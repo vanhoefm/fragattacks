@@ -197,6 +197,8 @@ static int wpa_supplicant_ctrl_iface_set(struct wpa_supplicant *wpa_s,
 			ret = pno_start(wpa_s);
 		else
 			ret = pno_stop(wpa_s);
+	} else if (os_strcasecmp(cmd, "ps") == 0) {
+		ret = wpa_drv_set_p2p_powersave(wpa_s, atoi(value), -1, -1);
 	} else {
 		value[-1] = '=';
 		ret = wpa_config_process_global(wpa_s->conf, cmd, -1);
