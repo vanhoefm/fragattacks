@@ -3099,3 +3099,13 @@ int wpas_driver_bss_selection(struct wpa_supplicant *wpa_s)
 	return wpa_s->conf->ap_scan == 2 ||
 		(wpa_s->drv_flags & WPA_DRIVER_FLAGS_BSS_SELECTION);
 }
+
+
+int wpas_is_p2p_prioritized(struct wpa_supplicant *wpa_s)
+{
+	if (wpa_s->global->conc_pref == WPA_CONC_PREF_P2P)
+		return 1;
+	if (wpa_s->global->conc_pref == WPA_CONC_PREF_STA)
+		return 0;
+	return -1;
+}

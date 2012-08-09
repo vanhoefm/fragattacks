@@ -220,6 +220,11 @@ struct wpa_global {
 	struct dl_list p2p_srv_upnp; /* struct p2p_srv_upnp */
 	int p2p_disabled;
 	int cross_connection;
+	enum wpa_conc_pref {
+		WPA_CONC_PREF_NOT_SET,
+		WPA_CONC_PREF_STA,
+		WPA_CONC_PREF_P2P
+	} conc_pref;
 };
 
 
@@ -596,6 +601,7 @@ void wpa_supplicant_update_config(struct wpa_supplicant *wpa_s);
 void wpa_supplicant_clear_status(struct wpa_supplicant *wpa_s);
 void wpas_connection_failed(struct wpa_supplicant *wpa_s, const u8 *bssid);
 int wpas_driver_bss_selection(struct wpa_supplicant *wpa_s);
+int wpas_is_p2p_prioritized(struct wpa_supplicant *wpa_s);
 
 /* events.c */
 void wpa_supplicant_mark_disassoc(struct wpa_supplicant *wpa_s);
