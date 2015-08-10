@@ -646,4 +646,17 @@ tls_connection_get_success_data(struct tls_connection *conn);
 
 void tls_connection_remove_session(struct tls_connection *conn);
 
+/**
+ * tls_get_tls_unique - Fetch "tls-unique" for channel binding
+ * @conn: Connection context data from tls_connection_init()
+ * @buf: Buffer for returning the value
+ * @max_len: Maximum length of the buffer in bytes
+ * Returns: Number of bytes written to buf or -1 on error
+ *
+ * This function can be used to fetch "tls-unique" (RFC 5929, Section 3) which
+ * is the first TLS Finished message sent in the most recent TLS handshake of
+ * the TLS connection.
+ */
+int tls_get_tls_unique(struct tls_connection *conn, u8 *buf, size_t max_len);
+
 #endif /* TLS_H */

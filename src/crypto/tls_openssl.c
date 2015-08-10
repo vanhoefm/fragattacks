@@ -5332,3 +5332,21 @@ void tls_connection_remove_session(struct tls_connection *conn)
 		wpa_printf(MSG_DEBUG,
 			   "OpenSSL: Removed cached session to disable session resumption");
 }
+
+
+int tls_get_tls_unique(struct tls_connection *conn, u8 *buf, size_t max_len)
+{
+	size_t len;
+	int reused;
+
+	reused = SSL_session_reused(conn->ssl);
+	if ((conn->server && !reused) || (!conn->server && reused))
+		len = SSL_get_peer_finished(conn->ssl, buf, max_len);
+	else
+		len = SSL_get_finished(conn->ssl, buf, max_len);
+
+	if (len == 0 || len > max_len)
+		return -1;
+
+	return len;
+}
