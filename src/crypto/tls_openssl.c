@@ -4437,6 +4437,10 @@ int tls_connection_set_cipher_list(void *tls_ctx, struct tls_connection *conn,
 
 		c++;
 	}
+	if (!buf[0]) {
+		wpa_printf(MSG_DEBUG, "OpenSSL: No ciphers listed");
+		return -1;
+	}
 
 	wpa_printf(MSG_DEBUG, "OpenSSL: cipher suites: %s", buf + 1);
 
