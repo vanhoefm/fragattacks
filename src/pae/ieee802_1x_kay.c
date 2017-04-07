@@ -1803,7 +1803,12 @@ ieee802_1x_mka_get_icv_length(struct ieee802_1x_mka_participant *participant)
 {
 	int length;
 
-	length = sizeof(struct ieee802_1x_mka_icv_body);
+	/* Determine if we need space for the ICV Indicator */
+	if (mka_alg_tbl[participant->kay->mka_algindex].icv_len !=
+	    DEFAULT_ICV_LEN)
+		length = sizeof(struct ieee802_1x_mka_icv_body);
+	else
+		length = 0;
 	length += mka_alg_tbl[participant->kay->mka_algindex].icv_len;
 
 	return MKA_ALIGN_LENGTH(length);
@@ -1822,11 +1827,13 @@ ieee802_1x_mka_encode_icv_body(struct ieee802_1x_mka_participant *participant,
 	u8 cmac[MAX_ICV_LEN];
 
 	length = ieee802_1x_mka_get_icv_length(participant);
-	if (length != DEFAULT_ICV_LEN)  {
+	if (mka_alg_tbl[participant->kay->mka_algindex].icv_len !=
+	    DEFAULT_ICV_LEN)  {
 		wpa_printf(MSG_DEBUG, "KaY: ICV Indicator");
 		body = wpabuf_put(buf, MKA_HDR_LEN);
 		body->type = MKA_ICV_INDICATOR;
-		set_mka_param_body_len(body, length - MKA_HDR_LEN);
+		length -= MKA_HDR_LEN;
+		set_mka_param_body_len(body, length);
 	}
 
 	if (mka_alg_tbl[participant->kay->mka_algindex].icv_hash(
@@ -1837,8 +1844,6 @@ ieee802_1x_mka_encode_icv_body(struct ieee802_1x_mka_participant *participant,
 	}
 	wpa_hexdump(MSG_DEBUG, "KaY: ICV", cmac, length);
 
-	if (length != DEFAULT_ICV_LEN)
-		length -= MKA_HDR_LEN;
 	os_memcpy(wpabuf_put(buf, length), cmac, length);
 
 	return 0;
