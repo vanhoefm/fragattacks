@@ -395,6 +395,7 @@ struct hostapd_bss_config {
 	char *ocsp_stapling_response_multi;
 	char *dh_file;
 	char *openssl_ciphers;
+	char *openssl_ecdh_curves;
 	u8 *pac_opaque_encr_key;
 	u8 *eap_fast_a_id;
 	size_t eap_fast_a_id_len;

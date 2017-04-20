@@ -218,6 +218,7 @@ int authsrv_init(struct hostapd_data *hapd)
 		params.private_key_passwd = hapd->conf->private_key_passwd;
 		params.dh_file = hapd->conf->dh_file;
 		params.openssl_ciphers = hapd->conf->openssl_ciphers;
+		params.openssl_ecdh_curves = hapd->conf->openssl_ecdh_curves;
 		params.ocsp_stapling_response =
 			hapd->conf->ocsp_stapling_response;
 		params.ocsp_stapling_response_multi =
