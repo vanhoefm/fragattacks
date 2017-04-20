@@ -1524,6 +1524,12 @@ int tls_global_set_params(void *tls_ctx,
 		return -1;
 	}
 
+	if (params->openssl_ecdh_curves) {
+		wpa_printf(MSG_INFO,
+			   "wolfSSL: openssl_ecdh_curves not supported");
+		return -1;
+	}
+
 #ifdef HAVE_SESSION_TICKET
 	/* Session ticket is off by default - can't disable once on. */
 	if (!(params->flags & TLS_CONN_DISABLE_SESSION_TICKET))

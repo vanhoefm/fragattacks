@@ -4505,6 +4505,40 @@ int tls_connection_set_params(void *tls_ctx, struct tls_connection *conn,
 		return -1;
 	}
 
+	if (!params->openssl_ecdh_curves) {
+#ifndef OPENSSL_IS_BORINGSSL
+#ifndef OPENSSL_NO_EC
+#if (OPENSSL_VERSION_NUMBER >= 0x10002000L) && \
+	(OPENSSL_VERSION_NUMBER < 0x10100000L)
+		if (SSL_set_ecdh_auto(conn->ssl, 1) != 1) {
+			wpa_printf(MSG_INFO,
+				   "OpenSSL: Failed to set ECDH curves to auto");
+			return -1;
+		}
+#endif /* >= 1.0.2 && < 1.1.0 */
+#endif /* OPENSSL_NO_EC */
+#endif /* OPENSSL_IS_BORINGSSL */
+	} else if (params->openssl_ecdh_curves[0]) {
+#if defined(OPENSSL_IS_BORINGSSL) || (OPENSSL_VERSION_NUMBER < 0x10002000L)
+		wpa_printf(MSG_INFO,
+			"OpenSSL: ECDH configuration nnot supported");
+		return -1;
+#else /* OPENSSL_IS_BORINGSSL || < 1.0.2 */
+#ifndef OPENSSL_NO_EC
+		if (SSL_set1_curves_list(conn->ssl,
+					 params->openssl_ecdh_curves) != 1) {
+			wpa_printf(MSG_INFO,
+				   "OpenSSL: Failed to set ECDH curves '%s'",
+				   params->openssl_ecdh_curves);
+			return -1;
+		}
+#else /* OPENSSL_NO_EC */
+		wpa_printf(MSG_INFO, "OpenSSL: ECDH not supported");
+		return -1;
+#endif /* OPENSSL_NO_EC */
+#endif /* OPENSSL_IS_BORINGSSL */
+	}
+
 	if (tls_set_conn_flags(conn, params->flags,
 			       params->openssl_ciphers) < 0)
 		return -1;
@@ -4569,6 +4603,41 @@ int tls_global_set_params(void *tls_ctx,
 			   "OpenSSL: Failed to set cipher string '%s'",
 			   params->openssl_ciphers);
 		return -1;
+	}
+
+	if (!params->openssl_ecdh_curves) {
+#ifndef OPENSSL_IS_BORINGSSL
+#ifndef OPENSSL_NO_EC
+#if (OPENSSL_VERSION_NUMBER >= 0x10002000L) && \
+	(OPENSSL_VERSION_NUMBER < 0x10100000L)
+		if (SSL_CTX_set_ecdh_auto(ssl_ctx, 1) != 1) {
+			wpa_printf(MSG_INFO,
+				   "OpenSSL: Failed to set ECDH curves to auto");
+			return -1;
+		}
+#endif /* >= 1.0.2 && < 1.1.0 */
+#endif /* OPENSSL_NO_EC */
+#endif /* OPENSSL_IS_BORINGSSL */
+	} else if (params->openssl_ecdh_curves[0]) {
+#if defined(OPENSSL_IS_BORINGSSL) || (OPENSSL_VERSION_NUMBER < 0x10002000L)
+		wpa_printf(MSG_INFO,
+			"OpenSSL: ECDH configuration nnot supported");
+		return -1;
+#else /* OPENSSL_IS_BORINGSSL || < 1.0.2 */
+#ifndef OPENSSL_NO_EC
+		if (SSL_CTX_set1_curves_list(ssl_ctx,
+					     params->openssl_ecdh_curves) !=
+		    1) {
+			wpa_printf(MSG_INFO,
+				   "OpenSSL: Failed to set ECDH curves '%s'",
+				   params->openssl_ecdh_curves);
+			return -1;
+		}
+#else /* OPENSSL_NO_EC */
+		wpa_printf(MSG_INFO, "OpenSSL: ECDH not supported");
+		return -1;
+#endif /* OPENSSL_NO_EC */
+#endif /* OPENSSL_IS_BORINGSSL */
 	}
 
 #ifdef SSL_OP_NO_TICKET

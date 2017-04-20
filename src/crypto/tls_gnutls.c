@@ -461,6 +461,12 @@ int tls_connection_set_params(void *tls_ctx, struct tls_connection *conn,
 		}
 	}
 
+	if (params->openssl_ecdh_curves) {
+		wpa_printf(MSG_INFO,
+			   "GnuTLS: openssl_ecdh_curves not supported");
+		return -1;
+	}
+
 	/* TODO: gnutls_certificate_set_verify_flags(xcred, flags);
 	 * to force peer validation(?) */
 

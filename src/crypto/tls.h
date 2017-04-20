@@ -144,6 +144,8 @@ struct tls_config {
  * @cert_id: the certificate's id when using engine
  * @ca_cert_id: the CA certificate's id when using engine
  * @openssl_ciphers: OpenSSL cipher configuration
+ * @openssl_ecdh_curves: OpenSSL ECDH curve configuration. %NULL for auto if
+ *	supported, empty string to disable, or a colon-separated curve list.
  * @flags: Parameter options (TLS_CONN_*)
  * @ocsp_stapling_response: DER encoded file with cached OCSP stapling response
  *	or %NULL if OCSP is not enabled
@@ -187,6 +189,7 @@ struct tls_connection_params {
 	const char *cert_id;
 	const char *ca_cert_id;
 	const char *openssl_ciphers;
+	const char *openssl_ecdh_curves;
 
 	unsigned int flags;
 	const char *ocsp_stapling_response;
