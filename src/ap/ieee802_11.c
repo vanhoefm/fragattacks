@@ -1648,8 +1648,11 @@ ieee802_11_set_radius_info(struct hostapd_data *hapd, struct sta_info *sta,
 		sta->psk = NULL;
 	}
 
+	os_free(sta->identity);
 	sta->identity = *identity;
 	*identity = NULL;
+
+	os_free(sta->radius_cui);
 	sta->radius_cui = *radius_cui;
 	*radius_cui = NULL;
 
