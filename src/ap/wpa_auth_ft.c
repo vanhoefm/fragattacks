@@ -3018,11 +3018,6 @@ static int wpa_ft_rrb_build_r0(const u8 *key, const size_t key_len,
 		{ .type = FT_RRB_LAST_EMPTY, .len = 0, .data = NULL },
 	};
 
-	if (!pmk_r0)
-		return wpa_ft_rrb_build(key, key_len, tlvs, NULL, tlv_auth,
-					NULL, src_addr, type,
-					packet, packet_len);
-
 	if (wpa_derive_pmk_r1(pmk_r0->pmk_r0, pmk_r0->pmk_r0_name, r1kh_id,
 			      s1kh_id, pmk_r1, pmk_r1_name) < 0)
 		return -1;
@@ -3172,13 +3167,18 @@ static int wpa_ft_rrb_rx_pull(struct wpa_authenticator *wpa_auth,
 	resp_auth[4].len = 0;
 	resp_auth[4].data = NULL;
 
-	if (wpa_ft_fetch_pmk_r0(wpa_auth, f_s1kh_id, f_pmk_r0_name, &r0) < 0)
+	if (wpa_ft_fetch_pmk_r0(wpa_auth, f_s1kh_id, f_pmk_r0_name, &r0) < 0) {
 		wpa_printf(MSG_DEBUG, "FT: No matching PMK-R0-Name found");
-
-	ret = wpa_ft_rrb_build_r0(key, key_len, resp, r0, f_r1kh_id, f_s1kh_id,
-				  resp_auth, wpa_auth->addr,
-				  FT_PACKET_R0KH_R1KH_RESP,
-				  &packet, &packet_len);
+		ret = wpa_ft_rrb_build(key, key_len, resp, NULL, resp_auth,
+				       NULL, wpa_auth->addr,
+				       FT_PACKET_R0KH_R1KH_RESP,
+				       &packet, &packet_len);
+	} else {
+		ret = wpa_ft_rrb_build_r0(key, key_len, resp, r0, f_r1kh_id,
+					  f_s1kh_id, resp_auth, wpa_auth->addr,
+					  FT_PACKET_R0KH_R1KH_RESP,
+					  &packet, &packet_len);
+	}
 
 	if (!ret)
 		wpa_ft_rrb_oui_send(wpa_auth, src_addr,
