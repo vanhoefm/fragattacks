@@ -836,6 +836,58 @@ hostapd_wpa_auth_add_sta(void *ctx, const u8 *sta_addr)
 }
 
 
+static int hostapd_wpa_auth_set_vlan(void *ctx, const u8 *sta_addr,
+				     struct vlan_description *vlan)
+{
+	struct hostapd_data *hapd = ctx;
+	struct sta_info *sta;
+
+	sta = ap_get_sta(hapd, sta_addr);
+	if (!sta || !sta->wpa_sm)
+		return -1;
+
+	if (vlan->notempty &&
+	    !hostapd_vlan_valid(hapd->conf->vlan, vlan)) {
+		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
+			       HOSTAPD_LEVEL_INFO,
+			       "Invalid VLAN %d%s received from FT",
+			       vlan->untagged, vlan->tagged[0] ? "+" : "");
+		return -1;
+	}
+
+	if (ap_sta_set_vlan(hapd, sta, vlan) < 0)
+		return -1;
+	/* Configure wpa_group for GTK but ignore error due to driver not
+	 * knowing this STA. */
+	ap_sta_bind_vlan(hapd, sta);
+
+	if (sta->vlan_id)
+		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
+			       HOSTAPD_LEVEL_INFO, "VLAN ID %d", sta->vlan_id);
+
+	return 0;
+}
+
+
+static int hostapd_wpa_auth_get_vlan(void *ctx, const u8 *sta_addr,
+				     struct vlan_description *vlan)
+{
+	struct hostapd_data *hapd = ctx;
+	struct sta_info *sta;
+
+	sta = ap_get_sta(hapd, sta_addr);
+	if (!sta)
+		return -1;
+
+	if (sta->vlan_desc)
+		*vlan = *sta->vlan_desc;
+	else
+		os_memset(vlan, 0, sizeof(*vlan));
+
+	return 0;
+}
+
+
 static void hostapd_rrb_receive(void *ctx, const u8 *src_addr, const u8 *buf,
 				size_t len)
 {
@@ -955,6 +1007,8 @@ int hostapd_setup_wpa(struct hostapd_data *hapd)
 		.send_ft_action = hostapd_wpa_auth_send_ft_action,
 		.add_sta = hostapd_wpa_auth_add_sta,
 		.add_tspec = hostapd_wpa_auth_add_tspec,
+		.set_vlan = hostapd_wpa_auth_set_vlan,
+		.get_vlan = hostapd_wpa_auth_get_vlan,
 #endif /* CONFIG_IEEE80211R_AP */
 	};
 	const u8 *wpa_ie;
