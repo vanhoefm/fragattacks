@@ -275,6 +275,9 @@ struct wpa_auth_callbacks {
 	int (*set_radius_cui)(void *ctx, const u8 *sta_addr,
 			      const u8 *radius_cui, size_t radius_cui_len);
 	size_t (*get_radius_cui)(void *ctx, const u8 *sta_addr, const u8 **buf);
+	void (*set_session_timeout)(void *ctx, const u8 *sta_addr,
+				    int session_timeout);
+	int (*get_session_timeout)(void *ctx, const u8 *sta_addr);
 
 	int (*send_ft_action)(void *ctx, const u8 *dst,
 			      const u8 *data, size_t data_len);
