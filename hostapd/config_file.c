@@ -2744,6 +2744,9 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 			return 1;
 		}
 	} else if (os_strcmp(buf, "r0_key_lifetime") == 0) {
+		/* DEPRECATED: Use ft_r0_key_lifetime instead. */
+		bss->r0_key_lifetime = atoi(pos) * 60;
+	} else if (os_strcmp(buf, "ft_r0_key_lifetime") == 0) {
 		bss->r0_key_lifetime = atoi(pos);
 	} else if (os_strcmp(buf, "reassociation_deadline") == 0) {
 		bss->reassociation_deadline = atoi(pos);
