@@ -126,11 +126,11 @@ def ft_params2_r0kh_mismatch(rsn=True, ssid=None, passphrase=None):
 def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
               sae=False, eap=False, fail_test=False, roams=1,
               pairwise_cipher="CCMP", group_cipher="TKIP CCMP", ptk_rekey="0",
-              test_connectivity=True):
+              test_connectivity=True, eap_identity="gpsk user", conndev=False):
     logger.info("Connect to first AP")
     if eap:
         dev.connect(ssid, key_mgmt="FT-EAP", proto="WPA2", ieee80211w="1",
-                    eap="GPSK", identity="gpsk user",
+                    eap="GPSK", identity=eap_identity,
                     password="abcdefghijklmnop0123456789abcdef",
                     scan_freq="2412",
                     pairwise=pairwise_cipher, group=group_cipher,
@@ -155,7 +155,10 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
         hapd1ap = hapd1
         hapd2ap = hapd0
     if test_connectivity:
-        hwsim_utils.test_connectivity(dev, hapd1ap)
+        if conndev:
+            hwsim_utils.test_connectivity_iface(dev, hapd1ap, conndev)
+        else:
+            hwsim_utils.test_connectivity(dev, hapd1ap)
 
     dev.scan_for_bss(ap2['bssid'], freq="2412")
 
@@ -170,7 +173,10 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
         if dev.get_status_field('bssid') != ap2['bssid']:
             raise Exception("Did not connect to correct AP")
         if (i == 0 or i == roams - 1) and test_connectivity:
-            hwsim_utils.test_connectivity(dev, hapd2ap)
+            if conndev:
+                hwsim_utils.test_connectivity_iface(dev, hapd2ap, conndev)
+            else:
+                hwsim_utils.test_connectivity(dev, hapd2ap)
 
         logger.info("Roam back to the first AP")
         if over_ds:
@@ -180,7 +186,10 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
         if dev.get_status_field('bssid') != ap1['bssid']:
             raise Exception("Did not connect to correct AP")
         if (i == 0 or i == roams - 1) and test_connectivity:
-            hwsim_utils.test_connectivity(dev, hapd1ap)
+            if conndev:
+                hwsim_utils.test_connectivity_iface(dev, hapd1ap, conndev)
+            else:
+                hwsim_utils.test_connectivity(dev, hapd1ap)
 
 def test_ap_ft(dev, apdev):
     """WPA2-PSK-FT AP"""
@@ -528,14 +537,23 @@ def test_ap_ft_sae_over_ds(dev, apdev):
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, sae=True,
               over_ds=True)
 
-def generic_ap_ft_eap(dev, apdev, over_ds=False, discovery=False, roams=1):
+def generic_ap_ft_eap(dev, apdev, vlan=False, over_ds=False, discovery=False,
+                      roams=1):
     ssid = "test-ft"
     passphrase="12345678"
+    if vlan:
+        identity="gpsk-vlan1"
+        conndev="brvlan1"
+    else:
+        identity="gpsk user"
+        conndev=False
 
     radius = hostapd.radius_params()
     params = ft_params1(ssid=ssid, passphrase=passphrase, discovery=discovery)
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
+    if vlan:
+        params["dynamic_vlan"] = "1"
     params = dict(radius.items() + params.items())
     hapd = hostapd.add_ap(apdev[0], params)
     key_mgmt = hapd.get_config()['key_mgmt']
@@ -544,11 +562,14 @@ def generic_ap_ft_eap(dev, apdev, over_ds=False, discovery=False, roams=1):
     params = ft_params2(ssid=ssid, passphrase=passphrase, discovery=discovery)
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
+    if vlan:
+        params["dynamic_vlan"] = "1"
     params = dict(radius.items() + params.items())
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd, hapd1, ssid, passphrase, eap=True,
-              over_ds=over_ds, roams=roams)
+              over_ds=over_ds, roams=roams, eap_identity=identity,
+              conndev=conndev)
     if "[WPA2-FT/EAP-CCMP]" not in dev[0].request("SCAN_RESULTS"):
         raise Exception("Scan results missing RSN element info")
     check_mib(dev[0], [ ("dot11RSNAAuthenticationSuiteRequested", "00-0f-ac-3"),
@@ -567,11 +588,22 @@ def generic_ap_ft_eap(dev, apdev, over_ds=False, discovery=False, roams=1):
     if ev is None:
         raise Exception("EAP authentication did not succeed")
     time.sleep(0.1)
-    hwsim_utils.test_connectivity(dev[0], ap)
+    if conndev:
+        hwsim_utils.test_connectivity_iface(dev[0], ap, conndev)
+    else:
+        hwsim_utils.test_connectivity(dev[0], ap)
 
 def test_ap_ft_eap(dev, apdev):
     """WPA2-EAP-FT AP"""
     generic_ap_ft_eap(dev, apdev)
+
+def test_ap_ft_eap_vlan(dev, apdev):
+    """WPA2-EAP-FT AP with VLAN"""
+    generic_ap_ft_eap(dev, apdev, vlan=True)
+
+def test_ap_ft_eap_vlan_multi(dev, apdev):
+    """WPA2-EAP-FT AP with VLAN"""
+    generic_ap_ft_eap(dev, apdev, vlan=True, roams=50)
 
 def test_ap_ft_eap_over_ds(dev, apdev):
     """WPA2-EAP-FT AP using over-the-DS"""
@@ -585,16 +617,40 @@ def test_ap_ft_eap_dis_over_ds(dev, apdev):
     """WPA2-EAP-FT AP with AP discovery and over-the-DS"""
     generic_ap_ft_eap(dev, apdev, over_ds=True, discovery=True)
 
-def test_ap_ft_eap_pull(dev, apdev):
+def test_ap_ft_eap_vlan(dev, apdev):
+    """WPA2-EAP-FT AP with VLAN"""
+    generic_ap_ft_eap(dev, apdev, vlan=True)
+
+def test_ap_ft_eap_vlan_multi(dev, apdev):
+    """WPA2-EAP-FT AP with VLAN"""
+    generic_ap_ft_eap(dev, apdev, vlan=True, roams=50)
+
+def test_ap_ft_eap_vlan_over_ds(dev, apdev):
+    """WPA2-EAP-FT AP with VLAN + over_ds"""
+    generic_ap_ft_eap(dev, apdev, vlan=True, over_ds=True)
+
+def test_ap_ft_eap_vlan_over_ds_multi(dev, apdev):
+    """WPA2-EAP-FT AP with VLAN + over_ds"""
+    generic_ap_ft_eap(dev, apdev, vlan=True, over_ds=True, roams=50)
+
+def generic_ap_ft_eap_pull(dev, apdev, vlan=False):
     """WPA2-EAP-FT AP (pull PMK)"""
     ssid = "test-ft"
     passphrase="12345678"
+    if vlan:
+        identity="gpsk-vlan1"
+        conndev="brvlan1"
+    else:
+        identity="gpsk user"
+        conndev=False
 
     radius = hostapd.radius_params()
     params = ft_params1(ssid=ssid, passphrase=passphrase)
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
     params["pmk_r1_push"] = "0"
+    if vlan:
+        params["dynamic_vlan"] = "1"
     params = dict(radius.items() + params.items())
     hapd = hostapd.add_ap(apdev[0], params)
     key_mgmt = hapd.get_config()['key_mgmt']
@@ -604,10 +660,20 @@ def test_ap_ft_eap_pull(dev, apdev):
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
     params["pmk_r1_push"] = "0"
+    if vlan:
+        params["dynamic_vlan"] = "1"
     params = dict(radius.items() + params.items())
     hapd1 = hostapd.add_ap(apdev[1], params)
 
-    run_roams(dev[0], apdev, hapd, hapd1, ssid, passphrase, eap=True)
+    run_roams(dev[0], apdev, hapd, hapd1, ssid, passphrase, eap=True,
+              eap_identity=identity, conndev=conndev)
+
+def test_ap_ft_eap_pull(dev, apdev):
+    """WPA2-EAP-FT AP (pull PMK)"""
+    generic_ap_ft_eap_pull(dev, apdev)
+
+def test_ap_ft_eap_pull_vlan(dev, apdev):
+    generic_ap_ft_eap_pull(dev, apdev, vlan=True)
 
 def test_ap_ft_eap_pull_wildcard(dev, apdev):
     """WPA2-EAP-FT AP (pull PMK) - wildcard R0KH/R1KH"""
