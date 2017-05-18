@@ -888,6 +888,148 @@ static int hostapd_wpa_auth_get_vlan(void *ctx, const u8 *sta_addr,
 }
 
 
+static int
+hostapd_wpa_auth_set_identity(void *ctx, const u8 *sta_addr,
+			      const u8 *identity, size_t identity_len)
+{
+	struct hostapd_data *hapd = ctx;
+	struct sta_info *sta;
+
+	sta = ap_get_sta(hapd, sta_addr);
+	if (!sta)
+		return -1;
+
+	os_free(sta->identity);
+	sta->identity = NULL;
+
+	if (sta->eapol_sm) {
+		os_free(sta->eapol_sm->identity);
+		sta->eapol_sm->identity = NULL;
+		sta->eapol_sm->identity_len = 0;
+	}
+
+	if (!identity_len)
+		return 0;
+
+	/* sta->identity is NULL terminated */
+	sta->identity = os_zalloc(identity_len + 1);
+	if (!sta->identity)
+		return -1;
+	os_memcpy(sta->identity, identity, identity_len);
+
+	if (sta->eapol_sm) {
+		sta->eapol_sm->identity = os_zalloc(identity_len);
+		if (!sta->eapol_sm->identity)
+			return -1;
+		os_memcpy(sta->eapol_sm->identity, identity, identity_len);
+		sta->eapol_sm->identity_len = identity_len;
+	}
+
+	return 0;
+}
+
+
+static size_t
+hostapd_wpa_auth_get_identity(void *ctx, const u8 *sta_addr, const u8 **buf)
+{
+	struct hostapd_data *hapd = ctx;
+	struct sta_info *sta;
+	size_t len;
+	char *identity;
+
+	sta = ap_get_sta(hapd, sta_addr);
+	if (!sta)
+		return 0;
+
+	*buf = ieee802_1x_get_identity(sta->eapol_sm, &len);
+	if (*buf && len)
+		return len;
+
+	if (!sta->identity) {
+		*buf = NULL;
+		return 0;
+	}
+
+	identity = sta->identity;
+	len = os_strlen(identity);
+	*buf = (u8 *) identity;
+
+	return len;
+}
+
+
+static int
+hostapd_wpa_auth_set_radius_cui(void *ctx, const u8 *sta_addr,
+				const u8 *radius_cui, size_t radius_cui_len)
+{
+	struct hostapd_data *hapd = ctx;
+	struct sta_info *sta;
+
+	sta = ap_get_sta(hapd, sta_addr);
+	if (!sta)
+		return -1;
+
+	os_free(sta->radius_cui);
+	sta->radius_cui = NULL;
+
+	if (sta->eapol_sm) {
+		wpabuf_free(sta->eapol_sm->radius_cui);
+		sta->eapol_sm->radius_cui = NULL;
+	}
+
+	if (!radius_cui)
+		return 0;
+
+	/* sta->radius_cui is NULL terminated */
+	sta->radius_cui = os_zalloc(radius_cui_len + 1);
+	if (!sta->radius_cui)
+		return -1;
+	os_memcpy(sta->radius_cui, radius_cui, radius_cui_len);
+
+	if (sta->eapol_sm) {
+		sta->eapol_sm->radius_cui = wpabuf_alloc_copy(radius_cui,
+							      radius_cui_len);
+		if (!sta->eapol_sm->radius_cui)
+			return -1;
+	}
+
+	return 0;
+}
+
+
+static size_t
+hostapd_wpa_auth_get_radius_cui(void *ctx, const u8 *sta_addr, const u8 **buf)
+{
+	struct hostapd_data *hapd = ctx;
+	struct sta_info *sta;
+	struct wpabuf *b;
+	size_t len;
+	char *radius_cui;
+
+	sta = ap_get_sta(hapd, sta_addr);
+	if (!sta)
+		return 0;
+
+	b = ieee802_1x_get_radius_cui(sta->eapol_sm);
+	if (b) {
+		len = wpabuf_len(b);
+		*buf = wpabuf_head(b);
+		return len;
+	}
+
+	if (!sta->radius_cui) {
+		*buf = NULL;
+		return 0;
+	}
+
+	radius_cui = sta->radius_cui;
+	len = os_strlen(radius_cui);
+	*buf = (u8 *) radius_cui;
+
+	return len;
+}
+
+
 static void hostapd_rrb_receive(void *ctx, const u8 *src_addr, const u8 *buf,
 				size_t len)
 {
@@ -1009,6 +1151,10 @@ int hostapd_setup_wpa(struct hostapd_data *hapd)
 		.add_tspec = hostapd_wpa_auth_add_tspec,
 		.set_vlan = hostapd_wpa_auth_set_vlan,
 		.get_vlan = hostapd_wpa_auth_get_vlan,
+		.set_identity = hostapd_wpa_auth_set_identity,
+		.get_identity = hostapd_wpa_auth_get_identity,
+		.set_radius_cui = hostapd_wpa_auth_set_radius_cui,
+		.get_radius_cui = hostapd_wpa_auth_get_radius_cui,
 #endif /* CONFIG_IEEE80211R_AP */
 	};
 	const u8 *wpa_ie;

@@ -266,6 +266,13 @@ struct wpa_auth_callbacks {
 			struct vlan_description *vlan);
 	int (*get_vlan)(void *ctx, const u8 *sta_addr,
 			struct vlan_description *vlan);
+	int (*set_identity)(void *ctx, const u8 *sta_addr,
+			    const u8 *identity, size_t identity_len);
+	size_t (*get_identity)(void *ctx, const u8 *sta_addr, const u8 **buf);
+	int (*set_radius_cui)(void *ctx, const u8 *sta_addr,
+			      const u8 *radius_cui, size_t radius_cui_len);
+	size_t (*get_radius_cui)(void *ctx, const u8 *sta_addr, const u8 **buf);
+
 	int (*send_ft_action)(void *ctx, const u8 *dst,
 			      const u8 *data, size_t data_len);
 	int (*add_tspec)(void *ctx, const u8 *sta_addr, u8 *tspec_ie,
