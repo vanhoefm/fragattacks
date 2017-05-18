@@ -361,6 +361,7 @@ struct hostapd_bss_config {
 	int pmk_r1_push;
 	int ft_over_ds;
 	int ft_psk_generate_local;
+	int r1_max_key_lifetime;
 #endif /* CONFIG_IEEE80211R_AP */
 
 	char *ctrl_interface; /* directory for UNIX domain sockets */
