@@ -198,7 +198,8 @@ struct sta_info {
 	unsigned int mesh_sae_pmksa_caching:1;
 #endif /* CONFIG_SAE */
 
-	u32 session_timeout; /* valid only if session_timeout_set == 1 */
+	/* valid only if session_timeout_set == 1 */
+	struct os_reltime session_timeout;
 
 	/* Last Authentication/(Re)Association Request/Action frame sequence
 	 * control */

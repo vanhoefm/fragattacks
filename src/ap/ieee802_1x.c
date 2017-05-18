@@ -1817,14 +1817,17 @@ ieee802_1x_receive_auth(struct radius_msg *msg, struct radius_msg *req,
 			break;
 
 		sta->session_timeout_set = !!session_timeout_set;
-		sta->session_timeout = session_timeout;
+		os_get_reltime(&sta->session_timeout);
+		sta->session_timeout.sec += session_timeout;
 
 		/* RFC 3580, Ch. 3.17 */
 		if (session_timeout_set && termination_action ==
-		    RADIUS_TERMINATION_ACTION_RADIUS_REQUEST) {
+		    RADIUS_TERMINATION_ACTION_RADIUS_REQUEST)
 			sm->reAuthPeriod = session_timeout;
-		} else if (session_timeout_set)
+		else if (session_timeout_set)
 			ap_sta_session_timeout(hapd, sta, session_timeout);
+		else
+			ap_sta_no_session_timeout(hapd, sta);
 
 		sm->eap_if->aaaSuccess = TRUE;
 		override_eapReq = 1;
@@ -2714,6 +2717,7 @@ static void ieee802_1x_finished(struct hostapd_data *hapd,
 	/* TODO: get PMKLifetime from WPA parameters */
 	static const int dot11RSNAConfigPMKLifetime = 43200;
 	unsigned int session_timeout;
+	struct os_reltime now, remaining;
 
 #ifdef CONFIG_HS20
 	if (remediation && !sta->remediation) {
@@ -2734,10 +2738,13 @@ static void ieee802_1x_finished(struct hostapd_data *hapd,
 #endif /* CONFIG_HS20 */
 
 	key = ieee802_1x_get_key(sta->eapol_sm, &len);
-	if (sta->session_timeout_set)
-		session_timeout = sta->session_timeout;
-	else
+	if (sta->session_timeout_set) {
+		os_get_reltime(&now);
+		os_reltime_sub(&sta->session_timeout, &now, &remaining);
+		session_timeout = (remaining.sec > 0) ? remaining.sec : 1;
+	} else {
 		session_timeout = dot11RSNAConfigPMKLifetime;
+	}
 	if (success && key && len >= PMK_LEN && !sta->remediation &&
 	    !sta->hs20_deauth_requested &&
 	    wpa_auth_pmksa_add(sta->wpa_sm, key, len, session_timeout,

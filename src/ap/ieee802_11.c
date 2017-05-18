@@ -1472,15 +1472,24 @@ prepare_auth_resp_fils(struct hostapd_data *hapd,
 		if (sta->fils_erp_pmkid_set) {
 			/* TODO: get PMKLifetime from WPA parameters */
 			unsigned int dot11RSNAConfigPMKLifetime = 43200;
+			int session_timeout;
+
+			session_timeout = dot11RSNAConfigPMKLifetime;
+			if (sta->session_timeout_set) {
+				struct os_reltime now, diff;
+
+				os_get_reltime(&now);
+				os_reltime_sub(&sta->session_timeout, &now,
+					       &diff);
+				session_timeout = diff.sec;
+			}
 
 			sta->fils_erp_pmkid_set = 0;
 			if (wpa_auth_pmksa_add2(
 				    hapd->wpa_auth, sta->addr,
 				    pmk, pmk_len,
 				    sta->fils_erp_pmkid,
-				    sta->session_timeout_set ?
-				    sta->session_timeout :
-				    dot11RSNAConfigPMKLifetime,
+				    session_timeout,
 				    wpa_auth_sta_key_mgmt(sta->wpa_sm)) < 0) {
 				wpa_printf(MSG_ERROR,
 					   "FILS: Failed to add PMKSA cache entry based on ERP");
@@ -1658,10 +1667,15 @@ ieee802_11_set_radius_info(struct hostapd_data *hapd, struct sta_info *sta,
 
 	if (hapd->conf->acct_interim_interval == 0 && acct_interim_interval)
 		sta->acct_interim_interval = acct_interim_interval;
-	if (res == HOSTAPD_ACL_ACCEPT_TIMEOUT)
+	if (res == HOSTAPD_ACL_ACCEPT_TIMEOUT) {
+		sta->session_timeout_set = 1;
+		os_get_reltime(&sta->session_timeout);
+		sta->session_timeout.sec += session_timeout;
 		ap_sta_session_timeout(hapd, sta, session_timeout);
-	else
+	} else {
+		sta->session_timeout_set = 0;
 		ap_sta_no_session_timeout(hapd, sta);
+	}
 
 	return 0;
 }
