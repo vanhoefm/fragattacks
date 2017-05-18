@@ -1177,7 +1177,7 @@ void ieee802_1x_new_station(struct hostapd_data *hapd, struct sta_info *sta)
 		sta->eapol_sm->portValid = TRUE;
 		if (sta->eapol_sm->eap)
 			eap_sm_notify_cached(sta->eapol_sm->eap);
-		/* TODO: get vlan_id from R0KH using RRB message */
+		ap_sta_bind_vlan(hapd, sta);
 		return;
 	}
 #endif /* CONFIG_IEEE80211R_AP */
