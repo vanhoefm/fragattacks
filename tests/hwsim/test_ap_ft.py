@@ -163,6 +163,9 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
     dev.scan_for_bss(ap2['bssid'], freq="2412")
 
     for i in range(0, roams):
+        # Roaming artificially fast can make data test fail because the key is
+        # set later.
+        time.sleep(0.01)
         logger.info("Roam to the second AP")
         if over_ds:
             dev.roam_over_ds(ap2['bssid'], fail_test=fail_test)
@@ -178,6 +181,9 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
             else:
                 hwsim_utils.test_connectivity(dev, hapd2ap)
 
+        # Roaming artificially fast can make data test fail because the key is
+        # set later.
+        time.sleep(0.01)
         logger.info("Roam back to the first AP")
         if over_ds:
             dev.roam_over_ds(ap1['bssid'])
