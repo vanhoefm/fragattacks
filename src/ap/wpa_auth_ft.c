@@ -892,9 +892,9 @@ void wpa_ft_pmk_cache_deinit(struct wpa_ft_pmk_cache *cache)
 }
 
 
-int wpa_ft_store_pmk_r0(struct wpa_authenticator *wpa_auth,
-			const u8 *spa, const u8 *pmk_r0,
-			const u8 *pmk_r0_name, int pairwise)
+static int wpa_ft_store_pmk_r0(struct wpa_authenticator *wpa_auth,
+			       const u8 *spa, const u8 *pmk_r0,
+			       const u8 *pmk_r0_name, int pairwise)
 {
 	struct wpa_ft_pmk_cache *cache = wpa_auth->ft_pmk_cache;
 	struct wpa_ft_pmk_r0_sa *r0;
@@ -1514,6 +1514,14 @@ static int wpa_ft_pull_pmk_r1(struct wpa_state_machine *sm,
 	os_free(packet);
 
 	return 0;
+}
+
+
+int wpa_ft_store_pmk_fils(struct wpa_state_machine *sm,
+			  const u8 *pmk_r0, const u8 *pmk_r0_name)
+{
+	return wpa_ft_store_pmk_r0(sm->wpa_auth, sm->addr, pmk_r0, pmk_r0_name,
+				   sm->pairwise);
 }
 
 

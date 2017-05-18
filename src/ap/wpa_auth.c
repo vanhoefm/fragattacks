@@ -2134,8 +2134,7 @@ int fils_auth_pmk_to_ptk(struct wpa_state_machine *sm, const u8 *pmk,
 		wpa_hexdump_key(MSG_DEBUG, "FILS+FT: PMK-R0", pmk_r0, PMK_LEN);
 		wpa_hexdump(MSG_DEBUG, "FILS+FT: PMKR0Name",
 			    pmk_r0_name, WPA_PMK_NAME_LEN);
-		wpa_ft_store_pmk_r0(wpa_auth, sm->addr, pmk_r0, pmk_r0_name,
-				    sm->pairwise);
+		wpa_ft_store_pmk_fils(sm, pmk_r0, pmk_r0_name);
 		os_memset(fils_ft, 0, sizeof(fils_ft));
 	}
 #endif /* CONFIG_IEEE80211R_AP */
