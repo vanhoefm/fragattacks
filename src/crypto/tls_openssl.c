@@ -214,10 +214,12 @@ static struct tls_context *tls_global = NULL;
 struct tls_data {
 	SSL_CTX *ssl;
 	unsigned int tls_session_lifetime;
+	int check_crl_strict;
 };
 
 struct tls_connection {
 	struct tls_context *context;
+	struct tls_data *data;
 	SSL_CTX *ssl_ctx;
 	SSL *ssl;
 	BIO *ssl_in, *ssl_out;
@@ -1474,6 +1476,7 @@ struct tls_connection * tls_connection_init(void *ssl_ctx)
 	conn = os_zalloc(sizeof(*conn));
 	if (conn == NULL)
 		return NULL;
+	conn->data = data;
 	conn->ssl_ctx = ssl;
 	conn->ssl = SSL_new(ssl);
 	if (conn->ssl == NULL) {
@@ -1993,6 +1996,13 @@ static int tls_verify_cb(int preverify_ok, X509_STORE_CTX *x509_ctx)
 			   "time mismatch");
 		preverify_ok = 1;
 	}
+	if (!preverify_ok && !conn->data->check_crl_strict &&
+	    (err == X509_V_ERR_CRL_HAS_EXPIRED ||
+	     err == X509_V_ERR_CRL_NOT_YET_VALID)) {
+		wpa_printf(MSG_DEBUG,
+			   "OpenSSL: Ignore certificate validity CRL time mismatch");
+		preverify_ok = 1;
+	}
 
 	err_str = X509_verify_cert_error_string(err);
 
@@ -2389,7 +2399,7 @@ static int tls_global_ca_cert(struct tls_data *data, const char *ca_cert)
 }
 
 
-int tls_global_set_verify(void *ssl_ctx, int check_crl)
+int tls_global_set_verify(void *ssl_ctx, int check_crl, int strict)
 {
 	int flags;
 
@@ -2406,6 +2416,8 @@ int tls_global_set_verify(void *ssl_ctx, int check_crl)
 		if (check_crl == 2)
 			flags |= X509_V_FLAG_CRL_CHECK_ALL;
 		X509_STORE_set_flags(cs, flags);
+
+		data->check_crl_strict = strict;
 	}
 	return 0;
 }

@@ -231,7 +231,8 @@ int authsrv_init(struct hostapd_data *hapd)
 		}
 
 		if (tls_global_set_verify(hapd->ssl_ctx,
-					  hapd->conf->check_crl)) {
+					  hapd->conf->check_crl,
+					  hapd->conf->check_crl_strict)) {
 			wpa_printf(MSG_ERROR, "Failed to enable check_crl");
 			authsrv_deinit(hapd);
 			return -1;

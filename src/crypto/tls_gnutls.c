@@ -848,7 +848,7 @@ fail:
 }
 
 
-int tls_global_set_verify(void *ssl_ctx, int check_crl)
+int tls_global_set_verify(void *ssl_ctx, int check_crl, int strict)
 {
 	/* TODO */
 	return 0;

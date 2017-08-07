@@ -324,9 +324,11 @@ int __must_check tls_global_set_params(
  * @tls_ctx: TLS context data from tls_init()
  * @check_crl: 0 = do not verify CRLs, 1 = verify CRL for the user certificate,
  * 2 = verify CRL for all certificates
+ * @strict: 0 = allow CRL time errors, 1 = do not allow CRL time errors
  * Returns: 0 on success, -1 on failure
  */
-int __must_check tls_global_set_verify(void *tls_ctx, int check_crl);
+int __must_check tls_global_set_verify(void *tls_ctx, int check_crl,
+				       int strict);
 
 /**
  * tls_connection_set_verify - Set certificate verification options

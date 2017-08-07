@@ -88,7 +88,7 @@ static int eap_example_server_init_tls(void)
 		return -1;
 	}
 
-	if (tls_global_set_verify(eap_ctx.tls_ctx, 0)) {
+	if (tls_global_set_verify(eap_ctx.tls_ctx, 0, 1)) {
 		printf("Failed to set check_crl\n");
 		return -1;
 	}

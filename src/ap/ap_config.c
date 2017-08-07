@@ -137,6 +137,9 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 #ifdef CONFIG_HS20
 	bss->hs20_release = (HS20_VERSION >> 4) + 1;
 #endif /* CONFIG_HS20 */
+
+	/* Default to strict CRL checking. */
+	bss->check_crl_strict = 1;
 }
 
 
