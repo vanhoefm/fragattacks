@@ -2020,8 +2020,18 @@ static int wpa_config_parse_mka_ckn(const struct parse_data *data,
 				    struct wpa_ssid *ssid, int line,
 				    const char *value)
 {
-	if (hexstr2bin(value, ssid->mka_ckn, MACSEC_CKN_LEN) ||
-	    value[MACSEC_CKN_LEN * 2] != '\0') {
+	size_t len;
+
+	len = os_strlen(value);
+	if (len > 2 * MACSEC_CKN_MAX_LEN || /* too long */
+	    len < 2 || /* too short */
+	    len % 2 != 0 /* not an integral number of bytes */) {
+		wpa_printf(MSG_ERROR, "Line %d: Invalid MKA-CKN '%s'.",
+			   line, value);
+		return -1;
+	}
+	ssid->mka_ckn_len = len / 2;
+	if (hexstr2bin(value, ssid->mka_ckn, ssid->mka_ckn_len)) {
 		wpa_printf(MSG_ERROR, "Line %d: Invalid MKA-CKN '%s'.",
 			   line, value);
 		return -1;
@@ -2029,7 +2039,8 @@ static int wpa_config_parse_mka_ckn(const struct parse_data *data,
 
 	ssid->mka_psk_set |= MKA_PSK_SET_CKN;
 
-	wpa_hexdump_key(MSG_MSGDUMP, "MKA-CKN", ssid->mka_ckn, MACSEC_CKN_LEN);
+	wpa_hexdump_key(MSG_MSGDUMP, "MKA-CKN", ssid->mka_ckn,
+			ssid->mka_ckn_len);
 	return 0;
 }
 
@@ -2051,7 +2062,7 @@ static char * wpa_config_write_mka_ckn(const struct parse_data *data,
 {
 	if (!(ssid->mka_psk_set & MKA_PSK_SET_CKN))
 		return NULL;
-	return wpa_config_write_string_hex(ssid->mka_ckn, MACSEC_CKN_LEN);
+	return wpa_config_write_string_hex(ssid->mka_ckn, ssid->mka_ckn_len);
 }
 
 #endif /* NO_CONFIG_WRITE */

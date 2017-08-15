@@ -414,7 +414,7 @@ void * ieee802_1x_create_preshared_mka(struct wpa_supplicant *wpa_s,
 	cak->len = MACSEC_CAK_LEN;
 	os_memcpy(cak->key, ssid->mka_cak, cak->len);
 
-	ckn->len = MACSEC_CKN_LEN;
+	ckn->len = ssid->mka_ckn_len;
 	os_memcpy(ckn->name, ssid->mka_ckn, ckn->len);
 
 	res = ieee802_1x_kay_create_mka(wpa_s->kay, ckn, cak, 0, PSK, FALSE);
