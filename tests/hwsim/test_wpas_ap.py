@@ -739,3 +739,26 @@ def test_wpas_ap_no_ht(dev):
         raise Exception("HT was not disabled: " + str(sig))
     if "WIDTH=20 MHz" not in sig2:
         raise Exception("HT was not enabled: " + str(sig2))
+
+def test_wpas_ap_async_fail(dev):
+    """wpa_supplicant AP mode - Async failure"""
+    id = dev[0].add_network()
+    dev[0].set("country", "FI")
+    try:
+        dev[0].set_network(id, "mode", "2")
+        dev[0].set_network_quoted(id, "ssid", "wpas-ap-open")
+        dev[0].set_network(id, "key_mgmt", "NONE")
+        dev[0].set_network(id, "frequency", "5180")
+        dev[0].set_network(id, "scan_freq", "5180")
+        dev[0].set_network(id, "vht", "1")
+        dev[0].set_network(id, "vht_center_freq1", "5210")
+        dev[0].set_network(id, "max_oper_chwidth", "1")
+        dev[0].set_network(id, "ht40", "1")
+
+        with alloc_fail(dev[0], 1,
+                        "nl80211_get_scan_results;ieee80211n_check_scan"):
+            dev[0].select_network(id)
+            dev[0].wait_disconnected()
+    finally:
+        set_country("00")
+        dev[0].set("country", "00")
