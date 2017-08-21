@@ -444,7 +444,7 @@ void free_hw_features(struct wpa_supplicant *wpa_s)
 }
 
 
-static void free_bss_tmp_disallowed(struct wpa_supplicant *wpa_s)
+void free_bss_tmp_disallowed(struct wpa_supplicant *wpa_s)
 {
 	struct wpa_bss_tmp_disallowed *bss, *prev;
 
@@ -7264,16 +7264,14 @@ static void wpa_bss_tmp_disallow_timeout(void *eloop_ctx, void *timeout_ctx)
 
 
 void wpa_bss_tmp_disallow(struct wpa_supplicant *wpa_s, const u8 *bssid,
-			  unsigned int sec)
+			  unsigned int sec, int rssi_threshold)
 {
 	struct wpa_bss_tmp_disallowed *bss;
 
 	bss = wpas_get_disallowed_bss(wpa_s, bssid);
 	if (bss) {
 		eloop_cancel_timeout(wpa_bss_tmp_disallow_timeout, wpa_s, bss);
-		eloop_register_timeout(sec, 0, wpa_bss_tmp_disallow_timeout,
-				       wpa_s, bss);
-		return;
+		goto finish;
 	}
 
 	bss = os_malloc(sizeof(*bss));
@@ -7286,23 +7284,31 @@ void wpa_bss_tmp_disallow(struct wpa_supplicant *wpa_s, const u8 *bssid,
 	os_memcpy(bss->bssid, bssid, ETH_ALEN);
 	dl_list_add(&wpa_s->bss_tmp_disallowed, &bss->list);
 	wpa_set_driver_tmp_disallow_list(wpa_s);
+
+finish:
+	bss->rssi_threshold = rssi_threshold;
 	eloop_register_timeout(sec, 0, wpa_bss_tmp_disallow_timeout,
 			       wpa_s, bss);
 }
 
 
-int wpa_is_bss_tmp_disallowed(struct wpa_supplicant *wpa_s, const u8 *bssid)
+int wpa_is_bss_tmp_disallowed(struct wpa_supplicant *wpa_s,
+			      struct wpa_bss *bss)
 {
-	struct wpa_bss_tmp_disallowed *bss = NULL, *tmp, *prev;
+	struct wpa_bss_tmp_disallowed *disallowed = NULL, *tmp, *prev;
 
 	dl_list_for_each_safe(tmp, prev, &wpa_s->bss_tmp_disallowed,
 			 struct wpa_bss_tmp_disallowed, list) {
-		if (os_memcmp(bssid, tmp->bssid, ETH_ALEN) == 0) {
-			bss = tmp;
+		if (os_memcmp(bss->bssid, tmp->bssid, ETH_ALEN) == 0) {
+			disallowed = tmp;
 			break;
 		}
 	}
-	if (!bss)
+	if (!disallowed)
+		return 0;
+
+	if (disallowed->rssi_threshold != 0 &&
+	    bss->level > disallowed->rssi_threshold)
 		return 0;
 
 	return 1;

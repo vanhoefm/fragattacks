@@ -1338,10 +1338,10 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 			continue;
 		}
 
-		if (wpa_is_bss_tmp_disallowed(wpa_s, bss->bssid)) {
+		if (wpa_is_bss_tmp_disallowed(wpa_s, bss)) {
 			if (debug_print)
 				wpa_dbg(wpa_s, MSG_DEBUG,
-					"   skip - MBO retry delay has not passed yet");
+					"   skip - AP temporarily disallowed");
 			continue;
 		}
 #ifdef CONFIG_TESTING_OPTIONS
@@ -3060,7 +3060,7 @@ static void wpa_supplicant_event_disassoc_finish(struct wpa_supplicant *wpa_s,
 	    !disallowed_ssid(wpa_s, fast_reconnect->ssid,
 			     fast_reconnect->ssid_len) &&
 	    !wpas_temp_disabled(wpa_s, fast_reconnect_ssid) &&
-	    !wpa_is_bss_tmp_disallowed(wpa_s, fast_reconnect->bssid)) {
+	    !wpa_is_bss_tmp_disallowed(wpa_s, fast_reconnect)) {
 #ifndef CONFIG_NO_SCAN_PROCESSING
 		wpa_dbg(wpa_s, MSG_DEBUG, "Try to reconnect to the same BSS");
 		if (wpa_supplicant_connect(wpa_s, fast_reconnect,
@@ -4036,6 +4036,32 @@ static void wpas_event_assoc_reject(struct wpa_supplicant *wpa_s,
 		return;
 	}
 #endif /* CONFIG_OWE */
+
+#ifdef CONFIG_MBO
+	if (data->assoc_reject.status_code ==
+	    WLAN_STATUS_DENIED_POOR_CHANNEL_CONDITIONS &&
+	    wpa_s->current_bss && data->assoc_reject.bssid &&
+	    data->assoc_reject.resp_ies) {
+		const u8 *rssi_rej;
+
+		rssi_rej = mbo_get_attr_from_ies(
+			data->assoc_reject.resp_ies,
+			data->assoc_reject.resp_ies_len,
+			OCE_ATTR_ID_RSSI_BASED_ASSOC_REJECT);
+		if (rssi_rej && rssi_rej[1] == 2) {
+			wpa_printf(MSG_DEBUG,
+				   "OCE: RSSI-based association rejection from "
+				   MACSTR " (Delta RSSI: %u, Retry Delay: %u)",
+				   MAC2STR(data->assoc_reject.bssid),
+				   rssi_rej[2], rssi_rej[3]);
+			wpa_bss_tmp_disallow(wpa_s,
+					     data->assoc_reject.bssid,
+					     rssi_rej[3],
+					     rssi_rej[2] +
+					     wpa_s->current_bss->level);
+		}
+	}
+#endif /* CONFIG_MBO */
 
 	if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) {
 		sme_event_assoc_reject(wpa_s, data);

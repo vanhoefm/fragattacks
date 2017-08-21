@@ -1538,6 +1538,24 @@ const u8 * get_ie_ext(const u8 *ies, size_t len, u8 ext)
 }
 
 
+const u8 * get_vendor_ie(const u8 *ies, size_t len, u32 vendor_type)
+{
+	const u8 *pos = ies, *end = ies + len;
+
+	while (end - pos > 1) {
+		if (2 + pos[1] > end - pos)
+			break;
+
+		if (pos[0] == WLAN_EID_VENDOR_SPECIFIC && pos[1] >= 4 &&
+		    vendor_type == WPA_GET_BE32(&pos[2]))
+			return pos;
+		pos += 2 + pos[1];
+	}
+
+	return NULL;
+}
+
+
 size_t mbo_add_ie(u8 *buf, size_t len, const u8 *attr, size_t attr_len)
 {
 	/*

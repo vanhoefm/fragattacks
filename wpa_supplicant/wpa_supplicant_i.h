@@ -451,6 +451,7 @@ struct icon_entry {
 struct wpa_bss_tmp_disallowed {
 	struct dl_list list;
 	u8 bssid[ETH_ALEN];
+	int rssi_threshold;
 };
 
 struct beacon_rep_data {
@@ -1371,6 +1372,8 @@ int wpas_mbo_ie(struct wpa_supplicant *wpa_s, u8 *buf, size_t len,
 		int add_oce_capa);
 const u8 * mbo_attr_from_mbo_ie(const u8 *mbo_ie, enum mbo_attr_id attr);
 const u8 * wpas_mbo_get_bss_attr(struct wpa_bss *bss, enum mbo_attr_id attr);
+const u8 * mbo_get_attr_from_ies(const u8 *ies, size_t ies_len,
+				 enum mbo_attr_id attr);
 int wpas_mbo_update_non_pref_chan(struct wpa_supplicant *wpa_s,
 				  const char *non_pref_chan);
 void wpas_mbo_scan_ie(struct wpa_supplicant *wpa_s, struct wpabuf *ie);
@@ -1481,8 +1484,10 @@ struct hostapd_hw_modes * get_mode(struct hostapd_hw_modes *modes,
 				   u16 num_modes, enum hostapd_hw_mode mode);
 
 void wpa_bss_tmp_disallow(struct wpa_supplicant *wpa_s, const u8 *bssid,
-			  unsigned int sec);
-int wpa_is_bss_tmp_disallowed(struct wpa_supplicant *wpa_s, const u8 *bssid);
+			  unsigned int sec, int rssi_threshold);
+int wpa_is_bss_tmp_disallowed(struct wpa_supplicant *wpa_s,
+			      struct wpa_bss *bss);
+void free_bss_tmp_disallowed(struct wpa_supplicant *wpa_s);
 
 struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 				     int i, struct wpa_bss *bss,

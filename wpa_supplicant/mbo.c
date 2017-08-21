@@ -51,6 +51,19 @@ const u8 * mbo_attr_from_mbo_ie(const u8 *mbo_ie, enum mbo_attr_id attr)
 }
 
 
+const u8 * mbo_get_attr_from_ies(const u8 *ies, size_t ies_len,
+				 enum mbo_attr_id attr)
+{
+	const u8 *mbo_ie;
+
+	mbo_ie = get_vendor_ie(ies, ies_len, MBO_IE_VENDOR_TYPE);
+	if (!mbo_ie)
+		return NULL;
+
+	return mbo_attr_from_mbo_ie(mbo_ie, attr);
+}
+
+
 const u8 * wpas_mbo_get_bss_attr(struct wpa_bss *bss, enum mbo_attr_id attr)
 {
 	const u8 *mbo, *end;
@@ -501,7 +514,7 @@ void wpas_mbo_ie_trans_req(struct wpa_supplicant *wpa_s, const u8 *mbo_ie,
 
 	if (disallowed_sec && wpa_s->current_bss)
 		wpa_bss_tmp_disallow(wpa_s, wpa_s->current_bss->bssid,
-				     disallowed_sec);
+				     disallowed_sec, 0);
 
 	return;
 fail:

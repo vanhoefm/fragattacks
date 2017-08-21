@@ -770,7 +770,7 @@ compare_scan_neighbor_results(struct wpa_supplicant *wpa_s, os_time_t age_secs,
 			continue;
 		}
 
-		if (wpa_is_bss_tmp_disallowed(wpa_s, target->bssid)) {
+		if (wpa_is_bss_tmp_disallowed(wpa_s, target)) {
 			wpa_printf(MSG_DEBUG,
 				   "MBO: Candidate BSS " MACSTR
 				   " retry delay is not over yet",
