@@ -849,6 +849,9 @@ struct hostapd_config {
 #define CH_SWITCH_VHT_ENABLED BIT(0)
 #define CH_SWITCH_VHT_DISABLED BIT(1)
 	unsigned int ch_switch_vht_config;
+
+	int rssi_reject_assoc_rssi;
+	int rssi_reject_assoc_timeout;
 };
 
 

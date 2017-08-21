@@ -4156,6 +4156,10 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		}
 
 		bss->multi_ap = val;
+	} else if (os_strcmp(buf, "rssi_reject_assoc_rssi") == 0) {
+		conf->rssi_reject_assoc_rssi = atoi(pos);
+	} else if (os_strcmp(buf, "rssi_reject_assoc_timeout") == 0) {
+		conf->rssi_reject_assoc_timeout = atoi(pos);
 	} else {
 		wpa_printf(MSG_ERROR,
 			   "Line %d: unknown configuration item '%s'",

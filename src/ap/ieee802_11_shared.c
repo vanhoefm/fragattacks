@@ -682,6 +682,22 @@ u8 * hostapd_eid_bss_max_idle_period(struct hostapd_data *hapd, u8 *eid)
 
 #ifdef CONFIG_MBO
 
+u8 * hostapd_eid_mbo_rssi_assoc_rej(struct hostapd_data *hapd, u8 *eid,
+				    size_t len, int delta)
+{
+	u8 mbo[4];
+
+	mbo[0] = OCE_ATTR_ID_RSSI_BASED_ASSOC_REJECT;
+	mbo[1] = 2;
+	/* Delta RSSI */
+	mbo[2] = delta;
+	/* Retry delay */
+	mbo[3] = hapd->iconf->rssi_reject_assoc_timeout;
+
+	return eid + mbo_add_ie(eid, len, mbo, 4);
+}
+
+
 u8 * hostapd_eid_mbo(struct hostapd_data *hapd, u8 *eid, size_t len)
 {
 	u8 mbo[9], *mbo_pos = mbo;

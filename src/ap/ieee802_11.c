@@ -2976,7 +2976,7 @@ static int add_associated_sta(struct hostapd_data *hapd,
 
 static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 			   const u8 *addr, u16 status_code, int reassoc,
-			   const u8 *ies, size_t ies_len)
+			   const u8 *ies, size_t ies_len, int rssi)
 {
 	int send_len;
 	u8 *buf;
@@ -3020,6 +3020,16 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 	p = hostapd_eid_supp_rates(hapd, reply->u.assoc_resp.variable);
 	/* Extended supported rates */
 	p = hostapd_eid_ext_supp_rates(hapd, p);
+
+#ifdef CONFIG_MBO
+	if (status_code == WLAN_STATUS_DENIED_POOR_CHANNEL_CONDITIONS &&
+	    rssi != 0) {
+		int delta = hapd->iconf->rssi_reject_assoc_rssi - rssi;
+
+		p = hostapd_eid_mbo_rssi_assoc_rej(hapd, p, buf + buflen - p,
+						   delta);
+	}
+#endif /* CONFIG_MBO */
 
 #ifdef CONFIG_IEEE80211R_AP
 	if (sta && status_code == WLAN_STATUS_SUCCESS) {
@@ -3292,7 +3302,7 @@ void fils_hlp_finish_assoc(struct hostapd_data *hapd, struct sta_info *sta)
 	reply_res = send_assoc_resp(hapd, sta, sta->addr, WLAN_STATUS_SUCCESS,
 				    sta->fils_pending_assoc_is_reassoc,
 				    sta->fils_pending_assoc_req,
-				    sta->fils_pending_assoc_req_len);
+				    sta->fils_pending_assoc_req_len, 0);
 	os_free(sta->fils_pending_assoc_req);
 	sta->fils_pending_assoc_req = NULL;
 	sta->fils_pending_assoc_req_len = 0;
@@ -3329,7 +3339,7 @@ void fils_hlp_timeout(void *eloop_ctx, void *eloop_data)
 
 static void handle_assoc(struct hostapd_data *hapd,
 			 const struct ieee80211_mgmt *mgmt, size_t len,
-			 int reassoc)
+			 int reassoc, int rssi)
 {
 	u16 capab_info, listen_interval, seq_ctrl, fc;
 	u16 resp = WLAN_STATUS_SUCCESS, reply_res;
@@ -3510,6 +3520,12 @@ static void handle_assoc(struct hostapd_data *hapd,
 #ifdef CONFIG_MBO
 	if (hapd->conf->mbo_enabled && hapd->mbo_assoc_disallow) {
 		resp = WLAN_STATUS_AP_UNABLE_TO_HANDLE_NEW_STA;
+		goto fail;
+	}
+
+	if (hapd->iconf->rssi_reject_assoc_rssi && rssi &&
+	    rssi < hapd->iconf->rssi_reject_assoc_rssi) {
+		resp = WLAN_STATUS_DENIED_POOR_CHANNEL_CONDITIONS;
 		goto fail;
 	}
 #endif /* CONFIG_MBO */
@@ -3710,7 +3726,7 @@ static void handle_assoc(struct hostapd_data *hapd,
 #endif /* CONFIG_FILS */
 
 	reply_res = send_assoc_resp(hapd, sta, mgmt->sa, resp, reassoc, pos,
-				    left);
+				    left, rssi);
 	os_free(tmp);
 
 	/*
@@ -4155,12 +4171,12 @@ int ieee802_11_mgmt(struct hostapd_data *hapd, const u8 *buf, size_t len,
 		break;
 	case WLAN_FC_STYPE_ASSOC_REQ:
 		wpa_printf(MSG_DEBUG, "mgmt::assoc_req");
-		handle_assoc(hapd, mgmt, len, 0);
+		handle_assoc(hapd, mgmt, len, 0, ssi_signal);
 		ret = 1;
 		break;
 	case WLAN_FC_STYPE_REASSOC_REQ:
 		wpa_printf(MSG_DEBUG, "mgmt::reassoc_req");
-		handle_assoc(hapd, mgmt, len, 1);
+		handle_assoc(hapd, mgmt, len, 1, ssi_signal);
 		ret = 1;
 		break;
 	case WLAN_FC_STYPE_DISASSOC:

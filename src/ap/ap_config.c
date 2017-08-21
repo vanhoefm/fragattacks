@@ -241,6 +241,9 @@ struct hostapd_config * hostapd_config_defaults(void)
 	 * environments for the current frequency band in the country. */
 	conf->country[2] = ' ';
 
+	conf->rssi_reject_assoc_rssi = 0;
+	conf->rssi_reject_assoc_timeout = 30;
+
 	return conf;
 }
 
