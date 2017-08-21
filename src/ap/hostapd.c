@@ -56,6 +56,8 @@ static int hostapd_setup_encryption(char *iface, struct hostapd_data *hapd);
 static int hostapd_broadcast_wep_clear(struct hostapd_data *hapd);
 static int setup_interface2(struct hostapd_iface *iface);
 static void channel_list_update_timeout(void *eloop_ctx, void *timeout_ctx);
+static void hostapd_interface_setup_failure_handler(void *eloop_ctx,
+						    void *timeout_ctx);
 
 
 int hostapd_for_each_interface(struct hapd_interfaces *interfaces,
@@ -429,6 +431,8 @@ static void hostapd_cleanup_iface(struct hostapd_iface *iface)
 {
 	wpa_printf(MSG_DEBUG, "%s(%p)", __func__, iface);
 	eloop_cancel_timeout(channel_list_update_timeout, iface, NULL);
+	eloop_cancel_timeout(hostapd_interface_setup_failure_handler, iface,
+			     NULL);
 
 	hostapd_cleanup_iface_partial(iface);
 	hostapd_config_free(iface->conf);
@@ -1779,6 +1783,20 @@ static void hostapd_owe_update_trans(struct hostapd_iface *iface)
 }
 
 
+static void hostapd_interface_setup_failure_handler(void *eloop_ctx,
+						    void *timeout_ctx)
+{
+	struct hostapd_iface *iface = eloop_ctx;
+	struct hostapd_data *hapd;
+
+	if (iface->num_bss < 1 || !iface->bss || !iface->bss[0])
+		return;
+	hapd = iface->bss[0];
+	if (hapd->setup_complete_cb)
+		hapd->setup_complete_cb(hapd->setup_complete_cb_ctx);
+}
+
+
 static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
 						 int err)
 {
@@ -1979,8 +1997,19 @@ fail:
 		iface->fst = NULL;
 	}
 #endif /* CONFIG_FST */
-	if (iface->interfaces && iface->interfaces->terminate_on_error)
+
+	if (iface->interfaces && iface->interfaces->terminate_on_error) {
 		eloop_terminate();
+	} else if (hapd->setup_complete_cb) {
+		/*
+		 * Calling hapd->setup_complete_cb directly may cause iface
+		 * deinitialization which may be accessed later by the caller.
+		 */
+		eloop_register_timeout(0, 0,
+				       hostapd_interface_setup_failure_handler,
+				       iface, NULL);
+	}
+
 	return -1;
 }
 

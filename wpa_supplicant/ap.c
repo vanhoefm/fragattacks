@@ -633,6 +633,13 @@ static void wpas_ap_configured_cb(void *ctx)
 {
 	struct wpa_supplicant *wpa_s = ctx;
 
+	wpa_printf(MSG_DEBUG, "AP interface setup completed - state %s",
+		   hostapd_state_text(wpa_s->ap_iface->state));
+	if (wpa_s->ap_iface->state == HAPD_IFACE_DISABLED) {
+		wpa_supplicant_ap_deinit(wpa_s);
+		return;
+	}
+
 #ifdef CONFIG_ACS
 	if (wpa_s->current_ssid && wpa_s->current_ssid->acs) {
 		wpa_s->assoc_freq = wpa_s->ap_iface->freq;
