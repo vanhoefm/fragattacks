@@ -238,3 +238,20 @@ def set_group_map(dev, val):
     (res, data) = dev.cmd_execute(["echo", data, ">", fname], shell=True)
     if res != 0:
         raise Exception("Failed to set group map for %s" % phy)
+
+def set_rx_rssi(dev, val):
+    """
+    Configure signal strength when receiving transmitted frames.
+    mac80211_hwsim driver sets rssi to: TX power - 50
+    According to that set tx_power in order to get the desired RSSI.
+    Valid RSSI range: -50 to -30.
+    """
+    tx_power = (val + 50) * 100
+    ifname = dev.get_driver_status_field("ifname")
+    (res, data) = dev.cmd_execute([ 'iw', ifname, 'set', 'txpower',
+                                    'fixed', str(tx_power)] )
+    if res != 0:
+        raise Exception("Failed to set RSSI to %d" % val)
+
+def reset_rx_rssi(dev):
+    set_rx_rssi(dev, -30)
