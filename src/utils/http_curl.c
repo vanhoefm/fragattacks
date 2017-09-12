@@ -1280,6 +1280,7 @@ static int ocsp_resp_cb(SSL *s, void *arg)
 }
 
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 static SSL_METHOD patch_ssl_method;
 static const SSL_METHOD *real_ssl_method;
 
@@ -1296,6 +1297,7 @@ static int curl_patch_ssl_new(SSL *s)
 
 	return ret;
 }
+#endif /* OpenSSL < 1.1.0 */
 
 #endif /* HAVE_OCSP */
 
@@ -1314,6 +1316,7 @@ static CURLcode curl_cb_ssl(CURL *curl, void *sslctx, void *parm)
 		SSL_CTX_set_tlsext_status_cb(ssl, ocsp_resp_cb);
 		SSL_CTX_set_tlsext_status_arg(ssl, ctx);
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 		/*
 		 * Use a temporary SSL_METHOD to get a callback on SSL_new()
 		 * from libcurl since there is no proper callback registration
@@ -1323,6 +1326,7 @@ static CURLcode curl_cb_ssl(CURL *curl, void *sslctx, void *parm)
 		patch_ssl_method.ssl_new = curl_patch_ssl_new;
 		real_ssl_method = ssl->method;
 		ssl->method = &patch_ssl_method;
+#endif /* OpenSSL < 1.1.0 */
 	}
 #endif /* HAVE_OCSP */
 
@@ -1359,7 +1363,7 @@ static CURL * setup_curl_post(struct http_ctx *ctx, const char *address,
 #ifdef EAP_TLS_OPENSSL
 		curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, curl_cb_ssl);
 		curl_easy_setopt(curl, CURLOPT_SSL_CTX_DATA, ctx);
-#ifdef OPENSSL_IS_BORINGSSL
+#if defined(OPENSSL_IS_BORINGSSL) || (OPENSSL_VERSION_NUMBER >= 0x10100000L)
 		/* For now, using the CURLOPT_SSL_VERIFYSTATUS option only
 		 * with BoringSSL since the OpenSSL specific callback hack to
 		 * enable OCSP is not available with BoringSSL. The OCSP
