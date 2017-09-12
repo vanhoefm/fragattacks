@@ -1136,7 +1136,7 @@ static int ocsp_resp_cb(SSL *s, void *arg)
 		return 0;
 	}
 
-	store = SSL_CTX_get_cert_store(s->ctx);
+	store = SSL_CTX_get_cert_store(SSL_get_SSL_CTX(s));
 	if (ctx->peer_issuer) {
 		wpa_printf(MSG_DEBUG, "OpenSSL: Add issuer");
 		debug_dump_cert("OpenSSL: Issuer certificate",
@@ -1277,7 +1277,7 @@ static const SSL_METHOD *real_ssl_method;
 
 static int curl_patch_ssl_new(SSL *s)
 {
-	SSL_CTX *ssl = s->ctx;
+	SSL_CTX *ssl = SSL_get_SSL_CTX(s);
 	int ret;
 
 	ssl->method = real_ssl_method;
