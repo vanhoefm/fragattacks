@@ -446,6 +446,7 @@ sk_num(CHECKED_CAST(_STACK *, STACK_OF(ASN1_IA5STRING) *, (st)))
 #define sk_ASN1_IA5STRING_value(st, i) (ASN1_IA5STRING *) \
 sk_value(CHECKED_CAST(_STACK *, const STACK_OF(ASN1_IA5STRING) *, (st)), (i))
 #else /* OPENSSL_IS_BORINGSSL */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 #define sk_LogotypeInfo_num(st) SKM_sk_num(LogotypeInfo, (st))
 #define sk_LogotypeInfo_value(st, i) SKM_sk_value(LogotypeInfo, (st), (i))
 #define sk_LogotypeImage_num(st) SKM_sk_num(LogotypeImage, (st))
@@ -456,6 +457,13 @@ sk_value(CHECKED_CAST(_STACK *, const STACK_OF(ASN1_IA5STRING) *, (st)), (i))
 #define sk_HashAlgAndValue_value(st, i) SKM_sk_value(HashAlgAndValue, (st), (i))
 #define sk_ASN1_IA5STRING_num(st) SKM_sk_num(ASN1_IA5STRING, (st))
 #define sk_ASN1_IA5STRING_value(st, i) SKM_sk_value(ASN1_IA5STRING, (st), (i))
+#else
+DEFINE_STACK_OF(LogotypeInfo)
+DEFINE_STACK_OF(LogotypeImage)
+DEFINE_STACK_OF(LogotypeAudio)
+DEFINE_STACK_OF(HashAlgAndValue)
+DEFINE_STACK_OF(ASN1_IA5STRING)
+#endif
 #endif /* OPENSSL_IS_BORINGSSL */
 
 
