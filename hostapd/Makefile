@@ -1101,6 +1101,9 @@ endif
 ifdef CONFIG_NO_RANDOM_POOL
 CFLAGS += -DCONFIG_NO_RANDOM_POOL
 else
+ifdef CONFIG_GETRANDOM
+CFLAGS += -DCONFIG_GETRANDOM
+endif
 OBJS += ../src/crypto/random.o
 HOBJS += ../src/crypto/random.o
 HOBJS += ../src/utils/eloop.o
