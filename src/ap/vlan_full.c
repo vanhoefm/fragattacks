@@ -16,6 +16,7 @@
 
 #include "utils/common.h"
 #include "drivers/priv_netlink.h"
+#include "drivers/linux_ioctl.h"
 #include "common/linux_bridge.h"
 #include "common/linux_vlan.h"
 #include "utils/eloop.h"
@@ -143,6 +144,9 @@ static int br_delif(const char *br_name, const char *if_name)
 		return -1;
 	}
 
+	if (linux_br_del_if(fd, br_name, if_name) == 0)
+		goto done;
+
 	if_index = if_nametoindex(if_name);
 
 	if (if_index == 0) {
@@ -168,6 +172,7 @@ static int br_delif(const char *br_name, const char *if_name)
 		return -1;
 	}
 
+done:
 	close(fd);
 	return 0;
 }
@@ -192,6 +197,14 @@ static int br_addif(const char *br_name, const char *if_name)
 		wpa_printf(MSG_ERROR, "VLAN: %s: socket(AF_INET,SOCK_STREAM) "
 			   "failed: %s", __func__, strerror(errno));
 		return -1;
+	}
+
+	if (linux_br_add_if(fd, br_name, if_name) == 0)
+		goto done;
+	if (errno == EBUSY) {
+		/* The interface is already added. */
+		close(fd);
+		return 1;
 	}
 
 	if_index = if_nametoindex(if_name);
@@ -224,6 +237,7 @@ static int br_addif(const char *br_name, const char *if_name)
 		return -1;
 	}
 
+done:
 	close(fd);
 	return 0;
 }
@@ -241,6 +255,9 @@ static int br_delbr(const char *br_name)
 		return -1;
 	}
 
+	if (linux_br_del(fd, br_name) == 0)
+		goto done;
+
 	arg[0] = BRCTL_DEL_BRIDGE;
 	arg[1] = (unsigned long) br_name;
 
@@ -252,6 +269,7 @@ static int br_delbr(const char *br_name)
 		return -1;
 	}
 
+done:
 	close(fd);
 	return 0;
 }
@@ -277,11 +295,19 @@ static int br_addbr(const char *br_name)
 		return -1;
 	}
 
+	if (linux_br_add(fd, br_name) == 0)
+		goto done;
+	if (errno == EEXIST) {
+		/* The bridge is already added. */
+		close(fd);
+		return 1;
+	}
+
 	arg[0] = BRCTL_ADD_BRIDGE;
 	arg[1] = (unsigned long) br_name;
 
 	if (ioctl(fd, SIOCGIFBR, arg) < 0) {
- 		if (errno == EEXIST) {
+		if (errno == EEXIST) {
 			/* The bridge is already added. */
 			close(fd);
 			return 1;
@@ -294,6 +320,7 @@ static int br_addbr(const char *br_name)
 		}
 	}
 
+done:
 	/* Decrease forwarding delay to avoid EAPOL timeouts. */
 	os_memset(&ifr, 0, sizeof(ifr));
 	os_strlcpy(ifr.ifr_name, br_name, IFNAMSIZ);
