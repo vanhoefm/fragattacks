@@ -5,10 +5,12 @@
 # See README for more details.
 
 from remotehost import remote_compatible
+import binascii
 import time
 import logging
 logger = logging.getLogger()
 import os
+import struct
 import subprocess
 
 import hostapd
@@ -1487,3 +1489,154 @@ def test_scan_probe_req_events(dev, apdev):
     for val in tests:
         if "FAIL" not in hapd2.mon.request("ATTACH " + val):
             raise Exception("Invalid ATTACH command accepted")
+
+def elem_capab(capab):
+    # Nontransmitted BSSID Capability element (83 = 0x53)
+    return struct.pack('<BBH', 83, 2, capab)
+
+def elem_ssid(ssid):
+    # SSID element
+    return struct.pack('BB', 0, len(ssid)) + ssid
+
+def elem_bssid_index(index):
+    # Multiple BSSID-index element (85 = 0x55)
+    return struct.pack('BBB', 85, 1, index)
+
+def elem_multibssid(profiles, max_bssid_indic):
+    # TODO: add support for fragmenting over multiple Multiple BSSID elements
+    if 1 + len(profiles) > 255:
+        raise Exception("Too long Multiple BSSID element")
+    elem = struct.pack('BBB', 71, 1 + len(profiles), max_bssid_indic) + profiles
+    return binascii.hexlify(elem)
+
+def run_scans(dev, check):
+    for i in range(2):
+        dev.request("SCAN TYPE=ONLY freq=2412")
+        ev = dev.wait_event(["CTRL-EVENT-SCAN-RESULTS"], timeout=10)
+        if ev is None:
+            raise Exception("Scan did not complete")
+
+    # TODO: Check IEs
+    for (bssid, ssid, capab) in check:
+        bss = dev.get_bss(bssid)
+        if bss is None:
+            raise Exception("AP " + bssid + " missing from scan results")
+        logger.info("AP " + bssid + ": " + str(bss))
+        if bss['ssid'] != ssid:
+            raise Exception("Unexpected AP " + bssid + " SSID")
+        if int(bss['capabilities'], 16) != capab:
+            raise Exception("Unexpected AP " + bssid + " capabilities")
+
+def check_multibss_sta_capa(dev):
+    res = dev.get_capability("multibss")
+    if res is None or 'MULTIBSS-STA' not in res:
+        raise HwsimSkip("Multi-BSS STA functionality not supported")
+
+def test_scan_multi_bssid(dev, apdev):
+    """Scan and Multiple BSSID element"""
+    check_multibss_sta_capa(dev[0])
+    dev[0].flush_scan_cache()
+
+    params = { "ssid": "test-scan" }
+    # Max BSSID Indicator 0 (max 1 BSSID) and no subelements
+    params['vendor_elements'] = elem_multibssid('', 0)
+    hostapd.add_ap(apdev[0], params)
+
+    params = { "ssid": "test-scan" }
+    elems = elem_capab(0x0401) + elem_ssid("1") + elem_bssid_index(1)
+    profile1 = struct.pack('BB', 0, len(elems)) + elems
+    params['vendor_elements'] = elem_multibssid(profile1, 1)
+    hostapd.add_ap(apdev[1], params)
+
+    bssid0 = apdev[0]['bssid']
+    bssid1 = apdev[1]['bssid']
+    check = [ (bssid0, 'test-scan', 0x401),
+              (bssid1, 'test-scan', 0x401),
+              (bssid1[0:16] + '1', '1', 0x401) ]
+    run_scans(dev[0], check)
+
+def test_scan_multi_bssid_2(dev, apdev):
+    """Scan and Multiple BSSID element (2)"""
+    check_multibss_sta_capa(dev[0])
+    dev[0].flush_scan_cache()
+
+    params = { "ssid": "transmitted" }
+
+    # Duplicated entry for the transmitted BSS (not a normal use case)
+    elems = elem_capab(1) + elem_ssid("transmitted") + elem_bssid_index(0)
+    profile1 = struct.pack('BB', 0, len(elems)) + elems
+
+    elems = elem_capab(1) + elem_ssid("nontransmitted") + elem_bssid_index(1)
+    profile2 = struct.pack('BB', 0, len(elems)) + elems
+
+    elems = elem_capab(1) + elem_ssid("nontransmitted_2") + elem_bssid_index(2)
+    profile3 = struct.pack('BB', 0, len(elems)) + elems
+
+    profiles = profile1 + profile2 + profile3
+    params['vendor_elements'] = elem_multibssid(profiles, 4)
+    hostapd.add_ap(apdev[0], params)
+
+    bssid = apdev[0]['bssid']
+    check = [ (bssid, 'transmitted', 0x401),
+              (bssid[0:16] + '1', 'nontransmitted', 0x1),
+              (bssid[0:16] + '2', 'nontransmitted_2', 0x1) ]
+    run_scans(dev[0], check)
+
+def test_scan_multi_bssid_3(dev, apdev):
+    """Scan and Multiple BSSID element (3)"""
+    check_multibss_sta_capa(dev[0])
+    dev[0].flush_scan_cache()
+
+    params = { "ssid": "transmitted" }
+
+    # Duplicated nontransmitted BSS (not a normal use case)
+    elems = elem_capab(1) + elem_ssid("nontransmitted") + elem_bssid_index(1)
+    profile1 = struct.pack('BB', 0, len(elems)) + elems
+
+    elems = elem_capab(1) + elem_ssid("nontransmitted") + elem_bssid_index(1)
+    profile2 = struct.pack('BB', 0, len(elems)) + elems
+
+    profiles = profile1 + profile2
+    params['vendor_elements'] = elem_multibssid(profiles, 2)
+    hostapd.add_ap(apdev[0], params)
+
+    bssid = apdev[0]['bssid']
+    check = [ (bssid, 'transmitted', 0x401),
+              (bssid[0:16] + '1', 'nontransmitted', 0x1) ]
+    run_scans(dev[0], check)
+
+def test_scan_multi_bssid_4(dev, apdev):
+    """Scan and Multiple BSSID element (3)"""
+    check_multibss_sta_capa(dev[0])
+    dev[0].flush_scan_cache()
+
+    # Transmitted BSSID is not the first one in the block
+    bssid = apdev[0]['bssid']
+    hapd = None
+    try:
+        params = { "ssid": "transmitted",
+                   "bssid": bssid[0:16] + '1'}
+
+        elems = elem_capab(1) + elem_ssid("1") + elem_bssid_index(1)
+        profile1 = struct.pack('BB', 0, len(elems)) + elems
+
+        elems = elem_capab(1) + elem_ssid("2") + elem_bssid_index(2)
+        profile2 = struct.pack('BB', 0, len(elems)) + elems
+
+        elems = elem_capab(1) + elem_ssid("3") + elem_bssid_index(3)
+        profile3 = struct.pack('BB', 0, len(elems)) + elems
+
+        profiles = profile1 + profile2 + profile3
+        params['vendor_elements'] = elem_multibssid(profiles, 2)
+        hapd = hostapd.add_ap(apdev[0], params)
+
+        check = [ (bssid[0:16] + '1', 'transmitted', 0x401),
+                  (bssid[0:16] + '2', '1', 0x1),
+                  (bssid[0:16] + '3', '2', 0x1),
+                  (bssid[0:16] + '0', '3', 0x1) ]
+        run_scans(dev[0], check)
+    finally:
+        if hapd:
+            hapd.disable()
+            hapd.set('bssid', bssid)
+            hapd.enable()
