@@ -540,7 +540,8 @@ retry_send:
 			res = recv(ctrl->s, reply, *reply_len, 0);
 			if (res < 0)
 				return res;
-			if (res > 0 && reply[0] == '<') {
+			if ((res > 0 && reply[0] == '<') ||
+			    (res > 6 && strncmp(reply, "IFNAME=", 7) == 0)) {
 				/* This is an unsolicited message from
 				 * wpa_supplicant, not the reply to the
 				 * request. Use msg_cb to report this to the
