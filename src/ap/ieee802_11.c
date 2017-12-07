@@ -1888,6 +1888,7 @@ static void handle_auth(struct hostapd_data *hapd,
 
 		sta = ap_sta_add(hapd, mgmt->sa);
 		if (!sta) {
+			wpa_printf(MSG_DEBUG, "ap_sta_add() failed");
 			resp = WLAN_STATUS_AP_UNABLE_TO_HANDLE_NEW_STA;
 			goto fail;
 		}
@@ -1899,6 +1900,7 @@ static void handle_auth(struct hostapd_data *hapd,
 		hapd, sta, res, session_timeout, acct_interim_interval,
 		&vlan_id, &psk, &identity, &radius_cui);
 	if (res) {
+		wpa_printf(MSG_DEBUG, "ieee802_11_set_radius_info() failed");
 		resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
 		goto fail;
 	}
@@ -1967,6 +1969,9 @@ static void handle_auth(struct hostapd_data *hapd,
 	case WLAN_AUTH_SHARED_KEY:
 		resp = auth_shared_key(hapd, sta, auth_transaction, challenge,
 				       fc & WLAN_FC_ISWEP);
+		if (resp != 0)
+			wpa_printf(MSG_DEBUG,
+				   "auth_shared_key() failed: status=%d", resp);
 		sta->auth_alg = WLAN_AUTH_SHARED_KEY;
 		mlme_authenticate_indication(hapd, sta);
 		if (sta->challenge && auth_transaction == 1) {
