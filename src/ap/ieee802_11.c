@@ -1729,6 +1729,8 @@ static void handle_auth(struct hostapd_data *hapd,
 #endif /* CONFIG_NO_RC4 */
 
 	if (hapd->tkip_countermeasures) {
+		wpa_printf(MSG_DEBUG,
+			   "Ongoing TKIP countermeasures (Michael MIC failure) - reject authentication");
 		resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
 		goto fail;
 	}
