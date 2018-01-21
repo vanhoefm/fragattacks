@@ -2757,10 +2757,9 @@ static int tls_connection_client_cert(struct tls_connection *conn,
 		return 0;
 	}
 
-	if (SSL_use_certificate_file(conn->ssl, client_cert,
-				     SSL_FILETYPE_PEM) == 1) {
+	if (SSL_use_certificate_chain_file(conn->ssl, client_cert) == 1) {
 		ERR_clear_error();
-		wpa_printf(MSG_DEBUG, "OpenSSL: SSL_use_certificate_file (PEM)"
+		wpa_printf(MSG_DEBUG, "OpenSSL: SSL_use_certificate_chain_file"
 			   " --> OK");
 		return 0;
 	}
