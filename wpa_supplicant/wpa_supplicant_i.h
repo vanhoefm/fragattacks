@@ -1475,4 +1475,7 @@ int wpas_ctrl_iface_get_pref_freq_list_override(struct wpa_supplicant *wpa_s,
 						unsigned int *num,
 						unsigned int *freq_list);
 
+int wpa_is_fils_supported(struct wpa_supplicant *wpa_s);
+int wpa_is_fils_sk_pfs_supported(struct wpa_supplicant *wpa_s);
+
 #endif /* WPA_SUPPLICANT_I_H */

@@ -2344,6 +2344,27 @@ static size_t wpas_add_fils_hlp_req(struct wpa_supplicant *wpa_s, u8 *ie_buf,
 
 	return ie_len;
 }
+
+
+int wpa_is_fils_supported(struct wpa_supplicant *wpa_s)
+{
+	return (((wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) &&
+		 (wpa_s->drv_flags & WPA_DRIVER_FLAGS_SUPPORT_FILS)) ||
+		(!(wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) &&
+		 (wpa_s->drv_flags & WPA_DRIVER_FLAGS_FILS_SK_OFFLOAD)));
+}
+
+
+int wpa_is_fils_sk_pfs_supported(struct wpa_supplicant *wpa_s)
+{
+#ifdef CONFIG_FILS_SK_PFS
+	return (wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) &&
+		(wpa_s->drv_flags & WPA_DRIVER_FLAGS_SUPPORT_FILS);
+#else /* CONFIG_FILS_SK_PFS */
+	return 0;
+#endif /* CONFIG_FILS_SK_PFS */
+}
+
 #endif /* CONFIG_FILS */
 
 

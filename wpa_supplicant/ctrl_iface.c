@@ -66,28 +66,6 @@ static int * freq_range_to_channel_list(struct wpa_supplicant *wpa_s,
 					char *val);
 
 
-#ifdef CONFIG_FILS
-
-static int wpa_is_fils_supported(struct wpa_supplicant *wpa_s)
-{
-	return (((wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) &&
-		 (wpa_s->drv_flags & WPA_DRIVER_FLAGS_SUPPORT_FILS)) ||
-		(!(wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) &&
-		 (wpa_s->drv_flags & WPA_DRIVER_FLAGS_FILS_SK_OFFLOAD)));
-}
-
-
-#ifdef CONFIG_FILS_SK_PFS
-static int wpa_is_fils_sk_pfs_supported(struct wpa_supplicant *wpa_s)
-{
-	return (wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) &&
-		(wpa_s->drv_flags & WPA_DRIVER_FLAGS_SUPPORT_FILS);
-}
-#endif /* CONFIG_FILS_SK_PFS */
-
-#endif /* CONFIG_FILS */
-
-
 static int set_bssid_filter(struct wpa_supplicant *wpa_s, char *val)
 {
 	char *pos;
