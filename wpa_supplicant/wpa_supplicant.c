@@ -5144,7 +5144,7 @@ radio_work_pending(struct wpa_supplicant *wpa_s, const char *type)
 
 
 static int wpas_init_driver(struct wpa_supplicant *wpa_s,
-			    struct wpa_interface *iface)
+			    const struct wpa_interface *iface)
 {
 	const char *ifname, *driver, *rn;
 
@@ -5228,7 +5228,7 @@ static void wpas_gas_server_tx(void *ctx, int freq, const u8 *da,
 #endif /* CONFIG_GAS_SERVER */
 
 static int wpa_supplicant_init_iface(struct wpa_supplicant *wpa_s,
-				     struct wpa_interface *iface)
+				     const struct wpa_interface *iface)
 {
 	struct wpa_driver_capa capa;
 	int capa_res;
@@ -5429,8 +5429,6 @@ static int wpa_supplicant_init_iface(struct wpa_supplicant *wpa_s,
 	 */
 	if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_DEDICATED_P2P_DEVICE)
 		wpa_s->p2p_mgmt = iface->p2p_mgmt;
-	else
-		iface->p2p_mgmt = 1;
 
 	if (wpa_s->num_multichan_concurrent == 0)
 		wpa_s->num_multichan_concurrent = 1;
@@ -5439,10 +5437,7 @@ static int wpa_supplicant_init_iface(struct wpa_supplicant *wpa_s,
 		return -1;
 
 #ifdef CONFIG_TDLS
-	if ((!iface->p2p_mgmt ||
-	     !(wpa_s->drv_flags &
-	       WPA_DRIVER_FLAGS_DEDICATED_P2P_DEVICE)) &&
-	    wpa_tdls_init(wpa_s->wpa))
+	if (!iface->p2p_mgmt && wpa_tdls_init(wpa_s->wpa))
 		return -1;
 #endif /* CONFIG_TDLS */
 
@@ -5514,7 +5509,9 @@ static int wpa_supplicant_init_iface(struct wpa_supplicant *wpa_s,
 		return -1;
 	}
 
-	if (iface->p2p_mgmt && wpas_p2p_init(wpa_s->global, wpa_s) < 0) {
+	if ((!(wpa_s->drv_flags & WPA_DRIVER_FLAGS_DEDICATED_P2P_DEVICE) ||
+	     wpa_s->p2p_mgmt) &&
+	    wpas_p2p_init(wpa_s->global, wpa_s) < 0) {
 		wpa_msg(wpa_s, MSG_ERROR, "Failed to init P2P");
 		return -1;
 	}
