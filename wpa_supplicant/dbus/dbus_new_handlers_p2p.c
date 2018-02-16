@@ -1916,6 +1916,30 @@ out:
 	return success;
 }
 
+dbus_bool_t wpas_dbus_getter_p2p_peer_vsie(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct peer_handler_args *peer_args = user_data;
+	const struct p2p_peer_info *info;
+
+	info = p2p_get_peer_found(peer_args->wpa_s->global->p2p,
+				  peer_args->p2p_device_addr, 0);
+	if (!info) {
+		dbus_set_error(error, DBUS_ERROR_FAILED, "failed to find peer");
+		return FALSE;
+	}
+
+	if (!info->vendor_elems)
+		return wpas_dbus_simple_array_property_getter(iter,
+							      DBUS_TYPE_BYTE,
+							      NULL, 0, error);
+
+	return wpas_dbus_simple_array_property_getter(
+		iter, DBUS_TYPE_BYTE, (char *) info->vendor_elems->buf,
+		info->vendor_elems->used, error);
+}
+
 
 /**
  * wpas_dbus_getter_persistent_groups - Get array of persistent group objects
