@@ -410,7 +410,7 @@ SM_STEP(CP)
 
 	case CP_READY:
 		if (sm->new_sak || changed_connect(sm))
-			SM_ENTER(CP, RECEIVE);
+			SM_ENTER(CP, ABANDON);
 		if (sm->server_transmitting)
 			SM_ENTER(CP, TRANSMIT);
 		break;
