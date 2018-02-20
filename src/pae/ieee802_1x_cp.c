@@ -320,8 +320,11 @@ SM_STATE(CP, RETIRE)
 	SM_ENTRY(CP, RETIRE);
 	/* RETIRE state machine not keep with Figure 12-2 in
 	 * IEEE Std 802.1X-2010 */
-	os_free(sm->oki);
-	sm->oki = NULL;
+	if (sm->oki) {
+		ieee802_1x_kay_delete_sas(sm->kay, sm->oki);
+		os_free(sm->oki);
+		sm->oki = NULL;
+	}
 	sm->orx = FALSE;
 	sm->otx = FALSE;
 	ieee802_1x_kay_set_old_sa_attr(sm->kay, sm->oki, sm->oan,
