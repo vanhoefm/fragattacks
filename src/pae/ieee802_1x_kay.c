@@ -27,6 +27,9 @@
 #define DEFAULT_ICV_LEN		16
 #define MAX_ICV_LEN		32  /* 32 bytes, 256 bits */
 
+#define MAX_MISSING_SAK_USE 10  /* Accept up to 10 inbound MKPDUs without
+				 * SAK-USE before dropping */
+
 #define PENDING_PN_EXHAUSTION 0xC0000000
 
 #define MKA_ALIGN_LENGTH(len) (((len) + 0x3) & ~0x3)
@@ -571,6 +574,7 @@ ieee802_1x_kay_create_peer(const u8 *mi, u32 mn)
 	peer->mn = mn;
 	peer->expire = time(NULL) + MKA_LIFE_TIME / 1000;
 	peer->sak_used = FALSE;
+	peer->missing_sak_use_count = 0;
 
 	return peer;
 }
@@ -3146,10 +3150,40 @@ static int ieee802_1x_kay_decode_mkpdu(struct ieee802_1x_kay *kay,
 		return -1;
 	}
 
+	/* Detect missing parameter sets */
+	peer = ieee802_1x_kay_get_live_peer(participant,
+					    participant->current_peer_id.mi);
+	if (peer) {
+		/* MKPDU is from live peer */
+		if (!handled[MKA_SAK_USE]) {
+			/* Once a live peer starts sending SAK-USE, it should be
+			 * sent every time. */
+			if (peer->sak_used) {
+				wpa_printf(MSG_INFO,
+					   "KaY: Discarding Rx MKPDU: Live Peer stopped sending SAK-USE");
+				return -1;
+			}
+
+			/* Live peer is probably hung if it hasn't sent SAK-USE
+			 * after a reasonable number of MKPDUs. Drop the MKPDU,
+			 * which will eventually force an timeout. */
+			if (++peer->missing_sak_use_count >
+			    MAX_MISSING_SAK_USE) {
+				wpa_printf(MSG_INFO,
+					   "KaY: Discarding Rx MKPDU: Live Peer not sending SAK-USE");
+				return -1;
+			}
+		} else {
+			peer->missing_sak_use_count = 0;
+		}
+	} else {
+		/* MKPDU is from new or potential peer */
+		peer = ieee802_1x_kay_get_peer(participant,
+					       participant->current_peer_id.mi);
+	}
+
 	/* Only update live peer watchdog after successful decode of all
 	 * parameter sets */
-	peer = ieee802_1x_kay_get_peer(participant,
-				       participant->current_peer_id.mi);
 	if (peer)
 		peer->expire = time(NULL) + MKA_LIFE_TIME / 1000;
 

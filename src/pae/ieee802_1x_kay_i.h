@@ -51,6 +51,7 @@ struct ieee802_1x_kay_peer {
 	Boolean macsec_desired;
 	enum macsec_cap macsec_capability;
 	Boolean sak_used;
+	int missing_sak_use_count;
 	struct dl_list list;
 };
 
