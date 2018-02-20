@@ -1216,7 +1216,7 @@ ieee802_1x_mka_encode_sak_use_body(
 	}
 
 	/* data protect, lowest accept packet number */
-	body->delay_protect = kay->macsec_replay_protect;
+	body->delay_protect = kay->mka_hello_time <= MKA_BOUNDED_HELLO_TIME;
 	pn = ieee802_1x_mka_get_lpn(participant, &participant->lki);
 	if (pn > kay->pn_exhaustion) {
 		wpa_printf(MSG_WARNING, "KaY: My LPN exhaustion");
@@ -2466,7 +2466,7 @@ static void ieee802_1x_participant_timer(void *eloop_ctx, void *timeout_ctx)
 		participant->retry_count++;
 	}
 
-	eloop_register_timeout(MKA_HELLO_TIME / 1000, 0,
+	eloop_register_timeout(kay->mka_hello_time / 1000, 0,
 			       ieee802_1x_participant_timer,
 			       participant, NULL);
 
@@ -3193,6 +3193,7 @@ ieee802_1x_kay_init(struct ieee802_1x_kay_ctx *ctx, enum macsec_policy policy,
 		kay->macsec_replay_protect = FALSE;
 		kay->macsec_replay_window = 0;
 		kay->macsec_confidentiality = CONFIDENTIALITY_NONE;
+		kay->mka_hello_time = MKA_HELLO_TIME;
 	} else {
 		kay->macsec_desired = TRUE;
 		kay->macsec_protect = TRUE;
@@ -3207,6 +3208,7 @@ ieee802_1x_kay_init(struct ieee802_1x_kay_ctx *ctx, enum macsec_policy policy,
 		kay->macsec_validate = Strict;
 		kay->macsec_replay_protect = FALSE;
 		kay->macsec_replay_window = 0;
+		kay->mka_hello_time = MKA_HELLO_TIME;
 	}
 
 	wpa_printf(MSG_DEBUG, "KaY: state machine created");
@@ -3412,7 +3414,7 @@ ieee802_1x_kay_create_mka(struct ieee802_1x_kay *kay,
 	wpa_hexdump(MSG_DEBUG, "KaY: Participant created:",
 		    ckn->name, ckn->len);
 
-	usecs = os_random() % (MKA_HELLO_TIME * 1000);
+	usecs = os_random() % (kay->mka_hello_time * 1000);
 	eloop_register_timeout(0, usecs, ieee802_1x_participant_timer,
 			       participant, NULL);
 
@@ -3614,7 +3616,8 @@ int ieee802_1x_kay_get_status(struct ieee802_1x_kay *kay, char *buf,
 			  "Key Server Priority=%u\n"
 			  "Is Key Server=%s\n"
 			  "Number of Keys Distributed=%u\n"
-			  "Number of Keys Received=%u\n",
+			  "Number of Keys Received=%u\n"
+			  "MKA Hello Time=%u\n",
 			  kay->active ? "Active" : "Not-Active",
 			  kay->authenticated ? "Yes" : "No",
 			  kay->secured ? "Yes" : "No",
@@ -3623,7 +3626,8 @@ int ieee802_1x_kay_get_status(struct ieee802_1x_kay *kay, char *buf,
 			  kay->key_server_priority,
 			  kay->is_key_server ? "Yes" : "No",
 			  kay->dist_kn - 1,
-			  kay->rcvd_keys);
+			  kay->rcvd_keys,
+			  kay->mka_hello_time);
 	if (os_snprintf_error(buflen, len))
 		return 0;
 

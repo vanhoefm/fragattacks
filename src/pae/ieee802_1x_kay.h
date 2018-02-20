@@ -21,6 +21,7 @@ struct macsec_init_params;
 
 /* MKA timer, unit: millisecond */
 #define MKA_HELLO_TIME		2000
+#define MKA_BOUNDED_HELLO_TIME	 500
 #define MKA_LIFE_TIME		6000
 #define MKA_SAK_RETIRE_TIME	3000
 
@@ -187,6 +188,7 @@ struct ieee802_1x_kay {
 	u32 macsec_replay_window;
 	enum validate_frames macsec_validate;
 	enum confidentiality_offset macsec_confidentiality;
+	u32 mka_hello_time;
 
 	u32 ltx_kn;
 	u8 ltx_an;
