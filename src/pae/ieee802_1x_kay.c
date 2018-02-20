@@ -3175,17 +3175,25 @@ static int ieee802_1x_kay_decode_mkpdu(struct ieee802_1x_kay *kay,
 			}
 		} else {
 			peer->missing_sak_use_count = 0;
+
+			/* Only update live peer watchdog after successful
+			 * decode of all parameter sets */
+			peer->expire = time(NULL) + MKA_LIFE_TIME / 1000;
 		}
 	} else {
 		/* MKPDU is from new or potential peer */
 		peer = ieee802_1x_kay_get_peer(participant,
 					       participant->current_peer_id.mi);
-	}
+		if (!peer)
+			return -1;
 
-	/* Only update live peer watchdog after successful decode of all
-	 * parameter sets */
-	if (peer)
-		peer->expire = time(NULL) + MKA_LIFE_TIME / 1000;
+		/* Do not update potential peer watchdog. Per IEEE Std
+		 * 802.1X-2010, 9.4.3, potential peers need to show liveness by
+		 * including our MI/MN in their transmitted MKPDU (within
+		 * potential or live parameter sets). Whena potential peer does
+		 * include our MI/MN in an MKPDU, we respond by moving the peer
+		 * from 'potential_peers' to 'live_peers'. */
+	}
 
 	kay->active = TRUE;
 	participant->retry_count = 0;
