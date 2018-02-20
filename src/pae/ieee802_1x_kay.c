@@ -842,7 +842,6 @@ ieee802_1x_mka_decode_basic_body(struct ieee802_1x_kay *kay, const u8 *mka_msg,
 		peer->key_server_priority = body->priority;
 	} else if (peer->mn < be_to_host32(body->actor_mn)) {
 		peer->mn = be_to_host32(body->actor_mn);
-		peer->expire = time(NULL) + MKA_LIFE_TIME / 1000;
 		peer->macsec_desired = body->macsec_desired;
 		peer->macsec_capability = body->macsec_capability;
 		peer->is_key_server = (Boolean) body->key_server;
@@ -1087,7 +1086,6 @@ static int ieee802_1x_mka_decode_live_peer_body(
 		peer = ieee802_1x_kay_get_peer(participant, peer_mi->mi);
 		if (peer) {
 			peer->mn = peer_mn;
-			peer->expire = time(NULL) + MKA_LIFE_TIME / 1000;
 		} else if (!ieee802_1x_kay_create_potential_peer(
 				participant, peer_mi->mi, peer_mn)) {
 			return -1;
@@ -1363,7 +1361,7 @@ ieee802_1x_mka_decode_sak_use_body(
 			}
 		}
 		if (!found) {
-			wpa_printf(MSG_WARNING, "KaY: Latest key is invalid");
+			wpa_printf(MSG_INFO, "KaY: Latest key is invalid");
 			return -1;
 		}
 		if (os_memcmp(participant->lki.mi, body->lsrv_mi,
@@ -3031,12 +3029,15 @@ static int ieee802_1x_kay_decode_mkpdu(struct ieee802_1x_kay *kay,
 {
 	struct ieee802_1x_mka_participant *participant;
 	struct ieee802_1x_mka_hdr *hdr;
+	struct ieee802_1x_kay_peer *peer;
 	size_t body_len;
 	size_t left_len;
 	u8 body_type;
 	int i;
 	const u8 *pos;
 	Boolean handled[256];
+	Boolean bad_sak_use = FALSE; /* Error detected while processing SAK Use
+				      * parameter set */
 
 	if (ieee802_1x_kay_mkpdu_sanity_check(kay, buf, len))
 		return -1;
@@ -3111,14 +3112,46 @@ static int ieee802_1x_kay_decode_mkpdu(struct ieee802_1x_kay *kay,
 		handled[body_type] = TRUE;
 		if (body_type < ARRAY_SIZE(mka_body_handler) &&
 		    mka_body_handler[body_type].body_rx) {
-			mka_body_handler[body_type].body_rx
-				(participant, pos, left_len);
+			if (mka_body_handler[body_type].body_rx
+				(participant, pos, left_len) != 0) {
+				/* Handle parameter set failure */
+				if (body_type != MKA_SAK_USE) {
+					wpa_printf(MSG_INFO,
+						   "KaY: Discarding Rx MKPDU: decode of parameter set type (%d) failed",
+						   body_type);
+					return -1;
+				}
+
+				/* Ideally DIST-SAK should be processed before
+				 * SAK-USE. Unfortunately IEEE Std 802.1X-2010,
+				 * 11.11.3 (Encoding MKPDUs) states SAK-USE(3)
+				 * must always be encoded before DIST-SAK(4).
+				 * Rather than redesigning mka_body_handler so
+				 * that it somehow processes DIST-SAK before
+				 * SAK-USE, just ignore SAK-USE failures if
+				 * DIST-SAK is also present in this MKPDU. */
+				bad_sak_use = TRUE;
+			}
 		} else {
 			wpa_printf(MSG_ERROR,
 				   "The type %d is not supported in this MKA version %d",
 				   body_type, MKA_VERSION_ID);
 		}
 	}
+
+	if (bad_sak_use && !handled[MKA_DISTRIBUTED_SAK]) {
+		wpa_printf(MSG_INFO,
+			   "KaY: Discarding Rx MKPDU: decode of parameter set type (%d) failed",
+			   MKA_SAK_USE);
+		return -1;
+	}
+
+	/* Only update live peer watchdog after successful decode of all
+	 * parameter sets */
+	peer = ieee802_1x_kay_get_peer(participant,
+				       participant->current_peer_id.mi);
+	if (peer)
+		peer->expire = time(NULL) + MKA_LIFE_TIME / 1000;
 
 	kay->active = TRUE;
 	participant->retry_count = 0;
