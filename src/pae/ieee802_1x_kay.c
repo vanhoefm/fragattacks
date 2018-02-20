@@ -803,17 +803,31 @@ ieee802_1x_mka_decode_basic_body(struct ieee802_1x_kay *kay, const u8 *mka_msg,
 	/* handler peer */
 	peer = ieee802_1x_kay_get_peer(participant, body->actor_mi);
 	if (!peer) {
-		/* Check duplicated SCI */
-		/* TODO: What policy should be applied to detect duplicated SCI
-		 * is active attacker or a valid peer whose MI is be changed?
+		/* Check duplicated SCI
+		 *
+		 * A duplicated SCI indicates either an active attacker or
+		 * a valid peer whose MI is being changed. The latter scenario
+		 * is more likely because to have gotten this far the received
+		 * MKPDU must have had a valid ICV, indicating the peer holds
+		 * the same CAK as our participant.
+		 *
+		 * Before creating a new peer object for the new MI we must
+		 * clean up the resources (SCs and SAs) associated with the
+		 * old peer. An easy way to do this is to ignore MKPDUs with
+		 * the new MI's for now and just wait for the old peer to
+		 * time out and clean itself up (within MKA_LIFE_TIME).
+		 *
+		 * This method is preferable to deleting the old peer here
+		 * and now and continuing on with processing because if this
+		 * MKPDU is from an attacker it's better to ignore the MKPDU
+		 * than to process it (and delete a valid peer as well).
 		 */
 		peer = ieee802_1x_kay_get_peer_sci(participant,
 						   &body->actor_sci);
 		if (peer) {
 			wpa_printf(MSG_WARNING,
-				   "KaY: duplicated SCI detected, Maybe active attacker");
-			dl_list_del(&peer->list);
-			os_free(peer);
+				   "KaY: duplicated SCI detected - maybe active attacker or peer selected new MI - ignore MKPDU");
+			return NULL;
 		}
 
 		peer = ieee802_1x_kay_create_potential_peer(
