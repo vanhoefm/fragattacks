@@ -804,6 +804,14 @@ static inline int wpa_drv_set_transmit_next_pn(struct wpa_supplicant *wpa_s,
 	return wpa_s->driver->set_transmit_next_pn(wpa_s->drv_priv, sa);
 }
 
+static inline int wpa_drv_set_receive_lowest_pn(struct wpa_supplicant *wpa_s,
+						struct receive_sa *sa)
+{
+	if (!wpa_s->driver->set_receive_lowest_pn)
+		return -1;
+	return wpa_s->driver->set_receive_lowest_pn(wpa_s->drv_priv, sa);
+}
+
 static inline int
 wpa_drv_create_receive_sc(struct wpa_supplicant *wpa_s, struct receive_sc *sc,
 			  unsigned int conf_offset, int validation)

@@ -3830,6 +3830,14 @@ struct wpa_driver_ops {
 	int (*set_transmit_next_pn)(void *priv, struct transmit_sa *sa);
 
 	/**
+	 * set_receive_lowest_pn - Set receive lowest PN
+	 * @priv: Private driver interface data
+	 * @sa: secure association
+	 * Returns: 0 on success, -1 on failure (or if not supported)
+	 */
+	int (*set_receive_lowest_pn)(void *priv, struct receive_sa *sa);
+
+	/**
 	 * create_receive_sc - create secure channel for receiving
 	 * @priv: Private driver interface data
 	 * @sc: secure channel

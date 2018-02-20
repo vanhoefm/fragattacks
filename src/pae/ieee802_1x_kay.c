@@ -1155,27 +1155,38 @@ ieee802_1x_mka_get_sak_use_length(
 
 
 /**
- *
+ * ieee802_1x_mka_get_lpn
  */
 static u32
 ieee802_1x_mka_get_lpn(struct ieee802_1x_mka_participant *principal,
 		       struct ieee802_1x_mka_ki *ki)
 {
-	struct receive_sa *rxsa;
-	struct receive_sc *rxsc;
+	struct transmit_sa *txsa;
 	u32 lpn = 0;
 
-	dl_list_for_each(rxsc, &principal->rxsc_list, struct receive_sc, list) {
-		dl_list_for_each(rxsa, &rxsc->sa_list, struct receive_sa, list)
-		{
-			if (is_ki_equal(&rxsa->pkey->key_identifier, ki)) {
-				secy_get_receive_lowest_pn(principal->kay,
-							   rxsa);
+	dl_list_for_each(txsa, &principal->txsc->sa_list,
+			 struct transmit_sa, list) {
+		if (is_ki_equal(&txsa->pkey->key_identifier, ki)) {
+			/* Per IEEE Std 802.1X-2010, Clause 9, "Each SecY uses
+			 * MKA to communicate the lowest PN used for
+			 * transmission with the SAK within the last two
+			 * seconds".  Achieve this 2 second delay by setting the
+			 * lpn using the transmit next PN (i.e., txsa->next_pn)
+			 * that was read last time here (i.e., mka_hello_time
+			 * 2 seconds ago).
+			 *
+			 * The lowest acceptable PN is the same as the last
+			 * transmitted PN, which is one less than the next
+			 * transmit PN.
+			 *
+			 * NOTE: This method only works if mka_hello_time is 2s.
+			 */
+			lpn = (txsa->next_pn > 0) ? (txsa->next_pn - 1) : 0;
 
-				lpn = lpn > rxsa->lowest_pn ?
-					lpn : rxsa->lowest_pn;
-				break;
-			}
+			/* Now read the current transmit next PN for use next
+			 * time through. */
+			secy_get_transmit_next_pn(principal->kay, txsa);
+			break;
 		}
 	}
 
@@ -1277,7 +1288,8 @@ ieee802_1x_mka_decode_sak_use_body(
 	struct ieee802_1x_mka_hdr *hdr;
 	struct ieee802_1x_mka_sak_use_body *body;
 	struct ieee802_1x_kay_peer *peer;
-	struct transmit_sa *txsa;
+	struct receive_sc *rxsc;
+	struct receive_sa *rxsa;
 	struct data_key *sa_key = NULL;
 	size_t body_len;
 	struct ieee802_1x_mka_ki ki;
@@ -1396,25 +1408,38 @@ ieee802_1x_mka_decode_sak_use_body(
 	}
 
 	found = FALSE;
-	dl_list_for_each(txsa, &participant->txsc->sa_list,
-			 struct transmit_sa, list) {
-		if (sa_key != NULL && txsa->pkey == sa_key) {
-			found = TRUE;
-			break;
+	dl_list_for_each(rxsc, &participant->rxsc_list, struct receive_sc,
+			 list) {
+		dl_list_for_each(rxsa, &rxsc->sa_list, struct receive_sa,
+				 list) {
+			if (sa_key && rxsa->pkey == sa_key) {
+				found = TRUE;
+				break;
+			}
 		}
+		if (found)
+			break;
 	}
 	if (!found) {
-		wpa_printf(MSG_WARNING, "KaY: Can't find txsa");
+		wpa_printf(MSG_WARNING, "KaY: Can't find rxsa");
 		return -1;
 	}
 
-	/* FIXME: Secy creates txsa with default npn. If MKA detected Latest Key
-	 * npn is larger than txsa's npn, set it to txsa.
-	 */
-	secy_get_transmit_next_pn(kay, txsa);
-	if (lpn > txsa->next_pn) {
-		secy_set_transmit_next_pn(kay, txsa);
-		wpa_printf(MSG_INFO, "KaY: update lpn =0x%x", lpn);
+	if (body->delay_protect) {
+		secy_get_receive_lowest_pn(participant->kay, rxsa);
+		if (lpn > rxsa->lowest_pn) {
+			/* Delay protect window (communicated via MKA) is
+			 * tighter than SecY's current replay protect window,
+			 * so tell SecY the new (and higher) lpn. */
+			rxsa->lowest_pn = lpn;
+			secy_set_receive_lowest_pn(participant->kay, rxsa);
+			wpa_printf(MSG_DEBUG, "KaY: update lpn =0x%x", lpn);
+		}
+		/* FIX: Delay protection for olpn not implemented.
+		 * Note that Old Key is only active for MKA_SAK_RETIRE_TIME
+		 * (3 seconds) and delay protection does allow PN's within
+		 * a 2 seconds window, so olpn would be a lot of work for
+		 * just 1 second's worth of protection. */
 	}
 
 	return 0;

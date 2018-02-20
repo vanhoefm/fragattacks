@@ -690,6 +690,50 @@ static int macsec_drv_get_receive_lowest_pn(void *priv, struct receive_sa *sa)
 
 
 /**
+ * macsec_drv_set_receive_lowest_pn - Set receive lowest PN
+ * @priv: Private driver interface data
+ * @sa: secure association
+ * Returns: 0 on success, -1 on failure (or if not supported)
+ */
+static int macsec_drv_set_receive_lowest_pn(void *priv, struct receive_sa *sa)
+{
+	struct macsec_drv_data *drv = priv;
+	struct macsec_genl_ctx *ctx = &drv->ctx;
+	struct nl_msg *msg;
+	struct nlattr *nest;
+	int ret = -1;
+
+	wpa_printf(MSG_DEBUG,
+		   DRV_PREFIX "%s: set_receive_lowest_pn -> %d: %d",
+		   drv->ifname, sa->an, sa->next_pn);
+
+	msg = msg_prepare(MACSEC_CMD_UPD_RXSA, ctx, drv->ifi);
+	if (!msg)
+		return ret;
+
+	nest = nla_nest_start(msg, MACSEC_ATTR_SA_CONFIG);
+	if (!nest)
+		goto nla_put_failure;
+
+	NLA_PUT_U8(msg, MACSEC_SA_ATTR_AN, sa->an);
+	NLA_PUT_U32(msg, MACSEC_SA_ATTR_PN, sa->next_pn);
+
+	nla_nest_end(msg, nest);
+
+	ret = nl_send_recv(ctx->sk, msg);
+	if (ret < 0) {
+		wpa_printf(MSG_ERROR,
+			   DRV_PREFIX "failed to communicate: %d (%s)",
+			   ret, nl_geterror(-ret));
+	}
+
+nla_put_failure:
+	nlmsg_free(msg);
+	return ret;
+}
+
+
+/**
  * macsec_drv_get_transmit_next_pn - Get transmit next PN
  * @priv: Private driver interface data
  * @sa: secure association
@@ -1373,6 +1417,7 @@ const struct wpa_driver_ops wpa_driver_macsec_linux_ops = {
 	.set_current_cipher_suite = macsec_drv_set_current_cipher_suite,
 	.enable_controlled_port = macsec_drv_enable_controlled_port,
 	.get_receive_lowest_pn = macsec_drv_get_receive_lowest_pn,
+	.set_receive_lowest_pn = macsec_drv_set_receive_lowest_pn,
 	.get_transmit_next_pn = macsec_drv_get_transmit_next_pn,
 	.set_transmit_next_pn = macsec_drv_set_transmit_next_pn,
 	.create_receive_sc = macsec_drv_create_receive_sc,

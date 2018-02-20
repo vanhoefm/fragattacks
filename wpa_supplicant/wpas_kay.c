@@ -92,6 +92,12 @@ static int wpas_set_transmit_next_pn(void *wpa_s, struct transmit_sa *sa)
 }
 
 
+static int wpas_set_receive_lowest_pn(void *wpa_s, struct receive_sa *sa)
+{
+	return wpa_drv_set_receive_lowest_pn(wpa_s, sa);
+}
+
+
 static unsigned int conf_offset_val(enum confidentiality_offset co)
 {
 	switch (co) {
@@ -219,6 +225,7 @@ int ieee802_1x_alloc_kay_sm(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 	kay_ctx->get_receive_lowest_pn = wpas_get_receive_lowest_pn;
 	kay_ctx->get_transmit_next_pn = wpas_get_transmit_next_pn;
 	kay_ctx->set_transmit_next_pn = wpas_set_transmit_next_pn;
+	kay_ctx->set_receive_lowest_pn = wpas_set_receive_lowest_pn;
 	kay_ctx->create_receive_sc = wpas_create_receive_sc;
 	kay_ctx->delete_receive_sc = wpas_delete_receive_sc;
 	kay_ctx->create_receive_sa = wpas_create_receive_sa;

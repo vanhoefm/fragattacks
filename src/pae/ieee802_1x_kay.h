@@ -150,6 +150,7 @@ struct ieee802_1x_kay_ctx {
 	int (*get_receive_lowest_pn)(void *ctx, struct receive_sa *sa);
 	int (*get_transmit_next_pn)(void *ctx, struct transmit_sa *sa);
 	int (*set_transmit_next_pn)(void *ctx, struct transmit_sa *sa);
+	int (*set_receive_lowest_pn)(void *ctx, struct receive_sa *sa);
 	int (*create_receive_sc)(void *ctx, struct receive_sc *sc,
 				 enum validate_frames vf,
 				 enum confidentiality_offset co);
