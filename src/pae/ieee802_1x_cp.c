@@ -386,7 +386,8 @@ SM_STEP(CP)
 		if (!sm->elected_self)
 			SM_ENTER(CP, READY);
 		if (sm->elected_self &&
-		    (sm->all_receiving || !sm->transmit_when))
+		    (sm->all_receiving || !sm->controlled_port_enabled ||
+		     !sm->transmit_when))
 			SM_ENTER(CP, TRANSMIT);
 		break;
 
