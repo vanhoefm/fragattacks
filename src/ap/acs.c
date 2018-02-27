@@ -362,7 +362,7 @@ acs_survey_chan_interference_factor(struct hostapd_iface *iface,
 }
 
 
-static int acs_usable_ht40_chan(struct hostapd_channel_data *chan)
+static int acs_usable_ht40_chan(const struct hostapd_channel_data *chan)
 {
 	const int allowed[] = { 36, 44, 52, 60, 100, 108, 116, 124, 132, 149,
 				157, 184, 192 };
@@ -376,9 +376,22 @@ static int acs_usable_ht40_chan(struct hostapd_channel_data *chan)
 }
 
 
-static int acs_usable_vht80_chan(struct hostapd_channel_data *chan)
+static int acs_usable_vht80_chan(const struct hostapd_channel_data *chan)
 {
 	const int allowed[] = { 36, 52, 100, 116, 132, 149 };
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(allowed); i++)
+		if (chan->chan == allowed[i])
+			return 1;
+
+	return 0;
+}
+
+
+static int acs_usable_vht160_chan(const struct hostapd_channel_data *chan)
+{
+	const int allowed[] = { 36, 100 };
 	unsigned int i;
 
 	for (i = 0; i < ARRAY_SIZE(allowed); i++)
@@ -579,16 +592,21 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 	    iface->conf->secondary_channel)
 		n_chans = 2;
 
-	if (iface->conf->ieee80211ac &&
-	    iface->conf->vht_oper_chwidth == 1)
-		n_chans = 4;
+	if (iface->conf->ieee80211ac) {
+		switch (iface->conf->vht_oper_chwidth) {
+		case VHT_CHANWIDTH_80MHZ:
+			n_chans = 4;
+			break;
+		case VHT_CHANWIDTH_160MHZ:
+			n_chans = 8;
+			break;
+		}
+	}
 
-	/* TODO: VHT80+80, VHT160. Update acs_adjust_vht_center_freq() too. */
+	/* TODO: VHT80+80. Update acs_adjust_vht_center_freq() too. */
 
 	wpa_printf(MSG_DEBUG, "ACS: Survey analysis for selected bandwidth %d MHz",
-		   n_chans == 1 ? 20 :
-		   n_chans == 2 ? 40 :
-		   80);
+		   n_chans * 20);
 
 	for (i = 0; i < iface->current_mode->num_channels; i++) {
 		double total_weight;
@@ -614,12 +632,24 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 		}
 
 		if (iface->current_mode->mode == HOSTAPD_MODE_IEEE80211A &&
-		    iface->conf->ieee80211ac &&
-		    iface->conf->vht_oper_chwidth == 1 &&
-		    !acs_usable_vht80_chan(chan)) {
-			wpa_printf(MSG_DEBUG, "ACS: Channel %d: not allowed as primary channel for VHT80",
-				   chan->chan);
-			continue;
+		    iface->conf->ieee80211ac) {
+			if (iface->conf->vht_oper_chwidth ==
+			    VHT_CHANWIDTH_80MHZ &&
+			    !acs_usable_vht80_chan(chan)) {
+				wpa_printf(MSG_DEBUG,
+					   "ACS: Channel %d: not allowed as primary channel for VHT80",
+					   chan->chan);
+				continue;
+			}
+
+			if (iface->conf->vht_oper_chwidth ==
+			    VHT_CHANWIDTH_160MHZ &&
+			    !acs_usable_vht160_chan(chan)) {
+				wpa_printf(MSG_DEBUG,
+					   "ACS: Channel %d: not allowed as primary channel for VHT160",
+					   chan->chan);
+				continue;
+			}
 		}
 
 		factor = 0;
@@ -744,10 +774,14 @@ static void acs_adjust_vht_center_freq(struct hostapd_iface *iface)
 	case VHT_CHANWIDTH_80MHZ:
 		offset = 6;
 		break;
+	case VHT_CHANWIDTH_160MHZ:
+		offset = 14;
+		break;
 	default:
 		/* TODO: How can this be calculated? Adjust
 		 * acs_find_ideal_chan() */
-		wpa_printf(MSG_INFO, "ACS: Only VHT20/40/80 is supported now");
+		wpa_printf(MSG_INFO,
+			   "ACS: Only VHT20/40/80/160 is supported now");
 		return;
 	}
 
