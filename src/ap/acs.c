@@ -13,6 +13,7 @@
 #include "utils/common.h"
 #include "utils/list.h"
 #include "common/ieee802_11_defs.h"
+#include "common/hw_features_common.h"
 #include "common/wpa_ctrl.h"
 #include "drivers/driver.h"
 #include "hostapd.h"
@@ -578,6 +579,7 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 	long double factor, ideal_factor = 0;
 	int i, j;
 	int n_chans = 1;
+	u32 bw;
 	unsigned int k;
 
 	/* TODO: HT40- support */
@@ -603,10 +605,12 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 		}
 	}
 
+	bw = num_chan_to_bw(n_chans);
+
 	/* TODO: VHT80+80. Update acs_adjust_vht_center_freq() too. */
 
-	wpa_printf(MSG_DEBUG, "ACS: Survey analysis for selected bandwidth %d MHz",
-		   n_chans * 20);
+	wpa_printf(MSG_DEBUG,
+		   "ACS: Survey analysis for selected bandwidth %d MHz", bw);
 
 	for (i = 0; i < iface->current_mode->num_channels; i++) {
 		double total_weight;
@@ -614,11 +618,22 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 
 		chan = &iface->current_mode->channels[i];
 
-		if (chan->flag & HOSTAPD_CHAN_DISABLED)
+		/* Since in the current ACS implementation the first channel is
+		 * always a primary channel, skip channels not available as
+		 * primary until more sophisticated channel selection is
+		 * implemented. */
+		if (!chan_pri_allowed(chan))
 			continue;
 
 		if (!is_in_chanlist(iface, chan))
 			continue;
+
+		if (!chan_bw_allowed(chan, bw, 1, 1)) {
+			wpa_printf(MSG_DEBUG,
+				   "ACS: Channel %d: BW %u is not supported",
+				   chan->chan, bw);
+			continue;
+		}
 
 		/* HT40 on 5 GHz has a limited set of primary channels as per
 		 * 11n Annex J */
@@ -661,6 +676,13 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 			adj_chan = acs_find_chan(iface, chan->freq + (j * 20));
 			if (!adj_chan)
 				break;
+
+			if (!chan_bw_allowed(adj_chan, bw, 1, 0)) {
+				wpa_printf(MSG_DEBUG,
+					   "ACS: PRI Channel %d: secondary channel %d BW %u is not supported",
+					   chan->chan, adj_chan->chan, bw);
+				break;
+			}
 
 			if (acs_usable_chan(adj_chan)) {
 				factor += adj_chan->interference_factor;
