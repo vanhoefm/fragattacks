@@ -58,6 +58,16 @@
 #define HOSTAPD_CHAN_VHT_130_30 0x04000000
 #define HOSTAPD_CHAN_VHT_150_10 0x08000000
 
+/* Allowed bandwidth mask */
+enum hostapd_chan_width_attr {
+	HOSTAPD_CHAN_WIDTH_10   = BIT(0),
+	HOSTAPD_CHAN_WIDTH_20   = BIT(1),
+	HOSTAPD_CHAN_WIDTH_40P  = BIT(2),
+	HOSTAPD_CHAN_WIDTH_40M  = BIT(3),
+	HOSTAPD_CHAN_WIDTH_80   = BIT(4),
+	HOSTAPD_CHAN_WIDTH_160  = BIT(5),
+};
+
 /* Filter gratuitous ARP */
 #define WPA_DATA_FRAME_FILTER_FLAG_ARP BIT(0)
 /* Filter unsolicited Neighbor Advertisement */
@@ -109,6 +119,13 @@ struct hostapd_channel_data {
 	 * flag - Channel flags (HOSTAPD_CHAN_*)
 	 */
 	int flag;
+
+	/**
+	 * allowed_bw - Allowed channel width bitmask
+	 *
+	 * See enum hostapd_chan_width_attr.
+	 */
+	u32 allowed_bw;
 
 	/**
 	 * max_tx_power - Regulatory transmit power limit in dBm

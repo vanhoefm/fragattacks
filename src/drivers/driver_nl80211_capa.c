@@ -1441,6 +1441,7 @@ static void phy_info_freq(struct hostapd_hw_modes *mode,
 	u8 channel;
 	chan->freq = nla_get_u32(tb_freq[NL80211_FREQUENCY_ATTR_FREQ]);
 	chan->flag = 0;
+	chan->allowed_bw = ~0;
 	chan->dfs_cac_ms = 0;
 	if (ieee80211_freq_to_chan(chan->freq, &channel) != NUM_HOSTAPD_MODES)
 		chan->chan = channel;
@@ -1455,6 +1456,19 @@ static void phy_info_freq(struct hostapd_hw_modes *mode,
 		chan->flag |= HOSTAPD_CHAN_INDOOR_ONLY;
 	if (tb_freq[NL80211_FREQUENCY_ATTR_GO_CONCURRENT])
 		chan->flag |= HOSTAPD_CHAN_GO_CONCURRENT;
+
+	if (tb_freq[NL80211_FREQUENCY_ATTR_NO_10MHZ])
+		chan->allowed_bw &= ~HOSTAPD_CHAN_WIDTH_10;
+	if (tb_freq[NL80211_FREQUENCY_ATTR_NO_20MHZ])
+		chan->allowed_bw &= ~HOSTAPD_CHAN_WIDTH_20;
+	if (tb_freq[NL80211_FREQUENCY_ATTR_NO_HT40_PLUS])
+		chan->allowed_bw &= ~HOSTAPD_CHAN_WIDTH_40P;
+	if (tb_freq[NL80211_FREQUENCY_ATTR_NO_HT40_MINUS])
+		chan->allowed_bw &= ~HOSTAPD_CHAN_WIDTH_40M;
+	if (tb_freq[NL80211_FREQUENCY_ATTR_NO_80MHZ])
+		chan->allowed_bw &= ~HOSTAPD_CHAN_WIDTH_80;
+	if (tb_freq[NL80211_FREQUENCY_ATTR_NO_160MHZ])
+		chan->allowed_bw &= ~HOSTAPD_CHAN_WIDTH_160;
 
 	if (tb_freq[NL80211_FREQUENCY_ATTR_DFS_STATE]) {
 		enum nl80211_dfs_state state =
@@ -1490,6 +1504,12 @@ static int phy_info_freqs(struct phy_info_arg *phy_info,
 		[NL80211_FREQUENCY_ATTR_RADAR] = { .type = NLA_FLAG },
 		[NL80211_FREQUENCY_ATTR_MAX_TX_POWER] = { .type = NLA_U32 },
 		[NL80211_FREQUENCY_ATTR_DFS_STATE] = { .type = NLA_U32 },
+		[NL80211_FREQUENCY_ATTR_NO_10MHZ] = { .type = NLA_FLAG },
+		[NL80211_FREQUENCY_ATTR_NO_20MHZ] = { .type = NLA_FLAG },
+		[NL80211_FREQUENCY_ATTR_NO_HT40_PLUS] = { .type = NLA_FLAG },
+		[NL80211_FREQUENCY_ATTR_NO_HT40_MINUS] = { .type = NLA_FLAG },
+		[NL80211_FREQUENCY_ATTR_NO_80MHZ] = { .type = NLA_FLAG },
+		[NL80211_FREQUENCY_ATTR_NO_160MHZ] = { .type = NLA_FLAG },
 	};
 	int new_channels = 0;
 	struct hostapd_channel_data *channel;

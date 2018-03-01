@@ -1131,6 +1131,7 @@ static struct hostapd_hw_modes * hostap_get_hw_feature_data(void *priv,
 	for (i = 0; i < 14; i++) {
 		mode->channels[i].chan = i + 1;
 		mode->channels[i].freq = chan2freq[i];
+		mode->channels[i].allowed_bw = HOSTAPD_CHAN_WIDTH_20;
 		/* TODO: Get allowed channel list from the driver */
 		if (i >= 11)
 			mode->channels[i].flag = HOSTAPD_CHAN_DISABLED;
