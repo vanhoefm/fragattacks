@@ -59,6 +59,13 @@ typedef enum { FALSE = 0, TRUE = 1 } Boolean;
 #define WPA_KEY_MGMT_DPP BIT(23)
 #define WPA_KEY_MGMT_FT_IEEE8021X_SHA384 BIT(24)
 
+#define WPA_KEY_MGMT_FT (WPA_KEY_MGMT_FT_PSK | \
+			 WPA_KEY_MGMT_FT_IEEE8021X | \
+			 WPA_KEY_MGMT_FT_IEEE8021X_SHA384 | \
+			 WPA_KEY_MGMT_FT_SAE | \
+			 WPA_KEY_MGMT_FT_FILS_SHA256 | \
+			 WPA_KEY_MGMT_FT_FILS_SHA384)
+
 static inline int wpa_key_mgmt_wpa_ieee8021x(int akm)
 {
 	return !!(akm & (WPA_KEY_MGMT_IEEE8021X |
@@ -86,12 +93,14 @@ static inline int wpa_key_mgmt_wpa_psk(int akm)
 
 static inline int wpa_key_mgmt_ft(int akm)
 {
-	return !!(akm & (WPA_KEY_MGMT_FT_PSK |
-			 WPA_KEY_MGMT_FT_IEEE8021X |
-			 WPA_KEY_MGMT_FT_IEEE8021X_SHA384 |
-			 WPA_KEY_MGMT_FT_SAE |
-			 WPA_KEY_MGMT_FT_FILS_SHA256 |
-			 WPA_KEY_MGMT_FT_FILS_SHA384));
+	return !!(akm & WPA_KEY_MGMT_FT);
+}
+
+static inline int wpa_key_mgmt_only_ft(int akm)
+{
+	int ft = wpa_key_mgmt_ft(akm);
+	akm &= ~WPA_KEY_MGMT_FT;
+	return ft && !akm;
 }
 
 static inline int wpa_key_mgmt_ft_psk(int akm)

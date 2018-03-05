@@ -561,6 +561,19 @@ int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 	if (version == WPA_PROTO_RSN) {
 		res = wpa_parse_wpa_ie_rsn(wpa_ie, wpa_ie_len, &data);
 
+		if (wpa_key_mgmt_ft(data.key_mgmt) && !mdie &&
+		    !wpa_key_mgmt_only_ft(data.key_mgmt)) {
+			/* Workaround for some HP and Epson printers that seem
+			 * to incorrectly copy the FT-PSK + WPA-PSK AKMs from AP
+			 * advertised RSNE to Association Request frame. */
+			wpa_printf(MSG_DEBUG,
+				   "RSN: FT set in RSNE AKM but MDE is missing from "
+				   MACSTR
+				   " - ignore FT AKM(s) because there's also a non-FT AKM",
+				   MAC2STR(sm->addr));
+			data.key_mgmt &= ~WPA_KEY_MGMT_FT;
+		}
+
 		selector = RSN_AUTH_KEY_MGMT_UNSPEC_802_1X;
 		if (0) {
 		}
