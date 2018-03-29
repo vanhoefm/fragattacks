@@ -11,18 +11,8 @@
 #include "common.h"
 #include "crypto.h"
 
-#define WOLFSSL_AES_DIRECT
-#define HAVE_AESGCM
-#define HAVE_AES_KEYWRAP
-#define WOLFSSL_SHA384
-#define WOLFSSL_SHA512
-#define WOLFSSL_CMAC
-#define HAVE_ECC
-#define USE_FAST_MATH
-#define WOLFSSL_KEY_GEN
-
-#include <wolfssl/options.h>
 /* wolfSSL headers */
+#include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/md4.h>
 #include <wolfssl/wolfcrypt/md5.h>
 #include <wolfssl/wolfcrypt/sha.h>

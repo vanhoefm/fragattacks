@@ -12,22 +12,8 @@
 #include "crypto.h"
 #include "tls.h"
 
-#define OPENSSL_EXTRA
-#define HAVE_STUNNEL
-#define HAVE_SECRET_CALLBACK
-#define HAVE_SESSION_TICKET
-#define HAVE_OCSP
-#define HAVE_CERTIFICATE_STATUS_REQUEST
-#define HAVE_CERTIFICATE_STATUS_REQUEST_V2
-#ifndef WOLFSSL_DER_LOAD
-#define WOLFSSL_DER_LOAD
-#endif
-#if 0
-/* Enable if a debug build of wolfSSL is installed. */
-#define DEBUG_WOLFSSL
-#endif
-
 /* wolfSSL includes */
+#include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
 #include <wolfssl/error-ssl.h>
 #include <wolfssl/wolfcrypt/asn.h>
