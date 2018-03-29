@@ -4127,7 +4127,7 @@ def test_ap_wpa2_eap_tls_intermediate_ca(dev, apdev, params):
     params["private_key"] = "auth_serv/iCA-server/server.key"
     hostapd.add_ap(apdev[0], params)
     tls = dev[0].request("GET tls_library")
-    if "GnuTLS" in tls:
+    if "GnuTLS" in tls or "wolfSSL" in tls:
         ca_cert = "auth_serv/iCA-user/ca-and-root.pem"
         client_cert = "auth_serv/iCA-user/user_and_ica.pem"
     else:
@@ -4235,7 +4235,7 @@ def run_ap_wpa2_eap_tls_intermediate_ca_ocsp(dev, apdev, params, md):
     try:
         hostapd.add_ap(apdev[0], params)
         tls = dev[0].request("GET tls_library")
-        if "GnuTLS" in tls:
+        if "GnuTLS" in tls or "wolfSSL" in tls:
             ca_cert = "auth_serv/iCA-user/ca-and-root.pem"
             client_cert = "auth_serv/iCA-user/user_and_ica.pem"
         else:
@@ -4270,7 +4270,7 @@ def run_ap_wpa2_eap_tls_intermediate_ca_ocsp_revoked(dev, apdev, params, md):
     try:
         hostapd.add_ap(apdev[0], params)
         tls = dev[0].request("GET tls_library")
-        if "GnuTLS" in tls:
+        if "GnuTLS" in tls or "wolfSSL" in tls:
             ca_cert = "auth_serv/iCA-user/ca-and-root.pem"
             client_cert = "auth_serv/iCA-user/user_and_ica.pem"
         else:
@@ -4320,7 +4320,7 @@ def test_ap_wpa2_eap_tls_intermediate_ca_ocsp_multi_missing_resp(dev, apdev, par
     try:
         hostapd.add_ap(apdev[0], params)
         tls = dev[0].request("GET tls_library")
-        if "GnuTLS" in tls:
+        if "GnuTLS" in tls or "wolfSSL" in tls:
             ca_cert = "auth_serv/iCA-user/ca-and-root.pem"
             client_cert = "auth_serv/iCA-user/user_and_ica.pem"
         else:
@@ -4387,7 +4387,7 @@ def test_ap_wpa2_eap_tls_intermediate_ca_ocsp_multi(dev, apdev, params):
 
         hostapd.add_ap(apdev[0], params)
         tls = dev[0].request("GET tls_library")
-        if "GnuTLS" in tls:
+        if "GnuTLS" in tls or "wolfSSL" in tls:
             ca_cert = "auth_serv/iCA-user/ca-and-root.pem"
             client_cert = "auth_serv/iCA-user/user_and_ica.pem"
         else:
