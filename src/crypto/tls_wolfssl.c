@@ -1179,7 +1179,6 @@ static int tls_connection_ca_cert(void *tls_ctx, struct tls_connection *conn,
 			return -1;
 		}
 		wolfSSL_CTX_set_cert_store(ctx, cm);
-		XFREE(cm, NULL, DYNAMIC_TYPE_X509_STORE);
 
 		if (wolfSSL_CTX_load_verify_locations(ctx, ca_cert, ca_path) !=
 		    SSL_SUCCESS) {
