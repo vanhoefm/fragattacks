@@ -2037,14 +2037,15 @@ static int tls_sess_sec_cb(WOLFSSL *s, void *secret, int *secret_len, void *arg)
 				      sizeof(client_random)) == 0 ||
 	    wolfSSL_get_server_random(s, server_random,
 				      sizeof(server_random)) == 0 ||
-	    wolfSSL_get_SessionTicket(s, conn->session_ticket, &ticketLen) != 1)
+	    wolfSSL_get_SessionTicket(s, conn->session_ticket,
+				      &ticket_len) != 1)
 		return 1;
 
 	if (ticket_len == 0)
 		return 0;
 
 	ret = conn->session_ticket_cb(conn->session_ticket_cb_ctx,
-				      conn->session_ticket, ticketLen,
+				      conn->session_ticket, ticket_len,
 				      client_random, server_random, secret);
 	if (ret <= 0)
 		return 1;
