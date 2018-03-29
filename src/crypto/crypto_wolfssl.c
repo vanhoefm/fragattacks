@@ -1625,7 +1625,7 @@ crypto_ec_point_compute_y_sqr(struct crypto_ec *e,
 		goto done;
 
 	if (mp_sqrmod((mp_int *) x, &e->prime, y2) != 0 ||
-	    mp_mulmod((mp_int *) x, &t, &e->prime, y2) != 0 ||
+	    mp_mulmod((mp_int *) x, y2, &e->prime, y2) != 0 ||
 	    mp_mulmod((mp_int *) x, &e->a, &e->prime, &t) != 0 ||
 	    mp_addmod(y2, &t, &e->prime, y2) != 0 ||
 	    mp_addmod(y2, &e->b, &e->prime, y2) != 0)
