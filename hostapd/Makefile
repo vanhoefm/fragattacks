@@ -901,7 +901,9 @@ AESOBJS += ../src/crypto/aes-encblock.o
 endif
 ifdef NEED_AES_OMAC1
 ifneq ($(CONFIG_TLS), linux)
+ifneq ($(CONFIG_TLS), wolfssl)
 AESOBJS += ../src/crypto/aes-omac1.o
+endif
 endif
 endif
 ifdef NEED_AES_UNWRAP
