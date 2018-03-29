@@ -563,10 +563,6 @@ static int tls_connection_private_key(void *tls_ctx,
 }
 
 
-#define GEN_EMAIL	1
-#define GEN_DNS		ALT_NAMES_OID
-#define GEN_URI		6
-
 static int tls_match_alt_subject_component(WOLFSSL_X509 *cert, int type,
 					   const char *value, size_t len)
 {
@@ -879,19 +875,16 @@ static void wolfssl_tls_cert_event(struct tls_connection *conn,
 		if (num_alt_subject == TLS_MAX_ALT_SUBJECT)
 			break;
 		gen = wolfSSL_sk_value((void *) ext, i);
-#if 0
 		if (gen->type != GEN_EMAIL &&
 		    gen->type != GEN_DNS &&
 		    gen->type != GEN_URI)
 			continue;
-#endif
 
 		pos = os_malloc(10 + os_strlen((char *) gen->obj) + 1);
 		if (!pos)
 			break;
 		alt_subject[num_alt_subject++] = pos;
 
-#if 0
 		switch (gen->type) {
 		case GEN_EMAIL:
 			os_memcpy(pos, "EMAIL:", 6);
@@ -906,10 +899,6 @@ static void wolfssl_tls_cert_event(struct tls_connection *conn,
 			pos += 4;
 			break;
 		}
-#else
-		os_memcpy(pos, "DNS:", 4);
-		pos += 4;
-#endif
 
 		os_memcpy(pos, gen->obj, os_strlen((char *)gen->obj));
 		pos += os_strlen((char *)gen->obj);
