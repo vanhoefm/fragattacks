@@ -660,13 +660,13 @@ void * dh5_init(struct wpabuf **priv, struct wpabuf **publ)
 	wpabuf_free(*publ);
 	*publ = NULL;
 
-	dh = os_malloc(sizeof(DhKey));
+	dh = XMALLOC(sizeof(DhKey), NULL, DYNAMIC_TYPE_TMP_BUFFER);
 	if (!dh)
 		return NULL;
 	wc_InitDhKey(dh);
 
 	if (wc_InitRng(&rng) != 0) {
-		os_free(dh);
+		XFREE(dh, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 		return NULL;
 	}
 
@@ -698,7 +698,7 @@ done:
 	wpabuf_clear_free(privkey);
 	if (dh) {
 		wc_FreeDhKey(dh);
-		os_free(dh);
+		XFREE(dh, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 	}
 	wc_FreeRng(&rng);
 	return ret;
@@ -712,12 +712,12 @@ void * dh5_init_fixed(const struct wpabuf *priv, const struct wpabuf *publ)
 	byte *secret;
 	word32 secret_sz;
 
-	dh = os_malloc(sizeof(DhKey));
+	dh = XMALLOC(sizeof(DhKey), NULL, DYNAMIC_TYPE_TMP_BUFFER);
 	if (!dh)
 		return NULL;
 	wc_InitDhKey(dh);
 
-	secret = os_malloc(RFC3526_LEN);
+	secret = XMALLOC(RFC3526_LEN, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 	if (!secret)
 		goto done;
 
@@ -740,9 +740,9 @@ void * dh5_init_fixed(const struct wpabuf *priv, const struct wpabuf *publ)
 done:
 	if (dh) {
 		wc_FreeDhKey(dh);
-		os_free(dh);
+		XFREE(dh, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 	}
-	os_free(secret);
+	XFREE(secret, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 	return ret;
 }
 
@@ -779,7 +779,7 @@ void dh5_free(void *ctx)
 		return;
 
 	wc_FreeDhKey(ctx);
-	os_free(ctx);
+	XFREE(ctx, NULL, DYNAMIC_TYPE_TMP_BUFFER);
 }
 
 #endif /* CONFIG_WPS_NFC */
