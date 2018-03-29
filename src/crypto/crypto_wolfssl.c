@@ -62,7 +62,7 @@ int md4_vector(size_t num_elem, const u8 *addr[], const size_t *len, u8 *mac)
 
 int md5_vector(size_t num_elem, const u8 *addr[], const size_t *len, u8 *mac)
 {
-	Md5 md5;
+	wc_Md5 md5;
 	size_t i;
 
 	if (TEST_FAIL())
@@ -83,7 +83,7 @@ int md5_vector(size_t num_elem, const u8 *addr[], const size_t *len, u8 *mac)
 
 int sha1_vector(size_t num_elem, const u8 *addr[], const size_t *len, u8 *mac)
 {
-	Sha sha;
+	wc_Sha sha;
 	size_t i;
 
 	if (TEST_FAIL())
@@ -104,7 +104,7 @@ int sha1_vector(size_t num_elem, const u8 *addr[], const size_t *len, u8 *mac)
 int sha256_vector(size_t num_elem, const u8 *addr[], const size_t *len,
 		  u8 *mac)
 {
-	Sha256 sha256;
+	wc_Sha256 sha256;
 	size_t i;
 
 	if (TEST_FAIL())
@@ -126,7 +126,7 @@ int sha256_vector(size_t num_elem, const u8 *addr[], const size_t *len,
 int sha384_vector(size_t num_elem, const u8 *addr[], const size_t *len,
 		  u8 *mac)
 {
-	Sha384 sha384;
+	wc_Sha384 sha384;
 	size_t i;
 
 	if (TEST_FAIL())
@@ -148,7 +148,7 @@ int sha384_vector(size_t num_elem, const u8 *addr[], const size_t *len,
 int sha512_vector(size_t num_elem, const u8 *addr[], const size_t *len,
 		  u8 *mac)
 {
-	Sha512 sha512;
+	wc_Sha512 sha512;
 	size_t i;
 
 	if (TEST_FAIL())
@@ -195,8 +195,8 @@ static int wolfssl_hmac_vector(int type, const u8 *key,
 int hmac_md5_vector(const u8 *key, size_t key_len, size_t num_elem,
 		    const u8 *addr[], const size_t *len, u8 *mac)
 {
-	return wolfssl_hmac_vector(MD5, key, key_len, num_elem, addr, len, mac,
-				   16);
+	return wolfssl_hmac_vector(WC_MD5, key, key_len, num_elem, addr, len,
+				   mac, 16);
 }
 
 
@@ -212,8 +212,8 @@ int hmac_md5(const u8 *key, size_t key_len, const u8 *data, size_t data_len,
 int hmac_sha1_vector(const u8 *key, size_t key_len, size_t num_elem,
 		     const u8 *addr[], const size_t *len, u8 *mac)
 {
-	return wolfssl_hmac_vector(SHA, key, key_len, num_elem, addr, len, mac,
-				   20);
+	return wolfssl_hmac_vector(WC_SHA, key, key_len, num_elem, addr, len,
+				   mac, 20);
 }
 
 
@@ -229,7 +229,7 @@ int hmac_sha1(const u8 *key, size_t key_len, const u8 *data, size_t data_len,
 int hmac_sha256_vector(const u8 *key, size_t key_len, size_t num_elem,
 		       const u8 *addr[], const size_t *len, u8 *mac)
 {
-	return wolfssl_hmac_vector(SHA256, key, key_len, num_elem, addr, len,
+	return wolfssl_hmac_vector(WC_SHA256, key, key_len, num_elem, addr, len,
 				   mac, 32);
 }
 
@@ -248,7 +248,7 @@ int hmac_sha256(const u8 *key, size_t key_len, const u8 *data,
 int hmac_sha384_vector(const u8 *key, size_t key_len, size_t num_elem,
 		       const u8 *addr[], const size_t *len, u8 *mac)
 {
-	return wolfssl_hmac_vector(SHA384, key, key_len, num_elem, addr, len,
+	return wolfssl_hmac_vector(WC_SHA384, key, key_len, num_elem, addr, len,
 				   mac, 48);
 }
 
@@ -267,7 +267,7 @@ int hmac_sha384(const u8 *key, size_t key_len, const u8 *data,
 int hmac_sha512_vector(const u8 *key, size_t key_len, size_t num_elem,
 		       const u8 *addr[], const size_t *len, u8 *mac)
 {
-	return wolfssl_hmac_vector(SHA512, key, key_len, num_elem, addr, len,
+	return wolfssl_hmac_vector(WC_SHA512, key, key_len, num_elem, addr, len,
 				   mac, 64);
 }
 
@@ -285,7 +285,7 @@ int pbkdf2_sha1(const char *passphrase, const u8 *ssid, size_t ssid_len,
 		int iterations, u8 *buf, size_t buflen)
 {
 	if (wc_PBKDF2(buf, (const byte*)passphrase, os_strlen(passphrase), ssid,
-		      ssid_len, iterations, buflen, SHA) != 0)
+		      ssid_len, iterations, buflen, WC_SHA) != 0)
 		return -1;
 	return 0;
 }
@@ -897,19 +897,19 @@ struct crypto_hash * crypto_hash_init(enum crypto_hash_alg alg, const u8 *key,
 #ifndef NO_MD5
 	case CRYPTO_HASH_ALG_HMAC_MD5:
 		hash->size = 16;
-		type = MD5;
+		type = WC_MD5;
 		break;
 #endif /* NO_MD5 */
 #ifndef NO_SHA
 	case CRYPTO_HASH_ALG_HMAC_SHA1:
-		type = SHA;
+		type = WC_SHA;
 		hash->size = 20;
 		break;
 #endif /* NO_SHA */
 #ifdef CONFIG_SHA256
 #ifndef NO_SHA256
 	case CRYPTO_HASH_ALG_HMAC_SHA256:
-		type = SHA256;
+		type = WC_SHA256;
 		hash->size = 32;
 		break;
 #endif /* NO_SHA256 */

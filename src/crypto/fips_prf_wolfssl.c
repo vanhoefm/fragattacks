@@ -7,6 +7,7 @@
  */
 
 #include "includes.h"
+#include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/sha.h>
 
 #include "common.h"
@@ -15,7 +16,7 @@
 
 static void sha1_transform(u32 *state, const u8 data[64])
 {
-	Sha sha;
+	wc_Sha sha;
 
 	os_memset(&sha, 0, sizeof(sha));
 	sha.digest[0] = state[0];
