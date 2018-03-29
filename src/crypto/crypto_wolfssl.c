@@ -423,6 +423,9 @@ int aes_wrap(const u8 *kek, size_t kek_len, int n, const u8 *plain, u8 *cipher)
 {
 	int ret;
 
+	if (TEST_FAIL())
+		return -1;
+
 	ret = wc_AesKeyWrap(kek, kek_len, plain, n * 8, cipher, (n + 1) * 8,
 			    NULL);
 	return ret != (n + 1) * 8 ? -1 : 0;
@@ -433,6 +436,9 @@ int aes_unwrap(const u8 *kek, size_t kek_len, int n, const u8 *cipher,
 	       u8 *plain)
 {
 	int ret;
+
+	if (TEST_FAIL())
+		return -1;
 
 	ret = wc_AesKeyUnWrap(kek, kek_len, cipher, (n + 1) * 8, plain, n * 8,
 			      NULL);
@@ -786,9 +792,6 @@ int crypto_dh_init(u8 generator, const u8 *prime, size_t prime_len, u8 *privkey,
 	WC_RNG rng;
 	DhKey *dh = NULL;
 	word32 priv_sz, pub_sz;
-
-	if (TEST_FAIL())
-		return -1;
 
 	dh = os_malloc(sizeof(DhKey));
 	if (!dh)
