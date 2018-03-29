@@ -470,9 +470,9 @@ static int tls_connection_client_cert(struct tls_connection *conn,
 		return 0;
 
 	if (client_cert_blob) {
-		if (wolfSSL_use_certificate_buffer(conn->ssl, client_cert_blob,
-						   blob_len,
-						   SSL_FILETYPE_ASN1) < 0) {
+		if (wolfSSL_use_certificate_chain_buffer_format(
+			    conn->ssl, client_cert_blob, blob_len,
+			    SSL_FILETYPE_ASN1) < 0) {
 			wpa_printf(MSG_INFO,
 				   "SSL: use client cert DER blob failed");
 			return -1;
@@ -482,11 +482,11 @@ static int tls_connection_client_cert(struct tls_connection *conn,
 	}
 
 	if (client_cert) {
-		if (wolfSSL_use_certificate_file(conn->ssl, client_cert,
-						 SSL_FILETYPE_PEM) < 0) {
+		if (wolfSSL_use_certificate_chain_file(conn->ssl,
+						       client_cert) < 0) {
 			wpa_printf(MSG_INFO,
 				   "SSL: use client cert PEM file failed");
-			if (wolfSSL_use_certificate_file(
+			if (wolfSSL_use_certificate_chain_file_format(
 				    conn->ssl, client_cert,
 				    SSL_FILETYPE_ASN1) < 0) {
 				wpa_printf(MSG_INFO,
@@ -1370,11 +1370,11 @@ static int tls_global_client_cert(void *ssl_ctx, const char *client_cert)
 	if (!client_cert)
 		return 0;
 
-	if (wolfSSL_CTX_use_certificate_file(ctx, client_cert,
-					     SSL_FILETYPE_ASN1) !=
+	if (wolfSSL_CTX_use_certificate_chain_file_format(ctx, client_cert,
+							  SSL_FILETYPE_ASN1) !=
 	    SSL_SUCCESS &&
-	    wolfSSL_CTX_use_certificate_file(ctx, client_cert,
-					     SSL_FILETYPE_PEM) != SSL_SUCCESS) {
+	    wolfSSL_CTX_use_certificate_chain_file(ctx, client_cert) !=
+	    SSL_SUCCESS) {
 		wpa_printf(MSG_INFO, "Failed to load client certificate");
 		return -1;
 	}
