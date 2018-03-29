@@ -5124,7 +5124,7 @@ def test_eap_proto_ikev2(dev, apdev):
 
         def build_ke(next=0):
             ke = struct.pack(">BBHHH", next, 0, 4 + 4 + 192, 5, 0)
-            ke += 192*'\x00'
+            ke += 191*'\x00'+'\x02'
             return ke
 
         idx += 1
