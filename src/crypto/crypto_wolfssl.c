@@ -889,7 +889,7 @@ struct crypto_hash * crypto_hash_init(enum crypto_hash_alg alg, const u8 *key,
 	struct crypto_hash *hash;
 	int type;
 
-	hash = os_malloc(sizeof(*hash));
+	hash = os_zalloc(sizeof(*hash));
 	if (!hash)
 		goto done;
 
