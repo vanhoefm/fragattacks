@@ -1059,6 +1059,7 @@ OBJS_p += ../src/crypto/crypto_wolfssl.o
 ifdef NEED_FIPS186_2_PRF
 OBJS += ../src/crypto/fips_prf_wolfssl.o
 endif
+NEED_TLS_PRF_SHA256=y
 LIBS += -lwolfssl -lm
 LIBS_p += -lwolfssl -lm
 endif
