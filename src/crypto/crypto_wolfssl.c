@@ -1667,4 +1667,129 @@ int crypto_ec_point_cmp(const struct crypto_ec *e,
 	return wc_ecc_cmp_point((ecc_point *) a, (ecc_point *) b);
 }
 
+
+struct crypto_ecdh {
+	struct crypto_ec *ec;
+};
+
+struct crypto_ecdh * crypto_ecdh_init(int group)
+{
+	struct crypto_ecdh *ecdh = NULL;
+	WC_RNG rng;
+	int ret;
+
+	if (wc_InitRng(&rng) != 0)
+		goto fail;
+
+	ecdh = os_zalloc(sizeof(*ecdh));
+	if (!ecdh)
+		goto fail;
+
+	ecdh->ec = crypto_ec_init(group);
+	if (!ecdh->ec)
+		goto fail;
+
+	ret = wc_ecc_make_key_ex(&rng, ecdh->ec->key.dp->size, &ecdh->ec->key,
+				 ecdh->ec->key.dp->id);
+	if (ret < 0)
+		goto fail;
+
+done:
+	wc_FreeRng(&rng);
+
+	return ecdh;
+fail:
+	crypto_ecdh_deinit(ecdh);
+	ecdh = NULL;
+	goto done;
+}
+
+
+void crypto_ecdh_deinit(struct crypto_ecdh *ecdh)
+{
+	if (ecdh) {
+		crypto_ec_deinit(ecdh->ec);
+		os_free(ecdh);
+	}
+}
+
+
+struct wpabuf * crypto_ecdh_get_pubkey(struct crypto_ecdh *ecdh, int inc_y)
+{
+	struct wpabuf *buf = NULL;
+	int ret;
+	int len = ecdh->ec->key.dp->size;
+
+	buf = wpabuf_alloc(inc_y ? 2 * len : len);
+	if (!buf)
+		goto fail;
+
+	ret = crypto_bignum_to_bin((struct crypto_bignum *)
+				   ecdh->ec->key.pubkey.x, wpabuf_put(buf, len),
+				   len, len);
+	if (ret < 0)
+		goto fail;
+	if (inc_y) {
+		ret = crypto_bignum_to_bin((struct crypto_bignum *)
+					   ecdh->ec->key.pubkey.y,
+					   wpabuf_put(buf, len), len, len);
+		if (ret < 0)
+			goto fail;
+	}
+
+done:
+	return buf;
+fail:
+	wpabuf_free(buf);
+	buf = NULL;
+	goto done;
+}
+
+
+struct wpabuf * crypto_ecdh_set_peerkey(struct crypto_ecdh *ecdh, int inc_y,
+					const u8 *key, size_t len)
+{
+	int ret;
+	struct wpabuf *pubkey = NULL;
+	struct wpabuf *secret = NULL;
+	word32 key_len = ecdh->ec->key.dp->size;
+	ecc_point *point = NULL;
+	size_t need_key_len = inc_y ? 2 * key_len : key_len;
+
+	if (len < need_key_len)
+		goto fail;
+	pubkey = wpabuf_alloc(1 + 2 * key_len);
+	if (!pubkey)
+		goto fail;
+	wpabuf_put_u8(pubkey, inc_y ? ECC_POINT_UNCOMP : ECC_POINT_COMP_EVEN);
+	wpabuf_put_data(pubkey, key, need_key_len);
+
+	point = wc_ecc_new_point();
+	if (!point)
+		goto fail;
+
+	ret = wc_ecc_import_point_der(wpabuf_mhead(pubkey), 1 + 2 * key_len,
+				      ecdh->ec->key.dp->id, point);
+	if (ret != MP_OKAY)
+		goto fail;
+
+	secret = wpabuf_alloc(key_len);
+	if (!secret)
+		goto fail;
+
+	ret = wc_ecc_shared_secret_ex(&ecdh->ec->key, point,
+				      wpabuf_put(secret, key_len), &key_len);
+	if (ret != MP_OKAY)
+		goto fail;
+
+done:
+	wc_ecc_del_point(point);
+	wpabuf_free(pubkey);
+	return secret;
+fail:
+	wpabuf_free(secret);
+	secret = NULL;
+	goto done;
+}
+
 #endif /* CONFIG_ECC */
