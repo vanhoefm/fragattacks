@@ -3771,6 +3771,81 @@ static void wpa_supplicant_event_port_authorized(struct wpa_supplicant *wpa_s)
 }
 
 
+static unsigned int wpas_event_cac_ms(const struct wpa_supplicant *wpa_s,
+				      int freq)
+{
+	size_t i;
+	int j;
+
+	for (i = 0; i < wpa_s->hw.num_modes; i++) {
+		const struct hostapd_hw_modes *mode = &wpa_s->hw.modes[i];
+
+		for (j = 0; j < mode->num_channels; j++) {
+			const struct hostapd_channel_data *chan;
+
+			chan = &mode->channels[j];
+			if (chan->freq == freq)
+				return chan->dfs_cac_ms;
+		}
+	}
+
+	return 0;
+}
+
+
+static void wpas_event_dfs_cac_started(struct wpa_supplicant *wpa_s,
+				       struct dfs_event *radar)
+{
+#if defined(NEED_AP_MLME) && defined(CONFIG_AP)
+	if (wpa_s->ap_iface) {
+		wpas_ap_event_dfs_cac_started(wpa_s, radar);
+	} else
+#endif /* NEED_AP_MLME && CONFIG_AP */
+	{
+		unsigned int cac_time = wpas_event_cac_ms(wpa_s, radar->freq);
+
+		cac_time /= 1000; /* convert from ms to sec */
+		if (!cac_time)
+			cac_time = 10 * 60; /* max timeout: 10 minutes */
+
+		/* Restart auth timeout: CAC time added to initial timeout */
+		wpas_auth_timeout_restart(wpa_s, cac_time);
+	}
+}
+
+
+static void wpas_event_dfs_cac_finished(struct wpa_supplicant *wpa_s,
+					struct dfs_event *radar)
+{
+#if defined(NEED_AP_MLME) && defined(CONFIG_AP)
+	if (wpa_s->ap_iface) {
+		wpas_ap_event_dfs_cac_finished(wpa_s, radar);
+	} else
+#endif /* NEED_AP_MLME && CONFIG_AP */
+	{
+		/* Restart auth timeout with original value after CAC is
+		 * finished */
+		wpas_auth_timeout_restart(wpa_s, 0);
+	}
+}
+
+
+static void wpas_event_dfs_cac_aborted(struct wpa_supplicant *wpa_s,
+				       struct dfs_event *radar)
+{
+#if defined(NEED_AP_MLME) && defined(CONFIG_AP)
+	if (wpa_s->ap_iface) {
+		wpas_ap_event_dfs_cac_aborted(wpa_s, radar);
+	} else
+#endif /* NEED_AP_MLME && CONFIG_AP */
+	{
+		/* Restart auth timeout with original value after CAC is
+		 * aborted */
+		wpas_auth_timeout_restart(wpa_s, 0);
+	}
+}
+
+
 static void wpa_supplicant_event_assoc_auth(struct wpa_supplicant *wpa_s,
 					    union wpa_event_data *data)
 {
@@ -4186,18 +4261,6 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 			wpas_ap_event_dfs_radar_detected(wpa_s,
 							 &data->dfs_event);
 		break;
-	case EVENT_DFS_CAC_STARTED:
-		if (data)
-			wpas_ap_event_dfs_cac_started(wpa_s, &data->dfs_event);
-		break;
-	case EVENT_DFS_CAC_FINISHED:
-		if (data)
-			wpas_ap_event_dfs_cac_finished(wpa_s, &data->dfs_event);
-		break;
-	case EVENT_DFS_CAC_ABORTED:
-		if (data)
-			wpas_ap_event_dfs_cac_aborted(wpa_s, &data->dfs_event);
-		break;
 	case EVENT_DFS_NOP_FINISHED:
 		if (data)
 			wpas_ap_event_dfs_cac_nop_finished(wpa_s,
@@ -4205,6 +4268,18 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		break;
 #endif /* NEED_AP_MLME */
 #endif /* CONFIG_AP */
+	case EVENT_DFS_CAC_STARTED:
+		if (data)
+			wpas_event_dfs_cac_started(wpa_s, &data->dfs_event);
+		break;
+	case EVENT_DFS_CAC_FINISHED:
+		if (data)
+			wpas_event_dfs_cac_finished(wpa_s, &data->dfs_event);
+		break;
+	case EVENT_DFS_CAC_ABORTED:
+		if (data)
+			wpas_event_dfs_cac_aborted(wpa_s, &data->dfs_event);
+		break;
 	case EVENT_RX_MGMT: {
 		u16 fc, stype;
 		const struct ieee80211_mgmt *mgmt;

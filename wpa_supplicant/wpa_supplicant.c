@@ -243,7 +243,27 @@ void wpa_supplicant_req_auth_timeout(struct wpa_supplicant *wpa_s,
 	wpa_dbg(wpa_s, MSG_DEBUG, "Setting authentication timeout: %d sec "
 		"%d usec", sec, usec);
 	eloop_cancel_timeout(wpa_supplicant_timeout, wpa_s, NULL);
+	wpa_s->last_auth_timeout_sec = sec;
 	eloop_register_timeout(sec, usec, wpa_supplicant_timeout, wpa_s, NULL);
+}
+
+
+/*
+ * wpas_auth_timeout_restart - Restart and change timeout for authentication
+ * @wpa_s: Pointer to wpa_supplicant data
+ * @sec_diff: difference in seconds applied to original timeout value
+ */
+void wpas_auth_timeout_restart(struct wpa_supplicant *wpa_s, int sec_diff)
+{
+	int new_sec = wpa_s->last_auth_timeout_sec + sec_diff;
+
+	if (eloop_is_timeout_registered(wpa_supplicant_timeout, wpa_s, NULL)) {
+		wpa_dbg(wpa_s, MSG_DEBUG,
+			"Authentication timeout restart: %d sec", new_sec);
+		eloop_cancel_timeout(wpa_supplicant_timeout, wpa_s, NULL);
+		eloop_register_timeout(new_sec, 0, wpa_supplicant_timeout,
+				       wpa_s, NULL);
+	}
 }
 
 
