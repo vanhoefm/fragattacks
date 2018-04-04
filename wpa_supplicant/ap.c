@@ -1528,8 +1528,8 @@ int wpas_ap_pmksa_cache_add_external(struct wpa_supplicant *wpa_s, char *cmd)
 
 
 #ifdef NEED_AP_MLME
-void wpas_event_dfs_radar_detected(struct wpa_supplicant *wpa_s,
-				   struct dfs_event *radar)
+void wpas_ap_event_dfs_radar_detected(struct wpa_supplicant *wpa_s,
+				      struct dfs_event *radar)
 {
 	if (!wpa_s->ap_iface || !wpa_s->ap_iface->bss[0])
 		return;
@@ -1541,8 +1541,8 @@ void wpas_event_dfs_radar_detected(struct wpa_supplicant *wpa_s,
 }
 
 
-void wpas_event_dfs_cac_started(struct wpa_supplicant *wpa_s,
-				struct dfs_event *radar)
+void wpas_ap_event_dfs_cac_started(struct wpa_supplicant *wpa_s,
+				   struct dfs_event *radar)
 {
 	if (!wpa_s->ap_iface || !wpa_s->ap_iface->bss[0])
 		return;
@@ -1553,8 +1553,8 @@ void wpas_event_dfs_cac_started(struct wpa_supplicant *wpa_s,
 }
 
 
-void wpas_event_dfs_cac_finished(struct wpa_supplicant *wpa_s,
-				 struct dfs_event *radar)
+void wpas_ap_event_dfs_cac_finished(struct wpa_supplicant *wpa_s,
+				    struct dfs_event *radar)
 {
 	if (!wpa_s->ap_iface || !wpa_s->ap_iface->bss[0])
 		return;
@@ -1565,8 +1565,8 @@ void wpas_event_dfs_cac_finished(struct wpa_supplicant *wpa_s,
 }
 
 
-void wpas_event_dfs_cac_aborted(struct wpa_supplicant *wpa_s,
-				struct dfs_event *radar)
+void wpas_ap_event_dfs_cac_aborted(struct wpa_supplicant *wpa_s,
+				   struct dfs_event *radar)
 {
 	if (!wpa_s->ap_iface || !wpa_s->ap_iface->bss[0])
 		return;
@@ -1577,8 +1577,8 @@ void wpas_event_dfs_cac_aborted(struct wpa_supplicant *wpa_s,
 }
 
 
-void wpas_event_dfs_cac_nop_finished(struct wpa_supplicant *wpa_s,
-				     struct dfs_event *radar)
+void wpas_ap_event_dfs_cac_nop_finished(struct wpa_supplicant *wpa_s,
+					struct dfs_event *radar)
 {
 	if (!wpa_s->ap_iface || !wpa_s->ap_iface->bss[0])
 		return;
