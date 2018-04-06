@@ -82,6 +82,9 @@ static void hostapd_reload_bss(struct hostapd_data *hapd)
 	if (!hapd->started)
 		return;
 
+	if (hapd->conf->wmm_enabled < 0)
+		hapd->conf->wmm_enabled = hapd->iconf->ieee80211n;
+
 #ifndef CONFIG_NO_RADIUS
 	radius_client_reconfig(hapd->radius, hapd->conf->radius);
 #endif /* CONFIG_NO_RADIUS */
