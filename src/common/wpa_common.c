@@ -339,7 +339,7 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 	size_t ptk_len;
 
 	if (pmk_len == 0) {
-		wpa_printf(MSG_ERROR, "WPA: No PMK set for PT derivation");
+		wpa_printf(MSG_ERROR, "WPA: No PMK set for PTK derivation");
 		return -1;
 	}
 
