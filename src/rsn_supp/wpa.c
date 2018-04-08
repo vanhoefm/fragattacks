@@ -2416,6 +2416,7 @@ static void wpa_sm_pmksa_free_cb(struct rsn_pmksa_cache_entry *entry,
 	}
 
 	if (deauth) {
+		sm->pmk_len = 0;
 		os_memset(sm->pmk, 0, sizeof(sm->pmk));
 		wpa_sm_deauthenticate(sm, WLAN_REASON_UNSPECIFIED);
 	}
@@ -3138,6 +3139,7 @@ void wpa_sm_drop_sa(struct wpa_sm *sm)
 	wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG, "WPA: Clear old PMK and PTK");
 	sm->ptk_set = 0;
 	sm->tptk_set = 0;
+	sm->pmk_len = 0;
 	os_memset(sm->pmk, 0, sizeof(sm->pmk));
 	os_memset(&sm->ptk, 0, sizeof(sm->ptk));
 	os_memset(&sm->tptk, 0, sizeof(sm->tptk));
@@ -4369,8 +4371,10 @@ int owe_process_assoc_resp(struct wpa_sm *sm, const u8 *bssid,
 		res = hmac_sha512_kdf(prk, hash_len, NULL, (const u8 *) info,
 				      os_strlen(info), sm->pmk, hash_len);
 	os_memset(prk, 0, SHA512_MAC_LEN);
-	if (res < 0)
+	if (res < 0) {
+		sm->pmk_len = 0;
 		return -1;
+	}
 	sm->pmk_len = hash_len;
 
 	wpa_hexdump_key(MSG_DEBUG, "OWE: PMK", sm->pmk, sm->pmk_len);

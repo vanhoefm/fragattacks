@@ -486,6 +486,8 @@ int fils_rmsk_to_pmk(int akmp, const u8 *rmsk, size_t rmsk_len,
 					 addr, len, pmk);
 	if (res == 0)
 		wpa_hexdump_key(MSG_DEBUG, "FILS: PMK", pmk, *pmk_len);
+	else
+		*pmk_len = 0;
 	return res;
 }
 
