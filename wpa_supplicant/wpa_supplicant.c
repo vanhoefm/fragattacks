@@ -1466,8 +1466,13 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 
 	if (wpa_key_mgmt_wpa_psk(ssid->key_mgmt)) {
 		int psk_set = 0;
+		int sae_only;
 
-		if (ssid->psk_set) {
+		sae_only = (ssid->key_mgmt & (WPA_KEY_MGMT_PSK |
+					      WPA_KEY_MGMT_FT_PSK |
+					      WPA_KEY_MGMT_PSK_SHA256)) == 0;
+
+		if (ssid->psk_set && !sae_only) {
 			wpa_hexdump_key(MSG_MSGDUMP, "PSK (set in config)",
 					ssid->psk, PMK_LEN);
 			wpa_sm_set_pmk(wpa_s->wpa, ssid->psk, PMK_LEN, NULL,
@@ -1475,12 +1480,13 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 			psk_set = 1;
 		}
 
-		if (wpa_key_mgmt_sae(ssid->key_mgmt) && ssid->sae_password)
+		if (wpa_key_mgmt_sae(ssid->key_mgmt) &&
+		    (ssid->sae_password || ssid->passphrase))
 			psk_set = 1;
 
 #ifndef CONFIG_NO_PBKDF2
 		if (bss && ssid->bssid_set && ssid->ssid_len == 0 &&
-		    ssid->passphrase) {
+		    ssid->passphrase && !sae_only) {
 			u8 psk[PMK_LEN];
 		        pbkdf2_sha1(ssid->passphrase, bss->ssid, bss->ssid_len,
 				    4096, psk, PMK_LEN);
@@ -1492,7 +1498,7 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		}
 #endif /* CONFIG_NO_PBKDF2 */
 #ifdef CONFIG_EXT_PASSWORD
-		if (ssid->ext_psk) {
+		if (ssid->ext_psk && !sae_only) {
 			struct wpabuf *pw = ext_password_get(wpa_s->ext_pw,
 							     ssid->ext_psk);
 			char pw_str[64 + 1];
@@ -1561,6 +1567,7 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		if (!psk_set) {
 			wpa_msg(wpa_s, MSG_INFO,
 				"No PSK available for association");
+			wpas_auth_failed(wpa_s, "NO_PSK_AVAILABLE");
 			return -1;
 		}
 #ifdef CONFIG_OWE

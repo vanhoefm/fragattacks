@@ -551,6 +551,7 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 				    NULL) == 0) {
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"PMKSA cache entry found - try to use PMKSA caching instead of new SAE authentication");
+		wpa_sm_set_pmk_from_pmksa(wpa_s->wpa);
 		params.auth_alg = WPA_AUTH_ALG_OPEN;
 		wpa_s->sme.sae_pmksa_caching = 1;
 	}
