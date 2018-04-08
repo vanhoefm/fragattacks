@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
 		ret = -2;
 	else {
 		ret = pmksa_cache_set_current(wpa_s.wpa, NULL, bssid, NULL, 0,
-					      NULL) ? 0 : -3;
+					      NULL, 0) ? 0 : -3;
 	}
 
 	test_eapol_clean(&wpa_s);
