@@ -1468,6 +1468,8 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		int psk_set = 0;
 
 		if (ssid->psk_set) {
+			wpa_hexdump_key(MSG_MSGDUMP, "PSK (set in config)",
+					ssid->psk, PMK_LEN);
 			wpa_sm_set_pmk(wpa_s->wpa, ssid->psk, PMK_LEN, NULL,
 				       NULL);
 			psk_set = 1;
@@ -1536,6 +1538,9 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 					ext_password_free(pw);
 					return -1;
 				}
+				wpa_hexdump_key(MSG_MSGDUMP,
+						"PSK (from external PSK)",
+						psk, PMK_LEN);
 				wpa_sm_set_pmk(wpa_s->wpa, psk, PMK_LEN, NULL,
 					       NULL);
 				psk_set = 1;
