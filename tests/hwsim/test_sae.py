@@ -251,6 +251,29 @@ def test_sae_mixed(dev, apdev):
         dev[i].connect("test-sae", psk="12345678", key_mgmt="SAE",
                        scan_freq="2412")
 
+def test_sae_and_psk(dev, apdev):
+    """SAE and PSK enabled in network profile"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].request("SET sae_groups ")
+    dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE WPA-PSK",
+                   scan_freq="2412")
+
+def test_sae_and_psk2(dev, apdev):
+    """SAE and PSK enabled in network profile (use PSK)"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-psk", passphrase="12345678")
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].request("SET sae_groups ")
+    dev[0].connect("test-psk", psk="12345678", key_mgmt="SAE WPA-PSK",
+                   scan_freq="2412")
+
 def test_sae_mixed_mfp(dev, apdev):
     """Mixed SAE and non-SAE network and MFP required with SAE"""
     if "SAE" not in dev[0].get_capability("auth_alg"):
