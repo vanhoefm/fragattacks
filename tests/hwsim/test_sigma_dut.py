@@ -1328,6 +1328,54 @@ def test_sigma_dut_dpp_qr_init_enrollee_psk(dev, apdev):
         dev[0].set("dpp_config_processing", "0")
         stop_sigma_dut(sigma)
 
+def test_sigma_dut_dpp_qr_init_enrollee_sae(dev, apdev):
+    """sigma_dut DPP/QR initiator as Enrollee (SAE)"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    params = hostapd.wpa2_params(ssid="DPPNET01",
+                                 passphrase="ThisIsDppPassphrase")
+    params['wpa_key_mgmt'] = 'SAE'
+    params["ieee80211w"] = "2"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    sigma = start_sigma_dut(dev[0].ifname)
+    try:
+        dev[0].set("dpp_config_processing", "2")
+
+        cmd = "DPP_CONFIGURATOR_ADD"
+        res = dev[1].request(cmd);
+        if "FAIL" in res:
+            raise Exception("Failed to add configurator")
+        conf_id = int(res)
+
+        addr = dev[1].own_addr().replace(':', '')
+        cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
+        res = dev[1].request(cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to generate bootstrapping info")
+        id0 = int(res)
+        uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+
+        dev[1].set("dpp_configurator_params",
+                   " conf=sta-sae ssid=%s pass=%s configurator=%d" % ("DPPNET01".encode("hex"), "ThisIsDppPassphrase".encode("hex"), conf_id));
+        cmd = "DPP_LISTEN 2437 role=configurator"
+        if "OK" not in dev[1].request(cmd):
+            raise Exception("Failed to start listen operation")
+
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+        if "status,COMPLETE" not in res:
+            raise Exception("dev_exec_action did not succeed: " + res)
+
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,DPPAuthDirection,Single,DPPProvisioningRole,Enrollee,DPPBS,QR,DPPTimeout,6,DPPWaitForConnect,Yes", timeout=10)
+        if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK,NetworkConnectResult,OK" not in res:
+            raise Exception("Unexpected result: " + res)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+        stop_sigma_dut(sigma)
+
 def test_sigma_dut_dpp_qr_init_configurator_1(dev, apdev):
     """sigma_dut DPP/QR initiator as Configurator (conf index 1)"""
     run_sigma_dut_dpp_qr_init_configurator(dev, apdev, 1)
