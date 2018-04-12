@@ -157,6 +157,7 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 	struct mesh_conf *mconf;
 	int basic_rates_erp[] = { 10, 20, 55, 60, 110, 120, 240, -1 };
 	static int default_groups[] = { 19, 20, 21, 25, 26, -1 };
+	const char *password;
 	size_t len;
 	int rate_len;
 	int frequency;
@@ -291,7 +292,10 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 	}
 
 	if (mconf->security != MESH_CONF_SEC_NONE) {
-		if (ssid->passphrase == NULL) {
+		password = ssid->sae_password;
+		if (!password)
+			password = ssid->passphrase;
+		if (!password) {
 			wpa_printf(MSG_ERROR,
 				   "mesh: Passphrase for SAE not configured");
 			goto out_free;
@@ -311,9 +315,9 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 				goto out_free;
 		}
 
-		len = os_strlen(ssid->passphrase);
+		len = os_strlen(password);
 		bss->conf->ssid.wpa_passphrase =
-			dup_binstr(ssid->passphrase, len);
+			dup_binstr(password, len);
 
 		wpa_s->mesh_rsn = mesh_rsn_auth_init(wpa_s, mconf);
 		if (!wpa_s->mesh_rsn)
