@@ -256,7 +256,8 @@ static int wpa_supplicant_conf_ap(struct wpa_supplicant *wpa_s,
 	}
 #endif /* CONFIG_ACS */
 
-	if (ieee80211_is_dfs(ssid->frequency) && wpa_s->conf->country[0]) {
+	if (ieee80211_is_dfs(ssid->frequency, wpa_s->hw.modes,
+			     wpa_s->hw.num_modes) && wpa_s->conf->country[0]) {
 		conf->ieee80211h = 1;
 		conf->ieee80211d = 1;
 		conf->country[0] = wpa_s->conf->country[0];
@@ -719,7 +720,8 @@ int wpa_supplicant_create_ap(struct wpa_supplicant *wpa_s,
 	else
 		params.uapsd = -1;
 
-	if (ieee80211_is_dfs(params.freq.freq))
+	if (ieee80211_is_dfs(params.freq.freq, wpa_s->hw.modes,
+			     wpa_s->hw.num_modes))
 		params.freq.freq = 0; /* set channel after CAC */
 
 	if (params.p2p)

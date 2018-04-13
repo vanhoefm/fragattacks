@@ -791,7 +791,8 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 	hapd->iconf->vht_oper_centr_freq_seg0_idx = seg0_idx;
 	hapd->iconf->vht_oper_centr_freq_seg1_idx = seg1_idx;
 
-	is_dfs = ieee80211_is_dfs(freq);
+	is_dfs = ieee80211_is_dfs(freq, hapd->iface->hw_features,
+				  hapd->iface->num_hw_features);
 
 	if (hapd->csa_in_progress &&
 	    freq == hapd->cs_freq_params.freq) {

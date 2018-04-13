@@ -1111,7 +1111,8 @@ int hostapd_handle_dfs_offload(struct hostapd_iface *iface)
 		return 1;
 	}
 
-	if (ieee80211_is_dfs(iface->freq)) {
+	if (ieee80211_is_dfs(iface->freq, iface->hw_features,
+			     iface->num_hw_features)) {
 		wpa_printf(MSG_DEBUG, "%s: freq %d MHz requires DFS",
 			   __func__, iface->freq);
 		return 0;

@@ -5204,7 +5204,8 @@ static int wpas_p2p_setup_freqs(struct wpa_supplicant *wpa_s, int freq,
 			ret = p2p_supported_freq_cli(wpa_s->global->p2p, freq);
 		if (!ret) {
 			if ((wpa_s->drv_flags & WPA_DRIVER_FLAGS_DFS_OFFLOAD) &&
-			    ieee80211_is_dfs(freq)) {
+			    ieee80211_is_dfs(freq, wpa_s->hw.modes,
+					     wpa_s->hw.num_modes)) {
 				/*
 				 * If freq is a DFS channel and DFS is offloaded
 				 * to the driver, allow P2P GO to use it.
@@ -5692,7 +5693,8 @@ static int wpas_p2p_select_go_freq(struct wpa_supplicant *wpa_s, int freq)
 
 	if (freq > 0 && !p2p_supported_freq_go(wpa_s->global->p2p, freq)) {
 		if ((wpa_s->drv_flags & WPA_DRIVER_FLAGS_DFS_OFFLOAD) &&
-		    ieee80211_is_dfs(freq)) {
+		    ieee80211_is_dfs(freq, wpa_s->hw.modes,
+				     wpa_s->hw.num_modes)) {
 			/*
 			 * If freq is a DFS channel and DFS is offloaded to the
 			 * driver, allow P2P GO to use it.
@@ -5856,7 +5858,8 @@ static int wpas_p2p_init_go_params(struct wpa_supplicant *wpa_s,
 		}
 		if (!p2p_supported_freq_go(wpa_s->global->p2p, freq)) {
 			if ((wpa_s->drv_flags & WPA_DRIVER_FLAGS_DFS_OFFLOAD) &&
-			    ieee80211_is_dfs(freq)) {
+			    ieee80211_is_dfs(freq, wpa_s->hw.modes,
+					     wpa_s->hw.num_modes)) {
 				/*
 				 * If freq is a DFS channel and DFS is offloaded
 				 * to the driver, allow P2P GO to use it.
@@ -9087,7 +9090,7 @@ static void wpas_p2p_consider_moving_one_go(struct wpa_supplicant *wpa_s,
 
 	freq = wpa_s->current_ssid->frequency;
 	dfs_offload = (wpa_s->drv_flags & WPA_DRIVER_FLAGS_DFS_OFFLOAD) &&
-		ieee80211_is_dfs(freq);
+		ieee80211_is_dfs(freq, wpa_s->hw.modes, wpa_s->hw.num_modes);
 	for (i = 0, invalid_freq = 0; i < num; i++) {
 		if (freqs[i].freq == freq) {
 			flags = freqs[i].flags;

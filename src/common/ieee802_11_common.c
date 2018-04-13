@@ -11,6 +11,7 @@
 #include "common.h"
 #include "defs.h"
 #include "wpa_common.h"
+#include "drivers/driver.h"
 #include "qca-vendor.h"
 #include "ieee802_11_defs.h"
 #include "ieee802_11_common.h"
@@ -1178,10 +1179,24 @@ int ieee80211_chan_to_freq(const char *country, u8 op_class, u8 chan)
 }
 
 
-int ieee80211_is_dfs(int freq)
+int ieee80211_is_dfs(int freq, const struct hostapd_hw_modes *modes,
+		     u16 num_modes)
 {
-	/* TODO: this could be more accurate to better cover all domains */
-	return (freq >= 5260 && freq <= 5320) || (freq >= 5500 && freq <= 5700);
+	int i, j;
+
+	if (!modes || !num_modes)
+		return (freq >= 5260 && freq <= 5320) ||
+			(freq >= 5500 && freq <= 5700);
+
+	for (i = 0; i < num_modes; i++) {
+		for (j = 0; j < modes[i].num_channels; j++) {
+			if (modes[i].channels[j].freq == freq &&
+			    (modes[i].channels[j].flag & HOSTAPD_CHAN_RADAR))
+				return 1;
+		}
+	}
+
+	return 0;
 }
 
 
