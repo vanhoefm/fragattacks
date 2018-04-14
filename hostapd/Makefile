@@ -688,6 +688,7 @@ NEED_SHA256=y
 NEED_TLS_PRF_SHA256=y
 LIBS += -lcrypto
 LIBS_h += -lcrypto
+LIBS_n += -lcrypto
 ifdef CONFIG_TLS_ADD_DL
 LIBS += -ldl
 LIBS_h += -ldl
@@ -716,6 +717,7 @@ endif
 ifeq ($(CONFIG_CRYPTO), gnutls)
 LIBS += -lgcrypt
 LIBS_h += -lgcrypt
+LIBS_n += -lgcrypt
 CONFIG_INTERNAL_RC4=y
 CONFIG_INTERNAL_DH_GROUP5=y
 endif
@@ -1300,9 +1302,6 @@ NOBJS += ../src/utils/wpabuf.o
 ifdef CONFIG_WPA_TRACE
 NOBJS += ../src/utils/trace.o
 LIBS_n += -lbfd
-endif
-ifdef TLS_FUNCS
-LIBS_n += -lcrypto
 endif
 
 HOBJS += hlr_auc_gw.o ../src/utils/common.o ../src/utils/wpa_debug.o ../src/utils/os_$(CONFIG_OS).o ../src/utils/wpabuf.o ../src/crypto/milenage.o
