@@ -4352,6 +4352,7 @@ int tls_connection_set_params(void *tls_ctx, struct tls_connection *conn,
 	}
 #endif
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
+#ifdef SSL_OP_NO_TLSv1_3
 	if (params->flags & TLS_CONN_EAP_FAST) {
 		/* Need to disable TLS v1.3 at least for now since OpenSSL 1.1.1
 		 * refuses to start the handshake with the modified ciphersuite
@@ -4359,6 +4360,7 @@ int tls_connection_set_params(void *tls_ctx, struct tls_connection *conn,
 		wpa_printf(MSG_DEBUG, "OpenSSL: Disable TLSv1.3 for EAP-FAST");
 		SSL_set_options(conn->ssl, SSL_OP_NO_TLSv1_3);
 	}
+#endif /* SSL_OP_NO_TLSv1_3 */
 #endif
 #endif /* EAP_FAST || EAP_FAST_DYNAMIC || EAP_SERVER_FAST */
 
