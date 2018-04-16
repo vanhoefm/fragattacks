@@ -3063,7 +3063,9 @@ def test_ap_hs20_req_hs20_icon(dev, apdev):
     hostapd.add_ap(apdev[0], params)
 
     dev[0].scan_for_bss(bssid, freq="2412")
+    run_req_hs20_icon(dev, bssid)
 
+def run_req_hs20_icon(dev, bssid):
     # First, fetch two icons from the AP to wpa_supplicant
 
     if "OK" not in dev[0].request("REQ_HS20_ICON " + bssid + " w1fi_logo"):
@@ -3099,6 +3101,56 @@ def test_ap_hs20_req_hs20_icon(dev, apdev):
         raise Exception("DEL_HS20_ICON failed")
     if "OK" not in dev[0].request("DEL_HS20_ICON " + bssid + " test_logo"):
         raise Exception("DEL_HS20_ICON failed")
+
+def test_ap_hs20_req_operator_icon(dev, apdev):
+    """Hotspot 2.0 operator icons"""
+    bssid = apdev[0]['bssid']
+    params = hs20_ap_params()
+    params['hs20_icon'] = [ "128:80:zxx:image/png:w1fi_logo:w1fi_logo.png",
+                            "500:300:fi:image/png:test_logo:auth_serv/sha512-server.pem" ]
+    params['operator_icon'] = [ "w1fi_logo", "unknown_logo", "test_logo" ]
+    hostapd.add_ap(apdev[0], params)
+
+    value = struct.pack('<HH', 128, 80) + "zxx"
+    value += struct.pack('B', 9) + "image/png"
+    value += struct.pack('B', 9) + "w1fi_logo"
+
+    value += struct.pack('<HH', 500, 300) + "fi\0"
+    value += struct.pack('B', 9) + "image/png"
+    value += struct.pack('B', 9) + "test_logo"
+
+    dev[0].scan_for_bss(bssid, freq="2412")
+
+    if "OK" not in dev[0].request("ANQP_GET " + bssid + " hs20:12"):
+        raise Exception("ANQP_GET command failed")
+
+    ev = dev[0].wait_event(["GAS-QUERY-START"], timeout=5)
+    if ev is None:
+        raise Exception("GAS query start timed out")
+
+    ev = dev[0].wait_event(["GAS-QUERY-DONE"], timeout=10)
+    if ev is None:
+        raise Exception("GAS query timed out")
+
+    ev = dev[0].wait_event(["RX-HS20-ANQP"], timeout=1)
+    if ev is None or "Operator Icon Metadata" not in ev:
+        raise Exception("Did not receive Operator Icon Metadata")
+
+    ev = dev[0].wait_event(["ANQP-QUERY-DONE"], timeout=10)
+    if ev is None:
+        raise Exception("ANQP-QUERY-DONE event not seen")
+    if "result=SUCCESS" not in ev:
+        raise Exception("Unexpected result: " + ev)
+
+    bss = dev[0].get_bss(bssid)
+    if "hs20_operator_icon_metadata" not in bss:
+        raise Exception("hs20_operator_icon_metadata missing from BSS entry")
+    if bss["hs20_operator_icon_metadata"] != binascii.hexlify(value):
+        print binascii.hexlify(value)
+        raise Exception("Unexpected hs20_operator_icon_metadata value: " +
+                        bss["hs20_operator_icon_metadata"])
+
+    run_req_hs20_icon(dev, bssid)
 
 def test_ap_hs20_req_hs20_icon_oom(dev, apdev):
     """Hotspot 2.0 icon fetch OOM with REQ_HS20_ICON"""
