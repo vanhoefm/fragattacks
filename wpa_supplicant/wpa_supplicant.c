@@ -2716,6 +2716,29 @@ static u8 * wpas_populate_assoc_ies(
 	}
 #endif /* CONFIG_OWE */
 
+#ifdef CONFIG_IEEE80211R
+	/*
+	 * Add MDIE under these conditions: the network profile allows FT,
+	 * the AP supports FT, and the mobility domain ID matches.
+	 */
+	if (wpa_key_mgmt_ft(wpa_sm_get_key_mgmt(wpa_s->wpa))) {
+		const u8 *mdie = wpa_bss_get_ie(bss, WLAN_EID_MOBILITY_DOMAIN);
+
+		if (mdie && mdie[1] >= MOBILITY_DOMAIN_ID_LEN) {
+			const u8 *md = mdie + 2;
+			const u8 *wpa_md = wpa_sm_get_ft_md(wpa_s->wpa);
+
+			if (os_memcmp(md, wpa_md,
+				      MOBILITY_DOMAIN_ID_LEN) == 0) {
+				/* Add mobility domain IE */
+				wpa_ie_len += wpa_ft_add_mdie(
+					wpa_s->wpa, wpa_ie + wpa_ie_len,
+					max_wpa_ie_len - wpa_ie_len, mdie);
+			}
+		}
+	}
+#endif /* CONFIG_IEEE80211R */
+
 	params->wpa_ie = wpa_ie;
 	params->wpa_ie_len = wpa_ie_len;
 	params->auth_alg = algs;

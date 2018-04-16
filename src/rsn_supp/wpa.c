@@ -3297,6 +3297,12 @@ const u8 * wpa_sm_get_anonce(struct wpa_sm *sm)
 #endif /* CONFIG_TESTING_OPTIONS */
 
 
+unsigned int wpa_sm_get_key_mgmt(struct wpa_sm *sm)
+{
+	return sm->key_mgmt;
+}
+
+
 #ifdef CONFIG_FILS
 
 struct wpabuf * fils_build_auth(struct wpa_sm *sm, int dh_group, const u8 *md)

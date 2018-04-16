@@ -353,6 +353,9 @@ static inline int wpa_fils_is_completed(struct wpa_sm *sm)
 
 int wpa_sm_set_ft_params(struct wpa_sm *sm, const u8 *ies, size_t ies_len);
 int wpa_ft_prepare_auth_request(struct wpa_sm *sm, const u8 *mdie);
+int wpa_ft_add_mdie(struct wpa_sm *sm, u8 *ies, size_t ies_len,
+		    const u8 *mdie);
+const u8 * wpa_sm_get_ft_md(struct wpa_sm *sm);
 int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 			    int ft_action, const u8 *target_ap,
 			    const u8 *ric_ies, size_t ric_ies_len);
@@ -373,6 +376,12 @@ wpa_sm_set_ft_params(struct wpa_sm *sm, const u8 *ies, size_t ies_len)
 
 static inline int wpa_ft_prepare_auth_request(struct wpa_sm *sm,
 					      const u8 *mdie)
+{
+	return 0;
+}
+
+static inline int wpa_ft_add_mdie(struct wpa_sm *sm, u8 *ies, size_t ies_len,
+				  const u8 *mdie)
 {
 	return 0;
 }
@@ -429,6 +438,7 @@ extern unsigned int tdls_testing;
 int wpa_wnmsleep_install_key(struct wpa_sm *sm, u8 subelem_id, u8 *buf);
 void wpa_sm_set_test_assoc_ie(struct wpa_sm *sm, struct wpabuf *buf);
 const u8 * wpa_sm_get_anonce(struct wpa_sm *sm);
+unsigned int wpa_sm_get_key_mgmt(struct wpa_sm *sm);
 
 struct wpabuf * fils_build_auth(struct wpa_sm *sm, int dh_group, const u8 *md);
 int fils_process_auth(struct wpa_sm *sm, const u8 *bssid, const u8 *data,

@@ -151,6 +151,7 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	struct rsn_ftie *ftie;
 	struct rsn_ie_hdr *rsnie;
 	u16 capab;
+	int mdie_len;
 
 	sm->ft_completed = 0;
 	sm->ft_reassoc_completed = 0;
@@ -247,14 +248,13 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	rsnie->len = (pos - (u8 *) rsnie) - 2;
 
 	/* MDIE */
-	*pos++ = WLAN_EID_MOBILITY_DOMAIN;
-	*pos++ = sizeof(*mdie);
-	mdie = (struct rsn_mdie *) pos;
-	pos += sizeof(*mdie);
-	os_memcpy(mdie->mobility_domain, sm->mobility_domain,
-		  MOBILITY_DOMAIN_ID_LEN);
-	mdie->ft_capab = ap_mdie && ap_mdie[1] >= 3 ? ap_mdie[4] :
-		sm->mdie_ft_capab;
+	mdie_len = wpa_ft_add_mdie(sm, pos, buf_len - (pos - buf), ap_mdie);
+	if (mdie_len <= 0) {
+		os_free(buf);
+		return NULL;
+	}
+	mdie = (struct rsn_mdie *) (pos + 2);
+	pos += mdie_len;
 
 	/* FTIE[SNonce, [R1KH-ID,] R0KH-ID ] */
 	ftie_pos = pos;
@@ -370,6 +370,37 @@ int wpa_ft_prepare_auth_request(struct wpa_sm *sm, const u8 *mdie)
 	}
 
 	return 0;
+}
+
+
+int wpa_ft_add_mdie(struct wpa_sm *sm, u8 *buf, size_t buf_len,
+		    const u8 *ap_mdie)
+{
+	u8 *pos = buf;
+	struct rsn_mdie *mdie;
+
+	if (buf_len < 2 + sizeof(*mdie)) {
+		wpa_printf(MSG_INFO,
+			   "FT: Failed to add MDIE: short buffer, length=%zu",
+			   buf_len);
+		return 0;
+	}
+
+	*pos++ = WLAN_EID_MOBILITY_DOMAIN;
+	*pos++ = sizeof(*mdie);
+	mdie = (struct rsn_mdie *) pos;
+	os_memcpy(mdie->mobility_domain, sm->mobility_domain,
+		  MOBILITY_DOMAIN_ID_LEN);
+	mdie->ft_capab = ap_mdie && ap_mdie[1] >= 3 ? ap_mdie[4] :
+		sm->mdie_ft_capab;
+
+	return 2 + sizeof(*mdie);
+}
+
+
+const u8 * wpa_sm_get_ft_md(struct wpa_sm *sm)
+{
+	return sm->mobility_domain;
 }
 
 
