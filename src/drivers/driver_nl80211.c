@@ -5505,6 +5505,8 @@ static int wpa_driver_nl80211_try_connect(
 		algs++;
 	if (params->auth_alg & WPA_AUTH_ALG_FILS)
 		algs++;
+	if (params->auth_alg & WPA_AUTH_ALG_FT)
+		algs++;
 	if (algs > 1) {
 		wpa_printf(MSG_DEBUG, "  * Leave out Auth Type for automatic "
 			   "selection");
