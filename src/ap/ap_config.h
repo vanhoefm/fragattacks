@@ -580,6 +580,8 @@ struct hostapd_bss_config {
 		struct hostapd_lang_string *service_desc;
 	} *hs20_osu_providers, *last_osu;
 	size_t hs20_osu_providers_count;
+	char **hs20_operator_icon;
+	size_t hs20_operator_icon_count;
 	unsigned int hs20_deauth_req_timeout;
 	char *subscr_remediation_url;
 	u8 subscr_remediation_method;

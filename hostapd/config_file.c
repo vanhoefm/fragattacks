@@ -2023,6 +2023,25 @@ static int hs20_parse_osu_service_desc(struct hostapd_bss_config *bss,
 	return 0;
 }
 
+
+static int hs20_parse_operator_icon(struct hostapd_bss_config *bss, char *pos,
+				    int line)
+{
+	char **n;
+
+	n = os_realloc_array(bss->hs20_operator_icon,
+			     bss->hs20_operator_icon_count + 1, sizeof(char *));
+	if (!n)
+		return -1;
+	bss->hs20_operator_icon = n;
+	bss->hs20_operator_icon[bss->hs20_operator_icon_count] = os_strdup(pos);
+	if (!bss->hs20_operator_icon[bss->hs20_operator_icon_count])
+		return -1;
+	bss->hs20_operator_icon_count++;
+
+	return 0;
+}
+
 #endif /* CONFIG_HS20 */
 
 
@@ -3601,6 +3620,9 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 			return 1;
 	} else if (os_strcmp(buf, "osu_service_desc") == 0) {
 		if (hs20_parse_osu_service_desc(bss, pos, line) < 0)
+			return 1;
+	} else if (os_strcmp(buf, "operator_icon") == 0) {
+		if (hs20_parse_operator_icon(bss, pos, line) < 0)
 			return 1;
 	} else if (os_strcmp(buf, "subscr_remediation_url") == 0) {
 		os_free(bss->subscr_remediation_url);

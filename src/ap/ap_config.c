@@ -612,6 +612,13 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 		}
 		os_free(conf->hs20_osu_providers);
 	}
+	if (conf->hs20_operator_icon) {
+		size_t i;
+
+		for (i = 0; i < conf->hs20_operator_icon_count; i++)
+			os_free(conf->hs20_operator_icon[i]);
+		os_free(conf->hs20_operator_icon);
+	}
 	os_free(conf->subscr_remediation_url);
 #endif /* CONFIG_HS20 */
 
