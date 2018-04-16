@@ -645,6 +645,16 @@ void hs20_parse_rx_hs20_anqp_resp(struct wpa_supplicant *wpa_s,
 					       wpa_s, NULL);
 		}
 		break;
+	case HS20_STYPE_OPERATOR_ICON_METADATA:
+		wpa_msg(wpa_s, MSG_INFO, RX_HS20_ANQP MACSTR
+			" Operator Icon Metadata", MAC2STR(sa));
+		wpa_hexdump(MSG_DEBUG, "Operator Icon Metadata", pos, slen);
+		if (anqp) {
+			wpabuf_free(anqp->hs20_operator_icon_metadata);
+			anqp->hs20_operator_icon_metadata =
+				wpabuf_alloc_copy(pos, slen);
+		}
+		break;
 	default:
 		wpa_printf(MSG_DEBUG, "HS20: Unsupported subtype %u", subtype);
 		break;
