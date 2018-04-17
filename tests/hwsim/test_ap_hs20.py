@@ -1018,7 +1018,9 @@ def test_ap_hs20_roaming_consortiums_match(dev, apdev):
     hostapd.add_ap(apdev[0], params)
 
     dev[0].hs20_enable()
-    for consortium in [ "112233", "ffffff,1020304050,eeeeee" ]:
+    tests = [ ("112233", "112233"),
+              ("ffffff,1020304050,eeeeee", "1020304050") ]
+    for consortium,selected in tests:
         id = dev[0].add_cred_values({ 'username': "user",
                                       'password': "password",
                                       'domain': "my.home.example.com",
@@ -1028,6 +1030,11 @@ def test_ap_hs20_roaming_consortiums_match(dev, apdev):
         interworking_select(dev[0], bssid, "roaming", freq="2412")
         interworking_connect(dev[0], bssid, "PEAP")
         check_sp_type(dev[0], "roaming")
+        network_id = dev[0].get_status_field("id")
+        sel = dev[0].get_network(network_id, "roaming_consortium_selection")
+        if sel != selected:
+            raise Exception("Unexpected roaming_consortium_selection value: " +
+                            sel)
         dev[0].request("INTERWORKING_SELECT auto freq=2412")
         ev = dev[0].wait_event(["INTERWORKING-ALREADY-CONNECTED"], timeout=15)
         if ev is None:
@@ -3683,9 +3690,14 @@ def test_ap_hs20_external_selection(dev, apdev):
     dev[0].connect("test-hs20", proto="RSN", key_mgmt="WPA-EAP", eap="TTLS",
                    identity="hs20-test", password="password",
                    ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
-                   scan_freq="2412", update_identifier="54321")
+                   scan_freq="2412", update_identifier="54321",
+                   roaming_consortium_selection="1020304050")
     if dev[0].get_status_field("hs20") != "2":
         raise Exception("Unexpected hs20 indication")
+    network_id = dev[0].get_status_field("id")
+    sel = dev[0].get_network(network_id, "roaming_consortium_selection")
+    if sel != "1020304050":
+        raise Exception("Unexpected roaming_consortium_selection value: " + sel)
 
 def test_ap_hs20_random_mac_addr(dev, apdev):
     """Hotspot 2.0 connection with random MAC address"""

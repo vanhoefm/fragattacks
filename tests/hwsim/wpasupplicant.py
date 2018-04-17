@@ -1029,7 +1029,8 @@ class WpaSupplicant:
                        "engine", "fils_dh_group", "bssid_hint",
                        "dpp_csign", "dpp_csign_expiry",
                        "dpp_netaccesskey", "dpp_netaccesskey_expiry",
-                       "group_mgmt", "owe_group" ]
+                       "group_mgmt", "owe_group",
+                       "roaming_consortium_selection" ]
         for field in not_quoted:
             if field in kwargs and kwargs[field]:
                 self.set_network(id, field, kwargs[field])
