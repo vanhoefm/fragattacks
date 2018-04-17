@@ -856,6 +856,7 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 #endif /* CONFIG_MACSEC */
 #ifdef CONFIG_HS20
 	INT(update_identifier);
+	STR(roaming_consortium_selection);
 #endif /* CONFIG_HS20 */
 	write_int(f, "mac_addr", ssid->mac_addr, -1);
 #ifdef CONFIG_MESH

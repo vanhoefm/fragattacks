@@ -1555,6 +1555,9 @@ static int interworking_connect_roaming_consortium(
 	struct wpa_bss *bss, int only_add)
 {
 	struct wpa_ssid *ssid;
+	const u8 *ie;
+	const struct wpabuf *anqp;
+	unsigned int i;
 
 	wpa_msg(wpa_s, MSG_DEBUG, "Interworking: Connect with " MACSTR
 		" based on roaming consortium match", MAC2STR(bss->bssid));
@@ -1583,6 +1586,26 @@ static int interworking_connect_roaming_consortium(
 
 	if (interworking_set_hs20_params(wpa_s, ssid) < 0)
 		goto fail;
+
+	ie = wpa_bss_get_ie(bss, WLAN_EID_ROAMING_CONSORTIUM);
+	anqp = bss->anqp ? bss->anqp->roaming_consortium : NULL;
+	for (i = 0; (ie || anqp) && i < cred->num_roaming_consortiums; i++) {
+		if (!roaming_consortium_match(
+			    ie, anqp, cred->roaming_consortiums[i],
+			    cred->roaming_consortiums_len[i]))
+			continue;
+
+		ssid->roaming_consortium_selection =
+			os_malloc(cred->roaming_consortiums_len[i]);
+		if (!ssid->roaming_consortium_selection)
+			goto fail;
+		os_memcpy(ssid->roaming_consortium_selection,
+			  cred->roaming_consortiums[i],
+			  cred->roaming_consortiums_len[i]);
+		ssid->roaming_consortium_selection_len =
+			cred->roaming_consortiums_len[i];
+		break;
+	}
 
 	if (cred->eap_method == NULL) {
 		wpa_msg(wpa_s, MSG_DEBUG,

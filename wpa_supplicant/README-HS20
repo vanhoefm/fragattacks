@@ -606,7 +606,7 @@ network={
 Hotspot 2.0 connection with external network selection
 ------------------------------------------------------
 
-When an component controlling wpa_supplicant takes care of Interworking
+When a component controlling wpa_supplicant takes care of Interworking
 network selection, following configuration and network profile
 parameters can be used to configure a temporary network profile for a
 Hotspot 2.0 connection (e.g., with SET, ADD_NETWORK, SET_NETWORK, and
@@ -628,6 +628,7 @@ network={
     eap=TTLS
     phase2="auth=MSCHAPV2"
     update_identifier=54321
+    roaming_consortium_selection=112233
     #ocsp=2
 }
 
@@ -643,4 +644,5 @@ update_identifier: PPS/UpdateIdentifier
 ca_cert: from the downloaded trust root based on PPS information
 eap: Credential/UsernamePassword/EAPMethod or NAI Realm list
 phase2: Credential/UsernamePassword/EAPMethod or NAI Realm list
+roaming_consortium_selection: Matching OI from HomeSP/RoamingConsortiumOI
 ocsp: Credential/CheckAAAServerCertStatus

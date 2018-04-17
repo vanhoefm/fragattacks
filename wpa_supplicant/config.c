@@ -2289,6 +2289,7 @@ static const struct parse_data ssid_fields[] = {
 #endif /* CONFIG_MACSEC */
 #ifdef CONFIG_HS20
 	{ INT(update_identifier) },
+	{ STR_RANGE(roaming_consortium_selection, 0, MAX_ROAMING_CONS_OI_LEN) },
 #endif /* CONFIG_HS20 */
 	{ INT_RANGE(mac_addr, 0, 2) },
 	{ INT_RANGE(pbss, 0, 2) },
@@ -2489,6 +2490,9 @@ void wpa_config_free_ssid(struct wpa_ssid *ssid)
 #ifdef CONFIG_MESH
 	os_free(ssid->mesh_basic_rates);
 #endif /* CONFIG_MESH */
+#ifdef CONFIG_HS20
+	os_free(ssid->roaming_consortium_selection);
+#endif /* CONFIG_HS20 */
 	os_free(ssid->dpp_connector);
 	bin_clear_free(ssid->dpp_netaccesskey, ssid->dpp_netaccesskey_len);
 	os_free(ssid->dpp_csign);

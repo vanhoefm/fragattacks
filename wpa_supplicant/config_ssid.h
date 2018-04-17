@@ -804,6 +804,19 @@ struct wpa_ssid {
 
 #ifdef CONFIG_HS20
 	int update_identifier;
+
+	/**
+	 * roaming_consortium_selection - Roaming Consortium Selection
+	 *
+	 * The matching Roaming Consortium OI that was used to generate this
+	 * network profile.
+	 */
+	u8 *roaming_consortium_selection;
+
+	/**
+	 * roaming_consortium_selection_len - roaming_consortium_selection len
+	 */
+	size_t roaming_consortium_selection_len;
 #endif /* CONFIG_HS20 */
 
 	unsigned int wps_run;
