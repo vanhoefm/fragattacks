@@ -1308,7 +1308,9 @@ static void set_pps_cred_home_sp_roaming_consortium_oi(
 	if (str == NULL)
 		return;
 	wpa_printf(MSG_INFO, "- HomeSP/RoamingConsortiumOI = %s", str);
-	/* TODO: Set to wpa_supplicant */
+	if (set_cred_quoted(ctx->ifname, id, "roaming_consortiums",
+			    str) < 0)
+		wpa_printf(MSG_INFO, "Failed to set cred roaming_consortiums");
 	xml_node_get_text_free(ctx->xml, str);
 }
 
