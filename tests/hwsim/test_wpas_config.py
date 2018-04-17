@@ -216,6 +216,8 @@ def test_wpas_config_file(dev, apdev, params):
         wpas.set_cred_quoted(id, "domain_suffix_match", "example.com")
         wpas.set_cred(id, "roaming_consortium", "112233")
         wpas.set_cred(id, "required_roaming_consortium", "112233")
+        wpas.set_cred_quoted(id, "roaming_consortiums",
+                             "112233,aabbccddee,445566")
         wpas.set_cred_quoted(id, "roaming_partner",
                              "roaming.example.net,1,127,*")
         wpas.set_cred_quoted(id, "ca_cert", "/tmp/ca.pem")
@@ -242,6 +244,10 @@ def test_wpas_config_file(dev, apdev, params):
             raise Exception("Unexpected number of networks")
         if len(wpas.request("LIST_CREDS").splitlines()) != 2:
             raise Exception("Unexpected number of credentials")
+
+        val = wpas.get_cred(0, "roaming_consortiums")
+        if val != "112233,aabbccddee,445566":
+            raise Exception("Unexpected roaming_consortiums value: " + val)
 
         if "OK" not in wpas.request("SAVE_CONFIG"):
             raise Exception("Failed to save configuration file")
