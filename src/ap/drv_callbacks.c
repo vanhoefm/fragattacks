@@ -235,6 +235,14 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 						 elems.hs20_len - 4);
 	} else
 		sta->hs20_ie = NULL;
+
+	wpabuf_free(sta->roaming_consortium);
+	if (elems.roaming_cons_sel)
+		sta->roaming_consortium = wpabuf_alloc_copy(
+			elems.roaming_cons_sel + 4,
+			elems.roaming_cons_sel_len - 4);
+	else
+		sta->roaming_consortium = NULL;
 #endif /* CONFIG_HS20 */
 
 #ifdef CONFIG_FST

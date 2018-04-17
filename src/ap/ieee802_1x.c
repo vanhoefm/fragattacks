@@ -712,6 +712,16 @@ void ieee802_1x_encapsulate_radius(struct hostapd_data *hapd,
 				goto fail;
 			}
 		}
+
+		if (sta->roaming_consortium &&
+		    !radius_msg_add_wfa(
+			    msg, RADIUS_VENDOR_ATTR_WFA_HS20_ROAMING_CONSORTIUM,
+			    wpabuf_head(sta->roaming_consortium),
+			    wpabuf_len(sta->roaming_consortium))) {
+			wpa_printf(MSG_ERROR,
+				   "Could not add HS 2.0 Roaming Consortium");
+			goto fail;
+		}
 	}
 #endif /* CONFIG_HS20 */
 

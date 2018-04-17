@@ -120,6 +120,11 @@ static int ieee802_11_parse_vendor_specific(const u8 *pos, size_t elen,
 			elems->mbo = pos;
 			elems->mbo_len = elen;
 			break;
+		case HS20_ROAMING_CONS_SEL_OUI_TYPE:
+			/* Hotspot 2.0 Roaming Consortium Selection */
+			elems->roaming_cons_sel = pos;
+			elems->roaming_cons_sel_len = elen;
+			break;
 		default:
 			wpa_printf(MSG_MSGDUMP, "Unknown WFA "
 				   "information element ignored "

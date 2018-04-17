@@ -182,6 +182,8 @@ struct sta_info {
 	struct wpabuf *wps_ie; /* WPS IE from (Re)Association Request */
 	struct wpabuf *p2p_ie; /* P2P IE from (Re)Association Request */
 	struct wpabuf *hs20_ie; /* HS 2.0 IE from (Re)Association Request */
+	/* Hotspot 2.0 Roaming Consortium from (Re)Association Request */
+	struct wpabuf *roaming_consortium;
 	u8 remediation_method;
 	char *remediation_url; /* HS 2.0 Subscription Remediation Server URL */
 	struct wpabuf *hs20_deauth_req;
