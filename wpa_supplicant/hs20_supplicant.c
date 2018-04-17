@@ -118,6 +118,22 @@ void wpas_hs20_add_indication(struct wpabuf *buf, int pps_mo_id)
 }
 
 
+void wpas_hs20_add_roam_cons_sel(struct wpabuf *buf,
+				 const struct wpa_ssid *ssid)
+{
+	if (!ssid->roaming_consortium_selection ||
+	    !ssid->roaming_consortium_selection_len)
+		return;
+
+	wpabuf_put_u8(buf, WLAN_EID_VENDOR_SPECIFIC);
+	wpabuf_put_u8(buf, 4 + ssid->roaming_consortium_selection_len);
+	wpabuf_put_be24(buf, OUI_WFA);
+	wpabuf_put_u8(buf, HS20_ROAMING_CONS_SEL_OUI_TYPE);
+	wpabuf_put_data(buf, ssid->roaming_consortium_selection,
+			ssid->roaming_consortium_selection_len);
+}
+
+
 int is_hs20_network(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 		    struct wpa_bss *bss)
 {

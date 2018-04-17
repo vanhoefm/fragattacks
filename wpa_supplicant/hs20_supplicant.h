@@ -10,6 +10,8 @@
 
 void hs20_configure_frame_filters(struct wpa_supplicant *wpa_s);
 void wpas_hs20_add_indication(struct wpabuf *buf, int pps_mo_id);
+void wpas_hs20_add_roam_cons_sel(struct wpabuf *buf,
+				 const struct wpa_ssid *ssid);
 
 int hs20_anqp_send_req(struct wpa_supplicant *wpa_s, const u8 *dst, u32 stypes,
 		       const u8 *payload, size_t payload_len, int inmem);
