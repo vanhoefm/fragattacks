@@ -148,6 +148,8 @@ static int cred_with_roaming_consortium(struct wpa_supplicant *wpa_s)
 			return 1;
 		if (cred->required_roaming_consortium_len)
 			return 1;
+		if (cred->num_roaming_consortiums)
+			return 1;
 	}
 	return 0;
 }
@@ -1145,6 +1147,23 @@ static int roaming_consortium_match(const u8 *ie, const struct wpabuf *anqp,
 }
 
 
+static int cred_roaming_consortiums_match(const u8 *ie,
+					  const struct wpabuf *anqp,
+					  const struct wpa_cred *cred)
+{
+	unsigned int i;
+
+	for (i = 0; i < cred->num_roaming_consortiums; i++) {
+		if (roaming_consortium_match(ie, anqp,
+					     cred->roaming_consortiums[i],
+					     cred->roaming_consortiums_len[i]))
+			return 1;
+	}
+
+	return 0;
+}
+
+
 static int cred_no_required_oi_match(struct wpa_cred *cred, struct wpa_bss *bss)
 {
 	const u8 *ie;
@@ -1349,27 +1368,28 @@ static struct wpa_cred * interworking_credentials_available_roaming_consortium(
 {
 	struct wpa_cred *cred, *selected = NULL;
 	const u8 *ie;
+	const struct wpabuf *anqp;
 	int is_excluded = 0;
 
 	ie = wpa_bss_get_ie(bss, WLAN_EID_ROAMING_CONSORTIUM);
+	anqp = bss->anqp ? bss->anqp->roaming_consortium : NULL;
 
-	if (ie == NULL &&
-	    (bss->anqp == NULL || bss->anqp->roaming_consortium == NULL))
+	if (!ie && !anqp)
 		return NULL;
 
 	if (wpa_s->conf->cred == NULL)
 		return NULL;
 
 	for (cred = wpa_s->conf->cred; cred; cred = cred->next) {
-		if (cred->roaming_consortium_len == 0)
+		if (cred->roaming_consortium_len == 0 &&
+		    cred->num_roaming_consortiums == 0)
 			continue;
 
-		if (!roaming_consortium_match(ie,
-					      bss->anqp ?
-					      bss->anqp->roaming_consortium :
-					      NULL,
-					      cred->roaming_consortium,
-					      cred->roaming_consortium_len))
+		if ((cred->roaming_consortium_len == 0 ||
+		     !roaming_consortium_match(ie, anqp,
+					       cred->roaming_consortium,
+					       cred->roaming_consortium_len)) &&
+		    !cred_roaming_consortiums_match(ie, anqp, cred))
 			continue;
 
 		if (cred_no_required_oi_match(cred, bss))
