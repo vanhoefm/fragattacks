@@ -1039,6 +1039,20 @@ static void wpa_config_write_cred(FILE *f, struct wpa_cred *cred)
 		fprintf(f, "\n");
 	}
 
+	if (cred->num_roaming_consortiums) {
+		size_t j;
+
+		fprintf(f, "\troaming_consortiums=\"");
+		for (i = 0; i < cred->num_roaming_consortiums; i++) {
+			if (i > 0)
+				fprintf(f, ",");
+			for (j = 0; j < cred->roaming_consortiums_len[i]; j++)
+				fprintf(f, "%02x",
+					cred->roaming_consortiums[i][j]);
+		}
+		fprintf(f, "\"\n");
+	}
+
 	if (cred->sim_num != DEFAULT_USER_SELECTED_SIM)
 		fprintf(f, "\tsim_num=%d\n", cred->sim_num);
 }

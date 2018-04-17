@@ -51,6 +51,9 @@
 #include "common/ieee802_11_common.h"
 
 
+#define MAX_ROAMING_CONS 36
+#define MAX_ROAMING_CONS_OI_LEN 15
+
 struct wpa_cred {
 	/**
 	 * next - Next credential in the list
@@ -238,6 +241,28 @@ struct wpa_cred {
 	 * required_roaming_consortium_len - Length of required_roaming_consortium
 	 */
 	size_t required_roaming_consortium_len;
+
+	/**
+	 * roaming_consortiums - Roaming Consortium OI(s) memberships
+	 *
+	 * This field contains one or more OIs identifying the roaming
+	 * consortiums of which the provider is a member. The list is sorted
+	 * from the most preferred one to the least preferred one. A match
+	 * between the Roaming Consortium OIs advertised by an AP and the OIs
+	 * in this list indicates that successful authentication is possible.
+	 * (Hotspot 2.0 PerProviderSubscription/<X+>/HomeSP/RoamingConsortiumOI)
+	 */
+	u8 roaming_consortiums[MAX_ROAMING_CONS][MAX_ROAMING_CONS_OI_LEN];
+
+	/**
+	 * roaming_consortiums_len - Length on roaming_consortiums[i]
+	 */
+	size_t roaming_consortiums_len[MAX_ROAMING_CONS];
+
+	/**
+	 * num_roaming_consortiums - Number of entries in roaming_consortiums
+	 */
+	unsigned int num_roaming_consortiums;
 
 	/**
 	 * eap_method - EAP method to use
