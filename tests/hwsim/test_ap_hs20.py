@@ -98,7 +98,7 @@ def check_sp_type(dev, sp_type):
     if type is None:
         raise Exception("sp_type not available")
     if type != sp_type:
-        raise Exception("sp_type did not indicate home network")
+        raise Exception("sp_type did not indicate %s network" % sp_type)
 
 def hlr_auc_gw_available():
     if not os.path.exists("/tmp/hlr_auc_gw.sock"):
@@ -1004,6 +1004,30 @@ def test_ap_hs20_roaming_consortium(dev, apdev):
         interworking_select(dev[0], bssid, "home", freq="2412")
         interworking_connect(dev[0], bssid, "PEAP")
         check_sp_type(dev[0], "home")
+        dev[0].request("INTERWORKING_SELECT auto freq=2412")
+        ev = dev[0].wait_event(["INTERWORKING-ALREADY-CONNECTED"], timeout=15)
+        if ev is None:
+            raise Exception("Timeout on already-connected event")
+        dev[0].remove_cred(id)
+
+def test_ap_hs20_roaming_consortiums_match(dev, apdev):
+    """Hotspot 2.0 connection based on roaming_consortiums match"""
+    bssid = apdev[0]['bssid']
+    params = hs20_ap_params()
+    params['hessid'] = bssid
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].hs20_enable()
+    for consortium in [ "112233", "ffffff,1020304050,eeeeee" ]:
+        id = dev[0].add_cred_values({ 'username': "user",
+                                      'password': "password",
+                                      'domain': "my.home.example.com",
+                                      'ca_cert': "auth_serv/ca.pem",
+                                      'roaming_consortiums': consortium,
+                                      'eap': "PEAP" })
+        interworking_select(dev[0], bssid, "roaming", freq="2412")
+        interworking_connect(dev[0], bssid, "PEAP")
+        check_sp_type(dev[0], "roaming")
         dev[0].request("INTERWORKING_SELECT auto freq=2412")
         ev = dev[0].wait_event(["INTERWORKING-ALREADY-CONNECTED"], timeout=15)
         if ev is None:
