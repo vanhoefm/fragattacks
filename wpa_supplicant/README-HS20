@@ -197,6 +197,11 @@ Credentials can be pre-configured for automatic network selection:
 #	pre-configured with the credential since the NAI Realm information
 #	may not be available or fetched.
 #
+# required_roaming_consortium: Required Roaming Consortium OI
+#	If required_roaming_consortium_len is non-zero, this field contains the
+#	Roaming Consortium OI that is required to be advertised by the AP for
+#	the credential to be considered matching.
+#
 # eap: Pre-configured EAP method
 #	This optional field can be used to specify which EAP method will be
 #	used with this credential. If not set, the EAP method is selected

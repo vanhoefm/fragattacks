@@ -225,7 +225,18 @@ struct wpa_cred {
 	 */
 	size_t roaming_consortium_len;
 
+	/**
+	 * required_roaming_consortium - Required Roaming Consortium OI
+	 *
+	 * If required_roaming_consortium_len is non-zero, this field contains
+	 * the Roaming Consortium OI that is required to be advertised by the AP
+	 * for the credential to be considered matching.
+	 */
 	u8 required_roaming_consortium[15];
+
+	/**
+	 * required_roaming_consortium_len - Length of required_roaming_consortium
+	 */
 	size_t required_roaming_consortium_len;
 
 	/**
