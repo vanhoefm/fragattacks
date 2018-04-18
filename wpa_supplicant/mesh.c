@@ -332,7 +332,8 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 	if (ssid->ht40)
 		conf->secondary_channel = ssid->ht40;
 	if (conf->hw_mode == HOSTAPD_MODE_IEEE80211A && ssid->vht) {
-		conf->vht_oper_chwidth = ssid->max_oper_chwidth;
+		if (ssid->max_oper_chwidth != DEFAULT_MAX_OPER_CHWIDTH)
+			conf->vht_oper_chwidth = ssid->max_oper_chwidth;
 		switch (conf->vht_oper_chwidth) {
 		case VHT_CHANWIDTH_80MHZ:
 		case VHT_CHANWIDTH_80P80MHZ:

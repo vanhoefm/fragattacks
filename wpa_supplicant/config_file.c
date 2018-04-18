@@ -838,7 +838,7 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	INT(vht);
 	INT_DEF(ht, 1);
 	INT(ht40);
-	INT(max_oper_chwidth);
+	INT_DEF(max_oper_chwidth, DEFAULT_MAX_OPER_CHWIDTH);
 	INT(vht_center_freq1);
 	INT(vht_center_freq2);
 	INT(pbss);

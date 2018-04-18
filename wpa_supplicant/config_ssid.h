@@ -39,6 +39,7 @@
 #define DEFAULT_AMPDU_FACTOR -1 /* no change */
 #define DEFAULT_AMPDU_DENSITY -1 /* no change */
 #define DEFAULT_USER_SELECTED_SIM 1
+#define DEFAULT_MAX_OPER_CHWIDTH -1
 
 struct psk_list_entry {
 	struct dl_list list;

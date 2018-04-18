@@ -2903,6 +2903,7 @@ void wpa_config_set_network_defaults(struct wpa_ssid *ssid)
 	ssid->mka_priority = DEFAULT_PRIO_NOT_KEY_SERVER;
 #endif /* CONFIG_MACSEC */
 	ssid->mac_addr = -1;
+	ssid->max_oper_chwidth = DEFAULT_MAX_OPER_CHWIDTH;
 }
 
 
