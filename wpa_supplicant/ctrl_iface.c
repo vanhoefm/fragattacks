@@ -7461,10 +7461,17 @@ static int wpa_supplicant_signal_poll(struct wpa_supplicant *wpa_s, char *buf,
 		pos += ret;
 	}
 
-	if (si.center_frq1 > 0 && si.center_frq2 > 0) {
-		ret = os_snprintf(pos, end - pos,
-				  "CENTER_FRQ1=%d\nCENTER_FRQ2=%d\n",
-				  si.center_frq1, si.center_frq2);
+	if (si.center_frq1 > 0) {
+		ret = os_snprintf(pos, end - pos, "CENTER_FRQ1=%d\n",
+				  si.center_frq1);
+		if (os_snprintf_error(end - pos, ret))
+			return -1;
+		pos += ret;
+	}
+
+	if (si.center_frq2 > 0) {
+		ret = os_snprintf(pos, end - pos, "CENTER_FRQ2=%d\n",
+				  si.center_frq2);
 		if (os_snprintf_error(end - pos, ret))
 			return -1;
 		pos += ret;
