@@ -1481,6 +1481,28 @@ static void hostapd_event_dfs_cac_started(struct hostapd_data *hapd,
 #endif /* NEED_AP_MLME */
 
 
+static void hostapd_event_wds_sta_interface_status(struct hostapd_data *hapd,
+						   int istatus,
+						   const char *ifname,
+						   const u8 *addr)
+{
+	struct sta_info *sta = ap_get_sta(hapd, addr);
+
+	if (sta) {
+		os_free(sta->ifname_wds);
+		if (istatus == INTERFACE_ADDED)
+			sta->ifname_wds = os_strdup(ifname);
+		else
+			sta->ifname_wds = NULL;
+	}
+
+	wpa_msg(hapd->msg_ctx, MSG_INFO, "%sifname=%s sta_addr=" MACSTR,
+		istatus == INTERFACE_ADDED ?
+		WDS_STA_INTERFACE_ADDED : WDS_STA_INTERFACE_REMOVED,
+		ifname, MAC2STR(addr));
+}
+
+
 void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 			  union wpa_event_data *data)
 {
@@ -1694,6 +1716,12 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 						 data->sta_opmode.smps_mode,
 						 data->sta_opmode.chan_width,
 						 data->sta_opmode.rx_nss);
+		break;
+	case EVENT_WDS_STA_INTERFACE_STATUS:
+		hostapd_event_wds_sta_interface_status(
+			hapd, data->wds_sta_interface.istatus,
+			data->wds_sta_interface.ifname,
+			data->wds_sta_interface.sta_addr);
 		break;
 	default:
 		wpa_printf(MSG_DEBUG, "Unknown event %d", event);

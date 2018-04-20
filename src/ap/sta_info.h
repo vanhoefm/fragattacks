@@ -257,6 +257,7 @@ struct sta_info {
 #endif /* CONFIG_OWE */
 
 	u8 *ext_capability;
+	char *ifname_wds; /* WDS ifname, if in use */
 
 #ifdef CONFIG_TESTING_OPTIONS
 	enum wpa_alg last_tk_alg;

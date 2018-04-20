@@ -351,6 +351,10 @@ extern "C" {
 #define STA_OPMODE_SMPS_MODE_CHANGED "STA-OPMODE-SMPS-MODE-CHANGED "
 #define STA_OPMODE_N_SS_CHANGED "STA-OPMODE-N_SS-CHANGED "
 
+/* New interface addition or removal for 4addr WDS SDA */
+#define WDS_STA_INTERFACE_ADDED "WDS-STA-INTERFACE-ADDED "
+#define WDS_STA_INTERFACE_REMOVED "WDS-STA-INTERFACE-REMOVED "
+
 /* BSS command information masks */
 
 #define WPA_BSS_MASK_ALL		0xFFFDFFFF

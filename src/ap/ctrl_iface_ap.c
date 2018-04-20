@@ -334,6 +334,13 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 		len += os_snprintf(buf + len, buflen - len, "\n");
 	}
 
+	if (sta->flags & WLAN_STA_WDS && sta->ifname_wds) {
+		ret = os_snprintf(buf + len, buflen - len,
+				  "wds_sta_ifname=%s\n", sta->ifname_wds);
+		if (!os_snprintf_error(buflen - len, ret))
+			len += ret;
+	}
+
 	return len;
 }
 

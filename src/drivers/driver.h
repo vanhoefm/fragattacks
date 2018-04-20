@@ -4594,6 +4594,13 @@ enum wpa_event_type {
 	 * must be always assumed that the MAC possibly changed.
 	 */
 	EVENT_INTERFACE_MAC_CHANGED,
+
+	/**
+	 * EVENT_WDS_STA_INTERFACE_STATUS - Notify WDS STA interface status
+	 *
+	 * This event is emitted when an interface is added/removed for WDS STA.
+	 */
+	EVENT_WDS_STA_INTERFACE_STATUS,
 };
 
 
@@ -5415,6 +5422,18 @@ union wpa_event_data {
 		enum chan_width chan_width;
 		u8 rx_nss;
 	} sta_opmode;
+
+	/**
+	 * struct wds_sta_interface - Data for EVENT_WDS_STA_INTERFACE_STATUS.
+	 */
+	struct wds_sta_interface {
+		const u8 *sta_addr;
+		const char *ifname;
+		enum {
+			INTERFACE_ADDED,
+			INTERFACE_REMOVED
+		} istatus;
+	} wds_sta_interface;
 };
 
 /**
