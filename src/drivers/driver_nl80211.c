@@ -8051,6 +8051,7 @@ static void nl80211_poll_client(void *priv, const u8 *own_addr, const u8 *addr,
 static int nl80211_set_power_save(struct i802_bss *bss, int enabled)
 {
 	struct nl_msg *msg;
+	int ret;
 
 	if (!(msg = nl80211_bss_msg(bss, 0, NL80211_CMD_SET_POWER_SAVE)) ||
 	    nla_put_u32(msg, NL80211_ATTR_PS_STATE,
@@ -8058,7 +8059,15 @@ static int nl80211_set_power_save(struct i802_bss *bss, int enabled)
 		nlmsg_free(msg);
 		return -ENOBUFS;
 	}
-	return send_and_recv_msgs(bss->drv, msg, NULL, NULL);
+
+	ret = send_and_recv_msgs(bss->drv, msg, NULL, NULL);
+	if (ret < 0) {
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: Setting PS state %s failed: %d (%s)",
+			   enabled ? "enabled" : "disabled",
+			   ret, strerror(-ret));
+	}
+	return ret;
 }
 
 
