@@ -587,6 +587,7 @@ struct hostapd_bss_config {
 	u8 subscr_remediation_method;
 	char *t_c_filename;
 	u32 t_c_timestamp;
+	char *t_c_server_url;
 #endif /* CONFIG_HS20 */
 
 	u8 wps_rf_bands; /* RF bands for WPS (WPS_RF_*) */

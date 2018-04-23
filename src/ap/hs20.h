@@ -18,5 +18,7 @@ int hs20_send_wnm_notification(struct hostapd_data *hapd, const u8 *addr,
 int hs20_send_wnm_notification_deauth_req(struct hostapd_data *hapd,
 					  const u8 *addr,
 					  const struct wpabuf *payload);
+int hs20_send_wnm_notification_t_c(struct hostapd_data *hapd,
+				   const u8 *addr);
 
 #endif /* HS20_H */

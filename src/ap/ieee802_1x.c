@@ -1622,6 +1622,26 @@ static void ieee802_1x_hs20_session_info(struct hostapd_data *hapd,
 	ap_sta_session_warning_timeout(hapd, sta, warning_time);
 }
 
+
+static void ieee802_1x_hs20_t_c_filtering(struct hostapd_data *hapd,
+					  struct sta_info *sta, u8 *pos,
+					  size_t len)
+{
+	if (len < 4)
+		return; /* Malformed information */
+	wpa_printf(MSG_DEBUG,
+		   "HS 2.0: Terms and Conditions filtering %02x %02x %02x %02x",
+		   pos[0], pos[1], pos[2], pos[3]);
+	if (pos[0] & BIT(0)) {
+		wpa_printf(MSG_DEBUG,
+			   "HS 2.0: Terms and Conditions filtering required");
+		sta->hs20_t_c_filtering = 1;
+		/* TODO: Enable firewall filtering for the STA */
+	} else {
+		sta->hs20_t_c_filtering = 0;
+	}
+}
+
 #endif /* CONFIG_HS20 */
 
 
@@ -1668,6 +1688,9 @@ static void ieee802_1x_check_hs20(struct hostapd_data *hapd,
 		case RADIUS_VENDOR_ATTR_WFA_HS20_SESSION_INFO_URL:
 			ieee802_1x_hs20_session_info(hapd, sta, pos, sublen,
 						     session_timeout);
+			break;
+		case RADIUS_VENDOR_ATTR_WFA_HS20_T_C_FILTERING:
+			ieee802_1x_hs20_t_c_filtering(hapd, sta, pos, sublen);
 			break;
 		}
 	}
@@ -2739,6 +2762,13 @@ static void ieee802_1x_wnm_notif_send(void *eloop_ctx, void *timeout_ctx)
 		hs20_send_wnm_notification_deauth_req(hapd, sta->addr,
 						      sta->hs20_deauth_req);
 	}
+
+	if (sta->hs20_t_c_filtering) {
+		wpa_printf(MSG_DEBUG, "HS 2.0: Send WNM-Notification to "
+			   MACSTR " to indicate Terms and Conditions filtering",
+			   MAC2STR(sta->addr));
+		hs20_send_wnm_notification_t_c(hapd, sta->addr);
+	}
 }
 #endif /* CONFIG_HS20 */
 
@@ -2763,7 +2793,8 @@ static void ieee802_1x_finished(struct hostapd_data *hapd,
 		sta->remediation_method = 1; /* SOAP-XML SPP */
 	}
 
-	if (success && (sta->remediation || sta->hs20_deauth_req)) {
+	if (success && (sta->remediation || sta->hs20_deauth_req ||
+			sta->hs20_t_c_filtering)) {
 		wpa_printf(MSG_DEBUG, "HS 2.0: Schedule WNM-Notification to "
 			   MACSTR " in 100 ms", MAC2STR(sta->addr));
 		eloop_cancel_timeout(ieee802_1x_wnm_notif_send, hapd, sta);

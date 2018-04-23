@@ -3634,6 +3634,9 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		bss->t_c_filename = os_strdup(pos);
 	} else if (os_strcmp(buf, "hs20_t_c_timestamp") == 0) {
 		bss->t_c_timestamp = strtol(pos, NULL, 0);
+	} else if (os_strcmp(buf, "hs20_t_c_server_url") == 0) {
+		os_free(bss->t_c_server_url);
+		bss->t_c_server_url = os_strdup(pos);
 #endif /* CONFIG_HS20 */
 #ifdef CONFIG_MBO
 	} else if (os_strcmp(buf, "mbo") == 0) {

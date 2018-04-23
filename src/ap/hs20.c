@@ -175,3 +175,46 @@ int hs20_send_wnm_notification_deauth_req(struct hostapd_data *hapd,
 
 	return ret;
 }
+
+
+int hs20_send_wnm_notification_t_c(struct hostapd_data *hapd,
+				   const u8 *addr)
+{
+	struct wpabuf *buf;
+	int ret;
+	const char *url = hapd->conf->t_c_server_url, *pos;
+	size_t url_len;
+
+	if (!url)
+		return -1;
+	pos = os_strstr(url, "@1@");
+	if (!pos)
+		return -1;
+
+	url_len = os_strlen(url) + ETH_ALEN * 3 - 1 - 3;
+	buf = wpabuf_alloc(4 + 7 + url_len);
+	if (!buf)
+		return -1;
+
+	wpabuf_put_u8(buf, WLAN_ACTION_WNM);
+	wpabuf_put_u8(buf, WNM_NOTIFICATION_REQ);
+	wpabuf_put_u8(buf, 1); /* Dialog token */
+	wpabuf_put_u8(buf, 1); /* Type - 1 reserved for WFA */
+
+	/* Terms and Conditions Acceptance subelement */
+	wpabuf_put_u8(buf, WLAN_EID_VENDOR_SPECIFIC);
+	wpabuf_put_u8(buf, 4 + 1 + url_len);
+	wpabuf_put_be24(buf, OUI_WFA);
+	wpabuf_put_u8(buf, HS20_WNM_T_C_ACCEPTANCE);
+	wpabuf_put_u8(buf, url_len);
+	wpabuf_put_data(buf, url, pos - url);
+	wpabuf_printf(buf, MACSTR, MAC2STR(addr));
+	wpabuf_put_str(buf, pos + 3);
+
+	ret = hostapd_drv_send_action(hapd, hapd->iface->freq, 0, addr,
+				      wpabuf_head(buf), wpabuf_len(buf));
+
+	wpabuf_free(buf);
+
+	return ret;
+}
