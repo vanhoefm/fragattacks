@@ -244,6 +244,19 @@ def test_ap_wds_sta(dev, apdev):
         dev[0].cmd_execute(['ip', 'link', 'set', 'dev', 'wds-br0', 'up'])
         dev[0].cmd_execute(['iw', dev[0].ifname, 'set', '4addr', 'on'])
         dev[0].connect(ssid, psk=passphrase, scan_freq="2412")
+        ev = hapd.wait_event(["WDS-STA-INTERFACE-ADDED"], timeout=10)
+        if ev is None:
+            raise Exception("No WDS-STA-INTERFACE-ADDED event seen")
+        if "sta_addr=" + dev[0].own_addr() not in ev:
+            raise Exception("No sta_addr match in " + ev)
+        if "ifname=" + hapd.ifname + ".sta" not in ev:
+            raise Exception("No ifname match in " + ev)
+        sta = hapd.get_sta(dev[0].own_addr())
+        if "wds_sta_ifname" not in sta:
+            raise Exception("Missing wds_sta_ifname in STA data")
+        if "ifname=" + sta['wds_sta_ifname'] not in ev:
+            raise Exception("wds_sta_ifname %s not in event: %s" %
+                            (sta['wds_sta_ifname'], ev))
         hwsim_utils.test_connectivity_iface(dev[0], hapd, "wds-br0",
                                             max_tries=15)
         dev[0].request("REATTACH")
