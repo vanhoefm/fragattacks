@@ -1232,6 +1232,18 @@ void hs20_rx_deauth_imminent_notice(struct wpa_supplicant *wpa_s, u8 code,
 }
 
 
+void hs20_rx_t_c_acceptance(struct wpa_supplicant *wpa_s, const char *url)
+{
+	if (!wpa_sm_pmf_enabled(wpa_s->wpa)) {
+		wpa_printf(MSG_DEBUG,
+			   "HS 2.0: Ignore Terms and Conditions Acceptance since PMF was not enabled");
+		return;
+	}
+
+	wpa_msg(wpa_s, MSG_INFO, HS20_T_C_ACCEPTANCE "%s", url);
+}
+
+
 void hs20_init(struct wpa_supplicant *wpa_s)
 {
 	dl_list_init(&wpa_s->icon_head);

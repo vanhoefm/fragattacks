@@ -1644,6 +1644,32 @@ static void ieee802_11_rx_wnm_notif_req_wfa(struct wpa_supplicant *wpa_s,
 			pos = next;
 			continue;
 		}
+
+		if (ie == WLAN_EID_VENDOR_SPECIFIC && ie_len >= 5 &&
+		    WPA_GET_BE24(pos) == OUI_WFA &&
+		    pos[3] == HS20_WNM_T_C_ACCEPTANCE) {
+			const u8 *ie_end;
+			u8 url_len;
+			char *url;
+
+			ie_end = pos + ie_len;
+			pos += 4;
+			url_len = *pos++;
+			wpa_printf(MSG_DEBUG,
+				   "WNM: HS 2.0 Terms and Conditions Acceptance (URL Length %u)",
+				   url_len);
+			if (url_len > ie_end - pos)
+				break;
+			url = os_malloc(url_len + 1);
+			if (!url)
+				break;
+			os_memcpy(url, pos, url_len);
+			url[url_len] = '\0';
+			hs20_rx_t_c_acceptance(wpa_s, url);
+			os_free(url);
+			pos = next;
+			continue;
+		}
 #endif /* CONFIG_HS20 */
 
 		pos = next;
