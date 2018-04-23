@@ -382,14 +382,14 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 		return -1;
 #endif /* CONFIG_SUITEB192 || CONFIG_FILS */
 	} else if (wpa_key_mgmt_sha256(akmp) || akmp == WPA_KEY_MGMT_OWE) {
-#if defined(CONFIG_IEEE80211W) || defined(CONFIG_SAE)
+#if defined(CONFIG_IEEE80211W) || defined(CONFIG_SAE) || defined(CONFIG_FILS)
 		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA256)");
 		if (sha256_prf(pmk, pmk_len, label, data, sizeof(data),
 			       tmp, ptk_len) < 0)
 			return -1;
-#else /* CONFIG_IEEE80211W or CONFIG_SAE */
+#else /* CONFIG_IEEE80211W or CONFIG_SAE or CONFIG_FILS */
 		return -1;
-#endif /* CONFIG_IEEE80211W or CONFIG_SAE */
+#endif /* CONFIG_IEEE80211W or CONFIG_SAE or CONFIG_FILS */
 #ifdef CONFIG_DPP
 	} else if (akmp == WPA_KEY_MGMT_DPP && pmk_len == 32) {
 		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA256)");
