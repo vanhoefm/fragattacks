@@ -585,6 +585,8 @@ struct hostapd_bss_config {
 	unsigned int hs20_deauth_req_timeout;
 	char *subscr_remediation_url;
 	u8 subscr_remediation_method;
+	char *t_c_filename;
+	u32 t_c_timestamp;
 #endif /* CONFIG_HS20 */
 
 	u8 wps_rf_bands; /* RF bands for WPS (WPS_RF_*) */

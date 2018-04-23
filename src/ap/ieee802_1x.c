@@ -722,6 +722,31 @@ void ieee802_1x_encapsulate_radius(struct hostapd_data *hapd,
 				   "Could not add HS 2.0 Roaming Consortium");
 			goto fail;
 		}
+
+		if (hapd->conf->t_c_filename) {
+			be32 timestamp;
+
+			if (!radius_msg_add_wfa(
+				    msg,
+				    RADIUS_VENDOR_ATTR_WFA_HS20_T_C_FILENAME,
+				    (const u8 *) hapd->conf->t_c_filename,
+				    os_strlen(hapd->conf->t_c_filename))) {
+				wpa_printf(MSG_ERROR,
+					   "Could not add HS 2.0 T&C Filename");
+				goto fail;
+			}
+
+			timestamp = host_to_be32(hapd->conf->t_c_timestamp);
+			if (!radius_msg_add_wfa(
+				    msg,
+				    RADIUS_VENDOR_ATTR_WFA_HS20_TIMESTAMP,
+				    (const u8 *) &timestamp,
+				    sizeof(timestamp))) {
+				wpa_printf(MSG_ERROR,
+					   "Could not add HS 2.0 Timestamp");
+				goto fail;
+			}
+		}
 	}
 #endif /* CONFIG_HS20 */
 
