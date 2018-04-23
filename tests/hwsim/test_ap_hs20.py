@@ -5722,3 +5722,26 @@ def test_ap_interworking_element_update(dev, apdev):
     logger.info("After update: " + str(bss))
     if '6b09f20208020000000300' not in bss['ie']:
         raise Exception("Expected Interworking element not seen after update")
+
+def test_ap_hs20_terms_and_conditions(dev, apdev):
+    """Hotspot 2.0 Terms and Conditions signaling"""
+    check_eap_capa(dev[0], "MSCHAPV2")
+    bssid = apdev[0]['bssid']
+    params = hs20_ap_params()
+    params['hessid'] = bssid
+    params['hs20_t_c_filename'] = 'terms-and-conditions'
+    params['hs20_t_c_timestamp'] = '123456789'
+    params['hs20_t_c_server_url'] = 'https://example.com/t_and_c?addr=@1@&ap=123'
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].hs20_enable()
+    dev[0].connect("test-hs20", proto="RSN", key_mgmt="WPA-EAP", eap="TTLS",
+                   identity="hs20-t-c-test", password="password",
+                   ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                   ieee80211w='2', scan_freq="2412")
+    ev = dev[0].wait_event(["HS20-T-C-ACCEPTANCE"], timeout=5)
+    if ev is None:
+        raise Exception("Terms and Conditions Acceptance notification not received")
+    url = "https://example.com/t_and_c?addr=%s&ap=123" % dev[0].own_addr()
+    if url not in ev:
+        raise Exception("Unexpected URL: " + ev)
