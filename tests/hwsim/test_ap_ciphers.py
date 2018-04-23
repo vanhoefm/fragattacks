@@ -15,6 +15,7 @@ import hwsim_utils
 import hostapd
 from utils import HwsimSkip, skip_with_fips, require_under_vm
 from wlantest import Wlantest
+from wpasupplicant import WpaSupplicant
 
 def check_cipher(dev, ap, cipher, group_cipher=None):
     if cipher not in dev.get_capability("pairwise"):
@@ -299,6 +300,64 @@ def test_ap_cipher_gcmp_256_group_ccmp_256(dev, apdev):
 def test_ap_cipher_gcmp_256_group_ccmp(dev, apdev):
     """WPA2-PSK/GCMP-256 connection with group cipher override CCMP"""
     check_cipher(dev[0], apdev[0], "GCMP-256", "CCMP")
+
+def test_ap_cipher_gcmp_ccmp(dev, apdev, params):
+    """WPA2-PSK/GCMP/CCMP ciphers"""
+    config = os.path.join(params['logdir'], 'ap_cipher_gcmp_ccmp.conf')
+
+    for cipher in [ "CCMP", "GCMP", "CCMP-256", "GCMP-256" ]:
+        if cipher not in dev[0].get_capability("pairwise"):
+            raise HwsimSkip("Cipher %s not supported" % cipher)
+        if cipher not in dev[0].get_capability("group"):
+            raise HwsimSkip("Group cipher %s not supported" % cipher)
+
+    params = { "ssid": "test-wpa2-psk",
+               "wpa_passphrase": "12345678",
+               "wpa": "2",
+               "wpa_key_mgmt": "WPA-PSK",
+               "rsn_pairwise": "CCMP GCMP CCMP-256 GCMP-256" }
+    hapd = hostapd.add_ap(apdev[0], params)
+
+
+    for cipher in [ "CCMP", "GCMP", "CCMP-256", "GCMP-256" ]:
+        dev[0].connect("test-wpa2-psk", psk="12345678",
+                       pairwise=cipher, group="CCMP", scan_freq="2412")
+        if dev[0].get_status_field("group_cipher") != "CCMP":
+            raise Exception("Unexpected group_cipher")
+        if dev[0].get_status_field("pairwise_cipher") != cipher:
+            raise Exception("Unexpected pairwise_cipher")
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].wait_disconnected()
+
+    dev[0].connect("test-wpa2-psk", psk="12345678",
+                   pairwise="CCMP CCMP-256 GCMP GCMP-256",
+                   group="CCMP CCMP-256 GCMP GCMP-256", scan_freq="2412")
+    if dev[0].get_status_field("group_cipher") != "CCMP":
+        raise Exception("Unexpected group_cipher")
+    res = dev[0].get_status_field("pairwise_cipher")
+    if res != "CCMP-256" and res != "GCMP-256":
+        raise Exception("Unexpected pairwise_cipher")
+
+    try:
+        with open(config, "w") as f:
+            f.write("network={\n" +
+                    "\tssid=\"test-wpa2-psk\"\n" +
+                    "\tkey_mgmt=WPA-PSK\n" +
+                    "\tpsk=\"12345678\"\n" +
+                    "\tpairwise=GCMP\n" +
+                    "\tgroup=CCMP\n" +
+                    "\tscan_freq=2412\n" +
+                    "}\n")
+
+        wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+        wpas.interface_add("wlan5", config=config)
+        wpas.wait_connected()
+        if wpas.get_status_field("group_cipher") != "CCMP":
+            raise Exception("Unexpected group_cipher")
+        if wpas.get_status_field("pairwise_cipher") != "GCMP":
+            raise Exception("Unexpected pairwise_cipher")
+    finally:
+        os.remove(config)
 
 @remote_compatible
 def test_ap_cipher_mixed_wpa_wpa2(dev, apdev):
