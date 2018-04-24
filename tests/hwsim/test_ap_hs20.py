@@ -5745,3 +5745,76 @@ def test_ap_hs20_terms_and_conditions(dev, apdev):
     url = "https://example.com/t_and_c?addr=%s&ap=123" % dev[0].own_addr()
     if url not in ev:
         raise Exception("Unexpected URL: " + ev)
+
+def test_ap_hs20_terms_and_conditions_coa(dev, apdev):
+    """Hotspot 2.0 Terms and Conditions signaling - CoA"""
+    try:
+        import pyrad.client
+        import pyrad.packet
+        import pyrad.dictionary
+        import radius_das
+    except ImportError:
+        raise HwsimSkip("No pyrad modules available")
+
+    check_eap_capa(dev[0], "MSCHAPV2")
+    bssid = apdev[0]['bssid']
+    params = hs20_ap_params()
+    params['hessid'] = bssid
+    params['hs20_t_c_filename'] = 'terms-and-conditions'
+    params['hs20_t_c_timestamp'] = '123456789'
+    params['hs20_t_c_server_url'] = 'https://example.com/t_and_c?addr=@1@&ap=123'
+    params['own_ip_addr'] = "127.0.0.1"
+    params['radius_das_port'] = "3799"
+    params['radius_das_client'] = "127.0.0.1 secret"
+    params['radius_das_require_event_timestamp'] = "1"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].hs20_enable()
+    dev[0].connect("test-hs20", proto="RSN", key_mgmt="WPA-EAP", eap="TTLS",
+                   identity="hs20-t-c-test", password="password",
+                   ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                   ieee80211w='2', scan_freq="2412")
+
+    ev = hapd.wait_event(["HS20-T-C-FILTERING-ADD"], timeout=5)
+    if ev is None:
+        raise Exception("Terms and Conditions filtering not enabled")
+    if ev.split(' ')[1] != dev[0].own_addr():
+        raise Exception("Unexpected STA address for filtering: " + ev)
+
+    ev = dev[0].wait_event(["HS20-T-C-ACCEPTANCE"], timeout=5)
+    if ev is None:
+        raise Exception("Terms and Conditions Acceptance notification not received")
+    url = "https://example.com/t_and_c?addr=%s&ap=123" % dev[0].own_addr()
+    if url not in ev:
+        raise Exception("Unexpected URL: " + ev)
+
+    dict = pyrad.dictionary.Dictionary("dictionary.radius")
+
+    srv = pyrad.client.Client(server="127.0.0.1", acctport=3799,
+                              secret="secret", dict=dict)
+    srv.retries = 1
+    srv.timeout = 1
+
+    sta = hapd.get_sta(dev[0].own_addr())
+    multi_sess_id = sta['authMultiSessionId']
+
+    logger.info("CoA-Request with matching Acct-Session-Id")
+    vsa = binascii.unhexlify('00009f68090600000000')
+    req = radius_das.CoAPacket(dict=dict, secret="secret",
+                               NAS_IP_Address="127.0.0.1",
+                               Acct_Multi_Session_Id=multi_sess_id,
+                               Chargeable_User_Identity="hs20-cui",
+                               Event_Timestamp=int(time.time()),
+                               Vendor_Specific=vsa)
+    reply = srv.SendPacket(req)
+    logger.debug("RADIUS response from hostapd")
+    for i in reply.keys():
+        logger.debug("%s: %s" % (i, reply[i]))
+    if reply.code != pyrad.packet.CoAACK:
+        raise Exception("CoA-Request failed")
+
+    ev = hapd.wait_event(["HS20-T-C-FILTERING-REMOVE"], timeout=5)
+    if ev is None:
+        raise Exception("Terms and Conditions filtering not disabled")
+    if ev.split(' ')[1] != dev[0].own_addr():
+        raise Exception("Unexpected STA address for filtering: " + ev)

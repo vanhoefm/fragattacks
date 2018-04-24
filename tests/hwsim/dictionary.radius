@@ -2,6 +2,7 @@ ATTRIBUTE	User-Name		1	string
 ATTRIBUTE	User-Password		2	string
 ATTRIBUTE	NAS-IP-Address		4	ipaddr
 ATTRIBUTE	State			24	octets
+ATTRIBUTE	Vendor-Specific		26	octets
 ATTRIBUTE	Session-Timeout		27	integer
 ATTRIBUTE	Calling-Station-Id	31	string
 ATTRIBUTE	NAS-Identifier		32	string
