@@ -445,6 +445,14 @@ enum qca_radiotap_vendor_ids {
  * @QCA_NL80211_VENDOR_SUBCMD_WIFI_TEST_CONFIGURATION: Sub command to set WiFi
  * 	test configuration. Attributes for this command are defined in
  * 	enum qca_wlan_vendor_attr_wifi_test_config.
+ *
+ * @QCA_NL80211_VENDOR_SUBCMD_BSS_FILTER: This command is used to configure an
+ *	RX filter to receive frames from stations that are active on the
+ *	operating channel, but not associated with the local device (e.g., STAs
+ *	associated with other APs). Filtering is done based on a list of BSSIDs
+ *	and STA MAC addresses added by the user. This command is also used to
+ *	fetch the statistics of unassociated stations. The attributes used with
+ *	this command are defined in enum qca_wlan_vendor_attr_bss_filter.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -602,6 +610,8 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_THERMAL_EVENT = 168,
 	/* Wi-Fi test configuration subcommand */
 	QCA_NL80211_VENDOR_SUBCMD_WIFI_TEST_CONFIGURATION = 169,
+	/* Frame filter operations for other BSSs/unassociated STAs */
+	QCA_NL80211_VENDOR_SUBCMD_BSS_FILTER = 170,
 };
 
 
@@ -5372,6 +5382,105 @@ enum qca_wlan_vendor_attr_wifi_test_config {
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_MAX =
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_AFTER_LAST - 1,
+};
+
+/**
+ * enum qca_wlan_vendor_attr_bss_filter - Used by the vendor command
+ * QCA_NL80211_VENDOR_SUBCMD_BSS_FILTER.
+ * The user can add/delete the filter by specifying the BSSID/STA MAC address in
+ * QCA_WLAN_VENDOR_ATTR_BSS_FILTER_MAC_ADDR, filter type in
+ * QCA_WLAN_VENDOR_ATTR_BSS_FILTER_TYPE, add/delete action in
+ * QCA_WLAN_VENDOR_ATTR_BSS_FILTER_ACTION in the request. The user can get the
+ * statistics of an unassociated station by specifying the MAC address in
+ * QCA_WLAN_VENDOR_ATTR_BSS_FILTER_MAC_ADDR, station type in
+ * QCA_WLAN_VENDOR_ATTR_BSS_FILTER_TYPE, GET action in
+ * QCA_WLAN_VENDOR_ATTR_BSS_FILTER_ACTION in the request. The user also can get
+ * the statistics of all unassociated stations by specifying the Broadcast MAC
+ * address (ff:ff:ff:ff:ff:ff) in QCA_WLAN_VENDOR_ATTR_BSS_FILTER_MAC_ADDR with
+ * above procedure. In the response, driver shall specify statistics
+ * information nested in QCA_WLAN_VENDOR_ATTR_BSS_FILTER_STA_STATS.
+ */
+enum qca_wlan_vendor_attr_bss_filter {
+	QCA_WLAN_VENDOR_ATTR_BSS_FILTER_INVALID = 0,
+	QCA_WLAN_VENDOR_ATTR_BSS_FILTER_MAC_ADDR = 1,
+	/* Other BSS filter type, unsigned 8 bit value. One of the values
+	 * in enum qca_wlan_vendor_bss_filter_type.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BSS_FILTER_TYPE = 2,
+	/* Other BSS filter action, unsigned 8 bit value. One of the values
+	 * in enum qca_wlan_vendor_bss_filter_action.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BSS_FILTER_ACTION = 3,
+	/* Array of nested attributes where each entry is the statistics
+	 * information of the specified station that belong to another BSS.
+	 * Attributes for each entry are taken from enum
+	 * qca_wlan_vendor_bss_filter_sta_stats.
+	 * Other BSS station configured in
+	 * QCA_NL80211_VENDOR_SUBCMD_BSS_FILTER with filter type
+	 * QCA_WLAN_VENDOR_BSS_FILTER_TYPE_STA.
+	 * Statistics returned by QCA_NL80211_VENDOR_SUBCMD_BSS_FILTER
+	 * with filter action QCA_WLAN_VENDOR_BSS_FILTER_ACTION_GET.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BSS_FILTER_STA_STATS = 4,
+
+	/* keep last */
+	QCA_WLAN_VENDOR_ATTR_BSS_FILTER_AFTER_LAST,
+	QCA_WLAN_VENDOR_ATTR_BSS_FILTER_MAX =
+	QCA_WLAN_VENDOR_ATTR_BSS_FILTER_AFTER_LAST - 1,
+};
+
+/**
+ * enum qca_wlan_vendor_bss_filter_type - Type of
+ * filter used in other BSS filter operations. Used by the vendor command
+ * QCA_NL80211_VENDOR_SUBCMD_BSS_FILTER.
+ *
+ * @QCA_WLAN_VENDOR_BSS_FILTER_TYPE_BSSID: BSSID filter
+ * @QCA_WLAN_VENDOR_BSS_FILTER_TYPE_STA: Station MAC address filter
+ */
+enum qca_wlan_vendor_bss_filter_type {
+	QCA_WLAN_VENDOR_BSS_FILTER_TYPE_BSSID,
+	QCA_WLAN_VENDOR_BSS_FILTER_TYPE_STA,
+};
+
+/**
+ * enum qca_wlan_vendor_bss_filter_action - Type of
+ * action in other BSS filter operations. Used by the vendor command
+ * QCA_NL80211_VENDOR_SUBCMD_BSS_FILTER.
+ *
+ * @QCA_WLAN_VENDOR_BSS_FILTER_ACTION_ADD: Add filter
+ * @QCA_WLAN_VENDOR_BSS_FILTER_ACTION_DEL: Delete filter
+ * @QCA_WLAN_VENDOR_BSS_FILTER_ACTION_GET: Get the statistics
+ */
+enum qca_wlan_vendor_bss_filter_action {
+	QCA_WLAN_VENDOR_BSS_FILTER_ACTION_ADD,
+	QCA_WLAN_VENDOR_BSS_FILTER_ACTION_DEL,
+	QCA_WLAN_VENDOR_BSS_FILTER_ACTION_GET,
+};
+
+/**
+ * enum qca_wlan_vendor_bss_filter_sta_stats - Attributes for
+ * the statistics of a specific unassociated station belonging to another BSS.
+ * The statistics provides information of the unassociated station
+ * filtered by other BSS operation - such as MAC, signal value.
+ * Used by the vendor command QCA_NL80211_VENDOR_SUBCMD_BSS_FILTER.
+ *
+ * @QCA_WLAN_VENDOR_BSS_FILTER_STA_STATS_MAC: MAC address of the station.
+ * @QCA_WLAN_VENDOR_BSS_FILTER_STA_STATS_RSSI: Last received signal strength
+ *	of the station. Unsigned 8 bit number containing RSSI.
+ * @QCA_WLAN_VENDOR_BSS_FILTER_STA_STATS_RSSI_TS: Time stamp of the host
+ *	driver for the last received RSSI. Unsigned 64 bit number containing
+ *	nanoseconds from the boottime.
+ */
+enum qca_wlan_vendor_bss_filter_sta_stats {
+	QCA_WLAN_VENDOR_BSS_FILTER_STA_STATS_INVALID = 0,
+	QCA_WLAN_VENDOR_BSS_FILTER_STA_STATS_MAC = 1,
+	QCA_WLAN_VENDOR_BSS_FILTER_STA_STATS_RSSI = 2,
+	QCA_WLAN_VENDOR_BSS_FILTER_STA_STATS_RSSI_TS = 3,
+
+	/* keep last */
+	QCA_WLAN_VENDOR_BSS_FILTER_STA_STATS_AFTER_LAST,
+	QCA_WLAN_VENDOR_BSS_FILTER_STA_STATS_MAX =
+	QCA_WLAN_VENDOR_BSS_FILTER_STA_STATS_AFTER_LAST - 1
 };
 
 #endif /* QCA_VENDOR_H */
