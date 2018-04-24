@@ -1225,6 +1225,7 @@ struct wpa_supplicant {
 #ifdef CONFIG_FILS
 	unsigned int disable_fils:1;
 #endif /* CONFIG_FILS */
+	unsigned int ieee80211ac:1;
 };
 
 

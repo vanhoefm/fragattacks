@@ -319,6 +319,7 @@ void wpa_supplicant_mark_disassoc(struct wpa_supplicant *wpa_s)
 	wpa_s->last_tk_alg = WPA_ALG_NONE;
 	os_memset(wpa_s->last_tk, 0, sizeof(wpa_s->last_tk));
 #endif /* CONFIG_TESTING_OPTIONS */
+	wpa_s->ieee80211ac = 0;
 }
 
 
@@ -2300,6 +2301,10 @@ static int wpa_supplicant_event_associnfo(struct wpa_supplicant *wpa_s,
 		interworking_process_assoc_resp(wpa_s, data->assoc_info.resp_ies,
 						data->assoc_info.resp_ies_len);
 #endif /* CONFIG_INTERWORKING */
+		if (wpa_s->hw_capab == CAPAB_VHT &&
+		    get_ie(data->assoc_info.resp_ies,
+			   data->assoc_info.resp_ies_len, WLAN_EID_VHT_CAP))
+			wpa_s->ieee80211ac = 1;
 	}
 	if (data->assoc_info.beacon_ies)
 		wpa_hexdump(MSG_DEBUG, "beacon_ies",
