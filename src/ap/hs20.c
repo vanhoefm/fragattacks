@@ -11,9 +11,11 @@
 
 #include "common.h"
 #include "common/ieee802_11_defs.h"
+#include "common/wpa_ctrl.h"
 #include "hostapd.h"
 #include "ap_config.h"
 #include "ap_drv_ops.h"
+#include "sta_info.h"
 #include "hs20.h"
 
 
@@ -217,4 +219,27 @@ int hs20_send_wnm_notification_t_c(struct hostapd_data *hapd,
 	wpabuf_free(buf);
 
 	return ret;
+}
+
+
+void hs20_t_c_filtering(struct hostapd_data *hapd, struct sta_info *sta,
+			int enabled)
+{
+	if (enabled) {
+		wpa_printf(MSG_DEBUG,
+			   "HS 2.0: Terms and Conditions filtering required for "
+			   MACSTR, MAC2STR(sta->addr));
+		sta->hs20_t_c_filtering = 1;
+		/* TODO: Enable firewall filtering for the STA */
+		wpa_msg(hapd->msg_ctx, MSG_INFO, HS20_T_C_FILTERING_ADD MACSTR,
+			MAC2STR(sta->addr));
+	} else {
+		wpa_printf(MSG_DEBUG,
+			   "HS 2.0: Terms and Conditions filtering not required for "
+			   MACSTR, MAC2STR(sta->addr));
+		sta->hs20_t_c_filtering = 0;
+		/* TODO: Disable firewall filtering for the STA */
+		wpa_msg(hapd->msg_ctx, MSG_INFO,
+			HS20_T_C_FILTERING_REMOVE MACSTR, MAC2STR(sta->addr));
+	}
 }

@@ -1632,14 +1632,7 @@ static void ieee802_1x_hs20_t_c_filtering(struct hostapd_data *hapd,
 	wpa_printf(MSG_DEBUG,
 		   "HS 2.0: Terms and Conditions filtering %02x %02x %02x %02x",
 		   pos[0], pos[1], pos[2], pos[3]);
-	if (pos[0] & BIT(0)) {
-		wpa_printf(MSG_DEBUG,
-			   "HS 2.0: Terms and Conditions filtering required");
-		sta->hs20_t_c_filtering = 1;
-		/* TODO: Enable firewall filtering for the STA */
-	} else {
-		sta->hs20_t_c_filtering = 0;
-	}
+	hs20_t_c_filtering(hapd, sta, pos[0] & BIT(0));
 }
 
 #endif /* CONFIG_HS20 */

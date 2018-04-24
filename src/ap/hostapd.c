@@ -49,6 +49,7 @@
 #include "rrm.h"
 #include "fils_hlp.h"
 #include "acs.h"
+#include "hs20.h"
 
 
 static int hostapd_flush_old_stations(struct hostapd_data *hapd, u16 reason);
@@ -900,6 +901,48 @@ hostapd_das_disconnect(void *ctx, struct radius_das_attrs *attr)
 	return RADIUS_DAS_SUCCESS;
 }
 
+
+#ifdef CONFIG_HS20
+static enum radius_das_res
+hostapd_das_coa(void *ctx, struct radius_das_attrs *attr)
+{
+	struct hostapd_data *hapd = ctx;
+	struct sta_info *sta;
+	int multi;
+
+	if (hostapd_das_nas_mismatch(hapd, attr))
+		return RADIUS_DAS_NAS_MISMATCH;
+
+	sta = hostapd_das_find_sta(hapd, attr, &multi);
+	if (!sta) {
+		if (multi) {
+			wpa_printf(MSG_DEBUG,
+				   "RADIUS DAS: Multiple sessions match - not supported");
+			return RADIUS_DAS_MULTI_SESSION_MATCH;
+		}
+		wpa_printf(MSG_DEBUG, "RADIUS DAS: No matching session found");
+		return RADIUS_DAS_SESSION_NOT_FOUND;
+	}
+
+	wpa_printf(MSG_DEBUG, "RADIUS DAS: Found a matching session " MACSTR
+		   " - CoA", MAC2STR(sta->addr));
+
+	if (attr->hs20_t_c_filtering) {
+		if (attr->hs20_t_c_filtering[0] & BIT(0)) {
+			wpa_printf(MSG_DEBUG,
+				   "HS 2.0: Unexpected Terms and Conditions filtering required in CoA-Request");
+			return RADIUS_DAS_COA_FAILED;
+		}
+
+		hs20_t_c_filtering(hapd, sta, 0);
+	}
+
+	return RADIUS_DAS_SUCCESS;
+}
+#else /* CONFIG_HS20 */
+#define hostapd_das_coa NULL
+#endif /* CONFIG_HS20 */
+
 #endif /* CONFIG_NO_RADIUS */
 
 
@@ -1074,6 +1117,7 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
 			conf->radius_das_require_message_authenticator;
 		das_conf.ctx = hapd;
 		das_conf.disconnect = hostapd_das_disconnect;
+		das_conf.coa = hostapd_das_coa;
 		hapd->radius_das = radius_das_init(&das_conf);
 		if (hapd->radius_das == NULL) {
 			wpa_printf(MSG_ERROR, "RADIUS DAS initialization "
