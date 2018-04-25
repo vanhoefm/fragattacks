@@ -4230,6 +4230,7 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		ap_rx_from_unknown_sta(wpa_s, data->rx_from_unknown.addr,
 				       data->rx_from_unknown.wds);
 		break;
+#endif /* CONFIG_AP */
 	case EVENT_CH_SWITCH:
 		if (!data || !wpa_s->current_ssid)
 			break;
@@ -4246,6 +4247,7 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		wpa_s->assoc_freq = data->ch_switch.freq;
 		wpa_s->current_ssid->frequency = data->ch_switch.freq;
 
+#ifdef CONFIG_AP
 		if (wpa_s->current_ssid->mode == WPAS_MODE_AP ||
 		    wpa_s->current_ssid->mode == WPAS_MODE_P2P_GO ||
 		    wpa_s->current_ssid->mode ==
@@ -4257,9 +4259,11 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 					  data->ch_switch.cf1,
 					  data->ch_switch.cf2);
 		}
+#endif /* CONFIG_AP */
 
 		wpas_p2p_update_channel_list(wpa_s, WPAS_P2P_CHANNEL_UPDATE_CS);
 		break;
+#ifdef CONFIG_AP
 #ifdef NEED_AP_MLME
 	case EVENT_DFS_RADAR_DETECTED:
 		if (data)
