@@ -5818,3 +5818,134 @@ def test_ap_hs20_terms_and_conditions_coa(dev, apdev):
         raise Exception("Terms and Conditions filtering not disabled")
     if ev.split(' ')[1] != dev[0].own_addr():
         raise Exception("Unexpected STA address for filtering: " + ev)
+
+def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
+    """Hotspot 2.0 Terms and Conditions using SQLite for user DB"""
+    check_eap_capa(dev[0], "MSCHAPV2")
+    try:
+        import sqlite3
+    except ImportError:
+        raise HwsimSkip("No sqlite3 module available")
+    dbfile = os.path.join(params['logdir'], "eap-user.db")
+    try:
+        os.remove(dbfile)
+    except:
+        pass
+    con = sqlite3.connect(dbfile)
+    with con:
+        cur = con.cursor()
+        cur.execute("CREATE TABLE users(identity TEXT PRIMARY KEY, methods TEXT, password TEXT, remediation TEXT, phase2 INTEGER, t_c_timestamp INTEGER)")
+        cur.execute("CREATE TABLE wildcards(identity TEXT PRIMARY KEY, methods TEXT)")
+        cur.execute("INSERT INTO users(identity,methods,password,phase2) VALUES ('user-mschapv2','TTLS-MSCHAPV2','password',1)")
+        cur.execute("INSERT INTO wildcards(identity,methods) VALUES ('','TTLS,TLS')")
+        cur.execute("CREATE TABLE authlog(timestamp TEXT, session TEXT, nas_ip TEXT, username TEXT, note TEXT)")
+
+    try:
+        params = { "ssid": "as", "beacon_int": "2000",
+                   "radius_server_clients": "auth_serv/radius_clients.conf",
+                   "radius_server_auth_port": '18128',
+                   "eap_server": "1",
+                   "eap_user_file": "sqlite:" + dbfile,
+                   "ca_cert": "auth_serv/ca.pem",
+                   "server_cert": "auth_serv/server.pem",
+                   "private_key": "auth_serv/server.key" }
+        hostapd.add_ap(apdev[1], params)
+
+        bssid = apdev[0]['bssid']
+        params = hs20_ap_params()
+        params['auth_server_port'] = "18128"
+        params['hs20_t_c_filename'] = 'terms-and-conditions'
+        params['hs20_t_c_timestamp'] = '123456789'
+        params['hs20_t_c_server_url'] = 'https://example.com/t_and_c?addr=@1@&ap=123'
+        params['own_ip_addr'] = "127.0.0.1"
+        params['radius_das_port'] = "3799"
+        params['radius_das_client'] = "127.0.0.1 secret"
+        params['radius_das_require_event_timestamp'] = "1"
+        params['disable_pmksa_caching'] = '1'
+        hapd = hostapd.add_ap(apdev[0], params)
+
+        dev[0].request("SET pmf 1")
+        dev[0].hs20_enable()
+        id = dev[0].add_cred_values({ 'realm': "example.com",
+                                      'username': "user-mschapv2",
+                                      'password': "password",
+                                      'ca_cert': "auth_serv/ca.pem" })
+        interworking_select(dev[0], bssid, freq="2412")
+        interworking_connect(dev[0], bssid, "TTLS")
+
+        ev = hapd.wait_event(["HS20-T-C-FILTERING-ADD"], timeout=5)
+        if ev is None:
+            raise Exception("Terms and Conditions filtering not enabled")
+        hapd.dump_monitor()
+
+        ev = dev[0].wait_event(["HS20-T-C-ACCEPTANCE"], timeout=5)
+        if ev is None:
+            raise Exception("Terms and Conditions Acceptance notification not received")
+        dev[0].dump_monitor()
+
+        dev[0].request("DISCONNECT")
+        dev[0].wait_disconnected()
+        dev[0].dump_monitor()
+
+        # Simulate T&C server operation on user reading the updated version
+        with con:
+            cur = con.cursor()
+            cur.execute("UPDATE users SET t_c_timestamp=123456789 WHERE identity='user-mschapv2'")
+
+        dev[0].request("RECONNECT")
+        dev[0].wait_connected()
+
+        ev = hapd.wait_event(["HS20-T-C-FILTERING-ADD"], timeout=0.1)
+        if ev is not None:
+            raise Exception("Terms and Conditions filtering enabled unexpectedly")
+        hapd.dump_monitor()
+
+        ev = dev[0].wait_event(["HS20-T-C-ACCEPTANCE"], timeout=0.1)
+        if ev is not None:
+            raise Exception("Unexpected Terms and Conditions Acceptance notification")
+        dev[0].dump_monitor()
+
+        dev[0].request("DISCONNECT")
+        dev[0].wait_disconnected()
+        dev[0].dump_monitor()
+
+        # New T&C available
+        hapd.set('hs20_t_c_timestamp', '123456790')
+
+        dev[0].request("RECONNECT")
+        dev[0].wait_connected()
+
+        ev = hapd.wait_event(["HS20-T-C-FILTERING-ADD"], timeout=5)
+        if ev is None:
+            raise Exception("Terms and Conditions filtering not enabled")
+        hapd.dump_monitor()
+
+        ev = dev[0].wait_event(["HS20-T-C-ACCEPTANCE"], timeout=5)
+        if ev is None:
+            raise Exception("Terms and Conditions Acceptance notification not received (2)")
+        dev[0].dump_monitor()
+
+        dev[0].request("DISCONNECT")
+        dev[0].wait_disconnected()
+        dev[0].dump_monitor()
+
+        # Simulate T&C server operation on user reading the updated version
+        with con:
+            cur = con.cursor()
+            cur.execute("UPDATE users SET t_c_timestamp=123456790 WHERE identity='user-mschapv2'")
+
+        dev[0].request("RECONNECT")
+        dev[0].wait_connected()
+
+        ev = hapd.wait_event(["HS20-T-C-FILTERING-ADD"], timeout=0.1)
+        if ev is not None:
+            raise Exception("Terms and Conditions filtering enabled unexpectedly")
+        hapd.dump_monitor()
+
+        ev = dev[0].wait_event(["HS20-T-C-ACCEPTANCE"], timeout=0.1)
+        if ev is not None:
+            raise Exception("Unexpected Terms and Conditions Acceptance notification (2)")
+        dev[0].dump_monitor()
+    finally:
+        os.remove(dbfile)
+        dev[0].request("SET pmf 0")
