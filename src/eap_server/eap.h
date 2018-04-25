@@ -38,6 +38,7 @@ struct eap_user {
 	int ttls_auth; /* bitfield of
 			* EAP_TTLS_AUTH_{PAP,CHAP,MSCHAP,MSCHAPV2} */
 	struct hostapd_radius_attr *accept_attr;
+	u32 t_c_timestamp;
 };
 
 struct eap_eapol_interface {

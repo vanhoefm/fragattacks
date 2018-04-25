@@ -83,6 +83,7 @@ static int hostapd_radius_get_eap_user(void *ctx, const u8 *identity,
 	user->ttls_auth = eap_user->ttls_auth;
 	user->remediation = eap_user->remediation;
 	user->accept_attr = eap_user->accept_attr;
+	user->t_c_timestamp = eap_user->t_c_timestamp;
 	rv = 0;
 
 out:

@@ -3,7 +3,8 @@ CREATE TABLE users(
 	methods TEXT,
 	password TEXT,
 	remediation TEXT,
-	phase2 INTEGER
+	phase2 INTEGER,
+	t_c_timestamp INTEGER
 );
 
 CREATE TABLE wildcards(

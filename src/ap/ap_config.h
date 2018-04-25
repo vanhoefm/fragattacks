@@ -169,6 +169,7 @@ struct hostapd_eap_user {
 	unsigned int macacl:1;
 	int ttls_auth; /* EAP_TTLS_AUTH_* bitfield */
 	struct hostapd_radius_attr *accept_attr;
+	u32 t_c_timestamp;
 };
 
 struct hostapd_radius_attr {

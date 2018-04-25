@@ -92,8 +92,11 @@ struct radius_session {
 
 	unsigned int remediation:1;
 	unsigned int macacl:1;
+	unsigned int t_c_filtering:1;
 
 	struct hostapd_radius_attr *accept_attr;
+
+	u32 t_c_timestamp; /* Last read T&C timestamp from user DB */
 };
 
 /**
@@ -821,6 +824,16 @@ radius_server_encapsulate_eap(struct radius_server_data *data,
 			RADIUS_DEBUG("Failed to add WFA-HS20-SubscrRem");
 		}
 	}
+
+	if (code == RADIUS_CODE_ACCESS_ACCEPT && sess->t_c_filtering) {
+		u8 buf[4] = { 0x01, 0x00, 0x00, 0x00 }; /* E=1 */
+
+		if (!radius_msg_add_wfa(
+			    msg, RADIUS_VENDOR_ATTR_WFA_HS20_T_C_FILTERING,
+			    buf, sizeof(buf))) {
+			RADIUS_DEBUG("Failed to add WFA-HS20-T-C-Filtering");
+		}
+	}
 #endif /* CONFIG_HS20 */
 
 	if (radius_msg_copy_attr(msg, request, RADIUS_ATTR_PROXY_STATE) < 0) {
@@ -1003,6 +1016,51 @@ static int radius_server_reject(struct radius_server_data *data,
 }
 
 
+static void radius_server_hs20_t_c_check(struct radius_session *sess,
+					 struct radius_msg *msg)
+{
+#ifdef CONFIG_HS20
+	u8 *buf, *pos, *end, type, sublen, *timestamp = NULL;
+	size_t len;
+
+	buf = NULL;
+	for (;;) {
+		if (radius_msg_get_attr_ptr(msg, RADIUS_ATTR_VENDOR_SPECIFIC,
+					    &buf, &len, buf) < 0)
+			break;
+		if (len < 6)
+			continue;
+		pos = buf;
+		end = buf + len;
+		if (WPA_GET_BE32(pos) != RADIUS_VENDOR_ID_WFA)
+			continue;
+		pos += 4;
+
+		type = *pos++;
+		sublen = *pos++;
+		if (sublen < 2)
+			continue; /* invalid length */
+		sublen -= 2; /* skip header */
+		if (pos + sublen > end)
+			continue; /* invalid WFA VSA */
+
+		if (type == RADIUS_VENDOR_ATTR_WFA_HS20_TIMESTAMP && len >= 4) {
+			timestamp = pos;
+			break;
+		}
+	}
+
+	if (!timestamp)
+		return;
+	RADIUS_DEBUG("HS20-Timestamp: %u", WPA_GET_BE32(timestamp));
+	if (sess->t_c_timestamp != WPA_GET_BE32(timestamp)) {
+		RADIUS_DEBUG("Last read T&C timestamp does not match HS20-Timestamp --> require filtering");
+		sess->t_c_filtering = 1;
+	}
+#endif /* CONFIG_HS20 */
+}
+
+
 static int radius_server_request(struct radius_server_data *data,
 				 struct radius_msg *msg,
 				 struct sockaddr *from, socklen_t fromlen,
@@ -1137,6 +1195,9 @@ static int radius_server_request(struct radius_server_data *data,
 		srv_log(sess, "EAP authentication failed");
 	else if (sess->eap_if->eapSuccess)
 		srv_log(sess, "EAP authentication succeeded");
+
+	if (sess->eap_if->eapSuccess)
+		radius_server_hs20_t_c_check(sess, msg);
 
 	reply = radius_server_encapsulate_eap(data, client, sess, msg);
 
@@ -2059,6 +2120,7 @@ static int radius_server_get_eap_user(void *ctx, const u8 *identity,
 		sess->accept_attr = user->accept_attr;
 		sess->remediation = user->remediation;
 		sess->macacl = user->macacl;
+		sess->t_c_timestamp = user->t_c_timestamp;
 	}
 
 	if (ret) {
