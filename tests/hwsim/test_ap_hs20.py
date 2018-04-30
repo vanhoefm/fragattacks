@@ -5839,6 +5839,7 @@ def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
         cur.execute("INSERT INTO users(identity,methods,password,phase2) VALUES ('user-mschapv2','TTLS-MSCHAPV2','password',1)")
         cur.execute("INSERT INTO wildcards(identity,methods) VALUES ('','TTLS,TLS')")
         cur.execute("CREATE TABLE authlog(timestamp TEXT, session TEXT, nas_ip TEXT, username TEXT, note TEXT)")
+        cur.execute("CREATE TABLE pending_tc(mac_addr TEXT PRIMARY KEY, identity TEXT)")
 
     try:
         params = { "ssid": "as", "beacon_int": "2000",
@@ -5890,6 +5891,14 @@ def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
         # Simulate T&C server operation on user reading the updated version
         with con:
             cur = con.cursor()
+            cur.execute("SELECT identity FROM pending_tc WHERE mac_addr='" +
+                        dev[0].own_addr() + "'")
+            rows = cur.fetchall()
+            if len(rows) != 1:
+                raise Exception("No pending_tc entry found")
+            if rows[0][0] != 'user-mschapv2':
+                raise Exception("Unexpected pending_tc identity value")
+
             cur.execute("UPDATE users SET t_c_timestamp=123456789 WHERE identity='user-mschapv2'")
 
         dev[0].request("RECONNECT")
