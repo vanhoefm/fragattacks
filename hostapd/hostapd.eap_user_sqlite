@@ -25,3 +25,8 @@ CREATE TABLE authlog(
 	username TEXT,
 	note TEXT
 );
+
+CREATE TABLE pending_tc(
+	mac_addr TEXT PRIMARY KEY,
+	identity TEXT
+);
