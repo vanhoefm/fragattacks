@@ -2,7 +2,7 @@ Hotspot 2.0 OSU server
 ======================
 
 The information in this document is based on the assumption that Ubuntu
-12.04 server (64-bit) distribution is used and the web server is
+16.04 server (64-bit) distribution is used and the web server is
 Apache2. Neither of these are requirements for the installation, but if
 other combinations are used, the package names and configuration
 parameters may need to be adjusted.
@@ -12,16 +12,11 @@ only for testing purposes in a lab environment. This design is not
 secure to be installed in a publicly available Internet server without
 considerable amount of modification and review for security issues.
 
-NOTE: While this describes use on Ubuntu 12.04, the version of Apache2
-included in that distribution is not new enough to support all OSU
-server validation steps. In other words, it may be most adapt the steps
-described here to Ubuntu 13.10.
-
 
 Build dependencies
 ------------------
 
-Ubuntu 12.04 server
+Ubuntu 16.04 server
 - default installation
 - upgraded to latest package versions
   sudo apt-get update
@@ -30,7 +25,7 @@ Ubuntu 12.04 server
 Packages needed for running the service:
   sudo apt-get install sqlite3
   sudo apt-get install apache2
-  sudo apt-get install php5-sqlite libapache2-mod-php5
+  sudo apt-get install php-sqlite3 php-xml libapache2-mod-php
 
 Additional packages needed for building the components:
   sudo apt-get install build-essential
@@ -226,8 +221,7 @@ Add following block just before "SSL Engine Switch" line":
         <Directory "/home/user/hs20-server/www/">
                 Options Indexes MultiViews FollowSymLinks
                 AllowOverride None
-                Order allow,deny
-                Allow from all
+		Require all granted
         </Directory>
 
 Update SSL configuration to use the OSU server certificate/key.
