@@ -1729,7 +1729,7 @@ void sme_clear_on_disassoc(struct wpa_supplicant *wpa_s)
 	sae_clear_data(&wpa_s->sme.sae);
 #endif /* CONFIG_SAE */
 #ifdef CONFIG_IEEE80211R
-	if (wpa_s->sme.ft_ies)
+	if (wpa_s->sme.ft_ies || wpa_s->sme.ft_used)
 		sme_update_ft_ies(wpa_s, NULL, NULL, 0);
 #endif /* CONFIG_IEEE80211R */
 }
