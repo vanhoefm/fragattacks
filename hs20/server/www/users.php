@@ -107,6 +107,10 @@ if ($cmd == "set-osu-cred" && $id > 0) {
   $db->exec("UPDATE users SET osu_user='$osu_user', osu_password='$osu_password' WHERE rowid=$id");
 }
 
+if ($cmd == 'clear-t-c' && $id > 0) {
+	$db->exec("UPDATE users SET t_c_timestamp=NULL WHERE rowid=$id");
+}
+
 $dump = 0;
 
 if ($id > 0) {
@@ -234,6 +238,13 @@ echo "password: <input type=\"password\" name=\"osu_password\">\n";
 echo "<input type=\"submit\" value=\"Set OSU credentials\">\n";
 echo "</form>\n";
 
+if (strlen($row['t_c_timestamp']) > 0) {
+	echo "<br>\n";
+	echo "<a href=\"users.php?cmd=clear-t-c&id=" .
+		$row['rowid'] .
+		"\">Clear Terms and Conditions acceptance</a><br>\n";
+}
+
 echo "<hr>\n";
 
 $user = $row['identity'];
@@ -303,7 +314,7 @@ echo "[<a href=\"users.php?cmd=eventlog&limit=50\">Eventlog</a>] ";
 echo "<br>\n";
 
 echo "<table border=1>\n";
-echo "<tr><th>User<th>Realm<th>Remediation<th>Policy<th>Account type<th>Phase 2 method(s)<th>DevId\n";
+echo "<tr><th>User<th>Realm<th>Remediation<th>Policy<th>Account type<th>Phase 2 method(s)<th>DevId<th>T&C\n";
 
 $res = $db->query('SELECT rowid,* FROM users WHERE phase2=1');
 foreach ($res as $row) {
@@ -338,6 +349,7 @@ foreach ($res as $row) {
 	    break;
 	  }
 	}
+	echo "<td>" . $row['t_c_timestamp'];
 	echo "\n";
 }
 echo "</table>\n";

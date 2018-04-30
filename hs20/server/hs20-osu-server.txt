@@ -95,6 +95,12 @@ sqlite3 /home/user/hs20-server/AS/DB/eap_user.db < sql-example.txt
 # the examples as-is for initial testing).
 cp -r www /home/user/hs20-server
 
+# Create /home/user/hs20-server/terms-and-conditions file (HTML segment to be
+# inserted within the BODY section of the page).
+cat > /home/user/hs20-server/terms-and-conditions <<EOF
+<P>Terms and conditions..</P>
+EOF
+
 # Build local keys and certs
 cd ca
 # Display help options.
