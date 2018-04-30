@@ -50,10 +50,24 @@ CREATE TABLE users(
 	osu_password TEXT,
 	shared INTEGER,
 	cert TEXT,
-	cert_pem TEXT
+	cert_pem TEXT,
+	t_c_timestamp INTEGER
 );
 
 CREATE TABLE wildcards(
 	identity TEXT PRIMARY KEY,
 	methods TEXT
+);
+
+CREATE TABLE authlog(
+	timestamp TEXT,
+	session TEXT,
+	nas_ip TEXT,
+	username TEXT,
+	note TEXT
+);
+
+CREATE TABLE pending_tc(
+	mac_addr TEXT PRIMARY KEY,
+	identity TEXT
 );
