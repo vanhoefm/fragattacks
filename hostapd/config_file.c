@@ -2140,6 +2140,11 @@ static unsigned int parse_tls_flags(const char *val)
 {
 	unsigned int flags = 0;
 
+	/* Disable TLS v1.3 by default for now to avoid interoperability issue.
+	 * This can be enabled by default once the implementation has been fully
+	 * completed and tested with other implementations. */
+	flags |= TLS_CONN_DISABLE_TLSv1_3;
+
 	if (os_strstr(val, "[ALLOW-SIGN-RSA-MD5]"))
 		flags |= TLS_CONN_ALLOW_SIGN_RSA_MD5;
 	if (os_strstr(val, "[DISABLE-TIME-CHECKS]"))
@@ -2152,6 +2157,8 @@ static unsigned int parse_tls_flags(const char *val)
 		flags |= TLS_CONN_DISABLE_TLSv1_2;
 	if (os_strstr(val, "[DISABLE-TLSv1.3]"))
 		flags |= TLS_CONN_DISABLE_TLSv1_3;
+	if (os_strstr(val, "[ENABLE-TLSv1.3]"))
+		flags &= ~TLS_CONN_DISABLE_TLSv1_3;
 	if (os_strstr(val, "[SUITEB]"))
 		flags |= TLS_CONN_SUITEB;
 	if (os_strstr(val, "[SUITEB-NO-ECDH]"))

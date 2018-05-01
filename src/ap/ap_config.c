@@ -10,6 +10,7 @@
 
 #include "utils/common.h"
 #include "crypto/sha1.h"
+#include "crypto/tls.h"
 #include "radius/radius_client.h"
 #include "common/ieee802_11_defs.h"
 #include "common/eapol_common.h"
@@ -125,6 +126,11 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 #ifdef CONFIG_MBO
 	bss->mbo_cell_data_conn_pref = -1;
 #endif /* CONFIG_MBO */
+
+	/* Disable TLS v1.3 by default for now to avoid interoperability issue.
+	 * This can be enabled by default once the implementation has been fully
+	 * completed and tested with other implementations. */
+	bss->tls_flags = TLS_CONN_DISABLE_TLSv1_3;
 }
 
 
