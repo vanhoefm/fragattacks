@@ -232,6 +232,7 @@ struct tls_connection {
 	unsigned int server_cert_only:1;
 	unsigned int invalid_hb_used:1;
 	unsigned int success_data:1;
+	unsigned int client_hello_generated:1;
 
 	u8 srv_cert_hash[32];
 
@@ -3597,8 +3598,22 @@ openssl_handshake(struct tls_connection *conn, const struct wpabuf *in_data,
 		else {
 			tls_show_errors(MSG_INFO, __func__, "SSL_connect");
 			conn->failed++;
+			if (!server && !conn->client_hello_generated) {
+				/* The server would not understand TLS Alert
+				 * before ClientHello, so simply terminate
+				 * handshake on this type of error case caused
+				 * by a likely internal error like no ciphers
+				 * available. */
+				wpa_printf(MSG_DEBUG,
+					   "OpenSSL: Could not generate ClientHello");
+				conn->write_alerts++;
+				return NULL;
+			}
 		}
 	}
+
+	if (!server && !conn->failed)
+		conn->client_hello_generated = 1;
 
 #ifdef CONFIG_SUITEB
 	if ((conn->flags & TLS_CONN_SUITEB) && !server &&
