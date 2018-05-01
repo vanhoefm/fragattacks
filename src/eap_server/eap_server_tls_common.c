@@ -373,7 +373,7 @@ static int eap_server_tls_reassemble(struct eap_ssl_data *data, u8 flags,
 	if (data->tls_in &&
 	    eap_server_tls_process_cont(data, *pos, end - *pos) < 0)
 		return -1;
-		
+
 	if (flags & EAP_TLS_FLAGS_MORE_FRAGMENTS) {
 		if (eap_server_tls_process_fragment(data, flags, tls_msg_len,
 						    *pos, end - *pos) < 0)
