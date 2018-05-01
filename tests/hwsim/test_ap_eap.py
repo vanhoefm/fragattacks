@@ -5352,6 +5352,9 @@ def test_ap_wpa2_eap_tls_versions(dev, apdev):
                   "tls_disable_tlsv1_0=1 tls_disable_tlsv1_2=1", "TLSv1.1")
     check_tls_ver(dev[2], hapd,
                   "tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1", "TLSv1")
+    if "run=OpenSSL 1.1.1" in tls:
+        check_tls_ver(dev[0], hapd,
+                      "tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1 tls_disable_tlsv1_3=0", "TLSv1.3")
 
 def test_rsn_ie_proto_eap_sta(dev, apdev):
     """RSN element protocol testing for EAP cases on STA side"""
