@@ -107,7 +107,7 @@ void eap_server_tls_ssl_deinit(struct eap_sm *sm, struct eap_ssl_data *data)
 
 
 u8 * eap_server_tls_derive_key(struct eap_sm *sm, struct eap_ssl_data *data,
-			       char *label, size_t len)
+			       const char *label, size_t len)
 {
 	u8 *out;
 
