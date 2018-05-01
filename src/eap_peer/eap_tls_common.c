@@ -80,6 +80,10 @@ static void eap_tls_params_flags(struct tls_connection_params *params,
 		params->flags |= TLS_CONN_DISABLE_TLSv1_2;
 	if (os_strstr(txt, "tls_disable_tlsv1_2=0"))
 		params->flags &= ~TLS_CONN_DISABLE_TLSv1_2;
+	if (os_strstr(txt, "tls_disable_tlsv1_3=1"))
+		params->flags |= TLS_CONN_DISABLE_TLSv1_3;
+	if (os_strstr(txt, "tls_disable_tlsv1_3=0"))
+		params->flags &= ~TLS_CONN_DISABLE_TLSv1_3;
 	if (os_strstr(txt, "tls_ext_cert_check=1"))
 		params->flags |= TLS_CONN_EXT_CERT_CHECK;
 	if (os_strstr(txt, "tls_ext_cert_check=0"))

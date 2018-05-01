@@ -2470,6 +2470,12 @@ static int tls_set_conn_flags(struct tls_connection *conn, unsigned int flags,
 	else
 		SSL_clear_options(ssl, SSL_OP_NO_TLSv1_2);
 #endif /* SSL_OP_NO_TLSv1_2 */
+#ifdef SSL_OP_NO_TLSv1_3
+	if (flags & TLS_CONN_DISABLE_TLSv1_3)
+		SSL_set_options(ssl, SSL_OP_NO_TLSv1_3);
+	else
+		SSL_clear_options(ssl, SSL_OP_NO_TLSv1_3);
+#endif /* SSL_OP_NO_TLSv1_3 */
 #ifdef CONFIG_SUITEB
 #ifdef OPENSSL_IS_BORINGSSL
 	/* Start with defaults from BoringSSL */
