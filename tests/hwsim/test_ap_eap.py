@@ -5029,7 +5029,10 @@ def test_openssl_cipher_suite_config_hapd(dev, apdev):
     params['openssl_ciphers'] = "FOO"
     hapd2 = hostapd.add_ap(apdev[1], params, no_enable=True)
     if "FAIL" not in hapd2.request("ENABLE"):
-        raise Exception("Invalid openssl_ciphers value accepted")
+        if "run=OpenSSL 1.1.1" in tls:
+            logger.info("Ignore acceptance of an invalid openssl_ciphers value with OpenSSL 1.1.1")
+        else:
+            raise Exception("Invalid openssl_ciphers value accepted")
 
 def test_wpa2_eap_ttls_pap_key_lifetime_in_memory(dev, apdev, params):
     """Key lifetime in memory with WPA2-Enterprise using EAP-TTLS/PAP"""
