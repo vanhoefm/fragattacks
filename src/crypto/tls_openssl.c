@@ -233,6 +233,7 @@ struct tls_connection {
 	unsigned int invalid_hb_used:1;
 	unsigned int success_data:1;
 	unsigned int client_hello_generated:1;
+	unsigned int server:1;
 
 	u8 srv_cert_hash[32];
 
@@ -3564,8 +3565,7 @@ int tls_connection_get_eap_fast_key(void *tls_ctx, struct tls_connection *conn,
 
 
 static struct wpabuf *
-openssl_handshake(struct tls_connection *conn, const struct wpabuf *in_data,
-		  int server)
+openssl_handshake(struct tls_connection *conn, const struct wpabuf *in_data)
 {
 	int res;
 	struct wpabuf *out_data;
@@ -3583,7 +3583,7 @@ openssl_handshake(struct tls_connection *conn, const struct wpabuf *in_data,
 	}
 
 	/* Initiate TLS handshake or continue the existing handshake */
-	if (server)
+	if (conn->server)
 		res = SSL_accept(conn->ssl);
 	else
 		res = SSL_connect(conn->ssl);
@@ -3598,7 +3598,7 @@ openssl_handshake(struct tls_connection *conn, const struct wpabuf *in_data,
 		else {
 			tls_show_errors(MSG_INFO, __func__, "SSL_connect");
 			conn->failed++;
-			if (!server && !conn->client_hello_generated) {
+			if (!conn->server && !conn->client_hello_generated) {
 				/* The server would not understand TLS Alert
 				 * before ClientHello, so simply terminate
 				 * handshake on this type of error case caused
@@ -3612,11 +3612,11 @@ openssl_handshake(struct tls_connection *conn, const struct wpabuf *in_data,
 		}
 	}
 
-	if (!server && !conn->failed)
+	if (!conn->server && !conn->failed)
 		conn->client_hello_generated = 1;
 
 #ifdef CONFIG_SUITEB
-	if ((conn->flags & TLS_CONN_SUITEB) && !server &&
+	if ((conn->flags & TLS_CONN_SUITEB) && !conn->server &&
 	    os_strncmp(SSL_get_cipher(conn->ssl), "DHE-", 4) == 0 &&
 	    conn->server_dh_prime_len < 3072) {
 		struct tls_context *context = conn->context;
@@ -3719,14 +3719,14 @@ openssl_get_appl_data(struct tls_connection *conn, size_t max_len)
 static struct wpabuf *
 openssl_connection_handshake(struct tls_connection *conn,
 			     const struct wpabuf *in_data,
-			     struct wpabuf **appl_data, int server)
+			     struct wpabuf **appl_data)
 {
 	struct wpabuf *out_data;
 
 	if (appl_data)
 		*appl_data = NULL;
 
-	out_data = openssl_handshake(conn, in_data, server);
+	out_data = openssl_handshake(conn, in_data);
 	if (out_data == NULL)
 		return NULL;
 	if (conn->invalid_hb_used) {
@@ -3763,7 +3763,7 @@ tls_connection_handshake(void *ssl_ctx, struct tls_connection *conn,
 			 const struct wpabuf *in_data,
 			 struct wpabuf **appl_data)
 {
-	return openssl_connection_handshake(conn, in_data, appl_data, 0);
+	return openssl_connection_handshake(conn, in_data, appl_data);
 }
 
 
@@ -3772,7 +3772,8 @@ struct wpabuf * tls_connection_server_handshake(void *tls_ctx,
 						const struct wpabuf *in_data,
 						struct wpabuf **appl_data)
 {
-	return openssl_connection_handshake(conn, in_data, appl_data, 1);
+	conn->server = 1;
+	return openssl_connection_handshake(conn, in_data, appl_data);
 }
 
 
