@@ -6214,13 +6214,14 @@ static int dpp_test_gen_invalid_key(struct wpabuf *msg,
 
 		if (EC_POINT_set_affine_coordinates_GFp(group, point, x, y,
 							ctx) != 1) {
-#ifdef OPENSSL_IS_BORINGSSL
-		/* Unlike OpenSSL, BoringSSL returns an error from
-		 * EC_POINT_set_affine_coordinates_GFp() is not on the curve. */
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L || defined(OPENSSL_IS_BORINGSSL)
+		/* Unlike older OpenSSL versions, OpenSSL 1.1.1 and BoringSSL
+		 * return an error from EC_POINT_set_affine_coordinates_GFp()
+		 * when the point is not on the curve. */
 			break;
-#else /* OPENSSL_IS_BORINGSSL */
+#else /* >=1.1.1 or OPENSSL_IS_BORINGSSL */
 			goto fail;
-#endif /* OPENSSL_IS_BORINGSSL */
+#endif /* >= 1.1.1 or OPENSSL_IS_BORINGSSL */
 		}
 
 		if (!EC_POINT_is_on_curve(group, point, ctx))
