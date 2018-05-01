@@ -124,7 +124,7 @@ def read_pem(fname):
 
 def eap_connect(dev, hapd, method, identity,
                 sha256=False, expect_failure=False, local_error_report=False,
-                maybe_local_error=False, **kwargs):
+                maybe_local_error=False, report_failure=False, **kwargs):
     id = dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP WPA-EAP-SHA256",
                      eap=method, identity=identity,
                      wait_connect=False, scan_freq="2412", ieee80211w="1",
@@ -132,7 +132,8 @@ def eap_connect(dev, hapd, method, identity,
     eap_check_auth(dev, method, True, sha256=sha256,
                    expect_failure=expect_failure,
                    local_error_report=local_error_report,
-                   maybe_local_error=maybe_local_error)
+                   maybe_local_error=maybe_local_error,
+                   report_failure=report_failure)
     if expect_failure:
         return id
     ev = hapd.wait_event([ "AP-STA-CONNECTED" ], timeout=5)
@@ -142,7 +143,7 @@ def eap_connect(dev, hapd, method, identity,
 
 def eap_check_auth(dev, method, initial, rsn=True, sha256=False,
                    expect_failure=False, local_error_report=False,
-                   maybe_local_error=False):
+                   maybe_local_error=False, report_failure=False):
     ev = dev.wait_event(["CTRL-EVENT-EAP-STARTED"], timeout=16)
     if ev is None:
         raise Exception("Association and EAP start timed out")
@@ -167,9 +168,17 @@ def eap_check_auth(dev, method, initial, rsn=True, sha256=False,
             if "reason=23" not in ev:
                 raise Exception("Proper reason code for disconnection not reported")
         return
-    ev = dev.wait_event(["CTRL-EVENT-EAP-SUCCESS"], timeout=10)
-    if ev is None:
-        raise Exception("EAP success timed out")
+    if report_failure:
+        ev = dev.wait_event(["CTRL-EVENT-EAP-SUCCESS",
+                             "CTRL-EVENT-EAP-FAILURE"], timeout=10)
+        if ev is None:
+            raise Exception("EAP success timed out")
+        if "CTRL-EVENT-EAP-SUCCESS" not in ev:
+            raise Exception("EAP failed")
+    else:
+        ev = dev.wait_event(["CTRL-EVENT-EAP-SUCCESS"], timeout=10)
+        if ev is None:
+            raise Exception("EAP success timed out")
 
     if initial:
         ev = dev.wait_event(["CTRL-EVENT-CONNECTED"], timeout=10)
@@ -3658,10 +3667,12 @@ def test_ap_wpa2_eap_fast_cipher_suites(dev, apdev):
                         openssl_ciphers=cipher,
                         anonymous_identity="FAST", password="password",
                         ca_cert="auth_serv/ca.pem", phase2="auth=GTC",
-                        pac_file="blob://fast_pac_ciphers")
+                        pac_file="blob://fast_pac_ciphers",
+                        report_failure=True)
         except Exception, e:
-            if "Could not select EAP method" in str(e) and cipher == "RC4-SHA":
-                tls = dev[0].request("GET tls_library")
+            if cipher == "RC4-SHA" and \
+               ("Could not select EAP method" in str(e) or \
+                "EAP failed" in str(e)):
                 if "run=OpenSSL 1.1" in tls:
                     logger.info("Allow failure due to missing TLS library support")
                     dev[0].request("REMOVE_NETWORK all")
