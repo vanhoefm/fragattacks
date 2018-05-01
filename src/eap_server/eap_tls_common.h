@@ -50,6 +50,11 @@ struct eap_ssl_data {
 
 	enum { MSG, FRAG_ACK, WAIT_FRAG_ACK } state;
 	struct wpabuf tmpbuf;
+
+	/**
+	 * tls_v13 - Whether TLS v1.3 or newer is used
+	 */
+	int tls_v13;
 };
 
 

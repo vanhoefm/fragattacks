@@ -305,6 +305,8 @@ static int eap_server_tls_process_fragment(struct eap_ssl_data *data,
 
 int eap_server_tls_phase1(struct eap_sm *sm, struct eap_ssl_data *data)
 {
+	char buf[20];
+
 	if (data->tls_out) {
 		/* This should not happen.. */
 		wpa_printf(MSG_INFO, "SSL: pending tls_out data when "
@@ -325,6 +327,11 @@ int eap_server_tls_phase1(struct eap_sm *sm, struct eap_ssl_data *data)
 		wpa_printf(MSG_DEBUG, "SSL: Failed - tls_out available to "
 			   "report error");
 		return -1;
+	}
+
+	if (tls_get_version(sm->ssl_ctx, data->conn, buf, sizeof(buf)) == 0) {
+		wpa_printf(MSG_DEBUG, "SSL: Using TLS version %s", buf);
+		data->tls_v13 = os_strcmp(buf, "TLSv1.3") == 0;
 	}
 
 	return 0;
