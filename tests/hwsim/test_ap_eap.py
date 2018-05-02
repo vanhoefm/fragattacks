@@ -80,6 +80,8 @@ def check_ocsp_support(dev):
     #    raise HwsimSkip("OCSP not supported with this TLS library: " + tls)
     #if "BoringSSL" in tls:
     #    raise HwsimSkip("OCSP not supported with this TLS library: " + tls)
+    if tls.startswith("wolfSSL"):
+        raise HwsimSkip("OCSP not supported with this TLS library: " + tls)
 
 def check_pkcs5_v15_support(dev):
     tls = dev.request("GET tls_library")
@@ -4108,6 +4110,7 @@ def test_ap_wpa2_eap_ttls_ocsp_unknown(dev, apdev, params):
 
 def test_ap_wpa2_eap_ttls_optional_ocsp_unknown(dev, apdev, params):
     """WPA2-Enterprise connection using EAP-TTLS and OCSP status revoked"""
+    check_ocsp_support(dev[0])
     ocsp = os.path.join(params['logdir'], "ocsp-server-cache-unknown.der")
     if not os.path.exists(ocsp):
         raise HwsimSkip("No OCSP response available")
@@ -4261,6 +4264,7 @@ def test_ap_wpa2_eap_tls_intermediate_ca_ocsp_revoked_sha1(dev, apdev, params):
                                                      "-sha1")
 
 def run_ap_wpa2_eap_tls_intermediate_ca_ocsp_revoked(dev, apdev, params, md):
+    check_ocsp_support(dev[0])
     params = int_eap_server_params()
     params["ca_cert"] = "auth_serv/iCA-server/ca-and-root.pem"
     params["server_cert"] = "auth_serv/iCA-server/server-revoked.pem"
