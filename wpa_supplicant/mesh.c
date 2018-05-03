@@ -169,7 +169,7 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 		return 0;
 	}
 
-	wpa_s->ifmsh = ifmsh = os_zalloc(sizeof(*wpa_s->ifmsh));
+	wpa_s->ifmsh = ifmsh = hostapd_alloc_iface();
 	if (!ifmsh)
 		return -ENOMEM;
 
