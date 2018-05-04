@@ -790,6 +790,11 @@ fi.w1.wpa_supplicant1.CreateInterface.
       </li>
 
       <li>
+	<h3>BSSTMStatus - u - (read)</h3>
+	<p>The most recent BSS Transition Management status code.</p>
+      </li>
+
+      <li>
 	<h3>EapolVersion - s - (read/write)</h3>
 	<p>IEEE 802.1X/EAPOL version number</p>
       </li>

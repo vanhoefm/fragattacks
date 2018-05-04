@@ -154,6 +154,7 @@ DECLARE_ACCESSOR(wpas_dbus_getter_assoc_status_code);
 DECLARE_ACCESSOR(wpas_dbus_getter_roam_time);
 DECLARE_ACCESSOR(wpas_dbus_getter_roam_complete);
 DECLARE_ACCESSOR(wpas_dbus_getter_session_length);
+DECLARE_ACCESSOR(wpas_dbus_getter_bss_tm_status);
 DECLARE_ACCESSOR(wpas_dbus_getter_bss_expire_age);
 DECLARE_ACCESSOR(wpas_dbus_setter_bss_expire_age);
 DECLARE_ACCESSOR(wpas_dbus_getter_bss_expire_count);

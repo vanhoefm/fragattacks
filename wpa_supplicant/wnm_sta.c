@@ -21,6 +21,7 @@
 #include "ctrl_iface.h"
 #include "bss.h"
 #include "wnm_sta.h"
+#include "notify.h"
 #include "hs20_supplicant.h"
 
 #define MAX_TFS_IE_LEN  1024
@@ -1014,6 +1015,9 @@ static void wnm_send_bss_transition_mgmt_resp(
 			   "WNM: Failed to allocate memory for BTM response");
 		return;
 	}
+
+	wpa_s->bss_tm_status = status;
+	wpas_notify_bss_tm_status(wpa_s);
 
 	wpabuf_put_u8(buf, WLAN_ACTION_WNM);
 	wpabuf_put_u8(buf, WNM_BSS_TRANS_MGMT_RESP);

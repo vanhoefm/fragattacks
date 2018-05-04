@@ -1065,6 +1065,7 @@ struct wpa_supplicant {
 	struct neighbor_report *wnm_neighbor_report_elements;
 	struct os_reltime wnm_cand_valid_until;
 	u8 wnm_cand_from_bss[ETH_ALEN];
+	enum bss_trans_mgmt_status_code bss_tm_status;
 	struct wpabuf *coloc_intf_elems;
 	u8 coloc_intf_dialog_token;
 	u8 coloc_intf_auto_report;

@@ -3179,6 +3179,28 @@ dbus_bool_t wpas_dbus_getter_session_length(
 
 
 /**
+ * wpas_dbus_getter_bss_tm_status - Get most BSS Transition Management request
+ * status code
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: TRUE on success, FALSE on failure
+ *
+ * Getter for "BSSTMStatus" property.
+ */
+dbus_bool_t wpas_dbus_getter_bss_tm_status(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct wpa_supplicant *wpa_s = user_data;
+	dbus_uint32_t bss_tm_status = wpa_s->bss_tm_status;
+
+	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT32,
+						&bss_tm_status, error);
+}
+
+
+/**
  * wpas_dbus_getter_bss_expire_age - Get BSS entry expiration age
  * @iter: Pointer to incoming dbus message iter
  * @error: Location to store error on failure

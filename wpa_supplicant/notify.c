@@ -176,6 +176,15 @@ void wpas_notify_session_length(struct wpa_supplicant *wpa_s)
 }
 
 
+void wpas_notify_bss_tm_status(struct wpa_supplicant *wpa_s)
+{
+	if (wpa_s->p2p_mgmt)
+		return;
+
+	wpas_dbus_signal_prop_changed(wpa_s, WPAS_DBUS_PROP_BSS_TM_STATUS);
+}
+
+
 void wpas_notify_network_changed(struct wpa_supplicant *wpa_s)
 {
 	if (wpa_s->p2p_mgmt)
