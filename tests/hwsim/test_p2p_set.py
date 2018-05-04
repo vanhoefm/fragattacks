@@ -19,7 +19,6 @@ def test_p2p_set(dev):
                  "noa 0,0,-1",
                  "noa 0,0,1",
                  "noa 255,10,20",
-                 "ps 1",
                  "ps 2",
                  "oppps 1",
                  "ctwindow 1",
@@ -36,6 +35,9 @@ def test_p2p_set(dev):
                  "ssid_postfix 123456789012345678901234" ]:
         if "FAIL" not in dev[0].request("P2P_SET " + cmd):
             raise Exception("Invalid P2P_SET accepted: " + cmd)
+    dev[0].request("P2P_SET ps 1")
+    if "OK" not in dev[0].request("P2P_SET ps 0"):
+        raise Exception("P2P_SET ps 0 failed unexpectedly")
 
 def test_p2p_set_discoverability(dev):
     """P2P_SET discoverability"""

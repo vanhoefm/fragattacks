@@ -922,7 +922,6 @@ def test_wpas_ctrl_set(dev):
              "ampdu 0",
              "radio_disable 0",
              "ps 10",
-             "ps 1",
              "dot11RSNAConfigPMKLifetime 0",
              "dot11RSNAConfigPMKReauthThreshold 101",
              "dot11RSNAConfigSATimeout 0",
@@ -933,6 +932,10 @@ def test_wpas_ctrl_set(dev):
     for val in vals:
         if "FAIL" not in dev[0].request("SET " + val):
             raise Exception("Unexpected SET success for " + val)
+
+    vals = [ "ps 1" ]
+    for val in vals:
+        dev[0].request("SET " + val)
 
     vals = [ "EAPOL::heldPeriod 60",
              "EAPOL::authPeriod 30",
