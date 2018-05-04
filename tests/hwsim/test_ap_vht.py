@@ -50,6 +50,9 @@ def test_ap_vht80(dev, apdev):
         est = dev[0].get_bss(bssid)['est_throughput']
         if est != "390001":
             raise Exception("Unexpected BSS est_throughput: " + est)
+        status = dev[0].get_status()
+        if status["ieee80211ac"] != "1":
+            raise Exception("Unexpected STATUS ieee80211ac value (STA)")
         status = hapd.get_status()
         logger.info("hostapd STATUS: " + str(status))
         if status["ieee80211n"] != "1":
