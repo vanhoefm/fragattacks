@@ -314,7 +314,7 @@ acs_survey_interference_factor(struct freq_survey *survey, s8 min_nf)
 
 	/* TODO: figure out the best multiplier for noise floor base */
 	factor = pow(10, survey->nf / 5.0L) +
-		(busy / total) *
+		(total ? (busy / total) : 0) *
 		pow(2, pow(10, (long double) survey->nf / 10.0L) -
 		    pow(10, (long double) min_nf / 10.0L));
 
