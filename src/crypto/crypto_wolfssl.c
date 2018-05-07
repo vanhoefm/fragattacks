@@ -1762,7 +1762,7 @@ struct wpabuf * crypto_ecdh_set_peerkey(struct crypto_ecdh *ecdh, int inc_y,
 		goto fail;
 
 	ret = wc_ecc_import_point_der(wpabuf_mhead(pubkey), 1 + 2 * key_len,
-				      ecdh->ec->key.dp->id, point);
+				      ecdh->ec->key.idx, point);
 	if (ret != MP_OKAY)
 		goto fail;
 
