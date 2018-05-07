@@ -4102,6 +4102,15 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 			struct wpa_ssid *ssid = wpa_s->current_ssid;
 			struct wpa_bss *bss = wpa_s->current_bss;
 
+			if (!bss) {
+				const u8 *bssid = data->assoc_reject.bssid;
+
+				if (!bssid || is_zero_ether_addr(bssid))
+					bssid = wpa_s->pending_bssid;
+				bss = wpa_supplicant_get_new_bss(wpa_s, bssid);
+				if (!bss)
+					break;
+			}
 			wpa_printf(MSG_DEBUG,
 				   "OWE: Try next supported DH group");
 			wpas_connect_work_done(wpa_s);
