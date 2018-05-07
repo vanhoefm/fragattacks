@@ -818,6 +818,11 @@ struct hostapd_config {
 	struct he_phy_capabilities_info he_phy_capab;
 	struct he_operation he_op;
 #endif /* CONFIG_IEEE80211AX */
+
+	/* VHT enable/disable config from CHAN_SWITCH */
+#define CH_SWITCH_VHT_ENABLED BIT(0)
+#define CH_SWITCH_VHT_DISABLED BIT(1)
+	unsigned int ch_switch_vht_config;
 };
 
 

@@ -2222,6 +2222,11 @@ static int hostapd_ctrl_iface_chan_switch(struct hostapd_iface *iface,
 		return ret;
 
 	for (i = 0; i < iface->num_bss; i++) {
+
+		/* Save CHAN_SWITCH VHT config */
+		hostapd_chan_switch_vht_config(
+			iface->bss[i], settings.freq_params.vht_enabled);
+
 		ret = hostapd_switch_channel(iface->bss[i], &settings);
 		if (ret) {
 			/* FIX: What do we do if CSA fails in the middle of

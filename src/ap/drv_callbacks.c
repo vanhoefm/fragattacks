@@ -737,9 +737,9 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 
 	hostapd_logger(hapd, NULL, HOSTAPD_MODULE_IEEE80211,
 		       HOSTAPD_LEVEL_INFO,
-		       "driver had channel switch: freq=%d, ht=%d, offset=%d, width=%d (%s), cf1=%d, cf2=%d",
-		       freq, ht, offset, width, channel_width_to_string(width),
-		       cf1, cf2);
+		       "driver had channel switch: freq=%d, ht=%d, vht_ch=0x%x, offset=%d, width=%d (%s), cf1=%d, cf2=%d",
+		       freq, ht, hapd->iconf->ch_switch_vht_config, offset,
+		       width, channel_width_to_string(width), cf1, cf2);
 
 	hapd->iface->freq = freq;
 
@@ -784,8 +784,19 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 
 	hapd->iconf->channel = channel;
 	hapd->iconf->ieee80211n = ht;
-	if (!ht)
+	if (!ht) {
 		hapd->iconf->ieee80211ac = 0;
+	} else if (hapd->iconf->ch_switch_vht_config) {
+		/* CHAN_SWITCH VHT config */
+		if (hapd->iconf->ch_switch_vht_config &
+		    CH_SWITCH_VHT_ENABLED)
+			hapd->iconf->ieee80211ac = 1;
+		else if (hapd->iconf->ch_switch_vht_config &
+			 CH_SWITCH_VHT_DISABLED)
+			hapd->iconf->ieee80211ac = 0;
+	}
+	hapd->iconf->ch_switch_vht_config = 0;
+
 	hapd->iconf->secondary_channel = offset;
 	hapd->iconf->vht_oper_chwidth = chwidth;
 	hapd->iconf->vht_oper_centr_freq_seg0_idx = seg0_idx;
