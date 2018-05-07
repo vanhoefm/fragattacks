@@ -783,6 +783,9 @@ int crypto_dh_init(u8 generator, const u8 *prime, size_t prime_len, u8 *privkey,
 	DhKey *dh = NULL;
 	word32 priv_sz, pub_sz;
 
+	if (TEST_FAIL())
+		return -1;
+
 	dh = os_malloc(sizeof(DhKey));
 	if (!dh)
 		return -1;
