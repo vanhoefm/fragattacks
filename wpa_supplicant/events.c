@@ -4116,6 +4116,18 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		else {
 			const u8 *bssid = data->assoc_reject.bssid;
 
+#ifdef CONFIG_SAE
+		if (wpa_s->current_ssid &&
+		    wpa_key_mgmt_sae(wpa_s->current_ssid->key_mgmt) &&
+		    !data->assoc_reject.timed_out) {
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"SAE: Drop PMKSA cache entry");
+			wpa_sm_aborted_cached(wpa_s->wpa);
+			wpa_sm_pmksa_cache_flush(wpa_s->wpa,
+						 wpa_s->current_ssid);
+		}
+#endif /* CONFIG_SAE */
+
 #ifdef CONFIG_FILS
 			/* Update ERP next sequence number */
 			if (wpa_s->auth_alg == WPA_AUTH_ALG_FILS)
