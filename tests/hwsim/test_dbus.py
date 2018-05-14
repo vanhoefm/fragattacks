@@ -2173,6 +2173,10 @@ def test_dbus_tdls(dev, apdev):
 
 def test_dbus_tdls_channel_switch(dev, apdev):
     """D-Bus TDLS channel switch configuration"""
+    flags = int(dev[0].get_driver_status_field('capa.flags'), 16)
+    if flags & 0x800000000 == 0:
+        raise HwsimSkip("Driver does not support TDLS channel switching")
+
     (bus,wpas_obj,path,if_obj) = prepare_dbus(dev[0])
     iface = dbus.Interface(if_obj, WPAS_DBUS_IFACE)
 
