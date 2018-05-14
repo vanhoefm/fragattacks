@@ -4894,6 +4894,23 @@ enum qca_wlan_vendor_attr_ndp_params {
 	QCA_WLAN_VENDOR_ATTR_NDP_CHANNEL_WIDTH,
 	/* Array of channel/band width */
 	QCA_WLAN_VENDOR_ATTR_NDP_CHANNEL_INFO,
+	/* IPv6 address used by NDP (in network byte order), 16 bytes array.
+	 * This attribute is used and optional for ndp request, ndp response,
+	 * ndp indication, and ndp confirm.
+	 */
+	QCA_WLAN_VENDOR_ATTR_NDP_IPV6_ADDR = 27,
+	/* Unsigned 16-bit value indicating transport port used by NDP.
+	 * This attribute is used and optional for ndp response, ndp indication,
+	 * and ndp confirm.
+	 */
+	QCA_WLAN_VENDOR_ATTR_NDP_TRANSPORT_PORT = 28,
+	/* Unsigned 8-bit value indicating protocol used by NDP and assigned by
+	 * the Internet Assigned Numbers Authority (IANA) as per:
+	 * https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
+	 * This attribute is used and optional for ndp response, ndp indication,
+	 * and ndp confirm.
+	 */
+	QCA_WLAN_VENDOR_ATTR_NDP_TRANSPORT_PROTOCOL = 29,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_NDP_PARAMS_AFTER_LAST,
