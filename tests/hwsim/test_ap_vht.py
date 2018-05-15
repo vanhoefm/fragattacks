@@ -714,6 +714,142 @@ def test_ap_vht80_csa(dev, apdev):
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].flush_scan_cache()
 
+def test_ap_vht_csa_vht40(dev, apdev):
+    """VHT CSA with VHT40 getting enabled"""
+    csa_supported(dev[0])
+    try:
+        hapd = None
+        params = { "ssid": "vht",
+                   "country_code": "US",
+                   "hw_mode": "a",
+                   "channel": "149",
+                   "ht_capab": "[HT40+]",
+                   "ieee80211n": "1",
+                   "ieee80211ac": "0" }
+        hapd = hostapd.add_ap(apdev[0], params)
+        bssid = hapd.own_addr()
+
+        dev[0].connect("vht", key_mgmt="NONE", scan_freq="5745")
+        hwsim_utils.test_connectivity(dev[0], hapd)
+
+        hapd.request("CHAN_SWITCH 5 5765 sec_channel_offset=-1 center_freq1=5775 bandwidth=40 vht")
+        ev = hapd.wait_event(["AP-CSA-FINISHED"], timeout=10)
+        if ev is None:
+            raise Exception("CSA finished event timed out")
+        if "freq=5765" not in ev:
+            raise Exception("Unexpected channel in CSA finished event")
+        ev = dev[0].wait_event("CTRL-EVENT-CHANNEL-SWITCH", timeout=5)
+        if ev is None:
+            raise Exception("Channel switch event not seen")
+        if "freq=5765" not in ev:
+            raise Exception("Channel mismatch: " + ev)
+        time.sleep(0.5)
+        hwsim_utils.test_connectivity(dev[0], hapd)
+
+        dev[1].connect("vht", key_mgmt="NONE", scan_freq="5765")
+        hwsim_utils.test_connectivity(dev[1], hapd)
+
+        if dev[1].get_status_field("ieee80211ac") != '1':
+            raise Exception("VHT not enabled as part of channel switch")
+    finally:
+        dev[0].request("DISCONNECT")
+        dev[1].request("DISCONNECT")
+        if hapd:
+            hapd.request("DISABLE")
+        subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].flush_scan_cache()
+        dev[1].flush_scan_cache()
+
+def test_ap_vht_csa_vht20(dev, apdev):
+    """VHT CSA with VHT20 getting enabled"""
+    csa_supported(dev[0])
+    try:
+        hapd = None
+        params = { "ssid": "vht",
+                   "country_code": "US",
+                   "hw_mode": "a",
+                   "channel": "149",
+                   "ht_capab": "[HT40+]",
+                   "ieee80211n": "1",
+                   "ieee80211ac": "0" }
+        hapd = hostapd.add_ap(apdev[0], params)
+        bssid = hapd.own_addr()
+
+        dev[0].connect("vht", key_mgmt="NONE", scan_freq="5745")
+        hwsim_utils.test_connectivity(dev[0], hapd)
+
+        hapd.request("CHAN_SWITCH 5 5200 center_freq1=5200 bandwidth=20 vht")
+        ev = hapd.wait_event(["AP-CSA-FINISHED"], timeout=10)
+        if ev is None:
+            raise Exception("CSA finished event timed out")
+        if "freq=5200" not in ev:
+            raise Exception("Unexpected channel in CSA finished event")
+        time.sleep(0.5)
+        hwsim_utils.test_connectivity(dev[0], hapd)
+
+        dev[1].connect("vht", key_mgmt="NONE", scan_freq="5200")
+        hwsim_utils.test_connectivity(dev[1], hapd)
+
+        if dev[1].get_status_field("ieee80211ac") != '1':
+            raise Exception("VHT not enabled as part of channel switch")
+    finally:
+        dev[0].request("DISCONNECT")
+        dev[1].request("DISCONNECT")
+        if hapd:
+            hapd.request("DISABLE")
+        subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].flush_scan_cache()
+        dev[1].flush_scan_cache()
+
+def test_ap_vht_csa_vht40_disable(dev, apdev):
+    """VHT CSA with VHT40 getting disabled"""
+    csa_supported(dev[0])
+    try:
+        hapd = None
+        params = { "ssid": "vht",
+                   "country_code": "US",
+                   "hw_mode": "a",
+                   "channel": "149",
+                   "ht_capab": "[HT40+]",
+                   "ieee80211n": "1",
+                   "ieee80211ac": "1",
+                   "vht_capab": "",
+                   "vht_oper_chwidth": "0",
+                   "vht_oper_centr_freq_seg0_idx": "0" }
+        hapd = hostapd.add_ap(apdev[0], params)
+        bssid = hapd.own_addr()
+
+        dev[0].connect("vht", key_mgmt="NONE", scan_freq="5745")
+        hwsim_utils.test_connectivity(dev[0], hapd)
+
+        hapd.request("CHAN_SWITCH 5 5200 center_freq1=5200 bandwidth=40 ht")
+        ev = hapd.wait_event(["AP-CSA-FINISHED"], timeout=10)
+        if ev is None:
+            raise Exception("CSA finished event timed out")
+        if "freq=5200" not in ev:
+            raise Exception("Unexpected channel in CSA finished event")
+        ev = dev[0].wait_event("CTRL-EVENT-CHANNEL-SWITCH", timeout=5)
+        if ev is None:
+            raise Exception("Channel switch event not seen")
+        if "freq=5200" not in ev:
+            raise Exception("Channel mismatch: " + ev)
+        time.sleep(0.5)
+        hwsim_utils.test_connectivity(dev[0], hapd)
+
+        dev[1].connect("vht", key_mgmt="NONE", scan_freq="5200")
+        hwsim_utils.test_connectivity(dev[1], hapd)
+
+        if dev[1].get_status_field("ieee80211ac") == '1':
+            raise Exception("VHT not disabled as part of channel switch")
+    finally:
+        dev[0].request("DISCONNECT")
+        dev[1].request("DISCONNECT")
+        if hapd:
+            hapd.request("DISABLE")
+        subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].flush_scan_cache()
+        dev[1].flush_scan_cache()
+
 def test_ap_vht_on_24ghz(dev, apdev):
     """Subset of VHT features on 2.4 GHz"""
     hapd = None
