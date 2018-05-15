@@ -1516,7 +1516,7 @@ static void eap_fast_process_msg(struct eap_sm *sm, void *priv,
 		if (eap_fast_process_phase1(sm, data))
 			break;
 
-		/* fall through to PHASE2_START */
+		/* fall through */
 	case PHASE2_START:
 		eap_fast_process_phase2_start(sm, data);
 		break;

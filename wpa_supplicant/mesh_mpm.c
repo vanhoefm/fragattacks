@@ -437,7 +437,7 @@ static void plink_timer(void *eloop_ctx, void *user_data)
 			break;
 		}
 		reason = WLAN_REASON_MESH_MAX_RETRIES;
-		/* fall through on else */
+		/* fall through */
 
 	case PLINK_CNF_RCVD:
 		/* confirm timer */
