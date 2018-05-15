@@ -922,7 +922,7 @@ static int wext_add_hostap(struct wpa_driver_wext_data *drv)
 
 static void wext_check_hostap(struct wpa_driver_wext_data *drv)
 {
-	char buf[200], *pos;
+	char path[200], buf[200], *pos;
 	ssize_t res;
 
 	/*
@@ -937,9 +937,9 @@ static void wext_check_hostap(struct wpa_driver_wext_data *drv)
 	 */
 
 	/* First, try to see if driver information is available from sysfs */
-	snprintf(buf, sizeof(buf), "/sys/class/net/%s/device/driver",
+	snprintf(path, sizeof(path), "/sys/class/net/%s/device/driver",
 		 drv->ifname);
-	res = readlink(buf, buf, sizeof(buf) - 1);
+	res = readlink(path, buf, sizeof(buf) - 1);
 	if (res > 0) {
 		buf[res] = '\0';
 		pos = strrchr(buf, '/');
