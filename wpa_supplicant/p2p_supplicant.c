@@ -748,6 +748,7 @@ static u8 p2ps_group_capability(void *ctx, u8 incoming, u8 role,
 				conncap = P2PS_SETUP_GROUP_OWNER;
 				goto grp_owner;
 			}
+			/* fall through */
 
 		default:
 			return P2PS_SETUP_NONE;
