@@ -3932,8 +3932,11 @@ static void wpas_event_assoc_reject(struct wpa_supplicant *wpa_s,
 
 		if (!bss) {
 			bss = wpa_supplicant_get_new_bss(wpa_s, bssid);
-			if (!bss)
+			if (!bss) {
+				wpas_connection_failed(wpa_s, bssid);
+				wpa_supplicant_mark_disassoc(wpa_s);
 				return;
+			}
 		}
 		wpa_printf(MSG_DEBUG, "OWE: Try next supported DH group");
 		wpas_connect_work_done(wpa_s);
