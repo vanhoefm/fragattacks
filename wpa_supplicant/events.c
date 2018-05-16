@@ -3892,6 +3892,87 @@ static void wpa_supplicant_event_assoc_auth(struct wpa_supplicant *wpa_s,
 }
 
 
+static void wpas_event_assoc_reject(struct wpa_supplicant *wpa_s,
+				    union wpa_event_data *data)
+{
+	const u8 *bssid = data->assoc_reject.bssid;
+
+	if (!bssid || is_zero_ether_addr(bssid))
+		bssid = wpa_s->pending_bssid;
+
+	if (data->assoc_reject.bssid)
+		wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_ASSOC_REJECT
+			"bssid=" MACSTR	" status_code=%u%s%s%s",
+			MAC2STR(data->assoc_reject.bssid),
+			data->assoc_reject.status_code,
+			data->assoc_reject.timed_out ? " timeout" : "",
+			data->assoc_reject.timeout_reason ? "=" : "",
+			data->assoc_reject.timeout_reason ?
+			data->assoc_reject.timeout_reason : "");
+	else
+		wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_ASSOC_REJECT
+			"status_code=%u%s%s%s",
+			data->assoc_reject.status_code,
+			data->assoc_reject.timed_out ? " timeout" : "",
+			data->assoc_reject.timeout_reason ? "=" : "",
+			data->assoc_reject.timeout_reason ?
+			data->assoc_reject.timeout_reason : "");
+	wpa_s->assoc_status_code = data->assoc_reject.status_code;
+	wpas_notify_assoc_status_code(wpa_s);
+
+#ifdef CONFIG_OWE
+	if (data->assoc_reject.status_code ==
+	    WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED &&
+	    wpa_s->key_mgmt == WPA_KEY_MGMT_OWE &&
+	    wpa_s->current_ssid &&
+	    wpa_s->current_ssid->owe_group == 0 &&
+	    wpa_s->last_owe_group != 21) {
+		struct wpa_ssid *ssid = wpa_s->current_ssid;
+		struct wpa_bss *bss = wpa_s->current_bss;
+
+		if (!bss) {
+			bss = wpa_supplicant_get_new_bss(wpa_s, bssid);
+			if (!bss)
+				return;
+		}
+		wpa_printf(MSG_DEBUG, "OWE: Try next supported DH group");
+		wpas_connect_work_done(wpa_s);
+		wpa_supplicant_mark_disassoc(wpa_s);
+		wpa_supplicant_connect(wpa_s, bss, ssid);
+		return;
+	}
+#endif /* CONFIG_OWE */
+
+	if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) {
+		sme_event_assoc_reject(wpa_s, data);
+		return;
+	}
+
+	/* Driver-based SME cases */
+
+#ifdef CONFIG_SAE
+	if (wpa_s->current_ssid &&
+	    wpa_key_mgmt_sae(wpa_s->current_ssid->key_mgmt) &&
+	    !data->assoc_reject.timed_out) {
+		wpa_dbg(wpa_s, MSG_DEBUG, "SAE: Drop PMKSA cache entry");
+		wpa_sm_aborted_cached(wpa_s->wpa);
+		wpa_sm_pmksa_cache_flush(wpa_s->wpa, wpa_s->current_ssid);
+	}
+#endif /* CONFIG_SAE */
+
+#ifdef CONFIG_FILS
+	/* Update ERP next sequence number */
+	if (wpa_s->auth_alg == WPA_AUTH_ALG_FILS)
+		eapol_sm_update_erp_next_seq_num(
+			wpa_s->eapol,
+			data->assoc_reject.fils_erp_next_seq_num);
+#endif /* CONFIG_FILS */
+
+	wpas_connection_failed(wpa_s, bssid);
+	wpa_supplicant_mark_disassoc(wpa_s);
+}
+
+
 void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 			  union wpa_event_data *data)
 {
@@ -4072,84 +4153,7 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		break;
 #endif /* CONFIG_IBSS_RSN */
 	case EVENT_ASSOC_REJECT:
-		if (data->assoc_reject.bssid)
-			wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_ASSOC_REJECT
-				"bssid=" MACSTR	" status_code=%u%s%s%s",
-				MAC2STR(data->assoc_reject.bssid),
-				data->assoc_reject.status_code,
-				data->assoc_reject.timed_out ? " timeout" : "",
-				data->assoc_reject.timeout_reason ? "=" : "",
-				data->assoc_reject.timeout_reason ?
-				data->assoc_reject.timeout_reason : "");
-		else
-			wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_ASSOC_REJECT
-				"status_code=%u%s%s%s",
-				data->assoc_reject.status_code,
-				data->assoc_reject.timed_out ? " timeout" : "",
-				data->assoc_reject.timeout_reason ? "=" : "",
-				data->assoc_reject.timeout_reason ?
-				data->assoc_reject.timeout_reason : "");
-		wpa_s->assoc_status_code = data->assoc_reject.status_code;
-		wpas_notify_assoc_status_code(wpa_s);
-
-#ifdef CONFIG_OWE
-		if (data->assoc_reject.status_code ==
-		    WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED &&
-		    wpa_s->key_mgmt == WPA_KEY_MGMT_OWE &&
-		    wpa_s->current_ssid &&
-		    wpa_s->current_ssid->owe_group == 0 &&
-		    wpa_s->last_owe_group != 21) {
-			struct wpa_ssid *ssid = wpa_s->current_ssid;
-			struct wpa_bss *bss = wpa_s->current_bss;
-
-			if (!bss) {
-				const u8 *bssid = data->assoc_reject.bssid;
-
-				if (!bssid || is_zero_ether_addr(bssid))
-					bssid = wpa_s->pending_bssid;
-				bss = wpa_supplicant_get_new_bss(wpa_s, bssid);
-				if (!bss)
-					break;
-			}
-			wpa_printf(MSG_DEBUG,
-				   "OWE: Try next supported DH group");
-			wpas_connect_work_done(wpa_s);
-			wpa_supplicant_mark_disassoc(wpa_s);
-			wpa_supplicant_connect(wpa_s, bss, ssid);
-			break;
-		}
-#endif /* CONFIG_OWE */
-
-		if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME)
-			sme_event_assoc_reject(wpa_s, data);
-		else {
-			const u8 *bssid = data->assoc_reject.bssid;
-
-#ifdef CONFIG_SAE
-		if (wpa_s->current_ssid &&
-		    wpa_key_mgmt_sae(wpa_s->current_ssid->key_mgmt) &&
-		    !data->assoc_reject.timed_out) {
-			wpa_dbg(wpa_s, MSG_DEBUG,
-				"SAE: Drop PMKSA cache entry");
-			wpa_sm_aborted_cached(wpa_s->wpa);
-			wpa_sm_pmksa_cache_flush(wpa_s->wpa,
-						 wpa_s->current_ssid);
-		}
-#endif /* CONFIG_SAE */
-
-#ifdef CONFIG_FILS
-			/* Update ERP next sequence number */
-			if (wpa_s->auth_alg == WPA_AUTH_ALG_FILS)
-				eapol_sm_update_erp_next_seq_num(
-				      wpa_s->eapol,
-				      data->assoc_reject.fils_erp_next_seq_num);
-#endif /* CONFIG_FILS */
-
-			if (bssid == NULL || is_zero_ether_addr(bssid))
-				bssid = wpa_s->pending_bssid;
-			wpas_connection_failed(wpa_s, bssid);
-			wpa_supplicant_mark_disassoc(wpa_s);
-		}
+		wpas_event_assoc_reject(wpa_s, data);
 		break;
 	case EVENT_AUTH_TIMED_OUT:
 		/* It is possible to get this event from earlier connection */
