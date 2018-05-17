@@ -1181,7 +1181,7 @@ int crypto_bignum_rshift(const struct crypto_bignum *a, int n,
 {
 	if (mp_copy((mp_int *) a, (mp_int *) r) != MP_OKAY)
 		return -1;
-	mp_rshd((mp_int *) r, n);
+	mp_rshb((mp_int *) r, n);
 	return 0;
 }
 
