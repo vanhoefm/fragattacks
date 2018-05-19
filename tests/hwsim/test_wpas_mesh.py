@@ -305,7 +305,7 @@ def _test_mesh_open_rssi_threshold(dev, apdev, value, expected):
                         ": " + str(mesh_rssi_threshold))
 
 def add_mesh_secure_net(dev, psk=True, pmf=False, pairwise=None, group=None,
-                        sae_password=False):
+                        sae_password=False, sae_password_id=None):
     id = dev.add_network()
     dev.set_network(id, "mode", "5")
     dev.set_network_quoted(id, "ssid", "wpas-mesh-sec")
@@ -313,6 +313,8 @@ def add_mesh_secure_net(dev, psk=True, pmf=False, pairwise=None, group=None,
     dev.set_network(id, "frequency", "2412")
     if sae_password:
         dev.set_network_quoted(id, "sae_password", "thisismypassphrase!")
+    if sae_password_id:
+        dev.set_network_quoted(id, "sae_password_id", sae_password_id)
     if psk:
         dev.set_network_quoted(id, "psk", "thisismypassphrase!")
     if pmf:
@@ -370,6 +372,48 @@ def test_wpas_mesh_secure_sae_password(dev, apdev):
     check_mesh_peer_connected(dev[1])
 
     hwsim_utils.test_connectivity(dev[0], dev[1])
+
+def test_wpas_mesh_secure_sae_password_id(dev, apdev):
+    """Secure mesh using sae_password and password identifier"""
+    check_mesh_support(dev[0], secure=True)
+    dev[0].request("SET sae_groups ")
+    id = add_mesh_secure_net(dev[0], psk=False, sae_password=True,
+                             sae_password_id="pw id")
+    dev[0].mesh_group_add(id)
+
+    dev[1].request("SET sae_groups ")
+    id = add_mesh_secure_net(dev[1], sae_password=True,
+                             sae_password_id="pw id")
+    dev[1].mesh_group_add(id)
+
+    check_mesh_group_added(dev[0])
+    check_mesh_group_added(dev[1])
+
+    check_mesh_peer_connected(dev[0])
+    check_mesh_peer_connected(dev[1])
+
+    hwsim_utils.test_connectivity(dev[0], dev[1])
+
+def test_wpas_mesh_secure_sae_password_id_mismatch(dev, apdev):
+    """Secure mesh using sae_password and password identifier mismatch"""
+    check_mesh_support(dev[0], secure=True)
+    dev[0].request("SET sae_groups ")
+    id = add_mesh_secure_net(dev[0], psk=False, sae_password=True,
+                             sae_password_id="pw id")
+    dev[0].mesh_group_add(id)
+
+    dev[1].request("SET sae_groups ")
+    id = add_mesh_secure_net(dev[1], sae_password=True,
+                             sae_password_id="wrong")
+    dev[1].mesh_group_add(id)
+
+    check_mesh_group_added(dev[0])
+    check_mesh_group_added(dev[1])
+
+    ev = dev[0].wait_event(["CTRL-EVENT-SAE-UNKNOWN-PASSWORD-IDENTIFIER"],
+                           timeout=10)
+    if ev is None:
+        raise Exception("Unknown Password Identifier not noticed")
 
 def test_mesh_secure_pmf(dev, apdev):
     """Secure mesh network connectivity with PMF enabled"""

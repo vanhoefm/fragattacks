@@ -1246,3 +1246,51 @@ def test_sae_connect_cmd(dev, apdev):
                          timeout=15)
     if ev is None:
         raise Exception("No connection result reported")
+
+def test_sae_password_id(dev, apdev):
+    """SAE and password identifier"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = [ 'secret|mac=ff:ff:ff:ff:ff:ff|id=pw id',
+                               'foo|mac=02:02:02:02:02:02',
+                               'another secret|mac=ff:ff:ff:ff:ff:ff|id=' + 29*'A' ]
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].request("SET sae_groups ")
+    dev[0].connect("test-sae", sae_password="secret", sae_password_id="pw id",
+                   key_mgmt="SAE", scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+
+    # SAE Password Identifier element with the exact same length as the
+    # optional Anti-Clogging Token field
+    dev[0].connect("test-sae", sae_password="another secret",
+                   sae_password_id=29*'A',
+                   key_mgmt="SAE", scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+
+    dev[0].connect("test-sae", sae_password="secret", sae_password_id="unknown",
+                   key_mgmt="SAE", scan_freq="2412", wait_connect=False)
+
+    ev = dev[0].wait_event(["CTRL-EVENT-SAE-UNKNOWN-PASSWORD-IDENTIFIER"],
+                           timeout=10)
+    if ev is None:
+        raise Exception("Unknown password identifier not reported")
+    dev[0].request("REMOVE_NETWORK all")
+
+def test_sae_forced_anti_clogging_pw_id(dev, apdev):
+    """SAE anti clogging (forced and Password Identifier)"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_anti_clogging_threshold'] = '0'
+    params['sae_password'] = 'secret|id=' + 29*'A'
+    hostapd.add_ap(apdev[0], params)
+    for i in range(0, 2):
+        dev[i].request("SET sae_groups ")
+        dev[i].connect("test-sae", sae_password="secret",
+                       sae_password_id=29*'A', key_mgmt="SAE", scan_freq="2412")
