@@ -184,6 +184,7 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 	if (!bss)
 		goto out_free;
 
+	ifmsh->bss[0]->msg_ctx = wpa_s;
 	os_memcpy(bss->own_addr, wpa_s->own_addr, ETH_ALEN);
 	bss->driver = wpa_s->driver;
 	bss->drv_priv = wpa_s->drv_priv;
