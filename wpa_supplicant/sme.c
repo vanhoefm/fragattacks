@@ -117,12 +117,15 @@ static struct wpabuf * sme_auth_build_sae_commit(struct wpa_supplicant *wpa_s,
 
 	if (sae_prepare_commit(wpa_s->own_addr, bssid,
 			       (u8 *) password, os_strlen(password),
+			       ssid->sae_password_id,
 			       &wpa_s->sme.sae) < 0) {
 		wpa_printf(MSG_DEBUG, "SAE: Could not pick PWE");
 		return NULL;
 	}
 
 	len = wpa_s->sme.sae_token ? wpabuf_len(wpa_s->sme.sae_token) : 0;
+	if (ssid->sae_password_id)
+		len += 4 + os_strlen(ssid->sae_password_id);
 	buf = wpabuf_alloc(4 + SAE_COMMIT_MAX_LEN + len);
 	if (buf == NULL)
 		return NULL;
@@ -130,7 +133,8 @@ static struct wpabuf * sme_auth_build_sae_commit(struct wpa_supplicant *wpa_s,
 		wpabuf_put_le16(buf, 1); /* Transaction seq# */
 		wpabuf_put_le16(buf, WLAN_STATUS_SUCCESS);
 	}
-	sae_write_commit(&wpa_s->sme.sae, buf, wpa_s->sme.sae_token);
+	sae_write_commit(&wpa_s->sme.sae, buf, wpa_s->sme.sae_token,
+			 ssid->sae_password_id);
 
 	return buf;
 }
@@ -1003,6 +1007,16 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 				wpa_s, wpa_s->sme.ext_auth.bssid,
 				wpa_s->current_ssid);
 		return 0;
+	}
+
+	if (auth_transaction == 1 &&
+	    status_code == WLAN_STATUS_UNKNOWN_PASSWORD_IDENTIFIER) {
+		const u8 *bssid = sa ? sa : wpa_s->pending_bssid;
+
+		wpa_msg(wpa_s, MSG_INFO,
+			WPA_EVENT_SAE_UNKNOWN_PASSWORD_IDENTIFIER MACSTR,
+			MAC2STR(bssid));
+		return -1;
 	}
 
 	if (status_code != WLAN_STATUS_SUCCESS)

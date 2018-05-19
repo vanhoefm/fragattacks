@@ -749,6 +749,7 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	write_psk(f, ssid);
 	INT(mem_only_psk);
 	STR(sae_password);
+	STR(sae_password_id);
 	write_proto(f, ssid);
 	write_key_mgmt(f, ssid);
 	INT_DEF(bg_scan_period, DEFAULT_BG_SCAN_PERIOD);

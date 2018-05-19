@@ -39,6 +39,7 @@ struct sae_temporary_data {
 	struct crypto_bignum *prime_buf;
 	struct crypto_bignum *order_buf;
 	struct wpabuf *anti_clogging_token;
+	char *pw_id;
 };
 
 enum sae_state {
@@ -63,10 +64,10 @@ void sae_clear_data(struct sae_data *sae);
 
 int sae_prepare_commit(const u8 *addr1, const u8 *addr2,
 		       const u8 *password, size_t password_len,
-		       struct sae_data *sae);
+		       const char *identifier, struct sae_data *sae);
 int sae_process_commit(struct sae_data *sae);
 void sae_write_commit(struct sae_data *sae, struct wpabuf *buf,
-		      const struct wpabuf *token);
+		      const struct wpabuf *token, const char *identifier);
 u16 sae_parse_commit(struct sae_data *sae, const u8 *data, size_t len,
 		     const u8 **token, size_t *token_len, int *allowed_groups);
 void sae_write_confirm(struct sae_data *sae, struct wpabuf *buf);

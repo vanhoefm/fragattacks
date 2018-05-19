@@ -873,6 +873,7 @@ static int wpa_config_write_network(HKEY hk, struct wpa_ssid *ssid, int id)
 	write_bssid(netw, ssid);
 	write_psk(netw, ssid);
 	STR(sae_password);
+	STR(sae_password_id);
 	write_proto(netw, ssid);
 	write_key_mgmt(netw, ssid);
 	write_pairwise(netw, ssid);

@@ -237,6 +237,12 @@ struct fils_realm {
 	char realm[];
 };
 
+struct sae_password_entry {
+	struct sae_password_entry *next;
+	char *password;
+	char *identifier;
+	u8 peer_addr[ETH_ALEN];
+};
 
 /**
  * struct hostapd_bss_config - Per-BSS configuration
@@ -604,7 +610,7 @@ struct hostapd_bss_config {
 	unsigned int sae_sync;
 	int sae_require_mfp;
 	int *sae_groups;
-	char *sae_password;
+	struct sae_password_entry *sae_passwords;
 
 	char *wowlan_triggers; /* Wake-on-WLAN triggers */
 

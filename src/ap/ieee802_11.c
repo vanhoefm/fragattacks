@@ -369,9 +369,25 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 					     struct sta_info *sta, int update)
 {
 	struct wpabuf *buf;
-	const char *password;
+	const char *password = NULL;
+	struct sae_password_entry *pw;
+	const char *rx_id = NULL;
 
-	password = hapd->conf->sae_password;
+	if (sta->sae->tmp)
+		rx_id = sta->sae->tmp->pw_id;
+
+	for (pw = hapd->conf->sae_passwords; pw; pw = pw->next) {
+		if (!is_broadcast_ether_addr(pw->peer_addr) &&
+		    os_memcmp(pw->peer_addr, sta->addr, ETH_ALEN) != 0)
+			continue;
+		if ((rx_id && !pw->identifier) || (!rx_id && pw->identifier))
+			continue;
+		if (rx_id && pw->identifier &&
+		    os_strcmp(rx_id, pw->identifier) != 0)
+			continue;
+		password = pw->password;
+		break;
+	}
 	if (!password)
 		password = hapd->conf->ssid.wpa_passphrase;
 	if (!password) {
@@ -381,17 +397,18 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 
 	if (update &&
 	    sae_prepare_commit(hapd->own_addr, sta->addr,
-			       (u8 *) password, os_strlen(password),
+			       (u8 *) password, os_strlen(password), rx_id,
 			       sta->sae) < 0) {
 		wpa_printf(MSG_DEBUG, "SAE: Could not pick PWE");
 		return NULL;
 	}
 
-	buf = wpabuf_alloc(SAE_COMMIT_MAX_LEN);
+	buf = wpabuf_alloc(SAE_COMMIT_MAX_LEN +
+			   (rx_id ? 3 + os_strlen(rx_id) : 0));
 	if (buf == NULL)
 		return NULL;
 	sae_write_commit(sta->sae, buf, sta->sae->tmp ?
-			 sta->sae->tmp->anti_clogging_token : NULL);
+			 sta->sae->tmp->anti_clogging_token : NULL, rx_id);
 
 	return buf;
 }
@@ -420,6 +437,8 @@ static int auth_sae_send_commit(struct hostapd_data *hapd,
 	int reply_res;
 
 	data = auth_build_sae_commit(hapd, sta, update);
+	if (!data && sta->sae->tmp && sta->sae->tmp->pw_id)
+		return WLAN_STATUS_UNKNOWN_PASSWORD_IDENTIFIER;
 	if (data == NULL)
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
@@ -932,6 +951,17 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 				   MAC2STR(sta->addr));
 			goto remove_sta;
 		}
+
+		if (resp == WLAN_STATUS_UNKNOWN_PASSWORD_IDENTIFIER) {
+			wpa_msg(hapd->msg_ctx, MSG_INFO,
+				WPA_EVENT_SAE_UNKNOWN_PASSWORD_IDENTIFIER
+				MACSTR, MAC2STR(sta->addr));
+			sae_clear_retransmit_timer(hapd, sta);
+			sae_set_state(sta, SAE_NOTHING,
+				      "Unknown Password Identifier");
+			goto remove_sta;
+		}
+
 		if (token && check_sae_token(hapd, sta->addr, token, token_len)
 		    < 0) {
 			wpa_printf(MSG_DEBUG, "SAE: Drop commit message with "

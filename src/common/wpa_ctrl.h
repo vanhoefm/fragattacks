@@ -89,6 +89,9 @@ extern "C" {
 #define WPA_EVENT_REGDOM_CHANGE "CTRL-EVENT-REGDOM-CHANGE "
 /** Channel switch (followed by freq=<MHz> and other channel parameters) */
 #define WPA_EVENT_CHANNEL_SWITCH "CTRL-EVENT-CHANNEL-SWITCH "
+/** SAE authentication failed due to unknown password identifier */
+#define WPA_EVENT_SAE_UNKNOWN_PASSWORD_IDENTIFIER \
+	"CTRL-EVENT-SAE-UNKNOWN-PASSWORD-IDENTIFIER "
 
 /** IP subnet status change notification
  *

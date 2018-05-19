@@ -194,6 +194,14 @@ struct wpa_ssid {
 	char *sae_password;
 
 	/**
+	 * sae_password_id - SAE password identifier
+	 *
+	 * This parameter can be used to identify a specific SAE password. If
+	 * not included, the default SAE password is used instead.
+	 */
+	char *sae_password_id;
+
+	/**
 	 * ext_psk - PSK/passphrase name in external storage
 	 *
 	 * If this is set, PSK/passphrase will be fetched from external storage

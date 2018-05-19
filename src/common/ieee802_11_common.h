@@ -83,6 +83,7 @@ struct ieee802_11_elems {
 	const u8 *owe_dh;
 	const u8 *power_capab;
 	const u8 *roaming_cons_sel;
+	const u8 *password_id;
 
 	u8 ssid_len;
 	u8 supp_rates_len;
@@ -128,6 +129,7 @@ struct ieee802_11_elems {
 	u8 owe_dh_len;
 	u8 power_capab_len;
 	u8 roaming_cons_sel_len;
+	u8 password_id_len;
 
 	struct mb_ies_info mb_ies;
 };

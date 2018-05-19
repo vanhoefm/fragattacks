@@ -2169,6 +2169,61 @@ static unsigned int parse_tls_flags(const char *val)
 #endif /* EAP_SERVER */
 
 
+#ifdef CONFIG_SAE
+static int parse_sae_password(struct hostapd_bss_config *bss, const char *val)
+{
+	struct sae_password_entry *pw;
+	const char *pos = val, *pos2, *end = NULL;
+
+	pw = os_zalloc(sizeof(*pw));
+	if (!pw)
+		return -1;
+	os_memset(pw->peer_addr, 0xff, ETH_ALEN); /* default to wildcard */
+
+	pos2 = os_strstr(pos, "|mac=");
+	if (pos2) {
+		end = pos2;
+		pos2 += 5;
+		if (hwaddr_aton(pos2, pw->peer_addr) < 0)
+			goto fail;
+		pos = pos2 + ETH_ALEN * 3 - 1;
+	}
+
+	pos2 = os_strstr(pos, "|id=");
+	if (pos2) {
+		if (!end)
+			end = pos2;
+		pos2 += 4;
+		pw->identifier = os_strdup(pos2);
+		if (!pw->identifier)
+			goto fail;
+	}
+
+	if (!end) {
+		pw->password = os_strdup(val);
+		if (!pw->password)
+			goto fail;
+	} else {
+		pw->password = os_malloc(end - val + 1);
+		if (!pw->password)
+			goto fail;
+		os_memcpy(pw->password, val, end - val);
+		pw->password[end - val] = '\0';
+	}
+
+	pw->next = bss->sae_passwords;
+	bss->sae_passwords = pw;
+
+	return 0;
+fail:
+	str_clear_free(pw->password);
+	os_free(pw->identifier);
+	os_free(pw);
+	return -1;
+}
+#endif /* CONFIG_SAE */
+
+
 static int hostapd_config_fill(struct hostapd_config *conf,
 			       struct hostapd_bss_config *bss,
 			       const char *buf, char *pos, int line)
@@ -3727,9 +3782,14 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "sae_commit_override") == 0) {
 		wpabuf_free(bss->sae_commit_override);
 		bss->sae_commit_override = wpabuf_parse_bin(pos);
+#ifdef CONFIG_SAE
 	} else if (os_strcmp(buf, "sae_password") == 0) {
-		os_free(bss->sae_password);
-		bss->sae_password = os_strdup(pos);
+		if (parse_sae_password(bss, pos) < 0) {
+			wpa_printf(MSG_ERROR, "Line %d: Invalid sae_password",
+				   line);
+			return 1;
+		}
+#endif /* CONFIG_SAE */
 #endif /* CONFIG_TESTING_OPTIONS */
 	} else if (os_strcmp(buf, "vendor_elements") == 0) {
 		if (parse_wpabuf_hex(line, buf, &bss->vendor_elements, pos))

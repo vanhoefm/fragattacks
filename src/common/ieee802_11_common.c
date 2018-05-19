@@ -262,6 +262,10 @@ static int ieee802_11_parse_extension(const u8 *pos, size_t elen,
 		elems->owe_dh = pos;
 		elems->owe_dh_len = elen;
 		break;
+	case WLAN_EID_EXT_PASSWORD_IDENTIFIER:
+		elems->password_id = pos;
+		elems->password_id_len = elen;
+		break;
 	default:
 		if (show_errors) {
 			wpa_printf(MSG_MSGDUMP,
