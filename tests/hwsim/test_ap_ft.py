@@ -2272,3 +2272,38 @@ def test_ap_ft_psk_file(dev, apdev):
     if ev is None:
         raise Exception("Timed out while waiting for failure report")
     dev[1].request("REMOVE_NETWORK all")
+
+def test_ap_ft_eap_ap_config_change(dev, apdev):
+    """WPA2-EAP-FT AP changing from 802.1X-only to FT-only"""
+    ssid = "test-ft"
+    passphrase="12345678"
+    bssid = apdev[0]['bssid']
+
+    radius = hostapd.radius_params()
+    params = ft_params1(ssid=ssid, passphrase=passphrase, discovery=True)
+    params['wpa_key_mgmt'] = "WPA-EAP"
+    params["ieee8021x"] = "1"
+    params["pmk_r1_push"] = "0"
+    params["r0kh"] = "ff:ff:ff:ff:ff:ff * 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    params["r1kh"] = "00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    params["eap_server"] = "0"
+    params = dict(radius.items() + params.items())
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect(ssid, key_mgmt="FT-EAP WPA-EAP", proto="WPA2",
+                   eap="GPSK", identity="gpsk user",
+                   password="abcdefghijklmnop0123456789abcdef",
+                   scan_freq="2412")
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+
+    hapd.disable()
+    hapd.set('wpa_key_mgmt', "FT-EAP")
+    hapd.enable()
+
+    dev[0].request("BSS_FLUSH 0")
+    dev[0].scan_for_bss(bssid, 2412, force_scan=True, only_new=True)
+
+    dev[0].request("RECONNECT")
+    dev[0].wait_connected()
