@@ -299,7 +299,7 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 {
 	struct crypto_ec_point *K = NULL, *point = NULL;
 	struct crypto_bignum *mask = NULL, *cofactor = NULL;
-	const u8 *ptr;
+	const u8 *ptr = payload;
 	u8 *scalar = NULL, *element = NULL;
 	size_t prime_len, order_len;
 	const u8 *password;
@@ -322,21 +322,23 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 	prime_len = crypto_ec_prime_len(data->grp->group);
 	order_len = crypto_ec_order_len(data->grp->group);
 
-	if (payload_len != 2 * prime_len + order_len) {
-		wpa_printf(MSG_INFO,
-			   "EAP-pwd: Unexpected Commit payload length %u (expected %u)",
-			   (unsigned int) payload_len,
-			   (unsigned int) (2 * prime_len + order_len));
-		goto fin;
-	}
-
-	if (data->prep == EAP_PWD_PREP_MS) {
+	switch (data->prep) {
+	case EAP_PWD_PREP_MS:
+		wpa_printf(MSG_DEBUG,
+			   "EAP-pwd commit request, password prep is MS");
 #ifdef CONFIG_FIPS
 		wpa_printf(MSG_ERROR,
 			   "EAP-PWD (peer): MS password hash not supported in FIPS mode");
 		eap_pwd_state(data, FAILURE);
 		return;
 #else /* CONFIG_FIPS */
+		if (payload_len != 2 * prime_len + order_len) {
+			wpa_printf(MSG_INFO,
+				   "EAP-pwd: Unexpected Commit payload length %u (expected %u)",
+				   (unsigned int) payload_len,
+				   (unsigned int) (2 * prime_len + order_len));
+			goto fin;
+		}
 		if (data->password_hash) {
 			res = hash_nt_password_hash(data->password, pwhashhash);
 		} else {
@@ -357,9 +359,32 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 		password = pwhashhash;
 		password_len = sizeof(pwhashhash);
 #endif /* CONFIG_FIPS */
-	} else {
+		break;
+	case EAP_PWD_PREP_NONE:
+		wpa_printf(MSG_DEBUG,
+			   "EAP-pwd commit request, password prep is NONE");
+		if (data->password_hash) {
+			wpa_printf(MSG_DEBUG,
+				   "EAP-PWD: Unhashed password not available");
+			eap_pwd_state(data, FAILURE);
+			return;
+		}
+		if (payload_len != 2 * prime_len + order_len) {
+			wpa_printf(MSG_INFO,
+				   "EAP-pwd: Unexpected Commit payload length %u (expected %u)",
+				   (unsigned int) payload_len,
+				   (unsigned int) (2 * prime_len + order_len));
+			goto fin;
+		}
 		password = data->password;
 		password_len = data->password_len;
+		break;
+	default:
+		wpa_printf(MSG_DEBUG,
+			   "EAP-pwd: Unsupported password pre-processing technique (Prep=%u)",
+			   data->prep);
+		eap_pwd_state(data, FAILURE);
+		return;
 	}
 
 	/* compute PWE */
@@ -433,7 +458,6 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 	}
 
 	/* element, x then y, followed by scalar */
-	ptr = payload;
 	data->server_element = crypto_ec_point_from_bin(data->grp->group, ptr);
 	if (!data->server_element) {
 		wpa_printf(MSG_INFO, "EAP-PWD (peer): setting peer element "
