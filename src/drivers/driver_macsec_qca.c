@@ -592,6 +592,7 @@ static int macsec_qca_create_transmit_sc(void *priv, struct transmit_sc *sc,
 	fal_tx_class_lut_t entry;
 	u8 psci[ETH_ALEN + 2];
 	u32 channel;
+	u16 sci_port = be_to_host16(sc->sci.port);
 
 	ret = macsec_qca_get_available_transmit_sc(priv, &channel);
 	if (ret != 0)
@@ -607,8 +608,8 @@ static int macsec_qca_create_transmit_sc(void *priv, struct transmit_sc *sc,
 	entry.channel = channel;
 
 	os_memcpy(psci, sc->sci.addr, ETH_ALEN);
-	psci[6] = (sc->sci.port >> 8) & 0xf;
-	psci[7] = sc->sci.port & 0xf;
+	psci[6] = (sci_port >> 8) & 0xf;
+	psci[7] = sci_port & 0xf;
 
 	ret += nss_macsec_secy_tx_class_lut_set(drv->secy_id, channel, &entry);
 	ret += nss_macsec_secy_tx_sc_create(drv->secy_id, channel, psci, 8);
