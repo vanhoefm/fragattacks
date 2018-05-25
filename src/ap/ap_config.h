@@ -160,6 +160,8 @@ struct hostapd_eap_user {
 	} methods[EAP_MAX_METHODS];
 	u8 *password;
 	size_t password_len;
+	u8 *salt;
+	size_t salt_len; /* non-zero when password is salted */
 	int phase2;
 	int force_version;
 	unsigned int wildcard_prefix:1;

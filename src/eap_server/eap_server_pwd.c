@@ -27,8 +27,11 @@ struct eap_pwd_data {
 	u8 *password;
 	size_t password_len;
 	int password_hash;
+	u8 *salt;
+	size_t salt_len;
 	u32 token;
 	u16 group_num;
+	u8 password_prep;
 	EAP_PWD_group *grp;
 
 	struct wpabuf *inbuf;
@@ -115,6 +118,19 @@ static void * eap_pwd_init(struct eap_sm *sm)
 	os_memcpy(data->password, sm->user->password, data->password_len);
 	data->password_hash = sm->user->password_hash;
 
+	data->salt_len = sm->user->salt_len;
+	if (data->salt_len) {
+		data->salt = os_memdup(sm->user->salt, sm->user->salt_len);
+		if (!data->salt) {
+			wpa_printf(MSG_INFO,
+				   "EAP-pwd: Memory allocation of salt failed");
+			bin_clear_free(data->id_server, data->id_server_len);
+			bin_clear_free(data->password, data->password_len);
+			os_free(data);
+			return NULL;
+		}
+	}
+
 	data->in_frag_pos = data->out_frag_pos = 0;
 	data->inbuf = data->outbuf = NULL;
 	/* use default MTU from RFC 5931 if not configured otherwise */
@@ -137,6 +153,7 @@ static void eap_pwd_reset(struct eap_sm *sm, void *priv)
 	bin_clear_free(data->id_peer, data->id_peer_len);
 	bin_clear_free(data->id_server, data->id_server_len);
 	bin_clear_free(data->password, data->password_len);
+	bin_clear_free(data->salt, data->salt_len);
 	if (data->grp) {
 		crypto_ec_deinit(data->grp->group);
 		crypto_ec_point_deinit(data->grp->pwe, 1);
@@ -172,12 +189,45 @@ static void eap_pwd_build_id_req(struct eap_sm *sm, struct eap_pwd_data *data,
 		return;
 	}
 
+	wpa_hexdump_key(MSG_DEBUG, "EAP-pwd (server): password",
+			data->password, data->password_len);
+	if (data->salt_len)
+		wpa_hexdump(MSG_DEBUG, "EAP-pwd (server): salt",
+			    data->salt, data->salt_len);
+
+	/*
+	 * If this is a salted password then figure out how it was hashed
+	 * based on the length.
+	 */
+	if (data->salt_len) {
+		switch (data->password_len) {
+		case 20:
+			data->password_prep = EAP_PWD_PREP_SSHA1;
+			break;
+		case 32:
+			data->password_prep = EAP_PWD_PREP_SSHA256;
+			break;
+		case 64:
+			data->password_prep = EAP_PWD_PREP_SSHA512;
+			break;
+		default:
+			wpa_printf(MSG_INFO,
+				   "EAP-pwd (server): bad size %d for salted password",
+				   (int) data->password_len);
+			eap_pwd_state(data, FAILURE);
+			return;
+		}
+	} else {
+		/* Otherwise, figure out whether it's MS hashed or plain */
+		data->password_prep = data->password_hash ? EAP_PWD_PREP_MS :
+			EAP_PWD_PREP_NONE;
+	}
+
 	wpabuf_put_be16(data->outbuf, data->group_num);
 	wpabuf_put_u8(data->outbuf, EAP_PWD_DEFAULT_RAND_FUNC);
 	wpabuf_put_u8(data->outbuf, EAP_PWD_DEFAULT_PRF);
 	wpabuf_put_data(data->outbuf, &data->token, sizeof(data->token));
-	wpabuf_put_u8(data->outbuf, data->password_hash ? EAP_PWD_PREP_MS :
-		      EAP_PWD_PREP_NONE);
+	wpabuf_put_u8(data->outbuf, data->password_prep);
 	wpabuf_put_data(data->outbuf, data->id_server, data->id_server_len);
 }
 
@@ -254,9 +304,16 @@ static void eap_pwd_build_commit_req(struct eap_sm *sm,
 
 	crypto_bignum_to_bin(data->my_scalar, scalar, order_len, order_len);
 
-	data->outbuf = wpabuf_alloc(2 * prime_len + order_len);
+	data->outbuf = wpabuf_alloc(2 * prime_len + order_len +
+				    (data->salt ? 1 + data->salt_len : 0));
 	if (data->outbuf == NULL)
 		goto fin;
+
+	/* If we're doing salted password prep, add the salt */
+	if (data->salt_len) {
+		wpabuf_put_u8(data->outbuf, data->salt_len);
+		wpabuf_put_data(data->outbuf, data->salt, data->salt_len);
+	}
 
 	/* We send the element as (x,y) followed by the scalar */
 	wpabuf_put_data(data->outbuf, element, 2 * prime_len);
@@ -546,10 +603,13 @@ static void eap_pwd_process_id_resp(struct eap_sm *sm,
 	    (id->random_function != EAP_PWD_DEFAULT_RAND_FUNC) ||
 	    (os_memcmp(id->token, (u8 *)&data->token, sizeof(data->token))) ||
 	    (id->prf != EAP_PWD_DEFAULT_PRF) ||
-	    id->prep !=
-	    data->password_hash ? EAP_PWD_PREP_MS : EAP_PWD_PREP_NONE) {
+	    (id->prep != data->password_prep)) {
 		wpa_printf(MSG_INFO, "EAP-pwd: peer changed parameters");
 		eap_pwd_state(data, FAILURE);
+		return;
+	}
+	if (data->id_peer || data->grp) {
+		wpa_printf(MSG_INFO, "EAP-pwd: data was already allocated");
 		return;
 	}
 	data->id_peer = os_malloc(payload_len - sizeof(struct eap_pwd_id));
@@ -569,7 +629,12 @@ static void eap_pwd_process_id_resp(struct eap_sm *sm,
 		return;
 	}
 
-	if (data->password_hash) {
+	/*
+	 * If it's PREP_MS then hash the password again, otherwise regardless
+	 * of the prep the client is doing, the password we have is the one to
+	 * use to generate the password element.
+	 */
+	if (data->password_prep == EAP_PWD_PREP_MS) {
 		res = hash_nt_password_hash(data->password, pwhashhash);
 		if (res)
 			return;

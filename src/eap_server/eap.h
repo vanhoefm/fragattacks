@@ -31,6 +31,8 @@ struct eap_user {
 	size_t password_len;
 	int password_hash; /* whether password is hashed with
 			    * nt_password_hash() */
+	u8 *salt;
+	size_t salt_len;
 	int phase2;
 	int force_version;
 	unsigned int remediation:1;

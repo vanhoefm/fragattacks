@@ -77,6 +77,13 @@ static int hostapd_radius_get_eap_user(void *ctx, const u8 *identity,
 			goto out;
 		user->password_len = eap_user->password_len;
 		user->password_hash = eap_user->password_hash;
+		if (eap_user->salt && eap_user->salt_len) {
+			user->salt = os_memdup(eap_user->salt,
+					       eap_user->salt_len);
+			if (!user->salt)
+				goto out;
+			user->salt_len = eap_user->salt_len;
+		}
 	}
 	user->force_version = eap_user->force_version;
 	user->macacl = eap_user->macacl;

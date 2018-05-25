@@ -415,6 +415,7 @@ void hostapd_config_free_eap_user(struct hostapd_eap_user *user)
 	hostapd_config_free_radius_attr(user->accept_attr);
 	os_free(user->identity);
 	bin_clear_free(user->password, user->password_len);
+	bin_clear_free(user->salt, user->salt_len);
 	os_free(user);
 }
 

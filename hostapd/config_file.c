@@ -233,6 +233,62 @@ static int hostapd_config_read_maclist(const char *fname,
 
 
 #ifdef EAP_SERVER
+
+static int hostapd_config_eap_user_salted(struct hostapd_eap_user *user,
+					  const char *hash, size_t len,
+					  char **pos, int line,
+					  const char *fname)
+{
+	char *pos2 = *pos;
+
+	while (*pos2 != '\0' && *pos2 != ' ' && *pos2 != '\t' && *pos2 != '#')
+		pos2++;
+
+	if (pos2 - *pos < (int) (2 * (len + 1))) { /* at least 1 byte of salt */
+		wpa_printf(MSG_ERROR,
+			   "Invalid salted %s hash on line %d in '%s'",
+			   hash, line, fname);
+		return -1;
+	}
+
+	user->password = os_malloc(len);
+	if (!user->password) {
+		wpa_printf(MSG_ERROR,
+			   "Failed to allocate memory for salted %s hash",
+			   hash);
+		return -1;
+	}
+
+	if (hexstr2bin(*pos, user->password, len) < 0) {
+		wpa_printf(MSG_ERROR,
+			   "Invalid salted password on line %d in '%s'",
+			   line, fname);
+		return -1;
+	}
+	user->password_len = len;
+	*pos += 2 * len;
+
+	user->salt_len = (pos2 - *pos) / 2;
+	user->salt = os_malloc(user->salt_len);
+	if (!user->salt) {
+		wpa_printf(MSG_ERROR,
+			   "Failed to allocate memory for salted %s hash",
+			   hash);
+		return -1;
+	}
+
+	if (hexstr2bin(*pos, user->salt, user->salt_len) < 0) {
+		wpa_printf(MSG_ERROR,
+			   "Invalid salt for password on line %d in '%s'",
+			   line, fname);
+		return -1;
+	}
+
+	*pos = pos2;
+	return 0;
+}
+
+
 static int hostapd_config_read_eap_user(const char *fname,
 					struct hostapd_bss_config *conf)
 {
@@ -484,6 +540,24 @@ static int hostapd_config_read_eap_user(const char *fname,
 			user->password_len = 16;
 			user->password_hash = 1;
 			pos = pos2;
+		} else if (os_strncmp(pos, "ssha1:", 6) == 0) {
+			pos += 6;
+			if (hostapd_config_eap_user_salted(user, "sha1", 20,
+							   &pos,
+							   line, fname) < 0)
+				goto failed;
+		} else if (os_strncmp(pos, "ssha256:", 8) == 0) {
+			pos += 8;
+			if (hostapd_config_eap_user_salted(user, "sha256", 32,
+							   &pos,
+							   line, fname) < 0)
+				goto failed;
+		} else if (os_strncmp(pos, "ssha512:", 8) == 0) {
+			pos += 8;
+			if (hostapd_config_eap_user_salted(user, "sha512", 64,
+							   &pos,
+							   line, fname) < 0)
+				goto failed;
 		} else {
 			pos2 = pos;
 			while (*pos2 != '\0' && *pos2 != ' ' &&
@@ -543,6 +617,7 @@ static int hostapd_config_read_eap_user(const char *fname,
 
 	return ret;
 }
+
 #endif /* EAP_SERVER */
 
 

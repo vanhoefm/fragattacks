@@ -1820,6 +1820,8 @@ static void eap_user_free(struct eap_user *user)
 		return;
 	bin_clear_free(user->password, user->password_len);
 	user->password = NULL;
+	bin_clear_free(user->salt, user->salt_len);
+	user->salt = NULL;
 	os_free(user);
 }
 
