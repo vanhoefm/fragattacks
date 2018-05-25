@@ -50,6 +50,7 @@ struct eap_pwd_id {
 } STRUCT_PACKED;
 
 /* common routines */
+EAP_PWD_group * get_eap_pwd_group(u16 num);
 int compute_password_element(EAP_PWD_group *grp, u16 num,
 			     const u8 *password, size_t password_len,
 			     const u8 *id_server, size_t id_server_len,

@@ -81,6 +81,27 @@ static int eap_pwd_kdf(const u8 *key, size_t keylen, const u8 *label,
 }
 
 
+EAP_PWD_group * get_eap_pwd_group(u16 num)
+{
+	EAP_PWD_group *grp;
+
+	grp = os_zalloc(sizeof(EAP_PWD_group));
+	if (!grp)
+		return NULL;
+	grp->group = crypto_ec_init(num);
+	if (!grp->group) {
+		wpa_printf(MSG_INFO, "EAP-pwd: unable to create EC group");
+		os_free(grp);
+		return NULL;
+	}
+
+	grp->group_num = num;
+	wpa_printf(MSG_INFO, "EAP-pwd: provisioned group %d", num);
+
+	return grp;
+}
+
+
 /*
  * compute a "random" secret point on an elliptic curve based
  * on the password and identities.
@@ -97,12 +118,8 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 	size_t primebytelen, primebitlen;
 	struct crypto_bignum *x_candidate = NULL, *rnd = NULL, *cofactor = NULL;
 
-	grp->pwe = NULL;
-	grp->group = crypto_ec_init(num);
-	if (!grp->group) {
-		wpa_printf(MSG_INFO, "EAP-pwd: unable to create EC group");
-		goto fail;
-	}
+	if (grp->pwe)
+		return -1;
 
 	cofactor = crypto_bignum_init();
 	grp->pwe = crypto_ec_point_init(grp->group);
@@ -234,11 +251,8 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 		break;
 	}
 	wpa_printf(MSG_DEBUG, "EAP-pwd: found a PWE in %d tries", ctr);
-	grp->group_num = num;
 	if (0) {
  fail:
-		crypto_ec_deinit(grp->group);
-		grp->group = NULL;
 		crypto_ec_point_deinit(grp->pwe, 1);
 		grp->pwe = NULL;
 		ret = 1;

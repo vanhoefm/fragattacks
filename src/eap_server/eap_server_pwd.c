@@ -562,7 +562,7 @@ static void eap_pwd_process_id_resp(struct eap_sm *sm,
 	wpa_hexdump_ascii(MSG_DEBUG, "EAP-PWD (server): peer sent id of",
 			  data->id_peer, data->id_peer_len);
 
-	data->grp = os_zalloc(sizeof(EAP_PWD_group));
+	data->grp = get_eap_pwd_group(data->group_num);
 	if (data->grp == NULL) {
 		wpa_printf(MSG_INFO, "EAP-PWD: failed to allocate memory for "
 			   "group");
