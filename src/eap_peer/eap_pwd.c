@@ -236,7 +236,8 @@ eap_pwd_perform_id_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 
 	if (id->prep != EAP_PWD_PREP_NONE &&
 	    id->prep != EAP_PWD_PREP_MS &&
-	    id->prep != EAP_PWD_PREP_SSHA1) {
+	    id->prep != EAP_PWD_PREP_SSHA1 &&
+	    id->prep != EAP_PWD_PREP_SSHA256) {
 		wpa_printf(MSG_DEBUG,
 			   "EAP-PWD: Unsupported password pre-processing technique (Prep=%u)",
 			   id->prep);
@@ -405,6 +406,40 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 		ptr += salt_len;
 		password = salthashpwd;
 		password_len = SHA1_MAC_LEN;
+		wpa_hexdump_key(MSG_DEBUG, "EAP-pwd: Salted password",
+				password, password_len);
+		break;
+	case EAP_PWD_PREP_SSHA256:
+		wpa_printf(MSG_DEBUG,
+			   "EAP-pwd commit request, password prep is salted sha256");
+		if (payload_len < 1 || *ptr == 0) {
+			wpa_printf(MSG_DEBUG, "EAP-pwd: Invalid Salt-len");
+			goto fin;
+		}
+		salt_len = *ptr++;
+		exp_len = 1 + salt_len + 2 * prime_len + order_len;
+		if (payload_len != exp_len) {
+			wpa_printf(MSG_INFO,
+				   "EAP-pwd: Unexpected Commit payload length %u (expected %u)",
+				   (unsigned int) payload_len,
+				   (unsigned int) exp_len);
+			goto fin;
+		}
+
+		/* salted-password = Hash(password | salt) */
+		wpa_hexdump_key(MSG_DEBUG, "EAP-pwd: Unsalted password",
+				data->password, data->password_len);
+		wpa_hexdump(MSG_DEBUG, "EAP-pwd: Salt", ptr, salt_len);
+		salt_pwd[0] = data->password;
+		salt_pwd[1] = ptr;
+		salt_pwd_len[0] = data->password_len;
+		salt_pwd_len[1] = salt_len;
+		if (sha256_vector(2, salt_pwd, salt_pwd_len, salthashpwd) < 0)
+			goto fin;
+
+		ptr += salt_len;
+		password = salthashpwd;
+		password_len = SHA256_MAC_LEN;
 		wpa_hexdump_key(MSG_DEBUG, "EAP-pwd: Salted password",
 				password, password_len);
 		break;
