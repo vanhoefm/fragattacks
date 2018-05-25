@@ -29,6 +29,8 @@ struct eap_pwd_data {
 	size_t password_len;
 	int password_hash;
 	u16 group_num;
+	u8 prep;
+	u8 token[4];
 	EAP_PWD_group *grp;
 
 	struct wpabuf *inbuf;
@@ -206,10 +208,6 @@ eap_pwd_perform_id_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 			    const u8 *payload, size_t payload_len)
 {
 	struct eap_pwd_id *id;
-	const u8 *password;
-	size_t password_len;
-	u8 pwhashhash[16];
-	int res;
 
 	if (data->state != PWD_ID_Req) {
 		ret->ignore = TRUE;
@@ -254,6 +252,9 @@ eap_pwd_perform_id_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 	wpa_printf(MSG_DEBUG, "EAP-PWD (peer): using group %d",
 		   data->group_num);
 
+	data->prep = id->prep;
+	os_memcpy(data->token, id->token, sizeof(id->token));
+
 	data->id_server = os_malloc(payload_len - sizeof(struct eap_pwd_id));
 	if (data->id_server == NULL) {
 		wpa_printf(MSG_INFO, "EAP-PWD: memory allocation id fail");
@@ -273,7 +274,63 @@ eap_pwd_perform_id_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 		return;
 	}
 
-	if (id->prep == EAP_PWD_PREP_MS) {
+	data->outbuf = wpabuf_alloc(sizeof(struct eap_pwd_id) +
+				    data->id_peer_len);
+	if (data->outbuf == NULL) {
+		eap_pwd_state(data, FAILURE);
+		return;
+	}
+	wpabuf_put_be16(data->outbuf, data->group_num);
+	wpabuf_put_u8(data->outbuf, EAP_PWD_DEFAULT_RAND_FUNC);
+	wpabuf_put_u8(data->outbuf, EAP_PWD_DEFAULT_PRF);
+	wpabuf_put_data(data->outbuf, id->token, sizeof(id->token));
+	wpabuf_put_u8(data->outbuf, id->prep);
+	wpabuf_put_data(data->outbuf, data->id_peer, data->id_peer_len);
+
+	eap_pwd_state(data, PWD_Commit_Req);
+}
+
+
+static void
+eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
+				struct eap_method_ret *ret,
+				const struct wpabuf *reqData,
+				const u8 *payload, size_t payload_len)
+{
+	struct crypto_ec_point *K = NULL, *point = NULL;
+	struct crypto_bignum *mask = NULL, *cofactor = NULL;
+	const u8 *ptr;
+	u8 *scalar = NULL, *element = NULL;
+	size_t prime_len, order_len;
+	const u8 *password;
+	size_t password_len;
+	u8 pwhashhash[16];
+	int res;
+
+	if (data->state != PWD_Commit_Req) {
+		ret->ignore = TRUE;
+		goto fin;
+	}
+
+	if (!data->grp) {
+		wpa_printf(MSG_DEBUG,
+			   "EAP-PWD (client): uninitialized EAP-pwd group");
+		ret->ignore = TRUE;
+		goto fin;
+	}
+
+	prime_len = crypto_ec_prime_len(data->grp->group);
+	order_len = crypto_ec_order_len(data->grp->group);
+
+	if (payload_len != 2 * prime_len + order_len) {
+		wpa_printf(MSG_INFO,
+			   "EAP-pwd: Unexpected Commit payload length %u (expected %u)",
+			   (unsigned int) payload_len,
+			   (unsigned int) (2 * prime_len + order_len));
+		goto fin;
+	}
+
+	if (data->prep == EAP_PWD_PREP_MS) {
 #ifdef CONFIG_FIPS
 		wpa_printf(MSG_ERROR,
 			   "EAP-PWD (peer): MS password hash not supported in FIPS mode");
@@ -310,7 +367,7 @@ eap_pwd_perform_id_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 				       password, password_len,
 				       data->id_server, data->id_server_len,
 				       data->id_peer, data->id_peer_len,
-				       id->token);
+				       data->token);
 	os_memset(pwhashhash, 0, sizeof(pwhashhash));
 	if (res) {
 		wpa_printf(MSG_INFO, "EAP-PWD (peer): unable to compute PWE");
@@ -320,51 +377,6 @@ eap_pwd_perform_id_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 
 	wpa_printf(MSG_DEBUG, "EAP-PWD (peer): computed %d bit PWE...",
 		   (int) crypto_ec_prime_len_bits(data->grp->group));
-
-	data->outbuf = wpabuf_alloc(sizeof(struct eap_pwd_id) +
-				    data->id_peer_len);
-	if (data->outbuf == NULL) {
-		eap_pwd_state(data, FAILURE);
-		return;
-	}
-	wpabuf_put_be16(data->outbuf, data->group_num);
-	wpabuf_put_u8(data->outbuf, EAP_PWD_DEFAULT_RAND_FUNC);
-	wpabuf_put_u8(data->outbuf, EAP_PWD_DEFAULT_PRF);
-	wpabuf_put_data(data->outbuf, id->token, sizeof(id->token));
-	wpabuf_put_u8(data->outbuf, id->prep);
-	wpabuf_put_data(data->outbuf, data->id_peer, data->id_peer_len);
-
-	eap_pwd_state(data, PWD_Commit_Req);
-}
-
-
-static void
-eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
-				struct eap_method_ret *ret,
-				const struct wpabuf *reqData,
-				const u8 *payload, size_t payload_len)
-{
-	struct crypto_ec_point *K = NULL, *point = NULL;
-	struct crypto_bignum *mask = NULL, *cofactor = NULL;
-	const u8 *ptr;
-	u8 *scalar = NULL, *element = NULL;
-	size_t prime_len, order_len;
-
-	if (data->state != PWD_Commit_Req) {
-		ret->ignore = TRUE;
-		goto fin;
-	}
-
-	prime_len = crypto_ec_prime_len(data->grp->group);
-	order_len = crypto_ec_order_len(data->grp->group);
-
-	if (payload_len != 2 * prime_len + order_len) {
-		wpa_printf(MSG_INFO,
-			   "EAP-pwd: Unexpected Commit payload length %u (expected %u)",
-			   (unsigned int) payload_len,
-			   (unsigned int) (2 * prime_len + order_len));
-		goto fin;
-	}
 
 	data->private_value = crypto_bignum_init();
 	data->my_element = crypto_ec_point_init(data->grp->group);
