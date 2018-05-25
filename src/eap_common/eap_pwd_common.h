@@ -46,6 +46,9 @@ struct eap_pwd_id {
 	u8 prep;
 #define EAP_PWD_PREP_NONE               0
 #define EAP_PWD_PREP_MS                 1
+#define EAP_PWD_PREP_SSHA1              3
+#define EAP_PWD_PREP_SSHA256            4
+#define EAP_PWD_PREP_SSHA512            5
 	u8 identity[0];     /* length inferred from payload */
 } STRUCT_PACKED;
 
