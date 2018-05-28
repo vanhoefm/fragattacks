@@ -6302,7 +6302,7 @@ def test_eap_proto_pwd_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    for i in range(1, 7):
+    for i in range(1, 5):
         with alloc_fail(dev[0], i, "eap_pwd_perform_id_exchange"):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                            eap="PWD", identity="pwd user",
@@ -6336,7 +6336,7 @@ def test_eap_proto_pwd_errors(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
 
-    for i in range(1, 4):
+    for i in range(1, 9):
         with alloc_fail(dev[0], i, "eap_pwd_perform_commit_exchange"):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                            eap="PWD", identity="pwd user",
@@ -6406,7 +6406,7 @@ def test_eap_proto_pwd_errors(dev, apdev):
     dev[0].wait_disconnected()
 
     with fail_test(dev[0], 1,
-                   "hash_nt_password_hash;eap_pwd_perform_id_exchange"):
+                   "hash_nt_password_hash;eap_pwd_perform_commit_exchange"):
         dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                        eap="PWD", identity="pwd-hash",
                        password_hex="hash:e3718ece8ab74792cbbfffd316d2d19a",
