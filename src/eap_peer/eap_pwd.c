@@ -255,6 +255,12 @@ eap_pwd_perform_id_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 	data->prep = id->prep;
 	os_memcpy(data->token, id->token, sizeof(id->token));
 
+	if (data->id_server || data->grp) {
+		wpa_printf(MSG_INFO, "EAP-pwd: data was already allocated");
+		eap_pwd_state(data, FAILURE);
+		return;
+	}
+
 	data->id_server = os_malloc(payload_len - sizeof(struct eap_pwd_id));
 	if (data->id_server == NULL) {
 		wpa_printf(MSG_INFO, "EAP-PWD: memory allocation id fail");
