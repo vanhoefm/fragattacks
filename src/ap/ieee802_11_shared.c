@@ -446,7 +446,7 @@ u8 * hostapd_eid_time_zone(struct hostapd_data *hapd, u8 *eid)
 {
 	size_t len;
 
-	if (hapd->conf->time_advertisement != 2)
+	if (hapd->conf->time_advertisement != 2 || !hapd->conf->time_zone)
 		return eid;
 
 	len = os_strlen(hapd->conf->time_zone);
