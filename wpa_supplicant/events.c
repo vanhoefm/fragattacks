@@ -536,7 +536,7 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 		 (ssid->key_mgmt & WPA_KEY_MGMT_IEEE8021X_NO_WPA));
 
 	rsn_ie = wpa_bss_get_ie(bss, WLAN_EID_RSN);
-	while ((ssid->proto & WPA_PROTO_RSN) && rsn_ie) {
+	while ((ssid->proto & (WPA_PROTO_RSN | WPA_PROTO_OSEN)) && rsn_ie) {
 		proto_match++;
 
 		if (wpa_parse_wpa_ie(rsn_ie, 2 + rsn_ie[1], &ie)) {
@@ -555,7 +555,8 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 			return 1;
 		}
 
-		if (!(ie.proto & ssid->proto)) {
+		if (!(ie.proto & ssid->proto) &&
+		    !(ssid->proto & WPA_PROTO_OSEN)) {
 			if (debug_print)
 				wpa_dbg(wpa_s, MSG_DEBUG,
 					"   skip RSN IE - proto mismatch");
@@ -985,18 +986,22 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 	struct wpa_blacklist *e;
 	const u8 *ie;
 	struct wpa_ssid *ssid;
-	int osen;
+	int osen, rsn_osen = 0;
 #ifdef CONFIG_MBO
 	const u8 *assoc_disallow;
 #endif /* CONFIG_MBO */
 	const u8 *match_ssid;
 	size_t match_ssid_len;
+	struct wpa_ie_data data;
 
 	ie = wpa_bss_get_vendor_ie(bss, WPA_IE_VENDOR_TYPE);
 	wpa_ie_len = ie ? ie[1] : 0;
 
 	ie = wpa_bss_get_ie(bss, WLAN_EID_RSN);
 	rsn_ie_len = ie ? ie[1] : 0;
+	if (ie && wpa_parse_wpa_ie_rsn(ie, 2 + ie[1], &data) == 0 &&
+	    (data.key_mgmt & WPA_KEY_MGMT_OSEN))
+		rsn_osen = 1;
 
 	ie = wpa_bss_get_vendor_ie(bss, OSEN_IE_VENDOR_TYPE);
 	osen = ie != NULL;
@@ -1170,7 +1175,8 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 			continue;
 		}
 
-		if ((ssid->key_mgmt & WPA_KEY_MGMT_OSEN) && !osen) {
+		if ((ssid->key_mgmt & WPA_KEY_MGMT_OSEN) && !osen &&
+		    !rsn_osen) {
 			if (debug_print)
 				wpa_dbg(wpa_s, MSG_DEBUG,
 					"   skip - non-OSEN network not allowed");

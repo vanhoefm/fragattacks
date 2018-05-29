@@ -1217,6 +1217,13 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		ie.pairwise_cipher = WPA_CIPHER_CCMP;
 		ie.key_mgmt = WPA_KEY_MGMT_OSEN;
 		proto = WPA_PROTO_OSEN;
+	} else if (bss_rsn && (ssid->proto & WPA_PROTO_OSEN) &&
+	    wpa_parse_wpa_ie(bss_rsn, 2 + bss_rsn[1], &ie) == 0 &&
+	    (ie.group_cipher & ssid->group_cipher) &&
+	    (ie.pairwise_cipher & ssid->pairwise_cipher) &&
+	    (ie.key_mgmt & ssid->key_mgmt)) {
+		wpa_dbg(wpa_s, MSG_DEBUG, "RSN: using OSEN (within RSN)");
+		proto = WPA_PROTO_RSN;
 #endif /* CONFIG_HS20 */
 	} else if (bss) {
 		wpa_msg(wpa_s, MSG_WARNING, "WPA: Failed to select WPA/RSN");
