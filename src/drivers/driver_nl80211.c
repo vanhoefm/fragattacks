@@ -8684,8 +8684,9 @@ static int nl80211_switch_channel(void *priv, struct csa_settings *settings)
 		return -EOPNOTSUPP;
 	}
 
-	if ((drv->nlmode != NL80211_IFTYPE_AP) &&
-	    (drv->nlmode != NL80211_IFTYPE_P2P_GO))
+	if (drv->nlmode != NL80211_IFTYPE_AP &&
+	    drv->nlmode != NL80211_IFTYPE_P2P_GO &&
+	    drv->nlmode != NL80211_IFTYPE_MESH_POINT)
 		return -EOPNOTSUPP;
 
 	/*
