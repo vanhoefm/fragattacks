@@ -2657,6 +2657,39 @@ def test_ap_hs20_osen(dev, apdev):
                  scan_freq="2412")
     wpas.request("DISCONNECT")
 
+def test_ap_hs20_osen_single_ssid(dev, apdev):
+    """Hotspot 2.0 OSEN-single-SSID connection"""
+    bssid = apdev[0]['bssid']
+    params = hs20_ap_params()
+    params['wpa_key_mgmt'] = "WPA-EAP OSEN"
+    params['hessid'] = bssid
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    # RSN-OSEN (for OSU)
+    dev[0].connect("test-hs20", proto="OSEN", key_mgmt="OSEN", pairwise="CCMP",
+                   eap="WFA-UNAUTH-TLS", identity="osen@example.com",
+                   ca_cert="auth_serv/ca.pem", ieee80211w='2',
+                   scan_freq="2412")
+    # RSN-EAP (for data connection)
+    dev[1].connect("test-hs20", key_mgmt="WPA-EAP", eap="TTLS",
+                   identity="hs20-test", password="password",
+                   ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                   ieee80211w='2', scan_freq="2412")
+
+    res = dev[0].get_bss(apdev[0]['bssid'])['flags']
+    if "[WPA2-EAP+OSEN-CCMP]" not in res:
+        raise Exception("OSEN not reported in BSS")
+    if "[WEP]" in res:
+        raise Exception("WEP reported in BSS")
+    res = dev[0].request("SCAN_RESULTS")
+    if "[WPA2-EAP+OSEN-CCMP]" not in res:
+        raise Exception("OSEN not reported in SCAN_RESULTS")
+
+    hwsim_utils.test_connectivity(dev[1], hapd)
+    hwsim_utils.test_connectivity(dev[0], hapd, broadcast=False)
+    hwsim_utils.test_connectivity(dev[0], hapd, timeout=1,
+                                  success_expected=False)
+
 def test_ap_hs20_network_preference(dev, apdev):
     """Hotspot 2.0 network selection with preferred home network"""
     check_eap_capa(dev[0], "MSCHAPV2")
