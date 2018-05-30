@@ -897,9 +897,6 @@ int ap_sta_set_vlan(struct hostapd_data *hapd, struct sta_info *sta,
 	struct hostapd_vlan *vlan = NULL, *wildcard_vlan = NULL;
 	int old_vlan_id, vlan_id = 0, ret = 0;
 
-	if (hapd->conf->ssid.dynamic_vlan == DYNAMIC_VLAN_DISABLED)
-		vlan_desc = NULL;
-
 	/* Check if there is something to do */
 	if (hapd->conf->ssid.per_sta_vif && !sta->vlan_id) {
 		/* This sta is lacking its own vif */
