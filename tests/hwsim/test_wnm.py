@@ -1802,3 +1802,11 @@ def test_wnm_bss_transition_mgmt_query_with_unknown_candidates(dev, apdev):
     ev = hapd.wait_event(["BSS-TM-RESP"], timeout=5)
     if ev is None:
         raise Exception("No BSS Transition Management Response frame seen")
+
+def test_wnm_time_adv_without_time_zone(dev, apdev):
+    """WNM Time Advertisement without time zone configuration"""
+    params = { "ssid": "test-wnm",
+               "time_advertisement": "2" }
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("test-wnm", key_mgmt="NONE", scan_freq="2412")
