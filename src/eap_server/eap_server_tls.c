@@ -308,7 +308,7 @@ static u8 * eap_tls_getKey(struct eap_sm *sm, void *priv, size_t *len)
 		return NULL;
 
 	if (data->ssl.tls_v13)
-		label = "client EAP encryption KM";
+		label = "EXPORTER_EAP_TLS_Key_Material";
 	else
 		label = "client EAP encryption";
 	eapKeyData = eap_server_tls_derive_key(sm, &data->ssl, label,
