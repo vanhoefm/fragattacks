@@ -107,7 +107,7 @@ def test_erp_server_no_match(dev, apdev):
         raise Exception("Unexpected use of ERP")
     dev[0].wait_connected(timeout=15, error="Reconnection timed out")
 
-def start_erp_as(apdev, erp_domain="example.com", msk_dump=None):
+def start_erp_as(apdev, erp_domain="example.com", msk_dump=None, tls13=False):
     params = { "ssid": "as", "beacon_int": "2000",
                "radius_server_clients": "auth_serv/radius_clients.conf",
                "radius_server_auth_port": '18128',
@@ -125,6 +125,8 @@ def start_erp_as(apdev, erp_domain="example.com", msk_dump=None):
                "erp_domain": erp_domain }
     if msk_dump:
         params["dump_msk_file"] = msk_dump
+    if tls13:
+        params["tls_flags"] = "[ENABLE-TLSv1.3]"
     return hostapd.add_ap(apdev, params)
 
 def test_erp_radius(dev, apdev):
@@ -228,6 +230,27 @@ def test_erp_radius_eap_methods(dev, apdev):
              private_key="auth_serv/user.key")
     erp_test(dev[0], hapd, eap="TTLS", identity="erp-ttls@example.com",
              password="password", ca_cert="auth_serv/ca.pem", phase2="auth=PAP")
+
+def test_erp_radius_eap_tls_v13(dev, apdev):
+    """ERP enabled on RADIUS server and peer using EAP-TLS v1.3"""
+    check_erp_capa(dev[0])
+    tls = dev[0].request("GET tls_library")
+    if "run=OpenSSL 1.1.1" not in tls:
+        raise HwsimSkip("No TLS v1.3 support in TLS library")
+
+    eap_methods = dev[0].get_capability("eap")
+    start_erp_as(apdev[1], tls13=True)
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    params['auth_server_port'] = "18128"
+    params['erp_send_reauth_start'] = '1'
+    params['erp_domain'] = 'example.com'
+    params['disable_pmksa_caching'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    erp_test(dev[0], hapd, eap="TLS", identity="erp-tls@example.com",
+             ca_cert="auth_serv/ca.pem", client_cert="auth_serv/user.pem",
+             private_key="auth_serv/user.key",
+             phase1="tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1 tls_disable_tlsv1_3=0")
 
 def test_erp_key_lifetime_in_memory(dev, apdev, params):
     """ERP and key lifetime in memory"""
