@@ -330,11 +330,15 @@ static u8 * eap_tls_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 {
 	struct eap_tls_data *data = priv;
 	u8 *eapKeyData, *emsk;
-	const char *label = "client EAP encryption";
+	const char *label;
 
 	if (data->state != SUCCESS)
 		return NULL;
 
+	if (data->ssl.tls_v13)
+		label = "EXPORTER_EAP_TLS_Key_Material";
+	else
+		label = "client EAP encryption";
 	eapKeyData = eap_server_tls_derive_key(sm, &data->ssl, label,
 					       EAP_TLS_KEY_LEN + EAP_EMSK_LEN);
 	if (eapKeyData) {
