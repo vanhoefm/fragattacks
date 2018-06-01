@@ -145,6 +145,13 @@ u8 * eap_server_tls_derive_session_id(struct eap_sm *sm,
 	struct tls_random keys;
 	u8 *out;
 
+	if (eap_type == EAP_TYPE_TLS && data->tls_v13) {
+		*len = 64;
+		return eap_server_tls_derive_key(sm, data,
+						 "EXPORTER_EAP_TLS_Session-Id",
+						 64);
+	}
+
 	if (tls_connection_get_random(sm->ssl_ctx, data->conn, &keys))
 		return NULL;
 
