@@ -127,7 +127,7 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
               sae=False, eap=False, fail_test=False, roams=1,
               pairwise_cipher="CCMP", group_cipher="TKIP CCMP", ptk_rekey="0",
               test_connectivity=True, eap_identity="gpsk user", conndev=False,
-              force_initial_conn_to_first_ap=False):
+              force_initial_conn_to_first_ap=False, sha384=False):
     logger.info("Connect to first AP")
 
     copts = {}
@@ -138,7 +138,7 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
     copts["group"]  = group_cipher
     copts["wpa_ptk_rekey"] = ptk_rekey
     if eap:
-        copts["key_mgmt"] = "FT-EAP"
+        copts["key_mgmt"] = "FT-EAP-SHA384" if sha384 else "FT-EAP"
         copts["eap"] = "GPSK"
         copts["identity"] = eap_identity
         copts["password"] = "abcdefghijklmnop0123456789abcdef"
@@ -2307,3 +2307,47 @@ def test_ap_ft_eap_ap_config_change(dev, apdev):
 
     dev[0].request("RECONNECT")
     dev[0].wait_connected()
+
+def test_ap_ft_eap_sha384(dev, apdev):
+    """WPA2-EAP-FT with SHA384"""
+    ssid = "test-ft"
+    passphrase="12345678"
+
+    radius = hostapd.radius_params()
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2";
+    params['wpa_key_mgmt'] = "FT-EAP-SHA384"
+    params["ieee8021x"] = "1"
+    params = dict(radius.items() + params.items())
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2";
+    params['wpa_key_mgmt'] = "FT-EAP-SHA384"
+    params["ieee8021x"] = "1"
+    params = dict(radius.items() + params.items())
+    hapd1 = hostapd.add_ap(apdev[1], params)
+
+    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, eap=True,
+              sha384=True)
+
+def test_ap_ft_eap_sha384_over_ds(dev, apdev):
+    """WPA2-EAP-FT with SHA384 over DS"""
+    ssid = "test-ft"
+    passphrase="12345678"
+
+    radius = hostapd.radius_params()
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2";
+    params['wpa_key_mgmt'] = "FT-EAP-SHA384"
+    params["ieee8021x"] = "1"
+    params = dict(radius.items() + params.items())
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2";
+    params['wpa_key_mgmt'] = "FT-EAP-SHA384"
+    params["ieee8021x"] = "1"
+    params = dict(radius.items() + params.items())
+    hapd1 = hostapd.add_ap(apdev[1], params)
+
+    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
+              eap=True, sha384=True)
