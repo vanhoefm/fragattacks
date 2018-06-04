@@ -746,30 +746,44 @@ int wpa_write_mdie(struct wpa_auth_config *conf, u8 *buf, size_t len)
 }
 
 
-int wpa_write_ftie(struct wpa_auth_config *conf, const u8 *r0kh_id,
-		   size_t r0kh_id_len,
+int wpa_write_ftie(struct wpa_auth_config *conf, int use_sha384,
+		   const u8 *r0kh_id, size_t r0kh_id_len,
 		   const u8 *anonce, const u8 *snonce,
 		   u8 *buf, size_t len, const u8 *subelem,
 		   size_t subelem_len)
 {
 	u8 *pos = buf, *ielen;
-	struct rsn_ftie *hdr;
+	size_t hdrlen = use_sha384 ? sizeof(struct rsn_ftie_sha384) :
+		sizeof(struct rsn_ftie);
 
-	if (len < 2 + sizeof(*hdr) + 2 + FT_R1KH_ID_LEN + 2 + r0kh_id_len +
+	if (len < 2 + hdrlen + 2 + FT_R1KH_ID_LEN + 2 + r0kh_id_len +
 	    subelem_len)
 		return -1;
 
 	*pos++ = WLAN_EID_FAST_BSS_TRANSITION;
 	ielen = pos++;
 
-	hdr = (struct rsn_ftie *) pos;
-	os_memset(hdr, 0, sizeof(*hdr));
-	pos += sizeof(*hdr);
-	WPA_PUT_LE16(hdr->mic_control, 0);
-	if (anonce)
-		os_memcpy(hdr->anonce, anonce, WPA_NONCE_LEN);
-	if (snonce)
-		os_memcpy(hdr->snonce, snonce, WPA_NONCE_LEN);
+	if (use_sha384) {
+		struct rsn_ftie_sha384 *hdr = (struct rsn_ftie_sha384 *) pos;
+
+		os_memset(hdr, 0, sizeof(*hdr));
+		pos += sizeof(*hdr);
+		WPA_PUT_LE16(hdr->mic_control, 0);
+		if (anonce)
+			os_memcpy(hdr->anonce, anonce, WPA_NONCE_LEN);
+		if (snonce)
+			os_memcpy(hdr->snonce, snonce, WPA_NONCE_LEN);
+	} else {
+		struct rsn_ftie *hdr = (struct rsn_ftie *) pos;
+
+		os_memset(hdr, 0, sizeof(*hdr));
+		pos += sizeof(*hdr);
+		WPA_PUT_LE16(hdr->mic_control, 0);
+		if (anonce)
+			os_memcpy(hdr->anonce, anonce, WPA_NONCE_LEN);
+		if (snonce)
+			os_memcpy(hdr->snonce, snonce, WPA_NONCE_LEN);
+	}
 
 	/* Optional Parameters */
 	*pos++ = FTIE_SUBELEM_R1KH_ID;
@@ -2308,10 +2322,10 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 				 const u8 *req_ies, size_t req_ies_len)
 {
 	u8 *end, *mdie, *ftie, *rsnie = NULL, *r0kh_id, *subelem = NULL;
+	u8 *fte_mic, *elem_count;
 	size_t mdie_len, ftie_len, rsnie_len = 0, r0kh_id_len, subelem_len = 0;
 	int res;
 	struct wpa_auth_config *conf;
-	struct rsn_ftie *_ftie;
 	struct wpa_ft_ies parse;
 	u8 *ric_start;
 	u8 *anonce, *snonce;
@@ -2386,8 +2400,9 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 		anonce = NULL;
 		snonce = NULL;
 	}
-	res = wpa_write_ftie(conf, r0kh_id, r0kh_id_len, anonce, snonce, pos,
-			     end - pos, subelem, subelem_len);
+	res = wpa_write_ftie(conf, use_sha384, r0kh_id, r0kh_id_len,
+			     anonce, snonce, pos, end - pos,
+			     subelem, subelem_len);
 	os_free(subelem);
 	if (res < 0)
 		return pos;
@@ -2395,9 +2410,20 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 	ftie_len = res;
 	pos += res;
 
-	_ftie = (struct rsn_ftie *) (ftie + 2);
+	if (use_sha384) {
+		struct rsn_ftie_sha384 *_ftie =
+			(struct rsn_ftie_sha384 *) (ftie + 2);
+
+		fte_mic = _ftie->mic;
+		elem_count = &_ftie->mic_control[1];
+	} else {
+		struct rsn_ftie *_ftie = (struct rsn_ftie *) (ftie + 2);
+
+		fte_mic = _ftie->mic;
+		elem_count = &_ftie->mic_control[1];
+	}
 	if (auth_alg == WLAN_AUTH_FT)
-		_ftie->mic_control[1] = 3; /* Information element count */
+		*elem_count = 3; /* Information element count */
 
 	ric_start = pos;
 	if (wpa_ft_parse_ies(req_ies, req_ies_len, &parse, use_sha384) == 0
@@ -2405,7 +2431,7 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 		pos = wpa_ft_process_ric(sm, pos, end, parse.ric,
 					 parse.ric_len);
 		if (auth_alg == WLAN_AUTH_FT)
-			_ftie->mic_control[1] +=
+			*elem_count +=
 				ieee802_11_ie_count(ric_start,
 						    pos - ric_start);
 	}
@@ -2424,7 +2450,7 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 		       mdie, mdie_len, ftie, ftie_len,
 		       rsnie, rsnie_len,
 		       ric_start, ric_start ? pos - ric_start : 0,
-		       _ftie->mic) < 0)
+		       fte_mic) < 0)
 		wpa_printf(MSG_DEBUG, "FT: Failed to calculate MIC");
 
 	os_free(sm->assoc_resp_ftie);
@@ -2871,7 +2897,7 @@ pmk_r1_derived:
 		goto fail;
 	pos += ret;
 
-	ret = wpa_write_ftie(conf, parse.r0kh_id, parse.r0kh_id_len,
+	ret = wpa_write_ftie(conf, use_sha384, parse.r0kh_id, parse.r0kh_id_len,
 			     sm->ANonce, sm->SNonce, pos, end - pos, NULL, 0);
 	if (ret < 0)
 		goto fail;

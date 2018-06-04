@@ -277,8 +277,8 @@ int wpa_auth_for_each_auth(struct wpa_authenticator *wpa_auth,
 
 #ifdef CONFIG_IEEE80211R_AP
 int wpa_write_mdie(struct wpa_auth_config *conf, u8 *buf, size_t len);
-int wpa_write_ftie(struct wpa_auth_config *conf, const u8 *r0kh_id,
-		   size_t r0kh_id_len,
+int wpa_write_ftie(struct wpa_auth_config *conf, int use_sha384,
+		   const u8 *r0kh_id, size_t r0kh_id_len,
 		   const u8 *anonce, const u8 *snonce,
 		   u8 *buf, size_t len, const u8 *subelem,
 		   size_t subelem_len);

@@ -1446,8 +1446,11 @@ prepare_auth_resp_fils(struct hostapd_data *hapd,
 	if (wpa_key_mgmt_ft(wpa_auth_sta_key_mgmt(sta->wpa_sm))) {
 		/* FTE[R1KH-ID,R0KH-ID] when using FILS+FT */
 		int res;
+		int use_sha384 = wpa_key_mgmt_sha384(
+			wpa_auth_sta_key_mgmt(sta->wpa_sm));
 
-		res = wpa_auth_write_fte(hapd->wpa_auth, wpabuf_put(data, 0),
+		res = wpa_auth_write_fte(hapd->wpa_auth, use_sha384,
+					 wpabuf_put(data, 0),
 					 wpabuf_tailroom(data));
 		if (res < 0) {
 			*resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
