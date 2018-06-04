@@ -155,9 +155,8 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 			       const u8 *ap_mdie)
 {
 	size_t buf_len;
-	u8 *buf, *pos, *ftie_len, *ftie_pos;
+	u8 *buf, *pos, *ftie_len, *ftie_pos, *fte_mic, *elem_count;
 	struct rsn_mdie *mdie;
-	struct rsn_ftie *ftie;
 	struct rsn_ie_hdr *rsnie;
 	u16 capab;
 	int mdie_len;
@@ -165,7 +164,8 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	sm->ft_completed = 0;
 	sm->ft_reassoc_completed = 0;
 
-	buf_len = 2 + sizeof(struct rsn_mdie) + 2 + sizeof(struct rsn_ftie) +
+	buf_len = 2 + sizeof(struct rsn_mdie) + 2 +
+		sizeof(struct rsn_ftie_sha384) +
 		2 + sm->r0kh_id_len + ric_ies_len + 100;
 	buf = os_zalloc(buf_len);
 	if (buf == NULL)
@@ -273,11 +273,27 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	ftie_pos = pos;
 	*pos++ = WLAN_EID_FAST_BSS_TRANSITION;
 	ftie_len = pos++;
-	ftie = (struct rsn_ftie *) pos;
-	pos += sizeof(*ftie);
-	os_memcpy(ftie->snonce, sm->snonce, WPA_NONCE_LEN);
-	if (anonce)
-		os_memcpy(ftie->anonce, anonce, WPA_NONCE_LEN);
+	if (wpa_key_mgmt_sha384(sm->key_mgmt)) {
+		struct rsn_ftie_sha384 *ftie;
+
+		ftie = (struct rsn_ftie_sha384 *) pos;
+		fte_mic = ftie->mic;
+		elem_count = &ftie->mic_control[1];
+		pos += sizeof(*ftie);
+		os_memcpy(ftie->snonce, sm->snonce, WPA_NONCE_LEN);
+		if (anonce)
+			os_memcpy(ftie->anonce, anonce, WPA_NONCE_LEN);
+	} else {
+		struct rsn_ftie *ftie;
+
+		ftie = (struct rsn_ftie *) pos;
+		fte_mic = ftie->mic;
+		elem_count = &ftie->mic_control[1];
+		pos += sizeof(*ftie);
+		os_memcpy(ftie->snonce, sm->snonce, WPA_NONCE_LEN);
+		if (anonce)
+			os_memcpy(ftie->anonce, anonce, WPA_NONCE_LEN);
+	}
 	if (kck) {
 		/* R1KH-ID sub-element in third FT message */
 		*pos++ = FTIE_SUBELEM_R1KH_ID;
@@ -311,13 +327,12 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 		 * RIC-Request (if present)
 		 */
 		/* Information element count */
-		ftie->mic_control[1] = 3 + ieee802_11_ie_count(ric_ies,
-							       ric_ies_len);
+		*elem_count = 3 + ieee802_11_ie_count(ric_ies, ric_ies_len);
 		if (wpa_ft_mic(kck, kck_len, sm->own_addr, target_ap, 5,
 			       ((u8 *) mdie) - 2, 2 + sizeof(*mdie),
 			       ftie_pos, 2 + *ftie_len,
 			       (u8 *) rsnie, 2 + rsnie->len, ric_ies,
-			       ric_ies_len, ftie->mic) < 0) {
+			       ric_ies_len, fte_mic) < 0) {
 			wpa_printf(MSG_INFO, "FT: Failed to calculate MIC");
 			os_free(buf);
 			return NULL;
