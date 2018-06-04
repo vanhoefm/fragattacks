@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant
- * Copyright (c) 2003-2017, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2003-2018, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -1393,6 +1393,19 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		wpa_dbg(wpa_s, MSG_DEBUG, "WPA: using KEY_MGMT FILS-SHA256");
 #endif /* CONFIG_FILS */
 #ifdef CONFIG_IEEE80211R
+#ifdef CONFIG_SHA384
+	} else if (sel & WPA_KEY_MGMT_FT_IEEE8021X_SHA384) {
+		wpa_s->key_mgmt = WPA_KEY_MGMT_FT_IEEE8021X_SHA384;
+		wpa_dbg(wpa_s, MSG_DEBUG,
+			"WPA: using KEY_MGMT FT/802.1X-SHA384");
+		if (pmksa_cache_get_current(wpa_s->wpa)) {
+			/* PMKSA caching with FT is not fully functional, so
+			 * disable the case for now. */
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"WPA: Disable PMKSA caching for FT/802.1X connection");
+			pmksa_cache_clear_current(wpa_s->wpa);
+		}
+#endif /* CONFIG_SHA384 */
 	} else if (sel & WPA_KEY_MGMT_FT_IEEE8021X) {
 		wpa_s->key_mgmt = WPA_KEY_MGMT_FT_IEEE8021X;
 		wpa_dbg(wpa_s, MSG_DEBUG, "WPA: using KEY_MGMT FT/802.1X");
