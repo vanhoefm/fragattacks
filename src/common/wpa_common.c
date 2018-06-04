@@ -1,6 +1,6 @@
 /*
  * WPA/RSN - Shared functions for supplicant and authenticator
- * Copyright (c) 2002-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2002-2018, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -25,6 +25,7 @@ static unsigned int wpa_kck_len(int akmp, size_t pmk_len)
 {
 	switch (akmp) {
 	case WPA_KEY_MGMT_IEEE8021X_SUITE_B_192:
+	case WPA_KEY_MGMT_FT_IEEE8021X_SHA384:
 		return 24;
 	case WPA_KEY_MGMT_FILS_SHA256:
 	case WPA_KEY_MGMT_FT_FILS_SHA256:
@@ -65,6 +66,7 @@ static unsigned int wpa_kek_len(int akmp, size_t pmk_len)
 	case WPA_KEY_MGMT_IEEE8021X_SUITE_B_192:
 	case WPA_KEY_MGMT_FILS_SHA256:
 	case WPA_KEY_MGMT_FT_FILS_SHA256:
+	case WPA_KEY_MGMT_FT_IEEE8021X_SHA384:
 		return 32;
 	case WPA_KEY_MGMT_DPP:
 		return pmk_len <= 32 ? 16 : 32;
@@ -95,6 +97,7 @@ unsigned int wpa_mic_len(int akmp, size_t pmk_len)
 {
 	switch (akmp) {
 	case WPA_KEY_MGMT_IEEE8021X_SUITE_B_192:
+	case WPA_KEY_MGMT_FT_IEEE8021X_SHA384:
 		return 24;
 	case WPA_KEY_MGMT_FILS_SHA256:
 	case WPA_KEY_MGMT_FILS_SHA384:
@@ -121,6 +124,7 @@ int wpa_use_akm_defined(int akmp)
 	return akmp == WPA_KEY_MGMT_OSEN ||
 		akmp == WPA_KEY_MGMT_OWE ||
 		akmp == WPA_KEY_MGMT_DPP ||
+		akmp == WPA_KEY_MGMT_FT_IEEE8021X_SHA384 ||
 		wpa_key_mgmt_sae(akmp) ||
 		wpa_key_mgmt_suite_b(akmp) ||
 		wpa_key_mgmt_fils(akmp);
@@ -1009,6 +1013,10 @@ static int rsn_key_mgmt_to_bitfield(const u8 *s)
 		return WPA_KEY_MGMT_FT_IEEE8021X;
 	if (RSN_SELECTOR_GET(s) == RSN_AUTH_KEY_MGMT_FT_PSK)
 		return WPA_KEY_MGMT_FT_PSK;
+#ifdef CONFIG_SHA384
+	if (RSN_SELECTOR_GET(s) == RSN_AUTH_KEY_MGMT_FT_802_1X_SHA384)
+		return WPA_KEY_MGMT_FT_IEEE8021X_SHA384;
+#endif /* CONFIG_SHA384 */
 #endif /* CONFIG_IEEE80211R */
 #ifdef CONFIG_IEEE80211W
 	if (RSN_SELECTOR_GET(s) == RSN_AUTH_KEY_MGMT_802_1X_SHA256)
@@ -1776,6 +1784,8 @@ const char * wpa_key_mgmt_txt(int key_mgmt, int proto)
 #ifdef CONFIG_IEEE80211R
 	case WPA_KEY_MGMT_FT_IEEE8021X:
 		return "FT-EAP";
+	case WPA_KEY_MGMT_FT_IEEE8021X_SHA384:
+		return "FT-EAP-SHA384";
 	case WPA_KEY_MGMT_FT_PSK:
 		return "FT-PSK";
 #endif /* CONFIG_IEEE80211R */
@@ -1817,6 +1827,8 @@ const char * wpa_key_mgmt_txt(int key_mgmt, int proto)
 
 u32 wpa_akm_to_suite(int akm)
 {
+	if (akm & WPA_KEY_MGMT_FT_IEEE8021X_SHA384)
+		return RSN_AUTH_KEY_MGMT_FT_802_1X_SHA384;
 	if (akm & WPA_KEY_MGMT_FT_IEEE8021X)
 		return RSN_AUTH_KEY_MGMT_FT_802_1X;
 	if (akm & WPA_KEY_MGMT_FT_PSK)

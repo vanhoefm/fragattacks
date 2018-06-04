@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant - Common definitions
- * Copyright (c) 2004-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2018, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -57,11 +57,13 @@ typedef enum { FALSE = 0, TRUE = 1 } Boolean;
 #define WPA_KEY_MGMT_FT_FILS_SHA384 BIT(21)
 #define WPA_KEY_MGMT_OWE BIT(22)
 #define WPA_KEY_MGMT_DPP BIT(23)
+#define WPA_KEY_MGMT_FT_IEEE8021X_SHA384 BIT(24)
 
 static inline int wpa_key_mgmt_wpa_ieee8021x(int akm)
 {
 	return !!(akm & (WPA_KEY_MGMT_IEEE8021X |
 			 WPA_KEY_MGMT_FT_IEEE8021X |
+			 WPA_KEY_MGMT_FT_IEEE8021X_SHA384 |
 			 WPA_KEY_MGMT_CCKM |
 			 WPA_KEY_MGMT_OSEN |
 			 WPA_KEY_MGMT_IEEE8021X_SHA256 |
@@ -86,6 +88,7 @@ static inline int wpa_key_mgmt_ft(int akm)
 {
 	return !!(akm & (WPA_KEY_MGMT_FT_PSK |
 			 WPA_KEY_MGMT_FT_IEEE8021X |
+			 WPA_KEY_MGMT_FT_IEEE8021X_SHA384 |
 			 WPA_KEY_MGMT_FT_SAE |
 			 WPA_KEY_MGMT_FT_FILS_SHA256 |
 			 WPA_KEY_MGMT_FT_FILS_SHA384));
@@ -125,6 +128,7 @@ static inline int wpa_key_mgmt_sha256(int akm)
 static inline int wpa_key_mgmt_sha384(int akm)
 {
 	return !!(akm & (WPA_KEY_MGMT_IEEE8021X_SUITE_B_192 |
+			 WPA_KEY_MGMT_FT_IEEE8021X_SHA384 |
 			 WPA_KEY_MGMT_FILS_SHA384 |
 			 WPA_KEY_MGMT_FT_FILS_SHA384));
 }

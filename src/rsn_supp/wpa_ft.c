@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant - IEEE 802.11r - Fast BSS Transition
- * Copyright (c) 2006-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2006-2018, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -202,6 +202,10 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	/* Authenticated Key Management Suite List */
 	if (sm->key_mgmt == WPA_KEY_MGMT_FT_IEEE8021X)
 		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_FT_802_1X);
+#ifdef CONFIG_SHA384
+	else if (sm->key_mgmt == WPA_KEY_MGMT_FT_IEEE8021X_SHA384)
+		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_FT_802_1X_SHA384);
+#endif /* CONFIG_SHA384 */
 	else if (sm->key_mgmt == WPA_KEY_MGMT_FT_PSK)
 		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_FT_PSK);
 	else if (sm->key_mgmt == WPA_KEY_MGMT_FT_SAE)
