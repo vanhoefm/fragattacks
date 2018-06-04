@@ -1516,15 +1516,33 @@ int wpa_derive_pmk_r1(const u8 *pmk_r0, size_t pmk_r0_len,
 	u8 *pos;
 
 	/* PMK-R1 = KDF-256(PMK-R0, "FT-R1", R1KH-ID || S1KH-ID) */
+	wpa_printf(MSG_DEBUG, "FT: Derive PMK-R1 using KDF-%s",
+		   pmk_r0_len == SHA384_MAC_LEN ? "SHA384" : "SHA256");
+	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R0", pmk_r0, pmk_r0_len);
+	wpa_hexdump(MSG_DEBUG, "FT: R1KH-ID", r1kh_id, FT_R1KH_ID_LEN);
+	wpa_printf(MSG_DEBUG, "FT: S1KH-ID: " MACSTR, MAC2STR(s1kh_id));
 	pos = buf;
 	os_memcpy(pos, r1kh_id, FT_R1KH_ID_LEN);
 	pos += FT_R1KH_ID_LEN;
 	os_memcpy(pos, s1kh_id, ETH_ALEN);
 	pos += ETH_ALEN;
 
-	if (sha256_prf(pmk_r0, PMK_LEN, "FT-R1", buf, pos - buf,
-		       pmk_r1, PMK_LEN) < 0)
+#ifdef CONFIG_SHA384
+	if (pmk_r0_len == SHA384_MAC_LEN &&
+	    sha384_prf(pmk_r0, pmk_r0_len, "FT-R1",
+		       buf, pos - buf, pmk_r1, pmk_r0_len) < 0)
 		return -1;
+#endif /* CONFIG_SHA384 */
+	if (pmk_r0_len == PMK_LEN &&
+	    sha256_prf(pmk_r0, pmk_r0_len, "FT-R1",
+		       buf, pos - buf, pmk_r1, pmk_r0_len) < 0)
+		return -1;
+	if (pmk_r0_len != SHA384_MAC_LEN && pmk_r0_len != PMK_LEN) {
+		wpa_printf(MSG_ERROR, "FT: Unexpected PMK-R0 length %d",
+			   (int) pmk_r0_len);
+		return -1;
+	}
+	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R1", pmk_r1, pmk_r0_len);
 
 	return wpa_derive_pmk_r1_name(pmk_r0_name, r1kh_id, s1kh_id,
 				      pmk_r1_name);
