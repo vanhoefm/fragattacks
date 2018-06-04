@@ -743,13 +743,22 @@ int wpa_ft_mic(const u8 *kck, size_t kck_len, const u8 *sta_addr,
 	const u8 *addr[9];
 	size_t len[9];
 	size_t i, num_elem = 0;
-	u8 zero_mic[16];
+	u8 zero_mic[24];
+	size_t mic_len, fte_fixed_len;
 
-	if (kck_len != 16) {
+	if (kck_len == 16) {
+		mic_len = 16;
+#ifdef CONFIG_SHA384
+	} else if (kck_len == 24) {
+		mic_len = 24;
+#endif /* CONFIG_SHA384 */
+	} else {
 		wpa_printf(MSG_WARNING, "FT: Unsupported KCK length %u",
 			   (unsigned int) kck_len);
 		return -1;
 	}
+
+	fte_fixed_len = sizeof(struct rsn_ftie) - 16 + mic_len;
 
 	addr[num_elem] = sta_addr;
 	len[num_elem] = ETH_ALEN;
@@ -774,7 +783,7 @@ int wpa_ft_mic(const u8 *kck, size_t kck_len, const u8 *sta_addr,
 		num_elem++;
 	}
 	if (ftie) {
-		if (ftie_len < 2 + sizeof(struct rsn_ftie))
+		if (ftie_len < 2 + fte_fixed_len)
 			return -1;
 
 		/* IE hdr and mic_control */
@@ -783,14 +792,14 @@ int wpa_ft_mic(const u8 *kck, size_t kck_len, const u8 *sta_addr,
 		num_elem++;
 
 		/* MIC field with all zeros */
-		os_memset(zero_mic, 0, sizeof(zero_mic));
+		os_memset(zero_mic, 0, mic_len);
 		addr[num_elem] = zero_mic;
-		len[num_elem] = sizeof(zero_mic);
+		len[num_elem] = mic_len;
 		num_elem++;
 
 		/* Rest of FTIE */
-		addr[num_elem] = ftie + 2 + 2 + 16;
-		len[num_elem] = ftie_len - (2 + 2 + 16);
+		addr[num_elem] = ftie + 2 + 2 + mic_len;
+		len[num_elem] = ftie_len - (2 + 2 + mic_len);
 		num_elem++;
 	}
 	if (ric) {
@@ -801,7 +810,17 @@ int wpa_ft_mic(const u8 *kck, size_t kck_len, const u8 *sta_addr,
 
 	for (i = 0; i < num_elem; i++)
 		wpa_hexdump(MSG_MSGDUMP, "FT: MIC data", addr[i], len[i]);
-	if (omac1_aes_128_vector(kck, num_elem, addr, len, mic))
+#ifdef CONFIG_SHA384
+	if (kck_len == 24) {
+		u8 hash[SHA384_MAC_LEN];
+
+		if (hmac_sha384_vector(kck, kck_len, num_elem, addr, len, hash))
+			return -1;
+		os_memcpy(mic, hash, 24);
+	}
+#endif /* CONFIG_SHA384 */
+	if (kck_len == 16 &&
+	    omac1_aes_128_vector(kck, num_elem, addr, len, mic))
 		return -1;
 
 	return 0;
