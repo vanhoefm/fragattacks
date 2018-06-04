@@ -296,6 +296,15 @@ int wpa_eapol_key_mic(const u8 *key, size_t key_len, int akmp, int ver,
 			os_memcpy(mic, hash, key_len);
 			break;
 #endif /* CONFIG_DPP */
+#if defined(CONFIG_IEEE80211R) && defined(CONFIG_SHA384)
+		case WPA_KEY_MGMT_FT_IEEE8021X_SHA384:
+			wpa_printf(MSG_DEBUG,
+				   "WPA: EAPOL-Key MIC using HMAC-SHA384 (AKM-defined - FT 802.1X SHA384)");
+			if (hmac_sha384(key, key_len, buf, len, hash))
+				return -1;
+			os_memcpy(mic, hash, 24);
+			break;
+#endif /* CONFIG_IEEE80211R && CONFIG_SHA384 */
 		default:
 			wpa_printf(MSG_DEBUG,
 				   "WPA: EAPOL-Key MIC algorithm not known (AKM-defined - akmp=0x%x)",
