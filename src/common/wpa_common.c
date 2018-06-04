@@ -1690,7 +1690,7 @@ int wpa_pmk_r1_to_ptk(const u8 *pmk_r1, size_t pmk_r1_len,
  * See rsn_pmkid_suite_b()
  * AKM: 00-0F-AC:12
  * See rsn_pmkid_suite_b_192()
- * AKM: 00-0F-AC:15, 00-0F-AC:17
+ * AKM: 00-0F-AC:13, 00-0F-AC:15, 00-0F-AC:17
  * PMKID = Truncate-128(HMAC-SHA-384(PMK, "PMK Name" || AA || SPA))
  * Otherwise:
  * PMKID = Truncate-128(HMAC-SHA-1(PMK, "PMK Name" || AA || SPA))
@@ -1708,11 +1708,11 @@ void rsn_pmkid(const u8 *pmk, size_t pmk_len, const u8 *aa, const u8 *spa,
 	addr[2] = spa;
 
 	if (0) {
-#ifdef CONFIG_FILS
+#if defined(CONFIG_FILS) || defined(CONFIG_SHA384)
 	} else if (wpa_key_mgmt_sha384(akmp)) {
 		wpa_printf(MSG_DEBUG, "RSN: Derive PMKID using HMAC-SHA-384");
 		hmac_sha384_vector(pmk, pmk_len, 3, addr, len, hash);
-#endif /* CONFIG_FILS */
+#endif /* CONFIG_FILS || CONFIG_SHA384 */
 #if defined(CONFIG_IEEE80211W) || defined(CONFIG_FILS)
 	} else if (wpa_key_mgmt_sha256(akmp)) {
 		wpa_printf(MSG_DEBUG, "RSN: Derive PMKID using HMAC-SHA-256");
