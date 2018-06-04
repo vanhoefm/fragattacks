@@ -828,23 +828,27 @@ int wpa_ft_mic(const u8 *kck, size_t kck_len, const u8 *sta_addr,
 
 
 static int wpa_ft_parse_ftie(const u8 *ie, size_t ie_len,
-			     struct wpa_ft_ies *parse)
+			     struct wpa_ft_ies *parse, int use_sha384)
 {
 	const u8 *end, *pos;
 
 	parse->ftie = ie;
 	parse->ftie_len = ie_len;
 
-	pos = ie + sizeof(struct rsn_ftie);
+	pos = ie + (use_sha384 ? sizeof(struct rsn_ftie_sha384) :
+		    sizeof(struct rsn_ftie));
 	end = ie + ie_len;
+	wpa_hexdump(MSG_DEBUG, "FT: Parse FTE subelements", pos, end - pos);
 
 	while (end - pos >= 2) {
 		u8 id, len;
 
 		id = *pos++;
 		len = *pos++;
-		if (len > end - pos)
+		if (len > end - pos) {
+			wpa_printf(MSG_DEBUG, "FT: Truncated subelement");
 			break;
+		}
 
 		switch (id) {
 		case FTIE_SUBELEM_R1KH_ID:
@@ -876,6 +880,9 @@ static int wpa_ft_parse_ftie(const u8 *ie, size_t ie_len,
 			parse->igtk_len = len;
 			break;
 #endif /* CONFIG_IEEE80211W */
+		default:
+			wpa_printf(MSG_DEBUG, "FT: Unknown subelem id %u", id);
+			break;
 		}
 
 		pos += len;
@@ -886,13 +893,19 @@ static int wpa_ft_parse_ftie(const u8 *ie, size_t ie_len,
 
 
 int wpa_ft_parse_ies(const u8 *ies, size_t ies_len,
-		     struct wpa_ft_ies *parse)
+		     struct wpa_ft_ies *parse, int use_sha384)
 {
 	const u8 *end, *pos;
 	struct wpa_ie_data data;
 	int ret;
 	const struct rsn_ftie *ftie;
 	int prot_ie_count = 0;
+	int update_use_sha384 = 0;
+
+	if (use_sha384 < 0) {
+		use_sha384 = 0;
+		update_use_sha384 = 1;
+	}
 
 	os_memset(parse, 0, sizeof(*parse));
 	if (ies == NULL)
@@ -924,6 +937,11 @@ int wpa_ft_parse_ies(const u8 *ies, size_t ies_len,
 				parse->rsn_pmkid = data.pmkid;
 			parse->key_mgmt = data.key_mgmt;
 			parse->pairwise_cipher = data.pairwise_cipher;
+			if (update_use_sha384) {
+				use_sha384 =
+					wpa_key_mgmt_sha384(parse->key_mgmt);
+				update_use_sha384 = 0;
+			}
 			break;
 		case WLAN_EID_MOBILITY_DOMAIN:
 			if (len < sizeof(struct rsn_mdie))
@@ -932,11 +950,24 @@ int wpa_ft_parse_ies(const u8 *ies, size_t ies_len,
 			parse->mdie_len = len;
 			break;
 		case WLAN_EID_FAST_BSS_TRANSITION:
+			if (use_sha384) {
+				const struct rsn_ftie_sha384 *ftie_sha384;
+
+				if (len < sizeof(*ftie_sha384))
+					return -1;
+				ftie_sha384 =
+					(const struct rsn_ftie_sha384 *) pos;
+				prot_ie_count = ftie_sha384->mic_control[1];
+				if (wpa_ft_parse_ftie(pos, len, parse, 1) < 0)
+					return -1;
+				break;
+			}
+
 			if (len < sizeof(*ftie))
 				return -1;
 			ftie = (const struct rsn_ftie *) pos;
 			prot_ie_count = ftie->mic_control[1];
-			if (wpa_ft_parse_ftie(pos, len, parse) < 0)
+			if (wpa_ft_parse_ftie(pos, len, parse, 0) < 0)
 				return -1;
 			break;
 		case WLAN_EID_TIMEOUT_INTERVAL:

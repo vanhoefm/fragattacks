@@ -314,6 +314,14 @@ struct rsn_ftie {
 	/* followed by optional parameters */
 } STRUCT_PACKED;
 
+struct rsn_ftie_sha384 {
+	u8 mic_control[2];
+	u8 mic[24];
+	u8 anonce[WPA_NONCE_LEN];
+	u8 snonce[WPA_NONCE_LEN];
+	/* followed by optional parameters */
+} STRUCT_PACKED;
+
 #define FTIE_SUBELEM_R1KH_ID 1
 #define FTIE_SUBELEM_GTK 2
 #define FTIE_SUBELEM_R0KH_ID 3
@@ -449,7 +457,8 @@ struct wpa_ft_ies {
 	int pairwise_cipher;
 };
 
-int wpa_ft_parse_ies(const u8 *ies, size_t ies_len, struct wpa_ft_ies *parse);
+int wpa_ft_parse_ies(const u8 *ies, size_t ies_len, struct wpa_ft_ies *parse,
+		     int use_sha384);
 
 int wpa_cipher_key_len(int cipher);
 int wpa_cipher_rsc_len(int cipher);

@@ -656,7 +656,7 @@ static void rx_mgmt_assoc_resp(struct wlantest *wt, const u8 *data, size_t len)
 		sta->state = STATE3;
 	}
 
-	if (wpa_ft_parse_ies(ies, ies_len, &parse) == 0) {
+	if (wpa_ft_parse_ies(ies, ies_len, &parse, 0) == 0) {
 		if (parse.r0kh_id) {
 			os_memcpy(bss->r0kh_id, parse.r0kh_id,
 				  parse.r0kh_id_len);

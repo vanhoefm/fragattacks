@@ -65,11 +65,13 @@ int wpa_derive_ptk_ft(struct wpa_sm *sm, const unsigned char *src_addr,
 int wpa_sm_set_ft_params(struct wpa_sm *sm, const u8 *ies, size_t ies_len)
 {
 	struct wpa_ft_ies ft;
+	int use_sha384;
 
 	if (sm == NULL)
 		return 0;
 
-	if (wpa_ft_parse_ies(ies, ies_len, &ft) < 0)
+	use_sha384 = wpa_key_mgmt_sha384(sm->key_mgmt);
+	if (wpa_ft_parse_ies(ies, ies_len, &ft, use_sha384) < 0)
 		return -1;
 
 	if (ft.mdie && ft.mdie_len < MOBILITY_DOMAIN_ID_LEN + 1)
@@ -423,12 +425,13 @@ int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 	size_t ft_ies_len;
 	struct wpa_ft_ies parse;
 	struct rsn_mdie *mdie;
-	struct rsn_ftie *ftie;
 	u8 ptk_name[WPA_PMK_NAME_LEN];
 	int ret;
 	const u8 *bssid;
 	const u8 *kck;
 	size_t kck_len;
+	int use_sha384 = wpa_key_mgmt_sha384(sm->key_mgmt);
+	const u8 *anonce, *snonce;
 
 	wpa_hexdump(MSG_DEBUG, "FT: Response IEs", ies, ies_len);
 	wpa_hexdump(MSG_DEBUG, "FT: RIC IEs", ric_ies, ric_ies_len);
@@ -454,7 +457,7 @@ int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 		return -1;
 	}
 
-	if (wpa_ft_parse_ies(ies, ies_len, &parse) < 0) {
+	if (wpa_ft_parse_ies(ies, ies_len, &parse, use_sha384) < 0) {
 		wpa_printf(MSG_DEBUG, "FT: Failed to parse IEs");
 		return -1;
 	}
@@ -467,16 +470,34 @@ int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 		return -1;
 	}
 
-	ftie = (struct rsn_ftie *) parse.ftie;
-	if (ftie == NULL || parse.ftie_len < sizeof(*ftie)) {
-		wpa_printf(MSG_DEBUG, "FT: Invalid FTIE");
-		return -1;
+	if (use_sha384) {
+		struct rsn_ftie_sha384 *ftie;
+
+		ftie = (struct rsn_ftie_sha384 *) parse.ftie;
+		if (!ftie || parse.ftie_len < sizeof(*ftie)) {
+			wpa_printf(MSG_DEBUG, "FT: Invalid FTIE");
+			return -1;
+		}
+
+		anonce = ftie->anonce;
+		snonce = ftie->snonce;
+	} else {
+		struct rsn_ftie *ftie;
+
+		ftie = (struct rsn_ftie *) parse.ftie;
+		if (!ftie || parse.ftie_len < sizeof(*ftie)) {
+			wpa_printf(MSG_DEBUG, "FT: Invalid FTIE");
+			return -1;
+		}
+
+		anonce = ftie->anonce;
+		snonce = ftie->snonce;
 	}
 
-	if (os_memcmp(ftie->snonce, sm->snonce, WPA_NONCE_LEN) != 0) {
+	if (os_memcmp(snonce, sm->snonce, WPA_NONCE_LEN) != 0) {
 		wpa_printf(MSG_DEBUG, "FT: SNonce mismatch in FTIE");
 		wpa_hexdump(MSG_DEBUG, "FT: Received SNonce",
-			    ftie->snonce, WPA_NONCE_LEN);
+			    snonce, WPA_NONCE_LEN);
 		wpa_hexdump(MSG_DEBUG, "FT: Expected SNonce",
 			    sm->snonce, WPA_NONCE_LEN);
 		return -1;
@@ -515,8 +536,8 @@ int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 	os_memcpy(sm->r1kh_id, parse.r1kh_id, FT_R1KH_ID_LEN);
 	wpa_hexdump(MSG_DEBUG, "FT: R1KH-ID", sm->r1kh_id, FT_R1KH_ID_LEN);
 	wpa_hexdump(MSG_DEBUG, "FT: SNonce", sm->snonce, WPA_NONCE_LEN);
-	wpa_hexdump(MSG_DEBUG, "FT: ANonce", ftie->anonce, WPA_NONCE_LEN);
-	os_memcpy(sm->anonce, ftie->anonce, WPA_NONCE_LEN);
+	wpa_hexdump(MSG_DEBUG, "FT: ANonce", anonce, WPA_NONCE_LEN);
+	os_memcpy(sm->anonce, anonce, WPA_NONCE_LEN);
 	if (wpa_derive_pmk_r1(sm->pmk_r0, sm->pmk_r0_len, sm->pmk_r0_name,
 			      sm->r1kh_id, sm->own_addr, sm->pmk_r1,
 			      sm->pmk_r1_name) < 0)
@@ -528,7 +549,7 @@ int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 
 	bssid = target_ap;
 	if (wpa_pmk_r1_to_ptk(sm->pmk_r1, sm->pmk_r1_len, sm->snonce,
-			      ftie->anonce, sm->own_addr, bssid,
+			      anonce, sm->own_addr, bssid,
 			      sm->pmk_r1_name, &sm->ptk, ptk_name, sm->key_mgmt,
 			      sm->pairwise_cipher) < 0)
 		return -1;
@@ -540,7 +561,7 @@ int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 		kck = sm->ptk.kck;
 		kck_len = sm->ptk.kck_len;
 	}
-	ft_ies = wpa_ft_gen_req_ies(sm, &ft_ies_len, ftie->anonce,
+	ft_ies = wpa_ft_gen_req_ies(sm, &ft_ies_len, anonce,
 				    sm->pmk_r1_name,
 				    kck, kck_len, bssid,
 				    ric_ies, ric_ies_len,
@@ -731,11 +752,13 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 {
 	struct wpa_ft_ies parse;
 	struct rsn_mdie *mdie;
-	struct rsn_ftie *ftie;
 	unsigned int count;
 	u8 mic[WPA_EAPOL_KEY_MIC_MAX_LEN];
 	const u8 *kck;
 	size_t kck_len;
+	int use_sha384 = wpa_key_mgmt_sha384(sm->key_mgmt);
+	const u8 *anonce, *snonce, *fte_mic;
+	u8 fte_elem_count;
 
 	wpa_hexdump(MSG_DEBUG, "FT: Response IEs", ies, ies_len);
 
@@ -750,7 +773,7 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 		return 0;
 	}
 
-	if (wpa_ft_parse_ies(ies, ies_len, &parse) < 0) {
+	if (wpa_ft_parse_ies(ies, ies_len, &parse, use_sha384) < 0) {
 		wpa_printf(MSG_DEBUG, "FT: Failed to parse IEs");
 		return -1;
 	}
@@ -763,25 +786,47 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 		return -1;
 	}
 
-	ftie = (struct rsn_ftie *) parse.ftie;
-	if (ftie == NULL || parse.ftie_len < sizeof(*ftie)) {
-		wpa_printf(MSG_DEBUG, "FT: Invalid FTIE");
-		return -1;
+	if (use_sha384) {
+		struct rsn_ftie_sha384 *ftie;
+
+		ftie = (struct rsn_ftie_sha384 *) parse.ftie;
+		if (!ftie || parse.ftie_len < sizeof(*ftie)) {
+			wpa_printf(MSG_DEBUG, "FT: Invalid FTIE");
+			return -1;
+		}
+
+		anonce = ftie->anonce;
+		snonce = ftie->snonce;
+		fte_elem_count = ftie->mic_control[1];
+		fte_mic = ftie->mic;
+	} else {
+		struct rsn_ftie *ftie;
+
+		ftie = (struct rsn_ftie *) parse.ftie;
+		if (!ftie || parse.ftie_len < sizeof(*ftie)) {
+			wpa_printf(MSG_DEBUG, "FT: Invalid FTIE");
+			return -1;
+		}
+
+		anonce = ftie->anonce;
+		snonce = ftie->snonce;
+		fte_elem_count = ftie->mic_control[1];
+		fte_mic = ftie->mic;
 	}
 
-	if (os_memcmp(ftie->snonce, sm->snonce, WPA_NONCE_LEN) != 0) {
+	if (os_memcmp(snonce, sm->snonce, WPA_NONCE_LEN) != 0) {
 		wpa_printf(MSG_DEBUG, "FT: SNonce mismatch in FTIE");
 		wpa_hexdump(MSG_DEBUG, "FT: Received SNonce",
-			    ftie->snonce, WPA_NONCE_LEN);
+			    snonce, WPA_NONCE_LEN);
 		wpa_hexdump(MSG_DEBUG, "FT: Expected SNonce",
 			    sm->snonce, WPA_NONCE_LEN);
 		return -1;
 	}
 
-	if (os_memcmp(ftie->anonce, sm->anonce, WPA_NONCE_LEN) != 0) {
+	if (os_memcmp(anonce, sm->anonce, WPA_NONCE_LEN) != 0) {
 		wpa_printf(MSG_DEBUG, "FT: ANonce mismatch in FTIE");
 		wpa_hexdump(MSG_DEBUG, "FT: Received ANonce",
-			    ftie->anonce, WPA_NONCE_LEN);
+			    anonce, WPA_NONCE_LEN);
 		wpa_hexdump(MSG_DEBUG, "FT: Expected ANonce",
 			    sm->anonce, WPA_NONCE_LEN);
 		return -1;
@@ -826,10 +871,10 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 	count = 3;
 	if (parse.ric)
 		count += ieee802_11_ie_count(parse.ric, parse.ric_len);
-	if (ftie->mic_control[1] != count) {
+	if (fte_elem_count != count) {
 		wpa_printf(MSG_DEBUG, "FT: Unexpected IE count in MIC "
 			   "Control: received %u expected %u",
-			   ftie->mic_control[1], count);
+			   fte_elem_count, count);
 		return -1;
 	}
 
@@ -851,9 +896,9 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 		return -1;
 	}
 
-	if (os_memcmp_const(mic, ftie->mic, 16) != 0) {
+	if (os_memcmp_const(mic, fte_mic, 16) != 0) {
 		wpa_printf(MSG_DEBUG, "FT: Invalid MIC in FTIE");
-		wpa_hexdump(MSG_MSGDUMP, "FT: Received MIC", ftie->mic, 16);
+		wpa_hexdump(MSG_MSGDUMP, "FT: Received MIC", fte_mic, 16);
 		wpa_hexdump(MSG_MSGDUMP, "FT: Calculated MIC", mic, 16);
 		return -1;
 	}
