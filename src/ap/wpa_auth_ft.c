@@ -3578,6 +3578,7 @@ static int wpa_ft_rrb_rx_r1(struct wpa_authenticator *wpa_auth,
 	int expires_in;
 	int session_timeout;
 	struct vlan_description vlan;
+	size_t pmk_r1_len;
 
 	RRB_GET_AUTH(FT_RRB_R0KH_ID, r0kh_id, msgtype, -1);
 	wpa_hexdump(MSG_DEBUG, "FT: R0KH-ID", f_r0kh_id, f_r0kh_id_len);
@@ -3656,8 +3657,13 @@ static int wpa_ft_rrb_rx_r1(struct wpa_authenticator *wpa_auth,
 	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name",
 		    f_pmk_r1_name, WPA_PMK_NAME_LEN);
 
-	RRB_GET(FT_RRB_PMK_R1, pmk_r1, msgtype, PMK_LEN);
-	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R1", f_pmk_r1, PMK_LEN);
+	pmk_r1_len = PMK_LEN;
+	if (wpa_ft_rrb_get_tlv(plain, plain_len, FT_RRB_PMK_R1, &f_pmk_r1_len,
+			       &f_pmk_r1) == 0 &&
+	    (f_pmk_r1_len == PMK_LEN || f_pmk_r1_len == SHA384_MAC_LEN))
+		pmk_r1_len = f_pmk_r1_len;
+	RRB_GET(FT_RRB_PMK_R1, pmk_r1, msgtype, pmk_r1_len);
+	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R1", f_pmk_r1, pmk_r1_len);
 
 	pairwise = WPA_GET_LE16(f_pairwise);
 
@@ -3698,7 +3704,7 @@ static int wpa_ft_rrb_rx_r1(struct wpa_authenticator *wpa_auth,
 		session_timeout = 0;
 	wpa_printf(MSG_DEBUG, "FT: session_timeout %d", session_timeout);
 
-	if (wpa_ft_store_pmk_r1(wpa_auth, f_s1kh_id, f_pmk_r1, PMK_LEN,
+	if (wpa_ft_store_pmk_r1(wpa_auth, f_s1kh_id, f_pmk_r1, pmk_r1_len,
 				f_pmk_r1_name,
 				pairwise, &vlan, expires_in, session_timeout,
 				f_identity, f_identity_len, f_radius_cui,
