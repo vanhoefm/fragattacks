@@ -1420,24 +1420,36 @@ int wpa_parse_wpa_ie_wpa(const u8 *wpa_ie, size_t wpa_ie_len,
 int wpa_derive_pmk_r0(const u8 *xxkey, size_t xxkey_len,
 		      const u8 *ssid, size_t ssid_len,
 		      const u8 *mdid, const u8 *r0kh_id, size_t r0kh_id_len,
-		      const u8 *s0kh_id, u8 *pmk_r0, u8 *pmk_r0_name)
+		      const u8 *s0kh_id, u8 *pmk_r0, u8 *pmk_r0_name,
+		      int use_sha384)
 {
 	u8 buf[1 + SSID_MAX_LEN + MOBILITY_DOMAIN_ID_LEN + 1 +
 	       FT_R0KH_ID_MAX_LEN + ETH_ALEN];
-	u8 *pos, r0_key_data[48], hash[32];
+	u8 *pos, r0_key_data[64], hash[32];
 	const u8 *addr[2];
 	size_t len[2];
+	size_t q = use_sha384 ? 48 : 32;
+	size_t r0_key_data_len = q + 16;
 
 	/*
 	 * R0-Key-Data = KDF-384(XXKey, "FT-R0",
 	 *                       SSIDlength || SSID || MDID || R0KHlength ||
 	 *                       R0KH-ID || S0KH-ID)
-	 * XXKey is either the second 256 bits of MSK or PSK.
-	 * PMK-R0 = L(R0-Key-Data, 0, 256)
-	 * PMK-R0Name-Salt = L(R0-Key-Data, 256, 128)
+	 * XXKey is either the second 256 bits of MSK or PSK; or the first
+	 * 384 bits of MSK for FT-EAP-SHA384.
+	 * PMK-R0 = L(R0-Key-Data, 0, Q)
+	 * PMK-R0Name-Salt = L(R0-Key-Data, Q, 128)
+	 * Q = 384 for FT-EAP-SHA384; otherwise, 256
 	 */
 	if (ssid_len > SSID_MAX_LEN || r0kh_id_len > FT_R0KH_ID_MAX_LEN)
 		return -1;
+	wpa_printf(MSG_DEBUG, "FT: Derive PMK-R0 using KDF-%s",
+		   use_sha384 ? "SHA384" : "SHA256");
+	wpa_hexdump_key(MSG_DEBUG, "FT: XXKey", xxkey, xxkey_len);
+	wpa_hexdump_ascii(MSG_DEBUG, "FT: SSID", ssid, ssid_len);
+	wpa_hexdump(MSG_DEBUG, "FT: MDID", mdid, MOBILITY_DOMAIN_ID_LEN);
+	wpa_hexdump_ascii(MSG_DEBUG, "FT: R0KH-ID", r0kh_id, r0kh_id_len);
+	wpa_printf(MSG_DEBUG, "FT: S0KH-ID: " MACSTR, MAC2STR(s0kh_id));
 	pos = buf;
 	*pos++ = ssid_len;
 	os_memcpy(pos, ssid, ssid_len);
@@ -1450,22 +1462,46 @@ int wpa_derive_pmk_r0(const u8 *xxkey, size_t xxkey_len,
 	os_memcpy(pos, s0kh_id, ETH_ALEN);
 	pos += ETH_ALEN;
 
-	if (sha256_prf(xxkey, xxkey_len, "FT-R0", buf, pos - buf,
-		       r0_key_data, sizeof(r0_key_data)) < 0)
-		return -1;
-	os_memcpy(pmk_r0, r0_key_data, PMK_LEN);
+#ifdef CONFIG_SHA384
+	if (use_sha384) {
+		if (xxkey_len != SHA384_MAC_LEN) {
+			wpa_printf(MSG_ERROR,
+				   "FT: Unexpected XXKey length %d (expected %d)",
+				   (int) xxkey_len, SHA384_MAC_LEN);
+			return -1;
+		}
+		if (sha384_prf(xxkey, xxkey_len, "FT-R0", buf, pos - buf,
+			       r0_key_data, r0_key_data_len) < 0)
+			return -1;
+	}
+#endif /* CONFIG_SHA384 */
+	if (!use_sha384) {
+		if (xxkey_len != PMK_LEN) {
+			wpa_printf(MSG_ERROR,
+				   "FT: Unexpected XXKey length %d (expected %d)",
+				   (int) xxkey_len, PMK_LEN);
+			return -1;
+		}
+		if (sha256_prf(xxkey, xxkey_len, "FT-R0", buf, pos - buf,
+			       r0_key_data, r0_key_data_len) < 0)
+			return -1;
+	}
+	os_memcpy(pmk_r0, r0_key_data, q);
+	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R0", pmk_r0, q);
+	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R0Name-Salt", &r0_key_data[q], 16);
 
 	/*
 	 * PMKR0Name = Truncate-128(SHA-256("FT-R0N" || PMK-R0Name-Salt)
 	 */
 	addr[0] = (const u8 *) "FT-R0N";
 	len[0] = 6;
-	addr[1] = r0_key_data + PMK_LEN;
+	addr[1] = &r0_key_data[q];
 	len[1] = 16;
 
 	if (sha256_vector(2, addr, len, hash) < 0)
 		return -1;
 	os_memcpy(pmk_r0_name, hash, WPA_PMK_NAME_LEN);
+	os_memset(r0_key_data, 0, sizeof(r0_key_data));
 	return 0;
 }
 

@@ -3747,6 +3747,7 @@ static int fils_ft_build_assoc_req_rsne(struct wpa_sm *sm, struct wpabuf *buf)
 	struct rsn_ie_hdr *rsnie;
 	u16 capab;
 	u8 *pos;
+	int use_sha384 = wpa_key_mgmt_sha384(sm->key_mgmt);
 
 	/* RSNIE[PMKR0Name/PMKR1Name] */
 	rsnie = wpabuf_put(buf, sizeof(*rsnie));
@@ -3814,11 +3815,13 @@ static int fils_ft_build_assoc_req_rsne(struct wpa_sm *sm, struct wpabuf *buf)
 	if (wpa_derive_pmk_r0(sm->fils_ft, sm->fils_ft_len, sm->ssid,
 			      sm->ssid_len, sm->mobility_domain,
 			      sm->r0kh_id, sm->r0kh_id_len, sm->own_addr,
-			      sm->pmk_r0, sm->pmk_r0_name) < 0) {
+			      sm->pmk_r0, sm->pmk_r0_name, use_sha384) < 0) {
 		wpa_printf(MSG_WARNING, "FILS+FT: Could not derive PMK-R0");
 		return -1;
 	}
-	wpa_hexdump_key(MSG_DEBUG, "FILS+FT: PMK-R0", sm->pmk_r0, PMK_LEN);
+	sm->pmk_r0_len = use_sha384 ? SHA384_MAC_LEN : PMK_LEN;
+	wpa_hexdump_key(MSG_DEBUG, "FILS+FT: PMK-R0",
+			sm->pmk_r0, sm->pmk_r0_len);
 	wpa_hexdump(MSG_DEBUG, "FILS+FT: PMKR0Name",
 		    sm->pmk_r0_name, WPA_PMK_NAME_LEN);
 	wpa_printf(MSG_DEBUG, "FILS+FT: R1KH-ID: " MACSTR,

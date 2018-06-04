@@ -10,6 +10,7 @@
 
 #include "common.h"
 #include "crypto/aes_wrap.h"
+#include "crypto/sha384.h"
 #include "crypto/random.h"
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
@@ -23,6 +24,7 @@ int wpa_derive_ptk_ft(struct wpa_sm *sm, const unsigned char *src_addr,
 {
 	u8 ptk_name[WPA_PMK_NAME_LEN];
 	const u8 *anonce = key->key_nonce;
+	int use_sha384 = wpa_key_mgmt_sha384(sm->key_mgmt);
 
 	if (sm->xxkey_len == 0) {
 		wpa_printf(MSG_DEBUG, "FT: XXKey not available for key "
@@ -30,11 +32,11 @@ int wpa_derive_ptk_ft(struct wpa_sm *sm, const unsigned char *src_addr,
 		return -1;
 	}
 
-	sm->pmk_r0_len = PMK_LEN;
+	sm->pmk_r0_len = use_sha384 ? SHA384_MAC_LEN : PMK_LEN;
 	if (wpa_derive_pmk_r0(sm->xxkey, sm->xxkey_len, sm->ssid,
 			      sm->ssid_len, sm->mobility_domain,
 			      sm->r0kh_id, sm->r0kh_id_len, sm->own_addr,
-			      sm->pmk_r0, sm->pmk_r0_name) < 0)
+			      sm->pmk_r0, sm->pmk_r0_name, use_sha384) < 0)
 		return -1;
 	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R0", sm->pmk_r0, sm->pmk_r0_len);
 	wpa_hexdump(MSG_DEBUG, "FT: PMKR0Name",

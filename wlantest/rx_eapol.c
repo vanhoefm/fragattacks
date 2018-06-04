@@ -109,7 +109,7 @@ static int try_pmk(struct wlantest *wt, struct wlantest_bss *bss,
 		wpa_derive_pmk_r0(pmk->pmk, PMK_LEN,
 				  bss->ssid, bss->ssid_len, bss->mdid,
 				  bss->r0kh_id, bss->r0kh_id_len,
-				  sta->addr, pmk_r0, pmk_r0_name);
+				  sta->addr, pmk_r0, pmk_r0_name, 0);
 		wpa_hexdump(MSG_DEBUG, "FT: PMK-R0", pmk_r0, PMK_LEN);
 		wpa_hexdump(MSG_DEBUG, "FT: PMKR0Name", pmk_r0_name,
 			    WPA_PMK_NAME_LEN);

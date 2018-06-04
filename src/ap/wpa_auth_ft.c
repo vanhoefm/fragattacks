@@ -1980,7 +1980,8 @@ int wpa_ft_store_pmk_fils(struct wpa_state_machine *sm,
 	const u8 *identity, *radius_cui;
 	size_t identity_len, radius_cui_len;
 	int session_timeout;
-	size_t pmk_r0_len = PMK_LEN;
+	size_t pmk_r0_len = wpa_key_mgmt_sha384(sm->wpa_key_mgmt) ?
+		SHA384_MAC_LEN : PMK_LEN;
 
 	if (wpa_ft_get_vlan(sm->wpa_auth, sm->addr, &vlan) < 0) {
 		wpa_printf(MSG_DEBUG, "FT: vlan not available for STA " MACSTR,
@@ -2004,7 +2005,8 @@ int wpa_auth_derive_ptk_ft(struct wpa_state_machine *sm, const u8 *pmk,
 			   struct wpa_ptk *ptk)
 {
 	u8 pmk_r0[PMK_LEN_MAX], pmk_r0_name[WPA_PMK_NAME_LEN];
-	size_t pmk_r0_len = PMK_LEN;
+	size_t pmk_r0_len = wpa_key_mgmt_sha384(sm->wpa_key_mgmt) ?
+		SHA384_MAC_LEN : PMK_LEN;
 	size_t pmk_r1_len = pmk_r0_len;
 	u8 pmk_r1[PMK_LEN_MAX];
 	u8 ptk_name[WPA_PMK_NAME_LEN];
@@ -2040,7 +2042,8 @@ int wpa_auth_derive_ptk_ft(struct wpa_state_machine *sm, const u8 *pmk,
 
 	if (wpa_derive_pmk_r0(sm->xxkey, sm->xxkey_len, ssid, ssid_len, mdid,
 			      r0kh, r0kh_len, sm->addr,
-			      pmk_r0, pmk_r0_name) < 0)
+			      pmk_r0, pmk_r0_name,
+			      wpa_key_mgmt_sha384(sm->wpa_key_mgmt)) < 0)
 		return -1;
 	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R0", pmk_r0, pmk_r0_len);
 	wpa_hexdump(MSG_DEBUG, "FT: PMKR0Name", pmk_r0_name, WPA_PMK_NAME_LEN);
@@ -2512,7 +2515,7 @@ static int wpa_ft_psk_pmk_r1(struct wpa_state_machine *sm,
 
 		if (wpa_derive_pmk_r0(pmk, PMK_LEN, ssid, ssid_len, mdid, r0kh,
 				      r0kh_len, sm->addr,
-				      pmk_r0, pmk_r0_name) < 0 ||
+				      pmk_r0, pmk_r0_name, 0) < 0 ||
 		    wpa_derive_pmk_r1(pmk_r0, PMK_LEN, pmk_r0_name, r1kh,
 				      sm->addr, pmk_r1, pmk_r1_name) < 0 ||
 		    os_memcmp_const(pmk_r1_name, req_pmk_r1_name,

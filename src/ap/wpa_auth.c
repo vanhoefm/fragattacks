@@ -2126,17 +2126,21 @@ int fils_auth_pmk_to_ptk(struct wpa_state_machine *sm, const u8 *pmk,
 	if (fils_ft_len) {
 		struct wpa_authenticator *wpa_auth = sm->wpa_auth;
 		struct wpa_auth_config *conf = &wpa_auth->conf;
-		u8 pmk_r0[PMK_LEN], pmk_r0_name[WPA_PMK_NAME_LEN];
+		u8 pmk_r0[PMK_LEN_MAX], pmk_r0_name[WPA_PMK_NAME_LEN];
+		int use_sha384 = wpa_key_mgmt_sha384(sm->wpa_key_mgmt);
+		size_t pmk_r0_len = use_sha384 ? SHA384_MAC_LEN : PMK_LEN;
 
 		if (wpa_derive_pmk_r0(fils_ft, fils_ft_len,
 				      conf->ssid, conf->ssid_len,
 				      conf->mobility_domain,
 				      conf->r0_key_holder,
 				      conf->r0_key_holder_len,
-				      sm->addr, pmk_r0, pmk_r0_name) < 0)
+				      sm->addr, pmk_r0, pmk_r0_name,
+				      use_sha384) < 0)
 			return -1;
 
-		wpa_hexdump_key(MSG_DEBUG, "FILS+FT: PMK-R0", pmk_r0, PMK_LEN);
+		wpa_hexdump_key(MSG_DEBUG, "FILS+FT: PMK-R0",
+				pmk_r0, pmk_r0_len);
 		wpa_hexdump(MSG_DEBUG, "FILS+FT: PMKR0Name",
 			    pmk_r0_name, WPA_PMK_NAME_LEN);
 		wpa_ft_store_pmk_fils(sm, pmk_r0, pmk_r0_name);
