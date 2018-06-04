@@ -1566,11 +1566,19 @@ int wpa_pmk_r1_to_ptk(const u8 *pmk_r1, size_t pmk_r1_len,
 	size_t len[6];
 	u8 tmp[2 * WPA_KCK_MAX_LEN + 2 * WPA_KEK_MAX_LEN + WPA_TK_MAX_LEN];
 	size_t ptk_len, offset;
+	int use_sha384 = wpa_key_mgmt_sha384(akmp);
 
 	/*
 	 * PTK = KDF-PTKLen(PMK-R1, "FT-PTK", SNonce || ANonce ||
 	 *                  BSSID || STA-ADDR)
 	 */
+	wpa_printf(MSG_DEBUG, "FT: Derive PTK using KDF-%s",
+		   use_sha384 ? "SHA384" : "SHA256");
+	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R1", pmk_r1, pmk_r1_len);
+	wpa_hexdump(MSG_DEBUG, "FT: SNonce", snonce, WPA_NONCE_LEN);
+	wpa_hexdump(MSG_DEBUG, "FT: ANonce", anonce, WPA_NONCE_LEN);
+	wpa_printf(MSG_DEBUG, "FT: BSSID=" MACSTR " STA-ADDR=" MACSTR,
+		   MAC2STR(bssid), MAC2STR(sta_addr));
 	pos = buf;
 	os_memcpy(pos, snonce, WPA_NONCE_LEN);
 	pos += WPA_NONCE_LEN;
@@ -1589,14 +1597,37 @@ int wpa_pmk_r1_to_ptk(const u8 *pmk_r1, size_t pmk_r1_len,
 	ptk_len = ptk->kck_len + ptk->kek_len + ptk->tk_len +
 		ptk->kck2_len + ptk->kek2_len;
 
-	if (sha256_prf(pmk_r1, PMK_LEN, "FT-PTK", buf, pos - buf,
-		       tmp, ptk_len) < 0)
-		return -1;
+#ifdef CONFIG_SHA384
+	if (use_sha384) {
+		if (pmk_r1_len != SHA384_MAC_LEN) {
+			wpa_printf(MSG_ERROR,
+				   "FT: Unexpected PMK-R1 length %d (expected %d)",
+				   (int) pmk_r1_len, SHA384_MAC_LEN);
+			return -1;
+		}
+		if (sha384_prf(pmk_r1, pmk_r1_len, "FT-PTK",
+			       buf, pos - buf, tmp, ptk_len) < 0)
+			return -1;
+	}
+#endif /* CONFIG_SHA384 */
+	if (!use_sha384) {
+		if (pmk_r1_len != PMK_LEN) {
+			wpa_printf(MSG_ERROR,
+				   "FT: Unexpected PMK-R1 length %d (expected %d)",
+				   (int) pmk_r1_len, PMK_LEN);
+			return -1;
+		}
+		if (sha256_prf(pmk_r1, pmk_r1_len, "FT-PTK",
+			       buf, pos - buf, tmp, ptk_len) < 0)
+			return -1;
+	}
+	wpa_hexdump_key(MSG_DEBUG, "FT: PTK", tmp, ptk_len);
 
 	/*
 	 * PTKName = Truncate-128(SHA-256(PMKR1Name || "FT-PTKN" || SNonce ||
 	 *                                ANonce || BSSID || STA-ADDR))
 	 */
+	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", pmk_r1_name, WPA_PMK_NAME_LEN);
 	addr[0] = pmk_r1_name;
 	len[0] = WPA_PMK_NAME_LEN;
 	addr[1] = (const u8 *) "FT-PTKN";
