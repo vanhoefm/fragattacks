@@ -323,8 +323,15 @@ static int wpa_supplicant_get_pmk(struct wpa_sm *sm,
 			u8 buf[2 * PMK_LEN];
 			if (eapol_sm_get_key(sm->eapol, buf, 2 * PMK_LEN) == 0)
 			{
-				os_memcpy(sm->xxkey, buf + PMK_LEN, PMK_LEN);
-				sm->xxkey_len = PMK_LEN;
+				if (wpa_key_mgmt_sha384(sm->key_mgmt)) {
+					os_memcpy(sm->xxkey, buf,
+						  SHA384_MAC_LEN);
+					sm->xxkey_len = SHA384_MAC_LEN;
+				} else {
+					os_memcpy(sm->xxkey, buf + PMK_LEN,
+						  PMK_LEN);
+					sm->xxkey_len = PMK_LEN;
+				}
 				os_memset(buf, 0, sizeof(buf));
 			}
 #endif /* CONFIG_IEEE80211R */

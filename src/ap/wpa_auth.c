@@ -1,6 +1,6 @@
 /*
  * IEEE 802.11 RSN / WPA Authenticator
- * Copyright (c) 2004-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2018, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -1949,8 +1949,13 @@ SM_STATE(WPA_PTK, INITPMK)
 		sm->pmk_len = pmk_len;
 #ifdef CONFIG_IEEE80211R_AP
 		if (len >= 2 * PMK_LEN) {
-			os_memcpy(sm->xxkey, msk + PMK_LEN, PMK_LEN);
-			sm->xxkey_len = PMK_LEN;
+			if (wpa_key_mgmt_sha384(sm->wpa_key_mgmt)) {
+				os_memcpy(sm->xxkey, msk, SHA384_MAC_LEN);
+				sm->xxkey_len = SHA384_MAC_LEN;
+			} else {
+				os_memcpy(sm->xxkey, msk + PMK_LEN, PMK_LEN);
+				sm->xxkey_len = PMK_LEN;
+			}
 		}
 #endif /* CONFIG_IEEE80211R_AP */
 	} else {
