@@ -112,7 +112,8 @@ struct wpa_state_machine {
 	u32 dot11RSNAStatsTKIPRemoteMICFailures;
 
 #ifdef CONFIG_IEEE80211R_AP
-	u8 xxkey[PMK_LEN]; /* PSK or the second 256 bits of MSK */
+	u8 xxkey[PMK_LEN_MAX]; /* PSK or the second 256 bits of MSK, or the
+				* first 384 bits of MSK */
 	size_t xxkey_len;
 	u8 pmk_r1_name[WPA_PMK_NAME_LEN]; /* PMKR1Name derived from FT Auth
 					   * Request */

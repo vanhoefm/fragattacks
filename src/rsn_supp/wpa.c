@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant - WPA state machine and EAPOL-Key processing
- * Copyright (c) 2003-2017, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2003-2018, Jouni Malinen <j@w1.fi>
  * Copyright(c) 2015 Intel Deutschland GmbH
  *
  * This software may be distributed under the terms of the BSD license.
@@ -3151,8 +3151,11 @@ void wpa_sm_drop_sa(struct wpa_sm *sm)
 #endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_IEEE80211R
 	os_memset(sm->xxkey, 0, sizeof(sm->xxkey));
+	sm->xxkey_len = 0;
 	os_memset(sm->pmk_r0, 0, sizeof(sm->pmk_r0));
+	sm->pmk_r0_len = 0;
 	os_memset(sm->pmk_r1, 0, sizeof(sm->pmk_r1));
+	sm->pmk_r1_len = 0;
 #endif /* CONFIG_IEEE80211R */
 }
 

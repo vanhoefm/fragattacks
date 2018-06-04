@@ -367,11 +367,12 @@ int wpa_derive_pmk_r0(const u8 *xxkey, size_t xxkey_len,
 		      const u8 *s0kh_id, u8 *pmk_r0, u8 *pmk_r0_name);
 int wpa_derive_pmk_r1_name(const u8 *pmk_r0_name, const u8 *r1kh_id,
 			   const u8 *s1kh_id, u8 *pmk_r1_name);
-int wpa_derive_pmk_r1(const u8 *pmk_r0, const u8 *pmk_r0_name,
+int wpa_derive_pmk_r1(const u8 *pmk_r0, size_t pmk_r0_len,
+		      const u8 *pmk_r0_name,
 		      const u8 *r1kh_id, const u8 *s1kh_id,
 		      u8 *pmk_r1, u8 *pmk_r1_name);
-int wpa_pmk_r1_to_ptk(const u8 *pmk_r1, const u8 *snonce, const u8 *anonce,
-		      const u8 *sta_addr, const u8 *bssid,
+int wpa_pmk_r1_to_ptk(const u8 *pmk_r1, size_t pmk_r1_len, const u8 *snonce,
+		      const u8 *anonce, const u8 *sta_addr, const u8 *bssid,
 		      const u8 *pmk_r1_name,
 		      struct wpa_ptk *ptk, u8 *ptk_name, int akmp, int cipher);
 #endif /* CONFIG_IEEE80211R */

@@ -1,6 +1,6 @@
 /*
  * Internal WPA/RSN supplicant state machine definitions
- * Copyright (c) 2004-2017, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2018, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -112,11 +112,14 @@ struct wpa_sm {
 #endif /* CONFIG_TDLS */
 
 #ifdef CONFIG_IEEE80211R
-	u8 xxkey[PMK_LEN]; /* PSK or the second 256 bits of MSK */
+	u8 xxkey[PMK_LEN_MAX]; /* PSK or the second 256 bits of MSK, or the
+				* first 384 bits of MSK */
 	size_t xxkey_len;
-	u8 pmk_r0[PMK_LEN];
+	u8 pmk_r0[PMK_LEN_MAX];
+	size_t pmk_r0_len;
 	u8 pmk_r0_name[WPA_PMK_NAME_LEN];
-	u8 pmk_r1[PMK_LEN];
+	u8 pmk_r1[PMK_LEN_MAX];
+	size_t pmk_r1_len;
 	u8 pmk_r1_name[WPA_PMK_NAME_LEN];
 	u8 mobility_domain[MOBILITY_DOMAIN_ID_LEN];
 	u8 r0kh_id[FT_R0KH_ID_MAX_LEN];

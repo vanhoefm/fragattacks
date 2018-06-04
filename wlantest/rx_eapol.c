@@ -113,12 +113,12 @@ static int try_pmk(struct wlantest *wt, struct wlantest_bss *bss,
 		wpa_hexdump(MSG_DEBUG, "FT: PMK-R0", pmk_r0, PMK_LEN);
 		wpa_hexdump(MSG_DEBUG, "FT: PMKR0Name", pmk_r0_name,
 			    WPA_PMK_NAME_LEN);
-		wpa_derive_pmk_r1(pmk_r0, pmk_r0_name, bss->r1kh_id,
+		wpa_derive_pmk_r1(pmk_r0, PMK_LEN, pmk_r0_name, bss->r1kh_id,
 				  sta->addr, pmk_r1, pmk_r1_name);
 		wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R1", pmk_r1, PMK_LEN);
 		wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", pmk_r1_name,
 			    WPA_PMK_NAME_LEN);
-		if (wpa_pmk_r1_to_ptk(pmk_r1, sta->snonce, sta->anonce,
+		if (wpa_pmk_r1_to_ptk(pmk_r1, PMK_LEN, sta->snonce, sta->anonce,
 				      sta->addr,
 				      bss->bssid, pmk_r1_name, &ptk, ptk_name,
 				      sta->key_mgmt,
