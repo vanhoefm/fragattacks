@@ -1732,6 +1732,10 @@ def test_fils_and_ft_over_air(dev, apdev, params):
     """FILS SK using ERP and FT-over-air (SHA256)"""
     run_fils_and_ft_over_air(dev, apdev, params, "FT-FILS-SHA256")
 
+def test_fils_and_ft_over_air_sha384(dev, apdev, params):
+    """FILS SK using ERP and FT-over-air (SHA384)"""
+    run_fils_and_ft_over_air(dev, apdev, params, "FT-FILS-SHA384")
+
 def run_fils_and_ft_over_air(dev, apdev, params, key_mgmt):
     hapd = run_fils_and_ft_setup(dev, apdev, params, key_mgmt)
 
@@ -1753,6 +1757,10 @@ def run_fils_and_ft_over_air(dev, apdev, params, key_mgmt):
 def test_fils_and_ft_over_ds(dev, apdev, params):
     """FILS SK using ERP and FT-over-DS (SHA256)"""
     run_fils_and_ft_over_ds(dev, apdev, params, "FT-FILS-SHA256")
+
+def test_fils_and_ft_over_ds_sha384(dev, apdev, params):
+    """FILS SK using ERP and FT-over-DS (SHA384)"""
+    run_fils_and_ft_over_ds(dev, apdev, params, "FT-FILS-SHA384")
 
 def run_fils_and_ft_over_ds(dev, apdev, params, key_mgmt):
     hapd = run_fils_and_ft_setup(dev, apdev, params, key_mgmt)
