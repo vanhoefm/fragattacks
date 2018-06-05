@@ -1294,3 +1294,25 @@ def test_sae_forced_anti_clogging_pw_id(dev, apdev):
         dev[i].request("SET sae_groups ")
         dev[i].connect("test-sae", sae_password="secret",
                        sae_password_id=29*'A', key_mgmt="SAE", scan_freq="2412")
+
+def test_sae_reauth(dev, apdev):
+    """SAE reauthentication"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae",
+                                 passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params["ieee80211w"] = "2"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].request("SET sae_groups ")
+    id = dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
+                        ieee80211w="2", scan_freq="2412")
+
+    hapd.set("ext_mgmt_frame_handling", "1")
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected(timeout=10)
+    hapd.set("ext_mgmt_frame_handling", "0")
+    dev[0].request("PMKSA_FLUSH")
+    dev[0].request("REASSOCIATE")
+    dev[0].wait_connected(timeout=10, error="Timeout on re-connection")
