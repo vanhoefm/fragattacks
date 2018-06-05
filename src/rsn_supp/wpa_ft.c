@@ -641,6 +641,16 @@ static int wpa_ft_process_gtk_subelem(struct wpa_sm *sm, const u8 *gtk_elem,
 	int keyidx;
 	enum wpa_alg alg;
 	size_t gtk_len, keylen, rsc_len;
+	const u8 *kek;
+	size_t kek_len;
+
+	if (wpa_key_mgmt_fils(sm->key_mgmt)) {
+		kek = sm->ptk.kek2;
+		kek_len = sm->ptk.kek2_len;
+	} else {
+		kek = sm->ptk.kek;
+		kek_len = sm->ptk.kek_len;
+	}
 
 	if (gtk_elem == NULL) {
 		wpa_printf(MSG_DEBUG, "FT: No GTK included in FTIE");
@@ -657,8 +667,7 @@ static int wpa_ft_process_gtk_subelem(struct wpa_sm *sm, const u8 *gtk_elem,
 		return -1;
 	}
 	gtk_len = gtk_elem_len - 19;
-	if (aes_unwrap(sm->ptk.kek, sm->ptk.kek_len, gtk_len / 8, gtk_elem + 11,
-		       gtk)) {
+	if (aes_unwrap(kek, kek_len, gtk_len / 8, gtk_elem + 11, gtk)) {
 		wpa_printf(MSG_WARNING, "FT: AES unwrap failed - could not "
 			   "decrypt GTK");
 		return -1;
@@ -714,6 +723,16 @@ static int wpa_ft_process_igtk_subelem(struct wpa_sm *sm, const u8 *igtk_elem,
 {
 	u8 igtk[WPA_IGTK_LEN];
 	u16 keyidx;
+	const u8 *kek;
+	size_t kek_len;
+
+	if (wpa_key_mgmt_fils(sm->key_mgmt)) {
+		kek = sm->ptk.kek2;
+		kek_len = sm->ptk.kek2_len;
+	} else {
+		kek = sm->ptk.kek;
+		kek_len = sm->ptk.kek_len;
+	}
 
 	if (sm->mgmt_group_cipher != WPA_CIPHER_AES_128_CMAC)
 		return 0;
@@ -737,8 +756,7 @@ static int wpa_ft_process_igtk_subelem(struct wpa_sm *sm, const u8 *igtk_elem,
 		return -1;
 	}
 
-	if (aes_unwrap(sm->ptk.kek, sm->ptk.kek_len, WPA_IGTK_LEN / 8,
-		       igtk_elem + 9, igtk)) {
+	if (aes_unwrap(kek, kek_len, WPA_IGTK_LEN / 8, igtk_elem + 9, igtk)) {
 		wpa_printf(MSG_WARNING, "FT: AES unwrap failed - could not "
 			   "decrypt IGTK");
 		return -1;

@@ -2104,6 +2104,16 @@ static u8 * wpa_ft_gtk_subelem(struct wpa_state_machine *sm, size_t *len)
 	const u8 *key;
 	size_t key_len;
 	u8 keybuf[32];
+	const u8 *kek;
+	size_t kek_len;
+
+	if (wpa_key_mgmt_fils(sm->wpa_key_mgmt)) {
+		kek = sm->PTK.kek2;
+		kek_len = sm->PTK.kek2_len;
+	} else {
+		kek = sm->PTK.kek;
+		kek_len = sm->PTK.kek_len;
+	}
 
 	key_len = gsm->GTK_len;
 	if (key_len > sizeof(keybuf))
@@ -2142,8 +2152,10 @@ static u8 * wpa_ft_gtk_subelem(struct wpa_state_machine *sm, size_t *len)
 	WPA_PUT_LE16(&subelem[2], gsm->GN & 0x03);
 	subelem[4] = gsm->GTK_len;
 	wpa_auth_get_seqnum(sm->wpa_auth, NULL, gsm->GN, subelem + 5);
-	if (aes_wrap(sm->PTK.kek, sm->PTK.kek_len, key_len / 8, key,
-		     subelem + 13)) {
+	if (aes_wrap(kek, kek_len, key_len / 8, key, subelem + 13)) {
+		wpa_printf(MSG_DEBUG,
+			   "FT: GTK subelem encryption failed: kek_len=%d",
+			   (int) kek_len);
 		os_free(subelem);
 		return NULL;
 	}
@@ -2159,6 +2171,16 @@ static u8 * wpa_ft_igtk_subelem(struct wpa_state_machine *sm, size_t *len)
 	u8 *subelem, *pos;
 	struct wpa_group *gsm = sm->group;
 	size_t subelem_len;
+	const u8 *kek;
+	size_t kek_len;
+
+	if (wpa_key_mgmt_fils(sm->wpa_key_mgmt)) {
+		kek = sm->PTK.kek2;
+		kek_len = sm->PTK.kek2_len;
+	} else {
+		kek = sm->PTK.kek;
+		kek_len = sm->PTK.kek_len;
+	}
 
 	/* Sub-elem ID[1] | Length[1] | KeyID[2] | IPN[6] | Key Length[1] |
 	 * Key[16+8] */
@@ -2175,8 +2197,11 @@ static u8 * wpa_ft_igtk_subelem(struct wpa_state_machine *sm, size_t *len)
 	wpa_auth_get_seqnum(sm->wpa_auth, NULL, gsm->GN_igtk, pos);
 	pos += 6;
 	*pos++ = WPA_IGTK_LEN;
-	if (aes_wrap(sm->PTK.kek, sm->PTK.kek_len, WPA_IGTK_LEN / 8,
+	if (aes_wrap(kek, kek_len, WPA_IGTK_LEN / 8,
 		     gsm->IGTK[gsm->GN_igtk - 4], pos)) {
+		wpa_printf(MSG_DEBUG,
+			   "FT: IGTK subelem encryption failed: kek_len=%d",
+			   (int) kek_len);
 		os_free(subelem);
 		return NULL;
 	}
@@ -2369,6 +2394,11 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 	/* Fast BSS Transition Information */
 	if (auth_alg == WLAN_AUTH_FT) {
 		subelem = wpa_ft_gtk_subelem(sm, &subelem_len);
+		if (!subelem) {
+			wpa_printf(MSG_DEBUG,
+				   "FT: Failed to add GTK subelement");
+			return pos;
+		}
 		r0kh_id = sm->r0kh_id;
 		r0kh_id_len = sm->r0kh_id_len;
 		anonce = sm->ANonce;
@@ -2380,6 +2410,8 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 			u8 *nbuf;
 			igtk = wpa_ft_igtk_subelem(sm, &igtk_len);
 			if (igtk == NULL) {
+				wpa_printf(MSG_DEBUG,
+					   "FT: Failed to add IGTK subelement");
 				os_free(subelem);
 				return pos;
 			}
