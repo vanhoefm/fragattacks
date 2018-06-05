@@ -923,6 +923,7 @@ int wpa_ft_parse_ies(const u8 *ies, size_t ies_len,
 
 		switch (id) {
 		case WLAN_EID_RSN:
+			wpa_hexdump(MSG_DEBUG, "FT: RSNE", pos, len);
 			parse->rsn = pos;
 			parse->rsn_len = len;
 			ret = wpa_parse_wpa_ie_rsn(parse->rsn - 2,
@@ -944,12 +945,14 @@ int wpa_ft_parse_ies(const u8 *ies, size_t ies_len,
 			}
 			break;
 		case WLAN_EID_MOBILITY_DOMAIN:
+			wpa_hexdump(MSG_DEBUG, "FT: MDE", pos, len);
 			if (len < sizeof(struct rsn_mdie))
 				return -1;
 			parse->mdie = pos;
 			parse->mdie_len = len;
 			break;
 		case WLAN_EID_FAST_BSS_TRANSITION:
+			wpa_hexdump(MSG_DEBUG, "FT: FTE", pos, len);
 			if (use_sha384) {
 				const struct rsn_ftie_sha384 *ftie_sha384;
 
@@ -957,6 +960,17 @@ int wpa_ft_parse_ies(const u8 *ies, size_t ies_len,
 					return -1;
 				ftie_sha384 =
 					(const struct rsn_ftie_sha384 *) pos;
+				wpa_hexdump(MSG_DEBUG, "FT: FTE-MIC Control",
+					    ftie_sha384->mic_control, 2);
+				wpa_hexdump(MSG_DEBUG, "FT: FTE-MIC",
+					    ftie_sha384->mic,
+					    sizeof(ftie_sha384->mic));
+				wpa_hexdump(MSG_DEBUG, "FT: FTE-ANonce",
+					    ftie_sha384->anonce,
+					    WPA_NONCE_LEN);
+				wpa_hexdump(MSG_DEBUG, "FT: FTE-SNonce",
+					    ftie_sha384->snonce,
+					    WPA_NONCE_LEN);
 				prot_ie_count = ftie_sha384->mic_control[1];
 				if (wpa_ft_parse_ftie(pos, len, parse, 1) < 0)
 					return -1;
@@ -966,11 +980,21 @@ int wpa_ft_parse_ies(const u8 *ies, size_t ies_len,
 			if (len < sizeof(*ftie))
 				return -1;
 			ftie = (const struct rsn_ftie *) pos;
+			wpa_hexdump(MSG_DEBUG, "FT: FTE-MIC Control",
+				    ftie->mic_control, 2);
+			wpa_hexdump(MSG_DEBUG, "FT: FTE-MIC",
+				    ftie->mic, sizeof(ftie->mic));
+			wpa_hexdump(MSG_DEBUG, "FT: FTE-ANonce",
+				    ftie->anonce, WPA_NONCE_LEN);
+			wpa_hexdump(MSG_DEBUG, "FT: FTE-SNonce",
+				    ftie->snonce, WPA_NONCE_LEN);
 			prot_ie_count = ftie->mic_control[1];
 			if (wpa_ft_parse_ftie(pos, len, parse, 0) < 0)
 				return -1;
 			break;
 		case WLAN_EID_TIMEOUT_INTERVAL:
+			wpa_hexdump(MSG_DEBUG, "FT: Timeout Interval",
+				    pos, len);
 			if (len != 5)
 				break;
 			parse->tie = pos;
