@@ -2748,7 +2748,7 @@ static u8 * wpas_populate_assoc_ies(
 	 * Add MDIE under these conditions: the network profile allows FT,
 	 * the AP supports FT, and the mobility domain ID matches.
 	 */
-	if (wpa_key_mgmt_ft(wpa_sm_get_key_mgmt(wpa_s->wpa))) {
+	if (bss && wpa_key_mgmt_ft(wpa_sm_get_key_mgmt(wpa_s->wpa))) {
 		const u8 *mdie = wpa_bss_get_ie(bss, WLAN_EID_MOBILITY_DOMAIN);
 
 		if (mdie && mdie[1] >= MOBILITY_DOMAIN_ID_LEN) {
