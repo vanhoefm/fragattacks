@@ -753,12 +753,24 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 		}
 		break;
 	case SAE_ACCEPTED:
-		if (auth_transaction == 1) {
+		if (auth_transaction == 1 &&
+		    (hapd->conf->mesh & MESH_ENABLED)) {
 			wpa_printf(MSG_DEBUG, "SAE: remove the STA (" MACSTR
 				   ") doing reauthentication",
 				   MAC2STR(sta->addr));
 			ap_free_sta(hapd, sta);
 			wpa_auth_pmksa_remove(hapd->wpa_auth, sta->addr);
+		} else if (auth_transaction == 1) {
+			wpa_printf(MSG_DEBUG, "SAE: Start reauthentication");
+			ret = auth_sae_send_commit(hapd, sta, bssid, 1);
+			if (ret)
+				return ret;
+			sae_set_state(sta, SAE_COMMITTED, "Sent Commit");
+
+			if (sae_process_commit(sta->sae) < 0)
+				return WLAN_STATUS_UNSPECIFIED_FAILURE;
+			sta->sae->sync = 0;
+			sae_set_retransmit_timer(hapd, sta);
 		} else {
 			if (sae_check_big_sync(hapd, sta))
 				return WLAN_STATUS_SUCCESS;
