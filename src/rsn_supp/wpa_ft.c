@@ -236,7 +236,10 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	/* RSN Capabilities */
 	capab = 0;
 #ifdef CONFIG_IEEE80211W
-	if (sm->mgmt_group_cipher == WPA_CIPHER_AES_128_CMAC)
+	if (sm->mgmt_group_cipher == WPA_CIPHER_AES_128_CMAC ||
+	    sm->mgmt_group_cipher == WPA_CIPHER_BIP_GMAC_128 ||
+	    sm->mgmt_group_cipher == WPA_CIPHER_BIP_GMAC_256 ||
+	    sm->mgmt_group_cipher == WPA_CIPHER_BIP_CMAC_256)
 		capab |= WPA_CAPABILITY_MFPC;
 #endif /* CONFIG_IEEE80211W */
 	WPA_PUT_LE16(pos, capab);
@@ -251,10 +254,24 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	pos += WPA_PMK_NAME_LEN;
 
 #ifdef CONFIG_IEEE80211W
-	if (sm->mgmt_group_cipher == WPA_CIPHER_AES_128_CMAC) {
-		/* Management Group Cipher Suite */
+	/* Management Group Cipher Suite */
+	switch (sm->mgmt_group_cipher) {
+	case WPA_CIPHER_AES_128_CMAC:
 		RSN_SELECTOR_PUT(pos, RSN_CIPHER_SUITE_AES_128_CMAC);
 		pos += RSN_SELECTOR_LEN;
+		break;
+	case WPA_CIPHER_BIP_GMAC_128:
+		RSN_SELECTOR_PUT(pos, RSN_CIPHER_SUITE_BIP_GMAC_128);
+		pos += RSN_SELECTOR_LEN;
+		break;
+	case WPA_CIPHER_BIP_GMAC_256:
+		RSN_SELECTOR_PUT(pos, RSN_CIPHER_SUITE_BIP_GMAC_256);
+		pos += RSN_SELECTOR_LEN;
+		break;
+	case WPA_CIPHER_BIP_CMAC_256:
+		RSN_SELECTOR_PUT(pos, RSN_CIPHER_SUITE_BIP_CMAC_256);
+		pos += RSN_SELECTOR_LEN;
+		break;
 	}
 #endif /* CONFIG_IEEE80211W */
 
@@ -721,7 +738,8 @@ static int wpa_ft_process_gtk_subelem(struct wpa_sm *sm, const u8 *gtk_elem,
 static int wpa_ft_process_igtk_subelem(struct wpa_sm *sm, const u8 *igtk_elem,
 				       size_t igtk_elem_len)
 {
-	u8 igtk[WPA_IGTK_LEN];
+	u8 igtk[WPA_IGTK_MAX_LEN];
+	size_t igtk_len;
 	u16 keyidx;
 	const u8 *kek;
 	size_t kek_len;
@@ -734,7 +752,10 @@ static int wpa_ft_process_igtk_subelem(struct wpa_sm *sm, const u8 *igtk_elem,
 		kek_len = sm->ptk.kek_len;
 	}
 
-	if (sm->mgmt_group_cipher != WPA_CIPHER_AES_128_CMAC)
+	if (sm->mgmt_group_cipher != WPA_CIPHER_AES_128_CMAC &&
+	    sm->mgmt_group_cipher != WPA_CIPHER_BIP_GMAC_128 &&
+	    sm->mgmt_group_cipher != WPA_CIPHER_BIP_GMAC_256 &&
+	    sm->mgmt_group_cipher != WPA_CIPHER_BIP_CMAC_256)
 		return 0;
 
 	if (igtk_elem == NULL) {
@@ -745,18 +766,19 @@ static int wpa_ft_process_igtk_subelem(struct wpa_sm *sm, const u8 *igtk_elem,
 	wpa_hexdump_key(MSG_DEBUG, "FT: Received IGTK in Reassoc Resp",
 			igtk_elem, igtk_elem_len);
 
-	if (igtk_elem_len != 2 + 6 + 1 + WPA_IGTK_LEN + 8) {
+	igtk_len = wpa_cipher_key_len(sm->mgmt_group_cipher);
+	if (igtk_elem_len != 2 + 6 + 1 + igtk_len + 8) {
 		wpa_printf(MSG_DEBUG, "FT: Invalid IGTK sub-elem "
 			   "length %lu", (unsigned long) igtk_elem_len);
 		return -1;
 	}
-	if (igtk_elem[8] != WPA_IGTK_LEN) {
+	if (igtk_elem[8] != igtk_len) {
 		wpa_printf(MSG_DEBUG, "FT: Invalid IGTK sub-elem Key Length "
 			   "%d", igtk_elem[8]);
 		return -1;
 	}
 
-	if (aes_unwrap(kek, kek_len, WPA_IGTK_LEN / 8, igtk_elem + 9, igtk)) {
+	if (aes_unwrap(kek, kek_len, igtk_len / 8, igtk_elem + 9, igtk)) {
 		wpa_printf(MSG_WARNING, "FT: AES unwrap failed - could not "
 			   "decrypt IGTK");
 		return -1;
@@ -767,13 +789,16 @@ static int wpa_ft_process_igtk_subelem(struct wpa_sm *sm, const u8 *igtk_elem,
 	keyidx = WPA_GET_LE16(igtk_elem);
 
 	wpa_hexdump_key(MSG_DEBUG, "FT: IGTK from Reassoc Resp", igtk,
-			WPA_IGTK_LEN);
-	if (wpa_sm_set_key(sm, WPA_ALG_IGTK, broadcast_ether_addr, keyidx, 0,
-			   igtk_elem + 2, 6, igtk, WPA_IGTK_LEN) < 0) {
+			igtk_len);
+	if (wpa_sm_set_key(sm, wpa_cipher_to_alg(sm->mgmt_group_cipher),
+			   broadcast_ether_addr, keyidx, 0,
+			   igtk_elem + 2, 6, igtk, igtk_len) < 0) {
 		wpa_printf(MSG_WARNING, "WPA: Failed to set IGTK to the "
 			   "driver.");
+		os_memset(igtk, 0, sizeof(igtk));
 		return -1;
 	}
+	os_memset(igtk, 0, sizeof(igtk));
 
 	return 0;
 }
