@@ -2173,6 +2173,7 @@ static u8 * wpa_ft_igtk_subelem(struct wpa_state_machine *sm, size_t *len)
 	size_t subelem_len;
 	const u8 *kek;
 	size_t kek_len;
+	size_t igtk_len;
 
 	if (wpa_key_mgmt_fils(sm->wpa_key_mgmt)) {
 		kek = sm->PTK.kek2;
@@ -2182,9 +2183,11 @@ static u8 * wpa_ft_igtk_subelem(struct wpa_state_machine *sm, size_t *len)
 		kek_len = sm->PTK.kek_len;
 	}
 
+	igtk_len = wpa_cipher_key_len(sm->wpa_auth->conf.group_mgmt_cipher);
+
 	/* Sub-elem ID[1] | Length[1] | KeyID[2] | IPN[6] | Key Length[1] |
 	 * Key[16+8] */
-	subelem_len = 1 + 1 + 2 + 6 + 1 + WPA_IGTK_LEN + 8;
+	subelem_len = 1 + 1 + 2 + 6 + 1 + igtk_len + 8;
 	subelem = os_zalloc(subelem_len);
 	if (subelem == NULL)
 		return NULL;
@@ -2196,8 +2199,8 @@ static u8 * wpa_ft_igtk_subelem(struct wpa_state_machine *sm, size_t *len)
 	pos += 2;
 	wpa_auth_get_seqnum(sm->wpa_auth, NULL, gsm->GN_igtk, pos);
 	pos += 6;
-	*pos++ = WPA_IGTK_LEN;
-	if (aes_wrap(kek, kek_len, WPA_IGTK_LEN / 8,
+	*pos++ = igtk_len;
+	if (aes_wrap(kek, kek_len, igtk_len / 8,
 		     gsm->IGTK[gsm->GN_igtk - 4], pos)) {
 		wpa_printf(MSG_DEBUG,
 			   "FT: IGTK subelem encryption failed: kek_len=%d",
