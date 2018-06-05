@@ -505,6 +505,7 @@ static int wpa_ft_rrb_build(const u8 *key, const size_t key_len,
 	size_t plain_len = 0, auth_len = 0;
 	int ret = -1;
 
+	*packet = NULL;
 	if (wpa_ft_rrb_lin(tlvs_enc0, tlvs_enc1, vlan, &plain, &plain_len) < 0)
 		goto out;
 
