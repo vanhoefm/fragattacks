@@ -2879,6 +2879,12 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 		p = wpa_sm_write_assoc_resp_ies(sta->wpa_sm, p,
 						buf + buflen - p,
 						sta->auth_alg, ies, ies_len);
+		if (!p) {
+			wpa_printf(MSG_DEBUG,
+				   "FT: Failed to write AssocResp IEs");
+			res = WLAN_STATUS_UNSPECIFIED_FAILURE;
+			goto done;
+		}
 	}
 #endif /* CONFIG_IEEE80211R_AP */
 

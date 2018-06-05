@@ -453,6 +453,10 @@ skip_wpa_check:
 #ifdef CONFIG_IEEE80211R_AP
 	p = wpa_sm_write_assoc_resp_ies(sta->wpa_sm, buf, sizeof(buf),
 					sta->auth_alg, req_ies, req_ies_len);
+	if (!p) {
+		wpa_printf(MSG_DEBUG, "FT: Failed to write AssocResp IEs");
+		return WLAN_STATUS_UNSPECIFIED_FAILURE;
+	}
 #endif /* CONFIG_IEEE80211R_AP */
 
 #ifdef CONFIG_FILS

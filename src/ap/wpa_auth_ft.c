@@ -2377,7 +2377,7 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 		 */
 		res = wpa_write_rsn_ie(conf, pos, end - pos, sm->pmk_r1_name);
 		if (res < 0)
-			return pos;
+			return NULL;
 		rsnie = pos;
 		rsnie_len = res;
 		pos += res;
@@ -2386,7 +2386,7 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 	/* Mobility Domain Information */
 	res = wpa_write_mdie(conf, pos, end - pos);
 	if (res < 0)
-		return pos;
+		return NULL;
 	mdie = pos;
 	mdie_len = res;
 	pos += res;
@@ -2397,7 +2397,7 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 		if (!subelem) {
 			wpa_printf(MSG_DEBUG,
 				   "FT: Failed to add GTK subelement");
-			return pos;
+			return NULL;
 		}
 		r0kh_id = sm->r0kh_id;
 		r0kh_id_len = sm->r0kh_id_len;
@@ -2413,13 +2413,13 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 				wpa_printf(MSG_DEBUG,
 					   "FT: Failed to add IGTK subelement");
 				os_free(subelem);
-				return pos;
+				return NULL;
 			}
 			nbuf = os_realloc(subelem, subelem_len + igtk_len);
 			if (nbuf == NULL) {
 				os_free(subelem);
 				os_free(igtk);
-				return pos;
+				return NULL;
 			}
 			subelem = nbuf;
 			os_memcpy(subelem + subelem_len, igtk, igtk_len);
@@ -2438,7 +2438,7 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 			     subelem, subelem_len);
 	os_free(subelem);
 	if (res < 0)
-		return pos;
+		return NULL;
 	ftie = pos;
 	ftie_len = res;
 	pos += res;
@@ -2483,13 +2483,16 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 		       mdie, mdie_len, ftie, ftie_len,
 		       rsnie, rsnie_len,
 		       ric_start, ric_start ? pos - ric_start : 0,
-		       fte_mic) < 0)
+		       fte_mic) < 0) {
 		wpa_printf(MSG_DEBUG, "FT: Failed to calculate MIC");
+		return NULL;
+	}
 
 	os_free(sm->assoc_resp_ftie);
 	sm->assoc_resp_ftie = os_malloc(ftie_len);
-	if (sm->assoc_resp_ftie)
-		os_memcpy(sm->assoc_resp_ftie, ftie, ftie_len);
+	if (!sm->assoc_resp_ftie)
+		return NULL;
+	os_memcpy(sm->assoc_resp_ftie, ftie, ftie_len);
 
 	return pos;
 }
