@@ -127,7 +127,8 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
               sae=False, eap=False, fail_test=False, roams=1,
               pairwise_cipher="CCMP", group_cipher="TKIP CCMP", ptk_rekey="0",
               test_connectivity=True, eap_identity="gpsk user", conndev=False,
-              force_initial_conn_to_first_ap=False, sha384=False):
+              force_initial_conn_to_first_ap=False, sha384=False,
+              group_mgmt=None):
     logger.info("Connect to first AP")
 
     copts = {}
@@ -137,6 +138,8 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
     copts["pairwise"] = pairwise_cipher
     copts["group"]  = group_cipher
     copts["wpa_ptk_rekey"] = ptk_rekey
+    if group_mgmt:
+        copts["group_mgmt"] = group_mgmt
     if eap:
         copts["key_mgmt"] = "FT-EAP-SHA384" if sha384 else "FT-EAP"
         copts["eap"] = "GPSK"
@@ -392,6 +395,41 @@ def test_ap_ft_pmf(dev, apdev):
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase)
 
+def test_ap_ft_pmf_bip_cmac_128(dev, apdev):
+    """WPA2-PSK-FT AP with PMF/BIP-CMAC-128"""
+    run_ap_ft_pmf_bip(dev, apdev, "AES-128-CMAC")
+
+def test_ap_ft_pmf_bip_gmac_128(dev, apdev):
+    """WPA2-PSK-FT AP with PMF/BIP-GMAC-128"""
+    run_ap_ft_pmf_bip(dev, apdev, "BIP-GMAC-128")
+
+def test_ap_ft_pmf_bip_gmac_256(dev, apdev):
+    """WPA2-PSK-FT AP with PMF/BIP-GMAC-256"""
+    run_ap_ft_pmf_bip(dev, apdev, "BIP-GMAC-256")
+
+def test_ap_ft_pmf_bip_cmac_256(dev, apdev):
+    """WPA2-PSK-FT AP with PMF/BIP-CMAC-256"""
+    run_ap_ft_pmf_bip(dev, apdev, "BIP-CMAC-256")
+
+def run_ap_ft_pmf_bip(dev, apdev, cipher):
+    if cipher not in dev[0].get_capability("group_mgmt"):
+        raise HwsimSkip("Cipher %s not supported" % cipher)
+
+    ssid = "test-ft"
+    passphrase="12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2"
+    params["group_mgmt_cipher"] = cipher
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2"
+    params["group_mgmt_cipher"] = cipher
+    hapd1 = hostapd.add_ap(apdev[1], params)
+
+    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase,
+              group_mgmt=cipher)
+
 def test_ap_ft_over_ds(dev, apdev):
     """WPA2-PSK-FT AP over DS"""
     ssid = "test-ft"
@@ -596,7 +634,40 @@ def test_ap_ft_pmf_over_ds(dev, apdev):
     params["ieee80211w"] = "2"
     hapd1 = hostapd.add_ap(apdev[1], params)
 
-    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True)
+def test_ap_ft_pmf_bip_cmac_128_over_ds(dev, apdev):
+    """WPA2-PSK-FT AP over DS with PMF/BIP-CMAC-128"""
+    run_ap_ft_pmf_bip_over_ds(dev, apdev, "AES-128-CMAC")
+
+def test_ap_ft_pmf_bip_gmac_128_over_ds(dev, apdev):
+    """WPA2-PSK-FT AP over DS with PMF/BIP-GMAC-128"""
+    run_ap_ft_pmf_bip_over_ds(dev, apdev, "BIP-GMAC-128")
+
+def test_ap_ft_pmf_bip_gmac_256_over_ds(dev, apdev):
+    """WPA2-PSK-FT AP over DS with PMF/BIP-GMAC-256"""
+    run_ap_ft_pmf_bip_over_ds(dev, apdev, "BIP-GMAC-256")
+
+def test_ap_ft_pmf_bip_cmac_256_over_ds(dev, apdev):
+    """WPA2-PSK-FT AP over DS with PMF/BIP-CMAC-256"""
+    run_ap_ft_pmf_bip_over_ds(dev, apdev, "BIP-CMAC-256")
+
+def run_ap_ft_pmf_bip_over_ds(dev, apdev, cipher):
+    if cipher not in dev[0].get_capability("group_mgmt"):
+        raise HwsimSkip("Cipher %s not supported" % cipher)
+
+    ssid = "test-ft"
+    passphrase="12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2"
+    params["group_mgmt_cipher"] = cipher
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2"
+    params["group_mgmt_cipher"] = cipher
+    hapd1 = hostapd.add_ap(apdev[1], params)
+
+    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
+              group_mgmt=cipher)
 
 def test_ap_ft_over_ds_pull(dev, apdev):
     """WPA2-PSK-FT AP over DS (pull PMK)"""
