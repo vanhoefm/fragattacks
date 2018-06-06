@@ -3829,7 +3829,7 @@ static int fils_ft_build_assoc_req_rsne(struct wpa_sm *sm, struct wpabuf *buf)
 		   MAC2STR(sm->r1kh_id));
 	pos = wpabuf_put(buf, WPA_PMK_NAME_LEN);
 	if (wpa_derive_pmk_r1_name(sm->pmk_r0_name, sm->r1kh_id, sm->own_addr,
-				   pos) < 0) {
+				   pos, use_sha384) < 0) {
 		wpa_printf(MSG_WARNING, "FILS+FT: Could not derive PMKR1Name");
 		return -1;
 	}

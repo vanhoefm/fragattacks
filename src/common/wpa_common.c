@@ -1480,7 +1480,7 @@ int wpa_derive_pmk_r0(const u8 *xxkey, size_t xxkey_len,
 {
 	u8 buf[1 + SSID_MAX_LEN + MOBILITY_DOMAIN_ID_LEN + 1 +
 	       FT_R0KH_ID_MAX_LEN + ETH_ALEN];
-	u8 *pos, r0_key_data[64], hash[32];
+	u8 *pos, r0_key_data[64], hash[48];
 	const u8 *addr[2];
 	size_t len[2];
 	size_t q = use_sha384 ? 48 : 32;
@@ -1546,14 +1546,18 @@ int wpa_derive_pmk_r0(const u8 *xxkey, size_t xxkey_len,
 	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R0Name-Salt", &r0_key_data[q], 16);
 
 	/*
-	 * PMKR0Name = Truncate-128(SHA-256("FT-R0N" || PMK-R0Name-Salt)
+	 * PMKR0Name = Truncate-128(Hash("FT-R0N" || PMK-R0Name-Salt)
 	 */
 	addr[0] = (const u8 *) "FT-R0N";
 	len[0] = 6;
 	addr[1] = &r0_key_data[q];
 	len[1] = 16;
 
-	if (sha256_vector(2, addr, len, hash) < 0)
+#ifdef CONFIG_SHA384
+	if (use_sha384 && sha384_vector(2, addr, len, hash) < 0)
+		return -1;
+#endif /* CONFIG_SHA384 */
+	if (!use_sha384 && sha256_vector(2, addr, len, hash) < 0)
 		return -1;
 	os_memcpy(pmk_r0_name, hash, WPA_PMK_NAME_LEN);
 	os_memset(r0_key_data, 0, sizeof(r0_key_data));
@@ -1567,15 +1571,15 @@ int wpa_derive_pmk_r0(const u8 *xxkey, size_t xxkey_len,
  * IEEE Std 802.11r-2008 - 8.5.1.5.4
  */
 int wpa_derive_pmk_r1_name(const u8 *pmk_r0_name, const u8 *r1kh_id,
-			   const u8 *s1kh_id, u8 *pmk_r1_name)
+			   const u8 *s1kh_id, u8 *pmk_r1_name, int use_sha384)
 {
-	u8 hash[32];
+	u8 hash[48];
 	const u8 *addr[4];
 	size_t len[4];
 
 	/*
-	 * PMKR1Name = Truncate-128(SHA-256("FT-R1N" || PMKR0Name ||
-	 *                                  R1KH-ID || S1KH-ID))
+	 * PMKR1Name = Truncate-128(Hash("FT-R1N" || PMKR0Name ||
+	 *                               R1KH-ID || S1KH-ID))
 	 */
 	addr[0] = (const u8 *) "FT-R1N";
 	len[0] = 6;
@@ -1586,7 +1590,11 @@ int wpa_derive_pmk_r1_name(const u8 *pmk_r0_name, const u8 *r1kh_id,
 	addr[3] = s1kh_id;
 	len[3] = ETH_ALEN;
 
-	if (sha256_vector(4, addr, len, hash) < 0)
+#ifdef CONFIG_SHA384
+	if (use_sha384 && sha384_vector(4, addr, len, hash) < 0)
+		return -1;
+#endif /* CONFIG_SHA384 */
+	if (!use_sha384 && sha256_vector(4, addr, len, hash) < 0)
 		return -1;
 	os_memcpy(pmk_r1_name, hash, WPA_PMK_NAME_LEN);
 	return 0;
@@ -1636,7 +1644,8 @@ int wpa_derive_pmk_r1(const u8 *pmk_r0, size_t pmk_r0_len,
 	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R1", pmk_r1, pmk_r0_len);
 
 	return wpa_derive_pmk_r1_name(pmk_r0_name, r1kh_id, s1kh_id,
-				      pmk_r1_name);
+				      pmk_r1_name,
+				      pmk_r0_len == SHA384_MAC_LEN);
 }
 
 
