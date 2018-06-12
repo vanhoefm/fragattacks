@@ -911,6 +911,25 @@ def test_ap_ht_40mhz_intolerant_sta(dev, apdev):
     if hapd.get_status_field("secondary_channel") != "-1":
         raise Exception("Unexpected secondary_channel (did not re-enable 40 MHz)")
 
+def test_ap_ht_40mhz_intolerant_sta_deinit(dev, apdev):
+    """Associated STA indicating 40 MHz intolerant and hostapd deinit"""
+    clear_scan_cache(apdev[0])
+    params = { "ssid": "intolerant",
+               "channel": "6",
+               "ht_capab": "[HT40-]",
+               "obss_interval": "0" }
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("intolerant", key_mgmt="NONE", scan_freq="2437",
+                   ht40_intolerant="1")
+    time.sleep(1)
+    if hapd.get_status_field("num_sta_ht40_intolerant") != "1":
+        raise Exception("Unexpected num_sta_ht40_intolerant value (expected 1)")
+    hglobal = hostapd.HostapdGlobal()
+    hglobal.remove(apdev[0]['ifname'])
+
+    dev[0].request("DISCONNECT")
+
 def test_ap_ht_40mhz_intolerant_ap(dev, apdev):
     """Associated STA reports 40 MHz intolerant AP after association"""
     clear_scan_cache(apdev[0])
