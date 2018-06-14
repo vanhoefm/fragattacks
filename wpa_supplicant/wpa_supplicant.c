@@ -6318,11 +6318,17 @@ static void wpa_supplicant_deinit_iface(struct wpa_supplicant *wpa_s,
 
 	wpa_s->disconnected = 1;
 	if (wpa_s->drv_priv) {
-		wpa_supplicant_deauthenticate(wpa_s,
-					      WLAN_REASON_DEAUTH_LEAVING);
+		/* Don't deauthenticate if WoWLAN is enabled */
+		if (!wpa_drv_get_wowlan(wpa_s)) {
+			wpa_supplicant_deauthenticate(
+				wpa_s, WLAN_REASON_DEAUTH_LEAVING);
 
-		wpa_drv_set_countermeasures(wpa_s, 0);
-		wpa_clear_keys(wpa_s, NULL);
+			wpa_drv_set_countermeasures(wpa_s, 0);
+			wpa_clear_keys(wpa_s, NULL);
+		} else {
+			wpa_msg(wpa_s, MSG_INFO,
+				"Do not deauthenticate as part of interface deinit since WoWLAN is enabled");
+		}
 	}
 
 	wpa_supplicant_cleanup(wpa_s);
