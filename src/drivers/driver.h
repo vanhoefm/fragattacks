@@ -3513,6 +3513,12 @@ struct wpa_driver_ops {
 				unsigned int val);
 
 	/**
+	 * get_wowlan - Get wake-on-wireless status
+	 * @priv: Private driver interface data
+	 */
+	int (*get_wowlan)(void *priv);
+
+	/**
 	 * set_wowlan - Set wake-on-wireless triggers
 	 * @priv: Private driver interface data
 	 * @triggers: wowlan triggers

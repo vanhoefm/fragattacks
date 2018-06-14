@@ -9398,6 +9398,46 @@ static int nl80211_set_qos_map(void *priv, const u8 *qos_map_set,
 }
 
 
+static int get_wowlan_handler(struct nl_msg *msg, void *arg)
+{
+	struct nlattr *tb[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	int *wowlan_enabled = arg;
+
+	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	*wowlan_enabled = !!tb[NL80211_ATTR_WOWLAN_TRIGGERS];
+
+	return NL_SKIP;
+}
+
+
+static int nl80211_get_wowlan(void *priv)
+{
+	struct i802_bss *bss = priv;
+	struct wpa_driver_nl80211_data *drv = bss->drv;
+	struct nl_msg *msg;
+	int wowlan_enabled;
+	int ret;
+
+	wpa_printf(MSG_DEBUG, "nl80211: Getting wowlan status");
+
+	msg = nl80211_drv_msg(drv, 0, NL80211_CMD_GET_WOWLAN);
+
+	ret = send_and_recv_msgs(drv, msg, get_wowlan_handler, &wowlan_enabled);
+	if (ret) {
+		wpa_printf(MSG_DEBUG, "nl80211: Getting wowlan status failed");
+		return 0;
+	}
+
+	wpa_printf(MSG_DEBUG, "nl80211: wowlan is %s",
+		   wowlan_enabled ? "enabled" : "disabled");
+
+	return wowlan_enabled;
+}
+
+
 static int nl80211_set_wowlan(void *priv,
 			      const struct wowlan_triggers *triggers)
 {
@@ -11269,6 +11309,7 @@ const struct wpa_driver_ops wpa_driver_nl80211_ops = {
 #endif /* ANDROID */
 	.vendor_cmd = nl80211_vendor_cmd,
 	.set_qos_map = nl80211_set_qos_map,
+	.get_wowlan = nl80211_get_wowlan,
 	.set_wowlan = nl80211_set_wowlan,
 	.set_mac_addr = nl80211_set_mac_addr,
 #ifdef CONFIG_MESH
