@@ -1219,7 +1219,8 @@ int wpa_driver_nl80211_capa(struct wpa_driver_nl80211_data *drv)
 		drv->capa.flags &= ~WPA_DRIVER_FLAGS_EAPOL_TX_STATUS;
 
 #ifdef CONFIG_DRIVER_NL80211_QCA
-	qca_nl80211_check_dfs_capa(drv);
+	if (!(info.capa->flags & WPA_DRIVER_FLAGS_DFS_OFFLOAD))
+		qca_nl80211_check_dfs_capa(drv);
 	qca_nl80211_get_features(drv);
 	qca_nl80211_check_he_capab(drv);
 
