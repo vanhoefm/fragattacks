@@ -463,7 +463,7 @@ ieee802_1x_kay_init_receive_sa(struct receive_sc *psc, u8 an, u32 lowest_pn,
 
 	dl_list_add(&psc->sa_list, &psa->list);
 	wpa_printf(MSG_DEBUG,
-		   "KaY: Create receive SA(AN: %hhu lowest_pn: %u) of SC",
+		   "KaY: Create receive SA(an: %hhu lowest_pn: %u) of SC",
 		   an, lowest_pn);
 
 	return psa;
@@ -781,7 +781,7 @@ ieee802_1x_mka_decode_basic_body(struct ieee802_1x_kay *kay, const u8 *mka_msg,
 			   body->version, MKA_VERSION_ID);
 	}
 	if (kay->is_obliged_key_server && body->key_server) {
-		wpa_printf(MSG_DEBUG, "I must be as key server");
+		wpa_printf(MSG_DEBUG, "I must be key server");
 		return NULL;
 	}
 
@@ -1411,7 +1411,7 @@ ieee802_1x_mka_decode_sak_use_body(
 	if (body->delay_protect &&
 	    (!be_to_host32(body->llpn) || !be_to_host32(body->olpn))) {
 		wpa_printf(MSG_WARNING,
-			   "KaY: Lowest packet number should greater than 0 when delay_protect is TRUE");
+			   "KaY: Lowest packet number should be greater than 0 when delay_protect is TRUE");
 		return -1;
 	}
 
@@ -1430,7 +1430,7 @@ ieee802_1x_mka_decode_sak_use_body(
 		ieee802_1x_cp_sm_step(kay->cp);
 	}
 
-	/* if i'm key server, and detects peer member pn exhaustion, rekey.*/
+	/* if I'm key server, and detects peer member pn exhaustion, rekey. */
 	lpn = be_to_host32(body->llpn);
 	if (lpn > kay->pn_exhaustion) {
 		if (participant->is_key_server) {
@@ -1614,7 +1614,7 @@ ieee802_1x_mka_decode_dist_sak_body(
 	}
 	if (participant->is_key_server) {
 		wpa_printf(MSG_ERROR,
-			   "KaY: I can't accept the distributed SAK as myself is key server ");
+			   "KaY: I can't accept the distributed SAK as myself is key server");
 		return -1;
 	}
 	if (!kay->macsec_desired ||
@@ -1643,7 +1643,7 @@ ieee802_1x_mka_decode_dist_sak_body(
 		participant->advised_desired = FALSE;
 		ieee802_1x_cp_connect_authenticated(kay->cp);
 		ieee802_1x_cp_sm_step(kay->cp);
-		wpa_printf(MSG_WARNING, "KaY:The Key server advise no MACsec");
+		wpa_printf(MSG_WARNING, "KaY: The Key server advise no MACsec");
 		participant->to_use_sak = FALSE;
 		return 0;
 	}
@@ -1662,7 +1662,7 @@ ieee802_1x_mka_decode_dist_sak_body(
 		if (os_memcmp(sa_key->key_identifier.mi,
 			      participant->current_peer_id.mi, MI_LEN) == 0 &&
 		    sa_key->key_identifier.kn == be_to_host32(body->kn)) {
-			wpa_printf(MSG_WARNING, "KaY:The Key has installed");
+			wpa_printf(MSG_WARNING, "KaY: The Key has installed");
 			return 0;
 		}
 	}
@@ -1695,7 +1695,7 @@ ieee802_1x_mka_decode_dist_sak_body(
 		os_free(unwrap_sak);
 		return -1;
 	}
-	wpa_hexdump_key(MSG_DEBUG, "\tAES Key Unwrap of SAK:",
+	wpa_hexdump_key(MSG_DEBUG, "\tAES Key Unwrap of SAK.:",
 			unwrap_sak, sak_len);
 
 	sa_key = os_zalloc(sizeof(*sa_key));
@@ -1849,7 +1849,7 @@ ieee802_1x_mka_decode_dist_cak_body(
 	body_len = get_mka_param_body_len(hdr);
 	if (body_len < 28) {
 		wpa_printf(MSG_ERROR,
-			   "KaY: MKA Use SAK Packet Body Length (%zu bytes) should be 28 or more octets",
+			   "KaY: MKA Use CAK Packet Body Length (%zu bytes) should be 28 or more octets",
 			   body_len);
 		return -1;
 	}
@@ -1873,7 +1873,7 @@ ieee802_1x_mka_decode_kmd_body(
 	body_len = get_mka_param_body_len(hdr);
 	if (body_len < 5) {
 		wpa_printf(MSG_ERROR,
-			   "KaY: MKA Use SAK Packet Body Length (%zu bytes) should be 5 or more octets",
+			   "KaY: MKA Use KMD Packet Body Length (%zu bytes) should be 5 or more octets",
 			   body_len);
 		return -1;
 	}
@@ -2027,7 +2027,7 @@ ieee802_1x_kay_generate_new_sak(struct ieee802_1x_mka_participant *participant)
 	 */
 	if (dl_list_empty(&participant->live_peers)) {
 		wpa_printf(MSG_ERROR,
-			   "KaY: Live peers list must not empty when generating fresh SAK");
+			   "KaY: Live peers list must not be empty when generating fresh SAK");
 		return -1;
 	}
 
@@ -2041,7 +2041,7 @@ ieee802_1x_kay_generate_new_sak(struct ieee802_1x_mka_participant *participant)
 	 */
 	if ((time(NULL) - kay->dist_time) < MKA_LIFE_TIME / 1000) {
 		wpa_printf(MSG_ERROR,
-			   "KaY: Life time have not elapsed since prior SAK distributed");
+			   "KaY: Life time has not elapsed since prior SAK distributed");
 		return -1;
 	}
 
@@ -2087,7 +2087,8 @@ ieee802_1x_kay_generate_new_sak(struct ieee802_1x_mka_participant *participant)
 			goto fail;
 		}
 	} else {
-		wpa_printf(MSG_ERROR, "KaY: SAK Length not support");
+		wpa_printf(MSG_ERROR, "KaY: SAK Length(%u) not supported",
+			   key_len);
 		goto fail;
 	}
 	wpa_hexdump_key(MSG_DEBUG, "KaY: generated new SAK", key, key_len);
@@ -2219,7 +2220,7 @@ ieee802_1x_kay_elect_key_server(struct ieee802_1x_mka_participant *participant)
 		participant->is_key_server = TRUE;
 		participant->principal = TRUE;
 		participant->new_sak = TRUE;
-		wpa_printf(MSG_DEBUG, "KaY: I is elected as key server");
+		wpa_printf(MSG_DEBUG, "KaY: I am elected as key server");
 		participant->to_dist_sak = FALSE;
 		participant->is_elected = TRUE;
 
@@ -2389,7 +2390,7 @@ ieee802_1x_participant_send_mkpdu(
 	}
 
 	if (ieee802_1x_kay_encode_mkpdu(participant, buf)) {
-		wpa_printf(MSG_ERROR, "KaY: encode mkpdu fail!");
+		wpa_printf(MSG_ERROR, "KaY: encode mkpdu fail");
 		return -1;
 	}
 
@@ -2578,7 +2579,7 @@ ieee802_1x_kay_init_transmit_sa(struct transmit_sc *psc, u8 an, u32 next_PN,
 
 	dl_list_add(&psc->sa_list, &psa->list);
 	wpa_printf(MSG_DEBUG,
-		   "KaY: Create transmit SA(an: %hhu, next_PN: %u) of SC",
+		   "KaY: Create transmit SA(an: %hhu, next_pn: %u) of SC",
 		   an, next_PN);
 
 	return psa;
@@ -2773,7 +2774,7 @@ int ieee802_1x_kay_create_sas(struct ieee802_1x_kay *kay,
 		}
 	}
 	if (!latest_sak) {
-		wpa_printf(MSG_ERROR, "lki related sak not found");
+		wpa_printf(MSG_ERROR, "KaY: lki related sak not found");
 		return -1;
 	}
 
@@ -3246,7 +3247,7 @@ static void kay_l2_receive(void *ctx, const u8 *src_addr, const u8 *buf,
 	eapol_hdr = (struct ieee802_1x_hdr *) (eth_hdr + 1);
 	if (len != sizeof(*eth_hdr) + sizeof(*eapol_hdr) +
 	    be_to_host16(eapol_hdr->length)) {
-		wpa_printf(MSG_MSGDUMP, "KAY: EAPOL MPDU is invalid: (%lu-%lu)",
+		wpa_printf(MSG_MSGDUMP, "KaY: EAPOL MPDU is invalid: (%lu-%lu)",
 			   (unsigned long) len,
 			   (unsigned long) be_to_host16(eapol_hdr->length));
 		return;
