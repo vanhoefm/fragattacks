@@ -190,6 +190,68 @@ def test_p2p_channel_avoid(dev):
         dev[0].request("DRIVER_EVENT AVOID_FREQUENCIES")
         dev[1].flush_scan_cache()
 
+def test_p2p_channel_avoid2(dev):
+    """P2P and avoid frequencies driver event on 5 GHz"""
+    try:
+        set_country("US", dev[0])
+        [i_res, r_res] = go_neg_pin_authorized(i_dev=dev[0], i_intent=15,
+                                               r_dev=dev[1], r_intent=0,
+                                               test_data=False,
+                                               i_max_oper_chwidth=80,
+                                               i_ht40=True, i_vht=True)
+        check_grpform_results(i_res, r_res)
+        freq = int(i_res['freq'])
+        if freq < 5000:
+            raise Exception("Unexpected channel %d MHz" % freq)
+
+        if "OK" not in dev[0].request("DRIVER_EVENT AVOID_FREQUENCIES " + str(freq)):
+            raise Exception("Could not simulate driver event(2)")
+        ev = dev[0].wait_event(["CTRL-EVENT-AVOID-FREQ"], timeout=10)
+        if ev is None:
+            raise Exception("No CTRL-EVENT-AVOID-FREQ event")
+        ev = dev[0].wait_group_event(["CTRL-EVENT-CHANNEL-SWITCH"], timeout=10)
+        if ev is None:
+            raise Exception("No channel switch event seen")
+        if "ch_width=80 MHz" not in ev:
+            raise Exception("Could not move to a VHT80 channel")
+        ev = dev[0].wait_group_event(["AP-CSA-FINISHED"], timeout=1)
+        if ev is None:
+            raise Exception("No AP-CSA-FINISHED event seen")
+    finally:
+        set_country("00")
+        dev[0].request("DRIVER_EVENT AVOID_FREQUENCIES")
+        dev[1].flush_scan_cache()
+
+def test_p2p_channel_avoid3(dev):
+    """P2P and avoid frequencies driver event on 5 GHz"""
+    try:
+        set_country("CN", dev[0])
+        form(dev[0], dev[1])
+        set_country("CN", dev[0])
+        [i_res, r_res] = invite_from_go(dev[0], dev[1], terminate=False,
+                                        extra="ht40 vht")
+        freq = int(i_res['freq'])
+        if freq < 5000:
+            raise Exception("Unexpected channel %d MHz" % freq)
+
+        if "OK" not in dev[0].request("DRIVER_EVENT AVOID_FREQUENCIES 5180-5320,5500-5640"):
+            raise Exception("Could not simulate driver event(2)")
+        ev = dev[0].wait_event(["CTRL-EVENT-AVOID-FREQ"], timeout=10)
+        if ev is None:
+            raise Exception("No CTRL-EVENT-AVOID-FREQ event")
+        ev = dev[0].wait_group_event(["CTRL-EVENT-CHANNEL-SWITCH"], timeout=10)
+        if ev is None:
+            raise Exception("No channel switch event seen")
+        if "ch_width=80 MHz" not in ev:
+            raise Exception("Could not move to a VHT80 channel")
+        ev = dev[0].wait_group_event(["AP-CSA-FINISHED"], timeout=1)
+        if ev is None:
+            raise Exception("No AP-CSA-FINISHED event seen")
+    finally:
+        set_country("00")
+        dev[0].request("DRIVER_EVENT AVOID_FREQUENCIES")
+        dev[1].flush_scan_cache()
+
 @remote_compatible
 def test_autogo_following_bss(dev, apdev):
     """P2P autonomous GO operate on the same channel as station interface"""

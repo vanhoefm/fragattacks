@@ -179,9 +179,9 @@ def invite_from_cli(go, cli, terminate=True):
         terminate_group(go, cli)
     return [go_res, cli_res]
 
-def invite_from_go(go, cli, terminate=True):
+def invite_from_go(go, cli, terminate=True, extra=None):
     logger.info("Re-invoke persistent group from GO")
-    invite(go, cli)
+    invite(go, cli, extra=extra)
     [go_res, cli_res] = check_result(go, cli)
     hwsim_utils.test_connectivity_p2p(go, cli)
     if terminate:
