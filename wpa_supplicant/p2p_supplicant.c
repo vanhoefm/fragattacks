@@ -1714,14 +1714,23 @@ static void wpas_p2p_add_psk_list(struct wpa_supplicant *wpa_s,
 
 static void p2p_go_dump_common_freqs(struct wpa_supplicant *wpa_s)
 {
+	char buf[20 + P2P_MAX_CHANNELS * 6];
+	char *pos, *end;
 	unsigned int i;
+	int res;
 
-	wpa_dbg(wpa_s, MSG_DEBUG, "P2P: Common group frequencies (len=%u):",
-		wpa_s->p2p_group_common_freqs_num);
+	pos = buf;
+	end = pos + sizeof(buf);
+	for (i = 0; i < wpa_s->p2p_group_common_freqs_num; i++) {
+		res = os_snprintf(pos, end - pos, " %d",
+				  wpa_s->p2p_group_common_freqs[i]);
+		if (os_snprintf_error(end - pos, res))
+			break;
+		pos += res;
+	}
+	*pos = '\0';
 
-	for (i = 0; i < wpa_s->p2p_group_common_freqs_num; i++)
-		wpa_dbg(wpa_s, MSG_DEBUG, "freq[%u]: %d",
-			i, wpa_s->p2p_group_common_freqs[i]);
+	wpa_dbg(wpa_s, MSG_DEBUG, "P2P: Common group frequencies:%s", buf);
 }
 
 
