@@ -5800,6 +5800,19 @@ out:
 }
 
 
+static int wpas_same_band(int freq1, int freq2)
+{
+	enum hostapd_hw_mode mode1, mode2;
+	u8 chan1, chan2;
+
+	mode1 = ieee80211_freq_to_chan(freq1, &chan1);
+	mode2 = ieee80211_freq_to_chan(freq2, &chan2);
+	if (mode1 == NUM_HOSTAPD_MODES)
+		return 0;
+	return mode1 == mode2;
+}
+
+
 static int wpas_p2p_init_go_params(struct wpa_supplicant *wpa_s,
 				   struct p2p_go_neg_results *params,
 				   int freq, int vht_center_freq2, int ht40,
@@ -5998,6 +6011,80 @@ static int wpas_p2p_init_go_params(struct wpa_supplicant *wpa_s,
 		wpa_printf(MSG_DEBUG, "P2P: Set GO freq %d MHz from preferred "
 			   "channels", params->freq);
 		goto success;
+	}
+
+	/* Try using a channel that allows VHT to be used with 80 MHz */
+	if (wpa_s->hw.modes && wpa_s->p2p_group_common_freqs) {
+		for (i = 0; i < wpa_s->p2p_group_common_freqs_num; i++) {
+			enum hostapd_hw_mode mode;
+			struct hostapd_hw_modes *hwmode;
+			u8 chan;
+
+			cand = wpa_s->p2p_group_common_freqs[i];
+			mode = ieee80211_freq_to_chan(cand, &chan);
+			hwmode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes,
+					  mode);
+			if (!hwmode ||
+			    wpas_p2p_verify_channel(wpa_s, hwmode, chan,
+						    BW80) != ALLOWED)
+				continue;
+			if (wpas_p2p_supported_freq_go(wpa_s, channels, cand)) {
+				params->freq = cand;
+				wpa_printf(MSG_DEBUG,
+					   "P2P: Use freq %d MHz common with the peer and allowing VHT80",
+					   params->freq);
+				goto success;
+			}
+		}
+	}
+
+	/* Try using a channel that allows HT to be used with 40 MHz on the same
+	 * band so that CSA can be used */
+	if (wpa_s->current_ssid && wpa_s->hw.modes &&
+	    wpa_s->p2p_group_common_freqs) {
+		for (i = 0; i < wpa_s->p2p_group_common_freqs_num; i++) {
+			enum hostapd_hw_mode mode;
+			struct hostapd_hw_modes *hwmode;
+			u8 chan;
+
+			cand = wpa_s->p2p_group_common_freqs[i];
+			mode = ieee80211_freq_to_chan(cand, &chan);
+			hwmode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes,
+					  mode);
+			if (!wpas_same_band(wpa_s->current_ssid->frequency,
+					    cand) ||
+			    !hwmode ||
+			    (wpas_p2p_verify_channel(wpa_s, hwmode, chan,
+						     BW40MINUS) != ALLOWED &&
+			     wpas_p2p_verify_channel(wpa_s, hwmode, chan,
+						     BW40PLUS) != ALLOWED))
+				continue;
+			if (wpas_p2p_supported_freq_go(wpa_s, channels, cand)) {
+				params->freq = cand;
+				wpa_printf(MSG_DEBUG,
+					   "P2P: Use freq %d MHz common with the peer, allowing HT40, and maintaining same band",
+					   params->freq);
+				goto success;
+			}
+		}
+	}
+
+	/* Try using one of the group common freqs on the same band so that CSA
+	 * can be used */
+	if (wpa_s->current_ssid && wpa_s->p2p_group_common_freqs) {
+		for (i = 0; i < wpa_s->p2p_group_common_freqs_num; i++) {
+			cand = wpa_s->p2p_group_common_freqs[i];
+			if (!wpas_same_band(wpa_s->current_ssid->frequency,
+					    cand))
+				continue;
+			if (wpas_p2p_supported_freq_go(wpa_s, channels, cand)) {
+				params->freq = cand;
+				wpa_printf(MSG_DEBUG,
+					   "P2P: Use freq %d MHz common with the peer and maintaining same band",
+					   params->freq);
+				goto success;
+			}
+		}
 	}
 
 	/* Try using one of the group common freqs */
