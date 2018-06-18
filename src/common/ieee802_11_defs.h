@@ -1335,7 +1335,9 @@ enum wmm_ac {
 #define HS20_DGAF_DISABLED 0x01
 #define HS20_PPS_MO_ID_PRESENT 0x02
 #define HS20_ANQP_DOMAIN_ID_PRESENT 0x04
+#ifndef HS20_VERSION
 #define HS20_VERSION 0x10 /* Release 2 */
+#endif /* HS20_VERSION */
 
 /* WNM-Notification WFA vendors specific subtypes */
 #define HS20_WNM_SUB_REM_NEEDED 0
