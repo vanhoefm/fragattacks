@@ -775,6 +775,21 @@ fi.w1.wpa_supplicant1.CreateInterface.
       </li>
 
       <li>
+	<h3>RoamTime - u - (read)</h3>
+	<p>The most recent roam time in milliseconds.</p>
+      </li>
+
+      <li>
+	<h3>RoamComplete - b - (read)</h3>
+	<p>The most recent roam success or failure.</p>
+      </li>
+
+      <li>
+	<h3>SessionLength - u - (read)</h3>
+	<p>The most recent BSS session length in milliseconds.</p>
+      </li>
+
+      <li>
 	<h3>EapolVersion - s - (read/write)</h3>
 	<p>IEEE 802.1X/EAPOL version number</p>
       </li>

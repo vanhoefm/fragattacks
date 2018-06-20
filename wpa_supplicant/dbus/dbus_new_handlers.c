@@ -3114,6 +3114,71 @@ dbus_bool_t wpas_dbus_getter_assoc_status_code(
 
 
 /**
+ * wpas_dbus_getter_roam_time - Get most recent roam time
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: TRUE on success, FALSE on failure
+ *
+ * Getter for "RoamTime" property.
+ */
+dbus_bool_t wpas_dbus_getter_roam_time(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct wpa_supplicant *wpa_s = user_data;
+	dbus_uint32_t roam_time = wpa_s->roam_time.sec * 1000 +
+		wpa_s->roam_time.usec / 1000;
+
+	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT32,
+						&roam_time, error);
+}
+
+
+/**
+ * wpas_dbus_getter_roam_complete - Get most recent roam success or failure
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: TRUE on success, FALSE on failure
+ *
+ * Getter for "RoamComplete" property.
+ */
+dbus_bool_t wpas_dbus_getter_roam_complete(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct wpa_supplicant *wpa_s = user_data;
+	dbus_bool_t roam_complete = os_reltime_initialized(&wpa_s->roam_time);
+
+	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_BOOLEAN,
+						&roam_complete, error);
+}
+
+
+/**
+ * wpas_dbus_getter_session_length - Get most recent BSS session length
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: TRUE on success, FALSE on failure
+ *
+ * Getter for "SessionLength" property.
+ */
+dbus_bool_t wpas_dbus_getter_session_length(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct wpa_supplicant *wpa_s = user_data;
+	dbus_uint32_t session_length = wpa_s->session_length.sec * 1000 +
+		wpa_s->session_length.usec / 1000;
+
+	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT32,
+						&session_length, error);
+}
+
+
+/**
  * wpas_dbus_getter_bss_expire_age - Get BSS entry expiration age
  * @iter: Pointer to incoming dbus message iter
  * @error: Location to store error on failure

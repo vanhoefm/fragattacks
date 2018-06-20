@@ -494,6 +494,10 @@ struct wpa_supplicant {
 	struct wpa_supplicant *next;
 	struct l2_packet_data *l2;
 	struct l2_packet_data *l2_br;
+	struct os_reltime roam_start;
+	struct os_reltime roam_time;
+	struct os_reltime session_start;
+	struct os_reltime session_length;
 	unsigned char own_addr[ETH_ALEN];
 	unsigned char perm_addr[ETH_ALEN];
 	char ifname[100];

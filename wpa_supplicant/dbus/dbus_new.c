@@ -2235,6 +2235,15 @@ void wpas_dbus_signal_prop_changed(struct wpa_supplicant *wpa_s,
 		prop = "AssocStatusCode";
 		flush = TRUE;
 		break;
+	case WPAS_DBUS_PROP_ROAM_TIME:
+		prop = "RoamTime";
+		break;
+	case WPAS_DBUS_PROP_ROAM_COMPLETE:
+		prop = "RoamComplete";
+		break;
+	case WPAS_DBUS_PROP_SESSION_LENGTH:
+		prop = "SessionLength";
+		break;
 	default:
 		wpa_printf(MSG_ERROR, "dbus: %s: Unknown Property value %d",
 			   __func__, property);
@@ -2836,6 +2845,24 @@ static const struct wpa_dbus_property_desc wpas_dbus_bss_properties[] = {
 	},
 	{ "Age", WPAS_DBUS_NEW_IFACE_BSS, "u",
 	  wpas_dbus_getter_bss_age,
+	  NULL,
+	  NULL
+	},
+	{
+	  "RoamTime", WPAS_DBUS_NEW_IFACE_INTERFACE, "u",
+	  wpas_dbus_getter_roam_time,
+	  NULL,
+	  NULL
+	},
+	{
+	  "RoamComplete", WPAS_DBUS_NEW_IFACE_INTERFACE, "b",
+	  wpas_dbus_getter_roam_complete,
+	  NULL,
+	  NULL
+	},
+	{
+	  "SessionLength", WPAS_DBUS_NEW_IFACE_INTERFACE, "u",
+	  wpas_dbus_getter_session_length,
 	  NULL,
 	  NULL
 	},

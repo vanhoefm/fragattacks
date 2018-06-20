@@ -293,6 +293,13 @@ void wpa_supplicant_mark_disassoc(struct wpa_supplicant *wpa_s)
 	if (wpa_s->wpa_state == WPA_INTERFACE_DISABLED)
 		return;
 
+	if (os_reltime_initialized(&wpa_s->session_start)) {
+		os_reltime_age(&wpa_s->session_start, &wpa_s->session_length);
+		wpa_s->session_start.sec = 0;
+		wpa_s->session_start.usec = 0;
+		wpas_notify_session_length(wpa_s);
+	}
+
 	wpa_supplicant_set_state(wpa_s, WPA_DISCONNECTED);
 	bssid_changed = !is_zero_ether_addr(wpa_s->bssid);
 	os_memset(wpa_s->bssid, 0, ETH_ALEN);
@@ -2698,6 +2705,16 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 
 	wpa_supplicant_set_state(wpa_s, WPA_ASSOCIATED);
 	if (os_memcmp(bssid, wpa_s->bssid, ETH_ALEN) != 0) {
+		if (os_reltime_initialized(&wpa_s->session_start)) {
+			os_reltime_age(&wpa_s->session_start,
+				       &wpa_s->session_length);
+			wpa_s->session_start.sec = 0;
+			wpa_s->session_start.usec = 0;
+			wpas_notify_session_length(wpa_s);
+		} else {
+			wpas_notify_auth_changed(wpa_s);
+			os_get_reltime(&wpa_s->session_start);
+		}
 		wpa_dbg(wpa_s, MSG_DEBUG, "Associated to a new BSS: BSSID="
 			MACSTR, MAC2STR(bssid));
 		new_bss = 1;

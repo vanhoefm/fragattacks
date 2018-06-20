@@ -24,6 +24,9 @@ void wpas_notify_state_changed(struct wpa_supplicant *wpa_s,
 			       enum wpa_states old_state);
 void wpas_notify_disconnect_reason(struct wpa_supplicant *wpa_s);
 void wpas_notify_assoc_status_code(struct wpa_supplicant *wpa_s);
+void wpas_notify_roam_time(struct wpa_supplicant *wpa_s);
+void wpas_notify_roam_complete(struct wpa_supplicant *wpa_s);
+void wpas_notify_session_length(struct wpa_supplicant *wpa_s);
 void wpas_notify_network_changed(struct wpa_supplicant *wpa_s);
 void wpas_notify_ap_scan_changed(struct wpa_supplicant *wpa_s);
 void wpas_notify_bssid_changed(struct wpa_supplicant *wpa_s);
