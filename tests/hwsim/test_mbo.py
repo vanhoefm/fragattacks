@@ -96,7 +96,7 @@ def test_mbo_supp_oper_classes(dev, apdev):
         us2, us5 = run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, "US")
         jp2, jp5 = run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, "JP")
         bd2, bd5 = run_mbo_supp_oper_classes(dev, apdev, None, hapd2, "BD")
-        kz2, kz5 = run_mbo_supp_oper_classes(dev, apdev, None, hapd2, "KZ")
+        sy2, sy5 = run_mbo_supp_oper_classes(dev, apdev, None, hapd2, "SY")
     finally:
         dev[0].dump_monitor()
         set_reg("00", apdev[0], apdev[1], dev[0])
@@ -107,14 +107,14 @@ def test_mbo_supp_oper_classes(dev, apdev):
     us = "515354737475767778797a7b7c7d7e7f808182"
     jp = "51525354737475767778797a7b808182"
     bd = "5153547c7d7e7f80"
-    kz = "515354"
+    sy = "515354"
 
     tests = [ ("ZA", za, za2, za5, True),
               ("FI", fi, fi2, fi5, True),
               ("US", us, us2, us5, True),
               ("JP", jp, jp2, jp5, True),
               ("BD", bd, bd2, bd5, False),
-              ("KZ", kz, kz2, kz5, False) ]
+              ("SY", sy, sy2, sy5, False) ]
     for country, expected, res2, res5, inc5 in tests:
         # For now, allow operating class 129 to be missing since not all
         # installed regdb files include the 160 MHz channels.
