@@ -953,6 +953,20 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 		if (status_code != WLAN_STATUS_SUCCESS)
 			goto remove_sta;
 
+		if (!(hapd->conf->mesh & MESH_ENABLED) &&
+		    sta->sae->state == SAE_COMMITTED) {
+			/* This is needed in the infrastructure BSS case to
+			 * address a sequence where a STA entry may remain in
+			 * hostapd across two attempts to do SAE authentication
+			 * by the same STA. The second attempt may end up trying
+			 * to use a different group and that would not be
+			 * allowed if we remain in Committed state with the
+			 * previously set parameters. */
+			sae_set_state(sta, SAE_NOTHING,
+				      "Clear existing state to allow restart");
+			sae_clear_data(sta->sae);
+		}
+
 		resp = sae_parse_commit(sta->sae, mgmt->u.auth.variable,
 					((const u8 *) mgmt) + len -
 					mgmt->u.auth.variable, &token,
