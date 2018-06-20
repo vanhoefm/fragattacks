@@ -1056,10 +1056,13 @@ def test_sae_bignum_failure(dev, apdev):
               (1, "crypto_ec_point_from_bin;sae_parse_commit_element_ecc") ]
     for count, func in tests:
         with fail_test(dev[0], count, func):
+            hapd.request("NOTE STA failure testing %d:%s" % (count, func))
             dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
                            scan_freq="2412", wait_connect=False)
             wait_fail_trigger(dev[0], "GET_FAIL")
             dev[0].request("REMOVE_NETWORK all")
+            dev[0].dump_monitor()
+            hapd.dump_monitor()
 
     dev[0].request("SET sae_groups 5")
     tests = [ (1, "crypto_bignum_init_set;sae_set_group"),
@@ -1082,10 +1085,13 @@ def test_sae_bignum_failure(dev, apdev):
               (1, "crypto_bignum_exptmod;sae_parse_commit_element_ffc") ]
     for count, func in tests:
         with fail_test(dev[0], count, func):
+            hapd.request("NOTE STA failure testing %d:%s" % (count, func))
             dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
                            scan_freq="2412", wait_connect=False)
             wait_fail_trigger(dev[0], "GET_FAIL")
             dev[0].request("REMOVE_NETWORK all")
+            dev[0].dump_monitor()
+            hapd.dump_monitor()
 
     dev[0].request("SET sae_groups 22")
     tests = [ (1, "crypto_bignum_init_set;sae_test_pwd_seed_ffc"),
@@ -1093,10 +1099,13 @@ def test_sae_bignum_failure(dev, apdev):
               (1, "crypto_bignum_div;sae_test_pwd_seed_ffc") ]
     for count, func in tests:
         with fail_test(dev[0], count, func):
+            hapd.request("NOTE STA failure testing %d:%s" % (count, func))
             dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
                            scan_freq="2412", wait_connect=False)
             wait_fail_trigger(dev[0], "GET_FAIL")
             dev[0].request("REMOVE_NETWORK all")
+            dev[0].dump_monitor()
+            hapd.dump_monitor()
 
 def test_sae_invalid_anti_clogging_token_req(dev, apdev):
     """SAE and invalid anti-clogging token request"""
