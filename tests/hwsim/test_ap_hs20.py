@@ -5872,6 +5872,8 @@ def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
         cur.execute("INSERT INTO wildcards(identity,methods) VALUES ('','TTLS,TLS')")
         cur.execute("CREATE TABLE authlog(timestamp TEXT, session TEXT, nas_ip TEXT, username TEXT, note TEXT)")
         cur.execute("CREATE TABLE pending_tc(mac_addr TEXT PRIMARY KEY, identity TEXT)")
+        cur.execute("CREATE TABLE current_sessions(mac_addr TEXT PRIMARY KEY, identity TEXT, start_time TEXT, nas TEXT, hs20_t_c_filtering BOOLEAN, waiting_coa_ack BOOLEAN, coa_ack_received BOOLEAN)")
+
 
     try:
         params = { "ssid": "as", "beacon_int": "2000",
@@ -5915,6 +5917,14 @@ def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
         if ev is None:
             raise Exception("Terms and Conditions Acceptance notification not received")
         dev[0].dump_monitor()
+
+        with con:
+            cur = con.cursor()
+            cur.execute("SELECT * from current_sessions")
+            rows = cur.fetchall()
+            if len(rows) != 1:
+                raise Exeception("Unexpected number of rows in current_sessions (%d; expected %d)" % (len(rows), 1))
+            logger.info("current_sessions: " + str(rows))
 
         dev[0].request("DISCONNECT")
         dev[0].wait_disconnected()
