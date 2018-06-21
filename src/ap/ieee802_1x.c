@@ -1635,6 +1635,20 @@ static void ieee802_1x_hs20_t_c_filtering(struct hostapd_data *hapd,
 	hs20_t_c_filtering(hapd, sta, pos[0] & BIT(0));
 }
 
+
+static void ieee802_1x_hs20_t_c_url(struct hostapd_data *hapd,
+				    struct sta_info *sta, u8 *pos, size_t len)
+{
+	os_free(sta->t_c_url);
+	sta->t_c_url = os_malloc(len + 1);
+	if (!sta->t_c_url)
+		return;
+	os_memcpy(sta->t_c_url, pos, len);
+	sta->t_c_url[len] = '\0';
+	wpa_printf(MSG_DEBUG,
+		   "HS 2.0: Terms and Conditions URL %s", sta->t_c_url);
+}
+
 #endif /* CONFIG_HS20 */
 
 
@@ -1684,6 +1698,9 @@ static void ieee802_1x_check_hs20(struct hostapd_data *hapd,
 			break;
 		case RADIUS_VENDOR_ATTR_WFA_HS20_T_C_FILTERING:
 			ieee802_1x_hs20_t_c_filtering(hapd, sta, pos, sublen);
+			break;
+		case RADIUS_VENDOR_ATTR_WFA_HS20_T_C_URL:
+			ieee802_1x_hs20_t_c_url(hapd, sta, pos, sublen);
 			break;
 		}
 	}
@@ -2767,7 +2784,9 @@ static void ieee802_1x_wnm_notif_send(void *eloop_ctx, void *timeout_ctx)
 		wpa_printf(MSG_DEBUG, "HS 2.0: Send WNM-Notification to "
 			   MACSTR " to indicate Terms and Conditions filtering",
 			   MAC2STR(sta->addr));
-		hs20_send_wnm_notification_t_c(hapd, sta->addr);
+		hs20_send_wnm_notification_t_c(hapd, sta->addr, sta->t_c_url);
+		os_free(sta->t_c_url);
+		sta->t_c_url = NULL;
 	}
 }
 #endif /* CONFIG_HS20 */

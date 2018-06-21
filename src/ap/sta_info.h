@@ -187,6 +187,7 @@ struct sta_info {
 	struct wpabuf *roaming_consortium;
 	u8 remediation_method;
 	char *remediation_url; /* HS 2.0 Subscription Remediation Server URL */
+	char *t_c_url; /* HS 2.0 Terms and Conditions Server URL */
 	struct wpabuf *hs20_deauth_req;
 	char *hs20_session_info_url;
 	int hs20_disassoc_timer;

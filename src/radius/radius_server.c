@@ -350,6 +350,8 @@ struct radius_server_data {
 	char *subscr_remediation_url;
 	u8 subscr_remediation_method;
 
+	char *t_c_server_url;
+
 #ifdef CONFIG_SQLITE
 	sqlite3 *db;
 #endif /* CONFIG_SQLITE */
@@ -884,12 +886,56 @@ radius_server_encapsulate_eap(struct radius_server_data *data,
 
 	if (code == RADIUS_CODE_ACCESS_ACCEPT && sess->t_c_filtering) {
 		u8 buf[4] = { 0x01, 0x00, 0x00, 0x00 }; /* E=1 */
+		const char *url = data->t_c_server_url, *pos;
+		char *url2, *end2, *pos2;
+		size_t url_len;
 
 		if (!radius_msg_add_wfa(
 			    msg, RADIUS_VENDOR_ATTR_WFA_HS20_T_C_FILTERING,
 			    buf, sizeof(buf))) {
 			RADIUS_DEBUG("Failed to add WFA-HS20-T-C-Filtering");
+			radius_msg_free(msg);
+			return NULL;
 		}
+
+		if (!url) {
+			RADIUS_DEBUG("No t_c_server_url configured");
+			radius_msg_free(msg);
+			return NULL;
+		}
+
+		pos = os_strstr(url, "@1@");
+		if (!pos) {
+			RADIUS_DEBUG("No @1@ macro in t_c_server_url");
+			radius_msg_free(msg);
+			return NULL;
+		}
+
+		url_len = os_strlen(url) + ETH_ALEN * 3 - 1 - 3;
+		url2 = os_malloc(url_len);
+		if (!url2) {
+			RADIUS_DEBUG("Failed to allocate room for T&C Server URL");
+			os_free(url2);
+			radius_msg_free(msg);
+			return NULL;
+		}
+		pos2 = url2;
+		end2 = url2 + url_len;
+		os_memcpy(pos2, url, pos - url);
+		pos2 += pos - url;
+		os_snprintf(pos2, end2 - pos2, MACSTR, MAC2STR(sess->mac_addr));
+		pos2 += ETH_ALEN * 3 - 1;
+		os_memcpy(pos2, pos + 3, os_strlen(pos + 3));
+		if (!radius_msg_add_wfa(msg,
+					RADIUS_VENDOR_ATTR_WFA_HS20_T_C_URL,
+					(const u8 *) url2, url_len)) {
+			RADIUS_DEBUG("Failed to add WFA-HS20-T-C-URL");
+			os_free(url2);
+			radius_msg_free(msg);
+			return NULL;
+		}
+		os_free(url2);
+
 		radius_srv_hs20_t_c_pending(sess);
 	}
 #endif /* CONFIG_HS20 */
@@ -1894,6 +1940,9 @@ radius_server_init(struct radius_server_conf *conf)
 	}
 	data->subscr_remediation_method = conf->subscr_remediation_method;
 
+	if (conf->t_c_server_url)
+		data->t_c_server_url = os_strdup(conf->t_c_server_url);
+
 #ifdef CONFIG_SQLITE
 	if (conf->sqlite_file) {
 		if (sqlite3_open(conf->sqlite_file, &data->db)) {
@@ -2010,6 +2059,7 @@ void radius_server_deinit(struct radius_server_data *data)
 	os_free(data->dump_msk_file);
 #endif /* CONFIG_RADIUS_TEST */
 	os_free(data->subscr_remediation_url);
+	os_free(data->t_c_server_url);
 
 #ifdef CONFIG_SQLITE
 	if (data->db)

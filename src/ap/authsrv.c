@@ -136,6 +136,7 @@ static int hostapd_setup_radius_srv(struct hostapd_data *hapd)
 #ifdef CONFIG_HS20
 	srv.subscr_remediation_url = conf->subscr_remediation_url;
 	srv.subscr_remediation_method = conf->subscr_remediation_method;
+	srv.t_c_server_url = conf->t_c_server_url;
 #endif /* CONFIG_HS20 */
 	srv.erp = conf->eap_server_erp;
 	srv.erp_domain = conf->erp_domain;

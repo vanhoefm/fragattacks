@@ -180,20 +180,24 @@ int hs20_send_wnm_notification_deauth_req(struct hostapd_data *hapd,
 
 
 int hs20_send_wnm_notification_t_c(struct hostapd_data *hapd,
-				   const u8 *addr)
+				   const u8 *addr, const char *url)
 {
 	struct wpabuf *buf;
 	int ret;
-	const char *url = hapd->conf->t_c_server_url, *pos;
-	size_t url_len;
+	size_t url_len = os_strlen(url);
 
-	if (!url)
+	if (!url) {
+		wpa_printf(MSG_INFO, "HS 2.0: No T&C Server URL available");
 		return -1;
-	pos = os_strstr(url, "@1@");
-	if (!pos)
-		return -1;
+	}
 
-	url_len = os_strlen(url) + ETH_ALEN * 3 - 1 - 3;
+	if (5 + url_len > 255) {
+		wpa_printf(MSG_INFO,
+			   "HS 2.0: Too long T&C Server URL for WNM-Notification: '%s'",
+			   url);
+		return -1;
+	}
+
 	buf = wpabuf_alloc(4 + 7 + url_len);
 	if (!buf)
 		return -1;
@@ -209,9 +213,7 @@ int hs20_send_wnm_notification_t_c(struct hostapd_data *hapd,
 	wpabuf_put_be24(buf, OUI_WFA);
 	wpabuf_put_u8(buf, HS20_WNM_T_C_ACCEPTANCE);
 	wpabuf_put_u8(buf, url_len);
-	wpabuf_put_data(buf, url, pos - url);
-	wpabuf_printf(buf, MACSTR, MAC2STR(addr));
-	wpabuf_put_str(buf, pos + 3);
+	wpabuf_put_str(buf, url);
 
 	ret = hostapd_drv_send_action(hapd, hapd->iface->freq, 0, addr,
 				      wpabuf_head(buf), wpabuf_len(buf));
