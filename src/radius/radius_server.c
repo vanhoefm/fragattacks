@@ -780,6 +780,36 @@ static void radius_srv_hs20_t_c_pending(struct radius_session *sess)
 #endif /* CONFIG_HS20 */
 
 
+static void radius_server_add_session(struct radius_session *sess)
+{
+#ifdef CONFIG_SQLITE
+	char *sql;
+	char addr_txt[ETH_ALEN * 3];
+	struct os_time now;
+
+	if (!sess->server->db)
+		return;
+
+
+	os_snprintf(addr_txt, sizeof(addr_txt), MACSTR,
+		    MAC2STR(sess->mac_addr));
+
+	os_get_time(&now);
+	sql = sqlite3_mprintf("INSERT OR REPLACE INTO current_sessions(mac_addr,identity,start_time,nas,hs20_t_c_filtering) VALUES (%Q,%Q,%d,%Q,%u)",
+			      addr_txt, sess->username, now.sec,
+			      sess->nas_ip, sess->t_c_filtering);
+	if (sql) {
+			if (sqlite3_exec(sess->server->db, sql, NULL, NULL,
+					 NULL) != SQLITE_OK) {
+				RADIUS_ERROR("Failed to add current_sessions entry into sqlite database: %s",
+					     sqlite3_errmsg(sess->server->db));
+			}
+			sqlite3_free(sql);
+	}
+#endif /* CONFIG_SQLITE */
+}
+
+
 static struct radius_msg *
 radius_server_encapsulate_eap(struct radius_server_data *data,
 			      struct radius_client *client,
@@ -973,6 +1003,9 @@ radius_server_encapsulate_eap(struct radius_server_data *data,
 				  hdr->authenticator) < 0) {
 		RADIUS_DEBUG("Failed to add Message-Authenticator attribute");
 	}
+
+	if (code == RADIUS_CODE_ACCESS_ACCEPT)
+		radius_server_add_session(sess);
 
 	return msg;
 }
