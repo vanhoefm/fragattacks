@@ -5764,7 +5764,7 @@ def test_ap_hs20_terms_and_conditions(dev, apdev):
     params['hessid'] = bssid
     params['hs20_t_c_filename'] = 'terms-and-conditions'
     params['hs20_t_c_timestamp'] = '123456789'
-    params['hs20_t_c_server_url'] = 'https://example.com/t_and_c?addr=@1@&ap=123'
+
     hostapd.add_ap(apdev[0], params)
 
     dev[0].hs20_enable()
@@ -5795,7 +5795,6 @@ def test_ap_hs20_terms_and_conditions_coa(dev, apdev):
     params['hessid'] = bssid
     params['hs20_t_c_filename'] = 'terms-and-conditions'
     params['hs20_t_c_timestamp'] = '123456789'
-    params['hs20_t_c_server_url'] = 'https://example.com/t_and_c?addr=@1@&ap=123'
     params['own_ip_addr'] = "127.0.0.1"
     params['radius_das_port'] = "3799"
     params['radius_das_client'] = "127.0.0.1 secret"
@@ -5883,6 +5882,7 @@ def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
                    "ca_cert": "auth_serv/ca.pem",
                    "server_cert": "auth_serv/server.pem",
                    "private_key": "auth_serv/server.key" }
+        params['hs20_t_c_server_url'] = 'https://example.com/t_and_c?addr=@1@&ap=123'
         hostapd.add_ap(apdev[1], params)
 
         bssid = apdev[0]['bssid']
@@ -5890,7 +5890,6 @@ def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
         params['auth_server_port'] = "18128"
         params['hs20_t_c_filename'] = 'terms-and-conditions'
         params['hs20_t_c_timestamp'] = '123456789'
-        params['hs20_t_c_server_url'] = 'https://example.com/t_and_c?addr=@1@&ap=123'
         params['own_ip_addr'] = "127.0.0.1"
         params['radius_das_port'] = "3799"
         params['radius_das_client'] = "127.0.0.1 secret"
