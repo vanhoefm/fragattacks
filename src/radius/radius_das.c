@@ -413,7 +413,8 @@ static void radius_das_receive(int sock, void *eloop_ctx, void *sock_ctx)
 
 	wpa_printf(MSG_DEBUG, "DAS: Received %d bytes from %s:%d",
 		   len, abuf, from_port);
-	if (das->client_addr.u.v4.s_addr != from.sin.sin_addr.s_addr) {
+	if (das->client_addr.u.v4.s_addr &&
+	    das->client_addr.u.v4.s_addr != from.sin.sin_addr.s_addr) {
 		wpa_printf(MSG_DEBUG, "DAS: Drop message from unknown client");
 		return;
 	}
