@@ -41,6 +41,36 @@ if (!$accept) {
 
       echo "<p>Terms and conditions were accepted.</p>";
    }
+
+   $fp = fsockopen($hostapd_ctrl);
+   if (!$fp) {
+      die("Could not connect to hostapd(AS)");
+   }
+
+   fwrite($fp, "DAC_REQUEST coa $addr t_c_clear");
+   fclose($fp);
+
+   $waiting = true;
+   $ack = false;
+   for ($i = 1; $i <= 10; $i++) {
+      $res = $db->prepare("SELECT waiting_coa_ack,coa_ack_received FROM current_sessions WHERE mac_addr=?");
+      $res->execute(array($addr));
+      $row = $res->fetch();
+      if (!$row) {
+         die("No current session for the specified MAC address");
+      }
+      $waiting = $row[0] == 1;
+      $ack = $row[1] == 1;
+      $res->closeCursor();
+      if (!$waiting)
+         break;
+      sleep(1);
+   }
+   if ($ack) {
+      echo "<P>Filtering disabled.</P>\n";
+   } else {
+      echo "<P>Failed to disable filtering.</P>\n";
+   }
 }
 
 ?>
