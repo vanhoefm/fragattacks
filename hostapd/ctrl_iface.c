@@ -3203,6 +3203,11 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 		if (hostapd_dpp_pkex_remove(hapd, buf + 16) < 0)
 			reply_len = -1;
 #endif /* CONFIG_DPP */
+#ifdef RADIUS_SERVER
+	} else if (os_strncmp(buf, "DAC_REQUEST ", 12) == 0) {
+		if (radius_server_dac_request(hapd->radius_srv, buf + 12) < 0)
+			reply_len = -1;
+#endif /* RADIUS_SERVER */
 	} else {
 		os_memcpy(reply, "UNKNOWN COMMAND\n", 16);
 		reply_len = 16;
