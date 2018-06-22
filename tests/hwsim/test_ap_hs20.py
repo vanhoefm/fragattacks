@@ -5885,7 +5885,7 @@ def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
                    "server_cert": "auth_serv/server.pem",
                    "private_key": "auth_serv/server.key" }
         params['hs20_t_c_server_url'] = 'https://example.com/t_and_c?addr=@1@&ap=123'
-        hostapd.add_ap(apdev[1], params)
+        authsrv = hostapd.add_ap(apdev[1], params)
 
         bssid = apdev[0]['bssid']
         params = hs20_ap_params()
@@ -5894,7 +5894,7 @@ def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
         params['hs20_t_c_timestamp'] = '123456789'
         params['own_ip_addr'] = "127.0.0.1"
         params['radius_das_port'] = "3799"
-        params['radius_das_client'] = "127.0.0.1 secret"
+        params['radius_das_client'] = "127.0.0.1 radius"
         params['radius_das_require_event_timestamp'] = "1"
         params['disable_pmksa_caching'] = '1'
         hapd = hostapd.add_ap(apdev[0], params)
@@ -5925,6 +5925,26 @@ def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
             if len(rows) != 1:
                 raise Exeception("Unexpected number of rows in current_sessions (%d; expected %d)" % (len(rows), 1))
             logger.info("current_sessions: " + str(rows))
+
+        if "OK" not in authsrv.request("DAC_REQUEST coa %s t_c_clear" % dev[0].own_addr()):
+            raise Exception("DAC_REQUEST failed")
+
+        ev = hapd.wait_event(["HS20-T-C-FILTERING-REMOVE"], timeout=5)
+        if ev is None:
+            raise Exception("Terms and Conditions filtering not disabled")
+        if ev.split(' ')[1] != dev[0].own_addr():
+            raise Exception("Unexpected STA address for filtering: " + ev)
+
+        time.sleep(0.2)
+        with con:
+            cur = con.cursor()
+            cur.execute("SELECT * from current_sessions")
+            rows = cur.fetchall()
+            if len(rows) != 1:
+                raise Exeception("Unexpected number of rows in current_sessions (%d; expected %d)" % (len(rows), 1))
+            logger.info("current_sessions: " + str(rows))
+            if rows[0][4] != 0 or rows[0][5] != 0 or rows[0][6] != 1:
+                raise Exception("Unexpected current_sessions information after CoA-ACK")
 
         dev[0].request("DISCONNECT")
         dev[0].wait_disconnected()
