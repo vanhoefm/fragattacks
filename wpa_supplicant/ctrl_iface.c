@@ -2913,6 +2913,13 @@ static int wpa_supplicant_ctrl_iface_scan_result(
 		pos += ret;
 	}
 #endif /* CONFIG_FST */
+	ie = wpa_bss_get_ie(bss, WLAN_EID_EXT_CAPAB);
+	if (ie && ie[1] >= 7 && ie[8] & BIT(0)) { /* Bit 48 - UTF-8 SSID */
+		ret = os_snprintf(pos, end - pos, "[UTF-8]");
+		if (os_snprintf_error(end - pos, ret))
+			return -1;
+		pos += ret;
+	}
 
 	ret = os_snprintf(pos, end - pos, "\t%s",
 			  wpa_ssid_txt(bss->ssid, bss->ssid_len));
