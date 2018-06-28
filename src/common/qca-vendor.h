@@ -5462,6 +5462,42 @@ enum qca_wlan_vendor_attr_wifi_test_config {
 	 */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_HE_TX_BEAMFORMEE_NSTS = 14,
 
+	/* 8-bit unsigned value to configure the MU EDCA params for given AC
+	 * This attribute is used to configure the testbed device.
+	 * Uses the enum qca_wlan_ac_type values.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_HE_MU_EDCA_AC = 15,
+
+	/* 8-bit unsigned value to configure the MU EDCA AIFSN for given AC
+	 * To configure MU EDCA AIFSN value, MU EDCA access category value
+	 * is required to process the command.
+	 * This attribute is used to configure the testbed device.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_HE_MU_EDCA_AIFSN = 16,
+
+	/* 8-bit unsigned value to configure the MU EDCA ECW min value for
+	 * given AC.
+	 * To configure MU EDCA ECW min value, MU EDCA access category value
+	 * is required to process the command.
+	 * This attribute is used to configure the testbed device.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_HE_MU_EDCA_ECWMIN = 17,
+
+	/* 8-bit unsigned value to configure the MU EDCA ECW max value for
+	 * given AC.
+	 * To configure MU EDCA ECW max value, MU EDCA access category value
+	 * is required to process the command.
+	 * This attribute is used to configure the testbed device.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_HE_MU_EDCA_ECWMAX = 18,
+
+	/* 8-bit unsigned value to configure the MU EDCA timer for given AC
+	 * To configure MU EDCA timer value, MU EDCA access category value
+	 * is required to process the command.
+	 * This attribute is used to configure the testbed device.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_HE_MU_EDCA_TIMER = 19,
+
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_MAX =
