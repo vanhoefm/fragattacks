@@ -60,6 +60,7 @@ struct i802_bss {
 	char brname[IFNAMSIZ];
 	unsigned int beacon_set:1;
 	unsigned int added_if_into_bridge:1;
+	unsigned int already_in_bridge:1;
 	unsigned int added_bridge:1;
 	unsigned int in_deinit:1;
 	unsigned int wdev_id_set:1;
