@@ -150,6 +150,7 @@ DECLARE_ACCESSOR(wpas_dbus_getter_fast_reauth);
 DECLARE_ACCESSOR(wpas_dbus_setter_fast_reauth);
 DECLARE_ACCESSOR(wpas_dbus_getter_disconnect_reason);
 DECLARE_ACCESSOR(wpas_dbus_getter_disassociate_reason);
+DECLARE_ACCESSOR(wpas_dbus_getter_auth_status_code);
 DECLARE_ACCESSOR(wpas_dbus_getter_assoc_status_code);
 DECLARE_ACCESSOR(wpas_dbus_getter_roam_time);
 DECLARE_ACCESSOR(wpas_dbus_getter_roam_complete);

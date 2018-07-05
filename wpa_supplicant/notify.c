@@ -140,6 +140,15 @@ void wpas_notify_disconnect_reason(struct wpa_supplicant *wpa_s)
 }
 
 
+void wpas_notify_auth_status_code(struct wpa_supplicant *wpa_s)
+{
+	if (wpa_s->p2p_mgmt)
+		return;
+
+	wpas_dbus_signal_prop_changed(wpa_s, WPAS_DBUS_PROP_AUTH_STATUS_CODE);
+}
+
+
 void wpas_notify_assoc_status_code(struct wpa_supplicant *wpa_s)
 {
 	if (wpa_s->p2p_mgmt)

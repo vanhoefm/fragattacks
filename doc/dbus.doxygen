@@ -770,6 +770,11 @@ fi.w1.wpa_supplicant1.CreateInterface.
       </li>
 
       <li>
+	<h3>AuthStatusCode - i - (read)</h3>
+	<p>The most recent IEEE 802.11 status code for authentication.</p>
+      </li>
+
+      <li>
 	<h3>AssocStatusCode - i - (read)</h3>
 	<p>The most recent IEEE 802.11 status code for association rejection.</p>
       </li>

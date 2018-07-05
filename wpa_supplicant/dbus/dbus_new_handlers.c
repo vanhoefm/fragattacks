@@ -3093,6 +3093,27 @@ dbus_bool_t wpas_dbus_getter_disconnect_reason(
 
 
 /**
+ * wpas_dbus_getter_auth_status_code - Get most recent auth status code
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: TRUE on success, FALSE on failure
+ *
+ * Getter for "AuthStatusCode" property.
+ */
+dbus_bool_t wpas_dbus_getter_auth_status_code(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct wpa_supplicant *wpa_s = user_data;
+	dbus_int32_t reason = wpa_s->auth_status_code;
+
+	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_INT32,
+						&reason, error);
+}
+
+
+/**
  * wpas_dbus_getter_assoc_status_code - Get most recent failed assoc status code
  * @iter: Pointer to incoming dbus message iter
  * @error: Location to store error on failure
