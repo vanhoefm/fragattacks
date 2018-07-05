@@ -5356,6 +5356,24 @@ enum qca_wlan_he_ltf_cfg {
 	QCA_WLAN_HE_LTF_4X = 3,
 };
 
+/**
+ * enum qca_wlan_he_mac_padding_dur - HE trigger frame MAC padding duration
+ *
+ * Indicates the HE trigger frame MAC padding duration value.
+ *
+ * @QCA_WLAN_HE_NO_ADDITIONAL_PROCESS_TIME: no additional time required to
+ * process the trigger frame.
+ * @QCA_WLAN_HE_8US_OF_PROCESS_TIME: indicates the 8us of processing time for
+ * trigger frame.
+ * @QCA_WLAN_HE_16US_OF_PROCESS_TIME: indicates the 16us of processing time for
+ * trigger frame.
+ */
+enum qca_wlan_he_mac_padding_dur {
+	QCA_WLAN_HE_NO_ADDITIONAL_PROCESS_TIME = 0,
+	QCA_WLAN_HE_8US_OF_PROCESS_TIME = 1,
+	QCA_WLAN_HE_16US_OF_PROCESS_TIME = 2,
+};
+
 /* Attributes for data used by
  * QCA_NL80211_VENDOR_SUBCMD_WIFI_TEST_CONFIGURATION
  */
@@ -5497,6 +5515,13 @@ enum qca_wlan_vendor_attr_wifi_test_config {
 	 * This attribute is used to configure the testbed device.
 	 */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_HE_MU_EDCA_TIMER = 19,
+
+	/* 8-bit unsigned value to configure the HE trigger frame MAC padding
+	 * duration.
+	 * This attribute is used to configure the testbed device.
+	 * Uses the enum qca_wlan_he_mac_padding_dur values.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_HE_MAC_PADDING_DUR = 20,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_AFTER_LAST,
