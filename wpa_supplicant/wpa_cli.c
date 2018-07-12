@@ -1205,6 +1205,39 @@ static int wpa_cli_cmd_sim(struct wpa_ctrl *ctrl, int argc, char *argv[])
 }
 
 
+static int wpa_cli_cmd_psk_passphrase(struct wpa_ctrl *ctrl, int argc,
+				      char *argv[])
+{
+	char cmd[256], *pos, *end;
+	int i, ret;
+
+	if (argc < 2) {
+		printf("Invalid PSK_PASSPHRASE command: needs two arguments (network id and PSK/passphrase)\n");
+		return -1;
+	}
+
+	end = cmd + sizeof(cmd);
+	pos = cmd;
+	ret = os_snprintf(pos, end - pos, WPA_CTRL_RSP "PSK_PASSPHRASE-%s:%s",
+			  argv[0], argv[1]);
+	if (os_snprintf_error(end - pos, ret)) {
+		printf("Too long PSK_PASSPHRASE command.\n");
+		return -1;
+	}
+	pos += ret;
+	for (i = 2; i < argc; i++) {
+		ret = os_snprintf(pos, end - pos, " %s", argv[i]);
+		if (os_snprintf_error(end - pos, ret)) {
+			printf("Too long PSK_PASSPHRASE command.\n");
+			return -1;
+		}
+		pos += ret;
+	}
+
+	return wpa_ctrl_command(ctrl, cmd);
+}
+
+
 static int wpa_cli_cmd_passphrase(struct wpa_ctrl *ctrl, int argc,
 				  char *argv[])
 {
@@ -3095,6 +3128,9 @@ static const struct wpa_cli_cmd wpa_cli_commands[] = {
 	  cli_cmd_flag_sensitive,
 	  "<network id> <password> = configure one-time-password for an SSID"
 	},
+	{ "psk_passphrase", wpa_cli_cmd_psk_passphrase,
+	  wpa_cli_complete_network_id, cli_cmd_flag_sensitive,
+	  "<network id> <PSK/passphrase> = configure PSK/passphrase for an SSID" },
 	{ "passphrase", wpa_cli_cmd_passphrase, wpa_cli_complete_network_id,
 	  cli_cmd_flag_sensitive,
 	  "<network id> <passphrase> = configure private key passphrase\n"
