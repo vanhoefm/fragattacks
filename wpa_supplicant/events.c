@@ -1829,32 +1829,28 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 			min_diff = 4;
 		else
 			min_diff = 5;
-		if (cur_est > sel_est * 1.5)
-			min_diff += 10;
-		else if (cur_est > sel_est * 1.2)
-			min_diff += 5;
-		else if (cur_est > sel_est * 1.1)
-			min_diff += 2;
-		else if (cur_est > sel_est)
-			min_diff++;
 	}
-	if (to_5ghz) {
-		int reduce = 2;
 
-		/* Make it easier to move to 5 GHz band */
-		if (sel_est > cur_est * 1.5)
-			reduce = 5;
-		else if (sel_est > cur_est * 1.2)
-			reduce = 4;
-		else if (sel_est > cur_est * 1.1)
-			reduce = 3;
+	if (cur_est > sel_est * 1.5)
+		min_diff += 10;
+	else if (cur_est > sel_est * 1.2)
+		min_diff += 5;
+	else if (cur_est > sel_est * 1.1)
+		min_diff += 2;
+	else if (cur_est > sel_est)
+		min_diff++;
+	else if (sel_est > cur_est * 1.5)
+		min_diff -= 10;
+	else if (sel_est > cur_est * 1.2)
+		min_diff -= 5;
+	else if (sel_est > cur_est * 1.1)
+		min_diff -= 2;
+	else if (sel_est > cur_est)
+		min_diff--;
 
-		if (min_diff > reduce)
-			min_diff -= reduce;
-		else
-			min_diff = 0;
-	}
-	diff = abs(cur_level - selected->level);
+	if (to_5ghz)
+		min_diff -= 2;
+	diff = selected->level - current_bss->level;
 	if (diff < min_diff) {
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"Skip roam - too small difference in signal level (%d < %d)",
