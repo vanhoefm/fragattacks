@@ -1711,7 +1711,10 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 			 * Try to re-enable interface if the driver stopped it
 			 * when the interface got disabled.
 			 */
-			wpa_auth_reconfig_group_keys(hapd->wpa_auth);
+			if (hapd->wpa_auth)
+				wpa_auth_reconfig_group_keys(hapd->wpa_auth);
+			else
+				hostapd_reconfig_encryption(hapd);
 			hapd->reenable_beacon = 1;
 			ieee802_11_set_beacon(hapd);
 		}

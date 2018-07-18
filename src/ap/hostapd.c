@@ -78,6 +78,16 @@ int hostapd_for_each_interface(struct hapd_interfaces *interfaces,
 }
 
 
+void hostapd_reconfig_encryption(struct hostapd_data *hapd)
+{
+	if (hapd->wpa_auth)
+		return;
+
+	hostapd_set_privacy(hapd, 0);
+	hostapd_setup_encryption(hapd->conf->iface, hapd);
+}
+
+
 static void hostapd_reload_bss(struct hostapd_data *hapd)
 {
 	struct hostapd_ssid *ssid;
