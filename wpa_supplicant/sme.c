@@ -591,6 +591,9 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 	    wpa_key_mgmt_fils(ssid->key_mgmt)) {
 		const u8 *indic;
 		u16 fils_info;
+		const u8 *realm, *username, *rrk;
+		size_t realm_len, username_len, rrk_len;
+		u16 next_seq_num;
 
 		/*
 		 * Check FILS Indication element (FILS Information field) bits
@@ -617,6 +620,19 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 			wpa_printf(MSG_DEBUG, "SME: " MACSTR
 				   " does not support FILS SK with PFS - cannot use FILS authentication with it",
 				   MAC2STR(bss->bssid));
+			goto no_fils;
+		}
+
+		if (wpa_s->last_con_fail_realm &&
+		    eapol_sm_get_erp_info(wpa_s->eapol, &ssid->eap,
+					  &username, &username_len,
+					  &realm, &realm_len, &next_seq_num,
+					  &rrk, &rrk_len) == 0 &&
+		    realm && realm_len == wpa_s->last_con_fail_realm_len &&
+		    os_memcmp(realm, wpa_s->last_con_fail_realm,
+			      realm_len) == 0) {
+			wpa_printf(MSG_DEBUG,
+				   "SME: FILS authentication for this realm failed last time - try to regenerate ERP key hierarchy");
 			goto no_fils;
 		}
 
@@ -1194,6 +1210,12 @@ void sme_event_auth(struct wpa_supplicant *wpa_s, union wpa_event_data *data)
 			ie_txt ? " ie=" : "",
 			ie_txt ? ie_txt : "");
 		os_free(ie_txt);
+
+#ifdef CONFIG_FILS
+		if (wpa_s->sme.auth_alg == WPA_AUTH_ALG_FILS ||
+		    wpa_s->sme.auth_alg == WPA_AUTH_ALG_FILS_SK_PFS)
+			fils_connection_failure(wpa_s);
+#endif /* CONFIG_FILS */
 
 		if (data->auth.status_code !=
 		    WLAN_STATUS_NOT_SUPPORTED_AUTH_ALG ||
