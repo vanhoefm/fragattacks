@@ -1024,8 +1024,10 @@ void * tls_init(const struct tls_config *conf)
 
 #ifndef OPENSSL_NO_ENGINE
 	wpa_printf(MSG_DEBUG, "ENGINE: Loading dynamic engine");
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	ERR_load_ENGINE_strings();
 	ENGINE_load_dynamic();
+#endif /* OPENSSL_VERSION_NUMBER */
 
 	if (conf &&
 	    (conf->opensc_engine_path || conf->pkcs11_engine_path ||
@@ -3874,7 +3876,7 @@ struct wpabuf * tls_connection_decrypt(void *tls_ctx,
 
 int tls_connection_resumed(void *ssl_ctx, struct tls_connection *conn)
 {
-	return conn ? SSL_cache_hit(conn->ssl) : 0;
+	return conn ? SSL_session_reused(conn->ssl) : 0;
 }
 
 
