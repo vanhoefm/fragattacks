@@ -950,7 +950,7 @@ radius_server_encapsulate_eap(struct radius_server_data *data,
 		}
 
 		url_len = os_strlen(url) + ETH_ALEN * 3 - 1 - 3;
-		url2 = os_malloc(url_len);
+		url2 = os_malloc(url_len + 1);
 		if (!url2) {
 			RADIUS_DEBUG("Failed to allocate room for T&C Server URL");
 			os_free(url2);
@@ -958,7 +958,7 @@ radius_server_encapsulate_eap(struct radius_server_data *data,
 			return NULL;
 		}
 		pos2 = url2;
-		end2 = url2 + url_len;
+		end2 = url2 + url_len + 1;
 		os_memcpy(pos2, url, pos - url);
 		pos2 += pos - url;
 		os_snprintf(pos2, end2 - pos2, MACSTR, MAC2STR(sess->mac_addr));
