@@ -2151,7 +2151,7 @@ static int osu_connect(struct hs20_osu_client *ctx, const char *bssid,
 		if (set_network(ifname, id, "proto", "OSEN") < 0 ||
 		    set_network(ifname, id, "key_mgmt", "OSEN") < 0 ||
 		    set_network(ifname, id, "pairwise", "CCMP") < 0 ||
-		    set_network(ifname, id, "group", "GTK_NOT_USED") < 0 ||
+		    set_network(ifname, id, "group", "GTK_NOT_USED CCMP") < 0 ||
 		    set_network(ifname, id, "eap", "WFA-UNAUTH-TLS") < 0 ||
 		    set_network(ifname, id, "ocsp", "2") < 0 ||
 		    set_network_quoted(ifname, id, "identity", osu_nai) < 0 ||
