@@ -2651,7 +2651,7 @@ def test_ap_hs20_osen(dev, apdev):
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
     wpas.connect("osen", proto="OSEN", key_mgmt="OSEN", pairwise="CCMP",
-                 group="GTK_NOT_USED",
+                 group="GTK_NOT_USED CCMP",
                  eap="WFA-UNAUTH-TLS", identity="osen@example.com",
                  ca_cert="auth_serv/ca.pem",
                  scan_freq="2412")
@@ -2667,6 +2667,7 @@ def test_ap_hs20_osen_single_ssid(dev, apdev):
 
     # RSN-OSEN (for OSU)
     dev[0].connect("test-hs20", proto="OSEN", key_mgmt="OSEN", pairwise="CCMP",
+                   group="CCMP GTK_NOT_USED",
                    eap="WFA-UNAUTH-TLS", identity="osen@example.com",
                    ca_cert="auth_serv/ca.pem", ieee80211w='2',
                    scan_freq="2412")
@@ -2674,6 +2675,7 @@ def test_ap_hs20_osen_single_ssid(dev, apdev):
     dev[1].connect("test-hs20", key_mgmt="WPA-EAP", eap="TTLS",
                    identity="hs20-test", password="password",
                    ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                   pairwise="CCMP", group="CCMP",
                    ieee80211w='2', scan_freq="2412")
 
     res = dev[0].get_bss(apdev[0]['bssid'])['flags']
