@@ -5853,6 +5853,20 @@ def test_ap_hs20_terms_and_conditions_coa(dev, apdev):
 
 def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
     """Hotspot 2.0 Terms and Conditions using SQLite for user DB"""
+    addr = dev[0].own_addr()
+    run_ap_hs20_terms_and_conditions_sql(dev, apdev, params,
+                                         "https://example.com/t_and_c?addr=@1@&ap=123",
+                                         "https://example.com/t_and_c?addr=" + addr + "&ap=123")
+
+def test_ap_hs20_terms_and_conditions_sql2(dev, apdev, params):
+    """Hotspot 2.0 Terms and Conditions using SQLite for user DB"""
+    addr = dev[0].own_addr()
+    run_ap_hs20_terms_and_conditions_sql(dev, apdev, params,
+                                         "https://example.com/t_and_c?addr=@1@",
+                                         "https://example.com/t_and_c?addr=" + addr)
+
+def run_ap_hs20_terms_and_conditions_sql(dev, apdev, params, url_template,
+                                         url_expected):
     check_eap_capa(dev[0], "MSCHAPV2")
     try:
         import sqlite3
@@ -5884,7 +5898,7 @@ def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
                    "ca_cert": "auth_serv/ca.pem",
                    "server_cert": "auth_serv/server.pem",
                    "private_key": "auth_serv/server.key" }
-        params['hs20_t_c_server_url'] = 'https://example.com/t_and_c?addr=@1@&ap=123'
+        params['hs20_t_c_server_url'] = url_template
         authsrv = hostapd.add_ap(apdev[1], params)
 
         bssid = apdev[0]['bssid']
@@ -5916,6 +5930,9 @@ def test_ap_hs20_terms_and_conditions_sql(dev, apdev, params):
         ev = dev[0].wait_event(["HS20-T-C-ACCEPTANCE"], timeout=5)
         if ev is None:
             raise Exception("Terms and Conditions Acceptance notification not received")
+        url = ev.split(' ')[1]
+        if url != url_expected:
+            raise Exception("Unexpected URL delivered to the client: %s (expected %s)" % (url, url_expected))
         dev[0].dump_monitor()
 
         with con:
