@@ -45,6 +45,14 @@ static struct macsec_ciphersuite cipher_suite_tbl[] = {
 		.sak_len = DEFAULT_SA_KEY_LEN,
 		.index = 0,
 	},
+	/* GCM-AES-256 */
+	{
+		.id = CS_ID_GCM_AES_256,
+		.name = CS_NAME_GCM_AES_256,
+		.capable = MACSEC_CAP_INTEG_AND_CONF_0_30_50,
+		.sak_len = 32,
+		.index = 1 /* index */
+	},
 };
 #define CS_TABLE_SIZE (ARRAY_SIZE(cipher_suite_tbl))
 #define DEFAULT_CS_INDEX  0

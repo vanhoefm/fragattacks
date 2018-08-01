@@ -12,6 +12,8 @@
 #define CS_ID_LEN		8
 #define CS_ID_GCM_AES_128	0x0080020001000001ULL
 #define CS_NAME_GCM_AES_128	"GCM-AES-128"
+#define CS_ID_GCM_AES_256	0x0080c20001000002ULL
+#define CS_NAME_GCM_AES_256	"GCM-AES-256"
 
 enum macsec_policy {
 	/**
