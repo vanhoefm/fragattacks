@@ -383,6 +383,25 @@ def test_sigma_dut_ap_pskhex(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
 
+def test_sigma_dut_ap_psk_sha256(dev, apdev, params):
+    """sigma_dut controlled AP PSK SHA256"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_psk_sha256.sigma-hostapd")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-psk,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-PSK-256,PSK,12345678")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].connect("test-psk", key_mgmt="WPA-PSK-SHA256",
+                           psk="12345678", scan_freq="2412")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
 def test_sigma_dut_suite_b(dev, apdev, params):
     """sigma_dut controlled STA Suite B"""
     check_suite_b_192_capa(dev)
@@ -2326,6 +2345,114 @@ def test_sigma_dut_ap_eap_osen(dev, apdev, params):
                            identity="hs20-test", password="password",
                            ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
                            ieee80211w='2', scan_freq="2412")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_eap(dev, apdev, params):
+    """sigma_dut controlled AP WPA2-Enterprise"""
+    logdir = os.path.join(params['logdir'], "sigma_dut_ap_eap.sigma-hostapd")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-eap,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_radius,NAME,AP,IPADDR,127.0.0.1,PORT,1812,PASSWORD,radius")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-ENT")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].connect("test-eap", key_mgmt="WPA-EAP", eap="GPSK",
+                           identity="gpsk user",
+                           password="abcdefghijklmnop0123456789abcdef",
+                           scan_freq="2412")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_eap_sha256(dev, apdev, params):
+    """sigma_dut controlled AP WPA2-Enterprise SHA256"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_eap_sha256.sigma-hostapd")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-eap,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_radius,NAME,AP,IPADDR,127.0.0.1,PORT,1812,PASSWORD,radius")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-ENT-256")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].connect("test-eap", key_mgmt="WPA-EAP-SHA256", eap="GPSK",
+                           identity="gpsk user",
+                           password="abcdefghijklmnop0123456789abcdef",
+                           scan_freq="2412")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_ft_eap(dev, apdev, params):
+    """sigma_dut controlled AP FT-EAP"""
+    logdir = os.path.join(params['logdir'], "sigma_dut_ap_ft_eap.sigma-hostapd")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-ft-eap,MODE,11ng,DOMAIN,0101,FT_OA,Enable")
+            sigma_dut_cmd_check("ap_set_radius,NAME,AP,IPADDR,127.0.0.1,PORT,1812,PASSWORD,radius")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,FT-EAP")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].connect("test-ft-eap", key_mgmt="FT-EAP", eap="GPSK",
+                           identity="gpsk user",
+                           password="abcdefghijklmnop0123456789abcdef",
+                           scan_freq="2412")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_ft_psk(dev, apdev, params):
+    """sigma_dut controlled AP FT-PSK"""
+    logdir = os.path.join(params['logdir'], "sigma_dut_ap_ft_psk.sigma-hostapd")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-ft-psk,MODE,11ng,DOMAIN,0101,FT_OA,Enable")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,FT-PSK,PSK,12345678")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].connect("test-ft-psk", key_mgmt="FT-PSK", psk="12345678",
+                           scan_freq="2412")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_ent_ft_eap(dev, apdev, params):
+    """sigma_dut controlled AP WPA-EAP and FT-EAP"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_ent_ft_eap.sigma-hostapd")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-ent-ft-eap,MODE,11ng,DOMAIN,0101,FT_OA,Enable")
+            sigma_dut_cmd_check("ap_set_radius,NAME,AP,IPADDR,127.0.0.1,PORT,1812,PASSWORD,radius")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-ENT-FT-EAP")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].connect("test-ent-ft-eap", key_mgmt="FT-EAP", eap="GPSK",
+                           identity="gpsk user",
+                           password="abcdefghijklmnop0123456789abcdef",
+                           scan_freq="2412")
+            dev[1].connect("test-ent-ft-eap", key_mgmt="WPA-EAP", eap="GPSK",
+                           identity="gpsk user",
+                           password="abcdefghijklmnop0123456789abcdef",
+                           scan_freq="2412")
 
             sigma_dut_cmd_check("ap_reset_default")
         finally:
