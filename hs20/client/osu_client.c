@@ -1232,8 +1232,7 @@ static void set_pps_cred_home_sp_oi(struct hs20_osu_client *ctx, int id,
 			     homeoi) < 0)
 			wpa_printf(MSG_INFO, "Failed to set cred required_roaming_consortium");
 	} else {
-		if (set_cred_quoted(ctx->ifname, id, "roaming_consortium",
-				    homeoi) < 0)
+		if (set_cred(ctx->ifname, id, "roaming_consortium", homeoi) < 0)
 			wpa_printf(MSG_INFO, "Failed to set cred roaming_consortium");
 	}
 
