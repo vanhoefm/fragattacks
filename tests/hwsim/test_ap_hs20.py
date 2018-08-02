@@ -3636,7 +3636,7 @@ def test_ap_hs20_ft(dev, apdev):
     params['r1_key_holder'] = "000102030405"
     params["mobility_domain"] = "a1b2"
     params["reassociation_deadline"] = "1000"
-    hostapd.add_ap(apdev[0], params)
+    hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].hs20_enable()
     id = dev[0].add_cred_values({ 'realm': "example.com",
@@ -3647,6 +3647,25 @@ def test_ap_hs20_ft(dev, apdev):
                                   'update_identifier': "1234" })
     interworking_select(dev[0], bssid, "home", freq="2412")
     interworking_connect(dev[0], bssid, "TTLS")
+    dev[0].dump_monitor()
+    # speed up testing by avoiding unnecessary scanning of other channels
+    nid = dev[0].get_status_field("id")
+    dev[0].set_network(nid, "scan_freq", "2412")
+
+    params = hs20_ap_params()
+    hapd2 = hostapd.add_ap(apdev[1], params)
+
+    hapd.disable()
+    ev = dev[0].wait_event(["CTRL-EVENT-BEACON-LOSS"], timeout=10)
+    if ev is None:
+        raise Exception("Beacon loss not reported")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=5)
+    if ev is None:
+        raise Exception("Disconnection not reported")
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=5)
+    if ev is None:
+        raise Exception("Connection to AP2 not reported")
+    print dev[0].request("STATUS")
 
 def test_ap_hs20_remediation_sql(dev, apdev, params):
     """Hotspot 2.0 connection and remediation required using SQLite for user DB"""
