@@ -3717,6 +3717,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Missing payload")
+            dev[0].note("Missing payload")
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1,
                                EAP_TYPE_AKA_PRIME)
@@ -3724,6 +3725,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with no attributes")
+            dev[0].note("Challenge with no attributes")
             return struct.pack(">BBHBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3,
                                EAP_TYPE_AKA_PRIME, EAP_AKA_SUBTYPE_CHALLENGE, 0)
@@ -3735,6 +3737,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with empty AT_KDF_INPUT")
+            dev[0].note("Challenge with empty AT_KDF_INPUT")
             return struct.pack(">BBHBBHBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 4,
                                EAP_TYPE_AKA_PRIME, EAP_AKA_SUBTYPE_CHALLENGE, 0,
@@ -3747,6 +3750,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with AT_KDF_INPUT")
+            dev[0].note("Test: Challenge with AT_KDF_INPUT")
             return struct.pack(">BBHBBHBBHBBBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8,
                                EAP_TYPE_AKA_PRIME, EAP_AKA_SUBTYPE_CHALLENGE, 0,
@@ -3760,6 +3764,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with duplicated KDF")
+            dev[0].note("Challenge with duplicated KDF")
             return struct.pack(">BBHBBHBBHBBBBBBHBBHBBH",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 3 * 4,
@@ -3777,6 +3782,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with multiple KDF proposals")
+            dev[0].note("Challenge with multiple KDF proposals (preparation)")
             return struct.pack(">BBHBBHBBHBBBBBBHBBHBBH",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 3 * 4,
@@ -3789,6 +3795,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with incorrect KDF selected")
+            dev[0].note("Challenge with incorrect KDF selected")
             return struct.pack(">BBHBBHBBHBBBBBBHBBHBBHBBH",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 4 * 4,
@@ -3807,6 +3814,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with multiple KDF proposals")
+            dev[0].note("Challenge with multiple KDF proposals (preparation)")
             return struct.pack(">BBHBBHBBHBBBBBBHBBHBBH",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 3 * 4,
@@ -3819,6 +3827,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with selected KDF not duplicated")
+            dev[0].note("Challenge with selected KDF not duplicated")
             return struct.pack(">BBHBBHBBHBBBBBBHBBHBBH",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 3 * 4,
@@ -3836,6 +3845,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with multiple KDF proposals")
+            dev[0].note("Challenge with multiple KDF proposals (preparation)")
             return struct.pack(">BBHBBHBBHBBBBBBHBBHBBH",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 3 * 4,
@@ -3848,6 +3858,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with selected KDF duplicated (missing MAC, RAND, AUTN)")
+            dev[0].note("Challenge with selected KDF duplicated (missing MAC, RAND, AUTN)")
             return struct.pack(">BBHBBHBBHBBBBBBHBBHBBHBBH",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 4 * 4,
@@ -3866,6 +3877,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with multiple unsupported KDF proposals")
+            dev[0].note("Challenge with multiple unsupported KDF proposals")
             return struct.pack(">BBHBBHBBHBBBBBBHBBH",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 2 * 4,
@@ -3882,6 +3894,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with multiple KDF proposals")
+            dev[0].note("Challenge with multiple KDF proposals (preparation)")
             return struct.pack(">BBHBBHBBHBBBBBBHBBHBBH",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 3 * 4,
@@ -3894,6 +3907,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with invalid MAC, RAND, AUTN values)")
+            dev[0].note("Challenge with invalid MAC, RAND, AUTN values)")
             return struct.pack(">BBHBBHBBHBBBBBBHBBHBBHBBHBBH4LBBH4LBBH4L",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 4 * 4 + 20 + 20 + 20,
@@ -3915,6 +3929,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge - AMF separation bit not set)")
+            dev[0].note("Challenge - AMF separation bit not set)")
             return struct.pack(">BBHBBHBBHBBBBBBHBBH4LBBH4LBBH4L",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 4 + 20 + 20 + 20,
@@ -3934,6 +3949,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge - Invalid MAC")
+            dev[0].note("Challenge - Invalid MAC")
             return struct.pack(">BBHBBHBBHBBBBBBHBBH4LBBH4LBBH4L",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 4 + 20 + 20 + 20,
@@ -3953,6 +3969,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge - Valid MAC")
+            dev[0].note("Challenge - Valid MAC")
             return struct.pack(">BBHBBHBBHBBBBBBHBBH4LBBH4LBBH4L",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8 + 4 + 20 + 20 + 20,
@@ -3973,6 +3990,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Invalid AT_KDF_INPUT length")
+            dev[0].note("Invalid AT_KDF_INPUT length")
             return struct.pack(">BBHBBHBBHL", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8,
                                EAP_TYPE_AKA_PRIME, EAP_AKA_SUBTYPE_IDENTITY, 0,
@@ -3985,6 +4003,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Invalid AT_KDF length")
+            dev[0].note("Invalid AT_KDF length")
             return struct.pack(">BBHBBHBBHL", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 8,
                                EAP_TYPE_AKA_PRIME, EAP_AKA_SUBTYPE_IDENTITY, 0,
@@ -3997,6 +4016,7 @@ def test_eap_proto_aka_prime(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Challenge with large number of KDF proposals")
+            dev[0].note("Challenge with large number of KDF proposals")
             return struct.pack(">BBHBBHBBHBBHBBHBBHBBHBBHBBHBBHBBHBBHBBHBBH",
                                EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 3 + 12 * 4,
@@ -4018,6 +4038,67 @@ def test_eap_proto_aka_prime(dev, apdev):
             logger.info("Test: EAP-Failure")
             return struct.pack(">BBH", EAP_CODE_FAILURE, ctx['id'], 4)
 
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Challenge with multiple KDF proposals")
+            dev[0].note("Challenge with multiple KDF proposals (preparation)")
+            return struct.pack(">BBHBBHBBHBBBBBBHBBH",
+                               EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + 3 + 8 + 2 * 4,
+                               EAP_TYPE_AKA_PRIME, EAP_AKA_SUBTYPE_CHALLENGE, 0,
+                               EAP_SIM_AT_KDF_INPUT, 2, 1, ord('a'), ord('b'),
+                               ord('c'), ord('d'),
+                               EAP_SIM_AT_KDF, 1, 2,
+                               EAP_SIM_AT_KDF, 1, 1)
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Challenge with an extra KDF appended")
+            dev[0].note("Challenge with an extra KDF appended")
+            return struct.pack(">BBHBBHBBHBBBBBBHBBHBBHBBH",
+                               EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + 3 + 8 + 4 * 4,
+                               EAP_TYPE_AKA_PRIME, EAP_AKA_SUBTYPE_CHALLENGE, 0,
+                               EAP_SIM_AT_KDF_INPUT, 2, 1, ord('a'), ord('b'),
+                               ord('c'), ord('d'),
+                               EAP_SIM_AT_KDF, 1, 1,
+                               EAP_SIM_AT_KDF, 1, 2,
+                               EAP_SIM_AT_KDF, 1, 1,
+                               EAP_SIM_AT_KDF, 1, 0)
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: EAP-Failure")
+            return struct.pack(">BBH", EAP_CODE_FAILURE, ctx['id'], 4)
+
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Challenge with multiple KDF proposals")
+            dev[0].note("Challenge with multiple KDF proposals (preparation)")
+            return struct.pack(">BBHBBHBBHBBBBBBHBBH",
+                               EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + 3 + 8 + 2 * 4,
+                               EAP_TYPE_AKA_PRIME, EAP_AKA_SUBTYPE_CHALLENGE, 0,
+                               EAP_SIM_AT_KDF_INPUT, 2, 1, ord('a'), ord('b'),
+                               ord('c'), ord('d'),
+                               EAP_SIM_AT_KDF, 1, 2,
+                               EAP_SIM_AT_KDF, 1, 1)
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Challenge with a modified KDF")
+            dev[0].note("Challenge with a modified KDF")
+            return struct.pack(">BBHBBHBBHBBBBBBHBBHBBH",
+                               EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + 3 + 8 + 3 * 4,
+                               EAP_TYPE_AKA_PRIME, EAP_AKA_SUBTYPE_CHALLENGE, 0,
+                               EAP_SIM_AT_KDF_INPUT, 2, 1, ord('a'), ord('b'),
+                               ord('c'), ord('d'),
+                               EAP_SIM_AT_KDF, 1, 1,
+                               EAP_SIM_AT_KDF, 1, 0,
+                               EAP_SIM_AT_KDF, 1, 1)
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: EAP-Failure")
+            return struct.pack(">BBH", EAP_CODE_FAILURE, ctx['id'], 4)
+
         return None
 
     srv = start_radius_server(aka_prime_handler)
@@ -4025,7 +4106,7 @@ def test_eap_proto_aka_prime(dev, apdev):
     try:
         hapd = start_ap(apdev[0])
 
-        for i in range(0, 16):
+        for i in range(0, 18):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                            eap="AKA'", identity="6555444333222111",
                            password="5122250214c33e723a5dd523fc145fc0:981d464c7c52eb6e5036234984ad0bcf:000000000123",

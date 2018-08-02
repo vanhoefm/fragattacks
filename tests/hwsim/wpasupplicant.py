@@ -1315,3 +1315,6 @@ class WpaSupplicant:
         if "OK" not in self.global_request("%s %s adv_id=%s adv_mac=%s session=%d session_mac=%s %s" %
                                            (cmd, peer, adv_id, adv_mac, session_id, session_mac, params)):
             raise Exception("%s request failed" % cmd)
+
+    def note(self, txt):
+        self.request("NOTE " + txt)
