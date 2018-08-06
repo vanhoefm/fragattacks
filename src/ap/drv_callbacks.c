@@ -739,6 +739,8 @@ void hostapd_event_sta_opmode_changed(struct hostapd_data *hapd, const u8 *addr,
 void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 			     int offset, int width, int cf1, int cf2)
 {
+	/* TODO: If OCV is enabled deauth STAs that don't perform a SA Query */
+
 #ifdef NEED_AP_MLME
 	int channel, chwidth, is_dfs;
 	u8 seg0_idx = 0, seg1_idx = 0;

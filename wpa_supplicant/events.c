@@ -4339,6 +4339,9 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		}
 #endif /* CONFIG_AP */
 
+#ifdef CONFIG_IEEE80211W
+		sme_event_ch_switch(wpa_s);
+#endif /* CONFIG_IEEE80211W */
 		wpas_p2p_update_channel_list(wpa_s, WPAS_P2P_CHANNEL_UPDATE_CS);
 		wnm_clear_coloc_intf_reporting(wpa_s);
 		break;
