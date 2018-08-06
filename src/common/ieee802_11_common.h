@@ -12,6 +12,7 @@
 #include "defs.h"
 
 struct hostapd_hw_modes;
+enum chan_width;
 
 #define MAX_NOF_MB_IES_SUPPORTED 5
 
@@ -160,6 +161,8 @@ int ieee80211_chan_to_freq(const char *country, u8 op_class, u8 chan);
 enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 						   int sec_channel, int vht,
 						   u8 *op_class, u8 *channel);
+int ieee80211_chaninfo_to_channel(unsigned int freq, enum chan_width chanwidth,
+				  int sec_channel, u8 *op_class, u8 *channel);
 int ieee80211_is_dfs(int freq, const struct hostapd_hw_modes *modes,
 		     u16 num_modes);
 enum phy_type ieee80211_get_phy_type(int freq, int ht, int vht);

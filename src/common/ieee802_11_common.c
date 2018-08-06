@@ -896,6 +896,41 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 }
 
 
+int ieee80211_chaninfo_to_channel(unsigned int freq, enum chan_width chanwidth,
+				  int sec_channel, u8 *op_class, u8 *channel)
+{
+	int vht = CHAN_WIDTH_UNKNOWN;
+
+	switch (chanwidth) {
+	case CHAN_WIDTH_UNKNOWN:
+	case CHAN_WIDTH_20_NOHT:
+	case CHAN_WIDTH_20:
+	case CHAN_WIDTH_40:
+		vht = VHT_CHANWIDTH_USE_HT;
+		break;
+	case CHAN_WIDTH_80:
+		vht = VHT_CHANWIDTH_80MHZ;
+		break;
+	case CHAN_WIDTH_80P80:
+		vht = VHT_CHANWIDTH_80P80MHZ;
+		break;
+	case CHAN_WIDTH_160:
+		vht = VHT_CHANWIDTH_160MHZ;
+		break;
+	}
+
+	if (ieee80211_freq_to_channel_ext(freq, sec_channel, vht, op_class,
+					  channel) == NUM_HOSTAPD_MODES) {
+		wpa_printf(MSG_WARNING,
+			   "Cannot determine operating class and channel (freq=%u chanwidth=%d sec_channel=%d)",
+			   freq, chanwidth, sec_channel);
+		return -1;
+	}
+
+	return 0;
+}
+
+
 static const char *const us_op_class_cc[] = {
 	"US", "CA", NULL
 };
