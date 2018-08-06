@@ -12,6 +12,7 @@
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
 #include "common/wpa_ctrl.h"
+#include "common/ocv.h"
 #include "rsn_supp/wpa.h"
 #include "config.h"
 #include "wpa_supplicant_i.h"
@@ -58,8 +59,8 @@ int ieee802_11_send_wnmsleep_req(struct wpa_supplicant *wpa_s,
 	int res;
 	size_t len;
 	struct wnm_sleep_element *wnmsleep_ie;
-	u8 *wnmtfs_ie;
-	u8 wnmsleep_ie_len;
+	u8 *wnmtfs_ie, *oci_ie;
+	u8 wnmsleep_ie_len, oci_ie_len;
 	u16 wnmtfs_ie_len;  /* possibly multiple IE(s) */
 	enum wnm_oper tfs_oper = action == 0 ? WNM_SLEEP_TFS_REQ_IE_ADD :
 		WNM_SLEEP_TFS_REQ_IE_NONE;
@@ -106,7 +107,41 @@ int ieee802_11_send_wnmsleep_req(struct wpa_supplicant *wpa_s,
 	wpa_hexdump(MSG_DEBUG, "WNM: TFS Request element",
 		    (u8 *) wnmtfs_ie, wnmtfs_ie_len);
 
-	mgmt = os_zalloc(sizeof(*mgmt) + wnmsleep_ie_len + wnmtfs_ie_len);
+	oci_ie = NULL;
+	oci_ie_len = 0;
+#ifdef CONFIG_OCV
+	if (action == WNM_SLEEP_MODE_EXIT && wpa_sm_ocv_enabled(wpa_s->wpa)) {
+		struct wpa_channel_info ci;
+
+		if (wpa_drv_channel_info(wpa_s, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to get channel info for OCI element in WNM-Sleep Mode frame");
+			os_free(wnmsleep_ie);
+			os_free(wnmtfs_ie);
+			return -1;
+		}
+
+		oci_ie_len = OCV_OCI_EXTENDED_LEN;
+		oci_ie = os_zalloc(oci_ie_len);
+		if (!oci_ie) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to allocate buffer for for OCI element in WNM-Sleep Mode frame");
+			os_free(wnmsleep_ie);
+			os_free(wnmtfs_ie);
+			return -1;
+		}
+
+		if (ocv_insert_extended_oci(&ci, oci_ie) < 0) {
+			os_free(wnmsleep_ie);
+			os_free(wnmtfs_ie);
+			os_free(oci_ie);
+			return -1;
+		}
+	}
+#endif /* CONFIG_OCV */
+
+	mgmt = os_zalloc(sizeof(*mgmt) + wnmsleep_ie_len + wnmtfs_ie_len +
+			 oci_ie_len);
 	if (mgmt == NULL) {
 		wpa_printf(MSG_DEBUG, "MLME: Failed to allocate buffer for "
 			   "WNM-Sleep Request action frame");
@@ -131,8 +166,16 @@ int ieee802_11_send_wnmsleep_req(struct wpa_supplicant *wpa_s,
 			  wnmsleep_ie_len, wnmtfs_ie, wnmtfs_ie_len);
 	}
 
+#ifdef CONFIG_OCV
+	/* copy OCV OCI here */
+	if (oci_ie_len > 0) {
+		os_memcpy(mgmt->u.action.u.wnm_sleep_req.variable +
+			  wnmsleep_ie_len + wnmtfs_ie_len, oci_ie, oci_ie_len);
+	}
+#endif /* CONFIG_OCV */
+
 	len = 1 + sizeof(mgmt->u.action.u.wnm_sleep_req) + wnmsleep_ie_len +
-		wnmtfs_ie_len;
+		wnmtfs_ie_len + oci_ie_len;
 
 	res = wpa_drv_send_action(wpa_s, wpa_s->assoc_freq, 0, wpa_s->bssid,
 				  wpa_s->own_addr, wpa_s->bssid,
@@ -145,6 +188,7 @@ int ieee802_11_send_wnmsleep_req(struct wpa_supplicant *wpa_s,
 
 	os_free(wnmsleep_ie);
 	os_free(wnmtfs_ie);
+	os_free(oci_ie);
 	os_free(mgmt);
 
 	return res;
@@ -256,6 +300,10 @@ static void ieee802_11_rx_wnmsleep_resp(struct wpa_supplicant *wpa_s,
 	/* multiple TFS Resp IE (assuming consecutive) */
 	const u8 *tfsresp_ie_start = NULL;
 	const u8 *tfsresp_ie_end = NULL;
+#ifdef CONFIG_OCV
+	const u8 *oci_ie = NULL;
+	u8 oci_ie_len = 0;
+#endif /* CONFIG_OCV */
 	size_t left;
 
 	if (!wpa_s->wnmsleep_used) {
@@ -289,6 +337,12 @@ static void ieee802_11_rx_wnmsleep_resp(struct wpa_supplicant *wpa_s,
 			if (!tfsresp_ie_start)
 				tfsresp_ie_start = pos;
 			tfsresp_ie_end = pos;
+#ifdef CONFIG_OCV
+		} else if (*pos == WLAN_EID_EXTENSION && ie_len >= 1 &&
+			   pos[2] == WLAN_EID_EXT_OCV_OCI) {
+			oci_ie = pos + 3;
+			oci_ie_len = ie_len - 1;
+#endif /* CONFIG_OCV */
 		} else
 			wpa_printf(MSG_DEBUG, "EID %d not recognized", *pos);
 		pos += ie_len + 2;
@@ -298,6 +352,26 @@ static void ieee802_11_rx_wnmsleep_resp(struct wpa_supplicant *wpa_s,
 		wpa_printf(MSG_DEBUG, "No WNM-Sleep IE found");
 		return;
 	}
+
+#ifdef CONFIG_OCV
+	if (wnmsleep_ie->action_type == WNM_SLEEP_MODE_EXIT &&
+	    wpa_sm_ocv_enabled(wpa_s->wpa)) {
+		struct wpa_channel_info ci;
+
+		if (wpa_drv_channel_info(wpa_s, &ci) != 0) {
+			wpa_msg(wpa_s, MSG_WARNING,
+				"Failed to get channel info to validate received OCI in WNM-Sleep Mode frame");
+			return;
+		}
+
+		if (ocv_verify_tx_params(oci_ie, oci_ie_len, &ci,
+					 channel_width_to_int(ci.chanwidth),
+					 ci.seg1_idx) != 0) {
+			wpa_msg(wpa_s, MSG_WARNING, "WNM: %s", ocv_errorstr);
+			return;
+		}
+	}
+#endif /* CONFIG_OCV */
 
 	wpa_s->wnmsleep_used = 0;
 
