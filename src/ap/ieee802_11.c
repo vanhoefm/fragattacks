@@ -21,6 +21,7 @@
 #include "common/ieee802_11_common.h"
 #include "common/wpa_ctrl.h"
 #include "common/sae.h"
+#include "common/ocv.h"
 #include "radius/radius.h"
 #include "radius/radius_client.h"
 #include "p2p/p2p.h"
@@ -2760,6 +2761,35 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 	}
 #endif /* CONFIG_MBO */
+
+#if defined(CONFIG_FILS) && defined(CONFIG_OCV)
+	if (wpa_auth_uses_ocv(sta->wpa_sm) &&
+	    (sta->auth_alg == WLAN_AUTH_FILS_SK ||
+	     sta->auth_alg == WLAN_AUTH_FILS_SK_PFS ||
+	     sta->auth_alg == WLAN_AUTH_FILS_PK)) {
+		struct wpa_channel_info ci;
+		int tx_chanwidth;
+		int tx_seg1_idx;
+
+		if (hostapd_drv_channel_info(hapd, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to get channel info to validate received OCI in FILS (Re)Association Request frame");
+			return WLAN_STATUS_UNSPECIFIED_FAILURE;
+		}
+
+		if (get_sta_tx_parameters(sta->wpa_sm,
+					  channel_width_to_int(ci.chanwidth),
+					  ci.seg1_idx, &tx_chanwidth,
+					  &tx_seg1_idx) < 0)
+			return WLAN_STATUS_UNSPECIFIED_FAILURE;
+
+		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
+					 tx_chanwidth, tx_seg1_idx) != 0) {
+			wpa_printf(MSG_WARNING, "FILS: %s", ocv_errorstr);
+			return WLAN_STATUS_UNSPECIFIED_FAILURE;
+		}
+	}
+#endif /* CONFIG_FILS && CONFIG_OCV */
 
 	ap_copy_sta_supp_op_classes(sta, elems.supp_op_classes,
 				    elems.supp_op_classes_len);

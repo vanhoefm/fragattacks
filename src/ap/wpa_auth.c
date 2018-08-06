@@ -2572,6 +2572,27 @@ static struct wpabuf * fils_prepare_plainbuf(struct wpa_state_machine *sm,
 	wpabuf_put(plain, tmp2 - tmp);
 
 	*len = (u8 *) wpabuf_put(plain, 0) - len - 1;
+
+#ifdef CONFIG_OCV
+	if (wpa_auth_uses_ocv(sm)) {
+		struct wpa_channel_info ci;
+		u8 *pos;
+
+		if (wpa_channel_info(sm->wpa_auth, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "FILS: Failed to get channel info for OCI element");
+			wpabuf_free(plain);
+			return NULL;
+		}
+
+		pos = wpabuf_put(plain, OCV_OCI_EXTENDED_LEN);
+		if (ocv_insert_extended_oci(&ci, pos) < 0) {
+			wpabuf_free(plain);
+			return NULL;
+		}
+	}
+#endif /* CONFIG_OCV */
+
 	return plain;
 }
 

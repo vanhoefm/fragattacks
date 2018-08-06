@@ -4064,6 +4064,26 @@ struct wpabuf * fils_build_assoc_req(struct wpa_sm *sm, const u8 **kek,
 
 	/* TODO: FILS IP Address Assignment */
 
+#ifdef CONFIG_OCV
+	if (wpa_sm_ocv_enabled(sm)) {
+		struct wpa_channel_info ci;
+		u8 *pos;
+
+		if (wpa_sm_channel_info(sm, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "FILS: Failed to get channel info for OCI element");
+			wpabuf_free(buf);
+			return NULL;
+		}
+
+		pos = wpabuf_put(buf, OCV_OCI_EXTENDED_LEN);
+		if (ocv_insert_extended_oci(&ci, pos) < 0) {
+			wpabuf_free(buf);
+			return NULL;
+		}
+	}
+#endif /* CONFIG_OCV */
+
 	wpa_hexdump_buf(MSG_DEBUG, "FILS: Association Request plaintext", buf);
 
 	*kek = sm->ptk.kek;
@@ -4226,6 +4246,25 @@ int fils_process_assoc_resp(struct wpa_sm *sm, const u8 *resp, size_t len)
 			    sm->fils_key_auth_ap, sm->fils_key_auth_len);
 		goto fail;
 	}
+
+#ifdef CONFIG_OCV
+	if (wpa_sm_ocv_enabled(sm)) {
+		struct wpa_channel_info ci;
+
+		if (wpa_sm_channel_info(sm, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to get channel info to validate received OCI in FILS (Re)Association Response frame");
+			goto fail;
+		}
+
+		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
+					 channel_width_to_int(ci.chanwidth),
+					 ci.seg1_idx) != 0) {
+			wpa_printf(MSG_WARNING, "FILS: %s", ocv_errorstr);
+			goto fail;
+		}
+	}
+#endif /* CONFIG_OCV */
 
 	/* Key Delivery */
 	if (!elems.key_delivery) {
