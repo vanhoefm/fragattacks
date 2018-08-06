@@ -160,6 +160,15 @@ static int wpa_config_validate_network(struct wpa_ssid *ssid, int line)
 		errors++;
 	}
 
+#ifdef CONFIG_OCV
+	if (ssid->ocv && ssid->ieee80211w == NO_MGMT_FRAME_PROTECTION) {
+		wpa_printf(MSG_ERROR,
+			   "Line %d: PMF needs to be enabled whenever using OCV",
+			   line);
+		errors++;
+	}
+#endif /* CONFIG_OCV */
+
 	return errors;
 }
 

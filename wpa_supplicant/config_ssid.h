@@ -457,6 +457,17 @@ struct wpa_ssid {
 	enum mfp_options ieee80211w;
 #endif /* CONFIG_IEEE80211W */
 
+#ifdef CONFIG_OCV
+	/**
+	 * ocv - Enable/disable operating channel validation
+	 *
+	 * If this parameter is set to 1, stations will exchange OCI element
+	 * to cryptographically verify the operating channel. Setting this
+	 * parameter to 0 disables this option. Default value: 0.
+	 */
+	int ocv;
+#endif /* CONFIG_OCV */
+
 	/**
 	 * frequency - Channel frequency in megahertz (MHz) for IBSS
 	 *
