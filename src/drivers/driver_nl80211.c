@@ -2233,6 +2233,11 @@ static int nl80211_mgmt_subscribe_non_ap(struct i802_bss *bss)
 		ret = -1;
 #endif /* CONFIG_DPP */
 #ifdef CONFIG_IEEE80211W
+#ifdef CONFIG_OCV
+	/* SA Query Request */
+	if (nl80211_register_action_frame(bss, (u8 *) "\x08\x00", 2) < 0)
+		ret = -1;
+#endif /* CONFIG_OCV */
 	/* SA Query Response */
 	if (nl80211_register_action_frame(bss, (u8 *) "\x08\x01", 2) < 0)
 		ret = -1;

@@ -12,6 +12,7 @@
 #include "utils/eloop.h"
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
+#include "common/ocv.h"
 #include "eapol_supp/eapol_supp_sm.h"
 #include "common/wpa_common.h"
 #include "common/sae.h"
@@ -2242,7 +2243,9 @@ static int sme_check_sa_query_timeout(struct wpa_supplicant *wpa_s)
 static void sme_send_sa_query_req(struct wpa_supplicant *wpa_s,
 				  const u8 *trans_id)
 {
-	u8 req[2 + WLAN_SA_QUERY_TR_ID_LEN];
+	u8 req[2 + WLAN_SA_QUERY_TR_ID_LEN + OCV_OCI_EXTENDED_LEN];
+	u8 req_len = 2 + WLAN_SA_QUERY_TR_ID_LEN;
+
 	wpa_dbg(wpa_s, MSG_DEBUG, "SME: Sending SA Query Request to "
 		MACSTR, MAC2STR(wpa_s->bssid));
 	wpa_hexdump(MSG_DEBUG, "SME: SA Query Transaction ID",
@@ -2250,9 +2253,27 @@ static void sme_send_sa_query_req(struct wpa_supplicant *wpa_s,
 	req[0] = WLAN_ACTION_SA_QUERY;
 	req[1] = WLAN_SA_QUERY_REQUEST;
 	os_memcpy(req + 2, trans_id, WLAN_SA_QUERY_TR_ID_LEN);
+
+#ifdef CONFIG_OCV
+	if (wpa_sm_ocv_enabled(wpa_s->wpa)) {
+		struct wpa_channel_info ci;
+
+		if (wpa_drv_channel_info(wpa_s, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to get channel info for OCI element in SA Query Request frame");
+			return;
+		}
+
+		if (ocv_insert_extended_oci(&ci, req + req_len) < 0)
+			return;
+
+		req_len += OCV_OCI_EXTENDED_LEN;
+	}
+#endif /* CONFIG_OCV */
+
 	if (wpa_drv_send_action(wpa_s, wpa_s->assoc_freq, 0, wpa_s->bssid,
 				wpa_s->own_addr, wpa_s->bssid,
-				req, sizeof(req), 0) < 0)
+				req, req_len, 0) < 0)
 		wpa_msg(wpa_s, MSG_INFO, "SME: Failed to send SA Query "
 			"Request");
 }
@@ -2347,15 +2368,54 @@ void sme_event_unprot_disconnect(struct wpa_supplicant *wpa_s, const u8 *sa,
 }
 
 
-void sme_sa_query_rx(struct wpa_supplicant *wpa_s, const u8 *sa,
-		     const u8 *data, size_t len)
+static void sme_process_sa_query_request(struct wpa_supplicant *wpa_s,
+					 const u8 *sa, const u8 *data,
+					 size_t len)
+{
+	u8 resp[2 + WLAN_SA_QUERY_TR_ID_LEN + OCV_OCI_EXTENDED_LEN];
+	u8 resp_len = 2 + WLAN_SA_QUERY_TR_ID_LEN;
+
+	wpa_dbg(wpa_s, MSG_DEBUG, "SME: Sending SA Query Response to "
+		MACSTR, MAC2STR(wpa_s->bssid));
+
+	resp[0] = WLAN_ACTION_SA_QUERY;
+	resp[1] = WLAN_SA_QUERY_RESPONSE;
+	os_memcpy(resp + 2, data + 1, WLAN_SA_QUERY_TR_ID_LEN);
+
+#ifdef CONFIG_OCV
+	if (wpa_sm_ocv_enabled(wpa_s->wpa)) {
+		struct wpa_channel_info ci;
+
+		if (wpa_drv_channel_info(wpa_s, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to get channel info for OCI element in SA Query Response frame");
+			return;
+		}
+
+		if (ocv_insert_extended_oci(&ci, resp + resp_len) < 0)
+			return;
+
+		resp_len += OCV_OCI_EXTENDED_LEN;
+	}
+#endif /* CONFIG_OCV */
+
+	if (wpa_drv_send_action(wpa_s, wpa_s->assoc_freq, 0, wpa_s->bssid,
+				wpa_s->own_addr, wpa_s->bssid,
+				resp, resp_len, 0) < 0)
+		wpa_msg(wpa_s, MSG_INFO,
+			"SME: Failed to send SA Query Response");
+}
+
+
+static void sme_process_sa_query_response(struct wpa_supplicant *wpa_s,
+					  const u8 *sa, const u8 *data,
+					  size_t len)
 {
 	int i;
 
-	if (wpa_s->sme.sa_query_trans_id == NULL ||
-	    len < 1 + WLAN_SA_QUERY_TR_ID_LEN ||
-	    data[0] != WLAN_SA_QUERY_RESPONSE)
+	if (!wpa_s->sme.sa_query_trans_id)
 		return;
+
 	wpa_dbg(wpa_s, MSG_DEBUG, "SME: Received SA Query response from "
 		MACSTR " (trans_id %02x%02x)", MAC2STR(sa), data[1], data[2]);
 
@@ -2378,6 +2438,50 @@ void sme_sa_query_rx(struct wpa_supplicant *wpa_s, const u8 *sa,
 	wpa_dbg(wpa_s, MSG_DEBUG, "SME: Reply to pending SA Query received "
 		"from " MACSTR, MAC2STR(sa));
 	sme_stop_sa_query(wpa_s);
+}
+
+
+void sme_sa_query_rx(struct wpa_supplicant *wpa_s, const u8 *sa,
+		     const u8 *data, size_t len)
+{
+	if (len < 1 + WLAN_SA_QUERY_TR_ID_LEN)
+		return;
+
+	wpa_dbg(wpa_s, MSG_DEBUG, "SME: Received SA Query frame from "
+		MACSTR " (trans_id %02x%02x)", MAC2STR(sa), data[1], data[2]);
+
+#ifdef CONFIG_OCV
+	if (wpa_sm_ocv_enabled(wpa_s->wpa)) {
+		struct ieee802_11_elems elems;
+		struct wpa_channel_info ci;
+
+		if (ieee802_11_parse_elems(data + 1 + WLAN_SA_QUERY_TR_ID_LEN,
+					   len - 1 - WLAN_SA_QUERY_TR_ID_LEN,
+					   &elems, 1) == ParseFailed) {
+			wpa_printf(MSG_DEBUG,
+				   "SA Query: Failed to parse elements");
+			return;
+		}
+
+		if (wpa_drv_channel_info(wpa_s, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to get channel info to validate received OCI in SA Query Action frame");
+			return;
+		}
+
+		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
+					 channel_width_to_int(ci.chanwidth),
+					 ci.seg1_idx) != 0) {
+			wpa_printf(MSG_WARNING, "%s", ocv_errorstr);
+			return;
+		}
+	}
+#endif /* CONFIG_OCV */
+
+	if (data[0] == WLAN_SA_QUERY_REQUEST)
+		sme_process_sa_query_request(wpa_s, sa, data, len);
+	else if (data[0] == WLAN_SA_QUERY_RESPONSE)
+		sme_process_sa_query_response(wpa_s, sa, data, len);
 }
 
 #endif /* CONFIG_IEEE80211W */

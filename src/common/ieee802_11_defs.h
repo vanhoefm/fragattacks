@@ -866,10 +866,12 @@ struct ieee80211_mgmt {
 				struct {
 					u8 action;
 					u8 trans_id[WLAN_SA_QUERY_TR_ID_LEN];
+					u8 variable[]; /* OCI element */
 				} STRUCT_PACKED sa_query_req;
 				struct {
 					u8 action; /* */
 					u8 trans_id[WLAN_SA_QUERY_TR_ID_LEN];
+					u8 variable[]; /* OCI element */
 				} STRUCT_PACKED sa_query_resp;
 				struct {
 					u8 action;

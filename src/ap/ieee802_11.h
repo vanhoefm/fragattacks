@@ -93,8 +93,8 @@ void ieee802_11_rx_from_unknown(struct hostapd_data *hapd, const u8 *src,
 u8 * hostapd_eid_assoc_comeback_time(struct hostapd_data *hapd,
 				     struct sta_info *sta, u8 *eid);
 void ieee802_11_sa_query_action(struct hostapd_data *hapd,
-				const u8 *sa, const u8 action_type,
-				const u8 *trans_id);
+				const struct ieee80211_mgmt *mgmt,
+				size_t len);
 u8 * hostapd_eid_interworking(struct hostapd_data *hapd, u8 *eid);
 u8 * hostapd_eid_adv_proto(struct hostapd_data *hapd, u8 *eid);
 u8 * hostapd_eid_roaming_consortium(struct hostapd_data *hapd, u8 *eid);

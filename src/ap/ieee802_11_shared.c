@@ -10,10 +10,12 @@
 
 #include "utils/common.h"
 #include "common/ieee802_11_defs.h"
+#include "common/ocv.h"
 #include "hostapd.h"
 #include "sta_info.h"
 #include "ap_config.h"
 #include "ap_drv_ops.h"
+#include "wpa_auth.h"
 #include "ieee802_11.h"
 
 
@@ -49,7 +51,12 @@ u8 * hostapd_eid_assoc_comeback_time(struct hostapd_data *hapd,
 void ieee802_11_send_sa_query_req(struct hostapd_data *hapd,
 				  const u8 *addr, const u8 *trans_id)
 {
-	struct ieee80211_mgmt mgmt;
+#ifdef CONFIG_OCV
+	struct sta_info *sta;
+#endif /* CONFIG_OCV */
+	struct ieee80211_mgmt *mgmt;
+	u8 *oci_ie = NULL;
+	u8 oci_ie_len = 0;
 	u8 *end;
 
 	wpa_printf(MSG_DEBUG, "IEEE 802.11: Sending SA Query Request to "
@@ -57,19 +64,61 @@ void ieee802_11_send_sa_query_req(struct hostapd_data *hapd,
 	wpa_hexdump(MSG_DEBUG, "IEEE 802.11: SA Query Transaction ID",
 		    trans_id, WLAN_SA_QUERY_TR_ID_LEN);
 
-	os_memset(&mgmt, 0, sizeof(mgmt));
-	mgmt.frame_control = IEEE80211_FC(WLAN_FC_TYPE_MGMT,
-					  WLAN_FC_STYPE_ACTION);
-	os_memcpy(mgmt.da, addr, ETH_ALEN);
-	os_memcpy(mgmt.sa, hapd->own_addr, ETH_ALEN);
-	os_memcpy(mgmt.bssid, hapd->own_addr, ETH_ALEN);
-	mgmt.u.action.category = WLAN_ACTION_SA_QUERY;
-	mgmt.u.action.u.sa_query_req.action = WLAN_SA_QUERY_REQUEST;
-	os_memcpy(mgmt.u.action.u.sa_query_req.trans_id, trans_id,
+#ifdef CONFIG_OCV
+	sta = ap_get_sta(hapd, addr);
+	if (sta && wpa_auth_uses_ocv(sta->wpa_sm)) {
+		struct wpa_channel_info ci;
+
+		if (hostapd_drv_channel_info(hapd, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to get channel info for OCI element in SA Query Request");
+			return;
+		}
+
+		oci_ie_len = OCV_OCI_EXTENDED_LEN;
+		oci_ie = os_zalloc(oci_ie_len);
+		if (!oci_ie) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to allocate buffer for OCI element in SA Query Request");
+			return;
+		}
+
+		if (ocv_insert_extended_oci(&ci, oci_ie) < 0) {
+			os_free(oci_ie);
+			return;
+		}
+	}
+#endif /* CONFIG_OCV */
+
+	mgmt = os_zalloc(sizeof(*mgmt) + oci_ie_len);
+	if (!mgmt) {
+		wpa_printf(MSG_DEBUG,
+			   "Failed to allocate buffer for SA Query Response frame");
+		os_free(oci_ie);
+		return;
+	}
+
+	mgmt->frame_control = IEEE80211_FC(WLAN_FC_TYPE_MGMT,
+					   WLAN_FC_STYPE_ACTION);
+	os_memcpy(mgmt->da, addr, ETH_ALEN);
+	os_memcpy(mgmt->sa, hapd->own_addr, ETH_ALEN);
+	os_memcpy(mgmt->bssid, hapd->own_addr, ETH_ALEN);
+	mgmt->u.action.category = WLAN_ACTION_SA_QUERY;
+	mgmt->u.action.u.sa_query_req.action = WLAN_SA_QUERY_REQUEST;
+	os_memcpy(mgmt->u.action.u.sa_query_req.trans_id, trans_id,
 		  WLAN_SA_QUERY_TR_ID_LEN);
-	end = mgmt.u.action.u.sa_query_req.trans_id + WLAN_SA_QUERY_TR_ID_LEN;
-	if (hostapd_drv_send_mlme(hapd, &mgmt, end - (u8 *) &mgmt, 0) < 0)
+	end = mgmt->u.action.u.sa_query_req.variable;
+#ifdef CONFIG_OCV
+	if (oci_ie_len > 0) {
+		os_memcpy(end, oci_ie, oci_ie_len);
+		end += oci_ie_len;
+	}
+#endif /* CONFIG_OCV */
+	if (hostapd_drv_send_mlme(hapd, mgmt, end - (u8 *) mgmt, 0) < 0)
 		wpa_printf(MSG_INFO, "ieee802_11_send_sa_query_req: send failed");
+
+	os_free(mgmt);
+	os_free(oci_ie);
 }
 
 
@@ -77,7 +126,9 @@ static void ieee802_11_send_sa_query_resp(struct hostapd_data *hapd,
 					  const u8 *sa, const u8 *trans_id)
 {
 	struct sta_info *sta;
-	struct ieee80211_mgmt resp;
+	struct ieee80211_mgmt *resp;
+	u8 *oci_ie = NULL;
+	u8 oci_ie_len = 0;
 	u8 *end;
 
 	wpa_printf(MSG_DEBUG, "IEEE 802.11: Received SA Query Request from "
@@ -92,30 +143,115 @@ static void ieee802_11_send_sa_query_resp(struct hostapd_data *hapd,
 		return;
 	}
 
+#ifdef CONFIG_OCV
+	if (wpa_auth_uses_ocv(sta->wpa_sm)) {
+		struct wpa_channel_info ci;
+
+		if (hostapd_drv_channel_info(hapd, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to get channel info for OCI element in SA Query Response");
+			return;
+		}
+
+		oci_ie_len = OCV_OCI_EXTENDED_LEN;
+		oci_ie = os_zalloc(oci_ie_len);
+		if (!oci_ie) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to allocate buffer for for OCI element in SA Query Response");
+			return;
+		}
+
+		if (ocv_insert_extended_oci(&ci, oci_ie) < 0) {
+			os_free(oci_ie);
+			return;
+		}
+	}
+#endif /* CONFIG_OCV */
+
+	resp = os_zalloc(sizeof(*resp) + oci_ie_len);
+	if (!resp) {
+		wpa_printf(MSG_DEBUG,
+			   "Failed to allocate buffer for SA Query Response frame");
+		os_free(oci_ie);
+		return;
+	}
+
 	wpa_printf(MSG_DEBUG, "IEEE 802.11: Sending SA Query Response to "
 		   MACSTR, MAC2STR(sa));
 
-	os_memset(&resp, 0, sizeof(resp));
-	resp.frame_control = IEEE80211_FC(WLAN_FC_TYPE_MGMT,
-					  WLAN_FC_STYPE_ACTION);
-	os_memcpy(resp.da, sa, ETH_ALEN);
-	os_memcpy(resp.sa, hapd->own_addr, ETH_ALEN);
-	os_memcpy(resp.bssid, hapd->own_addr, ETH_ALEN);
-	resp.u.action.category = WLAN_ACTION_SA_QUERY;
-	resp.u.action.u.sa_query_req.action = WLAN_SA_QUERY_RESPONSE;
-	os_memcpy(resp.u.action.u.sa_query_req.trans_id, trans_id,
+	resp->frame_control = IEEE80211_FC(WLAN_FC_TYPE_MGMT,
+					   WLAN_FC_STYPE_ACTION);
+	os_memcpy(resp->da, sa, ETH_ALEN);
+	os_memcpy(resp->sa, hapd->own_addr, ETH_ALEN);
+	os_memcpy(resp->bssid, hapd->own_addr, ETH_ALEN);
+	resp->u.action.category = WLAN_ACTION_SA_QUERY;
+	resp->u.action.u.sa_query_req.action = WLAN_SA_QUERY_RESPONSE;
+	os_memcpy(resp->u.action.u.sa_query_req.trans_id, trans_id,
 		  WLAN_SA_QUERY_TR_ID_LEN);
-	end = resp.u.action.u.sa_query_req.trans_id + WLAN_SA_QUERY_TR_ID_LEN;
-	if (hostapd_drv_send_mlme(hapd, &resp, end - (u8 *) &resp, 0) < 0)
+	end = resp->u.action.u.sa_query_req.variable;
+#ifdef CONFIG_OCV
+	if (oci_ie_len > 0) {
+		os_memcpy(end, oci_ie, oci_ie_len);
+		end += oci_ie_len;
+	}
+#endif /* CONFIG_OCV */
+	if (hostapd_drv_send_mlme(hapd, resp, end - (u8 *) resp, 0) < 0)
 		wpa_printf(MSG_INFO, "ieee80211_mgmt_sa_query_request: send failed");
+
+	os_free(resp);
+	os_free(oci_ie);
 }
 
 
-void ieee802_11_sa_query_action(struct hostapd_data *hapd, const u8 *sa,
-				const u8 action_type, const u8 *trans_id)
+void ieee802_11_sa_query_action(struct hostapd_data *hapd,
+				const struct ieee80211_mgmt *mgmt,
+				size_t len)
 {
 	struct sta_info *sta;
 	int i;
+	const u8 *sa = mgmt->sa;
+	const u8 action_type = mgmt->u.action.u.sa_query_resp.action;
+	const u8 *trans_id = mgmt->u.action.u.sa_query_resp.trans_id;
+
+	sta = ap_get_sta(hapd, sa);
+
+#ifdef CONFIG_OCV
+	if (sta && wpa_auth_uses_ocv(sta->wpa_sm)) {
+		struct ieee802_11_elems elems;
+		struct wpa_channel_info ci;
+		int tx_chanwidth;
+		int tx_seg1_idx;
+		size_t ies_len;
+		const u8 *ies;
+
+		ies = mgmt->u.action.u.sa_query_resp.variable;
+		ies_len = len - (ies - (u8 *) mgmt);
+		if (ieee802_11_parse_elems(ies, ies_len, &elems, 1) ==
+		    ParseFailed) {
+			wpa_printf(MSG_DEBUG,
+				   "SA Query: Failed to parse elements");
+			return;
+		}
+
+		if (hostapd_drv_channel_info(hapd, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to get channel info to validate received OCI in SA Query Action frame");
+			return;
+		}
+
+		if (get_sta_tx_parameters(sta->wpa_sm,
+					  channel_width_to_int(ci.chanwidth),
+					  ci.seg1_idx, &tx_chanwidth,
+					  &tx_seg1_idx) < 0)
+			return;
+
+		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
+					 tx_chanwidth, tx_seg1_idx) != 0) {
+			wpa_printf(MSG_WARNING, "%s", ocv_errorstr);
+			return;
+		}
+	}
+#endif /* CONFIG_OCV */
 
 	if (action_type == WLAN_SA_QUERY_REQUEST) {
 		ieee802_11_send_sa_query_resp(hapd, sa, trans_id);
@@ -135,7 +271,6 @@ void ieee802_11_sa_query_action(struct hostapd_data *hapd, const u8 *sa,
 
 	/* MLME-SAQuery.confirm */
 
-	sta = ap_get_sta(hapd, sa);
 	if (sta == NULL || sta->sa_query_trans_id == NULL) {
 		wpa_printf(MSG_DEBUG, "IEEE 802.11: No matching STA with "
 			   "pending SA Query request found");
