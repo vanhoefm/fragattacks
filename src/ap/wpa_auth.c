@@ -13,6 +13,7 @@
 #include "utils/state_machine.h"
 #include "utils/bitfield.h"
 #include "common/ieee802_11_defs.h"
+#include "common/ocv.h"
 #include "crypto/aes.h"
 #include "crypto/aes_wrap.h"
 #include "crypto/aes_siv.h"
@@ -22,6 +23,7 @@
 #include "crypto/sha384.h"
 #include "crypto/random.h"
 #include "eapol_auth/eapol_auth_sm.h"
+#include "drivers/driver.h"
 #include "ap_config.h"
 #include "ieee802_11.h"
 #include "wpa_auth.h"
@@ -236,6 +238,17 @@ static void wpa_sta_disconnect(struct wpa_authenticator *wpa_auth,
 		   MAC2STR(addr), reason);
 	wpa_auth->cb->disconnect(wpa_auth->cb_ctx, addr, reason);
 }
+
+
+#ifdef CONFIG_OCV
+static int wpa_channel_info(struct wpa_authenticator *wpa_auth,
+			    struct wpa_channel_info *ci)
+{
+	if (!wpa_auth->cb->channel_info)
+		return -1;
+	return wpa_auth->cb->channel_info(wpa_auth->cb_ctx, ci);
+}
+#endif /* CONFIG_OCV */
 
 
 static void wpa_rekey_gmk(void *eloop_ctx, void *timeout_ctx)
@@ -2883,6 +2896,36 @@ static u8 * ieee80211w_kde_add(struct wpa_state_machine *sm, u8 *pos)
 #endif /* CONFIG_IEEE80211W */
 
 
+static int ocv_oci_len(struct wpa_state_machine *sm)
+{
+#ifdef CONFIG_OCV
+	if (wpa_auth_uses_ocv(sm))
+		return OCV_OCI_KDE_LEN;
+#endif /* CONFIG_OCV */
+	return 0;
+}
+
+static int ocv_oci_add(struct wpa_state_machine *sm, u8 **argpos)
+{
+#ifdef CONFIG_OCV
+	struct wpa_channel_info ci;
+
+	if (!wpa_auth_uses_ocv(sm))
+		return 0;
+
+	if (wpa_channel_info(sm->wpa_auth, &ci) != 0) {
+		wpa_printf(MSG_WARNING,
+			   "Failed to get channel info for OCI element");
+		return -1;
+	}
+
+	return ocv_insert_oci_kde(&ci, argpos);
+#else /* CONFIG_OCV */
+	return 0;
+#endif /* CONFIG_OCV */
+}
+
+
 SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 {
 	u8 rsc[WPA_KEY_RSC_LEN], *_rsc, *gtk, *kde, *pos, dummy_gtk[32];
@@ -2966,7 +3009,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 		}
 	}
 
-	kde_len = wpa_ie_len + ieee80211w_kde_len(sm);
+	kde_len = wpa_ie_len + ieee80211w_kde_len(sm) + ocv_oci_len(sm);
 	if (gtk)
 		kde_len += 2 + RSN_SELECTOR_LEN + 2 + gtk_len;
 #ifdef CONFIG_IEEE80211R_AP
@@ -3011,6 +3054,10 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 				  gtk, gtk_len);
 	}
 	pos = ieee80211w_kde_add(sm, pos);
+	if (ocv_oci_add(sm, &pos) < 0) {
+		os_free(kde);
+		return;
+	}
 
 #ifdef CONFIG_IEEE80211R_AP
 	if (wpa_key_mgmt_ft(sm->wpa_key_mgmt)) {
@@ -3322,7 +3369,7 @@ SM_STATE(WPA_PTK_GROUP, REKEYNEGOTIATING)
 	}
 	if (sm->wpa == WPA_VERSION_WPA2) {
 		kde_len = 2 + RSN_SELECTOR_LEN + 2 + gsm->GTK_len +
-			ieee80211w_kde_len(sm);
+			ieee80211w_kde_len(sm) + ocv_oci_len(sm);
 		kde_buf = os_malloc(kde_len);
 		if (kde_buf == NULL)
 			return;
@@ -3333,6 +3380,10 @@ SM_STATE(WPA_PTK_GROUP, REKEYNEGOTIATING)
 		pos = wpa_add_kde(pos, RSN_KEY_DATA_GROUPKEY, hdr, 2,
 				  gtk, gsm->GTK_len);
 		pos = ieee80211w_kde_add(sm, pos);
+		if (ocv_oci_add(sm, &pos) < 0) {
+			os_free(kde_buf);
+			return;
+		}
 		kde_len = pos - kde;
 	} else {
 		kde = gtk;
@@ -4666,7 +4717,7 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 		}
 	}
 
-	kde_len = wpa_ie_len + ieee80211w_kde_len(sm);
+	kde_len = wpa_ie_len + ieee80211w_kde_len(sm) + ocv_oci_len(sm);
 	if (gtk)
 		kde_len += 2 + RSN_SELECTOR_LEN + 2 + gtk_len;
 #ifdef CONFIG_IEEE80211R_AP
@@ -4715,6 +4766,10 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 		os_memset(opos, 0, 6); /* clear PN */
 	}
 #endif /* CONFIG_IEEE80211W */
+	if (ocv_oci_add(sm, &pos) < 0) {
+		os_free(kde);
+		return -1;
+	}
 
 #ifdef CONFIG_IEEE80211R_AP
 	if (wpa_key_mgmt_ft(sm->wpa_key_mgmt)) {
@@ -4796,7 +4851,7 @@ int wpa_auth_resend_group_m1(struct wpa_state_machine *sm,
 	gtk = gsm->GTK[gsm->GN - 1];
 	if (sm->wpa == WPA_VERSION_WPA2) {
 		kde_len = 2 + RSN_SELECTOR_LEN + 2 + gsm->GTK_len +
-			ieee80211w_kde_len(sm);
+			ieee80211w_kde_len(sm) + ocv_oci_len(sm);
 		kde_buf = os_malloc(kde_len);
 		if (kde_buf == NULL)
 			return -1;
@@ -4816,6 +4871,10 @@ int wpa_auth_resend_group_m1(struct wpa_state_machine *sm,
 			os_memset(opos, 0, 6); /* clear PN */
 		}
 #endif /* CONFIG_IEEE80211W */
+		if (ocv_oci_add(sm, &pos) < 0) {
+			os_free(kde_buf);
+			return -1;
+		}
 		kde_len = pos - kde;
 	} else {
 		kde = gtk;

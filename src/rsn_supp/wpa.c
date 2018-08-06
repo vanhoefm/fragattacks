@@ -20,8 +20,10 @@
 #include "crypto/sha512.h"
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
+#include "common/ocv.h"
 #include "eap_common/eap_defs.h"
 #include "eapol_supp/eapol_supp_sm.h"
+#include "drivers/driver.h"
 #include "wpa.h"
 #include "eloop.h"
 #include "preauth.h"
@@ -617,6 +619,33 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 
 	kde = sm->assoc_wpa_ie;
 	kde_len = sm->assoc_wpa_ie_len;
+
+#ifdef CONFIG_OCV
+	if (wpa_sm_ocv_enabled(sm)) {
+		struct wpa_channel_info ci;
+		u8 *pos;
+
+		if (wpa_sm_channel_info(sm, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to get channel info for OCI element in EAPOL-Key 2/4");
+			goto failed;
+		}
+
+		kde_buf = os_malloc(kde_len + 2 + RSN_SELECTOR_LEN + 3);
+		if (!kde_buf) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to allocate memory for KDE with OCI in EAPOL-Key 2/4");
+			goto failed;
+		}
+
+		os_memcpy(kde_buf, kde, kde_len);
+		kde = kde_buf;
+		pos = kde + kde_len;
+		if (ocv_insert_oci_kde(&ci, &pos) < 0)
+			goto failed;
+		kde_len = pos - kde;
+	}
+#endif /* CONFIG_OCV */
 
 #ifdef CONFIG_P2P
 	if (sm->p2p) {
@@ -1631,11 +1660,17 @@ static int wpa_supplicant_send_2_of_2(struct wpa_sm *sm,
 	size_t mic_len, hdrlen, rlen;
 	struct wpa_eapol_key *reply;
 	u8 *rbuf, *key_mic;
+	size_t kde_len = 0;
+
+#ifdef CONFIG_OCV
+	if (wpa_sm_ocv_enabled(sm))
+		kde_len = OCV_OCI_KDE_LEN;
+#endif /* CONFIG_OCV */
 
 	mic_len = wpa_mic_len(sm->key_mgmt, sm->pmk_len);
 	hdrlen = sizeof(*reply) + mic_len + 2;
 	rbuf = wpa_sm_alloc_eapol(sm, IEEE802_1X_TYPE_EAPOL_KEY, NULL,
-				  hdrlen, &rlen, (void *) &reply);
+				  hdrlen + kde_len, &rlen, (void *) &reply);
 	if (rbuf == NULL)
 		return -1;
 
@@ -1657,7 +1692,27 @@ static int wpa_supplicant_send_2_of_2(struct wpa_sm *sm,
 		  WPA_REPLAY_COUNTER_LEN);
 
 	key_mic = (u8 *) (reply + 1);
-	WPA_PUT_BE16(key_mic + mic_len, 0);
+	WPA_PUT_BE16(key_mic + mic_len, kde_len); /* Key Data Length */
+
+#ifdef CONFIG_OCV
+	if (wpa_sm_ocv_enabled(sm)) {
+		struct wpa_channel_info ci;
+		u8 *pos;
+
+		if (wpa_sm_channel_info(sm, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to get channel info for OCI element in EAPOL-Key 2/2");
+			os_free(rbuf);
+			return -1;
+		}
+
+		pos = key_mic + mic_len + 2; /* Key Data */
+		if (ocv_insert_oci_kde(&ci, &pos) < 0) {
+			os_free(rbuf);
+			return -1;
+		}
+	}
+#endif /* CONFIG_OCV */
 
 	wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG, "WPA: Sending EAPOL-Key 2/2");
 	return wpa_eapol_key_send(sm, &sm->ptk, ver, sm->bssid, ETH_P_EAPOL,
@@ -2938,6 +2993,19 @@ int wpa_sm_pmf_enabled(struct wpa_sm *sm)
 		return 1;
 
 	return 0;
+}
+
+
+int wpa_sm_ocv_enabled(struct wpa_sm *sm)
+{
+	struct wpa_ie_data rsn;
+
+	if (!sm->ocv || !sm->ap_rsn_ie)
+		return 0;
+
+	return wpa_parse_wpa_ie_rsn(sm->ap_rsn_ie, sm->ap_rsn_ie_len,
+				    &rsn) >= 0 &&
+		(rsn.capabilities & WPA_CAPABILITY_OCVC);
 }
 
 
