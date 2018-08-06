@@ -2882,3 +2882,80 @@ def test_ap_wpa2_disable_eapol_retry_group(dev, apdev):
         raise Exception("Disconnection not reported")
     dev[0].request("REMOVE_NETWORK all")
     dev[0].dump_monitor()
+
+def test_ap_wpa2_psk_mic_0(dev, apdev):
+    """WPA2-PSK/TKIP and MIC=0 in EAPOL-Key msg 3/4"""
+    bssid = apdev[0]['bssid']
+    ssid = "test-wpa2-psk"
+    passphrase = 'qwertyuiop'
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
+    params['rsn_pairwise'] = "TKIP"
+    hapd = hostapd.add_ap(apdev[0], params)
+    hapd.request("SET ext_eapol_frame_io 1")
+    dev[0].request("SET ext_eapol_frame_io 1")
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412", wait_connect=False)
+    addr = dev[0].own_addr()
+
+    # EAPOL-Key msg 1/4
+    ev = hapd.wait_event(["EAPOL-TX"], timeout=15)
+    if ev is None:
+        raise Exception("Timeout on EAPOL-TX from hostapd")
+    res = dev[0].request("EAPOL_RX " + bssid + " " + ev.split(' ')[2])
+    if "OK" not in res:
+        raise Exception("EAPOL_RX to wpa_supplicant failed")
+
+    # EAPOL-Key msg 2/4
+    ev = dev[0].wait_event(["EAPOL-TX"], timeout=15)
+    if ev is None:
+        raise Exception("Timeout on EAPOL-TX from wpa_supplicant")
+    res = hapd.request("EAPOL_RX " + addr + " " + ev.split(' ')[2])
+    if "OK" not in res:
+        raise Exception("EAPOL_RX to hostapd failed")
+    dev[0].dump_monitor()
+
+    # EAPOL-Key msg 3/4
+    ev = hapd.wait_event(["EAPOL-TX"], timeout=15)
+    if ev is None:
+        raise Exception("Timeout on EAPOL-TX from hostapd")
+    msg3 = ev.split(' ')[2]
+    res = dev[0].request("EAPOL_RX " + bssid + " " + msg3)
+    if "OK" not in res:
+        raise Exception("EAPOL_RX to wpa_supplicant failed")
+
+    # EAPOL-Key msg 4/4
+    ev = dev[0].wait_event(["EAPOL-TX"], timeout=15)
+    if ev is None:
+        raise Exception("Timeout on EAPOL-TX from wpa_supplicant")
+    # Do not send to the AP
+
+    # EAPOL-Key msg 3/4 with MIC=0 and modifications
+    eapol_hdr = msg3[0:8]
+    key_type = msg3[8:10]
+    key_info = msg3[10:14]
+    key_length = msg3[14:18]
+    replay_counter = msg3[18:34]
+    key_nonce = msg3[34:98]
+    key_iv = msg3[98:130]
+    key_rsc = msg3[130:146]
+    key_id = msg3[146:162]
+    key_mic = msg3[162:194]
+    key_data_len = msg3[194:198]
+    key_data = msg3[198:]
+
+    msg3b = eapol_hdr + key_type
+    msg3b += "12c9" # Clear MIC bit from key_info (originally 13c9)
+    msg3b += key_length
+    msg3b += '0000000000000003'
+    msg3b += key_nonce + key_iv + key_rsc + key_id
+    msg3b += 32*'0' # Clear MIC value
+    msg3b += key_data_len + key_data
+    dev[0].dump_monitor()
+    res = dev[0].request("EAPOL_RX " + bssid + " " + msg3b)
+    if "OK" not in res:
+        raise Exception("EAPOL_RX to wpa_supplicant failed")
+    ev = dev[0].wait_event(["EAPOL-TX", "WPA: Ignore EAPOL-Key"], timeout=2)
+    if ev is None:
+        raise Exception("No event from wpa_supplicant")
+    if "EAPOL-TX" in ev:
+        raise Exception("Unexpected EAPOL-Key message from wpa_supplicant")
+    dev[0].request("DISCONNECT")
