@@ -752,3 +752,71 @@ u8 * hostapd_eid_fils_indic(struct hostapd_data *hapd, u8 *eid, int hessid)
 
 	return pos;
 }
+
+
+#ifdef CONFIG_OCV
+int get_tx_parameters(struct sta_info *sta, int ap_max_chanwidth,
+		      int ap_seg1_idx, int *bandwidth, int *seg1_idx)
+{
+	int ht_40mhz = 0;
+	int vht_80p80 = 0;
+	int requested_bw;
+
+	if (sta->ht_capabilities)
+		ht_40mhz = !!(sta->ht_capabilities->ht_capabilities_info &
+			      HT_CAP_INFO_SUPP_CHANNEL_WIDTH_SET);
+
+	if (sta->vht_operation) {
+		struct ieee80211_vht_operation *oper = sta->vht_operation;
+
+		/*
+		 * If a VHT Operation element was present, use it to determine
+		 * the supported channel bandwidth.
+		 */
+		if (oper->vht_op_info_chwidth == 0) {
+			requested_bw = ht_40mhz ? 40 : 20;
+		} else if (oper->vht_op_info_chan_center_freq_seg1_idx == 0) {
+			requested_bw = 80;
+		} else {
+			int diff;
+
+			requested_bw = 160;
+			diff = abs((int)
+				   oper->vht_op_info_chan_center_freq_seg0_idx -
+				   (int)
+				   oper->vht_op_info_chan_center_freq_seg1_idx);
+			vht_80p80 = oper->vht_op_info_chan_center_freq_seg1_idx
+				!= 0 &&	diff > 16;
+		}
+	} else if (sta->vht_capabilities) {
+		struct ieee80211_vht_capabilities *capab;
+		int vht_chanwidth;
+
+		capab = sta->vht_capabilities;
+
+		/*
+		 * If only the VHT Capabilities element is present (e.g., for
+		 * normal clients), use it to determine the supported channel
+		 * bandwidth.
+		 */
+		vht_chanwidth = capab->vht_capabilities_info &
+			VHT_CAP_SUPP_CHAN_WIDTH_MASK;
+		vht_80p80 = capab->vht_capabilities_info &
+			VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ;
+
+		/* TODO: Also take into account Extended NSS BW Support field */
+		requested_bw = vht_chanwidth ? 160 : 80;
+	} else {
+		requested_bw = ht_40mhz ? 40 : 20;
+	}
+
+	*bandwidth = requested_bw < ap_max_chanwidth ?
+		requested_bw : ap_max_chanwidth;
+
+	*seg1_idx = 0;
+	if (ap_seg1_idx && vht_80p80)
+		*seg1_idx = ap_seg1_idx;
+
+	return 0;
+}
+#endif /* CONFIG_OCV */

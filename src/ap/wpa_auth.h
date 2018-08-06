@@ -270,6 +270,9 @@ struct wpa_auth_callbacks {
 	int (*send_oui)(void *ctx, const u8 *dst, u8 oui_suffix, const u8 *data,
 			size_t data_len);
 	int (*channel_info)(void *ctx, struct wpa_channel_info *ci);
+	int (*get_sta_tx_params)(void *ctx, const u8 *addr,
+				 int ap_max_chanwidth, int ap_seg1_idx,
+				 int *bandwidth, int *seg1_idx);
 #ifdef CONFIG_IEEE80211R_AP
 	struct wpa_state_machine * (*add_sta)(void *ctx, const u8 *sta_addr);
 	int (*set_vlan)(void *ctx, const u8 *sta_addr,
@@ -455,6 +458,9 @@ const u8 *  wpa_fils_validate_fils_session(struct wpa_state_machine *sm,
 					   const u8 *fils_session);
 int wpa_fils_validate_key_confirm(struct wpa_state_machine *sm, const u8 *ies,
 				  size_t ies_len);
+
+int get_sta_tx_parameters(struct wpa_state_machine *sm, int ap_max_chanwidth,
+			  int ap_seg1_idx, int *bandwidth, int *seg1_idx);
 
 int wpa_auth_write_fte(struct wpa_authenticator *wpa_auth, int use_sha384,
 		       u8 *buf, size_t len);

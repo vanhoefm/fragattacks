@@ -168,4 +168,7 @@ int ieee802_11_allowed_address(struct hostapd_data *hapd, const u8 *addr,
 			       char **identity, char **radius_cui,
 			       int is_probe_req);
 
+int get_tx_parameters(struct sta_info *sta, int ap_max_chanwidth,
+		      int ap_seg1_idx, int *bandwidth, int *seg1_idx);
+
 #endif /* IEEE802_11_H */

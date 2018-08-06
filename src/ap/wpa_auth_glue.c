@@ -27,6 +27,7 @@
 #include "tkip_countermeasures.h"
 #include "ap_drv_ops.h"
 #include "ap_config.h"
+#include "ieee802_11.h"
 #include "pmksa_cache_auth.h"
 #include "wpa_auth.h"
 #include "wpa_auth_glue.h"
@@ -786,6 +787,28 @@ static int hostapd_channel_info(void *ctx, struct wpa_channel_info *ci)
 	return hostapd_drv_channel_info(hapd, ci);
 }
 
+
+#ifdef CONFIG_OCV
+static int hostapd_get_sta_tx_params(void *ctx, const u8 *addr,
+				     int ap_max_chanwidth, int ap_seg1_idx,
+				     int *bandwidth, int *seg1_idx)
+{
+	struct hostapd_data *hapd = ctx;
+	struct sta_info *sta;
+
+	sta = ap_get_sta(hapd, addr);
+	if (!sta) {
+		hostapd_wpa_auth_logger(hapd, addr, LOGGER_INFO,
+					"Failed to get STA info to validate received OCI");
+		return -1;
+	}
+
+	return get_tx_parameters(sta, ap_max_chanwidth, ap_seg1_idx, bandwidth,
+				 seg1_idx);
+}
+#endif /* CONFIG_OCV */
+
+
 #ifdef CONFIG_IEEE80211R_AP
 
 static int hostapd_wpa_auth_send_ft_action(void *ctx, const u8 *dst,
@@ -1200,6 +1223,9 @@ int hostapd_setup_wpa(struct hostapd_data *hapd)
 		.send_ether = hostapd_wpa_auth_send_ether,
 		.send_oui = hostapd_wpa_auth_send_oui,
 		.channel_info = hostapd_channel_info,
+#ifdef CONFIG_OCV
+		.get_sta_tx_params = hostapd_get_sta_tx_params,
+#endif /* CONFIG_OCV */
 #ifdef CONFIG_IEEE80211R_AP
 		.send_ft_action = hostapd_wpa_auth_send_ft_action,
 		.add_sta = hostapd_wpa_auth_add_sta,

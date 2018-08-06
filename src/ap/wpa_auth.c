@@ -2637,6 +2637,21 @@ u8 * hostapd_eid_assoc_fils_session(struct wpa_state_machine *sm, u8 *buf,
 #endif /* CONFIG_FILS */
 
 
+#ifdef CONFIG_OCV
+int get_sta_tx_parameters(struct wpa_state_machine *sm, int ap_max_chanwidth,
+			  int ap_seg1_idx, int *bandwidth, int *seg1_idx)
+{
+	struct wpa_authenticator *wpa_auth = sm->wpa_auth;
+
+	if (!wpa_auth->cb->get_sta_tx_params)
+		return -1;
+	return wpa_auth->cb->get_sta_tx_params(wpa_auth->cb_ctx, sm->addr,
+					       ap_max_chanwidth, ap_seg1_idx,
+					       bandwidth, seg1_idx);
+}
+#endif /* CONFIG_OCV */
+
+
 SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 {
 	struct wpa_authenticator *wpa_auth = sm->wpa_auth;
