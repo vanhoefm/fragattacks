@@ -3316,6 +3316,12 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 			return 1;
 		}
 #endif /* CONFIG_IEEE80211W */
+#ifdef CONFIG_OCV
+	} else if (os_strcmp(buf, "ocv") == 0) {
+		bss->ocv = atoi(pos);
+		if (bss->ocv && !bss->ieee80211w)
+			bss->ieee80211w = 1;
+#endif /* CONFIG_OCV */
 #ifdef CONFIG_IEEE80211N
 	} else if (os_strcmp(buf, "ieee80211n") == 0) {
 		conf->ieee80211n = atoi(pos);

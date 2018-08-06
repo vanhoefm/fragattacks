@@ -1009,6 +1009,15 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 	}
 #endif /* CONFIG_MBO */
 
+#ifdef CONFIG_OCV
+	if (full_config && bss->ieee80211w == NO_MGMT_FRAME_PROTECTION &&
+	    bss->ocv) {
+		wpa_printf(MSG_ERROR,
+			   "OCV: PMF needs to be enabled whenever using OCV");
+		return -1;
+	}
+#endif /* CONFIG_OCV */
+
 	return 0;
 }
 
