@@ -13,6 +13,8 @@
 #include "utils/list.h"
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
+#include "common/ocv.h"
+#include "drivers/driver.h"
 #include "crypto/aes.h"
 #include "crypto/aes_siv.h"
 #include "crypto/aes_wrap.h"
@@ -725,6 +727,17 @@ static int wpa_ft_add_tspec(struct wpa_authenticator *wpa_auth,
 	return wpa_auth->cb->add_tspec(wpa_auth->cb_ctx, sta_addr, tspec_ie,
 				       tspec_ielen);
 }
+
+
+#ifdef CONFIG_OCV
+static int wpa_channel_info(struct wpa_authenticator *wpa_auth,
+			       struct wpa_channel_info *ci)
+{
+	if (!wpa_auth->cb->channel_info)
+		return -1;
+	return wpa_auth->cb->channel_info(wpa_auth->cb_ctx, ci);
+}
+#endif /* CONFIG_OCV */
 
 
 int wpa_write_mdie(struct wpa_auth_config *conf, u8 *buf, size_t len)
@@ -2430,6 +2443,35 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 			os_free(igtk);
 		}
 #endif /* CONFIG_IEEE80211W */
+#ifdef CONFIG_OCV
+		if (wpa_auth_uses_ocv(sm)) {
+			struct wpa_channel_info ci;
+			u8 *nbuf, *ocipos;
+
+			if (wpa_channel_info(sm->wpa_auth, &ci) != 0) {
+				wpa_printf(MSG_WARNING,
+					   "Failed to get channel info for OCI element");
+				os_free(subelem);
+				return NULL;
+			}
+
+			subelem_len += 2 + OCV_OCI_LEN;
+			nbuf = os_realloc(subelem, subelem_len);
+			if (!nbuf) {
+				os_free(subelem);
+				return NULL;
+			}
+			subelem = nbuf;
+
+			ocipos = subelem + subelem_len - 2 - OCV_OCI_LEN;
+			*ocipos++ = FTIE_SUBELEM_OCI;
+			*ocipos++ = OCV_OCI_LEN;
+			if (ocv_insert_oci(&ci, &ocipos) < 0) {
+				os_free(subelem);
+				return NULL;
+			}
+		}
+#endif /* CONFIG_OCV */
 	} else {
 		r0kh_id = conf->r0_key_holder;
 		r0kh_id_len = conf->r0_key_holder_len;
@@ -3177,6 +3219,32 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 			    parse.rsn - 2, parse.rsn_len + 2);
 		return WLAN_STATUS_INVALID_FTIE;
 	}
+
+#ifdef CONFIG_OCV
+	if (wpa_auth_uses_ocv(sm)) {
+		struct wpa_channel_info ci;
+		int tx_chanwidth;
+		int tx_seg1_idx;
+
+		if (wpa_channel_info(sm->wpa_auth, &ci) != 0) {
+			wpa_printf(MSG_WARNING,
+				   "Failed to get channel info to validate received OCI in (Re)Assoc Request");
+			return WLAN_STATUS_UNSPECIFIED_FAILURE;
+		}
+
+		if (get_sta_tx_parameters(sm,
+					  channel_width_to_int(ci.chanwidth),
+					  ci.seg1_idx, &tx_chanwidth,
+					  &tx_seg1_idx) < 0)
+			return WLAN_STATUS_UNSPECIFIED_FAILURE;
+
+		if (ocv_verify_tx_params(parse.oci, parse.oci_len, &ci,
+					 tx_chanwidth, tx_seg1_idx) != 0) {
+			wpa_printf(MSG_WARNING, "%s", ocv_errorstr);
+			return WLAN_STATUS_UNSPECIFIED_FAILURE;
+		}
+	}
+#endif /* CONFIG_OCV */
 
 	return WLAN_STATUS_SUCCESS;
 }
