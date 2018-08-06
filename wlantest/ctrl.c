@@ -982,6 +982,9 @@ static void info_print_rsn_capab(char *buf, size_t len, int capab)
 	if (capab & WPA_CAPABILITY_PEERKEY_ENABLED)
 		pos += os_snprintf(pos, end - pos, "%sPEERKEY",
 				   pos == buf ? "" : " ");
+	if (capab & WPA_CAPABILITY_OCVC)
+		pos += os_snprintf(pos, end - pos, "%sOCVC",
+				   pos == buf ? "" : " ");
 }
 
 

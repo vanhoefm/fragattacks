@@ -283,7 +283,7 @@ void bss_update(struct wlantest *wt, struct wlantest_bss *bss,
 		   "group=%s%s%s%s%s%s%s%s%s"
 		   "mgmt_group_cipher=%s%s%s%s%s"
 		   "key_mgmt=%s%s%s%s%s%s%s%s%s"
-		   "rsn_capab=%s%s%s%s%s",
+		   "rsn_capab=%s%s%s%s%s%s",
 		   MAC2STR(bss->bssid),
 		   bss->proto == 0 ? "OPEN " : "",
 		   bss->proto & WPA_PROTO_WPA ? "WPA " : "",
@@ -333,7 +333,8 @@ void bss_update(struct wlantest *wt, struct wlantest_bss *bss,
 		   bss->rsn_capab & WPA_CAPABILITY_MFPR ? "MFPR " : "",
 		   bss->rsn_capab & WPA_CAPABILITY_MFPC ? "MFPC " : "",
 		   bss->rsn_capab & WPA_CAPABILITY_PEERKEY_ENABLED ?
-		   "PEERKEY " : "");
+		   "PEERKEY " : "",
+		   bss->rsn_capab & WPA_CAPABILITY_OCVC ? "OCVC " : "");
 }
 
 
