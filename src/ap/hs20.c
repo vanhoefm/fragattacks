@@ -87,6 +87,10 @@ u8 * hostapd_eid_osen(struct hostapd_data *hapd, u8 *eid)
 			capab |= WPA_CAPABILITY_MFPR;
 	}
 #endif /* CONFIG_IEEE80211W */
+#ifdef CONFIG_OCV
+	if (hapd->conf->ocv)
+		capab |= WPA_CAPABILITY_OCVC;
+#endif /* CONFIG_OCV */
 	WPA_PUT_LE16(eid, capab);
 	eid += 2;
 

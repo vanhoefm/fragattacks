@@ -293,9 +293,13 @@ int wpa_write_rsn_ie(struct wpa_auth_config *conf, u8 *buf, size_t len,
 			capab |= WPA_CAPABILITY_MFPR;
 	}
 #endif /* CONFIG_IEEE80211W */
+#ifdef CONFIG_OCV
+	if (conf->ocv)
+		capab |= WPA_CAPABILITY_OCVC;
+#endif /* CONFIG_OCV */
 #ifdef CONFIG_RSN_TESTING
 	if (rsn_testing)
-		capab |= BIT(8) | BIT(14) | BIT(15);
+		capab |= BIT(8) | BIT(15);
 #endif /* CONFIG_RSN_TESTING */
 	WPA_PUT_LE16(pos, capab);
 	pos += 2;
@@ -414,6 +418,10 @@ static u8 * wpa_write_osen(struct wpa_auth_config *conf, u8 *eid)
 			capab |= WPA_CAPABILITY_MFPR;
 	}
 #endif /* CONFIG_IEEE80211W */
+#ifdef CONFIG_OCV
+	if (conf->ocv)
+		capab |= WPA_CAPABILITY_OCVC;
+#endif /* CONFIG_OCV */
 	WPA_PUT_LE16(eid, capab);
 	eid += 2;
 
