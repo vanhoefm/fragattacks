@@ -768,6 +768,17 @@ int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 	}
 #endif /* CONFIG_SAE */
 
+#ifdef CONFIG_OCV
+	if ((data.capabilities & WPA_CAPABILITY_OCVC) &&
+	    !(data.capabilities & WPA_CAPABILITY_MFPC)) {
+		wpa_printf(MSG_DEBUG,
+			   "Management frame protection required with OCV, but client did not enable it");
+		return WPA_MGMT_FRAME_PROTECTION_VIOLATION;
+	}
+	wpa_auth_set_ocv(sm, wpa_auth->conf.ocv &&
+			 (data.capabilities & WPA_CAPABILITY_OCVC));
+#endif /* CONFIG_OCV */
+
 	if (wpa_auth->conf.ieee80211w == NO_MGMT_FRAME_PROTECTION ||
 	    !(data.capabilities & WPA_CAPABILITY_MFPC))
 		sm->mgmt_frame_prot = 0;
@@ -1068,6 +1079,23 @@ int wpa_auth_uses_mfp(struct wpa_state_machine *sm)
 {
 	return sm ? sm->mgmt_frame_prot : 0;
 }
+
+
+#ifdef CONFIG_OCV
+
+void wpa_auth_set_ocv(struct wpa_state_machine *sm, int ocv)
+{
+	if (sm)
+		sm->ocv_enabled = ocv;
+}
+
+
+int wpa_auth_uses_ocv(struct wpa_state_machine *sm)
+{
+	return sm ? sm->ocv_enabled : 0;
+}
+
+#endif /* CONFIG_OCV */
 
 
 #ifdef CONFIG_OWE
