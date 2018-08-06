@@ -465,6 +465,17 @@ static int wpa_parse_generic(const u8 *pos, const u8 *end,
 	}
 #endif /* CONFIG_P2P */
 
+#ifdef CONFIG_OCV
+	if (pos[1] >= RSN_SELECTOR_LEN + 1 &&
+	    RSN_SELECTOR_GET(pos + 2) == RSN_KEY_DATA_OCI) {
+		ie->oci = pos + 2 + RSN_SELECTOR_LEN;
+		ie->oci_len = pos[1] - RSN_SELECTOR_LEN;
+		wpa_hexdump(MSG_DEBUG, "WPA: OCI KDE in EAPOL-Key",
+			    pos, pos[1] + 2);
+		return 0;
+	}
+#endif /* CONFIG_OCV */
+
 	return 0;
 }
 

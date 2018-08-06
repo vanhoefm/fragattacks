@@ -454,6 +454,10 @@ struct wpa_ft_ies {
 	size_t tie_len;
 	const u8 *igtk;
 	size_t igtk_len;
+#ifdef CONFIG_OCV
+	const u8 *oci;
+	size_t oci_len;
+#endif /* CONFIG_OCV */
 	const u8 *ric;
 	size_t ric_len;
 	int key_mgmt;
