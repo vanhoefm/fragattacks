@@ -53,6 +53,9 @@ CONFIG_RSN_PREAUTH=y
 # IEEE 802.11w (management frame protection)
 CONFIG_IEEE80211W=y
 
+# Support Operating Channel Validation
+#CONFIG_OCV=y
+
 # Integrated EAP server
 CONFIG_EAP=y
 
