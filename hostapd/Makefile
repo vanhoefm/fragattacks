@@ -280,6 +280,7 @@ endif
 
 ifdef CONFIG_OCV
 CFLAGS += -DCONFIG_OCV
+OBJS += ../src/common/ocv.o
 CONFIG_IEEE80211W=y
 endif
 
