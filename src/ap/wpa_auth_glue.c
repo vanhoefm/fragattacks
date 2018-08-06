@@ -776,6 +776,13 @@ static int hostapd_wpa_auth_send_oui(void *ctx, const u8 *dst, u8 oui_suffix,
 }
 
 
+static int hostapd_channel_info(void *ctx, struct wpa_channel_info *ci)
+{
+	struct hostapd_data *hapd = ctx;
+
+	return hostapd_drv_channel_info(hapd, ci);
+}
+
 #ifdef CONFIG_IEEE80211R_AP
 
 static int hostapd_wpa_auth_send_ft_action(void *ctx, const u8 *dst,
@@ -1189,6 +1196,7 @@ int hostapd_setup_wpa(struct hostapd_data *hapd)
 		.for_each_auth = hostapd_wpa_auth_for_each_auth,
 		.send_ether = hostapd_wpa_auth_send_ether,
 		.send_oui = hostapd_wpa_auth_send_oui,
+		.channel_info = hostapd_channel_info,
 #ifdef CONFIG_IEEE80211R_AP
 		.send_ft_action = hostapd_wpa_auth_send_ft_action,
 		.add_sta = hostapd_wpa_auth_add_sta,

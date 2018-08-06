@@ -145,6 +145,7 @@ struct wpa_state_machine;
 struct rsn_pmksa_cache_entry;
 struct eapol_state_machine;
 struct ft_remote_seq;
+struct wpa_channel_info;
 
 
 struct ft_remote_r0kh {
@@ -265,6 +266,7 @@ struct wpa_auth_callbacks {
 			  size_t data_len);
 	int (*send_oui)(void *ctx, const u8 *dst, u8 oui_suffix, const u8 *data,
 			size_t data_len);
+	int (*channel_info)(void *ctx, struct wpa_channel_info *ci);
 #ifdef CONFIG_IEEE80211R_AP
 	struct wpa_state_machine * (*add_sta)(void *ctx, const u8 *sta_addr);
 	int (*set_vlan)(void *ctx, const u8 *sta_addr,
