@@ -14,7 +14,7 @@ import subprocess
 
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import alloc_fail, fail_test, wait_fail_trigger
+from utils import alloc_fail, fail_test, wait_fail_trigger, HwsimSkip
 from wlantest import Wlantest
 from datetime import datetime
 
@@ -280,6 +280,127 @@ def test_wnm_sleep_mode_rsn_pmf(dev, apdev):
         raise Exception("No connection event received from hostapd")
     check_wnm_sleep_mode_enter_exit(hapd, dev[0])
 
+@remote_compatible
+def test_wnm_sleep_mode_rsn_ocv(dev, apdev):
+    """WNM Sleep Mode - RSN with OCV"""
+    params = hostapd.wpa2_params("test-wnm-rsn", "12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    params["ocv"] = "1"
+    params["time_advertisement"] = "2"
+    params["time_zone"] = "EST5"
+    params["wnm_sleep_mode"] = "1"
+    params["bss_transition"] = "1"
+    try:
+        hapd = hostapd.add_ap(apdev[0], params)
+    except Exception, e:
+        if "Failed to set hostapd parameter ocv" in str(e):
+            raise HwsimSkip("OCV not supported")
+        raise
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+
+    dev[0].connect("test-wnm-rsn", psk="12345678", ieee80211w="2", ocv="1",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
+    ev = hapd.wait_event([ "AP-STA-CONNECTED" ], timeout=5)
+    if ev is None:
+        raise Exception("No connection event received from hostapd")
+    check_wnm_sleep_mode_enter_exit(hapd, dev[0])
+
+    # Check if OCV succeeded or failed
+    ev = dev[0].wait_event([ "OCV failed" ], timeout=1)
+    if ev is not None:
+        raise Exception("OCI verification failed: " + ev)
+
+@remote_compatible
+def test_wnm_sleep_mode_rsn_badocv(dev, apdev):
+    """WNM Sleep Mode - RSN with OCV and bad OCI elements"""
+    ssid = "test-wnm-pmf"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    params["ocv"] = "1"
+    params['wnm_sleep_mode'] = '1'
+    try:
+        hapd = hostapd.add_ap(apdev[0], params)
+    except Exception, e:
+        if "Failed to set hostapd parameter ocv" in str(e):
+            raise HwsimSkip("OCV not supported")
+        raise
+    bssid = apdev[0]['bssid']
+    dev[0].connect(ssid, psk="12345678", key_mgmt="WPA-PSK-SHA256", ocv="1",
+                   proto="WPA2", ieee80211w="2", scan_freq="2412")
+    dev[0].request("WNM_SLEEP enter")
+    time.sleep(0.1)
+
+    msg = { 'fc': MGMT_SUBTYPE_ACTION << 4,
+            'da': bssid,
+            'sa': dev[0].own_addr(),
+            'bssid': bssid }
+
+    logger.debug("WNM Sleep Mode Request - Missing OCI element")
+    msg['payload'] = struct.pack("<BBBBBBBHBB",
+                                 ACTION_CATEG_WNM, WNM_ACT_SLEEP_MODE_REQ, 0,
+                                 WLAN_EID_WNMSLEEP, 4, WNM_SLEEP_MODE_EXIT, 0, 0,
+                                 WLAN_EID_TFS_REQ, 0)
+    mgmt_tx(dev[0], "MGMT_TX {} {} freq=2412 wait_time=200 no_cck=1 action={}".format(msg['da'], msg['bssid'], binascii.hexlify(msg['payload'])))
+    ev = hapd.wait_event([ "OCV failed" ], timeout=5)
+    if ev is None:
+        raise Exception("AP did not report missing OCI element")
+
+    logger.debug("WNM Sleep Mode Request - Bad OCI element")
+    msg['payload'] = struct.pack("<BBBBBBBHBB",
+                                 ACTION_CATEG_WNM, WNM_ACT_SLEEP_MODE_REQ, 0,
+                                 WLAN_EID_WNMSLEEP, 4, WNM_SLEEP_MODE_EXIT, 0,
+                                 0,
+                                 WLAN_EID_TFS_REQ, 0)
+    oci_ie = struct.pack("<BBB", 81, 2, 0)
+    msg['payload'] += struct.pack("<BBB", WLAN_EID_EXTENSION, 1 + len(oci_ie),
+                                  WLAN_EID_EXT_OCV_OCI) + oci_ie
+    mgmt_tx(dev[0], "MGMT_TX {} {} freq=2412 wait_time=200 no_cck=1 action={}".format(msg['da'], msg['bssid'] , binascii.hexlify(msg['payload'])))
+    ev = hapd.wait_event([ "OCV failed" ], timeout=5)
+    if ev is None:
+        raise Exception("AP did not report bad OCI element")
+
+    msg = { 'fc': MGMT_SUBTYPE_ACTION << 4,
+            'da': dev[0].own_addr(),
+            'sa': bssid,
+            'bssid': bssid }
+    hapd.set("ext_mgmt_frame_handling", "1")
+
+    logger.debug("WNM Sleep Mode Response - Missing OCI element")
+    msg['payload'] = struct.pack("<BBBHBBBBHBB",
+                                 ACTION_CATEG_WNM, WNM_ACT_SLEEP_MODE_RESP, 0,
+                                 0,
+                                 WLAN_EID_WNMSLEEP, 4, WNM_SLEEP_MODE_EXIT,
+                                 WNM_STATUS_SLEEP_ACCEPT, 0,
+                                 WLAN_EID_TFS_RESP, 0)
+    dev[0].request("WNM_SLEEP exit")
+    hapd.mgmt_tx(msg)
+    expect_ack(hapd)
+    ev = dev[0].wait_event([ "OCV failed" ], timeout=5)
+    if ev is None:
+        raise Exception("STA did not report missing OCI element")
+
+    logger.debug("WNM Sleep Mode Response - Bad OCI element")
+    msg['payload'] = struct.pack("<BBBHBBBBHBB",
+                                 ACTION_CATEG_WNM, WNM_ACT_SLEEP_MODE_RESP, 0,
+                                 0,
+                                 WLAN_EID_WNMSLEEP, 4, WNM_SLEEP_MODE_EXIT,
+                                 WNM_STATUS_SLEEP_ACCEPT, 0,
+                                 WLAN_EID_TFS_RESP, 0)
+    oci_ie = struct.pack("<BBB", 81, 2, 0)
+    msg['payload'] += struct.pack("<BBB", WLAN_EID_EXTENSION, 1 + len(oci_ie),
+                                  WLAN_EID_EXT_OCV_OCI) + oci_ie
+    hapd.mgmt_tx(msg)
+    expect_ack(hapd)
+    ev = dev[0].wait_event([ "OCV failed" ], timeout=5)
+    if ev is None:
+        raise Exception("STA did not report bad OCI element")
+
 def test_wnm_sleep_mode_rsn_pmf_key_workaround(dev, apdev):
     """WNM Sleep Mode - RSN with PMF and GTK/IGTK workaround"""
     params = hostapd.wpa2_params("test-wnm-rsn", "12345678")
@@ -336,8 +457,11 @@ WNM_ACT_NOTIFICATION_REQ = 26
 WNM_ACT_NOTIFICATION_RESP = 27
 WNM_NOTIF_TYPE_FW_UPGRADE = 0
 WNM_NOTIF_TYPE_WFA = 1
+WLAN_EID_TFS_REQ = 91
 WLAN_EID_TFS_RESP = 92
 WLAN_EID_WNMSLEEP = 93
+WLAN_EID_EXTENSION = 255
+WLAN_EID_EXT_OCV_OCI = 54
 WNM_SLEEP_MODE_ENTER = 0
 WNM_SLEEP_MODE_EXIT = 1
 WNM_STATUS_SLEEP_ACCEPT = 0
@@ -399,6 +523,15 @@ def expect_ack(hapd):
         raise Exception("Missing TX status")
     if "ok=1" not in ev:
         raise Exception("Action frame not acknowledged")
+
+def mgmt_tx(dev, msg):
+    if "FAIL" in dev.request(msg):
+        raise Exception("Failed to send Action frame")
+    ev = dev.wait_event(["MGMT-TX-STATUS"], timeout=10)
+    if ev is None:
+        raise Exception("Timeout on MGMT-TX-STATUS")
+    if "result=SUCCESS" not in ev:
+        raise Exception("Peer did not ack Action frame")
 
 @remote_compatible
 def test_wnm_bss_tm_req(dev, apdev):
