@@ -129,7 +129,7 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
               pairwise_cipher="CCMP", group_cipher="TKIP CCMP", ptk_rekey="0",
               test_connectivity=True, eap_identity="gpsk user", conndev=False,
               force_initial_conn_to_first_ap=False, sha384=False,
-              group_mgmt=None):
+              group_mgmt=None, ocv=None):
     logger.info("Connect to first AP")
 
     copts = {}
@@ -141,6 +141,8 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
     copts["wpa_ptk_rekey"] = ptk_rekey
     if group_mgmt:
         copts["group_mgmt"] = group_mgmt
+    if ocv:
+        copts["ocv"] = ocv
     if eap:
         copts["key_mgmt"] = "FT-EAP-SHA384" if sha384 else "FT-EAP"
         copts["eap"] = "GPSK"
@@ -431,6 +433,27 @@ def run_ap_ft_pmf_bip(dev, apdev, cipher):
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase,
               group_mgmt=cipher)
 
+def test_ap_ft_ocv(dev, apdev):
+    """WPA2-PSK-FT AP with OCV"""
+    ssid = "test-ft"
+    passphrase="12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2"
+    params["ocv"] = "1"
+    try:
+        hapd0 = hostapd.add_ap(apdev[0], params)
+    except Exception, e:
+        if "Failed to set hostapd parameter ocv" in str(e):
+            raise HwsimSkip("OCV not supported")
+        raise
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2"
+    params["ocv"] = "1"
+    hapd1 = hostapd.add_ap(apdev[1], params)
+
+    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, ocv="1")
+
 def test_ap_ft_over_ds(dev, apdev):
     """WPA2-PSK-FT AP over DS"""
     ssid = "test-ft"
@@ -444,6 +467,28 @@ def test_ap_ft_over_ds(dev, apdev):
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True)
     check_mib(dev[0], [ ("dot11RSNAAuthenticationSuiteRequested", "00-0f-ac-4"),
                         ("dot11RSNAAuthenticationSuiteSelected", "00-0f-ac-4") ])
+
+def test_ap_ft_over_ds_ocv(dev, apdev):
+    """WPA2-PSK-FT AP over DS"""
+    ssid = "test-ft"
+    passphrase="12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2"
+    params["ocv"] = "1"
+    try:
+        hapd0 = hostapd.add_ap(apdev[0], params)
+    except Exception, e:
+        if "Failed to set hostapd parameter ocv" in str(e):
+            raise HwsimSkip("OCV not supported")
+        raise
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2"
+    params["ocv"] = "1"
+    hapd1 = hostapd.add_ap(apdev[1], params)
+
+    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
+              ocv="1")
 
 def test_ap_ft_over_ds_disabled(dev, apdev):
     """WPA2-PSK-FT AP over DS disabled"""
