@@ -2774,6 +2774,32 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 				   WLAN_REASON_PREV_AUTH_NOT_VALID);
 		return;
 	}
+#ifdef CONFIG_OCV
+	if (wpa_auth_uses_ocv(sm)) {
+		struct wpa_channel_info ci;
+		int tx_chanwidth;
+		int tx_seg1_idx;
+
+		if (wpa_channel_info(wpa_auth, &ci) != 0) {
+			wpa_auth_logger(wpa_auth, sm->addr, LOGGER_INFO,
+					"Failed to get channel info to validate received OCI in EAPOL-Key 2/4");
+			return;
+		}
+
+		if (get_sta_tx_parameters(sm,
+					  channel_width_to_int(ci.chanwidth),
+					  ci.seg1_idx, &tx_chanwidth,
+					  &tx_seg1_idx) < 0)
+			return;
+
+		if (ocv_verify_tx_params(kde.oci, kde.oci_len, &ci,
+					 tx_chanwidth, tx_seg1_idx) != 0) {
+			wpa_auth_logger(wpa_auth, sm->addr, LOGGER_INFO,
+					ocv_errorstr);
+			return;
+		}
+	}
+#endif /* CONFIG_OCV */
 #ifdef CONFIG_IEEE80211R_AP
 	if (ft && ft_check_msg_2_of_4(wpa_auth, sm, &kde) < 0) {
 		wpa_sta_disconnect(wpa_auth, sm->addr,
@@ -3419,8 +3445,67 @@ SM_STATE(WPA_PTK_GROUP, REKEYNEGOTIATING)
 
 SM_STATE(WPA_PTK_GROUP, REKEYESTABLISHED)
 {
+#ifdef CONFIG_OCV
+	struct wpa_authenticator *wpa_auth = sm->wpa_auth;
+	const u8 *key_data, *mic;
+	struct ieee802_1x_hdr *hdr;
+	struct wpa_eapol_key *key;
+	struct wpa_eapol_ie_parse kde;
+	size_t mic_len;
+	u16 key_data_length;
+#endif /* CONFIG_OCV */
+
 	SM_ENTRY_MA(WPA_PTK_GROUP, REKEYESTABLISHED, wpa_ptk_group);
 	sm->EAPOLKeyReceived = FALSE;
+
+#ifdef CONFIG_OCV
+	mic_len = wpa_mic_len(sm->wpa_key_mgmt, sm->pmk_len);
+
+	/*
+	 * Note: last_rx_eapol_key length fields have already been validated in
+	 * wpa_receive().
+	 */
+	hdr = (struct ieee802_1x_hdr *) sm->last_rx_eapol_key;
+	key = (struct wpa_eapol_key *) (hdr + 1);
+	mic = (u8 *) (key + 1);
+	key_data = mic + mic_len + 2;
+	key_data_length = WPA_GET_BE16(mic + mic_len);
+	if (key_data_length > sm->last_rx_eapol_key_len - sizeof(*hdr) -
+	    sizeof(*key) - mic_len - 2)
+		return;
+
+	if (wpa_parse_kde_ies(key_data, key_data_length, &kde) < 0) {
+		wpa_auth_vlogger(wpa_auth, sm->addr, LOGGER_INFO,
+				 "received EAPOL-Key group msg 2/2 with invalid Key Data contents");
+		return;
+	}
+
+	if (wpa_auth_uses_ocv(sm)) {
+		struct wpa_channel_info ci;
+		int tx_chanwidth;
+		int tx_seg1_idx;
+
+		if (wpa_channel_info(wpa_auth, &ci) != 0) {
+			wpa_auth_logger(wpa_auth, sm->addr, LOGGER_INFO,
+					"Failed to get channel info to validate received OCI in EAPOL-Key group 1/2");
+			return;
+		}
+
+		if (get_sta_tx_parameters(sm,
+					  channel_width_to_int(ci.chanwidth),
+					  ci.seg1_idx, &tx_chanwidth,
+					  &tx_seg1_idx) < 0)
+			return;
+
+		if (ocv_verify_tx_params(kde.oci, kde.oci_len, &ci,
+					 tx_chanwidth, tx_seg1_idx) != 0) {
+			wpa_auth_logger(wpa_auth, sm->addr, LOGGER_INFO,
+					ocv_errorstr);
+			return;
+		}
+	}
+#endif /* CONFIG_OCV */
+
 	if (sm->GUpdateStationKeys)
 		sm->group->GKeyDoneStations--;
 	sm->GUpdateStationKeys = FALSE;

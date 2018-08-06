@@ -1447,6 +1447,26 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 	}
 #endif /* CONFIG_P2P */
 
+#ifdef CONFIG_OCV
+	if (wpa_sm_ocv_enabled(sm)) {
+		struct wpa_channel_info ci;
+
+		if (wpa_sm_channel_info(sm, &ci) != 0) {
+			wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
+				"Failed to get channel info to validate received OCI in EAPOL-Key 3/4");
+			return;
+		}
+
+		if (ocv_verify_tx_params(ie.oci, ie.oci_len, &ci,
+					 channel_width_to_int(ci.chanwidth),
+					 ci.seg1_idx) != 0) {
+			wpa_msg(sm->ctx->msg_ctx, MSG_WARNING, "%s",
+				ocv_errorstr);
+			return;
+		}
+	}
+#endif /* CONFIG_OCV */
+
 	if (wpa_supplicant_send_4_of_4(sm, sm->bssid, key, ver, key_info,
 				       &sm->ptk) < 0) {
 		goto failed;
@@ -1539,6 +1559,26 @@ static int wpa_supplicant_process_1_of_2_rsn(struct wpa_sm *sm,
 		return -1;
 	}
 	maxkeylen = gd->gtk_len = ie.gtk_len - 2;
+
+#ifdef CONFIG_OCV
+	if (wpa_sm_ocv_enabled(sm)) {
+		struct wpa_channel_info ci;
+
+		if (wpa_sm_channel_info(sm, &ci) != 0) {
+			wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
+				"Failed to get channel info to validate received OCI in EAPOL-Key group msg 1/2");
+			return -1;
+		}
+
+		if (ocv_verify_tx_params(ie.oci, ie.oci_len, &ci,
+					 channel_width_to_int(ci.chanwidth),
+					 ci.seg1_idx) != 0) {
+			wpa_msg(sm->ctx->msg_ctx, MSG_WARNING, "%s",
+				ocv_errorstr);
+			return -1;
+		}
+	}
+#endif /* CONFIG_OCV */
 
 	if (wpa_supplicant_check_group_cipher(sm, sm->group_cipher,
 					      gd->gtk_len, maxkeylen,
