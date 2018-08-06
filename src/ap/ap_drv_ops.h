@@ -356,4 +356,12 @@ static inline int hostapd_drv_stop_ap(struct hostapd_data *hapd)
 	return hapd->driver->stop_ap(hapd->drv_priv);
 }
 
+static inline int hostapd_drv_channel_info(struct hostapd_data *hapd,
+					   struct wpa_channel_info *ci)
+{
+	if (!hapd->driver || !hapd->driver->channel_info)
+		return -1;
+	return hapd->driver->channel_info(hapd->drv_priv, ci);
+}
+
 #endif /* AP_DRV_OPS */

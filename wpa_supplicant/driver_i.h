@@ -492,6 +492,14 @@ static inline int wpa_drv_signal_poll(struct wpa_supplicant *wpa_s,
 	return -1;
 }
 
+static inline int wpa_drv_channel_info(struct wpa_supplicant *wpa_s,
+				       struct wpa_channel_info *ci)
+{
+	if (wpa_s->driver->channel_info)
+		return wpa_s->driver->channel_info(wpa_s->drv_priv, ci);
+	return -1;
+}
+
 static inline int wpa_drv_pktcnt_poll(struct wpa_supplicant *wpa_s,
 				      struct hostap_sta_driver_data *sta)
 {

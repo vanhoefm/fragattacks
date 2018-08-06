@@ -1943,6 +1943,26 @@ struct wpa_signal_info {
 };
 
 /**
+ * struct wpa_channel_info - Information about the current channel
+ * @frequency: Center frequency of the primary 20 MHz channel
+ * @chanwidth: Width of the current operating channel
+ * @sec_channel: Location of the secondary 20 MHz channel (either +1 or -1).
+ *	This field is only filled in when using a 40 MHz channel.
+ * @center_frq1: Center frequency of frequency segment 0
+ * @center_frq2: Center frequency of frequency segment 1 (for 80+80 channels)
+ * @seg1_idx: Frequency segment 1 index when using a 80+80 channel. This is
+ *	derived from center_frq2 for convenience.
+ */
+struct wpa_channel_info {
+	u32 frequency;
+	enum chan_width chanwidth;
+	int sec_channel;
+	int center_frq1;
+	int center_frq2;
+	u8 seg1_idx;
+};
+
+/**
  * struct beacon_data - Beacon data
  * @head: Head portion of Beacon frame (before TIM IE)
  * @tail: Tail portion of Beacon frame (after TIM IE)
@@ -3376,6 +3396,14 @@ struct wpa_driver_ops {
 	 * @signal_info: Connection info structure
 	 */
 	int (*signal_poll)(void *priv, struct wpa_signal_info *signal_info);
+
+	/**
+	 * channel_info - Get parameters of the current operating channel
+	 * @priv: Private driver interface data
+	 * @channel_info: Channel info structure
+	 * Returns: 0 on success, negative (<0) on failure
+	 */
+	int (*channel_info)(void *priv, struct wpa_channel_info *channel_info);
 
 	/**
 	 * set_authmode - Set authentication algorithm(s) for static WEP
