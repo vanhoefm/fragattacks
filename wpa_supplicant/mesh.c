@@ -93,6 +93,9 @@ static struct mesh_conf * mesh_config_create(struct wpa_supplicant *wpa_s,
 			conf->ieee80211w = NO_MGMT_FRAME_PROTECTION;
 	}
 #endif /* CONFIG_IEEE80211W */
+#ifdef CONFIG_OCV
+	conf->ocv = ssid->ocv;
+#endif /* CONFIG_OCV */
 
 	cipher = wpa_pick_pairwise_cipher(ssid->pairwise_cipher, 0);
 	if (cipher < 0 || cipher == WPA_CIPHER_TKIP) {

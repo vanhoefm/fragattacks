@@ -42,6 +42,7 @@ struct mesh_conf {
 #define MESH_CONF_SEC_AMPE BIT(2)
 	unsigned int security;
 	enum mfp_options ieee80211w;
+	int ocv;
 	unsigned int pairwise_cipher;
 	unsigned int group_cipher;
 	unsigned int mgmt_group_cipher;
