@@ -18,6 +18,7 @@ struct wpa_sm;
 struct eapol_sm;
 struct wpa_config_blob;
 struct hostapd_freq_params;
+struct wpa_channel_info;
 
 struct wpa_sm_ctx {
 	void *ctx; /* pointer to arbitrary upper level context */
@@ -82,6 +83,7 @@ struct wpa_sm_ctx {
 	int (*key_mgmt_set_pmk)(void *ctx, const u8 *pmk, size_t pmk_len);
 	void (*fils_hlp_rx)(void *ctx, const u8 *dst, const u8 *src,
 			    const u8 *pkt, size_t pkt_len);
+	int (*channel_info)(void *ctx, struct wpa_channel_info *ci);
 };
 
 

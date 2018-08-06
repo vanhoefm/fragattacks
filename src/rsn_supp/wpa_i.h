@@ -395,6 +395,14 @@ static inline void wpa_sm_fils_hlp_rx(struct wpa_sm *sm,
 		sm->ctx->fils_hlp_rx(sm->ctx->ctx, dst, src, pkt, pkt_len);
 }
 
+static inline int wpa_sm_channel_info(struct wpa_sm *sm,
+				      struct wpa_channel_info *ci)
+{
+	if (!sm->ctx->channel_info)
+		return -1;
+	return sm->ctx->channel_info(sm->ctx->ctx, ci);
+}
+
 
 int wpa_eapol_key_send(struct wpa_sm *sm, struct wpa_ptk *ptk,
 		       int ver, const u8 *dest, u16 proto,
