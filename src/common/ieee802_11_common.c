@@ -1699,6 +1699,27 @@ const struct oper_class_map * get_oper_class(const char *country, u8 op_class)
 }
 
 
+int oper_class_bw_to_int(const struct oper_class_map *map)
+{
+	switch (map->bw) {
+	case BW20:
+		return 20;
+	case BW40PLUS:
+	case BW40MINUS:
+		return 40;
+	case BW80:
+		return 80;
+	case BW80P80:
+	case BW160:
+		return 160;
+	case BW2160:
+		return 2160;
+	default:
+		return 0;
+	}
+}
+
+
 int ieee802_11_parse_candidate_list(const char *pos, u8 *nei_rep,
 				    size_t nei_rep_len)
 {

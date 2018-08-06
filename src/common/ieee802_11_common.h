@@ -200,6 +200,7 @@ struct country_op_class {
 u8 country_to_global_op_class(const char *country, u8 op_class);
 
 const struct oper_class_map * get_oper_class(const char *country, u8 op_class);
+int oper_class_bw_to_int(const struct oper_class_map *map);
 
 int ieee802_11_parse_candidate_list(const char *pos, u8 *nei_rep,
 				    size_t nei_rep_len);

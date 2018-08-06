@@ -5562,6 +5562,8 @@ const char * event_to_string(enum wpa_event_type event);
 /* Convert chan_width to a string for logging and control interfaces */
 const char * channel_width_to_string(enum chan_width width);
 
+int channel_width_to_int(enum chan_width width);
+
 int ht_supported(const struct hostapd_hw_modes *mode);
 int vht_supported(const struct hostapd_hw_modes *mode);
 

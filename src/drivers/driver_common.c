@@ -115,6 +115,25 @@ const char * channel_width_to_string(enum chan_width width)
 }
 
 
+int channel_width_to_int(enum chan_width width)
+{
+	switch (width) {
+	case CHAN_WIDTH_20_NOHT:
+	case CHAN_WIDTH_20:
+		return 20;
+	case CHAN_WIDTH_40:
+		return 40;
+	case CHAN_WIDTH_80:
+		return 80;
+	case CHAN_WIDTH_80P80:
+	case CHAN_WIDTH_160:
+		return 160;
+	default:
+		return 0;
+	}
+}
+
+
 int ht_supported(const struct hostapd_hw_modes *mode)
 {
 	if (!(mode->flags & HOSTAPD_MODE_FLAG_HT_INFO_KNOWN)) {
