@@ -33,5 +33,8 @@ int ocv_derive_all_parameters(struct oci_info *oci);
 int ocv_insert_oci(struct wpa_channel_info *ci, u8 **argpos);
 int ocv_insert_oci_kde(struct wpa_channel_info *ci, u8 **argpos);
 int ocv_insert_extended_oci(struct wpa_channel_info *ci, u8 *pos);
+int ocv_verify_tx_params(const u8 *oci_ie, size_t oci_ie_len,
+			 struct wpa_channel_info *ci, int tx_chanwidth,
+			 int tx_seg1_idx);
 
 #endif /* OCV_H */
