@@ -2485,6 +2485,10 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 		if (resp != WLAN_STATUS_SUCCESS)
 			return resp;
 
+		resp = copy_sta_vht_oper(hapd, sta, elems.vht_operation);
+		if (resp != WLAN_STATUS_SUCCESS)
+			return resp;
+
 		resp = set_sta_vht_opmode(hapd, sta, elems.vht_opmode_notif);
 		if (resp != WLAN_STATUS_SUCCESS)
 			return resp;

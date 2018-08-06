@@ -699,6 +699,7 @@ static struct sta_info * mesh_mpm_add_peer(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_IEEE80211AC
 	copy_sta_vht_capab(data, sta, elems->vht_capabilities);
+	copy_sta_vht_oper(data, sta, elems->vht_operation);
 	set_sta_vht_opmode(data, sta, elems->vht_opmode_notif);
 #endif /* CONFIG_IEEE80211AC */
 

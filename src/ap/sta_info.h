@@ -162,6 +162,7 @@ struct sta_info {
 
 	struct ieee80211_ht_capabilities *ht_capabilities;
 	struct ieee80211_vht_capabilities *vht_capabilities;
+	struct ieee80211_vht_operation *vht_operation;
 	u8 vht_opmode;
 
 #ifdef CONFIG_IEEE80211W
