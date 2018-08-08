@@ -6545,7 +6545,7 @@ static int i802_set_wds_sta(void *priv, const u8 *addr, int aid, int val,
 			event.wds_sta_interface.sta_addr = addr;
 			event.wds_sta_interface.ifname = name;
 			event.wds_sta_interface.istatus = INTERFACE_ADDED;
-			wpa_supplicant_event(drv->ctx,
+			wpa_supplicant_event(bss->ctx,
 					     EVENT_WDS_STA_INTERFACE_STATUS,
 					     &event);
 		}
@@ -6565,7 +6565,7 @@ static int i802_set_wds_sta(void *priv, const u8 *addr, int aid, int val,
 		event.wds_sta_interface.sta_addr = addr;
 		event.wds_sta_interface.ifname = name;
 		event.wds_sta_interface.istatus = INTERFACE_REMOVED;
-		wpa_supplicant_event(drv->ctx, EVENT_WDS_STA_INTERFACE_STATUS,
+		wpa_supplicant_event(bss->ctx, EVENT_WDS_STA_INTERFACE_STATUS,
 				     &event);
 		return 0;
 	}
