@@ -50,7 +50,10 @@ enum qca_radiotap_vendor_ids {
  *
  * @QCA_NL80211_VENDOR_SUBCMD_NAN: NAN command/event which is used to pass
  *	NAN Request/Response and NAN Indication messages. These messages are
- *	interpreted between the framework and the firmware component.
+ *	interpreted between the framework and the firmware component. While
+ *	sending the command from userspace to the driver, payload is not
+ *	encapsulated inside any attribute. Attribute QCA_WLAN_VENDOR_ATTR_NAN
+ *	is used when receiving vendor events in userspace from the driver.
  *
  * @QCA_NL80211_VENDOR_SUBCMD_KEY_MGMT_SET_KEY: Set key operation that can be
  *	used to configure PMK to the driver even when not connected. This can
@@ -618,7 +621,10 @@ enum qca_wlan_vendor_attr {
 	QCA_WLAN_VENDOR_ATTR_INVALID = 0,
 	/* used by QCA_NL80211_VENDOR_SUBCMD_DFS_CAPABILITY */
 	QCA_WLAN_VENDOR_ATTR_DFS     = 1,
-	/* used by QCA_NL80211_VENDOR_SUBCMD_NAN */
+	/* Used only when driver sends vendor events to the userspace under the
+	 * command QCA_NL80211_VENDOR_SUBCMD_NAN. Not used when userspace sends
+	 * commands to the driver.
+	 */
 	QCA_WLAN_VENDOR_ATTR_NAN     = 2,
 	/* used by QCA_NL80211_VENDOR_SUBCMD_STATS_EXT */
 	QCA_WLAN_VENDOR_ATTR_STATS_EXT     = 3,
