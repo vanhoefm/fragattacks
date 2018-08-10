@@ -3988,6 +3988,7 @@ void dpp_configuration_free(struct dpp_configuration *conf)
 	if (!conf)
 		return;
 	str_clear_free(conf->passphrase);
+	os_free(conf->group_id);
 	bin_clear_free(conf, sizeof(*conf));
 }
 
@@ -4134,6 +4135,9 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth, int ap,
 		extra_len += os_strlen(auth->groups_override);
 #endif /* CONFIG_TESTING_OPTIONS */
 
+	if (conf->group_id)
+		extra_len += os_strlen(conf->group_id);
+
 	/* Connector (JSON dppCon object) */
 	dppcon = wpabuf_alloc(extra_len + 2 * auth->curve->prime_len * 4 / 3);
 	if (!dppcon)
@@ -4152,7 +4156,8 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth, int ap,
 		goto skip_groups;
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
-	wpabuf_put_str(dppcon, "{\"groups\":[{\"groupId\":\"*\",");
+	wpabuf_printf(dppcon, "{\"groups\":[{\"groupId\":\"%s\",",
+		      conf->group_id ? conf->group_id : "*");
 	wpabuf_printf(dppcon, "\"netRole\":\"%s\"}],", ap ? "ap" : "sta");
 #ifdef CONFIG_TESTING_OPTIONS
 skip_groups:

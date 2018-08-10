@@ -153,6 +153,7 @@ struct dpp_configuration {
 	os_time_t netaccesskey_expiry;
 
 	/* TODO: groups */
+	char *group_id;
 
 	/* For legacy configuration */
 	char *passphrase;

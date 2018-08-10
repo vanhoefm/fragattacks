@@ -518,6 +518,7 @@ static void hostapd_dpp_set_configurator(struct hostapd_data *hapd,
 	size_t pass_len = 0;
 	u8 psk[PMK_LEN];
 	int psk_set = 0;
+	char *group_id = NULL;
 
 	if (!cmd)
 		return;
@@ -553,6 +554,20 @@ static void hostapd_dpp_set_configurator(struct hostapd_data *hapd,
 		psk_set = 1;
 	}
 
+	pos = os_strstr(cmd, " group_id=");
+	if (pos) {
+		size_t group_id_len;
+
+		pos += 10;
+		end = os_strchr(pos, ' ');
+		group_id_len = end ? (size_t) (end - pos) : os_strlen(pos);
+		group_id = os_malloc(group_id_len + 1);
+		if (!group_id)
+			goto fail;
+		os_memcpy(group_id, pos, group_id_len);
+		group_id[group_id_len] = '\0';
+	}
+
 	if (os_strstr(cmd, " conf=sta-")) {
 		conf_sta = os_zalloc(sizeof(struct dpp_configuration));
 		if (!conf_sta)
@@ -579,6 +594,10 @@ static void hostapd_dpp_set_configurator(struct hostapd_data *hapd,
 			conf_sta->akm = DPP_AKM_DPP;
 		} else {
 			goto fail;
+		}
+		if (os_strstr(cmd, " group_id=")) {
+			conf_sta->group_id = group_id;
+			group_id = NULL;
 		}
 	}
 
@@ -608,6 +627,10 @@ static void hostapd_dpp_set_configurator(struct hostapd_data *hapd,
 			conf_ap->akm = DPP_AKM_DPP;
 		} else {
 			goto fail;
+		}
+		if (os_strstr(cmd, " group_id=")) {
+			conf_ap->group_id = group_id;
+			group_id = NULL;
 		}
 	}
 
@@ -639,12 +662,14 @@ static void hostapd_dpp_set_configurator(struct hostapd_data *hapd,
 	auth->conf_sta = conf_sta;
 	auth->conf_ap = conf_ap;
 	auth->conf = conf;
+	os_free(group_id);
 	return;
 
 fail:
 	wpa_printf(MSG_DEBUG, "DPP: Failed to set configurator parameters");
 	dpp_configuration_free(conf_sta);
 	dpp_configuration_free(conf_ap);
+	os_free(group_id);
 }
 
 
