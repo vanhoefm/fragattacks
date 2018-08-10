@@ -2026,8 +2026,18 @@ SM_STATE(WPA_PTK, PTKSTART)
 	wpa_auth_logger(sm->wpa_auth, sm->addr, LOGGER_DEBUG,
 			"sending 1/4 msg of 4-Way Handshake");
 	/*
-	 * TODO: Could add PMKID even with WPA2-PSK, but only if there is only
-	 * one possible PSK for this STA.
+	 * For infrastructure BSS cases, it is better for the AP not to include
+	 * the PMKID KDE in EAPOL-Key msg 1/4 since it could be used to initiate
+	 * offline search for the passphrase/PSK without having to be able to
+	 * capture a 4-way handshake from a STA that has access to the network.
+	 *
+	 * For IBSS cases, addition of PMKID KDE could be considered even with
+	 * WPA2-PSK cases that use multiple PSKs, but only if there is a single
+	 * possible PSK for this STA. However, this should not be done unless
+	 * there is support for using that information on the supplicant side.
+	 * The concern about exposing PMKID unnecessarily in infrastructure BSS
+	 * cases would also apply here, but at least in the IBSS case, this
+	 * would cover a potential real use case.
 	 */
 	if (sm->wpa == WPA_VERSION_WPA2 &&
 	    (wpa_key_mgmt_wpa_ieee8021x(sm->wpa_key_mgmt) ||
