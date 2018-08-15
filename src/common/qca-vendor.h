@@ -5442,10 +5442,10 @@ enum qca_wlan_vendor_attr_wifi_test_config {
 	 */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_ADD_DEL_BA_SESSION = 7,
 
-	/* 8-bit unsigned value to configure the buffer size in addba
+	/* 16-bit unsigned value to configure the buffer size in addba
 	 * request and response frames.
 	 * This attribute is used to configure the testbed device.
-	 * The range of the value is 0 to 255.
+	 * The range of the value is 0 to 256.
 	 */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_ADDBA_BUFF_SIZE = 8,
 
