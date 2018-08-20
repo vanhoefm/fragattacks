@@ -38,6 +38,7 @@
 #include "mbo_ap.h"
 #include "dpp_hostapd.h"
 #include "fils_hlp.h"
+#include "neighbor_db.h"
 
 
 #ifdef CONFIG_FILS
@@ -744,6 +745,7 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 #ifdef NEED_AP_MLME
 	int channel, chwidth, is_dfs;
 	u8 seg0_idx = 0, seg1_idx = 0;
+	size_t i;
 
 	hostapd_logger(hapd, NULL, HOSTAPD_MODULE_IEEE80211,
 		       HOSTAPD_LEVEL_INFO,
@@ -826,6 +828,9 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_CSA_FINISHED
 			"freq=%d dfs=%d", freq, is_dfs);
 	}
+
+	for (i = 0; i < hapd->iface->num_bss; i++)
+		hostapd_neighbor_set_own_report(hapd->iface->bss[i]);
 #endif /* NEED_AP_MLME */
 }
 
