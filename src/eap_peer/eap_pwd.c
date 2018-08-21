@@ -696,7 +696,7 @@ eap_pwd_perform_confirm_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 				 const struct wpabuf *reqData,
 				 const u8 *payload, size_t payload_len)
 {
-	struct crypto_hash *hash;
+	struct crypto_hash *hash = NULL;
 	u32 cs;
 	u16 grp;
 	u8 conf[SHA256_MAC_LEN], *cruft = NULL, *ptr;
@@ -783,6 +783,7 @@ eap_pwd_perform_confirm_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 
 	/* random function fin */
 	eap_pwd_h_final(hash, conf);
+	hash = NULL;
 
 	ptr = (u8 *) payload;
 	if (os_memcmp_const(conf, ptr, SHA256_MAC_LEN)) {
@@ -836,6 +837,7 @@ eap_pwd_perform_confirm_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 
 	/* all done */
 	eap_pwd_h_final(hash, conf);
+	hash = NULL;
 
 	if (compute_keys(data->grp, data->k,
 			 data->my_scalar, data->server_scalar, conf, ptr,
@@ -860,6 +862,10 @@ fin:
 	} else {
 		eap_pwd_state(data, SUCCESS_ON_FRAG_COMPLETION);
 	}
+
+	/* clean allocated memory */
+	if (hash)
+		eap_pwd_h_final(hash, conf);
 }
 
 
