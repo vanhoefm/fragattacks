@@ -123,3 +123,27 @@ def test_wep_ht_vht(dev, apdev):
             hapd.request("DISABLE")
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].flush_scan_cache()
+
+def test_wep_ifdown(dev, apdev):
+    """AP with WEP and external ifconfig down"""
+    hapd = hostapd.add_ap(apdev[0],
+                          { "ssid": "wep-open",
+                            "wep_key0": '"hello"' })
+    dev[0].flush_scan_cache()
+    id = dev[0].connect("wep-open", key_mgmt="NONE", wep_key0='"hello"',
+                        scan_freq="2412")
+    hwsim_utils.test_connectivity(dev[0], hapd)
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+
+    hapd.cmd_execute(['ip', 'link', 'set', 'dev', apdev[0]['ifname'], 'down'])
+    ev = hapd.wait_event(["INTERFACE-DISABLED"], timeout=10)
+    if ev is None:
+        raise Exception("No INTERFACE-DISABLED event")
+    hapd.cmd_execute(['ip', 'link', 'set', 'dev', apdev[0]['ifname'], 'up'])
+    ev = hapd.wait_event(["INTERFACE-ENABLED"], timeout=10)
+    if ev is None:
+        raise Exception("No INTERFACE-ENABLED event")
+    dev[0].select_network(id, freq=2412)
+    dev[0].wait_connected()
+    hwsim_utils.test_connectivity(dev[0], hapd)
