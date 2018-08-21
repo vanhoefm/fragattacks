@@ -1429,3 +1429,38 @@ def test_ap_ht40_plus_minus2(dev, apdev):
         raise Exception("Unexpected secondary channel: " + sec)
 
     dev[0].connect("test-ht40", key_mgmt="NONE", scan_freq=freq)
+
+def test_ap_ht40_disable(dev, apdev):
+    """HT40 disabling"""
+    clear_scan_cache(apdev[0])
+    params = { "ssid": "test-ht40",
+               "channel": "6",
+               "ht_capab": "[HT40-]"}
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    sec = hapd.get_status_field("secondary_channel")
+    if sec != "-1":
+        raise Exception("Unexpected secondary channel: " + sec)
+
+    id = dev[0].connect("test-ht40", key_mgmt="NONE", scan_freq="2437")
+    sig = dev[0].request("SIGNAL_POLL").splitlines()
+    logger.info("SIGNAL_POLL: " + str(sig))
+    if "WIDTH=40 MHz" not in sig:
+        raise Exception("Station did not report 40 MHz bandwidth")
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+
+    hapd.disable()
+    hapd.set("ht_capab", "")
+    hapd.enable()
+    sec = hapd.get_status_field("secondary_channel")
+    if sec != "0":
+        raise Exception("Unexpected secondary channel(2): " + sec)
+
+    dev[0].flush_scan_cache()
+    dev[0].select_network(id, freq=2437)
+    dev[0].wait_connected()
+    sig = dev[0].request("SIGNAL_POLL").splitlines()
+    logger.info("SIGNAL_POLL: " + str(sig))
+    if "WIDTH=20 MHz" not in sig:
+        raise Exception("Station did not report 20 MHz bandwidth")
