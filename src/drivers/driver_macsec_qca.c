@@ -452,8 +452,8 @@ static int macsec_qca_create_receive_sc(void *priv, struct receive_sc *sc,
 	os_memset(&entry, 0, sizeof(entry));
 
 	os_memcpy(entry.sci, sci_addr, ETH_ALEN);
-	entry.sci[6] = (sci_port >> 8) & 0xf;
-	entry.sci[7] = sci_port & 0xf;
+	entry.sci[6] = (sci_port >> 8) & 0xff;
+	entry.sci[7] = sci_port & 0xff;
 	entry.sci_mask = 0xf;
 
 	entry.valid = 1;
@@ -634,8 +634,8 @@ static int macsec_qca_create_transmit_sc(void *priv, struct transmit_sc *sc,
 	entry.channel = channel;
 
 	os_memcpy(psci, sc->sci.addr, ETH_ALEN);
-	psci[6] = (sci_port >> 8) & 0xf;
-	psci[7] = sci_port & 0xf;
+	psci[6] = (sci_port >> 8) & 0xff;
+	psci[7] = sci_port & 0xff;
 
 	ret += nss_macsec_secy_tx_class_lut_set(drv->secy_id, channel, &entry);
 	ret += nss_macsec_secy_tx_sc_create(drv->secy_id, channel, psci, 8);
