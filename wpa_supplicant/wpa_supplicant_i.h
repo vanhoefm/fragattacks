@@ -456,6 +456,7 @@ struct wpa_bss_tmp_disallowed {
 
 struct beacon_rep_data {
 	u8 token;
+	u8 last_indication;
 	struct wpa_driver_scan_params scan_params;
 	u8 ssid[SSID_MAX_LEN];
 	size_t ssid_len;

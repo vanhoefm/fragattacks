@@ -392,16 +392,65 @@ static void wpas_rrm_send_msr_report_mpdu(struct wpa_supplicant *wpa_s,
 }
 
 
+static int wpas_rrm_beacon_rep_update_last_frame(u8 *pos, size_t len)
+{
+	struct rrm_measurement_report_element *msr_rep;
+	u8 *end = pos + len;
+	u8 *msr_rep_end;
+
+	while (end - pos >= (int) sizeof(*msr_rep)) {
+		msr_rep = (struct rrm_measurement_report_element *) pos;
+		msr_rep_end = pos + msr_rep->len + 2;
+
+		if (msr_rep->eid != WLAN_EID_MEASURE_REPORT ||
+		    msr_rep_end > end) {
+			/* Should not happen. This indicates a bug. */
+			wpa_printf(MSG_ERROR,
+				   "RRM: non-measurement report element in measurement report frame");
+			return -1;
+		}
+
+		if (msr_rep->type == MEASURE_TYPE_BEACON) {
+			struct rrm_measurement_beacon_report *rep;
+			u8 *subelem;
+
+			rep = (struct rrm_measurement_beacon_report *)
+				msr_rep->variable;
+			subelem = rep->variable;
+			while (subelem + 2 < msr_rep_end &&
+			       subelem[0] !=
+			       WLAN_BEACON_REPORT_SUBELEM_LAST_INDICATION)
+				subelem += 2 + subelem[1];
+
+			if (subelem + 2 < msr_rep_end &&
+			    subelem[0] ==
+			    WLAN_BEACON_REPORT_SUBELEM_LAST_INDICATION &&
+			    subelem[1] == 1 &&
+			    subelem +
+			    BEACON_REPORT_LAST_INDICATION_SUBELEM_LEN <= end)
+				subelem[2] = 1;
+		}
+
+		pos += pos[1] + 2;
+	}
+
+	return 0;
+}
+
+
 static void wpas_rrm_send_msr_report(struct wpa_supplicant *wpa_s,
 				     struct wpabuf *buf)
 {
 	int len = wpabuf_len(buf);
-	const u8 *pos = wpabuf_head_u8(buf), *next = pos;
+	u8 *pos = wpabuf_mhead_u8(buf), *next = pos;
 
 #define MPDU_REPORT_LEN (int) (IEEE80211_MAX_MMPDU_SIZE - IEEE80211_HDRLEN - 3)
 
 	while (len) {
 		int send_len = (len > MPDU_REPORT_LEN) ? next - pos : len;
+
+		if (send_len == len)
+			wpas_rrm_beacon_rep_update_last_frame(pos, len);
 
 		if (send_len == len ||
 		    (send_len + next[1] + 2) > MPDU_REPORT_LEN) {
@@ -796,12 +845,14 @@ static int wpas_add_beacon_rep_elem(struct beacon_rep_data *data,
 {
 	int ret;
 	u8 *buf, *pos;
+	u32 subelems_len = REPORTED_FRAME_BODY_SUBELEM_LEN +
+		(data->last_indication ?
+		 BEACON_REPORT_LAST_INDICATION_SUBELEM_LEN : 0);
 
 	/* Maximum element length: Beacon Report element + Reported Frame Body
 	 * subelement + all IEs of the reported Beacon frame + Reported Frame
 	 * Body Fragment ID subelement */
-	buf = os_malloc(sizeof(*rep) + 14 + *ie_len +
-			REPORTED_FRAME_BODY_SUBELEM_LEN);
+	buf = os_malloc(sizeof(*rep) + 14 + *ie_len + subelems_len);
 	if (!buf)
 		return -1;
 
@@ -832,11 +883,20 @@ static int wpas_add_beacon_rep_elem(struct beacon_rep_data *data,
 	else
 		pos[3] &= ~REPORTED_FRAME_BODY_MORE_FRAGMENTS;
 
+	pos += REPORTED_FRAME_BODY_SUBELEM_LEN;
+
+	if (data->last_indication) {
+		pos[0] = WLAN_BEACON_REPORT_SUBELEM_LAST_INDICATION;
+		pos[1] = 1;
+
+		/* This field will be updated later if this is the last frame */
+		pos[2] = 0;
+	}
+
 	ret = wpas_rrm_report_elem(wpa_buf, data->token,
 				   MEASUREMENT_REPORT_MODE_ACCEPT,
 				   MEASURE_TYPE_BEACON, buf,
-				   ret + sizeof(*rep) +
-				   REPORTED_FRAME_BODY_SUBELEM_LEN);
+				   ret + sizeof(*rep) + subelems_len);
 out:
 	os_free(buf);
 	return ret;
@@ -1050,6 +1110,16 @@ static int wpas_rm_handle_beacon_req_subelem(struct wpa_supplicant *wpa_s,
 		break;
 	case WLAN_BEACON_REQUEST_SUBELEM_AP_CHANNEL:
 		/* Skip - it will be processed when freqs are added */
+		break;
+	case WLAN_BEACON_REQUEST_SUBELEM_LAST_INDICATION:
+		if (slen != 1) {
+			wpa_printf(MSG_DEBUG,
+				   "Beacon request: Invalid last indication request subelement length: %u",
+				   slen);
+			return -1;
+		}
+
+		data->last_indication = subelem[0];
 		break;
 	default:
 		wpa_printf(MSG_DEBUG,

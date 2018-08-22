@@ -1851,11 +1851,14 @@ enum beacon_report_mode {
 };
 
 /* IEEE Std 802.11-2016, Table 9-88 - Beacon Request subelement IDs */
+/* IEEE P802.11-REVmd/D2.0, Table 9-106 - Optional subelement IDs for
+ * Beacon request */
 #define WLAN_BEACON_REQUEST_SUBELEM_SSID	0
 #define WLAN_BEACON_REQUEST_SUBELEM_INFO	1 /* Beacon Reporting */
 #define WLAN_BEACON_REQUEST_SUBELEM_DETAIL	2 /* Reporting Detail */
 #define WLAN_BEACON_REQUEST_SUBELEM_REQUEST	10
 #define WLAN_BEACON_REQUEST_SUBELEM_AP_CHANNEL	51 /* AP Channel Report */
+#define WLAN_BEACON_REQUEST_SUBELEM_LAST_INDICATION	164
 #define WLAN_BEACON_REQUEST_SUBELEM_VENDOR	221
 
 /*
@@ -1909,12 +1912,16 @@ struct rrm_measurement_beacon_report {
  * Beacon report */
 #define WLAN_BEACON_REPORT_SUBELEM_FRAME_BODY	1
 #define WLAN_BEACON_REPORT_SUBELEM_FRAME_BODY_FRAGMENT_ID	2
+#define WLAN_BEACON_REPORT_SUBELEM_LAST_INDICATION	164
 #define WLAN_BEACON_REPORT_SUBELEM_VENDOR	221
 
 /* IEEE P802.11-REVmd/D2.0, Table 9-232 - Data field format of the
  * Reported Frame Body Fragment ID subelement */
 #define REPORTED_FRAME_BODY_SUBELEM_LEN		4
 #define REPORTED_FRAME_BODY_MORE_FRAGMENTS	BIT(7)
+
+/* IEEE P802.11-REVmd/D2.0, 9.4.2.21.7 - Beacon report  */
+#define BEACON_REPORT_LAST_INDICATION_SUBELEM_LEN	3
 
 /* IEEE Std 802.11ad-2012 - Multi-band element */
 struct multi_band_ie {
