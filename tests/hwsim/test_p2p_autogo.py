@@ -887,11 +887,11 @@ def test_autogo_interworking(dev):
         dev[0].set("go_interworking", "0")
 
 def run_autogo_interworking(dev):
-    dev[0].set("go_interworking", "1")
-    dev[0].set("go_access_network_type", "1")
-    dev[0].set("go_internet", "1")
-    dev[0].set("go_venue_group", "2")
-    dev[0].set("go_venue_type", "3")
+    dev[0].global_request("SET go_interworking 1")
+    dev[0].global_request("SET go_access_network_type 1")
+    dev[0].global_request("SET go_internet 1")
+    dev[0].global_request("SET go_venue_group 2")
+    dev[0].global_request("SET go_venue_type 3")
     res = autogo(dev[0])
     bssid = dev[0].p2p_interface_addr()
     dev[1].scan_for_bss(bssid, freq=res['freq'])
