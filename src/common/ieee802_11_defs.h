@@ -1905,8 +1905,16 @@ struct rrm_measurement_beacon_report {
 } STRUCT_PACKED;
 
 /* IEEE Std 802.11-2016, Table 9-112 - Beacon report Subelement IDs */
+/* IEEE P802.11-REVmd/D2.0, Table 9-130 - Optional subelement IDs for
+ * Beacon report */
 #define WLAN_BEACON_REPORT_SUBELEM_FRAME_BODY	1
+#define WLAN_BEACON_REPORT_SUBELEM_FRAME_BODY_FRAGMENT_ID	2
 #define WLAN_BEACON_REPORT_SUBELEM_VENDOR	221
+
+/* IEEE P802.11-REVmd/D2.0, Table 9-232 - Data field format of the
+ * Reported Frame Body Fragment ID subelement */
+#define REPORTED_FRAME_BODY_SUBELEM_LEN		4
+#define REPORTED_FRAME_BODY_MORE_FRAGMENTS	BIT(7)
 
 /* IEEE Std 802.11ad-2012 - Multi-band element */
 struct multi_band_ie {
