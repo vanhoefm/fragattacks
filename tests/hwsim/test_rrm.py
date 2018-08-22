@@ -706,6 +706,7 @@ class BeaconReport:
         self.subelems = report
         self.frame_body = None
         self.frame_body_fragment_id = None
+        self.last_indication = None
         while len(report) >= 2:
             eid,elen = struct.unpack('BB', report[0:2])
             report = report[2:]
@@ -722,6 +723,8 @@ class BeaconReport:
                 self.frame_body = report[0:elen]
 	    if eid == 2:
 	        self.frame_body_fragment_id = report[0:elen]
+            if eid == 164:
+                self.last_indication = report[0:elen]
             report = report[elen:]
     def __str__(self):
         txt = "opclass={} channel={} start={} duration={} frame_info={} rcpi={} rsni={} bssid={} antenna_id={} parent_tsf={}".format(self.opclass, self.channel, self.start, self.duration, self.frame_info, self.rcpi, self.rsni, self.bssid_str, self.antenna_id, self.parent_tsf)
@@ -729,6 +732,9 @@ class BeaconReport:
             txt += " frame_body=" + binascii.hexlify(self.frame_body)
         if self.frame_body_fragment_id:
             txt += " fragment_id=" + binascii.hexlify(self.frame_body_fragment_id)
+        if self.last_indication:
+            txt += " last_indication=" + binascii.hexlify(self.last_indication)
+
         return txt
 
 def run_req_beacon(hapd, addr, request):
@@ -836,6 +842,62 @@ def test_rrm_beacon_req_frame_body_fragmentation(dev, apdev):
             raise Exception("more fragments bit is not set on first fragment")
         if i == 1 and more_frags != 0:
             raise Exception("more fragments bit is set on last fragment")
+
+def test_rrm_beacon_req_last_frame_indication(dev, apdev):
+    """Beacon request - beacon table mode - last frame indication"""
+    params = { "ssid": "rrm", "rrm_beacon_report": "1" }
+
+    hapd = hostapd.add_ap(apdev[0], params)
+    hapd2 = hostapd.add_ap(apdev[1], { "ssid": "another" })
+
+    dev[0].connect("rrm", key_mgmt="NONE", scan_freq="2412")
+    addr = dev[0].own_addr()
+
+    # The request contains the last beacon report indication subelement
+    token = run_req_beacon(hapd, addr, "51000000000002ffffffffffffa40101")
+
+    for i in range(1, 3):
+        ev = hapd.wait_event(["BEACON-RESP-RX"], timeout=10)
+        if ev is None:
+            raise Exception("Beacon report %d response not received" % i)
+        fields = ev.split(' ')
+        if fields[1] != addr:
+            raise Exception("Unexpected STA address in beacon report response: " + fields[1])
+        if fields[2] != token:
+            raise Exception("Unexpected dialog token in beacon report response: " + fields[2] + " (expected " + token + ")")
+        if fields[3] != "00":
+            raise Exception("Unexpected measurement report mode")
+
+        report = BeaconReport(binascii.unhexlify(fields[4]))
+        logger.info("Received beacon report: " + str(report))
+
+        if not report.last_indication:
+            raise Exception("Last Beacon Report Indication subelement missing")
+
+        last = binascii.hexlify(report.last_indication)
+        if last != '01':
+            raise Exception("last beacon report indication is not set on last frame")
+
+    # The request does not contain the last beacon report indication subelement
+    token = run_req_beacon(hapd, addr, "51000000000002ffffffffffff")
+
+    for i in range(1, 3):
+        ev = hapd.wait_event(["BEACON-RESP-RX"], timeout=10)
+        if ev is None:
+            raise Exception("Beacon report %d response not received" % i)
+        fields = ev.split(' ')
+        if fields[1] != addr:
+            raise Exception("Unexpected STA address in beacon report response: " + fields[1])
+        if fields[2] != token:
+            raise Exception("Unexpected dialog token in beacon report response: " + fields[2] + " (expected " + token + ")")
+        if fields[3] != "00":
+            raise Exception("Unexpected measurement report mode")
+
+        report = BeaconReport(binascii.unhexlify(fields[4]))
+        logger.info("Received beacon report: " + str(report))
+
+        if report.last_indication:
+            raise Exception("Last Beacon Report Indication subelement present but not requested")
 
 @remote_compatible
 def test_rrm_beacon_req_table_detail(dev, apdev):
