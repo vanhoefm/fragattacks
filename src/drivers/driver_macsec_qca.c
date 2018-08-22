@@ -515,6 +515,8 @@ static int macsec_qca_create_receive_sa(void *priv, struct receive_sa *sa)
 	fal_rx_sak_t rx_sak;
 	int i = 0;
 	u32 channel;
+	fal_rx_prc_lut_t entry;
+	u32 offset;
 
 	ret = macsec_qca_lookup_receive_channel(priv, sa->sc, &channel);
 	if (ret != 0)
@@ -537,6 +539,17 @@ static int macsec_qca_create_receive_sa(void *priv, struct receive_sa *sa)
 		return -1;
 	}
 
+	if (sa->pkey->confidentiality_offset == CONFIDENTIALITY_OFFSET_0)
+		offset = 0;
+	else if (sa->pkey->confidentiality_offset == CONFIDENTIALITY_OFFSET_30)
+		offset = 30;
+	else if (sa->pkey->confidentiality_offset == CONFIDENTIALITY_OFFSET_50)
+		offset = 50;
+	else
+		return -1;
+	ret += nss_macsec_secy_rx_prc_lut_get(drv->secy_id, channel, &entry);
+	entry.offset = offset;
+	ret += nss_macsec_secy_rx_prc_lut_set(drv->secy_id, channel, &entry);
 	ret += nss_macsec_secy_rx_sa_create(drv->secy_id, channel, sa->an);
 	ret += nss_macsec_secy_rx_sak_set(drv->secy_id, channel, sa->an,
 					  &rx_sak);
@@ -682,6 +695,7 @@ static int macsec_qca_create_transmit_sa(void *priv, struct transmit_sa *sa)
 	fal_tx_sak_t tx_sak;
 	int i;
 	u32 channel;
+	u32 offset;
 
 	ret = macsec_qca_lookup_transmit_channel(priv, sa->sc, &channel);
 	if (ret != 0)
@@ -715,6 +729,17 @@ static int macsec_qca_create_transmit_sa(void *priv, struct transmit_sa *sa)
 		return -1;
 	}
 
+	if (sa->pkey->confidentiality_offset == CONFIDENTIALITY_OFFSET_0)
+		offset = 0;
+	else if (sa->pkey->confidentiality_offset == CONFIDENTIALITY_OFFSET_30)
+		offset = 30;
+	else if (sa->pkey->confidentiality_offset == CONFIDENTIALITY_OFFSET_50)
+		offset = 50;
+	else
+		return -1;
+	ret += nss_macsec_secy_tx_sc_confidentiality_offset_set(drv->secy_id,
+								channel,
+								offset);
 	ret += nss_macsec_secy_tx_sa_next_pn_set(drv->secy_id, channel, sa->an,
 						 sa->next_pn);
 	ret += nss_macsec_secy_tx_sak_set(drv->secy_id, channel, sa->an,
