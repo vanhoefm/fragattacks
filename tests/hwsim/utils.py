@@ -58,13 +58,14 @@ class fail_test(object):
             if self._dev.request("GET_FAIL") != "0:%s" % self._funcs:
                 raise Exception("Test failure did not trigger")
 
-def wait_fail_trigger(dev, cmd, note="Failure not triggered", max_iter=40):
+def wait_fail_trigger(dev, cmd, note="Failure not triggered", max_iter=40,
+		      timeout=0.05):
     for i in range(0, max_iter):
         if dev.request(cmd).startswith("0:"):
             break
         if i == max_iter - 1:
             raise Exception(note)
-        time.sleep(0.05)
+        time.sleep(timeout)
 
 def require_under_vm():
     with open('/proc/1/cmdline', 'r') as f:

@@ -1396,7 +1396,7 @@ def test_sae_bignum_failure(dev, apdev):
             hapd.request("NOTE STA failure testing %d:%s" % (count, func))
             dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
                            scan_freq="2412", wait_connect=False)
-            wait_fail_trigger(dev[0], "GET_FAIL")
+            wait_fail_trigger(dev[0], "GET_FAIL", timeout=0.1)
             dev[0].request("REMOVE_NETWORK all")
             dev[0].dump_monitor()
             hapd.dump_monitor()
@@ -1426,7 +1426,7 @@ def test_sae_bignum_failure(dev, apdev):
             hapd.request("NOTE STA failure testing %d:%s" % (count, func))
             dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
                            scan_freq="2412", wait_connect=False)
-            wait_fail_trigger(dev[0], "GET_FAIL")
+            wait_fail_trigger(dev[0], "GET_FAIL", timeout=0.1)
             dev[0].request("REMOVE_NETWORK all")
             dev[0].dump_monitor()
             hapd.dump_monitor()
