@@ -705,6 +705,7 @@ class BeaconReport:
         report = report[5:]
         self.subelems = report
         self.frame_body = None
+        self.frame_body_fragment_id = None
         while len(report) >= 2:
             eid,elen = struct.unpack('BB', report[0:2])
             report = report[2:]
@@ -719,11 +720,15 @@ class BeaconReport:
                 # 2 = all fixed fields and all elements
                 # Fixed fields: Timestamp[8] BeaconInt[2] CapabInfo[2]
                 self.frame_body = report[0:elen]
+	    if eid == 2:
+	        self.frame_body_fragment_id = report[0:elen]
             report = report[elen:]
     def __str__(self):
         txt = "opclass={} channel={} start={} duration={} frame_info={} rcpi={} rsni={} bssid={} antenna_id={} parent_tsf={}".format(self.opclass, self.channel, self.start, self.duration, self.frame_info, self.rcpi, self.rsni, self.bssid_str, self.antenna_id, self.parent_tsf)
         if self.frame_body:
             txt += " frame_body=" + binascii.hexlify(self.frame_body)
+        if self.frame_body_fragment_id:
+            txt += " fragment_id=" + binascii.hexlify(self.frame_body_fragment_id)
         return txt
 
 def run_req_beacon(hapd, addr, request):
@@ -785,6 +790,52 @@ def test_rrm_beacon_req_table(dev, apdev):
             raise Exception("Reported Frame Body subelement missing")
         if len(report.frame_body) <= 12:
             raise Exception("Too short Reported Frame Body subelement")
+
+def test_rrm_beacon_req_frame_body_fragmentation(dev, apdev):
+    """Beacon request - beacon table mode - frame body fragmentation"""
+    params = { "ssid": "rrm", "rrm_beacon_report": "1" }
+
+    hapd = hostapd.add_ap(apdev[0], params)
+    hapd.set('vendor_elements', ("dd051122330203dd0400137400dd04001374ffdd0511"
+              "22330203dd0400137400dd04001374ffdd051122330203dd0400137400dd04001"
+              "374ffdd051122330203dd0400137400dd04001374ffdd051122330203dd040013"
+              "7400dd04001374ffdd051122330203dd0400137400dd04001374ffdd051122330"
+              "203dd0400137400dd04001374ffdd051122330203dd0400137400dd04001374ff"
+              "dd051122330203dd0400137400dd04001374ff"))
+
+    dev[0].connect("rrm", key_mgmt="NONE", scan_freq="2412")
+    addr = dev[0].own_addr()
+
+    token = run_req_beacon(hapd, addr, "51000000000002ffffffffffff")
+
+    # 2 beacon reports elements are expected because of fragmentation
+    for i in range(0, 2):
+        ev = hapd.wait_event(["BEACON-RESP-RX"], timeout=10)
+        if ev is None:
+            raise Exception("Beacon report %d response not received" % i)
+        fields = ev.split(' ')
+        if fields[1] != addr:
+            raise Exception("Unexpected STA address in beacon report response: " + fields[1])
+        if fields[2] != token:
+            raise Exception("Unexpected dialog token in beacon report response: " + fields[2] + " (expected " + token + ")")
+        if fields[3] != "00":
+            raise Exception("Unexpected measurement report mode")
+
+        report = BeaconReport(binascii.unhexlify(fields[4]))
+        logger.info("Received beacon report: " + str(report))
+
+        # Default reporting detail is 2, i.e., all fixed fields and elements.
+        if not report.frame_body_fragment_id:
+            raise Exception("Reported Frame Body Fragment ID subelement missing")
+        fragment_id = binascii.hexlify(report.frame_body_fragment_id)
+        frag_number = int(fragment_id[2:], 16) & int(0x7f)
+        if frag_number != i:
+            raise Exception("Incorrect fragment number: %d" % frag_number)
+        more_frags = int(fragment_id[2:], 16) >> 7
+        if i == 0 and more_frags != 1:
+            raise Exception("more fragments bit is not set on first fragment")
+        if i == 1 and more_frags != 0:
+            raise Exception("more fragments bit is set on last fragment")
 
 @remote_compatible
 def test_rrm_beacon_req_table_detail(dev, apdev):
