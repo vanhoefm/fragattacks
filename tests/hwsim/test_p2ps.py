@@ -1126,8 +1126,8 @@ def test_p2ps_channel_one_connected(dev, apdev):
         if freq != '2442':
             raise Exception('Unexpected frequency for group 2442 != ' + freq)
     finally:
-        remove_group(dev[0], dev[1])
         dev[0].global_request("P2P_SERVICE_DEL asp all")
+        remove_group(dev[0], dev[1])
 
 def set_random_listen_chan(dev):
     chan = random.randrange(0, 3) * 5 + 1
@@ -1158,10 +1158,10 @@ def test_p2ps_channel_both_connected_same(dev, apdev):
         if freq != '2437':
             raise Exception('Unexpected frequency for group 2437 != ' + freq)
     finally:
-        remove_group(dev[2], dev[1])
         dev[2].global_request("P2P_SERVICE_DEL asp all")
         for i in range(1, 3):
             set_random_listen_chan(dev[i])
+        remove_group(dev[2], dev[1])
 
 def disconnect_handler(seeker, advertiser):
     advertiser.request("DISCONNECT")
@@ -1199,8 +1199,8 @@ def test_p2ps_channel_both_connected_different(dev, apdev):
         if freq != '2457':
             raise Exception('Unexpected frequency for group 2457 != ' + freq)
     finally:
-        remove_group(dev[0], dev[1])
         dev[0].global_request("P2P_SERVICE_DEL asp all")
+        remove_group(dev[0], dev[1])
 
 def test_p2ps_channel_both_connected_different_mcc(dev, apdev):
     """P2PS connection with P2PS method - stations connected on different channels with mcc"""
@@ -1226,8 +1226,8 @@ def test_p2ps_channel_both_connected_different_mcc(dev, apdev):
         if freq != '2422' and freq != '2457':
             raise Exception('Unexpected frequency for group =' + freq)
     finally:
-        remove_group(dev[0], dev[1])
         dev[0].global_request("P2P_SERVICE_DEL asp all")
+        remove_group(dev[0], dev[1])
 
 def clear_disallow_handler(seeker, advertiser):
     advertiser.global_request("P2P_SET disallow_freq ")
@@ -1258,10 +1258,10 @@ def test_p2ps_channel_disallow_freq(dev, apdev):
         if freq != '2412':
             raise Exception('Unexpected frequency for group 2412 != ' + freq)
     finally:
-        remove_group(dev[0], dev[1])
         dev[0].global_request("P2P_SERVICE_DEL asp all")
         dev[0].global_request("P2P_SET disallow_freq ")
         dev[1].global_request("P2P_SET disallow_freq ")
+        remove_group(dev[0], dev[1])
 
 def test_p2ps_channel_sta_connected_disallow_freq(dev, apdev):
     """P2PS connection with P2PS method - one station and disallow freqs"""
@@ -1293,9 +1293,9 @@ def test_p2ps_channel_sta_connected_disallow_freq(dev, apdev):
         if freq != '2437':
             raise Exception('Unexpected frequency for group 2437 != ' + freq)
     finally:
-        remove_group(dev[0], dev[1])
         dev[0].global_request("P2P_SET disallow_freq ")
         dev[0].global_request("P2P_SERVICE_DEL asp all")
+        remove_group(dev[0], dev[1])
 
 def test_p2ps_channel_sta_connected_disallow_freq_mcc(dev, apdev):
     """P2PS connection with P2PS method - one station and disallow freqs with mcc"""
@@ -1323,9 +1323,9 @@ def test_p2ps_channel_sta_connected_disallow_freq_mcc(dev, apdev):
             if freq == '2437':
                 raise Exception('Unexpected frequency=2437')
         finally:
-            remove_group(dev[0], wpas)
             dev[0].global_request("P2P_SET disallow_freq ")
             dev[0].global_request("P2P_SERVICE_DEL asp all")
+            remove_group(dev[0], wpas)
 
 @remote_compatible
 def test_p2ps_active_go_adv(dev, apdev):
@@ -1356,8 +1356,8 @@ def test_p2ps_active_go_adv(dev, apdev):
         dev[0].p2p_stop_find()
         p2ps_connect_pd(dev[0], dev[1], ev0, ev1)
     finally:
-        remove_group(dev[0], dev[1])
         dev[0].global_request("P2P_SERVICE_DEL asp all")
+        remove_group(dev[0], dev[1])
 
 @remote_compatible
 def test_p2ps_active_go_seeker(dev, apdev):
@@ -1385,8 +1385,8 @@ def test_p2ps_active_go_seeker(dev, apdev):
         p2ps_connect_pd(dev[0], dev[1], ev0, ev1,
                         join_extra=" freq=" + res['freq'])
     finally:
-        remove_group(dev[0], dev[1])
         dev[0].global_request("P2P_SERVICE_DEL asp all")
+        remove_group(dev[0], dev[1])
 
 def test_p2ps_channel_active_go_and_station_same(dev, apdev):
     """P2PS connection, active P2P GO and station on channel"""
@@ -1419,10 +1419,10 @@ def test_p2ps_channel_active_go_and_station_same(dev, apdev):
         ev1, ev0 = p2ps_provision(dev[1], dev[2], adv_id)
         p2ps_connect_pd(dev[2], dev[1], ev0, ev1, join_extra=" freq=2462")
     finally:
-        remove_group(dev[2], dev[1])
         dev[2].global_request("P2P_SERVICE_DEL asp all")
         for i in range(1, 3):
             set_random_listen_chan(dev[i])
+        remove_group(dev[2], dev[1])
 
 def test_p2ps_channel_active_go_and_station_different(dev, apdev):
     """P2PS connection, active P2P GO and station on channel"""
@@ -1500,10 +1500,10 @@ def test_p2ps_channel_active_go_and_station_different_mcc(dev, apdev):
         ev1, ev0 = p2ps_provision(dev[1], dev[0], adv_id)
         p2ps_connect_pd(dev[0], dev[1], ev0, ev1)
     finally:
-        remove_group(dev[0], dev[1])
         dev[0].request("DISCONNECT")
         hapd.disable()
         dev[0].global_request("P2P_SERVICE_DEL asp all")
+        remove_group(dev[0], dev[1])
 
 def test_p2ps_connect_p2p_device(dev):
     """P2PS connection using cfg80211 P2P Device"""
