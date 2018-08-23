@@ -240,6 +240,8 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 	u8 ext_capab[18];
 	int ext_capab_len;
 	int skip_auth;
+	u8 *wpa_ie;
+	size_t wpa_ie_len;
 #ifdef CONFIG_MBO
 	const u8 *mbo_ie;
 #endif /* CONFIG_MBO */
@@ -391,6 +393,28 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 		wpa_s->sme.assoc_req_ie_len = 0;
 	}
 
+	/* In case the WPA vendor IE is used, it should be placed after all the
+	 * non-vendor IEs, as the lower layer expects the IEs to be ordered as
+	 * defined in the standard. Store the WPA IE so it can later be
+	 * inserted at the correct location.
+	 */
+	wpa_ie = NULL;
+	wpa_ie_len = 0;
+	if (wpa_s->wpa_proto == WPA_PROTO_WPA) {
+		wpa_ie = os_memdup(wpa_s->sme.assoc_req_ie,
+				   wpa_s->sme.assoc_req_ie_len);
+		if (wpa_ie) {
+			wpa_dbg(wpa_s, MSG_DEBUG, "WPA: Storing WPA IE");
+
+			wpa_ie_len = wpa_s->sme.assoc_req_ie_len;
+			wpa_s->sme.assoc_req_ie_len = 0;
+		} else {
+			wpa_msg(wpa_s, MSG_WARNING, "WPA: Failed copy WPA IE");
+			wpas_connect_work_done(wpa_s);
+			return;
+		}
+	}
+
 #ifdef CONFIG_IEEE80211R
 	ie = wpa_bss_get_ie(bss, WLAN_EID_MOBILITY_DOMAIN);
 	if (ie && ie[1] >= MOBILITY_DOMAIN_ID_LEN)
@@ -526,6 +550,26 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 		}
 	}
 #endif /* CONFIG_HS20 */
+
+	if (wpa_ie) {
+		size_t len;
+
+		wpa_dbg(wpa_s, MSG_DEBUG, "WPA: Reinsert WPA IE");
+
+		len = sizeof(wpa_s->sme.assoc_req_ie) -
+			wpa_s->sme.assoc_req_ie_len;
+
+		if (len > wpa_ie_len) {
+			os_memcpy(wpa_s->sme.assoc_req_ie +
+				  wpa_s->sme.assoc_req_ie_len,
+				  wpa_ie, wpa_ie_len);
+			wpa_s->sme.assoc_req_ie_len += wpa_ie_len;
+		} else {
+			wpa_dbg(wpa_s, MSG_DEBUG, "WPA: Failed to add WPA IE");
+		}
+
+		os_free(wpa_ie);
+	}
 
 	if (wpa_s->vendor_elem[VENDOR_ELEM_ASSOC_REQ]) {
 		struct wpabuf *buf = wpa_s->vendor_elem[VENDOR_ELEM_ASSOC_REQ];
