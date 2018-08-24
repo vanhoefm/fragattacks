@@ -215,9 +215,36 @@ static int wpas_op_class_supported(struct wpa_supplicant *wpa_s,
 	size_t i;
 	struct hostapd_hw_modes *mode;
 	int found;
+	int z;
+	int freq2 = 0;
+	int freq5 = 0;
 
 	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, op_class->mode);
 	if (!mode)
+		return 0;
+
+	/* If we are configured to disable certain things, take that into
+	 * account here. */
+	if (ssid->freq_list && ssid->freq_list[0]) {
+		for (z = 0; ; z++) {
+			int f = ssid->freq_list[z];
+
+			if (f == 0)
+				break; /* end of list */
+			if (f > 4000 && f < 6000)
+				freq5 = 1;
+			else if (f > 2400 && f < 2500)
+				freq2 = 1;
+		}
+	} else {
+		/* No frequencies specified, can use anything hardware supports.
+		 */
+		freq2 = freq5 = 1;
+	}
+
+	if (op_class->op_class >= 115 && op_class->op_class <= 130 && !freq5)
+		return 0;
+	if (op_class->op_class >= 81 && op_class->op_class <= 84 && !freq2)
 		return 0;
 
 #ifdef CONFIG_HT_OVERRIDES
