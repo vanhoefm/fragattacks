@@ -567,6 +567,18 @@ struct wpa_driver_scan_params {
 	 */
 	s8 relative_adjust_rssi;
 
+	/**
+	 * oce_scan
+	 *
+	 * Enable the following OCE scan features: (WFA OCE TechSpec v1.0)
+	 * - Accept broadcast Probe Response frame.
+	 * - Probe Request frame deferral and suppression.
+	 * - Max Channel Time - driver fills FILS request params IE with
+	 *   Maximum Channel Time.
+	 * - Send 1st Probe Request frame in rate of minimum 5.5 Mbps.
+	 */
+	unsigned int oce_scan:1;
+
 	/*
 	 * NOTE: Whenever adding new parameters here, please make sure
 	 * wpa_scan_clone_params() and wpa_scan_free_params() get updated with
