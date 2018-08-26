@@ -455,6 +455,33 @@ static void wpas_add_interworking_elements(struct wpa_supplicant *wpa_s,
 #endif /* CONFIG_INTERWORKING */
 
 
+#ifdef CONFIG_MBO
+static void wpas_fils_req_param_add_max_channel(struct wpa_supplicant *wpa_s,
+						struct wpabuf **ie)
+{
+	if (wpabuf_resize(ie, 5)) {
+		wpa_printf(MSG_DEBUG,
+			   "Failed to allocate space for FILS Request Parameters element");
+		return;
+	}
+
+	/* FILS Request Parameters element */
+	wpabuf_put_u8(*ie, WLAN_EID_EXTENSION);
+	wpabuf_put_u8(*ie, 3); /* FILS Request attribute length */
+	wpabuf_put_u8(*ie, WLAN_EID_EXT_FILS_REQ_PARAMS);
+	/* Parameter control bitmap */
+	wpabuf_put_u8(*ie, 0);
+	/* Max Channel Time field - contains the value of MaxChannelTime
+	 * parameter of the MLME-SCAN.request primitive represented in units of
+	 * TUs, as an unsigned integer. A Max Channel Time field value of 255
+	 * is used to indicate any duration of more than 254 TUs, or an
+	 * unspecified or unknown duration. (IEEE Std 802.11ai-2016, 9.4.2.178)
+	 */
+	wpabuf_put_u8(*ie, 255);
+}
+#endif /* CONFIG_MBO */
+
+
 void wpa_supplicant_set_default_scan_ies(struct wpa_supplicant *wpa_s)
 {
 	struct wpabuf *default_ies = NULL;
@@ -476,6 +503,8 @@ void wpa_supplicant_set_default_scan_ies(struct wpa_supplicant *wpa_s)
 		wpabuf_put_data(default_ies, ext_capab, ext_capab_len);
 
 #ifdef CONFIG_MBO
+	if (wpa_s->enable_oce & OCE_STA)
+		wpas_fils_req_param_add_max_channel(wpa_s, &default_ies);
 	/* Send MBO and OCE capabilities */
 	if (wpabuf_resize(&default_ies, 12) == 0)
 		wpas_mbo_scan_ie(wpa_s, default_ies);
@@ -516,6 +545,11 @@ static struct wpabuf * wpa_supplicant_extra_ies(struct wpa_supplicant *wpa_s)
 	    wpabuf_resize(&extra_ie, 100) == 0)
 		wpas_add_interworking_elements(wpa_s, extra_ie);
 #endif /* CONFIG_INTERWORKING */
+
+#ifdef CONFIG_MBO
+	if (wpa_s->enable_oce & OCE_STA)
+		wpas_fils_req_param_add_max_channel(wpa_s, &extra_ie);
+#endif /* CONFIG_MBO */
 
 #ifdef CONFIG_WPS
 	wps = wpas_wps_in_use(wpa_s, &req_type);
@@ -1077,6 +1111,11 @@ ssid_list_set:
 		}
 	}
 
+#ifdef CONFIG_MBO
+	if (wpa_s->enable_oce & OCE_STA)
+		params.oce_scan = 1;
+#endif /* CONFIG_MBO */
+
 	params.filter_ssids = wpa_supplicant_build_filter_ssids(
 		wpa_s->conf, &params.num_filter_ssids);
 	if (extra_ie) {
@@ -1485,6 +1524,11 @@ int wpa_supplicant_req_sched_scan(struct wpa_supplicant *wpa_s)
 			"Optimize scan based on conf->freq_list");
 		int_array_concat(&params.freqs, wpa_s->conf->freq_list);
 	}
+
+#ifdef CONFIG_MBO
+	if (wpa_s->enable_oce & OCE_STA)
+		params.oce_scan = 1;
+#endif /* CONFIG_MBO */
 
 	scan_params = &params;
 
