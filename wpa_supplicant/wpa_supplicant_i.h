@@ -1359,7 +1359,9 @@ void wpas_flush_fils_hlp_req(struct wpa_supplicant *wpa_s);
 
 
 /* MBO functions */
-int wpas_mbo_ie(struct wpa_supplicant *wpa_s, u8 *buf, size_t len);
+int wpas_mbo_ie(struct wpa_supplicant *wpa_s, u8 *buf, size_t len,
+		int add_oce_capa);
+const u8 * mbo_attr_from_mbo_ie(const u8 *mbo_ie, enum mbo_attr_id attr);
 const u8 * wpas_mbo_get_bss_attr(struct wpa_bss *bss, enum mbo_attr_id attr);
 int wpas_mbo_update_non_pref_chan(struct wpa_supplicant *wpa_s,
 				  const char *non_pref_chan);

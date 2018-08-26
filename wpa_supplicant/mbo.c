@@ -38,6 +38,19 @@ static int wpas_mbo_validate_non_pref_chan(u8 oper_class, u8 chan, u8 reason)
 }
 
 
+const u8 * mbo_attr_from_mbo_ie(const u8 *mbo_ie, enum mbo_attr_id attr)
+{
+	const u8 *mbo;
+	u8 ie_len = mbo_ie[1];
+
+	if (ie_len < MBO_IE_HEADER - 2)
+		return NULL;
+	mbo = mbo_ie + MBO_IE_HEADER;
+
+	return get_ie(mbo, 2 + ie_len - MBO_IE_HEADER, attr);
+}
+
+
 const u8 * wpas_mbo_get_bss_attr(struct wpa_bss *bss, enum mbo_attr_id attr)
 {
 	const u8 *mbo, *end;
@@ -149,7 +162,8 @@ static void wpas_mbo_non_pref_chan_attrs(struct wpa_supplicant *wpa_s,
 }
 
 
-int wpas_mbo_ie(struct wpa_supplicant *wpa_s, u8 *buf, size_t len)
+int wpas_mbo_ie(struct wpa_supplicant *wpa_s, u8 *buf, size_t len,
+		int add_oce_capa)
 {
 	struct wpabuf *mbo;
 	int res;
@@ -175,7 +189,7 @@ int wpas_mbo_ie(struct wpa_supplicant *wpa_s, u8 *buf, size_t len)
 	wpabuf_put_u8(mbo, wpa_s->conf->mbo_cell_capa);
 
 	/* Add OCE capability indication attribute if OCE is enabled */
-	if (wpa_s->enable_oce & OCE_STA) {
+	if ((wpa_s->enable_oce & OCE_STA) && add_oce_capa) {
 		wpabuf_put_u8(mbo, OCE_ATTR_ID_CAPA_IND);
 		wpabuf_put_u8(mbo, 1);
 		wpabuf_put_u8(mbo, OCE_RELEASE);

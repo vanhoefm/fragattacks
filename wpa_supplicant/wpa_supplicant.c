@@ -2444,6 +2444,9 @@ static u8 * wpas_populate_assoc_ies(
 	size_t max_wpa_ie_len = 500;
 	size_t wpa_ie_len;
 	int algs = WPA_AUTH_ALG_OPEN;
+#ifdef CONFIG_MBO
+	const u8 *mbo_ie;
+#endif
 #ifdef CONFIG_FILS
 	const u8 *realm, *username, *rrk;
 	size_t realm_len, username_len, rrk_len;
@@ -2699,11 +2702,14 @@ static u8 * wpas_populate_assoc_ies(
 #endif /* CONFIG_FST */
 
 #ifdef CONFIG_MBO
-	if (bss && wpa_bss_get_vendor_ie(bss, MBO_IE_VENDOR_TYPE)) {
+	mbo_ie = bss ? wpa_bss_get_vendor_ie(bss, MBO_IE_VENDOR_TYPE) : NULL;
+	if (mbo_ie) {
 		int len;
 
 		len = wpas_mbo_ie(wpa_s, wpa_ie + wpa_ie_len,
-				  max_wpa_ie_len - wpa_ie_len);
+				  max_wpa_ie_len - wpa_ie_len,
+				  !!mbo_attr_from_mbo_ie(mbo_ie,
+							 OCE_ATTR_ID_CAPA_IND));
 		if (len >= 0)
 			wpa_ie_len += len;
 	}
