@@ -203,6 +203,14 @@ static int wpas_mesh_complete(struct wpa_supplicant *wpa_s)
 		return -1;
 	}
 
+	if (ifmsh->mconf->security != MESH_CONF_SEC_NONE &&
+	    wpas_mesh_init_rsn(wpa_s)) {
+		wpa_printf(MSG_ERROR,
+			   "mesh: RSN initialization failed - deinit mesh");
+		wpa_supplicant_mesh_deinit(wpa_s);
+		return -1;
+	}
+
 	if (ssid->key_mgmt & WPA_KEY_MGMT_SAE) {
 		wpa_s->pairwise_cipher = wpa_s->mesh_rsn->pairwise_cipher;
 		wpa_s->group_cipher = wpa_s->mesh_rsn->group_cipher;
@@ -374,9 +382,6 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 		wpa_msg(wpa_s, MSG_ERROR, "Failed to init mesh in driver");
 		return -1;
 	}
-
-	if (mconf->security != MESH_CONF_SEC_NONE && wpas_mesh_init_rsn(wpa_s))
-		goto out_free;
 
 	wpa_supplicant_conf_ap_ht(wpa_s, ssid, conf);
 
