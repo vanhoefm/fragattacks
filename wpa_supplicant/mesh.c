@@ -150,6 +150,44 @@ static void wpas_mesh_copy_groups(struct hostapd_data *bss,
 }
 
 
+static int wpas_mesh_init_rsn(struct wpa_supplicant *wpa_s)
+{
+	struct hostapd_iface *ifmsh = wpa_s->ifmsh;
+	struct wpa_ssid *ssid = wpa_s->current_ssid;
+	struct hostapd_data *bss = ifmsh->bss[0];
+	static int default_groups[] = { 19, 20, 21, 25, 26, -1 };
+	const char *password;
+	size_t len;
+
+	password = ssid->sae_password;
+	if (!password)
+		password = ssid->passphrase;
+	if (!password) {
+		wpa_printf(MSG_ERROR,
+			   "mesh: Passphrase for SAE not configured");
+		return -1;
+	}
+
+	bss->conf->wpa = ssid->proto;
+	bss->conf->wpa_key_mgmt = ssid->key_mgmt;
+
+	if (wpa_s->conf->sae_groups && wpa_s->conf->sae_groups[0] > 0) {
+		wpas_mesh_copy_groups(bss, wpa_s);
+	} else {
+		bss->conf->sae_groups = os_memdup(default_groups,
+						  sizeof(default_groups));
+		if (!bss->conf->sae_groups)
+			return -1;
+	}
+
+	len = os_strlen(password);
+	bss->conf->ssid.wpa_passphrase = dup_binstr(password, len);
+
+	wpa_s->mesh_rsn = mesh_rsn_auth_init(wpa_s, ifmsh->mconf);
+	return !wpa_s->mesh_rsn ? -1 : 0;
+}
+
+
 static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 				    struct wpa_ssid *ssid,
 				    struct hostapd_freq_params *freq)
@@ -159,9 +197,6 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 	struct hostapd_config *conf;
 	struct mesh_conf *mconf;
 	int basic_rates_erp[] = { 10, 20, 55, 60, 110, 120, 240, -1 };
-	static int default_groups[] = { 19, 20, 21, 25, 26, -1 };
-	const char *password;
-	size_t len;
 	int rate_len;
 	int frequency;
 
@@ -295,38 +330,8 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 		return -1;
 	}
 
-	if (mconf->security != MESH_CONF_SEC_NONE) {
-		password = ssid->sae_password;
-		if (!password)
-			password = ssid->passphrase;
-		if (!password) {
-			wpa_printf(MSG_ERROR,
-				   "mesh: Passphrase for SAE not configured");
-			goto out_free;
-		}
-
-		bss->conf->wpa = ssid->proto;
-		bss->conf->wpa_key_mgmt = ssid->key_mgmt;
-
-		if (wpa_s->conf->sae_groups &&
-		    wpa_s->conf->sae_groups[0] > 0) {
-			wpas_mesh_copy_groups(bss, wpa_s);
-		} else {
-			bss->conf->sae_groups =
-				os_memdup(default_groups,
-					  sizeof(default_groups));
-			if (!bss->conf->sae_groups)
-				goto out_free;
-		}
-
-		len = os_strlen(password);
-		bss->conf->ssid.wpa_passphrase =
-			dup_binstr(password, len);
-
-		wpa_s->mesh_rsn = mesh_rsn_auth_init(wpa_s, mconf);
-		if (!wpa_s->mesh_rsn)
-			goto out_free;
-	}
+	if (mconf->security != MESH_CONF_SEC_NONE && wpas_mesh_init_rsn(wpa_s))
+		goto out_free;
 
 	wpa_supplicant_conf_ap_ht(wpa_s, ssid, conf);
 
