@@ -451,6 +451,7 @@ int wpa_supplicant_join_mesh(struct wpa_supplicant *wpa_s,
 
 	if (wpa_s->mesh_vht_enabled) {
 		ssid->vht = 1;
+		ssid->vht_center_freq1 = params->freq.center_freq1;
 		switch (params->freq.bandwidth) {
 		case 80:
 			if (params->freq.center_freq2) {
