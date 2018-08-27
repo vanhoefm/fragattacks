@@ -1827,7 +1827,7 @@ def test_mesh_oom(dev, apdev):
                 raise
             logger.info("Ignore no-oom for i=%d" % i)
 
-    with alloc_fail(dev[0], 3, "=wpa_supplicant_mesh_init"):
+    with alloc_fail(dev[0], 2, "=wpa_supplicant_mesh_init"):
         id = add_mesh_secure_net(dev[0])
         dev[0].mesh_group_add(id)
         ev = dev[0].wait_event(["Failed to init mesh"])
