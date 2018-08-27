@@ -5564,6 +5564,7 @@ dpp_keygen_configurator(const char *curve, const u8 *privkey,
 		if (!conf->curve) {
 			wpa_printf(MSG_INFO, "DPP: Unsupported curve: %s",
 				   curve);
+			os_free(conf);
 			return NULL;
 		}
 	}
