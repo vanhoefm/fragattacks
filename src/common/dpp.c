@@ -2602,6 +2602,7 @@ static int dpp_auth_derive_l_initiator(struct dpp_authentication *auth)
 	ret = 0;
 fail:
 	EC_POINT_clear_free(l);
+	EC_POINT_clear_free(sum);
 	EC_KEY_free(bI);
 	EC_KEY_free(BR);
 	EC_KEY_free(PR);
