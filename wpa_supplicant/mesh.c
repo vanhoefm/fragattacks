@@ -372,14 +372,14 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 		conf->basic_rates[rate_len] = -1;
 	}
 
-	if (hostapd_setup_interface(ifmsh)) {
-		wpa_printf(MSG_ERROR,
-			   "Failed to initialize hostapd interface for mesh");
+	if (wpa_drv_init_mesh(wpa_s)) {
+		wpa_msg(wpa_s, MSG_ERROR, "Failed to init mesh in driver");
 		return -1;
 	}
 
-	if (wpa_drv_init_mesh(wpa_s)) {
-		wpa_msg(wpa_s, MSG_ERROR, "Failed to init mesh in driver");
+	if (hostapd_setup_interface(ifmsh)) {
+		wpa_printf(MSG_ERROR,
+			   "Failed to initialize hostapd interface for mesh");
 		return -1;
 	}
 
