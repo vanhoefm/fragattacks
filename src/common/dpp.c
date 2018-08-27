@@ -840,6 +840,7 @@ static int dpp_parse_uri_pk(struct dpp_bootstrap_info *bi, const char *info)
 	if (sha256_vector(1, (const u8 **) &data, &data_len,
 			  bi->pubkey_hash) < 0) {
 		wpa_printf(MSG_DEBUG, "DPP: Failed to hash public key");
+		os_free(data);
 		return -1;
 	}
 	wpa_hexdump(MSG_DEBUG, "DPP: Public key hash",
