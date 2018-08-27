@@ -299,6 +299,16 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 	bss->conf->start_disabled = 1;
 	bss->conf->mesh = MESH_ENABLED;
 	bss->conf->ap_max_inactivity = wpa_s->conf->mesh_max_inactivity;
+
+	if (ieee80211_is_dfs(ssid->frequency, wpa_s->hw.modes,
+			     wpa_s->hw.num_modes) && wpa_s->conf->country[0]) {
+		conf->ieee80211h = 1;
+		conf->ieee80211d = 1;
+		conf->country[0] = wpa_s->conf->country[0];
+		conf->country[1] = wpa_s->conf->country[1];
+		conf->country[2] = ' ';
+	}
+
 	bss->iconf = conf;
 	ifmsh->conf = conf;
 
