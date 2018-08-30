@@ -1832,6 +1832,14 @@ def run_dpp_auto_connect_legacy_pmf_required(dev, apdev):
 
 def test_dpp_qr_code_auth_responder_configurator(dev, apdev):
     """DPP QR Code and responder as the configurator"""
+    run_dpp_qr_code_auth_responder_configurator(dev, apdev, "")
+
+def test_dpp_qr_code_auth_responder_configurator_group_id(dev, apdev):
+    """DPP QR Code and responder as the configurator with group_id)"""
+    run_dpp_qr_code_auth_responder_configurator(dev, apdev,
+                                                " group_id=test-group")
+
+def run_dpp_qr_code_auth_responder_configurator(dev, apdev, extra):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     cmd = "DPP_CONFIGURATOR_ADD"
@@ -1853,7 +1861,8 @@ def test_dpp_qr_code_auth_responder_configurator(dev, apdev):
         raise Exception("Failed to parse QR Code URI")
     id1 = int(res)
 
-    dev[0].set("dpp_configurator_params", " conf=sta-dpp configurator=%d" % conf_id);
+    dev[0].set("dpp_configurator_params",
+               " conf=sta-dpp configurator=%d%s" % (conf_id, extra));
     cmd = "DPP_LISTEN 2412 role=configurator"
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to start listen operation")
@@ -2868,6 +2877,13 @@ def test_dpp_own_config(dev, apdev):
     finally:
         dev[0].set("dpp_config_processing", "0")
 
+def test_dpp_own_config_group_id(dev, apdev):
+    """DPP configurator signing own connector"""
+    try:
+        run_dpp_own_config(dev, apdev, extra=" group_id=test-group")
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+
 def test_dpp_own_config_curve_mismatch(dev, apdev):
     """DPP configurator signing own connector using mismatching curve"""
     try:
@@ -2875,7 +2891,8 @@ def test_dpp_own_config_curve_mismatch(dev, apdev):
     finally:
         dev[0].set("dpp_config_processing", "0")
 
-def run_dpp_own_config(dev, apdev, own_curve=None, expect_failure=False):
+def run_dpp_own_config(dev, apdev, own_curve=None, expect_failure=False,
+                       extra=""):
     check_dpp_capab(dev[0], own_curve and "BP" in own_curve)
     hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
     check_dpp_capab(hapd)
@@ -2899,7 +2916,7 @@ def run_dpp_own_config(dev, apdev, own_curve=None, expect_failure=False):
         raise Exception("Failed to parse QR Code URI")
     id = int(res)
 
-    cmd = "DPP_AUTH_INIT peer=%d conf=ap-dpp configurator=%d" % (id, conf_id)
+    cmd = "DPP_AUTH_INIT peer=%d conf=ap-dpp configurator=%d%s" % (id, conf_id, extra)
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
     ev = hapd.wait_event(["DPP-AUTH-SUCCESS"], timeout=5)
@@ -2918,7 +2935,7 @@ def run_dpp_own_config(dev, apdev, own_curve=None, expect_failure=False):
     update_hapd_config(hapd)
 
     dev[0].set("dpp_config_processing", "1")
-    cmd = "DPP_CONFIGURATOR_SIGN  conf=sta-dpp configurator=%d" % (conf_id)
+    cmd = "DPP_CONFIGURATOR_SIGN  conf=sta-dpp configurator=%d%s" % (conf_id, extra)
     if own_curve:
         cmd += " curve=" + own_curve
     res = dev[0].request(cmd)
@@ -2945,6 +2962,13 @@ def test_dpp_own_config_ap(dev, apdev):
     finally:
         dev[0].set("dpp_config_processing", "0")
 
+def test_dpp_own_config_ap_group_id(dev, apdev):
+    """DPP configurator (AP) signing own connector (group_id)"""
+    try:
+        run_dpp_own_config_ap(dev, apdev, extra=" group_id=test-group")
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+
 def test_dpp_own_config_ap_reconf(dev, apdev):
     """DPP configurator (AP) signing own connector and configurator reconf"""
     try:
@@ -2952,7 +2976,7 @@ def test_dpp_own_config_ap_reconf(dev, apdev):
     finally:
         dev[0].set("dpp_config_processing", "0")
 
-def run_dpp_own_config_ap(dev, apdev, reconf_configurator=False):
+def run_dpp_own_config_ap(dev, apdev, reconf_configurator=False, extra=""):
     check_dpp_capab(dev[0])
     hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
     check_dpp_capab(hapd)
@@ -2968,7 +2992,7 @@ def run_dpp_own_config_ap(dev, apdev, reconf_configurator=False):
         if "FAIL" in csign or len(csign) == 0:
             raise Exception("DPP_CONFIGURATOR_GET_KEY failed")
 
-    cmd = "DPP_CONFIGURATOR_SIGN  conf=ap-dpp configurator=%d" % (conf_id)
+    cmd = "DPP_CONFIGURATOR_SIGN  conf=ap-dpp configurator=%d%s" % (conf_id, extra)
     res = hapd.request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to generate own configuration")
@@ -3000,7 +3024,7 @@ def run_dpp_own_config_ap(dev, apdev, reconf_configurator=False):
     dev[0].set("dpp_config_processing", "2")
     if "OK" not in dev[0].request("DPP_LISTEN 2412"):
         raise Exception("Failed to start listen operation")
-    cmd = "DPP_AUTH_INIT peer=%d conf=sta-dpp configurator=%d" % (id, conf_id)
+    cmd = "DPP_AUTH_INIT peer=%d conf=sta-dpp configurator=%d%s" % (id, conf_id, extra)
     if "OK" not in hapd.request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
     ev = hapd.wait_event(["DPP-AUTH-SUCCESS"], timeout=5)
