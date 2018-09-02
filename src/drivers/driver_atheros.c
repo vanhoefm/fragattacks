@@ -1974,7 +1974,7 @@ static int atheros_set_ap(void *priv, struct wpa_driver_ap_params *params)
 }
 
 
-#if defined(CONFIG_IEEE80211R) || defined(CONFIG_IEEE80211W)
+#if defined(CONFIG_IEEE80211R) || defined(CONFIG_IEEE80211W) || defined(CONFIG_FILS)
 
 static int atheros_send_mgmt(void *priv, const u8 *frm, size_t data_len,
 			     int noack, unsigned int freq,
@@ -2000,7 +2000,7 @@ static int atheros_send_mgmt(void *priv, const u8 *frm, size_t data_len,
 	return set80211priv(drv, IEEE80211_IOCTL_SEND_MGMT, mgmt_frm,
 			    sizeof(struct ieee80211req_mgmtbuf) + data_len);
 }
-#endif /* CONFIG_IEEE80211R || CONFIG_IEEE80211W */
+#endif /* CONFIG_IEEE80211R || CONFIG_IEEE80211W || CONFIG_FILS */
 
 
 #ifdef CONFIG_IEEE80211R
@@ -2288,7 +2288,7 @@ const struct wpa_driver_ops wpa_driver_atheros_ops = {
 	.sta_assoc              = atheros_sta_assoc,
 	.sta_auth               = atheros_sta_auth,
 	.send_mlme       	= atheros_send_mgmt,
-#endif /* CONFIG_IEEE80211R || CONFIG_IEEE80211W */
+#endif /* CONFIG_IEEE80211R || CONFIG_IEEE80211W || CONFIG_FILS */
 #ifdef CONFIG_IEEE80211R
 	.add_tspec      	= atheros_add_tspec,
 	.add_sta_node    	= atheros_add_sta_node,
