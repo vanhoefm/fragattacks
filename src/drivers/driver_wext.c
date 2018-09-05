@@ -2428,8 +2428,8 @@ static int wpa_driver_wext_signal_poll(void *priv, struct wpa_signal_info *si)
 	struct iwreq iwr;
 
 	os_memset(si, 0, sizeof(*si));
-	si->current_signal = -9999;
-	si->current_noise = 9999;
+	si->current_signal = -WPA_INVALID_NOISE;
+	si->current_noise = WPA_INVALID_NOISE;
 	si->chanwidth = CHAN_WIDTH_UNKNOWN;
 
 	os_memset(&iwr, 0, sizeof(iwr));

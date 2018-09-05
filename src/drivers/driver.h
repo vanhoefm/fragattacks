@@ -1913,8 +1913,21 @@ enum chan_width {
 	CHAN_WIDTH_UNKNOWN
 };
 
+#define WPA_INVALID_NOISE 9999
+
 /**
  * struct wpa_signal_info - Information about channel signal quality
+ * @frequency: control frequency
+ * @above_threshold: true if the above threshold was crossed
+ *	(relevant for a CQM event)
+ * @current_signal: in dBm
+ * @avg_signal: in dBm
+ * @avg_beacon_signal: in dBm
+ * @current_noise: %WPA_INVALID_NOISE if not supported
+ * @current_txrate: current TX rate
+ * @chanwidth: channel width
+ * @center_frq1: center frequency for the first segment
+ * @center_frq2: center frequency for the second segment (if relevant)
  */
 struct wpa_signal_info {
 	u32 frequency;

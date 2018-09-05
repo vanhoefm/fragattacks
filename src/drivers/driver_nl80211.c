@@ -1469,7 +1469,7 @@ int nl80211_get_link_signal(struct wpa_driver_nl80211_data *drv,
 {
 	struct nl_msg *msg;
 
-	sig->current_signal = -9999;
+	sig->current_signal = -WPA_INVALID_NOISE;
 	sig->current_txrate = 0;
 
 	if (!(msg = nl80211_drv_msg(drv, 0, NL80211_CMD_GET_STATION)) ||
@@ -1531,7 +1531,7 @@ int nl80211_get_link_noise(struct wpa_driver_nl80211_data *drv,
 {
 	struct nl_msg *msg;
 
-	sig_change->current_noise = 9999;
+	sig_change->current_noise = WPA_INVALID_NOISE;
 	sig_change->frequency = drv->assoc_freq;
 
 	msg = nl80211_drv_msg(drv, NLM_F_DUMP, NL80211_CMD_GET_SURVEY);
