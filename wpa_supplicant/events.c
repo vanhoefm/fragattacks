@@ -3969,6 +3969,16 @@ static void wpas_event_assoc_reject(struct wpa_supplicant *wpa_s,
 	}
 #endif /* CONFIG_SAE */
 
+#ifdef CONFIG_DPP
+	if (wpa_s->current_ssid &&
+	    wpa_s->current_ssid->key_mgmt == WPA_KEY_MGMT_DPP &&
+	    !data->assoc_reject.timed_out) {
+		wpa_dbg(wpa_s, MSG_DEBUG, "DPP: Drop PMKSA cache entry");
+		wpa_sm_aborted_cached(wpa_s->wpa);
+		wpa_sm_pmksa_cache_flush(wpa_s->wpa, wpa_s->current_ssid);
+	}
+#endif /* CONFIG_DPP */
+
 #ifdef CONFIG_FILS
 	/* Update ERP next sequence number */
 	if (wpa_s->auth_alg == WPA_AUTH_ALG_FILS) {
