@@ -927,6 +927,16 @@ struct wpa_ssid {
 	 * 1 = disable transition mode (allow connection only with OWE)
 	 */
 	int owe_only;
+
+	/**
+	 * owe_transition_bss_select_count - OWE transition BSS select count
+	 *
+	 * This is an internally used variable (i.e., not used in external
+	 * configuration) to track the number of selection attempts done for
+	 * OWE BSS in transition mode. This allows fallback to an open BSS if
+	 * the selection attempts for OWE BSS exceed the configured threshold.
+	 */
+	int owe_transition_bss_select_count;
 };
 
 #endif /* CONFIG_SSID_H */
