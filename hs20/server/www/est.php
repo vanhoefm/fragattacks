@@ -2,7 +2,7 @@
 
 require('config.php');
 
-$params = split("/", $_SERVER["PATH_INFO"], 3);
+$params = explode("/", $_SERVER["PATH_INFO"], 3);
 $realm = $params[1];
 $cmd = $params[2];
 $method = $_SERVER["REQUEST_METHOD"];
