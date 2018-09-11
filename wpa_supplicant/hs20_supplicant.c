@@ -49,6 +49,8 @@ struct osu_provider {
 	u8 bssid[ETH_ALEN];
 	u8 osu_ssid[SSID_MAX_LEN];
 	u8 osu_ssid_len;
+	u8 osu_ssid2[SSID_MAX_LEN];
+	u8 osu_ssid2_len;
 	char server_uri[256];
 	u32 osu_methods; /* bit 0 = OMA-DM, bit 1 = SOAP-XML SPP */
 	char osu_nai[256];
@@ -750,6 +752,11 @@ static void hs20_osu_fetch_done(struct wpa_supplicant *wpa_s)
 				wpa_ssid_txt(osu->osu_ssid,
 					     osu->osu_ssid_len));
 		}
+		if (osu->osu_ssid2_len) {
+			fprintf(f, "osu_ssid2=%s\n",
+				wpa_ssid_txt(osu->osu_ssid2,
+					     osu->osu_ssid2_len));
+		}
 		if (osu->osu_nai[0])
 			fprintf(f, "osu_nai=%s\n", osu->osu_nai);
 		for (j = 0; j < osu->friendly_name_count; j++) {
@@ -815,6 +822,7 @@ void hs20_next_osu_icon(struct wpa_supplicant *wpa_s)
 
 static void hs20_osu_add_prov(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 			      const u8 *osu_ssid, u8 osu_ssid_len,
+			      const u8 *osu_ssid2, u8 osu_ssid2_len,
 			      const u8 *pos, size_t len)
 {
 	struct osu_provider *prov;
@@ -836,6 +844,9 @@ static void hs20_osu_add_prov(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 	os_memcpy(prov->bssid, bss->bssid, ETH_ALEN);
 	os_memcpy(prov->osu_ssid, osu_ssid, osu_ssid_len);
 	prov->osu_ssid_len = osu_ssid_len;
+	if (osu_ssid2)
+		os_memcpy(prov->osu_ssid2, osu_ssid2, osu_ssid2_len);
+	prov->osu_ssid2_len = osu_ssid2_len;
 
 	/* OSU Friendly Name Length */
 	if (end - pos < 2) {
@@ -1017,18 +1028,30 @@ void hs20_osu_icon_fetch(struct wpa_supplicant *wpa_s)
 	struct wpabuf *prov_anqp;
 	const u8 *pos, *end;
 	u16 len;
-	const u8 *osu_ssid;
-	u8 osu_ssid_len;
+	const u8 *osu_ssid, *osu_ssid2;
+	u8 osu_ssid_len, osu_ssid2_len;
 	u8 num_providers;
 
 	hs20_free_osu_prov(wpa_s);
 
 	dl_list_for_each(bss, &wpa_s->bss, struct wpa_bss, list) {
+		struct wpa_ie_data data;
+		const u8 *ie;
+
 		if (bss->anqp == NULL)
 			continue;
 		prov_anqp = bss->anqp->hs20_osu_providers_list;
 		if (prov_anqp == NULL)
 			continue;
+		ie = wpa_bss_get_ie(bss, WLAN_EID_RSN);
+		if (ie && wpa_parse_wpa_ie(ie, 2 + ie[1], &data) == 0 &&
+		    (data.key_mgmt & WPA_KEY_MGMT_OSEN)) {
+			osu_ssid2 = bss->ssid;
+			osu_ssid2_len = bss->ssid_len;
+		} else {
+			osu_ssid2 = NULL;
+			osu_ssid2_len = 0;
+		}
 		wpa_printf(MSG_DEBUG, "HS 2.0: Parsing OSU Providers list from "
 			   MACSTR, MAC2STR(bss->bssid));
 		wpa_hexdump_buf(MSG_DEBUG, "HS 2.0: OSU Providers list",
@@ -1070,7 +1093,8 @@ void hs20_osu_icon_fetch(struct wpa_supplicant *wpa_s)
 			if (len > (unsigned int) (end - pos))
 				break;
 			hs20_osu_add_prov(wpa_s, bss, osu_ssid,
-					  osu_ssid_len, pos, len);
+					  osu_ssid_len, osu_ssid2,
+					  osu_ssid2_len, pos, len);
 			pos += len;
 		}
 
