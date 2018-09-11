@@ -2321,6 +2321,29 @@ def test_sigma_dut_sta_scan_bss(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
+def test_sigma_dut_ap_osen(dev, apdev, params):
+    """sigma_dut controlled AP with OSEN"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_osen.sigma-hostapd")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-hs20,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_radius,NAME,AP,IPADDR,127.0.0.1,PORT,1812,PASSWORD,radius")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,OSEN,PMF,Optional")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            # RSN-OSEN (for OSU)
+            dev[0].connect("test-hs20", proto="OSEN", key_mgmt="OSEN",
+                           pairwise="CCMP", group="GTK_NOT_USED",
+                           eap="WFA-UNAUTH-TLS", identity="osen@example.com",
+                           ca_cert="auth_serv/ca.pem", scan_freq="2412")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
 def test_sigma_dut_ap_eap_osen(dev, apdev, params):
     """sigma_dut controlled AP with EAP+OSEN"""
     logdir = os.path.join(params['logdir'],
