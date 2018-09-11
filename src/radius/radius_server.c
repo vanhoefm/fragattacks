@@ -818,6 +818,44 @@ static void radius_server_add_session(struct radius_session *sess)
 }
 
 
+static void db_update_last_msk(struct radius_session *sess, const char *msk)
+{
+#ifdef CONFIG_RADIUS_TEST
+#ifdef CONFIG_SQLITE
+	char *sql = NULL;
+	char *id_str = NULL;
+	const u8 *id;
+	size_t id_len;
+
+	if (!sess->server->db)
+		return;
+
+	id = eap_get_identity(sess->eap, &id_len);
+	if (!id)
+		return;
+	id_str = os_malloc(id_len + 1);
+	if (!id_str)
+		return;
+	os_memcpy(id_str, id, id_len);
+	id_str[id_len] = '\0';
+
+	sql = sqlite3_mprintf("UPDATE users SET last_msk=%Q WHERE identity=%Q",
+			      msk, id_str);
+	os_free(id_str);
+	if (!sql)
+		return;
+
+	if (sqlite3_exec(sess->server->db, sql, NULL, NULL, NULL) !=
+	    SQLITE_OK) {
+		RADIUS_DEBUG("Failed to update last_msk: %s",
+			     sqlite3_errmsg(sess->server->db));
+	}
+	sqlite3_free(sql);
+#endif /* CONFIG_SQLITE */
+#endif /* CONFIG_RADIUS_TEST */
+}
+
+
 static struct radius_msg *
 radius_server_encapsulate_eap(struct radius_server_data *data,
 			      struct radius_client *client,
@@ -863,9 +901,18 @@ radius_server_encapsulate_eap(struct radius_server_data *data,
 	if (code == RADIUS_CODE_ACCESS_ACCEPT && sess->eap_if->eapKeyData) {
 		int len;
 #ifdef CONFIG_RADIUS_TEST
+		char buf[2 * 64 + 1];
+
+		len = sess->eap_if->eapKeyDataLen;
+		if (len > 64)
+			len = 64;
+		len = wpa_snprintf_hex(buf, sizeof(buf),
+				       sess->eap_if->eapKeyData, len);
+		buf[len] = '\0';
+
 		if (data->dump_msk_file) {
 			FILE *f;
-			char buf[2 * 64 + 1];
+
 			f = fopen(data->dump_msk_file, "a");
 			if (f) {
 				len = sess->eap_if->eapKeyDataLen;
@@ -879,6 +926,8 @@ radius_server_encapsulate_eap(struct radius_server_data *data,
 				fclose(f);
 			}
 		}
+
+		db_update_last_msk(sess, buf);
 #endif /* CONFIG_RADIUS_TEST */
 		if (sess->eap_if->eapKeyDataLen > 64) {
 			len = 32;
@@ -1336,10 +1385,12 @@ static int radius_server_request(struct radius_server_data *data,
 
 	if (sess->eap_if->eapSuccess || sess->eap_if->eapFail)
 		is_complete = 1;
-	if (sess->eap_if->eapFail)
+	if (sess->eap_if->eapFail) {
 		srv_log(sess, "EAP authentication failed");
-	else if (sess->eap_if->eapSuccess)
+		db_update_last_msk(sess, "FAIL");
+	} else if (sess->eap_if->eapSuccess) {
 		srv_log(sess, "EAP authentication succeeded");
+	}
 
 	if (sess->eap_if->eapSuccess)
 		radius_server_hs20_t_c_check(sess, msg);
