@@ -2146,6 +2146,22 @@ static int osu_connect(struct hs20_osu_client *ctx, const char *bssid,
 	if (ssid2 && ssid2[0] == '\0')
 		ssid2 = NULL;
 
+	if (ctx->osu_ssid) {
+		if (os_strcmp(ssid, ctx->osu_ssid) == 0) {
+			wpa_printf(MSG_DEBUG,
+				   "Enforced OSU SSID matches ANQP info");
+			ssid2 = NULL;
+		} else if (ssid2 && os_strcmp(ssid2, ctx->osu_ssid) == 0) {
+			wpa_printf(MSG_DEBUG,
+				   "Enforced OSU SSID matches RSN[OSEN] info");
+			ssid = ssid2;
+		} else {
+			wpa_printf(MSG_INFO, "Enforced OSU SSID did not match");
+			write_summary(ctx, "Enforced OSU SSID did not match");
+			return -1;
+		}
+	}
+
 	id = add_network(ifname);
 	if (id < 0)
 		return -1;
@@ -3153,7 +3169,7 @@ int main(int argc, char *argv[])
 		return -1;
 
 	for (;;) {
-		c = getopt(argc, argv, "df:hKNO:qr:s:S:tw:x:");
+		c = getopt(argc, argv, "df:hKNo:O:qr:s:S:tw:x:");
 		if (c < 0)
 			break;
 		switch (c) {
@@ -3169,6 +3185,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'N':
 			no_prod_assoc = 1;
+			break;
+		case 'o':
+			ctx.osu_ssid = optarg;
 			break;
 		case 'O':
 			friendly_name = optarg;
