@@ -2844,6 +2844,31 @@ static void anqp_add_extra(struct wpa_supplicant *wpa_s,
 }
 
 
+static void interworking_parse_venue_url(struct wpa_supplicant *wpa_s,
+					 const u8 *data, size_t len)
+{
+	const u8 *pos = data, *end = data + len;
+	char url[255];
+
+	while (end - pos >= 2) {
+		u8 slen, num;
+
+		slen = *pos++;
+		if (slen < 1 || slen > end - pos) {
+			wpa_printf(MSG_DEBUG,
+				   "ANQP: Truncated Venue URL Duple field");
+			return;
+		}
+
+		num = *pos++;
+		os_memcpy(url, pos, slen - 1);
+		url[slen - 1] = '\0';
+		wpa_msg(wpa_s, MSG_INFO, RX_VENUE_URL "%u %s", num, url);
+		pos += slen - 1;
+	}
+}
+
+
 static void interworking_parse_rx_anqp_resp(struct wpa_supplicant *wpa_s,
 					    struct wpa_bss *bss, const u8 *sa,
 					    u16 info_id,
@@ -2950,6 +2975,18 @@ static void interworking_parse_rx_anqp_resp(struct wpa_supplicant *wpa_s,
 		}
 		break;
 #endif /* CONFIG_FILS */
+	case ANQP_VENUE_URL:
+		wpa_msg(wpa_s, MSG_INFO, RX_ANQP MACSTR " Venue URL",
+			MAC2STR(sa));
+		anqp_add_extra(wpa_s, anqp, info_id, pos, slen);
+
+		if (!wpa_sm_pmf_enabled(wpa_s->wpa)) {
+			wpa_printf(MSG_DEBUG,
+				   "ANQP: Ignore Venue URL since PMF was not enabled");
+			break;
+		}
+		interworking_parse_venue_url(wpa_s, pos, slen);
+		break;
 	case ANQP_VENDOR_SPECIFIC:
 		if (slen < 3)
 			return;
