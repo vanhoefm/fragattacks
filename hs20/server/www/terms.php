@@ -59,8 +59,10 @@ if (!$accept) {
       if (!$row) {
          die("No current session for the specified MAC address");
       }
-      $waiting = $row[0] == 1;
-      $ack = $row[1] == 1;
+      if (strlen($row[0]) > 0)
+            $waiting = $row[0] == 1;
+      if (strlen($row[1]) > 0)
+            $ack = $row[1] == 1;
       $res->closeCursor();
       if (!$waiting)
          break;
