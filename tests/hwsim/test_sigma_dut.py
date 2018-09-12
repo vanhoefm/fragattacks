@@ -4,10 +4,12 @@
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
 
+import binascii
 import logging
 logger = logging.getLogger()
 import os
 import socket
+import struct
 import subprocess
 import threading
 import time
@@ -2480,3 +2482,51 @@ def test_sigma_dut_ap_ent_ft_eap(dev, apdev, params):
             sigma_dut_cmd_check("ap_reset_default")
         finally:
             stop_sigma_dut(sigma)
+
+def test_sigma_dut_venue_url(dev, apdev):
+    """sigma_dut controlled Venue URL fetch"""
+    try:
+        run_sigma_dut_venue_url(dev, apdev)
+    finally:
+        dev[0].set("ignore_old_scan_res", "0")
+
+def run_sigma_dut_venue_url(dev, apdev):
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, debug=True)
+
+    ssid = "venue"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+
+    venue_group = 1
+    venue_type = 13
+    venue_info = struct.pack('BB', venue_group, venue_type)
+    lang1 = "eng"
+    name1= "Example venue"
+    lang2 = "fin"
+    name2 = "Esimerkkipaikka"
+    venue1 = struct.pack('B', len(lang1 + name1)) + lang1 + name1
+    venue2 = struct.pack('B', len(lang2 + name2)) + lang2 + name2
+    venue_name = binascii.hexlify(venue_info + venue1 + venue2)
+
+    url1 = "http://example.com/venue"
+    url2 = "https://example.org/venue-info/"
+    params["venue_group"] = str(venue_group)
+    params["venue_type"] = str(venue_type)
+    params["venue_name"] = [ lang1 + ":" + name1, lang2 + ":" + name2 ]
+    params["venue_url"] = [ "1:" + url1, "2:" + url2 ]
+
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
+    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+    sigma_dut_cmd_check("sta_set_psk,interface,%s,ssid,%s,passphrase,%s,encpType,aes-ccmp,keymgmttype,wpa2,PMF,Required" % (ifname, "venue", "12345678"))
+    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "venue"))
+    sigma_dut_wait_connected(ifname)
+    sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+    sigma_dut_cmd_check("sta_hs2_venue_info,interface," + ifname + ",Display,Yes")
+    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+
+    stop_sigma_dut(sigma)
