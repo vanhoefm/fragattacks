@@ -1986,6 +1986,7 @@ struct osu_data {
 	char url[256];
 	unsigned int methods;
 	char osu_ssid[33];
+	char osu_ssid2[33];
 	char osu_nai[256];
 	struct osu_lang_text friendly_name[MAX_OSU_VALS];
 	size_t friendly_name_count;
@@ -2042,6 +2043,12 @@ static struct osu_data * parse_osu_providers(const char *fname, size_t *count)
 		if (strncmp(buf, "osu_ssid=", 9) == 0) {
 			snprintf(last->osu_ssid, sizeof(last->osu_ssid),
 				 "%s", buf + 9);
+			continue;
+		}
+
+		if (strncmp(buf, "osu_ssid2=", 10) == 0) {
+			snprintf(last->osu_ssid2, sizeof(last->osu_ssid2),
+				 "%s", buf + 10);
 			continue;
 		}
 
@@ -2126,7 +2133,7 @@ static struct osu_data * parse_osu_providers(const char *fname, size_t *count)
 
 
 static int osu_connect(struct hs20_osu_client *ctx, const char *bssid,
-		       const char *ssid, const char *url,
+		       const char *ssid, const char *ssid2, const char *url,
 		       unsigned int methods, int no_prod_assoc,
 		       const char *osu_nai)
 {
@@ -2135,6 +2142,9 @@ static int osu_connect(struct hs20_osu_client *ctx, const char *bssid,
 	char buf[200];
 	struct wpa_ctrl *mon;
 	int res;
+
+	if (ssid2 && ssid2[0] == '\0')
+		ssid2 = NULL;
 
 	id = add_network(ifname);
 	if (id < 0)
@@ -2146,6 +2156,9 @@ static int osu_connect(struct hs20_osu_client *ctx, const char *bssid,
 		if (getcwd(dir, sizeof(dir)) == NULL)
 			return -1;
 		os_snprintf(fname, sizeof(fname), "%s/osu-ca.pem", dir);
+
+		if (ssid2 && set_network_quoted(ifname, id, "ssid", ssid2) < 0)
+			return -1;
 
 		if (set_network(ifname, id, "proto", "OSEN") < 0 ||
 		    set_network(ifname, id, "key_mgmt", "OSEN") < 0 ||
@@ -2331,6 +2344,8 @@ static int cmd_osu_select(struct hs20_osu_client *ctx, const char *dir,
 		fprintf(f, "</table></a><br><small>BSSID: %s<br>\n"
 			"SSID: %s<br>\n",
 			last->bssid, last->osu_ssid);
+		if (last->osu_ssid2[0])
+			fprintf(f, "SSID2: %s<br>\n", last->osu_ssid2);
 		if (last->osu_nai[0])
 			fprintf(f, "NAI: %s<br>\n", last->osu_nai);
 		fprintf(f, "URL: %s<br>\n"
@@ -2359,6 +2374,8 @@ selected:
 		ret = 0;
 		wpa_printf(MSG_INFO, "BSSID: %s", last->bssid);
 		wpa_printf(MSG_INFO, "SSID: %s", last->osu_ssid);
+		if (last->osu_ssid2[0])
+			wpa_printf(MSG_INFO, "SSID2: %s", last->osu_ssid2);
 		wpa_printf(MSG_INFO, "URL: %s", last->url);
 		write_summary(ctx, "Selected OSU provider id=%d BSSID=%s SSID=%s URL=%s",
 			      ret, last->bssid, last->osu_ssid, last->url);
@@ -2413,10 +2430,12 @@ selected:
 					   "No supported OSU provisioning method");
 				ret = -1;
 			}
-		} else if (connect)
+		} else if (connect) {
 			ret = osu_connect(ctx, last->bssid, last->osu_ssid,
+					  last->osu_ssid2,
 					  last->url, last->methods,
 					  no_prod_assoc, last->osu_nai);
+		}
 	} else
 		ret = -1;
 
