@@ -19,6 +19,8 @@ from utils import HwsimSkip
 from hwsim import HWSimRadio
 from test_dpp import check_dpp_capab, update_hapd_config
 from test_suite_b import check_suite_b_192_capa, suite_b_as_params, suite_b_192_rsa_ap_params
+from test_ap_eap import check_eap_capa
+from test_ap_hs20 import hs20_ap_params
 
 def check_sigma_dut():
     if not os.path.exists("./sigma_dut"):
@@ -2530,3 +2532,62 @@ def run_sigma_dut_venue_url(dev, apdev):
     sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
 
     stop_sigma_dut(sigma)
+
+def test_sigma_dut_hs20_assoc_24(dev, apdev):
+    """sigma_dut controlled Hotspot 2.0 connection (2.4 GHz)"""
+    run_sigma_dut_hs20_assoc(dev, apdev, True)
+
+def test_sigma_dut_hs20_assoc_5(dev, apdev):
+    """sigma_dut controlled Hotspot 2.0 connection (5 GHz)"""
+    run_sigma_dut_hs20_assoc(dev, apdev, False)
+
+def run_sigma_dut_hs20_assoc(dev, apdev, band24):
+    hapd0 = None
+    hapd1 = None
+    try:
+        bssid0 = apdev[0]['bssid']
+        params = hs20_ap_params()
+        params['hessid'] = bssid0
+        hapd0 = hostapd.add_ap(apdev[0], params)
+
+        bssid1 = apdev[1]['bssid']
+        params = hs20_ap_params()
+        params['hessid'] = bssid0
+        params["hw_mode"] = "a"
+        params["channel"] = "36"
+        params["country_code"] = "US"
+        hapd1 = hostapd.add_ap(apdev[1], params)
+
+        band = "2.4" if band24 else "5"
+        exp_bssid = bssid0 if band24 else bssid1
+        run_sigma_dut_hs20_assoc_2(dev, apdev, band, exp_bssid)
+    finally:
+        dev[0].request("DISCONNECT")
+        if hapd0:
+            hapd0.request("DISABLE")
+        if hapd1:
+            hapd1.request("DISABLE")
+        subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].flush_scan_cache()
+
+def run_sigma_dut_hs20_assoc_2(dev, apdev, band, expect_bssid):
+    check_eap_capa(dev[0], "MSCHAPV2")
+    dev[0].flush_scan_cache()
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, debug=True)
+
+    sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,HS2-R3" % ifname)
+    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+    sigma_dut_cmd_check("sta_add_credential,interface,%s,type,uname_pwd,realm,example.com,username,hs20-test,password,password" % ifname)
+    res = sigma_dut_cmd_check("sta_hs2_associate,interface,%s,band,%s" % (ifname, band),
+                              timeout=15)
+    sigma_dut_wait_connected(ifname)
+    sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+
+    stop_sigma_dut(sigma)
+
+    if "BSSID," + expect_bssid not in res:
+        raise Exception("Unexpected BSSID: " + res)
