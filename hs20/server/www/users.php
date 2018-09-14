@@ -314,7 +314,7 @@ echo "[<a href=\"users.php?cmd=eventlog&limit=50\">Eventlog</a>] ";
 echo "<br>\n";
 
 echo "<table border=1>\n";
-echo "<tr><th>User<th>Realm<th>Remediation<th>Policy<th>Account type<th>Phase 2 method(s)<th>DevId<th>T&C\n";
+echo "<tr><th>User<th>Realm<th>Remediation<th>Policy<th>Account type<th>Phase 2 method(s)<th>DevId<th>MAC Address<th>T&C\n";
 
 $res = $db->query('SELECT rowid,* FROM users WHERE phase2=1');
 foreach ($res as $row) {
@@ -349,6 +349,7 @@ foreach ($res as $row) {
 	    break;
 	  }
 	}
+	echo "<td>" . $row['mac_addr'];
 	echo "<td>" . $row['t_c_timestamp'];
 	echo "\n";
 }

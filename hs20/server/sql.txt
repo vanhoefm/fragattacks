@@ -22,7 +22,8 @@ CREATE TABLE sessions(
 	devinfo TEXT,
 	devdetail TEXT,
 	cert TEXT,
-	cert_pem TEXT
+	cert_pem TEXT,
+	mac_addr TEXT
 );
 
 CREATE index sessions_id_index ON sessions(id);
@@ -51,7 +52,8 @@ CREATE TABLE users(
 	shared INTEGER,
 	cert TEXT,
 	cert_pem TEXT,
-	t_c_timestamp INTEGER
+	t_c_timestamp INTEGER,
+	mac_addr TEXT
 );
 
 CREATE TABLE wildcards(
@@ -80,4 +82,11 @@ CREATE TABLE current_sessions(
 	hs20_t_c_filtering BOOLEAN,
 	waiting_coa_ack BOOLEAN,
 	coa_ack_received BOOLEAN
+);
+
+CREATE TABLE cert_enroll(
+	mac_addr TEXT PRIMARY KEY,
+	user TEXT,
+	realm TEXT,
+	serialnum TEXT
 );
