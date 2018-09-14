@@ -2620,6 +2620,11 @@ int hostapd_disable_iface(struct hostapd_iface *hapd_iface)
 		!!(hapd_iface->drv_flags &
 		   WPA_DRIVER_FLAGS_AP_TEARDOWN_SUPPORT);
 
+#ifdef NEED_AP_MLME
+	for (j = 0; j < hapd_iface->num_bss; j++)
+		hostapd_cleanup_cs_params(hapd_iface->bss[j]);
+#endif /* NEED_AP_MLME */
+
 	/* same as hostapd_interface_deinit without deinitializing ctrl-iface */
 	for (j = 0; j < hapd_iface->num_bss; j++) {
 		struct hostapd_data *hapd = hapd_iface->bss[j];
@@ -3428,7 +3433,6 @@ hostapd_switch_channel_fallback(struct hostapd_iface *iface,
 				const struct hostapd_freq_params *freq_params)
 {
 	int vht_seg0_idx = 0, vht_seg1_idx = 0, vht_bw = VHT_CHANWIDTH_USE_HT;
-	unsigned int i;
 
 	wpa_printf(MSG_DEBUG, "Restarting all CSA-related BSSes");
 
@@ -3470,10 +3474,8 @@ hostapd_switch_channel_fallback(struct hostapd_iface *iface,
 	/*
 	 * cs_params must not be cleared earlier because the freq_params
 	 * argument may actually point to one of these.
+	 * These params will be cleared during interface disable below.
 	 */
-	for (i = 0; i < iface->num_bss; i++)
-		hostapd_cleanup_cs_params(iface->bss[i]);
-
 	hostapd_disable_iface(iface);
 	hostapd_enable_iface(iface);
 }
