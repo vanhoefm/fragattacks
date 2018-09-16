@@ -3155,14 +3155,16 @@ static int wpa_config_set_cred_roaming_consortiums(struct wpa_cred *cred,
 		}
 		roaming_consortiums_len[num_roaming_consortiums] = len / 2;
 		num_roaming_consortiums++;
-		if (num_roaming_consortiums > MAX_ROAMING_CONS) {
+
+		if (!end)
+			break;
+
+		if (num_roaming_consortiums >= MAX_ROAMING_CONS) {
 			wpa_printf(MSG_INFO,
 				   "Too many roaming_consortiums OIs");
 			return -1;
 		}
 
-		if (!end)
-			break;
 		pos = end + 1;
 	}
 
