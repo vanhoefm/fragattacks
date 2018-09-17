@@ -463,6 +463,12 @@ enum qca_radiotap_vendor_ids {
  *	extendable to send more information. The newer version carries the
  *	legacy blob encapsulated within an attribute and can be extended with
  *	additional vendor attributes that can enhance the NAN command interface.
+ * @QCA_NL80211_VENDOR_SUBCMD_ROAM_SCAN_EVENT: Event to indicate scan triggered
+ *	or stopped within driver/firmware in order to initiate roaming. The
+ *	attributes used with this event are defined in enum
+ *	qca_wlan_vendor_attr_roam_scan. Some drivers may not send these events
+ *	in few cases, e.g., if the host processor is sleeping when this event
+ *	is generated in firmware.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -623,6 +629,7 @@ enum qca_nl80211_vendor_subcmds {
 	/* Frame filter operations for other BSSs/unassociated STAs */
 	QCA_NL80211_VENDOR_SUBCMD_BSS_FILTER = 170,
 	QCA_NL80211_VENDOR_SUBCMD_NAN_EXT = 171,
+	QCA_NL80211_VENDOR_SUBCMD_ROAM_SCAN_EVENT = 172,
 };
 
 enum qca_wlan_vendor_attr {
@@ -5860,6 +5867,57 @@ enum qca_wlan_vendor_twt_setup_req_type {
 	QCA_WLAN_VENDOR_TWT_SETUP_REQUEST = 1,
 	QCA_WLAN_VENDOR_TWT_SETUP_SUGGEST = 2,
 	QCA_WLAN_VENDOR_TWT_SETUP_DEMAND = 3,
+};
+
+/**
+ * enum qca_wlan_roam_scan_event_type - Type of roam scan event
+ *
+ * Indicates the type of roam scan event sent by firmware/driver.
+ *
+ * @QCA_WLAN_ROAM_SCAN_TRIGGER_EVENT: Roam scan trigger event type.
+ * @QCA_WLAN_ROAM_SCAN_STOP_EVENT: Roam scan stopped event type.
+ */
+enum qca_wlan_roam_scan_event_type {
+	QCA_WLAN_ROAM_SCAN_TRIGGER_EVENT = 0,
+	QCA_WLAN_ROAM_SCAN_STOP_EVENT = 1,
+};
+
+/**
+ * enum qca_wlan_roam_scan_trigger_reason - Roam scan trigger reason
+ *
+ * Indicates the reason for triggering roam scan by firmware/driver.
+ *
+ * @QCA_WLAN_ROAM_SCAN_TRIGGER_REASON_LOW_RSSI: Due to low RSSI of current AP.
+ * @QCA_WLAN_ROAM_SCAN_TRIGGER_REASON_HIGH_PER: Due to high packet error rate.
+ */
+enum qca_wlan_roam_scan_trigger_reason {
+	QCA_WLAN_ROAM_SCAN_TRIGGER_REASON_LOW_RSSI = 0,
+	QCA_WLAN_ROAM_SCAN_TRIGGER_REASON_HIGH_PER = 1,
+};
+
+/**
+ * enum qca_wlan_vendor_attr_roam_scan - Vendor subcmd attributes to report
+ * roam scan related details from driver/firmware to user space. enum values
+ * are used for NL attributes sent with
+ * %QCA_NL80211_VENDOR_SUBCMD_ROAM_SCAN_EVENT sub command.
+ */
+enum qca_wlan_vendor_attr_roam_scan {
+	QCA_WLAN_VENDOR_ATTR_ROAM_SCAN_INVALID = 0,
+	/* Encapsulates type of roam scan event being reported. enum
+	 * qca_wlan_roam_scan_event_type describes the possible range of
+	 * values. u32 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_ROAM_SCAN_EVENT_TYPE = 1,
+	/* Encapsulates reason for triggering roam scan. enum
+	 * qca_wlan_roam_scan_trigger_reason describes the possible range of
+	 * values. u32 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_ROAM_SCAN_TRIGGER_REASON = 2,
+
+	/* keep last */
+	QCA_WLAN_VENDOR_ATTR_ROAM_SCAN_AFTER_LAST,
+	QCA_WLAN_VENDOR_ATTR_ROAM_SCAN_MAX =
+	QCA_WLAN_VENDOR_ATTR_ROAM_SCAN_AFTER_LAST - 1,
 };
 
 #endif /* QCA_VENDOR_H */
