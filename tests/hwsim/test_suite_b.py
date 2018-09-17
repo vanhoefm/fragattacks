@@ -27,7 +27,7 @@ def check_suite_b_tls_lib(dev, dhe=False, level128=False):
     if not tls.startswith("OpenSSL"):
         raise HwsimSkip("TLS library not supported for Suite B: " + tls)
     supported = False
-    for ver in [ '1.0.2', '1.1.0' ]:
+    for ver in [ '1.0.2', '1.1.0', '1.1.1' ]:
         if "build=OpenSSL " + ver in tls and "run=OpenSSL " + ver in tls:
             supported = True
             break
