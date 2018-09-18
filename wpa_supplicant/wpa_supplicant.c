@@ -3075,6 +3075,11 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 				"MFP: require MFP");
 			params.mgmt_frame_protection =
 				MGMT_FRAME_PROTECTION_REQUIRED;
+#ifdef CONFIG_OWE
+		} else if (!rsn && (ssid->key_mgmt & WPA_KEY_MGMT_OWE) &&
+			   !ssid->owe_only) {
+			params.mgmt_frame_protection = NO_MGMT_FRAME_PROTECTION;
+#endif /* CONFIG_OWE */
 		}
 	}
 #endif /* CONFIG_IEEE80211W */
