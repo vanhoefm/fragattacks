@@ -670,6 +670,9 @@ void eap_peer_erp_free_keys(struct eap_sm *sm)
 }
 
 
+/* Note: If ext_session and/or ext_emsk are passed to this function, they are
+ * expected to point to allocated memory and those allocations will be freed
+ * unconditionally. */
 void eap_peer_erp_init(struct eap_sm *sm, u8 *ext_session_id,
 		       size_t ext_session_id_len, u8 *ext_emsk,
 		       size_t ext_emsk_len)
@@ -688,7 +691,7 @@ void eap_peer_erp_init(struct eap_sm *sm, u8 *ext_session_id,
 
 	realm = eap_home_realm(sm);
 	if (!realm)
-		return;
+		goto fail;
 	realm_len = os_strlen(realm);
 	wpa_printf(MSG_DEBUG, "EAP: Realm for ERP keyName-NAI: %s", realm);
 	eap_erp_remove_keys_realm(sm, realm);
@@ -775,7 +778,10 @@ void eap_peer_erp_init(struct eap_sm *sm, u8 *ext_session_id,
 	dl_list_add(&sm->erp_keys, &erp->list);
 	erp = NULL;
 fail:
-	bin_clear_free(emsk, emsk_len);
+	if (ext_emsk)
+		bin_clear_free(ext_emsk, ext_emsk_len);
+	else
+		bin_clear_free(emsk, emsk_len);
 	bin_clear_free(ext_session_id, ext_session_id_len);
 	bin_clear_free(erp, sizeof(*erp));
 	os_free(realm);

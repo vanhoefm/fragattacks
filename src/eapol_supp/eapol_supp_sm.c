@@ -503,10 +503,14 @@ SM_STATE(SUPP_BE, SUCCESS)
 			session_id = eap_proxy_get_eap_session_id(
 				sm->eap_proxy, &session_id_len);
 			emsk = eap_proxy_get_emsk(sm->eap_proxy, &emsk_len);
-			if (sm->config->erp && session_id && emsk)
+			if (sm->config->erp && session_id && emsk) {
 				eap_peer_erp_init(sm->eap, session_id,
 						  session_id_len, emsk,
 						  emsk_len);
+			} else {
+				os_free(session_id);
+				bin_clear_free(emsk, emsk_len);
+			}
 		}
 		return;
 	}
