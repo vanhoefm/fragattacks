@@ -4423,3 +4423,9 @@ def test_dpp_pkex_test_fail(dev, apdev):
             if ev:
                 dev[0].request("DPP_STOP_LISTEN")
                 dev[0].wait_event(["GAS-QUERY-DONE"], timeout=3)
+
+def test_dpp_keygen_configurator_error(dev, apdev):
+    """DPP Configurator keygen error case"""
+    check_dpp_capab(dev[0])
+    if "FAIL" not in dev[0].request("DPP_CONFIGURATOR_ADD curve=unknown"):
+        raise Exception("Unexpected success of invalid DPP_CONFIGURATOR_ADD")
