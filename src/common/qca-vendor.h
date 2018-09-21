@@ -5413,6 +5413,23 @@ enum qca_wlan_he_mac_padding_dur {
 	QCA_WLAN_HE_16US_OF_PROCESS_TIME = 2,
 };
 
+/**
+ * enum qca_wlan_he_om_ctrl_ch_bw - HE OM control field BW configuration
+ *
+ * Indicates the HE Operating mode control channel width setting value.
+ *
+ * @QCA_WLAN_HE_OM_CTRL_BW_20M: Primary 20 MHz
+ * @QCA_WLAN_HE_OM_CTRL_BW_40M: Primary 40 MHz
+ * @QCA_WLAN_HE_OM_CTRL_BW_80M: Primary 80 MHz
+ * @QCA_WLAN_HE_OM_CTRL_BW_160M: 160 MHz and 80+80 MHz
+ */
+enum qca_wlan_he_om_ctrl_ch_bw {
+	QCA_WLAN_HE_OM_CTRL_BW_20M = 0,
+	QCA_WLAN_HE_OM_CTRL_BW_40M = 1,
+	QCA_WLAN_HE_OM_CTRL_BW_80M = 2,
+	QCA_WLAN_HE_OM_CTRL_BW_160M = 3,
+};
+
 /* Attributes for data used by
  * QCA_NL80211_VENDOR_SUBCMD_WIFI_TEST_CONFIGURATION
  */
@@ -5603,6 +5620,44 @@ enum qca_wlan_vendor_attr_wifi_test_config {
 	 * parameters required to resume the TWT session.
 	 */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_TWT_RESUME = 26,
+
+	/* 8-bit unsigned value to set the HE operating mode control
+	 * (OM CTRL) Channel Width subfield.
+	 * The Channel Width subfield indicates the operating channel width
+	 * supported by the STA for both reception and transmission.
+	 * Uses the enum qca_wlan_he_om_ctrl_ch_bw values.
+	 * This setting is cleared with the
+	 * QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_CLEAR_HE_OM_CTRL_CONFIG
+	 * flag attribute to reset defaults.
+	 * This attribute is used to configure the testbed device.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_HE_OM_CTRL_BW = 27,
+
+	/* 8-bit unsigned value to configure the number of spatial
+	 * streams in HE operating mode control field.
+	 * This setting is cleared with the
+	 * QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_CLEAR_HE_OM_CTRL_CONFIG
+	 * flag attribute to reset defaults.
+	 * This attribute is used to configure the testbed device.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_HE_OM_CTRL_NSS = 28,
+
+	/* Flag attribute to configure the UL MU disable bit in
+	 * HE operating mode control field.
+	 * This setting is cleared with the
+	 * QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_CLEAR_HE_OM_CTRL_CONFIG
+	 * flag attribute to reset defaults.
+	 * This attribute is used to configure the testbed device.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_HE_OM_CTRL_UL_MU_DISABLE = 29,
+
+	/* Flag attribute to clear the previously set HE operating mode
+	 * control field configuration.
+	 * This attribute is used to configure the testbed device to reset
+	 * defaults to clear any previously set HE operating mode control
+	 * field configuration.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_CLEAR_HE_OM_CTRL_CONFIG = 30,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_AFTER_LAST,
