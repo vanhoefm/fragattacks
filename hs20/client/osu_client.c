@@ -293,7 +293,6 @@ static int process_est_cert(struct hs20_osu_client *ctx, xml_node_t *cert,
 
 	unlink("Cert/est-req.b64");
 	unlink("Cert/est-req.pem");
-	unlink("Cert/est-resp.raw");
 	rmdir("Cert");
 
 	return 0;
