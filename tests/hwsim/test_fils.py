@@ -1738,22 +1738,26 @@ def test_fils_and_ft_over_air_sha384(dev, apdev, params):
     run_fils_and_ft_over_air(dev, apdev, params, "FT-FILS-SHA384")
 
 def run_fils_and_ft_over_air(dev, apdev, params, key_mgmt):
-    hapd = run_fils_and_ft_setup(dev, apdev, params, key_mgmt)
+    hapd, hapd2 = run_fils_and_ft_setup(dev, apdev, params, key_mgmt)
 
     logger.info("FT protocol using FT key hierarchy established during FILS authentication")
     dev[0].scan_for_bss(apdev[1]['bssid'], freq="2412", force_scan=True)
     hapd.request("NOTE FT protocol to AP2 using FT keys established during FILS FILS authentication")
     dev[0].roam(apdev[1]['bssid'])
+    hwsim_utils.test_connectivity(dev[0], hapd2)
 
     logger.info("FT protocol using the previously established FT key hierarchy from FILS authentication")
     hapd.request("NOTE FT protocol back to AP1 using FT keys established during FILS FILS authentication")
     dev[0].roam(apdev[0]['bssid'])
+    hwsim_utils.test_connectivity(dev[0], hapd)
 
     hapd.request("NOTE FT protocol back to AP2 using FT keys established during FILS FILS authentication")
     dev[0].roam(apdev[1]['bssid'])
+    hwsim_utils.test_connectivity(dev[0], hapd2)
 
     hapd.request("NOTE FT protocol back to AP1 using FT keys established during FILS FILS authentication (2)")
     dev[0].roam(apdev[0]['bssid'])
+    hwsim_utils.test_connectivity(dev[0], hapd)
 
 def test_fils_and_ft_over_ds(dev, apdev, params):
     """FILS SK using ERP and FT-over-DS (SHA256)"""
@@ -1764,7 +1768,7 @@ def test_fils_and_ft_over_ds_sha384(dev, apdev, params):
     run_fils_and_ft_over_ds(dev, apdev, params, "FT-FILS-SHA384")
 
 def run_fils_and_ft_over_ds(dev, apdev, params, key_mgmt):
-    hapd = run_fils_and_ft_setup(dev, apdev, params, key_mgmt)
+    hapd, hapd2 = run_fils_and_ft_setup(dev, apdev, params, key_mgmt)
 
     logger.info("FT protocol using FT key hierarchy established during FILS authentication")
     dev[0].scan_for_bss(apdev[1]['bssid'], freq="2412", force_scan=True)
@@ -1806,6 +1810,7 @@ def run_fils_and_ft_setup(dev, apdev, params, key_mgmt):
                         eap="PSK", identity="psk.user@example.com",
                         password_hex="0123456789abcdef0123456789abcdef",
                         erp="1", scan_freq="2412")
+    hwsim_utils.test_connectivity(dev[0], hapd)
 
     dev[0].request("DISCONNECT")
     dev[0].wait_disconnected()
@@ -1863,7 +1868,7 @@ def run_fils_and_ft_setup(dev, apdev, params, key_mgmt):
     params['r1kh'] = "02:00:00:00:03:00 00:01:02:03:04:05 300102030405060708090a0b0c0d0e0f"
     hapd2 = hostapd.add_ap(apdev[1]['ifname'], params)
 
-    return hapd
+    return hapd, hapd2
 
 def test_fils_assoc_replay(dev, apdev, params):
     """FILS AP and replayed Association Request frame"""
