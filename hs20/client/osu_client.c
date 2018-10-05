@@ -1987,6 +1987,7 @@ struct osu_data {
 	char osu_ssid[33];
 	char osu_ssid2[33];
 	char osu_nai[256];
+	char osu_nai2[256];
 	struct osu_lang_text friendly_name[MAX_OSU_VALS];
 	size_t friendly_name_count;
 	struct osu_lang_text serv_desc[MAX_OSU_VALS];
@@ -2054,6 +2055,12 @@ static struct osu_data * parse_osu_providers(const char *fname, size_t *count)
 		if (os_strncmp(buf, "osu_nai=", 8) == 0) {
 			os_snprintf(last->osu_nai, sizeof(last->osu_nai),
 				    "%s", buf + 8);
+			continue;
+		}
+
+		if (os_strncmp(buf, "osu_nai2=", 9) == 0) {
+			os_snprintf(last->osu_nai2, sizeof(last->osu_nai2),
+				    "%s", buf + 9);
 			continue;
 		}
 
@@ -2134,7 +2141,7 @@ static struct osu_data * parse_osu_providers(const char *fname, size_t *count)
 static int osu_connect(struct hs20_osu_client *ctx, const char *bssid,
 		       const char *ssid, const char *ssid2, const char *url,
 		       unsigned int methods, int no_prod_assoc,
-		       const char *osu_nai)
+		       const char *osu_nai, const char *osu_nai2)
 {
 	int id;
 	const char *ifname = ctx->ifname;
@@ -2166,6 +2173,8 @@ static int osu_connect(struct hs20_osu_client *ctx, const char *bssid,
 		return -1;
 	if (set_network_quoted(ifname, id, "ssid", ssid) < 0)
 		return -1;
+	if (ssid2)
+		osu_nai = osu_nai2;
 	if (osu_nai && os_strlen(osu_nai) > 0) {
 		char dir[255], fname[300];
 		if (getcwd(dir, sizeof(dir)) == NULL)
@@ -2363,6 +2372,8 @@ static int cmd_osu_select(struct hs20_osu_client *ctx, const char *dir,
 			fprintf(f, "SSID2: %s<br>\n", last->osu_ssid2);
 		if (last->osu_nai[0])
 			fprintf(f, "NAI: %s<br>\n", last->osu_nai);
+		if (last->osu_nai2[0])
+			fprintf(f, "NAI2: %s<br>\n", last->osu_nai2);
 		fprintf(f, "URL: %s<br>\n"
 			"methods:%s%s<br>\n"
 			"</small></p>\n",
@@ -2449,7 +2460,8 @@ selected:
 			ret = osu_connect(ctx, last->bssid, last->osu_ssid,
 					  last->osu_ssid2,
 					  last->url, last->methods,
-					  no_prod_assoc, last->osu_nai);
+					  no_prod_assoc, last->osu_nai,
+					  last->osu_nai2);
 		}
 	} else
 		ret = -1;
