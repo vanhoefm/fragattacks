@@ -2193,6 +2193,10 @@ static int osu_connect(struct hs20_osu_client *ctx, const char *bssid,
 		    set_network_quoted(ifname, id, "identity", osu_nai) < 0 ||
 		    set_network_quoted(ifname, id, "ca_cert", fname) < 0)
 			return -1;
+	} else if (ssid2) {
+		wpa_printf(MSG_INFO, "No OSU_NAI set for RSN[OSEN]");
+		write_summary(ctx, "No OSU_NAI set for RSN[OSEN]");
+		return -1;
 	} else {
 		if (set_network(ifname, id, "key_mgmt", "NONE") < 0)
 			return -1;
