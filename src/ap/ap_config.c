@@ -631,6 +631,7 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 				os_free(p->icons[j]);
 			os_free(p->icons);
 			os_free(p->osu_nai);
+			os_free(p->osu_nai2);
 			os_free(p->service_desc);
 		}
 		os_free(conf->hs20_osu_providers);

@@ -181,6 +181,8 @@ static void anqp_add_hs_capab_list(struct hostapd_data *hapd,
 		wpabuf_put_u8(buf, HS20_STYPE_OPERATING_CLASS);
 	if (hapd->conf->hs20_osu_providers_count)
 		wpabuf_put_u8(buf, HS20_STYPE_OSU_PROVIDERS_LIST);
+	if (hapd->conf->hs20_osu_providers_nai_count)
+		wpabuf_put_u8(buf, HS20_STYPE_OSU_PROVIDERS_NAI_LIST);
 	if (hapd->conf->hs20_icons_count)
 		wpabuf_put_u8(buf, HS20_STYPE_ICON_REQUEST);
 	if (hapd->conf->hs20_operator_icon_count)
@@ -817,6 +819,40 @@ static void anqp_add_osu_providers_list(struct hostapd_data *hapd,
 }
 
 
+static void anqp_add_osu_provider_nai(struct wpabuf *buf,
+				      struct hs20_osu_provider *p)
+{
+	/* OSU_NAI for shared BSS (Single SSID) */
+	if (p->osu_nai2) {
+		wpabuf_put_u8(buf, os_strlen(p->osu_nai2));
+		wpabuf_put_str(buf, p->osu_nai2);
+	} else {
+		wpabuf_put_u8(buf, 0);
+	}
+}
+
+
+static void anqp_add_osu_providers_nai_list(struct hostapd_data *hapd,
+					    struct wpabuf *buf)
+{
+	if (hapd->conf->hs20_osu_providers_nai_count) {
+		size_t i;
+		u8 *len = gas_anqp_add_element(buf, ANQP_VENDOR_SPECIFIC);
+		wpabuf_put_be24(buf, OUI_WFA);
+		wpabuf_put_u8(buf, HS20_ANQP_OUI_TYPE);
+		wpabuf_put_u8(buf, HS20_STYPE_OSU_PROVIDERS_NAI_LIST);
+		wpabuf_put_u8(buf, 0); /* Reserved */
+
+		for (i = 0; i < hapd->conf->hs20_osu_providers_count; i++) {
+			anqp_add_osu_provider_nai(
+				buf, &hapd->conf->hs20_osu_providers[i]);
+		}
+
+		gas_anqp_set_element_len(buf, len);
+	}
+}
+
+
 static void anqp_add_icon_binary_file(struct hostapd_data *hapd,
 				      struct wpabuf *buf,
 				      const u8 *name, size_t name_len)
@@ -1024,6 +1060,8 @@ gas_serv_build_gas_resp_payload(struct hostapd_data *hapd,
 		anqp_add_icon_binary_file(hapd, buf, icon_name, icon_name_len);
 	if (request & ANQP_REQ_OPERATOR_ICON_METADATA)
 		anqp_add_operator_icon_metadata(hapd, buf);
+	if (request & ANQP_REQ_OSU_PROVIDERS_NAI_LIST)
+		anqp_add_osu_providers_nai_list(hapd, buf);
 #endif /* CONFIG_HS20 */
 
 #ifdef CONFIG_MBO
@@ -1215,6 +1253,11 @@ static void rx_anqp_hs_query_list(struct hostapd_data *hapd, u8 subtype,
 		set_anqp_req(ANQP_REQ_OPERATOR_ICON_METADATA,
 			     "Operator Icon Metadata",
 			     hapd->conf->hs20_operator_icon_count, qi);
+		break;
+	case HS20_STYPE_OSU_PROVIDERS_NAI_LIST:
+		set_anqp_req(ANQP_REQ_OSU_PROVIDERS_NAI_LIST,
+			     "OSU Providers NAI List",
+			     hapd->conf->hs20_osu_providers_nai_count, qi);
 		break;
 	default:
 		wpa_printf(MSG_DEBUG, "ANQP: Unsupported HS 2.0 subtype %u",
