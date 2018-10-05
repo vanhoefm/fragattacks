@@ -54,6 +54,7 @@ struct osu_provider {
 	char server_uri[256];
 	u32 osu_methods; /* bit 0 = OMA-DM, bit 1 = SOAP-XML SPP */
 	char osu_nai[256];
+	char osu_nai2[256];
 	struct osu_lang_string friendly_name[OSU_MAX_ITEMS];
 	size_t friendly_name_count;
 	struct osu_lang_string serv_desc[OSU_MAX_ITEMS];
@@ -673,6 +674,15 @@ void hs20_parse_rx_hs20_anqp_resp(struct wpa_supplicant *wpa_s,
 				wpabuf_alloc_copy(pos, slen);
 		}
 		break;
+	case HS20_STYPE_OSU_PROVIDERS_NAI_LIST:
+		wpa_msg(wpa_s, MSG_INFO, RX_HS20_ANQP MACSTR
+			" OSU Providers NAI List", MAC2STR(sa));
+		if (anqp) {
+			wpabuf_free(anqp->hs20_osu_providers_nai_list);
+			anqp->hs20_osu_providers_nai_list =
+				wpabuf_alloc_copy(pos, slen);
+		}
+		break;
 	default:
 		wpa_printf(MSG_DEBUG, "HS20: Unsupported subtype %u", subtype);
 		break;
@@ -759,6 +769,8 @@ static void hs20_osu_fetch_done(struct wpa_supplicant *wpa_s)
 		}
 		if (osu->osu_nai[0])
 			fprintf(f, "osu_nai=%s\n", osu->osu_nai);
+		if (osu->osu_nai2[0])
+			fprintf(f, "osu_nai2=%s\n", osu->osu_nai2);
 		for (j = 0; j < osu->friendly_name_count; j++) {
 			fprintf(f, "friendly_name=%s:%s\n",
 				osu->friendly_name[j].lang,
@@ -1102,6 +1114,35 @@ void hs20_osu_icon_fetch(struct wpa_supplicant *wpa_s)
 			wpa_printf(MSG_DEBUG, "HS 2.0: Ignored %d bytes of "
 				   "extra data after OSU Providers",
 				   (int) (end - pos));
+		}
+
+		prov_anqp = bss->anqp->hs20_osu_providers_nai_list;
+		if (!prov_anqp)
+			continue;
+		wpa_printf(MSG_DEBUG,
+			   "HS 2.0: Parsing OSU Providers NAI List from "
+			   MACSTR, MAC2STR(bss->bssid));
+		wpa_hexdump_buf(MSG_DEBUG, "HS 2.0: OSU Providers NAI List",
+				prov_anqp);
+		pos = wpabuf_head(prov_anqp);
+		end = pos + wpabuf_len(prov_anqp);
+		num_providers = 0;
+		while (end - pos > 0) {
+			len = *pos++;
+			if (end - pos < len) {
+				wpa_printf(MSG_DEBUG,
+					   "HS 2.0: Not enough room for OSU_NAI");
+				break;
+			}
+			if (num_providers >= wpa_s->osu_prov_count) {
+				wpa_printf(MSG_DEBUG,
+					   "HS 2.0: Ignore unexpected OSU Provider NAI List entries");
+				break;
+			}
+			os_memcpy(wpa_s->osu_prov[num_providers].osu_nai2,
+				  pos, len);
+			pos += len;
+			num_providers++;
 		}
 	}
 

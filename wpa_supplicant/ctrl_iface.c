@@ -4809,6 +4809,8 @@ static int print_bss_info(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 				   anqp->hs20_osu_providers_list);
 		pos = anqp_add_hex(pos, end, "hs20_operator_icon_metadata",
 				   anqp->hs20_operator_icon_metadata);
+		pos = anqp_add_hex(pos, end, "hs20_osu_providers_nai_list",
+				   anqp->hs20_osu_providers_nai_list);
 #endif /* CONFIG_HS20 */
 
 		dl_list_for_each(elem, &anqp->anqp_elems,

@@ -303,8 +303,10 @@ static int interworking_anqp_send_req(struct wpa_supplicant *wpa_s,
 			wpabuf_put_u8(extra, HS20_STYPE_CONNECTION_CAPABILITY);
 		if (all)
 			wpabuf_put_u8(extra, HS20_STYPE_OPERATING_CLASS);
-		if (all)
+		if (all) {
 			wpabuf_put_u8(extra, HS20_STYPE_OSU_PROVIDERS_LIST);
+			wpabuf_put_u8(extra, HS20_STYPE_OSU_PROVIDERS_NAI_LIST);
+		}
 		gas_anqp_set_element_len(extra, len_pos);
 	}
 #endif /* CONFIG_HS20 */

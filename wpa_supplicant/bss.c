@@ -103,6 +103,7 @@ static struct wpa_bss_anqp * wpa_bss_anqp_clone(struct wpa_bss_anqp *anqp)
 	ANQP_DUP(hs20_operating_class);
 	ANQP_DUP(hs20_osu_providers_list);
 	ANQP_DUP(hs20_operator_icon_metadata);
+	ANQP_DUP(hs20_osu_providers_nai_list);
 #endif /* CONFIG_HS20 */
 #undef ANQP_DUP
 
@@ -187,6 +188,7 @@ static void wpa_bss_anqp_free(struct wpa_bss_anqp *anqp)
 	wpabuf_free(anqp->hs20_operating_class);
 	wpabuf_free(anqp->hs20_osu_providers_list);
 	wpabuf_free(anqp->hs20_operator_icon_metadata);
+	wpabuf_free(anqp->hs20_osu_providers_nai_list);
 #endif /* CONFIG_HS20 */
 
 	os_free(anqp);
