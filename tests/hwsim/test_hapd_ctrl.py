@@ -385,6 +385,7 @@ def test_hapd_ctrl_set_error_cases(dev, apdev):
                'osu_ssid "1234567890123456789012345678901234567890"',
                "osu_friendly_name eng:Example",
                "osu_nai anonymous@example.com",
+               "osu_nai2 anonymous@example.com",
                "osu_method_list 1 0",
                "osu_icon foo",
                "osu_service_desc eng:Example services",

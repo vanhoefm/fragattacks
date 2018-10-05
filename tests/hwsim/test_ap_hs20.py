@@ -3107,6 +3107,7 @@ def test_ap_hs20_fetch_osu_single_ssid(dev, apdev):
     params['osu_ssid'] = '"HS 2.0 OSU open"'
     params['osu_method_list'] = "1"
     params['osu_friendly_name'] = [ "eng:Test OSU", "fin:Testi-OSU" ]
+    params['osu_nai2'] = "osen@example.com"
     params['osu_icon'] = "w1fi_logo"
     params['osu_service_desc'] = [ "eng:Example services", "fin:Esimerkkipalveluja" ]
     params['osu_server_uri'] = "https://example.com/osu/"
@@ -3133,6 +3134,8 @@ def test_ap_hs20_fetch_osu_single_ssid(dev, apdev):
             raise Exception("Timeout on OSU fetch")
         osu_ssid = False
         osu_ssid2 = False
+        osu_nai = False
+        osu_nai2 = False
         with open(os.path.join(dir, "osu-providers.txt"), "r") as f:
             for l in f.readlines():
                 logger.info(l.strip())
@@ -3140,10 +3143,90 @@ def test_ap_hs20_fetch_osu_single_ssid(dev, apdev):
                     osu_ssid = True
                 if l.strip() == "osu_ssid2=test-hs20":
                     osu_ssid2 = True
+                if l.strip().startswith("osu_nai="):
+                    osu_nai = True
+                if l.strip() == "osu_nai2=osen@example.com":
+                    osu_nai2 = True
         if not osu_ssid:
             raise Exception("osu_ssid not reported")
         if not osu_ssid2:
             raise Exception("osu_ssid2 not reported")
+        if osu_nai:
+            raise Exception("osu_nai reported unexpectedly")
+        if not osu_nai2:
+            raise Exception("osu_nai2 not reported")
+    finally:
+        files = [ f for f in os.listdir(dir) if f.startswith("osu-") ]
+        for f in files:
+            os.remove(dir + "/" + f)
+        os.rmdir(dir)
+
+def test_ap_hs20_fetch_osu_single_ssid2(dev, apdev):
+    """Hotspot 2.0 OSU provider and single SSID (two OSU providers)"""
+    bssid = apdev[0]['bssid']
+    params = hs20_ap_params()
+    params['hs20_icon'] = "128:80:zxx:image/png:w1fi_logo:w1fi_logo-no-file.png"
+    params['osu_ssid'] = '"HS 2.0 OSU open"'
+    params['osu_method_list'] = "1"
+    params['osu_friendly_name'] = [ "eng:Test OSU", "fin:Testi-OSU" ]
+    params['osu_nai2'] = "osen@example.com"
+    params['osu_icon'] = "w1fi_logo"
+    params['osu_service_desc'] = [ "eng:Example services", "fin:Esimerkkipalveluja" ]
+    params['osu_server_uri'] = "https://example.com/osu/"
+    params['wpa_key_mgmt'] = "WPA-EAP OSEN"
+    hapd = hostapd.add_ap(apdev[0], params, no_enable=True)
+
+    hapd.set('osu_server_uri', 'https://another.example.com/osu/')
+    hapd.set('osu_method_list', "1")
+    hapd.set('osu_nai2', "osen@another.example.com")
+    hapd.enable()
+
+    dev[0].hs20_enable()
+    dir = "/tmp/osu-fetch"
+    if os.path.isdir(dir):
+       files = [ f for f in os.listdir(dir) if f.startswith("osu-") ]
+       for f in files:
+           os.remove(dir + "/" + f)
+    else:
+        try:
+            os.makedirs(dir)
+        except:
+            pass
+    dev[0].scan_for_bss(bssid, freq="2412")
+    try:
+        dev[0].request("SET osu_dir " + dir)
+        dev[0].request("FETCH_OSU")
+        ev = dev[0].wait_event(["OSU provider fetch completed"], timeout=30)
+        if ev is None:
+            raise Exception("Timeout on OSU fetch")
+        osu_ssid = False
+        osu_ssid2 = False
+        osu_nai = False
+        osu_nai2 = False
+        osu_nai2b = False
+        with open(os.path.join(dir, "osu-providers.txt"), "r") as f:
+            for l in f.readlines():
+                logger.info(l.strip())
+                if l.strip() == "osu_ssid=HS 2.0 OSU open":
+                    osu_ssid = True
+                if l.strip() == "osu_ssid2=test-hs20":
+                    osu_ssid2 = True
+                if l.strip().startswith("osu_nai="):
+                    osu_nai = True
+                if l.strip() == "osu_nai2=osen@example.com":
+                    osu_nai2 = True
+                if l.strip() == "osu_nai2=osen@another.example.com":
+                    osu_nai2b = True
+        if not osu_ssid:
+            raise Exception("osu_ssid not reported")
+        if not osu_ssid2:
+            raise Exception("osu_ssid2 not reported")
+        if osu_nai:
+            raise Exception("osu_nai reported unexpectedly")
+        if not osu_nai2:
+            raise Exception("osu_nai2 not reported")
+        if not osu_nai2b:
+            raise Exception("osu_nai2b not reported")
     finally:
         files = [ f for f in os.listdir(dir) if f.startswith("osu-") ]
         for f in files:
