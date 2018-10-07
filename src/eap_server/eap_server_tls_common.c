@@ -341,6 +341,11 @@ int eap_server_tls_phase1(struct eap_sm *sm, struct eap_ssl_data *data)
 		data->tls_v13 = os_strcmp(buf, "TLSv1.3") == 0;
 	}
 
+	if (!sm->serial_num &&
+	    tls_connection_established(sm->ssl_ctx, data->conn))
+		sm->serial_num = tls_connection_peer_serial_num(sm->ssl_ctx,
+								data->conn);
+
 	return 0;
 }
 
