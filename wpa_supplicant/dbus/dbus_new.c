@@ -128,7 +128,8 @@ void wpas_dbus_unsubscribe_noc(struct wpas_dbus_priv *priv)
  * Notify listeners about event related with interface
  */
 static void wpas_dbus_signal_interface(struct wpa_supplicant *wpa_s,
-				       const char *sig_name, int properties)
+				       const char *sig_name,
+				       dbus_bool_t properties)
 {
 	struct wpas_dbus_priv *iface;
 	DBusMessage *msg;
@@ -230,7 +231,7 @@ void wpas_dbus_signal_scan_done(struct wpa_supplicant *wpa_s, int success)
  */
 static void wpas_dbus_signal_bss(struct wpa_supplicant *wpa_s,
 				 const char *bss_obj_path,
-				 const char *sig_name, int properties)
+				 const char *sig_name, dbus_bool_t properties)
 {
 	struct wpas_dbus_priv *iface;
 	DBusMessage *msg;
@@ -364,7 +365,7 @@ void wpas_dbus_signal_blob_removed(struct wpa_supplicant *wpa_s,
  */
 static void wpas_dbus_signal_network(struct wpa_supplicant *wpa_s,
 				     int id, const char *sig_name,
-				     int properties)
+				     dbus_bool_t properties)
 {
 	struct wpas_dbus_priv *iface;
 	DBusMessage *msg;
@@ -1882,7 +1883,7 @@ void wpas_dbus_signal_p2p_sd_response(struct wpa_supplicant *wpa_s,
  */
 static void wpas_dbus_signal_persistent_group(struct wpa_supplicant *wpa_s,
 					      int id, const char *sig_name,
-					      int properties)
+					      dbus_bool_t properties)
 {
 	struct wpas_dbus_priv *iface;
 	DBusMessage *msg;
@@ -4066,7 +4067,7 @@ static const struct wpa_dbus_signal_desc wpas_dbus_p2p_peer_signals[] = {
  */
 static void wpas_dbus_signal_peer(struct wpa_supplicant *wpa_s,
 				  const u8 *dev_addr, const char *interface,
-				  const char *sig_name, int properties)
+				  const char *sig_name, dbus_bool_t properties)
 {
 	struct wpas_dbus_priv *iface;
 	DBusMessage *msg;
