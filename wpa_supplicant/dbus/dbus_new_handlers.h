@@ -22,6 +22,11 @@ struct bss_handler_args {
 	unsigned int id;
 };
 
+struct sta_handler_args {
+	struct wpa_supplicant *wpa_s;
+	const u8 *sta;
+};
+
 dbus_bool_t wpas_dbus_simple_property_getter(DBusMessageIter *iter,
 					     const int type,
 					     const void *val,
@@ -166,6 +171,14 @@ DECLARE_ACCESSOR(wpas_dbus_getter_networks);
 DECLARE_ACCESSOR(wpas_dbus_getter_pkcs11_engine_path);
 DECLARE_ACCESSOR(wpas_dbus_getter_pkcs11_module_path);
 DECLARE_ACCESSOR(wpas_dbus_getter_blobs);
+DECLARE_ACCESSOR(wpas_dbus_getter_stas);
+DECLARE_ACCESSOR(wpas_dbus_getter_sta_address);
+DECLARE_ACCESSOR(wpas_dbus_getter_sta_aid);
+DECLARE_ACCESSOR(wpas_dbus_getter_sta_caps);
+DECLARE_ACCESSOR(wpas_dbus_getter_sta_rx_packets);
+DECLARE_ACCESSOR(wpas_dbus_getter_sta_tx_packets);
+DECLARE_ACCESSOR(wpas_dbus_getter_sta_tx_bytes);
+DECLARE_ACCESSOR(wpas_dbus_getter_sta_rx_bytes);
 DECLARE_ACCESSOR(wpas_dbus_getter_bss_bssid);
 DECLARE_ACCESSOR(wpas_dbus_getter_bss_ssid);
 DECLARE_ACCESSOR(wpas_dbus_getter_bss_privacy);

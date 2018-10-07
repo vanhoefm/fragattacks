@@ -735,6 +735,11 @@ fi.w1.wpa_supplicant1.CreateInterface.
       </li>
 
       <li>
+	<h3>Stations - ao - (read)</h3>
+	<p>List of D-Bus objects paths representing connected stations in AP mode.</p>
+      </li>
+
+      <li>
 	<h3>Networks - ao - (read)</h3>
 	<p>List of D-Bus objects paths representing configured networks.</p>
       </li>
@@ -1123,6 +1128,32 @@ fi.w1.wpa_supplicant1.CreateInterface.
 	<dl>
 	  <dt>s : mac</dt>
 	  <dd>A mac address which has been deauthorized.</dd>
+	</dl>
+      </li>
+
+      <li>
+	<h3>StationAdded ( o : Station, a{sv} : properties )</h3>
+	<p>A new station has been added to the interface.</p>
+	<p>This signal complements StaAuthorized, passing the Station object and its properties.</p>
+	<h4>Arguments</h4>
+	<dl>
+	  <dt>o : Station</dt>
+	  <dd>A D-Bus path to an object representing the new Station.</dd>
+	</dl>
+	<dl>
+	  <dt>a{sv} : properties</dt>
+	  <dd>A dictionary containing properties of added Station.</dd>
+	</dl>
+      </li>
+
+      <li>
+	<h3>StationRemoved ( o : Station )</h3>
+	<p>The station has been removed from the interface.</p>
+	<p>This signal complements StaDeauthorized, passing the Station object.</p>
+	<h4>Arguments</h4>
+	<dl>
+	  <dt>o : Station</dt>
+	  <dd>A D-Bus path to an object representing the Station.</dd>
 	</dl>
       </li>
 

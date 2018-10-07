@@ -15,6 +15,9 @@
 #include "eap_peer/eap_methods.h"
 #include "eapol_supp/eapol_supp_sm.h"
 #include "rsn_supp/wpa.h"
+#include "ap/hostapd.h"
+#include "ap/sta_info.h"
+#include "ap/ap_drv_ops.h"
 #include "../config.h"
 #include "../wpa_supplicant_i.h"
 #include "../driver_i.h"
@@ -22,6 +25,7 @@
 #include "../bss.h"
 #include "../scan.h"
 #include "../autoscan.h"
+#include "../ap.h"
 #include "dbus_new_helpers.h"
 #include "dbus_new.h"
 #include "dbus_new_handlers.h"
@@ -3802,6 +3806,289 @@ dbus_bool_t wpas_dbus_setter_iface_global(
 
 	wpa_supplicant_update_config(wpa_s);
 	return TRUE;
+}
+
+
+/**
+ * wpas_dbus_getter_stas - Get connected stations for an interface
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: a list of stations
+ *
+ * Getter for "Stations" property.
+ */
+dbus_bool_t wpas_dbus_getter_stas(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct wpa_supplicant *wpa_s = user_data;
+	struct hostapd_data *hapd;
+	struct sta_info *sta = NULL;
+	char **paths = NULL;
+	unsigned int i = 0, num = 0;
+	dbus_bool_t success = FALSE;
+
+	if (!wpa_s->dbus_new_path) {
+		dbus_set_error(error, DBUS_ERROR_FAILED,
+			       "%s: no D-Bus interface", __func__);
+		return FALSE;
+	}
+
+	if (wpa_s->ap_iface) {
+		hapd = wpa_s->ap_iface->bss[0];
+		sta = hapd->sta_list;
+		num = hapd->num_sta;
+	}
+
+	paths = os_calloc(num, sizeof(char *));
+	if (!paths) {
+		dbus_set_error_const(error, DBUS_ERROR_NO_MEMORY, "no memory");
+		return FALSE;
+	}
+
+	/* Loop through scan results and append each result's object path */
+	for (; sta; sta = sta->next) {
+		paths[i] = os_zalloc(WPAS_DBUS_OBJECT_PATH_MAX);
+		if (!paths[i]) {
+			dbus_set_error_const(error, DBUS_ERROR_NO_MEMORY,
+					     "no memory");
+			goto out;
+		}
+		/* Construct the object path for this BSS. */
+		os_snprintf(paths[i++], WPAS_DBUS_OBJECT_PATH_MAX,
+			    "%s/" WPAS_DBUS_NEW_STAS_PART "/" COMPACT_MACSTR,
+			    wpa_s->dbus_new_path, MAC2STR(sta->addr));
+	}
+
+	success = wpas_dbus_simple_array_property_getter(iter,
+							 DBUS_TYPE_OBJECT_PATH,
+							 paths, num,
+							 error);
+
+out:
+	while (i)
+		os_free(paths[--i]);
+	os_free(paths);
+	return success;
+}
+
+
+/**
+ * wpas_dbus_getter_sta_address - Return the address of a connected station
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: TRUE on success, FALSE on failure
+ *
+ * Getter for "Address" property.
+ */
+dbus_bool_t wpas_dbus_getter_sta_address(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct sta_handler_args *args = user_data;
+	struct sta_info *sta;
+
+	sta = ap_get_sta(args->wpa_s->ap_iface->bss[0], args->sta);
+	if (!sta)
+		return FALSE;
+
+	return wpas_dbus_simple_array_property_getter(iter, DBUS_TYPE_BYTE,
+						      sta->addr, ETH_ALEN,
+						      error);
+}
+
+
+/**
+ * wpas_dbus_getter_sta_aid - Return the AID of a connected station
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: TRUE on success, FALSE on failure
+ *
+ * Getter for "AID" property.
+ */
+dbus_bool_t wpas_dbus_getter_sta_aid(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct sta_handler_args *args = user_data;
+	struct sta_info *sta;
+
+	sta = ap_get_sta(args->wpa_s->ap_iface->bss[0], args->sta);
+	if (!sta)
+		return FALSE;
+
+	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT16,
+						&sta->aid,
+						error);
+}
+
+
+/**
+ * wpas_dbus_getter_sta_caps - Return the capabilities of a station
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: TRUE on success, FALSE on failure
+ *
+ * Getter for "Capabilities" property.
+ */
+dbus_bool_t wpas_dbus_getter_sta_caps(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct sta_handler_args *args = user_data;
+	struct sta_info *sta;
+
+	sta = ap_get_sta(args->wpa_s->ap_iface->bss[0], args->sta);
+	if (!sta)
+		return FALSE;
+
+	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT16,
+						&sta->capability,
+						error);
+}
+
+
+/**
+ * wpas_dbus_getter_rx_packets - Return the received packets for a station
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: TRUE on success, FALSE on failure
+ *
+ * Getter for "RxPackets" property.
+ */
+dbus_bool_t wpas_dbus_getter_sta_rx_packets(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct sta_handler_args *args = user_data;
+	struct sta_info *sta;
+	struct hostap_sta_driver_data data;
+	struct hostapd_data *hapd;
+
+	if (!args->wpa_s->ap_iface)
+		return FALSE;
+
+	hapd = args->wpa_s->ap_iface->bss[0];
+	sta = ap_get_sta(hapd, args->sta);
+	if (!sta)
+		return FALSE;
+
+	if (hostapd_drv_read_sta_data(hapd, &data, sta->addr) < 0)
+		return FALSE;
+
+	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT64,
+						&data.rx_packets,
+						error);
+}
+
+
+/**
+ * wpas_dbus_getter_tx_packets - Return the transmitted packets for a station
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: TRUE on success, FALSE on failure
+ *
+ * Getter for "TxPackets" property.
+ */
+dbus_bool_t wpas_dbus_getter_sta_tx_packets(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct sta_handler_args *args = user_data;
+	struct sta_info *sta;
+	struct hostap_sta_driver_data data;
+	struct hostapd_data *hapd;
+
+	if (!args->wpa_s->ap_iface)
+		return FALSE;
+
+	hapd = args->wpa_s->ap_iface->bss[0];
+	sta = ap_get_sta(hapd, args->sta);
+	if (!sta)
+		return FALSE;
+
+	if (hostapd_drv_read_sta_data(hapd, &data, sta->addr) < 0)
+		return FALSE;
+
+	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT64,
+						&data.tx_packets,
+						error);
+}
+
+
+/**
+ * wpas_dbus_getter_tx_bytes - Return the transmitted bytes for a station
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: TRUE on success, FALSE on failure
+ *
+ * Getter for "TxBytes" property.
+ */
+dbus_bool_t wpas_dbus_getter_sta_tx_bytes(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct sta_handler_args *args = user_data;
+	struct sta_info *sta;
+	struct hostap_sta_driver_data data;
+	struct hostapd_data *hapd;
+
+	if (!args->wpa_s->ap_iface)
+		return FALSE;
+
+	hapd = args->wpa_s->ap_iface->bss[0];
+	sta = ap_get_sta(hapd, args->sta);
+	if (!sta)
+		return FALSE;
+
+	if (hostapd_drv_read_sta_data(hapd, &data, sta->addr) < 0)
+		return FALSE;
+
+	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT64,
+						&data.tx_bytes,
+						error);
+}
+
+
+/**
+ * wpas_dbus_getter_rx_bytes - Return the received bytes for a station
+ * @iter: Pointer to incoming dbus message iter
+ * @error: Location to store error on failure
+ * @user_data: Function specific data
+ * Returns: TRUE on success, FALSE on failure
+ *
+ * Getter for "RxBytes" property.
+ */
+dbus_bool_t wpas_dbus_getter_sta_rx_bytes(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct sta_handler_args *args = user_data;
+	struct sta_info *sta;
+	struct hostap_sta_driver_data data;
+	struct hostapd_data *hapd;
+
+	if (!args->wpa_s->ap_iface)
+		return FALSE;
+
+	hapd = args->wpa_s->ap_iface->bss[0];
+	sta = ap_get_sta(hapd, args->sta);
+	if (!sta)
+		return FALSE;
+
+	if (hostapd_drv_read_sta_data(hapd, &data, sta->addr) < 0)
+		return FALSE;
+
+	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT64,
+						&data.rx_bytes,
+						error);
 }
 
 
