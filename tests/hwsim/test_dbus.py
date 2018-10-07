@@ -2367,6 +2367,33 @@ def _test_dbus_apscan(dev, apdev):
     if_obj.Set(WPAS_DBUS_IFACE, "ApScan", dbus.UInt32(1),
                dbus_interface=dbus.PROPERTIES_IFACE)
 
+def test_dbus_pmf(dev, apdev):
+    """D-Bus Get/Set Pmf"""
+    try:
+        _test_dbus_pmf(dev, apdev)
+    finally:
+        dev[0].request("SET pmf 0")
+
+def _test_dbus_pmf(dev, apdev):
+    (bus,wpas_obj,path,if_obj) = prepare_dbus(dev[0])
+
+    dev[0].set("pmf", "0")
+    res = if_obj.Get(WPAS_DBUS_IFACE, "Pmf",
+                     dbus_interface=dbus.PROPERTIES_IFACE)
+    if res != "0":
+        raise Exception("Unexpected initial Pmf value: %s" % res)
+
+    for i in range(3):
+        if_obj.Set(WPAS_DBUS_IFACE, "Pmf", str(i),
+                   dbus_interface=dbus.PROPERTIES_IFACE)
+        res = if_obj.Get(WPAS_DBUS_IFACE, "Pmf",
+                         dbus_interface=dbus.PROPERTIES_IFACE)
+        if res != str(i):
+            raise Exception("Unexpected Pmf value %s (expected %d)" % (res, i))
+
+    if_obj.Set(WPAS_DBUS_IFACE, "Pmf", "1",
+               dbus_interface=dbus.PROPERTIES_IFACE)
+
 def test_dbus_fastreauth(dev, apdev):
     """D-Bus Get/Set FastReauth"""
     (bus,wpas_obj,path,if_obj) = prepare_dbus(dev[0])
