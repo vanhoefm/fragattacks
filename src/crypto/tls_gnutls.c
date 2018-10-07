@@ -295,6 +295,14 @@ int tls_connection_established(void *ssl_ctx, struct tls_connection *conn)
 }
 
 
+char * tls_connection_peer_serial_num(void *tls_ctx,
+				      struct tls_connection *conn)
+{
+	/* TODO */
+	return NULL;
+}
+
+
 int tls_connection_shutdown(void *ssl_ctx, struct tls_connection *conn)
 {
 	struct tls_global *global = ssl_ctx;
