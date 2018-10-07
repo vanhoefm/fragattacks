@@ -2131,11 +2131,6 @@ void wpas_dbus_signal_prop_changed(struct wpa_supplicant *wpa_s,
 	case WPAS_DBUS_PROP_AP_SCAN:
 		prop = "ApScan";
 		break;
-#ifdef CONFIG_IEEE80211W
-	case WPAS_DBUS_PROP_PMF:
-		prop = "Pmf";
-		break;
-#endif /* CONFIG_IEEE80211W */
 	case WPAS_DBUS_PROP_SCANNING:
 		prop = "Scanning";
 		break;
@@ -3307,13 +3302,6 @@ static const struct wpa_dbus_property_desc wpas_dbus_interface_properties[] = {
 	  wpas_dbus_setter_ap_scan,
 	  NULL
 	},
-#ifdef CONFIG_IEEE80211W
-	{ "Pmf", WPAS_DBUS_NEW_IFACE_INTERFACE, "u",
-	  wpas_dbus_getter_pmf,
-	  wpas_dbus_setter_pmf,
-	  NULL
-	},
-#endif /* CONFIG_IEEE80211W */
 	{ "BSSExpireAge", WPAS_DBUS_NEW_IFACE_INTERFACE, "u",
 	  wpas_dbus_getter_bss_expire_age,
 	  wpas_dbus_setter_bss_expire_age,
