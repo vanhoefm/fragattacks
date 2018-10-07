@@ -155,6 +155,40 @@ static int hostapd_setup_radius_srv(struct hostapd_data *hapd)
 #endif /* RADIUS_SERVER */
 
 
+#ifdef EAP_TLS_FUNCS
+static void authsrv_tls_event(void *ctx, enum tls_event ev,
+			      union tls_event_data *data)
+{
+	switch (ev) {
+	case TLS_CERT_CHAIN_SUCCESS:
+		wpa_printf(MSG_DEBUG, "authsrv: remote certificate verification success");
+		break;
+	case TLS_CERT_CHAIN_FAILURE:
+		wpa_printf(MSG_INFO, "authsrv: certificate chain failure: reason=%d depth=%d subject='%s' err='%s'",
+			   data->cert_fail.reason,
+			   data->cert_fail.depth,
+			   data->cert_fail.subject,
+			   data->cert_fail.reason_txt);
+		break;
+	case TLS_PEER_CERTIFICATE:
+		wpa_printf(MSG_DEBUG, "authsrv: peer certificate: depth=%d serial_num=%s subject=%s",
+			   data->peer_cert.depth,
+			   data->peer_cert.serial_num ? data->peer_cert.serial_num : "N/A",
+			   data->peer_cert.subject);
+		break;
+	case TLS_ALERT:
+		if (data->alert.is_local)
+			wpa_printf(MSG_DEBUG, "authsrv: local TLS alert: %s",
+				   data->alert.description);
+		else
+			wpa_printf(MSG_DEBUG, "authsrv: remote TLS alert: %s",
+				   data->alert.description);
+		break;
+	}
+}
+#endif /* EAP_TLS_FUNCS */
+
+
 int authsrv_init(struct hostapd_data *hapd)
 {
 #ifdef EAP_TLS_FUNCS
@@ -167,6 +201,8 @@ int authsrv_init(struct hostapd_data *hapd)
 		os_memset(&conf, 0, sizeof(conf));
 		conf.tls_session_lifetime = hapd->conf->tls_session_lifetime;
 		conf.tls_flags = hapd->conf->tls_flags;
+		conf.event_cb = authsrv_tls_event;
+		conf.cb_ctx = hapd;
 		hapd->ssl_ctx = tls_init(&conf);
 		if (hapd->ssl_ctx == NULL) {
 			wpa_printf(MSG_ERROR, "Failed to initialize TLS");
