@@ -53,7 +53,8 @@ CREATE TABLE users(
 	cert TEXT,
 	cert_pem TEXT,
 	t_c_timestamp INTEGER,
-	mac_addr TEXT
+	mac_addr TEXT,
+	last_msk TEXT
 );
 
 CREATE TABLE wildcards(
