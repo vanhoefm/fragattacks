@@ -826,18 +826,28 @@ static void db_update_last_msk(struct radius_session *sess, const char *msk)
 	char *id_str = NULL;
 	const u8 *id;
 	size_t id_len;
+	const char *serial_num;
 
 	if (!sess->server->db)
 		return;
 
-	id = eap_get_identity(sess->eap, &id_len);
-	if (!id)
-		return;
-	id_str = os_malloc(id_len + 1);
-	if (!id_str)
-		return;
-	os_memcpy(id_str, id, id_len);
-	id_str[id_len] = '\0';
+	serial_num = eap_get_serial_num(sess->eap);
+	if (serial_num) {
+		id_len = 5 + os_strlen(serial_num) + 1;
+		id_str = os_malloc(id_len);
+		if (!id_str)
+			return;
+		os_snprintf(id_str, id_len, "cert-%s", serial_num);
+	} else {
+		id = eap_get_identity(sess->eap, &id_len);
+		if (!id)
+			return;
+		id_str = os_malloc(id_len + 1);
+		if (!id_str)
+			return;
+		os_memcpy(id_str, id, id_len);
+		id_str[id_len] = '\0';
+	}
 
 	sql = sqlite3_mprintf("UPDATE users SET last_msk=%Q WHERE identity=%Q",
 			      msk, id_str);
