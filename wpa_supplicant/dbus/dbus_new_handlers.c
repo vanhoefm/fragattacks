@@ -980,8 +980,8 @@ dbus_bool_t wpas_dbus_getter_global_capabilities(
 	const struct wpa_dbus_property_desc *property_desc,
 	DBusMessageIter *iter, DBusError *error, void *user_data)
 {
-	const char *capabilities[9] = { NULL, NULL, NULL, NULL, NULL, NULL,
-					NULL, NULL, NULL };
+	const char *capabilities[10] = { NULL, NULL, NULL, NULL, NULL, NULL,
+					NULL, NULL, NULL, NULL };
 	size_t num_items = 0;
 #ifdef CONFIG_FILS
 	struct wpa_global *global = user_data;
@@ -1023,6 +1023,9 @@ dbus_bool_t wpas_dbus_getter_global_capabilities(
 #ifdef CONFIG_IEEE80211R
 	capabilities[num_items++] = "ft";
 #endif /* CONFIG_IEEE80211R */
+#ifdef CONFIG_SHA384
+	capabilities[num_items++] = "sha384";
+#endif /* CONFIG_SHA384 */
 
 	return wpas_dbus_simple_array_property_getter(iter,
 						      DBUS_TYPE_STRING,
