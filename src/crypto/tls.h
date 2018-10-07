@@ -64,6 +64,7 @@ union tls_event_data {
 		size_t hash_len;
 		const char *altsubject[TLS_MAX_ALT_SUBJECT];
 		int num_altsubject;
+		const char *serial_num;
 	} peer_cert;
 
 	struct {

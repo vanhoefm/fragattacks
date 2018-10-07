@@ -111,6 +111,12 @@ static int RSA_bits(const RSA *r)
 	return BN_num_bits(r->n);
 }
 #endif /* CONFIG_SUITEB */
+
+
+static const unsigned char * ASN1_STRING_get0_data(const ASN1_STRING *x)
+{
+	return ASN1_STRING_data((ASN1_STRING *) x);
+}
 #endif
 
 #ifdef ANDROID
@@ -1824,6 +1830,8 @@ static void openssl_tls_cert_event(struct tls_connection *conn,
 	GENERAL_NAME *gen;
 	void *ext;
 	stack_index_t i;
+	ASN1_INTEGER *ser;
+	char serial_num[128];
 #ifdef CONFIG_SHA256
 	u8 hash[32];
 #endif /* CONFIG_SHA256 */
@@ -1851,6 +1859,14 @@ static void openssl_tls_cert_event(struct tls_connection *conn,
 #endif /* CONFIG_SHA256 */
 	ev.peer_cert.depth = depth;
 	ev.peer_cert.subject = subject;
+
+	ser = X509_get_serialNumber(err_cert);
+	if (ser) {
+		wpa_snprintf_hex_uppercase(serial_num, sizeof(serial_num),
+					   ASN1_STRING_get0_data(ser),
+					   ASN1_STRING_length(ser));
+		ev.peer_cert.serial_num = serial_num;
+	}
 
 	ext = X509_get_ext_d2i(err_cert, NID_subject_alt_name, NULL, NULL);
 	for (i = 0; ext && i < sk_GENERAL_NAME_num(ext); i++) {
