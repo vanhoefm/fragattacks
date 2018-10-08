@@ -313,10 +313,10 @@ if ($id == 0 && $cmd != 'eventlog') {
 echo "[<a href=\"users.php?cmd=eventlog&limit=50\">Eventlog</a>] ";
 echo "<br>\n";
 
-echo "<table border=1>\n";
-echo "<tr><th>User<th>Realm<th>Remediation<th>Policy<th>Account type<th>Phase 2 method(s)<th>DevId<th>MAC Address<th>T&C\n";
+echo "<table border=1 cellspacing=0 cellpadding=0>\n";
+echo "<tr><th>User<th>Realm<th><small>Remediation</small><th>Policy<th><small>Account type</small><th><small>Phase 2 method(s)</small><th>DevId<th>MAC Address<th>T&C\n";
 
-$res = $db->query('SELECT rowid,* FROM users WHERE phase2=1');
+$res = $db->query('SELECT rowid,* FROM users WHERE phase2=1 ORDER BY identity');
 foreach ($res as $row) {
 	echo "<tr><td><a href=\"users.php?id=" . $row['rowid'] . "\"> " .
 	    $row['identity'] . " </a>";
@@ -324,7 +324,7 @@ foreach ($res as $row) {
 	$rem = $row['remediation'];
 	echo "<td>";
 	if ($rem == "") {
-		echo "Not required";
+		echo "-";
 	} else if ($rem == "user") {
 		echo "User";
 	} else if ($rem == "policy") {
@@ -339,18 +339,18 @@ foreach ($res as $row) {
 	  echo "<td>shared";
 	else
 	  echo "<td>default";
-	echo "<td>" . $row['methods'];
+	echo "<td><small>" . $row['methods'] . "</small>";
 	echo "<td>";
 	$xml = xml_parser_create();
 	xml_parse_into_struct($xml, $row['devinfo'], $devinfo);
 	foreach($devinfo as $k) {
 	  if ($k['tag'] == 'DEVID') {
-	    echo $k['value'];
+	    echo "<small>" . $k['value'] . "</small>";
 	    break;
 	  }
 	}
-	echo "<td>" . $row['mac_addr'];
-	echo "<td>" . $row['t_c_timestamp'];
+	echo "<td><small>" . $row['mac_addr'] . "</small>";
+	echo "<td><small>" . $row['t_c_timestamp'] . "</small>";
 	echo "\n";
 }
 echo "</table>\n";
