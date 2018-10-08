@@ -540,7 +540,8 @@ static xml_node_t * build_username_password(struct hs20_svc *ctx,
 
 
 static int add_username_password(struct hs20_svc *ctx, xml_node_t *cred,
-				 const char *user, const char *pw)
+				 const char *user, const char *pw,
+				 int machine_managed)
 {
 	xml_node_t *node;
 
@@ -548,7 +549,8 @@ static int add_username_password(struct hs20_svc *ctx, xml_node_t *cred,
 	if (node == NULL)
 		return -1;
 
-	add_text_node(ctx, node, "MachineManaged", "TRUE");
+	add_text_node(ctx, node, "MachineManaged",
+		      machine_managed ? "TRUE" : "FALSE");
 	add_text_node(ctx, node, "SoftTokenApp", "");
 	add_eap_ttls(ctx, node);
 
@@ -573,7 +575,7 @@ static void add_creation_date(struct hs20_svc *ctx, xml_node_t *cred)
 
 static xml_node_t * build_credential_pw(struct hs20_svc *ctx,
 					const char *user, const char *realm,
-					const char *pw)
+					const char *pw, int machine_managed)
 {
 	xml_node_t *cred;
 
@@ -583,7 +585,7 @@ static xml_node_t * build_credential_pw(struct hs20_svc *ctx,
 		return NULL;
 	}
 	add_creation_date(ctx, cred);
-	if (add_username_password(ctx, cred, user, pw) < 0) {
+	if (add_username_password(ctx, cred, user, pw, machine_managed) < 0) {
 		xml_node_free(ctx->xml, cred);
 		return NULL;
 	}
@@ -600,7 +602,7 @@ static xml_node_t * build_credential(struct hs20_svc *ctx,
 	if (new_password(new_pw, new_pw_len) < 0)
 		return NULL;
 	debug_print(ctx, 1, "Update password to '%s'", new_pw);
-	return build_credential_pw(ctx, user, realm, new_pw);
+	return build_credential_pw(ctx, user, realm, new_pw, 1);
 }
 
 
@@ -710,8 +712,23 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 		cred = build_credential_cert(ctx, real_user ? real_user : user,
 					     realm, cert);
 	} else {
-		cred = build_credential(ctx, real_user ? real_user : user,
-					realm, new_pw, sizeof(new_pw));
+		char *pw;
+
+		pw = db_get_session_val(ctx, user, realm, session_id,
+					"password");
+		if (pw && pw[0]) {
+			debug_print(ctx, 1, "New password from the user: '%s'",
+				    pw);
+			snprintf(new_pw, sizeof(new_pw), "%s", pw);
+			free(pw);
+			cred = build_credential_pw(ctx,
+						   real_user ? real_user : user,
+						   realm, new_pw, 0);
+		} else {
+			cred = build_credential(ctx,
+						real_user ? real_user : user,
+						realm, new_pw, sizeof(new_pw));
+		}
 	}
 	free(real_user);
 	if (!cred) {
@@ -1471,7 +1488,7 @@ static xml_node_t * hs20_user_input_free_remediation(struct hs20_svc *ctx,
 		return NULL;
 	}
 
-	cred = build_credential_pw(ctx, free_account, realm, pw);
+	cred = build_credential_pw(ctx, free_account, realm, pw, 1);
 	free(free_account);
 	free(pw);
 	if (!cred) {
