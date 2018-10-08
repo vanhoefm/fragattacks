@@ -947,8 +947,10 @@ static xml_node_t * hs20_subscription_remediation(struct hs20_svc *ctx,
 				       redirect_uri);
 	else if (type && strcmp(type, "policy") == 0)
 		ret = policy_remediation(ctx, user, realm, session_id, dmacc);
-	else
+	else if (type && strcmp(type, "machine") == 0)
 		ret = machine_remediation(ctx, user, realm, session_id, dmacc);
+	else
+		ret = no_sub_rem(ctx, user, realm, session_id);
 	free(type);
 
 	return ret;
