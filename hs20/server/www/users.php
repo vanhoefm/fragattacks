@@ -191,6 +191,9 @@ if ($rem == "") {
 }
 echo "<br>\n";
 
+if (strncmp($row['identity'], "cert-", 5) != 0)
+   echo "Machine managed: " . ($row['machine_managed'] == "1" ? "TRUE" : "FALSE") . "<br>\n";
+
 echo "<form>Policy: <select name=\"policy\" " .
 	"onChange=\"window.location='users.php?cmd=policy&id=" .
 	$row['rowid'] . "&policy=' + this.value;\">\n";
