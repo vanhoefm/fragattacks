@@ -23,10 +23,16 @@ $realm = $row['realm'];
 
 echo "<h3>Sign up for a subscription - $realm</h3>\n";
 
+echo "<p>This page can be used to select between three different types of subscriptions for testing purposes.</p>\n";
+
+echo "<h4>Option 1 - shared free access credential</h4>\n";
+
 $row = $db->query("SELECT value FROM osu_config WHERE realm='$realm' AND field='free_account'")->fetch();
 if ($row && strlen($row['value']) > 0) {
   echo "<p><a href=\"free.php?session_id=$id\">Sign up for free access</a></p>\n";
 }
+
+echo "<h4>Option 2 - username/password credential</h4>\n";
 
 echo "<form action=\"add-mo.php\" method=\"POST\">\n";
 echo "<input type=\"hidden\" name=\"id\" value=\"$id\">\n";
@@ -39,6 +45,8 @@ Password: <input type="password" name="password"><br>
 </form>
 
 <?php
+echo "<h4>Option 3 - client certificate credential</h4>\n";
+
 echo "<p><a href=\"cert-enroll.php?id=$id\">Enroll a client certificate</a></p>\n"
 ?>
 
