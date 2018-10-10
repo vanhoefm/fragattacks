@@ -751,6 +751,7 @@ int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 
 #ifdef CONFIG_SAE
 	if (wpa_auth->conf.ieee80211w == MGMT_FRAME_PROTECTION_OPTIONAL &&
+	    wpa_auth->conf.sae_require_mfp &&
 	    wpa_key_mgmt_sae(sm->wpa_key_mgmt) &&
 	    !(data.capabilities & WPA_CAPABILITY_MFPC)) {
 		wpa_printf(MSG_DEBUG,
