@@ -45,6 +45,13 @@ def test_ssid_32_octets(dev, apdev):
     dev[0].connect("1234567890abcdef1234567890ABCDEF", key_mgmt="NONE",
                    scan_freq="2412")
 
+def test_ssid_32_octets_nul_term(dev, apdev):
+    """SSID with 32 octets with nul at the end"""
+    ssid = 'P"1234567890abcdef1234567890ABCDE\\x00"'
+    hostapd.add_ap(apdev[0],
+                   { "ssid2": ssid })
+    dev[0].connect(ssid2=ssid, key_mgmt="NONE", scan_freq="2412")
+
 @remote_compatible
 def test_ssid_utf8(dev, apdev):
     """SSID with UTF8 encoding"""
