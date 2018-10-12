@@ -2585,10 +2585,14 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 		if (resp != WLAN_STATUS_SUCCESS)
 			return resp;
 #ifdef CONFIG_IEEE80211W
-		if ((sta->flags & WLAN_STA_MFP) && !sta->sa_query_timed_out &&
+		if ((sta->flags & (WLAN_STA_ASSOC | WLAN_STA_MFP)) ==
+		    (WLAN_STA_ASSOC | WLAN_STA_MFP) &&
+		    !sta->sa_query_timed_out &&
 		    sta->sa_query_count > 0)
 			ap_check_sa_query_timeout(hapd, sta);
-		if ((sta->flags & WLAN_STA_MFP) && !sta->sa_query_timed_out &&
+		if ((sta->flags & (WLAN_STA_ASSOC | WLAN_STA_MFP)) ==
+		    (WLAN_STA_ASSOC | WLAN_STA_MFP) &&
+		    !sta->sa_query_timed_out &&
 		    (!reassoc || sta->auth_alg != WLAN_AUTH_FT)) {
 			/*
 			 * STA has already been associated with MFP and SA
