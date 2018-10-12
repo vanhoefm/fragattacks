@@ -716,6 +716,7 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 					"   skip OWE transition BSS (selection count %d does not exceed %d)",
 					ssid->owe_transition_bss_select_count,
 					MAX_OWE_TRANSITION_BSS_SELECT_COUNT);
+			wpa_s->owe_transition_search = 1;
 			return 0;
 		}
 		if (debug_print)
@@ -1953,6 +1954,7 @@ static int wpas_select_network_from_last_scan(struct wpa_supplicant *wpa_s,
 	if (wpa_s->p2p_mgmt)
 		return 0; /* no normal connection on p2p_mgmt interface */
 
+	wpa_s->owe_transition_search = 0;
 	selected = wpa_supplicant_pick_network(wpa_s, &ssid);
 
 #ifdef CONFIG_MESH
@@ -2054,6 +2056,17 @@ static int wpas_select_network_from_last_scan(struct wpa_supplicant *wpa_s,
 				return 0;
 			}
 #endif /* CONFIG_WPS */
+#ifdef CONFIG_OWE
+			if (wpa_s->owe_transition_search) {
+				wpa_dbg(wpa_s, MSG_DEBUG,
+					"OWE: Use shorter wait during transition mode search");
+				timeout_sec = 0;
+				timeout_usec = 500000;
+				wpa_supplicant_req_new_scan(wpa_s, timeout_sec,
+							    timeout_usec);
+				return 0;
+			}
+#endif /* CONFIG_OWE */
 			if (wpa_supplicant_req_sched_scan(wpa_s))
 				wpa_supplicant_req_new_scan(wpa_s, timeout_sec,
 							    timeout_usec);

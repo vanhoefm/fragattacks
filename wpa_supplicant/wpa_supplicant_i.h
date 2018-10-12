@@ -744,6 +744,7 @@ struct wpa_supplicant {
 	unsigned int added_vif:1;
 	unsigned int wnmsleep_used:1;
 	unsigned int owe_transition_select:1;
+	unsigned int owe_transition_search:1;
 
 	struct os_reltime last_mac_addr_change;
 	int last_mac_addr_style;
