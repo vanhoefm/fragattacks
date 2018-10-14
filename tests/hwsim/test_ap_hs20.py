@@ -1041,6 +1041,17 @@ def test_ap_hs20_roaming_consortiums_match(dev, apdev):
             raise Exception("Timeout on already-connected event")
         dev[0].remove_cred(id)
 
+def test_ap_hs20_max_roaming_consortiums(dev, apdev):
+    """Maximum number of cred roaming_consortiums"""
+    id = dev[0].add_cred()
+    consortium = (36*",ffffff")[1:]
+    if "OK" not in dev[0].request('SET_CRED %d roaming_consortiums "%s"' % (id, consortium)):
+        raise Exception("Maximum number of consortium OIs rejected")
+    consortium = (37*",ffffff")[1:]
+    if "FAIL" not in dev[0].request('SET_CRED %d roaming_consortiums "%s"' % (id, consortium)):
+        raise Exception("Over maximum number of consortium OIs accepted")
+    dev[0].remove_cred(id)
+
 def test_ap_hs20_roaming_consortium_invalid(dev, apdev):
     """Hotspot 2.0 connection and invalid roaming consortium ANQP-element"""
     bssid = apdev[0]['bssid']
