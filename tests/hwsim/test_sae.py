@@ -306,6 +306,23 @@ def test_sae_mixed_mfp(dev, apdev):
     dev[2].connect("test-sae", psk="12345678", ieee80211w="0", scan_freq="2412")
     dev[2].dump_monitor()
 
+def test_sae_mfp(dev, apdev):
+    """SAE and MFP enabled without sae_require_mfp"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params["ieee80211w"] = "1"
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].request("SET sae_groups ")
+    dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE", ieee80211w="2",
+                   scan_freq="2412")
+
+    dev[1].request("SET sae_groups ")
+    dev[1].connect("test-sae", psk="12345678", key_mgmt="SAE", ieee80211w="0",
+                   scan_freq="2412")
+
 @remote_compatible
 def test_sae_missing_password(dev, apdev):
     """SAE and missing password"""
