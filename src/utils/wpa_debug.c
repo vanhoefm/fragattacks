@@ -563,6 +563,14 @@ int wpa_debug_open_file(const char *path)
 		return -1;
 	}
 
+#ifdef __linux__
+	if (fcntl(out_fd, F_SETFD, FD_CLOEXEC) < 0) {
+		wpa_printf(MSG_DEBUG,
+			   "%s: Failed to set FD_CLOEXEC - continue without: %s",
+			   __func__, strerror(errno));
+	}
+#endif /* __linux__ */
+
 	out_file = fdopen(out_fd, "a");
 	if (out_file == NULL) {
 		wpa_printf(MSG_ERROR, "wpa_debug_open_file: Failed to open "
