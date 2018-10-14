@@ -1665,9 +1665,11 @@ ieee802_11_allowed_address(struct hostapd_data *hapd, const u8 *addr,
 				      is_probe_req);
 
 	if (res == HOSTAPD_ACL_REJECT) {
-		wpa_printf(MSG_INFO,
-			   "Station " MACSTR " not allowed to authenticate",
-			   MAC2STR(addr));
+		if (!is_probe_req)
+			wpa_printf(MSG_DEBUG,
+				   "Station " MACSTR
+				   " not allowed to authenticate",
+				   MAC2STR(addr));
 		return HOSTAPD_ACL_REJECT;
 	}
 
