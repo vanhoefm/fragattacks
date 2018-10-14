@@ -4054,7 +4054,8 @@ static void handle_auth_cb(struct hostapd_data *hapd,
 
 	sta = ap_get_sta(hapd, mgmt->da);
 	if (!sta) {
-		wpa_printf(MSG_INFO, "handle_auth_cb: STA " MACSTR " not found",
+		wpa_printf(MSG_DEBUG, "handle_auth_cb: STA " MACSTR
+			   " not found",
 			   MAC2STR(mgmt->da));
 		return;
 	}
