@@ -1064,3 +1064,41 @@ def test_ap_vht_40_fallback_to_20(devs, apdevs):
             hapd.request("DISABLE")
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev.flush_scan_cache()
+
+def test_ap_vht80_to_24g_ht(dev, apdev):
+    """VHT with 80 MHz channel width reconfigured to 2.4 GHz HT"""
+    try:
+        hapd = None
+        params = { "ssid": "vht",
+                   "country_code": "FI",
+                   "hw_mode": "a",
+                   "channel": "36",
+                   "ht_capab": "[HT40+]",
+                   "ieee80211n": "1",
+                   "ieee80211ac": "1",
+                   "vht_oper_chwidth": "1",
+                   "vht_capab": "[MAX-MPDU-11454]",
+                   "vht_oper_centr_freq_seg0_idx": "42" }
+        hapd = hostapd.add_ap(apdev[0], params)
+        bssid = apdev[0]['bssid']
+
+        hapd.disable()
+        hapd.set("ieee80211ac", "0")
+        hapd.set("hw_mode", "g")
+        hapd.set("channel", "1")
+        hapd.set("ht_capab", "")
+        hapd.set("vht_capab", "")
+        hapd.enable()
+
+        dev[0].connect("vht", key_mgmt="NONE", scan_freq="2412")
+    except Exception, e:
+        if isinstance(e, Exception) and str(e) == "AP startup failed":
+            if not vht_supported():
+                raise HwsimSkip("80 MHz channel not supported in regulatory information")
+        raise
+    finally:
+        dev[0].request("DISCONNECT")
+        if hapd:
+            hapd.request("DISABLE")
+        subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].flush_scan_cache()
