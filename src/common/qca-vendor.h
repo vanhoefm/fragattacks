@@ -4951,6 +4951,10 @@ enum qca_wlan_vendor_attr_ndp_params {
 	 * and ndp confirm.
 	 */
 	QCA_WLAN_VENDOR_ATTR_NDP_TRANSPORT_PROTOCOL = 29,
+	/* Unsigned 8-bit value indicating if NDP remote peer supports NAN NDPE.
+	 * 1:support 0:not support
+	 */
+	QCA_WLAN_VENDOR_ATTR_PEER_NDPE_SUPPORT = 30,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_NDP_PARAMS_AFTER_LAST,
