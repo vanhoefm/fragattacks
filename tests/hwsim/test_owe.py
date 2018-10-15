@@ -7,10 +7,12 @@
 import logging
 logger = logging.getLogger()
 import time
+import os
 
 import hostapd
 from wpasupplicant import WpaSupplicant
 import hwsim_utils
+from tshark import run_tshark
 from utils import HwsimSkip
 
 def test_owe(dev, apdev):
@@ -360,6 +362,58 @@ def test_owe_limited_group_set(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
         dev[0].dump_monitor()
+
+def test_owe_limited_group_set_pmf(dev, apdev, params):
+    """Opportunistic Wireless Encryption and limited group set (PMF)"""
+    if "OWE" not in dev[0].get_capability("key_mgmt"):
+        raise HwsimSkip("OWE not supported")
+    pcapng = os.path.join(params['logdir'], "hwsim0.pcapng")
+
+    params = { "ssid": "owe",
+               "wpa": "2",
+               "ieee80211w": "2",
+               "wpa_key_mgmt": "OWE",
+               "rsn_pairwise": "CCMP",
+               "owe_groups": "21" }
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    dev[0].scan_for_bss(bssid, freq="2412")
+    dev[0].connect("owe", key_mgmt="OWE", owe_group="19", ieee80211w="2",
+                   scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-ASSOC-REJECT"], timeout=10)
+    dev[0].request("DISCONNECT")
+    if ev is None:
+        raise Exception("Association not rejected")
+    if "status_code=77" not in ev:
+        raise Exception("Unexpected rejection reason: " + ev)
+    dev[0].dump_monitor()
+
+    dev[0].connect("owe", key_mgmt="OWE", owe_group="20", ieee80211w="2",
+                   scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-ASSOC-REJECT"], timeout=10)
+    dev[0].request("DISCONNECT")
+    if ev is None:
+        raise Exception("Association not rejected (2)")
+    if "status_code=77" not in ev:
+        raise Exception("Unexpected rejection reason (2): " + ev)
+    dev[0].dump_monitor()
+
+    dev[0].connect("owe", key_mgmt="OWE", owe_group="21", ieee80211w="2",
+                   scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+
+    out = run_tshark(pcapng,
+                     "wlan.fc.type_subtype == 1",
+                     display=['wlan_mgt.fixed.status_code'])
+    status = out.splitlines()
+    logger.info("Association Response frame status codes: " + str(status))
+    if len(status) != 3:
+        raise Exception("Unexpected number of Association Response frames")
+    if int(status[0]) != 77 or int(status[1]) != 77 or int(status[2]) != 0:
+        raise Exception("Unexpected Association Response frame status code")
 
 def test_owe_group_negotiation(dev, apdev):
     """Opportunistic Wireless Encryption and group negotiation"""
