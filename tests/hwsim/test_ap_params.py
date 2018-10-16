@@ -514,6 +514,10 @@ def test_ap_tx_queue_params_invalid(dev, apdev):
     params['wmm_ac_bk_acm'] = "0"
 
     hapd = hostapd.add_ap(apdev[0], params)
+
+    # Valid WMM change
+    hapd.set("wmm_ac_be_cwmin", "3")
+
     # "Invalid TX queue cwMin/cwMax values. cwMin(7) greater than cwMax(3)"
     if "FAIL" not in hapd.request('SET tx_queue_data2_cwmax 3'):
         raise Exception("TX cwMax < cwMin accepted")
