@@ -70,6 +70,17 @@ def _run_tshark(filename, filter, display=None, wait=True):
                                stderr=open('/dev/null', 'w'))
         out = cmd.communicate()[0]
         cmd.wait()
+    if res == 2:
+        if "tshark: Neither" in output[1] and "are field or protocol names" in output[1]:
+            errors = output[1].split('\n')
+            fields = []
+            for f in errors:
+                if f.startswith("tshark: Neither "):
+                    f = f.split(' ')[2].strip('"')
+                    if f:
+                        fields.append(f)
+                    continue
+            raise UnknownFieldsException(fields)
 
     return out
 
