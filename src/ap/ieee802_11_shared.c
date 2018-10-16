@@ -552,7 +552,8 @@ u8 * hostapd_eid_mbo(struct hostapd_data *hapd, u8 *eid, size_t len)
 	u8 mbo[9], *mbo_pos = mbo;
 	u8 *pos = eid;
 
-	if (!hapd->conf->mbo_enabled && !hapd->enable_oce)
+	if (!hapd->conf->mbo_enabled &&
+	    !OCE_STA_CFON_ENABLED(hapd) && !OCE_AP_ENABLED(hapd))
 		return eid;
 
 	if (hapd->conf->mbo_enabled) {
@@ -568,12 +569,11 @@ u8 * hostapd_eid_mbo(struct hostapd_data *hapd, u8 *eid, size_t len)
 		*mbo_pos++ = hapd->mbo_assoc_disallow;
 	}
 
-	if (hapd->enable_oce & (OCE_AP | OCE_STA_CFON)) {
+	if (OCE_STA_CFON_ENABLED(hapd) || OCE_AP_ENABLED(hapd)) {
 		u8 ctrl;
 
 		ctrl = OCE_RELEASE;
-		if ((hapd->enable_oce & (OCE_AP | OCE_STA_CFON)) ==
-		    OCE_STA_CFON)
+		if (OCE_STA_CFON_ENABLED(hapd) && !OCE_AP_ENABLED(hapd))
 			ctrl |= OCE_IS_STA_CFON;
 
 		*mbo_pos++ = OCE_ATTR_ID_CAPA_IND;
@@ -591,7 +591,8 @@ u8 hostapd_mbo_ie_len(struct hostapd_data *hapd)
 {
 	u8 len;
 
-	if (!hapd->conf->mbo_enabled && !hapd->enable_oce)
+	if (!hapd->conf->mbo_enabled &&
+	    !OCE_STA_CFON_ENABLED(hapd) && !OCE_AP_ENABLED(hapd))
 		return 0;
 
 	/*
@@ -603,7 +604,7 @@ u8 hostapd_mbo_ie_len(struct hostapd_data *hapd)
 		len += 3 + (hapd->mbo_assoc_disallow ? 3 : 0);
 
 	/* OCE capability indication attribute (3) */
-	if (hapd->enable_oce & (OCE_AP | OCE_STA_CFON))
+	if (OCE_STA_CFON_ENABLED(hapd) || OCE_AP_ENABLED(hapd))
 		len += 3;
 
 	return len;
