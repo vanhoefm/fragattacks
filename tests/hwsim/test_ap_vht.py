@@ -743,7 +743,9 @@ def test_ap_vht_csa_vht40(dev, apdev):
             raise Exception("Channel switch event not seen")
         if "freq=5765" not in ev:
             raise Exception("Channel mismatch: " + ev)
-        time.sleep(0.5)
+        ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        if ev is not None:
+            raise Exception("Unexpected disconnection event from station")
         hwsim_utils.test_connectivity(dev[0], hapd)
 
         dev[1].connect("vht", key_mgmt="NONE", scan_freq="5765")
