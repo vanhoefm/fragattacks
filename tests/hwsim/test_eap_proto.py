@@ -6513,6 +6513,20 @@ def test_eap_proto_pwd_errors(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
 
+    for i in range(1, 5):
+        with fail_test(dev[0], i,
+                       "=crypto_ec_point_to_bin;eap_pwd_perform_confirm_exchange"):
+            dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
+                           eap="PWD", identity="pwd-hash",
+                           password_hex="hash:e3718ece8ab74792cbbfffd316d2d19a",
+                           wait_connect=False)
+            ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"], timeout=10)
+            if ev is None:
+                raise Exception("No EAP-Failure reported")
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].wait_disconnected()
+            dev[0].dump_monitor()
+
 def test_eap_proto_erp(dev, apdev):
     """ERP protocol tests"""
     check_erp_capa(dev[0])
