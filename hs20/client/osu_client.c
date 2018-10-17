@@ -436,7 +436,7 @@ static int cmd_dl_polupd_ca(struct hs20_osu_client *ctx, const char *pps_fname,
 	if (node == NULL) {
 		wpa_printf(MSG_INFO, "No Policy/PolicyUpdate/TrustRoot/CertURL found from PPS");
 		xml_node_free(ctx->xml, pps);
-		return -1;
+		return -2;
 	}
 
 	ret = download_cert(ctx, node, ca_fname);
@@ -463,7 +463,7 @@ static int cmd_dl_aaa_ca(struct hs20_osu_client *ctx, const char *pps_fname,
 	if (node == NULL) {
 		wpa_printf(MSG_INFO, "No AAAServerTrustRoot/CertURL found from PPS");
 		xml_node_free(ctx->xml, pps);
-		return -1;
+		return -2;
 	}
 
 	aaa = xml_node_first_child(ctx->xml, node);
@@ -485,7 +485,7 @@ static int download_trust_roots(struct hs20_osu_client *ctx,
 {
 	char *dir, *pos;
 	char fname[300];
-	int ret;
+	int ret, ret1;
 
 	dir = os_strdup(pps_fname);
 	if (dir == NULL)
@@ -500,9 +500,13 @@ static int download_trust_roots(struct hs20_osu_client *ctx,
 	snprintf(fname, sizeof(fname), "%s/ca.pem", dir);
 	ret = cmd_dl_osu_ca(ctx, pps_fname, fname);
 	snprintf(fname, sizeof(fname), "%s/polupd-ca.pem", dir);
-	cmd_dl_polupd_ca(ctx, pps_fname, fname);
+	ret1 = cmd_dl_polupd_ca(ctx, pps_fname, fname);
+	if (ret == 0 && ret1 == -1)
+		ret = -1;
 	snprintf(fname, sizeof(fname), "%s/aaa-ca.pem", dir);
-	cmd_dl_aaa_ca(ctx, pps_fname, fname);
+	ret1 = cmd_dl_aaa_ca(ctx, pps_fname, fname);
+	if (ret == 0 && ret1 == -1)
+		ret = -1;
 
 	os_free(dir);
 
