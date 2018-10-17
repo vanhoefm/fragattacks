@@ -10,12 +10,13 @@ import os
 import struct
 import subprocess
 import time
+import json
 
 import hwsim_utils
 import hostapd
 from wpasupplicant import WpaSupplicant
 from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger
-from tshark import run_tshark
+from tshark import run_tshark, run_tshark_json
 from test_ap_ht import set_world_reg
 from hwsim_utils import set_group_map
 
@@ -837,9 +838,12 @@ def test_wpas_mesh_max_peering(dev, apdev, params):
     pkts = out.splitlines()
     one = [ 0, 0, 0 ]
     zero = [ 0, 0, 0 ]
+    all_cap_one = True
     for pkt in pkts:
         addr, cap = pkt.split('\t')
         cap = int(cap, 16)
+        if cap != 1:
+            all_cap_one = False
         if addr == addr0:
             idx = 0
         elif addr == addr1:
@@ -854,6 +858,30 @@ def test_wpas_mesh_max_peering(dev, apdev, params):
             zero[idx] += 1
     logger.info("one: " + str(one))
     logger.info("zero: " + str(zero))
+    if all_cap_one:
+        # It looks like tshark parser was broken at some point for
+        # wlan.mesh.config.cap which is now (tshark 2.6.3) pointing to incorrect
+        # field (same as wlan.mesh.config.ps_protocol). This used to work with
+        # tshark 2.2.6.
+        #
+        # For now, assume the capability field ends up being the last octet of
+        # the frame.
+        one = [ 0, 0, 0 ]
+        zero = [ 0, 0, 0 ]
+        addrs = [ addr0, addr1, addr2 ]
+        for idx in range(3):
+            addr = addrs[idx]
+            out = run_tshark_json(capfile, filt + " && wlan.sa == " + addr)
+            pkts = json.loads(out)
+            for pkt in pkts:
+                frame = pkt["_source"]["layers"]["frame_raw"][0]
+                cap = int(frame[-2:], 16)
+                if cap & 0x01:
+                    one[idx] += 1
+                else:
+                    zero[idx] += 1
+        logger.info("one: " + str(one))
+        logger.info("zero: " + str(zero))
     if zero[0] == 0:
         raise Exception("Accepting Additional Mesh Peerings not cleared")
     if one[0] == 0:

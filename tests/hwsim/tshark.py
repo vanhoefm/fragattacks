@@ -99,3 +99,19 @@ def run_tshark(filename, filter, display=None, wait=True):
         return _run_tshark(filename, filter.replace('wlan_mgt', 'wlan'),
                            [x.replace('wlan_mgt', 'wlan') for x in display],
                            wait)
+
+def run_tshark_json(filename, filter):
+    arg = [ "tshark", "-r", filename,
+            _tshark_filter_arg, filter ]
+    arg.append('-Tjson')
+    arg.append('-x')
+    try:
+        cmd = subprocess.Popen(arg, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    except Exception, e:
+        logger.info("Could run run tshark: " + str(e))
+        return None
+    output = cmd.communicate()
+    out = output[0]
+    res = cmd.wait()
+    return out
