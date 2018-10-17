@@ -16,6 +16,7 @@ struct hs20_svc {
 	FILE *debug_log;
 	sqlite3 *db;
 	const char *addr;
+	const char *test;
 };
 
 

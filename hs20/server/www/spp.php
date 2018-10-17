@@ -20,6 +20,11 @@ if (isset($_GET["realm"])) {
   die("Realm not specified");
 }
 
+if (isset($_GET["test"]))
+  $test = PREG_REPLACE("/[^0-9a-zA-Z\_\-]/i", '', $_GET["test"]);
+else
+  $test = "";
+
 unset($user);
 putenv("HS20CERT");
 
@@ -100,6 +105,7 @@ $postdata = file_get_contents("php://input");
 putenv("HS20POST=$postdata");
 $addr = $_SERVER["REMOTE_ADDR"];
 putenv("HS20ADDR=$addr");
+putenv("HS20TEST=$test");
 
 $last = exec("$osu_root/spp/hs20_spp_server -r$osu_root -f/tmp/hs20_spp_server.log", $output, $ret);
 

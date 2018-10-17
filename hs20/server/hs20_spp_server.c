@@ -70,6 +70,10 @@ static int process(struct hs20_svc *ctx)
 	ctx->addr = getenv("HS20ADDR");
 	if (ctx->addr)
 		debug_print(ctx, 1, "Connection from %s", ctx->addr);
+	ctx->test = getenv("HS20TEST");
+	if (ctx->test)
+		debug_print(ctx, 1, "Requested test functionality: %s",
+			    ctx->test);
 
 	user = getenv("HS20USER");
 	if (user && strlen(user) == 0)

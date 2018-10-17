@@ -23,7 +23,8 @@ CREATE TABLE sessions(
 	devdetail TEXT,
 	cert TEXT,
 	cert_pem TEXT,
-	mac_addr TEXT
+	mac_addr TEXT,
+	test TEXT
 );
 
 CREATE index sessions_id_index ON sessions(id);

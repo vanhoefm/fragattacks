@@ -69,14 +69,14 @@ static int db_add_session(struct hs20_svc *ctx,
 	else
 		addr[0] = '\0';
 	sql = sqlite3_mprintf("INSERT INTO sessions(timestamp,id,user,realm,"
-			      "operation,password,redirect_uri,mac_addr) "
+			      "operation,password,redirect_uri,mac_addr,test) "
 			      "VALUES "
 			      "(strftime('%%Y-%%m-%%d %%H:%%M:%%f','now'),"
-			      "%Q,%Q,%Q,%d,%Q,%Q,%Q)",
+			      "%Q,%Q,%Q,%d,%Q,%Q,%Q,%Q)",
 			      sessionid, user ? user : "", realm ? realm : "",
 			      operation, pw ? pw : "",
 			      redirect_uri ? redirect_uri : "",
-			      addr);
+			      addr, ctx->test);
 	if (sql == NULL)
 		return -1;
 	debug_print(ctx, 1, "DB: %s", sql);
@@ -331,6 +331,29 @@ static void add_text_node_conf(struct hs20_svc *ctx, const char *realm,
 {
 	char *val;
 	val = db_get_osu_config_val(ctx, realm, field);
+	xml_node_create_text(ctx->xml, parent, NULL, name, val ? val : "");
+	os_free(val);
+}
+
+
+static void add_text_node_conf_corrupt(struct hs20_svc *ctx, const char *realm,
+				       xml_node_t *parent, const char *name,
+				       const char *field)
+{
+	char *val;
+
+	val = db_get_osu_config_val(ctx, realm, field);
+	if (val) {
+		size_t len;
+
+		len = os_strlen(val);
+		if (len > 0) {
+			if (val[len - 1] == '0')
+				val[len - 1] = '1';
+			else
+				val[len - 1] = '0';
+		}
+	}
 	xml_node_create_text(ctx->xml, parent, NULL, name, val ? val : "");
 	os_free(val);
 }
@@ -1241,7 +1264,7 @@ static char * db_get_osu_config_val(struct hs20_svc *ctx, const char *realm,
 static xml_node_t * build_pps(struct hs20_svc *ctx,
 			      const char *user, const char *realm,
 			      const char *pw, const char *cert,
-			      int machine_managed)
+			      int machine_managed, const char *test)
 {
 	xml_node_t *pps, *c, *trust, *aaa, *aaa1, *upd, *homesp;
 	xml_node_t *cred, *eap, *userpw;
@@ -1261,8 +1284,16 @@ static xml_node_t * build_pps(struct hs20_svc *ctx,
 	aaa1 = xml_node_create(ctx->xml, aaa, NULL, "AAA1");
 	add_text_node_conf(ctx, realm, aaa1, "CertURL",
 			   "aaa_trust_root_cert_url");
-	add_text_node_conf(ctx, realm, aaa1, "CertSHA256Fingerprint",
-			   "aaa_trust_root_cert_fingerprint");
+	if (test && os_strcmp(test, "corrupt_aaa_hash") == 0) {
+		debug_print(ctx, 1,
+			    "TEST: Corrupt PPS/Cred*/AAAServerTrustRoot/Root*/CertSHA256FingerPrint");
+		add_text_node_conf_corrupt(ctx, realm, aaa1,
+					   "CertSHA256Fingerprint",
+					   "aaa_trust_root_cert_fingerprint");
+	} else {
+		add_text_node_conf(ctx, realm, aaa1, "CertSHA256Fingerprint",
+				   "aaa_trust_root_cert_fingerprint");
+	}
 
 	upd = xml_node_create(ctx->xml, c, NULL, "SubscriptionUpdate");
 	add_text_node(ctx, upd, "UpdateInterval", "4294967295");
@@ -1271,8 +1302,16 @@ static xml_node_t * build_pps(struct hs20_svc *ctx,
 	add_text_node_conf(ctx, realm, upd, "URI", "spp_http_auth_url");
 	trust = xml_node_create(ctx->xml, upd, NULL, "TrustRoot");
 	add_text_node_conf(ctx, realm, trust, "CertURL", "trust_root_cert_url");
-	add_text_node_conf(ctx, realm, trust, "CertSHA256Fingerprint",
-			   "trust_root_cert_fingerprint");
+	if (test && os_strcmp(test, "corrupt_subrem_hash") == 0) {
+		debug_print(ctx, 1,
+			    "TEST: Corrupt PPS/Cred*/SubscriptionUpdate/Trustroot/CertSHA256FingerPrint");
+		add_text_node_conf_corrupt(ctx, realm, trust,
+					   "CertSHA256Fingerprint",
+					   "trust_root_cert_fingerprint");
+	} else {
+		add_text_node_conf(ctx, realm, trust, "CertSHA256Fingerprint",
+				   "trust_root_cert_fingerprint");
+	}
 
 	homesp = xml_node_create(ctx->xml, c, NULL, "HomeSP");
 	add_text_node_conf(ctx, realm, homesp, "FriendlyName", "friendly_name");
@@ -1356,7 +1395,7 @@ static xml_node_t * hs20_user_input_registration(struct hs20_svc *ctx,
 	xml_node_t *pps, *tnds;
 	char buf[400];
 	char *str;
-	char *user, *realm, *pw, *type, *mm;
+	char *user, *realm, *pw, *type, *mm, *test;
 	const char *status;
 	int cert = 0;
 	int machine_managed = 0;
@@ -1415,9 +1454,15 @@ static xml_node_t * hs20_user_input_registration(struct hs20_svc *ctx,
 		return NULL;
 
 	fingerprint = db_get_session_val(ctx, NULL, NULL, session_id, "cert");
+	test = db_get_session_val(ctx, NULL, NULL, session_id, "test");
+	if (test)
+		debug_print(ctx, 1, "TEST: Requested special behavior: %s",
+			    test);
 	pps = build_pps(ctx, user, realm, pw,
-			fingerprint ? fingerprint : NULL, machine_managed);
+			fingerprint ? fingerprint : NULL, machine_managed,
+			test);
 	free(fingerprint);
+	free(test);
 	if (!pps) {
 		xml_node_free(ctx->xml, spp_node);
 		free(user);

@@ -15,11 +15,16 @@ if (!$db) {
    die($sqliteerror);
 }
 
-$row = $db->query("SELECT realm FROM sessions WHERE id='$id'")->fetch();
+$row = $db->query("SELECT realm,test FROM sessions WHERE id='$id'")->fetch();
 if ($row == false) {
    die("Session not found for id: $id");
 }
 $realm = $row['realm'];
+$test = $row['test'];
+
+if (strlen($test) > 0) {
+  echo "<p style=\"color:#FF0000\">Special test functionality: $test</red></big></p>\n";
+}
 
 echo "<h3>Sign up for a subscription - $realm</h3>\n";
 
