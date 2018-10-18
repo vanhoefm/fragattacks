@@ -1577,6 +1577,8 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_FLAGS_OCE_STA_CFON		0x0020000000000000ULL
 /** Driver supports MFP-optional in the connect command */
 #define WPA_DRIVER_FLAGS_MFP_OPTIONAL		0x0040000000000000ULL
+/** Driver is a self-managed regulatory device */
+#define WPA_DRIVER_FLAGS_SELF_MANAGED_REGULATORY       0x0080000000000000ULL
 	u64 flags;
 
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \
