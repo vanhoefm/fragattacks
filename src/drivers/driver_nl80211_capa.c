@@ -1921,6 +1921,13 @@ static int nl80211_set_regulatory_flags(struct wpa_driver_nl80211_data *drv,
 		return -ENOMEM;
 
 	nl80211_cmd(drv, msg, 0, NL80211_CMD_GET_REG);
+	if (drv->capa.flags & WPA_DRIVER_FLAGS_SELF_MANAGED_REGULATORY) {
+		if (nla_put_u32(msg, NL80211_ATTR_WIPHY, drv->wiphy_idx)) {
+			nlmsg_free(msg);
+			return -1;
+		}
+	}
+
 	return send_and_recv_msgs(drv, msg, nl80211_get_reg, results);
 }
 
