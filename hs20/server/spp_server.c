@@ -2262,6 +2262,9 @@ static xml_node_t * hs20_spp_update_response(struct hs20_svc *ctx,
 					      "", dmacc);
 			free(val);
 		}
+		if (oper == POLICY_UPDATE)
+			db_update_val(ctx, user, realm, "polupd_done", "1",
+				      dmacc);
 		ret = build_spp_exchange_complete(
 			ctx, session_id,
 			"Exchange complete, release TLS connection", NULL);
