@@ -1266,7 +1266,7 @@ static xml_node_t * build_pps(struct hs20_svc *ctx,
 			      const char *pw, const char *cert,
 			      int machine_managed, const char *test)
 {
-	xml_node_t *pps, *c, *trust, *aaa, *aaa1, *upd, *homesp;
+	xml_node_t *pps, *c, *trust, *aaa, *aaa1, *upd, *homesp, *p;
 	xml_node_t *cred, *eap, *userpw;
 
 	pps = xml_node_create_root(ctx->xml, NULL, NULL, NULL,
@@ -1293,6 +1293,23 @@ static xml_node_t * build_pps(struct hs20_svc *ctx,
 	} else {
 		add_text_node_conf(ctx, realm, aaa1, "CertSHA256Fingerprint",
 				   "aaa_trust_root_cert_fingerprint");
+	}
+
+	if (test && os_strcmp(test, "corrupt_polupd_hash") == 0) {
+		debug_print(ctx, 1,
+			    "TEST: Corrupt PPS/Cred*/Policy/PolicyUpdate/Trustroot/CertSHA256FingerPrint");
+		p = xml_node_create(ctx->xml, c, NULL, "Policy");
+		upd = xml_node_create(ctx->xml, p, NULL, "PolicyUpdate");
+		add_text_node(ctx, upd, "UpdateInterval", "30");
+		add_text_node(ctx, upd, "UpdateMethod", "SPP-ClientInitiated");
+		add_text_node(ctx, upd, "Restriction", "Unrestricted");
+		add_text_node_conf(ctx, realm, upd, "URI", "policy_url");
+		trust = xml_node_create(ctx->xml, upd, NULL, "TrustRoot");
+		add_text_node_conf(ctx, realm, trust, "CertURL",
+				   "policy_trust_root_cert_url");
+		add_text_node_conf_corrupt(ctx, realm, trust,
+					   "CertSHA256Fingerprint",
+					   "policy_trust_root_cert_fingerprint");
 	}
 
 	upd = xml_node_create(ctx->xml, c, NULL, "SubscriptionUpdate");
