@@ -1314,7 +1314,7 @@ static xml_node_t * build_pps(struct hs20_svc *ctx,
 
 	upd = xml_node_create(ctx->xml, c, NULL, "SubscriptionUpdate");
 	add_text_node(ctx, upd, "UpdateInterval", "4294967295");
-	add_text_node(ctx, upd, "UpdateMethod", "ClientInitiated");
+	add_text_node(ctx, upd, "UpdateMethod", "SPP-ClientInitiated");
 	add_text_node(ctx, upd, "Restriction", "HomeSP");
 	add_text_node_conf(ctx, realm, upd, "URI", "spp_http_auth_url");
 	trust = xml_node_create(ctx->xml, upd, NULL, "TrustRoot");
