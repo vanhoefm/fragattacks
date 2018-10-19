@@ -150,3 +150,14 @@ def test_ap_csa_invalid(dev, apdev):
     for val in vals:
         if "FAIL" not in ap.request("CHAN_SWITCH 1 %d" % val):
             raise Exception("Invalid channel accepted: %d" % val)
+
+def test_ap_csa_disable(dev, apdev):
+    """AP Channel Switch and DISABLE command before completion"""
+    csa_supported(dev[0])
+    ap = connect(dev[0], apdev)
+    if "OK" not in ap.request("CHAN_SWITCH 10 2462"):
+        raise Exception("CHAN_SWITCH failed")
+    ap.disable()
+    ap.enable()
+    dev[0].wait_disconnected()
+    dev[0].wait_connected()
