@@ -768,7 +768,7 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 	}
 
 	snprintf(buf, sizeof(buf),
-		 "./Wi-Fi/%s/PerProviderSubscription/Credential1/Credential",
+		 "./Wi-Fi/%s/PerProviderSubscription/Cred01/Credential",
 		 realm);
 
 	if (add_update_node(ctx, spp_node, ns, buf, cred) < 0) {
@@ -834,7 +834,7 @@ static xml_node_t * policy_remediation(struct hs20_svc *ctx,
 		return NULL;
 
 	snprintf(buf, sizeof(buf),
-		 "./Wi-Fi/%s/PerProviderSubscription/Credential1/Policy",
+		 "./Wi-Fi/%s/PerProviderSubscription/Cred01/Policy",
 		 realm);
 
 	if (add_update_node(ctx, spp_node, ns, buf, policy) < 0) {
@@ -1092,7 +1092,7 @@ static xml_node_t * hs20_policy_update(struct hs20_svc *ctx,
 		return NULL;
 
 	snprintf(buf, sizeof(buf),
-		 "./Wi-Fi/%s/PerProviderSubscription/Credential1/Policy",
+		 "./Wi-Fi/%s/PerProviderSubscription/Cred01/Policy",
 		 realm);
 
 	if (add_update_node(ctx, spp_node, ns, buf, policy) < 0) {
@@ -1276,7 +1276,7 @@ static xml_node_t * build_pps(struct hs20_svc *ctx,
 
 	add_text_node(ctx, pps, "UpdateIdentifier", "1");
 
-	c = xml_node_create(ctx->xml, pps, NULL, "Credential1");
+	c = xml_node_create(ctx->xml, pps, NULL, "Cred01");
 
 	add_text_node(ctx, c, "CredentialPriority", "1");
 
@@ -1565,7 +1565,7 @@ static xml_node_t * hs20_user_input_free_remediation(struct hs20_svc *ctx,
 		return NULL;
 
 	snprintf(buf, sizeof(buf),
-		 "./Wi-Fi/%s/PerProviderSubscription/Credential1/Credential",
+		 "./Wi-Fi/%s/PerProviderSubscription/Cred01/Credential",
 		 realm);
 
 	if (add_update_node(ctx, spp_node, ns, buf, cred) < 0) {
