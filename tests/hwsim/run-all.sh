@@ -39,6 +39,7 @@ unset RUN_TEST_ARGS
 unset BUILD
 unset BUILD_ARGS
 unset CODECOV
+unset VM
 while [ "$1" != "" ]; do
 	case $1 in
 		-v | --valgrind | valgrind)
@@ -71,6 +72,12 @@ while [ "$1" != "" ]; do
 		-h | --help)
 			usage
 			;;
+		-V | --vm)
+			shift
+			echo "$0: running inside a VM"
+			VM=VM
+			;;
+
 		*)
 			RUN_TEST_ARGS="$RUN_TEST_ARGS$1 "
 			shift
@@ -108,7 +115,7 @@ if [ ! -z "$BUILD" ]; then
     fi
 fi
 
-if ! ./start.sh $VALGRIND $TRACE channels=$NUM_CH; then
+if ! ./start.sh $VM $VALGRIND $TRACE channels=$NUM_CH; then
 	if ! [ -z "$LOGBASEDIR" ] ; then
 		echo "Could not start test environment" > $LOGDIR/run
 	fi

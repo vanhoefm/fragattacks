@@ -71,6 +71,12 @@ done
 sed "s/group=admin/group=$GROUP/;s%LOGDIR%$LOGDIR%g" "$DIR/auth_serv/as.conf" > "$LOGDIR/as.conf"
 sed "s/group=admin/group=$GROUP/;s%LOGDIR%$LOGDIR%g" "$DIR/auth_serv/as2.conf" > "$LOGDIR/as2.conf"
 
+unset VM
+if [ "$1" = "VM" ]; then
+    VM="y"
+    shift
+fi
+
 if [ "$1" = "valgrind" ]; then
     VALGRIND=y
     VALGRIND_WPAS="valgrind --log-file=$LOGDIR/valgrind-wlan%d"
@@ -121,7 +127,14 @@ sudo $(printf -- "$VALGRIND_WPAS" 5) $WPAS -g /tmp/wpas-wlan5 -G$GROUP \
     -ddKt$TRACE -f $LOGDIR/log5 &
 sudo $VALGRIND_HAPD $HAPD -ddKt$TRACE -g /var/run/hostapd-global -G $GROUP -f $LOGDIR/hostapd &
 HPID=$!
-echo $HPID > $LOGDIR/hostapd-test.pid
+
+if [ -z "$VM" ]; then
+    # Sleep a bit, otherwise pgrep may run before the child is forked
+    sleep 0.1
+    pgrep -P $HPID > $LOGDIR/hostapd-test.pid
+else
+    echo $HPID > $LOGDIR/hostapd-test.pid
+fi
 
 if [ -x $HLR_AUC_GW ]; then
     cp $DIR/auth_serv/hlr_auc_gw.milenage_db $LOGDIR/hlr_auc_gw.milenage_db

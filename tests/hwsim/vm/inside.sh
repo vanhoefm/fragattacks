@@ -113,7 +113,7 @@ else
 	dbus-daemon --config-file=$TESTDIR/vm/dbus.conf --fork
 
 	cd $TESTDIR
-	./run-all.sh $(cat /tmp/host$ARGS) </dev/ttyS0 >/dev/ttyS0 2>&1
+	./run-all.sh --vm $(cat /tmp/host$ARGS) </dev/ttyS0 >/dev/ttyS0 2>&1
 	if test -d /sys/kernel/debug/gcov ; then
 		cp -ar /sys/kernel/debug/gcov /tmp/logs/
 		# these are broken as they're updated while being read ...
