@@ -2271,7 +2271,7 @@ static void nl80211_sta_opmode_change_event(struct wpa_driver_nl80211_data *drv,
 	ed.sta_opmode.addr = nla_data(tb[NL80211_ATTR_MAC]);
 
 	if (tb[NL80211_ATTR_SMPS_MODE]) {
-		smps_mode = nla_get_u32(tb[NL80211_ATTR_SMPS_MODE]);
+		smps_mode = nla_get_u8(tb[NL80211_ATTR_SMPS_MODE]);
 		switch (smps_mode) {
 		case NL80211_SMPS_OFF:
 			ed.sta_opmode.smps_mode = SMPS_OFF;
