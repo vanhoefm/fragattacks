@@ -484,6 +484,16 @@ enum qca_radiotap_vendor_ids {
  *	modifications to kernel's TCP parameters which can be referred by
  *	userspace tools. The attributes used with this event are defined in enum
  *	qca_wlan_vendor_attr_throughput_change.
+ *
+ * @QCA_NL80211_VENDOR_SUBCMD_COEX_CONFIG: This command is used to set
+ *	priorities among different types of traffic during coex scenarios.
+ *	Current supported prioritization is among WLAN/BT/ZIGBEE with different
+ *	profiles mentioned in enum qca_coex_config_profiles. The associated
+ *	attributes used with this command are defined in enum
+ *	qca_vendor_attr_coex_config.
+ *
+ *	Based on the config provided, FW will boost the weight and prioritize
+ *	the traffic for that subsystem (WLAN/BT/Zigbee).
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -647,6 +657,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_ROAM_SCAN_EVENT = 172,
 	QCA_NL80211_VENDOR_SUBCMD_PEER_CFR_CAPTURE_CFG = 173,
 	QCA_NL80211_VENDOR_SUBCMD_THROUGHPUT_CHANGE_EVENT = 174,
+	QCA_NL80211_VENDOR_SUBCMD_COEX_CONFIG = 175,
 };
 
 enum qca_wlan_vendor_attr {
@@ -6131,6 +6142,79 @@ enum qca_wlan_vendor_attr_throughput_change {
 	QCA_WLAN_VENDOR_ATTR_THROUGHPUT_CHANGE_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_THROUGHPUT_CHANGE_MAX =
 	QCA_WLAN_VENDOR_ATTR_THROUGHPUT_CHANGE_AFTER_LAST - 1,
+};
+
+/**
+ * enum qca_coex_config_profiles - This enum defines different types of
+ * traffic streams that can be prioritized one over the other during coex
+ * scenarios.
+ * The types defined in this enum are categorized in the below manner.
+ * 0 - 31 values corresponds to WLAN
+ * 32 - 63 values corresponds to BT
+ * 64 - 95 values corresponds to Zigbee
+ * @QCA_WIFI_STA_DISCOVERY: Prioritize discovery frames for WLAN STA
+ * @QCA_WIFI_STA_CONNECTION: Prioritize connection frames for WLAN STA
+ * @QCA_WIFI_STA_CLASS_3_MGMT: Prioritize class 3 mgmt frames for WLAN STA
+ * @QCA_WIFI_STA_DATA : Prioritize data frames for WLAN STA
+ * @QCA_WIFI_STA_ALL: Priritize all frames for WLAN STA
+ * @QCA_WIFI_SAP_DISCOVERY: Prioritize discovery frames for WLAN SAP
+ * @QCA_WIFI_SAP_CONNECTION: Prioritize connection frames for WLAN SAP
+ * @QCA_WIFI_SAP_CLASS_3_MGMT: Prioritize class 3 mgmt frames for WLAN SAP
+ * @QCA_WIFI_SAP_DATA: Prioritize data frames for WLAN SAP
+ * @QCA_WIFI_SAP_ALL: Prioritize all frames for WLAN SAP
+ * @QCA_BT_A2DP: Prioritize BT A2DP
+ * @QCA_BT_BLE: Prioritize BT BLE
+ * @QCA_BT_SCO: Prioritize BT SCO
+ * @QCA_ZB_LOW: Prioritize Zigbee Low
+ * @QCA_ZB_HIGH: Prioritize Zigbee High
+ */
+enum qca_coex_config_profiles {
+	/* 0 - 31 corresponds to WLAN */
+	QCA_WIFI_STA_DISCOVERY = 0,
+	QCA_WIFI_STA_CONNECTION = 1,
+	QCA_WIFI_STA_CLASS_3_MGMT = 2,
+	QCA_WIFI_STA_DATA = 3,
+	QCA_WIFI_STA_ALL = 4,
+	QCA_WIFI_SAP_DISCOVERY = 5,
+	QCA_WIFI_SAP_CONNECTION = 6,
+	QCA_WIFI_SAP_CLASS_3_MGMT = 7,
+	QCA_WIFI_SAP_DATA = 8,
+	QCA_WIFI_SAP_ALL = 9,
+	/* 32 - 63 corresponds to BT */
+	QCA_BT_A2DP = 32,
+	QCA_BT_BLE = 33,
+	QCA_BT_SCO = 34,
+	/* 64 - 95 corresponds to Zigbee */
+	QCA_ZB_LOW = 64,
+	QCA_ZB_HIGH = 65
+};
+
+/**
+ * enum qca_vendor_attr_coex_config - Specifies vendor coex config attributes
+ *
+ * @QCA_VENDOR_ATTR_COEX_CONFIG_PROFILES: This attribute contains variable
+ * length array of 8-bit values from enum qca_coex_config_profiles.
+ * FW will prioritize the profiles in the order given in the array encapsulated
+ * in this attribute.
+ * For example:
+ * -----------------------------------------------------------------------
+ * |     1       |       34       |        32         |         65       |
+ * -----------------------------------------------------------------------
+ * If the attribute contains the values defined in above array then it means
+ * 1) Wifi STA connection has priority over BT_SCO, BT_A2DP and ZIGBEE HIGH.
+ * 2) BT_SCO has priority over BT_A2DP.
+ * 3) BT_A2DP has priority over ZIGBEE HIGH.
+ * Profiles which are not listed in this array shall not be preferred over the
+ * profiles which are listed in the array as a part of this attribute.
+ */
+enum qca_vendor_attr_coex_config {
+	QCA_VENDOR_ATTR_COEX_CONFIG_INVALID = 0,
+	QCA_VENDOR_ATTR_COEX_CONFIG_PROFILES = 1,
+
+	/* Keep last */
+	QCA_VENDOR_ATTR_COEX_CONFIG_AFTER_LAST,
+	QCA_VENDOR_ATTR_COEX_CONFIG_MAX =
+	QCA_VENDOR_ATTR_COEX_CONFIG_AFTER_LAST - 1,
 };
 
 #endif /* QCA_VENDOR_H */
