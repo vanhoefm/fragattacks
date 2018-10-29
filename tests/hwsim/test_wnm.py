@@ -452,7 +452,8 @@ def test_wnm_sleep_mode_proto(dev, apdev):
 
     hdr = "d0003a01" + bssid.replace(':', '') + addr.replace(':', '') + bssid.replace(':', '') + "1000"
     hapd.set("ext_mgmt_frame_handling", "1")
-    tests = [ "0a1001",
+    tests = [ "0a10",
+              "0a1001",
               "0a10015d00",
               "0a10015d01",
               "0a10015d0400000000",
