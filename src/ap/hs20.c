@@ -184,13 +184,14 @@ int hs20_send_wnm_notification_t_c(struct hostapd_data *hapd,
 {
 	struct wpabuf *buf;
 	int ret;
-	size_t url_len = os_strlen(url);
+	size_t url_len;
 
 	if (!url) {
 		wpa_printf(MSG_INFO, "HS 2.0: No T&C Server URL available");
 		return -1;
 	}
 
+	url_len = os_strlen(url);
 	if (5 + url_len > 255) {
 		wpa_printf(MSG_INFO,
 			   "HS 2.0: Too long T&C Server URL for WNM-Notification: '%s'",
