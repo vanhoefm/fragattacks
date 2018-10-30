@@ -1810,3 +1810,51 @@ def test_wnm_time_adv_without_time_zone(dev, apdev):
     hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-wnm", key_mgmt="NONE", scan_freq="2412")
+
+def test_wnm_coloc_intf_reporting(dev, apdev):
+    """WNM Collocated Interference Reporting"""
+    params = { "ssid": "test-wnm",
+               "coloc_intf_reporting": "1" }
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    no_intf = struct.pack("<BBBBBLLLLH", 96, 21, 0, 127, 0x0f, 0, 0, 0, 0, 0)
+
+    try:
+        dev[0].set("coloc_intf_reporting", "1")
+        dev[0].connect("test-wnm", key_mgmt="NONE", scan_freq="2412")
+        addr = dev[0].own_addr()
+        if "OK" not in hapd.request("COLOC_INTF_REQ %s 1 5" % addr):
+            raise Exception("Could not send Collocated Interference Request")
+        ev = dev[0].wait_event(["COLOC-INTF-REQ"], timeout=2)
+        if ev is None:
+            raise Exception("No Collocated Interference Request frame seen")
+        vals = ev.split(' ')
+        if vals[2] != '1' or vals[3] != '5':
+            raise Exception("Unexpected request values: " + ev)
+        dev[0].set("coloc_intf_elems", binascii.hexlify(no_intf))
+        ev = hapd.wait_event(["COLOC-INTF-REPORT"], timeout=1)
+        if ev is None:
+            raise Exception("No Collocated Interference Report frame seen")
+        if addr + " 1 " + binascii.hexlify(no_intf) not in ev:
+            raise Exception("Unexpected report values: " + ev)
+
+        if "OK" not in hapd.request("COLOC_INTF_REQ %s 0 0" % addr):
+            raise Exception("Could not send Collocated Interference Request")
+        ev = dev[0].wait_event(["COLOC-INTF-REQ"], timeout=2)
+        if ev is None:
+            raise Exception("No Collocated Interference Request frame seen")
+        vals = ev.split(' ')
+        if vals[2] != '0' or vals[3] != '0':
+            raise Exception("Unexpected request values: " + ev)
+
+        res = dev[0].request("COLOC_INTF_REPORT " + binascii.hexlify(no_intf))
+        if "OK" not in res:
+            raise Exception("Could not send unsolicited report")
+        ev = hapd.wait_event(["COLOC-INTF-REPORT"], timeout=1)
+        if ev is None:
+            raise Exception("No Collocated Interference Report frame seen")
+        if addr + " 0 " + binascii.hexlify(no_intf) not in ev:
+            raise Exception("Unexpected report values: " + ev)
+    finally:
+        dev[0].set("coloc_intf_reporting", "0")
+        dev[0].set("coloc_intf_elems", "")
