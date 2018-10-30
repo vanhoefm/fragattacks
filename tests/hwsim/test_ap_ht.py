@@ -848,7 +848,7 @@ def test_ap_require_ht(dev, apdev):
                    ht_mcs="0x01 00 00 00 00 00 00 00 00 00",
                    disable_max_amsdu="1", ampdu_factor="2",
                    ampdu_density="1", disable_ht40="1", disable_sgi="1",
-                   disable_ldpc="1")
+                   disable_ldpc="1", rx_stbc="2", tx_stbc="1")
 
 @remote_compatible
 def test_ap_require_ht_limited_rates(dev, apdev):
