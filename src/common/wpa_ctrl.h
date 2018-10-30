@@ -332,6 +332,13 @@ extern "C" {
 /* BSS Transition Management Response frame received */
 #define BSS_TM_RESP "BSS-TM-RESP "
 
+/* Collocated Interference Request frame received;
+ * parameters: <dialog token> <automatic report enabled> <report timeout> */
+#define COLOC_INTF_REQ "COLOC-INTF-REQ "
+/* Collocated Interference Report frame received;
+ * parameters: <STA address> <dialog token> <hexdump of report elements> */
+#define COLOC_INTF_REPORT "COLOC-INTF-REPORT "
+
 /* MBO IE with cellular data connection preference received */
 #define MBO_CELL_PREFERENCE "MBO-CELL-PREFERENCE "
 

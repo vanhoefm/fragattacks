@@ -684,6 +684,8 @@ struct hostapd_bss_config {
 	char owe_transition_ifname[IFNAMSIZ + 1];
 	int *owe_groups;
 #endif /* CONFIG_OWE */
+
+	int coloc_intf_reporting;
 };
 
 /**

@@ -317,6 +317,7 @@ void wpa_supplicant_mark_disassoc(struct wpa_supplicant *wpa_s)
 
 	wpas_rrm_reset(wpa_s);
 	wpa_s->wnmsleep_used = 0;
+	wnm_clear_coloc_intf_reporting(wpa_s);
 
 #ifdef CONFIG_TESTING_OPTIONS
 	wpa_s->last_tk_alg = WPA_ALG_NONE;
@@ -4339,6 +4340,7 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 #endif /* CONFIG_AP */
 
 		wpas_p2p_update_channel_list(wpa_s, WPAS_P2P_CHANNEL_UPDATE_CS);
+		wnm_clear_coloc_intf_reporting(wpa_s);
 		break;
 #ifdef CONFIG_AP
 #ifdef NEED_AP_MLME

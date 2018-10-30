@@ -453,6 +453,48 @@ static void ieee802_11_rx_wnm_notification_req(struct hostapd_data *hapd,
 }
 
 
+static void ieee802_11_rx_wnm_coloc_intf_report(struct hostapd_data *hapd,
+						const u8 *addr, const u8 *buf,
+						size_t len)
+{
+	u8 dialog_token;
+	char *hex;
+	size_t hex_len;
+
+	if (!hapd->conf->coloc_intf_reporting) {
+		wpa_printf(MSG_DEBUG,
+			   "WNM: Ignore unexpected Collocated Interference Report from "
+			   MACSTR, MAC2STR(addr));
+		return;
+	}
+
+	if (len < 1) {
+		wpa_printf(MSG_DEBUG,
+			   "WNM: Ignore too short Collocated Interference Report from "
+			   MACSTR, MAC2STR(addr));
+		return;
+	}
+	dialog_token = *buf++;
+	len--;
+
+	wpa_printf(MSG_DEBUG,
+		   "WNM: Received Collocated Interference Report frame from "
+		   MACSTR " (dialog_token=%u)",
+		   MAC2STR(addr), dialog_token);
+	wpa_hexdump(MSG_MSGDUMP, "WNM: Collocated Interference Report Elements",
+		    buf, len);
+
+	hex_len = 2 * len + 1;
+	hex = os_malloc(hex_len);
+	if (!hex)
+		return;
+	wpa_snprintf_hex(hex, hex_len, buf, len);
+	wpa_msg_ctrl(hapd->msg_ctx, MSG_INFO, COLOC_INTF_REPORT MACSTR " %d %s",
+		     MAC2STR(addr), dialog_token, hex);
+	os_free(hex);
+}
+
+
 int ieee802_11_rx_wnm_action_ap(struct hostapd_data *hapd,
 				const struct ieee80211_mgmt *mgmt, size_t len)
 {
@@ -482,6 +524,10 @@ int ieee802_11_rx_wnm_action_ap(struct hostapd_data *hapd,
 	case WNM_NOTIFICATION_REQ:
 		ieee802_11_rx_wnm_notification_req(hapd, mgmt->sa, payload,
 						   plen);
+		return 0;
+	case WNM_COLLOCATED_INTERFERENCE_REPORT:
+		ieee802_11_rx_wnm_coloc_intf_report(hapd, mgmt->sa, payload,
+						    plen);
 		return 0;
 	}
 
@@ -677,6 +723,43 @@ int wnm_send_bss_tm_req(struct hostapd_data *hapd, struct sta_info *sta,
 	if (disassoc_timer) {
 		/* send disassociation frame after time-out */
 		set_disassoc_timer(hapd, sta, disassoc_timer);
+	}
+
+	return 0;
+}
+
+
+int wnm_send_coloc_intf_req(struct hostapd_data *hapd, struct sta_info *sta,
+			    unsigned int auto_report, unsigned int timeout)
+{
+	u8 buf[100], *pos;
+	struct ieee80211_mgmt *mgmt;
+	u8 dialog_token = 1;
+
+	if (auto_report > 3 || timeout > 63)
+		return -1;
+	os_memset(buf, 0, sizeof(buf));
+	mgmt = (struct ieee80211_mgmt *) buf;
+	mgmt->frame_control = IEEE80211_FC(WLAN_FC_TYPE_MGMT,
+					   WLAN_FC_STYPE_ACTION);
+	os_memcpy(mgmt->da, sta->addr, ETH_ALEN);
+	os_memcpy(mgmt->sa, hapd->own_addr, ETH_ALEN);
+	os_memcpy(mgmt->bssid, hapd->own_addr, ETH_ALEN);
+	mgmt->u.action.category = WLAN_ACTION_WNM;
+	mgmt->u.action.u.coloc_intf_req.action =
+		WNM_COLLOCATED_INTERFERENCE_REQ;
+	mgmt->u.action.u.coloc_intf_req.dialog_token = dialog_token;
+	mgmt->u.action.u.coloc_intf_req.req_info = auto_report | (timeout << 2);
+	pos = &mgmt->u.action.u.coloc_intf_req.req_info;
+	pos++;
+
+	wpa_printf(MSG_DEBUG, "WNM: Sending Collocated Interference Request to "
+		   MACSTR " (dialog_token=%u auto_report=%u timeout=%u)",
+		   MAC2STR(sta->addr), dialog_token, auto_report, timeout);
+	if (hostapd_drv_send_mlme(hapd, buf, pos - buf, 0) < 0) {
+		wpa_printf(MSG_DEBUG,
+			   "WNM: Failed to send Collocated Interference Request frame");
+		return -1;
 	}
 
 	return 0;

@@ -65,11 +65,16 @@ int wnm_send_bss_transition_mgmt_query(struct wpa_supplicant *wpa_s,
 				       int cand_list);
 
 void wnm_deallocate_memory(struct wpa_supplicant *wpa_s);
+int wnm_send_coloc_intf_report(struct wpa_supplicant *wpa_s, u8 dialog_token,
+			       const struct wpabuf *elems);
+void wnm_set_coloc_intf_elems(struct wpa_supplicant *wpa_s,
+			      struct wpabuf *elems);
 
 
 #ifdef CONFIG_WNM
 
 int wnm_scan_process(struct wpa_supplicant *wpa_s, int reply_on_fail);
+void wnm_clear_coloc_intf_reporting(struct wpa_supplicant *wpa_s);
 
 #else /* CONFIG_WNM */
 
@@ -77,6 +82,10 @@ static inline int wnm_scan_process(struct wpa_supplicant *wpa_s,
 				   int reply_on_fail)
 {
 	return 0;
+}
+
+static inline void wnm_clear_coloc_intf_reporting(struct wpa_supplicant *wpa_s)
+{
 }
 
 #endif /* CONFIG_WNM */

@@ -1469,6 +1469,15 @@ struct wpa_config {
 	 *	profile automatically
 	 */
 	int dpp_config_processing;
+
+	/**
+	 * coloc_intf_reporting - Colocated interference reporting
+	 *
+	 * dot11CoLocIntfReportingActivated
+	 * 0 = disabled (false)
+	 * 1 = enabled (true)
+	 */
+	int coloc_intf_reporting;
 };
 
 

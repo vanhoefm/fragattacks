@@ -178,6 +178,10 @@ static void hostapd_ext_capab_byte(struct hostapd_data *hapd, u8 *pos, int idx)
 	case 1: /* Bits 8-15 */
 		if (hapd->conf->proxy_arp)
 			*pos |= 0x10; /* Bit 12 - Proxy ARP */
+		if (hapd->conf->coloc_intf_reporting) {
+			/* Bit 13 - Collocated Interference Reporting */
+			*pos |= 0x20;
+		}
 		break;
 	case 2: /* Bits 16-23 */
 		if (hapd->conf->wnm_sleep_mode)

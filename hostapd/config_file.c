@@ -4108,6 +4108,8 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 				   line, pos);
 			return 1;
 		}
+	} else if (os_strcmp(buf, "coloc_intf_reporting") == 0) {
+		bss->coloc_intf_reporting = atoi(pos);
 #endif /* CONFIG_OWE */
 	} else {
 		wpa_printf(MSG_ERROR,

@@ -338,6 +338,9 @@ void wnm_deallocate_memory(struct wpa_supplicant *wpa_s)
 	wpa_s->wnm_num_neighbor_report = 0;
 	os_free(wpa_s->wnm_neighbor_report_elements);
 	wpa_s->wnm_neighbor_report_elements = NULL;
+
+	wpabuf_free(wpa_s->coloc_intf_elems);
+	wpa_s->coloc_intf_elems = NULL;
 }
 
 
@@ -1717,6 +1720,46 @@ static void ieee802_11_rx_wnm_notif_req(struct wpa_supplicant *wpa_s,
 }
 
 
+static void ieee802_11_rx_wnm_coloc_intf_req(struct wpa_supplicant *wpa_s,
+					     const u8 *sa, const u8 *frm,
+					     int len)
+{
+	u8 dialog_token, req_info, auto_report, timeout;
+
+	if (!wpa_s->conf->coloc_intf_reporting)
+		return;
+
+	/* Dialog Token [1] | Request Info [1] */
+
+	if (len < 2)
+		return;
+	dialog_token = frm[0];
+	req_info = frm[1];
+	auto_report = req_info & 0x03;
+	timeout = req_info >> 2;
+
+	wpa_dbg(wpa_s, MSG_DEBUG,
+		"WNM: Received Collocated Interference Request (dialog_token %u auto_report %u timeout %u sa " MACSTR ")",
+		dialog_token, auto_report, timeout, MAC2STR(sa));
+
+	if (dialog_token == 0)
+		return; /* only nonzero values are used for request */
+
+	if (wpa_s->wpa_state != WPA_COMPLETED ||
+	    os_memcmp(sa, wpa_s->bssid, ETH_ALEN) != 0) {
+		wpa_dbg(wpa_s, MSG_DEBUG,
+			"WNM: Collocated Interference Request frame not from current AP - ignore it");
+		return;
+	}
+
+	wpa_msg(wpa_s, MSG_INFO, COLOC_INTF_REQ "%u %u %u",
+		dialog_token, auto_report, timeout);
+	wpa_s->coloc_intf_dialog_token = dialog_token;
+	wpa_s->coloc_intf_auto_report = auto_report;
+	wpa_s->coloc_intf_timeout = timeout;
+}
+
+
 void ieee802_11_rx_wnm_action(struct wpa_supplicant *wpa_s,
 			      const struct ieee80211_mgmt *mgmt, size_t len)
 {
@@ -1750,8 +1793,75 @@ void ieee802_11_rx_wnm_action(struct wpa_supplicant *wpa_s,
 	case WNM_NOTIFICATION_REQ:
 		ieee802_11_rx_wnm_notif_req(wpa_s, mgmt->sa, pos, end - pos);
 		break;
+	case WNM_COLLOCATED_INTERFERENCE_REQ:
+		ieee802_11_rx_wnm_coloc_intf_req(wpa_s, mgmt->sa, pos,
+						 end - pos);
+		break;
 	default:
 		wpa_printf(MSG_ERROR, "WNM: Unknown request");
 		break;
 	}
+}
+
+
+int wnm_send_coloc_intf_report(struct wpa_supplicant *wpa_s, u8 dialog_token,
+			       const struct wpabuf *elems)
+{
+	struct wpabuf *buf;
+	int ret;
+
+	if (wpa_s->wpa_state < WPA_ASSOCIATED || !elems)
+		return -1;
+
+	wpa_printf(MSG_DEBUG, "WNM: Send Collocated Interference Report to "
+		   MACSTR " (dialog token %u)",
+		   MAC2STR(wpa_s->bssid), dialog_token);
+
+	buf = wpabuf_alloc(3 + wpabuf_len(elems));
+	if (!buf)
+		return -1;
+
+	wpabuf_put_u8(buf, WLAN_ACTION_WNM);
+	wpabuf_put_u8(buf, WNM_COLLOCATED_INTERFERENCE_REPORT);
+	wpabuf_put_u8(buf, dialog_token);
+	wpabuf_put_buf(buf, elems);
+
+	ret = wpa_drv_send_action(wpa_s, wpa_s->assoc_freq, 0, wpa_s->bssid,
+				  wpa_s->own_addr, wpa_s->bssid,
+				  wpabuf_head_u8(buf), wpabuf_len(buf), 0);
+	wpabuf_free(buf);
+	return ret;
+}
+
+
+void wnm_set_coloc_intf_elems(struct wpa_supplicant *wpa_s,
+			      struct wpabuf *elems)
+{
+	wpabuf_free(wpa_s->coloc_intf_elems);
+	if (elems && wpabuf_len(elems) == 0) {
+		wpabuf_free(elems);
+		elems = NULL;
+	}
+	wpa_s->coloc_intf_elems = elems;
+
+	if (wpa_s->conf->coloc_intf_reporting && wpa_s->coloc_intf_elems &&
+	    wpa_s->coloc_intf_dialog_token &&
+	    (wpa_s->coloc_intf_auto_report == 1 ||
+	     wpa_s->coloc_intf_auto_report == 3)) {
+		/* TODO: Check that there has not been less than
+		 * wpa_s->coloc_intf_timeout * 200 TU from the last report.
+		 */
+		wnm_send_coloc_intf_report(wpa_s,
+					   wpa_s->coloc_intf_dialog_token,
+					   wpa_s->coloc_intf_elems);
+	}
+}
+
+
+void wnm_clear_coloc_intf_reporting(struct wpa_supplicant *wpa_s)
+{
+#ifdef CONFIG_WNM
+	wpa_s->coloc_intf_dialog_token = 0;
+	wpa_s->coloc_intf_auto_report = 0;
+#endif /* CONFIG_WNM */
 }

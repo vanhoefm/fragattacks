@@ -1511,7 +1511,9 @@ static void wpa_config_write_global(FILE *f, struct wpa_config *config)
 	if (config->dpp_config_processing)
 		fprintf(f, "dpp_config_processing=%d\n",
 			config->dpp_config_processing);
-
+	if (config->coloc_intf_reporting)
+		fprintf(f, "coloc_intf_reporting=%d\n",
+			config->coloc_intf_reporting);
 }
 
 #endif /* CONFIG_NO_CONFIG_WRITE */

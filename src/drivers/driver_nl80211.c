@@ -2200,6 +2200,11 @@ static int nl80211_mgmt_subscribe_non_ap(struct i802_bss *bss)
 	/* WNM-Sleep Mode Response */
 	if (nl80211_register_action_frame(bss, (u8 *) "\x0a\x11", 2) < 0)
 		ret = -1;
+#ifdef CONFIG_WNM
+	/* WNM - Collocated Interference Request */
+	if (nl80211_register_action_frame(bss, (u8 *) "\x0a\x0b", 2) < 0)
+		ret = -1;
+#endif /* CONFIG_WNM */
 
 #ifdef CONFIG_HS20
 	/* WNM-Notification */
