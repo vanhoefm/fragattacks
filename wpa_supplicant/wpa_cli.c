@@ -1412,7 +1412,7 @@ static const char *network_fields[] = {
 #ifdef CONFIG_HT_OVERRIDES
 	"disable_ht", "disable_ht40", "disable_sgi", "disable_ldpc",
 	"ht40_intolerant", "disable_max_amsdu", "ampdu_factor",
-	"ampdu_density", "ht_mcs",
+	"ampdu_density", "ht_mcs", "rx_stbc", "tx_stbc",
 #endif /* CONFIG_HT_OVERRIDES */
 #ifdef CONFIG_VHT_OVERRIDES
 	"disable_vht", "vht_capa", "vht_capa_mask", "vht_rx_mcs_nss_1",

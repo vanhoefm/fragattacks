@@ -895,6 +895,8 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	INT_DEF(disable_sgi, DEFAULT_DISABLE_SGI);
 	INT_DEF(disable_ldpc, DEFAULT_DISABLE_LDPC);
 	INT(ht40_intolerant);
+	INT_DEF(tx_stbc, DEFAULT_TX_STBC);
+	INT_DEF(rx_stbc, DEFAULT_RX_STBC);
 	INT_DEF(disable_max_amsdu, DEFAULT_DISABLE_MAX_AMSDU);
 	INT_DEF(ampdu_factor, DEFAULT_AMPDU_FACTOR);
 	INT_DEF(ampdu_density, DEFAULT_AMPDU_DENSITY);

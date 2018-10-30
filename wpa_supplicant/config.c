@@ -2331,6 +2331,8 @@ static const struct parse_data ssid_fields[] = {
 	{ INT_RANGE(disable_sgi, 0, 1) },
 	{ INT_RANGE(disable_ldpc, 0, 1) },
 	{ INT_RANGE(ht40_intolerant, 0, 1) },
+	{ INT_RANGE(tx_stbc, -1, 1) },
+	{ INT_RANGE(rx_stbc, -1, 3) },
 	{ INT_RANGE(disable_max_amsdu, -1, 1) },
 	{ INT_RANGE(ampdu_factor, -1, 3) },
 	{ INT_RANGE(ampdu_density, -1, 7) },
@@ -2851,6 +2853,8 @@ void wpa_config_set_network_defaults(struct wpa_ssid *ssid)
 	ssid->disable_ht40 = DEFAULT_DISABLE_HT40;
 	ssid->disable_sgi = DEFAULT_DISABLE_SGI;
 	ssid->disable_ldpc = DEFAULT_DISABLE_LDPC;
+	ssid->tx_stbc = DEFAULT_TX_STBC;
+	ssid->rx_stbc = DEFAULT_RX_STBC;
 	ssid->disable_max_amsdu = DEFAULT_DISABLE_MAX_AMSDU;
 	ssid->ampdu_factor = DEFAULT_AMPDU_FACTOR;
 	ssid->ampdu_density = DEFAULT_AMPDU_DENSITY;

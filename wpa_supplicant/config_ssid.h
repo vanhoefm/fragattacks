@@ -33,6 +33,8 @@
 #define DEFAULT_DISABLE_HT40 0
 #define DEFAULT_DISABLE_SGI 0
 #define DEFAULT_DISABLE_LDPC 0
+#define DEFAULT_TX_STBC -1 /* no change */
+#define DEFAULT_RX_STBC -1 /* no change */
 #define DEFAULT_DISABLE_MAX_AMSDU -1 /* no change */
 #define DEFAULT_AMPDU_FACTOR -1 /* no change */
 #define DEFAULT_AMPDU_DENSITY -1 /* no change */
@@ -693,6 +695,22 @@ struct wpa_ssid {
 	 * By default (empty string): Use whatever the OS has configured.
 	 */
 	char *ht_mcs;
+
+	/**
+	 * tx_stbc - Indicate STBC support for TX streams
+	 *
+	 * Value: -1..1, by default (-1): use whatever the OS or card has
+	 * configured. See IEEE Std 802.11-2016, 9.4.2.56.2.
+	 */
+	int tx_stbc;
+
+	/**
+	 * rx_stbc - Indicate STBC support for RX streams
+	 *
+	 * Value: -1..3, by default (-1): use whatever the OS or card has
+	 * configured. See IEEE Std 802.11-2016, 9.4.2.56.2.
+	 */
+	int rx_stbc;
 #endif /* CONFIG_HT_OVERRIDES */
 
 #ifdef CONFIG_VHT_OVERRIDES

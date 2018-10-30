@@ -4511,6 +4511,58 @@ static int wpa_set_disable_ldpc(struct wpa_supplicant *wpa_s,
 }
 
 
+static int wpa_set_tx_stbc(struct wpa_supplicant *wpa_s,
+			   struct ieee80211_ht_capabilities *htcaps,
+			   struct ieee80211_ht_capabilities *htcaps_mask,
+			   int tx_stbc)
+{
+	le16 msk = host_to_le16(HT_CAP_INFO_TX_STBC);
+
+	wpa_msg(wpa_s, MSG_DEBUG, "set_tx_stbc: %d", tx_stbc);
+
+	if (tx_stbc == -1)
+		return 0;
+
+	if (tx_stbc < 0 || tx_stbc > 1) {
+		wpa_msg(wpa_s, MSG_ERROR,
+			"tx_stbc: %d out of range. Must be 0-1 or -1", tx_stbc);
+		return -EINVAL;
+	}
+
+	htcaps_mask->ht_capabilities_info |= msk;
+	htcaps->ht_capabilities_info &= ~msk;
+	htcaps->ht_capabilities_info |= (tx_stbc << 7) & msk;
+
+	return 0;
+}
+
+
+static int wpa_set_rx_stbc(struct wpa_supplicant *wpa_s,
+			   struct ieee80211_ht_capabilities *htcaps,
+			   struct ieee80211_ht_capabilities *htcaps_mask,
+			   int rx_stbc)
+{
+	le16 msk = host_to_le16(HT_CAP_INFO_RX_STBC_MASK);
+
+	wpa_msg(wpa_s, MSG_DEBUG, "set_rx_stbc: %d", rx_stbc);
+
+	if (rx_stbc == -1)
+		return 0;
+
+	if (rx_stbc < 0 || rx_stbc > 3) {
+		wpa_msg(wpa_s, MSG_ERROR,
+			"rx_stbc: %d out of range. Must be 0-3 or -1", rx_stbc);
+		return -EINVAL;
+	}
+
+	htcaps_mask->ht_capabilities_info |= msk;
+	htcaps->ht_capabilities_info &= ~msk;
+	htcaps->ht_capabilities_info |= (rx_stbc << 8) & msk;
+
+	return 0;
+}
+
+
 void wpa_supplicant_apply_ht_overrides(
 	struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 	struct wpa_driver_associate_params *params)
@@ -4535,6 +4587,8 @@ void wpa_supplicant_apply_ht_overrides(
 	wpa_set_disable_ht40(wpa_s, htcaps, htcaps_mask, ssid->disable_ht40);
 	wpa_set_disable_sgi(wpa_s, htcaps, htcaps_mask, ssid->disable_sgi);
 	wpa_set_disable_ldpc(wpa_s, htcaps, htcaps_mask, ssid->disable_ldpc);
+	wpa_set_rx_stbc(wpa_s, htcaps, htcaps_mask, ssid->rx_stbc);
+	wpa_set_tx_stbc(wpa_s, htcaps, htcaps_mask, ssid->tx_stbc);
 
 	if (ssid->ht40_intolerant) {
 		le16 bit = host_to_le16(HT_CAP_INFO_40MHZ_INTOLERANT);
