@@ -474,6 +474,16 @@ enum qca_radiotap_vendor_ids {
  *	configure parameters per peer to capture Channel Frequency Response
  *	(CFR) and enable Periodic CFR capture. The attributes for this command
  *	are defined in enum qca_wlan_vendor_peer_cfr_capture_attr.
+ *
+ * @QCA_NL80211_VENDOR_SUBCMD_THROUGHPUT_CHANGE_EVENT: Event to indicate changes
+ *	in throughput dynamically. The driver estimates the throughput based on
+ *	number of packets being transmitted/received per second and indicates
+ *	the changes in throughput to user space. Userspace tools can use this
+ *	information to configure kernel's TCP parameters in order to achieve
+ *	peak throughput. Optionally, the driver will also send guidance on
+ *	modifications to kernel's TCP parameters which can be referred by
+ *	userspace tools. The attributes used with this event are defined in enum
+ *	qca_wlan_vendor_attr_throughput_change.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -636,6 +646,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_NAN_EXT = 171,
 	QCA_NL80211_VENDOR_SUBCMD_ROAM_SCAN_EVENT = 172,
 	QCA_NL80211_VENDOR_SUBCMD_PEER_CFR_CAPTURE_CFG = 173,
+	QCA_NL80211_VENDOR_SUBCMD_THROUGHPUT_CHANGE_EVENT = 174,
 };
 
 enum qca_wlan_vendor_attr {
@@ -6060,6 +6071,66 @@ enum qca_wlan_vendor_peer_cfr_capture_attr {
 	QCA_WLAN_VENDOR_ATTR_PEER_CFR_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_PEER_CFR_MAX =
 	QCA_WLAN_VENDOR_ATTR_PEER_CFR_AFTER_LAST - 1,
+};
+
+/**
+ * enum qca_wlan_throughput_level - Current throughput level
+ *
+ * Indicates the current level of throughput calculated by the driver. The
+ * driver may choose different thresholds to decide whether the throughput level
+ * is low or medium or high based on variety of parameters like physical link
+ * capacity of the current connection, the number of packets being dispatched
+ * per second, etc. The throughput level events might not be consistent with the
+ * actual current throughput value being observed.
+ *
+ * @QCA_WLAN_THROUGHPUT_LEVEL_LOW: Low level of throughput
+ * @QCA_WLAN_THROUGHPUT_LEVEL_MEDIUM: Medium level of throughput
+ * @QCA_WLAN_THROUGHPUT_LEVEL_HIGH: High level of throughput
+ */
+enum qca_wlan_throughput_level {
+	QCA_WLAN_THROUGHPUT_LEVEL_LOW = 0,
+	QCA_WLAN_THROUGHPUT_LEVEL_MEDIUM = 1,
+	QCA_WLAN_THROUGHPUT_LEVEL_HIGH = 2,
+};
+
+/**
+ * enum qca_wlan_vendor_attr_throughput_change - Vendor subcmd attributes to
+ * report throughput changes from the driver to user space. enum values are used
+ * for netlink attributes sent with
+ * %QCA_NL80211_VENDOR_SUBCMD_THROUGHPUT_CHANGE_EVENT sub command.
+ */
+enum qca_wlan_vendor_attr_throughput_change {
+	QCA_WLAN_VENDOR_ATTR_THROUGHPUT_CHANGE_INVALID = 0,
+	/* Indicates the direction of throughput in which the change is being
+	 * reported. u8 attribute. Value is 0 for TX and 1 for RX.
+	 */
+	QCA_WLAN_VENDOR_ATTR_THROUGHPUT_CHANGE_DIRECTION = 1,
+	/* Indicates the newly observed throughput level. enum
+	 * qca_wlan_throughput_level describes the possible range of values.
+	 * u8 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_THROUGHPUT_CHANGE_THROUGHPUT_LEVEL = 2,
+	/* Indicates the driver's guidance on the new value to be set to
+	 * kernel's TCP parameter tcp_limit_output_bytes. u32 attribute. The
+	 * driver may optionally include this attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_THROUGHPUT_CHANGE_TCP_LIMIT_OUTPUT_BYTES = 3,
+	/* Indicates the driver's guidance on the new value to be set to
+	 * kernel's TCP parameter tcp_adv_win_scale. s8 attribute. Possible
+	 * values are from -31 to 31. The driver may optionally include this
+	 * attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_THROUGHPUT_CHANGE_TCP_ADV_WIN_SCALE = 4,
+	/* Indicates the driver's guidance on the new value to be set to
+	 * kernel's TCP parameter tcp_delack_seg. u32 attribute. The driver may
+	 * optionally include this attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_THROUGHPUT_CHANGE_TCP_DELACK_SEG = 5,
+
+	/* keep last */
+	QCA_WLAN_VENDOR_ATTR_THROUGHPUT_CHANGE_AFTER_LAST,
+	QCA_WLAN_VENDOR_ATTR_THROUGHPUT_CHANGE_MAX =
+	QCA_WLAN_VENDOR_ATTR_THROUGHPUT_CHANGE_AFTER_LAST - 1,
 };
 
 #endif /* QCA_VENDOR_H */
