@@ -1520,14 +1520,18 @@ void sme_associate(struct wpa_supplicant *wpa_s, enum wpas_mode mode,
 
 		if (wpa_s->current_ssid && wpa_s->current_ssid->owe_group) {
 			group = wpa_s->current_ssid->owe_group;
-		} else {
+		} else if (wpa_s->assoc_status_code ==
+			   WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED) {
 			if (wpa_s->last_owe_group == 19)
 				group = 20;
 			else if (wpa_s->last_owe_group == 20)
 				group = 21;
 			else
 				group = OWE_DH_GROUP;
+		} else {
+			group = OWE_DH_GROUP;
 		}
+
 		wpa_s->last_owe_group = group;
 		wpa_printf(MSG_DEBUG, "OWE: Try to use group %u", group);
 		owe_ie = owe_build_assoc_req(wpa_s->wpa, group);
