@@ -605,9 +605,13 @@ ieee802_1x_kay_create_live_peer(struct ieee802_1x_mka_participant *participant,
 		return NULL;
 	}
 
+	if (secy_create_receive_sc(participant->kay, rxsc)) {
+		os_free(rxsc);
+		os_free(peer);
+		return NULL;
+	}
 	dl_list_add(&participant->live_peers, &peer->list);
 	dl_list_add(&participant->rxsc_list, &rxsc->list);
-	secy_create_receive_sc(participant->kay, rxsc);
 
 	wpa_printf(MSG_DEBUG, "KaY: Live peer created");
 	ieee802_1x_kay_dump_peer(peer);
@@ -665,10 +669,15 @@ ieee802_1x_kay_move_live_peer(struct ieee802_1x_mka_participant *participant,
 	ieee802_1x_kay_dump_peer(peer);
 
 	dl_list_del(&peer->list);
+	if (secy_create_receive_sc(participant->kay, rxsc)) {
+		wpa_printf(MSG_ERROR, "KaY: Can't create SC, discard peer");
+		os_free(rxsc);
+		os_free(peer);
+		return NULL;
+	}
 	dl_list_add_tail(&participant->live_peers, &peer->list);
 
 	dl_list_add(&participant->rxsc_list, &rxsc->list);
-	secy_create_receive_sc(participant->kay, rxsc);
 
 	return peer;
 }
@@ -3502,7 +3511,8 @@ ieee802_1x_kay_create_mka(struct ieee802_1x_kay *kay,
 	secy_cp_control_protect_frames(kay, kay->macsec_protect);
 	secy_cp_control_replay(kay, kay->macsec_replay_protect,
 			       kay->macsec_replay_window);
-	secy_create_transmit_sc(kay, participant->txsc);
+	if (secy_create_transmit_sc(kay, participant->txsc))
+		goto fail;
 
 	/* to derive KEK from CAK and CKN */
 	participant->kek.len = mka_alg_tbl[kay->mka_algindex].kek_len;
