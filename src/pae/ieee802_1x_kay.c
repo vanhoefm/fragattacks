@@ -172,7 +172,7 @@ ieee802_1x_mka_dump_peer_body(struct ieee802_1x_mka_peer_body *body)
 	for (i = 0; i < body_len; i += MI_LEN + sizeof(mn)) {
 		mi = body->peer + i;
 		os_memcpy(&mn, mi + MI_LEN, sizeof(mn));
-		wpa_hexdump_ascii(MSG_DEBUG, "\tMember Id.....:", mi, MI_LEN);
+		wpa_hexdump(MSG_DEBUG, "\tMember Id.....:", mi, MI_LEN);
 		wpa_printf(MSG_DEBUG, "\tMessage Number: %d", be_to_host32(mn));
 	}
 }
@@ -226,11 +226,11 @@ ieee802_1x_mka_dump_sak_use_body(struct ieee802_1x_mka_sak_use_body *body)
 	wpa_printf(MSG_DEBUG, "\tLatest Key AN....: %d", body->lan);
 	wpa_printf(MSG_DEBUG, "\tLatest Key Tx....: %s", yes_no(body->ltx));
 	wpa_printf(MSG_DEBUG, "\tLatest Key Rx....: %s", yes_no(body->lrx));
-	wpa_printf(MSG_DEBUG, "\tOld Key AN....: %d", body->oan);
-	wpa_printf(MSG_DEBUG, "\tOld Key Tx....: %s", yes_no(body->otx));
-	wpa_printf(MSG_DEBUG, "\tOld Key Rx....: %s", yes_no(body->orx));
-	wpa_printf(MSG_DEBUG, "\tPlain Key Tx....: %s", yes_no(body->ptx));
-	wpa_printf(MSG_DEBUG, "\tPlain Key Rx....: %s", yes_no(body->prx));
+	wpa_printf(MSG_DEBUG, "\tOld Key AN.......: %d", body->oan);
+	wpa_printf(MSG_DEBUG, "\tOld Key Tx.......: %s", yes_no(body->otx));
+	wpa_printf(MSG_DEBUG, "\tOld Key Rx.......: %s", yes_no(body->orx));
+	wpa_printf(MSG_DEBUG, "\tPlain Key Tx.....: %s", yes_no(body->ptx));
+	wpa_printf(MSG_DEBUG, "\tPlain Key Rx.....: %s", yes_no(body->prx));
 	wpa_printf(MSG_DEBUG, "\tDelay Protect....: %s",
 		   yes_no(body->delay_protect));
 	wpa_printf(MSG_DEBUG, "\tBody Length......: %d", body_len);
@@ -243,11 +243,11 @@ ieee802_1x_mka_dump_sak_use_body(struct ieee802_1x_mka_sak_use_body *body)
 		   be_to_host32(body->lkn));
 	wpa_printf(MSG_DEBUG, "\tLowest PN........: %u",
 		   be_to_host32(body->llpn));
-	wpa_hexdump_ascii(MSG_DEBUG, "\tOld Key Server MI....:",
-			  body->osrv_mi, sizeof(body->osrv_mi));
-	wpa_printf(MSG_DEBUG, "\tOld Key Number.......: %u",
+	wpa_hexdump(MSG_DEBUG, "\tOld Key Server MI:",
+		    body->osrv_mi, sizeof(body->osrv_mi));
+	wpa_printf(MSG_DEBUG, "\tOld Key Number...: %u",
 		   be_to_host32(body->okn));
-	wpa_printf(MSG_DEBUG, "\tOld Lowest PN........: %u",
+	wpa_printf(MSG_DEBUG, "\tOld Lowest PN....: %u",
 		   be_to_host32(body->olpn));
 }
 
@@ -467,7 +467,7 @@ ieee802_1x_kay_init_receive_sa(struct receive_sc *psc, u8 an, u32 lowest_pn,
 
 	dl_list_add(&psc->sa_list, &psa->list);
 	wpa_printf(MSG_DEBUG,
-		   "KaY: Create receive SA(AN: %hhu lowest_pn: %u of SC",
+		   "KaY: Create receive SA(AN: %hhu lowest_pn: %u) of SC",
 		   an, lowest_pn);
 
 	return psa;
@@ -552,10 +552,12 @@ ieee802_1x_kay_deinit_receive_sc(
 
 static void ieee802_1x_kay_dump_peer(struct ieee802_1x_kay_peer *peer)
 {
-	wpa_hexdump(MSG_DEBUG, "\tMI: ", peer->mi, sizeof(peer->mi));
-	wpa_printf(MSG_DEBUG, "\tMN: %d", peer->mn);
-	wpa_hexdump(MSG_DEBUG, "\tSCI Addr: ", peer->sci.addr, ETH_ALEN);
-	wpa_printf(MSG_DEBUG, "\tPort: %d", peer->sci.port);
+	wpa_hexdump(MSG_DEBUG, "\tMI......: ", peer->mi, sizeof(peer->mi));
+	wpa_printf(MSG_DEBUG, "\tMN......: %d", peer->mn);
+	wpa_printf(MSG_DEBUG, "\tSCI MAC.: " MACSTR,
+		   MAC2STR(peer->sci.addr));
+	wpa_printf(MSG_DEBUG, "\tSCI Port: %d",
+		   be_to_host16(peer->sci.port));
 }
 
 
