@@ -3550,6 +3550,7 @@ ieee802_1x_kay_create_mka(struct ieee802_1x_kay *kay,
 	return participant;
 
 fail:
+	os_free(participant->txsc);
 	os_free(participant);
 	return NULL;
 }
