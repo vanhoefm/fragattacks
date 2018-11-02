@@ -1426,6 +1426,8 @@ static const char *network_fields[] = {
 #ifdef CONFIG_MACSEC
 	"macsec_policy",
 	"macsec_integ_only",
+	"macsec_replay_protect",
+	"macsec_replay_window",
 	"macsec_port",
 	"mka_priority",
 #endif /* CONFIG_MACSEC */

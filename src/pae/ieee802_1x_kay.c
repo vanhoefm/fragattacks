@@ -1242,8 +1242,9 @@ ieee802_1x_mka_encode_sak_use_body(
 		return 0;
 	}
 
-	/* data protect, lowest accept packet number */
+	/* data delay protect */
 	body->delay_protect = kay->mka_hello_time <= MKA_BOUNDED_HELLO_TIME;
+	/* lowest accept packet number */
 	pn = ieee802_1x_mka_get_lpn(participant, &participant->lki);
 	if (pn > kay->pn_exhaustion) {
 		wpa_printf(MSG_WARNING, "KaY: My LPN exhaustion");
@@ -3252,6 +3253,7 @@ static void kay_l2_receive(void *ctx, const u8 *src_addr, const u8 *buf,
  */
 struct ieee802_1x_kay *
 ieee802_1x_kay_init(struct ieee802_1x_kay_ctx *ctx, enum macsec_policy policy,
+		    Boolean macsec_replay_protect, u32 macsec_replay_window,
 		    u16 port, u8 priority, const char *ifname, const u8 *addr)
 {
 	struct ieee802_1x_kay *kay;
@@ -3320,8 +3322,8 @@ ieee802_1x_kay_init(struct ieee802_1x_kay_ctx *ctx, enum macsec_policy policy,
 			kay->macsec_confidentiality = CONFIDENTIALITY_NONE;
 		}
 		kay->macsec_validate = Strict;
-		kay->macsec_replay_protect = FALSE;
-		kay->macsec_replay_window = 0;
+		kay->macsec_replay_protect = macsec_replay_protect;
+		kay->macsec_replay_window = macsec_replay_window;
 		kay->mka_hello_time = MKA_HELLO_TIME;
 	}
 

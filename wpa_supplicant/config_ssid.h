@@ -803,6 +803,33 @@ struct wpa_ssid {
 	int macsec_integ_only;
 
 	/**
+	 * macsec_replay_protect - Enable MACsec replay protection
+	 *
+	 * This setting applies only when MACsec is in use, i.e.,
+	 *  - macsec_policy is enabled
+	 *  - the key server has decided to enable MACsec
+	 *
+	 * 0: Replay protection disabled (default)
+	 * 1: Replay protection enabled
+	 */
+	int macsec_replay_protect;
+
+	/**
+	 * macsec_replay_window - MACsec replay protection window
+	 *
+	 * A window in which replay is tolerated, to allow receipt of frames
+	 * that have been misordered by the network.
+	 *
+	 * This setting applies only when MACsec replay protection active, i.e.,
+	 *  - macsec_replay_protect is enabled
+	 *  - the key server has decided to enable MACsec
+	 *
+	 * 0: No replay window, strict check (default)
+	 * 1..2^32-1: number of packets that could be misordered
+	 */
+	u32 macsec_replay_window;
+
+	/**
 	 * macsec_port - MACsec port (in SCI)
 	 *
 	 * Port component of the SCI.

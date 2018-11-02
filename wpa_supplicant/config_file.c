@@ -862,6 +862,8 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	write_mka_cak(f, ssid);
 	write_mka_ckn(f, ssid);
 	INT(macsec_integ_only);
+	INT(macsec_replay_protect);
+	INT(macsec_replay_window);
 	INT(macsec_port);
 	INT_DEF(mka_priority, DEFAULT_PRIO_NOT_KEY_SERVER);
 #endif /* CONFIG_MACSEC */

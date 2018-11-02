@@ -239,6 +239,7 @@ u64 mka_sci_u64(struct ieee802_1x_mka_sci *sci);
 
 struct ieee802_1x_kay *
 ieee802_1x_kay_init(struct ieee802_1x_kay_ctx *ctx, enum macsec_policy policy,
+		    Boolean macsec_replay_protect, u32 macsec_replay_window,
 		    u16 port, u8 priority, const char *ifname, const u8 *addr);
 void ieee802_1x_kay_deinit(struct ieee802_1x_kay *kay);
 
