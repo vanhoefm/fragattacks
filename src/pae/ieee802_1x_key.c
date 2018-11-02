@@ -183,7 +183,8 @@ int ieee802_1x_icv_128bits_aes_cmac(const u8 *ick, const u8 *msg,
  * SAK = KDF(Key, Label, KS-nonce | MI-value list | KN, SAKLength)
  */
 int ieee802_1x_sak_128bits_aes_cmac(const u8 *cak, const u8 *ctx,
-				    size_t ctx_bytes, u8 *sak)
+				    size_t ctx_bytes, u8 *sak, size_t sak_bytes)
 {
-	return aes_kdf_128(cak, "IEEE8021 SAK", ctx, ctx_bytes * 8, 128, sak);
+	return aes_kdf_128(cak, "IEEE8021 SAK", ctx, ctx_bytes * 8,
+			   sak_bytes * 8, sak);
 }

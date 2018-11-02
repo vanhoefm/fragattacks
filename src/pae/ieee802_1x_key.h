@@ -21,6 +21,7 @@ int ieee802_1x_ick_128bits_aes_cmac(const u8 *cak, const u8 *ckn,
 int ieee802_1x_icv_128bits_aes_cmac(const u8 *ick, const u8 *msg,
 				    size_t msg_bytes, u8 *icv);
 int ieee802_1x_sak_128bits_aes_cmac(const u8 *cak, const u8 *ctx,
-				    size_t ctx_bytes, u8 *sak);
+				    size_t ctx_bytes, u8 *sak,
+				    size_t sak_bytes);
 
 #endif /* IEEE802_1X_KEY_H */
