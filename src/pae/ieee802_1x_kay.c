@@ -840,8 +840,15 @@ ieee802_1x_mka_decode_basic_body(struct ieee802_1x_kay *kay, const u8 *mka_msg,
 		peer = ieee802_1x_kay_get_peer_sci(participant,
 						   &body->actor_sci);
 		if (peer) {
+			time_t new_expire;
+
 			wpa_printf(MSG_WARNING,
 				   "KaY: duplicated SCI detected - maybe active attacker or peer selected new MI - ignore MKPDU");
+			/* Reduce timeout to speed up this process but left the
+			 * chance for old one to prove aliveness. */
+			new_expire = time(NULL) + MKA_HELLO_TIME * 1.5 / 1000;
+			if (peer->expire > new_expire)
+				peer->expire = new_expire;
 			return NULL;
 		}
 
