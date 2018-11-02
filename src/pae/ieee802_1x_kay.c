@@ -1385,6 +1385,7 @@ ieee802_1x_mka_decode_sak_use_body(
 		}
 		if (!found) {
 			wpa_printf(MSG_INFO, "KaY: Latest key is invalid");
+			reset_participant_mi(participant);
 			return -1;
 		}
 		if (os_memcmp(participant->lki.mi, body->lsrv_mi,
