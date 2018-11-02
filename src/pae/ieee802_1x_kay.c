@@ -1435,6 +1435,8 @@ ieee802_1x_mka_decode_sak_use_body(
 		}
 	}
 
+	if (sa_key)
+		sa_key->next_pn = lpn;
 	found = FALSE;
 	dl_list_for_each(rxsc, &participant->rxsc_list, struct receive_sc,
 			 list) {
@@ -1568,6 +1570,7 @@ static void ieee802_1x_kay_init_data_key(struct data_key *pkey)
 	pkey->receives = TRUE;
 	os_get_time(&pkey->created_time);
 
+	pkey->next_pn = 1;
 	pkey->user = 1;
 }
 
@@ -2784,7 +2787,9 @@ int ieee802_1x_kay_create_sas(struct ieee802_1x_kay *kay,
 		ieee802_1x_delete_transmit_sa(kay, txsa);
 
 	txsa = ieee802_1x_kay_init_transmit_sa(principal->txsc, latest_sak->an,
-					       1, latest_sak);
+					       latest_sak->next_pn ?
+					       latest_sak->next_pn : 1,
+					       latest_sak);
 	if (!txsa)
 		return -1;
 
