@@ -4433,6 +4433,27 @@ enum qca_wlan_vendor_attr_spectral_cap {
 	 * qca_wlan_vendor_spectral_scan_cap_hw_gen.
 	 */
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_HW_GEN = 5,
+	/* Spectral bin scaling formula ID. u16 attribute.
+	 * It uses values defined in enum
+	 * qca_wlan_vendor_spectral_scan_cap_formula_id.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_FORMULA_ID = 6,
+	/* Spectral bin scaling param - low level offset.
+	 * s16 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_LOW_LEVEL_OFFSET = 7,
+	/* Spectral bin scaling param - high level offset.
+	 * s16 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_HIGH_LEVEL_OFFSET = 8,
+	/* Spectral bin scaling param - RSSI threshold.
+	 * s16 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_RSSI_THR = 9,
+	/* Spectral bin scaling param - default AGC max gain.
+	 * u8 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_DEFAULT_AGC_MAX_GAIN = 10,
 
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_MAX =
@@ -4575,6 +4596,20 @@ enum qca_wlan_vendor_attr_flush_pending {
 	QCA_WLAN_VENDOR_ATTR_FLUSH_PENDING_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_FLUSH_PENDING_MAX =
 	QCA_WLAN_VENDOR_ATTR_FLUSH_PENDING_AFTER_LAST - 1,
+};
+
+/**
+ * qca_wlan_vendor_spectral_scan_cap_formula_id: Attribute values for
+ * QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CAP_FORMULA_ID in the vendor subcmd
+ * QCA_NL80211_VENDOR_SUBCMD_SPECTRAL_SCAN_GET_CAP_INFO. This represents the
+ * Spectral bin scaling formula ID.
+ * @QCA_WLAN_VENDOR_SPECTRAL_SCAN_CAP_NO_SCALING: No scaling
+ * @QCA_WLAN_VENDOR_SPECTRAL_SCAN_CAP_AGC_GAIN_RSSI_CORR_BASED: AGC gain
+ * and RSSI threshold based formula.
+ */
+enum qca_wlan_vendor_spectral_scan_cap_formula_id {
+	QCA_WLAN_VENDOR_SPECTRAL_SCAN_CAP_NO_SCALING = 0,
+	QCA_WLAN_VENDOR_SPECTRAL_SCAN_CAP_AGC_GAIN_RSSI_CORR_BASED = 1,
 };
 
 /**
