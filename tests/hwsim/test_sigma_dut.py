@@ -17,6 +17,7 @@ import time
 import hostapd
 from utils import HwsimSkip
 from hwsim import HWSimRadio
+import hwsim_utils
 from test_dpp import check_dpp_capab, update_hapd_config
 from test_suite_b import check_suite_b_192_capa, suite_b_as_params, suite_b_192_rsa_ap_params
 from test_ap_eap import check_eap_capa
@@ -63,7 +64,8 @@ def sigma_dut_cmd_check(cmd, port=9000, timeout=2):
         raise Exception("sigma_dut command failed: " + cmd)
     return res
 
-def start_sigma_dut(ifname, debug=False, hostapd_logdir=None, cert_path=None):
+def start_sigma_dut(ifname, debug=False, hostapd_logdir=None, cert_path=None,
+                    bridge=None):
     check_sigma_dut()
     cmd = [ './sigma_dut',
             '-M', ifname,
@@ -78,6 +80,8 @@ def start_sigma_dut(ifname, debug=False, hostapd_logdir=None, cert_path=None):
         cmd += [ '-H', hostapd_logdir ]
     if cert_path:
         cmd += [ '-C', cert_path ]
+    if bridge:
+        cmd += [ '-b', bridge ]
     sigma = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
     for i in range(20):
@@ -2353,13 +2357,16 @@ def test_sigma_dut_ap_eap_osen(dev, apdev, params):
     logdir = os.path.join(params['logdir'],
                           "sigma_dut_ap_eap_osen.sigma-hostapd")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        sigma = start_sigma_dut(iface, bridge="ap-br0", hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-hs20,MODE,11ng")
             sigma_dut_cmd_check("ap_set_radius,NAME,AP,IPADDR,127.0.0.1,PORT,1812,PASSWORD,radius")
             sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-ENT-OSEN,PMF,Optional")
             sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            subprocess.call(['brctl', 'setfd', 'ap-br0', '0'])
+            subprocess.call(['ip', 'link', 'set', 'dev', 'ap-br0', 'up'])
 
             # RSN-OSEN (for OSU)
             dev[0].connect("test-hs20", proto="OSEN", key_mgmt="OSEN",
@@ -2373,9 +2380,16 @@ def test_sigma_dut_ap_eap_osen(dev, apdev, params):
                            ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
                            ieee80211w='2', scan_freq="2412")
 
+            hwsim_utils.test_connectivity(dev[0], dev[1], broadcast=False,
+                                          success_expected=False, timeout=1)
+
             sigma_dut_cmd_check("ap_reset_default")
         finally:
             stop_sigma_dut(sigma)
+            subprocess.call(['ip', 'link', 'set', 'dev', 'ap-br0', 'down'],
+                            stderr=open('/dev/null', 'w'))
+            subprocess.call(['brctl', 'delbr', 'ap-br0'],
+                            stderr=open('/dev/null', 'w'))
 
 def test_sigma_dut_ap_eap(dev, apdev, params):
     """sigma_dut controlled AP WPA2-Enterprise"""
