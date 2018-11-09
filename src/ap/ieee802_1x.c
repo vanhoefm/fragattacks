@@ -683,6 +683,8 @@ void ieee802_1x_encapsulate_radius(struct hostapd_data *hapd,
 #ifdef CONFIG_HS20
 	if (hapd->conf->hs20) {
 		u8 ver = 1; /* Release 2 */
+		if (HS20_VERSION > 0x10)
+			ver = 2; /* Release 3 */
 		if (!radius_msg_add_wfa(
 			    msg, RADIUS_VENDOR_ATTR_WFA_HS20_AP_VERSION,
 			    &ver, 1)) {
