@@ -1202,6 +1202,8 @@ int wpa_parse_wpa_ie_rsn(const u8 *rsn_ie, size_t rsn_ie_len,
 		pos = rsn_ie + 6;
 		left = rsn_ie_len - 6;
 
+		data->group_cipher = WPA_CIPHER_GTK_NOT_USED;
+		data->key_mgmt = WPA_KEY_MGMT_OSEN;
 		data->proto = WPA_PROTO_OSEN;
 	} else {
 		const struct rsn_ie_hdr *hdr;
