@@ -2646,7 +2646,7 @@ def test_ap_hs20_osen(dev, apdev):
                    scan_freq="2412", wait_connect=False)
     dev[0].flush_scan_cache()
     dev[0].connect("osen", proto="OSEN", key_mgmt="OSEN", pairwise="CCMP",
-                   group="GTK_NOT_USED",
+                   group="GTK_NOT_USED CCMP",
                    eap="WFA-UNAUTH-TLS", identity="osen@example.com",
                    ca_cert="auth_serv/ca.pem",
                    scan_freq="2412")
