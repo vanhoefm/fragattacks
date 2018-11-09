@@ -2625,6 +2625,7 @@ def test_sigma_dut_ap_hs20(dev, apdev, params):
             sigma_dut_cmd_check("ap_set_hs2,NAME,AP,WLAN_TAG,1,OPERATOR_ICON_METADATA,1")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,WLAN_TAG,2,CHANNEL,1,SSID,test-osu,MODE,11ng")
             sigma_dut_cmd_check("ap_set_security,NAME,AP,WLAN_TAG,2,KEYMGNT,NONE")
+            sigma_dut_cmd_check("ap_set_hs2,NAME,AP,WLAN_TAG,2,OSU,1")
             sigma_dut_cmd_check("ap_config_commit,NAME,AP")
 
             with open("/tmp/sigma_dut-ap.conf", "r") as f:
