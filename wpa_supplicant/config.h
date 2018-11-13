@@ -1488,6 +1488,25 @@ struct wpa_config {
 	 * 1 = enabled (true)
 	 */
 	int coloc_intf_reporting;
+
+	/**
+	 * p2p_device_random_mac_addr - P2P Device MAC address policy default
+	 *
+	 * 0 = use permanent MAC address
+	 * 1 = use random MAC address on creating the interface if there is no
+	 * persistent groups.
+	 *
+	 * By default, permanent MAC address is used.
+	 */
+	int p2p_device_random_mac_addr;
+
+	/**
+	 * p2p_device_persistent_mac_addr - Record last used MAC address
+	 *
+	 * If there are saved persistent groups, P2P cannot generate another
+	 * random MAC address, and need to restore to last used MAC address.
+	 */
+	u8 p2p_device_persistent_mac_addr[ETH_ALEN];
 };
 
 

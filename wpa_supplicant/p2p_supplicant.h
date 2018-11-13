@@ -211,6 +211,7 @@ int wpas_p2p_lo_start(struct wpa_supplicant *wpa_s, unsigned int freq,
 		      unsigned int period, unsigned int interval,
 		      unsigned int count);
 int wpas_p2p_lo_stop(struct wpa_supplicant *wpa_s);
+int wpas_p2p_mac_setup(struct wpa_supplicant *wpa_s);
 
 #else /* CONFIG_P2P */
 

@@ -4330,6 +4330,54 @@ static int wpas_p2p_get_pref_freq_list(void *ctx, int go,
 }
 
 
+int wpas_p2p_mac_setup(struct wpa_supplicant *wpa_s)
+{
+	u8 addr[ETH_ALEN] = {0};
+
+	if (wpa_s->conf->p2p_device_random_mac_addr == 0)
+		return 0;
+
+	if (!wpa_s->conf->ssid) {
+		if (random_mac_addr(addr) < 0) {
+			wpa_msg(wpa_s, MSG_INFO,
+				"Failed to generate random MAC address");
+			return -EINVAL;
+		}
+
+		/* Store generated MAC address. */
+		os_memcpy(wpa_s->conf->p2p_device_persistent_mac_addr, addr,
+			  ETH_ALEN);
+	} else {
+		/* If there are existing saved groups, restore last MAC address.
+		 * if there is no last used MAC address, the last one is
+		 * factory MAC. */
+		if (is_zero_ether_addr(
+			    wpa_s->conf->p2p_device_persistent_mac_addr))
+			return 0;
+		os_memcpy(addr, wpa_s->conf->p2p_device_persistent_mac_addr,
+			  ETH_ALEN);
+		wpa_msg(wpa_s, MSG_DEBUG, "Restore last used MAC address.");
+	}
+
+	if (wpa_drv_set_mac_addr(wpa_s, addr) < 0) {
+		wpa_msg(wpa_s, MSG_INFO,
+			"Failed to set random MAC address");
+		return -EINVAL;
+	}
+
+	if (wpa_supplicant_update_mac_addr(wpa_s) < 0) {
+		wpa_msg(wpa_s, MSG_INFO,
+			"Could not update MAC address information");
+		return -EINVAL;
+	}
+
+	wpa_msg(wpa_s, MSG_DEBUG, "Using random MAC address " MACSTR,
+		MAC2STR(addr));
+
+	return 0;
+}
+
+
 /**
  * wpas_p2p_init - Initialize P2P module for %wpa_supplicant
  * @global: Pointer to global data from wpa_supplicant_init()
@@ -4349,6 +4397,12 @@ int wpas_p2p_init(struct wpa_global *global, struct wpa_supplicant *wpa_s)
 
 	if (global->p2p)
 		return 0;
+
+	if (wpas_p2p_mac_setup(wpa_s) < 0) {
+		wpa_msg(wpa_s, MSG_ERROR,
+			"Failed to initialize P2P random MAC address.");
+		return -1;
+	}
 
 	os_memset(&p2p, 0, sizeof(p2p));
 	p2p.cb_ctx = wpa_s;
