@@ -390,12 +390,16 @@ static void vlan_newlink_tagged(int vlan_naming, const char *tagged_interface,
 }
 
 
-static void vlan_bridge_name(char *br_name, struct hostapd_data *hapd, int vid)
+static void vlan_bridge_name(char *br_name, struct hostapd_data *hapd,
+			     struct hostapd_vlan *vlan, int vid)
 {
 	char *tagged_interface = hapd->conf->ssid.vlan_tagged_interface;
 	int ret;
 
-	if (hapd->conf->vlan_bridge[0]) {
+	if (vlan->bridge[0]) {
+		os_strlcpy(br_name, vlan->bridge, IFNAMSIZ);
+		ret = 0;
+	} else if (hapd->conf->vlan_bridge[0]) {
 		ret = os_snprintf(br_name, IFNAMSIZ, "%s%d",
 				  hapd->conf->vlan_bridge, vid);
 	} else if (tagged_interface) {
@@ -456,7 +460,7 @@ void vlan_newlink(const char *ifname, struct hostapd_data *hapd)
 		    !br_addif(hapd->conf->bridge, ifname))
 			vlan->clean |= DVLAN_CLEAN_WLAN_PORT;
 	} else if (untagged > 0 && untagged <= MAX_VLAN_ID) {
-		vlan_bridge_name(br_name, hapd, untagged);
+		vlan_bridge_name(br_name, hapd, vlan, untagged);
 
 		vlan_get_bridge(br_name, hapd, untagged);
 
@@ -469,7 +473,7 @@ void vlan_newlink(const char *ifname, struct hostapd_data *hapd)
 		    tagged[i] <= 0 || tagged[i] > MAX_VLAN_ID ||
 		    (i > 0 && tagged[i] == tagged[i - 1]))
 			continue;
-		vlan_bridge_name(br_name, hapd, tagged[i]);
+		vlan_bridge_name(br_name, hapd, vlan, tagged[i]);
 		vlan_get_bridge(br_name, hapd, tagged[i]);
 		vlan_newlink_tagged(DYNAMIC_VLAN_NAMING_WITH_DEVICE,
 				    ifname, br_name, tagged[i], hapd);
@@ -561,7 +565,7 @@ void vlan_dellink(const char *ifname, struct hostapd_data *hapd)
 			    tagged[i] <= 0 || tagged[i] > MAX_VLAN_ID ||
 			    (i > 0 && tagged[i] == tagged[i - 1]))
 				continue;
-			vlan_bridge_name(br_name, hapd, tagged[i]);
+			vlan_bridge_name(br_name, hapd, vlan, tagged[i]);
 			vlan_dellink_tagged(DYNAMIC_VLAN_NAMING_WITH_DEVICE,
 					    ifname, br_name, tagged[i], hapd);
 			vlan_put_bridge(br_name, hapd, tagged[i]);
@@ -573,7 +577,7 @@ void vlan_dellink(const char *ifname, struct hostapd_data *hapd)
 			    (vlan->clean & DVLAN_CLEAN_WLAN_PORT))
 				br_delif(hapd->conf->bridge, ifname);
 		} else if (untagged > 0 && untagged <= MAX_VLAN_ID) {
-			vlan_bridge_name(br_name, hapd, untagged);
+			vlan_bridge_name(br_name, hapd, vlan, untagged);
 
 			if (vlan->clean & DVLAN_CLEAN_WLAN_PORT)
 				br_delif(br_name, vlan->ifname);

@@ -37,7 +37,7 @@ static int hostapd_config_read_vlan_file(struct hostapd_bss_config *bss,
 					 const char *fname)
 {
 	FILE *f;
-	char buf[128], *pos, *pos2;
+	char buf[128], *pos, *pos2, *pos3;
 	int line = 0, vlan_id;
 	struct hostapd_vlan *vlan;
 
@@ -82,13 +82,23 @@ static int hostapd_config_read_vlan_file(struct hostapd_bss_config *bss,
 		pos2 = pos;
 		while (*pos2 != ' ' && *pos2 != '\t' && *pos2 != '\0')
 			pos2++;
-		*pos2 = '\0';
+
+		if (*pos2 != '\0')
+			*(pos2++) = '\0';
+
 		if (*pos == '\0' || os_strlen(pos) > IFNAMSIZ) {
 			wpa_printf(MSG_ERROR, "Invalid VLAN ifname at line %d "
 				   "in '%s'", line, fname);
 			fclose(f);
 			return -1;
 		}
+
+		while (*pos2 == ' ' || *pos2 == '\t')
+			pos2++;
+		pos3 = pos2;
+		while (*pos3 != ' ' && *pos3 != '\t' && *pos3 != '\0')
+			pos3++;
+		*pos3 = '\0';
 
 		vlan = os_zalloc(sizeof(*vlan));
 		if (vlan == NULL) {
@@ -102,6 +112,7 @@ static int hostapd_config_read_vlan_file(struct hostapd_bss_config *bss,
 		vlan->vlan_desc.untagged = vlan_id;
 		vlan->vlan_desc.notempty = !!vlan_id;
 		os_strlcpy(vlan->ifname, pos, sizeof(vlan->ifname));
+		os_strlcpy(vlan->bridge, pos2, sizeof(vlan->bridge));
 		vlan->next = bss->vlan;
 		bss->vlan = vlan;
 	}

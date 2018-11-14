@@ -210,6 +210,7 @@ struct hostapd_vlan * vlan_add_dynamic(struct hostapd_data *hapd,
 
 	os_snprintf(n->ifname, sizeof(n->ifname), "%s%d%s", ifname, vlan_id,
 		    pos);
+	os_strlcpy(n->bridge, vlan->bridge, sizeof(n->bridge));
 
 	n->next = hapd->conf->vlan;
 	hapd->conf->vlan = n;

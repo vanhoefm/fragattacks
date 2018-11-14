@@ -123,6 +123,7 @@ struct hostapd_vlan {
 	int vlan_id; /* VLAN ID or -1 (VLAN_ID_WILDCARD) for wildcard entry */
 	struct vlan_description vlan_desc;
 	char ifname[IFNAMSIZ + 1];
+	char bridge[IFNAMSIZ + 1];
 	int configured;
 	int dynamic_vlan;
 #ifdef CONFIG_FULL_DYNAMIC_VLAN
