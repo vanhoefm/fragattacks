@@ -1637,7 +1637,7 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
 	{ "dpp_configurator_remove", hostapd_cli_cmd_dpp_configurator_remove,
 	  NULL,
 	  "*|<id> = remove DPP configurator" },
-	{ "dpp_configurator_remove", hostapd_cli_cmd_dpp_configurator_get_key,
+	{ "dpp_configurator_get_key", hostapd_cli_cmd_dpp_configurator_get_key,
 	  NULL,
 	  "<id> = Get DPP configurator's private key" },
 	{ "dpp_pkex_add", hostapd_cli_cmd_dpp_pkex_add, NULL,
