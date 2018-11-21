@@ -158,6 +158,11 @@ enum qca_radiotap_vendor_ids {
  *	timer value. Uses the attributes defines in
  *	enum qca_wlan_vendor_attr_ocb_get_tsf_resp.
  *
+ * @QCA_NL80211_VENDOR_SUBCMD_LINK_PROPERTIES: Command/event to update the
+ *	link properties of the respective interface. As an event, is used
+ *	to notify the connected station's status. The attributes for this
+ *	command are defined in enum qca_wlan_vendor_attr_link_properties.
+ *
  * @QCA_NL80211_VENDOR_SUBCMD_P2P_LISTEN_OFFLOAD_START: Command used to
  *	start the P2P Listen offload function in device and pass the listen
  *	channel, period, interval, count, device types, and vendor specific
@@ -6215,6 +6220,28 @@ enum qca_vendor_attr_coex_config {
 	QCA_VENDOR_ATTR_COEX_CONFIG_AFTER_LAST,
 	QCA_VENDOR_ATTR_COEX_CONFIG_MAX =
 	QCA_VENDOR_ATTR_COEX_CONFIG_AFTER_LAST - 1,
+};
+
+/**
+ * enum qca_wlan_vendor_attr_link_properties - Represent the link properties.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_LINK_PROPERTIES_MAC_ADDR: MAC address of the peer
+ * (STA/AP) for the connected link.
+ * @QCA_WLAN_VENDOR_ATTR_LINK_PROPERTIES_STA_FLAGS: Attribute containing a
+ * &struct nl80211_sta_flag_update for the respective connected link. MAC
+ * address of the peer represented by
+ * QCA_WLAN_VENDOR_ATTR_LINK_PROPERTIES_MAC_ADDR.
+ */
+enum qca_wlan_vendor_attr_link_properties {
+	QCA_WLAN_VENDOR_ATTR_LINK_PROPERTIES_INVALID = 0,
+	/* 1 - 3 are reserved */
+	QCA_WLAN_VENDOR_ATTR_LINK_PROPERTIES_MAC_ADDR = 4,
+	QCA_WLAN_VENDOR_ATTR_LINK_PROPERTIES_STA_FLAGS = 5,
+
+	/* Keep last */
+	QCA_VENDOR_ATTR_LINK_PROPERTIES_AFTER_LAST,
+	QCA_VENDOR_ATTR_LINK_PROPERTIES_MAX =
+	QCA_VENDOR_ATTR_LINK_PROPERTIES_AFTER_LAST - 1,
 };
 
 #endif /* QCA_VENDOR_H */
