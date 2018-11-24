@@ -222,7 +222,8 @@ static void mesh_mpm_send_plink_action(struct wpa_supplicant *wpa_s,
 	if (!sta)
 		return;
 
-	buf_len = 2 +      /* capability info */
+	buf_len = 2 +      /* Category and Action */
+		  2 +      /* capability info */
 		  2 +      /* AID */
 		  2 + 8 +  /* supported rates */
 		  2 + (32 - 8) +
