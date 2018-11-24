@@ -5256,6 +5256,37 @@ def test_dbus_introspect(dev, apdev):
         if len(res2) >= len(res):
             raise Exception("Unexpected Introspect response")
 
+def run_busctl(service, obj):
+    logger.info("busctl introspect %s %s" % (service, obj))
+    cmd = subprocess.Popen([ 'busctl', 'introspect', service, obj ],
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+    out = cmd.communicate()
+    cmd.wait()
+    logger.info("busctl stdout:\n%s" % out[0].strip())
+    if len(out[1]) > 0:
+        logger.info("busctl stderr: %s" % out[1].strip())
+    if "Duplicate property" in out[1]:
+        raise Exception("Duplicate property")
+
+def test_dbus_introspect_busctl(dev, apdev):
+    """D-Bus introspection with busctl"""
+    (bus,wpas_obj,path,if_obj) = prepare_dbus(dev[0])
+    ifaces = dbus_get(dbus, wpas_obj, "Interfaces")
+    run_busctl(WPAS_DBUS_SERVICE, WPAS_DBUS_PATH)
+    run_busctl(WPAS_DBUS_SERVICE, WPAS_DBUS_PATH + "/Interfaces")
+    run_busctl(WPAS_DBUS_SERVICE, ifaces[0])
+
+    hapd = hostapd.add_ap(apdev[0], { "ssid": "open" })
+    bssid = apdev[0]['bssid']
+    dev[0].scan_for_bss(bssid, freq=2412)
+    id = dev[0].add_network()
+    dev[0].set_network(id, "disabled", "0")
+    dev[0].set_network_quoted(id, "ssid", "test")
+
+    run_busctl(WPAS_DBUS_SERVICE, ifaces[0] + "/BSSs/0")
+    run_busctl(WPAS_DBUS_SERVICE, ifaces[0] + "/Networks/0")
+
 def test_dbus_ap(dev, apdev):
     """D-Bus AddNetwork for AP mode"""
     (bus,wpas_obj,path,if_obj) = prepare_dbus(dev[0])
