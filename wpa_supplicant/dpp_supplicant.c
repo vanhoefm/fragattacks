@@ -1346,7 +1346,8 @@ static void wpas_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 		wpa_printf(MSG_DEBUG, "DPP: No matching exchange in progress");
 		return;
 	}
-	if (!resp || status_code != WLAN_STATUS_SUCCESS) {
+	if (result != GAS_QUERY_SUCCESS ||
+	    !resp || status_code != WLAN_STATUS_SUCCESS) {
 		wpa_printf(MSG_DEBUG, "DPP: GAS query did not succeed");
 		goto fail;
 	}
