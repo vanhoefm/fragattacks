@@ -116,7 +116,7 @@ def test_ap_config_reload_file(dev, apdev, params):
     dev[0].wait_disconnected()
     dev[0].request("DISCONNECT")
 
-def write_hostapd_config(conffile, ifname, ssid, ht=True):
+def write_hostapd_config(conffile, ifname, ssid, ht=True, bss2=False):
     with open(conffile, "w") as f:
         f.write("driver=nl80211\n")
         f.write("hw_mode=g\n")
@@ -125,6 +125,9 @@ def write_hostapd_config(conffile, ifname, ssid, ht=True):
             f.write("ieee80211n=1\n")
         f.write("interface=" + ifname + "\n")
         f.write("ssid=" + ssid + "\n")
+        if bss2:
+            f.write("bss=" + ifname + "_2\n")
+            f.write("ssid=" + ssid + "-2\n")
 
 def test_ap_config_reload_on_sighup(dev, apdev, params):
     """hostapd configuration reload modification from file on SIGHUP"""
@@ -182,6 +185,66 @@ def run_ap_config_reload_on_sighup(dev, apdev, params, ht=True):
             raise Exception("Missing WMM IE after reload")
     if not ht and "dd180050f202" in bss['ie']:
             raise Exception("Unexpected WMM IE after reload")
+
+def test_ap_config_reload_on_sighup_bss_changes(dev, apdev, params):
+    """hostapd configuration reload modification from file on SIGHUP with bss remove/add"""
+    name = "ap_config_reload_on_sighup_bss_changes"
+    pidfile = os.path.join(params['logdir'], name + "-hostapd.pid")
+    logfile = os.path.join(params['logdir'], name + "-hostapd-log")
+    conffile = os.path.join(os.getcwd(), params['logdir'],
+                            name + "-hostapd.conf")
+    prg = os.path.join(params['logdir'], 'alt-hostapd/hostapd/hostapd')
+    if not os.path.exists(prg):
+        prg = '../../hostapd/hostapd'
+    write_hostapd_config(conffile, apdev[0]['ifname'], "test", bss2=True)
+    cmd = [ prg, '-B', '-dddt', '-P', pidfile, '-f', logfile, conffile ]
+    res = subprocess.check_call(cmd)
+    if res != 0:
+        raise Exception("Could not start hostapd: %s" % str(res))
+
+    dev[0].connect("test", key_mgmt="NONE", scan_freq="2412",
+                   wait_connect=False)
+    dev[1].connect("test-2", key_mgmt="NONE", scan_freq="2412")
+    dev[0].wait_connected()
+    dev[0].request("REMOVE_NETWORK all")
+    dev[1].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+    dev[1].wait_disconnected()
+    dev[0].dump_monitor()
+    dev[1].dump_monitor()
+
+    write_hostapd_config(conffile, apdev[0]['ifname'], "test-a", bss2=False)
+    with open(pidfile, "r") as f:
+        pid = int(f.read())
+    os.kill(pid, signal.SIGHUP)
+
+    time.sleep(0.5)
+    dev[0].flush_scan_cache()
+
+    dev[0].connect("test-a", key_mgmt="NONE", scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+
+    write_hostapd_config(conffile, apdev[0]['ifname'], "test-b", bss2=True)
+    os.kill(pid, signal.SIGHUP)
+
+    time.sleep(0.5)
+    dev[0].flush_scan_cache()
+    dev[1].flush_scan_cache()
+
+    dev[0].connect("test-b", key_mgmt="NONE", scan_freq="2412",
+                   wait_connect=False)
+    dev[1].connect("test-b-2", key_mgmt="NONE", scan_freq="2412")
+    dev[0].wait_connected()
+    dev[0].request("REMOVE_NETWORK all")
+    dev[1].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+    dev[1].wait_disconnected()
+    dev[0].dump_monitor()
+    dev[1].dump_monitor()
+
+    os.kill(pid, signal.SIGTERM)
 
 def test_ap_config_reload_before_enable(dev, apdev, params):
     """hostapd configuration reload before enable"""
