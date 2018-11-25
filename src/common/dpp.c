@@ -4757,7 +4757,7 @@ static EVP_PKEY * dpp_parse_jwk(struct json_token *jwk,
 		goto fail;
 	}
 	if (os_strcmp(token->string, "EC") != 0) {
-		wpa_printf(MSG_DEBUG, "DPP: Unexpected JWK kty '%s",
+		wpa_printf(MSG_DEBUG, "DPP: Unexpected JWK kty '%s'",
 			   token->string);
 		goto fail;
 	}
