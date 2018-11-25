@@ -260,6 +260,7 @@ gas_server_handle_rx_comeback_req(struct gas_server_response *response)
 				       handler->adv_proto_id_len +
 				       resp_frag_len);
 	if (!resp) {
+		dl_list_del(&response->list);
 		gas_server_free_response(response);
 		return;
 	}
