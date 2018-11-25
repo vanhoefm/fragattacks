@@ -5,6 +5,7 @@
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
 
+import base64
 import logging
 logger = logging.getLogger()
 import subprocess
@@ -1162,6 +1163,245 @@ def test_dpp_config_override_objects(dev, apdev):
                                  init_extra="conf=sta-dpp",
                                  require_conf_success=True,
                                  configurator=True)
+
+def build_conf_obj(kty="EC", crv="P-256",
+                   x="W4-Y5N1Pkos3UWb9A5qme0KUYRtY3CVUpekx_MapZ9s",
+                   y="Et-M4NSF4NGjvh2VCh4B1sJ9eSCZ4RNzP2DBdP137VE",
+                   kid="TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU",
+                   prot_hdr='{"typ":"dppCon","kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU","alg":"ES256"}',
+                   signed_connector=None,
+                   no_signed_connector=False,
+                   csign=True):
+    conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"},"cred":{'
+    conf += '"akm":"dpp",'
+
+    if signed_connector:
+        conn = signed_connector
+        conf += '"signedConnector":"%s",' % conn
+    elif not no_signed_connector:
+        payload = '{"groups":[{"groupId":"*","netRole":"sta"}],"netAccessKey":{"kty":"EC","crv":"P-256","x":"aTF4JEGIPKSZ0Xv9zdCMjm-tn5XpMsYIVZ9wySAz1gI","y":"QGcHWA_6rbU9XDXAztoX-M5Q3suTnMaqEhULtn7SSXw"}}'
+        sign = "_sm6YswxMf6hJLVTyYoU1uYUeY2VVkUNjrzjSiEhY42StD_RWowStEE-9CRsdCvLmsTptZ72_g40vTFwdId20A"
+        conn = base64.urlsafe_b64encode(prot_hdr).rstrip('=') + '.'
+        conn += base64.urlsafe_b64encode(payload).rstrip('=') + '.'
+        conn += sign
+        conf += '"signedConnector":"%s",' % conn
+
+    if csign:
+        conf += '"csign":{'
+        if kty:
+            conf += '"kty":"%s",' % kty
+        if crv:
+            conf += '"crv":"%s",' % crv
+        if x:
+            conf += '"x":"%s",' % x
+        if y:
+            conf += '"y":"%s",' % y
+        if kid:
+            conf += '"kid":"%s"' % kid
+        conf = conf.rstrip(',')
+        conf += '}'
+    else:
+        conf = conf.rstrip(',')
+
+    conf += '}}'
+
+    return conf
+
+def run_dpp_config_error(dev, apdev, conf):
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    dev[0].set("dpp_ignore_netaccesskey_mismatch", "1")
+    dev[1].set("dpp_config_obj_override", conf)
+    run_dpp_qr_code_auth_unicast(dev, apdev, "prime256v1",
+                                 require_conf_failure=True)
+
+def test_dpp_config_jwk_error_no_kty(dev, apdev):
+    """DPP Config Object JWK error - no kty"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(kty=None))
+
+def test_dpp_config_jwk_error_unexpected_kty(dev, apdev):
+    """DPP Config Object JWK error - unexpected kty"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(kty="unknown"))
+
+def test_dpp_config_jwk_error_no_crv(dev, apdev):
+    """DPP Config Object JWK error - no crv"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(crv=None))
+
+def test_dpp_config_jwk_error_unsupported_crv(dev, apdev):
+    """DPP Config Object JWK error - unsupported curve"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(crv="unsupported"))
+
+def test_dpp_config_jwk_error_no_x(dev, apdev):
+    """DPP Config Object JWK error - no x"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(x=None))
+
+def test_dpp_config_jwk_error_invalid_x(dev, apdev):
+    """DPP Config Object JWK error - invalid x"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(x="MTIz"))
+
+def test_dpp_config_jwk_error_no_y(dev, apdev):
+    """DPP Config Object JWK error - no y"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(y=None))
+
+def test_dpp_config_jwk_error_invalid_y(dev, apdev):
+    """DPP Config Object JWK error - invalid y"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(y="MTIz"))
+
+def test_dpp_config_jwk_error_invalid_xy(dev, apdev):
+    """DPP Config Object JWK error - invalid x,y"""
+    conf = build_conf_obj(x="MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY",
+                          y="MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY")
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_jwk_error_no_kid(dev, apdev):
+    """DPP Config Object JWK error - no kid"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(kid=None))
+
+def test_dpp_config_jws_error_prot_hdr_not_an_object(dev, apdev):
+    """DPP Config Object JWS error - protected header not an object"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr="1"))
+
+def test_dpp_config_jws_error_prot_hdr_no_typ(dev, apdev):
+    """DPP Config Object JWS error - protected header - no typ"""
+    prot_hdr='{"kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU","alg":"ES256"}'
+    run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr=prot_hdr))
+
+def test_dpp_config_jws_error_prot_hdr_unsupported_typ(dev, apdev):
+    """DPP Config Object JWS error - protected header - unsupported typ"""
+    prot_hdr='{"typ":"unsupported","kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU","alg":"ES256"}'
+    run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr=prot_hdr))
+
+def test_dpp_config_jws_error_prot_hdr_no_alg(dev, apdev):
+    """DPP Config Object JWS error - protected header - no alg"""
+    prot_hdr='{"typ":"dppCon","kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU"}'
+    run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr=prot_hdr))
+
+def test_dpp_config_jws_error_prot_hdr_unexpected_alg(dev, apdev):
+    """DPP Config Object JWS error - protected header - unexpected alg"""
+    prot_hdr='{"typ":"dppCon","kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU","alg":"unexpected"}'
+    run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr=prot_hdr))
+
+def test_dpp_config_jws_error_prot_hdr_no_kid(dev, apdev):
+    """DPP Config Object JWS error - protected header - no kid"""
+    prot_hdr='{"typ":"dppCon","alg":"ES256"}'
+    run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr=prot_hdr))
+
+def test_dpp_config_jws_error_prot_hdr_unexpected_kid(dev, apdev):
+    """DPP Config Object JWS error - protected header - unexpected kid"""
+    prot_hdr='{"typ":"dppCon","kid":"MTIz","alg":"ES256"}'
+    run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr=prot_hdr))
+
+def test_dpp_config_signed_connector_error_no_dot_1(dev, apdev):
+    """DPP Config Object signedConnector error - no dot(1)"""
+    conn = "MTIz"
+    run_dpp_config_error(dev, apdev, build_conf_obj(signed_connector=conn))
+
+def test_dpp_config_signed_connector_error_no_dot_2(dev, apdev):
+    """DPP Config Object signedConnector error - no dot(2)"""
+    conn = "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiJUbkdLaklsTlphYXRyRUFZcmJiamlCNjdyamtMX0FHVldYTzZxOWhESktVIiwiYWxnIjoiRVMyNTYifQ.MTIz"
+    run_dpp_config_error(dev, apdev, build_conf_obj(signed_connector=conn))
+
+def test_dpp_config_signed_connector_error_unexpected_signature_len(dev, apdev):
+    """DPP Config Object signedConnector error - unexpected signature length"""
+    conn = "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiJUbkdLaklsTlphYXRyRUFZcmJiamlCNjdyamtMX0FHVldYTzZxOWhESktVIiwiYWxnIjoiRVMyNTYifQ.MTIz.MTIz"
+    run_dpp_config_error(dev, apdev, build_conf_obj(signed_connector=conn))
+
+def test_dpp_config_signed_connector_error_invalid_signature_der(dev, apdev):
+    """DPP Config Object signedConnector error - invalid signature DER"""
+    conn = "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiJUbkdLaklsTlphYXRyRUFZcmJiamlCNjdyamtMX0FHVldYTzZxOWhESktVIiwiYWxnIjoiRVMyNTYifQ.MTIz.MTI"
+    run_dpp_config_error(dev, apdev, build_conf_obj(signed_connector=conn))
+
+def test_dpp_config_no_csign(dev, apdev):
+    """DPP Config Object error - no csign"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(csign=False))
+
+def test_dpp_config_no_signed_connector(dev, apdev):
+    """DPP Config Object error - no signedConnector"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(no_signed_connector=True))
+
+def test_dpp_config_unexpected_signed_connector_char(dev, apdev):
+    """DPP Config Object error - unexpected signedConnector character"""
+    run_dpp_config_error(dev, apdev, build_conf_obj(signed_connector='a\nb'))
+
+def test_dpp_config_root_not_an_object(dev, apdev):
+    """DPP Config Object error - root not an object"""
+    conf = "1"
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_no_wi_fi_tech(dev, apdev):
+    """DPP Config Object error - no wi-fi_tech"""
+    conf = "{}"
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_unsupported_wi_fi_tech(dev, apdev):
+    """DPP Config Object error - unsupported wi-fi_tech"""
+    conf = '{"wi-fi_tech":"unsupported"}'
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_no_discovery(dev, apdev):
+    """DPP Config Object error - no discovery"""
+    conf = '{"wi-fi_tech":"infra"}'
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_no_discovery_ssid(dev, apdev):
+    """DPP Config Object error - no discovery::ssid"""
+    conf = '{"wi-fi_tech":"infra","discovery":{}}'
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_too_long_discovery_ssid(dev, apdev):
+    """DPP Config Object error - too long discovery::ssid"""
+    conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"%s"}}' % (33*'A')
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_no_cred(dev, apdev):
+    """DPP Config Object error - no cred"""
+    conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"}}'
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_no_cred_akm(dev, apdev):
+    """DPP Config Object error - no cred::akm"""
+    conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"},"cred":{}}'
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_unsupported_cred_akm(dev, apdev):
+    """DPP Config Object error - unsupported cred::akm"""
+    conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"},"cred":{"akm":"unsupported"}}'
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_error_legacy_no_pass(dev, apdev):
+    """DPP Config Object legacy error - no pass/psk"""
+    conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"},"cred":{"akm":"psk"}}'
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_error_legacy_too_short_pass(dev, apdev):
+    """DPP Config Object legacy error - too short pass/psk"""
+    conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"},"cred":{"akm":"psk","pass":"1"}}'
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_error_legacy_too_long_pass(dev, apdev):
+    """DPP Config Object legacy error - too long pass/psk"""
+    conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"},"cred":{"akm":"psk","pass":"%s"}}' % (64*'A')
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_error_legacy_psk_with_sae(dev, apdev):
+    """DPP Config Object legacy error - psk_hex with SAE"""
+    conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"},"cred":{"akm":"sae","psk_hex":"%s"}}' % (32*"12")
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_error_legacy_no_pass_for_sae(dev, apdev):
+    """DPP Config Object legacy error - no pass for SAE"""
+    conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"},"cred":{"akm":"psk+sae","psk_hex":"%s"}}' % (32*"12")
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_error_legacy_invalid_psk(dev, apdev):
+    """DPP Config Object legacy error - invalid psk_hex"""
+    conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"},"cred":{"akm":"psk","psk_hex":"%s"}}' % (32*"qa")
+    run_dpp_config_error(dev, apdev, conf)
+
+def test_dpp_config_error_legacy_too_short_psk(dev, apdev):
+    """DPP Config Object legacy error - too short psk_hex"""
+    conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"},"cred":{"akm":"psk","psk_hex":"%s"}}' % (31*"12")
+    run_dpp_config_error(dev, apdev, conf)
 
 def test_dpp_gas_timeout(dev, apdev):
     """DPP and GAS server timeout for a query"""
