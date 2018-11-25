@@ -1474,3 +1474,16 @@ def test_scan_probe_req_events(dev, apdev):
     ev = hapd.wait_event(["RX-PROBE-REQUEST"], timeout=0.1)
     if ev is not None:
         raise Exception("Unexpected RX-PROBE-REQUEST")
+
+    if "OK" not in hapd2.mon.request("ATTACH probe_rx_events=0"):
+        raise Exception("Failed to update event registration")
+
+    dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412", force_scan=True)
+    ev = hapd2.wait_event(["RX-PROBE-REQUEST"], timeout=0.5)
+    if ev is not None:
+        raise Exception("Unexpected RX-PROBE-REQUEST")
+
+    tests = [ "probe_rx_events", "probe_rx_events=-1", "probe_rx_events=2" ]
+    for val in tests:
+        if "FAIL" not in hapd2.mon.request("ATTACH " + val):
+            raise Exception("Invalid ATTACH command accepted")
