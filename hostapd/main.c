@@ -253,7 +253,7 @@ static int hostapd_driver_init(struct hostapd_iface *iface)
  *
  * This function is used to parse configuration file for a full interface (one
  * or more BSSes sharing the same radio) and allocate memory for the BSS
- * interfaces. No actiual driver operations are started.
+ * interfaces. No actual driver operations are started.
  */
 static struct hostapd_iface *
 hostapd_interface_init(struct hapd_interfaces *interfaces, const char *if_name,
