@@ -6,8 +6,11 @@
 # See README for more details.
 
 import base64
+import binascii
+import hashlib
 import logging
 logger = logging.getLogger()
+import struct
 import subprocess
 import time
 
@@ -15,6 +18,12 @@ import hostapd
 import hwsim_utils
 from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger
 from wpasupplicant import WpaSupplicant
+
+try:
+    import OpenSSL
+    openssl_imported = True
+except ImportError:
+    openssl_imported = False
 
 def check_dpp_capab(dev, brainpool=False):
     if "UNKNOWN COMMAND" in dev.request("DPP_BOOTSTRAP_GET_URI 0"):
@@ -1207,10 +1216,12 @@ def build_conf_obj(kty="EC", crv="P-256",
 
     return conf
 
-def run_dpp_config_error(dev, apdev, conf):
+def run_dpp_config_error(dev, apdev, conf,
+                         skip_net_access_key_mismatch=True):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-    dev[0].set("dpp_ignore_netaccesskey_mismatch", "1")
+    if skip_net_access_key_mismatch:
+        dev[0].set("dpp_ignore_netaccesskey_mismatch", "1")
     dev[1].set("dpp_config_obj_override", conf)
     run_dpp_qr_code_auth_unicast(dev, apdev, "prime256v1",
                                  require_conf_failure=True)
@@ -1402,6 +1413,164 @@ def test_dpp_config_error_legacy_too_short_psk(dev, apdev):
     """DPP Config Object legacy error - too short psk_hex"""
     conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"},"cred":{"akm":"psk","psk_hex":"%s"}}' % (31*"12")
     run_dpp_config_error(dev, apdev, conf)
+
+def ecdsa_sign(pkey, message, alg="sha256"):
+    sign = OpenSSL.crypto.sign(pkey, message, alg)
+    a,b = struct.unpack('BB', sign[0:2])
+    if a != 0x30:
+        raise Exception("Invalid DER encoding of ECDSA signature")
+    if b != len(sign) - 2:
+        raise Exception("Invalid length of ECDSA signature")
+    sign = sign[2:]
+
+    a,b = struct.unpack('BB', sign[0:2])
+    if a != 0x02:
+        raise Exception("Invalid DER encoding of ECDSA signature r")
+    if b > len(sign) - 2:
+        raise Exception("Invalid length of ECDSA signature r")
+    sign = sign[2:]
+    if b == 32:
+        r = sign[0:32]
+        sign = sign[32:]
+    elif b == 33:
+        r = sign[1:33]
+        sign = sign[33:]
+    else:
+        raise Exception("Invalid length of ECDSA signature r")
+
+    a,b = struct.unpack('BB', sign[0:2])
+    if a != 0x02:
+        raise Exception("Invalid DER encoding of ECDSA signature s")
+    if b > len(sign) - 2:
+        raise Exception("Invalid length of ECDSA signature s")
+    sign = sign[2:]
+    if b == 32:
+        s = sign[0:32]
+        sign = sign[32:]
+    elif b == 33:
+        s = sign[1:33]
+        sign = sign[33:]
+    else:
+        raise Exception("Invalid length of ECDSA signature s")
+    if len(sign) != 0:
+        raise Exception("Extra data at the end of ECDSA signature")
+
+    raw_sign = r + s
+    return base64.urlsafe_b64encode(raw_sign).rstrip('=')
+
+p256_priv_key = """-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIBVQij9ah629f1pu3tarDQGQvrzHgAkgYd1jHGiLxNajoAoGCCqGSM49
+AwEHoUQDQgAEAC9d2/JirKu72F2qLuv5jEFMD1Cqu9EiyGk7cOzn/2DJ51p2mEoW
+n03N6XRvTC+G7WPol9Ng97NAM2sK57+F/Q==
+-----END EC PRIVATE KEY-----"""
+p256_pub_key_x = binascii.unhexlify("002f5ddbf262acabbbd85daa2eebf98c414c0f50aabbd122c8693b70ece7ff60")
+p256_pub_key_y = binascii.unhexlify("c9e75a76984a169f4dcde9746f4c2f86ed63e897d360f7b340336b0ae7bf85fd")
+
+def run_dpp_config_connector(dev, apdev, expiry=None, payload=None,
+                             skip_net_access_key_mismatch=True):
+    if not openssl_imported:
+        raise HwsimSkip("OpenSSL python method not available")
+    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM,
+                                          p256_priv_key)
+    x = base64.urlsafe_b64encode(p256_pub_key_x).rstrip('=')
+    y = base64.urlsafe_b64encode(p256_pub_key_y).rstrip('=')
+
+    pubkey = '\04' + p256_pub_key_x + p256_pub_key_y
+    kid = base64.urlsafe_b64encode(hashlib.sha256(pubkey).digest()).rstrip('=')
+
+    prot_hdr = '{"typ":"dppCon","kid":"%s","alg":"ES256"}' % kid
+
+    if not payload:
+        payload = '{"groups":[{"groupId":"*","netRole":"sta"}],"netAccessKey":{"kty":"EC","crv":"P-256","x":"aTF4JEGIPKSZ0Xv9zdCMjm-tn5XpMsYIVZ9wySAz1gI","y":"QGcHWA_6rbU9XDXAztoX-M5Q3suTnMaqEhULtn7SSXw"}'
+        if expiry:
+            payload += ',"expiry":"%s"' % expiry
+        payload += '}'
+    conn = base64.urlsafe_b64encode(prot_hdr).rstrip('=') + '.'
+    conn += base64.urlsafe_b64encode(payload).rstrip('=')
+    sign = ecdsa_sign(pkey, conn)
+    conn += '.' + sign
+    run_dpp_config_error(dev, apdev,
+                         build_conf_obj(x=x, y=y, signed_connector=conn),
+                         skip_net_access_key_mismatch=skip_net_access_key_mismatch)
+
+def test_dpp_config_connector_error_ext_sign(dev, apdev):
+    """DPP Config Object connector error - external signature calculation"""
+    run_dpp_config_connector(dev, apdev)
+
+def test_dpp_config_connector_error_too_short_timestamp(dev, apdev):
+    """DPP Config Object connector error - too short timestamp"""
+    run_dpp_config_connector(dev, apdev, expiry="1")
+
+def test_dpp_config_connector_error_invalid_timestamp(dev, apdev):
+    """DPP Config Object connector error - invalid timestamp"""
+    run_dpp_config_connector(dev, apdev, expiry=19*"1")
+
+def test_dpp_config_connector_error_invalid_timestamp_date(dev, apdev):
+    """DPP Config Object connector error - invalid timestamp date"""
+    run_dpp_config_connector(dev, apdev, expiry="9999-99-99T99:99:99Z")
+
+def test_dpp_config_connector_error_invalid_time_zone(dev, apdev):
+    """DPP Config Object connector error - invalid time zone"""
+    run_dpp_config_connector(dev, apdev, expiry="2018-01-01T00:00:00*")
+
+def test_dpp_config_connector_error_invalid_time_zone_2(dev, apdev):
+    """DPP Config Object connector error - invalid time zone 2"""
+    run_dpp_config_connector(dev, apdev, expiry="2018-01-01T00:00:00+")
+
+def test_dpp_config_connector_error_expired_1(dev, apdev):
+    """DPP Config Object connector error - expired 1"""
+    run_dpp_config_connector(dev, apdev, expiry="2018-01-01T00:00:00")
+
+def test_dpp_config_connector_error_expired_2(dev, apdev):
+    """DPP Config Object connector error - expired 2"""
+    run_dpp_config_connector(dev, apdev, expiry="2018-01-01T00:00:00Z")
+
+def test_dpp_config_connector_error_expired_3(dev, apdev):
+    """DPP Config Object connector error - expired 3"""
+    run_dpp_config_connector(dev, apdev, expiry="2018-01-01T00:00:00+01")
+
+def test_dpp_config_connector_error_expired_4(dev, apdev):
+    """DPP Config Object connector error - expired 4"""
+    run_dpp_config_connector(dev, apdev, expiry="2018-01-01T00:00:00+01:02")
+
+def test_dpp_config_connector_error_expired_5(dev, apdev):
+    """DPP Config Object connector error - expired 5"""
+    run_dpp_config_connector(dev, apdev, expiry="2018-01-01T00:00:00-01")
+
+def test_dpp_config_connector_error_expired_6(dev, apdev):
+    """DPP Config Object connector error - expired 6"""
+    run_dpp_config_connector(dev, apdev, expiry="2018-01-01T00:00:00-01:02")
+
+def test_dpp_config_connector_error_no_groups(dev, apdev):
+    """DPP Config Object connector error - no groups"""
+    payload = '{"netAccessKey":{"kty":"EC","crv":"P-256","x":"aTF4JEGIPKSZ0Xv9zdCMjm-tn5XpMsYIVZ9wySAz1gI","y":"QGcHWA_6rbU9XDXAztoX-M5Q3suTnMaqEhULtn7SSXw"}}'
+    run_dpp_config_connector(dev, apdev, payload=payload)
+
+def test_dpp_config_connector_error_empty_groups(dev, apdev):
+    """DPP Config Object connector error - empty groups"""
+    payload = '{"groups":[],"netAccessKey":{"kty":"EC","crv":"P-256","x":"aTF4JEGIPKSZ0Xv9zdCMjm-tn5XpMsYIVZ9wySAz1gI","y":"QGcHWA_6rbU9XDXAztoX-M5Q3suTnMaqEhULtn7SSXw"}}'
+    run_dpp_config_connector(dev, apdev, payload=payload)
+
+def test_dpp_config_connector_error_missing_group_id(dev, apdev):
+    """DPP Config Object connector error - missing groupId"""
+    payload = '{"groups":[{"netRole":"sta"}],"netAccessKey":{"kty":"EC","crv":"P-256","x":"aTF4JEGIPKSZ0Xv9zdCMjm-tn5XpMsYIVZ9wySAz1gI","y":"QGcHWA_6rbU9XDXAztoX-M5Q3suTnMaqEhULtn7SSXw"}}'
+    run_dpp_config_connector(dev, apdev, payload=payload)
+
+def test_dpp_config_connector_error_missing_net_role(dev, apdev):
+    """DPP Config Object connector error - missing netRole"""
+    payload = '{"groups":[{"groupId":"*"}],"netAccessKey":{"kty":"EC","crv":"P-256","x":"aTF4JEGIPKSZ0Xv9zdCMjm-tn5XpMsYIVZ9wySAz1gI","y":"QGcHWA_6rbU9XDXAztoX-M5Q3suTnMaqEhULtn7SSXw"}}'
+    run_dpp_config_connector(dev, apdev, payload=payload)
+
+def test_dpp_config_connector_error_missing_net_access_key(dev, apdev):
+    """DPP Config Object connector error - missing netAccessKey"""
+    payload = '{"groups":[{"groupId":"*","netRole":"sta"}]}'
+    run_dpp_config_connector(dev, apdev, payload=payload)
+
+def test_dpp_config_connector_error_net_access_key_mismatch(dev, apdev):
+    """DPP Config Object connector error - netAccessKey mismatch"""
+    payload = '{"groups":[{"groupId":"*","netRole":"sta"}],"netAccessKey":{"kty":"EC","crv":"P-256","x":"aTF4JEGIPKSZ0Xv9zdCMjm-tn5XpMsYIVZ9wySAz1gI","y":"QGcHWA_6rbU9XDXAztoX-M5Q3suTnMaqEhULtn7SSXw"}}'
+    run_dpp_config_connector(dev, apdev, payload=payload,
+                             skip_net_access_key_mismatch=False)
 
 def test_dpp_gas_timeout(dev, apdev):
     """DPP and GAS server timeout for a query"""
