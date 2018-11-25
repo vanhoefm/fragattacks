@@ -97,8 +97,10 @@ gas_server_send_resp(struct gas_server *gas, struct gas_server_handler *handler,
 		return;
 
 	response = os_zalloc(sizeof(*response));
-	if (!response)
+	if (!response) {
+		wpabuf_free(query_resp);
 		return;
+	}
 	wpa_printf(MSG_DEBUG, "DPP: Allocated GAS response @%p", response);
 	response->freq = freq;
 	response->handler = handler;
@@ -119,6 +121,7 @@ gas_server_send_resp(struct gas_server *gas, struct gas_server_handler *handler,
 				      handler->adv_proto_id_len +
 				      resp_frag_len);
 	if (!resp) {
+		wpabuf_free(query_resp);
 		gas_server_free_response(response);
 		return;
 	}
