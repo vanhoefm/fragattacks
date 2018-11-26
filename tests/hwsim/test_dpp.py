@@ -39,6 +39,7 @@ def test_dpp_qr_code_parsing(dev, apdev):
     id = []
 
     tests = [ "DPP:C:81/1,115/36;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkq/24e0rsrfMP9K1Tm8gx+ovP0I=;;",
+              "DPP:C:81/1,81/2,81/3,81/4,81/5,81/6,81/7,81/8,81/9,81/10,81/11,81/12,81/13,82/14,83/1,83/2,83/3,83/4,83/5,83/6,83/7,83/8,83/9,84/5,84/6,84/7,84/8,84/9,84/10,84/11,84/12,84/13,115/36;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkq/24e0rsrfMP9K1Tm8gx+ovP0I=;;",
               "DPP:I:SN=4774LH2b4044;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;",
               "DPP:I:;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;" ]
     for uri in tests:
@@ -55,7 +56,16 @@ def test_dpp_qr_code_parsing(dev, apdev):
               "DPP:",
               "DPP:;;",
               "DPP:C:1/2;M:;K;;",
-              "DPP:I:;M:01020304050;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;" ]
+              "DPP:I:;M:01020304050;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;",
+              "DPP:K:" + base64.b64encode("hello") + ";;",
+              "DPP:K:MEkwEwYHKoZIzj0CAQYIKoZIzj0DAQEDMgAEXiJuIWt1Q/CPCkuULechh37UsXPmbUANOeN5U9sOQROE4o/NEFeFEejROHYwwehF;;",
+              "DPP:K:MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANNZaZA4T/kRDjnmpI1ACOJhAuTIIEk2KFOpS6XPpGF+EVr/ao3XemkE0/nzXmGaLzLqTUCJknSdxTnVPeWfCVsCAwEAAQ==;;",
+              "DPP:K:MIIBCjCB0wYHKoZIzj0CATCBxwIBATAkBgcqhkjOPQEBAhkA/////////////////////v//////////MEsEGP////////////////////7//////////AQYZCEFGeWcgOcPp+mrciQwSf643uzBRrmxAxUAMEWub8hCL2TtV5Uo04Eg6uEhltUEMQQYjagOsDCQ9ny/IOtDoYgA9P8K/YL/EBIHGSuV/8jaeGMQEe1rJM3Vc/l3oR55SBECGQD///////////////+Z3vg2FGvJsbTSKDECAQEDMgAEXiJuIWt1Q/CPCkuULechh37UsXPmbUANOeN5U9sOQROE4o/NEFeFEejROHYwwehF;;",
+              "DPP:I:foo\tbar;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;",
+              "DPP:C:1;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkqa24e0rsrfMP9K1Tm8gx+ovP0I=;;",
+              "DPP:C:81/1a;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkqa24e0rsrfMP9K1Tm8gx+ovP0I=;;",
+              "DPP:C:1/2000,81/-1;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkqa24e0rsrfMP9K1Tm8gx+ovP0I=;;",
+              "DPP:C:-1/1;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkqa24e0rsrfMP9K1Tm8gx+ovP0I=;;" ]
     for t in tests:
         res = dev[0].request("DPP_QR_CODE " + t)
         if "FAIL" not in res:
@@ -89,6 +99,25 @@ def test_dpp_qr_code_parsing(dev, apdev):
     res = dev[0].request("DPP_QR_CODE " + uri)
     if "FAIL" in res:
         raise Exception("Failed to parse self-generated QR Code URI")
+
+def test_dpp_qr_code_parsing_fail(dev, apdev):
+    """DPP QR Code parsing local failure"""
+    check_dpp_capab(dev[0])
+    with alloc_fail(dev[0], 1, "dpp_parse_uri_info"):
+        if "FAIL" not in dev[0].request("DPP_QR_CODE DPP:I:SN=4774LH2b4044;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;"):
+            raise Exception("DPP_QR_CODE failure not reported")
+
+    with alloc_fail(dev[0], 1, "dpp_parse_uri_pk"):
+        if "FAIL" not in dev[0].request("DPP_QR_CODE DPP:K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;"):
+            raise Exception("DPP_QR_CODE failure not reported")
+
+    with fail_test(dev[0], 1, "dpp_parse_uri_pk"):
+        if "FAIL" not in dev[0].request("DPP_QR_CODE DPP:K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;"):
+            raise Exception("DPP_QR_CODE failure not reported")
+
+    with alloc_fail(dev[0], 1, "dpp_parse_uri"):
+        if "FAIL" not in dev[0].request("DPP_QR_CODE DPP:I:SN=4774LH2b4044;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;"):
+            raise Exception("DPP_QR_CODE failure not reported")
 
 dpp_key_p256 ="30570201010420777fc55dc51e967c10ec051b91d860b5f1e6c934e48d5daffef98d032c64b170a00a06082a8648ce3d030107a124032200020c804188c7f85beb6e91070d2b3e5e39b90ca77b4d3c5251bc1844d6ca29dcad"
 dpp_key_p384 = "307402010104302f56fdd83b5345cacb630eb7c22fa5ad5daba37307c95191e2a75756d137003bd8b32dbcb00eb5650c1eb499ecfcaec0a00706052b81040022a13403320003615ec2141b5b77aebb6523f8a012755f9a34405a8398d2ceeeebca7f5ce868bf55056cba4c4ec62fad3ed26dd29e0f23"
