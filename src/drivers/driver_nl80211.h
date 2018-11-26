@@ -66,6 +66,7 @@ struct i802_bss {
 	unsigned int wdev_id_set:1;
 	unsigned int added_if:1;
 	unsigned int static_ap:1;
+	unsigned int use_nl_connect:1;
 
 	u8 addr[ETH_ALEN];
 
@@ -252,7 +253,8 @@ int wpa_driver_nl80211_set_mode(struct i802_bss *bss,
 				enum nl80211_iftype nlmode);
 int wpa_driver_nl80211_mlme(struct wpa_driver_nl80211_data *drv,
 			    const u8 *addr, int cmd, u16 reason_code,
-			    int local_state_change);
+			    int local_state_change,
+			    struct nl_handle *nl_connect);
 
 int nl80211_create_monitor_interface(struct wpa_driver_nl80211_data *drv);
 void nl80211_remove_monitor_interface(struct wpa_driver_nl80211_data *drv);

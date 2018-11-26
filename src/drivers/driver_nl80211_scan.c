@@ -866,7 +866,8 @@ static void clear_state_mismatch(struct wpa_driver_nl80211_data *drv,
 			   "mismatch (" MACSTR ")", MAC2STR(addr));
 		wpa_driver_nl80211_mlme(drv, addr,
 					NL80211_CMD_DEAUTHENTICATE,
-					WLAN_REASON_PREV_AUTH_NOT_VALID, 1);
+					WLAN_REASON_PREV_AUTH_NOT_VALID, 1,
+					NULL);
 	}
 }
 
