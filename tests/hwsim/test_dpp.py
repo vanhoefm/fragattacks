@@ -4994,3 +4994,29 @@ def test_dpp_gas(dev, apdev):
     rx_process_frame(dev[0])
 
     wait_conf_completion(dev[0], dev[1])
+
+def test_dpp_truncated_attr(dev, apdev):
+    """DPP and truncated attribute"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    start_dpp(dev)
+
+    # DPP Authentication Request
+    msg = dev[0].mgmt_rx()
+    frame = msg['frame']
+
+    # DPP: Truncated message - not enough room for the attribute - dropped
+    frame1 = frame[0:36].encode('hex')
+    if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], frame1)):
+        raise Exception("MGMT_RX_PROCESS failed")
+    ev = dev[0].wait_event(["DPP-RX"], timeout=5)
+    if ev is None or "ignore=invalid-attributes" not in ev:
+        raise Exception("Invalid attribute error not reported")
+
+    # DPP: Unexpected octets (3) after the last attribute
+    frame2 = frame.encode('hex') + "000000"
+    if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], frame2)):
+        raise Exception("MGMT_RX_PROCESS failed")
+    ev = dev[0].wait_event(["DPP-RX"], timeout=5)
+    if ev is None or "ignore=invalid-attributes" not in ev:
+        raise Exception("Invalid attribute error not reported")
