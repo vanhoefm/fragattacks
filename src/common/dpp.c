@@ -2854,7 +2854,7 @@ static int dpp_auth_build_resp_status(struct dpp_authentication *auth,
 		i_pubkey_hash = test_hash;
 	} else if (dpp_test == DPP_TEST_NO_STATUS_AUTH_RESP) {
 		wpa_printf(MSG_INFO, "DPP: TESTING - no Status");
-		status = -1;
+		status = 255;
 	} else if (dpp_test == DPP_TEST_NO_I_NONCE_AUTH_RESP) {
 		wpa_printf(MSG_INFO, "DPP: TESTING - no I-nonce");
 		i_nonce = NULL;
