@@ -3669,7 +3669,8 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
         raise Exception("Unexpected network introduction result on STA5: " + ev)
 
 def run_dpp_proto_init(dev, test_dev, test, mutual=False, unicast=True,
-                       listen=True, chan="81/1", init_enrollee=False):
+                       listen=True, chan="81/1", init_enrollee=False,
+                       incompatible_roles=False):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     dev[test_dev].set("dpp_test", str(test))
@@ -3718,9 +3719,14 @@ def run_dpp_proto_init(dev, test_dev, test, mutual=False, unicast=True,
         cmd = "DPP_LISTEN 2412"
 
     if init_enrollee:
-        cmd += " role=configurator"
+        if incompatible_roles:
+            cmd += " role=enrollee"
+        else:
+            cmd += " role=configurator"
         dev[0].set("dpp_configurator_params",
                    " conf=sta-dpp configurator=%d" % conf_id);
+    elif incompatible_roles:
+        cmd += " role=enrollee"
 
     if listen:
         if "OK" not in dev[0].request(cmd):
@@ -3730,6 +3736,8 @@ def run_dpp_proto_init(dev, test_dev, test, mutual=False, unicast=True,
         cmd = "DPP_AUTH_INIT peer=%d role=enrollee" % (id1)
     else:
         cmd = "DPP_AUTH_INIT peer=%d configurator=%d conf=sta-dpp" % (id1, conf_id)
+        if incompatible_roles:
+            cmd += " role=enrollee"
     if mutual:
         cmd += " own=%d" % id1b
     if "OK" not in dev[1].request(cmd):
@@ -3914,8 +3922,10 @@ def test_dpp_proto_auth_req_no_wrapped_data(dev, apdev):
     """DPP protocol testing - no Wrapped Data in Auth Req"""
     run_dpp_proto_auth_req_missing(dev, 15, "Missing or invalid required Wrapped Data attribute")
 
-def run_dpp_proto_auth_resp_missing(dev, test, reason):
-    run_dpp_proto_init(dev, 0, test, mutual=True)
+def run_dpp_proto_auth_resp_missing(dev, test, reason,
+                                    incompatible_roles=False):
+    run_dpp_proto_init(dev, 0, test, mutual=True,
+                       incompatible_roles=incompatible_roles)
     if reason is None:
         time.sleep(0.1)
         return
@@ -3935,6 +3945,12 @@ def test_dpp_proto_auth_resp_no_status(dev, apdev):
     """DPP protocol testing - no Status in Auth Resp"""
     run_dpp_proto_auth_resp_missing(dev, 16, "Missing or invalid required DPP Status attribute")
 
+def test_dpp_proto_auth_resp_status_no_status(dev, apdev):
+    """DPP protocol testing - no Status in Auth Resp(status)"""
+    run_dpp_proto_auth_resp_missing(dev, 16,
+                                    "Missing or invalid required DPP Status attribute",
+                                    incompatible_roles=True)
+
 def test_dpp_proto_auth_resp_invalid_status(dev, apdev):
     """DPP protocol testing - invalid Status in Auth Resp"""
     run_dpp_proto_auth_resp_missing(dev, 74, "Responder reported failure")
@@ -3943,17 +3959,39 @@ def test_dpp_proto_auth_resp_no_r_bootstrap_key(dev, apdev):
     """DPP protocol testing - no R-bootstrap key in Auth Resp"""
     run_dpp_proto_auth_resp_missing(dev, 17, "Missing or invalid required Responder Bootstrapping Key Hash attribute")
 
+def test_dpp_proto_auth_resp_status_no_r_bootstrap_key(dev, apdev):
+    """DPP protocol testing - no R-bootstrap key in Auth Resp(status)"""
+    run_dpp_proto_auth_resp_missing(dev, 17,
+                                    "Missing or invalid required Responder Bootstrapping Key Hash attribute",
+                                    incompatible_roles=True)
+
 def test_dpp_proto_auth_resp_invalid_r_bootstrap_key(dev, apdev):
     """DPP protocol testing - invalid R-bootstrap key in Auth Resp"""
     run_dpp_proto_auth_resp_missing(dev, 70, "Unexpected Responder Bootstrapping Key Hash value")
+
+def test_dpp_proto_auth_resp_status_invalid_r_bootstrap_key(dev, apdev):
+    """DPP protocol testing - invalid R-bootstrap key in Auth Resp(status)"""
+    run_dpp_proto_auth_resp_missing(dev, 70,
+                                    "Unexpected Responder Bootstrapping Key Hash value",
+                                    incompatible_roles=True)
 
 def test_dpp_proto_auth_resp_no_i_bootstrap_key(dev, apdev):
     """DPP protocol testing - no I-bootstrap key in Auth Resp"""
     run_dpp_proto_auth_resp_missing(dev, 18, None)
 
+def test_dpp_proto_auth_resp_status_no_i_bootstrap_key(dev, apdev):
+    """DPP protocol testing - no I-bootstrap key in Auth Resp(status)"""
+    run_dpp_proto_auth_resp_missing(dev, 18, None, incompatible_roles=True)
+
 def test_dpp_proto_auth_resp_invalid_i_bootstrap_key(dev, apdev):
     """DPP protocol testing - invalid I-bootstrap key in Auth Resp"""
     run_dpp_proto_auth_resp_missing(dev, 71, "Initiator Bootstrapping Key Hash attribute did not match")
+
+def test_dpp_proto_auth_resp_status_invalid_i_bootstrap_key(dev, apdev):
+    """DPP protocol testing - invalid I-bootstrap key in Auth Resp(status)"""
+    run_dpp_proto_auth_resp_missing(dev, 71,
+                                    "Initiator Bootstrapping Key Hash attribute did not match",
+                                    incompatible_roles=True)
 
 def test_dpp_proto_auth_resp_no_r_proto_key(dev, apdev):
     """DPP protocol testing - no R-Proto Key in Auth Resp"""
@@ -3970,6 +4008,11 @@ def test_dpp_proto_auth_resp_no_r_nonce(dev, apdev):
 def test_dpp_proto_auth_resp_no_i_nonce(dev, apdev):
     """DPP protocol testing - no I-nonce in Auth Resp"""
     run_dpp_proto_auth_resp_missing(dev, 21, "Missing or invalid I-nonce")
+
+def test_dpp_proto_auth_resp_status_no_i_nonce(dev, apdev):
+    """DPP protocol testing - no I-nonce in Auth Resp(status)"""
+    run_dpp_proto_auth_resp_missing(dev, 21, "Missing or invalid I-nonce",
+                                    incompatible_roles=True)
 
 def test_dpp_proto_auth_resp_no_r_capab(dev, apdev):
     """DPP protocol testing - no R-capab in Auth Resp"""
