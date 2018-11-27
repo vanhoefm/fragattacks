@@ -4808,7 +4808,8 @@ def test_dpp_pkex_test_fail(dev, apdev):
               (1, "aes_siv_encrypt;dpp_pkex_build_commit_reveal_req"),
               (1, "hmac_sha256_vector;dpp_pkex_rx_exchange_resp"),
               (1, "aes_siv_decrypt;dpp_pkex_rx_commit_reveal_resp"),
-              (1, "hmac_sha256_vector;dpp_pkex_rx_commit_reveal_resp") ]
+              (1, "hmac_sha256_vector;dpp_pkex_rx_commit_reveal_resp"),
+              (1, "dpp_bootstrap_key_hash") ]
     for count, func in tests:
         dev[0].request("DPP_STOP_LISTEN")
         dev[1].request("DPP_STOP_LISTEN")
