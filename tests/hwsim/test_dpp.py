@@ -4847,6 +4847,7 @@ def test_dpp_pkex_test_fail(dev, apdev):
 
     # Local error cases on the Responder
     tests = [ (1, "aes_siv_encrypt;dpp_auth_build_resp"),
+              (1, "aes_siv_encrypt;dpp_auth_build_resp;dpp_auth_build_resp_ok"),
               (1, "os_get_random;dpp_build_conf_req"),
               (1, "aes_siv_encrypt;dpp_build_conf_req"),
               (1, "os_get_random;dpp_auth_build_resp_ok"),
