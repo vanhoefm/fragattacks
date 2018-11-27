@@ -173,6 +173,18 @@ def test_dpp_qr_code_unsupported_curve(dev, apdev):
         if "FAIL" not in id:
             raise Exception("Unsupported/invalid curve accepted")
 
+def test_dpp_qr_code_keygen_fail(dev, apdev):
+    """DPP QR Code and keygen failure"""
+    check_dpp_capab(dev[0])
+
+    with alloc_fail(dev[0], 1, "dpp_bootstrap_key_der;dpp_keygen"):
+        if "FAIL" not in dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode"):
+            raise Exception("Failure not reported")
+
+    with alloc_fail(dev[0], 1, "base64_gen_encode;dpp_keygen"):
+        if "FAIL" not in dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode"):
+            raise Exception("Failure not reported")
+
 def test_dpp_qr_code_curve_select(dev, apdev):
     """DPP QR Code and curve selection"""
     check_dpp_capab(dev[0], brainpool=True)
