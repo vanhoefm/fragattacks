@@ -158,6 +158,21 @@ def test_dpp_qr_code_curves_brainpool(dev, apdev):
         if "curve=" + curve not in info:
             raise Exception("Curve mismatch for " + curve)
 
+def test_dpp_qr_code_unsupported_curve(dev, apdev):
+    """DPP QR Code and unsupported curve"""
+    check_dpp_capab(dev[0])
+
+    id = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode curve=unsupported")
+    if "FAIL" not in id:
+        raise Exception("Unsupported curve accepted")
+
+    tests = [ "30",
+              "305f02010104187f723ed9e1b41979ec5cd02eb82696efc76b40e277661049a00a06082a8648ce3d030101a134033200043f292614dea97c43f500f069e79ae9fb48f8b07369180de5eec8fa2bc9eea5af7a46dc335f52f10cb1c0e9464201d41b" ]
+    for hex in tests:
+        id = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode key=" + hex)
+        if "FAIL" not in id:
+            raise Exception("Unsupported/invalid curve accepted")
+
 def test_dpp_qr_code_curve_select(dev, apdev):
     """DPP QR Code and curve selection"""
     check_dpp_capab(dev[0], brainpool=True)
