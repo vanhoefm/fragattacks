@@ -2000,14 +2000,15 @@ enum nr_chan_width {
 };
 
 struct ieee80211_he_capabilities {
-	u8 he_mac_capab_info[5];
-	u8 he_phy_capab_info[9];
+	u8 he_mac_capab_info[6];
+	u8 he_phy_capab_info[11];
 	u8 he_txrx_mcs_support[12]; /* TODO: 4, 8, or 12 octets */
 	/* PPE Thresholds (optional) */
 } STRUCT_PACKED;
 
 struct ieee80211_he_operation {
-	u32 he_oper_params;
+	u32 he_oper_params; /* HE Operation Parameters[3] and
+			     * BSS Color Information[1] */
 	u8 he_mcs_nss_set[2];
 	u8 vht_op_info_chwidth;
 	u8 vht_op_info_chan_center_freq_seg0_idx;
@@ -2024,28 +2025,22 @@ struct ieee80211_he_operation {
 #define HE_PHYCAP_MU_BEAMFORMER_CAPAB		((u8) BIT(1))
 
 /* HE Operation defines */
+/* HE Operation Parameters and BSS Color Information fields */
 #define HE_OPERATION_BSS_COLOR_MASK		((u32) (BIT(0) | BIT(1) | \
 							BIT(2) | BIT(3) | \
 							BIT(4) | BIT(5)))
-#define HE_OPERATION_DFLT_PE_DURATION_MASK	((u32) (BIT(6) | BIT(7) | \
-							BIT(8)))
-#define HE_OPERATION_DFLT_PE_DURATION_OFFSET	6
-#define HE_OPERATION_TWT_REQUIRED		((u32) BIT(9))
-#define HE_OPERATION_RTS_THRESHOLD_MASK	((u32) (BIT(10) | BIT(11) | \
-						BIT(12) | BIT(13) | \
+#define HE_OPERATION_PARTIAL_BSS_COLOR		((u32) BIT(6))
+#define HE_OPERATION_BSS_COLOR_DISABLED		((u32) BIT(7))
+#define HE_OPERATION_DFLT_PE_DURATION_MASK	((u32) (BIT(8) | BIT(9) | \
+							BIT(10)))
+#define HE_OPERATION_DFLT_PE_DURATION_OFFSET	8
+#define HE_OPERATION_TWT_REQUIRED		((u32) BIT(11))
+#define HE_OPERATION_RTS_THRESHOLD_MASK	((u32) (BIT(12) | BIT(13) | \
 						BIT(14) | BIT(15) | \
 						BIT(16) | BIT(17) | \
-						BIT(18) | BIT(19)))
-#define HE_OPERATION_RTS_THRESHOLD_OFFSET	10
-#define HE_OPERATION_PARTIAL_BSS_COLOR		((u32) BIT(20))
-#define HE_OPERATION_MAX_BSSID_INDICATOR_MASK	((u32) (BIT(21) | BIT(22) | \
-							BIT(23) | BIT(24) | \
-							BIT(25) | BIT(26) | \
-							BIT(27) | BIT(28)))
-#define HE_OPERATION_MAX_BSSID_INDICATOR_OFFSET 21
-#define HE_OPERATION_TX_BSSID_INDICATOR		((u32) BIT(29))
-#define HE_OPERATION_BSS_COLOR_DISABLED		((u32) BIT(30))
-#define HE_OPERATION_BSS_DUAL_BEACON		((u32) BIT(31))
+						BIT(18) | BIT(19) | \
+						BIT(20) | BIT(21)))
+#define HE_OPERATION_RTS_THRESHOLD_OFFSET	12
 
 /* DPP Public Action frame identifiers - OUI_WFA */
 #define DPP_OUI_TYPE 0x1A
