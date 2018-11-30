@@ -1451,7 +1451,7 @@ static int wpa_ft_fetch_pmk_r1(struct wpa_authenticator *wpa_auth,
 					now.sec;
 			else if (session_timeout && r1->session_timeout)
 				*session_timeout = 1;
-			else
+			else if (session_timeout)
 				*session_timeout = 0;
 			return 0;
 		}
