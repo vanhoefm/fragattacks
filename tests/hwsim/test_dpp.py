@@ -5159,3 +5159,9 @@ def test_dpp_bootstrap_key_autogen_issues(dev, apdev):
         if "FAIL" not in dev[1].request(cmd):
             raise Exception("Failure not reported")
     dev[0].request("DPP_STOP_LISTEN")
+
+def test_dpp_auth_resp_status_failure(dev, apdev):
+    """DPP and Auth Resp(status) build failure"""
+    with alloc_fail(dev[0], 1, "dpp_auth_build_resp"):
+        run_dpp_proto_auth_resp_missing(dev, 99999, None,
+                                        incompatible_roles=True)
