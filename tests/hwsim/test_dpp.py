@@ -5262,3 +5262,59 @@ def test_dpp_auth_resp_aes_siv_issue(dev, apdev):
         if ev is None or "AES-SIV decryption failed" not in ev:
             raise Exception("AES-SIV decryption failure not reported")
     dev[0].request("DPP_STOP_LISTEN")
+
+def test_dpp_invalid_legacy_params(dev, apdev):
+    """DPP invalid legacy parameters"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    addr = dev[0].own_addr().replace(':', '')
+    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
+    res = dev[0].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to generate bootstrapping info")
+    id0 = int(res)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+
+    res = dev[1].request("DPP_QR_CODE " + uri0)
+    if "FAIL" in res:
+        raise Exception("Failed to parse QR Code URI")
+    id1 = int(res)
+
+    # No pass/psk
+    cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk ssid=%s" % (id1, "dpp-legacy".encode("hex"))
+    if "FAIL" not in dev[1].request(cmd):
+        raise Exception("Invalid command not rejected")
+
+def test_dpp_invalid_legacy_params2(dev, apdev):
+    """DPP invalid legacy parameters 2"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    addr = dev[0].own_addr().replace(':', '')
+    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
+    res = dev[0].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to generate bootstrapping info")
+    id0 = int(res)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+
+    res = dev[1].request("DPP_QR_CODE " + uri0)
+    if "FAIL" in res:
+        raise Exception("Failed to parse QR Code URI")
+    id1 = int(res)
+
+    dev[0].set("dpp_configurator_params",
+               " conf=sta-psk ssid=%s" % ("dpp-legacy".encode("hex")))
+    cmd = "DPP_LISTEN 2412 role=configurator"
+    if "OK" not in dev[0].request(cmd):
+        raise Exception("Failed to start listen operation")
+
+    # No pass/psk
+    cmd = "DPP_AUTH_INIT peer=%d role=enrollee" % id1
+    if "OK" not in dev[1].request(cmd):
+        raise Exception("Failed to initiate DPP Authentication")
+    ev = dev[0].wait_event(["DPP: Failed to set configurator parameters"],
+                           timeout=5)
+    if ev is None:
+        raise Exception("DPP configuration failure not reported")
