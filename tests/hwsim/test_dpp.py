@@ -5209,3 +5209,36 @@ def test_dpp_auth_resp_status_failure(dev, apdev):
     with alloc_fail(dev[0], 1, "dpp_auth_build_resp"):
         run_dpp_proto_auth_resp_missing(dev, 99999, None,
                                         incompatible_roles=True)
+
+def test_dpp_auth_resp_aes_siv_issue(dev, apdev):
+    """DPP Auth Resp AES-SIV issue"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    logger.info("dev0 displays QR Code")
+    addr = dev[0].own_addr().replace(':', '')
+    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
+    res = dev[0].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to generate bootstrapping info")
+    id0 = int(res)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+
+    logger.info("dev1 scans QR Code")
+    res = dev[1].request("DPP_QR_CODE " + uri0)
+    if "FAIL" in res:
+        raise Exception("Failed to parse QR Code URI")
+    id1 = int(res)
+
+    logger.info("dev1 initiates DPP Authentication")
+    cmd = "DPP_LISTEN 2412"
+    if "OK" not in dev[0].request(cmd):
+        raise Exception("Failed to start listen operation")
+    cmd = "DPP_AUTH_INIT peer=%d" % id1
+    with fail_test(dev[1], 1, "aes_siv_decrypt;dpp_auth_resp_rx"):
+        if "OK" not in dev[1].request(cmd):
+            raise Exception("Failed to initiate DPP Authentication")
+        ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
+        if ev is None or "AES-SIV decryption failed" not in ev:
+            raise Exception("AES-SIV decryption failure not reported")
+    dev[0].request("DPP_STOP_LISTEN")
