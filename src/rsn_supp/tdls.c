@@ -2159,11 +2159,11 @@ static int wpa_tdls_enable_link(struct wpa_sm *sm, struct wpa_tdls_peer *peer)
 		eloop_register_timeout(lifetime, 0, wpa_tdls_tpk_timeout,
 				       sm, peer);
 #ifdef CONFIG_TDLS_TESTING
-	if (tdls_testing & TDLS_TESTING_NO_TPK_EXPIRATION) {
-		wpa_printf(MSG_DEBUG, "TDLS: Testing - disable TPK "
-			   "expiration");
-		eloop_cancel_timeout(wpa_tdls_tpk_timeout, sm, peer);
-	}
+		if (tdls_testing & TDLS_TESTING_NO_TPK_EXPIRATION) {
+			wpa_printf(MSG_DEBUG,
+				   "TDLS: Testing - disable TPK expiration");
+			eloop_cancel_timeout(wpa_tdls_tpk_timeout, sm, peer);
+		}
 #endif /* CONFIG_TDLS_TESTING */
 	}
 

@@ -2730,7 +2730,7 @@ hostapd_config_alloc(struct hapd_interfaces *interfaces, const char *ifname,
 	if (conf == NULL) {
 		 wpa_printf(MSG_ERROR, "%s: Failed to allocate memory for "
 				"configuration", __func__);
-		return NULL;
+		 return NULL;
 	}
 
 	if (driver) {

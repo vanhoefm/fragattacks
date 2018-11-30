@@ -96,16 +96,16 @@ static void handle_data(void *ctx, unsigned char *buf, size_t len)
 	hdr = (struct ieee8023_hdr *) buf;
 
 	switch (ntohs(hdr->ethertype)) {
-		case ETH_P_PAE:
-			wpa_printf(MSG_MSGDUMP, "Received EAPOL packet");
-			sa = hdr->src;
-			os_memset(&event, 0, sizeof(event));
-			event.new_sta.addr = sa;
-			wpa_supplicant_event(ctx, EVENT_NEW_STA, &event);
+	case ETH_P_PAE:
+		wpa_printf(MSG_MSGDUMP, "Received EAPOL packet");
+		sa = hdr->src;
+		os_memset(&event, 0, sizeof(event));
+		event.new_sta.addr = sa;
+		wpa_supplicant_event(ctx, EVENT_NEW_STA, &event);
 
-			pos = (u8 *) (hdr + 1);
-			left = len - sizeof(*hdr);
-			drv_event_eapol_rx(ctx, sa, pos, left);
+		pos = (u8 *) (hdr + 1);
+		left = len - sizeof(*hdr);
+		drv_event_eapol_rx(ctx, sa, pos, left);
 		break;
 
 	default:

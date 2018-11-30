@@ -754,12 +754,12 @@ static void mlme_event_deauth_disassoc(struct wpa_driver_nl80211_data *drv,
 			 * disconnection event for the old AP may show up after
 			 * we have started connection with the new AP.
 			 */
-			 wpa_printf(MSG_DEBUG,
-				    "nl80211: Ignore deauth/disassoc event from old AP "
-				    MACSTR
-				    " when already connecting with " MACSTR,
-				    MAC2STR(bssid),
-				    MAC2STR(drv->auth_attempt_bssid));
+			wpa_printf(MSG_DEBUG,
+				   "nl80211: Ignore deauth/disassoc event from old AP "
+				   MACSTR
+				   " when already connecting with " MACSTR,
+				   MAC2STR(bssid),
+				   MAC2STR(drv->auth_attempt_bssid));
 			return;
 		}
 

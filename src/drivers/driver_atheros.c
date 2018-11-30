@@ -1329,11 +1329,11 @@ atheros_wireless_event_wireless_custom(struct atheros_driver_data *drv,
 		}
 		atheros_raw_receive(drv, NULL,
 				    (u8 *) custom + MGMT_FRAM_TAG_SIZE, len);
-		} else if (os_strncmp(custom, "Manage.auth ", 12) == 0) {
+	} else if (os_strncmp(custom, "Manage.auth ", 12) == 0) {
 		/* Format: "Manage.auth <frame len>" | zero padding | frame */
 		int len = atoi(custom + 12);
-			if (len < 0 ||
-			    MGMT_FRAM_TAG_SIZE + len > end - custom) {
+		if (len < 0 ||
+		    MGMT_FRAM_TAG_SIZE + len > end - custom) {
 			wpa_printf(MSG_DEBUG,
 				   "Invalid Manage.auth event length %d", len);
 			return;
@@ -1342,7 +1342,7 @@ atheros_wireless_event_wireless_custom(struct atheros_driver_data *drv,
 				    (u8 *) custom + MGMT_FRAM_TAG_SIZE, len);
 #endif /* CONFIG_IEEE80211W || CONFIG_IEEE80211R || CONFIG_FILS */
 #ifdef ATHEROS_USE_RAW_RECEIVE
-		} else if (os_strncmp(custom, "Manage.action ", 14) == 0) {
+	} else if (os_strncmp(custom, "Manage.action ", 14) == 0) {
 		/* Format: "Manage.assoc_req <frame len>" | zero padding | frame
 		 */
 		int len = atoi(custom + 14);
