@@ -4113,6 +4113,26 @@ def test_dpp_proto_auth_resp_r_auth_mismatch(dev, apdev):
     if "Peer reported authentication failure" not in ev:
         raise Exception("Unexpected failure: " + ev)
 
+def test_dpp_proto_auth_resp_r_auth_mismatch_failure(dev, apdev):
+    """DPP protocol testing - Auth Conf RX processing failure"""
+    with alloc_fail(dev[0], 1, "dpp_auth_conf_rx_failure"):
+        run_dpp_proto_init(dev, 0, 32, mutual=True)
+        ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
+        if ev is None:
+            raise Exception("DPP failure not seen")
+        if "Authentication failed" not in ev:
+            raise Exception("Unexpected failure: " + ev)
+
+def test_dpp_proto_auth_resp_r_auth_mismatch_failure2(dev, apdev):
+    """DPP protocol testing - Auth Conf RX processing failure 2"""
+    with fail_test(dev[0], 1, "dpp_auth_conf_rx_failure"):
+        run_dpp_proto_init(dev, 0, 32, mutual=True)
+        ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
+        if ev is None:
+            raise Exception("DPP failure not seen")
+        if "AES-SIV decryption failed" not in ev:
+            raise Exception("Unexpected failure: " + ev)
+
 def run_dpp_proto_auth_conf_missing(dev, test, reason):
     run_dpp_proto_init(dev, 1, test, mutual=True)
     if reason is None:
