@@ -383,7 +383,7 @@ static int macsec_qca_get_transmit_next_pn(void *priv, struct transmit_sa *sa)
 }
 
 
-int macsec_qca_set_transmit_next_pn(void *priv, struct transmit_sa *sa)
+static int macsec_qca_set_transmit_next_pn(void *priv, struct transmit_sa *sa)
 {
 	struct macsec_qca_data *drv = priv;
 	int ret = 0;
