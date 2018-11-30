@@ -897,8 +897,7 @@ def run_dpp_qr_code_auth_initiator_either(dev, apdev, resp_role,
 
     dev[0].request("DPP_STOP_LISTEN")
 
-def test_dpp_qr_code_auth_incompatible_roles(dev, apdev):
-    """DPP QR Code and authentication exchange (incompatible roles)"""
+def run_init_incompatible_roles(dev, role="enrollee"):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     logger.info("dev0 displays QR Code")
@@ -916,8 +915,13 @@ def test_dpp_qr_code_auth_incompatible_roles(dev, apdev):
     id1 = int(res)
 
     logger.info("dev1 initiates DPP Authentication")
-    if "OK" not in dev[0].request("DPP_LISTEN 2412 role=enrollee"):
+    if "OK" not in dev[0].request("DPP_LISTEN 2412 role=%s" % role):
         raise Exception("Failed to start listen operation")
+    return id1
+
+def test_dpp_qr_code_auth_incompatible_roles(dev, apdev):
+    """DPP QR Code and authentication exchange (incompatible roles)"""
+    id1 = run_init_incompatible_roles(dev)
     if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d role=enrollee" % id1):
         raise Exception("Failed to initiate DPP Authentication")
     ev = dev[1].wait_event(["DPP-NOT-COMPATIBLE"], timeout=5)
@@ -936,6 +940,46 @@ def test_dpp_qr_code_auth_incompatible_roles(dev, apdev):
     if ev is None:
         raise Exception("DPP authentication did not succeed (Initiator)")
     dev[0].request("DPP_STOP_LISTEN")
+
+def test_dpp_qr_code_auth_incompatible_roles2(dev, apdev):
+    """DPP QR Code and authentication exchange (incompatible roles 2)"""
+    id1 = run_init_incompatible_roles(dev, role="configurator")
+    if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d role=configurator" % id1):
+        raise Exception("Failed to initiate DPP Authentication")
+    ev = dev[1].wait_event(["DPP-NOT-COMPATIBLE"], timeout=5)
+    if ev is None:
+        raise Exception("DPP-NOT-COMPATIBLE event on initiator timed out")
+    ev = dev[0].wait_event(["DPP-NOT-COMPATIBLE"], timeout=1)
+    if ev is None:
+        raise Exception("DPP-NOT-COMPATIBLE event on responder timed out")
+
+def test_dpp_qr_code_auth_incompatible_roles_failure(dev, apdev):
+    """DPP QR Code and authentication exchange (incompatible roles failure)"""
+    id1 = run_init_incompatible_roles(dev, role="configurator")
+    with alloc_fail(dev[0], 1, "dpp_auth_build_resp_status"):
+        if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d role=configurator" % id1):
+            raise Exception("Failed to initiate DPP Authentication")
+        ev = dev[0].wait_event(["DPP-NOT-COMPATIBLE"], timeout=1)
+        if ev is None:
+            raise Exception("DPP-NOT-COMPATIBLE event on responder timed out")
+
+def test_dpp_qr_code_auth_incompatible_roles_failure2(dev, apdev):
+    """DPP QR Code and authentication exchange (incompatible roles failure 2)"""
+    id1 = run_init_incompatible_roles(dev, role="configurator")
+    with alloc_fail(dev[1], 1, "dpp_auth_resp_rx_status"):
+        if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d role=configurator" % id1):
+            raise Exception("Failed to initiate DPP Authentication")
+        wait_fail_trigger(dev[1], "GET_ALLOC_FAIL")
+
+def test_dpp_qr_code_auth_incompatible_roles_failure3(dev, apdev):
+    """DPP QR Code and authentication exchange (incompatible roles failure 3)"""
+    id1 = run_init_incompatible_roles(dev, role="configurator")
+    with fail_test(dev[1], 1, "dpp_auth_resp_rx_status"):
+        if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d role=configurator" % id1):
+            raise Exception("Failed to initiate DPP Authentication")
+        ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
+        if ev is None or "AES-SIV decryption failed" not in ev:
+            raise Exception("AES-SIV decryption failure not reported")
 
 def test_dpp_qr_code_auth_neg_chan(dev, apdev):
     """DPP QR Code and authentication exchange with requested different channel"""
