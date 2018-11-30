@@ -895,10 +895,10 @@ static int sme_external_auth_build_buf(struct wpabuf *buf,
 	os_memcpy(resp->da, da, ETH_ALEN);
 	os_memcpy(resp->sa, sa, ETH_ALEN);
 	os_memcpy(resp->bssid, da, ETH_ALEN);
-	resp->u.auth.auth_alg = WLAN_AUTH_SAE;
-	resp->seq_ctrl = seq_num << 4;
-	resp->u.auth.auth_transaction = auth_transaction;
-	resp->u.auth.status_code = WLAN_STATUS_SUCCESS;
+	resp->u.auth.auth_alg = host_to_le16(WLAN_AUTH_SAE);
+	resp->seq_ctrl = host_to_le16(seq_num << 4);
+	resp->u.auth.auth_transaction = host_to_le16(auth_transaction);
+	resp->u.auth.status_code = host_to_le16(WLAN_STATUS_SUCCESS);
 	if (params)
 		wpabuf_put_buf(buf, params);
 
@@ -1178,13 +1178,14 @@ void sme_external_auth_mgmt_rx(struct wpa_supplicant *wpa_s,
 		return;
 	}
 
-	if (header->u.auth.auth_alg == WLAN_AUTH_SAE) {
+	if (le_to_host16(header->u.auth.auth_alg) == WLAN_AUTH_SAE) {
 		int res;
 
-		res = sme_sae_auth(wpa_s, header->u.auth.auth_transaction,
-				   header->u.auth.status_code,
-				   header->u.auth.variable,
-				   len - auth_length, 1, header->sa);
+		res = sme_sae_auth(
+			wpa_s, le_to_host16(header->u.auth.auth_transaction),
+			le_to_host16(header->u.auth.status_code),
+			header->u.auth.variable,
+			len - auth_length, 1, header->sa);
 		if (res < 0) {
 			/* Notify failure to the driver */
 			sme_send_external_auth_status(
