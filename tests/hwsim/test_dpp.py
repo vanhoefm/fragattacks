@@ -5121,3 +5121,41 @@ def test_dpp_truncated_attr(dev, apdev):
     ev = dev[0].wait_event(["DPP-RX"], timeout=5)
     if ev is None or "ignore=invalid-attributes" not in ev:
         raise Exception("Invalid attribute error not reported")
+
+def test_dpp_bootstrap_key_autogen_issues(dev, apdev):
+    """DPP bootstrap key autogen issues"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    logger.info("dev0 displays QR Code")
+    addr = dev[0].own_addr().replace(':', '')
+    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
+    res = dev[0].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to generate bootstrapping info")
+    id0 = int(res)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+
+    logger.info("dev1 scans QR Code")
+    res = dev[1].request("DPP_QR_CODE " + uri0)
+    if "FAIL" in res:
+        raise Exception("Failed to parse QR Code URI")
+    id1 = int(res)
+
+    logger.info("dev1 initiates DPP Authentication")
+    cmd = "DPP_LISTEN 2412"
+    if "OK" not in dev[0].request(cmd):
+        raise Exception("Failed to start listen operation")
+    with alloc_fail(dev[1], 1, "dpp_autogen_bootstrap_key"):
+        cmd = "DPP_AUTH_INIT peer=%d" % id1
+        if "FAIL" not in dev[1].request(cmd):
+            raise Exception("Failure not reported")
+    with alloc_fail(dev[1], 2, "=dpp_autogen_bootstrap_key"):
+        cmd = "DPP_AUTH_INIT peer=%d" % id1
+        if "FAIL" not in dev[1].request(cmd):
+            raise Exception("Failure not reported")
+    with fail_test(dev[1], 1, "dpp_keygen;dpp_autogen_bootstrap_key"):
+        cmd = "DPP_AUTH_INIT peer=%d" % id1
+        if "FAIL" not in dev[1].request(cmd):
+            raise Exception("Failure not reported")
+    dev[0].request("DPP_STOP_LISTEN")
