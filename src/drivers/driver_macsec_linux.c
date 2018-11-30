@@ -639,7 +639,7 @@ static int do_dump(struct macsec_drv_data *drv, u8 txsa, u64 rxsci, u8 rxsa,
 			   DRV_PREFIX "failed to communicate: %d (%s)",
 			   ret, nl_geterror(-ret));
 
-	ctx->cb_arg.pn = 0;
+	ctx->cb_arg.pn = NULL;
 
 out_free_msg:
 	nlmsg_free(msg);
