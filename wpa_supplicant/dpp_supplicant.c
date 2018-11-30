@@ -527,9 +527,9 @@ static void wpas_dpp_set_testing_options(struct wpa_supplicant *wpa_s,
 }
 
 
-static void wpas_dpp_set_configurator(struct wpa_supplicant *wpa_s,
-				      struct dpp_authentication *auth,
-				      const char *cmd)
+static int wpas_dpp_set_configurator(struct wpa_supplicant *wpa_s,
+				     struct dpp_authentication *auth,
+				     const char *cmd)
 {
 	const char *pos, *end;
 	struct dpp_configuration *conf_sta = NULL, *conf_ap = NULL;
@@ -543,7 +543,7 @@ static void wpas_dpp_set_configurator(struct wpa_supplicant *wpa_s,
 	char *group_id = NULL;
 
 	if (!cmd)
-		return;
+		return 0;
 
 	wpa_printf(MSG_DEBUG, "DPP: Set configurator parameters: %s", cmd);
 	pos = os_strstr(cmd, " ssid=");
@@ -607,10 +607,12 @@ static void wpas_dpp_set_configurator(struct wpa_supplicant *wpa_s,
 				conf_sta->akm = DPP_AKM_PSK;
 			if (psk_set) {
 				os_memcpy(conf_sta->psk, psk, PMK_LEN);
-			} else {
+			} else if (pass_len > 0) {
 				conf_sta->passphrase = os_strdup(pass);
 				if (!conf_sta->passphrase)
 					goto fail;
+			} else {
+				goto fail;
 			}
 		} else if (os_strstr(cmd, " conf=sta-dpp")) {
 			conf_sta->akm = DPP_AKM_DPP;
@@ -684,13 +686,14 @@ static void wpas_dpp_set_configurator(struct wpa_supplicant *wpa_s,
 	auth->conf_ap = conf_ap;
 	auth->conf = conf;
 	os_free(group_id);
-	return;
+	return 0;
 
 fail:
-	wpa_printf(MSG_DEBUG, "DPP: Failed to set configurator parameters");
+	wpa_msg(wpa_s, MSG_INFO, "DPP: Failed to set configurator parameters");
 	dpp_configuration_free(conf_sta);
 	dpp_configuration_free(conf_ap);
 	os_free(group_id);
+	return -1;
 }
 
 
@@ -869,7 +872,11 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 	if (!wpa_s->dpp_auth)
 		goto fail;
 	wpas_dpp_set_testing_options(wpa_s, wpa_s->dpp_auth);
-	wpas_dpp_set_configurator(wpa_s, wpa_s->dpp_auth, cmd);
+	if (wpas_dpp_set_configurator(wpa_s, wpa_s->dpp_auth, cmd) < 0) {
+		dpp_auth_deinit(wpa_s->dpp_auth);
+		wpa_s->dpp_auth = NULL;
+		goto fail;
+	}
 
 	wpa_s->dpp_auth->neg_freq = neg_freq;
 
@@ -1142,8 +1149,12 @@ static void wpas_dpp_rx_auth_req(struct wpa_supplicant *wpa_s, const u8 *src,
 		return;
 	}
 	wpas_dpp_set_testing_options(wpa_s, wpa_s->dpp_auth);
-	wpas_dpp_set_configurator(wpa_s, wpa_s->dpp_auth,
-				  wpa_s->dpp_configurator_params);
+	if (wpas_dpp_set_configurator(wpa_s, wpa_s->dpp_auth,
+				      wpa_s->dpp_configurator_params) < 0) {
+		dpp_auth_deinit(wpa_s->dpp_auth);
+		wpa_s->dpp_auth = NULL;
+		return;
+	}
 	os_memcpy(wpa_s->dpp_auth->peer_mac_addr, src, ETH_ALEN);
 
 	if (wpa_s->dpp_listen_freq &&
@@ -2287,9 +2298,8 @@ int wpas_dpp_configurator_sign(struct wpa_supplicant *wpa_s, const char *cmd)
 		return -1;
 
 	curve = get_param(cmd, " curve=");
-	wpas_dpp_set_configurator(wpa_s, auth, cmd);
-
-	if (dpp_configurator_own_config(auth, curve, 0) == 0) {
+	if (wpas_dpp_set_configurator(wpa_s, auth, cmd) == 0 &&
+	    dpp_configurator_own_config(auth, curve, 0) == 0) {
 		wpas_dpp_handle_config_obj(wpa_s, auth);
 		ret = 0;
 	}

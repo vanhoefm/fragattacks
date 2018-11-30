@@ -505,9 +505,9 @@ static void hostapd_dpp_set_testing_options(struct hostapd_data *hapd,
 }
 
 
-static void hostapd_dpp_set_configurator(struct hostapd_data *hapd,
-					 struct dpp_authentication *auth,
-					 const char *cmd)
+static int hostapd_dpp_set_configurator(struct hostapd_data *hapd,
+					struct dpp_authentication *auth,
+					const char *cmd)
 {
 	const char *pos, *end;
 	struct dpp_configuration *conf_sta = NULL, *conf_ap = NULL;
@@ -521,7 +521,7 @@ static void hostapd_dpp_set_configurator(struct hostapd_data *hapd,
 	char *group_id = NULL;
 
 	if (!cmd)
-		return;
+		return 0;
 
 	wpa_printf(MSG_DEBUG, "DPP: Set configurator parameters: %s", cmd);
 	pos = os_strstr(cmd, " ssid=");
@@ -618,10 +618,12 @@ static void hostapd_dpp_set_configurator(struct hostapd_data *hapd,
 				conf_ap->akm = DPP_AKM_PSK;
 			if (psk_set) {
 				os_memcpy(conf_ap->psk, psk, PMK_LEN);
-			} else {
+			} else if (pass_len > 0) {
 				conf_ap->passphrase = os_strdup(pass);
 				if (!conf_ap->passphrase)
 					goto fail;
+			} else {
+				goto fail;
 			}
 		} else if (os_strstr(cmd, " conf=ap-dpp")) {
 			conf_ap->akm = DPP_AKM_DPP;
@@ -663,13 +665,15 @@ static void hostapd_dpp_set_configurator(struct hostapd_data *hapd,
 	auth->conf_ap = conf_ap;
 	auth->conf = conf;
 	os_free(group_id);
-	return;
+	return 0;
 
 fail:
-	wpa_printf(MSG_DEBUG, "DPP: Failed to set configurator parameters");
+	wpa_msg(hapd->msg_ctx, MSG_INFO,
+		"DPP: Failed to set configurator parameters");
 	dpp_configuration_free(conf_sta);
 	dpp_configuration_free(conf_ap);
 	os_free(group_id);
+	return -1;
 }
 
 
@@ -842,7 +846,11 @@ int hostapd_dpp_auth_init(struct hostapd_data *hapd, const char *cmd)
 	if (!hapd->dpp_auth)
 		goto fail;
 	hostapd_dpp_set_testing_options(hapd, hapd->dpp_auth);
-	hostapd_dpp_set_configurator(hapd, hapd->dpp_auth, cmd);
+	if (hostapd_dpp_set_configurator(hapd, hapd->dpp_auth, cmd) < 0) {
+		dpp_auth_deinit(hapd->dpp_auth);
+		hapd->dpp_auth = NULL;
+		goto fail;
+	}
 
 	hapd->dpp_auth->neg_freq = neg_freq;
 
@@ -967,8 +975,12 @@ static void hostapd_dpp_rx_auth_req(struct hostapd_data *hapd, const u8 *src,
 		return;
 	}
 	hostapd_dpp_set_testing_options(hapd, hapd->dpp_auth);
-	hostapd_dpp_set_configurator(hapd, hapd->dpp_auth,
-				     hapd->dpp_configurator_params);
+	if (hostapd_dpp_set_configurator(hapd, hapd->dpp_auth,
+					 hapd->dpp_configurator_params) < 0) {
+		dpp_auth_deinit(hapd->dpp_auth);
+		hapd->dpp_auth = NULL;
+		return;
+	}
 	os_memcpy(hapd->dpp_auth->peer_mac_addr, src, ETH_ALEN);
 
 	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_TX "dst=" MACSTR
@@ -1892,9 +1904,8 @@ int hostapd_dpp_configurator_sign(struct hostapd_data *hapd, const char *cmd)
 		return -1;
 
 	curve = get_param(cmd, " curve=");
-	hostapd_dpp_set_configurator(hapd, auth, cmd);
-
-	if (dpp_configurator_own_config(auth, curve, 1) == 0) {
+	if (hostapd_dpp_set_configurator(hapd, auth, cmd) == 0 &&
+	    dpp_configurator_own_config(auth, curve, 1) == 0) {
 		hostapd_dpp_handle_config_obj(hapd, auth);
 		ret = 0;
 	}
