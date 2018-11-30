@@ -92,7 +92,7 @@ static int get_user_cb(void *ctx, int argc, char *argv[], char *col[])
 		} else if (os_strcmp(col[i], "remediation") == 0 && argv[i]) {
 			user->remediation = strlen(argv[i]) > 0;
 		} else if (os_strcmp(col[i], "t_c_timestamp") == 0 && argv[i]) {
-			user->t_c_timestamp = strtol(argv[i], 0, 10);
+			user->t_c_timestamp = strtol(argv[i], NULL, 10);
 		}
 	}
 
