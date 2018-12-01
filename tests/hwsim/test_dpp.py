@@ -5386,3 +5386,65 @@ def test_dpp_own_config_sign_fail(dev, apdev):
     for t in tests:
         if "FAIL" not in dev[0].request("DPP_CONFIGURATOR_SIGN " + t):
             raise Exception("Invalid command accepted: " + t)
+
+def test_dpp_peer_intro_failures(dev, apdev):
+    """DPP peer introduction failures"""
+    try:
+        run_dpp_peer_intro_failures(dev, apdev)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+
+def run_dpp_peer_intro_failures(dev, apdev):
+    check_dpp_capab(dev[0])
+    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    check_dpp_capab(hapd)
+
+    res = hapd.request("DPP_CONFIGURATOR_ADD key=" + dpp_key_p256);
+    if "FAIL" in res:
+        raise Exception("Failed to add configurator")
+    conf_id = int(res)
+    csign = hapd.request("DPP_CONFIGURATOR_GET_KEY %d" % conf_id)
+    if "FAIL" in csign or len(csign) == 0:
+        raise Exception("DPP_CONFIGURATOR_GET_KEY failed")
+
+    res = dev[0].request("DPP_CONFIGURATOR_ADD key=" + csign);
+    if "FAIL" in res:
+        raise Exception("Failed to add configurator")
+    conf_id2 = int(res)
+    csign2 = dev[0].request("DPP_CONFIGURATOR_GET_KEY %d" % conf_id2)
+
+    if csign != csign2:
+        raise Exception("Unexpected difference in configurator key")
+
+    cmd = "DPP_CONFIGURATOR_SIGN  conf=ap-dpp configurator=%d" % conf_id
+    res = hapd.request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to generate own configuration")
+    update_hapd_config(hapd)
+
+    dev[0].set("dpp_config_processing", "1")
+    cmd = "DPP_CONFIGURATOR_SIGN  conf=sta-dpp configurator=%d" % conf_id
+    res = dev[0].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to generate own configuration")
+    ev = dev[0].wait_event(["DPP-NETWORK-ID"], timeout=1)
+    if ev is None:
+        raise Exception("DPP network profile not generated")
+    id = ev.split(' ')[1]
+    dev[0].select_network(id, freq=2412)
+    dev[0].wait_connected()
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+
+    tests = [ "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiIwTlNSNTlxRTc0alFfZTFLVGVPV1lYY1pTWnFUaDdNXzU0aHJPcFRpaFJnIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOltdLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiJiVmFMRGlBT09OQmFjcVFVN1pYamFBVEtEMVhhbDVlUExqOUZFZUl3VkN3IiwieSI6Il95c25JR1hTYjBvNEsyMWg0anZmSkZxMHdVNnlPNWp1VUFPd3FuM0dHVHMifX0.WgzZBOJaisWBRxvtXPbVYPXU7OIZxs6sZD-cPOLmJVTIYZKdMkSOMvP5b6si_j61FIrjhm43tmGq1P6cpoxB_g",
+              "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiIwTlNSNTlxRTc0alFfZTFLVGVPV1lYY1pTWnFUaDdNXzU0aHJPcFRpaFJnIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7fV0sIm5ldEFjY2Vzc0tleSI6eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IkJhY3BWSDNpNDBrZklNS0RHa1FFRzhCODBCaEk4cEFmTWpLbzM5NlFZT2ciLCJ5IjoiMjBDYjhDNjRsSjFzQzV2NXlKMnBFZXRRempxMjI4YVV2cHMxNmQ0M3EwQSJ9fQ.dG2y8VvZQJ5hfob8E5F2FAeR7Nd700qstYkxDgA2QfARaNMZ0_SfKfoG-yKXsIZNM-TvGBfACgfhagG9Oaw_Xw",
+              "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiIwTlNSNTlxRTc0alFfZTFLVGVPV1lYY1pTWnFUaDdNXzU0aHJPcFRpaFJnIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7Imdyb3VwSWQiOiIqIn1dLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiJkc2VmcmJWWlhad0RMWHRpLWlObDBBYkFIOXpqeFFKd0R1SUd5NzNuZGU0IiwieSI6IjZFQnExN3cwYW1fZlh1OUQ4UGxWYk9XZ2I3b19DcTUxWHlmSG8wcHJyeDQifX0.caBvdDUtXrhnS61-juVZ_2FQdprepv0yZjC04G4ERvLUpeX7cgu0Hp-A1aFDogP1PEFGpkaEdcAWRQnSSRiIKQ" ]
+    for t in tests:
+        dev[0].set_network_quoted(id, "dpp_connector", t)
+        dev[0].select_network(id, freq=2412)
+        ev = dev[0].wait_event(["DPP-INTRO"], timeout=5)
+        if ev is None or "status=8" not in ev:
+            raise Exception("Introduction failure not reported")
+        dev[0].request("DISCONNECT")
+        dev[0].dump_monitor()
