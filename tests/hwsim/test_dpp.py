@@ -5370,3 +5370,19 @@ def test_dpp_invalid_configurator_key(dev, apdev):
     with fail_test(dev[0], 1, "dpp_keygen_configurator"):
         if "FAIL" not in dev[0].request("DPP_CONFIGURATOR_ADD key=" + dpp_key_p256):
             raise Exception("Error not reported")
+
+def test_dpp_own_config_sign_fail(dev, apdev):
+    """DPP own config signing failure"""
+    check_dpp_capab(dev[0])
+    res = dev[0].request("DPP_CONFIGURATOR_ADD");
+    if "FAIL" in res:
+        raise Exception("Failed to add configurator")
+    conf_id = int(res)
+    tests = [ "",
+              " ",
+              " conf=sta-dpp",
+              " configurator=%d" % conf_id,
+              " conf=sta-dpp configurator=%d curve=unsupported" % conf_id ]
+    for t in tests:
+        if "FAIL" not in dev[0].request("DPP_CONFIGURATOR_SIGN " + t):
+            raise Exception("Invalid command accepted: " + t)
