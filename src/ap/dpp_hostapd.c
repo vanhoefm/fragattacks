@@ -1904,6 +1904,7 @@ int hostapd_dpp_configurator_sign(struct hostapd_data *hapd, const char *cmd)
 		return -1;
 
 	curve = get_param(cmd, " curve=");
+	hostapd_dpp_set_testing_options(hapd, auth);
 	if (hostapd_dpp_set_configurator(hapd, auth, cmd) == 0 &&
 	    dpp_configurator_own_config(auth, curve, 1) == 0) {
 		hostapd_dpp_handle_config_obj(hapd, auth);

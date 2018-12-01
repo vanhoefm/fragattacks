@@ -2298,6 +2298,7 @@ int wpas_dpp_configurator_sign(struct wpa_supplicant *wpa_s, const char *cmd)
 		return -1;
 
 	curve = get_param(cmd, " curve=");
+	wpas_dpp_set_testing_options(wpa_s, auth);
 	if (wpas_dpp_set_configurator(wpa_s, auth, cmd) == 0 &&
 	    dpp_configurator_own_config(auth, curve, 0) == 0) {
 		wpas_dpp_handle_config_obj(wpa_s, auth);
