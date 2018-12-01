@@ -1924,3 +1924,36 @@ def test_rrm_unexpected(dev, apdev):
     for t in tests:
         if "OK" not in hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + hdr + t):
             raise Exception("MGMT_RX_PROCESS failed for " + t)
+
+def check_beacon_req(hapd, addr, idx):
+    request = "51000000000002ffffffffffff" + "020100"
+    token = hapd.request("REQ_BEACON " + addr + " " + request)
+    if "FAIL" in token:
+        raise Exception("REQ_BEACON failed (%d)" % idx)
+    ev = hapd.wait_event(["BEACON-RESP-RX"], timeout=10)
+    if ev is None:
+        raise Exception("Beacon report response not received (%d)" % idx)
+
+def test_rrm_reassociation(dev, apdev):
+    """Radio measurement request - reassociation"""
+    params = { "ssid": "rrm", "rrm_beacon_report": "1" }
+    hapd = hostapd.add_ap(apdev[0]['ifname'], params)
+    bssid = hapd.own_addr()
+
+    addr = dev[0].own_addr()
+    dev[0].connect("rrm", key_mgmt="NONE", scan_freq="2412")
+    check_beacon_req(hapd, addr, 1)
+
+    dev[0].request("REASSOCIATE")
+    dev[0].wait_connected()
+    check_beacon_req(hapd, addr, 1)
+
+    hapd2 = hostapd.add_ap(apdev[1]['ifname'], params)
+    bssid2 = hapd2.own_addr()
+    dev[0].scan_for_bss(bssid2, freq=2412)
+    dev[0].roam(bssid2)
+    check_beacon_req(hapd2, addr, 2)
+
+    dev[0].scan_for_bss(bssid, freq=2412)
+    dev[0].roam(bssid)
+    check_beacon_req(hapd, addr, 3)

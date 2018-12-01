@@ -18,6 +18,7 @@ from tshark import run_tshark
 from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger, skip_with_fips, parse_ie
 from wlantest import Wlantest
 from test_ap_psk import check_mib, find_wpas_process, read_process_memory, verify_not_present, get_key_locations
+from test_rrm import check_beacon_req
 
 def ft_base_rsn():
     params = { "wpa": "2",
@@ -2482,3 +2483,31 @@ def test_ap_ft_eap_sha384_over_ds(dev, apdev):
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
               eap=True, sha384=True)
+
+def test_ap_ft_roam_rrm(dev, apdev):
+    """WPA2-PSK-FT AP and radio measurement request"""
+    ssid = "test-ft"
+    passphrase="12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params["rrm_beacon_report"] = "1"
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    bssid0 = hapd0.own_addr()
+
+    addr = dev[0].own_addr()
+    dev[0].connect(ssid, psk=passphrase, key_mgmt="FT-PSK", proto="WPA2",
+                   scan_freq="2412")
+    check_beacon_req(hapd0, addr, 1)
+
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params["rrm_beacon_report"] = "1"
+    hapd1 = hostapd.add_ap(apdev[1], params)
+    bssid1 = hapd1.own_addr()
+
+    dev[0].scan_for_bss(bssid1, freq=2412)
+    dev[0].roam(bssid1)
+    check_beacon_req(hapd1, addr, 2)
+
+    dev[0].scan_for_bss(bssid0, freq=2412)
+    dev[0].roam(bssid0)
+    check_beacon_req(hapd0, addr, 3)
