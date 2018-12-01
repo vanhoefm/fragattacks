@@ -5318,3 +5318,32 @@ def test_dpp_invalid_legacy_params2(dev, apdev):
                            timeout=5)
     if ev is None:
         raise Exception("DPP configuration failure not reported")
+
+def test_dpp_legacy_params_failure(dev, apdev):
+    """DPP legacy parameters local failure"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    addr = dev[0].own_addr().replace(':', '')
+    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
+    res = dev[0].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to generate bootstrapping info")
+    id0 = int(res)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+
+    res = dev[1].request("DPP_QR_CODE " + uri0)
+    if "FAIL" in res:
+        raise Exception("Failed to parse QR Code URI")
+    id1 = int(res)
+
+    if "OK" not in dev[0].request("DPP_LISTEN 2412"):
+        raise Exception("Failed to start listen operation")
+
+    cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk pass=%s ssid=%s" % (id1, "passphrase".encode("hex"), "dpp-legacy".encode("hex"))
+    with alloc_fail(dev[1], 1, "dpp_build_conf_obj_legacy"):
+        if "OK" not in dev[1].request(cmd):
+            raise Exception("Failed to initiate DPP")
+        ev = dev[0].wait_event(["DPP-CONF-FAILED"], timeout=5)
+        if ev is None:
+            raise Exception("DPP configuration failure not reported")
