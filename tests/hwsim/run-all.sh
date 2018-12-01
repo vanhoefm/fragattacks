@@ -142,7 +142,9 @@ if [ ! -z "$CODECOV" ] ; then
 fi
 
 if [ $errors -gt 0 ]; then
-    tar czf /tmp/hwsim-tests-$DATE-FAILED$SUFFIX.tar.gz $LOGDIR/
+    if [ -z $VM ]; then
+	tar czf /tmp/hwsim-tests-$DATE-FAILED$SUFFIX.tar.gz $LOGDIR/
+    fi
     exit 1
 fi
 
