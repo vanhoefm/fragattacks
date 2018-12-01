@@ -3752,15 +3752,23 @@ static int handle_action(struct hostapd_data *hapd,
 			 unsigned int freq)
 {
 	struct sta_info *sta;
-	sta = ap_get_sta(hapd, mgmt->sa);
+	u8 *action __maybe_unused;
 
-	if (len < IEEE80211_HDRLEN + 1) {
+	if (len < IEEE80211_HDRLEN + 2 + 1) {
 		hostapd_logger(hapd, mgmt->sa, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_DEBUG,
 			       "handle_action - too short payload (len=%lu)",
 			       (unsigned long) len);
 		return 0;
 	}
+
+	action = (u8 *) &mgmt->u.action.u;
+	wpa_printf(MSG_DEBUG, "RX_ACTION category %u action %u sa " MACSTR
+		   " da " MACSTR " len %d freq %u",
+		   mgmt->u.action.category, *action,
+		   MAC2STR(mgmt->sa), MAC2STR(mgmt->da), (int) len, freq);
+
+	sta = ap_get_sta(hapd, mgmt->sa);
 
 	if (mgmt->u.action.category != WLAN_ACTION_PUBLIC &&
 	    (sta == NULL || !(sta->flags & WLAN_STA_ASSOC))) {
