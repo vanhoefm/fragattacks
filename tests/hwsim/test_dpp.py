@@ -5347,3 +5347,26 @@ def test_dpp_legacy_params_failure(dev, apdev):
         ev = dev[0].wait_event(["DPP-CONF-FAILED"], timeout=5)
         if ev is None:
             raise Exception("DPP configuration failure not reported")
+
+def test_dpp_invalid_configurator_key(dev, apdev):
+    """DPP invalid configurator key"""
+    check_dpp_capab(dev[0])
+
+    if "FAIL" not in dev[0].request("DPP_CONFIGURATOR_ADD key=aa"):
+        raise Exception("Invalid key accepted")
+
+    with alloc_fail(dev[0], 1, "dpp_keygen_configurator"):
+        if "FAIL" not in dev[0].request("DPP_CONFIGURATOR_ADD key=" + dpp_key_p256):
+            raise Exception("Error not reported")
+
+    with alloc_fail(dev[0], 1, "dpp_get_pubkey_point;dpp_keygen_configurator"):
+        if "FAIL" not in dev[0].request("DPP_CONFIGURATOR_ADD key=" + dpp_key_p256):
+            raise Exception("Error not reported")
+
+    with alloc_fail(dev[0], 1, "base64_gen_encode;dpp_keygen_configurator"):
+        if "FAIL" not in dev[0].request("DPP_CONFIGURATOR_ADD key=" + dpp_key_p256):
+            raise Exception("Error not reported")
+
+    with fail_test(dev[0], 1, "dpp_keygen_configurator"):
+        if "FAIL" not in dev[0].request("DPP_CONFIGURATOR_ADD key=" + dpp_key_p256):
+            raise Exception("Error not reported")
