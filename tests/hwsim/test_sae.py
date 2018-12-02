@@ -1273,18 +1273,21 @@ def test_sae_connect_cmd(dev, apdev):
     if ev is None:
         raise Exception("No connection result reported")
 
-def test_sae_password_id(dev, apdev):
-    """SAE and password identifier"""
+def run_sae_password_id(dev, apdev, groups=None):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     params = hostapd.wpa2_params(ssid="test-sae")
     params['wpa_key_mgmt'] = 'SAE'
+    if groups:
+        params['sae_groups'] = groups
+    else:
+        groups = ""
     params['sae_password'] = [ 'secret|mac=ff:ff:ff:ff:ff:ff|id=pw id',
                                'foo|mac=02:02:02:02:02:02',
                                'another secret|mac=ff:ff:ff:ff:ff:ff|id=' + 29*'A' ]
     hapd = hostapd.add_ap(apdev[0], params)
 
-    dev[0].request("SET sae_groups ")
+    dev[0].request("SET sae_groups " + groups)
     dev[0].connect("test-sae", sae_password="secret", sae_password_id="pw id",
                    key_mgmt="SAE", scan_freq="2412")
     dev[0].request("REMOVE_NETWORK all")
@@ -1306,6 +1309,18 @@ def test_sae_password_id(dev, apdev):
     if ev is None:
         raise Exception("Unknown password identifier not reported")
     dev[0].request("REMOVE_NETWORK all")
+
+def test_sae_password_id(dev, apdev):
+    """SAE and password identifier"""
+    run_sae_password_id(dev, apdev, "")
+
+def test_sae_password_id_ecc(dev, apdev):
+    """SAE and password identifier (ECC)"""
+    run_sae_password_id(dev, apdev, "19")
+
+def test_sae_password_id_ffc(dev, apdev):
+    """SAE and password identifier (FFC)"""
+    run_sae_password_id(dev, apdev, "22")
 
 def test_sae_forced_anti_clogging_pw_id(dev, apdev):
     """SAE anti clogging (forced and Password Identifier)"""
