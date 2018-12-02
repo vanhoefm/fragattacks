@@ -5780,3 +5780,49 @@ def test_dpp_listen_continue(dev, apdev):
         raise Exception("DPP configuration result not seen (Responder)")
     dev[0].request("DPP_STOP_LISTEN")
     dev[1].request("DPP_STOP_LISTEN")
+
+def test_dpp_network_addition_failure(dev, apdev):
+    """DPP network addition failure"""
+    try:
+        run_dpp_network_addition_failure(dev, apdev)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+
+def run_dpp_network_addition_failure(dev, apdev):
+    check_dpp_capab(dev[0])
+
+    res = dev[0].request("DPP_CONFIGURATOR_ADD");
+    if "FAIL" in res:
+        raise Exception("Failed to add configurator")
+    conf_id = int(res)
+
+    dev[0].set("dpp_config_processing", "1")
+    cmd = "DPP_CONFIGURATOR_SIGN  conf=sta-dpp configurator=%d" % conf_id
+    tests = [ (1, "=wpas_dpp_add_network"),
+              (2, "=wpas_dpp_add_network"),
+              (3, "=wpas_dpp_add_network"),
+              (4, "=wpas_dpp_add_network"),
+              (1, "wpa_config_add_network;wpas_dpp_add_network") ]
+    for count,func in tests:
+        with alloc_fail(dev[0], count, func):
+            res = dev[0].request(cmd)
+            if "FAIL" in res:
+                raise Exception("Failed to generate own configuration")
+            ev = dev[0].wait_event(["DPP-NET-ACCESS-KEY"], timeout=2)
+            if ev is None:
+                raise Exception("Config object not processed")
+            wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
+        dev[0].dump_monitor()
+
+    cmd = "DPP_CONFIGURATOR_SIGN  conf=sta-psk pass=%s configurator=%d" % ("passphrase".encode("hex"), conf_id)
+    tests = [ (1, "wpa_config_set_quoted;wpas_dpp_add_network") ]
+    for count,func in tests:
+        with alloc_fail(dev[0], count, func):
+            res = dev[0].request(cmd)
+            if "FAIL" in res:
+                raise Exception("Failed to generate own configuration")
+            ev = dev[0].wait_event(["DPP-NET-ACCESS-KEY"], timeout=2)
+            if ev is None:
+                raise Exception("Config object not processed")
+            wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
+        dev[0].dump_monitor()
