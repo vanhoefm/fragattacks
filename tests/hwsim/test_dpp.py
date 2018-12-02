@@ -2731,7 +2731,28 @@ def test_dpp_pkex_config(dev, apdev):
                  init_extra="conf=sta-dpp configurator=%d" % (conf_id),
                  check_config=True)
 
-def run_dpp_pkex(dev, apdev, curve=None, init_extra="", check_config=False):
+def test_dpp_pkex_no_identifier(dev, apdev):
+    """DPP and PKEX without identifier"""
+    run_dpp_pkex(dev, apdev, identifier_i=None, identifier_r=None)
+
+def test_dpp_pkex_identifier_mismatch(dev, apdev):
+    """DPP and PKEX with different identifiers"""
+    run_dpp_pkex(dev, apdev, identifier_i="foo", identifier_r="bar",
+                 expect_no_resp=True)
+
+def test_dpp_pkex_identifier_mismatch2(dev, apdev):
+    """DPP and PKEX with initiator using identifier and the responder not"""
+    run_dpp_pkex(dev, apdev, identifier_i="foo", identifier_r=None,
+                 expect_no_resp=True)
+
+def test_dpp_pkex_identifier_mismatch3(dev, apdev):
+    """DPP and PKEX with responder using identifier and the initiator not"""
+    run_dpp_pkex(dev, apdev, identifier_i=None, identifier_r="bar",
+                 expect_no_resp=True)
+
+def run_dpp_pkex(dev, apdev, curve=None, init_extra="", check_config=False,
+                 identifier_i="test", identifier_r="test",
+                 expect_no_resp=False):
     check_dpp_capab(dev[0], curve and "brainpool" in curve)
     check_dpp_capab(dev[1], curve and "brainpool" in curve)
 
@@ -2751,7 +2772,8 @@ def run_dpp_pkex(dev, apdev, curve=None, init_extra="", check_config=False):
         raise Exception("Failed to generate bootstrapping info")
     id1 = int(res)
 
-    cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
+    identifier = " identifier=" + identifier_r if identifier_r else ""
+    cmd = "DPP_PKEX_ADD own=%d%s code=secret" % (id0, identifier)
     res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
@@ -2759,10 +2781,24 @@ def run_dpp_pkex(dev, apdev, curve=None, init_extra="", check_config=False):
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to start listen operation")
 
-    cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 %s code=secret" % (id1, init_extra)
+    identifier = " identifier=" + identifier_i if identifier_i else ""
+    cmd = "DPP_PKEX_ADD own=%d%s init=1 %s code=secret" % (id1, identifier,
+                                                           init_extra)
     res = dev[1].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (initiator)")
+
+    if expect_no_resp:
+        ev = dev[0].wait_event(["DPP-RX"], timeout=10)
+        if ev is None:
+            raise Exception("DPP PKEX frame not received")
+        ev = dev[1].wait_event(["DPP-AUTH-SUCCESS"], timeout=1)
+        if ev is not None:
+            raise Exception("DPP authentication succeeded")
+        ev = dev[0].wait_event(["DPP-AUTH-SUCCESS"], timeout=0.1)
+        if ev is not None:
+            raise Exception("DPP authentication succeeded")
+        return
 
     ev = dev[1].wait_event(["DPP-AUTH-SUCCESS"], timeout=5)
     if ev is None:
