@@ -5751,3 +5751,32 @@ def test_dpp_bootstrap_gen_failures(dev, apdev):
     run_dpp_bootstrap_gen_failures(dev[0], False)
     hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
     run_dpp_bootstrap_gen_failures(hapd, True)
+
+def test_dpp_listen_continue(dev, apdev):
+    """DPP and continue listen state"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    addr = dev[0].own_addr().replace(':', '')
+    id = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
+    if "FAIL" in id:
+        raise Exception("Failed to set key for " + curve)
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI " + id)
+
+    if "OK" not in dev[0].request("DPP_LISTEN 2412"):
+        raise Exception("Failed to start listen operation")
+    time.sleep(5.1)
+
+    res = dev[1].request("DPP_QR_CODE " + uri)
+    if "FAIL" in res:
+        raise Exception("Failed to parse QR Code URI")
+    if "OK" not in dev[1].request("DPP_AUTH_INIT peer=" + res):
+        raise Exception("Failed to initiate DPP Authentication")
+    ev = dev[0].wait_event(["DPP-CONF-FAILED"], timeout=2)
+    if ev is None:
+        raise Exception("DPP configuration result not seen (Enrollee)")
+    ev = dev[1].wait_event(["DPP-CONF-SENT"], timeout=2)
+    if ev is None:
+        raise Exception("DPP configuration result not seen (Responder)")
+    dev[0].request("DPP_STOP_LISTEN")
+    dev[1].request("DPP_STOP_LISTEN")
