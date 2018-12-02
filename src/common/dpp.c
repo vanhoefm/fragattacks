@@ -6586,6 +6586,32 @@ static int dpp_pkex_derive_z(const u8 *mac_init, const u8 *mac_resp,
 }
 
 
+static int dpp_pkex_identifier_match(const u8 *attr_id, u16 attr_id_len,
+				     const char *identifier)
+{
+	if (!attr_id && identifier) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No PKEX code identifier received, but expected one");
+		return 0;
+	}
+
+	if (attr_id && !identifier) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: PKEX code identifier received, but not expecting one");
+		return 0;
+	}
+
+	if (attr_id && identifier &&
+	    (os_strlen(identifier) != attr_id_len ||
+	     os_memcmp(identifier, attr_id, attr_id_len) != 0)) {
+		wpa_printf(MSG_DEBUG, "DPP: PKEX code identifier mismatch");
+		return 0;
+	}
+
+	return 1;
+}
+
+
 struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 					   struct dpp_bootstrap_info *bi,
 					   const u8 *own_mac,
@@ -6630,19 +6656,11 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
 
+	attr_id_len = 0;
 	attr_id = dpp_get_attr(buf, len, DPP_ATTR_CODE_IDENTIFIER,
 			       &attr_id_len);
-	if (!attr_id && identifier) {
-		wpa_printf(MSG_DEBUG,
-			   "DPP: No PKEX code identifier received, but expected one");
+	if (!dpp_pkex_identifier_match(attr_id, attr_id_len, identifier))
 		return NULL;
-	}
-	if (attr_id && identifier &&
-	    (os_strlen(identifier) != attr_id_len ||
-	     os_memcmp(identifier, attr_id, attr_id_len) != 0)) {
-		wpa_printf(MSG_DEBUG, "DPP: PKEX code identifier mismatch");
-		return NULL;
-	}
 
 	attr_group = dpp_get_attr(buf, len, DPP_ATTR_FINITE_CYCLIC_GROUP,
 				  &attr_group_len);
@@ -7014,16 +7032,11 @@ struct wpabuf * dpp_pkex_rx_exchange_resp(struct dpp_pkex *pkex,
 		return NULL;
 	}
 
+	attr_id_len = 0;
 	attr_id = dpp_get_attr(buf, buflen, DPP_ATTR_CODE_IDENTIFIER,
 			       &attr_id_len);
-	if (!attr_id && pkex->identifier) {
-		wpa_printf(MSG_DEBUG,
-			   "DPP: No PKEX code identifier received, but expected one");
-		return NULL;
-	}
-	if (attr_id && pkex->identifier &&
-	    (os_strlen(pkex->identifier) != attr_id_len ||
-	     os_memcmp(pkex->identifier, attr_id, attr_id_len) != 0)) {
+	if (!dpp_pkex_identifier_match(attr_id, attr_id_len,
+				       pkex->identifier)) {
 		dpp_pkex_fail(pkex, "PKEX code identifier mismatch");
 		return NULL;
 	}
