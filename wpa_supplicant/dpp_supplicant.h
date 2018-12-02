@@ -19,8 +19,6 @@ int wpas_dpp_bootstrap_info(struct wpa_supplicant *wpa_s, int id,
 int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd);
 int wpas_dpp_listen(struct wpa_supplicant *wpa_s, const char *cmd);
 void wpas_dpp_listen_stop(struct wpa_supplicant *wpa_s);
-void wpas_dpp_remain_on_channel_cb(struct wpa_supplicant *wpa_s,
-				   unsigned int freq);
 void wpas_dpp_cancel_remain_on_channel_cb(struct wpa_supplicant *wpa_s,
 					  unsigned int freq);
 void wpas_dpp_rx_action(struct wpa_supplicant *wpa_s, const u8 *src,
