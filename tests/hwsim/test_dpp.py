@@ -5700,3 +5700,54 @@ def test_dpp_configurator_id_unknown(dev, apdev):
     run_dpp_configurator_id_unknown(dev[0])
     hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
     run_dpp_configurator_id_unknown(hapd)
+
+def run_dpp_bootstrap_gen_failures(dev, hostapd):
+    check_dpp_capab(dev)
+
+    tests = [ "type=unsupported",
+              "type=qrcode chan=-1",
+              "type=qrcode mac=a",
+              "type=qrcode key=qq",
+              "type=qrcode key=",
+              "type=qrcode info=abc\tdef" ]
+    for t in tests:
+        if "FAIL" not in dev.request("DPP_BOOTSTRAP_GEN " + t):
+            raise Exception("Command accepted unexpectedly")
+
+    id = dev.request("DPP_BOOTSTRAP_GEN type=qrcode")
+    if "FAIL" in id:
+        raise Exception("Failed to generate bootstrap info")
+    uri = dev.request("DPP_BOOTSTRAP_GET_URI " + id)
+    if not uri.startswith("DPP:"):
+        raise Exception("Could not get URI")
+    if "FAIL" not in dev.request("DPP_BOOTSTRAP_GET_URI 0"):
+        raise Exception("Failure not reported")
+    info = dev.request("DPP_BOOTSTRAP_INFO " + id)
+    if not info.startswith("type=QRCODE"):
+        raise Exception("Could not get info")
+    if "FAIL" not in dev.request("DPP_BOOTSTRAP_REMOVE 0"):
+        raise Exception("Failure not reported")
+    if "FAIL" in dev.request("DPP_BOOTSTRAP_REMOVE *"):
+        raise Exception("Failed to remove bootstrap info")
+    if "FAIL" not in dev.request("DPP_BOOTSTRAP_GET_URI " + id):
+        raise Exception("Failure not reported")
+    if "FAIL" not in dev.request("DPP_BOOTSTRAP_INFO " + id):
+        raise Exception("Failure not reported")
+
+    func = "hostapd_dpp_bootstrap_gen" if hostapd else "wpas_dpp_bootstrap_gen"
+    with alloc_fail(dev, 1, "=" + func):
+        if "FAIL" not in dev.request("DPP_BOOTSTRAP_GEN type=qrcode"):
+            raise Exception("Command accepted unexpectedly")
+
+    with alloc_fail(dev, 2, "=" + func):
+        if "FAIL" not in dev.request("DPP_BOOTSTRAP_GEN type=qrcode"):
+            raise Exception("Command accepted unexpectedly")
+
+    with alloc_fail(dev, 1, "get_param"):
+        dev.request("DPP_BOOTSTRAP_GEN type=qrcode curve=foo")
+
+def test_dpp_bootstrap_gen_failures(dev, apdev):
+    """DPP_BOOTSTRAP_GEN/REMOVE/GET_URI/INFO error cases"""
+    run_dpp_bootstrap_gen_failures(dev[0], False)
+    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    run_dpp_bootstrap_gen_failures(hapd, True)
