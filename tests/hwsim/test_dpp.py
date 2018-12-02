@@ -3152,6 +3152,39 @@ def test_dpp_pkex_exchange_resp_processing_failure(dev, apdev):
             raise Exception("Failed to set PKEX data (initiator)")
         wait_fail_trigger(dev[1], "GET_FAIL")
 
+def test_dpp_pkex_commit_reveal_req_processing_failure(dev, apdev):
+    """DPP and PKEX with local failure in processing Commit Reveal Req"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
+    res = dev[0].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to generate bootstrapping info")
+    id0 = int(res)
+
+    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
+    res = dev[1].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to generate bootstrapping info")
+    id1 = int(res)
+
+    cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
+    res = dev[0].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to set PKEX data (responder)")
+    cmd = "DPP_LISTEN 2437"
+    if "OK" not in dev[0].request(cmd):
+        raise Exception("Failed to start listen operation")
+
+    with alloc_fail(dev[0], 1,
+                    "dpp_get_pubkey_point;dpp_pkex_rx_commit_reveal_req"):
+        cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 code=secret" % id1
+        res = dev[1].request(cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to set PKEX data (initiator)")
+        wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
+
 def test_dpp_pkex_config2(dev, apdev):
     """DPP and PKEX with responder as the configurator"""
     check_dpp_capab(dev[0])
