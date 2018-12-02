@@ -438,3 +438,41 @@ def run_owe_group_negotiation(dev, apdev):
 
     dev.scan_for_bss(bssid, freq="2412")
     dev.connect("owe", key_mgmt="OWE")
+
+def test_owe_assoc_reject(dev, apdev):
+    """Opportunistic Wireless Encryption association rejection handling"""
+    if "OWE" not in dev[0].get_capability("key_mgmt"):
+        raise HwsimSkip("OWE not supported")
+    params = { "ssid": "owe",
+               "require_ht": "1",
+               "wpa": "2",
+               "ieee80211w": "2",
+               "wpa_key_mgmt": "OWE",
+               "rsn_pairwise": "CCMP",
+               "owe_groups": "19" }
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    # First, reject two associations with HT-required (i.e., not OWE related)
+    dev[0].scan_for_bss(bssid, freq="2412")
+    dev[0].connect("owe", key_mgmt="OWE", ieee80211w="2",
+                   disable_ht="1", scan_freq="2412", wait_connect=False)
+    for i in range(0,2):
+        ev = dev[0].wait_event(["CTRL-EVENT-ASSOC-REJECT"], timeout=10)
+        if ev is None:
+            raise Exception("Association rejection not reported")
+
+    # Then, verify that STA tries OWE with the default group (19) on the next
+    # attempt instead of having moved to testing another group.
+    hapd.set("require_ht", "0")
+    for i in range(0,2):
+        ev = dev[0].wait_event(["CTRL-EVENT-ASSOC-REJECT",
+                                "CTRL-EVENT-CONNECTED"], timeout=10)
+        if ev is None:
+            raise Exception("Association result not reported")
+        if "CTRL-EVENT-CONNECTED" in ev:
+            break
+        if "status_code=77" in ev:
+            raise Exception("Unexpected unsupport group rejection")
+    if "CTRL-EVENT-CONNECTED" not in ev:
+        raise Exception("Did not connect successfully")
