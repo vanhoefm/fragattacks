@@ -5681,3 +5681,22 @@ def test_dpp_peer_intro_local_failures(dev, apdev):
         raise Exception("No TX status reported")
     dev[0].request("REMOVE_NETWORK all")
     dev[0].dump_monitor()
+
+def run_dpp_configurator_id_unknown(dev):
+    check_dpp_capab(dev)
+    res = dev.request("DPP_CONFIGURATOR_ADD")
+    if "FAIL" in res:
+        raise Exception("Failed to add configurator")
+    conf_id = int(res)
+    if "FAIL" not in dev.request("DPP_CONFIGURATOR_GET_KEY %d" % (conf_id + 1)):
+        raise Exception("DPP_CONFIGURATOR_GET_KEY with incorrect id accepted")
+
+    cmd = "DPP_CONFIGURATOR_SIGN  conf=sta-dpp configurator=%d" % (conf_id + 1)
+    if "FAIL" not in dev.request(cmd):
+        raise Exception("DPP_CONFIGURATOR_SIGN with incorrect id accepted")
+
+def test_dpp_configurator_id_unknown(dev, apdev):
+    """DPP and unknown configurator id"""
+    run_dpp_configurator_id_unknown(dev[0])
+    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    run_dpp_configurator_id_unknown(hapd)
