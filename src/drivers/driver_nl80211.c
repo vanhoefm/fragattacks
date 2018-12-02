@@ -6297,6 +6297,7 @@ static int i802_set_tx_queue_params(void *priv, int queue, int aifs,
 	struct wpa_driver_nl80211_data *drv = bss->drv;
 	struct nl_msg *msg;
 	struct nlattr *txq, *params;
+	int res;
 
 	msg = nl80211_bss_msg(bss, 0, NL80211_CMD_SET_WIPHY);
 	if (!msg)
@@ -6342,7 +6343,11 @@ static int i802_set_tx_queue_params(void *priv, int queue, int aifs,
 
 	nla_nest_end(msg, txq);
 
-	if (send_and_recv_msgs(drv, msg, NULL, NULL) == 0)
+	res = send_and_recv_msgs(drv, msg, NULL, NULL);
+	wpa_printf(MSG_DEBUG,
+		   "nl80211: TX queue param set: queue=%d aifs=%d cw_min=%d cw_max=%d burst_time=%d --> res=%d",
+		   queue, aifs, cw_min, cw_max, burst_time, res);
+	if (res == 0)
 		return 0;
 	msg = NULL;
 fail:
