@@ -3075,6 +3075,51 @@ def test_dpp_pkex_curve_mismatch(dev, apdev):
     if "Peer indicated mismatching PKEX group - proposed 19" not in ev:
         raise Exception("Unexpected result: " + ev)
 
+def test_dpp_pkex_curve_mismatch_failure(dev, apdev):
+    """DPP and PKEX with mismatching curve (local failure)"""
+    run_dpp_pkex_curve_mismatch_failure(dev, apdev, "=dpp_pkex_rx_exchange_req")
+
+def test_dpp_pkex_curve_mismatch_failure2(dev, apdev):
+    """DPP and PKEX with mismatching curve (local failure 2)"""
+    run_dpp_pkex_curve_mismatch_failure(dev, apdev,
+                                        "dpp_pkex_build_exchange_resp")
+
+def run_dpp_pkex_curve_mismatch_failure(dev, apdev, func):
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    cmd = "DPP_BOOTSTRAP_GEN type=pkex curve=P-256"
+    res = dev[0].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to generate bootstrapping info")
+    id0 = int(res)
+
+    cmd = "DPP_BOOTSTRAP_GEN type=pkex curve=P-384"
+    res = dev[1].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to generate bootstrapping info")
+    id1 = int(res)
+
+    cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
+    res = dev[0].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to set PKEX data (responder)")
+    cmd = "DPP_LISTEN 2437"
+    if "OK" not in dev[0].request(cmd):
+        raise Exception("Failed to start listen operation")
+
+    with alloc_fail(dev[0], 1, func):
+        cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 code=secret" % id1
+        res = dev[1].request(cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to set PKEX data (initiator)")
+
+        ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
+        if ev is None:
+            raise Exception("Failure not reported (dev 0)")
+        if "Mismatching PKEX curve: peer=20 own=19" not in ev:
+            raise Exception("Unexpected result: " + ev)
+
 def test_dpp_pkex_config2(dev, apdev):
     """DPP and PKEX with responder as the configurator"""
     check_dpp_capab(dev[0])
