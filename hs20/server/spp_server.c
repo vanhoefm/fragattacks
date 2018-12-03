@@ -41,6 +41,7 @@ enum hs20_session_operation {
 	POLICY_REMEDIATION,
 	POLICY_UPDATE,
 	FREE_REMEDIATION,
+	CLEAR_REMEDIATION,
 };
 
 
@@ -521,6 +522,27 @@ static int update_password(struct hs20_svc *ctx, const char *user,
 }
 
 
+static int clear_remediation(struct hs20_svc *ctx, const char *user,
+			     const char *realm, int dmacc)
+{
+	char *cmd;
+
+	cmd = sqlite3_mprintf("UPDATE users SET remediation='' WHERE %s=%Q",
+			      dmacc ? "osu_user" : "identity",
+			      user);
+	if (cmd == NULL)
+		return -1;
+	debug_print(ctx, 1, "DB: %s", cmd);
+	if (sqlite3_exec(ctx->db, cmd, NULL, NULL, NULL) != SQLITE_OK) {
+		debug_print(ctx, 1, "Failed to update database for user '%s'",
+			    user);
+	}
+	sqlite3_free(cmd);
+
+	return 0;
+}
+
+
 static int add_eap_ttls(struct hs20_svc *ctx, xml_node_t *parent)
 {
 	xml_node_t *node;
@@ -780,8 +802,9 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 	xml_node_free(ctx->xml, cred);
 
 	if (cert) {
-		debug_print(ctx, 1, "Certificate credential - no need for DB "
-			    "password update on success notification");
+		debug_print(ctx, 1, "Request DB remediation clearing on success notification (certificate credential)");
+		db_add_session(ctx, user, realm, session_id, NULL, NULL,
+			       CLEAR_REMEDIATION, NULL);
 	} else {
 		debug_print(ctx, 1, "Request DB password update on success "
 			    "notification");
@@ -2235,6 +2258,29 @@ static xml_node_t * hs20_spp_update_response(struct hs20_svc *ctx,
 			hs20_eventlog(ctx, user, realm,
 				      session_id, "Updated user password "
 				      "in database", NULL);
+		}
+		if (oper == CLEAR_REMEDIATION) {
+			debug_print(ctx, 1,
+				    "Clear remediation requirement for user '%s' in DB",
+				    user);
+			if (clear_remediation(ctx, user, realm, dmacc) < 0) {
+				debug_print(ctx, 1,
+					    "Failed to clear remediation requirement for user '%s' in DB",
+					    user);
+				ret = build_spp_exchange_complete(
+					ctx, session_id, "Error occurred",
+					"Other");
+				hs20_eventlog_node(ctx, user, realm,
+						   session_id,
+						   "Failed to update database",
+						   ret);
+				db_remove_session(ctx, user, realm, session_id);
+				return ret;
+			}
+			hs20_eventlog(ctx, user, realm,
+				      session_id,
+				      "Cleared remediation requirement in database",
+				      NULL);
 		}
 		if (oper == SUBSCRIPTION_REGISTRATION) {
 			if (add_subscription(ctx, session_id) < 0) {
