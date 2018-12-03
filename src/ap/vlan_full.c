@@ -363,12 +363,18 @@ static void vlan_newlink_tagged(int vlan_naming, const char *tagged_interface,
 {
 	char vlan_ifname[IFNAMSIZ];
 	int clean;
+	int ret;
 
 	if (vlan_naming == DYNAMIC_VLAN_NAMING_WITH_DEVICE)
-		os_snprintf(vlan_ifname, sizeof(vlan_ifname), "%s.%d",
-			    tagged_interface, vid);
+		ret = os_snprintf(vlan_ifname, sizeof(vlan_ifname), "%s.%d",
+				  tagged_interface, vid);
 	else
-		os_snprintf(vlan_ifname, sizeof(vlan_ifname), "vlan%d", vid);
+		ret = os_snprintf(vlan_ifname, sizeof(vlan_ifname), "vlan%d",
+				  vid);
+	if (ret >= (int) sizeof(vlan_ifname))
+		wpa_printf(MSG_WARNING,
+			   "VLAN: Interface name was truncated to %s",
+			   vlan_ifname);
 
 	clean = 0;
 	ifconfig_up(tagged_interface);
@@ -387,16 +393,21 @@ static void vlan_newlink_tagged(int vlan_naming, const char *tagged_interface,
 static void vlan_bridge_name(char *br_name, struct hostapd_data *hapd, int vid)
 {
 	char *tagged_interface = hapd->conf->ssid.vlan_tagged_interface;
+	int ret;
 
 	if (hapd->conf->vlan_bridge[0]) {
-		os_snprintf(br_name, IFNAMSIZ, "%s%d",
-			    hapd->conf->vlan_bridge, vid);
+		ret = os_snprintf(br_name, IFNAMSIZ, "%s%d",
+				  hapd->conf->vlan_bridge, vid);
 	} else if (tagged_interface) {
-		os_snprintf(br_name, IFNAMSIZ, "br%s.%d",
-			    tagged_interface, vid);
+		ret = os_snprintf(br_name, IFNAMSIZ, "br%s.%d",
+				  tagged_interface, vid);
 	} else {
-		os_snprintf(br_name, IFNAMSIZ, "brvlan%d", vid);
+		ret = os_snprintf(br_name, IFNAMSIZ, "brvlan%d", vid);
 	}
+	if (ret >= IFNAMSIZ)
+		wpa_printf(MSG_WARNING,
+			   "VLAN: Interface name was truncated to %s",
+			   br_name);
 }
 
 
@@ -474,12 +485,19 @@ static void vlan_dellink_tagged(int vlan_naming, const char *tagged_interface,
 {
 	char vlan_ifname[IFNAMSIZ];
 	int clean;
+	int ret;
 
 	if (vlan_naming == DYNAMIC_VLAN_NAMING_WITH_DEVICE)
-		os_snprintf(vlan_ifname, sizeof(vlan_ifname), "%s.%d",
-			    tagged_interface, vid);
+		ret = os_snprintf(vlan_ifname, sizeof(vlan_ifname), "%s.%d",
+				  tagged_interface, vid);
 	else
-		os_snprintf(vlan_ifname, sizeof(vlan_ifname), "vlan%d", vid);
+		ret = os_snprintf(vlan_ifname, sizeof(vlan_ifname), "vlan%d",
+				  vid);
+	if (ret >= (int) sizeof(vlan_ifname))
+		wpa_printf(MSG_WARNING,
+			   "VLAN: Interface name was truncated to %s",
+			   vlan_ifname);
+
 
 	clean = dyn_iface_put(hapd, vlan_ifname);
 
