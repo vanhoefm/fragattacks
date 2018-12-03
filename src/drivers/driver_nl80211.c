@@ -4037,7 +4037,7 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 	struct wpa_driver_nl80211_data *drv = bss->drv;
 	struct nl_msg *msg;
 	u8 cmd = NL80211_CMD_NEW_BEACON;
-	int ret;
+	int ret = -ENOBUFS;
 	int beacon_set;
 	int num_suites;
 	int smps_mode;
@@ -4243,6 +4243,29 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 			goto fail;
 	}
 
+	if (params->ftm_responder) {
+		struct nlattr *ftm;
+
+		if (!(drv->capa.flags & WPA_DRIVER_FLAGS_FTM_RESPONDER)) {
+			ret = -ENOTSUP;
+			goto fail;
+		}
+
+		ftm = nla_nest_start(msg, NL80211_ATTR_FTM_RESPONDER);
+		if (!ftm ||
+		    nla_put_flag(msg, NL80211_FTM_RESP_ATTR_ENABLED) ||
+		    (params->lci &&
+		     nla_put(msg, NL80211_FTM_RESP_ATTR_LCI,
+			     wpabuf_len(params->lci),
+			     wpabuf_head(params->lci))) ||
+		    (params->civic &&
+		     nla_put(msg, NL80211_FTM_RESP_ATTR_CIVICLOC,
+			     wpabuf_len(params->civic),
+			     wpabuf_head(params->civic))))
+			goto fail;
+		nla_nest_end(msg, ftm);
+	}
+
 	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
 	if (ret) {
 		wpa_printf(MSG_DEBUG, "nl80211: Beacon set failed: %d (%s)",
@@ -4294,7 +4317,7 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 	return ret;
 fail:
 	nlmsg_free(msg);
-	return -ENOBUFS;
+	return ret;
 }
 
 
