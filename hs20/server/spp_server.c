@@ -290,8 +290,7 @@ static void db_update_mo_str(struct hs20_svc *ctx, const char *user,
 	char *sql;
 	if (user == NULL || realm == NULL || name == NULL)
 		return;
-	sql = sqlite3_mprintf("UPDATE users SET %s=%Q "
-		 "WHERE identity=%Q AND realm=%Q AND phase2=1",
+	sql = sqlite3_mprintf("UPDATE users SET %s=%Q WHERE identity=%Q AND realm=%Q AND (phase2=1 OR methods='TLS')",
 			      name, str, user, realm);
 	if (sql == NULL)
 		return;
@@ -413,8 +412,7 @@ static char * db_get_val(struct hs20_svc *ctx, const char *user,
 	char *cmd;
 	struct get_db_field_data data;
 
-	cmd = sqlite3_mprintf("SELECT %s FROM users WHERE "
-			      "%s=%Q AND realm=%Q AND phase2=1",
+	cmd = sqlite3_mprintf("SELECT %s FROM users WHERE %s=%Q AND realm=%Q AND (phase2=1 OR methods='TLS')",
 			      field, dmacc ? "osu_user" : "identity",
 			      user, realm);
 	if (cmd == NULL)
@@ -443,8 +441,7 @@ static int db_update_val(struct hs20_svc *ctx, const char *user,
 	char *cmd;
 	int ret;
 
-	cmd = sqlite3_mprintf("UPDATE users SET %s=%Q WHERE "
-			      "%s=%Q AND realm=%Q AND phase2=1",
+	cmd = sqlite3_mprintf("UPDATE users SET %s=%Q WHERE %s=%Q AND realm=%Q AND (phase2=1 OR methods='TLS')",
 			      field, val, dmacc ? "osu_user" : "identity", user,
 			      realm);
 	if (cmd == NULL)
@@ -2065,8 +2062,9 @@ static int add_subscription(struct hs20_svc *ctx, const char *session_id)
 
 	str = db_get_session_val(ctx, NULL, NULL, session_id, "mac_addr");
 
-	sql = sqlite3_mprintf("INSERT INTO users(identity,realm,phase2,methods,cert,cert_pem,machine_managed,mac_addr) VALUES (%Q,%Q,1,%Q,%Q,%Q,%d,%Q)",
-			      user, realm, cert ? "TLS" : "TTLS-MSCHAPV2",
+	sql = sqlite3_mprintf("INSERT INTO users(identity,realm,phase2,methods,cert,cert_pem,machine_managed,mac_addr) VALUES (%Q,%Q,%d,%Q,%Q,%Q,%d,%Q)",
+			      user, realm, cert ? 0 : 1,
+			      cert ? "TLS" : "TTLS-MSCHAPV2",
 			      fingerprint ? fingerprint : "",
 			      cert_pem ? cert_pem : "",
 			      pw_mm && atoi(pw_mm) ? 1 : 0,
@@ -2088,8 +2086,7 @@ static int add_subscription(struct hs20_svc *ctx, const char *session_id)
 	else
 		ret = update_password(ctx, user, realm, pw, 0);
 	if (ret < 0) {
-		sql = sqlite3_mprintf("DELETE FROM users WHERE identity=%Q AND "
-				      "realm=%Q AND phase2=1",
+		sql = sqlite3_mprintf("DELETE FROM users WHERE identity=%Q AND realm=%Q AND (phase2=1 OR methods='TLS')",
 				      user, realm);
 		if (sql) {
 			debug_print(ctx, 1, "DB: %s", sql);
