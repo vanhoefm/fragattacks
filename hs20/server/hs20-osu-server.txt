@@ -228,11 +228,16 @@ Add following block just before "SSL Engine Switch" line":
                 Options Indexes MultiViews FollowSymLinks
                 AllowOverride None
 		Require all granted
+		SSLOptions +StdEnvVars
         </Directory>
 
 Update SSL configuration to use the OSU server certificate/key.
 They keys and certs are called 'server.key' and 'server.pem' from
 ca/setup.sh.
+
+To support subscription remediation using client certificates, set
+"SSLVerifyClient optional" and configure the trust root CA(s) for the
+client certificates with SSLCACertificateFile.
 
 Enable default-ssl site and restart Apache2:
   sudo a2ensite default-ssl
