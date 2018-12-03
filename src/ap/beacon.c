@@ -1357,6 +1357,18 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 #endif /* CONFIG_HS20 */
 	params->multicast_to_unicast = hapd->conf->multicast_to_unicast;
 	params->pbss = hapd->conf->pbss;
+
+	if (hapd->conf->ftm_responder) {
+		if (hapd->iface->drv_flags & WPA_DRIVER_FLAGS_FTM_RESPONDER) {
+			params->ftm_responder = 1;
+			params->lci = hapd->iface->conf->lci;
+			params->civic = hapd->iface->conf->civic;
+		} else {
+			wpa_printf(MSG_WARNING,
+				   "Not configuring FTM responder as the driver doesn't advertise support for it");
+		}
+	}
+
 	return 0;
 }
 
