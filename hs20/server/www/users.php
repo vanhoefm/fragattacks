@@ -319,7 +319,7 @@ echo "<br>\n";
 echo "<table border=1 cellspacing=0 cellpadding=0>\n";
 echo "<tr><th>User<th>Realm<th><small>Remediation</small><th>Policy<th><small>Account type</small><th><small>Phase 2 method(s)</small><th>DevId<th>MAC Address<th>T&C\n";
 
-$res = $db->query('SELECT rowid,* FROM users WHERE phase2=1 ORDER BY identity');
+$res = $db->query('SELECT rowid,* FROM users WHERE (phase2=1 OR methods=\'TLS\') ORDER BY identity');
 foreach ($res as $row) {
 	echo "<tr><td><a href=\"users.php?id=" . $row['rowid'] . "\"> " .
 	    $row['identity'] . " </a>";
