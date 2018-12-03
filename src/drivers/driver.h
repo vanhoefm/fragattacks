@@ -1367,6 +1367,23 @@ struct wpa_driver_ap_params {
 	 * service).
 	 */
 	int multicast_to_unicast;
+
+	/**
+	 * ftm_responder - Whether FTM responder is enabled
+	 */
+	int ftm_responder;
+
+	/**
+	 * lci - Binary data, the content of an LCI report IE with type 8 as
+	 * defined in IEEE Std 802.11-2016, 9.4.2.22.10
+	 */
+	const struct wpabuf *lci;
+
+	/**
+	 * civic - Binary data, the content of a measurement report IE with
+	 * type 11 as defined in IEEE Std 802.11-2016, 9.4.2.22.13
+	 */
+	const struct wpabuf *civic;
 };
 
 struct wpa_driver_mesh_bss_params {
@@ -1579,6 +1596,8 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_FLAGS_MFP_OPTIONAL		0x0040000000000000ULL
 /** Driver is a self-managed regulatory device */
 #define WPA_DRIVER_FLAGS_SELF_MANAGED_REGULATORY       0x0080000000000000ULL
+/** Driver supports FTM responder functionality */
+#define WPA_DRIVER_FLAGS_FTM_RESPONDER		0x0100000000000000ULL
 	u64 flags;
 
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \
