@@ -754,8 +754,10 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 	}
 
 	cert = db_get_val(ctx, user, realm, "cert", dmacc);
-	if (cert && cert[0] == '\0')
+	if (cert && cert[0] == '\0') {
+		os_free(cert);
 		cert = NULL;
+	}
 	if (cert) {
 		cred = build_credential_cert(ctx, real_user ? real_user : user,
 					     realm, cert);
@@ -781,6 +783,7 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 	free(real_user);
 	if (!cred) {
 		debug_print(ctx, 1, "Could not build credential");
+		os_free(cert);
 		return NULL;
 	}
 
@@ -789,6 +792,7 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 						NULL);
 	if (spp_node == NULL) {
 		debug_print(ctx, 1, "Could not build sppPostDevDataResponse");
+		os_free(cert);
 		return NULL;
 	}
 
@@ -799,6 +803,7 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 	if (add_update_node(ctx, spp_node, ns, buf, cred) < 0) {
 		debug_print(ctx, 1, "Could not add update node");
 		xml_node_free(ctx->xml, spp_node);
+		os_free(cert);
 		return NULL;
 	}
 
@@ -817,6 +822,7 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 		db_add_session(ctx, user, realm, session_id, new_pw, NULL,
 			       UPDATE_PASSWORD, NULL);
 	}
+	os_free(cert);
 
 	return spp_node;
 }
