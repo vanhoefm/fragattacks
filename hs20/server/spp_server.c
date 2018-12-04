@@ -42,6 +42,7 @@ enum hs20_session_operation {
 	POLICY_UPDATE,
 	FREE_REMEDIATION,
 	CLEAR_REMEDIATION,
+	CERT_REENROLL,
 };
 
 
@@ -52,6 +53,11 @@ static char * db_get_osu_config_val(struct hs20_svc *ctx, const char *realm,
 				    const char *field);
 static xml_node_t * build_policy(struct hs20_svc *ctx, const char *user,
 				 const char *realm, int use_dmacc);
+static xml_node_t * spp_exec_get_certificate(struct hs20_svc *ctx,
+					     const char *session_id,
+					     const char *user,
+					     const char *realm,
+					     int add_est_user);
 
 
 static int db_add_session(struct hs20_svc *ctx,
@@ -825,6 +831,17 @@ static xml_node_t * machine_remediation(struct hs20_svc *ctx,
 }
 
 
+static xml_node_t * cert_reenroll(struct hs20_svc *ctx,
+				  const char *user,
+				  const char *realm,
+				  const char *session_id)
+{
+	db_add_session(ctx, user, realm, session_id, NULL, NULL,
+		       CERT_REENROLL, NULL);
+	return spp_exec_get_certificate(ctx, session_id, user, realm, 0);
+}
+
+
 static xml_node_t * policy_remediation(struct hs20_svc *ctx,
 				       const char *user, const char *realm,
 				       const char *session_id, int dmacc)
@@ -1009,6 +1026,8 @@ static xml_node_t * hs20_subscription_remediation(struct hs20_svc *ctx,
 		ret = policy_remediation(ctx, user, realm, session_id, dmacc);
 	else if (type && strcmp(type, "machine") == 0)
 		ret = machine_remediation(ctx, user, realm, session_id, dmacc);
+	else if (type && strcmp(type, "reenroll") == 0)
+		ret = cert_reenroll(ctx, user, realm, session_id);
 	else
 		ret = no_sub_rem(ctx, user, realm, session_id);
 	free(type);
@@ -1381,7 +1400,8 @@ static xml_node_t * build_pps(struct hs20_svc *ctx,
 static xml_node_t * spp_exec_get_certificate(struct hs20_svc *ctx,
 					     const char *session_id,
 					     const char *user,
-					     const char *realm)
+					     const char *realm,
+					     int add_est_user)
 {
 	xml_namespace_t *ns;
 	xml_node_t *spp_node, *enroll, *exec_node;
@@ -1389,7 +1409,7 @@ static xml_node_t * spp_exec_get_certificate(struct hs20_svc *ctx,
 	char password[11];
 	char *b64;
 
-	if (new_password(password, sizeof(password)) < 0)
+	if (add_est_user && new_password(password, sizeof(password)) < 0)
 		return NULL;
 
 	spp_node = build_post_dev_data_response(ctx, &ns, session_id, "OK",
@@ -1406,6 +1426,10 @@ static xml_node_t * spp_exec_get_certificate(struct hs20_svc *ctx,
 	xml_node_create_text(ctx->xml, enroll, ns, "enrollmentServerURI",
 			     val ? val : "");
 	os_free(val);
+
+	if (!add_est_user)
+		return spp_node;
+
 	xml_node_create_text(ctx->xml, enroll, ns, "estUserID", user);
 
 	b64 = (char *) base64_encode((unsigned char *) password,
@@ -1465,7 +1489,7 @@ static xml_node_t * hs20_user_input_registration(struct hs20_svc *ctx,
 		xml_node_t *ret;
 		hs20_eventlog(ctx, user, realm, session_id,
 			      "request client certificate enrollment", NULL);
-		ret = spp_exec_get_certificate(ctx, session_id, user, realm);
+		ret = spp_exec_get_certificate(ctx, session_id, user, realm, 1);
 		free(user);
 		free(realm);
 		free(pw);
@@ -1638,6 +1662,72 @@ static xml_node_t * hs20_user_input_complete(struct hs20_svc *ctx,
 }
 
 
+static xml_node_t * hs20_cert_reenroll_complete(struct hs20_svc *ctx,
+						 const char *session_id)
+{
+	char *user, *realm, *cert;
+	char *status;
+	xml_namespace_t *ns;
+	xml_node_t *spp_node, *cred;
+	char buf[400];
+
+	user = db_get_session_val(ctx, NULL, NULL, session_id, "user");
+	realm = db_get_session_val(ctx, NULL, NULL, session_id, "realm");
+	cert = db_get_session_val(ctx, NULL, NULL, session_id, "cert");
+	if (!user || !realm || !cert) {
+		debug_print(ctx, 1,
+			    "Could not find session info from DB for certificate reenrollment");
+		free(user);
+		free(realm);
+		free(cert);
+		return NULL;
+	}
+
+	cred = build_credential_cert(ctx, user, realm, cert);
+	if (!cred) {
+		debug_print(ctx, 1, "Could not build credential");
+		free(user);
+		free(realm);
+		free(cert);
+		return NULL;
+	}
+
+	status = "Remediation complete, request sppUpdateResponse";
+	spp_node = build_post_dev_data_response(ctx, &ns, session_id, status,
+						NULL);
+	if (spp_node == NULL) {
+		debug_print(ctx, 1, "Could not build sppPostDevDataResponse");
+		free(user);
+		free(realm);
+		free(cert);
+		xml_node_free(ctx->xml, cred);
+		return NULL;
+	}
+
+	snprintf(buf, sizeof(buf),
+		 "./Wi-Fi/%s/PerProviderSubscription/Cred01/Credential",
+		 realm);
+
+	if (add_update_node(ctx, spp_node, ns, buf, cred) < 0) {
+		debug_print(ctx, 1, "Could not add update node");
+		xml_node_free(ctx->xml, spp_node);
+		free(user);
+		free(realm);
+		free(cert);
+		return NULL;
+	}
+
+	hs20_eventlog_node(ctx, user, realm, session_id,
+			   "certificate reenrollment", cred);
+	xml_node_free(ctx->xml, cred);
+
+	free(user);
+	free(realm);
+	free(cert);
+	return spp_node;
+}
+
+
 static xml_node_t * hs20_cert_enroll_completed(struct hs20_svc *ctx,
 					       const char *user,
 					       const char *realm, int dmacc,
@@ -1646,7 +1736,7 @@ static xml_node_t * hs20_cert_enroll_completed(struct hs20_svc *ctx,
 	char *val;
 	enum hs20_session_operation oper;
 
-	val = db_get_session_val(ctx, user, realm, session_id, "operation");
+	val = db_get_session_val(ctx, NULL, NULL, session_id, "operation");
 	if (val == NULL) {
 		debug_print(ctx, 1, "No session %s found to continue",
 			    session_id);
@@ -1657,6 +1747,8 @@ static xml_node_t * hs20_cert_enroll_completed(struct hs20_svc *ctx,
 
 	if (oper == SUBSCRIPTION_REGISTRATION)
 		return hs20_user_input_registration(ctx, session_id, 1);
+	if (oper == CERT_REENROLL)
+		return hs20_cert_reenroll_complete(ctx, session_id);
 
 	debug_print(ctx, 1, "User session %s not in state for certificate "
 		    "enrollment completion", session_id);
@@ -2198,11 +2290,11 @@ static xml_node_t * hs20_spp_update_response(struct hs20_svc *ctx,
 	debug_print(ctx, 1, "sppUpdateResponse: sppStatus: %s  sessionID: %s",
 		    status, session_id);
 
-	val = db_get_session_val(ctx, user, realm, session_id, "operation");
+	val = db_get_session_val(ctx, NULL, NULL, session_id, "operation");
 	if (!val) {
 		debug_print(ctx, 1,
-			    "No session active for user: %s  sessionID: %s",
-			    user, session_id);
+			    "No session active for sessionID: %s",
+			    session_id);
 		oper = NO_OPERATION;
 	} else
 		oper = atoi(val);
@@ -2308,12 +2400,55 @@ static xml_node_t * hs20_spp_update_response(struct hs20_svc *ctx,
 		if (oper == POLICY_UPDATE)
 			db_update_val(ctx, user, realm, "polupd_done", "1",
 				      dmacc);
+		if (oper == CERT_REENROLL) {
+			char *new_user;
+
+			new_user = db_get_session_val(ctx, NULL, NULL,
+						      session_id, "user");
+			if (!new_user) {
+				debug_print(ctx, 1,
+					    "Failed to find new user name (cert-serialnum)");
+				ret = build_spp_exchange_complete(
+					ctx, session_id, "Error occurred",
+					"Other");
+				hs20_eventlog_node(ctx, user, realm,
+						   session_id,
+						   "Failed to find new user name (cert reenroll)",
+						   ret);
+				db_remove_session(ctx, NULL, NULL, session_id);
+				return ret;
+			}
+
+			debug_print(ctx, 1,
+				    "Update certificate user entry to use the new serial number (old=%s new=%s)",
+				    user, new_user);
+
+			if (db_update_val(ctx, user, realm, "identity",
+					  new_user, 0) < 0 ||
+			    db_update_val(ctx, new_user, realm, "remediation",
+					  "", 0) < 0) {
+				debug_print(ctx, 1,
+					    "Failed to update user name (cert-serialnum)");
+				ret = build_spp_exchange_complete(
+					ctx, session_id, "Error occurred",
+					"Other");
+				hs20_eventlog_node(ctx, user, realm,
+						   session_id,
+						   "Failed to update user name (cert reenroll)",
+						   ret);
+				db_remove_session(ctx, NULL, NULL, session_id);
+				os_free(new_user);
+				return ret;
+			}
+
+			os_free(new_user);
+		}
 		ret = build_spp_exchange_complete(
 			ctx, session_id,
 			"Exchange complete, release TLS connection", NULL);
 		hs20_eventlog_node(ctx, user, realm, session_id,
 				   "Exchange completed", ret);
-		db_remove_session(ctx, user, realm, session_id);
+		db_remove_session(ctx, NULL, NULL, session_id);
 		return ret;
 	}
 

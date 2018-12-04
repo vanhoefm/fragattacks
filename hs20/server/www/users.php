@@ -69,6 +69,9 @@ if ($cmd == 'subrem-add-user' && $id > 0) {
 if ($cmd == 'subrem-add-machine' && $id > 0) {
 	$db->exec("UPDATE users SET remediation='machine' WHERE rowid=$id");
 }
+if ($cmd == 'subrem-add-reenroll' && $id > 0) {
+	$db->exec("UPDATE users SET remediation='reenroll' WHERE rowid=$id");
+}
 if ($cmd == 'subrem-add-policy' && $id > 0) {
 	$db->exec("UPDATE users SET remediation='policy' WHERE rowid=$id");
 }
@@ -172,6 +175,10 @@ if ($rem == "") {
 		   $row['rowid'] . "\">add:user</a>]";
 	echo " [<a href=\"users.php?cmd=subrem-add-machine&id=" .
 		   $row['rowid'] . "\">add:machine</a>]";
+	if ($row['methods'] == 'TLS') {
+		echo " [<a href=\"users.php?cmd=subrem-add-reenroll&id=" .
+			   $row['rowid'] . "\">add:reenroll</a>]";
+	}
 	echo " [<a href=\"users.php?cmd=subrem-add-policy&id=" .
 		   $row['rowid'] . "\">add:policy</a>]";
 	echo " [<a href=\"users.php?cmd=subrem-add-free&id=" .
@@ -184,6 +191,9 @@ if ($rem == "") {
 		       $row['rowid'] . "\">clear</a>]";
 } else if ($rem == "free") {
 	echo "Free [<a href=\"users.php?cmd=subrem-clear&id=" .
+		       $row['rowid'] . "\">clear</a>]";
+} else if ($rem == "reenroll") {
+	echo "Reenroll [<a href=\"users.php?cmd=subrem-clear&id=" .
 		       $row['rowid'] . "\">clear</a>]";
 } else  {
 	echo "Machine [<a href=\"users.php?cmd=subrem-clear&id=" .
@@ -334,6 +344,8 @@ foreach ($res as $row) {
 		echo "Policy";
 	} else if ($rem == "free") {
 		echo "Free";
+	} else if ($rem == "reenroll") {
+		echo "Reenroll";
 	} else  {
 		echo "Machine";
 	}

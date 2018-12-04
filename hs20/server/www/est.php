@@ -10,6 +10,12 @@ $method = $_SERVER["REQUEST_METHOD"];
 unset($user);
 unset($rowid);
 
+$db = new PDO($osu_db);
+if (!$db) {
+  error_log("EST: Could not access database");
+  die("Could not access database");
+}
+
 if (!empty($_SERVER['PHP_AUTH_DIGEST'])) {
   $needed = array('nonce'=>1, 'nc'=>1, 'cnonce'=>1, 'qop'=>1, 'username'=>1,
 		  'uri'=>1, 'response'=>1);
@@ -29,12 +35,6 @@ if (!empty($_SERVER['PHP_AUTH_DIGEST'])) {
   if (strlen($user) < 1) {
     error_log("EST: Empty username");
     die('Authentication failed');
-  }
-
-  $db = new PDO($osu_db);
-  if (!$db) {
-    error_log("EST: Could not access database");
-    die("Could not access database");
   }
 
   $sql = "SELECT rowid,password,operation FROM sessions " .
@@ -70,6 +70,29 @@ if (!empty($_SERVER['PHP_AUTH_DIGEST'])) {
     error_log("EST: Incorrect authentication response for user=$user realm=$realm");
     die('Authentication failed');
   }
+} else if (isset($_SERVER["SSL_CLIENT_VERIFY"]) &&
+	   $_SERVER["SSL_CLIENT_VERIFY"] == "SUCCESS" &&
+	   isset($_SERVER["SSL_CLIENT_M_SERIAL"])) {
+  $user = "cert-" . $_SERVER["SSL_CLIENT_M_SERIAL"];
+  $sql = "SELECT rowid,password,operation FROM sessions " .
+    "WHERE user='$user' AND realm='$realm'";
+  $q = $db->query($sql);
+  if (!$q) {
+    error_log("EST: Session not found for user=$user realm=$realm");
+    die("Session not found");
+  }
+  $row = $q->fetch();
+  if (!$row) {
+    error_log("EST: Session fetch failed for user=$user realm=$realm");
+    die('Session not found');
+  }
+  $rowid = $row['rowid'];
+
+  $oper = $row['operation'];
+  if ($oper != '10') {
+    error_log("EST: Unexpected operation $oper for user=$user realm=$realm");
+    die("Session not found");
+  }
 }
 
 
@@ -92,12 +115,22 @@ if ($method == "GET" && $cmd == "cacerts") {
   header("Content-Type: application/csrattrs");
   readfile("$osu_root/est/est-attrs.b64");
   error_log("EST: csrattrs");
-} else if ($method == "POST" && $cmd == "simpleenroll") {
-  if (!isset($user) || strlen($user) == 0) {
+} else if ($method == "POST" &&
+           ($cmd == "simpleenroll" || $cmd == "simplereenroll")) {
+  $reenroll = $cmd == "simplereenroll";
+  if (!$reenroll && (!isset($user) || strlen($user) == 0)) {
     header('HTTP/1.1 401 Unauthorized');
     header('WWW-Authenticate: Digest realm="'.$realm.
 	   '",qop="auth",nonce="'.uniqid().'",opaque="'.md5($realm).'"');
     error_log("EST: simpleenroll - require authentication");
+    die('Authentication required');
+  }
+  if ($reenroll &&
+      (!isset($user) ||
+       !isset($_SERVER["SSL_CLIENT_VERIFY"]) ||
+       $_SERVER["SSL_CLIENT_VERIFY"] != "SUCCESS")) {
+    header('HTTP/1.1 403 Forbidden');
+    error_log("EST: simplereenroll - require certificate authentication");
     die('Authentication required');
   }
   if (!isset($_SERVER["CONTENT_TYPE"])) {
@@ -167,6 +200,7 @@ if ($method == "GET" && $cmd == "cacerts") {
   }
   $der = file_get_contents($cert_der);
   $fingerprint = hash("sha256", $der);
+  error_log("EST: sha256(DER cert): $fingerprint");
 
   $pkcs7 = "$cadir/tmp/est-client.pkcs7";
   if (file_exists($pkcs7))
