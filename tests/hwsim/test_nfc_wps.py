@@ -635,3 +635,28 @@ def test_nfc_invalid_ndef_record(dev, apdev):
     for test in tests:
         if "FAIL" not in dev[0].request("WPS_NFC_TAG_READ " + test):
             raise Exception("Invalid tag accepted: " + test)
+
+def test_nfc_wps_handover_failure(dev, apdev):
+    """Connect to WPS AP with NFC connection handover (local failure)"""
+    ssid = "test-wps-nfc-handover"
+    params = ap_wps_params(ssid)
+    hapd = hostapd.add_ap(apdev[0], params)
+    logger.info("NFC connection handover")
+    req = dev[0].request("NFC_GET_HANDOVER_REQ NDEF WPS-CR").rstrip()
+    if "FAIL" in req:
+        raise Exception("Failed to generate NFC connection handover request")
+    sel = hapd.request("NFC_GET_HANDOVER_SEL NDEF WPS-CR").rstrip()
+    if "FAIL" in sel:
+        raise Exception("Failed to generate NFC connection handover select")
+    res = hapd.request("NFC_REPORT_HANDOVER RESP WPS " + req + " " + sel)
+    if "FAIL" in res:
+        raise Exception("Failed to report NFC connection handover to to hostapd")
+    dev[0].dump_monitor()
+
+    with alloc_fail(hapd, 1, "wpabuf_dup;wps_build_public_key"):
+        res = dev[0].request("NFC_REPORT_HANDOVER INIT WPS " + req + " " + sel)
+        if "FAIL" in res:
+            raise Exception("Failed to report NFC connection handover to to wpa_supplicant")
+        ev = dev[0].wait_event(["WPS-FAIL"], timeout=10)
+        if ev is None:
+            raise Exception("WPS failure not reported")
