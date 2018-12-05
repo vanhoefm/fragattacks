@@ -1054,4 +1054,12 @@ wpa_drv_send_external_auth_status(struct wpa_supplicant *wpa_s,
 							params);
 }
 
+static inline int wpa_drv_set_4addr_mode(struct wpa_supplicant *wpa_s, int val)
+{
+	if (!wpa_s->driver->set_4addr_mode)
+		return -1;
+	return wpa_s->driver->set_4addr_mode(wpa_s->drv_priv,
+					     wpa_s->bridge_ifname, val);
+}
+
 #endif /* DRIVER_I_H */

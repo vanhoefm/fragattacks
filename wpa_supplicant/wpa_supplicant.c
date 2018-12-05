@@ -2816,6 +2816,21 @@ static u8 * wpas_populate_assoc_ies(
 	}
 #endif /* CONFIG_IEEE80211R */
 
+	if (ssid->multi_ap_backhaul_sta) {
+		size_t multi_ap_ie_len;
+
+		multi_ap_ie_len = add_multi_ap_ie(wpa_ie + wpa_ie_len,
+						  max_wpa_ie_len - wpa_ie_len,
+						  MULTI_AP_BACKHAUL_STA);
+		if (multi_ap_ie_len == 0) {
+			wpa_printf(MSG_ERROR,
+				   "Multi-AP: Failed to build Multi-AP IE");
+			os_free(wpa_ie);
+			return NULL;
+		}
+		wpa_ie_len += multi_ap_ie_len;
+	}
+
 	params->wpa_ie = wpa_ie;
 	params->wpa_ie_len = wpa_ie_len;
 	params->auth_alg = algs;
@@ -3293,6 +3308,9 @@ void wpa_supplicant_deauthenticate(struct wpa_supplicant *wpa_s,
 		addr = wpa_s->bssid;
 		zero_addr = 1;
 	}
+
+	if (wpa_s->enabled_4addr_mode && wpa_drv_set_4addr_mode(wpa_s, 0) == 0)
+		wpa_s->enabled_4addr_mode = 0;
 
 #ifdef CONFIG_TDLS
 	wpa_tdls_teardown_peers(wpa_s->wpa);

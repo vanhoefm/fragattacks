@@ -948,6 +948,13 @@ struct wpa_ssid {
 	 * the selection attempts for OWE BSS exceed the configured threshold.
 	 */
 	int owe_transition_bss_select_count;
+
+	/**
+	 * multi_ap_backhaul_sta - Multi-AP backhaul STA
+	 * 0 = normal (non-Multi-AP) station
+	 * 1 = Multi-AP backhaul station
+	 */
+	int multi_ap_backhaul_sta;
 };
 
 #endif /* CONFIG_SSID_H */

@@ -4120,6 +4120,15 @@ struct wpa_driver_ops {
 	 */
 	int (*send_external_auth_status)(void *priv,
 					 struct external_auth *params);
+
+	/**
+	 * set_4addr_mode - Set 4-address mode
+	 * @priv: Private driver interface data
+	 * @bridge_ifname: Bridge interface name
+	 * @val: 0 - disable 4addr mode, 1 - enable 4addr mode
+	 * Returns: 0 on success, < 0 on failure
+	 */
+	int (*set_4addr_mode)(void *priv, const char *bridge_ifname, int val);
 };
 
 /**

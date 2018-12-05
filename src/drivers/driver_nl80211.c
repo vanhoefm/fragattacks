@@ -10738,6 +10738,49 @@ fail:
 }
 
 
+static int nl80211_set_4addr_mode(void *priv, const char *bridge_ifname,
+				  int val)
+{
+	struct i802_bss *bss = priv;
+	struct wpa_driver_nl80211_data *drv = bss->drv;
+	struct nl_msg *msg;
+	int ret = -ENOBUFS;
+
+	wpa_printf(MSG_DEBUG, "nl80211: %s 4addr mode (bridge_ifname: %s)",
+		   val ? "Enable" : "Disable", bridge_ifname);
+
+	msg = nl80211_cmd_msg(drv->first_bss, 0, NL80211_CMD_SET_INTERFACE);
+	if (!msg || nla_put_u8(msg, NL80211_ATTR_4ADDR, val))
+		goto fail;
+
+	if (bridge_ifname[0] && bss->added_if_into_bridge && !val) {
+		if (linux_br_del_if(drv->global->ioctl_sock,
+				    bridge_ifname, bss->ifname)) {
+			wpa_printf(MSG_ERROR,
+				   "nl80211: Failed to remove interface %s from bridge %s",
+				   bss->ifname, bridge_ifname);
+			return -1;
+		}
+		bss->added_if_into_bridge = 0;
+	}
+
+	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
+	msg = NULL;
+	if (!ret) {
+		if (bridge_ifname[0] && val &&
+		    i802_check_bridge(drv, bss, bridge_ifname, bss->ifname) < 0)
+			return -1;
+		return 0;
+	}
+
+fail:
+	nlmsg_free(msg);
+	wpa_printf(MSG_ERROR, "nl80211: Failed to enable/disable 4addr");
+
+	return ret;
+}
+
+
 const struct wpa_driver_ops wpa_driver_nl80211_ops = {
 	.name = "nl80211",
 	.desc = "Linux nl80211/cfg80211",
@@ -10867,4 +10910,5 @@ const struct wpa_driver_ops wpa_driver_nl80211_ops = {
 	.get_ext_capab = nl80211_get_ext_capab,
 	.update_connect_params = nl80211_update_connection_params,
 	.send_external_auth_status = nl80211_send_external_auth_status,
+	.set_4addr_mode = nl80211_set_4addr_mode,
 };

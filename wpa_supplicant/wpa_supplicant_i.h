@@ -1234,6 +1234,7 @@ struct wpa_supplicant {
 	unsigned int disable_fils:1;
 #endif /* CONFIG_FILS */
 	unsigned int ieee80211ac:1;
+	unsigned int enabled_4addr_mode:1;
 };
 
 
