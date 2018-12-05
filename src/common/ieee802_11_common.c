@@ -126,6 +126,10 @@ static int ieee802_11_parse_vendor_specific(const u8 *pos, size_t elen,
 			elems->roaming_cons_sel = pos;
 			elems->roaming_cons_sel_len = elen;
 			break;
+		case MULTI_AP_OUI_TYPE:
+			elems->multi_ap = pos;
+			elems->multi_ap_len = elen;
+			break;
 		default:
 			wpa_printf(MSG_MSGDUMP, "Unknown WFA "
 				   "information element ignored "
@@ -1555,6 +1559,26 @@ size_t mbo_add_ie(u8 *buf, size_t len, const u8 *attr, size_t attr_len)
 	os_memcpy(buf, attr, attr_len);
 
 	return 6 + attr_len;
+}
+
+
+size_t add_multi_ap_ie(u8 *buf, size_t len, u8 value)
+{
+	u8 *pos = buf;
+
+	if (len < 9)
+		return 0;
+
+	*pos++ = WLAN_EID_VENDOR_SPECIFIC;
+	*pos++ = 7; /* len */
+	WPA_PUT_BE24(pos, OUI_WFA);
+	pos += 3;
+	*pos++ = MULTI_AP_OUI_TYPE;
+	*pos++ = MULTI_AP_SUB_ELEM_TYPE;
+	*pos++ = 1; /* len */
+	*pos++ = value;
+
+	return pos - buf;
 }
 
 

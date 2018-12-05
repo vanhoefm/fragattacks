@@ -166,7 +166,7 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
 	/* just in case */
 	ap_sta_set_authorized(hapd, sta, 0);
 
-	if (sta->flags & WLAN_STA_WDS)
+	if (sta->flags & (WLAN_STA_WDS | WLAN_STA_MULTI_AP))
 		hostapd_set_wds_sta(hapd, NULL, sta->addr, sta->aid, 0);
 
 	if (sta->ipaddr)

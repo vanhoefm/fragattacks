@@ -694,6 +694,10 @@ struct hostapd_bss_config {
 	int coloc_intf_reporting;
 
 	u8 send_probe_response;
+
+#define BACKHAUL_BSS 1
+#define FRONTHAUL_BSS 2
+	int multi_ap; /* bitmap of BACKHAUL_BSS, FRONTHAUL_BSS */
 };
 
 /**

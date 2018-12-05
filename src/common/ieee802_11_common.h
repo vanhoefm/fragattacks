@@ -86,6 +86,7 @@ struct ieee802_11_elems {
 	const u8 *roaming_cons_sel;
 	const u8 *password_id;
 	const u8 *oci;
+	const u8 *multi_ap;
 
 	u8 ssid_len;
 	u8 supp_rates_len;
@@ -133,6 +134,7 @@ struct ieee802_11_elems {
 	u8 roaming_cons_sel_len;
 	u8 password_id_len;
 	u8 oci_len;
+	u8 multi_ap_len;
 
 	struct mb_ies_info mb_ies;
 };
@@ -193,6 +195,8 @@ const u8 * get_ie(const u8 *ies, size_t len, u8 eid);
 const u8 * get_ie_ext(const u8 *ies, size_t len, u8 ext);
 
 size_t mbo_add_ie(u8 *buf, size_t len, const u8 *attr, size_t attr_len);
+
+size_t add_multi_ap_ie(u8 *buf, size_t len, u8 value);
 
 struct country_op_class {
 	u8 country_op_class;
