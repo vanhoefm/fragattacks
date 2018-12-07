@@ -3554,6 +3554,19 @@ static void handle_assoc(struct hostapd_data *hapd,
 		resp = WLAN_STATUS_AP_UNABLE_TO_HANDLE_NEW_STA;
 
 #ifdef CONFIG_FILS
+	if (sta && delay_assoc && resp == WLAN_STATUS_SUCCESS &&
+	    eloop_is_timeout_registered(fils_hlp_timeout, hapd, sta) &&
+	    sta->fils_pending_assoc_req) {
+		/* Do not reschedule fils_hlp_timeout in case the station
+		 * retransmits (Re)Association Request frame while waiting for
+		 * the previously started FILS HLP wait, so that the timeout can
+		 * be determined from the first pending attempt. */
+		wpa_printf(MSG_DEBUG,
+			   "FILS: Continue waiting for HLP processing before sending (Re)Association Response frame to "
+			   MACSTR, MAC2STR(sta->addr));
+		os_free(tmp);
+		return;
+	}
 	if (sta) {
 		eloop_cancel_timeout(fils_hlp_timeout, hapd, sta);
 		os_free(sta->fils_pending_assoc_req);
