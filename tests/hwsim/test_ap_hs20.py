@@ -789,10 +789,12 @@ def test_ap_hs20_auto_interworking_no_cred_match(dev, apdev):
             raise Exception("Scan timed out")
         logger.info("Scan completed")
 
-def eap_test(dev, ap, eap_params, method, user):
+def eap_test(dev, ap, eap_params, method, user, release=0):
     bssid = ap['bssid']
     params = hs20_ap_params()
     params['nai_realm'] = [ "0,example.com," + eap_params ]
+    if release > 0:
+        params['hs20_release'] = str(release)
     hostapd.add_ap(ap, params)
 
     dev.hs20_enable()
@@ -6203,3 +6205,23 @@ def run_ap_hs20_terms_and_conditions_sql(dev, apdev, params, url_template,
     finally:
         os.remove(dbfile)
         dev[0].request("SET pmf 0")
+
+def test_ap_hs20_release_number_1(dev, apdev):
+    """Hotspot 2.0 with AP claiming support for Release 1"""
+    run_ap_hs20_release_number(dev, apdev, 1)
+
+def test_ap_hs20_release_number_2(dev, apdev):
+    """Hotspot 2.0 with AP claiming support for Release 2"""
+    run_ap_hs20_release_number(dev, apdev, 2)
+
+def test_ap_hs20_release_number_3(dev, apdev):
+    """Hotspot 2.0 with AP claiming support for Release 3"""
+    run_ap_hs20_release_number(dev, apdev, 3)
+
+def run_ap_hs20_release_number(dev, apdev, release):
+    check_eap_capa(dev[0], "MSCHAPV2")
+    eap_test(dev[0], apdev[0], "21[3:26][6:7][99:99]", "TTLS", "user",
+             release=release)
+    rel = dev[0].get_status_field('hs20')
+    if rel != str(release):
+        raise Exception("Unexpected release number indicated: " + rel)
