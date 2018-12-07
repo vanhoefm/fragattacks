@@ -557,6 +557,7 @@ struct hostapd_bss_config {
 	int na_mcast_to_ucast;
 #ifdef CONFIG_HS20
 	int hs20;
+	int hs20_release;
 	int disable_dgaf;
 	u16 anqp_domain_id;
 	unsigned int hs20_oper_friendly_name_count;

@@ -3717,6 +3717,16 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 #ifdef CONFIG_HS20
 	} else if (os_strcmp(buf, "hs20") == 0) {
 		bss->hs20 = atoi(pos);
+	} else if (os_strcmp(buf, "hs20_release") == 0) {
+		int val = atoi(pos);
+
+		if (val < 1 || val > (HS20_VERSION >> 4) + 1) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: Unsupported hs20_release: %s",
+				   line, pos);
+			return 1;
+		}
+		bss->hs20_release = val;
 	} else if (os_strcmp(buf, "disable_dgaf") == 0) {
 		bss->disable_dgaf = atoi(pos);
 	} else if (os_strcmp(buf, "na_mcast_to_ucast") == 0) {

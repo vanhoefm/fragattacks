@@ -133,6 +133,10 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 	bss->tls_flags = TLS_CONN_DISABLE_TLSv1_3;
 
 	bss->send_probe_response = 1;
+
+#ifdef CONFIG_HS20
+	bss->hs20_release = (HS20_VERSION >> 4) + 1;
+#endif /* CONFIG_HS20 */
 }
 
 
