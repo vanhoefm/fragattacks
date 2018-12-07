@@ -767,7 +767,7 @@ void handle_probe_req(struct hostapd_data *hapd,
 					    ie, ie_len, ssi_signal) > 0)
 			return;
 
-	if (!hapd->iconf->send_probe_response)
+	if (!hapd->conf->send_probe_response)
 		return;
 
 	if (ieee802_11_parse_elems(ie, ie_len, &elems, 0) == ParseFailed) {

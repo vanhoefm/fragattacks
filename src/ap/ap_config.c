@@ -131,6 +131,8 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 	 * This can be enabled by default once the implementation has been fully
 	 * completed and tested with other implementations. */
 	bss->tls_flags = TLS_CONN_DISABLE_TLSv1_3;
+
+	bss->send_probe_response = 1;
 }
 
 
@@ -193,7 +195,6 @@ struct hostapd_config * hostapd_config_defaults(void)
 	conf->beacon_int = 100;
 	conf->rts_threshold = -1; /* use driver default: 2347 */
 	conf->fragm_threshold = -1; /* user driver default: 2346 */
-	conf->send_probe_response = 1;
 	/* Set to invalid value means do not add Power Constraint IE */
 	conf->local_pwr_constraint = -1;
 

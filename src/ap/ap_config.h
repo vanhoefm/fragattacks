@@ -686,6 +686,8 @@ struct hostapd_bss_config {
 #endif /* CONFIG_OWE */
 
 	int coloc_intf_reporting;
+
+	u8 send_probe_response;
 };
 
 /**
@@ -717,7 +719,6 @@ struct hostapd_config {
 	u16 beacon_int;
 	int rts_threshold;
 	int fragm_threshold;
-	u8 send_probe_response;
 	u8 channel;
 	u8 acs;
 	struct wpa_freq_range_list acs_ch_list;
