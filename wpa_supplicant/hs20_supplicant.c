@@ -104,15 +104,22 @@ void hs20_configure_frame_filters(struct wpa_supplicant *wpa_s)
 }
 
 
-void wpas_hs20_add_indication(struct wpabuf *buf, int pps_mo_id)
+void wpas_hs20_add_indication(struct wpabuf *buf, int pps_mo_id, int ap_release)
 {
+	int release;
 	u8 conf;
+
+	release = (HS20_VERSION >> 4) + 1;
+	if (ap_release > 0 && release > ap_release)
+		release = ap_release;
+	if (release < 2)
+		pps_mo_id = -1;
 
 	wpabuf_put_u8(buf, WLAN_EID_VENDOR_SPECIFIC);
 	wpabuf_put_u8(buf, pps_mo_id >= 0 ? 7 : 5);
 	wpabuf_put_be24(buf, OUI_WFA);
 	wpabuf_put_u8(buf, HS20_INDICATION_OUI_TYPE);
-	conf = HS20_VERSION;
+	conf = (release - 1) << 4;
 	if (pps_mo_id >= 0)
 		conf |= HS20_PPS_MO_ID_PRESENT;
 	wpabuf_put_u8(buf, conf);
@@ -134,6 +141,21 @@ void wpas_hs20_add_roam_cons_sel(struct wpabuf *buf,
 	wpabuf_put_u8(buf, HS20_ROAMING_CONS_SEL_OUI_TYPE);
 	wpabuf_put_data(buf, ssid->roaming_consortium_selection,
 			ssid->roaming_consortium_selection_len);
+}
+
+
+int get_hs20_version(struct wpa_bss *bss)
+{
+	const u8 *ie;
+
+	if (!bss)
+		return 0;
+
+	ie = wpa_bss_get_vendor_ie(bss, HS20_IE_VENDOR_TYPE);
+	if (!ie || ie[1] < 5)
+		return 0;
+
+	return ((ie[6] >> 4) & 0x0f) + 1;
 }
 
 

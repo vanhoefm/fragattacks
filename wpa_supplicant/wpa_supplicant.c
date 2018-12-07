@@ -2678,7 +2678,8 @@ static u8 * wpas_populate_assoc_ies(
 			int pps_mo_id = hs20_get_pps_mo_id(wpa_s, ssid);
 			size_t len;
 
-			wpas_hs20_add_indication(hs20, pps_mo_id);
+			wpas_hs20_add_indication(hs20, pps_mo_id,
+						 get_hs20_version(bss));
 			wpas_hs20_add_roam_cons_sel(hs20, ssid);
 			len = max_wpa_ie_len - wpa_ie_len;
 			if (wpabuf_len(hs20) <= len) {
