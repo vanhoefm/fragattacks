@@ -6236,3 +6236,27 @@ def run_ap_hs20_release_number(dev, apdev, release):
     rel = dev[0].get_status_field('hs20')
     if rel != str(release):
         raise Exception("Unexpected release number indicated: " + rel)
+
+def test_ap_hs20_missing_pmf(dev, apdev):
+    """Hotspot 2.0 connection attempt without PMF"""
+    check_eap_capa(dev[0], "MSCHAPV2")
+    bssid = apdev[0]['bssid']
+    params = hs20_ap_params()
+    params['hessid'] = bssid
+    params['disable_dgaf'] = '1'
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].hs20_enable()
+    dev[0].connect("test-hs20", proto="RSN", key_mgmt="WPA-EAP", eap="TTLS",
+                   ieee80211w="0",
+                   identity="hs20-test", password="password",
+                   ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                   scan_freq="2412", update_identifier="54321",
+                   roaming_consortium_selection="1020304050",
+                   wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-ASSOC-REJECT"], timeout=10)
+    dev[0].request("DISCONNECT")
+    if ev is None:
+        raise Exception("Association rejection not reported")
+    if "status_code=31" not in ev:
+        raise Exception("Unexpected rejection reason: " + ev)
