@@ -1055,6 +1055,18 @@ static char * wpa_config_write_key_mgmt(const struct parse_data *data,
 	}
 #endif /* CONFIG_DPP */
 
+#ifdef CONFIG_OWE
+	if (ssid->key_mgmt & WPA_KEY_MGMT_OWE) {
+		ret = os_snprintf(pos, end - pos, "%sOWE",
+				  pos == buf ? "" : " ");
+		if (os_snprintf_error(end - pos, ret)) {
+			end[-1] = '\0';
+			return buf;
+		}
+		pos += ret;
+	}
+#endif /* CONFIG_OWE */
+
 	if (pos == buf) {
 		os_free(buf);
 		buf = NULL;
