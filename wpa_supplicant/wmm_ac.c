@@ -471,13 +471,8 @@ static int wmm_ac_init(struct wpa_supplicant *wpa_s, const u8 *ies,
 		return -1;
 	}
 
-	if (!ies) {
-		wpa_printf(MSG_ERROR, "WMM AC: Missing IEs");
-		return -1;
-	}
-
-	if (!(wmm_params->info_bitmap & WMM_PARAMS_UAPSD_QUEUES_INFO)) {
-		wpa_printf(MSG_DEBUG, "WMM AC: Missing U-APSD configuration");
+	if (!ies || !(wmm_params->info_bitmap & WMM_PARAMS_UAPSD_QUEUES_INFO)) {
+		/* WMM AC not in use for this connection */
 		return -1;
 	}
 
