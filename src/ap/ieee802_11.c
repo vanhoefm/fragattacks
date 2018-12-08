@@ -2713,10 +2713,20 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 #ifdef CONFIG_HS20
 	wpabuf_free(sta->hs20_ie);
 	if (elems.hs20 && elems.hs20_len > 4) {
+		int release;
+
 		sta->hs20_ie = wpabuf_alloc_copy(elems.hs20 + 4,
 						 elems.hs20_len - 4);
-	} else
+		release = ((elems.hs20[4] >> 4) & 0x0f) + 1;
+		if (release >= 2 && !wpa_auth_uses_mfp(sta->wpa_sm)) {
+			wpa_printf(MSG_DEBUG,
+				   "HS 2.0: PMF not negotiated by release %d station "
+				   MACSTR, release, MAC2STR(sta->addr));
+			return WLAN_STATUS_ROBUST_MGMT_FRAME_POLICY_VIOLATION;
+		}
+	} else {
 		sta->hs20_ie = NULL;
+	}
 
 	wpabuf_free(sta->roaming_consortium);
 	if (elems.roaming_cons_sel)
