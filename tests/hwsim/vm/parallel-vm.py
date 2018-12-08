@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 #
 # Parallel VM test case executor
-# Copyright (c) 2014-2015, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2014-2018, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -51,6 +51,7 @@ long_tests = [ "ap_roam_open",
                "dfs_radar",
                "dfs",
                "dfs_ht40_minus",
+               "dfs_etsi",
                "grpform_cred_ready_timeout",
                "hostapd_oom_wpa2_eap_connect",
                "wpas_ap_dfs",
