@@ -523,3 +523,64 @@ def test_wpas_config_file_set_global(dev):
             os.rmdir(config)
         except:
             pass
+
+def test_wpas_config_file_key_mgmt(dev, apdev, params):
+    """wpa_supplicant config file writing and key_mgmt values"""
+    config = os.path.join(params['logdir'],
+                          'wpas_config_file_key_mgmt.conf')
+    if os.path.exists(config):
+        os.remove(config)
+
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+
+    with open(config, "w") as f:
+        f.write("update_config=1\n")
+
+    wpas.interface_add("wlan5", config=config)
+
+    from test_dpp import params1_csign, params1_sta_connector, params1_sta_netaccesskey
+    id = wpas.add_network()
+    wpas.set_network_quoted(id, "ssid", "foo")
+    wpas.set_network(id, "key_mgmt", "DPP")
+    wpas.set_network(id, "ieee80211w", "2")
+    wpas.set_network_quoted(id, "dpp_csign", params1_csign)
+    wpas.set_network_quoted(id, "dpp_connector", params1_sta_connector)
+    wpas.set_network_quoted(id, "dpp_netaccesskey", params1_sta_netaccesskey)
+    if "OK" not in wpas.request("SAVE_CONFIG"):
+        raise Exception("Failed to save configuration file")
+
+    with open(config, "r") as f:
+        data = f.read()
+        logger.info("Configuration file contents: " + data)
+        if "key_mgmt=DPP" not in data:
+            raise Exception("Missing key_mgmt")
+        if 'dpp_connector="' + params1_sta_connector + '"' not in data:
+            raise Exception("Missing dpp_connector")
+        if 'dpp_netaccesskey="' + params1_sta_netaccesskey + '"' not in data:
+            raise Exception("Missing dpp_netaccesskey")
+        if 'dpp_csign="' + params1_csign + '"' not in data:
+            raise Exception("Missing dpp_csign")
+
+    wpas.set_network(id, "dpp_csign", "NULL")
+    wpas.set_network(id, "dpp_connector", "NULL")
+    wpas.set_network(id, "dpp_netaccesskey", "NULL")
+    wpas.set_network_quoted(id, "psk", "12345678")
+    wpas.set_network(id, "ieee80211w", "0")
+
+    tests = [ "WPA-PSK", "WPA-EAP", "IEEE8021X", "NONE", "WPA-NONE", "FT-PSK",
+              "FT-EAP", "FT-EAP-SHA384", "WPA-PSK-SHA256", "WPA-EAP-SHA256",
+              "SAE", "FT-SAE", "OSEN", "WPA-EAP-SUITE-B",
+              "WPA-EAP-SUITE-B-192", "FILS-SHA256", "FILS-SHA384",
+              "FT-FILS-SHA256", "FT-FILS-SHA384", "OWE", "DPP" ]
+    for key_mgmt in tests:
+        wpas.set_network(id, "key_mgmt", key_mgmt)
+        if "OK" not in wpas.request("SAVE_CONFIG"):
+            raise Exception("Failed to save configuration file")
+        with open(config, "r") as f:
+            data = f.read()
+            logger.info("Configuration file contents: " + data)
+            if "key_mgmt=" + key_mgmt not in data:
+                raise Exception("Missing key_mgmt " + key_mgmt)
+
+    wpas.interface_remove("wlan5")
+    wpas.interface_add("wlan5", config=config)
