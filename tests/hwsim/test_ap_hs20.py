@@ -5867,6 +5867,7 @@ def test_ap_hs20_unexpected(dev, apdev):
     params['wpa'] = "3"
     params['wpa_pairwise'] = "TKIP CCMP"
     params['rsn_pairwise'] = "CCMP"
+    params['ieee80211w'] = "1"
     #params['vendor_elements'] = 'dd07506f9a10140000'
     params['vendor_elements'] = 'dd04506f9a10'
     hostapd.add_ap(apdev[0], params)
@@ -5890,6 +5891,7 @@ def test_ap_hs20_unexpected(dev, apdev):
     dev[2].hs20_enable()
     dev[2].scan_for_bss(bssid, freq="2412")
     dev[2].connect("test-hs20-fake", key_mgmt="WPA-EAP", eap="TTLS",
+                   ieee80211w="1",
                    proto="RSN", pairwise="CCMP",
                    identity="hs20-test", password="password",
                    ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
