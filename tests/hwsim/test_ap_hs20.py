@@ -665,7 +665,7 @@ def test_ap_hs20_username(dev, apdev):
     status = dev[0].get_status()
     if status['pairwise_cipher'] != "CCMP":
         raise Exception("Unexpected pairwise cipher")
-    if status['hs20'] != "2":
+    if status['hs20'] != "3":
         raise Exception("Unexpected HS 2.0 support indication")
 
     dev[1].connect("test-hs20", key_mgmt="WPA-EAP", eap="TTLS",
@@ -698,7 +698,7 @@ def test_ap_hs20_connect_api(dev, apdev):
     status = wpas.get_status()
     if status['pairwise_cipher'] != "CCMP":
         raise Exception("Unexpected pairwise cipher")
-    if status['hs20'] != "2":
+    if status['hs20'] != "3":
         raise Exception("Unexpected HS 2.0 support indication")
 
 def test_ap_hs20_auto_interworking(dev, apdev):
@@ -723,7 +723,7 @@ def test_ap_hs20_auto_interworking(dev, apdev):
     status = dev[0].get_status()
     if status['pairwise_cipher'] != "CCMP":
         raise Exception("Unexpected pairwise cipher")
-    if status['hs20'] != "2":
+    if status['hs20'] != "3":
         raise Exception("Unexpected HS 2.0 support indication")
 
 @remote_compatible
@@ -3891,7 +3891,7 @@ def test_ap_hs20_external_selection(dev, apdev):
                    ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
                    scan_freq="2412", update_identifier="54321",
                    roaming_consortium_selection="1020304050")
-    if dev[0].get_status_field("hs20") != "2":
+    if dev[0].get_status_field("hs20") != "3":
         raise Exception("Unexpected hs20 indication")
     network_id = dev[0].get_status_field("id")
     sel = dev[0].get_network(network_id, "roaming_consortium_selection")
