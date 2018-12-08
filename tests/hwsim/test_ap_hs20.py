@@ -3889,6 +3889,7 @@ def test_ap_hs20_external_selection(dev, apdev):
 
     dev[0].hs20_enable()
     dev[0].connect("test-hs20", proto="RSN", key_mgmt="WPA-EAP", eap="TTLS",
+                   ieee80211w="1",
                    identity="hs20-test", password="password",
                    ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
                    scan_freq="2412", update_identifier="54321",
