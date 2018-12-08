@@ -517,7 +517,7 @@ static void wmm_ac_deinit(struct wpa_supplicant *wpa_s)
 	for (i = 0; i < WMM_AC_NUM; i++)
 		wmm_ac_del_ts(wpa_s, i, TS_DIR_IDX_ALL);
 
-	/* delete pending add_ts requset */
+	/* delete pending add_ts request */
 	wmm_ac_del_req(wpa_s, 1);
 
 	os_free(wpa_s->wmm_ac_assoc_info);
