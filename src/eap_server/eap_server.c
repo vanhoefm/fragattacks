@@ -2003,6 +2003,32 @@ const char * eap_get_serial_num(struct eap_sm *sm)
 }
 
 
+/**
+ * eap_get_method - Get the used EAP method
+ * @sm: Pointer to EAP state machine allocated with eap_server_sm_init()
+ * Returns: Pointer to the method name or %NULL if not available
+ */
+const char * eap_get_method(struct eap_sm *sm)
+{
+	if (!sm || !sm->m)
+		return NULL;
+	return sm->m->name;
+}
+
+
+/**
+ * eap_get_imsi - Get IMSI of the user
+ * @sm: Pointer to EAP state machine allocated with eap_server_sm_init()
+ * Returns: Pointer to IMSI or %NULL if not available
+ */
+const char * eap_get_imsi(struct eap_sm *sm)
+{
+	if (!sm || sm->imsi[0] == '\0')
+		return NULL;
+	return sm->imsi;
+}
+
+
 void eap_erp_update_identity(struct eap_sm *sm, const u8 *eap, size_t len)
 {
 #ifdef CONFIG_ERP
