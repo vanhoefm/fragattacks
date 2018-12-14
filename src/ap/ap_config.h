@@ -597,6 +597,7 @@ struct hostapd_bss_config {
 	unsigned int hs20_deauth_req_timeout;
 	char *subscr_remediation_url;
 	u8 subscr_remediation_method;
+	char *hs20_sim_provisioning_url;
 	char *t_c_filename;
 	u32 t_c_timestamp;
 	char *t_c_server_url;

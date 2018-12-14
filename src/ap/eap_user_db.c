@@ -174,6 +174,7 @@ eap_user_sqlite_get(struct hostapd_data *hapd, const u8 *identity,
 	if (hapd->tmp_eap_user.identity == NULL)
 		return NULL;
 	os_memcpy(hapd->tmp_eap_user.identity, identity, identity_len);
+	hapd->tmp_eap_user.identity_len = identity_len;
 
 	if (sqlite3_open(hapd->conf->eap_user_sqlite, &db)) {
 		wpa_printf(MSG_INFO, "DB: Failed to open database %s: %s",

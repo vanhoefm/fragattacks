@@ -93,3 +93,11 @@ CREATE TABLE cert_enroll(
 	realm TEXT,
 	serialnum TEXT
 );
+
+CREATE TABLE sim_provisioning(
+	mobile_identifier_hash TEXT PRIMARY KEY,
+	imsi TEXT,
+	mac_addr TEXT,
+	eap_method TEXT,
+	timestamp TEXT
+);
