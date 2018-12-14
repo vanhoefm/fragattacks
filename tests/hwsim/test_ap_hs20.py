@@ -3886,6 +3886,98 @@ def test_ap_hs20_remediation_sql(dev, apdev, params):
         os.remove(dbfile)
         dev[0].request("SET pmf 0")
 
+def test_ap_hs20_sim_provisioning(dev, apdev, params):
+    """Hotspot 2.0 AAA server behavior for SIM provisioning"""
+    check_eap_capa(dev[0], "SIM")
+    try:
+        import sqlite3
+    except ImportError:
+        raise HwsimSkip("No sqlite3 module available")
+    dbfile = os.path.join(params['logdir'], "ap_hs20_sim_provisioning-eap-user.db")
+    try:
+        os.remove(dbfile)
+    except:
+        pass
+    con = sqlite3.connect(dbfile)
+    with con:
+        cur = con.cursor()
+        cur.execute("CREATE TABLE users(identity TEXT PRIMARY KEY, methods TEXT, password TEXT, remediation TEXT, phase2 INTEGER, last_msk TEXT)")
+        cur.execute("CREATE TABLE wildcards(identity TEXT PRIMARY KEY, methods TEXT)")
+        cur.execute("INSERT INTO wildcards(identity,methods) VALUES ('1','SIM')")
+        cur.execute("CREATE TABLE authlog(timestamp TEXT, session TEXT, nas_ip TEXT, username TEXT, note TEXT)")
+        cur.execute("CREATE TABLE current_sessions(mac_addr TEXT PRIMARY KEY, identity TEXT, start_time TEXT, nas TEXT, hs20_t_c_filtering BOOLEAN, waiting_coa_ack BOOLEAN, coa_ack_received BOOLEAN)")
+
+    try:
+        params = { "ssid": "as", "beacon_int": "2000",
+                   "radius_server_clients": "auth_serv/radius_clients.conf",
+                   "radius_server_auth_port": '18128',
+                   "eap_server": "1",
+                   "eap_user_file": "sqlite:" + dbfile,
+                   "eap_sim_db": "unix:/tmp/hlr_auc_gw.sock",
+                   "ca_cert": "auth_serv/ca.pem",
+                   "server_cert": "auth_serv/server.pem",
+                   "private_key": "auth_serv/server.key",
+                   "hs20_sim_provisioning_url":
+                   "https://example.org/?hotspot2dot0-mobile-identifier-hash=",
+                   "subscr_remediation_method": "1" }
+        hostapd.add_ap(apdev[1], params)
+
+        bssid = apdev[0]['bssid']
+        params = hs20_ap_params()
+        params['auth_server_port'] = "18128"
+        hostapd.add_ap(apdev[0], params)
+
+        dev[0].request("SET pmf 1")
+        dev[0].hs20_enable()
+        dev[0].connect("test-hs20", proto="RSN", key_mgmt="WPA-EAP", eap="SIM",
+                       ieee80211w="1",
+                       identity="1232010000000000",
+                       password="90dca4eda45b53cf0f12d7c9c3bc6a89:cb9cccc4b9258e6dca4760379fb82581",
+                   scan_freq="2412", update_identifier="54321")
+        ev = dev[0].wait_event(["HS20-SUBSCRIPTION-REMEDIATION"], timeout=0.5)
+        if ev is not None:
+            raise Exception("Unexpected subscription remediation notice")
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].wait_disconnected()
+        dev[0].dump_monitor()
+
+        dev[0].connect("test-hs20", proto="RSN", key_mgmt="WPA-EAP", eap="SIM",
+                       ieee80211w="1",
+                       identity="1232010000000000",
+                       password="90dca4eda45b53cf0f12d7c9c3bc6a89:cb9cccc4b9258e6dca4760379fb82581",
+                   scan_freq="2412", update_identifier="0")
+        ev = dev[0].wait_event(["HS20-SUBSCRIPTION-REMEDIATION"], timeout=5)
+        if ev is None:
+            raise Exception("Timeout on subscription remediation notice")
+        if " 1 https://example.org/?hotspot2dot0-mobile-identifier-hash=" not in ev:
+            raise Exception("Unexpected subscription remediation event contents: " + ev)
+        id_hash = ev.split(' ')[2].split('=')[1]
+
+        with con:
+            cur = con.cursor()
+            cur.execute("SELECT * from authlog")
+            rows = cur.fetchall()
+            if len(rows) < 1:
+                raise Exception("No authlog entries")
+
+        with con:
+            cur = con.cursor()
+            cur.execute("SELECT * from sim_provisioning")
+            rows = cur.fetchall()
+            if len(rows) != 1:
+                raise Exeception("Unexpected number of rows in sim_provisioning (%d; expected %d)" % (len(rows), 1))
+            logger.info("sim_provisioning: " + str(rows))
+            if len(rows[0][0]) != 32:
+                raise Exception("Unexpected mobile_identifier_hash length in DB")
+            if rows[0][1] != "232010000000000":
+                raise Exception("Unexpected IMSI in DB")
+            if rows[0][2] != dev[0].own_addr():
+                raise Exception("Unexpected MAC address in DB")
+            if rows[0][0] != id_hash:
+                raise Exception("hotspot2dot0-mobile-identifier-hash mismatch")
+    finally:
+        dev[0].request("SET pmf 0")
+
 def test_ap_hs20_external_selection(dev, apdev):
     """Hotspot 2.0 connection using external network selection and creation"""
     check_eap_capa(dev[0], "MSCHAPV2")
