@@ -85,6 +85,40 @@ if (!empty($_SERVER['PHP_AUTH_DIGEST'])) {
 	   isset($_SERVER["SSL_CLIENT_M_SERIAL"])) {
   $user = "cert-" . $_SERVER["SSL_CLIENT_M_SERIAL"];
   putenv("HS20CERT=yes");
+} else if (isset($_GET["hotspot2dot0-mobile-identifier-hash"])) {
+  $id_hash = $_GET["hotspot2dot0-mobile-identifier-hash"];
+  $id_hash = PREG_REPLACE("/[^0-9a-h]/i", '', $id_hash);
+
+  $db = new PDO($osu_db);
+  if (!$db) {
+    error_log("spp.php - Could not access database");
+    die("Could not access database");
+  }
+
+  $row = $db->query("SELECT * FROM sim_provisioning " .
+		    "WHERE mobile_identifier_hash='$id_hash'")->fetch();
+  if (!$row) {
+    error_log("spp.php - SIM provisioning failed - mobile_identifier_hash not found");
+    die('SIM provisioning failed - mobile_identifier_hash not found');
+  }
+
+  $imsi = $row['imsi'];
+  $mac_addr = $row['mac_addr'];
+  $eap_method = $row['eap_method'];
+
+  $row = $db->query("SELECT COUNT(*) FROM osu_config " .
+		    "WHERE realm='$realm'")->fetch();
+  if (!$row || intval($row[0]) < 1) {
+    error_log("spp.php - SIM provisioning failed - realm $realm not found");
+    die('SIM provisioning failed');
+  }
+
+  error_log("spp.php - SIM provisioning for IMSI $imsi");
+  putenv("HS20SIMPROV=yes");
+  putenv("HS20IMSI=$imsi");
+  putenv("HS20MACADDR=$mac_addr");
+  putenv("HS20EAPMETHOD=$eap_method");
+  putenv("HS20IDHASH=$id_hash");
 } else if (!isset($_SERVER["PATH_INFO"]) ||
 	   $_SERVER["PATH_INFO"] != "/signup") {
   header('HTTP/1.1 401 Unauthorized');

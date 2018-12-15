@@ -24,6 +24,10 @@ CREATE TABLE sessions(
 	cert TEXT,
 	cert_pem TEXT,
 	mac_addr TEXT,
+	osu_user TEXT,
+	osu_password TEXT,
+	eap_method TEXT,
+	mobile_identifier_hash TEXT,
 	test TEXT
 );
 

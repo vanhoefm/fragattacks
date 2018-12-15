@@ -211,6 +211,61 @@ static void db_add_session_devdetail(struct hs20_svc *ctx,
 }
 
 
+static void db_add_session_dmacc(struct hs20_svc *ctx, const char *sessionid,
+				 const char *username, const char *password)
+{
+	char *sql;
+
+	sql = sqlite3_mprintf("UPDATE sessions SET osu_user=%Q, osu_password=%Q WHERE id=%Q",
+			      username, password, sessionid);
+	if (!sql)
+		return;
+	debug_print(ctx, 1, "DB: %s", sql);
+	if (sqlite3_exec(ctx->db, sql, NULL, NULL, NULL) != SQLITE_OK) {
+		debug_print(ctx, 1, "Failed to add session DMAcc: %s",
+			    sqlite3_errmsg(ctx->db));
+	}
+	sqlite3_free(sql);
+}
+
+
+static void db_add_session_eap_method(struct hs20_svc *ctx,
+				      const char *sessionid,
+				      const char *method)
+{
+	char *sql;
+
+	sql = sqlite3_mprintf("UPDATE sessions SET eap_method=%Q WHERE id=%Q",
+			      method, sessionid);
+	if (!sql)
+		return;
+	debug_print(ctx, 1, "DB: %s", sql);
+	if (sqlite3_exec(ctx->db, sql, NULL, NULL, NULL) != SQLITE_OK) {
+		debug_print(ctx, 1, "Failed to add session EAP method: %s",
+			    sqlite3_errmsg(ctx->db));
+	}
+	sqlite3_free(sql);
+}
+
+
+static void db_add_session_id_hash(struct hs20_svc *ctx, const char *sessionid,
+				   const char *id_hash)
+{
+	char *sql;
+
+	sql = sqlite3_mprintf("UPDATE sessions SET mobile_identifier_hash=%Q WHERE id=%Q",
+			      id_hash, sessionid);
+	if (!sql)
+		return;
+	debug_print(ctx, 1, "DB: %s", sql);
+	if (sqlite3_exec(ctx->db, sql, NULL, NULL, NULL) != SQLITE_OK) {
+		debug_print(ctx, 1, "Failed to add session ID hash: %s",
+			    sqlite3_errmsg(ctx->db));
+	}
+	sqlite3_free(sql);
+}
+
+
 static void db_remove_session(struct hs20_svc *ctx,
 			      const char *user, const char *realm,
 			      const char *sessionid)
@@ -570,6 +625,7 @@ static xml_node_t * build_username_password(struct hs20_svc *ctx,
 {
 	xml_node_t *node;
 	char *b64;
+	size_t len;
 
 	node = xml_node_create(ctx->xml, parent, NULL, "UsernamePassword");
 	if (node == NULL)
@@ -580,6 +636,9 @@ static xml_node_t * build_username_password(struct hs20_svc *ctx,
 	b64 = (char *) base64_encode((unsigned char *) pw, strlen(pw), NULL);
 	if (b64 == NULL)
 		return NULL;
+	len = os_strlen(b64);
+	if (len > 0 && b64[len - 1] == '\n')
+		b64[len - 1] = '\0';
 	add_text_node(ctx, node, "Password", b64);
 	free(b64);
 
@@ -1309,7 +1368,9 @@ static char * db_get_osu_config_val(struct hs20_svc *ctx, const char *realm,
 static xml_node_t * build_pps(struct hs20_svc *ctx,
 			      const char *user, const char *realm,
 			      const char *pw, const char *cert,
-			      int machine_managed, const char *test)
+			      int machine_managed, const char *test,
+			      const char *imsi, const char *dmacc_username,
+			      const char *dmacc_password)
 {
 	xml_node_t *pps, *c, *trust, *aaa, *aaa1, *upd, *homesp, *p;
 	xml_node_t *cred, *eap, *userpw;
@@ -1325,6 +1386,8 @@ static xml_node_t * build_pps(struct hs20_svc *ctx,
 
 	add_text_node(ctx, c, "CredentialPriority", "1");
 
+	if (imsi)
+		goto skip_aaa_trust_root;
 	aaa = xml_node_create(ctx->xml, c, NULL, "AAAServerTrustRoot");
 	aaa1 = xml_node_create(ctx->xml, aaa, NULL, "AAA1");
 	add_text_node_conf(ctx, realm, aaa1, "CertURL",
@@ -1356,6 +1419,7 @@ static xml_node_t * build_pps(struct hs20_svc *ctx,
 					   "CertSHA256Fingerprint",
 					   "policy_trust_root_cert_fingerprint");
 	}
+skip_aaa_trust_root:
 
 	upd = xml_node_create(ctx->xml, c, NULL, "SubscriptionUpdate");
 	add_text_node(ctx, upd, "UpdateInterval", "4294967295");
@@ -1375,6 +1439,13 @@ static xml_node_t * build_pps(struct hs20_svc *ctx,
 				   "trust_root_cert_fingerprint");
 	}
 
+	if (dmacc_username &&
+	    !build_username_password(ctx, upd, dmacc_username,
+				     dmacc_password)) {
+		xml_node_free(ctx->xml, pps);
+		return NULL;
+	}
+
 	homesp = xml_node_create(ctx->xml, c, NULL, "HomeSP");
 	add_text_node_conf(ctx, realm, homesp, "FriendlyName", "friendly_name");
 	add_text_node_conf(ctx, realm, homesp, "FQDN", "fqdn");
@@ -1383,7 +1454,19 @@ static xml_node_t * build_pps(struct hs20_svc *ctx,
 
 	cred = xml_node_create(ctx->xml, c, NULL, "Credential");
 	add_creation_date(ctx, cred);
-	if (cert) {
+	if (imsi) {
+		xml_node_t *sim;
+		const char *type = "18"; /* default to EAP-SIM */
+
+		sim = xml_node_create(ctx->xml, cred, NULL, "SIM");
+		add_text_node(ctx, sim, "IMSI", imsi);
+		if (ctx->eap_method && os_strcmp(ctx->eap_method, "AKA") == 0)
+			type = "23";
+		else if (ctx->eap_method &&
+			 os_strcmp(ctx->eap_method, "AKA'") == 0)
+			type = "50";
+		add_text_node(ctx, sim, "EAPType", type);
+	} else if (cert) {
 		xml_node_t *dc;
 		dc = xml_node_create(ctx->xml, cred, NULL,
 				     "DigitalCertificate");
@@ -1527,7 +1610,7 @@ static xml_node_t * hs20_user_input_registration(struct hs20_svc *ctx,
 			    test);
 	pps = build_pps(ctx, user, realm, pw,
 			fingerprint ? fingerprint : NULL, machine_managed,
-			test);
+			test, NULL, NULL, NULL);
 	free(fingerprint);
 	free(test);
 	if (!pps) {
@@ -1797,6 +1880,85 @@ static xml_node_t * hs20_cert_enroll_failed(struct hs20_svc *ctx,
 	xml_node_add_attr(ctx->xml, node, NULL, "errorCode",
 			  "Credentials cannot be provisioned at this time");
 	db_remove_session(ctx, user, realm, session_id);
+
+	return spp_node;
+}
+
+
+static xml_node_t * hs20_sim_provisioning(struct hs20_svc *ctx,
+					  const char *user,
+					  const char *realm, int dmacc,
+					  const char *session_id)
+{
+	xml_namespace_t *ns;
+	xml_node_t *spp_node, *node = NULL;
+	xml_node_t *pps, *tnds;
+	char buf[400];
+	char *str;
+	const char *status;
+	char dmacc_username[32];
+	char dmacc_password[32];
+
+	if (!ctx->imsi) {
+		debug_print(ctx, 1, "IMSI not available for SIM provisioning");
+		return NULL;
+	}
+
+	if (new_password(dmacc_username, sizeof(dmacc_username)) < 0 ||
+	    new_password(dmacc_password, sizeof(dmacc_password)) < 0) {
+		debug_print(ctx, 1,
+			    "Failed to generate DMAcc username/password");
+		return NULL;
+	}
+
+	status = "Provisioning complete, request sppUpdateResponse";
+	spp_node = build_post_dev_data_response(ctx, &ns, session_id, status,
+						NULL);
+	if (!spp_node)
+		return NULL;
+
+	pps = build_pps(ctx, NULL, realm, NULL, NULL, 0, NULL, ctx->imsi,
+			dmacc_username, dmacc_password);
+	if (!pps) {
+		xml_node_free(ctx->xml, spp_node);
+		return NULL;
+	}
+
+	debug_print(ctx, 1,
+		    "Request DB subscription registration on success notification");
+	if (!user || !user[0])
+		user = ctx->imsi;
+	db_add_session(ctx, user, realm, session_id, NULL, NULL,
+		       SUBSCRIPTION_REGISTRATION, NULL);
+	db_add_session_dmacc(ctx, session_id, dmacc_username, dmacc_password);
+	if (ctx->eap_method)
+		db_add_session_eap_method(ctx, session_id, ctx->eap_method);
+	if (ctx->id_hash)
+		db_add_session_id_hash(ctx, session_id, ctx->id_hash);
+	db_add_session_pps(ctx, user, realm, session_id, pps);
+
+	hs20_eventlog_node(ctx, user, realm, session_id,
+			   "new subscription", pps);
+
+	tnds = mo_to_tnds(ctx->xml, pps, 0, URN_HS20_PPS, NULL);
+	xml_node_free(ctx->xml, pps);
+	if (!tnds) {
+		xml_node_free(ctx->xml, spp_node);
+		return NULL;
+	}
+
+	str = xml_node_to_str(ctx->xml, tnds);
+	xml_node_free(ctx->xml, tnds);
+	if (!str) {
+		xml_node_free(ctx->xml, spp_node);
+		return NULL;
+	}
+
+	node = xml_node_create_text(ctx->xml, spp_node, ns, "addMO", str);
+	free(str);
+	snprintf(buf, sizeof(buf), "./Wi-Fi/%s/PerProviderSubscription", realm);
+	xml_node_add_attr(ctx->xml, node, ns, "managementTreeURI", buf);
+	xml_node_add_attr(ctx->xml, node, ns, "moURN", URN_HS20_PPS);
 
 	return spp_node;
 }
@@ -2082,6 +2244,15 @@ static xml_node_t * hs20_spp_post_dev_data(struct hs20_svc *ctx,
 		goto out;
 	}
 
+	if (strcasecmp(req_reason, "Subscription provisioning") == 0) {
+		ret = hs20_sim_provisioning(ctx, user, realm, dmacc,
+					    session_id);
+		hs20_eventlog_node(ctx, user, realm, session_id,
+				   "subscription provisioning response",
+				   ret);
+		goto out;
+	}
+
 	debug_print(ctx, 1, "Unsupported requestReason '%s' user '%s'",
 		    req_reason, user);
 out:
@@ -2124,6 +2295,7 @@ static xml_node_t * build_spp_exchange_complete(struct hs20_svc *ctx,
 static int add_subscription(struct hs20_svc *ctx, const char *session_id)
 {
 	char *user, *realm, *pw, *pw_mm, *pps, *str;
+	char *osu_user, *osu_password, *eap_method;
 	char *sql;
 	int ret = -1;
 	char *free_account;
@@ -2131,6 +2303,7 @@ static int add_subscription(struct hs20_svc *ctx, const char *session_id)
 	char *type;
 	int cert = 0;
 	char *cert_pem, *fingerprint;
+	const char *method;
 
 	user = db_get_session_val(ctx, NULL, NULL, session_id, "user");
 	realm = db_get_session_val(ctx, NULL, NULL, session_id, "realm");
@@ -2144,6 +2317,11 @@ static int add_subscription(struct hs20_svc *ctx, const char *session_id)
 	if (type && strcmp(type, "cert") == 0)
 		cert = 1;
 	free(type);
+	osu_user = db_get_session_val(ctx, NULL, NULL, session_id, "osu_user");
+	osu_password = db_get_session_val(ctx, NULL, NULL, session_id,
+					  "osu_password");
+	eap_method = db_get_session_val(ctx, NULL, NULL, session_id,
+					"eap_method");
 
 	if (!user || !realm || !pw) {
 		debug_print(ctx, 1, "Could not find session info from DB for "
@@ -2183,13 +2361,19 @@ static int add_subscription(struct hs20_svc *ctx, const char *session_id)
 
 	str = db_get_session_val(ctx, NULL, NULL, session_id, "mac_addr");
 
-	sql = sqlite3_mprintf("INSERT INTO users(identity,realm,phase2,methods,cert,cert_pem,machine_managed,mac_addr) VALUES (%Q,%Q,%d,%Q,%Q,%Q,%d,%Q)",
+	if (eap_method && eap_method[0])
+		method = eap_method;
+	else
+		method = cert ? "TLS" : "TTLS-MSCHAPV2";
+	sql = sqlite3_mprintf("INSERT INTO users(identity,realm,phase2,methods,cert,cert_pem,machine_managed,mac_addr,osu_user,osu_password) VALUES (%Q,%Q,%d,%Q,%Q,%Q,%d,%Q,%Q,%Q)",
 			      user, realm, cert ? 0 : 1,
-			      cert ? "TLS" : "TTLS-MSCHAPV2",
+			      method,
 			      fingerprint ? fingerprint : "",
 			      cert_pem ? cert_pem : "",
 			      pw_mm && atoi(pw_mm) ? 1 : 0,
-			      str ? str : "");
+			      str ? str : "",
+			      osu_user ? osu_user : "",
+			      osu_password ? osu_password : "");
 	free(str);
 	if (sql == NULL)
 		goto out;
@@ -2257,6 +2441,24 @@ static int add_subscription(struct hs20_svc *ctx, const char *session_id)
 		}
 	}
 
+	str = db_get_session_val(ctx, NULL, NULL, session_id,
+				 "mobile_identifier_hash");
+	if (str) {
+		sql = sqlite3_mprintf("DELETE FROM sim_provisioning WHERE mobile_identifier_hash=%Q",
+				      str);
+		if (sql) {
+			debug_print(ctx, 1, "DB: %s", sql);
+			if (sqlite3_exec(ctx->db, sql, NULL, NULL, NULL) !=
+			    SQLITE_OK) {
+				debug_print(ctx, 1,
+					    "Failed to delete pending sim_provisioning entry: %s",
+					    sqlite3_errmsg(ctx->db));
+			}
+			sqlite3_free(sql);
+		}
+		os_free(str);
+	}
+
 	if (ret == 0) {
 		hs20_eventlog(ctx, user, realm, session_id,
 			      "completed subscription registration", NULL);
@@ -2270,6 +2472,9 @@ out:
 	free(pps);
 	free(cert_pem);
 	free(fingerprint);
+	free(osu_user);
+	free(osu_password);
+	free(eap_method);
 	return ret;
 }
 
