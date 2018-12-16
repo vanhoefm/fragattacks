@@ -1101,11 +1101,41 @@ static xml_node_t * hs20_subscription_remediation(struct hs20_svc *ctx,
 }
 
 
+static xml_node_t * read_policy_file(struct hs20_svc *ctx,
+				     const char *policy_id)
+{
+	char fname[200];
+
+	snprintf(fname, sizeof(fname), "%s/spp/policy/%s.xml",
+		 ctx->root_dir, policy_id);
+	debug_print(ctx, 1, "Use policy file %s", fname);
+
+	return node_from_file(ctx->xml, fname);
+}
+
+
+static void update_policy_update_uri(struct hs20_svc *ctx, const char *realm,
+				     xml_node_t *policy)
+{
+	xml_node_t *node;
+	char *url;
+
+	node = get_node_uri(ctx->xml, policy, "Policy/PolicyUpdate/URI");
+	if (!node)
+		return;
+
+	url = db_get_osu_config_val(ctx, realm, "policy_url");
+	if (!url)
+		return;
+	xml_node_set_text(ctx->xml, node, url);
+	free(url);
+}
+
+
 static xml_node_t * build_policy(struct hs20_svc *ctx, const char *user,
 				 const char *realm, int use_dmacc)
 {
 	char *policy_id;
-	char fname[200];
 	xml_node_t *policy, *node;
 
 	policy_id = db_get_val(ctx, user, realm, "policy", use_dmacc);
@@ -1115,27 +1145,12 @@ static xml_node_t * build_policy(struct hs20_svc *ctx, const char *user,
 		if (policy_id == NULL)
 			return NULL;
 	}
-
-	snprintf(fname, sizeof(fname), "%s/spp/policy/%s.xml",
-		 ctx->root_dir, policy_id);
+	policy = read_policy_file(ctx, policy_id);
 	free(policy_id);
-	debug_print(ctx, 1, "Use policy file %s", fname);
-
-	policy = node_from_file(ctx->xml, fname);
 	if (policy == NULL)
 		return NULL;
 
-	node = get_node_uri(ctx->xml, policy, "Policy/PolicyUpdate/URI");
-	if (node) {
-		char *url;
-		url = db_get_osu_config_val(ctx, realm, "policy_url");
-		if (url == NULL) {
-			xml_node_free(ctx->xml, policy);
-			return NULL;
-		}
-		xml_node_set_text(ctx->xml, node, url);
-		free(url);
-	}
+	update_policy_update_uri(ctx, realm, policy);
 
 	node = get_node_uri(ctx->xml, policy, "Policy/PolicyUpdate");
 	if (node && use_dmacc) {
@@ -1370,15 +1385,18 @@ static xml_node_t * build_pps(struct hs20_svc *ctx,
 			      const char *pw, const char *cert,
 			      int machine_managed, const char *test,
 			      const char *imsi, const char *dmacc_username,
-			      const char *dmacc_password)
+			      const char *dmacc_password,
+			      xml_node_t *policy_node)
 {
 	xml_node_t *pps, *c, *trust, *aaa, *aaa1, *upd, *homesp, *p;
 	xml_node_t *cred, *eap, *userpw;
 
 	pps = xml_node_create_root(ctx->xml, NULL, NULL, NULL,
 				   "PerProviderSubscription");
-	if (pps == NULL)
+	if (!pps) {
+		xml_node_free(ctx->xml, policy_node);
 		return NULL;
+	}
 
 	add_text_node(ctx, pps, "UpdateIdentifier", "1");
 
@@ -1443,8 +1461,12 @@ skip_aaa_trust_root:
 	    !build_username_password(ctx, upd, dmacc_username,
 				     dmacc_password)) {
 		xml_node_free(ctx->xml, pps);
+		xml_node_free(ctx->xml, policy_node);
 		return NULL;
 	}
+
+	if (policy_node)
+		xml_node_add_child(ctx->xml, c, policy_node);
 
 	homesp = xml_node_create(ctx->xml, c, NULL, "HomeSP");
 	add_text_node_conf(ctx, realm, homesp, "FriendlyName", "friendly_name");
@@ -1610,7 +1632,7 @@ static xml_node_t * hs20_user_input_registration(struct hs20_svc *ctx,
 			    test);
 	pps = build_pps(ctx, user, realm, pw,
 			fingerprint ? fingerprint : NULL, machine_managed,
-			test, NULL, NULL, NULL);
+			test, NULL, NULL, NULL, NULL);
 	free(fingerprint);
 	free(test);
 	if (!pps) {
@@ -1898,6 +1920,8 @@ static xml_node_t * hs20_sim_provisioning(struct hs20_svc *ctx,
 	const char *status;
 	char dmacc_username[32];
 	char dmacc_password[32];
+	char *policy;
+	xml_node_t *policy_node = NULL;
 
 	if (!ctx->imsi) {
 		debug_print(ctx, 1, "IMSI not available for SIM provisioning");
@@ -1917,8 +1941,24 @@ static xml_node_t * hs20_sim_provisioning(struct hs20_svc *ctx,
 	if (!spp_node)
 		return NULL;
 
+	policy = db_get_osu_config_val(ctx, realm, "sim_policy");
+	if (policy) {
+		policy_node = read_policy_file(ctx, policy);
+		os_free(policy);
+		if (!policy_node) {
+			xml_node_free(ctx->xml, spp_node);
+			return NULL;
+		}
+		update_policy_update_uri(ctx, realm, policy_node);
+		node = get_node_uri(ctx->xml, policy_node,
+				    "Policy/PolicyUpdate");
+		if (node)
+			build_username_password(ctx, node, dmacc_username,
+						dmacc_password);
+	}
+
 	pps = build_pps(ctx, NULL, realm, NULL, NULL, 0, NULL, ctx->imsi,
-			dmacc_username, dmacc_password);
+			dmacc_username, dmacc_password, policy_node);
 	if (!pps) {
 		xml_node_free(ctx->xml, spp_node);
 		return NULL;
@@ -2296,6 +2336,7 @@ static int add_subscription(struct hs20_svc *ctx, const char *session_id)
 {
 	char *user, *realm, *pw, *pw_mm, *pps, *str;
 	char *osu_user, *osu_password, *eap_method;
+	char *policy = NULL;
 	char *sql;
 	int ret = -1;
 	char *free_account;
@@ -2333,6 +2374,8 @@ static int add_subscription(struct hs20_svc *ctx, const char *session_id)
 	free_acc = free_account && strcmp(free_account, user) == 0;
 	free(free_account);
 
+	policy = db_get_osu_config_val(ctx, realm, "sim_policy");
+
 	debug_print(ctx, 1,
 		    "New subscription: user='%s' realm='%s' free_acc=%d",
 		    user, realm, free_acc);
@@ -2365,7 +2408,7 @@ static int add_subscription(struct hs20_svc *ctx, const char *session_id)
 		method = eap_method;
 	else
 		method = cert ? "TLS" : "TTLS-MSCHAPV2";
-	sql = sqlite3_mprintf("INSERT INTO users(identity,realm,phase2,methods,cert,cert_pem,machine_managed,mac_addr,osu_user,osu_password) VALUES (%Q,%Q,%d,%Q,%Q,%Q,%d,%Q,%Q,%Q)",
+	sql = sqlite3_mprintf("INSERT INTO users(identity,realm,phase2,methods,cert,cert_pem,machine_managed,mac_addr,osu_user,osu_password,policy) VALUES (%Q,%Q,%d,%Q,%Q,%Q,%d,%Q,%Q,%Q,%Q)",
 			      user, realm, cert ? 0 : 1,
 			      method,
 			      fingerprint ? fingerprint : "",
@@ -2373,7 +2416,8 @@ static int add_subscription(struct hs20_svc *ctx, const char *session_id)
 			      pw_mm && atoi(pw_mm) ? 1 : 0,
 			      str ? str : "",
 			      osu_user ? osu_user : "",
-			      osu_password ? osu_password : "");
+			      osu_password ? osu_password : "",
+			      policy ? policy : "");
 	free(str);
 	if (sql == NULL)
 		goto out;
@@ -2475,6 +2519,7 @@ out:
 	free(osu_user);
 	free(osu_password);
 	free(eap_method);
+	os_free(policy);
 	return ret;
 }
 
