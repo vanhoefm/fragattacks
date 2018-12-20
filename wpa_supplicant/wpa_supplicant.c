@@ -5582,6 +5582,12 @@ static int wpa_supplicant_init_iface(struct wpa_supplicant *wpa_s,
 		    capa.mac_addr_rand_sched_scan_supported)
 			wpa_s->mac_addr_rand_supported |=
 				(MAC_ADDR_RAND_SCHED_SCAN | MAC_ADDR_RAND_PNO);
+
+		wpa_drv_get_ext_capa(wpa_s, WPA_IF_STATION);
+		if (wpa_s->extended_capa &&
+		    wpa_s->extended_capa_len >= 3 &&
+		    wpa_s->extended_capa[2] & 0x40)
+			wpa_s->multi_bss_support = 1;
 	}
 	if (wpa_s->max_remain_on_chan == 0)
 		wpa_s->max_remain_on_chan = 1000;

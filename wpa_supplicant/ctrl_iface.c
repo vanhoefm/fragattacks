@@ -4388,6 +4388,13 @@ static int wpa_supplicant_ctrl_iface_get_capability(
 	}
 #endif /* CONFIG_FILS */
 
+	if (os_strcmp(field, "multibss") == 0 && wpa_s->multi_bss_support) {
+		res = os_snprintf(buf, buflen, "MULTIBSS-STA");
+		if (os_snprintf_error(buflen, res))
+			return -1;
+		return res;
+	}
+
 	wpa_printf(MSG_DEBUG, "CTRL_IFACE: Unknown GET_CAPABILITY field '%s'",
 		   field);
 
