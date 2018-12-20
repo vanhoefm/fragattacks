@@ -18,6 +18,23 @@ from utils import alloc_fail, fail_test, wait_fail_trigger, HwsimSkip
 from wlantest import Wlantest
 from datetime import datetime
 
+def clear_regdom_state(dev, hapd, hapd2):
+        for i in range(0, 3):
+            ev = dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
+            if ev is None or "init=COUNTRY_IE" in ev:
+                break
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        if hapd:
+            hapd.request("DISABLE")
+        if hapd2:
+            hapd2.request("DISABLE")
+        dev[0].dump_monitor()
+        subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
+        dev[0].flush_scan_cache()
+
 @remote_compatible
 def test_wnm_bss_transition_mgmt(dev, apdev):
     """WNM BSS Transition Management"""
@@ -842,13 +859,7 @@ def test_wnm_bss_tm(dev, apdev):
         if ev is not None:
             raise Exception("Unexpected reassociation")
     finally:
-        dev[0].request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        if hapd2:
-            hapd2.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        clear_regdom_state(dev, hapd, hapd2)
 
 def test_wnm_bss_tm_errors(dev, apdev):
     """WNM BSS Transition Management errors"""
@@ -994,13 +1005,7 @@ def run_wnm_bss_tm_scan_not_needed(dev, apdev, ht=True, vht=False, hwmode='a',
             raise Exception("Unexpected scan started")
         dev[0].dump_monitor()
     finally:
-        dev[0].request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        if hapd2:
-            hapd2.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        clear_regdom_state(dev, hapd, hapd2)
 
 def test_wnm_bss_tm_scan_needed(dev, apdev):
     """WNM BSS Transition Management and scan needed"""
@@ -1053,13 +1058,7 @@ def test_wnm_bss_tm_scan_needed(dev, apdev):
             raise Exception("Unexpected scan started")
         dev[0].dump_monitor()
     finally:
-        dev[0].request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        if hapd2:
-            hapd2.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        clear_regdom_state(dev, hapd, hapd2)
 
 def test_wnm_bss_tm_scan_needed_e4(dev, apdev):
     """WNM BSS Transition Management and scan needed (Table E-4)"""
@@ -1111,14 +1110,7 @@ def test_wnm_bss_tm_scan_needed_e4(dev, apdev):
                 break
         dev[0].dump_monitor()
     finally:
-        dev[0].request("REMOVE_NETWORK all")
-        dev[0].request("ABORT_SCAN")
-        if hapd:
-            hapd.request("DISABLE")
-        if hapd2:
-            hapd2.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        clear_regdom_state(dev, hapd, hapd2)
 
 def start_wnm_tm(ap, country, dev, country3=None):
     params = { "ssid": "test-wnm",
@@ -1320,13 +1312,7 @@ def test_wnm_bss_tm_rsn(dev, apdev):
         if apdev[1]['bssid'] not in ev:
             raise Exception("Unexpected reassociation target: " + ev)
     finally:
-        dev[0].request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        if hapd2:
-            hapd2.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        clear_regdom_state(dev, hapd, hapd2)
 
 def test_wnm_action_proto(dev, apdev):
     """WNM Action protocol testing"""
