@@ -1828,3 +1828,50 @@ def test_scan_mbssid_hidden_ssid(dev, apdev):
               (bssid[0:16] + '1', '', 0x1),
               (bssid[0:16] + '2', '2', 0x2) ]
     run_scans(dev[0], check)
+
+def test_connect_mbssid_open_1(dev, apdev):
+    """Connect to transmitting and nontransmitting BSS in open mode"""
+    check_multibss_sta_capa(dev[0])
+    dev[0].flush_scan_cache()
+
+    bssid = apdev[0]['bssid']
+    params = { "ssid": "transmitted" }
+
+    elems = elem_capab(1) + elem_ssid("nontransmitted") + elem_bssid_index(1)
+    profile1 = struct.pack('BB', 0, len(elems)) + elems
+
+    elems = elem_capab(1) + elem_ssid("nontransmitted_2") + elem_bssid_index(2)
+    profile2 = struct.pack('BB', 0, len(elems)) + elems
+
+    profiles = profile1 + profile2
+    params['vendor_elements'] = elem_multibssid(profiles, 4)
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("transmitted", key_mgmt="NONE", scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+
+    dev[0].connect("nontransmitted", key_mgmt="NONE", scan_freq="2412",
+                   wait_connect=False)
+    ev = dev[0].wait_event(["SME: Trying to authenticate"], timeout=10)
+    if ev is None:
+        raise Exception("Connection attempt to nontransmitted BSS not started")
+    if "02:00:00:00:03:01 (SSID='nontransmitted'" not in ev:
+        raise Exception("Unexpected authentication target")
+    # hostapd does not yet support Multiple-BSSID, so only verify that STA is
+    # able to start connection attempt.
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].dump_monitor()
+
+    dev[0].connect("nontransmitted_2", key_mgmt="NONE", scan_freq="2412",
+                   wait_connect=False)
+    ev = dev[0].wait_event(["SME: Trying to authenticate"], timeout=10)
+    if ev is None:
+        raise Exception("Connection attempt to nontransmitted BSS not started")
+    if "02:00:00:00:03:02 (SSID='nontransmitted_2'" not in ev:
+        raise Exception("Unexpected authentication target")
+    # hostapd does not yet support Multiple-BSSID, so only verify that STA is
+    # able to start connection attempt.
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].dump_monitor()
