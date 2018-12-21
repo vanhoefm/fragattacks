@@ -10610,7 +10610,7 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 		if (wpas_dpp_configurator_remove(wpa_s, buf + 24) < 0)
 			reply_len = -1;
 	} else if (os_strncmp(buf, "DPP_CONFIGURATOR_SIGN ", 22) == 0) {
-		if (wpas_dpp_configurator_sign(wpa_s, buf + 22) < 0)
+		if (wpas_dpp_configurator_sign(wpa_s, buf + 21) < 0)
 			reply_len = -1;
 	} else if (os_strncmp(buf, "DPP_CONFIGURATOR_GET_KEY ", 25) == 0) {
 		reply_len = wpas_dpp_configurator_get_key(wpa_s, atoi(buf + 25),
