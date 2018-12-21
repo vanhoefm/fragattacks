@@ -104,6 +104,11 @@ struct p2p_go_neg_results {
 	unsigned int vht_center_freq2;
 
 	/**
+	 * he - Indicates if IEEE 802.11ax HE is enabled
+	 */
+	int he;
+
+	/**
 	 * ssid - SSID of the group
 	 */
 	u8 ssid[SSID_MAX_LEN];

@@ -1261,6 +1261,8 @@ static void wpa_config_write_global(FILE *f, struct wpa_config *config)
 		fprintf(f, "p2p_go_ht40=%d\n", config->p2p_go_ht40);
 	if (config->p2p_go_vht)
 		fprintf(f, "p2p_go_vht=%d\n", config->p2p_go_vht);
+	if (config->p2p_go_he)
+		fprintf(f, "p2p_go_he=%d\n", config->p2p_go_he);
 	if (config->p2p_go_ctwindow != DEFAULT_P2P_GO_CTWINDOW)
 		fprintf(f, "p2p_go_ctwindow=%d\n", config->p2p_go_ctwindow);
 	if (config->p2p_disabled)

@@ -334,6 +334,9 @@ static int wpa_supplicant_conf_ap(struct wpa_supplicant *wpa_s,
 			list[8] = -1;
 		}
 		conf->supported_rates = list;
+#ifdef CONFIG_IEEE80211AX
+		conf->ieee80211ax = ssid->he;
+#endif /* CONFIG_IEEE80211AX */
 	}
 
 	bss->isolate = !wpa_s->conf->p2p_intra_bss;

@@ -5538,6 +5538,7 @@ static int p2p_ctrl_connect(struct wpa_supplicant *wpa_s, char *cmd,
 	int ht40, vht, max_oper_chwidth, chwidth = 0, freq2 = 0;
 	u8 _group_ssid[SSID_MAX_LEN], *group_ssid = NULL;
 	size_t group_ssid_len = 0;
+	int he;
 
 	if (!wpa_s->global->p2p_init_wpa_s)
 		return -1;
@@ -5550,7 +5551,7 @@ static int p2p_ctrl_connect(struct wpa_supplicant *wpa_s, char *cmd,
 	/* <addr> <"pbc" | "pin" | PIN> [label|display|keypad|p2ps]
 	 * [persistent|persistent=<network id>]
 	 * [join] [auth] [go_intent=<0..15>] [freq=<in MHz>] [provdisc]
-	 * [ht40] [vht] [auto] [ssid=<hexdump>] */
+	 * [ht40] [vht] [he] [auto] [ssid=<hexdump>] */
 
 	if (hwaddr_aton(cmd, addr))
 		return -1;
@@ -5581,6 +5582,7 @@ static int p2p_ctrl_connect(struct wpa_supplicant *wpa_s, char *cmd,
 	vht = (os_strstr(cmd, " vht") != NULL) || wpa_s->conf->p2p_go_vht;
 	ht40 = (os_strstr(cmd, " ht40") != NULL) || wpa_s->conf->p2p_go_ht40 ||
 		vht;
+	he = (os_strstr(cmd, " he") != NULL) || wpa_s->conf->p2p_go_he;
 
 	pos2 = os_strstr(pos, " go_intent=");
 	if (pos2) {
@@ -5651,7 +5653,7 @@ static int p2p_ctrl_connect(struct wpa_supplicant *wpa_s, char *cmd,
 	new_pin = wpas_p2p_connect(wpa_s, addr, pin, wps_method,
 				   persistent_group, automatic, join,
 				   auth, go_intent, freq, freq2, persistent_id,
-				   pd, ht40, vht, max_oper_chwidth,
+				   pd, ht40, vht, max_oper_chwidth, he,
 				   group_ssid, group_ssid_len);
 	if (new_pin == -2) {
 		os_memcpy(buf, "FAIL-CHANNEL-UNAVAILABLE\n", 25);
@@ -6207,7 +6209,7 @@ static int p2p_ctrl_invite_persistent(struct wpa_supplicant *wpa_s, char *cmd)
 	struct wpa_ssid *ssid;
 	u8 *_peer = NULL, peer[ETH_ALEN];
 	int freq = 0, pref_freq = 0;
-	int ht40, vht, max_oper_chwidth, chwidth = 0, freq2 = 0;
+	int ht40, vht, he, max_oper_chwidth, chwidth = 0, freq2 = 0;
 
 	id = atoi(cmd);
 	pos = os_strstr(cmd, " peer=");
@@ -6244,6 +6246,7 @@ static int p2p_ctrl_invite_persistent(struct wpa_supplicant *wpa_s, char *cmd)
 	vht = (os_strstr(cmd, " vht") != NULL) || wpa_s->conf->p2p_go_vht;
 	ht40 = (os_strstr(cmd, " ht40") != NULL) || wpa_s->conf->p2p_go_ht40 ||
 		vht;
+	he = (os_strstr(cmd, " he") != NULL) || wpa_s->conf->p2p_go_he;
 
 	pos = os_strstr(cmd, "freq2=");
 	if (pos)
@@ -6258,7 +6261,7 @@ static int p2p_ctrl_invite_persistent(struct wpa_supplicant *wpa_s, char *cmd)
 		return -1;
 
 	return wpas_p2p_invite(wpa_s, _peer, ssid, NULL, freq, freq2, ht40, vht,
-			       max_oper_chwidth, pref_freq);
+			       max_oper_chwidth, pref_freq, he);
 }
 
 
@@ -6306,7 +6309,8 @@ static int p2p_ctrl_invite(struct wpa_supplicant *wpa_s, char *cmd)
 
 static int p2p_ctrl_group_add_persistent(struct wpa_supplicant *wpa_s,
 					 int id, int freq, int vht_center_freq2,
-					 int ht40, int vht, int vht_chwidth)
+					 int ht40, int vht, int vht_chwidth,
+					 int he)
 {
 	struct wpa_ssid *ssid;
 
@@ -6320,7 +6324,7 @@ static int p2p_ctrl_group_add_persistent(struct wpa_supplicant *wpa_s,
 
 	return wpas_p2p_group_add_persistent(wpa_s, ssid, 0, freq,
 					     vht_center_freq2, 0, ht40, vht,
-					     vht_chwidth, NULL, 0, 0);
+					     vht_chwidth, he, NULL, 0, 0);
 }
 
 
@@ -6329,6 +6333,7 @@ static int p2p_ctrl_group_add(struct wpa_supplicant *wpa_s, char *cmd)
 	int freq = 0, persistent = 0, group_id = -1;
 	int vht = wpa_s->conf->p2p_go_vht;
 	int ht40 = wpa_s->conf->p2p_go_ht40 || vht;
+	int he = wpa_s->conf->p2p_go_he;
 	int max_oper_chwidth, chwidth = 0, freq2 = 0;
 	char *token, *context = NULL;
 #ifdef CONFIG_ACS
@@ -6351,6 +6356,8 @@ static int p2p_ctrl_group_add(struct wpa_supplicant *wpa_s, char *cmd)
 		} else if (os_strcmp(token, "vht") == 0) {
 			vht = 1;
 			ht40 = 1;
+		} else if (os_strcmp(token, "he") == 0) {
+			he = 1;
 		} else if (os_strcmp(token, "persistent") == 0) {
 			persistent = 1;
 		} else {
@@ -6386,10 +6393,10 @@ static int p2p_ctrl_group_add(struct wpa_supplicant *wpa_s, char *cmd)
 	if (group_id >= 0)
 		return p2p_ctrl_group_add_persistent(wpa_s, group_id,
 						     freq, freq2, ht40, vht,
-						     max_oper_chwidth);
+						     max_oper_chwidth, he);
 
 	return wpas_p2p_group_add(wpa_s, persistent, freq, freq2, ht40, vht,
-				  max_oper_chwidth);
+				  max_oper_chwidth, he);
 }
 
 

@@ -1079,6 +1079,16 @@ struct wpa_config {
 	int p2p_go_vht;
 
 	/**
+	 * p2p_go_he - Default mode for 11ax HE enable when operating as GO
+	 *
+	 * This will take effect for p2p_group_add, p2p_connect, and p2p_invite.
+	 * Note that regulatory constraints and driver capabilities are
+	 * consulted anyway, so setting it to 1 can't do real harm.
+	 * By default: 0 (disabled)
+	 */
+	int p2p_go_he;
+
+	/**
 	 * p2p_go_ctwindow - CTWindow to use when operating as GO
 	 *
 	 * By default: 0 (no CTWindow). Values 0-127 can be used to indicate

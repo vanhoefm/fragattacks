@@ -4760,6 +4760,7 @@ static const struct global_parse_data global_fields[] = {
 	{ INT_RANGE(p2p_optimize_listen_chan, 0, 1), 0 },
 	{ INT(p2p_go_ht40), 0 },
 	{ INT(p2p_go_vht), 0 },
+	{ INT(p2p_go_he), 0 },
 	{ INT(p2p_disabled), 0 },
 	{ INT_RANGE(p2p_go_ctwindow, 0, 127), 0 },
 	{ INT(p2p_no_group_iface), 0 },
