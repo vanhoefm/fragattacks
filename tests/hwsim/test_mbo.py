@@ -35,6 +35,7 @@ def run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, country):
     dev[0].dump_monitor()
 
     logger.info("Country: " + country)
+    dev[0].note("Setting country code " + country)
     set_reg(country, apdev[0], apdev[1], dev[0])
     for j in range(5):
         ev = dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=5)
@@ -52,8 +53,10 @@ def run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, country):
         dev[0].connect("test-wnm-mbo", key_mgmt="NONE", scan_freq="5180")
         sta = hapd.get_sta(addr)
         res5 = sta['supp_op_classes'][2:]
-        dev[0].request("REMOVE_NETWORK all")
+        dev[0].wait_regdom(country_ie=True)
         hapd.disable()
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].request("ABORT_SCAN")
         dev[0].wait_disconnected()
         dev[0].dump_monitor()
 
@@ -63,8 +66,10 @@ def run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, country):
     dev[0].connect("test-wnm-mbo-2", key_mgmt="NONE", scan_freq="2412")
     sta = hapd2.get_sta(addr)
     res2 = sta['supp_op_classes'][2:]
-    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_regdom(country_ie=True)
     hapd2.disable()
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].request("ABORT_SCAN")
     dev[0].wait_disconnected()
     dev[0].dump_monitor()
 
@@ -91,6 +96,7 @@ def test_mbo_supp_oper_classes(dev, apdev):
     hapd2 = hostapd.add_ap(apdev[1], params, no_enable=True)
 
     try:
+        dev[0].request("STA_AUTOCONNECT 0")
         za2, za5 = run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, "ZA")
         fi2, fi5 = run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, "FI")
         us2, us5 = run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, "US")
@@ -101,6 +107,7 @@ def test_mbo_supp_oper_classes(dev, apdev):
         dev[0].dump_monitor()
         set_reg("00", apdev[0], apdev[1], dev[0])
         ev = dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=1)
+        dev[0].request("STA_AUTOCONNECT 1")
 
     za = "515354737475767778797a7b808182"
     fi = "515354737475767778797a7b808182"

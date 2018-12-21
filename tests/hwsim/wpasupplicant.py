@@ -1319,3 +1319,14 @@ class WpaSupplicant:
 
     def note(self, txt):
         self.request("NOTE " + txt)
+
+    def wait_regdom(self, country_ie=False):
+        for i in range(5):
+            ev = self.wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=1)
+            if ev is None:
+                break
+            if country_ie:
+                if "init=COUNTRY_IE" in ev:
+                    break
+            else:
+                break
