@@ -1441,6 +1441,7 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA384    0x00002000
 #define WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA256 0x00004000
 #define WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA384 0x00008000
+#define WPA_DRIVER_CAPA_KEY_MGMT_SAE 		0x00010000
 	/** Bitfield of supported key management suites */
 	unsigned int key_mgmt;
 

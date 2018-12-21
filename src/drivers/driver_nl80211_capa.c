@@ -786,6 +786,9 @@ static int wiphy_info_handler(struct nl_msg *msg, void *arg)
 				case QCA_NL80211_VENDOR_SUBCMD_ROAM:
 					drv->roam_vendor_cmd_avail = 1;
 					break;
+				case QCA_NL80211_VENDOR_SUBCMD_GET_SUPPORTED_AKMS:
+					drv->get_supported_akm_suites_avail = 1;
+					break;
 #endif /* CONFIG_DRIVER_NL80211_QCA */
 				}
 			}
@@ -955,6 +958,126 @@ static void qca_nl80211_check_dfs_capa(struct wpa_driver_nl80211_data *drv)
 	ret = send_and_recv_msgs(drv, msg, dfs_info_handler, &dfs_capability);
 	if (!ret && dfs_capability)
 		drv->capa.flags |= WPA_DRIVER_FLAGS_DFS_OFFLOAD;
+}
+
+
+static unsigned int get_akm_suites_info(struct nlattr *tb)
+{
+	int i, num;
+	unsigned int key_mgmt = 0;
+	u32 *akms;
+
+	if (!tb)
+		return 0;
+
+	num = nla_len(tb) / sizeof(u32);
+	akms = nla_data(tb);
+	for (i = 0; i < num; i++) {
+		u32 a = akms[i];
+
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: Supported AKM %02x-%02x-%02x:%u",
+			   a >> 24, (a >> 16) & 0xff,
+			   (a >> 8) & 0xff, a & 0xff);
+		switch (a) {
+		case RSN_AUTH_KEY_MGMT_UNSPEC_802_1X:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_WPA |
+				WPA_DRIVER_CAPA_KEY_MGMT_WPA2;
+			break;
+		case RSN_AUTH_KEY_MGMT_PSK_OVER_802_1X:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_WPA_PSK |
+				WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK;
+			break;
+		case RSN_AUTH_KEY_MGMT_FT_802_1X:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FT;
+			break;
+		case RSN_AUTH_KEY_MGMT_FT_PSK:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FT_PSK;
+			break;
+		case RSN_AUTH_KEY_MGMT_802_1X_SUITE_B:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B;
+			break;
+		case RSN_AUTH_KEY_MGMT_802_1X_SUITE_B_192:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B_192;
+			break;
+		case RSN_AUTH_KEY_MGMT_OWE:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_OWE;
+			break;
+		case RSN_AUTH_KEY_MGMT_DPP:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_DPP;
+			break;
+		case RSN_AUTH_KEY_MGMT_FILS_SHA256:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA256;
+			break;
+		case RSN_AUTH_KEY_MGMT_FILS_SHA384:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA384;
+			break;
+		case RSN_AUTH_KEY_MGMT_FT_FILS_SHA256:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA256;
+			break;
+		case RSN_AUTH_KEY_MGMT_FT_FILS_SHA384:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA384;
+			break;
+		case RSN_AUTH_KEY_MGMT_SAE:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_SAE;
+			break;
+		}
+	}
+
+	return key_mgmt;
+}
+
+
+static int get_akm_suites_handler(struct nl_msg *msg, void *arg)
+{
+	struct nlattr *tb[NL80211_ATTR_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	unsigned int *key_mgmt = arg;
+
+	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (tb[NL80211_ATTR_VENDOR_DATA]) {
+		struct nlattr *nl_vend = tb[NL80211_ATTR_VENDOR_DATA];
+		struct nlattr *tb_data[NL80211_ATTR_MAX + 1];
+
+		nla_parse(tb_data, NL80211_ATTR_MAX,
+			  nla_data(nl_vend), nla_len(nl_vend), NULL);
+
+		*key_mgmt =
+			get_akm_suites_info(tb_data[NL80211_ATTR_AKM_SUITES]);
+	}
+
+	return NL_SKIP;
+}
+
+
+static int qca_nl80211_get_akm_suites(struct wpa_driver_nl80211_data *drv)
+{
+	struct nl_msg *msg;
+	unsigned int key_mgmt = 0;
+	int ret;
+
+	if (!drv->get_supported_akm_suites_avail)
+		return -1;
+
+	if (!(msg = nl80211_drv_msg(drv, 0, NL80211_CMD_VENDOR)) ||
+	    nla_put_u32(msg, NL80211_ATTR_VENDOR_ID, OUI_QCA) ||
+	    nla_put_u32(msg, NL80211_ATTR_VENDOR_SUBCMD,
+			QCA_NL80211_VENDOR_SUBCMD_GET_SUPPORTED_AKMS)) {
+		nlmsg_free(msg);
+		return -1;
+	}
+
+	ret = send_and_recv_msgs(drv, msg, get_akm_suites_handler, &key_mgmt);
+	if (!ret) {
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: Replace capa.key_mgmt based on driver advertised capabilities: 0x%x",
+			   key_mgmt);
+		drv->capa.key_mgmt = key_mgmt;
+	}
+
+	return ret;
 }
 
 
@@ -1183,10 +1306,17 @@ int wpa_driver_nl80211_capa(struct wpa_driver_nl80211_data *drv)
 		drv->capa.key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA256 |
 			WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA384 |
 			WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA256 |
-			WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA384;
+			WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA384 |
+			WPA_DRIVER_CAPA_KEY_MGMT_SAE;
 	else if (drv->capa.flags & WPA_DRIVER_FLAGS_FILS_SK_OFFLOAD)
 		drv->capa.key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA256 |
 			WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA384;
+
+#ifdef CONFIG_DRIVER_NL80211_QCA
+	/* Override drv->capa.key_mgmt based on driver advertised capability
+	 * constraints, if available. */
+	qca_nl80211_get_akm_suites(drv);
+#endif /* CONFIG_DRIVER_NL80211_QCA */
 
 	drv->capa.auth = WPA_DRIVER_AUTH_OPEN |
 		WPA_DRIVER_AUTH_SHARED |
