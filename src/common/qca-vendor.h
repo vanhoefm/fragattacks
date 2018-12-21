@@ -499,6 +499,10 @@ enum qca_radiotap_vendor_ids {
  *
  *	Based on the config provided, FW will boost the weight and prioritize
  *	the traffic for that subsystem (WLAN/BT/Zigbee).
+ *
+ * @QCA_NL80211_VENDOR_SUBCMD_GET_SUPPORTED_AKMS: This command is used to query
+ *	the supported AKM suite selectorss from the driver. It returns the list
+ *	of supported AKMs in the attribute NL80211_ATTR_AKM_SUITES.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -663,6 +667,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_PEER_CFR_CAPTURE_CFG = 173,
 	QCA_NL80211_VENDOR_SUBCMD_THROUGHPUT_CHANGE_EVENT = 174,
 	QCA_NL80211_VENDOR_SUBCMD_COEX_CONFIG = 175,
+	QCA_NL80211_VENDOR_SUBCMD_GET_SUPPORTED_AKMS = 176,
 };
 
 enum qca_wlan_vendor_attr {
