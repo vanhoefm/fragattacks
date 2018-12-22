@@ -154,12 +154,15 @@ def test_ap_acs_5ghz(dev, apdev):
             raise Exception("Unexpected frequency")
 
         dev[0].connect("test-acs", psk="12345678", scan_freq=freq)
-
+        dev[0].wait_regdom(country_ie=True)
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         hostapd.cmd_execute(apdev[0], ['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def test_ap_acs_5ghz_40mhz(dev, apdev):
@@ -183,12 +186,15 @@ def test_ap_acs_5ghz_40mhz(dev, apdev):
             raise Exception("Secondary channel not set")
 
         dev[0].connect("test-acs", psk="12345678", scan_freq=freq)
-
+        dev[0].wait_regdom(country_ie=True)
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         hostapd.cmd_execute(apdev[0], ['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def test_ap_acs_vht(dev, apdev):
@@ -214,12 +220,15 @@ def test_ap_acs_vht(dev, apdev):
             raise Exception("Secondary channel not set")
 
         dev[0].connect("test-acs", psk="12345678", scan_freq=freq)
-
+        dev[0].wait_regdom(country_ie=True)
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         hostapd.cmd_execute(apdev[0], ['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def test_ap_acs_vht40(dev, apdev):
@@ -247,12 +256,15 @@ def test_ap_acs_vht40(dev, apdev):
             raise Exception("Secondary channel not set")
 
         dev[0].connect("test-acs", psk="12345678", scan_freq=freq)
-
+        dev[0].wait_regdom(country_ie=True)
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         hostapd.cmd_execute(apdev[0], ['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def test_ap_acs_vht160(dev, apdev):
@@ -283,11 +295,16 @@ def test_ap_acs_vht160(dev, apdev):
             if int(freq) < 5000:
                 raise Exception("Unexpected frequency")
             dev[0].connect("test-acs", psk="12345678", scan_freq=freq)
+            dev[0].wait_regdom(country_ie=True)
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         hostapd.cmd_execute(apdev[0], ['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
+        dev[0].flush_scan_cache()
 
 def test_ap_acs_vht160_scan_disable(dev, apdev):
     """Automatic channel selection for VHT160 and DISABLE during scan"""

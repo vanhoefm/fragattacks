@@ -98,6 +98,7 @@ def run_wpa2_ocv_5ghz(dev, apdev):
     for ocv in range(2):
         dev[0].connect(ssid, psk=passphrase, scan_freq="5200", ocv=str(ocv),
                        ieee80211w="1")
+        dev[0].wait_regdom(country_ie=True)
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
 
@@ -149,6 +150,7 @@ def run_wpa2_ocv_ht40(dev, apdev):
                            ieee80211w="1", disable_ht="1")
             dev[1].connect(ssid, psk=passphrase, scan_freq=freq, ocv=str(ocv),
                            ieee80211w="1")
+            dev[0].wait_regdom(country_ie=True)
             dev[0].request("REMOVE_NETWORK all")
             dev[1].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
@@ -190,6 +192,7 @@ def run_wpa2_ocv_vht40(dev, apdev):
                            ieee80211w="1", disable_vht="1")
             dev[2].connect(ssid, psk=passphrase, scan_freq=freq, ocv=str(ocv),
                            ieee80211w="1")
+            dev[0].wait_regdom(country_ie=True)
             dev[0].request("REMOVE_NETWORK all")
             dev[1].request("REMOVE_NETWORK all")
             dev[2].request("REMOVE_NETWORK all")
@@ -230,6 +233,7 @@ def run_wpa2_ocv_vht80(dev, apdev):
                            ieee80211w="1", disable_vht="1")
             dev[2].connect(ssid, psk=passphrase, scan_freq=freq, ocv=str(ocv),
                            ieee80211w="1")
+            dev[0].wait_regdom(country_ie=True)
             dev[0].request("REMOVE_NETWORK all")
             dev[1].request("REMOVE_NETWORK all")
             dev[2].request("REMOVE_NETWORK all")
@@ -270,6 +274,7 @@ def run_wpa2_ocv_vht160(dev, apdev):
                            ieee80211w="1", disable_vht="1")
             dev[2].connect(ssid, psk=passphrase, scan_freq=freq, ocv=str(ocv),
                            ieee80211w="1")
+            dev[0].wait_regdom(country_ie=True)
             dev[0].request("REMOVE_NETWORK all")
             dev[1].request("REMOVE_NETWORK all")
             dev[2].request("REMOVE_NETWORK all")
@@ -285,6 +290,7 @@ def test_wpa2_ocv_vht80plus80(dev, apdev):
         run_wpa2_ocv_vht80plus80(dev, apdev)
     finally:
         set_world_reg(apdev[0], apdev[1], dev[0])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
         dev[1].flush_scan_cache()
         dev[2].flush_scan_cache()
@@ -313,13 +319,24 @@ def run_wpa2_ocv_vht80plus80(dev, apdev):
                            ieee80211w="1", disable_vht="1")
             dev[2].connect(ssid, psk=passphrase, scan_freq=freq, ocv=str(ocv),
                            ieee80211w="1")
+            dev[0].wait_regdom(country_ie=True)
             dev[0].request("REMOVE_NETWORK all")
             dev[1].request("REMOVE_NETWORK all")
             dev[2].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
             dev[1].wait_disconnected()
             dev[2].wait_disconnected()
+        for i in range(3):
+            dev[i].connect(ssid, psk=passphrase, scan_freq=freq, ocv=str(ocv),
+                           ieee80211w="1")
+            if i == 0:
+                dev[i].wait_regdom(country_ie=True)
         hapd.disable()
+        for i in range(3):
+            dev[i].request("DISCONNECT")
+            dev[i].request("ABORT_SCAN")
+        for i in range(3):
+            dev[i].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
 
 class APConnection:
     def init_params(self):
@@ -372,6 +389,8 @@ class APConnection:
 
         dev.connect(self.ssid, raw_psk=self.psk, scan_freq=freq, ocv=sta_ocv,
                     ieee80211w="1", wait_connect=False)
+        if "country_code" in params:
+            dev.wait_regdom(country_ie=True)
         self.addr = dev.p2p_interface_addr()
 
         # Wait for EAPOL-Key msg 1/4 from hostapd to determine when associated
@@ -473,6 +492,7 @@ def test_wpa2_ocv_ap_vht160_mismatch(dev, apdev):
         run_wpa2_ocv_ap_vht160_mismatch(dev, apdev)
     finally:
         set_world_reg(apdev[0], apdev[1], dev[0])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def run_wpa2_ocv_ap_vht160_mismatch(dev, apdev):
@@ -498,8 +518,11 @@ def run_wpa2_ocv_ap_vht160_mismatch(dev, apdev):
     conn.confirm_valid_oci(129, 100, 0)
 
     dev[0].dump_monitor()
+    if conn.hapd:
+        conn.hapd.request("DISABLE")
     dev[0].request("DISCONNECT")
-    dev[0].wait_disconnected()
+    dev[0].request("ABORT_SCAN")
+    dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
 
 @remote_compatible
 def test_wpa2_ocv_ap_vht80plus80_mismatch(dev, apdev):
@@ -508,6 +531,7 @@ def test_wpa2_ocv_ap_vht80plus80_mismatch(dev, apdev):
         run_wpa2_ocv_ap_vht80plus80_mismatch(dev, apdev)
     finally:
         set_world_reg(apdev[0], apdev[1], dev[0])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def run_wpa2_ocv_ap_vht80plus80_mismatch(dev, apdev):
@@ -530,8 +554,11 @@ def run_wpa2_ocv_ap_vht80plus80_mismatch(dev, apdev):
     conn.confirm_valid_oci(130, 36, 155)
 
     dev[0].dump_monitor()
+    if conn.hapd:
+        conn.hapd.request("DISABLE")
     dev[0].request("DISCONNECT")
-    dev[0].wait_disconnected()
+    dev[0].request("ABORT_SCAN")
+    dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
 
 @remote_compatible
 def test_wpa2_ocv_ap_unexpected1(dev, apdev):
@@ -720,6 +747,8 @@ class STAConnection:
 
         self.dev.connect(self.ssid, raw_psk=self.psk, scan_freq=freq,
                          wait_connect=False, **sta_params)
+        if "country_code" in params:
+            self.dev.wait_regdom(country_ie=True)
         self.addr = dev.p2p_interface_addr()
 
         # Forward msg 1/4 from AP to STA
@@ -798,6 +827,7 @@ def test_wpa2_ocv_vht160_mismatch_client(dev, apdev):
         run_wpa2_ocv_vht160_mismatch_client(dev, apdev)
     finally:
         set_world_reg(apdev[0], apdev[1], dev[0])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def run_wpa2_ocv_vht160_mismatch_client(dev, apdev):
@@ -823,6 +853,13 @@ def run_wpa2_ocv_vht160_mismatch_client(dev, apdev):
     conn.test_bad_oci("wrong upper/lower behaviour",
                       129, 104, 0, "primary channel mismatch")
     conn.confirm_valid_oci(122, 100, 0)
+
+    dev[0].dump_monitor()
+    if conn.hapd:
+        conn.hapd.request("DISABLE")
+    dev[0].request("DISCONNECT")
+    dev[0].request("ABORT_SCAN")
+    dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
 
 def test_wpa2_ocv_sta_group_hs(dev, apdev):
     """OCV group handshake (STA)"""

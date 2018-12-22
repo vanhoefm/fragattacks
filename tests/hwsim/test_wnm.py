@@ -23,13 +23,13 @@ def clear_regdom_state(dev, hapd, hapd2):
             ev = dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
             if ev is None or "init=COUNTRY_IE" in ev:
                 break
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         if hapd:
             hapd.request("DISABLE")
         if hapd2:
             hapd2.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         dev[0].dump_monitor()
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
@@ -1128,13 +1128,13 @@ def start_wnm_tm(ap, country, dev, country3=None):
     return hapd, id
 
 def stop_wnm_tm(hapd, dev):
+    if hapd:
+        hapd.request("DISABLE")
     dev.request("DISCONNECT")
     try:
         dev.wait_disconnected()
     except:
         pass
-    if hapd:
-        hapd.request("DISABLE")
     subprocess.call(['iw', 'reg', 'set', '00'])
     dev.flush_scan_cache()
 
@@ -1864,11 +1864,15 @@ def test_wnm_bss_tm_reject(dev, apdev):
         if "status_code=123" not in ev:
             raise Exception("Unexpected BSS Transition Management Response status: " + ev)
         dev[0].wait_disconnected()
+        dev[0].wait_connected()
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def test_wnm_bss_tm_ap_proto(dev, apdev):

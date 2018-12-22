@@ -106,6 +106,7 @@ def test_dfs(dev, apdev):
             raise Exception("Unexpected frequency")
 
         dev[0].connect("dfs", key_mgmt="NONE")
+        dev[0].wait_regdom(country_ie=True)
         hwsim_utils.test_connectivity(dev[0], hapd)
 
         hapd.request("RADAR DETECTED freq=5260 ht_enabled=1 chan_width=1")
@@ -128,10 +129,13 @@ def test_dfs(dev, apdev):
         time.sleep(1)
         hwsim_utils.test_connectivity(dev[0], hapd)
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def test_dfs_etsi(dev, apdev, params):
@@ -161,6 +165,7 @@ def test_dfs_etsi(dev, apdev, params):
             raise Exception("Unexpected frequency")
 
         dev[0].connect("dfs", key_mgmt="NONE")
+        dev[0].wait_regdom(country_ie=True)
         hwsim_utils.test_connectivity(dev[0], hapd)
 
         hapd.request("RADAR DETECTED freq=%s ht_enabled=1 chan_width=1" % freq)
@@ -197,10 +202,13 @@ def test_dfs_etsi(dev, apdev, params):
             time.sleep(1)
         hwsim_utils.test_connectivity(dev[0], hapd)
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def test_dfs_radar1(dev, apdev):
@@ -255,11 +263,15 @@ def test_dfs_radar1(dev, apdev):
                 raise Exception("Unexpected frequency: " + freq)
 
         dev[0].connect("dfs", key_mgmt="NONE")
+        dev[0].wait_regdom(country_ie=True)
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def test_dfs_radar2(dev, apdev):
@@ -324,11 +336,15 @@ def test_dfs_radar_chanlist(dev, apdev):
         if "AP-ENABLED" not in ev:
             raise Exception("Unexpected DFS event: " + ev)
         dev[0].connect("dfs", key_mgmt="NONE")
+        dev[0].wait_regdom(country_ie=True)
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def test_dfs_radar_chanlist_vht80(dev, apdev):
@@ -359,14 +375,18 @@ def test_dfs_radar_chanlist_vht80(dev, apdev):
         if "AP-ENABLED" not in ev:
             raise Exception("Unexpected DFS event: " + ev)
         dev[0].connect("dfs", key_mgmt="NONE")
+        dev[0].wait_regdom(country_ie=True)
 
         if hapd.get_status_field('vht_oper_centr_freq_seg0_idx') != "42":
             raise Exception("Unexpected seg0 idx")
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def test_dfs_radar_chanlist_vht20(dev, apdev):
@@ -397,11 +417,15 @@ def test_dfs_radar_chanlist_vht20(dev, apdev):
         if "AP-ENABLED" not in ev:
             raise Exception("Unexpected DFS event: " + ev)
         dev[0].connect("dfs", key_mgmt="NONE")
+        dev[0].wait_regdom(country_ie=True)
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def test_dfs_radar_no_ht(dev, apdev):
@@ -432,11 +456,15 @@ def test_dfs_radar_no_ht(dev, apdev):
         if "AP-ENABLED" not in ev:
             raise Exception("Unexpected DFS event: " + ev)
         dev[0].connect("dfs", key_mgmt="NONE")
+        dev[0].wait_regdom(country_ie=True)
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def test_dfs_radar_ht40minus(dev, apdev):
@@ -467,12 +495,18 @@ def test_dfs_radar_ht40minus(dev, apdev):
         if "AP-ENABLED" not in ev:
             raise Exception("Unexpected DFS event: " + ev)
         dev[0].connect("dfs", key_mgmt="NONE")
+        dev[0].wait_regdom(country_ie=True)
+        dev[0].request("STA_AUTOCONNECT 0")
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
+        dev[0].request("STA_AUTOCONNECT 1")
 
 def test_dfs_ht40_minus(dev, apdev, params):
     """DFS CAC functionality on channel 104 HT40- [long]"""
@@ -502,10 +536,14 @@ def test_dfs_ht40_minus(dev, apdev, params):
             raise Exception("Unexpected frequency")
 
         dev[0].connect("dfs", key_mgmt="NONE", scan_freq="5520")
+        dev[0].wait_regdom(country_ie=True)
         hwsim_utils.test_connectivity(dev[0], hapd)
     finally:
-        dev[0].request("DISCONNECT")
         if hapd:
             hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()

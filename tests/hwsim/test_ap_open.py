@@ -767,10 +767,16 @@ def test_ap_open_country_outdoor(dev, apdev):
 
 def _test_ap_open_country(dev, apdev, country_code, country3):
     try:
-        run_ap_open_country(dev, apdev, country_code, country3)
+        hapd = None
+        hapd = run_ap_open_country(dev, apdev, country_code, country3)
     finally:
+        if hapd:
+            hapd.request("DISABLE")
         dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
         set_world_reg(apdev[0], apdev[1], dev[0])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
 def run_ap_open_country(dev, apdev, country_code, country3):
@@ -780,8 +786,8 @@ def run_ap_open_country(dev, apdev, country_code, country3):
                                       "ieee80211d": "1" })
     dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
     dev[0].connect("open", key_mgmt="NONE", scan_freq="2412")
-    dev[0].request("DISCONNECT")
-    dev[0].wait_disconnected()
+    dev[0].wait_regdom(country_ie=True)
+    return hapd
 
 def test_ap_open_disable_select(dev, apdev):
     """DISABLE_NETWORK for connected AP followed by SELECT_NETWORK"""
