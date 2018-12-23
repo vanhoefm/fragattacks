@@ -833,7 +833,7 @@ def test_ap_require_ht(dev, apdev):
     """Require HT"""
     params = { "ssid": "require-ht",
                "require_ht": "1" }
-    hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
+    hapd = hostapd.add_ap(apdev[0], params)
 
     dev[1].connect("require-ht", key_mgmt="NONE", scan_freq="2412",
                    disable_ht="1", wait_connect=False)
@@ -867,7 +867,7 @@ def test_ap_require_ht_limited_rates(dev, apdev):
     params = { "ssid": "require-ht",
                "supported_rates": "60 120 240 360 480 540",
                "require_ht": "1" }
-    hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
+    hapd = hostapd.add_ap(apdev[0], params)
 
     dev[1].connect("require-ht", key_mgmt="NONE", scan_freq="2412",
                    disable_ht="1", wait_connect=False)
