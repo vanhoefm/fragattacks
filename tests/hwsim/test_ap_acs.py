@@ -1,5 +1,5 @@
 # Test cases for automatic channel selection with hostapd
-# Copyright (c) 2013-2017, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2018, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -9,8 +9,9 @@ logger = logging.getLogger()
 import time
 
 import hostapd
-from utils import skip_with_fips, alloc_fail, fail_test
+from utils import skip_with_fips, alloc_fail, fail_test, HwsimSkip
 from test_ap_ht import clear_scan_cache
+from test_dfs import wait_dfs_event
 
 def force_prev_ap_on_24g(ap):
     # For now, make sure the last operating channel was on 2.4 GHz band to get
@@ -27,7 +28,7 @@ def force_prev_ap_on_5g(ap):
     time.sleep(0.1)
     hostapd.remove_bss(ap)
 
-def wait_acs(hapd):
+def wait_acs(hapd, return_after_acs=False):
     ev = hapd.wait_event(["ACS-STARTED", "ACS-COMPLETED", "ACS-FAILED",
                           "AP-ENABLED", "AP-DISABLED"], timeout=5)
     if not ev:
@@ -45,6 +46,9 @@ def wait_acs(hapd):
         raise Exception("ACS timed out")
     if "ACS-COMPLETED" not in ev:
         raise Exception("Unexpected ACS event: " + ev)
+
+    if return_after_acs:
+        return
 
     ev = hapd.wait_event(["AP-ENABLED", "AP-DISABLED"], timeout=5)
     if not ev:
@@ -386,3 +390,51 @@ def test_ap_acs_errors(dev, apdev):
         ev = hapd.wait_event(["AP-ENABLED", "AP-DISABLED"], timeout=10)
         if not ev:
             raise Exception("ACS start timed out")
+
+def test_ap_acs_dfs(dev, apdev, params):
+    """Automatic channel selection, HT scan, and DFS [long]"""
+    if not params['long']:
+        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+    try:
+        hapd = None
+        force_prev_ap_on_5g(apdev[0])
+        params = hostapd.wpa2_params(ssid="test-acs", passphrase="12345678")
+        params['hw_mode'] = 'a'
+        params['channel'] = '0'
+        params['ht_capab'] = '[HT40+]'
+        params['country_code'] = 'US'
+        params['ieee80211d'] = '1'
+        params['ieee80211h'] = '1'
+        params['acs_num_scans'] = '1'
+        params['chanlist'] = '52 56 60 64'
+        hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
+        wait_acs(hapd, return_after_acs=True)
+
+        wait_dfs_event(hapd, "DFS-CAC-START", 5)
+        ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 70)
+        if "success=1" not in ev:
+            raise Exception("CAC failed")
+
+        ev = hapd.wait_event(["AP-ENABLED"], timeout=5)
+        if not ev:
+            raise Exception("AP setup timed out")
+
+        state = hapd.get_status_field("state")
+        if state != "ENABLED":
+            raise Exception("Unexpected interface state")
+
+        freq = int(hapd.get_status_field("freq"))
+        if freq not in [ 5260, 5280, 5300, 5320 ]:
+            raise Exception("Unexpected frequency: %d" % freq)
+
+        dev[0].connect("test-acs", psk="12345678", scan_freq=str(freq))
+        dev[0].wait_regdom(country_ie=True)
+    finally:
+        if hapd:
+            hapd.request("DISABLE")
+        dev[0].request("DISCONNECT")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        hostapd.cmd_execute(apdev[0], ['iw', 'reg', 'set', '00'])
+        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
+        dev[0].flush_scan_cache()
