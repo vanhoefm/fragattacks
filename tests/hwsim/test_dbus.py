@@ -5299,6 +5299,11 @@ def test_dbus_ap(dev, apdev):
         def __init__(self, bus):
             TestDbus.__init__(self, bus)
             self.started = False
+            self.sta_added = False
+            self.sta_removed = False
+            self.authorized = False
+            self.deauthorized = False
+            self.stations = False
 
         def __enter__(self):
             gobject.timeout_add(1, self.run_connect)
@@ -5308,6 +5313,13 @@ def test_dbus_ap(dev, apdev):
                             "NetworkSelected")
             self.add_signal(self.propertiesChanged, WPAS_DBUS_IFACE,
                             "PropertiesChanged")
+            self.add_signal(self.stationAdded, WPAS_DBUS_IFACE, "StationAdded")
+            self.add_signal(self.stationRemoved, WPAS_DBUS_IFACE,
+                            "StationRemoved")
+            self.add_signal(self.staAuthorized, WPAS_DBUS_IFACE,
+                            "StaAuthorized")
+            self.add_signal(self.staDeauthorized, WPAS_DBUS_IFACE,
+                            "StaDeauthorized")
             self.loop.run()
             return self
 
@@ -5323,7 +5335,41 @@ def test_dbus_ap(dev, apdev):
             logger.debug("propertiesChanged: %s" % str(properties))
             if 'State' in properties and properties['State'] == "completed":
                 self.started = True
-                self.loop.quit()
+                dev1 = WpaSupplicant('wlan1', '/tmp/wpas-wlan1')
+                dev1.connect(ssid, psk=passphrase, scan_freq="2412")
+
+        def stationAdded(self, station, properties):
+            logger.debug("stationAdded: %s" % str(station))
+            logger.debug(str(properties))
+            self.sta_added = True
+            res = if_obj.Get(WPAS_DBUS_IFACE, 'Stations',
+                             dbus_interface=dbus.PROPERTIES_IFACE)
+            logger.info("Stations: " + str(res))
+            if len(res) == 1:
+                self.stations = True
+            else:
+                raise Exception("Missing Stations entry: " + str(res))
+
+        def stationRemoved(self, station):
+            logger.debug("stationRemoved: %s" % str(station))
+            self.sta_removed = True
+            res = if_obj.Get(WPAS_DBUS_IFACE, 'Stations',
+                             dbus_interface=dbus.PROPERTIES_IFACE)
+            logger.info("Stations: " + str(res))
+            if len(res) != 0:
+                self.stations = False
+                raise Exception("Unexpected Stations entry: " + str(res))
+            self.loop.quit()
+
+        def staAuthorized(self, name):
+            logger.debug("staAuthorized: " + name)
+            self.authorized = True
+            dev1 = WpaSupplicant('wlan1', '/tmp/wpas-wlan1')
+            dev1.request("DISCONNECT")
+
+        def staDeauthorized(self, name):
+            logger.debug("staDeauthorized: " + name)
+            self.deauthorized = True
 
         def run_connect(self, *args):
             logger.debug("run_connect")
@@ -5331,19 +5377,20 @@ def test_dbus_ap(dev, apdev):
                                      'key_mgmt': 'WPA-PSK',
                                      'psk': passphrase,
                                      'mode': 2,
-                                     'frequency': 2412 },
+                                     'frequency': 2412,
+                                     'scan_freq': 2412 },
                                    signature='sv')
             self.netw = iface.AddNetwork(args)
             iface.SelectNetwork(self.netw)
             return False
 
         def success(self):
-            return self.started
+            return self.started and self.sta_added and self.sta_removed and \
+                self.authorized and self.deauthorized
 
     with TestDbusConnect(bus) as t:
         if not t.success():
             raise Exception("Expected signals not seen")
-        dev[1].connect(ssid, psk=passphrase, scan_freq="2412")
 
 def test_dbus_connect_wpa_eap(dev, apdev):
     """D-Bus AddNetwork and connection with WPA+WPA2-Enterprise AP"""
