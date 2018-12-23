@@ -532,6 +532,7 @@ DBusMessage * wpas_dbus_handler_p2p_connect(DBusMessage *message,
 	int new_pin;
 	char *err_msg = NULL;
 	char *iface = NULL;
+	int ret;
 
 	if (!wpa_dbus_p2p_check_enabled(wpa_s, message, &reply, NULL))
 		return reply;
@@ -609,7 +610,12 @@ DBusMessage * wpas_dbus_handler_p2p_connect(DBusMessage *message,
 		char npin[9];
 		char *generated_pin;
 
-		os_snprintf(npin, sizeof(npin), "%08d", new_pin);
+		ret = os_snprintf(npin, sizeof(npin), "%08d", new_pin);
+		if (os_snprintf_error(sizeof(npin), ret)) {
+			reply = wpas_dbus_error_unknown_error(message,
+							      "invalid PIN");
+			goto out;
+		}
 		generated_pin = npin;
 		reply = dbus_message_new_method_return(message);
 		dbus_message_append_args(reply, DBUS_TYPE_STRING,

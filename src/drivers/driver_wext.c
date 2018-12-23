@@ -868,14 +868,16 @@ static int wext_hostap_ifname(struct wpa_driver_wext_data *drv,
 			      const char *ifname)
 {
 	char buf[200], *res;
-	int type;
+	int type, ret;
 	FILE *f;
 
 	if (strcmp(ifname, ".") == 0 || strcmp(ifname, "..") == 0)
 		return -1;
 
-	snprintf(buf, sizeof(buf), "/sys/class/net/%s/device/net/%s/type",
-		 drv->ifname, ifname);
+	ret = snprintf(buf, sizeof(buf), "/sys/class/net/%s/device/net/%s/type",
+		       drv->ifname, ifname);
+	if (os_snprintf_error(sizeof(buf), ret))
+		return -1;
 
 	f = fopen(buf, "r");
 	if (!f)

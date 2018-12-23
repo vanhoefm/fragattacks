@@ -139,6 +139,7 @@ eap_user_sqlite_get(struct hostapd_data *hapd, const u8 *identity,
 	struct hostapd_eap_user *user = NULL;
 	char id_str[256], cmd[300];
 	size_t i;
+	int res;
 
 	if (identity_len >= sizeof(id_str)) {
 		wpa_printf(MSG_DEBUG, "%s: identity len too big: %d >= %d",
@@ -183,9 +184,12 @@ eap_user_sqlite_get(struct hostapd_data *hapd, const u8 *identity,
 		return NULL;
 	}
 
-	os_snprintf(cmd, sizeof(cmd),
-		    "SELECT * FROM users WHERE identity='%s' AND phase2=%d;",
-		    id_str, phase2);
+	res = os_snprintf(cmd, sizeof(cmd),
+			  "SELECT * FROM users WHERE identity='%s' AND phase2=%d;",
+			  id_str, phase2);
+	if (os_snprintf_error(sizeof(cmd), res))
+		goto fail;
+
 	wpa_printf(MSG_DEBUG, "DB: %s", cmd);
 	if (sqlite3_exec(db, cmd, get_user_cb, &hapd->tmp_eap_user, NULL) !=
 	    SQLITE_OK) {
@@ -215,6 +219,7 @@ eap_user_sqlite_get(struct hostapd_data *hapd, const u8 *identity,
 		}
 	}
 
+fail:
 	sqlite3_close(db);
 
 	return user;
