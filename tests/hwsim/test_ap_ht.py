@@ -850,6 +850,17 @@ def test_ap_require_ht(dev, apdev):
                    ampdu_density="1", disable_ht40="1", disable_sgi="1",
                    disable_ldpc="1", rx_stbc="2", tx_stbc="1")
 
+def test_ap_ht_stbc(dev, apdev):
+    """HT STBC overrides"""
+    params = { "ssid": "ht" }
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("ht", key_mgmt="NONE", scan_freq="2412")
+    dev[1].connect("ht", key_mgmt="NONE", scan_freq="2412",
+                   rx_stbc="0", tx_stbc="0")
+    dev[2].connect("ht", key_mgmt="NONE", scan_freq="2412",
+                   rx_stbc="1", tx_stbc="1")
+
 @remote_compatible
 def test_ap_require_ht_limited_rates(dev, apdev):
     """Require HT with limited supported rates"""
