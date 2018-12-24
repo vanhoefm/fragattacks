@@ -1331,6 +1331,30 @@ static int macsec_drv_disable_transmit_sa(void *priv, struct transmit_sa *sa)
 }
 
 
+static int macsec_drv_status(void *priv, char *buf, size_t buflen)
+{
+	struct macsec_drv_data *drv = priv;
+	int res;
+	char *pos, *end;
+
+	pos = buf;
+	end = buf + buflen;
+
+	res = os_snprintf(pos, end - pos,
+			  "ifname=%s\n"
+			  "ifi=%d\n"
+			  "parent_ifname=%s\n"
+			  "parent_ifi=%d\n",
+			  drv->common.ifname, drv->ifi,
+			  drv->ifname, drv->parent_ifi);
+	if (os_snprintf_error(end - pos, res))
+		return pos - buf;
+	pos += res;
+
+	return pos - buf;
+}
+
+
 const struct wpa_driver_ops wpa_driver_macsec_linux_ops = {
 	.name = "macsec_linux",
 	.desc = "MACsec Ethernet driver for Linux",
@@ -1363,4 +1387,6 @@ const struct wpa_driver_ops wpa_driver_macsec_linux_ops = {
 	.delete_transmit_sa = macsec_drv_delete_transmit_sa,
 	.enable_transmit_sa = macsec_drv_enable_transmit_sa,
 	.disable_transmit_sa = macsec_drv_disable_transmit_sa,
+
+	.status = macsec_drv_status,
 };
