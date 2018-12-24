@@ -3706,7 +3706,7 @@ struct wpa_driver_ops {
 	/**
 	 * status - Get driver interface status information
 	 * @priv: Private driver interface data
-	 * @buf: Buffer for printing tou the status information
+	 * @buf: Buffer for printing the status information
 	 * @buflen: Maximum length of the buffer
 	 * Returns: Length of written status information or -1 on failure
 	 */
