@@ -177,6 +177,9 @@ static int try_commit(struct macsec_drv_data *drv)
 	if (drv->controlled_port_enabled_set) {
 		struct rtnl_link *change = rtnl_link_alloc();
 
+		wpa_printf(MSG_DEBUG, DRV_PREFIX
+			   "%s: try_commit controlled_port_enabled=%d",
+			   drv->ifname, drv->controlled_port_enabled);
 		if (!change)
 			return -1;
 
@@ -196,13 +199,24 @@ static int try_commit(struct macsec_drv_data *drv)
 		drv->controlled_port_enabled_set = FALSE;
 	}
 
-	if (drv->protect_frames_set)
+	if (drv->protect_frames_set) {
+		wpa_printf(MSG_DEBUG, DRV_PREFIX
+			   "%s: try_commit protect_frames=%d",
+			   drv->ifname, drv->protect_frames);
 		rtnl_link_macsec_set_protect(drv->link, drv->protect_frames);
+	}
 
-	if (drv->encrypt_set)
+	if (drv->encrypt_set) {
+		wpa_printf(MSG_DEBUG, DRV_PREFIX "%s: try_commit encrypt=%d",
+			   drv->ifname, drv->encrypt);
 		rtnl_link_macsec_set_encrypt(drv->link, drv->encrypt);
+	}
 
 	if (drv->replay_protect_set) {
+		wpa_printf(MSG_DEBUG, DRV_PREFIX
+			   "%s: try_commit replay_protect=%d replay_window=%d",
+			   drv->ifname, drv->replay_protect,
+			   drv->replay_window);
 		rtnl_link_macsec_set_replay_protect(drv->link,
 						    drv->replay_protect);
 		if (drv->replay_protect)
@@ -210,8 +224,12 @@ static int try_commit(struct macsec_drv_data *drv)
 						    drv->replay_window);
 	}
 
-	if (drv->encoding_sa_set)
+	if (drv->encoding_sa_set) {
+		wpa_printf(MSG_DEBUG, DRV_PREFIX
+			   "%s: try_commit encoding_sa=%d",
+			   drv->ifname, drv->encoding_sa);
 		rtnl_link_macsec_set_encoding_sa(drv->link, drv->encoding_sa);
+	}
 
 	err = rtnl_link_add(drv->sk, drv->link, 0);
 	if (err < 0)
@@ -318,6 +336,8 @@ static int macsec_drv_macsec_init(void *priv, struct macsec_init_params *params)
 			   drv->common.ifname);
 		goto cache;
 	}
+	wpa_printf(MSG_DEBUG, DRV_PREFIX "ifname=%s parent_ifi=%d",
+		   drv->common.ifname, drv->parent_ifi);
 
 	err = init_genl_ctx(drv);
 	if (err < 0)
@@ -754,8 +774,10 @@ static int macsec_drv_create_receive_sc(void *priv, struct receive_sc *sc,
 	struct nl_msg *msg;
 	int ret = -1;
 
-	wpa_printf(MSG_DEBUG, "%s -> " SCISTR, __func__,
-		   SCI2STR(sc->sci.addr, sc->sci.port));
+	wpa_printf(MSG_DEBUG, DRV_PREFIX "%s: create_receive_sc -> " SCISTR
+		   " (conf_offset=%u validation=%d)",
+		   drv->ifname, SCI2STR(sc->sci.addr, sc->sci.port),
+		   conf_offset, validation);
 
 	msg = msg_prepare(MACSEC_CMD_ADD_RXSC, ctx, drv->ifi);
 	if (!msg)
@@ -790,8 +812,8 @@ static int macsec_drv_delete_receive_sc(void *priv, struct receive_sc *sc)
 	struct nl_msg *msg;
 	int ret = -1;
 
-	wpa_printf(MSG_DEBUG, "%s -> " SCISTR, __func__,
-		   SCI2STR(sc->sci.addr, sc->sci.port));
+	wpa_printf(MSG_DEBUG, DRV_PREFIX "%s: delete_receive_sc -> " SCISTR,
+		   drv->ifname, SCI2STR(sc->sci.addr, sc->sci.port));
 
 	msg = msg_prepare(MACSEC_CMD_DEL_RXSC, ctx, drv->ifi);
 	if (!msg)
@@ -827,8 +849,17 @@ static int macsec_drv_create_receive_sa(void *priv, struct receive_sa *sa)
 	struct nlattr *nest;
 	int ret = -1;
 
-	wpa_printf(MSG_DEBUG, "%s -> %d on " SCISTR, __func__, sa->an,
-		   SCI2STR(sa->sc->sci.addr, sa->sc->sci.port));
+	wpa_printf(MSG_DEBUG,
+		   DRV_PREFIX "%s: create_receive_sa -> %d on " SCISTR
+		   " (enable_receive=%d next_pn=%u)",
+		   drv->ifname, sa->an,
+		   SCI2STR(sa->sc->sci.addr, sa->sc->sci.port),
+		   sa->enable_receive, sa->next_pn);
+	wpa_hexdump(MSG_DEBUG, DRV_PREFIX "SA keyid",
+		    &sa->pkey->key_identifier,
+		    sizeof(sa->pkey->key_identifier));
+	wpa_hexdump_key(MSG_DEBUG, DRV_PREFIX "SA key",
+			sa->pkey->key, sa->pkey->key_len);
 
 	msg = msg_prepare(MACSEC_CMD_ADD_RXSA, ctx, drv->ifi);
 	if (!msg)
@@ -877,7 +908,8 @@ static int macsec_drv_delete_receive_sa(void *priv, struct receive_sa *sa)
 	struct nlattr *nest;
 	int ret = -1;
 
-	wpa_printf(MSG_DEBUG, "%s -> %d on " SCISTR, __func__, sa->an,
+	wpa_printf(MSG_DEBUG, DRV_PREFIX "%s: delete_receive_sa -> %d on "
+		   SCISTR, drv->ifname, sa->an,
 		   SCI2STR(sa->sc->sci.addr, sa->sc->sci.port));
 
 	msg = msg_prepare(MACSEC_CMD_DEL_RXSA, ctx, drv->ifi);
@@ -954,7 +986,8 @@ static int macsec_drv_enable_receive_sa(void *priv, struct receive_sa *sa)
 	struct macsec_drv_data *drv = priv;
 	struct macsec_genl_ctx *ctx = &drv->ctx;
 
-	wpa_printf(MSG_DEBUG, "%s -> %d on " SCISTR, __func__, sa->an,
+	wpa_printf(MSG_DEBUG, DRV_PREFIX "%s: enable_receive_sa -> %d on "
+		   SCISTR, drv->ifname, sa->an,
 		   SCI2STR(sa->sc->sci.addr, sa->sc->sci.port));
 
 	return set_active_rx_sa(ctx, drv->ifi, mka_sci_u64(&sa->sc->sci),
@@ -973,7 +1006,8 @@ static int macsec_drv_disable_receive_sa(void *priv, struct receive_sa *sa)
 	struct macsec_drv_data *drv = priv;
 	struct macsec_genl_ctx *ctx = &drv->ctx;
 
-	wpa_printf(MSG_DEBUG, "%s -> %d on " SCISTR, __func__, sa->an,
+	wpa_printf(MSG_DEBUG, DRV_PREFIX "%s: disable_receive_sa -> %d on "
+		   SCISTR, drv->ifname, sa->an,
 		   SCI2STR(sa->sc->sci.addr, sa->sc->sci.port));
 
 	return set_active_rx_sa(ctx, drv->ifi, mka_sci_u64(&sa->sc->sci),
@@ -1017,7 +1051,10 @@ static int macsec_drv_create_transmit_sc(
 	u64 sci;
 	int err;
 
-	wpa_printf(MSG_DEBUG, "%s", __func__);
+	wpa_printf(MSG_DEBUG, DRV_PREFIX
+		   "%s: create_transmit_sc -> " SCISTR " (conf_offset=%d)",
+		   drv->common.ifname, SCI2STR(sc->sci.addr, sc->sci.port),
+		   conf_offset);
 
 	if (!drv->sk) {
 		wpa_printf(MSG_ERROR, DRV_PREFIX "NULL rtnl socket");
@@ -1060,6 +1097,9 @@ static int macsec_drv_create_transmit_sc(
 
 	drv->ifi = rtnl_link_get_ifindex(link);
 	ifname = rtnl_link_get_name(link);
+	wpa_printf(MSG_DEBUG,
+		   DRV_PREFIX "%s: create_transmit_sc: ifi=%d ifname=%s",
+		   drv->common.ifname, drv->ifi, ifname);
 	os_strlcpy(drv->ifname, ifname, sizeof(drv->ifname));
 	rtnl_link_put(link);
 
@@ -1088,7 +1128,8 @@ static int macsec_drv_delete_transmit_sc(void *priv, struct transmit_sc *sc)
 	struct macsec_drv_data *drv = priv;
 	int err;
 
-	wpa_printf(MSG_DEBUG, "%s", __func__);
+	wpa_printf(MSG_DEBUG, DRV_PREFIX "%s: delete_transmit_sc -> " SCISTR,
+		   drv->ifname, SCI2STR(sc->sci.addr, sc->sci.port));
 
 	if (!drv->sk)
 		return 0;
@@ -1125,7 +1166,16 @@ static int macsec_drv_create_transmit_sa(void *priv, struct transmit_sa *sa)
 	struct nlattr *nest;
 	int ret = -1;
 
-	wpa_printf(MSG_DEBUG, "%s -> %d", __func__, sa->an);
+	wpa_printf(MSG_DEBUG, DRV_PREFIX "%s: create_transmit_sa -> %d on "
+		   SCISTR " (enable_transmit=%d next_pn=%u)",
+		   drv->ifname, sa->an,
+		   SCI2STR(sa->sc->sci.addr, sa->sc->sci.port),
+		   sa->enable_transmit, sa->next_pn);
+	wpa_hexdump(MSG_DEBUG, DRV_PREFIX "SA keyid",
+		    &sa->pkey->key_identifier,
+		    sizeof(sa->pkey->key_identifier));
+	wpa_hexdump_key(MSG_DEBUG, DRV_PREFIX "SA key",
+			sa->pkey->key, sa->pkey->key_len);
 
 	msg = msg_prepare(MACSEC_CMD_ADD_TXSA, ctx, drv->ifi);
 	if (!msg)
@@ -1171,7 +1221,9 @@ static int macsec_drv_delete_transmit_sa(void *priv, struct transmit_sa *sa)
 	struct nlattr *nest;
 	int ret = -1;
 
-	wpa_printf(MSG_DEBUG, "%s -> %d", __func__, sa->an);
+	wpa_printf(MSG_DEBUG, DRV_PREFIX "%s: delete_transmit_sa -> %d on "
+		   SCISTR, drv->ifname, sa->an,
+		   SCI2STR(sa->sc->sci.addr, sa->sc->sci.port));
 
 	msg = msg_prepare(MACSEC_CMD_DEL_TXSA, ctx, drv->ifi);
 	if (!msg)
@@ -1243,7 +1295,9 @@ static int macsec_drv_enable_transmit_sa(void *priv, struct transmit_sa *sa)
 	struct macsec_genl_ctx *ctx = &drv->ctx;
 	int ret;
 
-	wpa_printf(MSG_DEBUG, "%s -> %d", __func__, sa->an);
+	wpa_printf(MSG_DEBUG, DRV_PREFIX "%s: enable_transmit_sa -> %d on "
+		   SCISTR, drv->ifname, sa->an,
+		   SCI2STR(sa->sc->sci.addr, sa->sc->sci.port));
 
 	ret = set_active_tx_sa(ctx, drv->ifi, sa->an, TRUE);
 	if (ret < 0) {
@@ -1269,7 +1323,9 @@ static int macsec_drv_disable_transmit_sa(void *priv, struct transmit_sa *sa)
 	struct macsec_drv_data *drv = priv;
 	struct macsec_genl_ctx *ctx = &drv->ctx;
 
-	wpa_printf(MSG_DEBUG, "%s -> %d", __func__, sa->an);
+	wpa_printf(MSG_DEBUG, DRV_PREFIX "%s: disable_transmit_sa -> %d on "
+		   SCISTR, drv->ifname, sa->an,
+		   SCI2STR(sa->sc->sci.addr, sa->sc->sci.port));
 
 	return set_active_tx_sa(ctx, drv->ifi, sa->an, FALSE);
 }
