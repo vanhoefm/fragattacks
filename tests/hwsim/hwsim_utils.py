@@ -16,11 +16,15 @@ def run_connectivity_test(dev1, dev2, tos, dev1group=False, dev2group=False,
                           multicast_to_unicast=False, broadcast=True):
     addr1 = dev1.own_addr()
     if not dev1group and isinstance(dev1, WpaSupplicant):
-        addr1 = dev1.get_driver_status_field('addr')
+        addr = dev1.get_driver_status_field('addr')
+        if addr:
+            addr1 = addr
 
     addr2 = dev2.own_addr()
     if not dev2group and isinstance(dev2, WpaSupplicant):
-        addr2 = dev2.get_driver_status_field('addr')
+        addr = dev2.get_driver_status_field('addr')
+        if addr:
+            addr2 = addr
 
     dev1.dump_monitor()
     dev2.dump_monitor()
