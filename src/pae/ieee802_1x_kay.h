@@ -38,7 +38,7 @@ struct ieee802_1x_mka_ki {
 struct ieee802_1x_mka_sci {
 	u8 addr[ETH_ALEN];
 	be16 port;
-};
+} STRUCT_PACKED;
 
 struct mka_key {
 	u8 key[MAX_KEY_LEN];

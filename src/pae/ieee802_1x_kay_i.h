@@ -165,7 +165,7 @@ struct ieee802_1x_mka_hdr {
 #endif
 	/* octet 4 */
 	u8 length1;
-};
+} STRUCT_PACKED;
 
 #define MKA_HDR_LEN sizeof(struct ieee802_1x_mka_hdr)
 
@@ -210,9 +210,9 @@ struct ieee802_1x_mka_basic_body {
 	be32 actor_mn;
 	u8 algo_agility[4];
 
-	/* followed by CAK Name*/
+	/* followed by CAK Name */
 	u8 ckn[0];
-};
+} STRUCT_PACKED;
 
 /**
  * struct ieee802_1x_mka_peer_body - Live Peer List and Potential Peer List
@@ -238,9 +238,9 @@ struct ieee802_1x_mka_peer_body {
 	/* octet 4 */
 	u8 length1;
 
-	u8 peer[0];
 	/* followed by Peers */
-};
+	u8 peer[0];
+} STRUCT_PACKED;
 
 /**
  * struct ieee802_1x_mka_sak_use_body - MACsec SAK Use parameter set (Figure
@@ -315,7 +315,7 @@ struct ieee802_1x_mka_sak_use_body {
 	be32 okn;
 	/* octet 41 - 44 */
 	be32 olpn;
-};
+} STRUCT_PACKED;
 
 /**
  * struct ieee802_1x_mka_dist_sak_body - Distributed SAK parameter set
@@ -362,7 +362,7 @@ struct ieee802_1x_mka_dist_sak_body {
 	 * for other cipher suite: octet 9-16: cipher suite id, octet 17-: SAK
 	 */
 	u8 sak[0];
-};
+} STRUCT_PACKED;
 
 /**
  * struct ieee802_1x_mka_dist_cak_body - Distributed CAK parameter set (Figure
@@ -398,7 +398,7 @@ struct ieee802_1x_mka_dist_cak_body {
 
 	/* followed by CAK Name, 29- */
 	u8 ckn[0];
-};
+} STRUCT_PACKED;
 
 struct ieee802_1x_mka_icv_body {
 	/* octet 1 */
@@ -418,6 +418,6 @@ struct ieee802_1x_mka_icv_body {
 
 	/* octet 5 - */
 	u8 icv[0];
-};
+} STRUCT_PACKED;
 
 #endif /* IEEE802_1X_KAY_I_H */
