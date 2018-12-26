@@ -172,16 +172,25 @@ int ieee802_1x_ick_aes_cmac(const u8 *cak, size_t cak_bytes, const u8 *ckn,
 
 
 /**
- * ieee802_1x_icv_128bits_aes_cmac
+ * ieee802_1x_icv_aes_cmac
  *
  * IEEE Std 802.1X-2010, 9.4.1
  * ICV = AES-CMAC(ICK, M, 128)
  */
-int ieee802_1x_icv_128bits_aes_cmac(const u8 *ick, const u8 *msg,
-				    size_t msg_bytes, u8 *icv)
+int ieee802_1x_icv_aes_cmac(const u8 *ick, size_t ick_bytes, const u8 *msg,
+			    size_t msg_bytes, u8 *icv)
 {
-	if (omac1_aes_128(ick, msg, msg_bytes, icv)) {
-		wpa_printf(MSG_ERROR, "MKA: omac1_aes_128 failed");
+	int res;
+
+	if (ick_bytes == 16)
+		res = omac1_aes_128(ick, msg, msg_bytes, icv);
+	else if (ick_bytes == 32)
+		res = omac1_aes_256(ick, msg, msg_bytes, icv);
+	else
+		return -1;
+	if (res) {
+		wpa_printf(MSG_ERROR,
+			   "MKA: AES-CMAC failed for ICV calculation");
 		return -1;
 	}
 	return 0;

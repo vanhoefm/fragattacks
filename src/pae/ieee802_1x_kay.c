@@ -74,7 +74,7 @@ static struct mka_alg mka_alg_tbl[] = {
 		.ckn_trfm = ieee802_1x_ckn_128bits_aes_cmac,
 		.kek_trfm = ieee802_1x_kek_aes_cmac,
 		.ick_trfm = ieee802_1x_ick_aes_cmac,
-		.icv_hash = ieee802_1x_icv_128bits_aes_cmac,
+		.icv_hash = ieee802_1x_icv_aes_cmac,
 
 		.index = 1,
 	},
@@ -1782,8 +1782,9 @@ ieee802_1x_mka_encode_icv_body(struct ieee802_1x_mka_participant *participant,
 	}
 
 	if (mka_alg_tbl[participant->kay->mka_algindex].icv_hash(
-		    participant->ick.key, wpabuf_head(buf), buf->used, cmac)) {
-		wpa_printf(MSG_ERROR, "KaY, omac1_aes_128 failed");
+		    participant->ick.key, participant->ick.len,
+		    wpabuf_head(buf), wpabuf_len(buf), cmac)) {
+		wpa_printf(MSG_ERROR, "KaY: failed to calculate ICV");
 		return -1;
 	}
 
@@ -3029,9 +3030,9 @@ static int ieee802_1x_kay_mkpdu_sanity_check(struct ieee802_1x_kay *kay,
 	 * packet body length.
 	 */
 	if (mka_alg_tbl[kay->mka_algindex].icv_hash(
-		    participant->ick.key,
+		    participant->ick.key, participant->ick.len,
 		    buf, len - mka_alg_tbl[kay->mka_algindex].icv_len, icv)) {
-		wpa_printf(MSG_ERROR, "KaY: omac1_aes_128 failed");
+		wpa_printf(MSG_ERROR, "KaY: failed to calculate ICV");
 		return -1;
 	}
 

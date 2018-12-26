@@ -80,7 +80,8 @@ struct mka_alg {
 	int (*ick_trfm)(const u8 *cak, size_t cak_bytes,
 			const u8 *ckn, size_t ckn_len,
 			u8 *ick, size_t ick_bytes);
-	int (*icv_hash)(const u8 *ick, const u8 *msg, size_t msg_len, u8 *icv);
+	int (*icv_hash)(const u8 *ick, size_t ick_bytes,
+			const u8 *msg, size_t msg_len, u8 *icv);
 
 	int index; /* index for configuring */
 };
