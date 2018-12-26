@@ -855,8 +855,9 @@ struct wpa_ssid {
 	/**
 	 * mka_cak - MKA pre-shared CAK
 	 */
-#define MACSEC_CAK_LEN 16
-	u8 mka_cak[MACSEC_CAK_LEN];
+#define MACSEC_CAK_MAX_LEN 32
+	size_t mka_cak_len;
+	u8 mka_cak[MACSEC_CAK_MAX_LEN];
 
 #define MKA_PSK_SET_CKN BIT(0)
 #define MKA_PSK_SET_CAK BIT(1)

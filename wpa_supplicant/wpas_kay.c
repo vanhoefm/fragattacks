@@ -419,7 +419,7 @@ void * ieee802_1x_create_preshared_mka(struct wpa_supplicant *wpa_s,
 	if (wpa_s->kay->policy == DO_NOT_SECURE)
 		goto dealloc;
 
-	cak->len = MACSEC_CAK_LEN;
+	cak->len = ssid->mka_cak_len;
 	os_memcpy(cak->key, ssid->mka_cak, cak->len);
 
 	ckn->len = ssid->mka_ckn_len;

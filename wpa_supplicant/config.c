@@ -2002,16 +2002,21 @@ static int wpa_config_parse_mka_cak(const struct parse_data *data,
 				    struct wpa_ssid *ssid, int line,
 				    const char *value)
 {
-	if (hexstr2bin(value, ssid->mka_cak, MACSEC_CAK_LEN) ||
-	    value[MACSEC_CAK_LEN * 2] != '\0') {
+	size_t len;
+
+	len = os_strlen(value);
+	if (len > 2 * MACSEC_CAK_MAX_LEN ||
+	    (len != 2 * 16 && len != 2 * 32) ||
+	    hexstr2bin(value, ssid->mka_cak, len / 2)) {
 		wpa_printf(MSG_ERROR, "Line %d: Invalid MKA-CAK '%s'.",
 			   line, value);
 		return -1;
 	}
-
+	ssid->mka_cak_len = len / 2;
 	ssid->mka_psk_set |= MKA_PSK_SET_CAK;
 
-	wpa_hexdump_key(MSG_MSGDUMP, "MKA-CAK", ssid->mka_cak, MACSEC_CAK_LEN);
+	wpa_hexdump_key(MSG_MSGDUMP, "MKA-CAK", ssid->mka_cak,
+			ssid->mka_cak_len);
 	return 0;
 }
 
@@ -2053,7 +2058,7 @@ static char * wpa_config_write_mka_cak(const struct parse_data *data,
 	if (!(ssid->mka_psk_set & MKA_PSK_SET_CAK))
 		return NULL;
 
-	return wpa_config_write_string_hex(ssid->mka_cak, MACSEC_CAK_LEN);
+	return wpa_config_write_string_hex(ssid->mka_cak, ssid->mka_cak_len);
 }
 
 
