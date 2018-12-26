@@ -72,7 +72,7 @@ static struct mka_alg mka_alg_tbl[] = {
 
 		.cak_trfm = ieee802_1x_cak_128bits_aes_cmac,
 		.ckn_trfm = ieee802_1x_ckn_128bits_aes_cmac,
-		.kek_trfm = ieee802_1x_kek_128bits_aes_cmac,
+		.kek_trfm = ieee802_1x_kek_aes_cmac,
 		.ick_trfm = ieee802_1x_ick_128bits_aes_cmac,
 		.icv_hash = ieee802_1x_icv_128bits_aes_cmac,
 
@@ -1556,7 +1556,7 @@ ieee802_1x_mka_encode_dist_sak_body(
 		os_memcpy(body->sak, &cs, CS_ID_LEN);
 		sak_pos = CS_ID_LEN;
 	}
-	if (aes_wrap(participant->kek.key, 16,
+	if (aes_wrap(participant->kek.key, participant->kek.len,
 		     cipher_suite_tbl[cs_index].sak_len / 8,
 		     sak->key, body->sak + sak_pos)) {
 		wpa_printf(MSG_ERROR, "KaY: AES wrap failed");
@@ -1693,8 +1693,8 @@ ieee802_1x_mka_decode_dist_sak_body(
 		wpa_printf(MSG_ERROR, "KaY-%s: Out of memory", __func__);
 		return -1;
 	}
-	if (aes_unwrap(participant->kek.key, 16, sak_len >> 3, wrap_sak,
-		       unwrap_sak)) {
+	if (aes_unwrap(participant->kek.key, participant->kek.len,
+		       sak_len >> 3, wrap_sak, unwrap_sak)) {
 		wpa_printf(MSG_ERROR, "KaY: AES unwrap failed");
 		os_free(unwrap_sak);
 		return -1;
@@ -3532,9 +3532,11 @@ ieee802_1x_kay_create_mka(struct ieee802_1x_kay *kay,
 	/* to derive KEK from CAK and CKN */
 	participant->kek.len = mka_alg_tbl[kay->mka_algindex].kek_len;
 	if (mka_alg_tbl[kay->mka_algindex].kek_trfm(participant->cak.key,
+						    participant->cak.len,
 						    participant->ckn.name,
 						    participant->ckn.len,
-						    participant->kek.key)) {
+						    participant->kek.key,
+						    participant->kek.len)) {
 		wpa_printf(MSG_ERROR, "KaY: Derived KEK failed");
 		goto fail;
 	}

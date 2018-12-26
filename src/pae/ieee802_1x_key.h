@@ -14,8 +14,8 @@ int ieee802_1x_cak_128bits_aes_cmac(const u8 *msk, const u8 *mac1,
 int ieee802_1x_ckn_128bits_aes_cmac(const u8 *msk, const u8 *mac1,
 				    const u8 *mac2, const u8 *sid,
 				    size_t sid_bytes, u8 *ckn);
-int ieee802_1x_kek_128bits_aes_cmac(const u8 *cak, const u8 *ckn,
-				    size_t ckn_bytes, u8 *kek);
+int ieee802_1x_kek_aes_cmac(const u8 *cak, size_t cak_bytes, const u8 *ckn,
+			    size_t ckn_bytes, u8 *kek, size_t kek_bytes);
 int ieee802_1x_ick_128bits_aes_cmac(const u8 *cak, const u8 *ckn,
 				    size_t ckn_bytes, u8 *ick);
 int ieee802_1x_icv_128bits_aes_cmac(const u8 *ick, const u8 *msg,
