@@ -64,7 +64,6 @@ static struct mka_alg mka_alg_tbl[] = {
 	{
 		.parameter = MKA_ALGO_AGILITY_2009,
 
-		.cak_len = DEFAULT_ICV_LEN,
 		.icv_len = DEFAULT_ICV_LEN,
 
 		.cak_trfm = ieee802_1x_cak_128bits_aes_cmac,
@@ -3437,8 +3436,9 @@ ieee802_1x_kay_create_mka(struct ieee802_1x_kay *kay,
 		return NULL;
 	}
 
-	if (cak->len != mka_alg_tbl[kay->mka_algindex].cak_len) {
-		wpa_printf(MSG_ERROR, "KaY: CAK length not follow key schema");
+	if (cak->len != 16 && cak->len != 32) {
+		wpa_printf(MSG_ERROR, "KaY: Unexpected CAK length %u",
+			   (unsigned int) cak->len);
 		return NULL;
 	}
 	if (ckn->len > MAX_CKN_LEN) {
