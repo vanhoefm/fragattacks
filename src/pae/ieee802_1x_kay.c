@@ -2082,9 +2082,10 @@ ieee802_1x_kay_generate_new_sak(struct ieee802_1x_mka_participant *participant)
 	os_memcpy(context + ctx_offset, &kay->dist_kn, sizeof(kay->dist_kn));
 
 	if (key_len == 16 || key_len == 32) {
-		if (ieee802_1x_sak_128bits_aes_cmac(participant->cak.key,
-						    context, ctx_len,
-						    key, key_len)) {
+		if (ieee802_1x_sak_aes_cmac(participant->cak.key,
+					    participant->cak.len,
+					    context, ctx_len,
+					    key, key_len)) {
 			wpa_printf(MSG_ERROR, "KaY: Failed to generate SAK");
 			goto fail;
 		}
