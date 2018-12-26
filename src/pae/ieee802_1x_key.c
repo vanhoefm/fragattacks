@@ -151,13 +151,13 @@ int ieee802_1x_kek_aes_cmac(const u8 *cak, size_t cak_bytes, const u8 *ckn,
 
 
 /**
- * ieee802_1x_ick_128bits_aes_cmac
+ * ieee802_1x_ick_aes_cmac
  *
  * IEEE Std 802.1X-2010, 9.3.3
  * ICK = KDF(Key, Label, Keyid, ICKLength)
  */
-int ieee802_1x_ick_128bits_aes_cmac(const u8 *cak, const u8 *ckn,
-				    size_t ckn_bytes, u8 *ick)
+int ieee802_1x_ick_aes_cmac(const u8 *cak, size_t cak_bytes, const u8 *ckn,
+			    size_t ckn_bytes, u8 *ick, size_t ick_bytes)
 {
 	u8 context[16];
 
@@ -165,8 +165,9 @@ int ieee802_1x_ick_128bits_aes_cmac(const u8 *cak, const u8 *ckn,
 	os_memset(context, 0, sizeof(context));
 	os_memcpy(context, ckn, (ckn_bytes < 16) ? ckn_bytes : 16);
 
-	return aes_kdf(cak, 128, "IEEE8021 ICK", context, sizeof(context) * 8,
-		       128, ick);
+	return aes_kdf(cak, 8 *cak_bytes, "IEEE8021 ICK",
+		       context, sizeof(context) * 8,
+		       8 * ick_bytes, ick);
 }
 
 

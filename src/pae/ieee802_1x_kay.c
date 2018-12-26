@@ -73,7 +73,7 @@ static struct mka_alg mka_alg_tbl[] = {
 		.cak_trfm = ieee802_1x_cak_128bits_aes_cmac,
 		.ckn_trfm = ieee802_1x_ckn_128bits_aes_cmac,
 		.kek_trfm = ieee802_1x_kek_aes_cmac,
-		.ick_trfm = ieee802_1x_ick_128bits_aes_cmac,
+		.ick_trfm = ieee802_1x_ick_aes_cmac,
 		.icv_hash = ieee802_1x_icv_128bits_aes_cmac,
 
 		.index = 1,
@@ -3546,9 +3546,11 @@ ieee802_1x_kay_create_mka(struct ieee802_1x_kay *kay,
 	/* to derive ICK from CAK and CKN */
 	participant->ick.len = mka_alg_tbl[kay->mka_algindex].ick_len;
 	if (mka_alg_tbl[kay->mka_algindex].ick_trfm(participant->cak.key,
+						    participant->cak.len,
 						    participant->ckn.name,
 						    participant->ckn.len,
-						    participant->ick.key)) {
+						    participant->ick.key,
+						    participant->ick.len)) {
 		wpa_printf(MSG_ERROR, "KaY: Derived ICK failed");
 		goto fail;
 	}
