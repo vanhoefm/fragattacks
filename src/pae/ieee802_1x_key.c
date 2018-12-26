@@ -82,33 +82,32 @@ static int aes_kdf(const u8 *kdk, size_t kdk_bits,
 }
 
 
-/********** AES-CMAC-128 **********/
 /**
- * ieee802_1x_cak_128bits_aes_cmac
+ * ieee802_1x_cak_aes_cmac
  *
  * IEEE Std 802.1X-2010, 6.2.2
  * CAK = KDF(Key, Label, mac1 | mac2, CAKlength)
  */
-int ieee802_1x_cak_128bits_aes_cmac(const u8 *msk, const u8 *mac1,
-				    const u8 *mac2, u8 *cak)
+int ieee802_1x_cak_aes_cmac(const u8 *msk, size_t msk_bytes, const u8 *mac1,
+			    const u8 *mac2, u8 *cak, size_t cak_bytes)
 {
 	u8 context[2 * ETH_ALEN];
 
 	joint_two_mac(mac1, mac2, context);
-	return aes_kdf(msk, 128, "IEEE8021 EAP CAK",
-		       context, sizeof(context) * 8, 128, cak);
+	return aes_kdf(msk, 8 * msk_bytes, "IEEE8021 EAP CAK",
+		       context, sizeof(context) * 8, 8 * cak_bytes, cak);
 }
 
 
 /**
- * ieee802_1x_ckn_128bits_aes_cmac
+ * ieee802_1x_ckn_aes_cmac
  *
  * IEEE Std 802.1X-2010, 6.2.2
  * CKN = KDF(Key, Label, ID | mac1 | mac2, CKNlength)
  */
-int ieee802_1x_ckn_128bits_aes_cmac(const u8 *msk, const u8 *mac1,
-				    const u8 *mac2, const u8 *sid,
-				    size_t sid_bytes, u8 *ckn)
+int ieee802_1x_ckn_aes_cmac(const u8 *msk, size_t msk_bytes, const u8 *mac1,
+			    const u8 *mac2, const u8 *sid,
+			    size_t sid_bytes, u8 *ckn)
 {
 	int res;
 	u8 *context;
@@ -122,8 +121,8 @@ int ieee802_1x_ckn_128bits_aes_cmac(const u8 *msk, const u8 *mac1,
 	os_memcpy(context, sid, sid_bytes);
 	joint_two_mac(mac1, mac2, context + sid_bytes);
 
-	res = aes_kdf(msk, 128, "IEEE8021 EAP CKN", context, ctx_len * 8,
-		      128, ckn);
+	res = aes_kdf(msk, 8 * msk_bytes, "IEEE8021 EAP CKN",
+		      context, ctx_len * 8, 128, ckn);
 	os_free(context);
 	return res;
 }

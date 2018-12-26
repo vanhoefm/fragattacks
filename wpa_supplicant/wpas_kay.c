@@ -357,8 +357,8 @@ void * ieee802_1x_notify_create_actor(struct wpa_supplicant *wpa_s,
 
 	/* Derive CAK from MSK */
 	cak->len = DEFAULT_KEY_LEN;
-	if (ieee802_1x_cak_128bits_aes_cmac(msk->key, wpa_s->own_addr,
-					    peer_addr, cak->key)) {
+	if (ieee802_1x_cak_aes_cmac(msk->key, msk->len, wpa_s->own_addr,
+				    peer_addr, cak->key, cak->len)) {
 		wpa_printf(MSG_ERROR,
 			   "IEEE 802.1X: Deriving CAK failed");
 		goto fail;
@@ -367,9 +367,8 @@ void * ieee802_1x_notify_create_actor(struct wpa_supplicant *wpa_s,
 
 	/* Derive CKN from MSK */
 	ckn->len = DEFAULT_CKN_LEN;
-	if (ieee802_1x_ckn_128bits_aes_cmac(msk->key, wpa_s->own_addr,
-					    peer_addr, sid, sid_len,
-					    ckn->name)) {
+	if (ieee802_1x_ckn_aes_cmac(msk->key, msk->len, wpa_s->own_addr,
+				    peer_addr, sid, sid_len, ckn->name)) {
 		wpa_printf(MSG_ERROR,
 			   "IEEE 802.1X: Deriving CKN failed");
 		goto fail;

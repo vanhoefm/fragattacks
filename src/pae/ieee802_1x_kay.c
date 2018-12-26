@@ -66,8 +66,8 @@ static struct mka_alg mka_alg_tbl[] = {
 
 		.icv_len = DEFAULT_ICV_LEN,
 
-		.cak_trfm = ieee802_1x_cak_128bits_aes_cmac,
-		.ckn_trfm = ieee802_1x_ckn_128bits_aes_cmac,
+		.cak_trfm = ieee802_1x_cak_aes_cmac,
+		.ckn_trfm = ieee802_1x_ckn_aes_cmac,
 		.kek_trfm = ieee802_1x_kek_aes_cmac,
 		.ick_trfm = ieee802_1x_ick_aes_cmac,
 		.icv_hash = ieee802_1x_icv_aes_cmac,
