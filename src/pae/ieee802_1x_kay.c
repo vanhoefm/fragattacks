@@ -64,10 +64,7 @@ static struct mka_alg mka_alg_tbl[] = {
 	{
 		.parameter = MKA_ALGO_AGILITY_2009,
 
-		/* 128-bit CAK, KEK, ICK, ICV */
 		.cak_len = DEFAULT_ICV_LEN,
-		.kek_len = DEFAULT_ICV_LEN,
-		.ick_len = DEFAULT_ICV_LEN,
 		.icv_len = DEFAULT_ICV_LEN,
 
 		.cak_trfm = ieee802_1x_cak_128bits_aes_cmac,
@@ -3531,7 +3528,7 @@ ieee802_1x_kay_create_mka(struct ieee802_1x_kay *kay,
 		goto fail;
 
 	/* to derive KEK from CAK and CKN */
-	participant->kek.len = mka_alg_tbl[kay->mka_algindex].kek_len;
+	participant->kek.len = participant->cak.len;
 	if (mka_alg_tbl[kay->mka_algindex].kek_trfm(participant->cak.key,
 						    participant->cak.len,
 						    participant->ckn.name,
@@ -3545,7 +3542,7 @@ ieee802_1x_kay_create_mka(struct ieee802_1x_kay *kay,
 			participant->kek.key, participant->kek.len);
 
 	/* to derive ICK from CAK and CKN */
-	participant->ick.len = mka_alg_tbl[kay->mka_algindex].ick_len;
+	participant->ick.len = participant->cak.len;
 	if (mka_alg_tbl[kay->mka_algindex].ick_trfm(participant->cak.key,
 						    participant->cak.len,
 						    participant->ckn.name,

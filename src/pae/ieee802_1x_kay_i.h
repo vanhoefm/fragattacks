@@ -67,8 +67,6 @@ struct macsec_ciphersuite {
 struct mka_alg {
 	u8 parameter[4];
 	size_t cak_len;
-	size_t kek_len;
-	size_t ick_len;
 	size_t icv_len;
 
 	int (*cak_trfm)(const u8 *msk, const u8 *mac1, const u8 *mac2, u8 *cak);
