@@ -477,7 +477,6 @@ struct ieee802_1x_cp_sm * ieee802_1x_cp_sm_init(struct ieee802_1x_kay *kay)
 	secy_cp_control_confidentiality_offset(sm->kay,
 					       sm->confidentiality_offset);
 
-	SM_ENTER(CP, INIT);
 	SM_STEP_RUN(CP);
 
 	return sm;
