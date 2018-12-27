@@ -38,12 +38,10 @@ struct ieee802_1x_cp_sm {
 
 	/* Logon -> CP */
 	enum connect_type connect;
-	u8 *authorization_data;
 
 	/* KaY -> CP */
 	Boolean chgd_server; /* clear by CP */
 	Boolean elected_self;
-	u8 *authorization_data1;
 	enum confidentiality_offset cipher_offset;
 	u64 cipher_suite;
 	Boolean new_sak; /* clear by CP */
@@ -468,7 +466,6 @@ struct ieee802_1x_cp_sm * ieee802_1x_cp_sm_init(struct ieee802_1x_kay *kay)
 	sm->retire_delay = MKA_SAK_RETIRE_TIME;
 	sm->CP_state = CP_BEGIN;
 	sm->changed = FALSE;
-	sm->authorization_data = NULL;
 
 	wpa_printf(MSG_DEBUG, "CP: state machine created");
 
@@ -522,7 +519,6 @@ void ieee802_1x_cp_sm_deinit(struct ieee802_1x_cp_sm *sm)
 	eloop_cancel_timeout(ieee802_1x_cp_step_cb, sm, NULL);
 	os_free(sm->lki);
 	os_free(sm->oki);
-	os_free(sm->authorization_data);
 	os_free(sm);
 }
 
@@ -589,19 +585,6 @@ void ieee802_1x_cp_set_electedself(void *cp_ctx, Boolean status)
 {
 	struct ieee802_1x_cp_sm *sm = cp_ctx;
 	sm->elected_self = status;
-}
-
-
-/**
- * ieee802_1x_cp_set_authorizationdata -
- */
-void ieee802_1x_cp_set_authorizationdata(void *cp_ctx, u8 *pdata, int len)
-{
-	struct ieee802_1x_cp_sm *sm = cp_ctx;
-	os_free(sm->authorization_data);
-	sm->authorization_data = os_zalloc(len);
-	if (sm->authorization_data)
-		os_memcpy(sm->authorization_data, pdata, len);
 }
 
 
