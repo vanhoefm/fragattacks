@@ -1536,6 +1536,11 @@ ieee802_1x_mka_encode_dist_sak_body(
 	}
 
 	sak = participant->new_key;
+	if (!sak) {
+		wpa_printf(MSG_DEBUG,
+			   "KaY: No SAK available to build Distributed SAK parameter set");
+		return -1;
+	}
 	body->confid_offset = sak->confidentiality_offset;
 	body->dan = sak->an;
 	body->kn = host_to_be32(sak->key_identifier.kn);
@@ -2847,12 +2852,12 @@ int ieee802_1x_kay_delete_sas(struct ieee802_1x_kay *kay,
 	dl_list_for_each_safe(sa_key, pre_key, &principal->sak_list,
 			      struct data_key, list) {
 		if (is_ki_equal(&sa_key->key_identifier, ki)) {
+			if (principal->new_key == sa_key)
+				principal->new_key = NULL;
 			dl_list_del(&sa_key->list);
 			ieee802_1x_kay_deinit_data_key(sa_key);
 			break;
 		}
-		if (principal->new_key == sa_key)
-			principal->new_key = NULL;
 	}
 
 	return 0;
