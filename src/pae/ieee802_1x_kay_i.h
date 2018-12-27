@@ -15,7 +15,7 @@
 
 #define MKA_VERSION_ID              1
 
-/* IEEE Std 802.1X-2010, 11.11.1, Table 11-7 */
+/* IEEE Std 802.1X-2010, 11.11.1, Table 11-7 (MKPDU parameter sets) */
 enum mka_packet_type {
 	MKA_BASIC_PARAMETER_SET = MKA_VERSION_ID,
 	MKA_LIVE_PEER_LIST = 1,
@@ -131,8 +131,10 @@ struct ieee802_1x_mka_participant {
 	u8 mi[MI_LEN];
 	u32 mn;
 
+	/* Current peer MI and SCI during MKPDU processing */
 	struct ieee802_1x_mka_peer_id current_peer_id;
 	struct ieee802_1x_mka_sci current_peer_sci;
+
 	time_t cak_life;
 	time_t mka_life;
 	Boolean to_dist_sak;
