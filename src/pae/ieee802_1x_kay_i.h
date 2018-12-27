@@ -60,8 +60,6 @@ struct macsec_ciphersuite {
 	char name[32];
 	enum macsec_cap capable;
 	int sak_len; /* unit: byte */
-
-	u32 index;
 };
 
 struct mka_alg {
@@ -80,8 +78,6 @@ struct mka_alg {
 			u8 *ick, size_t ick_bytes);
 	int (*icv_hash)(const u8 *ick, size_t ick_bytes,
 			const u8 *msg, size_t msg_len, u8 *icv);
-
-	int index; /* index for configuring */
 };
 
 #define DEFAULT_MKA_ALG_INDEX 0

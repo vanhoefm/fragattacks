@@ -46,7 +46,6 @@ static struct macsec_ciphersuite cipher_suite_tbl[] = {
 		.name = CS_NAME_GCM_AES_128,
 		.capable = MACSEC_CAP_INTEG_AND_CONF_0_30_50,
 		.sak_len = DEFAULT_SA_KEY_LEN,
-		.index = 0,
 	},
 	/* GCM-AES-256 */
 	{
@@ -54,7 +53,6 @@ static struct macsec_ciphersuite cipher_suite_tbl[] = {
 		.name = CS_NAME_GCM_AES_256,
 		.capable = MACSEC_CAP_INTEG_AND_CONF_0_30_50,
 		.sak_len = 32,
-		.index = 1 /* index */
 	},
 };
 #define CS_TABLE_SIZE (ARRAY_SIZE(cipher_suite_tbl))
@@ -71,8 +69,6 @@ static struct mka_alg mka_alg_tbl[] = {
 		.kek_trfm = ieee802_1x_kek_aes_cmac,
 		.ick_trfm = ieee802_1x_ick_aes_cmac,
 		.icv_hash = ieee802_1x_icv_aes_cmac,
-
-		.index = 1,
 	},
 };
 #define MKA_ALG_TABLE_SIZE (ARRAY_SIZE(mka_alg_tbl))
@@ -370,7 +366,7 @@ ieee802_1x_kay_get_peer(struct ieee802_1x_mka_participant *participant,
  */
 static struct macsec_ciphersuite *
 ieee802_1x_kay_get_cipher_suite(struct ieee802_1x_mka_participant *participant,
-				const u8 *cs_id)
+				const u8 *cs_id, unsigned int *idx)
 {
 	unsigned int i;
 	u64 cs;
@@ -380,8 +376,10 @@ ieee802_1x_kay_get_cipher_suite(struct ieee802_1x_mka_participant *participant,
 	cs = be_to_host64(_cs);
 
 	for (i = 0; i < CS_TABLE_SIZE; i++) {
-		if (cipher_suite_tbl[i].id == cs)
+		if (cipher_suite_tbl[i].id == cs) {
+			*idx = i;
 			return &cipher_suite_tbl[i];
+		}
 	}
 
 	return NULL;
@@ -1673,7 +1671,10 @@ ieee802_1x_mka_decode_dist_sak_body(
 		kay->macsec_csindex = DEFAULT_CS_INDEX;
 		cs = &cipher_suite_tbl[kay->macsec_csindex];
 	} else {
-		cs = ieee802_1x_kay_get_cipher_suite(participant, body->sak);
+		unsigned int idx;
+
+		cs = ieee802_1x_kay_get_cipher_suite(participant, body->sak,
+						     &idx);
 		if (!cs) {
 			wpa_printf(MSG_ERROR,
 				   "KaY: I can't support the Cipher Suite advised by key server");
@@ -1681,7 +1682,7 @@ ieee802_1x_mka_decode_dist_sak_body(
 		}
 		sak_len = cs->sak_len;
 		wrap_sak = body->sak + CS_ID_LEN;
-		kay->macsec_csindex = cs->index;
+		kay->macsec_csindex = idx;
 	}
 
 	unwrap_sak = os_zalloc(sak_len);
