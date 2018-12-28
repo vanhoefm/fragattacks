@@ -2010,6 +2010,8 @@ void p2p_set_managed_oper(struct p2p_data *p2p, int enabled);
  * @p2p: P2P config
  * @op_class: Selected operating class
  * @op_channel: Selected social channel
+ * @avoid_list: Channel ranges to try to avoid or %NULL
+ * @disallow_list: Channel ranges to discard or %NULL
  * Returns: 0 on success, -1 on failure
  *
  * This function is used before p2p_init is called. A random social channel
@@ -2017,7 +2019,9 @@ void p2p_set_managed_oper(struct p2p_data *p2p, int enabled);
  * returned on success.
  */
 int p2p_config_get_random_social(struct p2p_config *p2p, u8 *op_class,
-				 u8 *op_channel);
+				 u8 *op_channel,
+				 struct wpa_freq_range_list *avoid_list,
+				 struct wpa_freq_range_list *disallow_list);
 
 int p2p_set_listen_channel(struct p2p_data *p2p, u8 reg_class, u8 channel,
 			   u8 forced);

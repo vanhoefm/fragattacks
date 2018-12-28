@@ -4498,7 +4498,10 @@ int wpas_p2p_init(struct wpa_global *global, struct wpa_supplicant *wpa_s)
 		 * channel.
 		 */
 		if (p2p_config_get_random_social(&p2p, &p2p.reg_class,
-						 &p2p.channel) != 0) {
+						 &p2p.channel,
+						 &global->p2p_go_avoid_freq,
+						 &global->p2p_disallow_freq) !=
+		    0) {
 			wpa_printf(MSG_INFO,
 				   "P2P: No social channels supported by the driver - do not enable P2P");
 			return 0;
@@ -4523,10 +4526,14 @@ int wpas_p2p_init(struct wpa_global *global, struct wpa_supplicant *wpa_s)
 		 * other preference is indicated.
 		 */
 		if (p2p_config_get_random_social(&p2p, &p2p.op_reg_class,
-						 &p2p.op_channel) != 0) {
-			wpa_printf(MSG_ERROR,
+						 &p2p.op_channel, NULL,
+						 NULL) != 0) {
+			wpa_printf(MSG_INFO,
 				   "P2P: Failed to select random social channel as operation channel");
-			return -1;
+			p2p.op_reg_class = 0;
+			p2p.op_channel = 0;
+			/* This will be overridden during group setup in
+			 * p2p_prepare_channel(), so allow setup to continue. */
 		}
 		p2p.cfg_op_channel = 0;
 		wpa_printf(MSG_DEBUG, "P2P: Random operating channel: "
