@@ -1528,7 +1528,8 @@ static Boolean
 ieee802_1x_mka_dist_sak_body_present(
 	struct ieee802_1x_mka_participant *participant)
 {
-	return participant->to_dist_sak && participant->new_key;
+	return participant->is_key_server && participant->to_dist_sak &&
+		participant->new_key;
 }
 
 
@@ -2584,7 +2585,7 @@ static void ieee802_1x_participant_timer(void *eloop_ctx, void *timeout_ctx)
 		}
 	}
 
-	if (participant->new_sak) {
+	if (participant->new_sak && participant->is_key_server) {
 		if (!ieee802_1x_kay_generate_new_sak(participant))
 			participant->to_dist_sak = TRUE;
 
