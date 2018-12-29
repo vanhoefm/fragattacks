@@ -3889,19 +3889,24 @@ ieee802_1x_kay_change_cipher_suite(struct ieee802_1x_kay *kay,
  * @verbose: Whether to include verbose status information
  * Returns: Number of bytes written to buf.
  *
- * Query KAY status information. This function fills in a text area with current
+ * Query KaY status information. This function fills in a text area with current
  * status information. If the buffer (buf) is not large enough, status
  * information will be truncated to fit the buffer.
  */
 int ieee802_1x_kay_get_status(struct ieee802_1x_kay *kay, char *buf,
 			      size_t buflen)
 {
-	int len;
+	char *pos, *end;
+	int res, count;
+	struct ieee802_1x_mka_participant *p;
 
 	if (!kay)
 		return 0;
 
-	len = os_snprintf(buf, buflen,
+	pos = buf;
+	end = buf + buflen;
+
+	res = os_snprintf(pos, end - pos,
 			  "PAE KaY status=%s\n"
 			  "Authenticated=%s\n"
 			  "Secured=%s\n"
@@ -3922,9 +3927,61 @@ int ieee802_1x_kay_get_status(struct ieee802_1x_kay *kay, char *buf,
 			  kay->dist_kn - 1,
 			  kay->rcvd_keys,
 			  kay->mka_hello_time);
-	if (os_snprintf_error(buflen, len))
+	if (os_snprintf_error(buflen, res))
 		return 0;
+	pos += res;
 
-	return len;
+	res = os_snprintf(pos, end - pos,
+			  "actor_sci=%s\n", sci_txt(&kay->actor_sci));
+	if (os_snprintf_error(buflen, res))
+		return end - pos;
+	pos += res;
+
+	res = os_snprintf(pos, end - pos,
+			  "key_server_sci=%s\n", sci_txt(&kay->key_server_sci));
+	if (os_snprintf_error(buflen, res))
+		return end - pos;
+	pos += res;
+
+	count = 0;
+	dl_list_for_each(p, &kay->participant_list,
+			 struct ieee802_1x_mka_participant, list) {
+		char *pos2 = pos;
+
+		res = os_snprintf(pos2, end - pos2, "participant_idx=%d\nckn=",
+			count);
+		if (os_snprintf_error(buflen, res))
+			return end - pos;
+		pos2 += res;
+		count++;
+
+		pos2 += wpa_snprintf_hex(pos2, end - pos2, p->ckn.name,
+					 p->ckn.len);
+
+		res = os_snprintf(pos2, end - pos2,
+				  "\nmi=%s\n"
+				  "mn=%u\n"
+				  "active=%s\n"
+				  "participant=%s\n"
+				  "retain=%s\n"
+				  "live_peers=%u\n"
+				  "potential_peers=%u\n"
+				  "is_key_server=%s\n"
+				  "is_elected=%s\n",
+				  mi_txt(p->mi), p->mn,
+				  yes_no(p->active),
+				  yes_no(p->participant),
+				  yes_no(p->retain),
+				  dl_list_len(&p->live_peers),
+				  dl_list_len(&p->potential_peers),
+				  yes_no(p->is_key_server),
+				  yes_no(p->is_elected));
+		if (os_snprintf_error(buflen, res))
+			return end - pos;
+		pos2 += res;
+		pos = pos2;
+	}
+
+	return pos - buf;
 }
 #endif /* CONFIG_CTRL_IFACE */
