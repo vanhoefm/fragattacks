@@ -283,6 +283,28 @@ def run_macsec_psk(dev, apdev, params, prefix, integ_only=False, port0=None,
                               stderr=open('/dev/null', 'w'))
     time.sleep(0.5)
 
+    mi0 = wpas0.get_status_field("mi")
+    mi1 = wpas1.get_status_field("mi")
+    sci0 = wpas0.get_status_field("actor_sci")
+    sci1 = wpas1.get_status_field("actor_sci")
+    logger.info("wpas0 MIB:\n" +  wpas0.request("MIB"))
+    logger.info("wpas1 MIB:\n" +  wpas1.request("MIB"))
+    mib0 = wpas0.get_mib()
+    mib1 = wpas1.get_mib()
+
+    if mib0['ieee8021XKayMkaPeerListMI'] != mi1:
+        raise Exception("Unexpected ieee8021XKayMkaPeerListMI value (0)")
+    if mib0['ieee8021XKayMkaPeerListType'] != "1":
+        raise Exception("Unexpected ieee8021XKayMkaPeerListType value (0)")
+    if mib0['ieee8021XKayMkaPeerListSCI'] != sci1:
+        raise Exception("Unexpected ieee8021XKayMkaPeerListSCI value (0)")
+    if mib1['ieee8021XKayMkaPeerListMI'] != mi0:
+        raise Exception("Unexpected ieee8021XKayMkaPeerListMI value (1)")
+    if mib1['ieee8021XKayMkaPeerListType'] != "1":
+        raise Exception("Unexpected ieee8021XKayMkaPeerListType value (1)")
+    if mib1['ieee8021XKayMkaPeerListSCI'] != sci0:
+        raise Exception("Unexpected ieee8021XKayMkaPeerListSCI value (1)")
+
     logger.info("wpas0 STATUS:\n" + wpas0.request("STATUS"))
     logger.info("wpas1 STATUS:\n" + wpas1.request("STATUS"))
     log_ip_macsec()
