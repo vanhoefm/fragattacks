@@ -9896,6 +9896,11 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 			reply_len += eapol_sm_get_mib(wpa_s->eapol,
 						      reply + reply_len,
 						      reply_size - reply_len);
+#ifdef CONFIG_MACSEC
+			reply_len += ieee802_1x_kay_get_mib(
+				wpa_s->kay, reply + reply_len,
+				reply_size - reply_len);
+#endif /* CONFIG_MACSEC */
 		}
 	} else if (os_strncmp(buf, "STATUS", 6) == 0) {
 		reply_len = wpa_supplicant_ctrl_iface_status(

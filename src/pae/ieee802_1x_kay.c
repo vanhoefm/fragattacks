@@ -3881,6 +3881,7 @@ ieee802_1x_kay_change_cipher_suite(struct ieee802_1x_kay *kay,
 
 
 #ifdef CONFIG_CTRL_IFACE
+
 /**
  * ieee802_1x_kay_get_status - Get IEEE 802.1X KaY status details
  * @sm: Pointer to KaY allocated with ieee802_1x_kay_init()
@@ -3984,4 +3985,103 @@ int ieee802_1x_kay_get_status(struct ieee802_1x_kay *kay, char *buf,
 
 	return pos - buf;
 }
+
+
+static const char * true_false(Boolean val)
+{
+	return val ? "true" : "false";
+}
+
+
+static const char * activate_control_txt(enum activate_ctrl activate)
+{
+	switch (activate) {
+	case DEFAULT:
+		return "default";
+	case DISABLED:
+		return "disabled";
+	case ON_OPER_UP:
+		return "onOperUp";
+	case ALWAYS:
+		return "always";
+	}
+
+	return "?";
+}
+
+
+static char * mka_mib_peer(struct dl_list *peers, Boolean live, char *buf,
+			   char *end)
+{
+	char *pos = buf;
+	struct ieee802_1x_kay_peer *p;
+	int res;
+
+	dl_list_for_each(p, peers, struct ieee802_1x_kay_peer, list) {
+		res = os_snprintf(pos, end - pos,
+				  "ieee8021XKayMkaPeerListMI=%s\n"
+				  "ieee8021XKayMkaPeerListMN=%u\n"
+				  "ieee8021XKayMkaPeerListType=%u\n"
+				  "ieee8021XKayMkaPeerListSCI=%s\n",
+				  mi_txt(p->mi),
+				  p->mn,
+				  live ? 1 : 2,
+				  sci_txt(&p->sci));
+		if (os_snprintf_error(end - pos, res))
+			return pos;
+		pos += res;
+	}
+
+	return pos;
+}
+
+
+int ieee802_1x_kay_get_mib(struct ieee802_1x_kay *kay, char *buf,
+			   size_t buflen)
+{
+	char *pos, *end;
+	int res;
+	struct ieee802_1x_mka_participant *p;
+
+	if (!kay)
+		return 0;
+
+	pos = buf;
+	end = buf + buflen;
+
+	dl_list_for_each(p, &kay->participant_list,
+			 struct ieee802_1x_mka_participant, list) {
+		char *pos2 = pos;
+
+		res = os_snprintf(pos2, end - pos2, "ieee8021XKayMkaPartCKN=");
+		if (os_snprintf_error(buflen, res))
+			return end - pos;
+		pos2 += res;
+
+		pos2 += wpa_snprintf_hex(pos2, end - pos2, p->ckn.name,
+					 p->ckn.len);
+
+		res = os_snprintf(pos2, end - pos2,
+				  "\nieee8021XKayMkaPartCached=%s\n"
+				  "ieee8021XKayMkaPartActive=%s\n"
+				  "ieee8021XKayMkaPartRetain=%s\n"
+				  "ieee8021XKayMkaPartActivateControl=%s\n"
+				  "ieee8021XKayMkaPartPrincipal=%s\n",
+				  true_false(p->cached),
+				  true_false(p->active),
+				  true_false(p->retain),
+				  activate_control_txt(p->activate),
+				  true_false(p->principal));
+		if (os_snprintf_error(buflen, res))
+			return end - pos;
+		pos2 += res;
+		pos = pos2;
+
+		pos = mka_mib_peer(&p->live_peers, TRUE, pos, end);
+		pos = mka_mib_peer(&p->potential_peers, FALSE, pos, end);
+	}
+
+	return pos - buf;
+}
+
 #endif /* CONFIG_CTRL_IFACE */
