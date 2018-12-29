@@ -4329,7 +4329,7 @@ def test_ap_hs20_proxyarp_enable_dgaf(dev, apdev):
 def ip_checksum(buf):
     sum = 0
     if len(buf) & 0x01:
-        buf += '\0x00'
+        buf += '\x00'
     for i in range(0, len(buf), 2):
         val, = struct.unpack('H', buf[i:i+2])
         sum += val
@@ -4460,7 +4460,8 @@ def send_na(dev, src_ll=None, target=None, ip_src=None, ip_dst=None, opt=None,
 
 def build_dhcp_ack(dst_ll, src_ll, ip_src, ip_dst, yiaddr, chaddr,
                    subnet_mask="255.255.255.0", truncated_opt=False,
-                   wrong_magic=False, force_tot_len=None, no_dhcp=False):
+                   wrong_magic=False, force_tot_len=None, no_dhcp=False,
+                   udp_checksum=True):
     _dst_ll = binascii.unhexlify(dst_ll.replace(':',''))
     _src_ll = binascii.unhexlify(src_ll.replace(':',''))
     proto = '\x08\x00'
@@ -4500,7 +4501,14 @@ def build_dhcp_ack(dst_ll, src_ll, ip_src, ip_dst, yiaddr, chaddr,
         payload = struct.pack('>BBBBL3BB', 2, 1, 6, 0, 12345, 0, 0, 0, 0)
         payload += _ciaddr + _yiaddr + _siaddr + _giaddr + _chaddr + 192*'\x00'
 
-    udp = struct.pack('>HHHH', 67, 68, 8 + len(payload), 0) + payload
+    if udp_checksum:
+        pseudohdr = _ip_src + _ip_dst + struct.pack('>BBH', 0, 17,
+                                                    8 + len(payload))
+        udphdr = struct.pack('>HHHH', 67, 68, 8 + len(payload), 0)
+        checksum, = struct.unpack('>H', ip_checksum(pseudohdr + udphdr + payload))
+    else:
+        checksum = 0
+    udp = struct.pack('>HHHH', 67, 68, 8 + len(payload), checksum) + payload
 
     if force_tot_len:
         tot_len = force_tot_len
@@ -4692,7 +4700,8 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
     # Change address and verify unicast
     pkt = build_dhcp_ack(dst_ll=addr0, src_ll=bssid,
                          ip_src="192.168.1.1", ip_dst="255.255.255.255",
-                         yiaddr="192.168.1.123", chaddr=addr0)
+                         yiaddr="192.168.1.123", chaddr=addr0,
+                         udp_checksum=False)
     if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
         raise Exception("DATA_TEST_FRAME failed")
 
