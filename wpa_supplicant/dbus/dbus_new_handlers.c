@@ -3823,7 +3823,6 @@ dbus_bool_t wpas_dbus_getter_stas(
 	DBusMessageIter *iter, DBusError *error, void *user_data)
 {
 	struct wpa_supplicant *wpa_s = user_data;
-	struct hostapd_data *hapd;
 	struct sta_info *sta = NULL;
 	char **paths = NULL;
 	unsigned int i = 0, num = 0;
@@ -3835,11 +3834,15 @@ dbus_bool_t wpas_dbus_getter_stas(
 		return FALSE;
 	}
 
+#ifdef CONFIG_AP
 	if (wpa_s->ap_iface) {
+		struct hostapd_data *hapd;
+
 		hapd = wpa_s->ap_iface->bss[0];
 		sta = hapd->sta_list;
 		num = hapd->num_sta;
 	}
+#endif /* CONFIG_AP */
 
 	paths = os_calloc(num, sizeof(char *));
 	if (!paths) {
@@ -3887,6 +3890,7 @@ dbus_bool_t wpas_dbus_getter_sta_address(
 	const struct wpa_dbus_property_desc *property_desc,
 	DBusMessageIter *iter, DBusError *error, void *user_data)
 {
+#ifdef CONFIG_AP
 	struct sta_handler_args *args = user_data;
 	struct sta_info *sta;
 
@@ -3897,6 +3901,9 @@ dbus_bool_t wpas_dbus_getter_sta_address(
 	return wpas_dbus_simple_array_property_getter(iter, DBUS_TYPE_BYTE,
 						      sta->addr, ETH_ALEN,
 						      error);
+#else /* CONFIG_AP */
+    return FALSE;
+#endif /* CONFIG_AP */
 }
 
 
@@ -3913,6 +3920,7 @@ dbus_bool_t wpas_dbus_getter_sta_aid(
 	const struct wpa_dbus_property_desc *property_desc,
 	DBusMessageIter *iter, DBusError *error, void *user_data)
 {
+#ifdef CONFIG_AP
 	struct sta_handler_args *args = user_data;
 	struct sta_info *sta;
 
@@ -3923,6 +3931,9 @@ dbus_bool_t wpas_dbus_getter_sta_aid(
 	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT16,
 						&sta->aid,
 						error);
+#else /* CONFIG_AP */
+    return FALSE;
+#endif /* CONFIG_AP */
 }
 
 
@@ -3939,6 +3950,7 @@ dbus_bool_t wpas_dbus_getter_sta_caps(
 	const struct wpa_dbus_property_desc *property_desc,
 	DBusMessageIter *iter, DBusError *error, void *user_data)
 {
+#ifdef CONFIG_AP
 	struct sta_handler_args *args = user_data;
 	struct sta_info *sta;
 
@@ -3949,6 +3961,9 @@ dbus_bool_t wpas_dbus_getter_sta_caps(
 	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT16,
 						&sta->capability,
 						error);
+#else /* CONFIG_AP */
+    return FALSE;
+#endif /* CONFIG_AP */
 }
 
 
@@ -3965,6 +3980,7 @@ dbus_bool_t wpas_dbus_getter_sta_rx_packets(
 	const struct wpa_dbus_property_desc *property_desc,
 	DBusMessageIter *iter, DBusError *error, void *user_data)
 {
+#ifdef CONFIG_AP
 	struct sta_handler_args *args = user_data;
 	struct sta_info *sta;
 	struct hostap_sta_driver_data data;
@@ -3984,6 +4000,9 @@ dbus_bool_t wpas_dbus_getter_sta_rx_packets(
 	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT64,
 						&data.rx_packets,
 						error);
+#else /* CONFIG_AP */
+    return FALSE;
+#endif /* CONFIG_AP */
 }
 
 
@@ -4000,6 +4019,7 @@ dbus_bool_t wpas_dbus_getter_sta_tx_packets(
 	const struct wpa_dbus_property_desc *property_desc,
 	DBusMessageIter *iter, DBusError *error, void *user_data)
 {
+#ifdef CONFIG_AP
 	struct sta_handler_args *args = user_data;
 	struct sta_info *sta;
 	struct hostap_sta_driver_data data;
@@ -4019,6 +4039,9 @@ dbus_bool_t wpas_dbus_getter_sta_tx_packets(
 	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT64,
 						&data.tx_packets,
 						error);
+#else /* CONFIG_AP */
+    return FALSE;
+#endif /* CONFIG_AP */
 }
 
 
@@ -4035,6 +4058,7 @@ dbus_bool_t wpas_dbus_getter_sta_tx_bytes(
 	const struct wpa_dbus_property_desc *property_desc,
 	DBusMessageIter *iter, DBusError *error, void *user_data)
 {
+#ifdef CONFIG_AP
 	struct sta_handler_args *args = user_data;
 	struct sta_info *sta;
 	struct hostap_sta_driver_data data;
@@ -4054,6 +4078,9 @@ dbus_bool_t wpas_dbus_getter_sta_tx_bytes(
 	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT64,
 						&data.tx_bytes,
 						error);
+#else /* CONFIG_AP */
+    return FALSE;
+#endif /* CONFIG_AP */
 }
 
 
@@ -4070,6 +4097,7 @@ dbus_bool_t wpas_dbus_getter_sta_rx_bytes(
 	const struct wpa_dbus_property_desc *property_desc,
 	DBusMessageIter *iter, DBusError *error, void *user_data)
 {
+#ifdef CONFIG_AP
 	struct sta_handler_args *args = user_data;
 	struct sta_info *sta;
 	struct hostap_sta_driver_data data;
@@ -4089,6 +4117,9 @@ dbus_bool_t wpas_dbus_getter_sta_rx_bytes(
 	return wpas_dbus_simple_property_getter(iter, DBUS_TYPE_UINT64,
 						&data.rx_bytes,
 						error);
+#else /* CONFIG_AP */
+    return FALSE;
+#endif /* CONFIG_AP */
 }
 
 
