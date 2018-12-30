@@ -116,6 +116,26 @@ def test_ap_config_reload_file(dev, apdev, params):
     dev[0].wait_disconnected()
     dev[0].request("DISCONNECT")
 
+def test_ap_config_reload_file_while_disabled(dev, apdev, params):
+    """hostapd configuration reload from file when disabled"""
+    hapd = hostapd.add_iface(apdev[0], "bss-1.conf")
+    hapd.enable()
+    ev = hapd.wait_event(["AP-ENABLED"], timeout=3)
+    if ev is None:
+        raise Exception("AP-ENABLED event not reported")
+    hapd.set("ssid", "foobar")
+    with open(os.path.join(params['logdir'], 'hostapd-test.pid'), "r") as f:
+        pid = int(f.read())
+    hapd.disable()
+    ev = hapd.wait_event(["AP-DISABLED"], timeout=3)
+    if ev is None:
+        raise Exception("AP-DISABLED event not reported")
+    hapd.dump_monitor()
+    os.kill(pid, signal.SIGHUP)
+    time.sleep(0.1)
+    hapd.enable()
+    dev[0].connect("foobar", key_mgmt="NONE", scan_freq="2412")
+
 def write_hostapd_config(conffile, ifname, ssid, ht=True, bss2=False):
     with open(conffile, "w") as f:
         f.write("driver=nl80211\n")
