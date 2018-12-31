@@ -2183,6 +2183,54 @@ static void nl80211_reg_change_event(struct wpa_driver_nl80211_data *drv,
 }
 
 
+static void nl80211_dump_freq(const char *title, struct nlattr *nl_freq)
+{
+	static struct nla_policy freq_policy[NL80211_FREQUENCY_ATTR_MAX + 1] = {
+		[NL80211_FREQUENCY_ATTR_FREQ] = { .type = NLA_U32 },
+		[NL80211_FREQUENCY_ATTR_DISABLED] = { .type = NLA_FLAG },
+		[NL80211_FREQUENCY_ATTR_NO_IR] = { .type = NLA_FLAG },
+		[NL80211_FREQUENCY_ATTR_RADAR] = { .type = NLA_FLAG },
+		[NL80211_FREQUENCY_ATTR_MAX_TX_POWER] = { .type = NLA_U32 },
+	};
+	struct nlattr *tb[NL80211_FREQUENCY_ATTR_MAX + 1];
+	u32 freq = 0, max_tx_power = 0;
+
+	nla_parse(tb, NL80211_FREQUENCY_ATTR_MAX,
+		  nla_data(nl_freq), nla_len(nl_freq), freq_policy);
+
+	if (tb[NL80211_FREQUENCY_ATTR_FREQ])
+		freq = nla_get_u32(tb[NL80211_FREQUENCY_ATTR_FREQ]);
+	if (tb[NL80211_FREQUENCY_ATTR_MAX_TX_POWER])
+		max_tx_power =
+			nla_get_u32(tb[NL80211_FREQUENCY_ATTR_MAX_TX_POWER]);
+
+	wpa_printf(MSG_DEBUG,
+		   "nl80211: Channel (%s): freq=%u max_tx_power=%u%s%s%s",
+		   title, freq, max_tx_power,
+		   tb[NL80211_FREQUENCY_ATTR_DISABLED] ? " disabled" : "",
+		   tb[NL80211_FREQUENCY_ATTR_NO_IR] ? " no-IR" : "",
+		   tb[NL80211_FREQUENCY_ATTR_RADAR] ? " radar" : "");
+}
+
+
+static void nl80211_reg_beacon_hint_event(struct wpa_driver_nl80211_data *drv,
+					   struct nlattr *tb[])
+{
+	union wpa_event_data data;
+
+	wpa_printf(MSG_DEBUG, "nl80211: Regulatory beacon hint");
+	os_memset(&data, 0, sizeof(data));
+	data.channel_list_changed.initiator = REGDOM_BEACON_HINT;
+
+	if (tb[NL80211_ATTR_FREQ_BEFORE])
+		nl80211_dump_freq("before", tb[NL80211_ATTR_FREQ_BEFORE]);
+	if (tb[NL80211_ATTR_FREQ_AFTER])
+		nl80211_dump_freq("after", tb[NL80211_ATTR_FREQ_AFTER]);
+
+	wpa_supplicant_event(drv->ctx, EVENT_CHANNEL_LIST_CHANGED, &data);
+}
+
+
 static void nl80211_external_auth(struct wpa_driver_nl80211_data *drv,
 				  struct nlattr **tb)
 {
@@ -2327,7 +2375,6 @@ static void do_process_drv_event(struct i802_bss *bss, int cmd,
 				 struct nlattr **tb)
 {
 	struct wpa_driver_nl80211_data *drv = bss->drv;
-	union wpa_event_data data;
 	int external_scan_event = 0;
 
 	wpa_printf(MSG_DEBUG, "nl80211: Drv Event %d (%s) received for %s",
@@ -2480,11 +2527,7 @@ static void do_process_drv_event(struct i802_bss *bss, int cmd,
 		nl80211_reg_change_event(drv, tb);
 		break;
 	case NL80211_CMD_REG_BEACON_HINT:
-		wpa_printf(MSG_DEBUG, "nl80211: Regulatory beacon hint");
-		os_memset(&data, 0, sizeof(data));
-		data.channel_list_changed.initiator = REGDOM_BEACON_HINT;
-		wpa_supplicant_event(drv->ctx, EVENT_CHANNEL_LIST_CHANGED,
-				     &data);
+		nl80211_reg_beacon_hint_event(drv, tb);
 		break;
 	case NL80211_CMD_NEW_STATION:
 		nl80211_new_station_event(drv, bss, tb);
