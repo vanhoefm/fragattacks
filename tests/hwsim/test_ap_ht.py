@@ -1334,8 +1334,14 @@ def run_op_class(dev, apdev, hw_mode, channel, country, ht_capab, sec_chan,
         rx_opclass, = struct.unpack('B', ie[59][0:1])
         if rx_opclass != opclass:
             raise Exception("Unexpected operating class: %d" % rx_opclass)
+        hapd.disable()
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].request("ABORT_SCAN")
+        dev[0].wait_disconnected()
+        dev[0].dump_monitor()
     finally:
-        set_world_reg(apdev[0], None, None)
+        set_world_reg(apdev[0], None, dev[0])
+        time.sleep(0.1)
 
 def test_ap_ht_op_class_81(dev, apdev):
     """HT20 on operationg class 81"""
