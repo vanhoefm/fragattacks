@@ -3262,11 +3262,15 @@ def test_dpp_pkex_no_responder(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (initiator)")
 
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=15)
-    if ev is None:
-        raise Exception("DPP PKEX failure not reported")
-    if "No response from PKEX peer" not in ev:
-        raise Exception("Unexpected failure reason: " + ev)
+    for i in range(15):
+        ev = dev[0].wait_event(["DPP-TX ", "DPP-FAIL"], timeout=5)
+        if ev is None:
+            raise Exception("DPP PKEX failure not reported")
+        if "DPP-FAIL" not in ev:
+            continue
+        if "No response from PKEX peer" not in ev:
+            raise Exception("Unexpected failure reason: " + ev)
+        break
 
 def test_dpp_pkex_after_retry(dev, apdev):
     """DPP and PKEX completing after retry"""
