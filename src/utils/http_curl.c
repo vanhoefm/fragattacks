@@ -31,6 +31,14 @@
 #endif /* EAP_TLS_OPENSSL */
 
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static const unsigned char * ASN1_STRING_get0_data(const ASN1_STRING *x)
+{
+	return ASN1_STRING_data((ASN1_STRING *) x);
+}
+#endif /* OpenSSL < 1.1.0 */
+
+
 struct http_ctx {
 	void *ctx;
 	struct xml_node_ctx *xml;
@@ -494,7 +502,8 @@ static void add_logo(struct http_ctx *ctx, struct http_cert *hcert,
 		return;
 
 	n->hash_len = ASN1_STRING_length(hash->hashValue);
-	n->hash = os_memdup(ASN1_STRING_data(hash->hashValue), n->hash_len);
+	n->hash = os_memdup(ASN1_STRING_get0_data(hash->hashValue),
+			    n->hash_len);
 	if (n->hash == NULL) {
 		os_free(n->alg_oid);
 		return;
@@ -507,7 +516,7 @@ static void add_logo(struct http_ctx *ctx, struct http_cert *hcert,
 		os_free(n->hash);
 		return;
 	}
-	os_memcpy(n->uri, ASN1_STRING_data(uri), len);
+	os_memcpy(n->uri, ASN1_STRING_get0_data(uri), len);
 	n->uri[len] = '\0';
 
 	hcert->num_logo++;
@@ -822,9 +831,9 @@ static void add_logotype_ext(struct http_ctx *ctx, struct http_cert *hcert,
 	}
 
 	wpa_hexdump(MSG_DEBUG, "logotypeExtn",
-		    ASN1_STRING_data(os), ASN1_STRING_length(os));
+		    ASN1_STRING_get0_data(os), ASN1_STRING_length(os));
 
-	data = ASN1_STRING_data(os);
+	data = ASN1_STRING_get0_data(os);
 	logo = d2i_LogotypeExtn(NULL, &data, ASN1_STRING_length(os));
 	if (logo == NULL) {
 		wpa_printf(MSG_INFO, "Failed to parse logotypeExtn");
