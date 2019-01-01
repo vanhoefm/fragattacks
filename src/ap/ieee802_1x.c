@@ -1,6 +1,6 @@
 /*
  * hostapd / IEEE 802.1X-2004 Authenticator
- * Copyright (c) 2002-2012, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2002-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -2596,6 +2596,7 @@ int ieee802_1x_get_mib_sta(struct hostapd_data *hapd, struct sta_info *sta,
 	struct os_reltime diff;
 	const char *name1;
 	const char *name2;
+	char *identity_buf = NULL;
 
 	if (sm == NULL)
 		return 0;
@@ -2711,6 +2712,14 @@ int ieee802_1x_get_mib_sta(struct hostapd_data *hapd, struct sta_info *sta,
 
 	/* dot1xAuthSessionStatsTable */
 	os_reltime_age(&sta->acct_session_start, &diff);
+	if (sm->eap && !sm->identity) {
+		const u8 *id;
+		size_t id_len;
+
+		id = eap_get_identity(sm->eap, &id_len);
+		if (id)
+			identity_buf = dup_binstr(id, id_len);
+	}
 	ret = os_snprintf(buf + len, buflen - len,
 			  /* TODO: dot1xAuthSessionOctetsRx */
 			  /* TODO: dot1xAuthSessionOctetsTx */
@@ -2726,7 +2735,8 @@ int ieee802_1x_get_mib_sta(struct hostapd_data *hapd, struct sta_info *sta,
 				   wpa_auth_sta_key_mgmt(sta->wpa_sm))) ?
 			  1 : 2,
 			  (unsigned int) diff.sec,
-			  sm->identity);
+			  sm->identity ? (char *) sm->identity : identity_buf);
+	os_free(identity_buf);
 	if (os_snprintf_error(buflen - len, ret))
 		return len;
 	len += ret;
