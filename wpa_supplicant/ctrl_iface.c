@@ -7957,6 +7957,8 @@ static void wpa_supplicant_ctrl_iface_flush(struct wpa_supplicant *wpa_s)
 
 	wpabuf_free(wpa_s->ric_ies);
 	wpa_s->ric_ies = NULL;
+
+	wpa_supplicant_update_channel_list(wpa_s, NULL);
 }
 
 
