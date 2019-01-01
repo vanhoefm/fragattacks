@@ -464,8 +464,10 @@ def test_go_neg_forced_freq_diff_than_bss_freq(dev, apdev):
            raise Exception("GO not selected according to go_intent")
         hwsim_utils.test_connectivity(wpas, hapd)
 
-        wpas.request("DISCONNECT")
         hapd.request("DISABLE")
+        wpas.request("DISCONNECT")
+        wpas.request("ABORT_SCAN")
+        wpas.wait_disconnected()
         subprocess.call(['iw', 'reg', 'set', '00'])
         wpas.flush_scan_cache()
 
