@@ -2066,6 +2066,61 @@ static int nl80211_set_regulatory_flags(struct wpa_driver_nl80211_data *drv,
 }
 
 
+static const char * modestr(enum hostapd_hw_mode mode)
+{
+	switch (mode) {
+	case HOSTAPD_MODE_IEEE80211B:
+		return "802.11b";
+	case HOSTAPD_MODE_IEEE80211G:
+		return "802.11g";
+	case HOSTAPD_MODE_IEEE80211A:
+		return "802.11a";
+	case HOSTAPD_MODE_IEEE80211AD:
+		return "802.11ad";
+	default:
+		return "?";
+	}
+}
+
+
+static void nl80211_dump_chan_list(struct hostapd_hw_modes *modes,
+				   u16 num_modes)
+{
+	int i;
+
+	if (!modes)
+		return;
+
+	for (i = 0; i < num_modes; i++) {
+		struct hostapd_hw_modes *mode = &modes[i];
+		char str[200];
+		char *pos = str;
+		char *end = pos + sizeof(str);
+		int j, res;
+
+		for (j = 0; j < mode->num_channels; j++) {
+			struct hostapd_channel_data *chan = &mode->channels[j];
+
+			res = os_snprintf(pos, end - pos, " %d%s%s%s",
+					  chan->freq,
+					  (chan->flag & HOSTAPD_CHAN_DISABLED) ?
+					  "[DISABLED]" : "",
+					  (chan->flag & HOSTAPD_CHAN_NO_IR) ?
+					  "[NO_IR]" : "",
+					  (chan->flag & HOSTAPD_CHAN_RADAR) ?
+					  "[RADAR]" : "");
+			if (os_snprintf_error(end - pos, res))
+				break;
+			pos += res;
+		}
+
+		*pos = '\0';
+		wpa_printf(MSG_DEBUG, "nl80211: Mode IEEE %s:%s",
+			   modestr(mode->mode), str);
+	}
+}
+
+
 struct hostapd_hw_modes *
 nl80211_get_hw_feature_data(void *priv, u16 *num_modes, u16 *flags,
 			    u8 *dfs_domain)
@@ -2097,6 +2152,8 @@ nl80211_get_hw_feature_data(void *priv, u16 *num_modes, u16 *flags,
 	}
 
 	if (send_and_recv_msgs(drv, msg, phy_info_handler, &result) == 0) {
+		struct hostapd_hw_modes *modes;
+
 		nl80211_set_regulatory_flags(drv, &result);
 		if (result.failed) {
 			int i;
@@ -2112,8 +2169,10 @@ nl80211_get_hw_feature_data(void *priv, u16 *num_modes, u16 *flags,
 
 		*dfs_domain = result.dfs_domain;
 
-		return wpa_driver_nl80211_postprocess_modes(result.modes,
-							    num_modes);
+		modes = wpa_driver_nl80211_postprocess_modes(result.modes,
+							     num_modes);
+		nl80211_dump_chan_list(modes, *num_modes);
+		return modes;
 	}
 
 	return NULL;
