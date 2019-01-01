@@ -199,6 +199,7 @@ def test_ap_vht80_invalid(dev, apdev):
         if hapd:
             hapd.request("DISABLE")
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def test_ap_vht80_invalid2(dev, apdev):
     """VHT with invalid 80 MHz channel configuration (seg0)"""
@@ -229,6 +230,7 @@ def test_ap_vht80_invalid2(dev, apdev):
         if hapd:
             hapd.request("DISABLE")
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def test_ap_vht_20(devs, apdevs):
     """VHT and 20 MHz channel"""
@@ -309,6 +311,7 @@ def test_ap_vht_capab_not_supported(dev, apdev):
                 raise Exception("Unexpected SET failure")
     finally:
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def test_ap_vht160(dev, apdev):
     """VHT with 160 MHz channel width (1)"""
@@ -569,6 +572,7 @@ def test_ap_vht160_no_ht40(dev, apdev):
         if hapd:
             hapd.request("DISABLE")
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def test_ap_vht80plus80(dev, apdev):
     """VHT with 80+80 MHz channel width"""
@@ -672,6 +676,7 @@ def test_ap_vht80plus80_invalid(dev, apdev):
         if hapd:
             hapd.request("DISABLE")
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def test_ap_vht80_csa(dev, apdev):
     """VHT with 80 MHz channel width and CSA"""

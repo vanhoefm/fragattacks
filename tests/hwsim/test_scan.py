@@ -975,6 +975,7 @@ def test_scan_dfs(dev, apdev, params):
         _test_scan_dfs(dev, apdev, params)
     finally:
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def _test_scan_dfs(dev, apdev, params):
     subprocess.call(['iw', 'reg', 'set', 'US'])

@@ -2829,6 +2829,7 @@ def test_dpp_pkex_5ghz(dev, apdev):
         dev[0].request("SET country 00")
         dev[1].request("SET country 00")
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def run_dpp_pkex_5ghz(dev, apdev):
     check_dpp_capab(dev[0])

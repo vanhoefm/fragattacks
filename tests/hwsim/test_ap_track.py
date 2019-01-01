@@ -19,6 +19,7 @@ def test_ap_track_sta(dev, apdev):
         _test_ap_track_sta(dev, apdev)
     finally:
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def _test_ap_track_sta(dev, apdev):
     params = { "ssid": "track",
@@ -85,6 +86,7 @@ def test_ap_track_sta_no_probe_resp(dev, apdev):
         _test_ap_track_sta_no_probe_resp(dev, apdev)
     finally:
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def _test_ap_track_sta_no_probe_resp(dev, apdev):
     dev[0].flush_scan_cache()
@@ -127,6 +129,7 @@ def test_ap_track_sta_no_auth(dev, apdev):
         _test_ap_track_sta_no_auth(dev, apdev)
     finally:
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def _test_ap_track_sta_no_auth(dev, apdev):
     params = { "ssid": "track",
@@ -173,6 +176,7 @@ def test_ap_track_sta_no_auth_passive(dev, apdev):
         _test_ap_track_sta_no_auth_passive(dev, apdev)
     finally:
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def _test_ap_track_sta_no_auth_passive(dev, apdev):
     dev[0].flush_scan_cache()
@@ -230,6 +234,7 @@ def test_ap_track_sta_force_5ghz(dev, apdev):
         _test_ap_track_sta_force_5ghz(dev, apdev)
     finally:
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def _test_ap_track_sta_force_5ghz(dev, apdev):
     params = { "ssid": "track",
@@ -264,6 +269,7 @@ def test_ap_track_sta_force_2ghz(dev, apdev):
         _test_ap_track_sta_force_2ghz(dev, apdev)
     finally:
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 def _test_ap_track_sta_force_2ghz(dev, apdev):
     params = { "ssid": "track",

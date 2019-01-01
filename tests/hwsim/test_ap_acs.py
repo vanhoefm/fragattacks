@@ -327,6 +327,7 @@ def test_ap_acs_vht160_scan_disable(dev, apdev):
     time.sleep(3)
     hapd.request("DISABLE")
     hostapd.cmd_execute(apdev[0], ['iw', 'reg', 'set', '00'])
+    time.sleep(0.1)
 
 def test_ap_acs_bias(dev, apdev):
     """Automatic channel selection with bias values"""

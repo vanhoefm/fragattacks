@@ -30,6 +30,7 @@ def set_world_reg(apdev0=None, apdev1=None, dev0=None):
         hostapd.cmd_execute(apdev1, ['iw', 'reg', 'set', '00'])
     if dev0:
         dev0.cmd_execute(['iw', 'reg', 'set', '00'])
+    time.sleep(0.1)
 
 def test_ap_ht40_scan(dev, apdev):
     """HT40 co-ex scan"""

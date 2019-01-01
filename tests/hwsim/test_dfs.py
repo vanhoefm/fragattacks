@@ -299,6 +299,7 @@ def test_dfs_radar2(dev, apdev):
         if hapd:
             hapd.request("DISABLE")
         subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
 
 @remote_compatible
 def test_dfs_radar_on_non_dfs_channel(dev, apdev):
