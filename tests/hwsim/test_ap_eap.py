@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # WPA2-Enterprise tests
-# Copyright (c) 2013-2015, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -6472,3 +6472,31 @@ def test_ap_wpa2_eap_psk_mac_addr_change(dev, apdev):
     addr2 = dev[0].get_status_field("address")
     if addr != addr2:
         raise Exception("Failed to restore MAC address")
+
+def test_ap_wpa2_eap_server_get_id(dev, apdev):
+    """Internal EAP server and dot1xAuthSessionUserName"""
+    params = int_eap_server_params()
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TLS", "tls user", ca_cert="auth_serv/ca.pem",
+                client_cert="auth_serv/user.pem",
+                private_key="auth_serv/user.key")
+    sta = hapd.get_sta(dev[0].own_addr())
+    if 'dot1xAuthSessionUserName' not in sta:
+        raise Exception("No dot1xAuthSessionUserName included")
+    user = sta['dot1xAuthSessionUserName']
+    if user != "tls user":
+        raise Exception("Unexpected dot1xAuthSessionUserName value: " + user)
+
+def test_ap_wpa2_radius_server_get_id(dev, apdev):
+    """External RADIUS server and dot1xAuthSessionUserName"""
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TTLS", "test-user",
+                anonymous_identity="ttls", password="password",
+                ca_cert="auth_serv/ca.pem", phase2="auth=PAP")
+    sta = hapd.get_sta(dev[0].own_addr())
+    if 'dot1xAuthSessionUserName' not in sta:
+        raise Exception("No dot1xAuthSessionUserName included")
+    user = sta['dot1xAuthSessionUserName']
+    if user != "real-user":
+        raise Exception("Unexpected dot1xAuthSessionUserName value: " + user)
