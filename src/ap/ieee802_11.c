@@ -1760,7 +1760,8 @@ ieee802_11_set_radius_info(struct hostapd_data *hapd, struct sta_info *sta,
 
 
 static void handle_auth(struct hostapd_data *hapd,
-			const struct ieee80211_mgmt *mgmt, size_t len)
+			const struct ieee80211_mgmt *mgmt, size_t len,
+			int rssi)
 {
 	u16 auth_alg, auth_transaction, status_code;
 	u16 resp = WLAN_STATUS_SUCCESS;
@@ -1990,6 +1991,9 @@ static void handle_auth(struct hostapd_data *hapd,
 	}
 	sta->last_seq_ctrl = seq_ctrl;
 	sta->last_subtype = WLAN_FC_STYPE_AUTH;
+#ifdef CONFIG_MBO
+	sta->auth_rssi = rssi;
+#endif /* CONFIG_MBO */
 
 	res = ieee802_11_set_radius_info(
 		hapd, sta, res, session_timeout, acct_interim_interval,
@@ -3524,7 +3528,9 @@ static void handle_assoc(struct hostapd_data *hapd,
 	}
 
 	if (hapd->iconf->rssi_reject_assoc_rssi && rssi &&
-	    rssi < hapd->iconf->rssi_reject_assoc_rssi) {
+	    rssi < hapd->iconf->rssi_reject_assoc_rssi &&
+	    (sta->auth_rssi == 0 ||
+	     sta->auth_rssi < hapd->iconf->rssi_reject_assoc_rssi)) {
 		resp = WLAN_STATUS_DENIED_POOR_CHANNEL_CONDITIONS;
 		goto fail;
 	}
@@ -4166,7 +4172,7 @@ int ieee802_11_mgmt(struct hostapd_data *hapd, const u8 *buf, size_t len,
 	switch (stype) {
 	case WLAN_FC_STYPE_AUTH:
 		wpa_printf(MSG_DEBUG, "mgmt::auth");
-		handle_auth(hapd, mgmt, len);
+		handle_auth(hapd, mgmt, len, ssi_signal);
 		ret = 1;
 		break;
 	case WLAN_FC_STYPE_ASSOC_REQ:

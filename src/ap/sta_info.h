@@ -217,6 +217,7 @@ struct sta_info {
 	u8 cell_capa; /* 0 = unknown (not an MBO STA); otherwise,
 		       * enum mbo_cellular_capa values */
 	struct mbo_non_pref_chan_info *non_pref_chan;
+	int auth_rssi; /* Last Authentication frame RSSI */
 #endif /* CONFIG_MBO */
 
 	u8 *supp_op_classes; /* Supported Operating Classes element, if
