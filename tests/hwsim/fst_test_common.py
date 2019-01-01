@@ -5,6 +5,7 @@
 # See README for more details.
 
 import subprocess
+import time
 import logging
 
 import hostapd
@@ -86,3 +87,11 @@ class HapdRegCtrl:
             raise Exception("Cannot restore regulatory domain")
 
         logger.debug("fst hostapd: regulatory domain ready")
+
+def fst_clear_regdom():
+    cmd = subprocess.Popen([ "iw", "reg", "get" ], stdout=subprocess.PIPE)
+    res = cmd.stdout.read()
+    cmd.stdout.close()
+    if "country 00:" not in res:
+        subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)

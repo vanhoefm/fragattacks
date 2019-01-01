@@ -1523,6 +1523,7 @@ def test_fst_ap_start_session_oom(dev, apdev, test_params):
         run_fst_ap_start_session_oom(apdev, ap1)
     finally:
         ap1.stop()
+        fst_test_common.fst_clear_regdom()
 
 def run_fst_ap_start_session_oom(apdev, ap1):
     with alloc_fail(ap1, 1, "fst_iface_create"):
@@ -2137,6 +2138,7 @@ def test_fst_ap_config_oom(dev, apdev, test_params):
         # This is allowed to complete currently
 
     ap1.stop()
+    fst_test_common.fst_clear_regdom()
 
 def test_fst_send_oom(dev, apdev, test_params):
     """FST send action OOM"""

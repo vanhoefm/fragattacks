@@ -219,6 +219,7 @@ class FstLauncher:
         while len(self.cfgs_to_run) != 0:
             cfg = self.cfgs_to_run[0]
             self.remove_cfg(cfg)
+        fst_test_common.fst_clear_regdom()
 
     def kill_pid(self, pidfile, try_again=False):
         """Kills process by PID file"""

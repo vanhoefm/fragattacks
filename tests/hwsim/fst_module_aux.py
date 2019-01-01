@@ -101,6 +101,7 @@ def stop_two_ap_sta_pairs(ap1, ap2, sta1, sta2):
     sta2.stop()
     ap1.stop()
     ap2.stop()
+    fst_test_common.fst_clear_regdom()
 
 def connect_two_ap_sta_pairs(ap1, ap2, dev1, dev2, rsn=False):
     """Connects a pair of stations, each one to a separate AP"""
