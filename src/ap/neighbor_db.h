@@ -19,6 +19,6 @@ int hostapd_neighbor_set(struct hostapd_data *hapd, const u8 *bssid,
 			 const struct wpabuf *civic, int stationary);
 int hostapd_neighbor_remove(struct hostapd_data *hapd, const u8 *bssid,
 			    const struct wpa_ssid_value *ssid);
-void hostpad_free_neighbor_db(struct hostapd_data *hapd);
+void hostapd_free_neighbor_db(struct hostapd_data *hapd);
 
 #endif /* NEIGHBOR_DB_H */

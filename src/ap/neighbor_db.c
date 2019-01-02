@@ -123,7 +123,7 @@ int hostapd_neighbor_remove(struct hostapd_data *hapd, const u8 *bssid,
 }
 
 
-void hostpad_free_neighbor_db(struct hostapd_data *hapd)
+void hostapd_free_neighbor_db(struct hostapd_data *hapd)
 {
 	struct hostapd_neighbor_entry *nr, *prev;
 
