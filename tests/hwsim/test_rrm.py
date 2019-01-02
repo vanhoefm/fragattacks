@@ -1063,7 +1063,7 @@ def test_rrm_beacon_req_table_truncated_subelem(dev, apdev):
 
 @remote_compatible
 def test_rrm_beacon_req_table_rsne(dev, apdev):
-    """Beacon request - beacon table mode - RSNE truncation"""
+    """Beacon request - beacon table mode - RSNE reporting"""
     params = hostapd.wpa2_params(ssid="rrm-rsn", passphrase="12345678")
     params["rrm_beacon_report"] = "1"
     hapd = hostapd.add_ap(apdev[0], params)
@@ -1080,10 +1080,10 @@ def test_rrm_beacon_req_table_rsne(dev, apdev):
     logger.info("Received beacon report: " + str(report))
     if not report.frame_body:
         raise Exception("Reported Frame Body subelement missing")
-    if len(report.frame_body) != 12 + 6:
+    if len(report.frame_body) != 12 + 22:
         raise Exception("Unexpected Reported Frame Body subelement length with Reporting Detail 1 and requested element RSNE")
-    if binascii.unhexlify("30040100000f") not in report.frame_body:
-        raise Exception("Truncated RSNE not found")
+    if binascii.unhexlify("30140100000fac040100000fac040100000fac020c00") not in report.frame_body:
+        raise Exception("Full RSNE not found")
 
 def test_rrm_beacon_req_table_vht(dev, apdev):
     """Beacon request - beacon table mode - VHT"""
