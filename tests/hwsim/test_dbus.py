@@ -2944,6 +2944,12 @@ def test_dbus_p2p_oom(dev, apdev):
 
 def test_dbus_p2p_discovery(dev, apdev):
     """D-Bus P2P discovery"""
+    try:
+        run_dbus_p2p_discovery(dev, apdev)
+    finally:
+        dev[1].request("VENDOR_ELEM_REMOVE 1 *")
+
+def run_dbus_p2p_discovery(dev, apdev):
     (bus,wpas_obj,path,if_obj) = prepare_dbus(dev[0])
     p2p = dbus.Interface(if_obj, WPAS_DBUS_IFACE_P2PDEVICE)
 
@@ -2951,6 +2957,7 @@ def test_dbus_p2p_discovery(dev, apdev):
 
     dev[1].request("SET sec_device_type 1-0050F204-2")
     dev[1].request("VENDOR_ELEM_ADD 1 dd0c0050f2041049000411223344")
+    dev[1].request("VENDOR_ELEM_ADD 1 dd06001122335566")
     dev[1].p2p_listen()
     addr1 = dev[1].p2p_dev_addr()
     a1 = binascii.unhexlify(addr1.replace(':',''))
@@ -3032,6 +3039,14 @@ def test_dbus_p2p_discovery(dev, apdev):
                     raise Exception("Vendor extension missing")
                 if "\x11\x22\x33\x44" not in vendor:
                     raise Exception("Secondary device type mismatch")
+
+                if 'VSIE' not in res:
+                    raise Exception("Missing VSIE")
+                vendor = res['VSIE']
+                if len(vendor) < 1:
+                    raise Exception("VSIE missing")
+                if vendor != "\xdd\x06\x00\x11\x22\x33\x55\x66":
+                    raise Exception("VSIE mismatch")
 
                 self.found = True
             elif res['DeviceAddress'] == a2:
