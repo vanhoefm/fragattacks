@@ -92,7 +92,7 @@ def test_p2p_ext_discovery_go(dev):
             raise Exception("Device discovery timed out")
         peer = dev[1].get_peer(addr0)
         if peer['vendor_elems'] != "dd050011223344dd06001122335566":
-            print peer['vendor_elems']
+            logger.info("Peer vendor_elems: " + peer['vendor_elems'])
             raise Exception("Vendor elements not reported correctly")
     finally:
         dev[0].request("VENDOR_ELEM_REMOVE 2 *")
