@@ -5454,6 +5454,7 @@ def test_eap_ttls_pap_session_resumption(dev, apdev):
         raise Exception("Key handshake with the AP timed out")
     if dev[0].get_status_field("tls_session_reused") != '1':
         raise Exception("Session resumption not used on the second connection")
+    hwsim_utils.test_connectivity(dev[0], hapd)
 
 def test_eap_ttls_chap_session_resumption(dev, apdev):
     """EAP-TTLS/CHAP session resumption"""
