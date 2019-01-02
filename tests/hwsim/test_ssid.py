@@ -72,6 +72,11 @@ def test_ssid_utf8(dev, apdev):
     if len(sta3) != 0:
         raise Exception("Unexpected STA iteration result (did not stop)")
 
+    if "[UTF-8]" not in dev[0].get_bss(hapd.own_addr())['flags']:
+        raise Exception("[UTF-8] flag not included in BSS")
+    if "[UTF-8]" not in dev[0].request("SCAN_RESULTS"):
+        raise Exception("[UTF-8] flag not included in SCAN_RESULTS")
+
 def clear_scan_cache(hapd, dev):
     # clear BSS table to avoid issues in following test cases
     dev[0].request("REMOVE_NETWORK all")
