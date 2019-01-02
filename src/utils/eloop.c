@@ -301,7 +301,7 @@ static int eloop_sock_table_add_sock(struct eloop_sock_table *table,
 #endif /* CONFIG_ELOOP_POLL */
 #if defined(CONFIG_ELOOP_EPOLL) || defined(CONFIG_ELOOP_KQUEUE)
 	if (new_max_sock >= eloop.max_fd) {
-		next = eloop.max_fd == 0 ? 16 : eloop.max_fd * 2;
+		next = new_max_sock + 16;
 		temp_table = os_realloc_array(eloop.fd_table, next,
 					      sizeof(struct eloop_sock));
 		if (temp_table == NULL)
