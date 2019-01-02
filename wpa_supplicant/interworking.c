@@ -2626,7 +2626,6 @@ static void interworking_next_anqp_fetch(struct wpa_supplicant *wpa_s)
 {
 	struct wpa_bss *bss;
 	int found = 0;
-	const u8 *ie;
 
 	wpa_printf(MSG_DEBUG, "Interworking: next_anqp_fetch - "
 		   "fetch_anqp_in_progress=%d fetch_osu_icon_in_progress=%d",
@@ -2649,8 +2648,7 @@ static void interworking_next_anqp_fetch(struct wpa_supplicant *wpa_s)
 	dl_list_for_each(bss, &wpa_s->bss, struct wpa_bss, list) {
 		if (!(bss->caps & IEEE80211_CAP_ESS))
 			continue;
-		ie = wpa_bss_get_ie(bss, WLAN_EID_EXT_CAPAB);
-		if (ie == NULL || ie[1] < 4 || !(ie[5] & 0x80))
+		if (!wpa_bss_ext_capab(bss, WLAN_EXT_CAPAB_INTERWORKING))
 			continue; /* AP does not support Interworking */
 		if (disallowed_bssid(wpa_s, bss->bssid) ||
 		    disallowed_ssid(wpa_s, bss->ssid, bss->ssid_len))

@@ -95,8 +95,7 @@ void hs20_configure_frame_filters(struct wpa_supplicant *wpa_s)
 		return;
 	}
 
-	/* Check if Proxy ARP is enabled (2nd byte in the IE) */
-	if (ext_capa[3] & BIT(4))
+	if (wpa_bss_ext_capab(bss, WLAN_EXT_CAPAB_PROXY_ARP))
 		filter |= WPA_DATA_FRAME_FILTER_FLAG_ARP |
 			WPA_DATA_FRAME_FILTER_FLAG_NA;
 

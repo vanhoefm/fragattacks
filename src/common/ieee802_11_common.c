@@ -1,6 +1,6 @@
 /*
  * IEEE 802.11 Common routines
- * Copyright (c) 2002-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2002-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -1865,4 +1865,12 @@ int ieee802_11_parse_candidate_list(const char *pos, u8 *nei_rep,
 	}
 
 	return nei_pos - nei_rep;
+}
+
+
+int ieee802_11_ext_capab(const u8 *ie, unsigned int capab)
+{
+	if (!ie || ie[1] <= capab / 8)
+		return 0;
+	return !!(ie[2 + capab / 8] & BIT(capab % 8));
 }

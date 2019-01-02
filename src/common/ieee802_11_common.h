@@ -1,6 +1,6 @@
 /*
  * IEEE 802.11 Common routines
- * Copyright (c) 2002-2012, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2002-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -211,5 +211,7 @@ int oper_class_bw_to_int(const struct oper_class_map *map);
 
 int ieee802_11_parse_candidate_list(const char *pos, u8 *nei_rep,
 				    size_t nei_rep_len);
+
+int ieee802_11_ext_capab(const u8 *ie, unsigned int capab);
 
 #endif /* IEEE802_11_COMMON_H */

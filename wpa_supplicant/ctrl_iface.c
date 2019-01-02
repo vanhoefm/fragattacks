@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant / Control interface (shared code for all backends)
- * Copyright (c) 2004-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -2913,8 +2913,7 @@ static int wpa_supplicant_ctrl_iface_scan_result(
 		pos += ret;
 	}
 #endif /* CONFIG_FST */
-	ie = wpa_bss_get_ie(bss, WLAN_EID_EXT_CAPAB);
-	if (ie && ie[1] >= 7 && ie[8] & BIT(0)) { /* Bit 48 - UTF-8 SSID */
+	if (wpa_bss_ext_capab(bss, WLAN_EXT_CAPAB_UTF_8_SSID)) {
 		ret = os_snprintf(pos, end - pos, "[UTF-8]");
 		if (os_snprintf_error(end - pos, ret))
 			return -1;
@@ -4748,9 +4747,7 @@ static int print_bss_info(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 			pos += ret;
 		}
 #endif /* CONFIG_FST */
-		ie = wpa_bss_get_ie(bss, WLAN_EID_EXT_CAPAB);
-		if (ie && ie[1] >= 7 && ie[8] & BIT(0)) {
-			/* Bit 48 - UTF-8 SSID */
+		if (wpa_bss_ext_capab(bss, WLAN_EXT_CAPAB_UTF_8_SSID)) {
 			ret = os_snprintf(pos, end - pos, "[UTF-8]");
 			if (os_snprintf_error(end - pos, ret))
 				return 0;
