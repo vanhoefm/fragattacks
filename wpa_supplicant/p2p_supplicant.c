@@ -3918,6 +3918,10 @@ static int wpas_remove_stale_groups(void *ctx, const u8 *peer, const u8 *go,
 
 		/* Remove stale persistent group */
 		if (s->mode != WPAS_MODE_P2P_GO || s->num_p2p_clients <= 1) {
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"P2P: Remove stale persistent group id=%d",
+				s->id);
+			wpas_notify_persistent_group_removed(wpa_s, s);
 			wpa_config_remove_network(wpa_s->conf, s->id);
 			save_config = 1;
 			continue;
