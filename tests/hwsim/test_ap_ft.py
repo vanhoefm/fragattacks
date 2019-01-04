@@ -1389,8 +1389,7 @@ def test_ap_ft_gcmp_256(dev, apdev):
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase,
               pairwise_cipher="GCMP-256", group_cipher="GCMP-256")
 
-def test_ap_ft_oom(dev, apdev):
-    """WPA2-PSK-FT and OOM"""
+def setup_ap_ft_oom(dev, apdev):
     skip_with_fips(dev[0])
     ssid = "test-ft"
     passphrase="12345678"
@@ -1408,13 +1407,32 @@ def test_ap_ft_oom(dev, apdev):
         dst = apdev[0]['bssid']
 
     dev[0].scan_for_bss(dst, freq="2412")
+
+    return dst
+
+def test_ap_ft_oom(dev, apdev):
+    """WPA2-PSK-FT and OOM"""
+    dst = setup_ap_ft_oom(dev, apdev)
     with alloc_fail(dev[0], 1, "wpa_ft_gen_req_ies"):
         dev[0].roam(dst)
-    with fail_test(dev[0], 1, "wpa_ft_mic"):
-        dev[0].roam(dst, fail_test=True)
-    with fail_test(dev[0], 1, "os_get_random;wpa_ft_prepare_auth_request"):
-        dev[0].roam(dst, fail_test=True)
 
+def test_ap_ft_oom2(dev, apdev):
+    """WPA2-PSK-FT and OOM (2)"""
+    dst = setup_ap_ft_oom(dev, apdev)
+    with fail_test(dev[0], 1, "wpa_ft_mic"):
+        dev[0].roam(dst, fail_test=True, assoc_reject_ok=True)
+
+def test_ap_ft_oom3(dev, apdev):
+    """WPA2-PSK-FT and OOM (3)"""
+    dst = setup_ap_ft_oom(dev, apdev)
+    with fail_test(dev[0], 1, "os_get_random;wpa_ft_prepare_auth_request"):
+        dev[0].roam(dst)
+
+def test_ap_ft_oom4(dev, apdev):
+    """WPA2-PSK-FT and OOM (4)"""
+    ssid = "test-ft"
+    passphrase="12345678"
+    dst = setup_ap_ft_oom(dev, apdev)
     dev[0].request("REMOVE_NETWORK all")
     with alloc_fail(dev[0], 1, "=sme_update_ft_ies"):
         dev[0].connect(ssid, psk=passphrase, key_mgmt="FT-PSK", proto="WPA2",

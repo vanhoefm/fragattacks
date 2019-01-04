@@ -1106,13 +1106,17 @@ class WpaSupplicant:
             if len(res.splitlines()) > 1:
                 logger.info("flush_scan_cache: Could not clear all BSS entries. These remain:\n" + res)
 
-    def roam(self, bssid, fail_test=False):
+    def roam(self, bssid, fail_test=False, assoc_reject_ok=False):
         self.dump_monitor()
         if "OK" not in self.request("ROAM " + bssid):
             raise Exception("ROAM failed")
         if fail_test:
-            ev = self.wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
-            if ev is not None:
+            if assoc_reject_ok:
+                ev = self.wait_event(["CTRL-EVENT-CONNECTED",
+                                      "CTRL-EVENT-ASSOC-REJECT"], timeout=1)
+            else:
+                ev = self.wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
+            if ev is not None and "CTRL-EVENT-ASSOC-REJECT" not in ev:
                 raise Exception("Unexpected connection")
             self.dump_monitor()
             return
