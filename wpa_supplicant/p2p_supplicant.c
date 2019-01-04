@@ -4045,6 +4045,11 @@ static void wpas_p2ps_prov_complete(void *ctx, u8 status, const u8 *dev,
 
 		if (persistent_go && !persistent_go->num_p2p_clients) {
 			/* remove empty persistent GO */
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"P2P: Remove empty persistent group id=%d",
+				persistent_go->id);
+			wpas_notify_persistent_group_removed(wpa_s,
+							     persistent_go);
 			wpa_config_remove_network(wpa_s->conf,
 						  persistent_go->id);
 		}
@@ -4085,6 +4090,10 @@ static void wpas_p2ps_prov_complete(void *ctx, u8 status, const u8 *dev,
 		/* Remove stale persistent group */
 		if (stale->mode != WPAS_MODE_P2P_GO ||
 		    stale->num_p2p_clients <= 1) {
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"P2P: Remove stale persistent group id=%d",
+				stale->id);
+			wpas_notify_persistent_group_removed(wpa_s, stale);
 			wpa_config_remove_network(wpa_s->conf, stale->id);
 		} else {
 			size_t i;
@@ -4117,6 +4126,11 @@ static void wpas_p2ps_prov_complete(void *ctx, u8 status, const u8 *dev,
 		if (persistent_go && s != persistent_go &&
 		    !persistent_go->num_p2p_clients) {
 			/* remove empty persistent GO */
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"P2P: Remove empty persistent group id=%d",
+				persistent_go->id);
+			wpas_notify_persistent_group_removed(wpa_s,
+							     persistent_go);
 			wpa_config_remove_network(wpa_s->conf,
 						  persistent_go->id);
 			/* Save config */
@@ -4224,6 +4238,10 @@ static void wpas_p2ps_prov_complete(void *ctx, u8 status, const u8 *dev,
 
 	if (persistent_go && !persistent_go->num_p2p_clients) {
 		/* remove empty persistent GO */
+		wpa_dbg(wpa_s, MSG_DEBUG,
+			"P2P: Remove empty persistent group id=%d",
+			persistent_go->id);
+		wpas_notify_persistent_group_removed(wpa_s, persistent_go);
 		wpa_config_remove_network(wpa_s->conf, persistent_go->id);
 	}
 
