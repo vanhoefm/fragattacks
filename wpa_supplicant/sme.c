@@ -460,7 +460,7 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 			wpa_s->sme.assoc_req_ie_len += 5;
 		}
 
-		if (wpa_s->sme.ft_used &&
+		if (wpa_s->sme.prev_bssid_set && wpa_s->sme.ft_used &&
 		    os_memcmp(md, wpa_s->sme.mobility_domain, 2) == 0 &&
 		    wpa_sm_has_ptk(wpa_s->wpa)) {
 			wpa_dbg(wpa_s, MSG_DEBUG, "SME: Trying to use FT "
