@@ -1,5 +1,5 @@
 # Fast BSS Transition tests
-# Copyright (c) 2013-2017, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -10,9 +10,12 @@ import os
 import time
 import logging
 logger = logging.getLogger()
+import signal
 import struct
+import subprocess
 
 import hwsim_utils
+from hwsim import HWSimRadio
 import hostapd
 from tshark import run_tshark
 from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger, skip_with_fips, parse_ie
@@ -467,6 +470,107 @@ def test_ap_ft_over_ds(dev, apdev):
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True)
     check_mib(dev[0], [ ("dot11RSNAAuthenticationSuiteRequested", "00-0f-ac-4"),
                         ("dot11RSNAAuthenticationSuiteSelected", "00-0f-ac-4") ])
+
+def cleanup_ap_ft_separate_hostapd():
+    subprocess.call(["brctl", "delif", "br0ft", "veth0"],
+                    stderr=open('/dev/null', 'w'))
+    subprocess.call(["brctl", "delif", "br1ft", "veth1"],
+                    stderr=open('/dev/null', 'w'))
+    subprocess.call(["ip", "link", "del", "veth0"],
+                    stderr=open('/dev/null', 'w'))
+    subprocess.call(["ip", "link", "del", "veth1"],
+                    stderr=open('/dev/null', 'w'))
+    for ifname in [ 'br0ft', 'br1ft', 'br-ft' ]:
+        subprocess.call(['ip', 'link', 'set', 'dev', ifname, 'down'],
+                        stderr=open('/dev/null', 'w'))
+        subprocess.call(['brctl', 'delbr', ifname],
+                        stderr=open('/dev/null', 'w'))
+
+def test_ap_ft_separate_hostapd(dev, apdev, params):
+    """WPA2-PSK-FT AP and separate hostapd process"""
+    try:
+        run_ap_ft_separate_hostapd(dev, apdev, params, False)
+    finally:
+        cleanup_ap_ft_separate_hostapd()
+
+def test_ap_ft_over_ds_separate_hostapd(dev, apdev, params):
+    """WPA2-PSK-FT AP over DS and separate hostapd process"""
+    try:
+        run_ap_ft_separate_hostapd(dev, apdev, params, True)
+    finally:
+        cleanup_ap_ft_separate_hostapd()
+
+def run_ap_ft_separate_hostapd(dev, apdev, params, over_ds):
+    ssid = "test-ft"
+    passphrase="12345678"
+    logdir = params['logdir']
+    pidfile = os.path.join(logdir, 'ap_ft_over_ds_separate_hostapd.pid')
+    logfile = os.path.join(logdir, 'ap_ft_over_ds_separate_hostapd.hapd')
+    global_ctrl = '/var/run/hostapd-ft'
+    br_ifname = 'br-ft'
+
+    try:
+        subprocess.check_call(['brctl', 'addbr', br_ifname])
+        subprocess.check_call(['brctl', 'setfd', br_ifname, '0'])
+        subprocess.check_call(['ip', 'link', 'set', 'dev', br_ifname, 'up'])
+
+        subprocess.check_call([ "ip", "link", "add", "veth0", "type", "veth",
+                                "peer", "name", "veth0br" ])
+        subprocess.check_call([ "ip", "link", "add", "veth1", "type", "veth",
+                                "peer", "name", "veth1br" ])
+        subprocess.check_call(['ip', 'link', 'set', 'dev', 'veth0br', 'up'])
+        subprocess.check_call(['ip', 'link', 'set', 'dev', 'veth1br', 'up'])
+        subprocess.check_call(['brctl', 'addif', br_ifname, 'veth0br'])
+        subprocess.check_call(['brctl', 'addif', br_ifname, 'veth1br'])
+
+        subprocess.check_call(['brctl', 'addbr', 'br0ft'])
+        subprocess.check_call(['brctl', 'setfd', 'br0ft', '0'])
+        subprocess.check_call(['ip', 'link', 'set', 'dev', 'br0ft', 'up'])
+        subprocess.check_call(['ip', 'link', 'set', 'dev', 'veth0', 'up'])
+        subprocess.check_call(['brctl', 'addif', 'br0ft', 'veth0'])
+        subprocess.check_call(['brctl', 'addbr', 'br1ft'])
+        subprocess.check_call(['brctl', 'setfd', 'br1ft', '0'])
+        subprocess.check_call(['ip', 'link', 'set', 'dev', 'br1ft', 'up'])
+        subprocess.check_call(['ip', 'link', 'set', 'dev', 'veth1', 'up'])
+        subprocess.check_call(['brctl', 'addif', 'br1ft', 'veth1'])
+    except subprocess.CalledProcessError:
+        raise HwsimSkip("Bridge or veth not supported (kernel CONFIG_VETH)")
+
+    with HWSimRadio() as (radio, iface):
+        prg = os.path.join(logdir, 'alt-hostapd/hostapd/hostapd')
+        if not os.path.exists(prg):
+            prg = '../../hostapd/hostapd'
+        cmd = [ prg, '-B', '-ddKt',
+                '-P', pidfile, '-f', logfile, '-g', global_ctrl ]
+        subprocess.check_call(cmd)
+
+        hglobal = hostapd.HostapdGlobal(global_ctrl_override=global_ctrl)
+        apdev_ft = { 'ifname': iface }
+        apdev2 = [ apdev_ft, apdev[1] ]
+
+        params = ft_params1(ssid=ssid, passphrase=passphrase)
+        params["r0kh"] = "ff:ff:ff:ff:ff:ff * 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+        params["r1kh"] = "00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+        params['bridge'] = 'br0ft'
+        hapd0 = hostapd.add_ap(apdev2[0], params,
+                               global_ctrl_override=global_ctrl)
+        apdev2[0]['bssid'] = hapd0.own_addr()
+        params = ft_params2(ssid=ssid, passphrase=passphrase)
+        params["r0kh"] = "ff:ff:ff:ff:ff:ff * 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+        params["r1kh"] = "00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+        params['bridge'] = 'br1ft'
+        hapd1 = hostapd.add_ap(apdev2[1], params)
+
+        run_roams(dev[0], apdev2, hapd0, hapd1, ssid, passphrase,
+                  over_ds=over_ds, test_connectivity=False)
+
+        hglobal.terminate()
+
+    if os.path.exists(pidfile):
+        with open(pidfile, 'r') as f:
+            pid = int(f.read())
+            f.close()
+        os.kill(pid, signal.SIGTERM)
 
 def test_ap_ft_over_ds_ocv(dev, apdev):
     """WPA2-PSK-FT AP over DS"""

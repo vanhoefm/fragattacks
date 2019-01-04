@@ -1,5 +1,5 @@
 # Python class for controlling hostapd
-# Copyright (c) 2013-2014, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -22,7 +22,7 @@ def mac2tuple(mac):
     return struct.unpack('6B', binascii.unhexlify(mac.replace(':','')))
 
 class HostapdGlobal:
-    def __init__(self, apdev=None):
+    def __init__(self, apdev=None, global_ctrl_override=None):
         try:
             hostname = apdev['hostname']
             port = apdev['port']
@@ -33,8 +33,11 @@ class HostapdGlobal:
         self.hostname = hostname
         self.port = port
         if hostname is None:
-            self.ctrl = wpaspy.Ctrl(hapd_global)
-            self.mon = wpaspy.Ctrl(hapd_global)
+            global_ctrl = hapd_global
+            if global_ctrl_override:
+                global_ctrl = global_ctrl_override
+            self.ctrl = wpaspy.Ctrl(global_ctrl)
+            self.mon = wpaspy.Ctrl(global_ctrl)
             self.dbg = ""
         else:
             self.ctrl = wpaspy.Ctrl(hostname, port)
@@ -377,7 +380,8 @@ class Hostapd:
             return vals
         return None
 
-def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30):
+def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30,
+           global_ctrl_override=None):
         if isinstance(apdev, dict):
             ifname = apdev['ifname']
             try:
@@ -393,7 +397,8 @@ def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30):
             logger.info("Starting AP " + ifname + " (old add_ap argument type)")
             hostname = None
             port = 8878
-        hapd_global = HostapdGlobal(apdev)
+        hapd_global = HostapdGlobal(apdev,
+                                    global_ctrl_override=global_ctrl_override)
         hapd_global.remove(ifname)
         hapd_global.add(ifname)
         port = hapd_global.get_ctrl_iface_port(ifname)
