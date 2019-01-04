@@ -847,12 +847,18 @@ hostapd_wpa_auth_add_sta(void *ctx, const u8 *sta_addr)
 	struct hostapd_data *hapd = ctx;
 	struct sta_info *sta;
 
+	wpa_printf(MSG_DEBUG, "Add station entry for " MACSTR
+		   " based on WPA authenticator callback",
+		   MAC2STR(sta_addr));
 	if (hostapd_add_sta_node(hapd, sta_addr, WLAN_AUTH_FT) < 0)
 		return NULL;
 
 	sta = ap_sta_add(hapd, sta_addr);
 	if (sta == NULL)
 		return NULL;
+	if (hapd->driver && hapd->driver->add_sta_node)
+		sta->added_unassoc = 1;
+	sta->ft_over_ds = 1;
 	if (sta->wpa_sm) {
 		sta->auth_alg = WLAN_AUTH_FT;
 		return sta->wpa_sm;

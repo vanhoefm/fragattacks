@@ -1943,6 +1943,7 @@ static void handle_auth(struct hostapd_data *hapd,
 	sta = ap_get_sta(hapd, mgmt->sa);
 	if (sta) {
 		sta->flags &= ~WLAN_STA_PENDING_FILS_ERP;
+		sta->ft_over_ds = 0;
 		if ((fc & WLAN_FC_RETRY) &&
 		    sta->last_seq_ctrl != WLAN_INVALID_MGMT_SEQ &&
 		    sta->last_seq_ctrl == seq_ctrl &&
@@ -2911,7 +2912,7 @@ static void send_deauth(struct hostapd_data *hapd, const u8 *addr,
 
 
 static int add_associated_sta(struct hostapd_data *hapd,
-			      struct sta_info *sta)
+			      struct sta_info *sta, int reassoc)
 {
 	struct ieee80211_ht_capabilities ht_cap;
 	struct ieee80211_vht_capabilities vht_cap;
@@ -2927,14 +2928,36 @@ static int add_associated_sta(struct hostapd_data *hapd,
 	 * Skip this if the STA has already completed FT reassociation and the
 	 * TK has been configured since the TX/RX PN must not be reset to 0 for
 	 * the same key.
+	 *
+	 * FT-over-the-DS has a special case where the STA entry (and as such,
+	 * the TK) has not yet been configured to the driver depending on which
+	 * driver interface is used. For that case, allow add-STA operation to
+	 * be used (instead of set-STA). This is needed to allow mac80211-based
+	 * drivers to accept the STA parameter configuration. Since this is
+	 * after a new FT-over-DS exchange, a new TK has been derived, so key
+	 * reinstallation is not a concern for this case.
 	 */
+	wpa_printf(MSG_DEBUG, "Add associated STA " MACSTR
+		   " (added_unassoc=%d auth_alg=%u ft_over_ds=%u reassoc=%d authorized=%d ft_tk=%d fils_tk=%d)",
+		   MAC2STR(sta->addr), sta->added_unassoc, sta->auth_alg,
+		   sta->ft_over_ds, reassoc,
+		   !!(sta->flags & WLAN_STA_AUTHORIZED),
+		   wpa_auth_sta_ft_tk_already_set(sta->wpa_sm),
+		   wpa_auth_sta_fils_tk_already_set(sta->wpa_sm));
+
 	if (!sta->added_unassoc &&
 	    (!(sta->flags & WLAN_STA_AUTHORIZED) ||
+	     (reassoc && sta->ft_over_ds && sta->auth_alg == WLAN_AUTH_FT) ||
 	     (!wpa_auth_sta_ft_tk_already_set(sta->wpa_sm) &&
 	      !wpa_auth_sta_fils_tk_already_set(sta->wpa_sm)))) {
 		hostapd_drv_sta_remove(hapd, sta->addr);
 		wpa_auth_sm_event(sta->wpa_sm, WPA_DRV_STA_REMOVED);
 		set = 0;
+
+		 /* Do not allow the FT-over-DS exception to be used more than
+		  * once per authentication exchange to guarantee a new TK is
+		  * used here */
+		sta->ft_over_ds = 0;
 	}
 
 #ifdef CONFIG_IEEE80211N
@@ -3691,7 +3714,8 @@ static void handle_assoc(struct hostapd_data *hapd,
 	 *    issues with processing other non-Data Class 3 frames during this
 	 *    window.
 	 */
-	if (resp == WLAN_STATUS_SUCCESS && sta && add_associated_sta(hapd, sta))
+	if (resp == WLAN_STATUS_SUCCESS && sta &&
+	    add_associated_sta(hapd, sta, reassoc))
 		resp = WLAN_STATUS_AP_UNABLE_TO_HANDLE_NEW_STA;
 
 #ifdef CONFIG_FILS
