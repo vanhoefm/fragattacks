@@ -646,7 +646,7 @@ class WpaSupplicant:
             res['passphrase'] = p.group(1)
         res['go_dev_addr'] = s[7]
 
-        if len(s) > 8 and len(s[8]) > 0:
+        if len(s) > 8 and len(s[8]) > 0 and "[PERSISTENT]" not in s[8]:
             res['ip_addr'] = s[8]
         if len(s) > 9:
             res['ip_mask'] = s[9]
