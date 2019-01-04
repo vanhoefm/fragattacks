@@ -1,5 +1,5 @@
 # Python class for controlling wpa_supplicant
-# Copyright (c) 2013-2014, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -1116,7 +1116,12 @@ class WpaSupplicant:
                 raise Exception("Unexpected connection")
             self.dump_monitor()
             return
-        self.wait_connected(timeout=10, error="Roaming with the AP timed out")
+        ev = self.wait_event(["CTRL-EVENT-CONNECTED",
+                              "CTRL-EVENT-ASSOC-REJECT"], timeout=10)
+        if ev is None:
+            raise Exception("Roaming with the AP timed out")
+        if "CTRL-EVENT-ASSOC-REJECT" in ev:
+            raise Exception("Roaming association rejected")
         self.dump_monitor()
 
     def roam_over_ds(self, bssid, fail_test=False):
@@ -1129,7 +1134,12 @@ class WpaSupplicant:
                 raise Exception("Unexpected connection")
             self.dump_monitor()
             return
-        self.wait_connected(timeout=10, error="Roaming with the AP timed out")
+        ev = self.wait_event(["CTRL-EVENT-CONNECTED",
+                              "CTRL-EVENT-ASSOC-REJECT"], timeout=10)
+        if ev is None:
+            raise Exception("Roaming with the AP timed out")
+        if "CTRL-EVENT-ASSOC-REJECT" in ev:
+            raise Exception("Roaming association rejected")
         self.dump_monitor()
 
     def wps_reg(self, bssid, pin, new_ssid=None, key_mgmt=None, cipher=None,
