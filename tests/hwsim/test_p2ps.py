@@ -861,6 +861,111 @@ def test_p2ps_connect_adv_go_persistent(dev):
     p2ps_connect_pd(dev[0], dev[1], ev0, ev1)
     remove_group(dev[0], dev[1])
 
+def test_p2ps_stale_group_removal(dev):
+    """P2PS stale group removal"""
+    go_neg_pin_authorized_persistent(i_dev=dev[0], i_intent=15,
+                                     r_dev=dev[1], r_intent=0)
+    dev[0].remove_group()
+    dev[1].wait_go_ending_session()
+
+    # Drop the first persistent group on dev[1] and form new persistent groups
+    # on both devices.
+    dev[1].request("FLUSH")
+    go_neg_pin_authorized_persistent(i_dev=dev[0], i_intent=15,
+                                     r_dev=dev[1], r_intent=0)
+    dev[0].remove_group()
+    dev[1].wait_go_ending_session()
+
+    # The GO now has a stale persistent group as the first entry. Try to go
+    # through P2PS sequence to hit stale group removal.
+    if len(dev[0].list_networks(p2p=True)) != 2:
+        raise Exception("Unexpected number of networks on dev[0]")
+    if len(dev[1].list_networks(p2p=True)) != 1:
+        raise Exception("Unexpected number of networks on dev[1]")
+
+    p2ps_advertise(r_dev=dev[0], r_role='4', svc_name='org.wi-fi.wfds.send.rx',
+                   srv_info='I can receive files upto size 2 GB')
+    [adv_id, rcvd_svc_name] = p2ps_exact_seek(i_dev=dev[1], r_dev=dev[0],
+                                              svc_name='org.wi-fi.wfds.send.rx',
+                                              srv_info='2 GB')
+    ev1, ev0 = p2ps_provision(dev[1], dev[0], adv_id)
+    if "persist=" not in ev0 or "persist=" not in ev1:
+        raise Exception("Persistent group isn't used by peers")
+
+    p2ps_connect_pd(dev[0], dev[1], ev0, ev1)
+    remove_group(dev[0], dev[1])
+
+    if len(dev[0].list_networks(p2p=True)) != 1:
+        raise Exception("Unexpected number of networks on dev[0] (2)")
+    if len(dev[1].list_networks(p2p=True)) != 1:
+        raise Exception("Unexpected number of networks on dev[1] (2)")
+
+def test_p2ps_stale_group_removal2(dev):
+    """P2PS stale group removal (2)"""
+    go_neg_pin_authorized_persistent(i_dev=dev[0], i_intent=0,
+                                     r_dev=dev[1], r_intent=15)
+    dev[1].remove_group()
+    dev[0].wait_go_ending_session()
+
+    # Drop the first persistent group on dev[1] and form new persistent groups
+    # on both devices.
+    dev[1].request("FLUSH")
+    go_neg_pin_authorized_persistent(i_dev=dev[0], i_intent=0,
+                                     r_dev=dev[1], r_intent=15)
+    dev[1].remove_group()
+    dev[0].wait_go_ending_session()
+
+    # The P2P Client now has a stale persistent group as the first entry. Try
+    # to go through P2PS sequence to hit stale group removal.
+    if len(dev[0].list_networks(p2p=True)) != 2:
+        raise Exception("Unexpected number of networks on dev[0]")
+    if len(dev[1].list_networks(p2p=True)) != 1:
+        raise Exception("Unexpected number of networks on dev[1]")
+
+    p2ps_advertise(r_dev=dev[1], r_role='4', svc_name='org.wi-fi.wfds.send.rx',
+                   srv_info='I can receive files upto size 2 GB')
+    [adv_id, rcvd_svc_name] = p2ps_exact_seek(i_dev=dev[0], r_dev=dev[1],
+                                              svc_name='org.wi-fi.wfds.send.rx',
+                                              srv_info='2 GB')
+    ev0, ev1 = p2ps_provision(dev[0], dev[1], adv_id)
+    # This hits persistent group removal on dev[0] (P2P Client)
+
+def test_p2ps_stale_group_removal3(dev):
+    """P2PS stale group removal (3)"""
+    dev[0].p2p_start_go(persistent=True)
+    dev[0].remove_group()
+    if len(dev[0].list_networks(p2p=True)) != 1:
+        raise Exception("Unexpected number of networks on dev[0]")
+
+    go_neg_pin_authorized_persistent(i_dev=dev[0], i_intent=15,
+                                     r_dev=dev[1], r_intent=0)
+    dev[0].remove_group()
+    dev[1].wait_go_ending_session()
+
+    # The GO now has a stale persistent group as the first entry. Try to go
+    # through P2PS sequence to hit stale group removal.
+    if len(dev[0].list_networks(p2p=True)) != 2:
+        raise Exception("Unexpected number of networks on dev[0] (2)")
+    if len(dev[1].list_networks(p2p=True)) != 1:
+        raise Exception("Unexpected number of networks on dev[1] (2)")
+
+    p2ps_advertise(r_dev=dev[0], r_role='4', svc_name='org.wi-fi.wfds.send.rx',
+                   srv_info='I can receive files upto size 2 GB')
+    [adv_id, rcvd_svc_name] = p2ps_exact_seek(i_dev=dev[1], r_dev=dev[0],
+                                              svc_name='org.wi-fi.wfds.send.rx',
+                                              srv_info='2 GB')
+    ev1, ev0 = p2ps_provision(dev[1], dev[0], adv_id)
+    if "persist=" not in ev0 or "persist=" not in ev1:
+        raise Exception("Persistent group isn't used by peers")
+
+    p2ps_connect_pd(dev[0], dev[1], ev0, ev1)
+    remove_group(dev[0], dev[1])
+
+    if len(dev[0].list_networks(p2p=True)) != 1:
+        raise Exception("Unexpected number of networks on dev[0] (3)")
+    if len(dev[1].list_networks(p2p=True)) != 1:
+        raise Exception("Unexpected number of networks on dev[1] (3)")
+
 @remote_compatible
 def test_p2ps_adv_go_persistent_no_peer_entry(dev):
     """P2PS advertisement as GO having persistent group (no peer entry)"""
