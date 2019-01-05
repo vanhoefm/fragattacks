@@ -1,6 +1,6 @@
 /*
  * EAP peer: EAP-TLS/PEAP/TTLS/FAST common functions
- * Copyright (c) 2004-2013, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -170,7 +170,9 @@ static int eap_tls_params_from_conf(struct eap_sm *sm,
 		 * TLS v1.3 changes, so disable this by default for now. */
 		params->flags |= TLS_CONN_DISABLE_TLSv1_3;
 	}
-	if (data->eap_type == EAP_TYPE_TLS) {
+	if (data->eap_type == EAP_TYPE_TLS ||
+	    data->eap_type == EAP_UNAUTH_TLS_TYPE ||
+	    data->eap_type == EAP_WFA_UNAUTH_TLS_TYPE) {
 		/* While the current EAP-TLS implementation is more or less
 		 * complete for TLS v1.3, there has been no interoperability
 		 * testing with other implementations, so disable for by default
