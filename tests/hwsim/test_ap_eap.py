@@ -19,8 +19,9 @@ import struct
 import tempfile
 
 import hwsim_utils
+from hwsim import HWSimRadio
 import hostapd
-from utils import HwsimSkip, alloc_fail, fail_test, skip_with_fips, wait_fail_trigger
+from utils import HwsimSkip, alloc_fail, fail_test, skip_with_fips, wait_fail_trigger, require_under_vm
 from wpasupplicant import WpaSupplicant
 from test_ap_psk import check_mib, find_wpas_process, read_process_memory, verify_not_present, get_key_locations, set_test_assoc_ie
 
@@ -6501,3 +6502,90 @@ def test_ap_wpa2_radius_server_get_id(dev, apdev):
     user = sta['dot1xAuthSessionUserName']
     if user != "real-user":
         raise Exception("Unexpected dot1xAuthSessionUserName value: " + user)
+
+def test_openssl_systemwide_policy(dev, apdev, test_params):
+    """OpenSSL systemwide policy and overrides"""
+    prefix = "openssl_systemwide_policy"
+    pidfile = os.path.join(test_params['logdir'], prefix + '.pid-wpas')
+    try:
+        with HWSimRadio() as (radio, iface):
+            run_openssl_systemwide_policy(iface, apdev, test_params)
+    finally:
+        if os.path.exists(pidfile):
+            with open(pidfile, 'r') as f:
+                pid = int(f.read().strip())
+                os.kill(pid, signal.SIGTERM)
+
+def write_openssl_cnf(cnf, MinProtocol=None, CipherString=None):
+    with open(cnf, "w") as f:
+        f.write("""openssl_conf = default_conf
+[default_conf]
+ssl_conf = ssl_sect
+[ssl_sect]
+system_default = system_default_sect
+[system_default_sect]
+""")
+        if MinProtocol:
+            f.write("MinProtocol = %s\n" % MinProtocol)
+        if CipherString:
+            f.write("CipherString = %s\n" % CipherString)
+
+def run_openssl_systemwide_policy(iface, apdev, test_params):
+    prefix = "openssl_systemwide_policy"
+    logfile = os.path.join(test_params['logdir'], prefix + '.log-wpas')
+    pidfile = os.path.join(test_params['logdir'], prefix + '.pid-wpas')
+    conffile = os.path.join(test_params['logdir'], prefix + '.conf')
+    openssl_cnf = os.path.join(test_params['logdir'], prefix + '.openssl.cnf')
+
+    write_openssl_cnf(openssl_cnf, "TLSv1.2", "DEFAULT@SECLEVEL=2")
+
+    with open(conffile, 'w') as f:
+        f.write("ctrl_interface=DIR=/var/run/wpa_supplicant\n")
+
+    params = int_eap_server_params()
+    params['tls_flags'] = "[DISABLE-TLSv1.1][DISABLE-TLSv1.2][DISABLE-TLSv1.3]"
+
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    prg = os.path.join(test_params['logdir'],
+                       'alt-wpa_supplicant/wpa_supplicant/wpa_supplicant')
+    if not os.path.exists(prg):
+        prg = '../../wpa_supplicant/wpa_supplicant'
+    arg = [ prg, '-BddtK', '-P', pidfile, '-f', logfile,
+            '-Dnl80211', '-c', conffile, '-i', iface ]
+    logger.info("Start wpa_supplicant: " + str(arg))
+    subprocess.call(arg, env={'OPENSSL_CONF': openssl_cnf})
+    wpas = WpaSupplicant(ifname=iface)
+    if "PONG" not in wpas.request("PING"):
+        raise Exception("Could not PING wpa_supplicant")
+    tls = wpas.request("GET tls_library")
+    if not tls.startswith("OpenSSL"):
+        raise HwsimSkip("Not using OpenSSL")
+
+    # Use default configuration without any TLS version overrides. This should
+    # end up using OpenSSL systemwide policy and result in failure to find a
+    # compatible protocol version.
+    ca_file = os.path.join(os.getcwd(), "auth_serv/ca.pem")
+    id = wpas.connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="TTLS",
+                      identity="pap user", anonymous_identity="ttls",
+                      password="password", phase2="auth=PAP",
+                      ca_cert=ca_file,
+                      scan_freq="2412", wait_connect=False)
+    ev = wpas.wait_event(["CTRL-EVENT-EAP-STARTED"], timeout=10)
+    if ev is None:
+        raise Exception("EAP not started")
+    ev = wpas.wait_event(["CTRL-EVENT-EAP-STATUS status='local TLS alert'"],
+                         timeout=1)
+    if ev is None:
+        raise HwsimSkip("OpenSSL systemwide policy not supported")
+    wpas.request("DISCONNECT")
+    wpas.wait_disconnected()
+    wpas.dump_monitor()
+
+    # Explicitly allow TLSv1.0 to be used to override OpenSSL systemwide policy
+    wpas.set_network_quoted(id, "openssl_ciphers", "DEFAULT@SECLEVEL=1")
+    wpas.set_network_quoted(id, "phase1", "tls_disable_tlsv1_0=0")
+    wpas.select_network(id, freq="2412")
+    wpas.wait_connected()
+
+    wpas.request("TERMINATE")
