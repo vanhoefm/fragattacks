@@ -2533,6 +2533,38 @@ static int tls_set_conn_flags(struct tls_connection *conn, unsigned int flags,
 	else
 		SSL_clear_options(ssl, SSL_OP_NO_TLSv1_3);
 #endif /* SSL_OP_NO_TLSv1_3 */
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	if (flags & (TLS_CONN_ENABLE_TLSv1_0 |
+		     TLS_CONN_ENABLE_TLSv1_1 |
+		     TLS_CONN_ENABLE_TLSv1_2)) {
+		int version = 0;
+
+		/* Explicit request to enable TLS versions even if needing to
+		 * override systemwide policies. */
+		if (flags & TLS_CONN_ENABLE_TLSv1_0) {
+			version = TLS1_VERSION;
+		} else if (flags & TLS_CONN_ENABLE_TLSv1_1) {
+			if (!(flags & TLS_CONN_DISABLE_TLSv1_0))
+				version = TLS1_1_VERSION;
+		} else if (flags & TLS_CONN_ENABLE_TLSv1_2) {
+			if (!(flags & (TLS_CONN_DISABLE_TLSv1_0 |
+				       TLS_CONN_DISABLE_TLSv1_1)))
+				version = TLS1_2_VERSION;
+		}
+		if (!version) {
+			wpa_printf(MSG_DEBUG,
+				   "OpenSSL: Invalid TLS version configuration");
+			return -1;
+		}
+
+		if (SSL_set_min_proto_version(ssl, version) != 1) {
+			wpa_printf(MSG_DEBUG,
+				   "OpenSSL: Failed to set minimum TLS version");
+			return -1;
+		}
+	}
+#endif /* >= 1.1.0 */
+
 #ifdef CONFIG_SUITEB
 #ifdef OPENSSL_IS_BORINGSSL
 	/* Start with defaults from BoringSSL */
@@ -2635,7 +2667,22 @@ static int tls_set_conn_flags(struct tls_connection *conn, unsigned int flags,
 			return -1;
 		}
 	}
+#else /* OPENSSL_IS_BORINGSSL */
+	if (!(flags & (TLS_CONN_SUITEB | TLS_CONN_SUITEB_NO_ECDH)) &&
+	    openssl_ciphers && SSL_set_cipher_list(ssl, openssl_ciphers) != 1) {
+		wpa_printf(MSG_INFO,
+			   "OpenSSL: Failed to set openssl_ciphers '%s'",
+			   openssl_ciphers);
+		return -1;
+	}
 #endif /* OPENSSL_IS_BORINGSSL */
+#else /* CONFIG_SUITEB */
+	if (openssl_ciphers && SSL_set_cipher_list(ssl, openssl_ciphers) != 1) {
+		wpa_printf(MSG_INFO,
+			   "OpenSSL: Failed to set openssl_ciphers '%s'",
+			   openssl_ciphers);
+		return -1;
+	}
 #endif /* CONFIG_SUITEB */
 
 	return 0;

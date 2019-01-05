@@ -2265,10 +2265,16 @@ static unsigned int parse_tls_flags(const char *val)
 		flags |= TLS_CONN_DISABLE_TIME_CHECKS;
 	if (os_strstr(val, "[DISABLE-TLSv1.0]"))
 		flags |= TLS_CONN_DISABLE_TLSv1_0;
+	if (os_strstr(val, "[ENABLE-TLSv1.0]"))
+		flags |= TLS_CONN_ENABLE_TLSv1_0;
 	if (os_strstr(val, "[DISABLE-TLSv1.1]"))
 		flags |= TLS_CONN_DISABLE_TLSv1_1;
+	if (os_strstr(val, "[ENABLE-TLSv1.1]"))
+		flags |= TLS_CONN_ENABLE_TLSv1_1;
 	if (os_strstr(val, "[DISABLE-TLSv1.2]"))
 		flags |= TLS_CONN_DISABLE_TLSv1_2;
+	if (os_strstr(val, "[ENABLE-TLSv1.2]"))
+		flags |= TLS_CONN_ENABLE_TLSv1_2;
 	if (os_strstr(val, "[DISABLE-TLSv1.3]"))
 		flags |= TLS_CONN_DISABLE_TLSv1_3;
 	if (os_strstr(val, "[ENABLE-TLSv1.3]"))
