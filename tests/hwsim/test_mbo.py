@@ -14,7 +14,7 @@ import time
 
 import hostapd
 from tshark import run_tshark
-from utils import alloc_fail, fail_test
+from utils import *
 
 def set_reg(country_code, apdev0=None, apdev1=None, dev0=None):
     if apdev0:
@@ -78,32 +78,6 @@ def run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, country):
     dev[0].dump_monitor()
 
     return res2, res5
-
-def clear_country(dev):
-    logger.info("Try to clear country")
-    id = dev[1].add_network()
-    dev[1].set_network(id, "mode", "2")
-    dev[1].set_network_quoted(id, "ssid", "country-clear")
-    dev[1].set_network(id, "key_mgmt", "NONE")
-    dev[1].set_network(id, "frequency", "2412")
-    dev[1].set_network(id, "scan_freq", "2412")
-    dev[1].select_network(id)
-    ev = dev[1].wait_event(["CTRL-EVENT-CONNECTED"])
-    if ev:
-        dev[0].connect("country-clear", key_mgmt="NONE", scan_freq="2412")
-        dev[1].request("DISCONNECT")
-        dev[0].wait_disconnected()
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        time.sleep(1)
-        dev[0].dump_monitor()
-        dev[1].dump_monitor()
-
-def wait_regdom_changes(dev):
-    for i in range(10):
-        ev = dev.wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.1)
-        if ev is None:
-            break
 
 def run_mbo_supp_oper_class(dev, apdev, country, expected, inc5):
     if inc5:

@@ -1,5 +1,5 @@
 # WNM tests
-# Copyright (c) 2013-2017, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -14,7 +14,7 @@ import subprocess
 
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import alloc_fail, fail_test, wait_fail_trigger, HwsimSkip
+from utils import *
 from wlantest import Wlantest
 from datetime import datetime
 
@@ -1123,6 +1123,7 @@ def start_wnm_tm(ap, country, dev, country3=None):
         params["country3"] = country3
     hapd = hostapd.add_ap(ap, params)
     id = dev.connect("test-wnm", key_mgmt="NONE", scan_freq="2412")
+    wait_regdom_changes(dev)
     dev.dump_monitor()
     dev.set_network(id, "scan_freq", "")
     return hapd, id
@@ -1130,13 +1131,21 @@ def start_wnm_tm(ap, country, dev, country3=None):
 def stop_wnm_tm(hapd, dev):
     if hapd:
         hapd.request("DISABLE")
-    dev.request("DISCONNECT")
+        time.sleep(0.1)
+    dev[0].request("DISCONNECT")
+    dev[0].request("ABORT_SCAN")
     try:
-        dev.wait_disconnected()
+        dev[0].wait_disconnected()
     except:
         pass
     subprocess.call(['iw', 'reg', 'set', '00'])
-    dev.flush_scan_cache()
+    wait_regdom_changes(dev[0])
+    country = dev[0].get_driver_status_field("country")
+    logger.info("Country code at the end: " + country)
+    if country != "00":
+        clear_country(dev)
+
+    dev[0].flush_scan_cache()
 
 def wnm_bss_tm_check(hapd, dev, data):
     addr = dev.p2p_interface_addr()
@@ -1172,7 +1181,7 @@ def test_wnm_bss_tm_country_us(dev, apdev):
         logger.info("Preferred Candidate List (no matching neighbor, unknown channels 2)")
         wnm_bss_tm_check(hapd, dev[0], "pref=1 neighbor=00:11:22:33:44:59,0x0000,3,148,7 neighbor=00:11:22:33:44:5a,0x0000,3,162,7 neighbor=00:11:22:33:44:5b,0x0000,34,0,7 neighbor=00:11:22:33:44:5c,0x0000,34,4,7 neighbor=00:11:22:33:44:5d,0x0000,5,148,7 neighbor=00:11:22:33:44:5e,0x0000,5,166,7 neighbor=00:11:22:33:44:5f,0x0000,0,0,7")
     finally:
-        stop_wnm_tm(hapd, dev[0])
+        stop_wnm_tm(hapd, dev)
 
 def test_wnm_bss_tm_country_fi(dev, apdev):
     """WNM BSS Transition Management (FI)"""
@@ -1192,7 +1201,7 @@ def test_wnm_bss_tm_country_fi(dev, apdev):
         logger.info("Preferred Candidate List (no matching neighbor, unknown channels 2)")
         wnm_bss_tm_check(hapd, dev[0], "pref=1 neighbor=00:11:22:33:44:00,0x0000,0,0,7")
     finally:
-        stop_wnm_tm(hapd, dev[0])
+        stop_wnm_tm(hapd, dev)
 
 def test_wnm_bss_tm_country_jp(dev, apdev):
     """WNM BSS Transition Management (JP)"""
@@ -1209,7 +1218,7 @@ def test_wnm_bss_tm_country_jp(dev, apdev):
         logger.info("Preferred Candidate List (no matching neighbor, unknown channels)")
         wnm_bss_tm_check(hapd, dev[0], "pref=1 neighbor=11:22:33:44:55:66,0x0000,30,0,7,0301ff neighbor=22:33:44:55:66:77,0x0000,30,14,7 neighbor=00:11:22:33:44:56,0x0000,31,13,7 neighbor=00:11:22:33:44:57,0x0000,1,33,7 neighbor=00:11:22:33:44:58,0x0000,1,65,7 neighbor=00:11:22:33:44:5a,0x0000,34,99,7 neighbor=00:11:22:33:44:5b,0x0000,34,141,7 neighbor=00:11:22:33:44:5d,0x0000,59,0,7 neighbor=00:11:22:33:44:5e,0x0000,59,4,7 neighbor=00:11:22:33:44:5f,0x0000,0,0,7")
     finally:
-        stop_wnm_tm(hapd, dev[0])
+        stop_wnm_tm(hapd, dev)
 
 def test_wnm_bss_tm_country_cn(dev, apdev):
     """WNM BSS Transition Management (CN)"""
@@ -1226,7 +1235,7 @@ def test_wnm_bss_tm_country_cn(dev, apdev):
         logger.info("Preferred Candidate List (no matching neighbor, unknown channels)")
         wnm_bss_tm_check(hapd, dev[0], "pref=1 neighbor=11:22:33:44:55:66,0x0000,7,0,7,0301ff neighbor=22:33:44:55:66:77,0x0000,7,14,7 neighbor=00:11:22:33:44:56,0x0000,1,35,7 neighbor=00:11:22:33:44:57,0x0000,1,65,7 neighbor=00:11:22:33:44:58,0x0000,3,148,7 neighbor=00:11:22:33:44:5a,0x0000,3,166,7 neighbor=00:11:22:33:44:5f,0x0000,0,0,7")
     finally:
-        stop_wnm_tm(hapd, dev[0])
+        stop_wnm_tm(hapd, dev)
 
 def test_wnm_bss_tm_global(dev, apdev):
     """WNM BSS Transition Management (global)"""
@@ -1253,7 +1262,7 @@ def run_wnm_bss_tm_global(dev, apdev, country, country3):
         logger.info("Preferred Candidate List (no matching neighbor, unknown channels 2)")
         wnm_bss_tm_check(hapd, dev[0], "pref=1 neighbor=00:11:22:33:44:00,0x0000,124,162,7 neighbor=00:11:22:33:44:01,0x0000,125,148,7 neighbor=00:11:22:33:44:02,0x0000,125,170,7 neighbor=00:11:22:33:44:03,0x0000,128,35,7 neighbor=00:11:22:33:44:04,0x0000,128,162,7 neighbor=00:11:22:33:44:05,0x0000,129,49,7 neighbor=00:11:22:33:44:06,0x0000,129,115,7 neighbor=00:11:22:33:44:07,0x0000,180,0,7 neighbor=00:11:22:33:44:08,0x0000,180,5,7 neighbor=00:11:22:33:44:09,0x0000,0,0,7")
     finally:
-        stop_wnm_tm(hapd, dev[0])
+        stop_wnm_tm(hapd, dev)
 
 def test_wnm_bss_tm_op_class_0(dev, apdev):
     """WNM BSS Transition Management with invalid operating class"""
@@ -1264,7 +1273,7 @@ def test_wnm_bss_tm_op_class_0(dev, apdev):
         logger.info("Preferred Candidate List (no matching neighbor, invalid op class specified for channels)")
         wnm_bss_tm_check(hapd, dev[0], "pref=1 neighbor=00:11:22:33:44:59,0x0000,0,149,7 neighbor=00:11:22:33:44:5b,0x0000,0,1,7")
     finally:
-        stop_wnm_tm(hapd, dev[0])
+        stop_wnm_tm(hapd, dev)
 
 def test_wnm_bss_tm_rsn(dev, apdev):
     """WNM BSS Transition Management with RSN"""
