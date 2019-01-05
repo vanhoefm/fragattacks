@@ -2757,12 +2757,22 @@ static int tls_connection_client_cert(struct tls_connection *conn,
 		return 0;
 	}
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	if (SSL_use_certificate_chain_file(conn->ssl, client_cert) == 1) {
 		ERR_clear_error();
 		wpa_printf(MSG_DEBUG, "OpenSSL: SSL_use_certificate_chain_file"
 			   " --> OK");
 		return 0;
 	}
+#else
+	if (SSL_use_certificate_file(conn->ssl, client_cert,
+				     SSL_FILETYPE_PEM) == 1) {
+		ERR_clear_error();
+		wpa_printf(MSG_DEBUG, "OpenSSL: SSL_use_certificate_file (PEM)"
+			   " --> OK");
+		return 0;
+	}
+#endif
 
 	tls_show_errors(MSG_DEBUG, __func__,
 			"SSL_use_certificate_file failed");
