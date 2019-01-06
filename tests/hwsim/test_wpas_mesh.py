@@ -111,7 +111,7 @@ def test_wpas_add_set_remove_support(dev):
     dev[0].remove_network(id)
 
 def add_open_mesh_network(dev, freq="2412", start=True, beacon_int=0,
-                          basic_rates=None, chwidth=0, disable_vht=False,
+                          basic_rates=None, chwidth=-1, disable_vht=False,
                           disable_ht40=False):
     id = dev.add_network()
     dev.set_network(id, "mode", "5")
@@ -119,7 +119,7 @@ def add_open_mesh_network(dev, freq="2412", start=True, beacon_int=0,
     dev.set_network(id, "key_mgmt", "NONE")
     if freq:
         dev.set_network(id, "frequency", freq)
-    if chwidth > 0:
+    if chwidth > -1:
         dev.set_network(id, "max_oper_chwidth", str(chwidth))
     if beacon_int:
         dev.set_network(id, "beacon_int", str(beacon_int))
@@ -1166,6 +1166,112 @@ def _test_wpas_mesh_open_ht40(dev, apdev):
     dev[0].dump_monitor()
     dev[1].dump_monitor()
     dev[2].dump_monitor()
+
+def test_wpas_mesh_open_vht40(dev, apdev):
+    """wpa_supplicant open MESH network on VHT 40 MHz channel"""
+    try:
+        _test_wpas_mesh_open_vht40(dev, apdev)
+    finally:
+        dev[0].request("MESH_GROUP_REMOVE " + dev[0].ifname)
+        dev[1].request("MESH_GROUP_REMOVE " + dev[1].ifname)
+        subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].flush_scan_cache()
+        dev[1].flush_scan_cache()
+
+def _test_wpas_mesh_open_vht40(dev, apdev):
+    check_mesh_support(dev[0])
+    subprocess.call(['iw', 'reg', 'set', 'US'])
+    for i in range(2):
+        for j in range(5):
+            ev = dev[i].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=5)
+            if ev is None:
+                raise Exception("No regdom change event")
+            if "alpha2=US" in ev:
+                break
+        add_open_mesh_network(dev[i], freq="5180", chwidth=0)
+
+    # Check for mesh joined
+    check_mesh_group_added(dev[0])
+    check_mesh_group_added(dev[1])
+
+    # Check for peer connected
+    check_mesh_peer_connected(dev[0])
+    check_mesh_peer_connected(dev[1])
+
+    # Test connectivity 0->1 and 1->0
+    hwsim_utils.test_connectivity(dev[0], dev[1])
+
+    sig = dev[0].request("SIGNAL_POLL").splitlines()
+    if "WIDTH=40 MHz" not in sig:
+        raise Exception("Unexpected SIGNAL_POLL value(2): " + str(sig))
+    if "CENTER_FRQ1=5190" not in sig:
+        raise Exception("Unexpected SIGNAL_POLL value(3): " + str(sig))
+
+    sig = dev[1].request("SIGNAL_POLL").splitlines()
+    if "WIDTH=40 MHz" not in sig:
+        raise Exception("Unexpected SIGNAL_POLL value(2b): " + str(sig))
+    if "CENTER_FRQ1=5190" not in sig:
+        raise Exception("Unexpected SIGNAL_POLL value(3b): " + str(sig))
+
+    dev[0].mesh_group_remove()
+    dev[1].mesh_group_remove()
+    check_mesh_group_removed(dev[0])
+    check_mesh_group_removed(dev[1])
+    dev[0].dump_monitor()
+    dev[1].dump_monitor()
+
+def test_wpas_mesh_open_vht20(dev, apdev):
+    """wpa_supplicant open MESH network on VHT 20 MHz channel"""
+    try:
+        _test_wpas_mesh_open_vht20(dev, apdev)
+    finally:
+        dev[0].request("MESH_GROUP_REMOVE " + dev[0].ifname)
+        dev[1].request("MESH_GROUP_REMOVE " + dev[1].ifname)
+        subprocess.call(['iw', 'reg', 'set', '00'])
+        dev[0].flush_scan_cache()
+        dev[1].flush_scan_cache()
+
+def _test_wpas_mesh_open_vht20(dev, apdev):
+    check_mesh_support(dev[0])
+    subprocess.call(['iw', 'reg', 'set', 'US'])
+    for i in range(2):
+        for j in range(5):
+            ev = dev[i].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=5)
+            if ev is None:
+                raise Exception("No regdom change event")
+            if "alpha2=US" in ev:
+                break
+        add_open_mesh_network(dev[i], freq="5180", chwidth=0, disable_ht40=True)
+
+    # Check for mesh joined
+    check_mesh_group_added(dev[0])
+    check_mesh_group_added(dev[1])
+
+    # Check for peer connected
+    check_mesh_peer_connected(dev[0])
+    check_mesh_peer_connected(dev[1])
+
+    # Test connectivity 0->1 and 1->0
+    hwsim_utils.test_connectivity(dev[0], dev[1])
+
+    sig = dev[0].request("SIGNAL_POLL").splitlines()
+    if "WIDTH=20 MHz" not in sig:
+        raise Exception("Unexpected SIGNAL_POLL value(2): " + str(sig))
+    if "CENTER_FRQ1=5180" not in sig:
+        raise Exception("Unexpected SIGNAL_POLL value(3): " + str(sig))
+
+    sig = dev[1].request("SIGNAL_POLL").splitlines()
+    if "WIDTH=20 MHz" not in sig:
+        raise Exception("Unexpected SIGNAL_POLL value(2b): " + str(sig))
+    if "CENTER_FRQ1=5180" not in sig:
+        raise Exception("Unexpected SIGNAL_POLL value(3b): " + str(sig))
+
+    dev[0].mesh_group_remove()
+    dev[1].mesh_group_remove()
+    check_mesh_group_removed(dev[0])
+    check_mesh_group_removed(dev[1])
+    dev[0].dump_monitor()
+    dev[1].dump_monitor()
 
 def test_wpas_mesh_open_vht_80p80(dev, apdev):
     """wpa_supplicant open MESH network on VHT 80+80 MHz channel"""
