@@ -15,7 +15,7 @@ import os
 import hostapd
 import hwsim_utils
 from tshark import run_tshark
-from utils import alloc_fail, fail_test, wait_fail_trigger
+from utils import *
 from wpasupplicant import WpaSupplicant
 from test_ap_ht import set_world_reg
 
@@ -770,14 +770,7 @@ def _test_ap_open_country(dev, apdev, country_code, country3):
         hapd = None
         hapd = run_ap_open_country(dev, apdev, country_code, country3)
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
-        set_world_reg(apdev[0], apdev[1], dev[0])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def run_ap_open_country(dev, apdev, country_code, country3):
     hapd = hostapd.add_ap(apdev[0], { "ssid": "open",
