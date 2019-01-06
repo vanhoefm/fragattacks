@@ -2755,6 +2755,31 @@ def test_ap_wpa2_psk_assoc_rsn(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].dump_monitor()
 
+def test_ap_wpa2_psk_ft_workaround(dev, apdev):
+    """WPA2-PSK+FT AP and workaround for incorrect STA behavior"""
+    ssid = "test-wpa2-psk-ft"
+    passphrase = 'qwertyuiop'
+
+    params = { "wpa": "2",
+               "wpa_key_mgmt": "FT-PSK WPA-PSK",
+               "rsn_pairwise": "CCMP",
+               "ssid": ssid,
+               "wpa_passphrase": passphrase }
+    params["mobility_domain"] = "a1b2"
+    params["r0_key_lifetime"] = "10000"
+    params["pmk_r1_push"] = "1"
+    params["reassociation_deadline"] = "1000"
+    params['nas_identifier'] = "nas1.w1.fi"
+    params['r1_key_holder'] = "000102030405"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    # Include both WPA-PSK and FT-PSK AKMs in Association Request frame
+    set_test_assoc_ie(dev[0],
+                      "30180100000fac040100000fac040200000fac02000fac040000")
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+
 def test_ap_wpa2_psk_assoc_rsn_pmkid(dev, apdev):
     """WPA2-PSK AP and association request RSN IE with PMKID"""
     ssid = "test-wpa2-psk"
