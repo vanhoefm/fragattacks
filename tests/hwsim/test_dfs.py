@@ -1,5 +1,5 @@
 # Test cases for DFS
-# Copyright (c) 2013, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -13,7 +13,7 @@ logger = logging.getLogger()
 
 import hwsim_utils
 import hostapd
-from utils import HwsimSkip
+from utils import *
 
 def wait_dfs_event(hapd, event, timeout):
     dfs_events = [ "DFS-RADAR-DETECTED", "DFS-NEW-CHANNEL",
@@ -129,14 +129,7 @@ def test_dfs(dev, apdev):
         time.sleep(1)
         hwsim_utils.test_connectivity(dev[0], hapd)
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_dfs_etsi(dev, apdev, params):
     """DFS and uniform spreading requirement for ETSI [long]"""
@@ -202,14 +195,7 @@ def test_dfs_etsi(dev, apdev, params):
             time.sleep(1)
         hwsim_utils.test_connectivity(dev[0], hapd)
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_dfs_radar1(dev, apdev):
     """DFS CAC functionality with radar detected during initial CAC"""
@@ -265,14 +251,7 @@ def test_dfs_radar1(dev, apdev):
         dev[0].connect("dfs", key_mgmt="NONE")
         dev[0].wait_regdom(country_ie=True)
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_dfs_radar2(dev, apdev):
     """DFS CAC functionality with radar detected after initial CAC"""
@@ -339,14 +318,7 @@ def test_dfs_radar_chanlist(dev, apdev):
         dev[0].connect("dfs", key_mgmt="NONE")
         dev[0].wait_regdom(country_ie=True)
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_dfs_radar_chanlist_vht80(dev, apdev):
     """DFS chanlist when radar is detected and VHT80 configured"""
@@ -381,14 +353,7 @@ def test_dfs_radar_chanlist_vht80(dev, apdev):
         if hapd.get_status_field('vht_oper_centr_freq_seg0_idx') != "42":
             raise Exception("Unexpected seg0 idx")
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_dfs_radar_chanlist_vht20(dev, apdev):
     """DFS chanlist when radar is detected and VHT40 configured"""
@@ -420,14 +385,7 @@ def test_dfs_radar_chanlist_vht20(dev, apdev):
         dev[0].connect("dfs", key_mgmt="NONE")
         dev[0].wait_regdom(country_ie=True)
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_dfs_radar_no_ht(dev, apdev):
     """DFS chanlist when radar is detected and no HT configured"""
@@ -459,14 +417,7 @@ def test_dfs_radar_no_ht(dev, apdev):
         dev[0].connect("dfs", key_mgmt="NONE")
         dev[0].wait_regdom(country_ie=True)
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_dfs_radar_ht40minus(dev, apdev):
     """DFS chanlist when radar is detected and HT40- configured"""
@@ -499,14 +450,7 @@ def test_dfs_radar_ht40minus(dev, apdev):
         dev[0].wait_regdom(country_ie=True)
         dev[0].request("STA_AUTOCONNECT 0")
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
         dev[0].request("STA_AUTOCONNECT 1")
 
 def test_dfs_ht40_minus(dev, apdev, params):
@@ -540,11 +484,4 @@ def test_dfs_ht40_minus(dev, apdev, params):
         dev[0].wait_regdom(country_ie=True)
         hwsim_utils.test_connectivity(dev[0], hapd)
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)

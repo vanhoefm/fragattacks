@@ -7,6 +7,7 @@
 import binascii
 import os
 import struct
+import subprocess
 import time
 import remotehost
 import logging
@@ -144,3 +145,18 @@ def clear_country(dev):
         time.sleep(1)
         dev[0].dump_monitor()
         dev[1].dump_monitor()
+
+def clear_regdom(hapd, dev):
+    if hapd:
+        hapd.request("DISABLE")
+        time.sleep(0.1)
+    dev[0].request("DISCONNECT")
+    dev[0].request("ABORT_SCAN")
+    dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+    subprocess.call(['iw', 'reg', 'set', '00'])
+    wait_regdom_changes(dev[0])
+    country = dev[0].get_driver_status_field("country")
+    logger.info("Country code at the end: " + country)
+    if country != "00":
+        clear_country(dev)
+    dev[0].flush_scan_cache()
