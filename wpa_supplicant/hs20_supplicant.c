@@ -431,7 +431,7 @@ static void hs20_set_osu_access_permission(const char *osu_dir,
 		return;
 	}
 
-	if (chown(fname, statbuf.st_uid, statbuf.st_gid) < 0) {
+	if (lchown(fname, statbuf.st_uid, statbuf.st_gid) < 0) {
 		wpa_printf(MSG_WARNING, "Cannot change the ownership for %s",
 			   fname);
 	}

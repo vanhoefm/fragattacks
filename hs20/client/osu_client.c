@@ -117,8 +117,8 @@ static int android_update_permission(const char *path, mode_t mode)
 
 	/* Allow processes running with Group ID as AID_WIFI,
 	 * to read files from SP, SP/<fqdn>, Cert and osu-info directories */
-	if (chown(path, -1, AID_WIFI)) {
-		wpa_printf(MSG_INFO, "CTRL: Could not chown directory: %s",
+	if (lchown(path, -1, AID_WIFI)) {
+		wpa_printf(MSG_INFO, "CTRL: Could not lchown directory: %s",
 			   strerror(errno));
 		return -1;
 	}
