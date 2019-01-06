@@ -146,12 +146,13 @@ def clear_country(dev):
         dev[0].dump_monitor()
         dev[1].dump_monitor()
 
-def clear_regdom(hapd, dev):
+def clear_regdom(hapd, dev, count=1):
     if hapd:
         hapd.request("DISABLE")
         time.sleep(0.1)
-    dev[0].request("DISCONNECT")
-    dev[0].request("ABORT_SCAN")
+    for i in range(count):
+        dev[i].request("DISCONNECT")
+        dev[i].request("ABORT_SCAN")
     dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
     subprocess.call(['iw', 'reg', 'set', '00'])
     wait_regdom_changes(dev[0])
@@ -159,4 +160,5 @@ def clear_regdom(hapd, dev):
     logger.info("Country code at the end: " + country)
     if country != "00":
         clear_country(dev)
-    dev[0].flush_scan_cache()
+    for i in range(count):
+        dev[i].flush_scan_cache()
