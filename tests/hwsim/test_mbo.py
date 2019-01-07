@@ -24,7 +24,8 @@ def set_reg(country_code, apdev0=None, apdev1=None, dev0=None):
     if dev0:
         dev0.cmd_execute(['iw', 'reg', 'set', country_code])
 
-def run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, country):
+def run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, country, freq_list=None,
+                              disable_ht=False, disable_vht=False):
     """MBO and supported operating classes"""
     addr = dev[0].own_addr()
 
@@ -46,11 +47,15 @@ def run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, country):
     dev[0].dump_monitor()
     dev[1].dump_monitor()
     dev[2].dump_monitor()
+    _disable_ht = "1" if disable_ht else "0"
+    _disable_vht = "1" if disable_vht else "0"
     if hapd:
         hapd.set("country_code", country)
         hapd.enable()
         dev[0].scan_for_bss(hapd.own_addr(), 5180, force_scan=True)
-        dev[0].connect("test-wnm-mbo", key_mgmt="NONE", scan_freq="5180")
+        dev[0].connect("test-wnm-mbo", key_mgmt="NONE", scan_freq="5180",
+                       freq_list=freq_list, disable_ht=_disable_ht,
+                       disable_vht=_disable_vht)
         sta = hapd.get_sta(addr)
         res5 = sta['supp_op_classes'][2:]
         dev[0].wait_regdom(country_ie=True)
@@ -65,7 +70,9 @@ def run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, country):
     hapd2.set("country_code", country)
     hapd2.enable()
     dev[0].scan_for_bss(hapd2.own_addr(), 2412, force_scan=True)
-    dev[0].connect("test-wnm-mbo-2", key_mgmt="NONE", scan_freq="2412")
+    dev[0].connect("test-wnm-mbo-2", key_mgmt="NONE", scan_freq="2412",
+                   freq_list=freq_list, disable_ht=_disable_ht,
+                   disable_vht=_disable_vht)
     sta = hapd2.get_sta(addr)
     res2 = sta['supp_op_classes'][2:]
     dev[0].wait_regdom(country_ie=True)
@@ -79,7 +86,9 @@ def run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, country):
 
     return res2, res5
 
-def run_mbo_supp_oper_class(dev, apdev, country, expected, inc5):
+def run_mbo_supp_oper_class(dev, apdev, country, expected, inc5,
+                            freq_list=None, disable_ht=False,
+                            disable_vht=False):
     if inc5:
         params = { 'ssid': "test-wnm-mbo",
                    'mbo': '1',
@@ -103,7 +112,10 @@ def run_mbo_supp_oper_class(dev, apdev, country, expected, inc5):
 
     try:
         dev[0].request("STA_AUTOCONNECT 0")
-        res2, res5 = run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, country)
+        res2, res5 = run_mbo_supp_oper_classes(dev, apdev, hapd, hapd2, country,
+                                               freq_list=freq_list,
+                                               disable_ht=disable_ht,
+                                               disable_vht=disable_vht)
     finally:
         dev[0].dump_monitor()
         dev[0].request("STA_AUTOCONNECT 1")
@@ -163,6 +175,22 @@ def test_mbo_supp_oper_classes_sy(dev, apdev):
     """MBO and supported operating classes (SY)"""
     run_mbo_supp_oper_class(dev, apdev, "SY",
                             "515354", False)
+
+def test_mbo_supp_oper_classes_us_freq_list(dev, apdev):
+    """MBO and supported operating classes (US) - freq_list"""
+    run_mbo_supp_oper_class(dev, apdev, "US", "515354", False,
+                            freq_list="2412 2437 2462")
+
+def test_mbo_supp_oper_classes_us_disable_ht(dev, apdev):
+    """MBO and supported operating classes (US) - disable_ht"""
+    run_mbo_supp_oper_class(dev, apdev, "US", "517376797c7d", False,
+                            disable_ht=True)
+
+def test_mbo_supp_oper_classes_us_disable_vht(dev, apdev):
+    """MBO and supported operating classes (US) - disable_vht"""
+    run_mbo_supp_oper_class(dev, apdev, "US",
+                            "515354737475767778797a7b7c7d7e7f", False,
+                            disable_vht=True)
 
 def test_mbo_assoc_disallow(dev, apdev, params):
     """MBO and association disallowed"""
