@@ -485,3 +485,29 @@ def test_dfs_ht40_minus(dev, apdev, params):
         hwsim_utils.test_connectivity(dev[0], hapd)
     finally:
         clear_regdom(hapd, dev)
+
+def test_dfs_cac_restart_on_enable(dev, apdev):
+    """DFS CAC interrupted and restarted"""
+    try:
+        hapd = None
+        hapd = start_dfs_ap(apdev[0], allow_failure=True)
+        time.sleep(0.1)
+        subprocess.check_call(['ip', 'link', 'set', 'dev', hapd.ifname, 'down'])
+        ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 5)
+        if ev is None:
+            raise Exception("Timeout on DFS aborted event")
+        if "success=0 freq=5260" not in ev:
+            raise Exception("Unexpected DFS aborted event contents: " + ev)
+        time.sleep(0.1)
+        subprocess.check_call(['ip', 'link', 'set', 'dev', hapd.ifname, 'up'])
+
+        ev = wait_dfs_event(hapd, "DFS-CAC-START", 5)
+        if "DFS-CAC-START" not in ev:
+            raise Exception("Unexpected DFS event: " + ev)
+        hapd.disable()
+
+    finally:
+        if hapd:
+            hapd.request("DISABLE")
+        subprocess.call(['iw', 'reg', 'set', '00'])
+        time.sleep(0.1)
