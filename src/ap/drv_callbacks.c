@@ -1729,6 +1729,11 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 				hostapd_reconfig_encryption(hapd);
 			hapd->reenable_beacon = 1;
 			ieee802_11_set_beacon(hapd);
+#ifdef NEED_AP_MLME
+		} else if (hapd->disabled && hapd->iface->cac_started) {
+			wpa_printf(MSG_DEBUG, "DFS: restarting pending CAC");
+			hostapd_handle_dfs(hapd->iface);
+#endif /* NEED_AP_MLME */
 		}
 		break;
 	case EVENT_INTERFACE_DISABLED:
