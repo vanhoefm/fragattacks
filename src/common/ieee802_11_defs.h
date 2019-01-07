@@ -467,6 +467,7 @@
 #define WLAN_EID_EXT_PASSWORD_IDENTIFIER 33
 #define WLAN_EID_EXT_HE_CAPABILITIES 35
 #define WLAN_EID_EXT_HE_OPERATION 36
+#define WLAN_EID_EXT_HE_MU_EDCA_PARAMS 38
 #define WLAN_EID_EXT_OCV_OCI 54
 
 /* Extended Capabilities field */
@@ -2146,6 +2147,39 @@ struct ieee80211_he_operation {
 						BIT(18) | BIT(19) | \
 						BIT(20) | BIT(21)))
 #define HE_OPERATION_RTS_THRESHOLD_OFFSET	12
+
+struct ieee80211_he_mu_edca_parameter_set {
+	u8 he_qos_info;
+	u8 he_mu_ac_be_param[3];
+	u8 he_mu_ac_bk_param[3];
+	u8 he_mu_ac_vi_param[3];
+	u8 he_mu_ac_vo_param[3];
+} STRUCT_PACKED;
+
+/* HE MU AC parameter record field format */
+/* ACI/AIFSN */
+#define HE_MU_AC_PARAM_ACI_IDX 0
+#define HE_MU_AC_PARAM_AIFSN ((u8) (BIT(0) | BIT(1) | BIT(2) | BIT(3)))
+#define HE_MU_AC_PARAM_ACM ((u8) BIT(4))
+#define HE_MU_AC_PARAM_ACI ((u8) (BIT(5) | BIT(6)))
+/* B7: Reserved */
+
+/* ECWmin/ECWmax */
+#define HE_MU_AC_PARAM_ECW_IDX 1
+#define HE_MU_AC_PARAM_ECWMIN ((u8) (BIT(0) | BIT(1) | BIT(2) | BIT(3)))
+#define HE_MU_AC_PARAM_ECWMAX ((u8) (BIT(4) | BIT(5) | BIT(6) | BIT(7)))
+
+/* MU EDCA Timer */
+#define HE_MU_AC_PARAM_TIMER_IDX 2
+
+/* HE QoS Info field */
+#define HE_QOS_INFO_EDCA_PARAM_SET_COUNT ((u8) (BIT(0) | BIT(1) | \
+						BIT(2) | BIT(3)))
+#define HE_QOS_INFO_Q_ACK ((u8) (BIT(4)))
+#define HE_QOS_INFO_QUEUE_REQUEST ((u8) (BIT(5)))
+#define HE_QOS_INFO_TXOP_REQUEST ((u8) (BIT(6)))
+/* B7: Reserved if sent by an AP; More Data Ack if sent by a non-AP STA */
+#define HE_QOS_INFO_MORE_DATA_ACK ((u8) (BIT(7)))
 
 /* DPP Public Action frame identifiers - OUI_WFA */
 #define DPP_OUI_TYPE 0x1A

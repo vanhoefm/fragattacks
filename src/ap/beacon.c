@@ -397,7 +397,8 @@ static u8 * hostapd_gen_probe_resp(struct hostapd_data *hapd,
 #ifdef CONFIG_IEEE80211AX
 	if (hapd->iconf->ieee80211ax) {
 		buflen += 3 + sizeof(struct ieee80211_he_capabilities) +
-			3 + sizeof(struct ieee80211_he_operation);
+			3 + sizeof(struct ieee80211_he_operation) +
+			3 + sizeof(struct ieee80211_he_mu_edca_parameter_set);
 	}
 #endif /* CONFIG_IEEE80211AX */
 
@@ -510,6 +511,7 @@ static u8 * hostapd_gen_probe_resp(struct hostapd_data *hapd,
 	if (hapd->iconf->ieee80211ax) {
 		pos = hostapd_eid_he_capab(hapd, pos);
 		pos = hostapd_eid_he_operation(hapd, pos);
+		pos = hostapd_eid_he_mu_edca_parameter_set(hapd, pos);
 	}
 #endif /* CONFIG_IEEE80211AX */
 
@@ -1085,7 +1087,8 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 #ifdef CONFIG_IEEE80211AX
 	if (hapd->iconf->ieee80211ax) {
 		tail_len += 3 + sizeof(struct ieee80211_he_capabilities) +
-			3 + sizeof(struct ieee80211_he_operation);
+			3 + sizeof(struct ieee80211_he_operation) +
+			3 + sizeof(struct ieee80211_he_mu_edca_parameter_set);
 	}
 #endif /* CONFIG_IEEE80211AX */
 
@@ -1222,6 +1225,7 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 	if (hapd->iconf->ieee80211ax) {
 		tailpos = hostapd_eid_he_capab(hapd, tailpos);
 		tailpos = hostapd_eid_he_operation(hapd, tailpos);
+		tailpos = hostapd_eid_he_mu_edca_parameter_set(hapd, tailpos);
 	}
 #endif /* CONFIG_IEEE80211AX */
 

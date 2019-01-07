@@ -1379,6 +1379,14 @@ static int hostapd_config_vht_capab(struct hostapd_config *conf,
 #endif /* CONFIG_IEEE80211AC */
 
 
+#ifdef CONFIG_IEEE80211AX
+static u8 set_he_cap(int val, u8 mask)
+{
+	return (u8) (mask & (val << ffs(mask)));
+}
+#endif /* CONFIG_IEEE80211AX */
+
+
 #ifdef CONFIG_INTERWORKING
 static int parse_roaming_consortium(struct hostapd_bss_config *bss, char *pos,
 				    int line)
@@ -3397,6 +3405,90 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		conf->he_op.he_twt_required = atoi(pos);
 	} else if (os_strcmp(buf, "he_rts_threshold") == 0) {
 		conf->he_op.he_rts_threshold = atoi(pos);
+	} else if (os_strcmp(buf, "he_mu_edca_qos_info_param_count") == 0) {
+		conf->he_mu_edca.he_qos_info |=
+			set_he_cap(atoi(pos), HE_QOS_INFO_EDCA_PARAM_SET_COUNT);
+	} else if (os_strcmp(buf, "he_mu_edca_qos_info_q_ack") == 0) {
+		conf->he_mu_edca.he_qos_info |=
+			set_he_cap(atoi(pos), HE_QOS_INFO_Q_ACK);
+	} else if (os_strcmp(buf, "he_mu_edca_qos_info_queue_request") == 0) {
+		conf->he_mu_edca.he_qos_info |=
+			set_he_cap(atoi(pos), HE_QOS_INFO_QUEUE_REQUEST);
+	} else if (os_strcmp(buf, "he_mu_edca_qos_info_txop_request") == 0) {
+		conf->he_mu_edca.he_qos_info |=
+			set_he_cap(atoi(pos), HE_QOS_INFO_TXOP_REQUEST);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_be_aifsn") == 0) {
+		conf->he_mu_edca.he_mu_ac_be_param[HE_MU_AC_PARAM_ACI_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_AIFSN);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_be_acm") == 0) {
+		conf->he_mu_edca.he_mu_ac_be_param[HE_MU_AC_PARAM_ACI_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ACM);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_be_aci") == 0) {
+		conf->he_mu_edca.he_mu_ac_be_param[HE_MU_AC_PARAM_ACI_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ACI);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_be_ecwmin") == 0) {
+		conf->he_mu_edca.he_mu_ac_be_param[HE_MU_AC_PARAM_ECW_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ECWMIN);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_be_ecwmax") == 0) {
+		conf->he_mu_edca.he_mu_ac_be_param[HE_MU_AC_PARAM_ECW_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ECWMAX);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_be_timer") == 0) {
+		conf->he_mu_edca.he_mu_ac_be_param[HE_MU_AC_PARAM_TIMER_IDX] =
+			atoi(pos) & 0xff;
+	} else if (os_strcmp(buf, "he_mu_edca_ac_bk_aifsn") == 0) {
+		conf->he_mu_edca.he_mu_ac_bk_param[HE_MU_AC_PARAM_ACI_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_AIFSN);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_bk_acm") == 0) {
+		conf->he_mu_edca.he_mu_ac_bk_param[HE_MU_AC_PARAM_ACI_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ACM);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_bk_aci") == 0) {
+		conf->he_mu_edca.he_mu_ac_bk_param[HE_MU_AC_PARAM_ACI_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ACI);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_bk_ecwmin") == 0) {
+		conf->he_mu_edca.he_mu_ac_bk_param[HE_MU_AC_PARAM_ECW_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ECWMIN);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_bk_ecwmax") == 0) {
+		conf->he_mu_edca.he_mu_ac_bk_param[HE_MU_AC_PARAM_ECW_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ECWMAX);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_bk_timer") == 0) {
+		conf->he_mu_edca.he_mu_ac_bk_param[HE_MU_AC_PARAM_TIMER_IDX] =
+			atoi(pos) & 0xff;
+	} else if (os_strcmp(buf, "he_mu_edca_ac_vi_aifsn") == 0) {
+		conf->he_mu_edca.he_mu_ac_vi_param[HE_MU_AC_PARAM_ACI_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_AIFSN);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_vi_acm") == 0) {
+		conf->he_mu_edca.he_mu_ac_vi_param[HE_MU_AC_PARAM_ACI_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ACM);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_vi_aci") == 0) {
+		conf->he_mu_edca.he_mu_ac_vi_param[HE_MU_AC_PARAM_ACI_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ACI);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_vi_ecwmin") == 0) {
+		conf->he_mu_edca.he_mu_ac_vi_param[HE_MU_AC_PARAM_ECW_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ECWMIN);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_vi_ecwmax") == 0) {
+		conf->he_mu_edca.he_mu_ac_vi_param[HE_MU_AC_PARAM_ECW_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ECWMAX);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_vi_timer") == 0) {
+		conf->he_mu_edca.he_mu_ac_vi_param[HE_MU_AC_PARAM_TIMER_IDX] =
+			atoi(pos) & 0xff;
+	} else if (os_strcmp(buf, "he_mu_edca_ac_vo_aifsn") == 0) {
+		conf->he_mu_edca.he_mu_ac_vo_param[HE_MU_AC_PARAM_ACI_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_AIFSN);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_vo_acm") == 0) {
+		conf->he_mu_edca.he_mu_ac_vo_param[HE_MU_AC_PARAM_ACI_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ACM);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_vo_aci") == 0) {
+		conf->he_mu_edca.he_mu_ac_vo_param[HE_MU_AC_PARAM_ACI_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ACI);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_vo_ecwmin") == 0) {
+		conf->he_mu_edca.he_mu_ac_vo_param[HE_MU_AC_PARAM_ECW_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ECWMIN);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_vo_ecwmax") == 0) {
+		conf->he_mu_edca.he_mu_ac_vo_param[HE_MU_AC_PARAM_ECW_IDX] |=
+			set_he_cap(atoi(pos), HE_MU_AC_PARAM_ECWMAX);
+	} else if (os_strcmp(buf, "he_mu_edca_ac_vo_timer") == 0) {
+		conf->he_mu_edca.he_mu_ac_vo_param[HE_MU_AC_PARAM_TIMER_IDX] =
+			atoi(pos) & 0xff;
 #endif /* CONFIG_IEEE80211AX */
 	} else if (os_strcmp(buf, "max_listen_interval") == 0) {
 		bss->max_listen_interval = atoi(pos);
