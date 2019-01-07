@@ -5568,6 +5568,13 @@ static int nl80211_connect_common(struct wpa_driver_nl80211_data *drv,
 			return -1;
 	}
 
+	if (params->req_key_mgmt_offload &&
+	    (drv->capa.flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_8021X)) {
+		    wpa_printf(MSG_DEBUG, "  * WANT_1X_4WAY_HS");
+		    if (nla_put_flag(msg, NL80211_ATTR_WANT_1X_4WAY_HS))
+			    return -1;
+	    }
+
 	/* Add PSK in case of 4-way handshake offload */
 	if (params->psk &&
 	    (drv->capa.flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_PSK)) {

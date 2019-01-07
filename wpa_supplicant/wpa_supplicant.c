@@ -3114,6 +3114,13 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 			params.psk = ssid->psk;
 	}
 
+	if ((wpa_s->drv_flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_8021X) &&
+	    (params.key_mgmt_suite == WPA_KEY_MGMT_IEEE8021X ||
+	     params.key_mgmt_suite == WPA_KEY_MGMT_IEEE8021X_SHA256 ||
+	     params.key_mgmt_suite == WPA_KEY_MGMT_IEEE8021X_SUITE_B ||
+	     params.key_mgmt_suite == WPA_KEY_MGMT_IEEE8021X_SUITE_B_192))
+		params.req_key_mgmt_offload = 1;
+
 	if (wpa_s->conf->key_mgmt_offload) {
 		if (params.key_mgmt_suite == WPA_KEY_MGMT_IEEE8021X ||
 		    params.key_mgmt_suite == WPA_KEY_MGMT_IEEE8021X_SHA256 ||
