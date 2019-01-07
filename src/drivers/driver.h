@@ -931,10 +931,10 @@ struct wpa_driver_associate_params {
 	 * passphrase - RSN passphrase for PSK
 	 *
 	 * This value is made available only for WPA/WPA2-Personal (PSK) and
-	 * only for drivers that set WPA_DRIVER_FLAGS_4WAY_HANDSHAKE. This is
-	 * the 8..63 character ASCII passphrase, if available. Please note that
-	 * this can be %NULL if passphrase was not used to generate the PSK. In
-	 * that case, the psk field must be used to fetch the PSK.
+	 * only for drivers that set WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_PSK. This
+	 * is the 8..63 character ASCII passphrase, if available. Please note
+	 * that this can be %NULL if passphrase was not used to generate the
+	 * PSK. In that case, the psk field must be used to fetch the PSK.
 	 */
 	const char *passphrase;
 
@@ -942,9 +942,9 @@ struct wpa_driver_associate_params {
 	 * psk - RSN PSK (alternative for passphrase for PSK)
 	 *
 	 * This value is made available only for WPA/WPA2-Personal (PSK) and
-	 * only for drivers that set WPA_DRIVER_FLAGS_4WAY_HANDSHAKE. This is
-	 * the 32-octet (256-bit) PSK, if available. The driver wrapper should
-	 * be prepared to handle %NULL value as an error.
+	 * only for drivers that set WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_PSK. This
+	 * is the 32-octet (256-bit) PSK, if available. The driver wrapper
+	 * should be prepared to handle %NULL value as an error.
 	 */
 	const u8 *psk;
 
@@ -1492,7 +1492,7 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_FLAGS_DFS_OFFLOAD			0x00000004
 /** Driver takes care of RSN 4-way handshake internally; PMK is configured with
  * struct wpa_driver_ops::set_key using alg = WPA_ALG_PMK */
-#define WPA_DRIVER_FLAGS_4WAY_HANDSHAKE 0x00000008
+#define WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_8021X		0x00000008
 /** Driver is for a wired Ethernet interface */
 #define WPA_DRIVER_FLAGS_WIRED		0x00000010
 /** Driver provides separate commands for authentication and association (SME in
@@ -1616,6 +1616,8 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_FLAGS_SELF_MANAGED_REGULATORY       0x0080000000000000ULL
 /** Driver supports FTM responder functionality */
 #define WPA_DRIVER_FLAGS_FTM_RESPONDER		0x0100000000000000ULL
+/** Driver support 4-way handshake offload for WPA-Personal */
+#define WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_PSK	0x0200000000000000ULL
 	u64 flags;
 
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \

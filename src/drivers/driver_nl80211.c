@@ -3031,7 +3031,7 @@ static int wpa_driver_nl80211_set_key(const char *ifname, struct i802_bss *bss,
 #endif /* CONFIG_DRIVER_NL80211_QCA */
 
 	if (alg == WPA_ALG_PMK &&
-	    (drv->capa.flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE))
+	    (drv->capa.flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_8021X))
 		return nl80211_set_pmk(drv, key, key_len, addr);
 
 	if (alg == WPA_ALG_NONE) {
@@ -5570,7 +5570,7 @@ static int nl80211_connect_common(struct wpa_driver_nl80211_data *drv,
 
 	/* Add PSK in case of 4-way handshake offload */
 	if (params->psk &&
-	    (drv->capa.flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE)) {
+	    (drv->capa.flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_PSK)) {
 		wpa_hexdump_key(MSG_DEBUG, "  * PSK", params->psk, 32);
 		if (nla_put(msg, NL80211_ATTR_PMK, 32, params->psk))
 			return -1;
