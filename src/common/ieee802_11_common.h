@@ -10,9 +10,9 @@
 #define IEEE802_11_COMMON_H
 
 #include "defs.h"
+#include "ieee802_11_defs.h"
 
 struct hostapd_hw_modes;
-enum chan_width;
 
 #define MAX_NOF_MB_IES_SUPPORTED 5
 

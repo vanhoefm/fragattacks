@@ -1939,17 +1939,6 @@ enum smps_mode {
 	SMPS_INVALID,
 };
 
-/* enum chan_width - Channel width definitions */
-enum chan_width {
-	CHAN_WIDTH_20_NOHT,
-	CHAN_WIDTH_20,
-	CHAN_WIDTH_40,
-	CHAN_WIDTH_80,
-	CHAN_WIDTH_80P80,
-	CHAN_WIDTH_160,
-	CHAN_WIDTH_UNKNOWN
-};
-
 #define WPA_INVALID_NOISE 9999
 
 /**

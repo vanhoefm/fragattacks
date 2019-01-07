@@ -408,4 +408,15 @@ enum eap_proxy_sim_state {
 #define OCE_STA_CFON BIT(1)
 #define OCE_AP BIT(2)
 
+/* enum chan_width - Channel width definitions */
+enum chan_width {
+	CHAN_WIDTH_20_NOHT,
+	CHAN_WIDTH_20,
+	CHAN_WIDTH_40,
+	CHAN_WIDTH_80,
+	CHAN_WIDTH_80P80,
+	CHAN_WIDTH_160,
+	CHAN_WIDTH_UNKNOWN
+};
+
 #endif /* DEFS_H */
