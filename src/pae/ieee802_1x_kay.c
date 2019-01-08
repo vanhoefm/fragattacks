@@ -1422,12 +1422,6 @@ ieee802_1x_mka_decode_sak_use_body(
 		}
 		if (!found) {
 			wpa_printf(MSG_INFO, "KaY: Latest key is invalid");
-			if (!reset_participant_mi(participant))
-				wpa_printf(MSG_DEBUG, "KaY: Could not update mi");
-			else
-				wpa_printf(MSG_DEBUG,
-					   "KaY: Selected a new random MI: %s",
-					   mi_txt(participant->mi));
 			return -1;
 		}
 		if (os_memcmp(participant->lki.mi, body->lsrv_mi,
@@ -3289,6 +3283,12 @@ static int ieee802_1x_kay_decode_mkpdu(struct ieee802_1x_kay *kay,
 		wpa_printf(MSG_INFO,
 			   "KaY: Discarding Rx MKPDU: decode of parameter set type (%d) failed",
 			   MKA_SAK_USE);
+		if (!reset_participant_mi(participant))
+			wpa_printf(MSG_DEBUG, "KaY: Could not update mi");
+		else
+			wpa_printf(MSG_DEBUG,
+				   "KaY: Selected a new random MI: %s",
+				   mi_txt(participant->mi));
 		return -1;
 	}
 
