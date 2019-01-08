@@ -160,6 +160,18 @@ endif
 endif
 
 ifdef NEED_LIBNL
+ifndef CONFIG_LIBNL32
+ifndef CONFIG_LIBNL20
+ifndef CONFIG_LIBNL_TINY
+PKG_CONFIG ?= pkg-config
+HAVE_LIBNL3 := $(shell $(PKG_CONFIG) --exists libnl-3.0; echo $$?)
+ifeq ($(HAVE_LIBNL3),0)
+CONFIG_LIBNL32=y
+endif
+endif
+endif
+endif
+
 ifdef CONFIG_LIBNL32
   DRV_LIBS += -lnl-3
   DRV_LIBS += -lnl-genl-3
