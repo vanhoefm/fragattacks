@@ -8,9 +8,9 @@ HAPD_AS=$DIR/../../hostapd/hostapd
 HAPDCLI=$DIR/../../hostapd/hostapd_cli
 WLANTEST=$DIR/../../wlantest/wlantest
 HLR_AUC_GW=$DIR/../../hostapd/hlr_auc_gw
-DATE="$(date +%s)"
 
 if [ -z "$LOGDIR" ] ; then
+    DATE="$(date +%s)"
     LOGDIR="$DIR/logs/$DATE"
     mkdir -p $LOGDIR
 else
@@ -51,9 +51,10 @@ else
     fi
 fi
 
-if test -w "$DIR/logs" ; then
-    rm -rf $DIR/logs/current
-    ln -sf $DATE $DIR/logs/current
+LOGBASEDIR="$( cd "$(dirname "$LOGDIR")" && pwd )"
+if test "$LOGBASEDIR" = "$DIR/logs" -a -w "$LOGBASEDIR" ; then
+    rm -rf "$LOGBASEDIR/current"
+    ln -sf "$(basename "$LOGDIR")" "$LOGBASEDIR/current"
 fi
 
 if groups | tr ' ' "\n" | grep -q ^admin$; then
