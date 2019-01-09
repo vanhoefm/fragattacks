@@ -2658,6 +2658,7 @@ static xml_node_t * hs20_spp_update_response(struct hs20_svc *ctx,
 				      dmacc);
 		if (oper == CERT_REENROLL) {
 			char *new_user;
+			char event[200];
 
 			new_user = db_get_session_val(ctx, NULL, NULL,
 						      session_id, "user");
@@ -2678,6 +2679,10 @@ static xml_node_t * hs20_spp_update_response(struct hs20_svc *ctx,
 			debug_print(ctx, 1,
 				    "Update certificate user entry to use the new serial number (old=%s new=%s)",
 				    user, new_user);
+			os_snprintf(event, sizeof(event), "renamed user to: %s",
+				    new_user);
+			hs20_eventlog(ctx, user, realm, session_id, event,
+				      NULL);
 
 			if (db_update_val(ctx, user, realm, "identity",
 					  new_user, 0) < 0 ||
