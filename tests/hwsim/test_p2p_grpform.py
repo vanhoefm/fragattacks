@@ -1161,3 +1161,25 @@ def test_grpform_go_neg_stopped(dev):
     dev[1].p2p_stop_find()
     if ev is None:
         raise Exception("Did not find peer quickly enough after stopped P2P_CONNECT")
+
+def test_grpform_random_addr(dev):
+    """P2P group formation with random interface addresses"""
+    dev[0].global_request("SET p2p_no_group_iface 0")
+    dev[1].global_request("SET p2p_no_group_iface 0")
+    try:
+        if "OK" not in dev[0].global_request("SET p2p_interface_random_mac_addr 1"):
+            raise Exception("Failed to set p2p_interface_random_mac_addr")
+        if "OK" not in dev[1].global_request("SET p2p_interface_random_mac_addr 1"):
+            raise Exception("Failed to set p2p_interface_random_mac_addr")
+        [i_res, r_res] = go_neg_pin_authorized(i_dev=dev[0], i_intent=15,
+                                               r_dev=dev[1], r_intent=0)
+        if "p2p-wlan" not in i_res['ifname']:
+            raise Exception("Unexpected group interface name")
+        check_grpform_results(i_res, r_res)
+        hwsim_utils.test_connectivity_p2p(dev[0], dev[1])
+        remove_group(dev[0], dev[1])
+        if i_res['ifname'] in utils.get_ifnames():
+            raise Exception("Group interface netdev was not removed")
+    finally:
+        dev[0].global_request("SET p2p_interface_random_mac_addr 0")
+        dev[1].global_request("SET p2p_interface_random_mac_addr 0")
