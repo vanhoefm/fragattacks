@@ -125,6 +125,9 @@ config_checks = [ ("ap_scan", "0"),
                   ("go_internet", "1"),
                   ("go_venue_group", "3"),
                   ("go_venue_type", "4"),
+                  ("p2p_device_random_mac_addr", "1"),
+                  ("p2p_device_persistent_mac_addr", "02:12:34:56:78:9a"),
+                  ("p2p_interface_random_mac_addr", "1"),
                   ("openssl_ciphers", "DEFAULT") ]
 
 def supported_param(capa, field):
