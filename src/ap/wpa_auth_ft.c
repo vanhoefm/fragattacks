@@ -2638,6 +2638,8 @@ static int wpa_ft_psk_pmk_r1(struct wpa_state_machine *sm,
 		os_memcpy(out_pmk_r1, pmk_r1, PMK_LEN);
 		if (out_pairwise)
 			*out_pairwise = pairwise;
+		os_memcpy(sm->PMK, pmk, PMK_LEN);
+		sm->pmk_len = PMK_LEN;
 		if (out_vlan &&
 		    wpa_ft_get_vlan(sm->wpa_auth, sm->addr, out_vlan) < 0) {
 			wpa_printf(MSG_DEBUG, "FT: vlan not available for STA "

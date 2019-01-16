@@ -873,6 +873,8 @@ static int wpa_try_alt_snonce(struct wpa_state_machine *sm, u8 *data,
 
 		if (wpa_verify_key_mic(sm->wpa_key_mgmt, pmk_len, &PTK,
 				       data, data_len) == 0) {
+			os_memcpy(sm->PMK, pmk, pmk_len);
+			sm->pmk_len = pmk_len;
 			ok = 1;
 			break;
 		}
@@ -2724,6 +2726,8 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 		    wpa_verify_key_mic(sm->wpa_key_mgmt, pmk_len, &PTK,
 				       sm->last_rx_eapol_key,
 				       sm->last_rx_eapol_key_len) == 0) {
+			os_memcpy(sm->PMK, pmk, pmk_len);
+			sm->pmk_len = pmk_len;
 			ok = 1;
 			break;
 		}
@@ -4132,6 +4136,15 @@ int wpa_auth_pairwise_set(struct wpa_state_machine *sm)
 int wpa_auth_get_pairwise(struct wpa_state_machine *sm)
 {
 	return sm->pairwise;
+}
+
+
+const u8 * wpa_auth_get_pmk(struct wpa_state_machine *sm, int *len)
+{
+	if (!sm)
+		return NULL;
+	*len = sm->pmk_len;
+	return sm->PMK;
 }
 
 
