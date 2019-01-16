@@ -505,6 +505,7 @@ DBusMessage * wpas_dbus_handler_p2p_flush(DBusMessage *message,
 
 	wpa_s = wpa_s->global->p2p_init_wpa_s;
 
+	wpas_p2p_stop_find(wpa_s);
 	os_memset(wpa_s->p2p_auth_invite, 0, ETH_ALEN);
 	wpa_s->force_long_sd = 0;
 	p2p_flush(wpa_s->global->p2p);
