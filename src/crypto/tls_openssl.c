@@ -214,7 +214,11 @@ static struct tls_context *tls_global = NULL;
 struct tls_data {
 	SSL_CTX *ssl;
 	unsigned int tls_session_lifetime;
+	int check_crl;
 	int check_crl_strict;
+	char *ca_cert;
+	unsigned int crl_reload_interval;
+	struct os_reltime crl_last_reload;
 };
 
 struct tls_connection {
@@ -303,6 +307,37 @@ static void tls_show_errors(int level, const char *func, const char *txt)
 }
 
 #endif /* CONFIG_NO_STDOUT_DEBUG */
+
+
+static X509_STORE * tls_crl_cert_reload(const char *ca_cert, int check_crl)
+{
+	int flags;
+	X509_STORE *store;
+
+	store = X509_STORE_new();
+	if (!store) {
+		wpa_printf(MSG_DEBUG,
+			   "OpenSSL: %s - failed to allocate new certificate store",
+			   __func__);
+		return NULL;
+	}
+
+	if (ca_cert && X509_STORE_load_locations(store, ca_cert, NULL) != 1) {
+		tls_show_errors(MSG_WARNING, __func__,
+				"Failed to load root certificates");
+		X509_STORE_free(store);
+		return NULL;
+	}
+
+	if (check_crl)
+		flags = X509_V_FLAG_CRL_CHECK;
+	if (check_crl == 2)
+		flags |= X509_V_FLAG_CRL_CHECK_ALL;
+
+	X509_STORE_set_flags(store, flags);
+
+	return store;
+}
 
 
 #ifdef CONFIG_NATIVE_WINDOWS
@@ -993,8 +1028,10 @@ void * tls_init(const struct tls_config *conf)
 		return NULL;
 	}
 	data->ssl = ssl;
-	if (conf)
+	if (conf) {
 		data->tls_session_lifetime = conf->tls_session_lifetime;
+		data->crl_reload_interval = conf->crl_reload_interval;
+	}
 
 	SSL_CTX_set_options(ssl, SSL_OP_NO_SSLv2);
 	SSL_CTX_set_options(ssl, SSL_OP_NO_SSLv3);
@@ -1076,6 +1113,7 @@ void tls_deinit(void *ssl_ctx)
 		os_free(context);
 	if (data->tls_session_lifetime > 0)
 		SSL_CTX_flush_sessions(ssl, 0);
+	os_free(data->ca_cert);
 	SSL_CTX_free(ssl);
 
 	tls_openssl_ref_count--;
@@ -1471,7 +1509,27 @@ struct tls_connection * tls_connection_init(void *ssl_ctx)
 	SSL_CTX *ssl = data->ssl;
 	struct tls_connection *conn;
 	long options;
+	X509_STORE *new_cert_store;
+	struct os_reltime now;
 	struct tls_context *context = SSL_CTX_get_app_data(ssl);
+
+	/* Replace X509 store if it is time to update CRL. */
+	if (data->crl_reload_interval > 0 && os_get_reltime(&now) == 0 &&
+	    os_reltime_expired(&now, &data->crl_last_reload,
+			       data->crl_reload_interval)) {
+		wpa_printf(MSG_INFO,
+			   "OpenSSL: Flushing X509 store with ca_cert file");
+		new_cert_store = tls_crl_cert_reload(data->ca_cert,
+						     data->check_crl);
+		if (!new_cert_store) {
+			wpa_printf(MSG_ERROR,
+				   "OpenSSL: Error replacing X509 store with ca_cert file");
+		} else {
+			/* Replace old store */
+			SSL_CTX_set_cert_store(ssl, new_cert_store);
+			data->crl_last_reload = now;
+		}
+	}
 
 	conn = os_zalloc(sizeof(*conn));
 	if (conn == NULL)
@@ -2393,6 +2451,9 @@ static int tls_global_ca_cert(struct tls_data *data, const char *ca_cert)
 		SSL_CTX_set_client_CA_list(ssl_ctx,
 					   SSL_load_client_CA_file(ca_cert));
 #endif /* OPENSSL_NO_STDIO */
+
+		os_free(data->ca_cert);
+		data->ca_cert = os_strdup(ca_cert);
 	}
 
 	return 0;
@@ -2417,7 +2478,9 @@ int tls_global_set_verify(void *ssl_ctx, int check_crl, int strict)
 			flags |= X509_V_FLAG_CRL_CHECK_ALL;
 		X509_STORE_set_flags(cs, flags);
 
+		data->check_crl = check_crl;
 		data->check_crl_strict = strict;
+		os_get_reltime(&data->crl_last_reload);
 	}
 	return 0;
 }
