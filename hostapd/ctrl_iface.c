@@ -1488,6 +1488,63 @@ static int hostapd_ctrl_iface_disable(struct hostapd_iface *iface)
 }
 
 
+static int
+hostapd_ctrl_iface_kick_mismatch_psk_sta_iter(struct hostapd_data *hapd,
+					      struct sta_info *sta, void *ctx)
+{
+	struct hostapd_wpa_psk *psk;
+	const u8 *pmk;
+	int pmk_len;
+	int pmk_match;
+	int sta_match;
+	int bss_match;
+	int reason;
+
+	pmk = wpa_auth_get_pmk(sta->wpa_sm, &pmk_len);
+
+	for (psk = hapd->conf->ssid.wpa_psk; pmk && psk; psk = psk->next) {
+		pmk_match = PMK_LEN == pmk_len &&
+			os_memcmp(psk->psk, pmk, pmk_len) == 0;
+		sta_match = psk->group == 0 &&
+			os_memcmp(sta->addr, psk->addr, ETH_ALEN) == 0;
+		bss_match = psk->group == 1;
+
+		if (pmk_match && (sta_match || bss_match))
+			return 0;
+	}
+
+	wpa_printf(MSG_INFO, "STA " MACSTR
+		   " PSK/passphrase no longer valid - disconnect",
+		   MAC2STR(sta->addr));
+	reason = WLAN_REASON_PREV_AUTH_NOT_VALID;
+	hostapd_drv_sta_deauth(hapd, sta->addr, reason);
+	ap_sta_deauthenticate(hapd, sta, reason);
+
+	return 0;
+}
+
+
+static int hostapd_ctrl_iface_reload_wpa_psk(struct hostapd_data *hapd)
+{
+	struct hostapd_bss_config *conf = hapd->conf;
+	int err;
+
+	hostapd_config_clear_wpa_psk(&conf->ssid.wpa_psk);
+
+	err = hostapd_setup_wpa_psk(conf);
+	if (err < 0) {
+		wpa_printf(MSG_ERROR, "Reloading WPA-PSK passwords failed: %d",
+			   err);
+		return -1;
+	}
+
+	ap_for_each_sta(hapd, hostapd_ctrl_iface_kick_mismatch_psk_sta_iter,
+			NULL);
+
+	return 0;
+}
+
+
 #ifdef CONFIG_TESTING_OPTIONS
 
 static int hostapd_ctrl_iface_radar(struct hostapd_data *hapd, char *cmd)
@@ -3012,6 +3069,9 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 						   reply_size);
 	} else if (os_strncmp(buf, "ENABLE", 6) == 0) {
 		if (hostapd_ctrl_iface_enable(hapd->iface))
+			reply_len = -1;
+	} else if (os_strcmp(buf, "RELOAD_WPA_PSK") == 0) {
+		if (hostapd_ctrl_iface_reload_wpa_psk(hapd))
 			reply_len = -1;
 	} else if (os_strncmp(buf, "RELOAD", 6) == 0) {
 		if (hostapd_ctrl_iface_reload(hapd->iface))
