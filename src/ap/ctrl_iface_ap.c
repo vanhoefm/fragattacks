@@ -207,6 +207,7 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 				      char *buf, size_t buflen)
 {
 	int len, res, ret, i;
+	const char *keyid;
 
 	if (!sta)
 		return 0;
@@ -337,6 +338,13 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 	if (sta->flags & WLAN_STA_WDS && sta->ifname_wds) {
 		ret = os_snprintf(buf + len, buflen - len,
 				  "wds_sta_ifname=%s\n", sta->ifname_wds);
+		if (!os_snprintf_error(buflen - len, ret))
+			len += ret;
+	}
+
+	keyid = ap_sta_wpa_get_keyid(hapd, sta);
+	if (keyid) {
+		ret = os_snprintf(buf + len, buflen - len, "keyid=%s\n", keyid);
 		if (!os_snprintf_error(buflen - len, ret))
 			len += ret;
 	}

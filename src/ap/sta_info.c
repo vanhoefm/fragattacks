@@ -1163,6 +1163,32 @@ void ap_sta_stop_sa_query(struct hostapd_data *hapd, struct sta_info *sta)
 #endif /* CONFIG_IEEE80211W */
 
 
+const char * ap_sta_wpa_get_keyid(struct hostapd_data *hapd,
+				  struct sta_info *sta)
+{
+	struct hostapd_wpa_psk *psk;
+	struct hostapd_ssid *ssid;
+	const u8 *pmk;
+	int pmk_len;
+
+	ssid = &hapd->conf->ssid;
+
+	pmk = wpa_auth_get_pmk(sta->wpa_sm, &pmk_len);
+	if (!pmk || pmk_len != PMK_LEN)
+		return NULL;
+
+	for (psk = ssid->wpa_psk; psk; psk = psk->next)
+		if (os_memcmp(pmk, psk->psk, PMK_LEN) == 0)
+			break;
+	if (!psk)
+		return NULL;
+	if (!psk || !psk->keyid[0])
+		return NULL;
+
+	return psk->keyid;
+}
+
+
 void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
 			   int authorized)
 {
@@ -1201,7 +1227,11 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
 					sta->addr, authorized, dev_addr);
 
 	if (authorized) {
+		const char *keyid;
+		char keyid_buf[100];
 		char ip_addr[100];
+
+		keyid_buf[0] = '\0';
 		ip_addr[0] = '\0';
 #ifdef CONFIG_P2P
 		if (wpa_auth_get_ip_addr(sta->wpa_sm, ip_addr_buf) == 0) {
@@ -1212,14 +1242,20 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
 		}
 #endif /* CONFIG_P2P */
 
-		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_CONNECTED "%s%s",
-			buf, ip_addr);
+		keyid = ap_sta_wpa_get_keyid(hapd, sta);
+		if (keyid) {
+			os_snprintf(keyid_buf, sizeof(keyid_buf),
+				    " keyid=%s", keyid);
+		}
+
+		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_CONNECTED "%s%s%s",
+			buf, ip_addr, keyid_buf);
 
 		if (hapd->msg_ctx_parent &&
 		    hapd->msg_ctx_parent != hapd->msg_ctx)
 			wpa_msg_no_global(hapd->msg_ctx_parent, MSG_INFO,
-					  AP_STA_CONNECTED "%s%s",
-					  buf, ip_addr);
+					  AP_STA_CONNECTED "%s%s%s",
+					  buf, ip_addr, keyid_buf);
 	} else {
 		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_DISCONNECTED "%s", buf);
 
