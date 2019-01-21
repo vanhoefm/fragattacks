@@ -9527,13 +9527,6 @@ static int wpas_ctrl_iface_mac_rand_scan(struct wpa_supplicant *wpa_s,
 		return -1;
 	}
 
-	if ((wpa_s->mac_addr_rand_supported & type) != type) {
-		wpa_printf(MSG_INFO,
-			   "CTRL: MAC_RAND_SCAN types=%u != supported=%u",
-			   type, wpa_s->mac_addr_rand_supported);
-		return -1;
-	}
-
 	if (enable > 1) {
 		wpa_printf(MSG_INFO,
 			   "CTRL: MAC_RAND_SCAN enable=<0/1> not specified");
@@ -9567,21 +9560,25 @@ static int wpas_ctrl_iface_mac_rand_scan(struct wpa_supplicant *wpa_s,
 	}
 
 	if (type & MAC_ADDR_RAND_SCAN) {
-		wpas_mac_addr_rand_scan_set(wpa_s, MAC_ADDR_RAND_SCAN,
-					    addr, mask);
+		if (wpas_mac_addr_rand_scan_set(wpa_s, MAC_ADDR_RAND_SCAN,
+					    addr, mask))
+			return -1;
 	}
 
 	if (type & MAC_ADDR_RAND_SCHED_SCAN) {
-		wpas_mac_addr_rand_scan_set(wpa_s, MAC_ADDR_RAND_SCHED_SCAN,
-					    addr, mask);
+		if (wpas_mac_addr_rand_scan_set(wpa_s, MAC_ADDR_RAND_SCHED_SCAN,
+					    addr, mask))
+			return -1;
 
 		if (wpa_s->sched_scanning && !wpa_s->pno)
 			wpas_scan_restart_sched_scan(wpa_s);
 	}
 
 	if (type & MAC_ADDR_RAND_PNO) {
-		wpas_mac_addr_rand_scan_set(wpa_s, MAC_ADDR_RAND_PNO,
-					    addr, mask);
+		if (wpas_mac_addr_rand_scan_set(wpa_s, MAC_ADDR_RAND_PNO,
+					    addr, mask))
+			return -1;
+
 		if (wpa_s->pno) {
 			wpas_stop_pno(wpa_s);
 			wpas_start_pno(wpa_s);

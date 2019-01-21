@@ -2806,6 +2806,13 @@ int wpas_mac_addr_rand_scan_set(struct wpa_supplicant *wpa_s,
 {
 	u8 *tmp = NULL;
 
+	if ((wpa_s->mac_addr_rand_supported & type) != type ) {
+		wpa_printf(MSG_INFO,
+			   "scan: MAC randomization type %u != supported=%u",
+			   type, wpa_s->mac_addr_rand_supported);
+		return -1;
+	}
+
 	wpas_mac_addr_rand_scan_clear(wpa_s, type);
 
 	if (addr) {
