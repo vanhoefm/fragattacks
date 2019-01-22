@@ -569,8 +569,6 @@ CONFIG_BACKEND=file
 #CONFIG_MBO=y
 
 # Fast Initial Link Setup (FILS) (IEEE 802.11ai)
-# Note: This is an experimental and not yet complete implementation. This
-# should not be enabled for production use.
 #CONFIG_FILS=y
 # FILS shared key authentication with PFS
 #CONFIG_FILS_SK_PFS=y
