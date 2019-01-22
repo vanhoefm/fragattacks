@@ -790,6 +790,45 @@ static int add_update_node(struct hs20_svc *ctx, xml_node_t *spp_node,
 }
 
 
+static xml_node_t * read_subrem_file(struct hs20_svc *ctx,
+				     const char *subrem_id,
+				     char *uri, size_t uri_size)
+{
+	char fname[200];
+	char *buf, *buf2, *pos;
+	size_t len;
+	xml_node_t *node;
+
+	os_snprintf(fname, sizeof(fname), "%s/spp/subrem/%s",
+		    ctx->root_dir, subrem_id);
+	debug_print(ctx, 1, "Use subrem file %s", fname);
+
+	buf = os_readfile(fname, &len);
+	if (!buf)
+		return NULL;
+	buf2 = os_realloc(buf, len + 1);
+	if (!buf2) {
+		os_free(buf);
+		return NULL;
+	}
+	buf = buf2;
+	buf[len] = '\0';
+
+	pos = os_strchr(buf, '\n');
+	if (!pos) {
+		os_free(buf);
+		return NULL;
+	}
+	*pos++ = '\0';
+	os_strlcpy(uri, buf, uri_size);
+
+	node = xml_node_from_buf(ctx->xml, pos);
+	os_free(buf);
+
+	return node;
+}
+
+
 static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 				       const char *user, const char *realm,
 				       const char *session_id,
@@ -808,8 +847,24 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 		cert = NULL;
 	}
 	if (cert) {
-		/* No change needed in PPS MO */
+		char *subrem;
+
+		/* No change needed in PPS MO unless specifically asked to */
 		cred = NULL;
+		buf[0] = '\0';
+
+		subrem = db_get_val(ctx, user, realm, "subrem", dmacc);
+		if (subrem && subrem[0]) {
+			cred = read_subrem_file(ctx, subrem, buf, sizeof(buf));
+			if (!cred) {
+				debug_print(ctx, 1,
+					    "Could not create updateNode from subrem file");
+				os_free(subrem);
+				os_free(cert);
+				return NULL;
+			}
+		}
+		os_free(subrem);
 	} else {
 		char *real_user = NULL;
 		char *pw;
@@ -847,6 +902,10 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 			os_free(cert);
 			return NULL;
 		}
+
+		snprintf(buf, sizeof(buf),
+			 "./Wi-Fi/%s/PerProviderSubscription/Cred01/Credential",
+			 realm);
 	}
 
 	status = "Remediation complete, request sppUpdateResponse";
@@ -857,10 +916,6 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 		os_free(cert);
 		return NULL;
 	}
-
-	snprintf(buf, sizeof(buf),
-		 "./Wi-Fi/%s/PerProviderSubscription/Cred01/Credential",
-		 realm);
 
 	if ((cred && add_update_node(ctx, spp_node, ns, buf, cred) < 0) ||
 	    (!cred && !xml_node_create(ctx->xml, spp_node, ns, "noMOUpdate"))) {

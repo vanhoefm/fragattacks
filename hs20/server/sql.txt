@@ -61,6 +61,7 @@ CREATE TABLE users(
 	mac_addr TEXT,
 	last_msk TEXT,
 	polupd_done TEXT,
+	subrem TEXT
 );
 
 CREATE TABLE wildcards(
