@@ -799,18 +799,8 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 	xml_node_t *spp_node, *cred;
 	char buf[400];
 	char new_pw[33];
-	char *real_user = NULL;
 	char *status;
 	char *cert;
-
-	if (dmacc) {
-		real_user = db_get_val(ctx, user, realm, "identity", dmacc);
-		if (real_user == NULL) {
-			debug_print(ctx, 1, "Could not find user identity for "
-				    "dmacc user '%s'", user);
-			return NULL;
-		}
-	}
 
 	cert = db_get_val(ctx, user, realm, "cert", dmacc);
 	if (cert && cert[0] == '\0') {
@@ -818,10 +808,22 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 		cert = NULL;
 	}
 	if (cert) {
-		cred = build_credential_cert(ctx, real_user ? real_user : user,
-					     realm, cert);
+		/* No change needed in PPS MO */
+		cred = NULL;
 	} else {
+		char *real_user = NULL;
 		char *pw;
+
+		if (dmacc) {
+			real_user = db_get_val(ctx, user, realm, "identity",
+					       dmacc);
+			if (!real_user) {
+				debug_print(ctx, 1,
+					    "Could not find user identity for dmacc user '%s'",
+					    user);
+				return NULL;
+			}
+		}
 
 		pw = db_get_session_val(ctx, user, realm, session_id,
 					"password");
@@ -838,12 +840,13 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 						real_user ? real_user : user,
 						realm, new_pw, sizeof(new_pw));
 		}
-	}
-	free(real_user);
-	if (!cred) {
-		debug_print(ctx, 1, "Could not build credential");
-		os_free(cert);
-		return NULL;
+
+		free(real_user);
+		if (!cred) {
+			debug_print(ctx, 1, "Could not build credential");
+			os_free(cert);
+			return NULL;
+		}
 	}
 
 	status = "Remediation complete, request sppUpdateResponse";
@@ -859,7 +862,8 @@ static xml_node_t * build_sub_rem_resp(struct hs20_svc *ctx,
 		 "./Wi-Fi/%s/PerProviderSubscription/Cred01/Credential",
 		 realm);
 
-	if (add_update_node(ctx, spp_node, ns, buf, cred) < 0) {
+	if ((cred && add_update_node(ctx, spp_node, ns, buf, cred) < 0) ||
+	    (!cred && !xml_node_create(ctx->xml, spp_node, ns, "noMOUpdate"))) {
 		debug_print(ctx, 1, "Could not add update node");
 		xml_node_free(ctx->xml, spp_node);
 		os_free(cert);
