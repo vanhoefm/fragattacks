@@ -10580,10 +10580,12 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 	} else if (os_strcmp(buf, "RESEND_ASSOC") == 0) {
 		if (wpas_ctrl_resend_assoc(wpa_s) < 0)
 			reply_len = -1;
+#ifdef CONFIG_IEEE80211W
 	} else if (os_strcmp(buf, "UNPROT_DEAUTH") == 0) {
 		sme_event_unprot_disconnect(
 			wpa_s, wpa_s->bssid, NULL,
 			WLAN_REASON_CLASS2_FRAME_FROM_NONAUTH_STA);
+#endif /* CONFIG_IEEE80211W */
 #endif /* CONFIG_TESTING_OPTIONS */
 	} else if (os_strncmp(buf, "VENDOR_ELEM_ADD ", 16) == 0) {
 		if (wpas_ctrl_vendor_elem_add(wpa_s, buf + 16) < 0)
