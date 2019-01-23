@@ -21,6 +21,16 @@ LIBS += -lsqlite3
 # Using glibc < 2.17 requires -lrt for clock_gettime()
 LIBS += -lrt
 
+ifndef CONFIG_NO_GITVER
+# Add VERSION_STR postfix for builds from a git repository
+ifeq ($(wildcard ../../.git),../../.git)
+GITVER := $(shell git describe --dirty=+)
+ifneq ($(GITVER),)
+CFLAGS += -DGIT_VERSION_STR_POSTFIX=\"-$(GITVER)\"
+endif
+endif
+endif
+
 OBJS=spp_server.o
 OBJS += hs20_spp_server.o
 OBJS += ../../src/utils/xml-utils.o
