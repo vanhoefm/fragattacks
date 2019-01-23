@@ -1168,3 +1168,26 @@ void hostapd_set_security_params(struct hostapd_bss_config *bss,
 		}
 	}
 }
+
+
+int hostapd_sae_pw_id_in_use(struct hostapd_bss_config *conf)
+{
+	int with_id = 0, without_id = 0;
+	struct sae_password_entry *pw;
+
+	if (conf->ssid.wpa_passphrase)
+		without_id = 1;
+
+	for (pw = conf->sae_passwords; pw; pw = pw->next) {
+		if (pw->identifier)
+			with_id = 1;
+		else
+			without_id = 1;
+		if (with_id && without_id)
+			break;
+	}
+
+	if (with_id && !without_id)
+		return 2;
+	return with_id;
+}

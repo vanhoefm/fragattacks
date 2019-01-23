@@ -880,5 +880,6 @@ hostapd_config_get_radius_attr(struct hostapd_radius_attr *attr, u8 type);
 int hostapd_config_check(struct hostapd_config *conf, int full_config);
 void hostapd_set_security_params(struct hostapd_bss_config *bss,
 				 int full_config);
+int hostapd_sae_pw_id_in_use(struct hostapd_bss_config *conf);
 
 #endif /* HOSTAPD_CONFIG_H */
