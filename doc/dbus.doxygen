@@ -2028,7 +2028,7 @@ scan results.
 	<h3>RSN - a{sv} - (read)</h3>
 	<p>RSN information of the BSS. Empty dictionary indicates no RSN support. Dictionary entries are:</p>
 	<table>
-	  <tr><td>KeyMgmt</td><td>as</td><td>Key management suite. Possible array elements: "wpa-psk", "wpa-eap", "wpa-ft-psk", "wpa-ft-eap", "wpa-psk-sha256", "wpa-eap-sha256",</td>
+	  <tr><td>KeyMgmt</td><td>as</td><td>Key management suite. Possible array elements: "wpa-psk", "wpa-ft-psk", "wpa-psk-sha256", "wpa-eap", "wpa-ft-eap", "wpa-eap-sha256", "wpa-eap-suite-b", "wpa-eap-suite-b-192", "wpa-fils-sha256", "wpa-fils-sha384", "wpa-ft-fils-sha256", "wpa-ft-fils-sha384", "sae", "ft-sae", "wpa-none"</td>
 	  <tr><td>Pairwise</td><td>as</td><td>Pairwise cipher suites. Possible array elements: "ccmp", "tkip"</td>
 	  <tr><td>Group</td><td>s</td><td>Group cipher suite. Possible values are: "ccmp", "tkip", "wep104", "wep40"</td>
 	  <tr><td>MgmtGroup</td><td>s</td><td>Mangement frames cipher suite. Possible values are: "aes128cmac"</td>

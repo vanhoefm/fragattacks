@@ -4507,7 +4507,12 @@ static dbus_bool_t wpas_dbus_get_bss_security_prop(
 	if (!wpa_dbus_dict_open_write(&variant_iter, &iter_dict))
 		goto nomem;
 
-	/* KeyMgmt */
+	/*
+	 * KeyMgmt
+	 *
+	 * When adding a new entry here, please take care to extend key_mgmt[]
+	 * and keep documentation in doc/dbus.doxygen up to date.
+	 */
 	n = 0;
 	if (ie_data->key_mgmt & WPA_KEY_MGMT_PSK)
 		key_mgmt[n++] = "wpa-psk";
