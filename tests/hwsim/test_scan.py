@@ -1326,9 +1326,9 @@ def test_scan_ies(dev, apdev):
     if not bss or 'beacon_ie' not in bss:
         raise Exception("beacon_ie not present")
     ie = parse_ie(bss['ie'])
-    logger.info("ie: " + str(ie.keys()))
+    logger.info("ie: " + str(list(ie.keys())))
     beacon_ie = parse_ie(bss['beacon_ie'])
-    logger.info("beacon_ie: " + str(ie.keys()))
+    logger.info("beacon_ie: " + str(list(ie.keys())))
     if bss['ie'] == bss['beacon_ie']:
         raise Exception("Both ie and beacon_ie show same data")
 
@@ -1684,7 +1684,7 @@ def test_scan_multi_bssid_check_ie(dev, apdev):
         raise Exception("beacon_ie not present in trans_bss")
 
     beacon_ie = parse_ie(trans_bss['beacon_ie'])
-    logger.info("trans_bss beacon_ie: " + str(beacon_ie.keys()))
+    logger.info("trans_bss beacon_ie: " + str(list(beacon_ie.keys())))
 
     bssid = bssid[0:16] + '1'
     nontrans_bss1 = dev[0].get_bss(bssid)
@@ -1695,12 +1695,12 @@ def test_scan_multi_bssid_check_ie(dev, apdev):
         raise Exception("beacon_ie not present in nontrans_bss1")
 
     nontx_beacon_ie = parse_ie(nontrans_bss1['beacon_ie'])
-    logger.info("nontrans_bss1 beacon_ie: " + str(nontx_beacon_ie.keys()))
+    logger.info("nontrans_bss1 beacon_ie: " + str(list(nontx_beacon_ie.keys())))
 
-    if 71 in beacon_ie.keys():
-        ie_list = beacon_ie.keys()
+    if 71 in list(beacon_ie.keys()):
+        ie_list = list(beacon_ie.keys())
         ie_list.remove(71)
-        if ie_list != nontx_beacon_ie.keys():
+        if ie_list != list(nontx_beacon_ie.keys()):
             raise Exception("check IE failed")
 
 def elem_fms1():

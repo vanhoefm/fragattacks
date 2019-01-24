@@ -6120,7 +6120,7 @@ def test_ap_hs20_terms_and_conditions_coa(dev, apdev):
                                Vendor_Specific=vsa)
     reply = srv.SendPacket(req)
     logger.debug("RADIUS response from hostapd")
-    for i in reply.keys():
+    for i in list(reply.keys()):
         logger.debug("%s: %s" % (i, reply[i]))
     if reply.code != pyrad.packet.CoAACK:
         raise Exception("CoA-Request failed")

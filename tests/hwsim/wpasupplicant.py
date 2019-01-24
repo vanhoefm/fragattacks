@@ -958,7 +958,7 @@ class WpaSupplicant:
             "mean_data_rate": 1500,
         }
         cmd = "WMM_AC_ADDTS %s tsid=%d up=%d" % (direction, tsid, up)
-        for (key, value) in params.iteritems():
+        for (key, value) in params.items():
             cmd += " %s=%d" % (key, value)
         if extra:
             cmd += " " + extra

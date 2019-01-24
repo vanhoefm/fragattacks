@@ -413,7 +413,7 @@ def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30,
         for field in fields:
             if field in params:
                 hapd.set(field, params[field])
-        for f,v in params.items():
+        for f,v in list(params.items()):
             if f in fields:
                 continue
             if isinstance(v, list):

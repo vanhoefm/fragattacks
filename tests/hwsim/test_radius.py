@@ -362,7 +362,7 @@ def _test_radius_acct_ipaddr(dev, apdev):
 def send_and_check_reply(srv, req, code, error_cause=0):
     reply = srv.SendPacket(req)
     logger.debug("RADIUS response from hostapd")
-    for i in reply.keys():
+    for i in list(reply.keys()):
         logger.debug("%s: %s" % (i, reply[i]))
     if reply.code != code:
         raise Exception("Unexpected response code")

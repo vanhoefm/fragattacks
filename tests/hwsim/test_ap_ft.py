@@ -924,7 +924,7 @@ def generic_ap_ft_eap(dev, apdev, vlan=False, cui=False, over_ds=False,
     params["ieee8021x"] = "1"
     if vlan:
         params["dynamic_vlan"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd = hostapd.add_ap(apdev[0], params)
     key_mgmt = hapd.get_config()['key_mgmt']
     if key_mgmt.split(' ')[0] != "FT-EAP":
@@ -934,7 +934,7 @@ def generic_ap_ft_eap(dev, apdev, vlan=False, cui=False, over_ds=False,
     params["ieee8021x"] = "1"
     if vlan:
         params["dynamic_vlan"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd, hapd1, ssid, passphrase, eap=True,
@@ -1025,7 +1025,7 @@ def generic_ap_ft_eap_pull(dev, apdev, vlan=False):
     params["pmk_r1_push"] = "0"
     if vlan:
         params["dynamic_vlan"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd = hostapd.add_ap(apdev[0], params)
     key_mgmt = hapd.get_config()['key_mgmt']
     if key_mgmt.split(' ')[0] != "FT-EAP":
@@ -1036,7 +1036,7 @@ def generic_ap_ft_eap_pull(dev, apdev, vlan=False):
     params["pmk_r1_push"] = "0"
     if vlan:
         params["dynamic_vlan"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd, hapd1, ssid, passphrase, eap=True,
@@ -1063,7 +1063,7 @@ def test_ap_ft_eap_pull_wildcard(dev, apdev):
     params["r1kh"] = "00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
     params["ft_psk_generate_local"] = "1"
     params["eap_server"] = "0"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase, discovery=True)
     params['wpa_key_mgmt'] = "WPA-EAP FT-EAP"
@@ -1073,7 +1073,7 @@ def test_ap_ft_eap_pull_wildcard(dev, apdev):
     params["r1kh"] = "00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
     params["ft_psk_generate_local"] = "1"
     params["eap_server"] = "0"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd, hapd1, ssid, passphrase, eap=True)
@@ -1172,13 +1172,13 @@ def test_ap_ft_mismatching_rrb_key_push_eap(dev, apdev):
     params["ieee80211w"] = "2";
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2_incorrect_rrb_key(ssid=ssid, passphrase=passphrase)
     params["ieee80211w"] = "2";
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
@@ -1194,13 +1194,13 @@ def test_ap_ft_mismatching_rrb_key_pull_eap(dev, apdev):
     params["pmk_r1_push"] = "0"
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2_incorrect_rrb_key(ssid=ssid, passphrase=passphrase)
     params["pmk_r1_push"] = "0"
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
@@ -1217,7 +1217,7 @@ def test_ap_ft_mismatching_r0kh_id_pull_eap(dev, apdev):
     params["nas_identifier"] = "nas0.w1.fi"
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, key_mgmt="FT-EAP", proto="WPA2", ieee80211w="1",
                    eap="GPSK", identity="gpsk user",
@@ -1228,7 +1228,7 @@ def test_ap_ft_mismatching_r0kh_id_pull_eap(dev, apdev):
     params["pmk_r1_push"] = "0"
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hostapd.add_ap(apdev[1], params)
 
     dev[0].scan_for_bss(apdev[1]['bssid'], freq="2412")
@@ -1244,13 +1244,13 @@ def test_ap_ft_mismatching_rrb_r0kh_push_eap(dev, apdev):
     params["ieee80211w"] = "2";
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2_r0kh_mismatch(ssid=ssid, passphrase=passphrase)
     params["ieee80211w"] = "2";
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
@@ -1266,13 +1266,13 @@ def test_ap_ft_mismatching_rrb_r0kh_pull_eap(dev, apdev):
     params["pmk_r1_push"] = "0"
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params["pmk_r1_push"] = "0"
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
@@ -2269,7 +2269,7 @@ def test_ap_ft_internal_rrb_check(dev, apdev):
     params = ft_params1(ssid=ssid, passphrase=passphrase)
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd = hostapd.add_ap(apdev[0], params)
     key_mgmt = hapd.get_config()['key_mgmt']
     if key_mgmt.split(' ')[0] != "FT-EAP":
@@ -2586,7 +2586,7 @@ def test_ap_ft_eap_ap_config_change(dev, apdev):
     params["r0kh"] = "ff:ff:ff:ff:ff:ff * 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
     params["r1kh"] = "00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
     params["eap_server"] = "0"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect(ssid, key_mgmt="FT-EAP WPA-EAP", proto="WPA2",
@@ -2617,13 +2617,13 @@ def test_ap_ft_eap_sha384(dev, apdev):
     params["ieee80211w"] = "2";
     params['wpa_key_mgmt'] = "FT-EAP-SHA384"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params["ieee80211w"] = "2";
     params['wpa_key_mgmt'] = "FT-EAP-SHA384"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, eap=True,
@@ -2639,13 +2639,13 @@ def test_ap_ft_eap_sha384_over_ds(dev, apdev):
     params["ieee80211w"] = "2";
     params['wpa_key_mgmt'] = "FT-EAP-SHA384"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params["ieee80211w"] = "2";
     params['wpa_key_mgmt'] = "FT-EAP-SHA384"
     params["ieee8021x"] = "1"
-    params = dict(radius.items() + params.items())
+    params = dict(list(radius.items()) + list(params.items()))
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,

@@ -429,7 +429,7 @@ def generic_pmksa_cache_preauth(dev, apdev, extraparams, identity, databridge,
     try:
         params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
         params['bridge'] = 'ap-br0'
-        for key, value in extraparams[0].iteritems():
+        for key, value in extraparams[0].items():
             params[key] = value
 
         hapd = hostapd.add_ap(apdev[0], params)
@@ -445,7 +445,7 @@ def generic_pmksa_cache_preauth(dev, apdev, extraparams, identity, databridge,
         params['bridge'] = 'ap-br0'
         params['rsn_preauth'] = '1'
         params['rsn_preauth_interfaces'] = databridge
-        for key, value in extraparams[1].iteritems():
+        for key, value in extraparams[1].items():
             params[key] = value
         hostapd.add_ap(apdev[1], params)
         bssid1 = apdev[1]['bssid']
