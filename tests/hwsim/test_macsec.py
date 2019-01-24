@@ -509,13 +509,13 @@ def write_conf(conffile, mka_priority=None):
         f.write("ap_scan=0\n")
         f.write("fast_reauth=1\n")
         f.write("network={\n")
-	f.write("   key_mgmt=NONE\n")
-	f.write("   mka_cak=000102030405060708090a0b0c0d0e0f\n")
-	f.write("   mka_ckn=000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f\n")
+        f.write("   key_mgmt=NONE\n")
+        f.write("   mka_cak=000102030405060708090a0b0c0d0e0f\n")
+        f.write("   mka_ckn=000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f\n")
         if mka_priority is not None:
             f.write("   mka_priority=%d\n" % mka_priority)
-	f.write("   eapol_flags=0\n")
-	f.write("   macsec_policy=1\n")
+        f.write("   eapol_flags=0\n")
+        f.write("   macsec_policy=1\n")
         f.write("}\n")
 
 def run_macsec_psk_ns(dev, apdev, params):

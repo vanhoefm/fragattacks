@@ -721,8 +721,8 @@ class BeaconReport:
                 # 2 = all fixed fields and all elements
                 # Fixed fields: Timestamp[8] BeaconInt[2] CapabInfo[2]
                 self.frame_body = report[0:elen]
-	    if eid == 2:
-	        self.frame_body_fragment_id = report[0:elen]
+            if eid == 2:
+                self.frame_body_fragment_id = report[0:elen]
             if eid == 164:
                 self.last_indication = report[0:elen]
             report = report[elen:]
