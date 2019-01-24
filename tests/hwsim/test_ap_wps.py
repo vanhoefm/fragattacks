@@ -6347,7 +6347,7 @@ def wsc_dh_init():
     return own_private, pk
 
 def wsc_dh_kdf(peer_pk, own_private, mac_addr, e_nonce, r_nonce):
-    peer_public = long(binascii.hexlify(peer_pk), 16)
+    peer_public = int(binascii.hexlify(peer_pk), 16)
     if peer_public < 2 or peer_public >= group_5_prime:
         raise Exception("Invalid peer public key")
     if pow(peer_public, (group_5_prime - 1) / 2, group_5_prime) != 1:
