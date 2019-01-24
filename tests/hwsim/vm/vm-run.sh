@@ -13,7 +13,7 @@ else
 fi
 
 # increase the memory size if you want to run with valgrind, 512 MB works
-MEMORY=192
+MEMORY=256
 
 # Some ubuntu systems (notably 12.04) have issues with this - since the guest
 # mounts as read-only it should be safe to not specify ,readonly. Override in
