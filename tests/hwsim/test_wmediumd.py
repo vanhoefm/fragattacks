@@ -368,7 +368,7 @@ def test_wmediumd_path_rann(dev, apdev, params):
         raise Exception("No captured data found\n")
     lines = out.splitlines()
     prev = float(lines[len(lines) - 1])
-    for i in reversed(range(1, len(lines) - 1)):
+    for i in reversed(list(range(1, len(lines) - 1))):
         now = float(lines[i])
         if prev - now < 1.0 or 3.0 < prev - now:
             raise Exception("RANN interval " + str(prev - now) +

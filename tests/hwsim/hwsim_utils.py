@@ -83,7 +83,7 @@ def run_connectivity_test(dev1, dev2, tos, dev1group=False, dev2group=False,
             cmd = "DATA_TEST_TX ff:ff:ff:ff:ff:ff {} {}".format(addr1, tos)
             if send_len is not None:
                 cmd += " len=" + str(send_len)
-            for i in xrange(broadcast_retry_c):
+            for i in range(broadcast_retry_c):
                 try:
                     if dev1group:
                         dev1.group_request(cmd)
@@ -135,7 +135,7 @@ def run_connectivity_test(dev1, dev2, tos, dev1group=False, dev2group=False,
             cmd = "DATA_TEST_TX ff:ff:ff:ff:ff:ff {} {}".format(addr2, tos)
             if send_len is not None:
                 cmd += " len=" + str(send_len)
-            for i in xrange(broadcast_retry_c):
+            for i in range(broadcast_retry_c):
                 try:
                     if dev2group:
                         dev2.group_request(cmd)
@@ -221,7 +221,7 @@ def test_connectivity_p2p_sta(dev1, dev2, dscp=None, tos=None):
 def test_connectivity_sta(dev1, dev2, dscp=None, tos=None):
     test_connectivity(dev1, dev2, dscp, tos)
 
-(PS_DISABLED, PS_ENABLED, PS_AUTO_POLL, PS_MANUAL_POLL) = range(4)
+(PS_DISABLED, PS_ENABLED, PS_AUTO_POLL, PS_MANUAL_POLL) = list(range(4))
 
 def set_powersave(dev, val):
     phy = dev.get_driver_status_field("phyname")

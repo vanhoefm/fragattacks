@@ -21,12 +21,12 @@ import os
  TYPE_WWAN,
  TYPE_GPS,
  TYPE_FM,
- TYPE_NFC) = range(9)
+ TYPE_NFC) = list(range(9))
 
 (_OP_ADD,
  _OP_DEL,
  _OP_CHANGE,
- _OP_CHANGE_ALL) = range(4)
+ _OP_CHANGE_ALL) = list(range(4))
 
 _type_names = {
     TYPE_ALL: "all",
