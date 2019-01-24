@@ -189,7 +189,7 @@ class FstDevice:
 
     def grequest(self, req):
         """Send request on the global control interface"""
-        raise Exception, "Virtual grequest() called!"
+        raise Exception("Virtual grequest() called!")
 
     def wait_gevent(self, events, timeout=None):
         """Wait for a list of events on the global interface"""
