@@ -68,9 +68,9 @@ def run_hwsim_test(devices, setup_params, refs, duts, monitors, hwsim_test):
             apdev.append(dut_host.dev)
 
         # run hwsim test/currently only 2 params tests
-        if hwsim_test.func_code.co_argcount == 1:
+        if hwsim_test.__code__.co_argcount == 1:
             hwsim_test(dev)
-        elif hwsim_test.func_code.co_argcount == 2:
+        elif hwsim_test.__code__.co_argcount == 2:
             hwsim_test(dev, apdev)
         else:
             raise Exception("more than 2 arguments required")

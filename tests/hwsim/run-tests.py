@@ -488,12 +488,12 @@ def main():
                         set_term_echo(sys.stdin.fileno(), True)
                     sys.exit(1)
             try:
-                if t.func_code.co_argcount > 2:
+                if t.__code__.co_argcount > 2:
                     params = {}
                     params['logdir'] = args.logdir
                     params['long'] = args.long
                     t(dev, apdev, params)
-                elif t.func_code.co_argcount > 1:
+                elif t.__code__.co_argcount > 1:
                     t(dev, apdev)
                 else:
                     t(dev)

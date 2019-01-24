@@ -200,7 +200,7 @@ def main():
                 t = None
                 for tt in hwsim_tests:
                     name = tt.__name__.replace('test_', '', 1)
-                    if name == test and tt.func_code.co_argcount <= 2:
+                    if name == test and tt.__code__.co_argcount <= 2:
                         t = tt
                         break
                 if not t:
