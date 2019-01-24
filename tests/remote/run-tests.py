@@ -265,7 +265,7 @@ def main():
     # lock devices
     try:
         get_devices(devices, duts, refs, monitors)
-    except Exception, e:
+    except Exception as e:
         logger.warning("get devices failed: " + str(e))
         logger.info(traceback.format_exc())
         put_devices(devices, duts, refs, monitors)
@@ -288,7 +288,7 @@ def main():
     logger.warning("RUN check_devices")
     try:
         check_devices(devices, setup_params, refs, duts, monitors)
-    except Exception, e:
+    except Exception as e:
         logger.warning("FAILED: " + str(e))
         logger.info(traceback.format_exc())
         put_devices(devices, duts, refs, monitors)
@@ -317,10 +317,10 @@ def main():
         except KeyboardInterrupt:
             put_devices(devices, duts, refs, monitors)
             raise
-        except TestSkip, e:
+        except TestSkip as e:
             end = datetime.now()
             logger.warning("SKIP (" + str(e) + ") - " + str((end - start).total_seconds()) + "s")
-        except Exception, e:
+        except Exception as e:
             end = datetime.now()
             logger.warning("FAILED (" + str(e) + ") - " + str((end - start).total_seconds()) + "s")
             logger.info(traceback.format_exc())
@@ -344,11 +344,11 @@ def main():
         except KeyboardInterrupt:
             put_devices(devices, duts, refs, monitors)
             raise
-        except HwsimSkip,e:
+        except HwsimSkip as e:
             end = datetime.now()
             logger.warning("SKIP (" + str(e) + ") - " + str((end - start).total_seconds()) + "s")
             failed.append(hwsim_test.__name__.replace('test_', '', 1))
-        except Exception, e:
+        except Exception as e:
             end = datetime.now()
             logger.warning("FAILED (" + str(e) + ") - " + str((end - start).total_seconds()) + "s")
             logger.info(traceback.format_exc())

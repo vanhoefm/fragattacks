@@ -123,14 +123,14 @@ def main():
 	path = None
 	try:
 		path = wpas.GetInterface(ifname)
-	except dbus.DBusException, exc:
+	except dbus.DBusException as exc:
 		if not str(exc).startswith("fi.w1.wpa_supplicant1.InterfaceUnknown:"):
 			raise exc
 		try:
 			path = wpas.CreateInterface({'Ifname': ifname, 'Driver': 'test'})
 			time.sleep(1)
 
-		except dbus.DBusException, exc:
+		except dbus.DBusException as exc:
 			if not str(exc).startswith("fi.w1.wpa_supplicant1.InterfaceExists:"):
 				raise exc
 

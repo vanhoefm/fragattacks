@@ -39,7 +39,7 @@ def _run_tshark(filename, filter, display=None, wait=True):
             arg.append('-V')
         cmd = subprocess.Popen(arg, stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-    except Exception, e:
+    except Exception as e:
         logger.info("Could run run tshark check: " + str(e))
         cmd = None
         return None
@@ -88,7 +88,7 @@ def run_tshark(filename, filter, display=None, wait=True):
     if display is None: display = []
     try:
         return _run_tshark(filename, filter, display, wait)
-    except UnknownFieldsException, e:
+    except UnknownFieldsException as e:
         all_wlan_mgt = True
         for f in e.fields:
             if not f.startswith('wlan_mgt.'):
@@ -108,7 +108,7 @@ def run_tshark_json(filename, filter):
     try:
         cmd = subprocess.Popen(arg, stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
-    except Exception, e:
+    except Exception as e:
         logger.info("Could run run tshark: " + str(e))
         return None
     output = cmd.communicate()

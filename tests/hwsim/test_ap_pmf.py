@@ -67,7 +67,7 @@ def test_ocv_sa_query(dev, apdev):
     params["ocv"] = "1"
     try:
         hapd = hostapd.add_ap(apdev[0], params)
-    except Exception, e:
+    except Exception as e:
         if "Failed to set hostapd parameter ocv" in str(e):
             raise HwsimSkip("OCV not supported")
         raise
@@ -104,7 +104,7 @@ def test_ocv_sa_query_csa(dev, apdev):
     params["ocv"] = "1"
     try:
         hapd = hostapd.add_ap(apdev[0], params)
-    except Exception, e:
+    except Exception as e:
         if "Failed to set hostapd parameter ocv" in str(e):
             raise HwsimSkip("OCV not supported")
         raise
@@ -194,7 +194,7 @@ def test_ap_pmf_negative(dev, apdev):
                        scan_freq="2412")
         hwsim_utils.test_connectivity(dev[1], hapd)
         raise Exception("PMF required STA connected to no PMF AP")
-    except Exception, e:
+    except Exception as e:
         logger.debug("Ignore expected exception: " + str(e))
     wt.require_ap_no_pmf(apdev[0]['bssid'])
 

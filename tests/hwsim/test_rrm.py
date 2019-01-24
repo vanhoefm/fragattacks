@@ -1247,7 +1247,7 @@ def test_rrm_beacon_req_table_vht(dev, apdev):
             elif report.bssid_str == apdev[1]['bssid']:
                 if report.opclass != 117 or report.channel != 48:
                     raise Exception("Incorrect opclass/channel for AP1")
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80 MHz channel not supported in regulatory information")
@@ -1662,7 +1662,7 @@ def test_rrm_beacon_req_passive_scan_vht(dev, apdev):
         logger.info("Received beacon report: " + str(report))
         if report.opclass != 128 or report.channel != 36:
             raise Exception("Incorrect opclass/channel for AP")
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80 MHz channel not supported in regulatory information")
@@ -1712,7 +1712,7 @@ def test_rrm_beacon_req_passive_scan_vht160(dev, apdev):
         logger.info("Received beacon report: " + str(report))
         if report.opclass != 129 or report.channel != 104:
             raise Exception("Incorrect opclass/channel for AP")
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             raise HwsimSkip("ZA regulatory rule likely did not have DFS requirement removed")
         raise

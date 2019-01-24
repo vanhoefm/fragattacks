@@ -330,7 +330,7 @@ def _test_ap_open_wpas_in_bridge(dev, apdev):
     try:
         wpas.interface_add(ifname, br_ifname=br_ifname)
         raise Exception("Interface addition succeeded unexpectedly")
-    except Exception, e:
+    except Exception as e:
         if "Failed to add" in str(e):
             logger.info("Ignore expected interface_add failure due to missing bridge interface: " + str(e))
         else:

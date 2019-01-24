@@ -240,15 +240,15 @@ def test_ibss_wpa_none(dev):
     # mac80211 currently..
     try:
         hwsim_utils.test_connectivity(dev[0], dev[1])
-    except Exception, e:
+    except Exception as e:
         logger.info("Ignoring known connectivity failure: " + str(e))
     try:
         hwsim_utils.test_connectivity(dev[0], dev[2])
-    except Exception, e:
+    except Exception as e:
         logger.info("Ignoring known connectivity failure: " + str(e))
     try:
         hwsim_utils.test_connectivity(dev[1], dev[2])
-    except Exception, e:
+    except Exception as e:
         logger.info("Ignoring known connectivity failure: " + str(e))
 
     key_mgmt = dev[0].get_status_field("key_mgmt")
@@ -291,7 +291,7 @@ def test_ibss_wpa_none_ccmp(dev):
     # mac80211 currently..
     try:
         hwsim_utils.test_connectivity(dev[0], dev[1])
-    except Exception, e:
+    except Exception as e:
         logger.info("Ignoring known connectivity failure: " + str(e))
 
 def test_ibss_open(dev):

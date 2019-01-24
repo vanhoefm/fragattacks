@@ -81,7 +81,7 @@ class P2P_Disconnect (threading.Thread):
 		try:
 			self.path = self.wpas.GetInterface(
 					self.interface_name)
-		except dbus.DBusException, exc:
+		except dbus.DBusException as exc:
 			error = 'Error:\n  Interface ' + self.interface_name \
 				+ ' was not found'
 			print error

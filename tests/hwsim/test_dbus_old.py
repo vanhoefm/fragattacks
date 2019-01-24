@@ -36,7 +36,7 @@ def prepare_dbus(dev):
         path = wpas.getInterface(dev.ifname)
         if_obj = bus.get_object(WPAS_DBUS_OLD_SERVICE, path)
         return (bus,wpas_obj,path,if_obj)
-    except Exception, e:
+    except Exception as e:
         raise HwsimSkip("Could not connect to D-Bus: %s" % e)
 
 class TestDbusOldWps(TestDbus):
@@ -83,7 +83,7 @@ def test_dbus_old(dev, apdev):
         try:
             if_obj.setAPScan(t, dbus_interface=WPAS_DBUS_OLD_IFACE)
             raise Exception("Invalid setAPScan() accepted")
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if "InvalidOptions" not in str(e):
                 raise Exception("Unexpected error message for invalid setAPScan: " + str(e))
 
@@ -93,7 +93,7 @@ def test_dbus_old(dev, apdev):
         try:
             obj.disable(dbus_interface=WPAS_DBUS_OLD_NETWORK)
             raise Exception("Invalid disable() accepted")
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if "InvalidNetwork" not in str(e):
                 raise Exception("Unexpected error message for invalid disable: " + str(e))
 
@@ -103,7 +103,7 @@ def test_dbus_old(dev, apdev):
         try:
             obj.properties(dbus_interface=WPAS_DBUS_OLD_BSSID)
             raise Exception("Invalid properties() accepted")
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if "InvalidBSSID" not in str(e):
                 raise Exception("Unexpected error message for invalid properties: " + str(e))
 
@@ -162,7 +162,7 @@ def test_dbus_old_scan(dev, apdev):
     try:
         bss_obj.properties2(dbus_interface=WPAS_DBUS_OLD_BSSID)
         raise Exception("Unknown BSSID method accepted")
-    except Exception, e:
+    except Exception as e:
         logger.debug("Unknown BSSID method exception: " + str(e))
 
     if not if_obj.flush(0, dbus_interface=WPAS_DBUS_OLD_IFACE):
@@ -175,13 +175,13 @@ def test_dbus_old_scan(dev, apdev):
     try:
         if_obj.flush("foo", dbus_interface=WPAS_DBUS_OLD_IFACE)
         raise Exception("Invalid flush arguments accepted")
-    except dbus.exceptions.DBusException, e:
+    except dbus.exceptions.DBusException as e:
         if not str(e).startswith("fi.epitest.hostap.WPASupplicant.InvalidOptions"):
             raise Exception("Unexpected error message for invalid flush: " + str(e))
     try:
         bss_obj.properties(dbus_interface=WPAS_DBUS_OLD_BSSID,
                            byte_arrays=True)
-    except dbus.exceptions.DBusException, e:
+    except dbus.exceptions.DBusException as e:
         if not str(e).startswith("fi.epitest.hostap.WPASupplicant.Interface.InvalidBSSID"):
             raise Exception("Unexpected error message for invalid BSS: " + str(e))
 
@@ -193,14 +193,14 @@ def test_dbus_old_debug(dev, apdev):
     try:
         wpas.setDebugParams(123)
         raise Exception("Invalid setDebugParams accepted")
-    except dbus.exceptions.DBusException, e:
+    except dbus.exceptions.DBusException as e:
         if "InvalidOptions" not in str(e):
             raise Exception("Unexpected error message for invalid setDebugParam: " + str(e))
 
     try:
         wpas.setDebugParams(123, True, True)
         raise Exception("Invalid setDebugParams accepted")
-    except dbus.exceptions.DBusException, e:
+    except dbus.exceptions.DBusException as e:
         if "InvalidOptions" not in str(e):
             raise Exception("Unexpected error message for invalid setDebugParam: " + str(e))
 
@@ -233,7 +233,7 @@ def test_dbus_old_smartcard(dev, apdev):
         try:
             if_obj.setSmartcardModules(t, dbus_interface=WPAS_DBUS_OLD_IFACE)
             raise Exception("Invalid setSmartcardModules accepted: " + str(t))
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if not str(e).startswith("fi.epitest.hostap.WPASupplicant.InvalidOptions"):
                 raise Exception("Unexpected error message for invalid setSmartcardModules(%s): %s" % (str(t), str(e)))
 
@@ -266,7 +266,7 @@ def test_dbus_old_interface(dev, apdev):
         try:
             wpas.getInterface(ifname)
             raise Exception("Invalid getInterface accepted")
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if err not in str(e):
                 raise Exception("Unexpected error message for invalid getInterface: " + str(e))
 
@@ -278,7 +278,7 @@ def test_dbus_old_interface(dev, apdev):
     try:
         wpas.removeInterface(path)
         raise Exception("Invalid removeInterface() accepted")
-    except dbus.exceptions.DBusException, e:
+    except dbus.exceptions.DBusException as e:
         if "InvalidInterface" not in str(e):
             raise Exception("Unexpected error message for invalid removeInterface: " + str(e))
 
@@ -302,14 +302,14 @@ def test_dbus_old_interface(dev, apdev):
             else:
                 wpas.addInterface(ifname, params)
             raise Exception("Invalid addInterface accepted: " + str(params))
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if err not in str(e):
                 raise Exception("Unexpected error message for invalid addInterface(%s): %s" % (str(params), str(e)))
 
     try:
         wpas.removeInterface(123)
         raise Exception("Invalid removeInterface accepted")
-    except dbus.exceptions.DBusException, e:
+    except dbus.exceptions.DBusException as e:
         if not str(e).startswith("fi.epitest.hostap.WPASupplicant.InvalidOptions"):
             raise Exception("Unexpected error message for invalid removeInterface: " + str(e))
 
@@ -345,7 +345,7 @@ def test_dbus_old_blob(dev, apdev):
         try:
             if_obj.setBlobs(arg, dbus_interface=WPAS_DBUS_OLD_IFACE)
             raise Exception("Invalid setBlobs() accepted: " + str(arg))
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             logger.debug("setBlobs(%s): %s" % (str(arg), str(e)))
             if err not in str(e):
                 raise Exception("Unexpected error message for invalid setBlobs: " + str(e))
@@ -358,7 +358,7 @@ def test_dbus_old_blob(dev, apdev):
         try:
             if_obj.removeBlobs(arg, dbus_interface=WPAS_DBUS_OLD_IFACE)
             raise Exception("Invalid removeBlobs() accepted: " + str(arg))
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             logger.debug("removeBlobs(%s): %s" % (str(arg), str(e)))
             if err not in str(e):
                 raise Exception("Unexpected error message for invalid removeBlobs: " + str(e))
@@ -412,21 +412,21 @@ def test_dbus_old_connect(dev, apdev):
         try:
             if_obj.removeNetwork(obj, dbus_interface=WPAS_DBUS_OLD_IFACE)
             raise Exception("Invalid removeNetwork accepted: " + p)
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if not str(e).startswith("fi.epitest.hostap.WPASupplicant.Interface.InvalidNetwork"):
                 raise Exception("Unexpected error message for invalid removeNetwork: " + str(e))
 
     try:
         if_obj.removeNetwork("foo", dbus_interface=WPAS_DBUS_OLD_IFACE)
         raise Exception("Invalid removeNetwork accepted")
-    except dbus.exceptions.DBusException, e:
+    except dbus.exceptions.DBusException as e:
         if not str(e).startswith("fi.epitest.hostap.WPASupplicant.InvalidOptions"):
             raise Exception("Unexpected error message for invalid removeNetwork: " + str(e))
 
     try:
         if_obj.removeNetwork(path, dbus_interface=WPAS_DBUS_OLD_IFACE)
         raise Exception("Invalid removeNetwork accepted")
-    except dbus.exceptions.DBusException, e:
+    except dbus.exceptions.DBusException as e:
         if not str(e).startswith("fi.epitest.hostap.WPASupplicant.Interface.InvalidNetwork"):
             raise Exception("Unexpected error message for invalid removeNetwork: " + str(e))
 
@@ -442,7 +442,7 @@ def test_dbus_old_connect(dev, apdev):
         try:
             if_obj.selectNetwork(t, dbus_interface=WPAS_DBUS_OLD_IFACE)
             raise Exception("Invalid selectNetwork accepted: " + str(t))
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if err not in str(e):
                 raise Exception("Unexpected error message for invalid selectNetwork(%s): %s" % (str(t), str(e)))
 
@@ -456,7 +456,7 @@ def test_dbus_old_connect(dev, apdev):
         try:
             netw_obj.set(t, dbus_interface=WPAS_DBUS_OLD_NETWORK)
             raise Exception("Invalid set() accepted: " + str(t))
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if "InvalidOptions" not in str(e):
                 raise Exception("Unexpected error message for invalid set: " + str(e))
     params = dbus.Dictionary({ 'ssid': ssid,
@@ -521,7 +521,7 @@ def test_dbus_old_connect(dev, apdev):
                         if_obj.removeNetwork(self.path,
                                              dbus_interface=WPAS_DBUS_OLD_IFACE)
                         raise Exception("Invalid removeNetwork accepted")
-                    except dbus.exceptions.DBusException, e:
+                    except dbus.exceptions.DBusException as e:
                         if not str(e).startswith("fi.epitest.hostap.WPASupplicant.Interface.InvalidNetwork"):
                             raise Exception("Unexpected error message for invalid wpsPbc: " + str(e))
 
@@ -637,7 +637,7 @@ def test_dbus_old_network_set(dev, apdev):
     try:
         netw_obj.set(params, dbus_interface=WPAS_DBUS_OLD_NETWORK)
         raise Exception("set succeeded with unexpected type")
-    except dbus.exceptions.DBusException, e:
+    except dbus.exceptions.DBusException as e:
         if "InvalidOptions" not in str(e):
             raise Exception("Unexpected error message for unexpected type: " + str(e))
 
@@ -662,7 +662,7 @@ def _test_dbus_old_wps_pbc(dev, apdev):
         try:
             if_obj.wpsPbc(arg, dbus_interface=WPAS_DBUS_OLD_IFACE)
             raise Exception("Invalid wpsPbc arguments accepted: " + str(arg))
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if not str(e).startswith("fi.epitest.hostap.WPASupplicant.InvalidOptions"):
                 raise Exception("Unexpected error message for invalid wpsPbc: " + str(e))
 
@@ -730,7 +730,7 @@ def _test_dbus_old_wps_pin(dev, apdev):
         try:
             if_obj.wpsPin(arg[0], arg[1], dbus_interface=WPAS_DBUS_OLD_IFACE)
             raise Exception("Invalid wpsPin arguments accepted: " + str(arg))
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if not str(e).startswith("fi.epitest.hostap.WPASupplicant.InvalidOptions"):
                 raise Exception("Unexpected error message for invalid wpsPbc: " + str(e))
 
@@ -784,7 +784,7 @@ def _test_dbus_old_wps_reg(dev, apdev):
         try:
             if_obj.wpsReg(arg[0], arg[1], dbus_interface=WPAS_DBUS_OLD_IFACE)
             raise Exception("Invalid wpsReg arguments accepted: " + str(arg))
-        except dbus.exceptions.DBusException, e:
+        except dbus.exceptions.DBusException as e:
             if not str(e).startswith("fi.epitest.hostap.WPASupplicant.InvalidOptions"):
                 raise Exception("Unexpected error message for invalid wpsPbc: " + str(e))
 

@@ -70,7 +70,7 @@ def get_wmediumd_version():
 
     try:
         verstr = subprocess.check_output(['wmediumd', '-V'])
-    except OSError, e:
+    except OSError as e:
         if e.errno == errno.ENOENT:
             raise HwsimSkip('wmediumd not available')
         raise
@@ -101,7 +101,7 @@ def start_wmediumd(fn, params):
         p = subprocess.Popen(['wmediumd', '-c', fn],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
-    except OSError, e:
+    except OSError as e:
         if e.errno == errno.ENOENT:
             raise HwsimSkip('wmediumd not available')
         raise

@@ -206,7 +206,7 @@ def invalid_ap(ap):
     try:
         hapd.enable()
         started = True
-    except Exception, e:
+    except Exception as e:
         started = False
     if started:
         raise Exception("ENABLE command succeeded unexpectedly")
@@ -516,7 +516,7 @@ def test_ap_duplicate_bssid(dev, apdev):
     try:
         hostapd.add_bss(apdev[0], ifname2, 'bss-2-dup.conf')
         raise Exception("BSS add succeeded unexpectedly")
-    except Exception, e:
+    except Exception as e:
         if "Could not add hostapd BSS" in str(e):
             pass
         else:

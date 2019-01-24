@@ -37,12 +37,12 @@ def main():
 	path = None
 	try:
 		path = wpas.getInterface(ifname)
-	except dbus.dbus_bindings.DBusException, exc:
+	except dbus.dbus_bindings.DBusException as exc:
 		if str(exc) != "wpa_supplicant knows nothing about this interface.":
 			raise exc
 		try:
 			path = wpas.addInterface(ifname, {'driver': dbus.Variant('wext')})
-		except dbus.dbus_bindings.DBusException, exc:
+		except dbus.dbus_bindings.DBusException as exc:
 			if str(exc) != "wpa_supplicant already controls this interface.":
 				raise exc
 

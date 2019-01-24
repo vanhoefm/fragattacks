@@ -446,7 +446,7 @@ def test_ap_ft_ocv(dev, apdev):
     params["ocv"] = "1"
     try:
         hapd0 = hostapd.add_ap(apdev[0], params)
-    except Exception, e:
+    except Exception as e:
         if "Failed to set hostapd parameter ocv" in str(e):
             raise HwsimSkip("OCV not supported")
         raise
@@ -582,7 +582,7 @@ def test_ap_ft_over_ds_ocv(dev, apdev):
     params["ocv"] = "1"
     try:
         hapd0 = hostapd.add_ap(apdev[0], params)
-    except Exception, e:
+    except Exception as e:
         if "Failed to set hostapd parameter ocv" in str(e):
             raise HwsimSkip("OCV not supported")
         raise

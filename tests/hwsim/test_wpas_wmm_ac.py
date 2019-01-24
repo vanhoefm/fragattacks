@@ -60,7 +60,7 @@ def test_tspec(dev, apdev):
     try:
         dev[0].add_ts(tsid, 3)
         raise Exception("ADDTS succeeded although it should have failed")
-    except Exception, e:
+    except Exception as e:
         if not str(e).startswith("ADDTS failed"):
             raise
     status = dev[0].request("WMM_AC_STATUS")
@@ -77,7 +77,7 @@ def test_tspec(dev, apdev):
     try:
         dev[0].add_ts(tsid, 5)
         raise Exception("ADDTS succeeded although it should have failed")
-    except Exception, e:
+    except Exception as e:
         if not str(e).startswith("ADDTS failed"):
             raise
 
@@ -93,13 +93,13 @@ def test_tspec(dev, apdev):
     try:
         dev[0].add_ts(tsid, 7, direction="uplink")
         raise Exception("ADDTS succeeded although it should have failed")
-    except Exception, e:
+    except Exception as e:
         if not str(e).startswith("ADDTS failed"):
             raise
     try:
         dev[0].add_ts(tsid, 7, direction="bidi")
         raise Exception("ADDTS succeeded although it should have failed")
-    except Exception, e:
+    except Exception as e:
         if not str(e).startswith("ADDTS failed"):
             raise
 
@@ -107,7 +107,7 @@ def test_tspec(dev, apdev):
     try:
         dev[0].del_ts(tsid)
         raise Exception("DELTS succeeded although it should have failed")
-    except Exception, e:
+    except Exception as e:
         if not str(e).startswith("DELTS failed"):
             raise
 
@@ -231,7 +231,7 @@ def test_tspec_not_enabled(dev, apdev):
     try:
         dev[0].add_ts(5, 6)
         raise Exception("ADDTS succeeded although it should have failed")
-    except Exception, e:
+    except Exception as e:
         if not str(e).startswith("ADDTS failed"):
             raise
 
@@ -239,7 +239,7 @@ def test_tspec_not_enabled(dev, apdev):
     try:
         dev[0].del_ts(5)
         raise Exception("DELTS succeeded although it should have failed")
-    except Exception, e:
+    except Exception as e:
         if not str(e).startswith("DELTS failed"):
             raise
 

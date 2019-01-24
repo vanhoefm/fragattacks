@@ -551,7 +551,7 @@ def test_go_neg_peers_force_diff_freq(dev, apdev):
     try:
        [i_res2, r_res2] = go_neg_pbc(i_dev=dev[0], i_intent=14, i_freq=5180,
                                      r_dev=dev[1], r_intent=0, r_freq=5200)
-    except Exception, e:
+    except Exception as e:
         return
     raise Exception("Unexpected group formation success")
 

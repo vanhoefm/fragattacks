@@ -485,7 +485,7 @@ def get_rx_spec(phy, gtk=False):
                 continue
             with open(keydir + "/rx_spec") as f:
                 return f.read()
-    except OSError, e:
+    except OSError as e:
         raise HwsimSkip("debugfs not supported in mac80211")
     return None
 
@@ -501,7 +501,7 @@ def get_tk_replay_counter(phy, gtk=False):
                 continue
             with open(keydir + "/replays") as f:
                 return int(f.read())
-    except OSError, e:
+    except OSError as e:
         raise HwsimSkip("debugfs not supported in mac80211")
     return None
 

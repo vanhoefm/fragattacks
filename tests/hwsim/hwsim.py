@@ -65,7 +65,7 @@ class HWSimRadio(object):
             raise Exception("Failed to create radio (err:%d)" % self._radio_id)
         try:
             iface = os.listdir('/sys/class/mac80211_hwsim/hwsim%d/net/' % self._radio_id)[0]
-        except Exception,e:
+        except Exception as e:
             self._controller.destroy_radio(self._radio_id)
             raise e
         return self._radio_id, iface

@@ -42,7 +42,7 @@ def wpas_connect():
     if os.path.isdir(wpas_ctrl):
         try:
             ifaces = [os.path.join(wpas_ctrl, i) for i in os.listdir(wpas_ctrl)]
-        except OSError, error:
+        except OSError as error:
             print "Could not find hostapd: ", error
             return None
 
@@ -54,7 +54,7 @@ def wpas_connect():
         try:
             wpas = wpaspy.Ctrl(ctrl)
             return wpas
-        except Exception, e:
+        except Exception as e:
             pass
     return None
 
@@ -134,7 +134,7 @@ class HandoverServer(nfc.handover.HandoverServer):
         summary("HandoverServer - request received")
         try:
             print "Parsed handover request: " + request.pretty()
-        except Exception, e:
+        except Exception as e:
             print e
         print str(request).encode("hex")
 
@@ -161,7 +161,7 @@ class HandoverServer(nfc.handover.HandoverServer):
         print "Handover select:"
         try:
             print sel.pretty()
-        except Exception, e:
+        except Exception as e:
             print e
         print str(sel).encode("hex")
 
@@ -236,7 +236,7 @@ def rdwr_connected(tag):
         print "NDEF tag: " + tag.type
         try:
             print tag.ndef.message.pretty()
-        except Exception, e:
+        except Exception as e:
             print e
         success = wps_tag_read(tag)
         if only_one and success:
@@ -324,7 +324,7 @@ def main():
                                    llcp={'on-startup': llcp_startup,
                                          'on-connect': llcp_connected}):
                     break
-            except Exception, e:
+            except Exception as e:
                 print "clf.connect failed"
 
             global srv

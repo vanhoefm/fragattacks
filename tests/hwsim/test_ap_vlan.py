@@ -294,7 +294,7 @@ def generic_ap_vlan_wpa2_radius_id_change(dev, apdev, tagged):
                                               ifname2="brvlan1")
         else:
             hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
-    except Exception, e:
+    except Exception as e:
         # It is possible for new bridge setup to not be ready immediately, so
         # try again to avoid reporting issues related to that.
         logger.info("First VLAN-ID 1 data test failed - try again")

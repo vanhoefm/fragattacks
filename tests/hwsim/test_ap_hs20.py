@@ -4853,7 +4853,7 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
 
     try:
         hwsim_utils.test_connectivity_iface(dev[0], hapd, "ap-br0")
-    except Exception, e:
+    except Exception as e:
         logger.info("test_connectibity_iface failed: " + str(e))
         raise HwsimSkip("Assume kernel did not have the required patches for proxyarp")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "ap-br0")
@@ -5110,7 +5110,7 @@ def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
 
     try:
         hwsim_utils.test_connectivity_iface(dev[0], hapd, "ap-br0")
-    except Exception, e:
+    except Exception as e:
         logger.info("test_connectibity_iface failed: " + str(e))
         raise HwsimSkip("Assume kernel did not have the required patches for proxyarp")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "ap-br0")

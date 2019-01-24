@@ -629,7 +629,7 @@ class FstAP (FstDevice):
             self.remove_all_sessions()
             try:
                 self.send_iface_detach_request(self.iface)
-            except Exception, e:
+            except Exception as e:
                 logger.info(str(e))
         self.reg_ctrl.stop()
         del self.global_instance

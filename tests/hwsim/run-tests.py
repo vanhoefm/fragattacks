@@ -47,7 +47,7 @@ def reset_devs(dev, apdev):
     for d in dev:
         try:
             d.reset()
-        except Exception, e:
+        except Exception as e:
             logger.info("Failed to reset device " + d.ifname)
             print str(e)
             ok = False
@@ -59,7 +59,7 @@ def reset_devs(dev, apdev):
         for iface in ifaces:
             if iface.startswith("wlan"):
                 wpas.interface_remove(iface)
-    except Exception, e:
+    except Exception as e:
         pass
     if wpas:
         wpas.close_ctrl()
@@ -74,7 +74,7 @@ def reset_devs(dev, apdev):
         hapd.remove('wlan3-2')
         for ap in apdev:
             hapd.remove(ap['ifname'])
-    except Exception, e:
+    except Exception as e:
         logger.info("Failed to remove hostapd interface")
         print str(e)
         ok = False
@@ -93,7 +93,7 @@ def add_log_file(conn, test, run, type, path):
     try:
         conn.execute(sql, params)
         conn.commit()
-    except Exception, e:
+    except Exception as e:
         print "sqlite: " + str(e)
         print "sql: %r" % (params, )
 
@@ -112,7 +112,7 @@ def report(conn, prefill, build, commit, run, test, result, duration, logdir,
             conn.execute(sql, params)
             if sql_commit:
                 conn.commit()
-        except Exception, e:
+        except Exception as e:
             print "sqlite: " + str(e)
             print "sql: %r" % (params, )
 
@@ -180,7 +180,7 @@ def rename_log(logdir, basename, testname, dev):
         if dev:
             dev.relog()
             subprocess.call(['chown', '-f', getpass.getuser(), srcname])
-    except Exception, e:
+    except Exception as e:
         logger.info("Failed to rename log files")
         logger.info(e)
 
@@ -303,7 +303,7 @@ def main():
                 params = (name, t.__doc__)
                 try:
                     conn.execute(sql, params)
-                except Exception, e:
+                except Exception as e:
                     print "sqlite: " + str(e)
                     print "sql: %r" % (params,)
         if conn:
@@ -477,7 +477,7 @@ def main():
                     if not d.global_ping():
                         raise Exception("Global PING failed for {}".format(d.ifname))
                     d.request("NOTE TEST-START " + name)
-                except Exception, e:
+                except Exception as e:
                     logger.info("Failed to issue TEST-START before " + name + " for " + d.ifname)
                     logger.info(e)
                     print "FAIL " + name + " - could not start test"
@@ -522,15 +522,15 @@ def main():
                                 print "Country code remains set - expect following test cases to fail"
                                 logger.info("Country code remains set - expect following test cases to fail")
                             break
-            except HwsimSkip, e:
+            except HwsimSkip as e:
                 logger.info("Skip test case: %s" % e)
                 result = "SKIP"
-            except NameError, e:
+            except NameError as e:
                 import traceback
                 logger.info(e)
                 traceback.print_exc()
                 result = "FAIL"
-            except Exception, e:
+            except Exception as e:
                 import traceback
                 logger.info(e)
                 traceback.print_exc()
@@ -542,7 +542,7 @@ def main():
                 try:
                     d.dump_monitor()
                     d.request("NOTE TEST-STOP " + name)
-                except Exception, e:
+                except Exception as e:
                     logger.info("Failed to issue TEST-STOP after {} for {}".format(name, d.ifname))
                     logger.info(e)
                     result = "FAIL"
@@ -556,7 +556,7 @@ def main():
                 rename_log(args.logdir, 'log5', name, wpas)
                 if not args.no_reset:
                     wpas.remove_ifname()
-            except Exception, e:
+            except Exception as e:
                 pass
             if wpas:
                 wpas.close_ctrl()
@@ -565,7 +565,7 @@ def main():
                 rename_log(args.logdir, 'log' + str(i), name, dev[i])
             try:
                 hapd = HostapdGlobal()
-            except Exception, e:
+            except Exception as e:
                 print "Failed to connect to hostapd interface"
                 print str(e)
                 reset_ok = False

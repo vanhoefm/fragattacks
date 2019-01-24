@@ -74,7 +74,7 @@ def test_ap_vht80(dev, apdev):
             raise Exception("Missing STA flag: HT")
         if "[VHT]" not in sta['flags']:
             raise Exception("Missing STA flag: VHT")
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80 MHz channel not supported in regulatory information")
@@ -104,7 +104,7 @@ def vht80_test(apdev, dev, channel, ht_capab):
 
         dev.connect("vht", key_mgmt="NONE", scan_freq=str(5000 + 5 * channel))
         hwsim_utils.test_connectivity(dev, hapd)
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80 MHz channel not supported in regulatory information")
@@ -165,7 +165,7 @@ def test_ap_vht80_params(dev, apdev):
             raise Exception("dev[0] did not support SGI")
         if capab2 & 0x60 != 0:
             raise Exception("dev[2] claimed support for SGI")
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80 MHz channel not supported in regulatory information")
@@ -194,7 +194,7 @@ def test_ap_vht80_invalid(dev, apdev):
         ev = hapd.wait_event(["AP-DISABLED"], timeout=5)
         if ev is None:
             raise Exception("AP-DISABLED not reported")
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80/160 MHz channel not supported in regulatory information")
@@ -225,7 +225,7 @@ def test_ap_vht80_invalid2(dev, apdev):
         ev = hapd.wait_event(["AP-DISABLED"], timeout=5)
         if ev is None:
             raise Exception("AP-DISABLED not reported")
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80/160 MHz channel not supported in regulatory information")
@@ -371,7 +371,7 @@ def test_ap_vht160(dev, apdev):
             raise Exception("Unexpected SIGNAL_POLL value(1): " + str(sig))
         if "WIDTH=160 MHz" not in sig:
             raise Exception("Unexpected SIGNAL_POLL value(2): " + str(sig))
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80/160 MHz channel not supported in regulatory information")
@@ -445,7 +445,7 @@ def test_ap_vht160b(dev, apdev):
             raise Exception("Unexpected SIGNAL_POLL value(1): " + str(sig))
         if "WIDTH=160 MHz" not in sig:
             raise Exception("Unexpected SIGNAL_POLL value(2): " + str(sig))
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80/160 MHz channel not supported in regulatory information")
@@ -525,7 +525,7 @@ def run_ap_vht160_no_dfs(dev, apdev, channel, ht_capab):
             raise Exception("Unexpected SIGNAL_POLL value(1): " + str(sig))
         if "WIDTH=160 MHz" not in sig:
             raise Exception("Unexpected SIGNAL_POLL value(2): " + str(sig))
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80/160 MHz channel not supported in regulatory information")
@@ -567,7 +567,7 @@ def test_ap_vht160_no_ht40(dev, apdev):
         if "AP-ENABLED" in ev:
             # This was supposed to fail due to sec_channel_offset == 0
             raise Exception("Unexpected AP-ENABLED")
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80/160 MHz channel not supported in regulatory information")
@@ -634,7 +634,7 @@ def test_ap_vht80plus80(dev, apdev):
             raise Exception("Unexpected SIGNAL_POLL value(3): " + str(sig))
         if "CENTER_FRQ2=5775" not in sig:
             raise Exception("Unexpected SIGNAL_POLL value(4): " + str(sig))
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80/160 MHz channel not supported in regulatory information")
@@ -671,7 +671,7 @@ def test_ap_vht80plus80_invalid(dev, apdev):
         ev = hapd.wait_event(["AP-DISABLED"], timeout=5)
         if ev is None:
             raise Exception("AP-DISABLED not reported")
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80/160 MHz channel not supported in regulatory information")
@@ -723,7 +723,7 @@ def test_ap_vht80_csa(dev, apdev):
         # extra code coverage.
         hapd.request("CHAN_SWITCH 5 5745")
         hapd.wait_event(["AP-CSA-FINISHED"], timeout=1)
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80 MHz channel not supported in regulatory information")
@@ -969,7 +969,7 @@ def test_ap_vht80_pwr_constraint(dev, apdev):
 
         dev[0].connect("vht", key_mgmt="NONE", scan_freq="5180")
         dev[0].wait_regdom(country_ie=True)
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80 MHz channel not supported in regulatory information")
@@ -1003,7 +1003,7 @@ def test_ap_vht_use_sta_nsts(dev, apdev):
 
         dev[0].connect("vht", key_mgmt="NONE", scan_freq="5180")
         hwsim_utils.test_connectivity(dev[0], hapd)
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80 MHz channel not supported in regulatory information")
@@ -1050,7 +1050,7 @@ def test_ap_vht_tkip(dev, apdev):
             raise Exception("Unexpected STATUS ieee80211ac value")
         if status["secondary_channel"] != "0":
             raise Exception("Unexpected STATUS secondary_channel value")
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80 MHz channel not supported in regulatory information")
@@ -1122,7 +1122,7 @@ def test_ap_vht80_to_24g_ht(dev, apdev):
         hapd.enable()
 
         dev[0].connect("vht", key_mgmt="NONE", scan_freq="2412")
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80 MHz channel not supported in regulatory information")

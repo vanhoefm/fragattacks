@@ -27,7 +27,7 @@ def wpas_connect(host=None, port=9877):
     if os.path.isdir(wpas_ctrl):
         try:
             ifaces = [os.path.join(wpas_ctrl, i) for i in os.listdir(wpas_ctrl)]
-        except OSError, error:
+        except OSError as error:
             print "Could not find wpa_supplicant: ", error
             return None
 
@@ -39,7 +39,7 @@ def wpas_connect(host=None, port=9877):
         try:
             wpas = wpaspy.Ctrl(ctrl)
             return wpas
-        except Exception, e:
+        except Exception as e:
             pass
     return None
 

@@ -198,7 +198,7 @@ def test_fils_sk_pmksa_caching_ocv(dev, apdev, params):
     params['ocv'] = '1'
     try:
         hapd = hostapd.add_ap(apdev[0]['ifname'], params)
-    except Exception, e:
+    except Exception as e:
         if "Failed to set hostapd parameter ocv" in str(e):
             raise HwsimSkip("OCV not supported")
         raise

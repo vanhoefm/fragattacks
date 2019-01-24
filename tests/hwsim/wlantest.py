@@ -142,7 +142,7 @@ class Wlantest:
     def get_bss_counter(self, field, bssid):
         try:
             res = self.cli_cmd(["get_bss_counter", field, bssid])
-        except Exception, e:
+        except Exception as e:
             return 0
         if "FAIL" in res:
             return 0

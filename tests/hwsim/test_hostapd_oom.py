@@ -35,7 +35,7 @@ def hostapd_oom_loop(apdev, params, start_func="main"):
                 count += 1
                 if count == 5:
                     break
-        except Exception, e:
+        except Exception as e:
             logger.info("Iteration %d - %s" % (i, str(e)))
 
 @remote_compatible
@@ -57,7 +57,7 @@ def test_hostapd_oom_wpa2_psk(dev, apdev):
         try:
             hostapd.add_ap(apdev[1], params, timeout=2.5)
             raise Exception("Unexpected add_ap() success during OOM")
-        except Exception, e:
+        except Exception as e:
             if "Failed to enable hostapd" in str(e):
                 pass
             else:

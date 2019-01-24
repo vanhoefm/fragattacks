@@ -428,7 +428,7 @@ def test_ap_open_tdls_vht80(dev, apdev):
             res = cmd.stdout.read()
             cmd.stdout.close()
             logger.info("Station dump on dev[%d]:\n%s" % (i, res))
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80/160 MHz channel not supported in regulatory information")
@@ -472,7 +472,7 @@ def test_ap_open_tdls_vht80plus80(dev, apdev):
             res = cmd.stdout.read()
             cmd.stdout.close()
             logger.info("Station dump on dev[%d]:\n%s" % (i, res))
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80/160 MHz channel not supported in regulatory information")
@@ -516,7 +516,7 @@ def test_ap_open_tdls_vht160(dev, apdev):
             res = cmd.stdout.read()
             cmd.stdout.close()
             logger.info("Station dump on dev[%d]:\n%s" % (i, res))
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
                 raise HwsimSkip("80/160 MHz channel not supported in regulatory information")

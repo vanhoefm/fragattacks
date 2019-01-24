@@ -22,7 +22,7 @@ def get_rfkill(dev):
         for r, s, h in RFKill.list():
             if r.name == phy:
                 return r
-    except Exception, e:
+    except Exception as e:
         raise HwsimSkip("No rfkill available: " + str(e))
     raise HwsimSkip("No rfkill match found for the interface")
 

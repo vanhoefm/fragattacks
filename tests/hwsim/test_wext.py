@@ -21,7 +21,7 @@ def get_wext_interface():
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     try:
         wpas.interface_add("wlan5", driver="wext")
-    except Exception, e:
+    except Exception as e:
         wpas.close_ctrl()
         raise HwsimSkip("WEXT driver support not included in wpa_supplicant")
     return wpas

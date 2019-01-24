@@ -438,7 +438,7 @@ class WpaSupplicant:
             try:
                 [name,value] = l.split('=', 1)
                 vals[name] = value
-            except ValueError, e:
+            except ValueError as e:
                 logger.info(self.ifname + ": Ignore unexpected STATUS line: " + l)
         return vals
 
@@ -507,7 +507,7 @@ class WpaSupplicant:
             try:
                 [name,value] = l.split('=', 1)
                 vals[name] = value
-            except ValueError, e:
+            except ValueError as e:
                 logger.info(self.ifname + ": Ignore unexpected MIB line: " + l)
         return vals
 

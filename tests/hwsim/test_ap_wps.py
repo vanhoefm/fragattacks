@@ -2329,7 +2329,7 @@ def test_ap_wps_auto_setup_with_config_file(dev, apdev):
                 try:
                     [name,value] = l.split('=', 1)
                     vals[name] = value
-                except ValueError, e:
+                except ValueError as e:
                     if "# WPS configuration" in l:
                         pass
                     else:
@@ -3322,7 +3322,7 @@ def test_ap_wps_upnp_http_proto(dev, apdev):
         try:
             conn.request(cmd, "hello")
             resp = conn.getresponse()
-        except Exception, e:
+        except Exception as e:
             pass
         conn.close()
 
@@ -3330,7 +3330,7 @@ def test_ap_wps_upnp_http_proto(dev, apdev):
     conn.request("HEAD", "hello", "\r\n\r\n", headers)
     try:
         resp = conn.getresponse()
-    except Exception, e:
+    except Exception as e:
         pass
     conn.close()
 
@@ -3338,7 +3338,7 @@ def test_ap_wps_upnp_http_proto(dev, apdev):
     conn.request("HEAD", "hello", "\r\n\r\n", headers)
     try:
         resp = conn.getresponse()
-    except Exception, e:
+    except Exception as e:
         pass
     conn.close()
 
@@ -3346,7 +3346,7 @@ def test_ap_wps_upnp_http_proto(dev, apdev):
     conn.request("HEAD", "hello", "\r\n\r\nhello", headers)
     try:
         resp = conn.getresponse()
-    except Exception, e:
+    except Exception as e:
         pass
     conn.close()
 
@@ -3368,7 +3368,7 @@ def test_ap_wps_upnp_http_proto(dev, apdev):
     conn.request("HEAD", 5000 * 'A')
     try:
         resp = conn.getresponse()
-    except Exception, e:
+    except Exception as e:
         pass
     conn.close()
 
@@ -3383,7 +3383,7 @@ def test_ap_wps_upnp_http_proto(dev, apdev):
     conn.request("POST", "hello", 10 * 'A' + "\r\n\r\n", headers)
     try:
         resp = conn.getresponse()
-    except Exception, e:
+    except Exception as e:
         pass
     conn.close()
 
@@ -3396,7 +3396,7 @@ def test_ap_wps_upnp_http_proto(dev, apdev):
     conn.request("POST", "hello", 60000 * 'A' + "\r\n\r\n")
     try:
         resp = conn.getresponse()
-    except Exception, e:
+    except Exception as e:
         pass
     conn.close()
 
@@ -3442,7 +3442,7 @@ def test_ap_wps_upnp_http_proto_chunked(dev, apdev):
         conn.send("0\r\n\r\n")
         resp = conn.getresponse()
         completed = True
-    except Exception, e:
+    except Exception as e:
         pass
     conn.close()
     if completed:
@@ -3452,14 +3452,14 @@ def test_ap_wps_upnp_http_proto_chunked(dev, apdev):
     conn.request("POST", "hello", "80000000\r\na", headers)
     try:
         resp = conn.getresponse()
-    except Exception, e:
+    except Exception as e:
         pass
     conn.close()
 
     conn.request("POST", "hello", "10000000\r\na", headers)
     try:
         resp = conn.getresponse()
-    except Exception, e:
+    except Exception as e:
         pass
     conn.close()
 
@@ -4203,7 +4203,7 @@ def send_wlanevent(url, uuid, data, no_response=False):
     if no_response:
         try:
             conn.getresponse()
-        except Exception, e:
+        except Exception as e:
             pass
         return
     resp = conn.getresponse()
@@ -5127,7 +5127,7 @@ def wps_run_pbc_fail_ap(apdev, dev, hapd):
         try:
             dev.flush_scan_cache()
             break
-        except Exception, e:
+        except Exception as e:
             if str(e).startswith("Failed to trigger scan"):
                 # Try again
                 time.sleep(1)

@@ -2881,7 +2881,7 @@ def test_ap_wpa2_eap_eke_server_oom(dev, apdev):
                     if hapd.request("GET_ALLOC_FAIL").startswith('0'):
                         break
                 dev[0].request("REMOVE_NETWORK all")
-        except Exception, e:
+        except Exception as e:
             if str(e) == "Allocation failure did not trigger":
                 if count < 30:
                     raise Exception("Too few allocation failures")
@@ -3699,7 +3699,7 @@ def test_ap_wpa2_eap_fast_cipher_suites(dev, apdev):
                         ca_cert="auth_serv/ca.pem", phase2="auth=GTC",
                         pac_file="blob://fast_pac_ciphers",
                         report_failure=True)
-        except Exception, e:
+        except Exception as e:
             if cipher == "RC4-SHA" and \
                ("Could not select EAP method" in str(e) or \
                 "EAP failed" in str(e)):

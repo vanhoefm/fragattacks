@@ -164,7 +164,7 @@ def add_wpas_interfaces(count=2):
             wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
             wpas.interface_add("veth%d" % i, driver="macsec_linux")
             wpa.append(wpas)
-    except Exception, e:
+    except Exception as e:
         if "Failed to add a dynamic wpa_supplicant interface" in str(e):
             raise HwsimSkip("macsec supported (wpa_supplicant CONFIG_MACSEC, CONFIG_MACSEC_LINUX; kernel CONFIG_MACSEC)")
         raise

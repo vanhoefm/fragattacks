@@ -666,7 +666,7 @@ def test_ap_missing_psk(dev, apdev):
         # "WPA-PSK enabled, but PSK or passphrase is not configured."
         hostapd.add_ap(apdev[0], params)
         raise Exception("AP setup succeeded unexpectedly")
-    except Exception, e:
+    except Exception as e:
         if "Failed to enable hostapd" in str(e):
             pass
         else:

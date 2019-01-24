@@ -227,7 +227,7 @@ def go_neg_init(i_dev, r_dev, pin, i_method, i_intent, res):
     try:
         i_res = i_dev.p2p_go_neg_init(r_dev.p2p_dev_addr(), pin, i_method, timeout=20, go_intent=i_intent)
         logger.debug("i_res: " + str(i_res))
-    except Exception, e:
+    except Exception as e:
         i_res = None
         logger.info("go_neg_init thread caught an exception from p2p_go_neg_init: " + str(e))
     res.put(i_res)
@@ -305,7 +305,7 @@ def go_neg_init_pbc(i_dev, r_dev, i_intent, res, freq, provdisc):
                                       timeout=20, go_intent=i_intent, freq=freq,
                                       provdisc=provdisc)
         logger.debug("i_res: " + str(i_res))
-    except Exception, e:
+    except Exception as e:
         i_res = None
         logger.info("go_neg_init_pbc thread caught an exception from p2p_go_neg_init: " + str(e))
     res.put(i_res)

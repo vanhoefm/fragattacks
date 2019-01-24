@@ -198,7 +198,7 @@ def test_connectivity(dev1, dev2, dscp=None, tos=None, max_tries=1,
                                   broadcast=broadcast, send_len=send_len)
             success = True
             break
-        except Exception, e:
+        except Exception as e:
             last_err = e
             if i + 1 < max_tries:
                 time.sleep(1)

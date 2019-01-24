@@ -94,7 +94,7 @@ def test_wpas_ctrl_network(dev):
         res = dev[0].get_network(id, "key_mgmt")
         if res != value:
             raise Exception("Unexpected response for key_mgmt")
-    except Exception, e:
+    except Exception as e:
         if str(e).startswith("Unexpected"):
             raise
         else:
@@ -1827,7 +1827,7 @@ def test_wpas_ctrl_socket_full(dev, apdev, test_params):
         logger.debug("Command %d" % i)
         try:
             s.send("MIB")
-        except Exception, e:
+        except Exception as e:
             logger.info("Could not send command %d: %s" % (i, str(e)))
             break
         # Close without receiving response
@@ -1846,7 +1846,7 @@ def test_wpas_ctrl_socket_full(dev, apdev, test_params):
         logger.debug("Command %d [2]" % i)
         try:
             s2.send("MIB")
-        except Exception, e:
+        except Exception as e:
             logger.info("Could not send command %d [2]: %s" % (i, str(e)))
             break
         # Close without receiving response
@@ -1859,7 +1859,7 @@ def test_wpas_ctrl_socket_full(dev, apdev, test_params):
         logger.debug("Command %d [3]" % i)
         try:
             s2.send("MIB")
-        except Exception, e:
+        except Exception as e:
             logger.info("Could not send command %d [3]: %s" % (i, str(e)))
             break
         # Close without receiving response

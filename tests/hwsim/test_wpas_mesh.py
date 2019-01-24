@@ -303,7 +303,7 @@ def add_mesh_secure_net(dev, psk=True, pmf=False, pairwise=None, group=None,
     if ocv:
         try:
             dev.set_network(id, "ocv", "1")
-        except Exception, e:
+        except Exception as e:
             if "SET_NETWORK failed" in str(e):
                 raise HwsimSkip("OCV not supported")
             raise
@@ -1264,7 +1264,7 @@ def test_wpas_mesh_password_mismatch(dev, apdev):
         try:
             hwsim_utils.test_connectivity(dev[i], dev[2], timeout=1)
             raise Exception("Data connectivity test passed unexpectedly")
-        except Exception, e:
+        except Exception as e:
             if "data delivery failed" not in str(e):
                 raise
 
@@ -1713,7 +1713,7 @@ def test_mesh_oom(dev, apdev):
                                         "MESH-GROUP-STARTED"])
                 if ev is None:
                     raise Exception("Init failure not reported")
-        except Exception, e:
+        except Exception as e:
             if i < 15:
                 raise
             logger.info("Ignore no-oom for i=%d" % i)

@@ -310,7 +310,7 @@ def test_wnm_sleep_mode_rsn_ocv(dev, apdev):
     params["bss_transition"] = "1"
     try:
         hapd = hostapd.add_ap(apdev[0], params)
-    except Exception, e:
+    except Exception as e:
         if "Failed to set hostapd parameter ocv" in str(e):
             raise HwsimSkip("OCV not supported")
         raise
@@ -343,7 +343,7 @@ def test_wnm_sleep_mode_rsn_badocv(dev, apdev):
     params['wnm_sleep_mode'] = '1'
     try:
         hapd = hostapd.add_ap(apdev[0], params)
-    except Exception, e:
+    except Exception as e:
         if "Failed to set hostapd parameter ocv" in str(e):
             raise HwsimSkip("OCV not supported")
         raise

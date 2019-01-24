@@ -53,7 +53,7 @@ def wpas_connect():
     if os.path.isdir(wpas_ctrl):
         try:
             ifaces = [os.path.join(wpas_ctrl, i) for i in os.listdir(wpas_ctrl)]
-        except OSError, error:
+        except OSError as error:
             print "Could not find wpa_supplicant: ", error
             return None
 
@@ -69,7 +69,7 @@ def wpas_connect():
             print "Trying to use control interface " + ctrl
             wpas = wpaspy.Ctrl(ctrl)
             return wpas
-        except Exception, e:
+        except Exception as e:
             pass
     return None
 
@@ -169,7 +169,7 @@ def p2p_handover_client(llc):
         print "Handover request (pre-WPS):"
         try:
             print message.pretty()
-        except Exception, e:
+        except Exception as e:
             print e
 
         data = wpas_get_handover_req_wps()
@@ -181,7 +181,7 @@ def p2p_handover_client(llc):
     print "Handover request:"
     try:
         print message.pretty()
-    except Exception, e:
+    except Exception as e:
         print e
     print str(message).encode("hex")
 
@@ -194,7 +194,7 @@ def p2p_handover_client(llc):
         summary("Handover connection refused")
         client.close()
         return
-    except Exception, e:
+    except Exception as e:
         summary("Other exception: " + str(e))
         client.close()
         return
@@ -220,14 +220,14 @@ def p2p_handover_client(llc):
     print "Received message"
     try:
         print message.pretty()
-    except Exception, e:
+    except Exception as e:
         print e
     print str(message).encode("hex")
     message = nfc.ndef.HandoverSelectMessage(message)
     summary("Handover select received")
     try:
         print message.pretty()
-    except Exception, e:
+    except Exception as e:
         print e
 
     for carrier in message.carriers:
@@ -286,7 +286,7 @@ class HandoverServer(nfc.handover.HandoverServer):
         print "HandoverServer - request received"
         try:
             print "Parsed handover request: " + request.pretty()
-        except Exception, e:
+        except Exception as e:
             print e
 
         sel = nfc.ndef.HandoverSelectMessage(version="1.2")
@@ -302,7 +302,7 @@ class HandoverServer(nfc.handover.HandoverServer):
                 print "Carrier record:"
                 try:
                     print carrier.record.pretty()
-                except Exception, e:
+                except Exception as e:
                     print e
                 data = wpas_get_handover_sel()
                 if data is None:
@@ -332,7 +332,7 @@ class HandoverServer(nfc.handover.HandoverServer):
                 print "Carrier record:"
                 try:
                     print carrier.record.pretty()
-                except Exception, e:
+                except Exception as e:
                     print e
                 data = wpas_get_handover_sel_wps()
                 if data is None:
@@ -355,7 +355,7 @@ class HandoverServer(nfc.handover.HandoverServer):
         print "Handover select:"
         try:
             print sel.pretty()
-        except Exception, e:
+        except Exception as e:
             print e
         print str(sel).encode("hex")
 
@@ -443,7 +443,7 @@ def wps_write_p2p_handover_sel(clf, wait_remove=True):
     print "Handover select:"
     try:
         print p2p_sel_data.pretty()
-    except Exception, e:
+    except Exception as e:
         print e
     print str(p2p_sel_data).encode("hex")
 
@@ -459,7 +459,7 @@ def rdwr_connected(tag):
         print "NDEF tag: " + tag.type
         try:
             print tag.ndef.message.pretty()
-        except Exception, e:
+        except Exception as e:
             print e
         success = p2p_tag_read(tag)
         if only_one and success:
@@ -636,7 +636,7 @@ def main():
                                              'on-connect': llcp_connected},
                                        terminate=terminate_loop):
                         break
-            except Exception, e:
+            except Exception as e:
                 print "clf.connect failed"
 
             global srv

@@ -35,7 +35,7 @@ def ocv_setup_ap(apdev, params):
     params.update(hostapd.wpa2_params(ssid=ssid, passphrase=passphrase))
     try:
         hapd = hostapd.add_ap(apdev, params)
-    except Exception, e:
+    except Exception as e:
         if "Failed to set hostapd parameter ocv" in str(e):
             raise HwsimSkip("OCV not supported")
         raise
@@ -371,7 +371,7 @@ class APConnection:
         params["ocv"] = ap_ocv
         try:
             self.hapd = hostapd.add_ap(apdev, params)
-        except Exception, e:
+        except Exception as e:
             if "Failed to set hostapd parameter ocv" in str(e):
                 raise HwsimSkip("OCV not supported")
             raise
@@ -598,7 +598,7 @@ def test_wpa2_ocv_ap_retransmit_msg3(dev, apdev):
     params['wpa_disable_eapol_key_retries'] = "1"
     try:
         hapd = hostapd.add_ap(apdev[0], params)
-    except Exception, e:
+    except Exception as e:
         if "Failed to set hostapd parameter ocv" in str(e):
             raise HwsimSkip("OCV not supported")
         raise
@@ -731,7 +731,7 @@ class STAConnection:
 
         try:
             self.hapd = hostapd.add_ap(apdev, params)
-        except Exception, e:
+        except Exception as e:
             if "Failed to set hostapd parameter ocv" in str(e):
                 raise HwsimSkip("OCV not supported")
             raise

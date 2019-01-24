@@ -118,7 +118,7 @@ class P2P_Connect():
 					{'Ifname': ifname, 'Driver': 'test'})
 				time.sleep(1)
 
-			except dbus.DBusException, exc:
+			except dbus.DBusException as exc:
 				if not str(exc).startswith(
 					self.wpas_dbus_interface + \
 					".InterfaceExists:"):
@@ -209,7 +209,7 @@ class P2P_Connect():
 			result_pin = self.p2p_interface.Connect(
 				self.p2p_connect_arguements)
 
-		except dbus.DBusException, exc:
+		except dbus.DBusException as exc:
 				raise exc
 
 		if (self.wps_method == 'pin' and \

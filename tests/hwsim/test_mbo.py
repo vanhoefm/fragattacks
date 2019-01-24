@@ -528,7 +528,7 @@ def test_mbo_without_pmf(dev, apdev):
         # "MBO: PMF needs to be enabled whenever using WPA2 with MBO"
         hostapd.add_ap(apdev[0], params)
         raise Exception("AP setup succeeded unexpectedly")
-    except Exception, e:
+    except Exception as e:
         if "Failed to enable hostapd" in str(e):
             pass
         else:
