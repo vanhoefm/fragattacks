@@ -22,7 +22,7 @@ from test_ap_psk import parse_eapol, build_eapol, pmk_to_ptk, eapol_key_mic, rec
 
 def make_ocikde(op_class, channel, seg1_idx):
     WLAN_EID_VENDOR_SPECIFIC = 221
-    RSN_KEY_DATA_OCI = "\x00\x0f\xac\x0d"
+    RSN_KEY_DATA_OCI = b"\x00\x0f\xac\x0d"
 
     data = RSN_KEY_DATA_OCI + struct.pack("<BBB", op_class, channel, seg1_idx)
     ocikde = struct.pack("<BB", WLAN_EID_VENDOR_SPECIFIC, len(data)) + data
@@ -403,7 +403,7 @@ class APConnection:
     def test_bad_oci(self, logmsg, op_class, channel, seg1_idx):
         logger.debug("Bad OCI element: " + logmsg)
         if op_class is None:
-            ocikde = ""
+            ocikde = b''
         else:
             ocikde = make_ocikde(op_class, channel, seg1_idx)
 
@@ -768,7 +768,7 @@ class STAConnection:
     def test_bad_oci(self, logmsg, op_class, channel, seg1_idx, errmsg):
         logger.info("Bad OCI element: " + logmsg)
         if op_class is None:
-            ocikde = ""
+            ocikde = b''
         else:
             ocikde = make_ocikde(op_class, channel, seg1_idx)
 
