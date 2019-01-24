@@ -3365,7 +3365,7 @@ def test_ap_hs20_req_operator_icon(dev, apdev):
     if "hs20_operator_icon_metadata" not in bss:
         raise Exception("hs20_operator_icon_metadata missing from BSS entry")
     if bss["hs20_operator_icon_metadata"] != binascii.hexlify(value):
-        print binascii.hexlify(value)
+        print(binascii.hexlify(value))
         raise Exception("Unexpected hs20_operator_icon_metadata value: " +
                         bss["hs20_operator_icon_metadata"])
 

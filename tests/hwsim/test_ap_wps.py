@@ -9292,7 +9292,7 @@ def test_ap_wps_upnp_web_oom(dev, apdev, params):
         conn.request("GET", "/unknown")
         try:
             resp = conn.getresponse()
-            print resp.status
+            print(resp.status)
         except:
             pass
 

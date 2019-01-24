@@ -21,18 +21,18 @@ def wpas_connect(host=None, port=9877):
             wpas = wpaspy.Ctrl(host, port)
             return wpas
         except:
-            print "Could not connect to host: ", host
+            print("Could not connect to host: ", host)
             return None
 
     if os.path.isdir(wpas_ctrl):
         try:
             ifaces = [os.path.join(wpas_ctrl, i) for i in os.listdir(wpas_ctrl)]
         except OSError as error:
-            print "Could not find wpa_supplicant: ", error
+            print("Could not find wpa_supplicant: ", error)
             return None
 
     if len(ifaces) < 1:
-        print "No wpa_supplicant control interface found"
+        print("No wpa_supplicant control interface found")
         return None
 
     for ctrl in ifaces:
@@ -45,21 +45,21 @@ def wpas_connect(host=None, port=9877):
 
 
 def main(host=None, port=9877):
-    print "Testing wpa_supplicant control interface connection"
+    print("Testing wpa_supplicant control interface connection")
     wpas = wpas_connect(host, port)
     if wpas is None:
         return
-    print "Connected to wpa_supplicant"
-    print wpas.request('PING')
+    print("Connected to wpa_supplicant")
+    print(wpas.request('PING'))
 
     mon = wpas_connect(host, port)
     if mon is None:
-        print "Could not open event monitor connection"
+        print("Could not open event monitor connection")
         return
 
     mon.attach()
-    print "Scan"
-    print wpas.request('SCAN')
+    print("Scan")
+    print(wpas.request('SCAN'))
 
     count = 0
     while count < 10:
@@ -67,10 +67,10 @@ def main(host=None, port=9877):
         time.sleep(1)
         while mon.pending():
             ev = mon.recv()
-            print ev
+            print(ev)
             if 'CTRL-EVENT-SCAN-RESULTS' in ev:
-                print 'Scan completed'
-                print wpas.request('SCAN_RESULTS')
+                print('Scan completed')
+                print(wpas.request('SCAN_RESULTS'))
                 count = 10
                 pass
 

@@ -75,11 +75,11 @@ class HWSimRadio(object):
 
 
 def create(args):
-    print 'Created radio %d' % c.create_radio(n_channels=args.channels,
-                                              use_chanctx=args.chanctx)
+    print('Created radio %d' % c.create_radio(n_channels=args.channels,
+                                              use_chanctx=args.chanctx))
 
 def destroy(args):
-    print c.destroy_radio(args.radio)
+    print(c.destroy_radio(args.radio))
 
 if __name__ == '__main__':
     import argparse

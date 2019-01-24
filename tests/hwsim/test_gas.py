@@ -1695,7 +1695,7 @@ def test_gas_anqp_venue_url2(dev, apdev):
     if 'anqp[277]' not in bss:
         raise Exception("Venue URL ANQP-element not seen")
     if bss['anqp[277]'] != venue_url:
-        print venue_url
+        print(venue_url)
         raise Exception("Unexpected Venue URL ANQP-element value: " + bss['anqp[277]'])
 
     if 'anqp_capability_list' not in bss:

@@ -49,7 +49,7 @@ def reset_devs(dev, apdev):
             d.reset()
         except Exception as e:
             logger.info("Failed to reset device " + d.ifname)
-            print str(e)
+            print(str(e))
             ok = False
 
     wpas = None
@@ -76,7 +76,7 @@ def reset_devs(dev, apdev):
             hapd.remove(ap['ifname'])
     except Exception as e:
         logger.info("Failed to remove hostapd interface")
-        print str(e)
+        print(str(e))
         ok = False
     return ok
 
@@ -94,8 +94,8 @@ def add_log_file(conn, test, run, type, path):
         conn.execute(sql, params)
         conn.commit()
     except Exception as e:
-        print "sqlite: " + str(e)
-        print "sql: %r" % (params, )
+        print("sqlite: " + str(e))
+        print("sql: %r" % (params, ))
 
 def report(conn, prefill, build, commit, run, test, result, duration, logdir,
            sql_commit=True):
@@ -113,8 +113,8 @@ def report(conn, prefill, build, commit, run, test, result, duration, logdir,
             if sql_commit:
                 conn.commit()
         except Exception as e:
-            print "sqlite: " + str(e)
-            print "sql: %r" % (params, )
+            print("sqlite: " + str(e))
+            print("sql: %r" % (params, ))
 
         if result == "FAIL":
             for log in [ "log", "log0", "log1", "log2", "log3", "log5",
@@ -142,7 +142,7 @@ class DataCollector(object):
                 l += self._trace_cmd.stdout.read(1)
             res = self._trace_cmd.returncode
             if res:
-                print "Failed calling trace-cmd: returned exit status %d" % res
+                print("Failed calling trace-cmd: returned exit status %d" % res)
                 sys.exit(1)
         if self._dbus:
             output = os.path.abspath(os.path.join(self._logdir, '%s.dbus' % (self._testname, )))
@@ -152,7 +152,7 @@ class DataCollector(object):
                                               cwd=self._logdir)
             res = self._dbus_cmd.returncode
             if res:
-                print "Failed calling dbus-monitor: returned exit status %d" % res
+                print("Failed calling dbus-monitor: returned exit status %d" % res)
                 sys.exit(1)
     def __exit__(self, type, value, traceback):
         if self._tracing:
@@ -249,12 +249,12 @@ def main():
     args = parser.parse_args()
 
     if (args.tests and args.testmodules) or (args.tests and args.mfile) or (args.testmodules and args.mfile):
-        print 'Invalid arguments - only one of (test, test modules, modules file) can be given.'
+        print('Invalid arguments - only one of (test, test modules, modules file) can be given.')
         sys.exit(2)
 
     if args.database:
         if not sqlite3_imported:
-            print "No sqlite3 module found"
+            print("No sqlite3 module found")
             sys.exit(2)
         conn = sqlite3.connect(args.database)
         conn.execute('CREATE TABLE IF NOT EXISTS results (test,result,run,time,duration,build,commitid)')
@@ -295,17 +295,17 @@ def main():
         for t in tests_to_run:
             name = t.__name__.replace('test_', '', 1)
             if t.__doc__ is None:
-                print name + " - MISSING DESCRIPTION"
+                print(name + " - MISSING DESCRIPTION")
             else:
-                print name + " - " + t.__doc__
+                print(name + " - " + t.__doc__)
             if conn:
                 sql = 'INSERT OR REPLACE INTO tests(test,description) VALUES (?, ?)'
                 params = (name, t.__doc__)
                 try:
                     conn.execute(sql, params)
                 except Exception as e:
-                    print "sqlite: " + str(e)
-                    print "sql: %r" % (params,)
+                    print("sqlite: " + str(e))
+                    print("sql: %r" % (params,))
         if conn:
             conn.commit()
             conn.close()
@@ -385,7 +385,7 @@ def main():
 
     count = 0
     if args.stdin_ctrl:
-        print "READY"
+        print("READY")
         sys.stdout.flush()
         num_tests = 0
     else:
@@ -413,7 +413,7 @@ def main():
                     t = tt
                     break
             if not t:
-                print "NOT-FOUND"
+                print("NOT-FOUND")
                 sys.stdout.flush()
                 continue
         else:
@@ -463,7 +463,7 @@ def main():
             msg = "START {} {}/{}".format(name, count, num_tests)
             logger.info(msg)
             if args.loglevel == logging.WARNING:
-                print msg
+                print(msg)
                 sys.stdout.flush()
             if t.__doc__:
                 logger.info("Test: " + t.__doc__)
@@ -480,7 +480,7 @@ def main():
                 except Exception as e:
                     logger.info("Failed to issue TEST-START before " + name + " for " + d.ifname)
                     logger.info(e)
-                    print "FAIL " + name + " - could not start test"
+                    print("FAIL " + name + " - could not start test")
                     if conn:
                         conn.close()
                         conn = None
@@ -504,7 +504,7 @@ def main():
                         if country != "00":
                             d.dump_monitor()
                             logger.info("Country code not reset back to 00: is " + country)
-                            print "Country code not reset back to 00: is " + country
+                            print("Country code not reset back to 00: is " + country)
                             result = "FAIL"
 
                             # Try to wait for cfg80211 regulatory state to
@@ -516,10 +516,10 @@ def main():
                                 if country == "00":
                                     break
                             if country == "00":
-                                print "Country code cleared back to 00"
+                                print("Country code cleared back to 00")
                                 logger.info("Country code cleared back to 00")
                             else:
-                                print "Country code remains set - expect following test cases to fail"
+                                print("Country code remains set - expect following test cases to fail")
                                 logger.info("Country code remains set - expect following test cases to fail")
                             break
             except HwsimSkip as e:
@@ -535,7 +535,7 @@ def main():
                 logger.info(e)
                 traceback.print_exc()
                 if args.loglevel == logging.WARNING:
-                    print "Exception: " + str(e)
+                    print("Exception: " + str(e))
                 result = "FAIL"
             open('/dev/kmsg', 'w').write('TEST-STOP %s @%.6f\n' % (name, time.time()))
             for d in dev:
@@ -547,7 +547,7 @@ def main():
                     logger.info(e)
                     result = "FAIL"
             if args.no_reset:
-                print "Leaving devices in current state"
+                print("Leaving devices in current state")
             else:
                 reset_ok = reset_devs(dev, apdev)
             wpas = None
@@ -566,8 +566,8 @@ def main():
             try:
                 hapd = HostapdGlobal()
             except Exception as e:
-                print "Failed to connect to hostapd interface"
-                print str(e)
+                print("Failed to connect to hostapd interface")
+                print(str(e))
                 reset_ok = False
                 result = "FAIL"
                 hapd = None
@@ -609,11 +609,11 @@ def main():
         result = "{} {} {} {}".format(result, name, diff.total_seconds(), end)
         logger.info(result)
         if args.loglevel == logging.WARNING:
-            print result
+            print(result)
             sys.stdout.flush()
 
         if not reset_ok:
-            print "Terminating early due to device reset failure"
+            print("Terminating early due to device reset failure")
             break
     if args.stdin_ctrl:
         set_term_echo(sys.stdin.fileno(), True)
@@ -635,15 +635,15 @@ def main():
         logger.info("skipped {} test case(s)".format(len(skipped)))
         logger.info("failed tests: " + ' '.join(failed))
         if args.loglevel == logging.WARNING:
-            print "failed tests: " + ' '.join(failed)
+            print("failed tests: " + ' '.join(failed))
         sys.exit(1)
     logger.info("passed all {} test case(s)".format(len(passed)))
     if len(skipped):
         logger.info("skipped {} test case(s)".format(len(skipped)))
     if args.loglevel == logging.WARNING:
-        print "passed all {} test case(s)".format(len(passed))
+        print("passed all {} test case(s)".format(len(passed)))
         if len(skipped):
-            print "skipped {} test case(s)".format(len(skipped))
+            print("skipped {} test case(s)".format(len(skipped)))
 
 if __name__ == "__main__":
     main()

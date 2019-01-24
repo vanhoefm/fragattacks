@@ -1485,7 +1485,7 @@ def test_wpas_ctrl_dump(dev, apdev):
         if res == 'FAIL\n':
             res = "null"
         if res != vals[field]:
-            print "'{}' != '{}'".format(res, vals[field])
+            print("'{}' != '{}'".format(res, vals[field]))
             raise Exception("Mismatch in config field " + field)
     if "beacon_int" not in vals:
         raise Exception("Missing config field")

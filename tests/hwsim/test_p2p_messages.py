@@ -1316,7 +1316,7 @@ def test_p2p_msg_go_neg_req(dev, apdev):
     hapd.mgmt_tx(msg)
     frame = hapd.mgmt_rx(timeout=0.1)
     if frame is not None:
-        print frame
+        print(frame)
         raise Exception("Unexpected GO Neg Response")
 
     # missing atributes

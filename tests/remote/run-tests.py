@@ -30,10 +30,10 @@ from utils import HwsimSkip
 from hwsim_wrapper import run_hwsim_test
 
 def usage():
-    print "USAGE: " + sys.argv[0] + " -t devices"
-    print "USAGE: " + sys.argv[0] + " -t check_devices"
-    print "USAGE: " + sys.argv[0] + " -d <dut_name> -t <all|sanity|tests_to_run> [-r <ref_name>] [-c <cfg_file.py>] [-m <all|monitor_name>] [-h hwsim_tests][-R][-T][-P][-v]"
-    print "USAGE: " + sys.argv[0]
+    print("USAGE: " + sys.argv[0] + " -t devices")
+    print("USAGE: " + sys.argv[0] + " -t check_devices")
+    print("USAGE: " + sys.argv[0] + " -d <dut_name> -t <all|sanity|tests_to_run> [-r <ref_name>] [-c <cfg_file.py>] [-m <all|monitor_name>] [-h hwsim_tests][-R][-T][-P][-v]")
+    print("USAGE: " + sys.argv[0])
 
 def get_devices(devices, duts, refs, monitors):
     for dut in duts:
@@ -215,15 +215,15 @@ def main():
     # print help
     if requested_tests[0] == "help" and len(requested_hwsim_tests) == 0:
         usage()
-        print "\nAvailable Devices:"
+        print("\nAvailable Devices:")
         for device in devices:
-            print "\t", device['name']
-        print "\nAvailable tests:"
+            print("\t", device['name'])
+        print("\nAvailable tests:")
         for test in test_names:
-            print "\t", test
-        print "\nAvailable hwsim tests:"
+            print("\t", test)
+        print("\nAvailable hwsim tests:")
         for hwsim_test in hwsim_tests:
-            print "\t", hwsim_test.__name__.replace('test_', '', 1)
+            print("\t", hwsim_test.__name__.replace('test_', '', 1))
         return
 
     # show/check devices

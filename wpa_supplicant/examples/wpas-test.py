@@ -24,7 +24,7 @@ def byte_array_to_string(s):
 
 def main():
 	if len(sys.argv) != 2:
-		print "Usage: wpas-test.py <interface>"
+		print("Usage: wpas-test.py <interface>")
 		os._exit(1)
 
 	ifname = sys.argv[1]
@@ -53,7 +53,7 @@ def main():
 	time.sleep(5)
 	res = iface.scanResults()
 
-	print "Scanned wireless networks:"
+	print("Scanned wireless networks:")
 	for opath in res:
 		net_obj = bus.get_object(WPAS_DBUS_SERVICE, opath)
 		net = dbus.Interface(net_obj, WPAS_DBUS_BSSID_INTERFACE)
@@ -80,7 +80,7 @@ def main():
 		noise = props["noise"]
 		maxrate = props["maxrate"] / 1000000
 
-		print "  %s  ::  ssid='%s'  wpa=%s  wpa2=%s  quality=%d%%  rate=%d  freq=%d" % (bssid, ssid, wpa, wpa2, qual, maxrate, freq)
+		print("  %s  ::  ssid='%s'  wpa=%s  wpa2=%s  quality=%d%%  rate=%d  freq=%d" % (bssid, ssid, wpa, wpa2, qual, maxrate, freq))
 
 	wpas.removeInterface(dbus.ObjectPath(path))
 	# Should fail here with unknown interface error

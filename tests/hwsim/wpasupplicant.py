@@ -240,7 +240,7 @@ class WpaSupplicant:
             iter = iter + 1
         if iter == 60:
             logger.error(self.ifname + ": Driver scan state did not clear")
-            print "Trying to clear cfg80211/mac80211 scan state"
+            print("Trying to clear cfg80211/mac80211 scan state")
             status, buf = self.host.execute(["ifconfig", self.ifname, "down"])
             if status != 0:
                 logger.info("ifconfig failed: " + buf)

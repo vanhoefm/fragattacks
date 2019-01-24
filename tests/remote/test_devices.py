@@ -24,57 +24,57 @@ import hostapd
 
 def show_devices(devices, setup_params):
     """Show/check available devices"""
-    print "Devices:"
+    print("Devices:")
     for device in devices:
         host = rutils.get_host(devices, device['name'])
         # simple check if authorized_keys works correctly
         status, buf = host.execute(["id"])
         if status != 0:
-            print "[" + host.name + "] - ssh communication:  FAILED"
+            print("[" + host.name + "] - ssh communication:  FAILED")
             continue
         else:
-            print "[" + host.name + "] - ssh communication: OK"
+            print("[" + host.name + "] - ssh communication: OK")
         # check setup_hw works correctly
         rutils.setup_hw_host(host, setup_params)
 
         # show uname
         status, buf = host.execute(["uname", "-s", "-n", "-r", "-m", "-o"])
-        print "\t" + buf
+        print("\t" + buf)
         # show ifconfig
         ifaces = re.split('; | |, ', host.ifname)
         for iface in ifaces:
             status, buf = host.execute(["ifconfig", iface])
             if status != 0:
-                print "\t" + iface + " failed\n"
+                print("\t" + iface + " failed\n")
                 continue
             lines = buf.splitlines()
             for line in lines:
-                print "\t" + line
+                print("\t" + line)
         # check hostapd, wpa_supplicant, iperf exist
         status, buf = host.execute([setup_params['wpa_supplicant'], "-v"])
         if status != 0:
-            print "\t" + setup_params['wpa_supplicant'] + " not find\n"
+            print("\t" + setup_params['wpa_supplicant'] + " not find\n")
             continue
         lines = buf.splitlines()
         for line in lines:
-            print "\t" + line
-        print ""
+            print("\t" + line)
+        print("")
         status, buf = host.execute([setup_params['hostapd'], "-v"])
         if status != 1:
-            print "\t" + setup_params['hostapd'] + " not find\n"
+            print("\t" + setup_params['hostapd'] + " not find\n")
             continue
         lines = buf.splitlines()
         for line in lines:
-            print "\t" + line
-        print ""
+            print("\t" + line)
+        print("")
         status, buf = host.execute([setup_params['iperf'], "-v"])
         if status != 0 and status != 1:
-            print "\t" + setup_params['iperf'] + " not find\n"
+            print("\t" + setup_params['iperf'] + " not find\n")
             continue
         lines = buf.splitlines()
         for line in lines:
-            print "\t" + line
-        print ""
+            print("\t" + line)
+        print("")
 
 def check_device(devices, setup_params, dev_name, monitor=False):
     host = rutils.get_host(devices, dev_name)
