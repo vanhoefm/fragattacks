@@ -1038,8 +1038,8 @@ def test_rsn_preauth_processing(dev, apdev):
                          socket.htons(0x88c7))
     sock.bind(("lo", socket.htons(0x88c7)))
 
-    foreign = "\x02\x03\x04\x05\x06\x07"
-    proto = "\x88\xc7"
+    foreign = b"\x02\x03\x04\x05\x06\x07"
+    proto = b"\x88\xc7"
     tests = []
     # RSN: too short pre-auth packet (len=14)
     tests += [ _bssid + foreign + proto ]
@@ -1077,9 +1077,9 @@ def test_rsn_preauth_local_errors(dev, apdev):
                          socket.htons(0x88c7))
     sock.bind(("lo", socket.htons(0x88c7)))
 
-    foreign = "\x02\x03\x04\x05\x06\x07"
-    foreign2 = "\x02\x03\x04\x05\x06\x08"
-    proto = "\x88\xc7"
+    foreign = b"\x02\x03\x04\x05\x06\x07"
+    foreign2 = b"\x02\x03\x04\x05\x06\x08"
+    proto = b"\x88\xc7"
 
     with alloc_fail(hapd, 1, "ap_sta_add;rsn_preauth_receive"):
         sock.send(_bssid + foreign + proto + struct.pack('>BBH', 2, 1, 0))
