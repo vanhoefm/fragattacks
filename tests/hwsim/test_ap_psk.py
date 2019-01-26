@@ -70,6 +70,101 @@ def test_ap_wpa2_psk_file(dev, apdev):
         raise Exception("Timed out while waiting for failure report")
     dev[1].request("REMOVE_NETWORK all")
 
+def check_no_keyid(hapd, dev):
+    addr = dev.own_addr()
+    ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=1)
+    if ev is None:
+        raise Exception("No AP-STA-CONNECTED indicated")
+    if addr not in ev:
+        raise Exception("AP-STA-CONNECTED for unexpected STA")
+    if "keyid=" in ev:
+        raise Exception("Unexpected keyid indication")
+
+def check_keyid(hapd, dev, keyid):
+    addr = dev.own_addr()
+    ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=1)
+    if ev is None:
+        raise Exception("No AP-STA-CONNECTED indicated")
+    if addr not in ev:
+        raise Exception("AP-STA-CONNECTED for unexpected STA")
+    if "keyid=" + keyid not in ev:
+        raise Exception("Incorrect keyid indication")
+    sta = hapd.get_sta(addr)
+    if 'keyid' not in sta or sta['keyid'] != keyid:
+        raise Exception("Incorrect keyid in STA output")
+    dev.request("REMOVE_NETWORK all")
+
+def check_disconnect(dev, expected):
+    for i in range(2):
+        if expected[i]:
+            dev[i].wait_disconnected()
+            dev[i].request("REMOVE_NETWORK all")
+        else:
+            ev = dev[i].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.1)
+            if ev is not None:
+                raise Exception("Unexpected disconnection")
+            dev[i].request("REMOVE_NETWORK all")
+            dev[i].wait_disconnected()
+
+def test_ap_wpa2_psk_file_keyid(dev, apdev, params):
+    """WPA2-PSK AP with PSK from a file (keyid and reload)"""
+    psk_file = os.path.join(params['logdir'], 'ap_wpa2_psk_file_keyid.wpa_psk')
+    with open(psk_file, 'w') as f:
+        f.write('00:00:00:00:00:00 secret passphrase\n')
+        f.write('02:00:00:00:00:00 very secret\n')
+        f.write('00:00:00:00:00:00 another passphrase for all STAs\n')
+    ssid = "test-wpa2-psk"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase='qwertyuiop')
+    params['wpa_psk_file'] = psk_file
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect(ssid, psk="very secret", scan_freq="2412")
+    check_no_keyid(hapd, dev[0])
+
+    dev[1].connect(ssid, psk="another passphrase for all STAs",
+                   scan_freq="2412")
+    check_no_keyid(hapd, dev[1])
+
+    dev[2].connect(ssid, psk="qwertyuiop", scan_freq="2412")
+    check_no_keyid(hapd, dev[2])
+
+    with open(psk_file, 'w') as f:
+        f.write('00:00:00:00:00:00 secret passphrase\n')
+        f.write('02:00:00:00:00:00 very secret\n')
+        f.write('00:00:00:00:00:00 changed passphrase\n')
+    if "OK" not in hapd.request("RELOAD_WPA_PSK"):
+        raise Exception("RELOAD_WPA_PSK failed")
+
+    check_disconnect(dev, [ False, True, False ])
+
+    with open(psk_file, 'w') as f:
+        f.write('00:00:00:00:00:00 secret passphrase\n')
+        f.write('keyid=foo 02:00:00:00:00:00 very secret\n')
+        f.write('keyid=bar 00:00:00:00:00:00 another passphrase for all STAs\n')
+    if "OK" not in hapd.request("RELOAD_WPA_PSK"):
+        raise Exception("RELOAD_WPA_PSK failed")
+
+    dev[0].connect(ssid, psk="very secret", scan_freq="2412")
+    check_keyid(hapd, dev[0], "foo")
+
+    dev[1].connect(ssid, psk="another passphrase for all STAs",
+                   scan_freq="2412")
+    check_keyid(hapd, dev[1], "bar")
+
+    dev[2].connect(ssid, psk="qwertyuiop", scan_freq="2412")
+    check_no_keyid(hapd, dev[2])
+
+    dev[0].wait_disconnected()
+    dev[0].connect(ssid, psk="secret passphrase", scan_freq="2412")
+    check_no_keyid(hapd, dev[0])
+
+    with open(psk_file, 'w') as f:
+        f.write('# empty\n')
+    if "OK" not in hapd.request("RELOAD_WPA_PSK"):
+        raise Exception("RELOAD_WPA_PSK failed")
+
+    check_disconnect(dev, [ True, True, False ])
+
 @remote_compatible
 def test_ap_wpa2_psk_mem(dev, apdev):
     """WPA2-PSK AP with passphrase only in memory"""
