@@ -5295,6 +5295,40 @@ def test_ap_wpa2_eap_tls_check_crl(dev, apdev):
                 private_key="auth_serv/user.key")
     dev[0].request("REMOVE_NETWORK all")
 
+def test_ap_wpa2_eap_tls_crl_reload(dev, apdev, params):
+    """EAP-TLS and server reloading CRL from ca_cert"""
+    ca_cert = os.path.join(params['logdir'],
+                           "ap_wpa2_eap_tls_crl_reload.ca_cert")
+    with open('auth_serv/ca.pem', 'r') as f:
+        only_cert = f.read()
+    with open('auth_serv/ca-and-crl.pem', 'r') as f:
+        cert_and_crl = f.read()
+    with open(ca_cert, 'w') as f:
+        f.write(only_cert)
+    params = int_eap_server_params()
+    params['ca_cert'] = ca_cert
+    params['check_crl'] = '1'
+    params['crl_reload_interval'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    # check_crl=1 and no CRL available --> reject connection
+    eap_connect(dev[0], hapd, "TLS", "tls user", ca_cert="auth_serv/ca.pem",
+                client_cert="auth_serv/user.pem",
+                private_key="auth_serv/user.key", expect_failure=True)
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].dump_monitor()
+
+    with open(ca_cert, 'w') as f:
+        f.write(cert_and_crl)
+    time.sleep(1)
+
+    # check_crl=1 and valid CRL --> accept
+    eap_connect(dev[0], hapd, "TLS", "tls user", ca_cert="auth_serv/ca.pem",
+                client_cert="auth_serv/user.pem",
+                private_key="auth_serv/user.key")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+
 def test_ap_wpa2_eap_tls_oom(dev, apdev):
     """EAP-TLS and OOM"""
     check_subject_match_support(dev[0])
