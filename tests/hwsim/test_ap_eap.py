@@ -1875,7 +1875,7 @@ def test_ap_wpa2_eap_peap_eap_mschapv2_domain(dev, apdev):
     check_eap_capa(dev[0], "MSCHAPV2")
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     hapd = hostapd.add_ap(apdev[0], params)
-    eap_connect(dev[0], hapd, "PEAP", "DOMAIN\user3",
+    eap_connect(dev[0], hapd, "PEAP", r"DOMAIN\user3",
                 anonymous_identity="peap", password="password",
                 ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2")
     hwsim_utils.test_connectivity(dev[0], hapd)
