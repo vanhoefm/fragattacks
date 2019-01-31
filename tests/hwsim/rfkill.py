@@ -97,20 +97,20 @@ class RFKill(object):
         return self.blocked[1]
 
     def block(self):
-        rfk = open('/dev/rfkill', 'w')
+        rfk = open('/dev/rfkill', 'wb')
         s = struct.pack(_event_struct, self.idx, TYPE_ALL, _OP_CHANGE, 1, 0)
         rfk.write(s)
         rfk.close()
 
     def unblock(self):
-        rfk = open('/dev/rfkill', 'w')
+        rfk = open('/dev/rfkill', 'wb')
         s = struct.pack(_event_struct, self.idx, TYPE_ALL, _OP_CHANGE, 0, 0)
         rfk.write(s)
         rfk.close()
 
     @classmethod
     def block_all(cls, t=TYPE_ALL):
-        rfk = open('/dev/rfkill', 'w')
+        rfk = open('/dev/rfkill', 'wb')
         print(rfk)
         s = struct.pack(_event_struct, 0, t, _OP_CHANGE_ALL, 1, 0)
         rfk.write(s)
@@ -118,7 +118,7 @@ class RFKill(object):
 
     @classmethod
     def unblock_all(cls, t=TYPE_ALL):
-        rfk = open('/dev/rfkill', 'w')
+        rfk = open('/dev/rfkill', 'wb')
         s = struct.pack(_event_struct, 0, t, _OP_CHANGE_ALL, 0, 0)
         rfk.write(s)
         rfk.close()
@@ -126,13 +126,15 @@ class RFKill(object):
     @classmethod
     def list(cls):
         res = []
-        rfk = open('/dev/rfkill', 'r')
+        rfk = open('/dev/rfkill', 'rb')
         fd = rfk.fileno()
         flgs = fcntl.fcntl(fd, fcntl.F_GETFL)
         fcntl.fcntl(fd, fcntl.F_SETFL, flgs | os.O_NONBLOCK)
         while True:
             try:
                 d = rfk.read(_event_sz)
+                if d == None:
+                    break
                 _idx, _t, _op, _s, _h = struct.unpack(_event_struct, d)
                 if _op != _OP_ADD:
                     continue
