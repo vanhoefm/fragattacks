@@ -1444,6 +1444,8 @@ enum wmm_ac {
 /* WNM-Notification WFA vendors specific subtypes */
 #define HS20_WNM_SUB_REM_NEEDED 0
 #define HS20_WNM_DEAUTH_IMMINENT_NOTICE 1
+#define WFA_WNM_NOTIF_SUBELEM_NON_PREF_CHAN_REPORT 2
+#define WFA_WNM_NOTIF_SUBELEM_CELL_DATA_CAPA 3
 #define HS20_WNM_T_C_ACCEPTANCE 4
 
 #define HS20_DEAUTH_REASON_CODE_BSS 0
@@ -1531,12 +1533,6 @@ enum mbo_transition_reject_reason {
 	MBO_TRANSITION_REJECT_REASON_RSSI = 4,
 	MBO_TRANSITION_REJECT_REASON_INTERFERENCE = 5,
 	MBO_TRANSITION_REJECT_REASON_SERVICES = 6,
-};
-
-/* MBO v0.0_r19, 4.4: WNM-Notification vendor subelements */
-enum wfa_wnm_notif_subelem_id {
-	WFA_WNM_NOTIF_SUBELEM_NON_PREF_CHAN_REPORT = 2,
-	WFA_WNM_NOTIF_SUBELEM_CELL_DATA_CAPA = 3,
 };
 
 /* MBO v0.0_r27, 4.3: MBO ANQP-elements */
