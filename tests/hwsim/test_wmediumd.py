@@ -108,7 +108,7 @@ def start_wmediumd(fn, params):
 
     logs = ''
     while True:
-        line = p.stdout.readline()
+        line = p.stdout.readline().decode()
         if not line:
             output_wmediumd_log(p, params, logs)
             raise Exception('wmediumd was terminated unexpectedly')
@@ -121,7 +121,7 @@ def stop_wmediumd(p, params):
     p.terminate()
     p.wait()
     stdoutdata, stderrdata = p.communicate()
-    output_wmediumd_log(p, params, stdoutdata)
+    output_wmediumd_log(p, params, stdoutdata.decode())
 
 def test_wmediumd_simple(dev, apdev, params):
     """test a simple wmediumd configuration"""
