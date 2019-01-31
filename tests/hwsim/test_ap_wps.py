@@ -2486,10 +2486,10 @@ def ssdp_send(msg, no_recv=False):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
     sock.bind(("127.0.0.1", 0))
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
     if no_recv:
         return None
-    return sock.recv(1000)
+    return sock.recv(1000).decode()
 
 def ssdp_send_msearch(st, no_recv=False):
     msg = '\r\n'.join([
@@ -2557,7 +2557,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MAN: "ssdp:discover"',
             'ST: urn:schemas-wifialliance-org:device:WFADevice:1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
 
     logger.debug("Negative MX")
     msg = '\r\n'.join([
@@ -2567,7 +2567,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MAN: "ssdp:discover"',
             'ST: urn:schemas-wifialliance-org:device:WFADevice:1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
 
     logger.debug("Invalid MX")
     msg = '\r\n'.join([
@@ -2577,7 +2577,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MAN: "ssdp:discover"',
             'ST: urn:schemas-wifialliance-org:device:WFADevice:1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
 
     logger.debug("Missing MAN")
     msg = '\r\n'.join([
@@ -2586,7 +2586,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MX: 1',
             'ST: urn:schemas-wifialliance-org:device:WFADevice:1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
 
     logger.debug("Invalid MAN")
     msg = '\r\n'.join([
@@ -2596,7 +2596,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MAN: foo',
             'ST: urn:schemas-wifialliance-org:device:WFADevice:1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
     msg = '\r\n'.join([
             'M-SEARCH * HTTP/1.1',
             'HOST: 239.255.255.250:1900',
@@ -2604,7 +2604,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MAN; "ssdp:discover"',
             'ST: urn:schemas-wifialliance-org:device:WFADevice:1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
 
     logger.debug("Missing HOST")
     msg = '\r\n'.join([
@@ -2613,7 +2613,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MX: 1',
             'ST: urn:schemas-wifialliance-org:device:WFADevice:1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
 
     logger.debug("Missing ST")
     msg = '\r\n'.join([
@@ -2622,7 +2622,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MAN: "ssdp:discover"',
             'MX: 1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
 
     logger.debug("Mismatching ST")
     msg = '\r\n'.join([
@@ -2632,7 +2632,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MX: 1',
             'ST: uuid:16d5f8a9-4ee4-4f5e-81f9-cc6e2f47f42d',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
     msg = '\r\n'.join([
             'M-SEARCH * HTTP/1.1',
             'HOST: 239.255.255.250:1900',
@@ -2640,7 +2640,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MX: 1',
             'ST: foo:bar',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
     msg = '\r\n'.join([
             'M-SEARCH * HTTP/1.1',
             'HOST: 239.255.255.250:1900',
@@ -2648,7 +2648,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MX: 1',
             'ST: foobar',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
 
     logger.debug("Invalid ST")
     msg = '\r\n'.join([
@@ -2658,7 +2658,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MX: 1',
             'ST; urn:schemas-wifialliance-org:device:WFADevice:1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
 
     logger.debug("Invalid M-SEARCH")
     msg = '\r\n'.join([
@@ -2668,7 +2668,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MX: 1',
             'ST: urn:schemas-wifialliance-org:device:WFADevice:1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
     msg = '\r\n'.join([
             'M-SEARCH-* HTTP/1.1',
             'HOST: 239.255.255.250:1900',
@@ -2676,10 +2676,10 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MX: 1',
             'ST: urn:schemas-wifialliance-org:device:WFADevice:1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
 
     logger.debug("Invalid message format")
-    sock.sendto("NOTIFY * HTTP/1.1", ("239.255.255.250", 1900))
+    sock.sendto(b"NOTIFY * HTTP/1.1", ("239.255.255.250", 1900))
     msg = '\r'.join([
             'M-SEARCH * HTTP/1.1',
             'HOST: 239.255.255.250:1900',
@@ -2687,7 +2687,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MX: 1',
             'ST: urn:schemas-wifialliance-org:device:WFADevice:1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
 
     try:
         r = sock.recv(1000)
@@ -2703,7 +2703,7 @@ def test_ap_wps_ssdp_invalid_msearch(dev, apdev):
             'MX: 1',
             'ST: urn:schemas-wifialliance-org:device:WFADevice:1',
             '', ''])
-    sock.sendto(msg, ("239.255.255.250", 1900))
+    sock.sendto(msg.encode(), ("239.255.255.250", 1900))
 
     try:
         r = sock.recv(1000)
@@ -2729,11 +2729,11 @@ def test_ap_wps_ssdp_burst(dev, apdev):
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
     sock.bind(("127.0.0.1", 0))
     for i in range(0, 25):
-        sock.sendto(msg, ("239.255.255.250", 1900))
+        sock.sendto(msg.encode(), ("239.255.255.250", 1900))
     resp = 0
     while True:
         try:
-            r = sock.recv(1000)
+            r = sock.recv(1000).decode()
             if not r.startswith("HTTP/1.1 200 OK\r\n"):
                 raise Exception("Unexpected message: " + r)
             resp += 1
@@ -2747,10 +2747,10 @@ def test_ap_wps_ssdp_burst(dev, apdev):
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
     sock.bind(("127.0.0.1", 0))
     for i in range(0, 25):
-        sock.sendto(msg, ("239.255.255.250", 1900))
+        sock.sendto(msg.encode(), ("239.255.255.250", 1900))
     while True:
         try:
-            r = sock.recv(1000)
+            r = sock.recv(1000).decode()
             if ap_uuid in r:
                 break
         except socket.timeout:
@@ -3434,10 +3434,10 @@ def test_ap_wps_upnp_http_proto_chunked(dev, apdev):
     conn.putrequest("POST", "hello")
     conn.putheader('Transfer-Encoding', 'chunked')
     conn.endheaders()
-    conn.send("a\r\nabcdefghij\r\n")
+    conn.send(b"a\r\nabcdefghij\r\n")
     time.sleep(0.1)
-    conn.send("2\r\nkl\r\n")
-    conn.send("0\r\n\r\n")
+    conn.send(b"2\r\nkl\r\n")
+    conn.send(b"0\r\n\r\n")
     resp = conn.getresponse()
     if resp.status != 404:
         raise Exception("Unexpected HTTP response: %d" % resp.status)
@@ -3449,8 +3449,8 @@ def test_ap_wps_upnp_http_proto_chunked(dev, apdev):
     completed = False
     try:
         for i in range(20000):
-            conn.send("1\r\nZ\r\n")
-        conn.send("0\r\n\r\n")
+            conn.send(b"1\r\nZ\r\n")
+        conn.send(b"0\r\n\r\n")
         resp = conn.getresponse()
         completed = True
     except Exception as e:
@@ -3957,49 +3957,51 @@ def _test_ap_wps_er_ssdp_proto(dev, apdev):
     if "OK" not in dev[0].request("WPS_ER_START ifname=lo 1.2.3.4"):
         raise Exception("WPS_ER_START with filter failed")
     (msg,addr) = sock.recvfrom(1000)
+    msg = msg.decode()
     logger.debug("Received SSDP message from %s: %s" % (str(addr), msg))
     if "M-SEARCH" not in msg:
         raise Exception("Not an M-SEARCH")
-    sock.sendto("FOO", addr)
+    sock.sendto(b"FOO", addr)
     time.sleep(0.1)
     dev[0].request("WPS_ER_STOP")
 
     dev[0].request("WPS_ER_START ifname=lo")
     (msg,addr) = sock.recvfrom(1000)
+    msg = msg.decode()
     logger.debug("Received SSDP message from %s: %s" % (str(addr), msg))
     if "M-SEARCH" not in msg:
         raise Exception("Not an M-SEARCH")
-    sock.sendto("FOO", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\nFOO\r\n\r\n", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\nNTS:foo\r\n\r\n", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\nNTS:ssdp:byebye\r\n\r\n", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\ncache-control:   foo=1\r\n\r\n", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\ncache-control:   max-age=1\r\n\r\n", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\nusn:\r\n\r\n", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\nusn:foo\r\n\r\n", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\nusn:   uuid:\r\n\r\n", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\nusn:   uuid:     \r\n\r\n", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\nusn:   uuid:     foo\r\n\r\n", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\n\r\n", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nNTS:ssdp:byebye\r\n\r\n", addr)
-    sock.sendto("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:foo\r\n\r\n", addr)
+    sock.sendto(b"FOO", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nFOO\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nNTS:foo\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nNTS:ssdp:byebye\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\ncache-control:   foo=1\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\ncache-control:   max-age=1\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nusn:\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nusn:foo\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nusn:   uuid:\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nusn:   uuid:     \r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nusn:   uuid:     foo\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nNTS:ssdp:byebye\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:foo\r\n\r\n", addr)
     with alloc_fail(dev[0], 1, "wps_er_ap_add"):
-        sock.sendto("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:foo\r\ncache-control:max-age=1\r\n\r\n", addr)
+        sock.sendto(b"HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:foo\r\ncache-control:max-age=1\r\n\r\n", addr)
         time.sleep(0.1)
     with alloc_fail(dev[0], 2, "wps_er_ap_add"):
-        sock.sendto("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:foo\r\ncache-control:max-age=1\r\n\r\n", addr)
+        sock.sendto(b"HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:foo\r\ncache-control:max-age=1\r\n\r\n", addr)
         time.sleep(0.1)
 
     # Add an AP with bogus URL
-    sock.sendto("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:foo\r\ncache-control:max-age=1\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:foo\r\ncache-control:max-age=1\r\n\r\n", addr)
     # Update timeout on AP without updating URL
-    sock.sendto("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:http://127.0.0.1:12345/foo.xml\r\ncache-control:max-age=1\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:http://127.0.0.1:12345/foo.xml\r\ncache-control:max-age=1\r\n\r\n", addr)
     ev = dev[0].wait_event(["WPS-ER-AP-REMOVE"], timeout=5)
     if ev is None:
         raise Exception("No WPS-ER-AP-REMOVE event on max-age timeout")
 
     # Add an AP with a valid URL (but no server listing to it)
-    sock.sendto("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:http://127.0.0.1:12345/foo.xml\r\ncache-control:max-age=1\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:http://127.0.0.1:12345/foo.xml\r\ncache-control:max-age=1\r\n\r\n", addr)
     ev = dev[0].wait_event(["WPS-ER-AP-REMOVE"], timeout=5)
     if ev is None:
         raise Exception("No WPS-ER-AP-REMOVE event on max-age timeout")
@@ -4138,6 +4140,7 @@ def wps_er_start(dev, http_server, max_age=1, wait_m_search=False,
     dev.request("WPS_ER_START ifname=lo")
     for i in range(100):
         (msg,addr) = sock.recvfrom(1000)
+        msg = msg.decode()
         logger.debug("Received SSDP message from %s: %s" % (str(addr), msg))
         if "M-SEARCH" in msg:
             break
@@ -4150,7 +4153,7 @@ def wps_er_start(dev, http_server, max_age=1, wait_m_search=False,
     server = MyTCPServer(("127.0.0.1", 12345), http_server)
     if not location_url:
         location_url = 'http://127.0.0.1:12345/foo.xml'
-    sock.sendto("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:%s\r\ncache-control:max-age=%d\r\n\r\n" % (location_url, max_age), addr)
+    sock.sendto(("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:%s\r\ncache-control:max-age=%d\r\n\r\n" % (location_url, max_age)).encode(), addr)
     server.timeout = 1
     return server,sock
 
@@ -4488,11 +4491,11 @@ RGV2aWNlIEEQSQAGADcqAAEg
         socks[i].settimeout(10)
         socks[i].connect(addr)
     for i in range(20):
-        socks[i].send("GET / HTTP/1.1\r\n\r\n")
+        socks[i].send(b"GET / HTTP/1.1\r\n\r\n")
     count = 0
     for i in range(20):
         try:
-            res = socks[i].recv(100)
+            res = socks[i].recv(100).decode()
             if "HTTP/1" in res:
                 count += 1
             else:
@@ -4513,7 +4516,7 @@ RGV2aWNlIEEQSQAGADcqAAEg
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM,
                                  socket.IPPROTO_TCP)
             sock.connect(addr)
-            sock.send("GET / HTTP/1.1\r\n\r\n")
+            sock.send(b"GET / HTTP/1.1\r\n\r\n")
             try:
                 sock.recv(100)
             except:
@@ -4536,7 +4539,7 @@ RGV2aWNlIEEQSQAGADcqAAEg
                              socket.IPPROTO_TCP)
         sock.settimeout(0.1)
         sock.connect(addr)
-        sock.send(req)
+        sock.send(req.encode())
         try:
             sock.recv(100)
         except:
@@ -4547,7 +4550,7 @@ RGV2aWNlIEEQSQAGADcqAAEg
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM,
                              socket.IPPROTO_TCP)
         sock.connect(addr)
-        sock.send("NOTIFY / HTTP/1.1\r\n\r\n" + 4500*'a')
+        sock.send(b"NOTIFY / HTTP/1.1\r\n\r\n" + 4500 * b'a')
         try:
             sock.recv(100)
         except:
@@ -4839,7 +4842,7 @@ def _test_ap_wps_http_timeout(dev, apdev):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM,
                          socket.IPPROTO_TCP)
     sock.connect(addr)
-    sock.send("G")
+    sock.send(b"G")
 
     class DummyServer(StreamRequestHandler):
         def handle(self):
@@ -4877,14 +4880,15 @@ def _test_ap_wps_er_url_parse(dev, apdev):
     sock.bind(("239.255.255.250", 1900))
     dev[0].request("WPS_ER_START ifname=lo")
     (msg,addr) = sock.recvfrom(1000)
+    msg = msg.decode()
     logger.debug("Received SSDP message from %s: %s" % (str(addr), msg))
     if "M-SEARCH" not in msg:
         raise Exception("Not an M-SEARCH")
-    sock.sendto("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:http://127.0.0.1\r\ncache-control:max-age=1\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:http://127.0.0.1\r\ncache-control:max-age=1\r\n\r\n", addr)
     ev = dev[0].wait_event(["WPS-ER-AP-REMOVE"], timeout=2)
-    sock.sendto("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:http://127.0.0.1/:foo\r\ncache-control:max-age=1\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:http://127.0.0.1/:foo\r\ncache-control:max-age=1\r\n\r\n", addr)
     ev = dev[0].wait_event(["WPS-ER-AP-REMOVE"], timeout=2)
-    sock.sendto("HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:http://255.255.255.255:0/foo.xml\r\ncache-control:max-age=1\r\n\r\n", addr)
+    sock.sendto(b"HTTP/1.1 200 OK\r\nST: urn:schemas-wifialliance-org:device:WFADevice:1\r\nlocation:http://255.255.255.255:0/foo.xml\r\ncache-control:max-age=1\r\n\r\n", addr)
     ev = dev[0].wait_event(["WPS-ER-AP-REMOVE"], timeout=2)
 
     sock.close()

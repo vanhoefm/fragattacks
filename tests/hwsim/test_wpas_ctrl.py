@@ -1826,7 +1826,7 @@ def test_wpas_ctrl_socket_full(dev, apdev, test_params):
     for i in range(20):
         logger.debug("Command %d" % i)
         try:
-            s.send("MIB")
+            s.send(b"MIB")
         except Exception as e:
             logger.info("Could not send command %d: %s" % (i, str(e)))
             break
@@ -1845,7 +1845,7 @@ def test_wpas_ctrl_socket_full(dev, apdev, test_params):
     for i in range(10):
         logger.debug("Command %d [2]" % i)
         try:
-            s2.send("MIB")
+            s2.send(b"MIB")
         except Exception as e:
             logger.info("Could not send command %d [2]: %s" % (i, str(e)))
             break
@@ -1858,7 +1858,7 @@ def test_wpas_ctrl_socket_full(dev, apdev, test_params):
     for i in range(10):
         logger.debug("Command %d [3]" % i)
         try:
-            s2.send("MIB")
+            s2.send(b"MIB")
         except Exception as e:
             logger.info("Could not send command %d [3]: %s" % (i, str(e)))
             break
@@ -1877,8 +1877,8 @@ def test_wpas_ctrl_socket_full(dev, apdev, test_params):
     counter += 1
     s.bind(local)
     s.connect("/var/run/wpa_supplicant/wlan0")
-    s.send("ATTACH")
-    res = s.recv(100)
+    s.send(b"ATTACH")
+    res = s.recv(100).decode()
     if "OK" not in res:
         raise Exception("Could not attach a test socket")
 

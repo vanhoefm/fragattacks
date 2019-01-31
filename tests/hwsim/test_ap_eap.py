@@ -5994,15 +5994,15 @@ def test_ap_wpa2_eap_sim_db(dev, apdev, params):
 
     class test_handler(SocketServer.DatagramRequestHandler):
         def handle(self):
-            data = self.request[0].strip()
+            data = self.request[0].decode().strip()
             socket = self.request[1]
             logger.debug("Received hlr_auc_gw request: " + data)
             # EAP-SIM DB: Failed to parse response string
-            socket.sendto("FOO", self.client_address)
+            socket.sendto(b"FOO", self.client_address)
             # EAP-SIM DB: Failed to parse response string
-            socket.sendto("FOO 1", self.client_address)
+            socket.sendto(b"FOO 1", self.client_address)
             # EAP-SIM DB: Unknown external response
-            socket.sendto("FOO 1 2", self.client_address)
+            socket.sendto(b"FOO 1 2", self.client_address)
             logger.info("No proper response - wait for pending eap_sim_db request timeout")
 
     server = SocketServer.UnixDatagramServer(sockpath, test_handler)
@@ -6020,7 +6020,7 @@ def test_ap_wpa2_eap_sim_db(dev, apdev, params):
 
     class test_handler2(SocketServer.DatagramRequestHandler):
         def handle(self):
-            data = self.request[0].strip()
+            data = self.request[0].decode().strip()
             socket = self.request[1]
             logger.debug("Received hlr_auc_gw request: " + data)
             fname = os.path.join(params['logdir'],
@@ -6031,7 +6031,7 @@ def test_ap_wpa2_eap_sim_db(dev, apdev, params):
             res = cmd.stdout.read().decode().strip()
             cmd.stdout.close()
             logger.debug("hlr_auc_gw response: " + res)
-            socket.sendto(res, self.client_address)
+            socket.sendto(res.encode(), self.client_address)
 
     server.RequestHandlerClass = test_handler2
 

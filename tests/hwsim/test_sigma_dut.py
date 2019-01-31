@@ -33,9 +33,9 @@ def sigma_dut_cmd(cmd, port=9000, timeout=2):
     sock.settimeout(timeout)
     addr = ('127.0.0.1', port)
     sock.connect(addr)
-    sock.send(cmd + "\r\n")
+    sock.send(cmd.encode() + b"\r\n")
     try:
-        res = sock.recv(1000)
+        res = sock.recv(1000).decode()
         running = False
         done = False
         for line in res.splitlines():
@@ -49,7 +49,7 @@ def sigma_dut_cmd(cmd, port=9000, timeout=2):
                 done = True
         if running and not done:
             # Read the actual response
-            res = sock.recv(1000)
+            res = sock.recv(1000).decode()
     except:
         res = ''
         pass
