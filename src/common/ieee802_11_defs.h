@@ -1444,7 +1444,7 @@ enum wmm_ac {
 /* WNM-Notification WFA vendors specific subtypes */
 #define HS20_WNM_SUB_REM_NEEDED 0
 #define HS20_WNM_DEAUTH_IMMINENT_NOTICE 1
-#define HS20_WNM_T_C_ACCEPTANCE 2
+#define HS20_WNM_T_C_ACCEPTANCE 4
 
 #define HS20_DEAUTH_REASON_CODE_BSS 0
 #define HS20_DEAUTH_REASON_CODE_ESS 1
