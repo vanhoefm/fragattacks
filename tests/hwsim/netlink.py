@@ -33,7 +33,7 @@ class Attr(object):
         hdr = struct.pack("HH", len(self._data) + 4, self._type)
         length = len(self._data)
         pad = ((length + 4 - 1) & ~3 ) - length
-        return hdr + self._data + '\0' * pad
+        return hdr + self._data + b'\x00' * pad
 
     def __repr__(self):
         return '<Attr type %d, data "%s">' % (self._type, repr(self._data))
@@ -71,7 +71,7 @@ class U8Attr(Attr):
 
 class FlagAttr(Attr):
     def __init__(self, attr_type):
-        Attr.__init__(self, attr_type, "")
+        Attr.__init__(self, attr_type, b"")
 
 class Nested(Attr):
     def __init__(self, attr_type, attrs):
@@ -113,10 +113,9 @@ class Message(object):
         self.pid = -1
         payload = payload or []
         if isinstance(payload, list):
-            contents = []
+            self.payload = bytes()
             for attr in payload:
-                contents.append(attr._dump())
-            self.payload = ''.join(contents)
+                self.payload += attr._dump()
         else:
             self.payload = payload
 
