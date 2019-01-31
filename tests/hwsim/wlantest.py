@@ -111,7 +111,7 @@ class Wlantest:
                 raise Exception("wlantest_cli failed")
             return ret[1]
         else:
-            return subprocess.check_output([self.wlantest_cli] + params)
+            return subprocess.check_output([self.wlantest_cli] + params).decode()
 
     def flush(self):
         res = self.cli_cmd(["flush"])

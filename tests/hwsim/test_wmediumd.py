@@ -69,7 +69,7 @@ def get_wmediumd_version():
         return LocalVariables.revs
 
     try:
-        verstr = subprocess.check_output(['wmediumd', '-V'])
+        verstr = subprocess.check_output(['wmediumd', '-V']).decode()
     except OSError as e:
         if e.errno == errno.ENOENT:
             raise HwsimSkip('wmediumd not available')

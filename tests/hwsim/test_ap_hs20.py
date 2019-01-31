@@ -129,7 +129,7 @@ def interworking_ext_sim_auth(dev, method):
     res = subprocess.check_output(["../../hostapd/hlr_auc_gw",
                                    "-m",
                                    "auth_serv/hlr_auc_gw.milenage_db",
-                                   "GSM-AUTH-REQ 232010000000000 " + rand])
+                                   "GSM-AUTH-REQ 232010000000000 " + rand]).decode()
     if "GSM-AUTH-RESP" not in res:
         raise Exception("Unexpected hlr_auc_gw response")
     resp = res.split(' ')[2].rstrip()

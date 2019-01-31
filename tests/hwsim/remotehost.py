@@ -19,7 +19,7 @@ def execute_thread(command, reply):
     logger.debug("thread run: " + cmd)
     try:
         status = 0
-        buf = subprocess.check_output(command, stderr=subprocess.STDOUT)
+        buf = subprocess.check_output(command, stderr=subprocess.STDOUT).decode()
     except subprocess.CalledProcessError as e:
         status = e.returncode
         buf = e.output

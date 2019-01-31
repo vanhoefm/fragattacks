@@ -529,7 +529,7 @@ def _test_ap_wpa2_eap_sim_ext_replace_sim(dev, apdev):
     res = subprocess.check_output(["../../hostapd/hlr_auc_gw",
                                    "-m",
                                    "auth_serv/hlr_auc_gw.milenage_db",
-                                   "GSM-AUTH-REQ 232010000000000 " + rand])
+                                   "GSM-AUTH-REQ 232010000000000 " + rand]).decode()
     if "GSM-AUTH-RESP" not in res:
         raise Exception("Unexpected hlr_auc_gw response")
     resp = res.split(' ')[2].rstrip()
@@ -555,7 +555,7 @@ def _test_ap_wpa2_eap_sim_ext_replace_sim(dev, apdev):
     res = subprocess.check_output(["../../hostapd/hlr_auc_gw",
                                    "-m",
                                    "auth_serv/hlr_auc_gw.milenage_db",
-                                   "GSM-AUTH-REQ 232010000000009 " + rand])
+                                   "GSM-AUTH-REQ 232010000000009 " + rand]).decode()
     if "GSM-AUTH-RESP" not in res:
         raise Exception("Unexpected hlr_auc_gw response")
     resp = res.split(' ')[2].rstrip()
@@ -595,7 +595,7 @@ def _test_ap_wpa2_eap_sim_ext_replace_sim2(dev, apdev):
     res = subprocess.check_output(["../../hostapd/hlr_auc_gw",
                                    "-m",
                                    "auth_serv/hlr_auc_gw.milenage_db",
-                                   "GSM-AUTH-REQ 232010000000000 " + rand])
+                                   "GSM-AUTH-REQ 232010000000000 " + rand]).decode()
     if "GSM-AUTH-RESP" not in res:
         raise Exception("Unexpected hlr_auc_gw response")
     resp = res.split(' ')[2].rstrip()
@@ -622,7 +622,7 @@ def _test_ap_wpa2_eap_sim_ext_replace_sim2(dev, apdev):
     res = subprocess.check_output(["../../hostapd/hlr_auc_gw",
                                    "-m",
                                    "auth_serv/hlr_auc_gw.milenage_db",
-                                   "GSM-AUTH-REQ 232010000000009 " + rand])
+                                   "GSM-AUTH-REQ 232010000000009 " + rand]).decode()
     if "GSM-AUTH-RESP" not in res:
         raise Exception("Unexpected hlr_auc_gw response")
     resp = res.split(' ')[2].rstrip()
@@ -665,7 +665,7 @@ def _test_ap_wpa2_eap_sim_ext_replace_sim3(dev, apdev):
     res = subprocess.check_output(["../../hostapd/hlr_auc_gw",
                                    "-m",
                                    "auth_serv/hlr_auc_gw.milenage_db",
-                                   "GSM-AUTH-REQ 232010000000000 " + rand])
+                                   "GSM-AUTH-REQ 232010000000000 " + rand]).decode()
     if "GSM-AUTH-RESP" not in res:
         raise Exception("Unexpected hlr_auc_gw response")
     resp = res.split(' ')[2].rstrip()
@@ -698,7 +698,7 @@ def _test_ap_wpa2_eap_sim_ext_replace_sim3(dev, apdev):
     res = subprocess.check_output(["../../hostapd/hlr_auc_gw",
                                    "-m",
                                    "auth_serv/hlr_auc_gw.milenage_db",
-                                   "GSM-AUTH-REQ 232010000000009 " + rand])
+                                   "GSM-AUTH-REQ 232010000000009 " + rand]).decode()
     if "GSM-AUTH-RESP" not in res:
         raise Exception("Unexpected hlr_auc_gw response")
     resp = res.split(' ')[2].rstrip()
@@ -764,7 +764,7 @@ def _test_ap_wpa2_eap_sim_change_bssid(dev, apdev):
     res = subprocess.check_output(["../../hostapd/hlr_auc_gw",
                                    "-m",
                                    "auth_serv/hlr_auc_gw.milenage_db",
-                                   "GSM-AUTH-REQ 232010000000000 " + rand])
+                                   "GSM-AUTH-REQ 232010000000000 " + rand]).decode()
     if "GSM-AUTH-RESP" not in res:
         raise Exception("Unexpected hlr_auc_gw response")
     resp = res.split(' ')[2].rstrip()
@@ -805,7 +805,7 @@ def _test_ap_wpa2_eap_sim_no_change_set(dev, apdev):
     res = subprocess.check_output(["../../hostapd/hlr_auc_gw",
                                    "-m",
                                    "auth_serv/hlr_auc_gw.milenage_db",
-                                   "GSM-AUTH-REQ 232010000000000 " + rand])
+                                   "GSM-AUTH-REQ 232010000000000 " + rand]).decode()
     if "GSM-AUTH-RESP" not in res:
         raise Exception("Unexpected hlr_auc_gw response")
     resp = res.split(' ')[2].rstrip()
@@ -1707,7 +1707,7 @@ def run_ext_sim_auth(dev):
     res = subprocess.check_output(["../../hostapd/hlr_auc_gw",
                                    "-m",
                                    "auth_serv/hlr_auc_gw.milenage_db",
-                                   "GSM-AUTH-REQ 232010000000000 " + rand])
+                                   "GSM-AUTH-REQ 232010000000000 " + rand]).decode()
     if "GSM-AUTH-RESP" not in res:
         raise Exception("Unexpected hlr_auc_gw response")
     resp = res.split(' ')[2].rstrip()

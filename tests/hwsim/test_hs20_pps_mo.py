@@ -20,7 +20,7 @@ def check_hs20_osu_client():
 
 def set_pps(pps_mo):
     res = subprocess.check_output(["../../hs20/client/hs20-osu-client",
-                                   "set_pps", pps_mo])
+                                   "set_pps", pps_mo]).decode()
     logger.info("set_pps result: " + res)
 
 def test_hs20_pps_mo_1(dev, apdev):
