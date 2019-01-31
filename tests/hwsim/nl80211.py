@@ -322,7 +322,7 @@ nl80211_attr = {
 def build_nl80211_attr(id, val):
     attr = struct.pack("@HH", 4 + len(val), nl80211_attr[id]) + val
     if len(attr) % 4 != 0:
-        attr += '\0' * (4 - (len(attr) % 4))
+        attr += b'\x00' * (4 - (len(attr) % 4))
     return attr
 
 def build_nl80211_attr_u32(id, val):
@@ -335,7 +335,7 @@ def build_nl80211_attr_u8(id, val):
     return build_nl80211_attr(id, struct.pack("@B", val))
 
 def build_nl80211_attr_flag(id):
-    return build_nl80211_attr(id, '')
+    return build_nl80211_attr(id, b'')
 
 def build_nl80211_attr_mac(id, val):
     addr = struct.unpack('6B', binascii.unhexlify(val.replace(':','')))
