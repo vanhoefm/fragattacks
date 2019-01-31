@@ -515,7 +515,7 @@ def test_erp_home_realm_oom(dev, apdev):
                        ca_cert="auth_serv/ca.pem", phase2="auth=PAP",
                        erp="1", scan_freq="2412", wait_connect=False)
         dev[0].wait_connected(timeout=10)
-        if range > 1:
+        if count > 1:
             continue
         with alloc_fail(dev[0], count, "eap_get_realm"):
             dev[0].request("DISCONNECT")
