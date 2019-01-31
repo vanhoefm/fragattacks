@@ -14,7 +14,10 @@ logger = logging.getLogger()
 import os
 import signal
 import socket
-import SocketServer
+try:
+    import SocketServer
+except ImportError:
+    import socketserver as SocketServer
 import struct
 import tempfile
 
