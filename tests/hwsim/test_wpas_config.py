@@ -575,7 +575,11 @@ def test_wpas_config_file_key_mgmt(dev, apdev, params):
               "SAE", "FT-SAE", "OSEN", "WPA-EAP-SUITE-B",
               "WPA-EAP-SUITE-B-192", "FILS-SHA256", "FILS-SHA384",
               "FT-FILS-SHA256", "FT-FILS-SHA384", "OWE", "DPP" ]
+    supported_key_mgmts = dev[0].get_capability("key_mgmt")
     for key_mgmt in tests:
+        if key_mgmt == "WPA-EAP-SUITE-B-192" and not key_mgmt in supported_key_mgmts:
+            logger.info("Skip unsupported " + key_mgmt)
+            continue
         wpas.set_network(id, "key_mgmt", key_mgmt)
         if "OK" not in wpas.request("SAVE_CONFIG"):
             raise Exception("Failed to save configuration file")
