@@ -1172,9 +1172,9 @@ int p2p_find(struct p2p_data *p2p, unsigned int timeout,
 	     u8 seek_count, const char **seek, int freq)
 {
 	int res;
+	struct os_reltime start;
 
 	p2p_dbg(p2p, "Starting find (type=%d)", type);
-	os_get_reltime(&p2p->find_start);
 	if (p2p->p2p_scan_running) {
 		p2p_dbg(p2p, "p2p_scan is already running");
 	}
@@ -1258,6 +1258,7 @@ int p2p_find(struct p2p_data *p2p, unsigned int timeout,
 	if (timeout)
 		eloop_register_timeout(timeout, 0, p2p_find_timeout,
 				       p2p, NULL);
+	os_get_reltime(&start);
 	switch (type) {
 	case P2P_FIND_START_WITH_FULL:
 		if (freq > 0) {
@@ -1288,6 +1289,9 @@ int p2p_find(struct p2p_data *p2p, unsigned int timeout,
 	default:
 		return -1;
 	}
+
+	if (!res)
+		p2p->find_start = start;
 
 	if (res != 0 && p2p->p2p_scan_running) {
 		p2p_dbg(p2p, "Failed to start p2p_scan - another p2p_scan was already running");
