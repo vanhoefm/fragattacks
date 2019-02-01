@@ -764,12 +764,12 @@ class WpaSupplicant:
             return self.group_form_result(ev, expect_failure, go_neg_res)
         raise Exception("P2P_CONNECT failed")
 
-    def wait_event(self, events, timeout=10):
+    def _wait_event(self, mon, pfx, events, timeout):
         start = os.times()[4]
         while True:
-            while self.mon.pending():
-                ev = self.mon.recv()
-                logger.debug(self.dbg + ": " + ev)
+            while mon.pending():
+                ev = mon.recv()
+                logger.debug(self.dbg + pfx + ev)
                 for event in events:
                     if event in ev:
                         return ev
@@ -777,29 +777,18 @@ class WpaSupplicant:
             remaining = start + timeout - now
             if remaining <= 0:
                 break
-            if not self.mon.pending(timeout=remaining):
+            if not mon.pending(timeout=remaining):
                 break
         return None
 
+    def wait_event(self, events, timeout=10):
+        return self._wait_event(self.mon, ": ", events, timeout)
+
     def wait_global_event(self, events, timeout):
         if self.global_iface is None:
-            self.wait_event(events, timeout)
-        else:
-            start = os.times()[4]
-            while True:
-                while self.global_mon.pending():
-                    ev = self.global_mon.recv()
-                    logger.debug(self.global_dbg + self.ifname + "(global): " + ev)
-                    for event in events:
-                        if event in ev:
-                            return ev
-                now = os.times()[4]
-                remaining = start + timeout - now
-                if remaining <= 0:
-                    break
-                if not self.global_mon.pending(timeout=remaining):
-                    break
-        return None
+            return self.wait_event(events, timeout)
+        return self._wait_event(self.global_mon, "(global): ",
+                                events, timeout)
 
     def wait_group_event(self, events, timeout=10):
         if self.group_ifname and self.group_ifname != self.ifname:
