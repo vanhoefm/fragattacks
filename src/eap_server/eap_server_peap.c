@@ -1,6 +1,6 @@
 /*
  * hostapd / EAP-PEAP (draft-josefsson-pppext-eap-tls-eap-10.txt)
- * Copyright (c) 2004-2008, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -756,7 +756,7 @@ static void eap_peap_process_phase2_tlv(struct eap_sm *sm,
 			} else {
 				eap_peap_state(data, FAILURE);
 			}
-			
+
 		} else if (status == EAP_TLV_RESULT_FAILURE) {
 			wpa_printf(MSG_INFO, "EAP-PEAP: TLV Result - Failure "
 				   "- requested %s", requested);
@@ -1328,8 +1328,9 @@ static u8 * eap_peap_getKey(struct eap_sm *sm, void *priv, size_t *len)
 	/* TODO: PEAPv1 - different label in some cases */
 	eapKeyData = eap_server_tls_derive_key(sm, &data->ssl,
 					       "client EAP encryption",
-					       EAP_TLS_KEY_LEN);
+					       EAP_TLS_KEY_LEN + EAP_EMSK_LEN);
 	if (eapKeyData) {
+		os_memset(eapKeyData + EAP_TLS_KEY_LEN, 0, EAP_EMSK_LEN);
 		*len = EAP_TLS_KEY_LEN;
 		wpa_hexdump(MSG_DEBUG, "EAP-PEAP: Derived key",
 			    eapKeyData, EAP_TLS_KEY_LEN);
@@ -1338,6 +1339,40 @@ static u8 * eap_peap_getKey(struct eap_sm *sm, void *priv, size_t *len)
 	}
 
 	return eapKeyData;
+}
+
+
+static u8 * eap_peap_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
+{
+	struct eap_peap_data *data = priv;
+	u8 *eapKeyData, *emsk;
+
+	if (data->state != SUCCESS)
+		return NULL;
+
+	if (data->crypto_binding_used) {
+		/* [MS-PEAP] does not define EMSK derivation */
+		return NULL;
+	}
+
+	/* TODO: PEAPv1 - different label in some cases */
+	eapKeyData = eap_server_tls_derive_key(sm, &data->ssl,
+					       "client EAP encryption",
+					       EAP_TLS_KEY_LEN + EAP_EMSK_LEN);
+	if (eapKeyData) {
+		emsk = os_memdup(eapKeyData + EAP_TLS_KEY_LEN, EAP_EMSK_LEN);
+		bin_clear_free(eapKeyData, EAP_TLS_KEY_LEN + EAP_EMSK_LEN);
+		if (!emsk)
+			return NULL;
+		*len = EAP_EMSK_LEN;
+		wpa_hexdump(MSG_DEBUG, "EAP-PEAP: Derived EMSK",
+			    emsk, EAP_EMSK_LEN);
+	} else {
+		wpa_printf(MSG_DEBUG, "EAP-PEAP: Failed to derive EMSK");
+		emsk = NULL;
+	}
+
+	return emsk;
 }
 
 
@@ -1376,6 +1411,7 @@ int eap_server_peap_register(void)
 	eap->process = eap_peap_process;
 	eap->isDone = eap_peap_isDone;
 	eap->getKey = eap_peap_getKey;
+	eap->get_emsk = eap_peap_get_emsk;
 	eap->isSuccess = eap_peap_isSuccess;
 	eap->getSessionId = eap_peap_get_session_id;
 
