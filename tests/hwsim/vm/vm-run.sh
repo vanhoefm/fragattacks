@@ -86,6 +86,8 @@ done
 
 LOGDIR=$LOGS/$DATE
 mkdir -p $LOGDIR
+rm -f $LOGS/latest
+ln -s $LOGDIR $LOGS/latest
 
 if [ -n "$CODECOV_DIR" ]; then
     cp -a $CODECOV_DIR/alt-wpa_supplicant $LOGDIR
@@ -142,7 +144,7 @@ fi
 
 echo
 echo "Test run completed"
-echo "Logfiles are at $LOGDIR"
+echo "Logfiles are at $LOGDIR ($LOGS/latest)"
 if [ $CODECOV = "yes" ]; then
     echo "Code coverage report:"
     echo "file://$LOGDIR/lcov/index.html"
