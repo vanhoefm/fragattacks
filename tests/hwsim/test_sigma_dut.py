@@ -30,6 +30,9 @@ def check_sigma_dut():
 def to_hex(s):
     return binascii.hexlify(s.encode()).decode()
 
+def from_hex(s):
+    return binascii.unhexlify(s).decode()
+
 def sigma_dut_cmd(cmd, port=9000, timeout=2):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM,
                          socket.IPPROTO_TCP)
@@ -968,7 +971,7 @@ def run_sigma_dut_dpp_qr_resp(dev, apdev, conf_idx, chan_list=None,
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
         hex = res.split(',')[3]
-        uri = hex.decode('hex')
+        uri = from_hex(hex)
         logger.info("URI from sigma_dut: " + uri)
 
         res = dev[1].request("DPP_QR_CODE " + uri)
@@ -1105,7 +1108,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra=''):
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
         hex = res.split(',')[3]
-        uri = hex.decode('hex')
+        uri = from_hex(hex)
         logger.info("URI from sigma_dut: " + uri)
 
         res = dev[1].request("DPP_QR_CODE " + uri)
@@ -1189,7 +1192,7 @@ def run_sigma_dut_dpp_qr_mutual_resp_enrollee(dev, apdev, extra=None):
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
         hex = res.split(',')[3]
-        uri = hex.decode('hex')
+        uri = from_hex(hex)
         logger.info("URI from sigma_dut: " + uri)
 
         res = dev[1].request("DPP_QR_CODE " + uri)
@@ -1288,7 +1291,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee(dev, apdev, resp_pending):
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
         hex = res.split(',')[3]
-        uri = hex.decode('hex')
+        uri = from_hex(hex)
         logger.info("URI from sigma_dut: " + uri)
 
         if not resp_pending:
@@ -1485,7 +1488,7 @@ def test_sigma_dut_dpp_incompatible_roles_init(dev, apdev):
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
         hex = res.split(',')[3]
-        uri = hex.decode('hex')
+        uri = from_hex(hex)
         logger.info("URI from sigma_dut: " + uri)
 
         res = dev[1].request("DPP_QR_CODE " + uri)
@@ -1539,7 +1542,7 @@ def test_sigma_dut_dpp_incompatible_roles_resp(dev, apdev):
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
         hex = res.split(',')[3]
-        uri = hex.decode('hex')
+        uri = from_hex(hex)
         logger.info("URI from sigma_dut: " + uri)
 
         res = dev[1].request("DPP_QR_CODE " + uri)
@@ -1629,7 +1632,7 @@ def run_sigma_dut_ap_dpp_qr(dev, apdev, params, ap_conf, sta_conf, extra=""):
             if "status,COMPLETE" not in res:
                 raise Exception("dev_exec_action did not succeed: " + res)
             hex = res.split(',')[3]
-            uri = hex.decode('hex')
+            uri = from_hex(hex)
             logger.info("URI from sigma_dut: " + uri)
 
             cmd = "DPP_CONFIGURATOR_ADD"
@@ -1850,7 +1853,7 @@ def run_sigma_dut_dpp_proto_responder(dev, step, frame, attr, result, fail):
     if "status,COMPLETE" not in res:
         raise Exception("dev_exec_action did not succeed: " + res)
     hex = res.split(',')[3]
-    uri = hex.decode('hex')
+    uri = from_hex(hex)
     logger.info("URI from sigma_dut: " + uri)
 
     res = dev[1].request("DPP_QR_CODE " + uri)
@@ -1992,7 +1995,7 @@ def run_sigma_dut_dpp_proto_stop_at_responder(dev, frame, result, fail):
     if "status,COMPLETE" not in res:
         raise Exception("dev_exec_action did not succeed: " + res)
     hex = res.split(',')[3]
-    uri = hex.decode('hex')
+    uri = from_hex(hex)
     logger.info("URI from sigma_dut: " + uri)
 
     res = dev[1].request("DPP_QR_CODE " + uri)

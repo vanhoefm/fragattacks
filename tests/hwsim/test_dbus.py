@@ -776,7 +776,7 @@ def _test_dbus_wps_pin(dev, apdev):
 
         def start_pin(self, *args):
             logger.debug("start_pin")
-            bssid_ay = dbus.ByteArray(bssid.replace(':','').decode('hex'))
+            bssid_ay = dbus.ByteArray(binascii.unhexlify(bssid.replace(':','').encode()))
             wps.Start({'Role': 'enrollee', 'Type': 'pin', 'Pin': '12345670',
                        'Bssid': bssid_ay})
             return False
@@ -836,7 +836,7 @@ def _test_dbus_wps_pin2(dev, apdev):
 
         def start_pin(self, *args):
             logger.debug("start_pin")
-            bssid_ay = dbus.ByteArray(bssid.replace(':','').decode('hex'))
+            bssid_ay = dbus.ByteArray(binascii.unhexlify(bssid.replace(':','').encode()))
             res = wps.Start({'Role': 'enrollee', 'Type': 'pin',
                              'Bssid': bssid_ay})
             pin = res['Pin']
@@ -902,7 +902,7 @@ def _test_dbus_wps_pin_m2d(dev, apdev):
 
         def start_pin(self, *args):
             logger.debug("start_pin")
-            bssid_ay = dbus.ByteArray(bssid.replace(':','').decode('hex'))
+            bssid_ay = dbus.ByteArray(binascii.unhexlify(bssid.replace(':','').encode()))
             wps.Start({'Role': 'enrollee', 'Type': 'pin', 'Pin': '12345670',
                        'Bssid': bssid_ay})
             return False
@@ -957,7 +957,7 @@ def _test_dbus_wps_reg(dev, apdev):
 
         def start_reg(self, *args):
             logger.debug("start_reg")
-            bssid_ay = dbus.ByteArray(bssid.replace(':','').decode('hex'))
+            bssid_ay = dbus.ByteArray(binascii.unhexlify(bssid.replace(':','').encode()))
             wps.Start({'Role': 'registrar', 'Type': 'pin',
                        'Pin': '12345670', 'Bssid': bssid_ay})
             return False
@@ -981,7 +981,7 @@ def test_dbus_wps_cancel(dev, apdev):
 
     wps.Cancel()
     dev[0].scan_for_bss(bssid, freq="2412")
-    bssid_ay = dbus.ByteArray(bssid.replace(':','').decode('hex'))
+    bssid_ay = dbus.ByteArray(binascii.unhexlify(bssid.replace(':','').encode()))
     wps.Start({'Role': 'enrollee', 'Type': 'pin', 'Pin': '12345670',
                'Bssid': bssid_ay})
     wps.Cancel()

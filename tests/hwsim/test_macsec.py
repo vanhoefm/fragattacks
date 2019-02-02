@@ -6,6 +6,7 @@
 
 import logging
 logger = logging.getLogger()
+import binascii
 import os
 import signal
 import subprocess
@@ -175,9 +176,9 @@ def lower_addr(addr1, addr2):
     a1 = addr1.split(':')
     a2 = addr2.split(':')
     for i in range(6):
-        if a1[i].decode("hex") < a2[i].decode("hex"):
+        if binascii.unhexlify(a1[i]) < binascii.unhexlify(a2[i]):
             return True
-        if a1[i].decode("hex") > a2[i].decode("hex"):
+        if binascii.unhexlify(a1[i]) > binascii.unhexlify(a2[i]):
             return False
     return False
 
