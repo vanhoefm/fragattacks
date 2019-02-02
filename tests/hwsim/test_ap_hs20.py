@@ -5815,7 +5815,7 @@ def test_ap_hs20_set_profile_failures(dev, apdev):
                                   'realm': "example.com",
                                   'username': "user",
                                   'eap': "PEAP" })
-    dev[0].set_cred(id, "password", "ext:password");
+    dev[0].set_cred(id, "password", "ext:password")
     interworking_select(dev[0], bssid, "home", freq=2412)
     dev[0].dump_monitor()
     dev[0].request("NOTE wpa_config_set(password)")

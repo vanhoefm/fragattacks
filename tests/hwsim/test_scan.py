@@ -1781,7 +1781,7 @@ def test_scan_multiple_mbssid_ie(dev, apdev):
     dev[0].flush_scan_cache()
 
     bssid = apdev[0]['bssid']
-    logger.info("bssid: " + bssid);
+    logger.info("bssid: " + bssid)
     hapd = None
 
     # construct 2 MBSSID IEs, each MBSSID IE contains 1 profile
@@ -1808,7 +1808,7 @@ def test_scan_mbssid_hidden_ssid(dev, apdev):
     dev[0].flush_scan_cache()
 
     bssid = apdev[0]['bssid']
-    logger.info("bssid: " + bssid);
+    logger.info("bssid: " + bssid)
     hapd = None
 
     # construct 2 MBSSID IEs, each MBSSID IE contains 1 profile

@@ -613,7 +613,7 @@ def test_fils_sk_multiple_realms(dev, apdev, params):
 
     if 'anqp_fils_realm_info' not in bss:
         raise Exception("FILS Realm Information ANQP-element not seen")
-    info = bss['anqp_fils_realm_info'];
+    info = bss['anqp_fils_realm_info']
     expected = ''
     for realm in fils_realms:
         hash = hashlib.sha256(realm.lower()).digest()

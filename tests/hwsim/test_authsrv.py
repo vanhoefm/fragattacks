@@ -18,7 +18,7 @@ def authsrv_params():
                "server_cert": "auth_serv/server.pem",
                "private_key": "auth_serv/server.key",
                "eap_message": "hello" }
-    return params;
+    return params
 
 def test_authsrv_oom(dev, apdev):
     """Authentication server OOM"""

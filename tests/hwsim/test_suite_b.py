@@ -300,7 +300,7 @@ def test_suite_b_192_radius_and_p256_cert(dev, apdev):
     if ev is None:
         raise Exception("Disconnection not reported")
     if "reason=23" not in ev:
-        raise Exception("Unexpected disconnection reason: " + ev);
+        raise Exception("Unexpected disconnection reason: " + ev)
 
 def test_suite_b_pmkid_failure(dev, apdev):
     """WPA2/GCMP connection at Suite B 128-bit level and PMKID derivation failure"""
@@ -608,4 +608,4 @@ def run_suite_b_192_rsa_radius_rsa2048_client(dev, apdev, ecdhe):
     if ev is None:
         raise Exception("Disconnection not reported")
     if "reason=23" not in ev:
-        raise Exception("Unexpected disconnection reason: " + ev);
+        raise Exception("Unexpected disconnection reason: " + ev)

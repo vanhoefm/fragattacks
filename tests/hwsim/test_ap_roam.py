@@ -97,7 +97,7 @@ def test_ap_reconnect_auth_timeout(dev, apdev, params):
     time.sleep(10)
     ev = wpas.wait_event(["CTRL-EVENT-SCAN-STARTED"], 12)
     if not ev:
-        raise Exception("CTRL-EVENT-SCAN-STARTED not seen");
+        raise Exception("CTRL-EVENT-SCAN-STARTED not seen")
 
     b = get_blacklist(wpas)
     if '00:00:00:00:00:00' in b:
@@ -133,7 +133,7 @@ def test_ap_roam_with_reassoc_auth_timeout(dev, apdev, params):
     time.sleep(10)
     ev = wpas.wait_event(["CTRL-EVENT-SCAN-STARTED"], 12)
     if not ev:
-        raise Exception("CTRL-EVENT-SCAN-STARTED not seen");
+        raise Exception("CTRL-EVENT-SCAN-STARTED not seen")
 
     b = get_blacklist(wpas)
     if bssid0 in b:

@@ -57,7 +57,7 @@ def run_rssi_based_assoc_rej_timeout(dev, apdev, params):
     if ev is None:
         raise Exception("Association not rejected")
     if 'status_code=34' not in ev:
-        raise Exception("STA assoc request was not rejected with status code 34: " + ev);
+        raise Exception("STA assoc request was not rejected with status code 34: " + ev)
     t_rej = datetime.now()
 
     # Set the scan interval to make dev[0] look for connections

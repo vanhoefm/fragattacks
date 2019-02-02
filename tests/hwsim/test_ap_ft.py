@@ -270,11 +270,11 @@ def test_ap_ft_local_key_gen(dev, apdev):
     passphrase="12345678"
 
     params = ft_params1a(ssid=ssid, passphrase=passphrase)
-    params['ft_psk_generate_local'] = "1";
+    params['ft_psk_generate_local'] = "1"
     del params['pmk_r1_push']
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2a(ssid=ssid, passphrase=passphrase)
-    params['ft_psk_generate_local'] = "1";
+    params['ft_psk_generate_local'] = "1"
     del params['pmk_r1_push']
     hapd1 = hostapd.add_ap(apdev[1], params)
 
@@ -288,13 +288,13 @@ def test_ap_ft_vlan(dev, apdev):
     passphrase="12345678"
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
 
     params = ft_params2(ssid=ssid, passphrase=passphrase)
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, conndev="brvlan1")
@@ -307,15 +307,15 @@ def test_ap_ft_vlan_disconnected(dev, apdev):
     passphrase="12345678"
 
     params = ft_params1a(ssid=ssid, passphrase=passphrase)
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
-    params['ft_psk_generate_local'] = "1";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
+    params['ft_psk_generate_local'] = "1"
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
 
     params = ft_params2a(ssid=ssid, passphrase=passphrase)
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
-    params['ft_psk_generate_local'] = "1";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
+    params['ft_psk_generate_local'] = "1"
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, conndev="brvlan1")
@@ -328,12 +328,12 @@ def test_ap_ft_vlan_2(dev, apdev):
     passphrase="12345678"
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
 
     params = ft_params2(ssid=ssid, passphrase=passphrase)
-    params['dynamic_vlan'] = "1";
+    params['dynamic_vlan'] = "1"
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, conndev="brvlan1",
@@ -359,13 +359,13 @@ def test_ap_ft_many_vlan(dev, apdev):
     passphrase="12345678"
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
 
     params = ft_params2(ssid=ssid, passphrase=passphrase)
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, roams=50,
@@ -615,12 +615,12 @@ def test_ap_ft_vlan_over_ds(dev, apdev):
     passphrase="12345678"
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
@@ -647,12 +647,12 @@ def test_ap_ft_vlan_over_ds_many(dev, apdev):
     passphrase="12345678"
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
@@ -854,13 +854,13 @@ def test_ap_ft_over_ds_pull_vlan(dev, apdev):
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
     params["pmk_r1_push"] = "0"
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params["pmk_r1_push"] = "0"
-    params['dynamic_vlan'] = "1";
-    params['accept_mac_file'] = "hostapd.accept";
+    params['dynamic_vlan'] = "1"
+    params['accept_mac_file'] = "hostapd.accept"
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
@@ -1169,13 +1169,13 @@ def test_ap_ft_mismatching_rrb_key_push_eap(dev, apdev):
 
     radius = hostapd.radius_params()
     params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params["ieee80211w"] = "2";
+    params["ieee80211w"] = "2"
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
     params = dict(list(radius.items()) + list(params.items()))
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2_incorrect_rrb_key(ssid=ssid, passphrase=passphrase)
-    params["ieee80211w"] = "2";
+    params["ieee80211w"] = "2"
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
     params = dict(list(radius.items()) + list(params.items()))
@@ -1241,13 +1241,13 @@ def test_ap_ft_mismatching_rrb_r0kh_push_eap(dev, apdev):
 
     radius = hostapd.radius_params()
     params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params["ieee80211w"] = "2";
+    params["ieee80211w"] = "2"
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
     params = dict(list(radius.items()) + list(params.items()))
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2_r0kh_mismatch(ssid=ssid, passphrase=passphrase)
-    params["ieee80211w"] = "2";
+    params["ieee80211w"] = "2"
     params['wpa_key_mgmt'] = "FT-EAP"
     params["ieee8021x"] = "1"
     params = dict(list(radius.items()) + list(params.items()))
@@ -1828,7 +1828,7 @@ def test_ap_ft_ap_oom8(dev, apdev):
     passphrase="12345678"
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params['ft_psk_generate_local'] = "1";
+    params['ft_psk_generate_local'] = "1"
     hapd0 = hostapd.add_ap(apdev[0], params)
     bssid0 = hapd0.own_addr()
 
@@ -1837,7 +1837,7 @@ def test_ap_ft_ap_oom8(dev, apdev):
                    scan_freq="2412")
 
     params = ft_params2(ssid=ssid, passphrase=passphrase)
-    params['ft_psk_generate_local'] = "1";
+    params['ft_psk_generate_local'] = "1"
     hapd1 = hostapd.add_ap(apdev[1], params)
     bssid1 = hapd1.own_addr()
     dev[0].scan_for_bss(bssid1, freq="2412")
@@ -2614,13 +2614,13 @@ def test_ap_ft_eap_sha384(dev, apdev):
 
     radius = hostapd.radius_params()
     params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params["ieee80211w"] = "2";
+    params["ieee80211w"] = "2"
     params['wpa_key_mgmt'] = "FT-EAP-SHA384"
     params["ieee8021x"] = "1"
     params = dict(list(radius.items()) + list(params.items()))
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
-    params["ieee80211w"] = "2";
+    params["ieee80211w"] = "2"
     params['wpa_key_mgmt'] = "FT-EAP-SHA384"
     params["ieee8021x"] = "1"
     params = dict(list(radius.items()) + list(params.items()))
@@ -2636,13 +2636,13 @@ def test_ap_ft_eap_sha384_over_ds(dev, apdev):
 
     radius = hostapd.radius_params()
     params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params["ieee80211w"] = "2";
+    params["ieee80211w"] = "2"
     params['wpa_key_mgmt'] = "FT-EAP-SHA384"
     params["ieee8021x"] = "1"
     params = dict(list(radius.items()) + list(params.items()))
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
-    params["ieee80211w"] = "2";
+    params["ieee80211w"] = "2"
     params['wpa_key_mgmt'] = "FT-EAP-SHA384"
     params["ieee8021x"] = "1"
     params = dict(list(radius.items()) + list(params.items()))

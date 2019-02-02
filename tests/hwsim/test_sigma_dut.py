@@ -1013,7 +1013,7 @@ def test_sigma_dut_dpp_qr_init_enrollee(dev, apdev):
         dev[0].set("dpp_config_processing", "2")
 
         cmd = "DPP_CONFIGURATOR_ADD key=" + csign
-        res = dev[1].request(cmd);
+        res = dev[1].request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to add configurator")
         conf_id = int(res)
@@ -1027,7 +1027,7 @@ def test_sigma_dut_dpp_qr_init_enrollee(dev, apdev):
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         dev[1].set("dpp_configurator_params",
-                   " conf=sta-dpp ssid=%s configurator=%d" % ("DPPNET01".encode("hex"), conf_id));
+                   " conf=sta-dpp ssid=%s configurator=%d" % ("DPPNET01".encode("hex"), conf_id))
         cmd = "DPP_LISTEN 2437 role=configurator"
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to start listen operation")
@@ -1079,7 +1079,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra=''):
         dev[0].set("dpp_config_processing", "2")
 
         cmd = "DPP_CONFIGURATOR_ADD key=" + csign
-        res = dev[1].request(cmd);
+        res = dev[1].request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to add configurator")
         conf_id = int(res)
@@ -1093,7 +1093,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra=''):
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         dev[1].set("dpp_configurator_params",
-                   " conf=sta-dpp ssid=%s configurator=%d" % ("DPPNET01".encode("hex"), conf_id));
+                   " conf=sta-dpp ssid=%s configurator=%d" % ("DPPNET01".encode("hex"), conf_id))
         cmd = "DPP_LISTEN 2437 role=configurator qr=mutual"
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to start listen operation")
@@ -1169,7 +1169,7 @@ def run_sigma_dut_dpp_qr_mutual_resp_enrollee(dev, apdev, extra=None):
         dev[0].set("dpp_config_processing", "2")
 
         cmd = "DPP_CONFIGURATOR_ADD key=" + csign
-        res = dev[1].request(cmd);
+        res = dev[1].request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to add configurator")
         conf_id = int(res)
@@ -1216,7 +1216,7 @@ def run_sigma_dut_dpp_qr_mutual_resp_enrollee(dev, apdev, extra=None):
 def dpp_resp_conf_mutual(dev, conf_id, uri):
     logger.info("Starting DPP responder/configurator in a thread")
     dev.set("dpp_configurator_params",
-            " conf=sta-dpp ssid=%s configurator=%d" % ("DPPNET01".encode("hex"), conf_id));
+            " conf=sta-dpp ssid=%s configurator=%d" % ("DPPNET01".encode("hex"), conf_id))
     cmd = "DPP_LISTEN 2437 role=configurator qr=mutual"
     if "OK" not in dev.request(cmd):
         raise Exception("Failed to initiate DPP listen")
@@ -1267,7 +1267,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee(dev, apdev, resp_pending):
         dev[0].set("dpp_config_processing", "2")
 
         cmd = "DPP_CONFIGURATOR_ADD key=" + csign
-        res = dev[1].request(cmd);
+        res = dev[1].request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to add configurator")
         conf_id = int(res)
@@ -1325,7 +1325,7 @@ def test_sigma_dut_dpp_qr_init_enrollee_psk(dev, apdev):
         dev[0].set("dpp_config_processing", "2")
 
         cmd = "DPP_CONFIGURATOR_ADD"
-        res = dev[1].request(cmd);
+        res = dev[1].request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to add configurator")
         conf_id = int(res)
@@ -1339,7 +1339,7 @@ def test_sigma_dut_dpp_qr_init_enrollee_psk(dev, apdev):
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         dev[1].set("dpp_configurator_params",
-                   " conf=sta-psk ssid=%s pass=%s configurator=%d" % ("DPPNET01".encode("hex"), "ThisIsDppPassphrase".encode("hex"), conf_id));
+                   " conf=sta-psk ssid=%s pass=%s configurator=%d" % ("DPPNET01".encode("hex"), "ThisIsDppPassphrase".encode("hex"), conf_id))
         cmd = "DPP_LISTEN 2437 role=configurator"
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to start listen operation")
@@ -1373,7 +1373,7 @@ def test_sigma_dut_dpp_qr_init_enrollee_sae(dev, apdev):
         dev[0].set("dpp_config_processing", "2")
 
         cmd = "DPP_CONFIGURATOR_ADD"
-        res = dev[1].request(cmd);
+        res = dev[1].request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to add configurator")
         conf_id = int(res)
@@ -1387,7 +1387,7 @@ def test_sigma_dut_dpp_qr_init_enrollee_sae(dev, apdev):
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         dev[1].set("dpp_configurator_params",
-                   " conf=sta-sae ssid=%s pass=%s configurator=%d" % ("DPPNET01".encode("hex"), "ThisIsDppPassphrase".encode("hex"), conf_id));
+                   " conf=sta-sae ssid=%s pass=%s configurator=%d" % ("DPPNET01".encode("hex"), "ThisIsDppPassphrase".encode("hex"), conf_id))
         cmd = "DPP_LISTEN 2437 role=configurator"
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to start listen operation")
@@ -1629,7 +1629,7 @@ def run_sigma_dut_ap_dpp_qr(dev, apdev, params, ap_conf, sta_conf, extra=""):
             logger.info("URI from sigma_dut: " + uri)
 
             cmd = "DPP_CONFIGURATOR_ADD"
-            res = dev[0].request(cmd);
+            res = dev[0].request(cmd)
             if "FAIL" in res:
                 raise Exception("Failed to add configurator")
             conf_id = int(res)
@@ -1709,7 +1709,7 @@ def run_sigma_dut_ap_dpp_pkex_responder(dev, apdev):
     sigma_dut_cmd_check("ap_reset_default,program,DPP")
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[0].request(cmd);
+    res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -1734,7 +1734,7 @@ def test_sigma_dut_dpp_pkex_responder_proto(dev, apdev):
 
 def run_sigma_dut_dpp_pkex_responder_proto(dev, apdev):
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[1].request(cmd);
+    res = dev[1].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -1753,7 +1753,7 @@ def dpp_proto_init(dev, id1):
     time.sleep(1)
     logger.info("Starting DPP initiator/configurator in a thread")
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev.request(cmd);
+    res = dev.request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -2015,7 +2015,7 @@ def dpp_proto_init_pkex(dev):
     time.sleep(1)
     logger.info("Starting DPP PKEX initiator/configurator in a thread")
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev.request(cmd);
+    res = dev.request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -2145,7 +2145,7 @@ def init_sigma_dut_dpp_proto_peer_disc_req(dev, apdev):
     dev[0].set("dpp_config_processing", "2")
 
     cmd = "DPP_CONFIGURATOR_ADD key=" + csign
-    res = dev[1].request(cmd);
+    res = dev[1].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -2159,7 +2159,7 @@ def init_sigma_dut_dpp_proto_peer_disc_req(dev, apdev):
     uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     dev[1].set("dpp_configurator_params",
-               " conf=sta-dpp ssid=%s configurator=%d" % ("DPPNET01".encode("hex"), conf_id));
+               " conf=sta-dpp ssid=%s configurator=%d" % ("DPPNET01".encode("hex"), conf_id))
     cmd = "DPP_LISTEN 2437 role=configurator"
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to start listen operation")

@@ -355,11 +355,11 @@ def _test_ap_track_taxonomy(dev, apdev):
     if "|assoc:" not in res:
         raise Exception("Missing assoc info in SIGNATURE")
     if "wps:" in res:
-        raise Exception("Unexpected WPS info");
+        raise Exception("Unexpected WPS info")
     if ",221(0050f2,4)," in res:
-        raise Exception("Unexpected WPS IE info");
+        raise Exception("Unexpected WPS IE info")
     if ",221(506f9a,9)," in res:
-        raise Exception("Unexpected P2P IE info");
+        raise Exception("Unexpected P2P IE info")
 
     res = hapd.request("SIGNATURE " + addr)
     logger.info("sta: " + res)
@@ -370,9 +370,9 @@ def _test_ap_track_taxonomy(dev, apdev):
     if "wps:track_test" not in res:
         raise Exception("Missing WPS model name")
     if ",221(0050f2,4)," not in res:
-        raise Exception("Missing WPS IE info");
+        raise Exception("Missing WPS IE info")
     if ",221(506f9a,9)," not in res:
-        raise Exception("Missing P2P IE info");
+        raise Exception("Missing P2P IE info")
 
     addr2 = dev[2].own_addr()
     res = hapd.request("SIGNATURE " + addr2)

@@ -313,7 +313,7 @@ def run_dpp_qr_code_auth_unicast(dev, apdev, curve, netrole=None, key=None,
         cmd = "DPP_CONFIGURATOR_ADD"
         if conf_curve:
             cmd += " curve=" + conf_curve
-        res = dev[1].request(cmd);
+        res = dev[1].request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to add configurator")
         conf_id = int(res)
@@ -988,7 +988,7 @@ def test_dpp_qr_code_auth_neg_chan(dev, apdev):
 
     logger.info("Create configurator on dev1")
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[1].request(cmd);
+    res = dev[1].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -1977,7 +1977,7 @@ def run_dpp_ap_config(dev, apdev, curve=None, conf_curve=None,
     cmd = "DPP_CONFIGURATOR_ADD"
     if conf_curve:
         cmd += " curve=" + conf_curve
-    res = dev[0].request(cmd);
+    res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -2035,7 +2035,7 @@ def run_dpp_ap_config(dev, apdev, curve=None, conf_curve=None,
         if conf_curve:
             cmd += " curve=" + conf_curve
         cmd += " key=" + csign
-        res = dev[0].request(cmd);
+        res = dev[0].request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to add configurator (reconf)")
         conf_id = int(res)
@@ -2346,7 +2346,7 @@ def run_dpp_qr_code_auth_responder_configurator(dev, apdev, extra):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[0].request(cmd);
+    res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -2365,7 +2365,7 @@ def run_dpp_qr_code_auth_responder_configurator(dev, apdev, extra):
     id1 = int(res)
 
     dev[0].set("dpp_configurator_params",
-               " conf=sta-dpp configurator=%d%s" % (conf_id, extra));
+               " conf=sta-dpp configurator=%d%s" % (conf_id, extra))
     cmd = "DPP_LISTEN 2412 role=configurator"
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to start listen operation")
@@ -2396,7 +2396,7 @@ def test_dpp_qr_code_hostapd_init(dev, apdev):
     check_dpp_capab(hapd)
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[0].request(cmd);
+    res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -2410,7 +2410,7 @@ def test_dpp_qr_code_hostapd_init(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     dev[0].set("dpp_configurator_params",
-               " conf=ap-dpp configurator=%d" % conf_id);
+               " conf=ap-dpp configurator=%d" % conf_id)
     cmd = "DPP_LISTEN 2437 role=configurator"
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to start listen operation")
@@ -2453,7 +2453,7 @@ def run_dpp_qr_code_hostapd_init_offchannel(dev, apdev, extra):
     check_dpp_capab(hapd)
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[0].request(cmd);
+    res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -2467,7 +2467,7 @@ def run_dpp_qr_code_hostapd_init_offchannel(dev, apdev, extra):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     dev[0].set("dpp_configurator_params",
-               " conf=ap-dpp configurator=%d" % conf_id);
+               " conf=ap-dpp configurator=%d" % conf_id)
     cmd = "DPP_LISTEN 2462 role=configurator"
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to start listen operation")
@@ -2722,7 +2722,7 @@ def test_dpp_pkex_config(dev, apdev):
     check_dpp_capab(dev[1])
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[1].request(cmd);
+    res = dev[1].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -3191,13 +3191,13 @@ def test_dpp_pkex_config2(dev, apdev):
     check_dpp_capab(dev[0])
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[0].request(cmd);
+    res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
     dev[0].set("dpp_configurator_params",
-               " conf=sta-dpp configurator=%d" % conf_id);
+               " conf=sta-dpp configurator=%d" % conf_id)
     run_dpp_pkex2(dev, apdev)
 
 def run_dpp_pkex2(dev, apdev, curve=None, init_extra=""):
@@ -3332,7 +3332,7 @@ def test_dpp_pkex_hostapd_responder(dev, apdev):
         raise Exception("Failed to set PKEX data (responder/hostapd)")
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[0].request(cmd);
+    res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -3371,7 +3371,7 @@ def test_dpp_pkex_hostapd_initiator(dev, apdev):
     check_dpp_capab(hapd)
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[0].request(cmd);
+    res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -3383,7 +3383,7 @@ def test_dpp_pkex_hostapd_initiator(dev, apdev):
     id0 = int(res)
 
     dev[0].set("dpp_configurator_params",
-               " conf=ap-dpp configurator=%d" % conf_id);
+               " conf=ap-dpp configurator=%d" % conf_id)
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
     res = dev[0].request(cmd)
@@ -3428,7 +3428,7 @@ def test_dpp_hostapd_configurator(dev, apdev):
     check_dpp_capab(hapd)
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = hapd.request(cmd);
+    res = hapd.request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -3484,13 +3484,13 @@ def test_dpp_hostapd_configurator_responder(dev, apdev):
     check_dpp_capab(hapd)
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = hapd.request(cmd);
+    res = hapd.request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
     hapd.set("dpp_configurator_params",
-             " conf=sta-dpp configurator=%d" % conf_id);
+             " conf=sta-dpp configurator=%d" % conf_id)
 
     addr = hapd.own_addr().replace(':', '')
     cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
@@ -3560,7 +3560,7 @@ def run_dpp_own_config(dev, apdev, own_curve=None, expect_failure=False,
     uri = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id_h)
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[0].request(cmd);
+    res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -3604,7 +3604,7 @@ def run_dpp_own_config(dev, apdev, own_curve=None, expect_failure=False,
     if expect_failure:
         ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
         if ev is not None:
-            raise Exception("Unexpected connection");
+            raise Exception("Unexpected connection")
         dev[0].request("DISCONNECT")
     else:
         dev[0].wait_connected()
@@ -3636,7 +3636,7 @@ def run_dpp_own_config_ap(dev, apdev, reconf_configurator=False, extra=""):
     check_dpp_capab(hapd)
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = hapd.request(cmd);
+    res = hapd.request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -3657,7 +3657,7 @@ def run_dpp_own_config_ap(dev, apdev, reconf_configurator=False, extra=""):
         if "OK" not in res:
             raise Exception("DPP_CONFIGURATOR_REMOVE failed")
         cmd = "DPP_CONFIGURATOR_ADD key=" + csign
-        res = hapd.request(cmd);
+        res = hapd.request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to add configurator (reconf)")
         conf_id = int(res)
@@ -3727,7 +3727,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
     uri = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id_h)
 
     logger.info("Provision AP with DPP configuration")
-    res = dev[1].request("DPP_CONFIGURATOR_ADD");
+    res = dev[1].request("DPP_CONFIGURATOR_ADD")
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -3792,7 +3792,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
     if "OK" not in dev[2].request(cmd):
         raise Exception("Failed to start listen operation")
 
-    res = dev[1].request("DPP_CONFIGURATOR_ADD");
+    res = dev[1].request("DPP_CONFIGURATOR_ADD")
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id_2 = int(res)
@@ -3913,7 +3913,7 @@ def run_dpp_proto_init(dev, test_dev, test, mutual=False, unicast=True,
         else:
             cmd += " role=configurator"
         dev[0].set("dpp_configurator_params",
-                   " conf=sta-dpp configurator=%d" % conf_id);
+                   " conf=sta-dpp configurator=%d" % conf_id)
     elif incompatible_roles:
         cmd += " role=enrollee"
 
@@ -4881,12 +4881,12 @@ def test_dpp_pkex_alloc_fail(dev, apdev):
     for count, func in tests:
         with alloc_fail(dev[1], count, func):
             cmd = "DPP_CONFIGURATOR_ADD"
-            res = dev[1].request(cmd);
+            res = dev[1].request(cmd)
             if "FAIL" not in res:
                 raise Exception("Unexpected DPP_CONFIGURATOR_ADD success")
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[1].request(cmd);
+    res = dev[1].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -5023,7 +5023,7 @@ def test_dpp_pkex_test_fail(dev, apdev):
     for count, func in tests:
         with fail_test(dev[1], count, func):
             cmd = "DPP_CONFIGURATOR_ADD"
-            res = dev[1].request(cmd);
+            res = dev[1].request(cmd)
             if "FAIL" not in res:
                 raise Exception("Unexpected DPP_CONFIGURATOR_ADD success")
 
@@ -5031,12 +5031,12 @@ def test_dpp_pkex_test_fail(dev, apdev):
     for count, func in tests:
         with fail_test(dev[1], count, func):
             cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-            res = dev[1].request(cmd);
+            res = dev[1].request(cmd)
             if "FAIL" not in res:
                 raise Exception("Unexpected DPP_BOOTSTRAP_GEN success")
 
     cmd = "DPP_CONFIGURATOR_ADD"
-    res = dev[1].request(cmd);
+    res = dev[1].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -5517,7 +5517,7 @@ def test_dpp_invalid_configurator_key(dev, apdev):
 def test_dpp_own_config_sign_fail(dev, apdev):
     """DPP own config signing failure"""
     check_dpp_capab(dev[0])
-    res = dev[0].request("DPP_CONFIGURATOR_ADD");
+    res = dev[0].request("DPP_CONFIGURATOR_ADD")
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -5542,7 +5542,7 @@ def run_dpp_peer_intro_failures(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
     check_dpp_capab(hapd)
 
-    res = hapd.request("DPP_CONFIGURATOR_ADD key=" + dpp_key_p256);
+    res = hapd.request("DPP_CONFIGURATOR_ADD key=" + dpp_key_p256)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
@@ -5550,7 +5550,7 @@ def run_dpp_peer_intro_failures(dev, apdev):
     if "FAIL" in csign or len(csign) == 0:
         raise Exception("DPP_CONFIGURATOR_GET_KEY failed")
 
-    res = dev[0].request("DPP_CONFIGURATOR_ADD key=" + csign);
+    res = dev[0].request("DPP_CONFIGURATOR_ADD key=" + csign)
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id2 = int(res)
@@ -5796,7 +5796,7 @@ def test_dpp_network_addition_failure(dev, apdev):
 def run_dpp_network_addition_failure(dev, apdev):
     check_dpp_capab(dev[0])
 
-    res = dev[0].request("DPP_CONFIGURATOR_ADD");
+    res = dev[0].request("DPP_CONFIGURATOR_ADD")
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)

@@ -19,54 +19,54 @@ class LocalVariables:
 CFG = """
 ifaces :
 {
-    ids = ["%s", "%s" ];
+    ids = ["%s", "%s" ]
     links = (
         (0, 1, 30)
-    );
-};
+    )
+}
 """
 
 CFG2 = """
 ifaces :
 {
-    ids = ["%s", "%s", "%s"];
-};
+    ids = ["%s", "%s", "%s"]
+}
 
 model:
 {
-    type = "prob";
+    type = "prob"
 
     links = (
         (0, 1, 0.000000),
         (0, 2, 0.000000),
         (1, 2, 1.000000)
-    );
-};
+    )
+}
 """
 
 CFG3 = """
 ifaces :
 {
-    ids = ["%s", "%s", "%s", "%s", "%s" ];
-};
+    ids = ["%s", "%s", "%s", "%s", "%s" ]
+}
 
 model:
 {
-    type = "prob";
+    type = "prob"
 
-    default_prob = 1.0;
+    default_prob = 1.0
     links = (
         (0, 1, 0.000000),
         (1, 2, 0.000000),
         (2, 3, 0.000000),
         (3, 4, 0.000000)
-    );
-};
+    )
+}
 """
 
 def get_wmediumd_version():
     if len(LocalVariables.revs) > 0:
-        return LocalVariables.revs;
+        return LocalVariables.revs
 
     try:
         verstr = subprocess.check_output(['wmediumd', '-V'])
@@ -82,7 +82,7 @@ def get_wmediumd_version():
     while len(LocalVariables.revs) < 3:
         LocalVariables.revs += [0]
 
-    return LocalVariables.revs;
+    return LocalVariables.revs
 
 def require_wmediumd_version(major, minor, patch):
     revs = get_wmediumd_version()
