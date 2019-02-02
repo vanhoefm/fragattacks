@@ -84,7 +84,7 @@ def add_log_file(conn, test, run, type, path):
     if not os.path.exists(path):
         return
     contents = None
-    with open(path, 'r') as f:
+    with open(path, 'rb') as f:
         contents = f.read()
     if contents is None:
         return
