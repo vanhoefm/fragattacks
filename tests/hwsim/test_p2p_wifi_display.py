@@ -7,12 +7,8 @@
 from remotehost import remote_compatible
 import logging
 logger = logging.getLogger()
-import time
-import threading
-import Queue
 
 import hwsim_utils
-import utils
 from p2p_utils import *
 
 def test_wifi_display(dev):
