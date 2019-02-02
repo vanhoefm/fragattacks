@@ -1,5 +1,5 @@
 # EAP Re-authentication Protocol (ERP) tests
-# Copyright (c) 2014-2015, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2014-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -275,6 +275,7 @@ def test_erp_key_lifetime_in_memory(dev, apdev, params):
     # eloop before reading process memory.
     time.sleep(1)
     dev[0].ping()
+    password = password.encode()
     buf = read_process_memory(pid, password)
 
     dev[0].request("DISCONNECT")

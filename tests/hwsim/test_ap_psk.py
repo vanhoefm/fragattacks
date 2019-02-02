@@ -2329,7 +2329,7 @@ def read_process_memory(pid, key=None):
     buf = bytes()
     logger.info("Reading process memory (pid=%d)" % pid)
     with open('/proc/%d/maps' % pid, 'r') as maps, \
-         open('/proc/%d/mem' % pid, 'r') as mem:
+         open('/proc/%d/mem' % pid, 'rb') as mem:
         for l in maps.readlines():
             m = re.match(r'([0-9a-f]+)-([0-9a-f]+) ([-r][-w][-x][-p])', l)
             if not m:
@@ -2360,7 +2360,7 @@ def verify_not_present(buf, key, fname, keyname):
         return
 
     prefix = 2048 if pos > 2048 else pos
-    with open(fname + keyname, 'w') as f:
+    with open(fname + keyname, 'wb') as f:
         f.write(buf[pos - prefix:pos + 2048])
     raise Exception(keyname + " found after disassociation")
 

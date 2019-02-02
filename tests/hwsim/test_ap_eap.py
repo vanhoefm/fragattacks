@@ -5083,6 +5083,7 @@ def test_wpa2_eap_ttls_pap_key_lifetime_in_memory(dev, apdev, params):
     # eloop before reading process memory.
     time.sleep(1)
     dev[0].ping()
+    password = password.encode()
     buf = read_process_memory(pid, password)
 
     dev[0].request("DISCONNECT")
