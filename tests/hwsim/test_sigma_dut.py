@@ -2527,11 +2527,11 @@ def run_sigma_dut_venue_url(dev, apdev):
     venue_type = 13
     venue_info = struct.pack('BB', venue_group, venue_type)
     lang1 = "eng"
-    name1= "Example venue"
+    name1 = "Example venue"
     lang2 = "fin"
     name2 = "Esimerkkipaikka"
-    venue1 = struct.pack('B', len(lang1 + name1)) + lang1 + name1
-    venue2 = struct.pack('B', len(lang2 + name2)) + lang2 + name2
+    venue1 = struct.pack('B', len(lang1 + name1)) + lang1.encode() + name1.encode()
+    venue2 = struct.pack('B', len(lang2 + name2)) + lang2.encode() + name2.encode()
     venue_name = binascii.hexlify(venue_info + venue1 + venue2)
 
     url1 = "http://example.com/venue"
