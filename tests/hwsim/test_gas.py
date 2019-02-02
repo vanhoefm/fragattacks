@@ -1193,9 +1193,9 @@ def test_gas_anqp_extra_elements(dev, apdev):
     geo_loc = "001052834d12efd2b08b9b4bf1cc2c00004104050000000000060100"
     civic_loc = "0000f9555302f50102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5"
     held_uri = "https://held.example.com/location"
-    held = struct.pack('BBB', 0, 1 + len(held_uri), 1) + held_uri
+    held = struct.pack('BBB', 0, 1 + len(held_uri), 1) + held_uri.encode()
     supl_fqdn = "supl.example.com"
-    supl = struct.pack('BBB', 0, 1 + len(supl_fqdn), 1) + supl_fqdn
+    supl = struct.pack('BBB', 0, 1 + len(supl_fqdn), 1) + supl_fqdn.encode()
     public_id = binascii.hexlify(held + supl).decode()
     params = { "ssid": "gas/anqp",
                "interworking": "1",
@@ -1602,8 +1602,8 @@ def test_gas_anqp_venue_url(dev, apdev):
     name1= "Example venue"
     lang2 = "fin"
     name2 = "Esimerkkipaikka"
-    venue1 = struct.pack('B', len(lang1 + name1)) + lang1 + name1
-    venue2 = struct.pack('B', len(lang2 + name2)) + lang2 + name2
+    venue1 = struct.pack('B', len(lang1 + name1)) + lang1.encode() + name1.encode()
+    venue2 = struct.pack('B', len(lang2 + name2)) + lang2.encode() + name2.encode()
     venue_name = binascii.hexlify(venue_info + venue1 + venue2).decode()
 
     url1 = "http://example.com/venue"
@@ -1659,14 +1659,14 @@ def test_gas_anqp_venue_url2(dev, apdev):
     name1= "Example venue"
     lang2 = "fin"
     name2 = "Esimerkkipaikka"
-    venue1 = struct.pack('B', len(lang1 + name1)) + lang1 + name1
-    venue2 = struct.pack('B', len(lang2 + name2)) + lang2 + name2
+    venue1 = struct.pack('B', len(lang1 + name1)) + lang1.encode() + name1.encode()
+    venue2 = struct.pack('B', len(lang2 + name2)) + lang2.encode() + name2.encode()
     venue_name = binascii.hexlify(venue_info + venue1 + venue2).decode()
 
     url1 = "http://example.com/venue"
     url2 = "https://example.org/venue-info/"
-    duple1 = struct.pack('BB', 1 + len(url1), 1) + url1
-    duple2 = struct.pack('BB', 1 + len(url2), 2) + url2
+    duple1 = struct.pack('BB', 1 + len(url1.encode()), 1) + url1.encode()
+    duple2 = struct.pack('BB', 1 + len(url2.encode()), 2) + url2.encode()
     venue_url = binascii.hexlify(duple1 + duple2).decode()
 
     params = { "ssid": "gas/anqp",
@@ -1713,8 +1713,8 @@ def test_gas_anqp_venue_url_pmf(dev, apdev):
     name1= "Example venue"
     lang2 = "fin"
     name2 = "Esimerkkipaikka"
-    venue1 = struct.pack('B', len(lang1 + name1)) + lang1 + name1
-    venue2 = struct.pack('B', len(lang2 + name2)) + lang2 + name2
+    venue1 = struct.pack('B', len(lang1 + name1)) + lang1.encode() + name1.encode()
+    venue2 = struct.pack('B', len(lang2 + name2)) + lang2.encode() + name2.encode()
     venue_name = binascii.hexlify(venue_info + venue1 + venue2)
 
     url1 = "http://example.com/venue"

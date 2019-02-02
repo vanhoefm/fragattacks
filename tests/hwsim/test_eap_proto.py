@@ -6830,7 +6830,7 @@ def test_eap_proto_fast_errors(dev, apdev):
               "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nI-ID=1\nEND\n",
               "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nA-ID-Info=1\nEND\n" ]
     for pac in tests:
-        blob = binascii.hexlify(pac).decode()
+        blob = binascii.hexlify(pac.encode()).decode()
         dev[0].request("SET blob fast_pac_errors " + blob)
         dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                        eap="FAST", anonymous_identity="FAST",
@@ -6849,7 +6849,7 @@ def test_eap_proto_fast_errors(dev, apdev):
     tests = [ "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nEND\n",
               "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nEND\nSTART\nEND\nSTART\nEND\n" ]
     for pac in tests:
-        blob = binascii.hexlify(pac).decode()
+        blob = binascii.hexlify(pac.encode()).decode()
         dev[0].request("SET blob fast_pac_errors " + blob)
         dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                        eap="FAST", anonymous_identity="FAST",

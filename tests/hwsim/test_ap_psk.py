@@ -1248,7 +1248,7 @@ def sha1_prf(key, label, data, outlen):
     res = ''
     counter = 0
     while outlen > 0:
-        m = hmac.new(key, label, hashlib.sha1)
+        m = hmac.new(key, label.encode(), hashlib.sha1)
         m.update(struct.pack('B', 0))
         m.update(data)
         m.update(struct.pack('B', counter))

@@ -4049,7 +4049,7 @@ def gen_upnp_info(eventSubURL='wps_event', controlURL='wps_control',
           'Connection: close\r\n' + \
           'Content-Length: ' + str(len(payload)) + '\r\n' + \
           'Date: Sat, 15 Aug 2015 18:55:08 GMT\r\n\r\n'
-    return hdr + payload
+    return (hdr + payload).encode()
 
 def gen_wps_control(payload_override=None):
     payload = '''<?xml version="1.0"?>
@@ -4077,7 +4077,7 @@ AAYANyoAASA=
           'Connection: close\r\n' + \
           'Content-Length: ' + str(len(payload)) + '\r\n' + \
           'Date: Sat, 15 Aug 2015 18:55:08 GMT\r\n\r\n'
-    return hdr + payload
+    return (hdr + payload).encode()
 
 def gen_wps_event(sid='uuid:7eb3342a-8a5f-47fe-a585-0785bfec6d8a'):
     payload = ""
@@ -4090,7 +4090,7 @@ def gen_wps_event(sid='uuid:7eb3342a-8a5f-47fe-a585-0785bfec6d8a'):
         hdr += 'SID: ' + sid + '\r\n'
     hdr += 'Timeout: Second-1801\r\n' + \
           'Date: Sat, 15 Aug 2015 18:55:08 GMT\r\n\r\n'
-    return hdr + payload
+    return (hdr + payload).encode()
 
 class WPSAPHTTPServer(StreamRequestHandler):
     def handle(self):
@@ -4723,7 +4723,7 @@ def test_ap_wps_er_http_proto_subscribe_failing(dev, apdev):
                   'Content-Length: ' + str(len(payload)) + '\r\n' + \
                   'Timeout: Second-1801\r\n' + \
                   'Date: Sat, 15 Aug 2015 18:55:08 GMT\r\n\r\n'
-            self.wfile.write(hdr + payload)
+            self.wfile.write((hdr + payload).encode())
     run_wps_er_proto_test(dev[0], WPSAPHTTPServer_fail_subscribe)
 
 def test_ap_wps_er_http_proto_subscribe_invalid_response(dev, apdev):
@@ -4738,7 +4738,7 @@ def test_ap_wps_er_http_proto_subscribe_invalid_response(dev, apdev):
                   'Content-Length: ' + str(len(payload)) + '\r\n' + \
                   'Timeout: Second-1801\r\n' + \
                   'Date: Sat, 15 Aug 2015 18:55:08 GMT\r\n\r\n'
-            self.wfile.write(hdr + payload)
+            self.wfile.write((hdr + payload).encode())
     run_wps_er_proto_test(dev[0], WPSAPHTTPServer_subscribe_invalid_response)
 
 def test_ap_wps_er_http_proto_subscribe_invalid_response(dev, apdev):
@@ -4775,7 +4775,7 @@ def test_ap_wps_er_http_proto_upnp_info_no_device(dev, apdev):
                   'Connection: close\r\n' + \
                   'Content-Length: ' + str(len(payload)) + '\r\n' + \
                   'Date: Sat, 15 Aug 2015 18:55:08 GMT\r\n\r\n'
-            self.wfile.write(hdr + payload)
+            self.wfile.write((hdr + payload).encode())
     run_wps_er_proto_test(dev[0], WPSAPHTTPServer_no_device, no_event_url=True)
 
 def test_ap_wps_er_http_proto_upnp_info_no_device_type(dev, apdev):
@@ -4798,7 +4798,7 @@ def test_ap_wps_er_http_proto_upnp_info_no_device_type(dev, apdev):
                   'Connection: close\r\n' + \
                   'Content-Length: ' + str(len(payload)) + '\r\n' + \
                   'Date: Sat, 15 Aug 2015 18:55:08 GMT\r\n\r\n'
-            self.wfile.write(hdr + payload)
+            self.wfile.write((hdr + payload).encode())
     run_wps_er_proto_test(dev[0], WPSAPHTTPServer_no_device, no_event_url=True)
 
 def test_ap_wps_er_http_proto_upnp_info_invalid_udn_uuid(dev, apdev):
@@ -6276,7 +6276,7 @@ def wsc_kdf(key, label, bits):
     result = ''
     i = 1
     while len(result) * 8 < bits:
-        data = struct.pack('>L', i) + label + struct.pack('>L', bits)
+        data = struct.pack('>L', i) + label.encode() + struct.pack('>L', bits)
         m = hmac.new(key, data, hashlib.sha256)
         result += m.digest()
         i += 1
@@ -6290,7 +6290,7 @@ def wsc_keys(kdk):
     return authkey,keywrapkey,emsk
 
 def wsc_dev_pw_half_psk(authkey, dev_pw):
-    m = hmac.new(authkey, dev_pw, hashlib.sha256)
+    m = hmac.new(authkey, dev_pw.encode(), hashlib.sha256)
     return m.digest()[0:16]
 
 def wsc_dev_pw_psk(authkey, dev_pw):

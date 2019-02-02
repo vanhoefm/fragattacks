@@ -16,7 +16,7 @@ from p2p_utils import *
 from test_gas import anqp_adv_proto
 
 def ie_ssid(ssid):
-    return struct.pack("<BB", WLAN_EID_SSID, len(ssid)) + ssid
+    return struct.pack("<BB", WLAN_EID_SSID, len(ssid)) + ssid.encode()
 
 def ie_supp_rates():
     return struct.pack("<BBBBBBBBBB", WLAN_EID_SUPP_RATES, 8,
@@ -85,12 +85,12 @@ def p2p_attr_device_info(addr, name="Test", config_methods=0, dev_type="00010050
     val2 = struct.unpack('8B', binascii.unhexlify(dev_type))
     t = (P2P_ATTR_DEVICE_INFO, 6 + 2 + 8 + 1 + 4 + len(name)) + val
     t2 = val2 + (0,)
-    return struct.pack("<BH6B", *t) + struct.pack(">H", config_methods) + struct.pack("8BB", *t2) + struct.pack('>HH', 0x1011, len(name)) +name
+    return struct.pack("<BH6B", *t) + struct.pack(">H", config_methods) + struct.pack("8BB", *t2) + struct.pack('>HH', 0x1011, len(name)) + name.encode()
 
 def p2p_attr_group_id(addr, ssid):
     val = struct.unpack('6B', binascii.unhexlify(addr.replace(':','')))
     t = (P2P_ATTR_GROUP_ID, 6 + len(ssid)) + val
-    return struct.pack('<BH6B', *t) + ssid
+    return struct.pack('<BH6B', *t) + ssid.encode()
 
 def p2p_attr_operating_channel(op_class=81, chan=1):
     return struct.pack("<BHBBBBB", P2P_ATTR_OPERATING_CHANNEL, 5,

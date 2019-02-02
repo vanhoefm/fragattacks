@@ -603,7 +603,7 @@ def test_fils_sk_multiple_realms(dev, apdev, params):
     expected = ''
     count = 0
     for realm in fils_realms:
-        hash = hashlib.sha256(realm.lower()).digest()
+        hash = hashlib.sha256(realm.lower().encode()).digest()
         expected += binascii.hexlify(hash[0:2]).decode()
         count += 1
         if count == 7:
@@ -616,7 +616,7 @@ def test_fils_sk_multiple_realms(dev, apdev, params):
     info = bss['anqp_fils_realm_info']
     expected = ''
     for realm in fils_realms:
-        hash = hashlib.sha256(realm.lower()).digest()
+        hash = hashlib.sha256(realm.lower().encode()).digest()
         expected += binascii.hexlify(hash[0:2]).decode()
     if info != expected:
         raise Exception("Unexpected FILS Realm Info ANQP-element: " + info)
