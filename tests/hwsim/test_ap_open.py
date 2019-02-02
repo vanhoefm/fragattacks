@@ -129,6 +129,36 @@ def test_ap_open_assoc_timeout(dev, apdev):
     hapd.set("ext_mgmt_frame_handling", "0")
     dev[0].wait_connected(timeout=15)
 
+def test_ap_open_auth_drop_sta(dev, apdev):
+    """AP dropping station after successful authentication"""
+    hapd = hostapd.add_ap(apdev[0]['ifname'], { "ssid": "open" })
+    dev[0].scan(freq="2412")
+    hapd.set("ext_mgmt_frame_handling", "1")
+    dev[0].connect("open", key_mgmt="NONE", scan_freq="2412",
+                   wait_connect=False)
+    for i in range(0, 10):
+        req = hapd.mgmt_rx()
+        if req is None:
+            raise Exception("MGMT RX wait timed out")
+        if req['subtype'] == 11:
+            break
+        req = None
+    if not req:
+        raise Exception("Authentication frame not received")
+
+    # turn off before sending successful response
+    hapd.set("ext_mgmt_frame_handling", "0")
+
+    resp = {}
+    resp['fc'] = req['fc']
+    resp['da'] = req['sa']
+    resp['sa'] = req['da']
+    resp['bssid'] = req['bssid']
+    resp['payload'] = struct.pack('<HHH', 0, 2, 0)
+    hapd.mgmt_tx(resp)
+
+    dev[0].wait_connected(timeout=15)
+
 @remote_compatible
 def test_ap_open_id_str(dev, apdev):
     """AP with open mode and id_str"""
