@@ -243,14 +243,22 @@ def main():
     parser.add_argument('-i', action='store_true', dest='stdin_ctrl',
                         help='stdin-controlled test case execution')
     parser.add_argument('tests', metavar='<test>', nargs='*', type=str,
-                        help='tests to run (only valid without -f)',
-                        choices=[[]] + test_names)
+                        help='tests to run (only valid without -f)')
 
     args = parser.parse_args()
 
     if (args.tests and args.testmodules) or (args.tests and args.mfile) or (args.testmodules and args.mfile):
         print('Invalid arguments - only one of (test, test modules, modules file) can be given.')
         sys.exit(2)
+
+    if args.tests:
+        fail = False
+        for t in args.tests:
+            if not t in test_names:
+                print('Invalid arguments - test "%s" not known' % t)
+                fail = True
+        if fail:
+            sys.exit(2)
 
     if args.database:
         if not sqlite3_imported:
