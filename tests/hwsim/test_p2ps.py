@@ -1309,30 +1309,31 @@ def test_p2ps_channel_both_connected_different(dev, apdev):
 
 def test_p2ps_channel_both_connected_different_mcc(dev, apdev):
     """P2PS connection with P2PS method - stations connected on different channels with mcc"""
-    if dev[0].get_mcc() == 1:
-        raise HwsimSkip('Skip case due to MCC not enabled')
+    with HWSimRadio(n_channels=2) as (radio, iface):
+        wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+        wpas.interface_add(iface)
 
-    set_no_group_iface(dev[0], 0)
-    set_no_group_iface(dev[1], 0)
+        set_no_group_iface(wpas, 0)
+        set_no_group_iface(dev[1], 0)
 
-    try:
-        hapd1 = hostapd.add_ap(apdev[0],
-                               { "ssid": 'bss-channel-3', "channel": '3' })
+        try:
+            hapd1 = hostapd.add_ap(apdev[0],
+                                   { "ssid": 'bss-channel-3', "channel": '3' })
 
-        hapd2 = hostapd.add_ap(apdev[1],
-                               { "ssid": 'bss-channel-10', "channel": '10' })
+            hapd2 = hostapd.add_ap(apdev[1],
+                                   { "ssid": 'bss-channel-10', "channel": '10' })
 
-        dev[0].connect("bss-channel-3", key_mgmt="NONE", scan_freq="2422")
-        dev[1].connect("bss-channel-10", key_mgmt="NONE", scan_freq="2457")
+            wpas.connect("bss-channel-3", key_mgmt="NONE", scan_freq="2422")
+            dev[1].connect("bss-channel-10", key_mgmt="NONE", scan_freq="2457")
 
-        (grp_ifname0, grp_ifname1, ifnames) = p2ps_connect_p2ps_method(dev, keep_group=True)
-        freq = dev[0].get_group_status_field('freq')
+            (grp_ifname0, grp_ifname1, ifnames) = p2ps_connect_p2ps_method([ wpas, dev[1] ], keep_group=True)
+            freq = wpas.get_group_status_field('freq')
 
-        if freq != '2422' and freq != '2457':
-            raise Exception('Unexpected frequency for group =' + freq)
-    finally:
-        dev[0].global_request("P2P_SERVICE_DEL asp all")
-        remove_group(dev[0], dev[1])
+            if freq != '2422' and freq != '2457':
+                raise Exception('Unexpected frequency for group =' + freq)
+        finally:
+            wpas.global_request("P2P_SERVICE_DEL asp all")
+            remove_group(wpas, dev[1])
 
 def clear_disallow_handler(seeker, advertiser):
     advertiser.global_request("P2P_SET disallow_freq ")
