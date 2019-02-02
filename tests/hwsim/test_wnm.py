@@ -363,7 +363,8 @@ def test_wnm_sleep_mode_rsn_badocv(dev, apdev):
                                  ACTION_CATEG_WNM, WNM_ACT_SLEEP_MODE_REQ, 0,
                                  WLAN_EID_WNMSLEEP, 4, WNM_SLEEP_MODE_EXIT, 0, 0,
                                  WLAN_EID_TFS_REQ, 0)
-    mgmt_tx(dev[0], "MGMT_TX {} {} freq=2412 wait_time=200 no_cck=1 action={}".format(msg['da'], msg['bssid'], binascii.hexlify(msg['payload'])))
+    mgmt_tx(dev[0], "MGMT_TX {} {} freq=2412 wait_time=200 no_cck=1 action={}".format(
+        msg['da'], msg['bssid'], binascii.hexlify(msg['payload']).decode()))
     ev = hapd.wait_event([ "OCV failed" ], timeout=5)
     if ev is None:
         raise Exception("AP did not report missing OCI element")
@@ -377,7 +378,8 @@ def test_wnm_sleep_mode_rsn_badocv(dev, apdev):
     oci_ie = struct.pack("<BBB", 81, 2, 0)
     msg['payload'] += struct.pack("<BBB", WLAN_EID_EXTENSION, 1 + len(oci_ie),
                                   WLAN_EID_EXT_OCV_OCI) + oci_ie
-    mgmt_tx(dev[0], "MGMT_TX {} {} freq=2412 wait_time=200 no_cck=1 action={}".format(msg['da'], msg['bssid'] , binascii.hexlify(msg['payload'])))
+    mgmt_tx(dev[0], "MGMT_TX {} {} freq=2412 wait_time=200 no_cck=1 action={}".format(
+        msg['da'], msg['bssid'] , binascii.hexlify(msg['payload']).decode()))
     ev = hapd.wait_event([ "OCV failed" ], timeout=5)
     if ev is None:
         raise Exception("AP did not report bad OCI element")
@@ -1964,11 +1966,11 @@ def test_wnm_coloc_intf_reporting(dev, apdev):
         vals = ev.split(' ')
         if vals[2] != '1' or vals[3] != '5':
             raise Exception("Unexpected request values: " + ev)
-        dev[0].set("coloc_intf_elems", binascii.hexlify(no_intf))
+        dev[0].set("coloc_intf_elems", binascii.hexlify(no_intf).decode())
         ev = hapd.wait_event(["COLOC-INTF-REPORT"], timeout=1)
         if ev is None:
             raise Exception("No Collocated Interference Report frame seen")
-        if addr + " 1 " + binascii.hexlify(no_intf) not in ev:
+        if addr + " 1 " + binascii.hexlify(no_intf).decode() not in ev:
             raise Exception("Unexpected report values: " + ev)
 
         if "OK" not in hapd.request("COLOC_INTF_REQ %s 0 0" % addr):
@@ -1980,13 +1982,13 @@ def test_wnm_coloc_intf_reporting(dev, apdev):
         if vals[2] != '0' or vals[3] != '0':
             raise Exception("Unexpected request values: " + ev)
 
-        res = dev[0].request("COLOC_INTF_REPORT " + binascii.hexlify(no_intf))
+        res = dev[0].request("COLOC_INTF_REPORT " + binascii.hexlify(no_intf).decode())
         if "OK" not in res:
             raise Exception("Could not send unsolicited report")
         ev = hapd.wait_event(["COLOC-INTF-REPORT"], timeout=1)
         if ev is None:
             raise Exception("No Collocated Interference Report frame seen")
-        if addr + " 0 " + binascii.hexlify(no_intf) not in ev:
+        if addr + " 0 " + binascii.hexlify(no_intf).decode() not in ev:
             raise Exception("Unexpected report values: " + ev)
     finally:
         dev[0].set("coloc_intf_reporting", "0")

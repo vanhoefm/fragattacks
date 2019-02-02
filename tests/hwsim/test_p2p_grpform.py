@@ -1104,7 +1104,7 @@ def test_grpform_go_neg_dup_on_restart(dev):
     attrs += p2p_attr_operating_channel()
     wsc_attrs = struct.pack(">HHH", 0x1012, 2, 4)
     msg['payload'] += ie_p2p(attrs) + ie_wsc(wsc_attrs)
-    mgmt_tx(lower, "MGMT_TX {} {} freq={} wait_time=200 no_cck=1 action={}".format(addr_high, addr_high, peer['listen_freq'], binascii.hexlify(msg['payload'])))
+    mgmt_tx(lower, "MGMT_TX {} {} freq={} wait_time=200 no_cck=1 action={}".format(addr_high, addr_high, peer['listen_freq'], binascii.hexlify(msg['payload']).decode()))
 
     # Wait for the GO Negotiation Response frame which would have been sent in
     # this case previously, but not anymore after the check for

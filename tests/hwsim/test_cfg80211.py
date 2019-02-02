@@ -19,7 +19,7 @@ from wpasupplicant import WpaSupplicant
 
 def nl80211_command(dev, cmd, attr):
     res = dev.request("VENDOR ffffffff {} {}".format(nl80211_cmd[cmd],
-                                                     binascii.hexlify(attr)))
+                                                     binascii.hexlify(attr).decode()))
     if "FAIL" in res:
         raise Exception("nl80211 command failed")
     return binascii.unhexlify(res)

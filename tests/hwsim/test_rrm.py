@@ -729,11 +729,11 @@ class BeaconReport:
     def __str__(self):
         txt = "opclass={} channel={} start={} duration={} frame_info={} rcpi={} rsni={} bssid={} antenna_id={} parent_tsf={}".format(self.opclass, self.channel, self.start, self.duration, self.frame_info, self.rcpi, self.rsni, self.bssid_str, self.antenna_id, self.parent_tsf)
         if self.frame_body:
-            txt += " frame_body=" + binascii.hexlify(self.frame_body)
+            txt += " frame_body=" + binascii.hexlify(self.frame_body).decode()
         if self.frame_body_fragment_id:
-            txt += " fragment_id=" + binascii.hexlify(self.frame_body_fragment_id)
+            txt += " fragment_id=" + binascii.hexlify(self.frame_body_fragment_id).decode()
         if self.last_indication:
-            txt += " last_indication=" + binascii.hexlify(self.last_indication)
+            txt += " last_indication=" + binascii.hexlify(self.last_indication).decode()
 
         return txt
 
@@ -874,7 +874,7 @@ def test_rrm_beacon_req_last_frame_indication(dev, apdev):
         if not report.last_indication:
             raise Exception("Last Beacon Report Indication subelement missing")
 
-        last = binascii.hexlify(report.last_indication)
+        last = binascii.hexlify(report.last_indication).decode()
         if last != '01':
             raise Exception("last beacon report indication is not set on last frame")
 

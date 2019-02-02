@@ -1,5 +1,5 @@
 # IEEE 802.1X tests
-# Copyright (c) 2013-2015, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -247,7 +247,7 @@ def send_eapol_key(dev, bssid, signkey, frame_start, frame_end):
     hmac_obj = hmac.new(binascii.unhexlify(signkey))
     hmac_obj.update(binascii.unhexlify(frame))
     sign = hmac_obj.digest()
-    frame = frame_start + binascii.hexlify(sign) + frame_end
+    frame = frame_start + binascii.hexlify(sign).decode() + frame_end
     dev.request("EAPOL_RX " + bssid + " " + frame)
 
 def test_ieee8021x_eapol_key(dev, apdev):

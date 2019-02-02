@@ -604,7 +604,7 @@ def test_fils_sk_multiple_realms(dev, apdev, params):
     count = 0
     for realm in fils_realms:
         hash = hashlib.sha256(realm.lower()).digest()
-        expected += binascii.hexlify(hash[0:2])
+        expected += binascii.hexlify(hash[0:2]).decode()
         count += 1
         if count == 7:
             break
@@ -617,7 +617,7 @@ def test_fils_sk_multiple_realms(dev, apdev, params):
     expected = ''
     for realm in fils_realms:
         hash = hashlib.sha256(realm.lower()).digest()
-        expected += binascii.hexlify(hash[0:2])
+        expected += binascii.hexlify(hash[0:2]).decode()
     if info != expected:
         raise Exception("Unexpected FILS Realm Info ANQP-element: " + info)
 
@@ -776,7 +776,7 @@ def run_fils_sk_hlp(dev, apdev, rapid_commit_server, params):
     tests = [ "ff:ff:ff:ff:ff:ff aabb",
               "ff:ff:ff:ff:ff:ff " + 255*'cc',
               hapd.own_addr() + " ddee010203040506070809",
-              "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc) ]
+              "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc).decode() ]
     for t in tests:
         if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + t):
             raise Exception("FILS_HLP_REQ_ADD failed: " + t)
@@ -868,7 +868,7 @@ def test_fils_sk_hlp_timeout(dev, apdev, params):
         raise Exception("Failed to flush pending FILS HLP requests")
     dhcpdisc = build_dhcp(req=True, dhcp_msg=DHCPDISCOVER,
                           chaddr=dev[0].own_addr())
-    if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc)):
+    if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc).decode()):
         raise Exception("FILS_HLP_REQ_ADD failed")
     id = dev[0].connect("fils", key_mgmt="FILS-SHA256",
                         eap="PSK", identity="psk.user@example.com",
@@ -912,7 +912,7 @@ def test_fils_sk_hlp_oom(dev, apdev, params):
         raise Exception("Failed to flush pending FILS HLP requests")
     dhcpdisc = build_dhcp(req=True, dhcp_msg=DHCPDISCOVER,
                           chaddr=dev[0].own_addr())
-    if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc)):
+    if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc).decode()):
         raise Exception("FILS_HLP_REQ_ADD failed")
     id = dev[0].connect("fils", key_mgmt="FILS-SHA256",
                         eap="PSK", identity="psk.user@example.com",
@@ -1071,16 +1071,16 @@ def test_fils_sk_hlp_req_parsing(dev, apdev, params):
     tests = [ "ff",
               "0800",
               "0800" + 20*"00",
-              "0800" + binascii.hexlify(ipv4_overflow),
-              "0800" + binascii.hexlify(ipv4_unknown_proto),
-              "0800" + binascii.hexlify(ipv4_missing_udp_hdr),
-              "0800" + binascii.hexlify(udp_overflow),
-              "0800" + binascii.hexlify(udp_underflow),
-              "0800" + binascii.hexlify(udp_unknown_port),
-              "0800" + binascii.hexlify(dhcp_missing_data),
-              binascii.hexlify(dhcp_not_req),
-              binascii.hexlify(dhcp_no_magic),
-              binascii.hexlify(dhcp_unknown_magic) ]
+              "0800" + binascii.hexlify(ipv4_overflow).decode(),
+              "0800" + binascii.hexlify(ipv4_unknown_proto).decode(),
+              "0800" + binascii.hexlify(ipv4_missing_udp_hdr).decode(),
+              "0800" + binascii.hexlify(udp_overflow).decode(),
+              "0800" + binascii.hexlify(udp_underflow).decode(),
+              "0800" + binascii.hexlify(udp_unknown_port).decode(),
+              "0800" + binascii.hexlify(dhcp_missing_data).decode(),
+              binascii.hexlify(dhcp_not_req).decode(),
+              binascii.hexlify(dhcp_no_magic).decode(),
+              binascii.hexlify(dhcp_unknown_magic).decode() ]
     for t in tests:
         if "OK" not in dev[0].request("FILS_HLP_REQ_ADD ff:ff:ff:ff:ff:ff " + t):
             raise Exception("FILS_HLP_REQ_ADD failed: " + t)
@@ -1099,8 +1099,8 @@ def test_fils_sk_hlp_req_parsing(dev, apdev, params):
     dev[0].wait_disconnected()
 
     dev[0].request("FILS_HLP_REQ_FLUSH")
-    tests = [ binascii.hexlify(dhcp_opts),
-              binascii.hexlify(dhcp_opts2) ]
+    tests = [ binascii.hexlify(dhcp_opts).decode(),
+              binascii.hexlify(dhcp_opts2).decode() ]
     for t in tests:
         if "OK" not in dev[0].request("FILS_HLP_REQ_ADD ff:ff:ff:ff:ff:ff " + t):
             raise Exception("FILS_HLP_REQ_ADD failed: " + t)
@@ -1112,7 +1112,7 @@ def test_fils_sk_hlp_req_parsing(dev, apdev, params):
     dev[0].wait_disconnected()
 
     dev[0].request("FILS_HLP_REQ_FLUSH")
-    if "OK" not in dev[0].request("FILS_HLP_REQ_ADD ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcp_valid)):
+    if "OK" not in dev[0].request("FILS_HLP_REQ_ADD ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcp_valid).decode()):
         raise Exception("FILS_HLP_REQ_ADD failed")
     hapd.set("own_ip_addr", "0.0.0.0")
     dev[0].select_network(id, freq=2412)
@@ -1173,7 +1173,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
         raise Exception("Failed to flush pending FILS HLP requests")
     dhcpdisc = build_dhcp(req=True, dhcp_msg=DHCPDISCOVER,
                           chaddr=dev[0].own_addr())
-    if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc)):
+    if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc).decode()):
         raise Exception("FILS_HLP_REQ_ADD failed")
     id = dev[0].connect("fils", key_mgmt="FILS-SHA256",
                         eap="PSK", identity="psk.user@example.com",
@@ -1277,7 +1277,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     dhcpdisc = build_dhcp(req=True, dhcp_msg=DHCPDISCOVER,
                           chaddr=dev[0].own_addr(),
                           extra_op="\x00\x11", opt_end=False)
-    if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc)):
+    if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc).decode()):
         raise Exception("FILS_HLP_REQ_ADD failed")
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
@@ -1296,7 +1296,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     dhcpdisc = build_dhcp(req=True, dhcp_msg=DHCPDISCOVER,
                           chaddr=dev[0].own_addr(),
                           extra_op="\x11\x01", opt_end=False)
-    if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc)):
+    if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc).decode()):
         raise Exception("FILS_HLP_REQ_ADD failed")
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
@@ -1967,7 +1967,7 @@ def test_fils_assoc_replay(dev, apdev, params):
         req = hapd.mgmt_rx()
         count += 1
         hapd.dump_monitor()
-        hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + binascii.hexlify(req['frame']))
+        hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + binascii.hexlify(req['frame']).decode())
         if req['subtype'] == 0:
             assocreq = req
             ev = hapd.wait_event(["MGMT-TX-STATUS"], timeout=5)
@@ -1989,7 +1989,7 @@ def test_fils_assoc_replay(dev, apdev, params):
     logger.info("Replay the last Association Request frame")
     hapd.dump_monitor()
     hapd.set("ext_mgmt_frame_handling", "1")
-    hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + binascii.hexlify(req['frame']))
+    hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + binascii.hexlify(req['frame']).decode())
     ev = hapd.wait_event(["MGMT-TX-STATUS"], timeout=5)
     if ev is None:
         raise Exception("No TX status seen")

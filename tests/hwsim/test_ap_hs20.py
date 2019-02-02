@@ -3021,7 +3021,7 @@ def test_ap_hs20_fetch_osu(dev, apdev):
             break
         icon += base64.b64decode(res)
         pos += 1000
-    hex = binascii.hexlify(icon)
+    hex = binascii.hexlify(icon).decode()
     if not hex.startswith("0009696d6167652f706e677d1d"):
         raise Exception("Unexpected beacon binary header: " + hex)
     with open('w1fi_logo.png', 'r') as f:
@@ -3364,7 +3364,7 @@ def test_ap_hs20_req_operator_icon(dev, apdev):
     bss = dev[0].get_bss(bssid)
     if "hs20_operator_icon_metadata" not in bss:
         raise Exception("hs20_operator_icon_metadata missing from BSS entry")
-    if bss["hs20_operator_icon_metadata"] != binascii.hexlify(value):
+    if bss["hs20_operator_icon_metadata"] != binascii.hexlify(value).decode():
         print(binascii.hexlify(value))
         raise Exception("Unexpected hs20_operator_icon_metadata value: " +
                         bss["hs20_operator_icon_metadata"])
@@ -4141,19 +4141,19 @@ def _test_ap_hs20_proxyarp(dev, apdev):
     pkt = build_ns(src_ll=addr0, ip_src="aaaa:bbbb:cccc::2",
                    ip_dst="ff02::1:ff00:2", target="aaaa:bbbb:cccc::2",
                    opt=src_ll_opt0)
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     pkt = build_ns(src_ll=addr1, ip_src="aaaa:bbbb:dddd::2",
                    ip_dst="ff02::1:ff00:2", target="aaaa:bbbb:dddd::2",
                    opt=src_ll_opt1)
-    if "OK" not in dev[1].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[1].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     pkt = build_ns(src_ll=addr1, ip_src="aaaa:bbbb:eeee::2",
                    ip_dst="ff02::1:ff00:2", target="aaaa:bbbb:eeee::2",
                    opt=src_ll_opt1)
-    if "OK" not in dev[1].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[1].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     matches = get_permanent_neighbors("ap-br0")
@@ -4263,29 +4263,29 @@ def _test_ap_hs20_proxyarp_dgaf(dev, apdev, disabled):
     pkt = build_ns(src_ll=addr0, ip_src="aaaa:bbbb:cccc::2",
                    ip_dst="ff02::1:ff00:2", target="aaaa:bbbb:cccc::2",
                    opt=src_ll_opt0)
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     pkt = build_ra(src_ll=apdev[0]['bssid'], ip_src="aaaa:bbbb:cccc::33",
                    ip_dst="ff01::1")
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     pkt = build_na(src_ll=apdev[0]['bssid'], ip_src="aaaa:bbbb:cccc::44",
                    ip_dst="ff01::1", target="aaaa:bbbb:cccc::55")
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     pkt = build_dhcp_ack(dst_ll="ff:ff:ff:ff:ff:ff", src_ll=bssid,
                          ip_src="192.168.1.1", ip_dst="255.255.255.255",
                          yiaddr="192.168.1.123", chaddr=addr0)
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
     # another copy for additional code coverage
     pkt = build_dhcp_ack(dst_ll=addr0, src_ll=bssid,
                          ip_src="192.168.1.1", ip_dst="255.255.255.255",
                          yiaddr="192.168.1.123", chaddr=addr0)
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     matches = get_permanent_neighbors("ap-br0")
@@ -4419,7 +4419,7 @@ def send_ns(dev, src_ll=None, target=None, ip_src=None, ip_dst=None, opt=None,
 
     pkt = build_ns(src_ll=src_ll, ip_src=ip_src, ip_dst=ip_dst, target=target,
                    opt=opt)
-    if "OK" not in dev.request(cmd + binascii.hexlify(pkt)):
+    if "OK" not in dev.request(cmd + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
 def build_na(src_ll, ip_src, ip_dst, target, opt=None, flags=0):
@@ -4455,7 +4455,7 @@ def send_na(dev, src_ll=None, target=None, ip_src=None, ip_dst=None, opt=None,
 
     pkt = build_na(src_ll=src_ll, ip_src=ip_src, ip_dst=ip_dst, target=target,
                    opt=opt)
-    if "OK" not in dev.request(cmd + binascii.hexlify(pkt)):
+    if "OK" not in dev.request(cmd + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
 def build_dhcp_ack(dst_ll, src_ll, ip_src, ip_dst, yiaddr, chaddr,
@@ -4559,7 +4559,7 @@ def send_arp(dev, dst_ll="ff:ff:ff:ff:ff:ff", src_ll=None, opcode=1,
     pkt = build_arp(dst_ll=dst_ll, src_ll=src_ll, opcode=opcode,
                     sender_mac=sender_mac, sender_ip=sender_ip,
                     target_mac=target_mac, target_ip=target_ip)
-    if "OK" not in dev.request(cmd + binascii.hexlify(pkt)):
+    if "OK" not in dev.request(cmd + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
 def get_permanent_neighbors(ifname):
@@ -4695,28 +4695,28 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
     pkt = build_dhcp_ack(dst_ll="ff:ff:ff:ff:ff:ff", src_ll=bssid,
                          ip_src="192.168.1.1", ip_dst="255.255.255.255",
                          yiaddr="192.168.1.124", chaddr=addr0)
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
     # Change address and verify unicast
     pkt = build_dhcp_ack(dst_ll=addr0, src_ll=bssid,
                          ip_src="192.168.1.1", ip_dst="255.255.255.255",
                          yiaddr="192.168.1.123", chaddr=addr0,
                          udp_checksum=False)
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Not-associated client MAC address
     pkt = build_dhcp_ack(dst_ll="ff:ff:ff:ff:ff:ff", src_ll=bssid,
                          ip_src="192.168.1.1", ip_dst="255.255.255.255",
                          yiaddr="192.168.1.125", chaddr="22:33:44:55:66:77")
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # No IP address
     pkt = build_dhcp_ack(dst_ll=addr1, src_ll=bssid,
                          ip_src="192.168.1.1", ip_dst="255.255.255.255",
                          yiaddr="0.0.0.0", chaddr=addr1)
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Zero subnet mask
@@ -4724,7 +4724,7 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
                          ip_src="192.168.1.1", ip_dst="255.255.255.255",
                          yiaddr="192.168.1.126", chaddr=addr1,
                          subnet_mask="0.0.0.0")
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Truncated option
@@ -4732,7 +4732,7 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
                          ip_src="192.168.1.1", ip_dst="255.255.255.255",
                          yiaddr="192.168.1.127", chaddr=addr1,
                          truncated_opt=True)
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Wrong magic
@@ -4740,7 +4740,7 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
                          ip_src="192.168.1.1", ip_dst="255.255.255.255",
                          yiaddr="192.168.1.128", chaddr=addr1,
                          wrong_magic=True)
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Wrong IPv4 total length
@@ -4748,7 +4748,7 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
                          ip_src="192.168.1.1", ip_dst="255.255.255.255",
                          yiaddr="192.168.1.129", chaddr=addr1,
                          force_tot_len=1000)
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # BOOTP
@@ -4756,7 +4756,7 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
                          ip_src="192.168.1.1", ip_dst="255.255.255.255",
                          yiaddr="192.168.1.129", chaddr=addr1,
                          no_dhcp=True)
-    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+    if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     macs = get_bridge_macs("ap-br0")
@@ -5283,7 +5283,7 @@ def run_proxyarp_errors(dev, apdev, params):
     pkt = build_ra(src_ll=apdev[0]['bssid'], ip_src="aaaa:bbbb:cccc::33",
                    ip_dst="ff01::1")
     with fail_test(hapd, 1, "x_snoop_mcast_to_ucast_convert_send"):
-        if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt)):
+        if "OK" not in hapd.request("DATA_TEST_FRAME ifname=ap-br0 " + binascii.hexlify(pkt).decode()):
             raise Exception("DATA_TEST_FRAME failed")
         wait_fail_trigger(dev[0], "GET_FAIL")
 
@@ -5292,7 +5292,7 @@ def run_proxyarp_errors(dev, apdev, params):
         pkt = build_ns(src_ll=addr0, ip_src="aaaa:bbbb:cccc::2",
                        ip_dst="ff02::1:ff00:2", target="aaaa:bbbb:cccc::2",
                        opt=src_ll_opt0)
-        if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+        if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
             raise Exception("DATA_TEST_FRAME failed")
         wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
 

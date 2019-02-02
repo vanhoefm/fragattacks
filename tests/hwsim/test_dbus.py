@@ -5747,7 +5747,7 @@ def test_dbus_mesh(dev, apdev):
             logger.debug("MeshPeers: " + str(res))
             if len(res) != 1:
                 raise Exception("Unexpected number of MeshPeer values")
-            if binascii.hexlify(res[0]) != addr1.replace(':', ''):
+            if binascii.hexlify(res[0]).decode() != addr1.replace(':', ''):
                 raise Exception("Unexpected peer address")
 
             res = if_obj.Get(WPAS_DBUS_IFACE_MESH, 'MeshGroup',

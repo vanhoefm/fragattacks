@@ -6261,7 +6261,7 @@ def build_eap_failure(eap_id):
     return msg
 
 def send_wsc_msg(dev, src, msg):
-    res = dev.request("EAPOL_RX " + src + " " + binascii.hexlify(msg))
+    res = dev.request("EAPOL_RX " + src + " " + binascii.hexlify(msg).decode())
     if "OK" not in res:
         raise Exception("EAPOL_RX failed")
 
@@ -6369,33 +6369,33 @@ def wsc_dh_kdf(peer_pk, own_private, mac_addr, e_nonce, r_nonce):
     logger.debug("DH shared secret: " + ss)
 
     dhkey = hashlib.sha256(binascii.unhexlify(ss)).digest()
-    logger.debug("DHKey: " + binascii.hexlify(dhkey))
+    logger.debug("DHKey: " + binascii.hexlify(dhkey).decode())
 
     m = hmac.new(dhkey, e_nonce + mac_addr + r_nonce, hashlib.sha256)
     kdk = m.digest()
-    logger.debug("KDK: " + binascii.hexlify(kdk))
+    logger.debug("KDK: " + binascii.hexlify(kdk).decode())
     authkey,keywrapkey,emsk = wsc_keys(kdk)
-    logger.debug("AuthKey: " + binascii.hexlify(authkey))
-    logger.debug("KeyWrapKey: " + binascii.hexlify(keywrapkey))
-    logger.debug("EMSK: " + binascii.hexlify(emsk))
+    logger.debug("AuthKey: " + binascii.hexlify(authkey).decode())
+    logger.debug("KeyWrapKey: " + binascii.hexlify(keywrapkey).decode())
+    logger.debug("EMSK: " + binascii.hexlify(emsk).decode())
     return authkey,keywrapkey
 
 def wsc_dev_pw_hash(authkey, dev_pw, e_pk, r_pk):
     psk1,psk2 = wsc_dev_pw_psk(authkey, dev_pw)
-    logger.debug("PSK1: " + binascii.hexlify(psk1))
-    logger.debug("PSK2: " + binascii.hexlify(psk2))
+    logger.debug("PSK1: " + binascii.hexlify(psk1).decode())
+    logger.debug("PSK2: " + binascii.hexlify(psk2).decode())
 
     # Note: Secret values are supposed to be random, but hardcoded values are
     # fine for testing.
     s1 = 16*'\x77'
     m = hmac.new(authkey, s1 + psk1 + e_pk + r_pk, hashlib.sha256)
     hash1 = m.digest()
-    logger.debug("Hash1: " + binascii.hexlify(hash1))
+    logger.debug("Hash1: " + binascii.hexlify(hash1).decode())
 
     s2 = 16*'\x88'
     m = hmac.new(authkey, s2 + psk2 + e_pk + r_pk, hashlib.sha256)
     hash2 = m.digest()
-    logger.debug("Hash2: " + binascii.hexlify(hash2))
+    logger.debug("Hash2: " + binascii.hexlify(hash2).decode())
     return s1,s2,hash1,hash2
 
 def build_m1(eap_id, uuid_e, mac_addr, e_nonce, e_pk,
@@ -6583,7 +6583,7 @@ def test_wps_ext(dev, apdev):
     msg, m8_attrs, raw_m8_attrs = recv_wsc_msg(hapd, WSC_MSG, WPS_M8)
     m8_cred = decrypt_attr_encr_settings(authkey, keywrapkey,
                                          m8_attrs[ATTR_ENCR_SETTINGS])
-    logger.debug("M8 Credential: " + binascii.hexlify(m8_cred))
+    logger.debug("M8 Credential: " + binascii.hexlify(m8_cred).decode())
 
     logger.debug("Prepare WSC_Done")
     attrs = build_wsc_attr(ATTR_VERSION, '\x10')

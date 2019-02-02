@@ -39,7 +39,7 @@ def _test_kernel_bss_leak(dev, apdev, deauth):
             break
         else:
             hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=%s" % (
-                         binascii.hexlify(pkt['frame']), ))
+                         binascii.hexlify(pkt['frame']).decode(), ))
     hapd.set("ext_mgmt_frame_handling", "0")
 
     hapd.request("STOP_AP")

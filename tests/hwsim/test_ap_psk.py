@@ -1307,7 +1307,7 @@ def recv_eapol(hapd):
     return parse_eapol(eapol)
 
 def send_eapol(hapd, addr, data):
-    res = hapd.request("EAPOL_RX " + addr + " " + binascii.hexlify(data))
+    res = hapd.request("EAPOL_RX " + addr + " " + binascii.hexlify(data).decode())
     if "OK" not in res:
         raise Exception("EAPOL_RX to hostapd failed")
 

@@ -753,22 +753,22 @@ def test_ap_ft_over_ds_unexpected(dev, apdev):
     hapd1ap.mgmt_tx(msg)
 
     logger.info("No R0KH-ID subelem in FTIE")
-    snonce = binascii.hexlify(req['payload'][111:111+32])
+    snonce = binascii.hexlify(req['payload'][111:111+32]).decode()
     msg['payload'] = binascii.unhexlify("0602" + addrs + "00003603a1b20137520000" + "00000000000000000000000000000000" + "0000000000000000000000000000000000000000000000000000000000000000" + snonce)
     hapd1ap.mgmt_tx(msg)
 
     logger.info("No R0KH-ID subelem mismatch in FTIE")
-    snonce = binascii.hexlify(req['payload'][111:111+32])
+    snonce = binascii.hexlify(req['payload'][111:111+32]).decode()
     msg['payload'] = binascii.unhexlify("0602" + addrs + "00003603a1b201375e0000" + "00000000000000000000000000000000" + "0000000000000000000000000000000000000000000000000000000000000000" + snonce + "030a11223344556677889900")
     hapd1ap.mgmt_tx(msg)
 
     logger.info("No R1KH-ID subelem in FTIE")
-    r0khid = binascii.hexlify(req['payload'][145:145+10])
+    r0khid = binascii.hexlify(req['payload'][145:145+10]).decode()
     msg['payload'] = binascii.unhexlify("0602" + addrs + "00003603a1b201375e0000" + "00000000000000000000000000000000" + "0000000000000000000000000000000000000000000000000000000000000000" + snonce + "030a" + r0khid)
     hapd1ap.mgmt_tx(msg)
 
     logger.info("No RSNE")
-    r0khid = binascii.hexlify(req['payload'][145:145+10])
+    r0khid = binascii.hexlify(req['payload'][145:145+10]).decode()
     msg['payload'] = binascii.unhexlify("0602" + addrs + "00003603a1b20137660000" + "00000000000000000000000000000000" + "0000000000000000000000000000000000000000000000000000000000000000" + snonce + "030a" + r0khid + "0106000102030405")
     hapd1ap.mgmt_tx(msg)
 
@@ -2066,77 +2066,77 @@ def test_ap_ft_rrb(dev, apdev):
 
     # Too short RRB frame
     pkt = ehdr + '\x01'
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # RRB discarded frame wikth unrecognized type
     pkt = ehdr + '\x02' + '\x02' + '\x01\x00' + _src_ll
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # RRB frame too short for action frame
     pkt = ehdr + '\x01' + '\x02' + '\x01\x00' + _src_ll
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Too short RRB frame (not enough room for Action Frame body)
     pkt = ehdr + '\x01' + '\x02' + '\x00\x00' + _src_ll
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Unexpected Action frame category
     pkt = ehdr + '\x01' + '\x02' + '\x0e\x00' + _src_ll + '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Unexpected Action in RRB Request
     pkt = ehdr + '\x01' + '\x00' + '\x0e\x00' + _src_ll + '\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Target AP address in RRB Request does not match with own address
     pkt = ehdr + '\x01' + '\x00' + '\x0e\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Not enough room for status code in RRB Response
     pkt = ehdr + '\x01' + '\x01' + '\x0e\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # RRB discarded frame with unknown packet_type
     pkt = ehdr + '\x01' + '\x02' + '\x0e\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # RRB Response with non-zero status code; no STA match
     pkt = ehdr + '\x01' + '\x01' + '\x10\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' + '\xff\xff'
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # RRB Response with zero status code and extra data; STA match
     pkt = ehdr + '\x01' + '\x01' + '\x11\x00' + _src_ll + '\x06\x01' + _src_ll + '\x00\x00\x00\x00\x00\x00' + '\x00\x00' + '\x00'
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Too short PMK-R1 pull
     pkt = ehdr + '\x01' + '\xc8' + '\x0e\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Too short PMK-R1 resp
     pkt = ehdr + '\x01' + '\xc9' + '\x0e\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Too short PMK-R1 push
     pkt = ehdr + '\x01' + '\xca' + '\x0e\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # No matching R0KH address found for PMK-R0 pull response
     pkt = ehdr + '\x01' + '\xc9' + '\x5a\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' + 76*'\00'
-    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt)):
+    if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
 @remote_compatible
@@ -2348,7 +2348,7 @@ def test_ap_ft_ric(dev, apdev):
         dev[0].dump_monitor()
 
 def ie_hex(ies, id):
-    return binascii.hexlify(struct.pack('BB', id, len(ies[id])) + ies[id])
+    return binascii.hexlify(struct.pack('BB', id, len(ies[id])) + ies[id]).decode()
 
 def test_ap_ft_reassoc_proto(dev, apdev):
     """WPA2-PSK-FT AP Reassociation Request frame parsing"""
@@ -2375,7 +2375,7 @@ def test_ap_ft_reassoc_proto(dev, apdev):
 
     while True:
         req = hapd2ap.mgmt_rx()
-        hapd2ap.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + binascii.hexlify(req['frame']))
+        hapd2ap.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + binascii.hexlify(req['frame']).decode())
         if req['subtype'] == 11:
             break
 
@@ -2383,10 +2383,10 @@ def test_ap_ft_reassoc_proto(dev, apdev):
         req = hapd2ap.mgmt_rx()
         if req['subtype'] == 2:
             break
-        hapd2ap.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + binascii.hexlify(req['frame']))
+        hapd2ap.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + binascii.hexlify(req['frame']).decode())
 
     # IEEE 802.11 header + fixed fields before IEs
-    hdr = binascii.hexlify(req['frame'][0:34])
+    hdr = binascii.hexlify(req['frame'][0:34]).decode()
     ies = parse_ie(binascii.hexlify(req['frame'][34:]))
     # First elements: SSID, Supported Rates, Extended Supported Rates
     ies1 = ie_hex(ies, 0) + ie_hex(ies, 1) + ie_hex(ies, 50)
@@ -2487,7 +2487,7 @@ def test_ap_ft_reassoc_replay(dev, apdev, params):
         req = hapd2ap.mgmt_rx()
         count += 1
         hapd2ap.dump_monitor()
-        hapd2ap.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + binascii.hexlify(req['frame']))
+        hapd2ap.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + binascii.hexlify(req['frame']).decode())
         if req['subtype'] == 2:
             reassocreq = req
             ev = hapd2ap.wait_event(["MGMT-TX-STATUS"], timeout=5)
@@ -2509,7 +2509,7 @@ def test_ap_ft_reassoc_replay(dev, apdev, params):
     logger.info("Replay the last Reassociation Request frame")
     hapd2ap.dump_monitor()
     hapd2ap.set("ext_mgmt_frame_handling", "1")
-    hapd2ap.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + binascii.hexlify(req['frame']))
+    hapd2ap.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + binascii.hexlify(req['frame']).decode())
     ev = hapd2ap.wait_event(["MGMT-TX-STATUS"], timeout=5)
     if ev is None:
         raise Exception("No TX status seen")

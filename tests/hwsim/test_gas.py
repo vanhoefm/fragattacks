@@ -1004,7 +1004,7 @@ def test_gas_max_pending(dev, apdev):
     for dialog_token in range(1, 10):
         msg = struct.pack('<BBB', ACTION_CATEG_PUBLIC, GAS_INITIAL_REQUEST,
                           dialog_token) + anqp_adv_proto() + gas
-        req = "MGMT_TX {} {} freq=2412 wait_time=10 action={}".format(bssid, bssid, binascii.hexlify(msg))
+        req = "MGMT_TX {} {} freq=2412 wait_time=10 action={}".format(bssid, bssid, binascii.hexlify(msg).decode())
         if "OK" not in wpas.request(req):
             raise Exception("Could not send management frame")
         resp = wpas.mgmt_rx()
@@ -1036,7 +1036,7 @@ def test_gas_no_pending(dev, apdev):
         raise Exception("Failed to enable external management frame handling")
 
     msg = struct.pack('<BBB', ACTION_CATEG_PUBLIC, GAS_COMEBACK_REQUEST, 1)
-    req = "MGMT_TX {} {} freq=2412 wait_time=10 action={}".format(bssid, bssid, binascii.hexlify(msg))
+    req = "MGMT_TX {} {} freq=2412 wait_time=10 action={}".format(bssid, bssid, binascii.hexlify(msg).decode())
     if "OK" not in wpas.request(req):
         raise Exception("Could not send management frame")
     resp = wpas.mgmt_rx()
@@ -1196,7 +1196,7 @@ def test_gas_anqp_extra_elements(dev, apdev):
     held = struct.pack('BBB', 0, 1 + len(held_uri), 1) + held_uri
     supl_fqdn = "supl.example.com"
     supl = struct.pack('BBB', 0, 1 + len(supl_fqdn), 1) + supl_fqdn
-    public_id = binascii.hexlify(held + supl)
+    public_id = binascii.hexlify(held + supl).decode()
     params = { "ssid": "gas/anqp",
                "interworking": "1",
                "anqp_elem": [ "265:" + geo_loc,
@@ -1604,13 +1604,13 @@ def test_gas_anqp_venue_url(dev, apdev):
     name2 = "Esimerkkipaikka"
     venue1 = struct.pack('B', len(lang1 + name1)) + lang1 + name1
     venue2 = struct.pack('B', len(lang2 + name2)) + lang2 + name2
-    venue_name = binascii.hexlify(venue_info + venue1 + venue2)
+    venue_name = binascii.hexlify(venue_info + venue1 + venue2).decode()
 
     url1 = "http://example.com/venue"
     url2 = "https://example.org/venue-info/"
     duple1 = struct.pack('BB', 1 + len(url1), 1) + url1
     duple2 = struct.pack('BB', 1 + len(url2), 2) + url2
-    venue_url = binascii.hexlify(duple1 + duple2)
+    venue_url = binascii.hexlify(duple1 + duple2).decode()
 
     params = { "ssid": "gas/anqp",
                "interworking": "1",
@@ -1647,7 +1647,7 @@ def test_gas_anqp_venue_url(dev, apdev):
     if 'anqp_capability_list' not in bss:
         raise Exception("Capability List ANQP-element not seen")
     ids = struct.pack('<HHH', 257, 258, 277)
-    if not bss['anqp_capability_list'].startswith(binascii.hexlify(ids)):
+    if not bss['anqp_capability_list'].startswith(binascii.hexlify(ids).decode()):
         raise Exception("Unexpected Capability List ANQP-element value: " + bss['anqp_capability_list'])
 
 def test_gas_anqp_venue_url2(dev, apdev):
@@ -1661,13 +1661,13 @@ def test_gas_anqp_venue_url2(dev, apdev):
     name2 = "Esimerkkipaikka"
     venue1 = struct.pack('B', len(lang1 + name1)) + lang1 + name1
     venue2 = struct.pack('B', len(lang2 + name2)) + lang2 + name2
-    venue_name = binascii.hexlify(venue_info + venue1 + venue2)
+    venue_name = binascii.hexlify(venue_info + venue1 + venue2).decode()
 
     url1 = "http://example.com/venue"
     url2 = "https://example.org/venue-info/"
     duple1 = struct.pack('BB', 1 + len(url1), 1) + url1
     duple2 = struct.pack('BB', 1 + len(url2), 2) + url2
-    venue_url = binascii.hexlify(duple1 + duple2)
+    venue_url = binascii.hexlify(duple1 + duple2).decode()
 
     params = { "ssid": "gas/anqp",
                "interworking": "1",
@@ -1701,7 +1701,7 @@ def test_gas_anqp_venue_url2(dev, apdev):
     if 'anqp_capability_list' not in bss:
         raise Exception("Capability List ANQP-element not seen")
     ids = struct.pack('<HHH', 257, 258, 277)
-    if not bss['anqp_capability_list'].startswith(binascii.hexlify(ids)):
+    if not bss['anqp_capability_list'].startswith(binascii.hexlify(ids).decode()):
         raise Exception("Unexpected Capability List ANQP-element value: " + bss['anqp_capability_list'])
 
 def test_gas_anqp_venue_url_pmf(dev, apdev):
@@ -1849,7 +1849,7 @@ def test_gas_server_oom(dev, apdev):
         raise Exception("Failed to enable external management frame handling")
 
     msg = struct.pack('<BBB', ACTION_CATEG_PUBLIC, GAS_COMEBACK_REQUEST, 1)
-    req = "MGMT_TX {} {} freq=2412 wait_time=10 action={}".format(bssid, bssid, binascii.hexlify(msg))
+    req = "MGMT_TX {} {} freq=2412 wait_time=10 action={}".format(bssid, bssid, binascii.hexlify(msg).decode())
     with alloc_fail(hapd, 1,
                     "gas_anqp_build_comeback_resp_buf;gas_serv_rx_gas_comeback_req"):
         if "OK" not in wpas.request(req):
@@ -1910,7 +1910,7 @@ def test_gas_no_dialog_token_match(dev, apdev):
     dialog_token = 100
     msg = struct.pack('<BBB', ACTION_CATEG_PUBLIC, GAS_INITIAL_REQUEST,
                       dialog_token) + anqp_adv_proto() + gas
-    req = "MGMT_TX {} {} freq=2412 wait_time=10 action={}".format(bssid, bssid, binascii.hexlify(msg))
+    req = "MGMT_TX {} {} freq=2412 wait_time=10 action={}".format(bssid, bssid, binascii.hexlify(msg).decode())
     if "OK" not in wpas.request(req):
         raise Exception("Could not send management frame")
     resp = wpas.mgmt_rx()
@@ -1927,7 +1927,7 @@ def test_gas_no_dialog_token_match(dev, apdev):
 
     msg = struct.pack('<BBB', ACTION_CATEG_PUBLIC, GAS_COMEBACK_REQUEST,
                       dialog_token + 1)
-    req = "MGMT_TX {} {} freq=2412 wait_time=10 action={}".format(bssid, bssid, binascii.hexlify(msg))
+    req = "MGMT_TX {} {} freq=2412 wait_time=10 action={}".format(bssid, bssid, binascii.hexlify(msg).decode())
     if "OK" not in wpas.request(req):
         raise Exception("Could not send management frame")
     resp = wpas.mgmt_rx()
@@ -2012,7 +2012,7 @@ def test_gas_vendor_spec_errors(dev, apdev):
     msg6 = struct.pack('<BB', ACTION_CATEG_PUBLIC, GAS_COMEBACK_REQUEST)
     tests = [ msg, msg2, msg3, msg4, msg5, msg6 ]
     for t in tests:
-        req = "MGMT_TX {} {} freq=2412 wait_time=10 action={}".format(bssid, bssid, binascii.hexlify(t))
+        req = "MGMT_TX {} {} freq=2412 wait_time=10 action={}".format(bssid, bssid, binascii.hexlify(t).decode())
         if "OK" not in wpas.request(req):
             raise Exception("Could not send management frame")
         ev = wpas.wait_event(["MGMT-TX-STATUS"], timeout=5)
