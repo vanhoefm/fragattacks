@@ -11,6 +11,7 @@ import os
 import socket
 import subprocess
 import time
+import binascii
 
 import hostapd
 import hwsim_utils
@@ -872,7 +873,7 @@ def test_wpas_ctrl_disallow_aps(dev, apdev):
         raise Exception("Unexpected BSSID")
 
     dev[0].dump_monitor()
-    if "OK" not in dev[0].request("SET disallow_aps ssid " + "test".encode("hex")):
+    if "OK" not in dev[0].request("SET disallow_aps ssid " + binascii.hexlify(b"test").decode()):
         raise Exception("Failed to set disallow_aps")
     dev[0].wait_disconnected(timeout=5, error="Disconnection not seen")
     ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)

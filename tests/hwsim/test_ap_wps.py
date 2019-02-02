@@ -177,7 +177,7 @@ def test_ap_wps_init_through_wps_config(dev, apdev):
     ssid = "test-wps-init-config"
     hapd = hostapd.add_ap(apdev[0],
                           { "ssid": ssid, "eap_server": "1", "wps_state": "1" })
-    if "FAIL" in hapd.request("WPS_CONFIG " + ssid.encode("hex") + " WPA2PSK CCMP " + "12345678".encode("hex")):
+    if "FAIL" in hapd.request("WPS_CONFIG " + binascii.hexlify(ssid.encode()).decode() + " WPA2PSK CCMP " + binascii.hexlify(b"12345678").decode()):
         raise Exception("WPS_CONFIG command failed")
     ev = hapd.wait_event(["WPS-NEW-AP-SETTINGS"], timeout=5)
     if ev is None:
@@ -200,7 +200,7 @@ def test_ap_wps_init_through_wps_config_2(dev, apdev):
     hapd = hostapd.add_ap(apdev[0],
                           { "ssid": ssid, "eap_server": "1", "wps_state": "1",
                           "wps_cred_processing": "2" })
-    if "FAIL" in hapd.request("WPS_CONFIG " + ssid.encode("hex") + " WPA2PSK CCMP " + "12345678".encode("hex")):
+    if "FAIL" in hapd.request("WPS_CONFIG " + binascii.hexlify(ssid.encode()).decode() + " WPA2PSK CCMP " + binascii.hexlify(b"12345678").decode()):
         raise Exception("WPS_CONFIG command failed")
     ev = hapd.wait_event(["WPS-NEW-AP-SETTINGS"], timeout=5)
     if ev is None:
@@ -214,7 +214,7 @@ def test_ap_wps_invalid_wps_config_passphrase(dev, apdev):
     ssid = "test-wps-init-config"
     hapd = hostapd.add_ap(apdev[0],
                           { "ssid": ssid, "eap_server": "1", "wps_state": "1" })
-    if "FAIL" not in hapd.request("WPS_CONFIG " + ssid.encode("hex") + " WPA2PSK CCMP " + "1234567".encode("hex")):
+    if "FAIL" not in hapd.request("WPS_CONFIG " + binascii.hexlify(ssid.encode()).decode() + " WPA2PSK CCMP " + binascii.hexlify(b"1234567").decode()):
         raise Exception("Invalid WPS_CONFIG command accepted")
 
 def test_ap_wps_conf(dev, apdev):
@@ -771,7 +771,7 @@ def test_ap_wps_reg_config_ext_processing(dev, apdev):
     if "1026" not in ev:
         raise Exception("AP Settings missing from event")
     hapd.request("SET wps_cred_processing 0")
-    if "FAIL" in hapd.request("WPS_CONFIG " + new_ssid.encode("hex") + " WPA2PSK CCMP " + new_passphrase.encode("hex")):
+    if "FAIL" in hapd.request("WPS_CONFIG " + binascii.hexlify(new_ssid.encode()).decode() + " WPA2PSK CCMP " + binascii.hexlify(new_passphrase.encode()).decode()):
         raise Exception("WPS_CONFIG command failed")
     dev[0].wait_connected(timeout=15)
 
@@ -1572,8 +1572,8 @@ def _test_ap_wps_er_config_ap(dev, apdev):
         raise Exception("Expected AP UUID not found")
     new_passphrase = "1234567890"
     dev[0].request("WPS_ER_CONFIG " + apdev[0]['bssid'] + " " + ap_pin + " " +
-                   ssid.encode("hex") + " WPA2PSK CCMP " +
-                   new_passphrase.encode("hex"))
+                   binascii.hexlify(ssid.encode()).decode() + " WPA2PSK CCMP " +
+                   binascii.hexlify(new_passphrase.encode()).decode())
     ev = dev[0].wait_event(["WPS-SUCCESS"])
     if ev is None:
         raise Exception("WPS ER configuration operation timed out")

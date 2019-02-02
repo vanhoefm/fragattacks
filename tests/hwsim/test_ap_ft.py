@@ -2417,9 +2417,9 @@ def test_ap_ft_reassoc_proto(dev, apdev):
     # FT: R0KH-ID in FTIE did not match with the current R0KH-ID
     tests += [ rsne + mde + "3755" + fte[4:168] + "0301ff" ]
     # FT: No R1KH-ID subelem in FTIE
-    tests += [ rsne + mde + "375e" + fte[4:168] + "030a" + "nas1.w1.fi".encode("hex") ]
+    tests += [ rsne + mde + "375e" + fte[4:168] + "030a" + binascii.hexlify(b"nas1.w1.fi").decode() ]
     # FT: Unknown R1KH-ID used in ReassocReq
-    tests += [ rsne + mde + "3766" + fte[4:168] + "030a" + "nas1.w1.fi".encode("hex") + "0106000000000000" ]
+    tests += [ rsne + mde + "3766" + fte[4:168] + "030a" + binascii.hexlify(b"nas1.w1.fi").decode() + "0106000000000000" ]
     # FT: PMKID in Reassoc Req did not match with the PMKR1Name derived from auth request
     tests += [ rsne[:-32] + 16*"00" + mde + fte ]
     # Invalid MIC in FTIE

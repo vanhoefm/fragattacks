@@ -351,13 +351,13 @@ def test_ap_nai_home_realm_query(dev, apdev):
 
     if len(nai1) >= len(nai2):
         raise Exception("Unexpected NAI Realm list response lengths")
-    if "example.com".encode('hex') not in nai1:
+    if binascii.hexlify(b"example.com").decode() not in nai1:
         raise Exception("Home realm not reported")
-    if "example.org".encode('hex') in nai1:
+    if binascii.hexlify(b"example.org").decode() in nai1:
         raise Exception("Non-home realm reported")
-    if "example.com".encode('hex') not in nai2:
+    if binascii.hexlify(b"example.com").decode() not in nai2:
         raise Exception("Home realm not reported in wildcard query")
-    if "example.org".encode('hex') not in nai2:
+    if binascii.hexlify(b"example.org").decode() not in nai2:
         raise Exception("Non-home realm not reported in wildcard query ")
 
     cmds = [ "foo",

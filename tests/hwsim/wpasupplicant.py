@@ -1140,8 +1140,9 @@ class WpaSupplicant:
         self.dump_monitor()
         if new_ssid:
             self.request("WPS_REG " + bssid + " " + pin + " " +
-                         new_ssid.encode("hex") + " " + key_mgmt + " " +
-                         cipher + " " + new_passphrase.encode("hex"))
+                         binascii.hexlify(new_ssid.encode()).decode() + " " +
+                         key_mgmt + " " + cipher + " " +
+                         binascii.hexlify(new_passphrase.encode()).decode())
             if no_wait:
                 return
             ev = self.wait_event(["WPS-SUCCESS"], timeout=15)

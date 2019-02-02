@@ -2047,13 +2047,13 @@ def test_ap_wpa2_eap_tls_blob(dev, apdev):
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     hapd = hostapd.add_ap(apdev[0], params)
     cert = read_pem("auth_serv/ca.pem")
-    if "OK" not in dev[0].request("SET blob cacert " + cert.encode("hex")):
+    if "OK" not in dev[0].request("SET blob cacert " +  binascii.hexlify(cert).decode()):
         raise Exception("Could not set cacert blob")
     cert = read_pem("auth_serv/user.pem")
-    if "OK" not in dev[0].request("SET blob usercert " + cert.encode("hex")):
+    if "OK" not in dev[0].request("SET blob usercert " + binascii.hexlify(cert).decode()):
         raise Exception("Could not set usercert blob")
     key = read_pem("auth_serv/user.rsa-key")
-    if "OK" not in dev[0].request("SET blob userkey " + key.encode("hex")):
+    if "OK" not in dev[0].request("SET blob userkey " + binascii.hexlify(key).decode()):
         raise Exception("Could not set cacert blob")
     eap_connect(dev[0], hapd, "TLS", "tls user", ca_cert="blob://cacert",
                 client_cert="blob://usercert",
@@ -2128,10 +2128,10 @@ def test_ap_wpa2_eap_tls_pkcs12_blob(dev, apdev):
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     hapd = hostapd.add_ap(apdev[0], params)
     cert = read_pem("auth_serv/ca.pem")
-    if "OK" not in dev[0].request("SET blob cacert " + cert.encode("hex")):
+    if "OK" not in dev[0].request("SET blob cacert " + binascii.hexlify(cert).decode()):
         raise Exception("Could not set cacert blob")
     with open("auth_serv/user.pkcs12", "rb") as f:
-        if "OK" not in dev[0].request("SET blob pkcs12 " + f.read().encode("hex")):
+        if "OK" not in dev[0].request("SET blob pkcs12 " + binascii.hexlify(f.read()).decode()):
             raise Exception("Could not set pkcs12 blob")
     eap_connect(dev[0], hapd, "TLS", "tls user", ca_cert="blob://cacert",
                 private_key="blob://pkcs12",
@@ -2143,7 +2143,7 @@ def test_ap_wpa2_eap_tls_neg_incorrect_trust_root(dev, apdev):
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     hostapd.add_ap(apdev[0], params)
     cert = read_pem("auth_serv/ca-incorrect.pem")
-    if "OK" not in dev[0].request("SET blob cacert " + cert.encode("hex")):
+    if "OK" not in dev[0].request("SET blob cacert " + binascii.hexlify(cert).decode()):
         raise Exception("Could not set cacert blob")
     dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="TTLS",
                    identity="DOMAIN\mschapv2 user", anonymous_identity="ttls",
@@ -3421,7 +3421,7 @@ def test_ap_wpa2_eap_fast_text_pac_errors(dev, apdev):
     pac += "START\n"
     pac += "PAC-Type\n"
     pac += "END\n"
-    if "OK" not in dev[0].request("SET blob fast_pac_text_errors " + pac.encode("hex")):
+    if "OK" not in dev[0].request("SET blob fast_pac_text_errors " + binascii.hexlify(pac.encode()).decode()):
         raise Exception("Could not set blob")
 
     dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="FAST",
@@ -4760,7 +4760,7 @@ def test_ap_wpa2_eap_ttls_dh_params_blob(dev, apdev):
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     hapd = hostapd.add_ap(apdev[0], params)
     dh = read_pem("auth_serv/dh2.conf")
-    if "OK" not in dev[0].request("SET blob dhparams " + dh.encode("hex")):
+    if "OK" not in dev[0].request("SET blob dhparams " + binascii.hexlify(dh).decode()):
         raise Exception("Could not set dhparams blob")
     eap_connect(dev[0], hapd, "TTLS", "pap user",
                 anonymous_identity="ttls", password="password",

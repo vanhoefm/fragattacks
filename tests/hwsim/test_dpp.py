@@ -1115,7 +1115,7 @@ def test_dpp_config_fragmentation(dev, apdev):
 def test_dpp_config_legacy_gen(dev, apdev):
     """Generate DPP Config Object for legacy network"""
     run_dpp_qr_code_auth_unicast(dev, apdev, "prime256v1",
-                                 init_extra="conf=sta-psk pass=%s" % "passphrase".encode("hex"),
+                                 init_extra="conf=sta-psk pass=%s" % binascii.hexlify(b"passphrase").decode(),
                                  require_conf_success=True)
 
 def test_dpp_config_legacy_gen_psk(dev, apdev):
@@ -1707,12 +1707,14 @@ def test_dpp_gas_timeout(dev, apdev):
 
     # DPP Authentication Request
     msg = dev[0].mgmt_rx()
-    if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], msg['frame'].encode('hex'))):
+    if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(
+        msg['freq'], msg['datarate'], msg['ssi_signal'], binascii.hexlify(msg['frame']).decode())):
         raise Exception("MGMT_RX_PROCESS failed")
 
     # DPP Authentication Confirmation
     msg = dev[0].mgmt_rx()
-    if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], msg['frame'].encode('hex'))):
+    if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(
+        msg['freq'], msg['datarate'], msg['ssi_signal'], binascii.hexlify(msg['frame']).decode())):
         raise Exception("MGMT_RX_PROCESS failed")
 
     ev = dev[0].wait_event(["DPP-AUTH-SUCCESS"], timeout=5)
@@ -1724,7 +1726,8 @@ def test_dpp_gas_timeout(dev, apdev):
 
     # DPP Configuration Response (GAS Initial Response frame)
     msg = dev[0].mgmt_rx()
-    if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], msg['frame'].encode('hex'))):
+    if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(
+        msg['freq'], msg['datarate'], msg['ssi_signal'], binascii.hexlify(msg['frame']).decode())):
         raise Exception("MGMT_RX_PROCESS failed")
 
     # GAS Comeback Response frame
@@ -2266,7 +2269,9 @@ def run_dpp_auto_connect_legacy(dev, apdev, conf='sta-psk',
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to start listen operation")
 
-    cmd = "DPP_AUTH_INIT peer=%d conf=%s ssid=%s pass=%s" % (id1, conf, "dpp-legacy".encode("hex"), "secret passphrase".encode("hex"))
+    cmd = "DPP_AUTH_INIT peer=%d conf=%s ssid=%s pass=%s" % (id1, conf,
+        binascii.hexlify(b"dpp-legacy").decode(),
+        binascii.hexlify(b"secret passphrase").decode())
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
     ev = dev[1].wait_event(["DPP-CONF-SENT"], timeout=10)
@@ -2317,7 +2322,9 @@ def run_dpp_auto_connect_legacy_pmf_required(dev, apdev):
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to start listen operation")
 
-    cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk ssid=%s pass=%s" % (id1, "dpp-legacy".encode("hex"), "secret passphrase".encode("hex"))
+    cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk ssid=%s pass=%s" % (id1,
+        binascii.hexlify(b"dpp-legacy").decode(),
+        binascii.hexlify(b"secret passphrase").decode())
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
     ev = dev[1].wait_event(["DPP-CONF-SENT"], timeout=10)
@@ -5149,7 +5156,8 @@ def test_dpp_keygen_configurator_error(dev, apdev):
 
 def rx_process_frame(dev):
     msg = dev.mgmt_rx()
-    if "OK" not in dev.request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], msg['frame'].encode('hex'))):
+    if "OK" not in dev.request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(
+        msg['freq'], msg['datarate'], msg['ssi_signal'], binascii.hexlify(msg['frame']).decode())):
         raise Exception("MGMT_RX_PROCESS failed")
 
 def wait_auth_success(responder, initiator):
@@ -5238,7 +5246,7 @@ def test_dpp_gas_comeback_after_failure(dev, apdev):
 
     # DPP Configuration Request (GAS Comeback Request frame)
     msg = dev[0].mgmt_rx()
-    frame = msg['frame'].encode('hex')
+    frame = binascii.hexlify(msg['frame']).decode()
     with alloc_fail(dev[0], 1, "gas_build_comeback_resp;gas_server_handle_rx_comeback_req"):
         if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], frame)):
             raise Exception("MGMT_RX_PROCESS failed")
@@ -5269,26 +5277,29 @@ def test_dpp_gas(dev, apdev):
     msg = dev[0].mgmt_rx()
 
     # Protected Dual of GAS Initial Request frame (dropped by GAS server)
-    frame = msg['frame'].encode('hex')
-    frame = frame[0:48] + "09" + frame[50:]
+    if msg == None:
+        raise Exception("MGMT_RX_PROCESS failed. <Please retry>")
+    frame = binascii.hexlify(msg['frame'])
+    frame = frame[0:48] + b"09" + frame[50:]
+    frame = frame.decode()
     if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], frame)):
         raise Exception("MGMT_RX_PROCESS failed")
 
     with alloc_fail(dev[0], 1, "gas_server_send_resp"):
-        frame = msg['frame'].encode('hex')
+        frame = binascii.hexlify(msg['frame']).decode()
         if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], frame)):
             raise Exception("MGMT_RX_PROCESS failed")
         wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
 
     with alloc_fail(dev[0], 1, "gas_build_initial_resp;gas_server_send_resp"):
-        frame = msg['frame'].encode('hex')
+        frame = binascii.hexlify(msg['frame']).decode()
         if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], frame)):
             raise Exception("MGMT_RX_PROCESS failed")
         wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
 
     # Add extra data after Query Request field to trigger
     # "GAS: Ignored extra data after Query Request field"
-    frame = msg['frame'].encode('hex') + "00"
+    frame = binascii.hexlify(msg['frame']).decode() + "00"
     if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], frame)):
         raise Exception("MGMT_RX_PROCESS failed")
 
@@ -5314,7 +5325,7 @@ def test_dpp_truncated_attr(dev, apdev):
     frame = msg['frame']
 
     # DPP: Truncated message - not enough room for the attribute - dropped
-    frame1 = frame[0:36].encode('hex')
+    frame1 = binascii.hexlify(frame[0:36]).decode()
     if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], frame1)):
         raise Exception("MGMT_RX_PROCESS failed")
     ev = dev[0].wait_event(["DPP-RX"], timeout=5)
@@ -5322,7 +5333,7 @@ def test_dpp_truncated_attr(dev, apdev):
         raise Exception("Invalid attribute error not reported")
 
     # DPP: Unexpected octets (3) after the last attribute
-    frame2 = frame.encode('hex') + "000000"
+    frame2 = binascii.hexlify(frame).decode() + "000000"
     if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], frame2)):
         raise Exception("MGMT_RX_PROCESS failed")
     ev = dev[0].wait_event(["DPP-RX"], timeout=5)
@@ -5425,7 +5436,7 @@ def test_dpp_invalid_legacy_params(dev, apdev):
     id1 = int(res)
 
     # No pass/psk
-    cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk ssid=%s" % (id1, "dpp-legacy".encode("hex"))
+    cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk ssid=%s" % (id1, binascii.hexlify(b"dpp-legacy").decode())
     if "FAIL" not in dev[1].request(cmd):
         raise Exception("Invalid command not rejected")
 
@@ -5448,7 +5459,7 @@ def test_dpp_invalid_legacy_params2(dev, apdev):
     id1 = int(res)
 
     dev[0].set("dpp_configurator_params",
-               " conf=sta-psk ssid=%s" % ("dpp-legacy".encode("hex")))
+               " conf=sta-psk ssid=%s" % (binascii.hexlify(b"dpp-legacy").decode()))
     cmd = "DPP_LISTEN 2412 role=configurator"
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to start listen operation")
@@ -5483,7 +5494,9 @@ def test_dpp_legacy_params_failure(dev, apdev):
     if "OK" not in dev[0].request("DPP_LISTEN 2412"):
         raise Exception("Failed to start listen operation")
 
-    cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk pass=%s ssid=%s" % (id1, "passphrase".encode("hex"), "dpp-legacy".encode("hex"))
+    cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk pass=%s ssid=%s" % (id1,
+        binascii.hexlify(b"passphrase").decode(),
+        binascii.hexlify(b"dpp-legacy").decode())
     with alloc_fail(dev[1], 1, "dpp_build_conf_obj_legacy"):
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to initiate DPP")
@@ -5819,7 +5832,7 @@ def run_dpp_network_addition_failure(dev, apdev):
             wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
         dev[0].dump_monitor()
 
-    cmd = "DPP_CONFIGURATOR_SIGN  conf=sta-psk pass=%s configurator=%d" % ("passphrase".encode("hex"), conf_id)
+    cmd = "DPP_CONFIGURATOR_SIGN  conf=sta-psk pass=%s configurator=%d" % (binascii.hexlify(b"passphrase").decode(), conf_id)
     tests = [ (1, "wpa_config_set_quoted;wpas_dpp_add_network") ]
     for count,func in tests:
         with alloc_fail(dev[0], count, func):

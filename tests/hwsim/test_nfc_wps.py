@@ -5,6 +5,7 @@
 # See README for more details.
 
 from remotehost import remote_compatible
+import binascii
 import time
 import subprocess
 import logging
@@ -154,7 +155,10 @@ def test_nfc_wps_password_token_ap(dev, apdev):
     dev[0].dump_monitor()
     new_ssid = "test-wps-nfc-pw-token-new-ssid"
     new_passphrase = "1234567890"
-    res = dev[0].request("WPS_REG " + apdev[0]['bssid'] + " nfc-pw " + new_ssid.encode("hex") + " WPA2PSK CCMP " + new_passphrase.encode("hex"))
+    res = dev[0].request("WPS_REG " + apdev[0]['bssid'] + " nfc-pw " +
+                         binascii.hexlify(new_ssid.encode()).decode() +
+                         " WPA2PSK CCMP " +
+                         binascii.hexlify(new_passphrase.encode()).decode())
     if "FAIL" in res:
         raise Exception("Failed to start Registrar using NFC password token")
     dev[0].wait_connected(timeout=30)

@@ -11,6 +11,7 @@ import struct
 import subprocess
 import time
 import json
+import binascii
 
 import hwsim_utils
 import hostapd
@@ -666,7 +667,8 @@ def test_wpas_mesh_secure_dropped_frame(dev, apdev):
         if rx_msg['subtype'] == 13:
             logger.info("Drop the first Action frame")
             break
-        if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(rx_msg['freq'], rx_msg['datarate'], rx_msg['ssi_signal'], rx_msg['frame'].encode('hex'))):
+        if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(
+            rx_msg['freq'], rx_msg['datarate'], rx_msg['ssi_signal'], binascii.hexlify(rx_msg['frame']).decode())):
             raise Exception("MGMT_RX_PROCESS failed")
 
     dev[0].request("SET ext_mgmt_frame_handling 0")
@@ -1988,7 +1990,8 @@ def test_mesh_missing_mic(dev, apdev):
                 # Remove MIC
                 rx_msg['frame'] = frame[0:pos]
                 remove_mic = False
-        if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(rx_msg['freq'], rx_msg['datarate'], rx_msg['ssi_signal'], rx_msg['frame'].encode('hex'))):
+        if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(
+            rx_msg['freq'], rx_msg['datarate'], rx_msg['ssi_signal'], binascii.hexlify(rx_msg['frame']).decode())):
             raise Exception("MGMT_RX_PROCESS failed")
         ev = dev[1].wait_event(["MESH-PEER-CONNECTED"], timeout=0.01)
         if ev:
@@ -2057,7 +2060,8 @@ def test_mesh_pmkid_mismatch(dev, apdev):
                 # not match calculated PMKID)"
                 rx_msg['frame'] = frame[0:pos + 6] + b'\x00\x00\x00\x00' + frame[pos + 10:]
                 break_pmkid = False
-        if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(rx_msg['freq'], rx_msg['datarate'], rx_msg['ssi_signal'], rx_msg['frame'].encode('hex'))):
+        if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(
+            rx_msg['freq'], rx_msg['datarate'], rx_msg['ssi_signal'], binascii.hexlify(rx_msg['frame']).decode())):
             raise Exception("MGMT_RX_PROCESS failed")
         ev = dev[1].wait_event(["MESH-PEER-CONNECTED"], timeout=0.01)
         if ev:
@@ -2140,7 +2144,8 @@ def test_mesh_peering_proto(dev, apdev):
                 # "MPM: Mesh parsing rejected frame"
                 rx_msg['frame'] = frame[0:pos] + b'\x75\x00\x00\x00' + frame[pos + 6:]
                 test += 1
-        if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(rx_msg['freq'], rx_msg['datarate'], rx_msg['ssi_signal'], rx_msg['frame'].encode('hex'))):
+        if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(
+            rx_msg['freq'], rx_msg['datarate'], rx_msg['ssi_signal'], binascii.hexlify(rx_msg['frame']).decode())):
             raise Exception("MGMT_RX_PROCESS failed")
         ev = dev[1].wait_event(["MESH-PEER-CONNECTED"], timeout=0.01)
         if ev:
@@ -2254,8 +2259,8 @@ def test_mesh_holding(dev, apdev):
     if categ != 0x0f or action != 0x03:
         raise Exception("Did not see Mesh Peering Close")
 
-    peer_lid = payload[-6:-4].encode("hex")
-    my_lid = payload[-4:-2].encode("hex")
+    peer_lid = binascii.hexlify(payload[-6:-4]).decode()
+    my_lid = binascii.hexlify(payload[-4:-2]).decode()
 
     # Drop Mesh Peering Close and instead, process an unexpected Mesh Peering
     # Open to trigger transmission of another Mesh Peering Close in the HOLDING
@@ -2297,12 +2302,13 @@ def test_mesh_cnf_rcvd_event_cls_acpt(dev, apdev):
 
     rx_msg = dev[0].mgmt_rx()
     # Allow Mesh Peering Confirm to go through
-    if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(rx_msg['freq'], rx_msg['datarate'], rx_msg['ssi_signal'], rx_msg['frame'].encode('hex'))):
+    if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(
+        rx_msg['freq'], rx_msg['datarate'], rx_msg['ssi_signal'], binascii.hexlify(rx_msg['frame']).decode())):
         raise Exception("MGMT_RX_PROCESS failed")
 
     payload = rx_msg['payload']
-    peer_lid = payload[51:53].encode("hex")
-    my_lid = payload[53:55].encode("hex")
+    peer_lid = binascii.hexlify(payload[51:53]).decode()
+    my_lid = binascii.hexlify(payload[53:55]).decode()
 
     dst = addr0.replace(':', '')
     src = addr1.replace(':', '')
@@ -2339,7 +2345,7 @@ def test_mesh_opn_snt_event_cls_acpt(dev, apdev):
 
     payload = rx_msg['payload']
     peer_lid = "0000"
-    my_lid = payload[53:55].encode("hex")
+    my_lid = binascii.hexlify(payload[53:55]).decode()
 
     dst = addr0.replace(':', '')
     src = addr1.replace(':', '')

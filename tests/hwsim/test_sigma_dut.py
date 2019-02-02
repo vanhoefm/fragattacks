@@ -27,6 +27,9 @@ def check_sigma_dut():
     if not os.path.exists("./sigma_dut"):
         raise HwsimSkip("sigma_dut not available")
 
+def to_hex(s):
+    return binascii.hexlify(s.encode()).decode()
+
 def sigma_dut_cmd(cmd, port=9000, timeout=2):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM,
                          socket.IPPROTO_TCP)
@@ -1027,12 +1030,12 @@ def test_sigma_dut_dpp_qr_init_enrollee(dev, apdev):
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         dev[1].set("dpp_configurator_params",
-                   " conf=sta-dpp ssid=%s configurator=%d" % ("DPPNET01".encode("hex"), conf_id))
+                   " conf=sta-dpp ssid=%s configurator=%d" % (to_hex("DPPNET01"), conf_id))
         cmd = "DPP_LISTEN 2437 role=configurator"
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to start listen operation")
 
-        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -1093,7 +1096,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra=''):
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         dev[1].set("dpp_configurator_params",
-                   " conf=sta-dpp ssid=%s configurator=%d" % ("DPPNET01".encode("hex"), conf_id))
+                   " conf=sta-dpp ssid=%s configurator=%d" % (to_hex("DPPNET01"), conf_id))
         cmd = "DPP_LISTEN 2437 role=configurator qr=mutual"
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to start listen operation")
@@ -1110,7 +1113,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra=''):
             raise Exception("Failed to parse QR Code URI")
         id1 = int(res)
 
-        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -1124,7 +1127,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra=''):
 def dpp_init_conf_mutual(dev, id1, conf_id, own_id=None):
     time.sleep(1)
     logger.info("Starting DPP initiator/configurator in a thread")
-    cmd = "DPP_AUTH_INIT peer=%d conf=sta-dpp ssid=%s configurator=%d" % (id1, "DPPNET01".encode("hex"), conf_id)
+    cmd = "DPP_AUTH_INIT peer=%d conf=sta-dpp ssid=%s configurator=%d" % (id1, to_hex("DPPNET01"), conf_id)
     if own_id is not None:
         cmd += " own=%d" % own_id
     if "OK" not in dev.request(cmd):
@@ -1194,7 +1197,7 @@ def run_sigma_dut_dpp_qr_mutual_resp_enrollee(dev, apdev, extra=None):
             raise Exception("Failed to parse QR Code URI")
         id1 = int(res)
 
-        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -1216,7 +1219,8 @@ def run_sigma_dut_dpp_qr_mutual_resp_enrollee(dev, apdev, extra=None):
 def dpp_resp_conf_mutual(dev, conf_id, uri):
     logger.info("Starting DPP responder/configurator in a thread")
     dev.set("dpp_configurator_params",
-            " conf=sta-dpp ssid=%s configurator=%d" % ("DPPNET01".encode("hex"), conf_id))
+            " conf=sta-dpp ssid=%s configurator=%d" % (to_hex("DPPNET01"),
+                                                       conf_id))
     cmd = "DPP_LISTEN 2437 role=configurator qr=mutual"
     if "OK" not in dev.request(cmd):
         raise Exception("Failed to initiate DPP listen")
@@ -1293,7 +1297,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee(dev, apdev, resp_pending):
                 raise Exception("Failed to parse QR Code URI")
             uri = None
 
-        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -1339,12 +1343,12 @@ def test_sigma_dut_dpp_qr_init_enrollee_psk(dev, apdev):
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         dev[1].set("dpp_configurator_params",
-                   " conf=sta-psk ssid=%s pass=%s configurator=%d" % ("DPPNET01".encode("hex"), "ThisIsDppPassphrase".encode("hex"), conf_id))
+                   " conf=sta-psk ssid=%s pass=%s configurator=%d" % (to_hex("DPPNET01"), to_hex("ThisIsDppPassphrase"), conf_id))
         cmd = "DPP_LISTEN 2437 role=configurator"
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to start listen operation")
 
-        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -1387,12 +1391,12 @@ def test_sigma_dut_dpp_qr_init_enrollee_sae(dev, apdev):
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         dev[1].set("dpp_configurator_params",
-                   " conf=sta-sae ssid=%s pass=%s configurator=%d" % ("DPPNET01".encode("hex"), "ThisIsDppPassphrase".encode("hex"), conf_id))
+                   " conf=sta-sae ssid=%s pass=%s configurator=%d" % (to_hex("DPPNET01"), to_hex("ThisIsDppPassphrase"), conf_id))
         cmd = "DPP_LISTEN 2437 role=configurator"
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to start listen operation")
 
-        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -1458,7 +1462,7 @@ def run_sigma_dut_dpp_qr_init_configurator(dev, apdev, conf_idx,
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to start listen operation")
 
-        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -1501,7 +1505,7 @@ def test_sigma_dut_dpp_incompatible_roles_init(dev, apdev):
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to start listen operation")
 
-        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -1551,7 +1555,7 @@ def test_sigma_dut_dpp_incompatible_roles_resp(dev, apdev):
         id0 = int(res)
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -1607,7 +1611,7 @@ def test_sigma_dut_ap_dpp_qr(dev, apdev, params):
 def test_sigma_dut_ap_dpp_qr_legacy(dev, apdev, params):
     """sigma_dut controlled AP (legacy)"""
     run_sigma_dut_ap_dpp_qr(dev, apdev, params, "ap-psk", "sta-psk",
-                            extra="pass=%s" % "qwertyuiop".encode("hex"))
+                            extra="pass=%s" % to_hex("qwertyuiop"))
 
 def test_sigma_dut_ap_dpp_qr_legacy_psk(dev, apdev, params):
     """sigma_dut controlled AP (legacy)"""
@@ -1804,7 +1808,7 @@ def run_sigma_dut_dpp_proto_initiator(dev, step, frame, attr, result, fail):
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to start listen operation")
 
-    res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+    res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
     if "status,COMPLETE" not in res:
         raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -1901,7 +1905,7 @@ def run_sigma_dut_dpp_proto_stop_at_initiator(dev, frame, result, fail):
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to start listen operation")
 
-    res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+    res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
     if "status,COMPLETE" not in res:
         raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -1948,7 +1952,7 @@ def run_sigma_dut_dpp_proto_stop_at_initiator_enrollee(dev, frame, result,
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to start listen operation")
 
-    res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+    res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
     if "status,COMPLETE" not in res:
         raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -2159,12 +2163,13 @@ def init_sigma_dut_dpp_proto_peer_disc_req(dev, apdev):
     uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     dev[1].set("dpp_configurator_params",
-               " conf=sta-dpp ssid=%s configurator=%d" % ("DPPNET01".encode("hex"), conf_id))
+               " conf=sta-dpp ssid=%s configurator=%d" % (to_hex("DPPNET01"),
+                                                          conf_id))
     cmd = "DPP_LISTEN 2437 role=configurator"
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to start listen operation")
 
-    res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri0.encode('hex'))
+    res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
     if "status,COMPLETE" not in res:
         raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -2199,7 +2204,7 @@ def test_sigma_dut_dpp_self_config(dev, apdev):
         id = int(res)
         uri = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id)
 
-        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri.encode('hex'))
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri))
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
 
@@ -2250,7 +2255,7 @@ def run_sigma_dut_ap_dpp_self_config(dev, apdev):
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to start listen operation")
 
-    res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % uri.encode('hex'))
+    res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri))
     if "status,COMPLETE" not in res:
         raise Exception("dev_exec_action did not succeed: " + res)
     cmd = "dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,DPPAuthDirection,Single,DPPProvisioningRole,Configurator,DPPConfIndex,1,DPPSigningKeyECC,P-256,DPPConfEnrolleeRole,STA,DPPBS,QR,DPPTimeout,6"

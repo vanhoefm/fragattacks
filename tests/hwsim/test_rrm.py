@@ -1083,7 +1083,7 @@ def test_rrm_beacon_req_table_ssid(dev, apdev):
     addr = dev[0].own_addr()
 
     bssid2 = hapd2.own_addr()
-    token = run_req_beacon(hapd, addr, "51000000000002ffffffffffff" + "0007" + "another".encode('hex'))
+    token = run_req_beacon(hapd, addr, "51000000000002ffffffffffff" + "0007" + binascii.hexlify(b"another").decode())
     ev = hapd.wait_event(["BEACON-RESP-RX"], timeout=10)
     if ev is None:
         raise Exception("Beacon report response not received")
