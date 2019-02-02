@@ -36,8 +36,13 @@ cd ../../../wlantest
 make clean > /dev/null
 make QUIET=1 -j8 > /dev/null
 
+echo "Building hs20-osu-client"
+cd ../hs20/client/
+make clean > /dev/null 2>&1
+make QUIET=1 CONFIG_NO_BROWSER=1
+
 echo "Building hostapd"
-cd ../hostapd
+cd ../../hostapd
 if [ ! -e .config -o $force_config -eq 1 ]; then
     cp ../tests/hwsim/example-hostapd.config .config
 else
