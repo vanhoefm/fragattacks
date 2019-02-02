@@ -1606,8 +1606,8 @@ def test_gas_anqp_venue_url(dev, apdev):
     venue2 = struct.pack('B', len(lang2 + name2)) + lang2.encode() + name2.encode()
     venue_name = binascii.hexlify(venue_info + venue1 + venue2).decode()
 
-    url1 = "http://example.com/venue"
-    url2 = "https://example.org/venue-info/"
+    url1 = b"http://example.com/venue"
+    url2 = b"https://example.org/venue-info/"
     duple1 = struct.pack('BB', 1 + len(url1), 1) + url1
     duple2 = struct.pack('BB', 1 + len(url2), 2) + url2
     venue_url = binascii.hexlify(duple1 + duple2).decode()

@@ -411,7 +411,7 @@ def test_p2p_msg_invitation_req(dev, apdev):
     # Invalid Device Name header length in Device Info attribute
     dialog_token += 1
     msg = p2p_hdr(dst, src, type=P2P_INVITATION_REQ, dialog_token=dialog_token)
-    devname = 'A'
+    devname = b'A'
     attrs = struct.pack("<BH6BH8BB8B4B", P2P_ATTR_DEVICE_INFO, 6 + 2 + 8 + 1 + 8 + 4 + len(devname),
                         0, 0, 0, 0, 0, 0,
                         0,
@@ -433,7 +433,7 @@ def test_p2p_msg_invitation_req(dev, apdev):
                         1, 2, 3, 4, 5, 6, 7, 8,
                         0x10, 0x11, 0, 4,
                         64, 9, 0, 64)
-    devname = '123456789012345678901234567890123'
+    devname = b'123456789012345678901234567890123'
     attrs += struct.pack("<BH6BH8BB8B4B", P2P_ATTR_DEVICE_INFO, 6 + 2 + 8 + 1 + 8 + 4 + len(devname),
                          0, 0, 0, 0, 0, 0,
                          0,
@@ -475,7 +475,7 @@ def test_p2p_msg_invitation_req(dev, apdev):
     # Too long P2P Group ID attribute
     dialog_token += 1
     msg = p2p_hdr(dst, src, type=P2P_INVITATION_REQ, dialog_token=dialog_token)
-    attrs = struct.pack("<BH6B", P2P_ATTR_GROUP_ID, 6 + 33, 0, 0, 0, 0, 0, 0) + "123456789012345678901234567890123"
+    attrs = struct.pack("<BH6B", P2P_ATTR_GROUP_ID, 6 + 33, 0, 0, 0, 0, 0, 0) + b"123456789012345678901234567890123"
     msg['payload'] += ie_p2p(attrs)
     hapd.mgmt_tx(msg)
 
@@ -1155,7 +1155,7 @@ def test_p2p_msg_pd_req(dev, apdev):
     # No attributes
     dialog_token += 1
     msg = p2p_hdr(dst, src, type=P2P_PROV_DISC_REQ, dialog_token=dialog_token)
-    attrs = ""
+    attrs = b''
     msg['payload'] += ie_p2p(attrs)
     hapd.mgmt_tx(msg)
     if hapd.mgmt_rx(timeout=1) is None:

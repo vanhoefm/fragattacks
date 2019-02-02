@@ -259,14 +259,14 @@ def test_dbus_properties(dev, apdev):
     if val != res:
         raise Exception("WFDIEs value changed")
     try:
-        dbus_set(dbus, wpas_obj, "WFDIEs", dbus.ByteArray('\x00'))
+        dbus_set(dbus, wpas_obj, "WFDIEs", dbus.ByteArray(b'\x00'))
         raise Exception("Invalid WFDIEs value accepted")
     except dbus.exceptions.DBusException as e:
         if "InvalidArgs" not in str(e):
             raise Exception("Unexpected error message: " + str(e))
-    dbus_set(dbus, wpas_obj, "WFDIEs", dbus.ByteArray(''))
+    dbus_set(dbus, wpas_obj, "WFDIEs", dbus.ByteArray(b''))
     dbus_set(dbus, wpas_obj, "WFDIEs", dbus.ByteArray(val))
-    dbus_set(dbus, wpas_obj, "WFDIEs", dbus.ByteArray(''))
+    dbus_set(dbus, wpas_obj, "WFDIEs", dbus.ByteArray(b''))
     res = dbus_get(dbus, wpas_obj, "WFDIEs", byte_arrays=True)
     if len(res) != 0:
         raise Exception("WFDIEs not cleared properly")
@@ -314,7 +314,7 @@ def test_dbus_properties(dev, apdev):
 
     try:
         wpas_obj.Set(WPAS_DBUS_SERVICE, "WFDIEs",
-                     dbus.ByteArray('', variant_level=2),
+                     dbus.ByteArray(b'', variant_level=2),
                      dbus_interface=dbus.PROPERTIES_IFACE)
         raise Exception("Invalid Set accepted")
     except dbus.exceptions.DBusException as e:
@@ -443,7 +443,7 @@ def _test_dbus_get_set_wps(dev, apdev):
     if val[0] != 0x00 or val[1] != 0x05 != val[2] != 0x00 or val[3] != 0x50 or val[4] != 0xf2 or val[5] != 0x04 or val[6] != 0x00 or val[7] != 0x01:
         raise Exception("DeviceType mismatch after Set")
 
-    val2 = '\x01\x02\x03\x04\x05\x06\x07\x08'
+    val2 = b'\x01\x02\x03\x04\x05\x06\x07\x08'
     if_obj.Set(WPAS_DBUS_IFACE_WPS, "DeviceType", dbus.ByteArray(val2),
                dbus_interface=dbus.PROPERTIES_IFACE)
     val = if_obj.Get(WPAS_DBUS_IFACE_WPS, "DeviceType",
@@ -527,11 +527,11 @@ def test_dbus_wps_invalid(dev, apdev):
                   'Bssid': '02:33:44:55:66:77'},
                  {'Role': 'enrollee', 'Type': 'pin', 'Pin': 123},
                  {'Role': 'enrollee', 'Type': 'pbc',
-                  'Bssid': dbus.ByteArray('12345')},
+                  'Bssid': dbus.ByteArray(b'12345')},
                  {'Role': 'enrollee', 'Type': 'pbc',
                   'P2PDeviceAddress': 12345},
                  {'Role': 'enrollee', 'Type': 'pbc',
-                  'P2PDeviceAddress': dbus.ByteArray('12345')},
+                  'P2PDeviceAddress': dbus.ByteArray(b'12345')},
                  {'Role': 'enrollee', 'Type': 'pbc', 'Foo': 'bar'} ]
     for args in failures:
         try:
@@ -999,18 +999,18 @@ def test_dbus_scan_invalid(dev, apdev):
               ({'Type': 'active', 'SSIDs': 'foo'}, "InvalidArgs"),
               ({'Type': 'active', 'SSIDs': ['foo']}, "InvalidArgs"),
               ({'Type': 'active',
-                'SSIDs': [ dbus.ByteArray("1"), dbus.ByteArray("2"),
-                           dbus.ByteArray("3"), dbus.ByteArray("4"),
-                           dbus.ByteArray("5"), dbus.ByteArray("6"),
-                           dbus.ByteArray("7"), dbus.ByteArray("8"),
-                           dbus.ByteArray("9"), dbus.ByteArray("10"),
-                           dbus.ByteArray("11"), dbus.ByteArray("12"),
-                           dbus.ByteArray("13"), dbus.ByteArray("14"),
-                           dbus.ByteArray("15"), dbus.ByteArray("16"),
-                           dbus.ByteArray("17") ]},
+                'SSIDs': [ dbus.ByteArray(b"1"), dbus.ByteArray(b"2"),
+                           dbus.ByteArray(b"3"), dbus.ByteArray(b"4"),
+                           dbus.ByteArray(b"5"), dbus.ByteArray(b"6"),
+                           dbus.ByteArray(b"7"), dbus.ByteArray(b"8"),
+                           dbus.ByteArray(b"9"), dbus.ByteArray(b"10"),
+                           dbus.ByteArray(b"11"), dbus.ByteArray(b"12"),
+                           dbus.ByteArray(b"13"), dbus.ByteArray(b"14"),
+                           dbus.ByteArray(b"15"), dbus.ByteArray(b"16"),
+                           dbus.ByteArray(b"17") ]},
                "InvalidArgs"),
               ({'Type': 'active',
-                'SSIDs': [ dbus.ByteArray("1234567890abcdef1234567890abcdef1") ]},
+                'SSIDs': [ dbus.ByteArray(b"1234567890abcdef1234567890abcdef1") ]},
                "InvalidArgs"),
               ({'Type': 'active', 'IEs': 'foo'}, "InvalidArgs"),
               ({'Type': 'active', 'IEs': ['foo']}, "InvalidArgs"),
@@ -1023,9 +1023,9 @@ def test_dbus_scan_invalid(dev, apdev):
                 'Channels': [ (dbus.UInt32(2412), dbus.Int32(20)) ] },
                "InvalidArgs"),
               ({'Type': 'active', 'AllowRoam': "yes" }, "InvalidArgs"),
-              ({'Type': 'passive', 'IEs': [ dbus.ByteArray("\xdd\x00") ]},
+              ({'Type': 'passive', 'IEs': [ dbus.ByteArray(b"\xdd\x00") ]},
                "InvalidArgs"),
-              ({'Type': 'passive', 'SSIDs': [ dbus.ByteArray("foo") ]},
+              ({'Type': 'passive', 'SSIDs': [ dbus.ByteArray(b"foo") ]},
                "InvalidArgs")]
     for (t,err) in tests:
         try:
@@ -1056,14 +1056,14 @@ def test_dbus_scan_oom(dev, apdev):
                          "=wpas_dbus_get_scan_ies;wpas_dbus_handler_scan",
                          "Scan"):
         iface.Scan({ 'Type': 'active',
-                     'IEs': [ dbus.ByteArray("\xdd\x00") ],
+                     'IEs': [ dbus.ByteArray(b"\xdd\x00") ],
                      'Channels': [ (dbus.UInt32(2412), dbus.UInt32(20)) ] })
 
     with alloc_fail_dbus(dev[0], 1,
                          "=wpas_dbus_get_scan_ssids;wpas_dbus_handler_scan",
                          "Scan"):
         iface.Scan({ 'Type': 'active',
-                     'SSIDs': [ dbus.ByteArray("open"),
+                     'SSIDs': [ dbus.ByteArray(b"open"),
                                 dbus.ByteArray() ],
                      'Channels': [ (dbus.UInt32(2412), dbus.UInt32(20)) ] })
 
@@ -1120,9 +1120,9 @@ def test_dbus_scan(dev, apdev):
         def run_scan(self, *args):
             logger.debug("run_scan")
             iface.Scan({'Type': 'active',
-                        'SSIDs': [ dbus.ByteArray("open"),
+                        'SSIDs': [ dbus.ByteArray(b"open"),
                                    dbus.ByteArray() ],
-                        'IEs': [ dbus.ByteArray("\xdd\x00"),
+                        'IEs': [ dbus.ByteArray(b"\xdd\x00"),
                                  dbus.ByteArray() ],
                         'AllowRoam': False,
                         'Channels': [(dbus.UInt32(2412), dbus.UInt32(20))]})
@@ -1793,7 +1793,7 @@ def test_dbus_network_oom(dev, apdev):
 
     tests = [ (1,
                'wpa_dbus_dict_get_entry;set_network_properties;wpas_dbus_handler_add_network',
-               dbus.Dictionary({ 'ssid': dbus.ByteArray(' ') },
+               dbus.Dictionary({ 'ssid': dbus.ByteArray(b' ') },
                                signature='sv')),
               (1, '=set_network_properties;wpas_dbus_handler_add_network',
                dbus.Dictionary({ 'ssid': 'foo' }, signature='sv')),
@@ -1806,7 +1806,7 @@ def test_dbus_network_oom(dev, apdev):
                dbus.Dictionary({ 'priority': dbus.Int32(1) },
                                signature='sv')),
               (1, '=set_network_properties;wpas_dbus_handler_add_network',
-               dbus.Dictionary({ 'ssid': dbus.ByteArray(' ') },
+               dbus.Dictionary({ 'ssid': dbus.ByteArray(b' ') },
                                signature='sv')) ]
     for (count,funcs,args) in tests:
         with alloc_fail_dbus(dev[0], count, funcs, "AddNetwork", "InvalidArgs"):
@@ -1934,10 +1934,10 @@ def test_dbus_blob(dev, apdev):
     (bus,wpas_obj,path,if_obj) = prepare_dbus(dev[0])
     iface = dbus.Interface(if_obj, WPAS_DBUS_IFACE)
 
-    blob = dbus.ByteArray("\x01\x02\x03")
+    blob = dbus.ByteArray(b"\x01\x02\x03")
     iface.AddBlob('blob1', blob)
     try:
-        iface.AddBlob('blob1', dbus.ByteArray("\x01\x02\x04"))
+        iface.AddBlob('blob1', dbus.ByteArray(b"\x01\x02\x04"))
         raise Exception("Invalid AddBlob() accepted")
     except dbus.exceptions.DBusException as e:
         if "BlobExists" not in str(e):
@@ -1993,7 +1993,7 @@ def test_dbus_blob(dev, apdev):
 
         def run_blob(self, *args):
             logger.debug("run_blob")
-            iface.AddBlob('blob2', dbus.ByteArray("\x01\x02\x04"))
+            iface.AddBlob('blob2', dbus.ByteArray(b"\x01\x02\x04"))
             iface.RemoveBlob('blob2')
             return False
 
@@ -2012,7 +2012,7 @@ def test_dbus_blob_oom(dev, apdev):
     for i in range(1, 4):
         with alloc_fail_dbus(dev[0], i, "wpas_dbus_handler_add_blob",
                              "AddBlob"):
-            iface.AddBlob('blob_no_mem', dbus.ByteArray("\x01\x02\x03\x04"))
+            iface.AddBlob('blob_no_mem', dbus.ByteArray(b"\x01\x02\x03\x04"))
 
 def test_dbus_autoscan(dev, apdev):
     """D-Bus Autoscan()"""
@@ -2704,8 +2704,8 @@ def test_dbus_p2p_invalid(dev, apdev):
               {'RequestedDeviceTypes': dbus.Array([], signature="s")},
               {'RequestedDeviceTypes': dbus.Array([['foo']], signature="as")},
               {'RequestedDeviceTypes': dbus.Array([], signature="i")},
-              {'RequestedDeviceTypes': [dbus.ByteArray('12345678'),
-                                        dbus.ByteArray('1234567')]},
+              {'RequestedDeviceTypes': [dbus.ByteArray(b'12345678'),
+                                        dbus.ByteArray(b'1234567')]},
               {'Foo': dbus.Int16(1)},
               {'Foo': dbus.UInt16(1)},
               {'Foo': dbus.Int64(1)},
@@ -2904,29 +2904,29 @@ def test_dbus_p2p_oom(dev, apdev):
 
     with alloc_fail_dbus(dev[0], 1, ":=_wpa_dbus_dict_entry_get_binarray",
                          "Find", "InvalidArgs"):
-        p2p.Find(dbus.Dictionary({ 'Foo': [ dbus.ByteArray('123') ] }))
+        p2p.Find(dbus.Dictionary({ 'Foo': [ dbus.ByteArray(b'123') ] }))
 
     with alloc_fail_dbus(dev[0], 1, "_wpa_dbus_dict_entry_get_byte_array;_wpa_dbus_dict_entry_get_binarray",
                          "Find", "InvalidArgs"):
-        p2p.Find(dbus.Dictionary({ 'Foo': [ dbus.ByteArray('123') ] }))
+        p2p.Find(dbus.Dictionary({ 'Foo': [ dbus.ByteArray(b'123') ] }))
 
     with alloc_fail_dbus(dev[0], 2, "=_wpa_dbus_dict_entry_get_binarray",
                          "Find", "InvalidArgs"):
-        p2p.Find(dbus.Dictionary({ 'Foo': [ dbus.ByteArray('123'),
-                                            dbus.ByteArray('123'),
-                                            dbus.ByteArray('123'),
-                                            dbus.ByteArray('123'),
-                                            dbus.ByteArray('123'),
-                                            dbus.ByteArray('123'),
-                                            dbus.ByteArray('123'),
-                                            dbus.ByteArray('123'),
-                                            dbus.ByteArray('123'),
-                                            dbus.ByteArray('123'),
-                                            dbus.ByteArray('123') ] }))
+        p2p.Find(dbus.Dictionary({ 'Foo': [ dbus.ByteArray(b'123'),
+                                            dbus.ByteArray(b'123'),
+                                            dbus.ByteArray(b'123'),
+                                            dbus.ByteArray(b'123'),
+                                            dbus.ByteArray(b'123'),
+                                            dbus.ByteArray(b'123'),
+                                            dbus.ByteArray(b'123'),
+                                            dbus.ByteArray(b'123'),
+                                            dbus.ByteArray(b'123'),
+                                            dbus.ByteArray(b'123'),
+                                            dbus.ByteArray(b'123') ] }))
 
     with alloc_fail_dbus(dev[0], 1, "wpabuf_alloc_ext_data;_wpa_dbus_dict_entry_get_binarray",
                          "Find", "InvalidArgs"):
-        p2p.Find(dbus.Dictionary({ 'Foo': [ dbus.ByteArray('123') ] }))
+        p2p.Find(dbus.Dictionary({ 'Foo': [ dbus.ByteArray(b'123') ] }))
 
     with alloc_fail_dbus(dev[0], 1, "_wpa_dbus_dict_fill_value_from_variant;wpas_dbus_handler_p2p_find",
                          "Find", "InvalidArgs"):
@@ -2935,7 +2935,7 @@ def test_dbus_p2p_oom(dev, apdev):
     with alloc_fail_dbus(dev[0], 1, "_wpa_dbus_dict_entry_get_byte_array",
                          "AddService", "InvalidArgs"):
         args = { 'service_type': 'bonjour',
-                 'response': dbus.ByteArray(500*'b') }
+                 'response': dbus.ByteArray(500*b'b') }
         p2p.AddService(args)
 
     with alloc_fail_dbus(dev[0], 2, "_wpa_dbus_dict_entry_get_byte_array",
@@ -2978,7 +2978,7 @@ def run_dbus_p2p_discovery(dev, apdev):
         raise Exception("Unexpected peer(s) in the list")
 
     args = {'DiscoveryType': 'social',
-            'RequestedDeviceTypes': [dbus.ByteArray('12345678')],
+            'RequestedDeviceTypes': [dbus.ByteArray(b'12345678')],
             'Timeout': dbus.Int32(1) }
     p2p.Find(dbus.Dictionary(args))
     p2p.StopFind()
@@ -3029,7 +3029,7 @@ def run_dbus_p2p_discovery(dev, apdev):
                 sec = res['SecondaryDeviceTypes']
                 if len(sec) < 1:
                     raise Exception("Secondary device type missing")
-                if "\x00\x01\x00\x50\xF2\x04\x00\x02" not in sec:
+                if b"\x00\x01\x00\x50\xF2\x04\x00\x02" not in sec:
                     raise Exception("Secondary device type mismatch")
 
                 if 'VendorExtension' not in res:
@@ -3037,7 +3037,7 @@ def run_dbus_p2p_discovery(dev, apdev):
                 vendor = res['VendorExtension']
                 if len(vendor) < 1:
                     raise Exception("Vendor extension missing")
-                if "\x11\x22\x33\x44" not in vendor:
+                if b"\x11\x22\x33\x44" not in vendor:
                     raise Exception("Secondary device type mismatch")
 
                 if 'VSIE' not in res:
@@ -3045,7 +3045,7 @@ def run_dbus_p2p_discovery(dev, apdev):
                 vendor = res['VSIE']
                 if len(vendor) < 1:
                     raise Exception("VSIE missing")
-                if vendor != "\xdd\x06\x00\x11\x22\x33\x55\x66":
+                if vendor != b"\xdd\x06\x00\x11\x22\x33\x55\x66":
                     raise Exception("VSIE mismatch")
 
                 self.found = True
@@ -3250,7 +3250,7 @@ def test_dbus_p2p_service_discovery(dev, apdev):
               { 'service_type': 'bonjour', 'response': 'foo' },
               { 'service_type': 'bonjour', 'query': bonjour_query },
               { 'service_type': 'bonjour', 'response': bonjour_response },
-              { 'service_type': 'bonjour', 'query': dbus.ByteArray(500*'a') },
+              { 'service_type': 'bonjour', 'query': dbus.ByteArray(500*b'a') },
               { 'service_type': 'bonjour', 'foo': 'bar' } ]
     for args in tests:
         try:
@@ -3260,7 +3260,7 @@ def test_dbus_p2p_service_discovery(dev, apdev):
             if "InvalidArgs" not in str(e):
                 raise Exception("Unexpected error message for invalid AddService(): " + str(e))
 
-    args = { 'tlv': dbus.ByteArray("\x02\x00\x00\x01") }
+    args = { 'tlv': dbus.ByteArray(b"\x02\x00\x00\x01") }
     ref = p2p.ServiceDiscoveryRequest(args)
     p2p.ServiceDiscoveryCancelRequest(ref)
     try:
@@ -3348,7 +3348,7 @@ def test_dbus_p2p_service_discovery_query(dev, apdev):
         def deviceFound(self, path):
             logger.debug("deviceFound: path=%s" % path)
             args = { 'peer_object': path,
-                     'tlv': dbus.ByteArray("\x02\x00\x00\x01") }
+                     'tlv': dbus.ByteArray(b"\x02\x00\x00\x01") }
             p2p.ServiceDiscoveryRequest(args)
 
         def serviceDiscoveryResponse(self, sd_request):
@@ -3598,7 +3598,7 @@ def test_dbus_p2p_autogo(dev, apdev):
                 self.exceptions = True
                 raise Exception("Unexpected number of group members")
 
-            ext = dbus.ByteArray("\x11\x22\x33\x44")
+            ext = dbus.ByteArray(b"\x11\x22\x33\x44")
             # Earlier implementation of this interface was a bit strange. The
             # property is defined to have aay signature and that is what the
             # getter returned. However, the setter expected there to be a
@@ -3621,7 +3621,7 @@ def test_dbus_p2p_autogo(dev, apdev):
 
             # And now verify that the more appropriate encoding is accepted as
             # well.
-            res.append(dbus.ByteArray('\xaa\xbb\xcc\xdd\xee\xff'))
+            res.append(dbus.ByteArray(b'\xaa\xbb\xcc\xdd\xee\xff'))
             g_obj.Set(WPAS_DBUS_GROUP, 'WPSVendorExtensions', res,
                       dbus_interface=dbus.PROPERTIES_IFACE)
             res2 = g_obj.Get(WPAS_DBUS_GROUP, 'WPSVendorExtensions',
@@ -3635,7 +3635,7 @@ def test_dbus_p2p_autogo(dev, apdev):
                 raise Exception("Vendor extension value changed")
 
             for i in range(10):
-                res.append(dbus.ByteArray('\xaa\xbb'))
+                res.append(dbus.ByteArray(b'\xaa\xbb'))
             try:
                 g_obj.Set(WPAS_DBUS_GROUP, 'WPSVendorExtensions', res,
                           dbus_interface=dbus.PROPERTIES_IFACE)
@@ -3947,7 +3947,7 @@ def test_dbus_p2p_join(dev, apdev):
                                byte_arrays=True)
             logger.debug("Group properties: " + str(res))
 
-            ext = dbus.ByteArray("\x11\x22\x33\x44")
+            ext = dbus.ByteArray(b"\x11\x22\x33\x44")
             try:
                 # Set(WPSVendorExtensions) not allowed for P2P Client
                 g_obj.Set(WPAS_DBUS_GROUP, 'WPSVendorExtensions', res,
@@ -4068,8 +4068,8 @@ def _test_dbus_p2p_config(dev, apdev):
             raise Exception("Parameter %s value changes" % k)
 
     changes = { 'SsidPostfix': 'foo',
-                'VendorExtension': [ dbus.ByteArray('\x11\x22\x33\x44') ],
-                'SecondaryDeviceTypes': [ dbus.ByteArray('\x11\x22\x33\x44\x55\x66\x77\x88') ]}
+                'VendorExtension': [ dbus.ByteArray(b'\x11\x22\x33\x44') ],
+                'SecondaryDeviceTypes': [ dbus.ByteArray(b'\x11\x22\x33\x44\x55\x66\x77\x88') ]}
     if_obj.Set(WPAS_DBUS_IFACE_P2PDEVICE, "P2PDeviceConfig",
                dbus.Dictionary(changes, signature='sv'),
                dbus_interface=dbus.PROPERTIES_IFACE)
@@ -5554,7 +5554,7 @@ def _test_dbus_vendor_elem(dev, apdev):
     dev[0].request("VENDOR_ELEM_REMOVE 1 *")
 
     try:
-        ie = dbus.ByteArray("\x00\x00")
+        ie = dbus.ByteArray(b"\x00\x00")
         iface.VendorElemAdd(-1, ie)
         raise Exception("Invalid VendorElemAdd() accepted")
     except dbus.exceptions.DBusException as e:
@@ -5562,7 +5562,7 @@ def _test_dbus_vendor_elem(dev, apdev):
             raise Exception("Unexpected error message for invalid VendorElemAdd[1]: " + str(e))
 
     try:
-        ie = dbus.ByteArray("")
+        ie = dbus.ByteArray(b'')
         iface.VendorElemAdd(1, ie)
         raise Exception("Invalid VendorElemAdd() accepted")
     except dbus.exceptions.DBusException as e:
@@ -5570,7 +5570,7 @@ def _test_dbus_vendor_elem(dev, apdev):
             raise Exception("Unexpected error message for invalid VendorElemAdd[2]: " + str(e))
 
     try:
-        ie = dbus.ByteArray("\x00\x01")
+        ie = dbus.ByteArray(b"\x00\x01")
         iface.VendorElemAdd(1, ie)
         raise Exception("Invalid VendorElemAdd() accepted")
     except dbus.exceptions.DBusException as e:
@@ -5592,7 +5592,7 @@ def _test_dbus_vendor_elem(dev, apdev):
             raise Exception("Unexpected error message for invalid VendorElemGet[2]: " + str(e))
 
     try:
-        ie = dbus.ByteArray("\x00\x00")
+        ie = dbus.ByteArray(b"\x00\x00")
         iface.VendorElemRem(-1, ie)
         raise Exception("Invalid VendorElemRemove() accepted")
     except dbus.exceptions.DBusException as e:
@@ -5600,16 +5600,16 @@ def _test_dbus_vendor_elem(dev, apdev):
             raise Exception("Unexpected error message for invalid VendorElemRemove[1]: " + str(e))
 
     try:
-        ie = dbus.ByteArray("")
+        ie = dbus.ByteArray(b'')
         iface.VendorElemRem(1, ie)
         raise Exception("Invalid VendorElemRemove() accepted")
     except dbus.exceptions.DBusException as e:
         if "InvalidArgs" not in str(e) or "Invalid value" not in str(e):
             raise Exception("Unexpected error message for invalid VendorElemRemove[1]: " + str(e))
 
-    iface.VendorElemRem(1, "*")
+    iface.VendorElemRem(1, b"*")
 
-    ie = dbus.ByteArray("\x00\x01\x00")
+    ie = dbus.ByteArray(b"\x00\x01\x00")
     iface.VendorElemAdd(1, ie)
 
     val = iface.VendorElemGet(1)
@@ -5619,7 +5619,7 @@ def _test_dbus_vendor_elem(dev, apdev):
         if val[i] != dbus.Byte(ie[i]):
             raise Exception("Unexpected VendorElemGet data")
 
-    ie2 = dbus.ByteArray("\xe0\x00")
+    ie2 = dbus.ByteArray(b"\xe0\x00")
     iface.VendorElemAdd(1, ie2)
 
     ies = ie + ie2
@@ -5631,7 +5631,7 @@ def _test_dbus_vendor_elem(dev, apdev):
             raise Exception("Unexpected VendorElemGet data[2]")
 
     try:
-        test_ie = dbus.ByteArray("\x01\x01")
+        test_ie = dbus.ByteArray(b"\x01\x01")
         iface.VendorElemRem(1, test_ie)
         raise Exception("Invalid VendorElemRemove() accepted")
     except dbus.exceptions.DBusException as e:
@@ -5643,7 +5643,7 @@ def _test_dbus_vendor_elem(dev, apdev):
     if len(val) != len(ie2):
         raise Exception("Unexpected VendorElemGet length[3]")
 
-    iface.VendorElemRem(1, "*")
+    iface.VendorElemRem(1, b"*")
     try:
         iface.VendorElemGet(1)
         raise Exception("Invalid VendorElemGet() accepted after removal")
@@ -5754,7 +5754,7 @@ def test_dbus_mesh(dev, apdev):
                              dbus_interface=dbus.PROPERTIES_IFACE,
                              byte_arrays=True)
             logger.debug("MeshGroup: " + str(res))
-            if res != "wpas-mesh-open":
+            if res != b"wpas-mesh-open":
                 raise Exception("Unexpected MeshGroup")
             dev1 = WpaSupplicant('wlan1', '/tmp/wpas-wlan1')
             dev1.mesh_group_remove()

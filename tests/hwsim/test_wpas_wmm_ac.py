@@ -171,7 +171,7 @@ def test_tspec_protocol(dev, apdev):
     hapd.mgmt_tx(msg)
 
     # too short WMM element
-    msg['payload'] = struct.pack('BBBB', 17, 1, dialog, 0) + payload[4:] + '\xdd\x06\x00\x50\xf2\x02\x02\x01'
+    msg['payload'] = struct.pack('BBBB', 17, 1, dialog, 0) + payload[4:] + b'\xdd\x06\x00\x50\xf2\x02\x02\x01'
     hapd.mgmt_tx(msg)
 
     # DELTS

@@ -2061,81 +2061,81 @@ def test_ap_ft_rrb(dev, apdev):
 
     _dst_ll = binascii.unhexlify(apdev[0]['bssid'].replace(':',''))
     _src_ll = binascii.unhexlify(dev[0].own_addr().replace(':',''))
-    proto = '\x89\x0d'
+    proto = b'\x89\x0d'
     ehdr = _dst_ll + _src_ll + proto
 
     # Too short RRB frame
-    pkt = ehdr + '\x01'
+    pkt = ehdr + b'\x01'
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # RRB discarded frame wikth unrecognized type
-    pkt = ehdr + '\x02' + '\x02' + '\x01\x00' + _src_ll
+    pkt = ehdr + b'\x02' + b'\x02' + b'\x01\x00' + _src_ll
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # RRB frame too short for action frame
-    pkt = ehdr + '\x01' + '\x02' + '\x01\x00' + _src_ll
+    pkt = ehdr + b'\x01' + b'\x02' + b'\x01\x00' + _src_ll
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Too short RRB frame (not enough room for Action Frame body)
-    pkt = ehdr + '\x01' + '\x02' + '\x00\x00' + _src_ll
+    pkt = ehdr + b'\x01' + b'\x02' + b'\x00\x00' + _src_ll
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Unexpected Action frame category
-    pkt = ehdr + '\x01' + '\x02' + '\x0e\x00' + _src_ll + '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    pkt = ehdr + b'\x01' + b'\x02' + b'\x0e\x00' + _src_ll + b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Unexpected Action in RRB Request
-    pkt = ehdr + '\x01' + '\x00' + '\x0e\x00' + _src_ll + '\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    pkt = ehdr + b'\x01' + b'\x00' + b'\x0e\x00' + _src_ll + b'\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Target AP address in RRB Request does not match with own address
-    pkt = ehdr + '\x01' + '\x00' + '\x0e\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    pkt = ehdr + b'\x01' + b'\x00' + b'\x0e\x00' + _src_ll + b'\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Not enough room for status code in RRB Response
-    pkt = ehdr + '\x01' + '\x01' + '\x0e\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    pkt = ehdr + b'\x01' + b'\x01' + b'\x0e\x00' + _src_ll + b'\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # RRB discarded frame with unknown packet_type
-    pkt = ehdr + '\x01' + '\x02' + '\x0e\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    pkt = ehdr + b'\x01' + b'\x02' + b'\x0e\x00' + _src_ll + b'\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # RRB Response with non-zero status code; no STA match
-    pkt = ehdr + '\x01' + '\x01' + '\x10\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' + '\xff\xff'
+    pkt = ehdr + b'\x01' + b'\x01' + b'\x10\x00' + _src_ll + b'\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' + b'\xff\xff'
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # RRB Response with zero status code and extra data; STA match
-    pkt = ehdr + '\x01' + '\x01' + '\x11\x00' + _src_ll + '\x06\x01' + _src_ll + '\x00\x00\x00\x00\x00\x00' + '\x00\x00' + '\x00'
+    pkt = ehdr + b'\x01' + b'\x01' + b'\x11\x00' + _src_ll + b'\x06\x01' + _src_ll + b'\x00\x00\x00\x00\x00\x00' + b'\x00\x00' + b'\x00'
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Too short PMK-R1 pull
-    pkt = ehdr + '\x01' + '\xc8' + '\x0e\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    pkt = ehdr + b'\x01' + b'\xc8' + b'\x0e\x00' + _src_ll + b'\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Too short PMK-R1 resp
-    pkt = ehdr + '\x01' + '\xc9' + '\x0e\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    pkt = ehdr + b'\x01' + b'\xc9' + b'\x0e\x00' + _src_ll + b'\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # Too short PMK-R1 push
-    pkt = ehdr + '\x01' + '\xca' + '\x0e\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    pkt = ehdr + b'\x01' + b'\xca' + b'\x0e\x00' + _src_ll + b'\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 
     # No matching R0KH address found for PMK-R0 pull response
-    pkt = ehdr + '\x01' + '\xc9' + '\x5a\x00' + _src_ll + '\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' + 76*'\00'
+    pkt = ehdr + b'\x01' + b'\xc9' + b'\x5a\x00' + _src_ll + b'\x06\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' + 76 * b'\00'
     if "OK" not in dev[0].request("DATA_TEST_FRAME " + binascii.hexlify(pkt).decode()):
         raise Exception("DATA_TEST_FRAME failed")
 

@@ -1245,7 +1245,7 @@ def build_eapol(msg):
     return data
 
 def sha1_prf(key, label, data, outlen):
-    res = ''
+    res = b''
     counter = 0
     while outlen > 0:
         m = hmac.new(key, label.encode(), hashlib.sha1)
@@ -1296,7 +1296,7 @@ def rsn_eapol_key_set(msg, key_info, key_len, nonce, data):
         msg['length'] = 95 + len(data)
     else:
         msg['rsn_key_data_len'] = 0
-        msg['rsn_key_data'] = ''
+        msg['rsn_key_data'] = b''
         msg['length'] = 95
 
 def recv_eapol(hapd):
@@ -1577,7 +1577,7 @@ def test_ap_wpa2_psk_ext_eapol_key_info(dev, apdev):
     reply_eapol("4/4", hapd, addr, msg, 0x030a, None, None, kck)
     hapd_connected(hapd)
 
-def build_eapol_key_1_4(anonce, replay_counter=1, key_data='', key_len=16):
+def build_eapol_key_1_4(anonce, replay_counter=1, key_data=b'', key_len=16):
     msg = {}
     msg['version'] = 2
     msg['type'] = 3
@@ -1626,15 +1626,15 @@ def aes_wrap(kek, plain):
             b = enc(struct.pack('>Q', a) + r[i - 1])
             a = struct.unpack('>Q', b[:8])[0] ^ (n * j + i)
             r[i - 1] =b[8:]
-    return struct.pack('>Q', a) + ''.join(r)
+    return struct.pack('>Q', a) + b''.join(r)
 
 def pad_key_data(plain):
     pad_len = len(plain) % 8
     if pad_len:
         pad_len = 8 - pad_len
-        plain += '\xdd'
+        plain += b'\xdd'
         pad_len -= 1
-        plain += pad_len * '\0'
+        plain += pad_len * b'\x00'
     return plain
 
 def test_ap_wpa2_psk_supp_proto(dev, apdev):
@@ -1658,7 +1658,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Invalid AES wrap data length 0")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '', replay_counter=counter)
+    msg = build_eapol_key_3_4(anonce, kck, b'', replay_counter=counter)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
     ev = dev[0].wait_event(["WPA: Unsupported AES-WRAP len 0"])
@@ -1667,7 +1667,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Invalid AES wrap data length 1")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '1', replay_counter=counter)
+    msg = build_eapol_key_3_4(anonce, kck, b'1', replay_counter=counter)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
     ev = dev[0].wait_event(["WPA: Unsupported AES-WRAP len 1"])
@@ -1676,7 +1676,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Invalid AES wrap data length 9")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '123456789', replay_counter=counter)
+    msg = build_eapol_key_3_4(anonce, kck, b'123456789', replay_counter=counter)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
     ev = dev[0].wait_event(["WPA: Unsupported AES-WRAP len 9"])
@@ -1685,7 +1685,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Invalid AES wrap data payload")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '12345678', replay_counter=counter)
+    msg = build_eapol_key_3_4(anonce, kck, b'12345678', replay_counter=counter)
     # do not increment counter to test replay protection
     send_eapol(dev[0], bssid, build_eapol(msg))
     ev = dev[0].wait_event(["WPA: AES unwrap failed"])
@@ -1694,7 +1694,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Replay Count not increasing")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '12345678', replay_counter=counter)
+    msg = build_eapol_key_3_4(anonce, kck, b'12345678', replay_counter=counter)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
     ev = dev[0].wait_event(["WPA: EAPOL-Key Replay Counter did not increase"])
@@ -1703,7 +1703,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Missing Ack bit in key info")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '12345678', replay_counter=counter,
+    msg = build_eapol_key_3_4(anonce, kck, b'12345678', replay_counter=counter,
                               key_info=0x134a)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
@@ -1713,7 +1713,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Unexpected Request bit in key info")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '12345678', replay_counter=counter,
+    msg = build_eapol_key_3_4(anonce, kck, b'12345678', replay_counter=counter,
                               key_info=0x1bca)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
@@ -1723,7 +1723,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Unsupported key descriptor version 0")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '0123456789abcdef',
+    msg = build_eapol_key_3_4(anonce, kck, b'0123456789abcdef',
                               replay_counter=counter, key_info=0x13c8)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
@@ -1733,7 +1733,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Key descriptor version 1 not allowed with CCMP")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '0123456789abcdef',
+    msg = build_eapol_key_3_4(anonce, kck, b'0123456789abcdef',
                               replay_counter=counter, key_info=0x13c9)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
@@ -1743,7 +1743,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Invalid AES wrap payload with key descriptor version 2")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '0123456789abcdef',
+    msg = build_eapol_key_3_4(anonce, kck, b'0123456789abcdef',
                               replay_counter=counter, key_info=0x13ca)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
@@ -1753,7 +1753,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Key descriptor version 3 workaround")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '0123456789abcdef',
+    msg = build_eapol_key_3_4(anonce, kck, b'0123456789abcdef',
                               replay_counter=counter, key_info=0x13cb)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
@@ -1769,7 +1769,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Unsupported key descriptor version 4")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '0123456789abcdef',
+    msg = build_eapol_key_3_4(anonce, kck, b'0123456789abcdef',
                               replay_counter=counter, key_info=0x13cc)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
@@ -1779,7 +1779,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Unsupported key descriptor version 7")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '0123456789abcdef',
+    msg = build_eapol_key_3_4(anonce, kck, b'0123456789abcdef',
                               replay_counter=counter, key_info=0x13cf)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
@@ -1789,7 +1789,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Too short EAPOL header length")
     dev[0].dump_monitor()
-    msg = build_eapol_key_3_4(anonce, kck, '12345678', replay_counter=counter,
+    msg = build_eapol_key_3_4(anonce, kck, b'12345678', replay_counter=counter,
                               extra_len=-1)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
@@ -1798,26 +1798,26 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
         raise Exception("Key data overflow not reported")
 
     logger.debug("Too long EAPOL header length")
-    msg = build_eapol_key_3_4(anonce, kck, '12345678', replay_counter=counter,
+    msg = build_eapol_key_3_4(anonce, kck, b'12345678', replay_counter=counter,
                               extra_len=1)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
 
     logger.debug("Unsupported descriptor type 0")
-    msg = build_eapol_key_3_4(anonce, kck, '12345678', replay_counter=counter,
+    msg = build_eapol_key_3_4(anonce, kck, b'12345678', replay_counter=counter,
                               descr_type=0)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
 
     logger.debug("WPA descriptor type 0")
-    msg = build_eapol_key_3_4(anonce, kck, '12345678', replay_counter=counter,
+    msg = build_eapol_key_3_4(anonce, kck, b'12345678', replay_counter=counter,
                               descr_type=254)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
 
     logger.debug("Non-zero key index for pairwise key")
     dev[0].dump_monitor()
-    wrapped = aes_wrap(kek, 16*'z')
+    wrapped = aes_wrap(kek, 16*b'z')
     msg = build_eapol_key_3_4(anonce, kck, wrapped, replay_counter=counter,
                               key_info=0x13ea)
     counter += 1
@@ -1828,7 +1828,7 @@ def test_ap_wpa2_psk_supp_proto(dev, apdev):
 
     logger.debug("Invalid Key Data plaintext payload --> disconnect")
     dev[0].dump_monitor()
-    wrapped = aes_wrap(kek, 16*'z')
+    wrapped = aes_wrap(kek, 16*b'z')
     msg = build_eapol_key_3_4(anonce, kck, wrapped, replay_counter=counter)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
@@ -1855,7 +1855,7 @@ def test_ap_wpa2_psk_supp_proto_no_ie(dev, apdev):
 
     logger.debug("No IEs in msg 3/4 --> disconnect")
     dev[0].dump_monitor()
-    wrapped = aes_wrap(kek, 16*'\0')
+    wrapped = aes_wrap(kek, 16*b'\x00')
     msg = build_eapol_key_3_4(anonce, kck, wrapped, replay_counter=counter)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))

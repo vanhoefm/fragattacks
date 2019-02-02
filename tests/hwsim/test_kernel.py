@@ -34,7 +34,7 @@ def _test_kernel_bss_leak(dev, apdev, deauth):
                     'sa': pkt['da'],
                     'da': pkt['sa'],
                     'bssid': pkt['bssid'],
-                    'payload': '\x01\x00',
+                    'payload': b'\x01\x00',
                 })
             break
         else:

@@ -3011,7 +3011,7 @@ def test_ap_hs20_fetch_osu(dev, apdev):
         raise Exception("GET_HS20_ICON with too many output bytes to fit the buffer succeeded")
     if "FAIL" not in dev[2].request("GET_HS20_ICON " + bssid + " w1fi_logo 0 0"):
         raise Exception("GET_HS20_ICON 0..0 succeeded")
-    icon = ""
+    icon = b''
     pos = 0
     while True:
         if pos > 100000:
@@ -3253,7 +3253,7 @@ def test_ap_hs20_fetch_osu_single_ssid2(dev, apdev):
         os.rmdir(dir)
 
 def get_icon(dev, bssid, iconname):
-    icon = ""
+    icon = b''
     pos = 0
     while True:
         if pos > 100000:
@@ -3330,13 +3330,13 @@ def test_ap_hs20_req_operator_icon(dev, apdev):
     params['operator_icon'] = [ "w1fi_logo", "unknown_logo", "test_logo" ]
     hostapd.add_ap(apdev[0], params)
 
-    value = struct.pack('<HH', 128, 80) + "zxx"
-    value += struct.pack('B', 9) + "image/png"
-    value += struct.pack('B', 9) + "w1fi_logo"
+    value = struct.pack('<HH', 128, 80) + b"zxx"
+    value += struct.pack('B', 9) + b"image/png"
+    value += struct.pack('B', 9) + b"w1fi_logo"
 
-    value += struct.pack('<HH', 500, 300) + "fi\0"
-    value += struct.pack('B', 9) + "image/png"
-    value += struct.pack('B', 9) + "test_logo"
+    value += struct.pack('<HH', 500, 300) + b"fi\0"
+    value += struct.pack('B', 9) + b"image/png"
+    value += struct.pack('B', 9) + b"test_logo"
 
     dev[0].scan_for_bss(bssid, freq="2412")
 
@@ -3578,11 +3578,11 @@ def test_ap_hs20_fetch_osu_proto(dev, apdev):
         except:
             pass
 
-    tests = [ ( "Empty provider list (no OSU SSID field)", '' ),
+    tests = [ ( "Empty provider list (no OSU SSID field)", b'' ),
               ( "HS 2.0: Not enough room for OSU SSID",
                 binascii.unhexlify('01') ),
               ( "HS 2.0: Invalid OSU SSID Length 33",
-                binascii.unhexlify('21') + 33*'A' ),
+                binascii.unhexlify('21') + 33*b'A' ),
               ( "HS 2.0: Not enough room for Number of OSU Providers",
                 binascii.unhexlify('0130') ),
               ( "Truncated OSU Provider",
@@ -4135,8 +4135,8 @@ def _test_ap_hs20_proxyarp(dev, apdev):
     addr0 = dev[0].p2p_interface_addr()
     addr1 = dev[1].p2p_interface_addr()
 
-    src_ll_opt0 = "\x01\x01" + binascii.unhexlify(addr0.replace(':',''))
-    src_ll_opt1 = "\x01\x01" + binascii.unhexlify(addr1.replace(':',''))
+    src_ll_opt0 = b"\x01\x01" + binascii.unhexlify(addr0.replace(':',''))
+    src_ll_opt1 = b"\x01\x01" + binascii.unhexlify(addr1.replace(':',''))
 
     pkt = build_ns(src_ll=addr0, ip_src="aaaa:bbbb:cccc::2",
                    ip_dst="ff02::1:ff00:2", target="aaaa:bbbb:cccc::2",
@@ -4258,7 +4258,7 @@ def _test_ap_hs20_proxyarp_dgaf(dev, apdev, disabled):
 
     addr0 = dev[0].p2p_interface_addr()
 
-    src_ll_opt0 = "\x01\x01" + binascii.unhexlify(addr0.replace(':',''))
+    src_ll_opt0 = b"\x01\x01" + binascii.unhexlify(addr0.replace(':',''))
 
     pkt = build_ns(src_ll=addr0, ip_src="aaaa:bbbb:cccc::2",
                    ip_dst="ff02::1:ff00:2", target="aaaa:bbbb:cccc::2",
@@ -4329,7 +4329,7 @@ def test_ap_hs20_proxyarp_enable_dgaf(dev, apdev):
 def ip_checksum(buf):
     sum = 0
     if len(buf) & 0x01:
-        buf += '\x00'
+        buf += b'\x00'
     for i in range(0, len(buf), 2):
         val, = struct.unpack('H', buf[i:i+2])
         sum += val
@@ -4353,7 +4353,7 @@ def ipv6_solicited_node_mcaddr(target):
 def build_icmpv6(ipv6_addrs, type, code, payload):
     start = struct.pack("BB", type, code)
     end = payload
-    icmp = start + '\x00\x00' + end
+    icmp = start + b'\x00\x00' + end
     pseudo = ipv6_addrs + struct.pack(">LBBBB", len(icmp), 0, 0, 0, 58)
     csum = ip_checksum(pseudo + icmp)
     return start + csum + end
@@ -4362,7 +4362,7 @@ def build_ra(src_ll, ip_src, ip_dst, cur_hop_limit=0, router_lifetime=0,
              reachable_time=0, retrans_timer=0, opt=None):
     link_mc = binascii.unhexlify("3333ff000002")
     _src_ll = binascii.unhexlify(src_ll.replace(':',''))
-    proto = '\x86\xdd'
+    proto = b'\x86\xdd'
     ehdr = link_mc + _src_ll + proto
     _ip_src = socket.inet_pton(socket.AF_INET6, ip_src)
     _ip_dst = socket.inet_pton(socket.AF_INET6, ip_dst)
@@ -4383,14 +4383,14 @@ def build_ra(src_ll, ip_src, ip_dst, cur_hop_limit=0, router_lifetime=0,
 def build_ns(src_ll, ip_src, ip_dst, target, opt=None):
     link_mc = binascii.unhexlify("3333ff000002")
     _src_ll = binascii.unhexlify(src_ll.replace(':',''))
-    proto = '\x86\xdd'
+    proto = b'\x86\xdd'
     ehdr = link_mc + _src_ll + proto
     _ip_src = socket.inet_pton(socket.AF_INET6, ip_src)
     if ip_dst is None:
         ip_dst = ipv6_solicited_node_mcaddr(target)
     _ip_dst = socket.inet_pton(socket.AF_INET6, ip_dst)
 
-    reserved = '\x00\x00\x00\x00'
+    reserved = b'\x00\x00\x00\x00'
     _target = socket.inet_pton(socket.AF_INET6, target)
     if opt:
         payload = reserved + _target + opt
@@ -4415,7 +4415,7 @@ def send_ns(dev, src_ll=None, target=None, ip_src=None, ip_dst=None, opt=None,
         cmd = "DATA_TEST_FRAME "
 
     if opt is None:
-        opt = "\x01\x01" + binascii.unhexlify(src_ll.replace(':',''))
+        opt = b"\x01\x01" + binascii.unhexlify(src_ll.replace(':',''))
 
     pkt = build_ns(src_ll=src_ll, ip_src=ip_src, ip_dst=ip_dst, target=target,
                    opt=opt)
@@ -4425,7 +4425,7 @@ def send_ns(dev, src_ll=None, target=None, ip_src=None, ip_dst=None, opt=None,
 def build_na(src_ll, ip_src, ip_dst, target, opt=None, flags=0):
     link_mc = binascii.unhexlify("3333ff000002")
     _src_ll = binascii.unhexlify(src_ll.replace(':',''))
-    proto = '\x86\xdd'
+    proto = b'\x86\xdd'
     ehdr = link_mc + _src_ll + proto
     _ip_src = socket.inet_pton(socket.AF_INET6, ip_src)
     _ip_dst = socket.inet_pton(socket.AF_INET6, ip_dst)
@@ -4464,42 +4464,42 @@ def build_dhcp_ack(dst_ll, src_ll, ip_src, ip_dst, yiaddr, chaddr,
                    udp_checksum=True):
     _dst_ll = binascii.unhexlify(dst_ll.replace(':',''))
     _src_ll = binascii.unhexlify(src_ll.replace(':',''))
-    proto = '\x08\x00'
+    proto = b'\x08\x00'
     ehdr = _dst_ll + _src_ll + proto
     _ip_src = socket.inet_pton(socket.AF_INET, ip_src)
     _ip_dst = socket.inet_pton(socket.AF_INET, ip_dst)
     _subnet_mask = socket.inet_pton(socket.AF_INET, subnet_mask)
 
-    _ciaddr = '\x00\x00\x00\x00'
+    _ciaddr = b'\x00\x00\x00\x00'
     _yiaddr = socket.inet_pton(socket.AF_INET, yiaddr)
-    _siaddr = '\x00\x00\x00\x00'
-    _giaddr = '\x00\x00\x00\x00'
+    _siaddr = b'\x00\x00\x00\x00'
+    _giaddr = b'\x00\x00\x00\x00'
     _chaddr = binascii.unhexlify(chaddr.replace(':','') + "00000000000000000000")
     payload = struct.pack('>BBBBL3BB', 2, 1, 6, 0, 12345, 0, 0, 0, 0)
-    payload += _ciaddr + _yiaddr + _siaddr + _giaddr + _chaddr + 192*'\x00'
+    payload += _ciaddr + _yiaddr + _siaddr + _giaddr + _chaddr + 192*b'\x00'
     # magic
     if wrong_magic:
-        payload += '\x63\x82\x53\x00'
+        payload += b'\x63\x82\x53\x00'
     else:
-        payload += '\x63\x82\x53\x63'
+        payload += b'\x63\x82\x53\x63'
     if truncated_opt:
-        payload += '\x22\xff\x00'
+        payload += b'\x22\xff\x00'
     # Option: DHCP Message Type = ACK
-    payload += '\x35\x01\x05'
+    payload += b'\x35\x01\x05'
     # Pad Option
-    payload += '\x00'
+    payload += b'\x00'
     # Option: Subnet Mask
-    payload += '\x01\x04' + _subnet_mask
+    payload += b'\x01\x04' + _subnet_mask
     # Option: Time Offset
     payload += struct.pack('>BBL', 2, 4, 0)
     # End Option
-    payload += '\xff'
+    payload += b'\xff'
     # Pad Option
-    payload += '\x00\x00\x00\x00'
+    payload += b'\x00\x00\x00\x00'
 
     if no_dhcp:
         payload = struct.pack('>BBBBL3BB', 2, 1, 6, 0, 12345, 0, 0, 0, 0)
-        payload += _ciaddr + _yiaddr + _siaddr + _giaddr + _chaddr + 192*'\x00'
+        payload += _ciaddr + _yiaddr + _siaddr + _giaddr + _chaddr + 192*b'\x00'
 
     if udp_checksum:
         pseudohdr = _ip_src + _ip_dst + struct.pack('>BBH', 0, 17,
@@ -4515,7 +4515,7 @@ def build_dhcp_ack(dst_ll, src_ll, ip_src, ip_dst, yiaddr, chaddr,
     else:
         tot_len = 20 + len(udp)
     start = struct.pack('>BBHHBBBB', 0x45, 0, tot_len, 0, 0, 0, 128, 17)
-    ipv4 = start + '\x00\x00' + _ip_src + _ip_dst
+    ipv4 = start + b'\x00\x00' + _ip_src + _ip_dst
     csum = ip_checksum(ipv4)
     ipv4 = start + csum + _ip_src + _ip_dst
 
@@ -4525,7 +4525,7 @@ def build_arp(dst_ll, src_ll, opcode, sender_mac, sender_ip,
               target_mac, target_ip):
     _dst_ll = binascii.unhexlify(dst_ll.replace(':',''))
     _src_ll = binascii.unhexlify(src_ll.replace(':',''))
-    proto = '\x08\x06'
+    proto = b'\x08\x06'
     ehdr = _dst_ll + _src_ll + proto
 
     _sender_mac = binascii.unhexlify(sender_mac.replace(':',''))
@@ -5038,8 +5038,8 @@ def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
     addr1 = dev[1].p2p_interface_addr()
     addr2 = dev[2].p2p_interface_addr()
 
-    src_ll_opt0 = "\x01\x01" + binascii.unhexlify(addr0.replace(':',''))
-    src_ll_opt1 = "\x01\x01" + binascii.unhexlify(addr1.replace(':',''))
+    src_ll_opt0 = b"\x01\x01" + binascii.unhexlify(addr0.replace(':',''))
+    src_ll_opt1 = b"\x01\x01" + binascii.unhexlify(addr1.replace(':',''))
 
     # DAD NS
     send_ns(dev[0], ip_src="::", target="aaaa:bbbb:cccc::2")
@@ -5050,13 +5050,13 @@ def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
             opt='')
     # test frame with bogus option
     send_ns(dev[0], ip_src="aaaa:bbbb:cccc::2", target="aaaa:bbbb:cccc::2",
-            opt="\x70\x01\x01\x02\x03\x04\x05\x05")
+            opt=b"\x70\x01\x01\x02\x03\x04\x05\x05")
     # test frame with truncated source link-layer address option
     send_ns(dev[0], ip_src="aaaa:bbbb:cccc::2", target="aaaa:bbbb:cccc::2",
-            opt="\x01\x01\x01\x02\x03\x04")
+            opt=b"\x01\x01\x01\x02\x03\x04")
     # test frame with foreign source link-layer address option
     send_ns(dev[0], ip_src="aaaa:bbbb:cccc::2", target="aaaa:bbbb:cccc::2",
-            opt="\x01\x01\x01\x02\x03\x04\x05\x06")
+            opt=b"\x01\x01\x01\x02\x03\x04\x05\x06")
 
     send_ns(dev[1], ip_src="aaaa:bbbb:dddd::2", target="aaaa:bbbb:dddd::2")
 
@@ -5288,7 +5288,7 @@ def run_proxyarp_errors(dev, apdev, params):
         wait_fail_trigger(dev[0], "GET_FAIL")
 
     with alloc_fail(hapd, 1, "sta_ip6addr_add"):
-        src_ll_opt0 = "\x01\x01" + binascii.unhexlify(addr0.replace(':',''))
+        src_ll_opt0 = b"\x01\x01" + binascii.unhexlify(addr0.replace(':',''))
         pkt = build_ns(src_ll=addr0, ip_src="aaaa:bbbb:cccc::2",
                        ip_dst="ff02::1:ff00:2", target="aaaa:bbbb:cccc::2",
                        opt=src_ll_opt0)

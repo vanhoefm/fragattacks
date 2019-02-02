@@ -706,7 +706,7 @@ def test_wnm_bss_tm_req(dev, apdev):
     # Preferred Candidate List followed by vendor element
     req = bss_tm_req(addr, apdev[0]['bssid'],
                      req_mode=0x01, dialog_token=8)
-    subelems = ""
+    subelems = b''
     req['payload'] += struct.pack("<BB6BLBBB", 52, 13 + len(subelems),
                                   1, 2, 3, 4, 5, 6,
                                   0, 81, 1, 7) + subelems

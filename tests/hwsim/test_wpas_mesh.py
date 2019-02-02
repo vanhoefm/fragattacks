@@ -1981,7 +1981,7 @@ def test_mesh_missing_mic(dev, apdev):
             (categ, action) = struct.unpack('BB', payload[0:2])
             if categ == 15 and action == 1 and remove_mic:
                 # Mesh Peering Open
-                pos = frame.find('\x8c\x10')
+                pos = frame.find(b'\x8c\x10')
                 if not pos:
                     raise Exception("Could not find MIC element")
                 logger.info("Found MIC at %d" % pos)
@@ -2049,13 +2049,13 @@ def test_mesh_pmkid_mismatch(dev, apdev):
             (categ, action) = struct.unpack('BB', payload[0:2])
             if categ == 15 and action == 1 and break_pmkid:
                 # Mesh Peering Open
-                pos = frame.find('\x75\x14')
+                pos = frame.find(b'\x75\x14')
                 if not pos:
                     raise Exception("Could not find Mesh Peering Management element")
                 logger.info("Found Mesh Peering Management element at %d" % pos)
                 # Break PMKID to hit "Mesh RSN: Invalid PMKID (Chosen PMK did
                 # not match calculated PMKID)"
-                rx_msg['frame'] = frame[0:pos + 6] + '\x00\x00\x00\x00' + frame[pos + 10:]
+                rx_msg['frame'] = frame[0:pos + 6] + b'\x00\x00\x00\x00' + frame[pos + 10:]
                 break_pmkid = False
         if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(rx_msg['freq'], rx_msg['datarate'], rx_msg['ssi_signal'], rx_msg['frame'].encode('hex'))):
             raise Exception("MGMT_RX_PROCESS failed")
@@ -2089,7 +2089,7 @@ def test_mesh_peering_proto(dev, apdev):
             (categ, action) = struct.unpack('BB', payload[0:2])
             if categ == 15 and action == 1 and test == 1:
                 # Mesh Peering Open
-                pos = frame.find('\x75\x04')
+                pos = frame.find(b'\x75\x04')
                 if not pos:
                     raise Exception("Could not find Mesh Peering Management element")
                 logger.info("Found Mesh Peering Management element at %d" % pos)
@@ -2099,7 +2099,7 @@ def test_mesh_peering_proto(dev, apdev):
                 test += 1
             elif categ == 15 and action == 1 and test == 2:
                 # Mesh Peering Open
-                pos = frame.find('\x72\x0e')
+                pos = frame.find(b'\x72\x0e')
                 if not pos:
                     raise Exception("Could not find Mesh ID element")
                 logger.info("Found Mesh ID element at %d" % pos)
@@ -2109,13 +2109,13 @@ def test_mesh_peering_proto(dev, apdev):
                 test += 1
             elif categ == 15 and action == 1 and test == 3:
                 # Mesh Peering Open
-                pos = frame.find('\x72\x0e')
+                pos = frame.find(b'\x72\x0e')
                 if not pos:
                     raise Exception("Could not find Mesh ID element")
                 logger.info("Found Mesh ID element at %d" % pos)
                 # Replace Mesh ID to hit "MPM: Mesh ID or Mesh Configuration
                 # element do not match local MBSS"
-                rx_msg['frame'] = frame[0:pos] + '\x72\x0etest-test-test' + frame[pos + 16:]
+                rx_msg['frame'] = frame[0:pos] + b'\x72\x0etest-test-test' + frame[pos + 16:]
                 test += 1
             elif categ == 15 and action == 1 and test == 4:
                 # Mesh Peering Open
@@ -2131,14 +2131,14 @@ def test_mesh_peering_proto(dev, apdev):
                 test += 1
             elif categ == 15 and action == 1 and test == 6:
                 # Mesh Peering Open
-                pos = frame.find('\x75\x04')
+                pos = frame.find(b'\x75\x04')
                 if not pos:
                     raise Exception("Could not find Mesh Peering Management element")
                 logger.info("Found Mesh Peering Management element at %d" % pos)
                 # Truncate the element to hit
                 # "MPM: Invalid peer mgmt ie" and
                 # "MPM: Mesh parsing rejected frame"
-                rx_msg['frame'] = frame[0:pos] + '\x75\x00\x00\x00' + frame[pos + 6:]
+                rx_msg['frame'] = frame[0:pos] + b'\x75\x00\x00\x00' + frame[pos + 6:]
                 test += 1
         if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(rx_msg['freq'], rx_msg['datarate'], rx_msg['ssi_signal'], rx_msg['frame'].encode('hex'))):
             raise Exception("MGMT_RX_PROCESS failed")

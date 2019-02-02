@@ -665,15 +665,15 @@ def build_dhcp(req, dhcp_msg, chaddr, giaddr="0.0.0.0",
                ip_src="0.0.0.0", ip_dst="255.255.255.255",
                rapid_commit=True, override_op=None, magic_override=None,
                opt_end=True, extra_op=None):
-    proto = '\x08\x00' # IPv4
+    proto = b'\x08\x00' # IPv4
     _ip_src = socket.inet_pton(socket.AF_INET, ip_src)
     _ip_dst = socket.inet_pton(socket.AF_INET, ip_dst)
 
-    _ciaddr = '\x00\x00\x00\x00'
-    _yiaddr = '\x00\x00\x00\x00'
-    _siaddr = '\x00\x00\x00\x00'
+    _ciaddr = b'\x00\x00\x00\x00'
+    _yiaddr = b'\x00\x00\x00\x00'
+    _siaddr = b'\x00\x00\x00\x00'
     _giaddr = socket.inet_pton(socket.AF_INET, giaddr)
-    _chaddr = binascii.unhexlify(chaddr.replace(':','')) + 10*'\x00'
+    _chaddr = binascii.unhexlify(chaddr.replace(':','')) + 10 * b'\x00'
     htype = 1 # Hardware address type; 1 = Ethernet
     hlen = 6 # Hardware address length
     hops = 0
@@ -691,14 +691,14 @@ def build_dhcp(req, dhcp_msg, chaddr, giaddr="0.0.0.0",
     if override_op is not None:
         op = override_op
     payload = struct.pack('>BBBBLHH', op, htype, hlen, hops, xid, secs, flags)
-    sname = 64*'\x00'
-    file = 128*'\x00'
+    sname = 64*b'\x00'
+    file = 128*b'\x00'
     payload += _ciaddr + _yiaddr + _siaddr + _giaddr + _chaddr + sname + file
     # magic - DHCP
     if magic_override is not None:
         payload += magic_override
     else:
-        payload += '\x63\x82\x53\x63'
+        payload += b'\x63\x82\x53\x63'
     # Option: DHCP Message Type
     if dhcp_msg is not None:
         payload += struct.pack('BBB', OPT_DHCP_MESSAGE_TYPE, 1, dhcp_msg)
@@ -716,7 +716,7 @@ def build_dhcp(req, dhcp_msg, chaddr, giaddr="0.0.0.0",
 
     tot_len = 20 + len(udp)
     start = struct.pack('>BBHHBBBB', 0x45, 0, tot_len, 0, 0, 0, 128, 17)
-    ipv4 = start + '\x00\x00' + _ip_src + _ip_dst
+    ipv4 = start + b'\x00\x00' + _ip_src + _ip_dst
     csum = ip_checksum(ipv4)
     ipv4 = start + csum + _ip_src + _ip_dst
 
@@ -817,7 +817,7 @@ def run_fils_sk_hlp(dev, apdev, rapid_commit_server, params):
         raise Exception("Unexpected ethertype in HLP response: %d" % proto)
     frame = frame[2:]
     ip = frame[0:20]
-    if ip_checksum(ip) != '\x00\x00':
+    if ip_checksum(ip) != b'\x00\x00':
         raise Exception("IP header checksum mismatch in HLP response")
     frame = frame[20:]
     udp = frame[0:8]
@@ -835,7 +835,7 @@ def run_fils_sk_hlp(dev, apdev, rapid_commit_server, params):
     file = frame[0:128]
     frame = frame[128:]
     options = frame
-    if options[0:4] != '\x63\x82\x53\x63':
+    if options[0:4] != b'\x63\x82\x53\x63':
         raise Exception("No DHCP magic seen in HLP response")
     options = options[4:]
     # TODO: fully parse and validate DHCPACK options
@@ -999,21 +999,21 @@ def test_fils_sk_hlp_req_parsing(dev, apdev, params):
 
     tot_len = 20 + 1
     start = struct.pack('>BBHHBBBB', 0x45, 0, tot_len, 0, 0, 0, 128, 17)
-    _ip_src = '\x00\x00\x00\x00'
-    _ip_dst = '\x00\x00\x00\x00'
-    ipv4 = start + '\x00\x00' + _ip_src + _ip_dst
+    _ip_src = b'\x00\x00\x00\x00'
+    _ip_dst = b'\x00\x00\x00\x00'
+    ipv4 = start + b'\x00\x00' + _ip_src + _ip_dst
     csum = ip_checksum(ipv4)
     ipv4_overflow = start + csum + _ip_src + _ip_dst
 
     tot_len = 20
     start = struct.pack('>BBHHBBBB', 0x45, 0, tot_len, 0, 0, 0, 128, 123)
-    ipv4 = start + '\x00\x00' + _ip_src + _ip_dst
+    ipv4 = start + b'\x00\x00' + _ip_src + _ip_dst
     csum = ip_checksum(ipv4)
     ipv4_unknown_proto = start + csum + _ip_src + _ip_dst
 
     tot_len = 20
     start = struct.pack('>BBHHBBBB', 0x45, 0, tot_len, 0, 0, 0, 128, 17)
-    ipv4 = start + '\x00\x00' + _ip_src + _ip_dst
+    ipv4 = start + b'\x00\x00' + _ip_src + _ip_dst
     csum = ip_checksum(ipv4)
     ipv4_missing_udp_hdr = start + csum + _ip_src + _ip_dst
 
@@ -1022,14 +1022,14 @@ def test_fils_sk_hlp_req_parsing(dev, apdev, params):
     udp = struct.pack('>HHHH', src_port, dst_port, 8 + 1, 0)
     tot_len = 20 + len(udp)
     start = struct.pack('>BBHHBBBB', 0x45, 0, tot_len, 0, 0, 0, 128, 17)
-    ipv4 = start + '\x00\x00' + _ip_src + _ip_dst
+    ipv4 = start + b'\x00\x00' + _ip_src + _ip_dst
     csum = ip_checksum(ipv4)
     udp_overflow = start + csum + _ip_src + _ip_dst + udp
 
     udp = struct.pack('>HHHH', src_port, dst_port, 7, 0)
     tot_len = 20 + len(udp)
     start = struct.pack('>BBHHBBBB', 0x45, 0, tot_len, 0, 0, 0, 128, 17)
-    ipv4 = start + '\x00\x00' + _ip_src + _ip_dst
+    ipv4 = start + b'\x00\x00' + _ip_src + _ip_dst
     csum = ip_checksum(ipv4)
     udp_underflow = start + csum + _ip_src + _ip_dst + udp
 
@@ -1038,7 +1038,7 @@ def test_fils_sk_hlp_req_parsing(dev, apdev, params):
     udp = struct.pack('>HHHH', src_port, dst_port, 8, 0)
     tot_len = 20 + len(udp)
     start = struct.pack('>BBHHBBBB', 0x45, 0, tot_len, 0, 0, 0, 128, 17)
-    ipv4 = start + '\x00\x00' + _ip_src + _ip_dst
+    ipv4 = start + b'\x00\x00' + _ip_src + _ip_dst
     csum = ip_checksum(ipv4)
     udp_unknown_port = start + csum + _ip_src + _ip_dst + udp
 
@@ -1047,24 +1047,24 @@ def test_fils_sk_hlp_req_parsing(dev, apdev, params):
     udp = struct.pack('>HHHH', src_port, dst_port, 8, 0)
     tot_len = 20 + len(udp)
     start = struct.pack('>BBHHBBBB', 0x45, 0, tot_len, 0, 0, 0, 128, 17)
-    ipv4 = start + '\x00\x00' + _ip_src + _ip_dst
+    ipv4 = start + b'\x00\x00' + _ip_src + _ip_dst
     csum = ip_checksum(ipv4)
     dhcp_missing_data = start + csum + _ip_src + _ip_dst + udp
 
     dhcp_not_req = build_dhcp(req=True, dhcp_msg=DHCPDISCOVER,
                               chaddr=dev[0].own_addr(), override_op=BOOTREPLY)
     dhcp_no_magic = build_dhcp(req=True, dhcp_msg=None,
-                               chaddr=dev[0].own_addr(), magic_override='',
+                               chaddr=dev[0].own_addr(), magic_override=b'',
                                rapid_commit=False, opt_end=False)
     dhcp_unknown_magic = build_dhcp(req=True, dhcp_msg=DHCPDISCOVER,
                                     chaddr=dev[0].own_addr(),
-                                    magic_override='\x00\x00\x00\x00')
+                                    magic_override=b'\x00\x00\x00\x00')
     dhcp_opts = build_dhcp(req=True, dhcp_msg=DHCPNAK,
                            chaddr=dev[0].own_addr(),
-                           extra_op='\x00\x11', opt_end=False)
+                           extra_op=b'\x00\x11', opt_end=False)
     dhcp_opts2 = build_dhcp(req=True, dhcp_msg=DHCPNAK,
                             chaddr=dev[0].own_addr(),
-                            extra_op='\x11\x01', opt_end=False)
+                            extra_op=b'\x11\x01', opt_end=False)
     dhcp_valid = build_dhcp(req=True, dhcp_msg=DHCPDISCOVER,
                             chaddr=dev[0].own_addr())
 
@@ -1197,16 +1197,16 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     dhcpdisc = build_dhcp(req=False, dhcp_msg=DHCPACK,
                           chaddr=dev[0].own_addr(), giaddr="127.0.0.3")
     #sock.sendto(dhcpdisc[2+20+8:], addr)
-    chaddr = binascii.unhexlify(dev[0].own_addr().replace(':','')) + 10*'\x00'
-    tests = [ "\x00",
-              "\x02" + 500 * "\x00",
-              "\x02\x00\x00\x00" + 20*"\x00" + "\x7f\x00\x00\x03" + 500 * "\x00",
-              "\x02\x00\x00\x00" + 20*"\x00" + "\x7f\x00\x00\x03" + 16*"\x00" + 64*"\x00" + 128*"\x00" + "\x63\x82\x53\x63",
-              "\x02\x00\x00\x00" + 20*"\x00" + "\x7f\x00\x00\x03" + 16*"\x00" + 64*"\x00" + 128*"\x00" + "\x63\x82\x53\x63" + "\x00\x11",
-              "\x02\x00\x00\x00" + 20*"\x00" + "\x7f\x00\x00\x03" + 16*"\x00" + 64*"\x00" + 128*"\x00" + "\x63\x82\x53\x63" + "\x11\x01",
-              "\x02\x00\x00\x00" + 20*"\x00" + "\x7f\x00\x00\x03" + chaddr + 64*"\x00" + 128*"\x00" + "\x63\x82\x53\x63" + "\x35\x00\xff",
-              "\x02\x00\x00\x00" + 20*"\x00" + "\x7f\x00\x00\x03" + chaddr + 64*"\x00" + 128*"\x00" + "\x63\x82\x53\x63" + "\x35\x01\x00\xff",
-              1501 * "\x00" ]
+    chaddr = binascii.unhexlify(dev[0].own_addr().replace(':','')) + 10*b'\x00'
+    tests = [ b"\x00",
+              b"\x02" + 500 * b"\x00",
+              b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + 500*b"\x00",
+              b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + 16*b"\x00" + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63",
+              b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + 16*b"\x00" + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63" + b"\x00\x11",
+              b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + 16*b"\x00" + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63" + b"\x11\x01",
+              b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + chaddr + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63" + b"\x35\x00\xff",
+              b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + chaddr + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63" + b"\x35\x01\x00\xff",
+              1501 * b"\x00" ]
     for t in tests:
         sock.sendto(t, addr)
     dev[0].wait_connected()
@@ -1234,7 +1234,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     logger.debug("Received DHCP message from %s" % str(addr))
     dhcpoffer = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
                            chaddr=dev[0].own_addr(), giaddr="127.0.0.3",
-                           extra_op="\x00\x11", opt_end=False)
+                           extra_op=b"\x00\x11", opt_end=False)
     sock.sendto(dhcpoffer[2+20+8:], addr)
     (msg,addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
@@ -1249,7 +1249,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     logger.debug("Received DHCP message from %s" % str(addr))
     dhcpoffer = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
                            chaddr=dev[0].own_addr(), giaddr="127.0.0.3",
-                           extra_op="\x11\x01", opt_end=False)
+                           extra_op=b"\x11\x01", opt_end=False)
     sock.sendto(dhcpoffer[2+20+8:], addr)
     (msg,addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
@@ -1264,7 +1264,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     logger.debug("Received DHCP message from %s" % str(addr))
     dhcpoffer = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
                            chaddr=dev[0].own_addr(), giaddr="127.0.0.3",
-                           extra_op="\x36\x01\x30")
+                           extra_op=b"\x36\x01\x30")
     sock.sendto(dhcpoffer[2+20+8:], addr)
     (msg,addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
@@ -1276,7 +1276,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     dev[0].request("FILS_HLP_REQ_FLUSH")
     dhcpdisc = build_dhcp(req=True, dhcp_msg=DHCPDISCOVER,
                           chaddr=dev[0].own_addr(),
-                          extra_op="\x00\x11", opt_end=False)
+                          extra_op=b"\x00\x11", opt_end=False)
     if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc).decode()):
         raise Exception("FILS_HLP_REQ_ADD failed")
     dev[0].dump_monitor()
@@ -1285,7 +1285,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     logger.debug("Received DHCP message from %s" % str(addr))
     dhcpoffer = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
                            chaddr=dev[0].own_addr(), giaddr="127.0.0.3",
-                           extra_op="\x36\x01\x30")
+                           extra_op=b"\x36\x01\x30")
     sock.sendto(dhcpoffer[2+20+8:], addr)
     dev[0].wait_connected()
     dev[0].request("DISCONNECT")
@@ -1295,7 +1295,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     dev[0].request("FILS_HLP_REQ_FLUSH")
     dhcpdisc = build_dhcp(req=True, dhcp_msg=DHCPDISCOVER,
                           chaddr=dev[0].own_addr(),
-                          extra_op="\x11\x01", opt_end=False)
+                          extra_op=b"\x11\x01", opt_end=False)
     if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc).decode()):
         raise Exception("FILS_HLP_REQ_ADD failed")
     dev[0].dump_monitor()
@@ -1304,7 +1304,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     logger.debug("Received DHCP message from %s" % str(addr))
     dhcpoffer = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
                            chaddr=dev[0].own_addr(), giaddr="127.0.0.3",
-                           extra_op="\x36\x01\x30")
+                           extra_op=b"\x36\x01\x30")
     sock.sendto(dhcpoffer[2+20+8:], addr)
     dev[0].wait_connected()
     dev[0].request("DISCONNECT")

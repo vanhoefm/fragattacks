@@ -612,11 +612,11 @@ def test_ap_wps_reg_override_ap_settings(dev, apdev):
     except:
         pass
     # Override AP Settings with values that point to another AP
-    data = build_wsc_attr(ATTR_NETWORK_INDEX, '\x01')
-    data += build_wsc_attr(ATTR_SSID, "test")
-    data += build_wsc_attr(ATTR_AUTH_TYPE, '\x00\x01')
-    data += build_wsc_attr(ATTR_ENCR_TYPE, '\x00\x01')
-    data += build_wsc_attr(ATTR_NETWORK_KEY, '')
+    data = build_wsc_attr(ATTR_NETWORK_INDEX, b'\x01')
+    data += build_wsc_attr(ATTR_SSID, b"test")
+    data += build_wsc_attr(ATTR_AUTH_TYPE, b'\x00\x01')
+    data += build_wsc_attr(ATTR_ENCR_TYPE, b'\x00\x01')
+    data += build_wsc_attr(ATTR_NETWORK_KEY, b'')
     data += build_wsc_attr(ATTR_MAC_ADDR, binascii.unhexlify(apdev[1]['bssid'].replace(':', '')))
     with open(ap_settings, "w") as f:
         f.write(data)
@@ -4322,164 +4322,164 @@ RGV2aWNlIEEQSQAGADcqAAEg
         time.sleep(0.5)
 
     logger.info("Too short WLANEvent")
-    data = '\x00'
+    data = b'\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("Invalid WLANEventMAC")
-    data = '\x00qwertyuiopasdfghjklzxcvbnm'
+    data = b'\x00qwertyuiopasdfghjklzxcvbnm'
     send_wlanevent(url, uuid, data)
 
     logger.info("Unknown WLANEventType")
-    data = '\xff02:00:00:00:00:00'
+    data = b'\xff02:00:00:00:00:00'
     send_wlanevent(url, uuid, data)
 
     logger.info("Probe Request notification without any attributes")
-    data = '\x0102:00:00:00:00:00'
+    data = b'\x0102:00:00:00:00:00'
     send_wlanevent(url, uuid, data)
 
     logger.info("Probe Request notification with invalid attribute")
-    data = '\x0102:00:00:00:00:00\xff'
+    data = b'\x0102:00:00:00:00:00\xff'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message without any attributes")
-    data = '\x0202:00:00:00:00:00'
+    data = b'\x0202:00:00:00:00:00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message with invalid attribute")
-    data = '\x0202:00:00:00:00:00\xff'
+    data = b'\x0202:00:00:00:00:00\xff'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message from new STA and not M1")
-    data = '\x0202:ff:ff:ff:ff:ff' + '\x10\x22\x00\x01\x05'
+    data = b'\x0202:ff:ff:ff:ff:ff' + b'\x10\x22\x00\x01\x05'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1")
-    data = '\x0202:00:00:00:00:00'
-    data += '\x10\x22\x00\x01\x04'
-    data += '\x10\x47\x00\x10' + 16*'\x00'
-    data += '\x10\x20\x00\x06\x02\x00\x00\x00\x00\x00'
-    data += '\x10\x1a\x00\x10' + 16*'\x00'
-    data += '\x10\x32\x00\xc0' + 192*'\x00'
-    data += '\x10\x04\x00\x02\x00\x00'
-    data += '\x10\x10\x00\x02\x00\x00'
-    data += '\x10\x0d\x00\x01\x00'
-    data += '\x10\x08\x00\x02\x00\x00'
-    data += '\x10\x44\x00\x01\x00'
-    data += '\x10\x21\x00\x00'
-    data += '\x10\x23\x00\x00'
-    data += '\x10\x24\x00\x00'
-    data += '\x10\x42\x00\x00'
-    data += '\x10\x54\x00\x08' + 8*'\x00'
-    data += '\x10\x11\x00\x00'
-    data += '\x10\x3c\x00\x01\x00'
-    data += '\x10\x02\x00\x02\x00\x00'
-    data += '\x10\x12\x00\x02\x00\x00'
-    data += '\x10\x09\x00\x02\x00\x00'
-    data += '\x10\x2d\x00\x04\x00\x00\x00\x00'
+    data = b'\x0202:00:00:00:00:00'
+    data += b'\x10\x22\x00\x01\x04'
+    data += b'\x10\x47\x00\x10' + 16 * b'\x00'
+    data += b'\x10\x20\x00\x06\x02\x00\x00\x00\x00\x00'
+    data += b'\x10\x1a\x00\x10' + 16 * b'\x00'
+    data += b'\x10\x32\x00\xc0' + 192 * b'\x00'
+    data += b'\x10\x04\x00\x02\x00\x00'
+    data += b'\x10\x10\x00\x02\x00\x00'
+    data += b'\x10\x0d\x00\x01\x00'
+    data += b'\x10\x08\x00\x02\x00\x00'
+    data += b'\x10\x44\x00\x01\x00'
+    data += b'\x10\x21\x00\x00'
+    data += b'\x10\x23\x00\x00'
+    data += b'\x10\x24\x00\x00'
+    data += b'\x10\x42\x00\x00'
+    data += b'\x10\x54\x00\x08' + 8 * b'\x00'
+    data += b'\x10\x11\x00\x00'
+    data += b'\x10\x3c\x00\x01\x00'
+    data += b'\x10\x02\x00\x02\x00\x00'
+    data += b'\x10\x12\x00\x02\x00\x00'
+    data += b'\x10\x09\x00\x02\x00\x00'
+    data += b'\x10\x2d\x00\x04\x00\x00\x00\x00'
     m1 = data
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: WSC_ACK")
-    data = '\x0202:00:00:00:00:00' + '\x10\x22\x00\x01\x0d'
+    data = b'\x0202:00:00:00:00:00' + b'\x10\x22\x00\x01\x0d'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1")
     send_wlanevent(url, uuid, m1)
 
     logger.info("EAP message: WSC_NACK")
-    data = '\x0202:00:00:00:00:00' + '\x10\x22\x00\x01\x0e'
+    data = b'\x0202:00:00:00:00:00' + b'\x10\x22\x00\x01\x0e'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 - Too long attribute values")
-    data = '\x0202:00:00:00:00:00'
-    data += '\x10\x11\x00\x21' + 33*'\x00'
-    data += '\x10\x45\x00\x21' + 33*'\x00'
-    data += '\x10\x42\x00\x21' + 33*'\x00'
-    data += '\x10\x24\x00\x21' + 33*'\x00'
-    data += '\x10\x23\x00\x21' + 33*'\x00'
-    data += '\x10\x21\x00\x41' + 65*'\x00'
-    data += '\x10\x49\x00\x09\x00\x37\x2a\x05\x02\x00\x00\x05\x00'
+    data = b'\x0202:00:00:00:00:00'
+    data += b'\x10\x11\x00\x21' + 33 * b'\x00'
+    data += b'\x10\x45\x00\x21' + 33 * b'\x00'
+    data += b'\x10\x42\x00\x21' + 33 * b'\x00'
+    data += b'\x10\x24\x00\x21' + 33 * b'\x00'
+    data += b'\x10\x23\x00\x21' + 33 * b'\x00'
+    data += b'\x10\x21\x00\x41' + 65 * b'\x00'
+    data += b'\x10\x49\x00\x09\x00\x37\x2a\x05\x02\x00\x00\x05\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing UUID-E")
-    data = '\x0202:00:00:00:00:00'
-    data += '\x10\x22\x00\x01\x04'
+    data = b'\x0202:00:00:00:00:00'
+    data += b'\x10\x22\x00\x01\x04'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing MAC Address")
-    data += '\x10\x47\x00\x10' + 16*'\x00'
+    data += b'\x10\x47\x00\x10' + 16 * b'\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Enrollee Nonce")
-    data += '\x10\x20\x00\x06\x02\x00\x00\x00\x00\x00'
+    data += b'\x10\x20\x00\x06\x02\x00\x00\x00\x00\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Public Key")
-    data += '\x10\x1a\x00\x10' + 16*'\x00'
+    data += b'\x10\x1a\x00\x10' + 16 * b'\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Authentication Type flags")
-    data += '\x10\x32\x00\xc0' + 192*'\x00'
+    data += b'\x10\x32\x00\xc0' + 192 * b'\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Encryption Type Flags")
-    data += '\x10\x04\x00\x02\x00\x00'
+    data += b'\x10\x04\x00\x02\x00\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Connection Type flags")
-    data += '\x10\x10\x00\x02\x00\x00'
+    data += b'\x10\x10\x00\x02\x00\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Config Methods")
-    data += '\x10\x0d\x00\x01\x00'
+    data += b'\x10\x0d\x00\x01\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Wi-Fi Protected Setup State")
-    data += '\x10\x08\x00\x02\x00\x00'
+    data += b'\x10\x08\x00\x02\x00\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Manufacturer")
-    data += '\x10\x44\x00\x01\x00'
+    data += b'\x10\x44\x00\x01\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Model Name")
-    data += '\x10\x21\x00\x00'
+    data += b'\x10\x21\x00\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Model Number")
-    data += '\x10\x23\x00\x00'
+    data += b'\x10\x23\x00\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Serial Number")
-    data += '\x10\x24\x00\x00'
+    data += b'\x10\x24\x00\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Primary Device Type")
-    data += '\x10\x42\x00\x00'
+    data += b'\x10\x42\x00\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Device Name")
-    data += '\x10\x54\x00\x08' + 8*'\x00'
+    data += b'\x10\x54\x00\x08' + 8 * b'\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing RF Bands")
-    data += '\x10\x11\x00\x00'
+    data += b'\x10\x11\x00\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Association State")
-    data += '\x10\x3c\x00\x01\x00'
+    data += b'\x10\x3c\x00\x01\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Device Password ID")
-    data += '\x10\x02\x00\x02\x00\x00'
+    data += b'\x10\x02\x00\x02\x00\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing Configuration Error")
-    data += '\x10\x12\x00\x02\x00\x00'
+    data += b'\x10\x12\x00\x02\x00\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("EAP message: M1 missing OS Version")
-    data += '\x10\x09\x00\x02\x00\x00'
+    data += b'\x10\x09\x00\x02\x00\x00'
     send_wlanevent(url, uuid, data)
 
     logger.info("Check max concurrent requests")
@@ -4586,10 +4586,10 @@ RGV2aWNlIEEQSQAGADcqAAEg
         raise Exception("Unexpected HTTP response: %d" % resp.status)
 
     with alloc_fail(dev[0], 1, "xml_get_first_item"):
-        send_wlanevent(url, uuid, '')
+        send_wlanevent(url, uuid, b'')
 
     with alloc_fail(dev[0], 1, "wpabuf_alloc_ext_data;xml_get_base64_item"):
-        send_wlanevent(url, uuid, 'foo')
+        send_wlanevent(url, uuid, b'foo')
 
     for func in [ "wps_init",
                   "wps_process_manufacturer",
@@ -4608,28 +4608,28 @@ RGV2aWNlIEEQSQAGADcqAAEg
         send_wlanevent(url2, uuid, m1, no_response=True)
 
     logger.info("EAP message: M1")
-    data = '\x0202:11:22:00:00:00'
-    data += '\x10\x22\x00\x01\x04'
-    data += '\x10\x47\x00\x10' + 16*'\x00'
-    data += '\x10\x20\x00\x06\x02\x00\x00\x00\x00\x00'
-    data += '\x10\x1a\x00\x10' + 16*'\x00'
-    data += '\x10\x32\x00\xc0' + 192*'\x00'
-    data += '\x10\x04\x00\x02\x00\x00'
-    data += '\x10\x10\x00\x02\x00\x00'
-    data += '\x10\x0d\x00\x01\x00'
-    data += '\x10\x08\x00\x02\x00\x00'
-    data += '\x10\x44\x00\x01\x00'
-    data += '\x10\x21\x00\x00'
-    data += '\x10\x23\x00\x00'
-    data += '\x10\x24\x00\x00'
-    data += '\x10\x42\x00\x00'
-    data += '\x10\x54\x00\x08' + 8*'\x00'
-    data += '\x10\x11\x00\x00'
-    data += '\x10\x3c\x00\x01\x00'
-    data += '\x10\x02\x00\x02\x00\x00'
-    data += '\x10\x12\x00\x02\x00\x00'
-    data += '\x10\x09\x00\x02\x00\x00'
-    data += '\x10\x2d\x00\x04\x00\x00\x00\x00'
+    data = b'\x0202:11:22:00:00:00'
+    data += b'\x10\x22\x00\x01\x04'
+    data += b'\x10\x47\x00\x10' + 16 * b'\x00'
+    data += b'\x10\x20\x00\x06\x02\x00\x00\x00\x00\x00'
+    data += b'\x10\x1a\x00\x10' + 16 * b'\x00'
+    data += b'\x10\x32\x00\xc0' + 192 * b'\x00'
+    data += b'\x10\x04\x00\x02\x00\x00'
+    data += b'\x10\x10\x00\x02\x00\x00'
+    data += b'\x10\x0d\x00\x01\x00'
+    data += b'\x10\x08\x00\x02\x00\x00'
+    data += b'\x10\x44\x00\x01\x00'
+    data += b'\x10\x21\x00\x00'
+    data += b'\x10\x23\x00\x00'
+    data += b'\x10\x24\x00\x00'
+    data += b'\x10\x42\x00\x00'
+    data += b'\x10\x54\x00\x08' + 8 * b'\x00'
+    data += b'\x10\x11\x00\x00'
+    data += b'\x10\x3c\x00\x01\x00'
+    data += b'\x10\x02\x00\x02\x00\x00'
+    data += b'\x10\x12\x00\x02\x00\x00'
+    data += b'\x10\x09\x00\x02\x00\x00'
+    data += b'\x10\x2d\x00\x04\x00\x00\x00\x00'
     dev[0].dump_monitor()
     with alloc_fail(dev[0], 1, "wps_er_add_sta_data"):
         send_wlanevent(url, uuid, data)
@@ -4920,7 +4920,7 @@ def test_ap_wps_er_http_client(dev, apdev):
 
     class WPSAPHTTPServer_req_as_resp(WPSAPHTTPServer):
         def handle_upnp_info(self):
-            self.wfile.write("GET / HTTP/1.1\r\n\r\n")
+            self.wfile.write(b"GET / HTTP/1.1\r\n\r\n")
     run_wps_er_proto_test(dev[0], WPSAPHTTPServer_req_as_resp,
                           no_event_url=True)
 
@@ -6185,7 +6185,7 @@ def get_wsc_msg(dev):
     if msg['eap_type'] == 254:
         if len(data) < 3 + 4:
             raise Exception("Truncated EAP expanded header")
-        msg['eap_vendor_id'], msg['eap_vendor_type'] = struct.unpack('>LL', '\0' + data[0:7])
+        msg['eap_vendor_id'], msg['eap_vendor_type'] = struct.unpack('>LL', b'\x00' + data[0:7])
         data = data[7:]
     else:
         raise Exception("Unexpected EAP type")
@@ -6273,7 +6273,7 @@ group_5_prime = 0xFFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC
 group_5_generator = 2
 
 def wsc_kdf(key, label, bits):
-    result = ''
+    result = b''
     i = 1
     while len(result) * 8 < bits:
         data = struct.pack('>L', i) + label.encode() + struct.pack('>L', bits)
@@ -6309,7 +6309,7 @@ def build_attr_encr_settings(authkey, keywrapkey, data):
     m = hmac.new(authkey, data, hashlib.sha256)
     kwa = m.digest()[0:8]
     data += build_wsc_attr(ATTR_KEY_WRAP_AUTH, kwa)
-    iv = 16*'\x99'
+    iv = 16*b'\x99'
     aes = AES.new(keywrapkey, AES.MODE_CBC, iv)
     pad_len = 16 - len(data) % 16
     ps = pad_len * struct.pack('B', pad_len)
@@ -6391,12 +6391,12 @@ def wsc_dev_pw_hash(authkey, dev_pw, e_pk, r_pk):
 
     # Note: Secret values are supposed to be random, but hardcoded values are
     # fine for testing.
-    s1 = 16*'\x77'
+    s1 = 16*b'\x77'
     m = hmac.new(authkey, s1 + psk1 + e_pk + r_pk, hashlib.sha256)
     hash1 = m.digest()
     logger.debug("Hash1: " + binascii.hexlify(hash1).decode())
 
-    s2 = 16*'\x88'
+    s2 = 16*b'\x88'
     m = hmac.new(authkey, s2 + psk2 + e_pk + r_pk, hashlib.sha256)
     hash2 = m.digest()
     logger.debug("Hash2: " + binascii.hexlify(hash2).decode())
@@ -6523,8 +6523,8 @@ def test_wps_ext(dev, apdev):
     wsc_start_id = msg['eap_identifier']
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -6599,12 +6599,12 @@ def test_wps_ext(dev, apdev):
     # Do not send WSC_Done yet to allow exchangw with STA complete before the
     # AP disconnects.
 
-    uuid_r = 16*'\x33'
-    r_nonce = 16*'\x44'
+    uuid_r = 16*b'\x33'
+    r_nonce = 16*b'\x44'
 
     eap_id = wsc_start_id
     logger.debug("Send WSC/Start to STA")
-    wsc_start = build_eap_wsc(1, eap_id, "", opcode=WSC_Start)
+    wsc_start = build_eap_wsc(1, eap_id, b'', opcode=WSC_Start)
     send_wsc_msg(dev[0], bssid, wsc_start)
     eap_id = (eap_id + 1) % 256
 
@@ -6700,8 +6700,8 @@ def wps_start_kwa(dev, apdev):
     wps_ext_eap_wsc(dev[0], hapd, bssid, "EAP-WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_r = 16*'\x33'
-    r_nonce = 16*'\x44'
+    uuid_r = 16*b'\x33'
+    r_nonce = 16*b'\x44'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Receive M1 from STA")
@@ -6753,7 +6753,7 @@ def test_wps_ext_kwa_proto_no_kwa(dev, apdev):
     r_s1,keywrapkey,authkey,raw_m3_attrs,eap_id,bssid,attrs = wps_start_kwa(dev, apdev)
     data = build_wsc_attr(ATTR_R_SNONCE1, r_s1)
     # Encrypted Settings without KWA
-    iv = 16*'\x99'
+    iv = 16*b'\x99'
     aes = AES.new(keywrapkey, AES.MODE_CBC, iv)
     pad_len = 16 - len(data) % 16
     ps = pad_len * struct.pack('B', pad_len)
@@ -6771,7 +6771,7 @@ def test_wps_ext_kwa_proto_data_after_kwa(dev, apdev):
     kwa = m.digest()[0:8]
     data += build_wsc_attr(ATTR_KEY_WRAP_AUTH, kwa)
     data += build_wsc_attr(ATTR_VENDOR_EXT, "1234567890")
-    iv = 16*'\x99'
+    iv = 16*b'\x99'
     aes = AES.new(keywrapkey, AES.MODE_CBC, iv)
     pad_len = 16 - len(data) % 16
     ps = pad_len * struct.pack('B', pad_len)
@@ -6786,7 +6786,7 @@ def test_wps_ext_kwa_proto_kwa_mismatch(dev, apdev):
     data = build_wsc_attr(ATTR_R_SNONCE1, r_s1)
     # Encrypted Settings and KWA with incorrect value
     data += build_wsc_attr(ATTR_KEY_WRAP_AUTH, 8*'\x00')
-    iv = 16*'\x99'
+    iv = 16*b'\x99'
     aes = AES.new(keywrapkey, AES.MODE_CBC, iv)
     pad_len = 16 - len(data) % 16
     ps = pad_len * struct.pack('B', pad_len)
@@ -6803,8 +6803,8 @@ def wps_run_cred_proto(dev, apdev, m8_cred, connect=False, no_connect=False):
     wps_ext_eap_wsc(dev[0], hapd, bssid, "EAP-WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_r = 16*'\x33'
-    r_nonce = 16*'\x44'
+    uuid_r = 16*b'\x33'
+    r_nonce = 16*b'\x44'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Receive M1 from STA")
@@ -6909,7 +6909,7 @@ def wps_run_cred_proto(dev, apdev, m8_cred, connect=False, no_connect=False):
 def build_cred(nw_idx='\x01', ssid='test-wps-conf', auth_type='\x00\x20',
                encr_type='\x00\x08', nw_key="12345678",
                mac_addr='\x00\x00\x00\x00\x00\x00'):
-    attrs = ''
+    attrs = b''
     if nw_idx is not None:
         attrs += build_wsc_attr(ATTR_NETWORK_INDEX, nw_idx)
     if ssid is not None:
@@ -6993,7 +6993,7 @@ def test_wps_ext_cred_proto_invalid_encr_type(dev, apdev):
 def test_wps_ext_cred_proto_missing_cred(dev, apdev):
     """WPS and Credential: Missing Credential"""
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    m8_cred = ''
+    m8_cred = b''
     wps_run_cred_proto(dev, apdev, m8_cred)
 
 def test_wps_ext_proto_m2_no_public_key(dev, apdev):
@@ -7005,8 +7005,8 @@ def test_wps_ext_proto_m2_no_public_key(dev, apdev):
     wps_ext_eap_wsc(dev[0], hapd, bssid, "EAP-WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_r = 16*'\x33'
-    r_nonce = 16*'\x44'
+    uuid_r = 16*b'\x33'
+    r_nonce = 16*b'\x44'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Receive M1 from STA")
@@ -7043,8 +7043,8 @@ def test_wps_ext_proto_m2_invalid_public_key(dev, apdev):
     wps_ext_eap_wsc(dev[0], hapd, bssid, "EAP-WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_r = 16*'\x33'
-    r_nonce = 16*'\x44'
+    uuid_r = 16*b'\x33'
+    r_nonce = 16*b'\x44'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Receive M1 from STA")
@@ -7060,7 +7060,7 @@ def test_wps_ext_proto_m2_invalid_public_key(dev, apdev):
     logger.debug("Send M2 to STA")
     m2, raw_m2_attrs = build_m2(authkey, raw_m1_attrs, eap_id,
                                 m1_attrs[ATTR_ENROLLEE_NONCE],
-                                r_nonce, uuid_r, 192*'\xff')
+                                r_nonce, uuid_r, 192*b'\xff')
     send_wsc_msg(dev[0], bssid, m2)
     eap_id = (eap_id + 1) % 256
 
@@ -7081,8 +7081,8 @@ def test_wps_ext_proto_m2_public_key_oom(dev, apdev):
     wps_ext_eap_wsc(dev[0], hapd, bssid, "EAP-WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_r = 16*'\x33'
-    r_nonce = 16*'\x44'
+    uuid_r = 16*b'\x33'
+    r_nonce = 16*b'\x44'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Receive M1 from STA")
@@ -7120,8 +7120,8 @@ def test_wps_ext_proto_nack_m3(dev, apdev):
     wps_ext_eap_wsc(dev[0], hapd, bssid, "EAP-WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_r = 16*'\x33'
-    r_nonce = 16*'\x44'
+    uuid_r = 16*b'\x33'
+    r_nonce = 16*b'\x44'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Receive M1 from STA")
@@ -7163,8 +7163,8 @@ def test_wps_ext_proto_nack_m5(dev, apdev):
     wps_ext_eap_wsc(dev[0], hapd, bssid, "EAP-WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_r = 16*'\x33'
-    r_nonce = 16*'\x44'
+    uuid_r = 16*b'\x33'
+    r_nonce = 16*b'\x44'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Receive M1 from STA")
@@ -7222,8 +7222,8 @@ def wps_nack_m3(dev, apdev):
     wps_ext_eap_wsc(dev[0], hapd, bssid, "EAP-WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_r = 16*'\x33'
-    r_nonce = 16*'\x44'
+    uuid_r = 16*b'\x33'
+    r_nonce = 16*b'\x44'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Receive M1 from STA")
@@ -7321,7 +7321,7 @@ def test_wps_ext_proto_nack_m3_invalid_attr(dev, apdev):
     """WPS and NACK M3 invalid attribute"""
     eap_id, e_nonce, r_nonce, bssid = wps_nack_m3(dev, apdev)
     logger.debug("Send NACK to STA")
-    attrs = '\x10\x10\x00'
+    attrs = b'\x10\x10\x00'
     msg = build_eap_wsc(1, eap_id, attrs, opcode=WSC_NACK)
     send_wsc_msg(dev[0], bssid, msg)
     dev[0].request("WPS_CANCEL")
@@ -7392,7 +7392,7 @@ def test_wps_ext_proto_ack_m3_invalid_attr(dev, apdev):
     """WPS and ACK M3 invalid attribute"""
     eap_id, e_nonce, r_nonce, bssid = wps_nack_m3(dev, apdev)
     logger.debug("Send ACK to STA")
-    attrs = '\x10\x10\x00'
+    attrs = b'\x10\x10\x00'
     msg = build_eap_wsc(1, eap_id, attrs, opcode=WSC_ACK)
     send_wsc_msg(dev[0], bssid, msg)
     dev[0].request("WPS_CANCEL")
@@ -7417,8 +7417,8 @@ def wps_to_m3_helper(dev, apdev):
     wps_ext_eap_wsc(dev[0], hapd, bssid, "EAP-WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_r = 16*'\x33'
-    r_nonce = 16*'\x44'
+    uuid_r = 16*b'\x33'
+    r_nonce = 16*b'\x44'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Receive M1 from STA")
@@ -7531,7 +7531,7 @@ def test_wps_ext_proto_m4_missing_r_snonce1(dev, apdev):
     attrs += build_wsc_attr(ATTR_R_HASH1, r_hash1)
     attrs += build_wsc_attr(ATTR_R_HASH2, r_hash2)
     #data = build_wsc_attr(ATTR_R_SNONCE1, r_s1)
-    data = ''
+    data = b''
     attrs += build_attr_encr_settings(authkey, keywrapkey, data)
     attrs += build_attr_authenticator(authkey, m3, attrs)
     m4 = build_eap_wsc(1, eap_id, attrs)
@@ -7562,7 +7562,7 @@ def test_wps_ext_proto_m4_invalid_pad_string(dev, apdev):
     m = hmac.new(authkey, data, hashlib.sha256)
     kwa = m.digest()[0:8]
     data += build_wsc_attr(ATTR_KEY_WRAP_AUTH, kwa)
-    iv = 16*'\x99'
+    iv = 16*b'\x99'
     aes = AES.new(keywrapkey, AES.MODE_CBC, iv)
     pad_len = 16 - len(data) % 16
     ps = (pad_len - 1) * struct.pack('B', pad_len) + struct.pack('B', pad_len - 1)
@@ -7599,7 +7599,7 @@ def test_wps_ext_proto_m4_invalid_pad_value(dev, apdev):
     m = hmac.new(authkey, data, hashlib.sha256)
     kwa = m.digest()[0:8]
     data += build_wsc_attr(ATTR_KEY_WRAP_AUTH, kwa)
-    iv = 16*'\x99'
+    iv = 16*b'\x99'
     aes = AES.new(keywrapkey, AES.MODE_CBC, iv)
     pad_len = 16 - len(data) % 16
     ps = (pad_len - 1) * struct.pack('B', pad_len) + struct.pack('B', 255)
@@ -7654,7 +7654,7 @@ def test_wps_ext_proto_m6_missing_r_snonce2(dev, apdev):
     attrs += build_attr_msg_type(WPS_M6)
     attrs += build_wsc_attr(ATTR_ENROLLEE_NONCE, e_nonce)
     #data = build_wsc_attr(ATTR_R_SNONCE2, r_s2)
-    data = ''
+    data = b''
     attrs += build_attr_encr_settings(authkey, keywrapkey, data)
     attrs += build_attr_authenticator(authkey, m5, attrs)
     m6 = build_eap_wsc(1, eap_id, attrs)
@@ -7763,8 +7763,8 @@ def wps_run_ap_settings_proto(dev, apdev, ap_settings, success):
     e_pk = m1_attrs[ATTR_PUBLIC_KEY]
 
     appin = '12345670'
-    uuid_r = 16*'\x33'
-    r_nonce = 16*'\x44'
+    uuid_r = 16*b'\x33'
+    r_nonce = 16*b'\x44'
     own_private, r_pk = wsc_dh_init()
     authkey,keywrapkey = wsc_dh_kdf(e_pk, own_private, mac_addr, e_nonce,
                                     r_nonce)
@@ -7947,8 +7947,8 @@ def test_wps_ext_m3_missing_e_hash1(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -7992,8 +7992,8 @@ def test_wps_ext_m3_missing_e_hash2(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8037,8 +8037,8 @@ def test_wps_ext_m5_missing_e_snonce1(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8074,7 +8074,7 @@ def test_wps_ext_m5_missing_e_snonce1(dev, apdev):
     attrs += build_attr_msg_type(WPS_M5)
     attrs += build_wsc_attr(ATTR_REGISTRAR_NONCE, r_nonce)
     #data = build_wsc_attr(ATTR_E_SNONCE1, e_s1)
-    data = ''
+    data = b''
     attrs += build_attr_encr_settings(authkey, keywrapkey, data)
     attrs += build_attr_authenticator(authkey, raw_m4_attrs, attrs)
     raw_m5_attrs = attrs
@@ -8097,8 +8097,8 @@ def test_wps_ext_m5_e_snonce1_mismatch(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8155,8 +8155,8 @@ def test_wps_ext_m7_missing_e_snonce2(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8206,7 +8206,7 @@ def test_wps_ext_m7_missing_e_snonce2(dev, apdev):
     attrs += build_attr_msg_type(WPS_M7)
     attrs += build_wsc_attr(ATTR_REGISTRAR_NONCE, r_nonce)
     #data = build_wsc_attr(ATTR_E_SNONCE2, e_s2)
-    data = ''
+    data = b''
     attrs += build_attr_encr_settings(authkey, keywrapkey, data)
     attrs += build_attr_authenticator(authkey, raw_m6_attrs, attrs)
     m7 = build_eap_wsc(2, msg['eap_identifier'], attrs)
@@ -8229,8 +8229,8 @@ def test_wps_ext_m7_e_snonce2_mismatch(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8333,8 +8333,8 @@ def test_wps_ext_m3_m1(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8378,8 +8378,8 @@ def test_wps_ext_m5_m3(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8437,8 +8437,8 @@ def test_wps_ext_m3_m2(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8480,8 +8480,8 @@ def test_wps_ext_m3_m5(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8525,8 +8525,8 @@ def test_wps_ext_m3_m7(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8570,8 +8570,8 @@ def test_wps_ext_m3_done(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8612,8 +8612,8 @@ def test_wps_ext_m2_nack_invalid(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8631,7 +8631,7 @@ def test_wps_ext_m2_nack_invalid(dev, apdev):
     e_s1,e_s2,e_hash1,e_hash2 = wsc_dev_pw_hash(authkey, pin, e_pk, r_pk)
 
     logger.debug("Send WSC_NACK to AP")
-    attrs = '\x10\x00\x00'
+    attrs = b'\x10\x00\x00'
     nack = build_eap_wsc(2, msg['eap_identifier'], attrs, opcode=WSC_NACK)
     send_wsc_msg(hapd, addr, nack)
 
@@ -8651,8 +8651,8 @@ def test_wps_ext_m2_nack_no_msg_type(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8690,8 +8690,8 @@ def test_wps_ext_m2_nack_invalid_msg_type(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8729,8 +8729,8 @@ def test_wps_ext_m2_nack_e_nonce_mismatch(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8748,7 +8748,7 @@ def test_wps_ext_m2_nack_e_nonce_mismatch(dev, apdev):
     e_s1,e_s2,e_hash1,e_hash2 = wsc_dev_pw_hash(authkey, pin, e_pk, r_pk)
 
     logger.debug("Send WSC_NACK to AP")
-    nack,attrs = build_nack(msg['eap_identifier'], 16*'\x00', r_nonce,
+    nack,attrs = build_nack(msg['eap_identifier'], 16*b'\x00', r_nonce,
                             eap_code=2)
     send_wsc_msg(hapd, addr, nack)
 
@@ -8768,8 +8768,8 @@ def test_wps_ext_m2_nack_no_config_error(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8807,8 +8807,8 @@ def test_wps_ext_m2_ack_invalid(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8826,7 +8826,7 @@ def test_wps_ext_m2_ack_invalid(dev, apdev):
     e_s1,e_s2,e_hash1,e_hash2 = wsc_dev_pw_hash(authkey, pin, e_pk, r_pk)
 
     logger.debug("Send WSC_ACK to AP")
-    attrs = '\x10\x00\x00'
+    attrs = b'\x10\x00\x00'
     ack = build_eap_wsc(2, msg['eap_identifier'], attrs, opcode=WSC_ACK)
     send_wsc_msg(hapd, addr, ack)
 
@@ -8846,8 +8846,8 @@ def test_wps_ext_m2_ack(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8884,8 +8884,8 @@ def test_wps_ext_m2_ack_no_msg_type(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8923,8 +8923,8 @@ def test_wps_ext_m2_ack_invalid_msg_type(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8962,8 +8962,8 @@ def test_wps_ext_m2_ack_e_nonce_mismatch(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -8981,7 +8981,7 @@ def test_wps_ext_m2_ack_e_nonce_mismatch(dev, apdev):
     e_s1,e_s2,e_hash1,e_hash2 = wsc_dev_pw_hash(authkey, pin, e_pk, r_pk)
 
     logger.debug("Send WSC_ACK to AP")
-    ack,attrs = build_ack(msg['eap_identifier'], 16*'\x00', r_nonce,
+    ack,attrs = build_ack(msg['eap_identifier'], 16*b'\x00', r_nonce,
                           eap_code=2)
     send_wsc_msg(hapd, addr, ack)
 
@@ -9001,7 +9001,7 @@ def test_wps_ext_m1_invalid(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     logger.debug("Send M1 to AP")
-    attrs = '\x10\x00\x00'
+    attrs = b'\x10\x00\x00'
     m1 = build_eap_wsc(2, msg['eap_identifier'], attrs)
     send_wsc_msg(hapd, addr, m1)
 
@@ -9024,7 +9024,7 @@ def test_wps_ext_m1_missing_msg_type(dev, apdev):
     m1 = build_eap_wsc(2, msg['eap_identifier'], attrs)
     send_wsc_msg(hapd, addr, m1)
 
-    wps_wait_ap_nack(hapd, dev[0], 16*'\x00', 16*'\x00')
+    wps_wait_ap_nack(hapd, dev[0], 16*b'\x00', 16*b'\x00')
 
 def wps_ext_wsc_done(dev, apdev):
     pin = "12345670"
@@ -9038,8 +9038,8 @@ def wps_ext_wsc_done(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -9105,7 +9105,7 @@ def test_wps_ext_wsc_done_invalid(dev, apdev):
     hapd, msg, e_nonce, r_nonce = wps_ext_wsc_done(dev, apdev)
 
     logger.debug("Send WSC_Done to AP")
-    attrs = '\x10\x00\x00'
+    attrs = b'\x10\x00\x00'
     wsc_done = build_eap_wsc(2, msg['eap_identifier'], attrs, opcode=WSC_Done)
     send_wsc_msg(hapd, dev[0].own_addr(), wsc_done)
 
@@ -9184,8 +9184,8 @@ def test_wps_ext_m7_no_encr_settings(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
@@ -9257,14 +9257,14 @@ def test_wps_ext_m1_workaround(dev, apdev):
         raise Exception("Unexpected Op-Code for WSC/Start")
 
     mac_addr = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
-    uuid_e = 16*'\x11'
-    e_nonce = 16*'\x22'
+    uuid_e = 16*b'\x11'
+    e_nonce = 16*b'\x22'
     own_private, e_pk = wsc_dh_init()
 
     logger.debug("Send M1 to AP")
     m1, raw_m1_attrs = build_m1(msg['eap_identifier'], uuid_e, mac_addr,
                                 e_nonce, e_pk, manufacturer='Apple TEST',
-                                model_name='AirPort', config_methods='\xff\xff')
+                                model_name='AirPort', config_methods=b'\xff\xff')
     send_wsc_msg(hapd, addr, m1)
 
     logger.debug("Receive M2 from AP")
