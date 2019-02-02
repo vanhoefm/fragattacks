@@ -1,10 +1,13 @@
 #!/bin/sh
 
+# keep old /etc
+mount tmpfs -t tmpfs /tmp
+mkdir /tmp/etc
+mount --bind /etc /tmp/etc
 # mount all kinds of things
 mount tmpfs -t tmpfs /etc
 # we need our own /dev/rfkill, and don't want device access
 mount tmpfs -t tmpfs /dev
-mount tmpfs -t tmpfs /tmp
 # some sockets go into /var/run, and / is read-only
 mount tmpfs -t tmpfs /var/run
 mount proc -t proc /proc
@@ -78,6 +81,9 @@ tcp     6       TCP
 udp     17      UDP
 ipv6-icmp 58	IPv6-ICMP
 EOF
+
+# we may need /etc/alternatives, at least on Debian-based systems
+ln -s /tmp/etc/alternatives /etc/
 
 # local network is needed for some tests
 ip link set lo up
