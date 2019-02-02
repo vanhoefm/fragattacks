@@ -55,7 +55,7 @@ class Host():
 
         logger.debug("status: " + str(status))
         logger.debug("buf: " + str(buf))
-        return status, buf
+        return status, buf.decode()
 
     def execute(self, command):
         if self.host is None:
@@ -73,7 +73,7 @@ class Host():
 
         logger.debug(self.name + " status: " + str(status))
         logger.debug(self.name + " buf: " + str(buf))
-        return status, buf
+        return status, buf.decode()
 
     # async execute
     def execute_run(self, command, res):

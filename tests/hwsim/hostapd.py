@@ -55,7 +55,7 @@ class HostapdGlobal:
                                     stdout=subprocess.PIPE, shell=shell)
             out = proc.communicate()[0]
             ret = proc.returncode
-            return ret, out
+            return ret, out.decode()
         else:
             return self.host.execute(cmd_array)
 
@@ -162,7 +162,7 @@ class Hostapd:
                                     stdout=subprocess.PIPE, shell=shell)
             out = proc.communicate()[0]
             ret = proc.returncode
-            return ret, out
+            return ret, out.decode()
         else:
             return self.host.execute(cmd_array)
 
