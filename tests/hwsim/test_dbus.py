@@ -9,9 +9,13 @@ import logging
 logger = logging.getLogger()
 import subprocess
 import time
+import sys
 
 try:
-    import gobject
+    if sys.version_info[0] > 2:
+        from gi.repository import GObject as gobject
+    else:
+        import gobject
     import dbus
     dbus_imported = True
 except ImportError:
