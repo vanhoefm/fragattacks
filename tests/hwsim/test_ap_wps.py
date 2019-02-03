@@ -6227,7 +6227,8 @@ def recv_wsc_msg(dev, opcode, msg_type):
     return msg, msg['wsc_attrs'], msg['raw_attrs']
 
 def build_wsc_attr(attr, payload):
-    return struct.pack('>HH', attr, len(payload)) + payload
+    _payload = payload if type(payload) == bytes else payload.encode()
+    return struct.pack('>HH', attr, len(_payload)) + _payload
 
 def build_attr_msg_type(msg_type):
     return build_wsc_attr(ATTR_MSG_TYPE, struct.pack('B', msg_type))
