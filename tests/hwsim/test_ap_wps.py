@@ -2795,7 +2795,7 @@ def upnp_soap_action(conn, path, action, include_soap_action=True,
     act = ET.SubElement(body, "{%s}%s" % (wpsns, action))
     if newmsg:
         msg = ET.SubElement(act, "NewMessage")
-        msg.text = base64.b64encode(newmsg)
+        msg.text = base64.b64encode(newmsg.encode()).decode()
     if neweventtype:
         msg = ET.SubElement(act, "NewWLANEventType")
         msg.text = neweventtype
@@ -4204,7 +4204,7 @@ def send_wlanevent(url, uuid, data, no_response=False):
 <e:property><STAStatus>1</STAStatus></e:property>
 <e:property><APStatus>1</APStatus></e:property>
 <e:property><WLANEvent>'''
-    payload += base64.b64encode(data)
+    payload += base64.b64encode(data).decode()
     payload += '</WLANEvent></e:property></e:propertyset>'
     headers = { "Content-type": 'text/xml; charset="utf-8"',
                 "Server": "Unspecified, UPnP/1.0, Unspecified",
@@ -5978,7 +5978,7 @@ def test_ap_wps_set_selected_registrar_proto(dev, apdev):
               (200, "104a000110") ]
     for status,test in tests:
         tlvs = binascii.unhexlify(test)
-        newmsg = base64.b64encode(tlvs)
+        newmsg = base64.b64encode(tlvs).decode()
         msg = '<?xml version="1.0"?>\n'
         msg += '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">'
         msg += '<s:Body>'

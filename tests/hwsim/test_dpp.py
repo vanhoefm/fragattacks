@@ -57,7 +57,7 @@ def test_dpp_qr_code_parsing(dev, apdev):
               "DPP:;;",
               "DPP:C:1/2;M:;K;;",
               "DPP:I:;M:01020304050;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;",
-              "DPP:K:" + base64.b64encode(b"hello") + ";;",
+              "DPP:K:" + base64.b64encode(b"hello").decode() + ";;",
               "DPP:K:MEkwEwYHKoZIzj0CAQYIKoZIzj0DAQEDMgAEXiJuIWt1Q/CPCkuULechh37UsXPmbUANOeN5U9sOQROE4o/NEFeFEejROHYwwehF;;",
               "DPP:K:MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANNZaZA4T/kRDjnmpI1ACOJhAuTIIEk2KFOpS6XPpGF+EVr/ao3XemkE0/nzXmGaLzLqTUCJknSdxTnVPeWfCVsCAwEAAQ==;;",
               "DPP:K:MIIBCjCB0wYHKoZIzj0CATCBxwIBATAkBgcqhkjOPQEBAhkA/////////////////////v//////////MEsEGP////////////////////7//////////AQYZCEFGeWcgOcPp+mrciQwSf643uzBRrmxAxUAMEWub8hCL2TtV5Uo04Eg6uEhltUEMQQYjagOsDCQ9ny/IOtDoYgA9P8K/YL/EBIHGSuV/8jaeGMQEe1rJM3Vc/l3oR55SBECGQD///////////////+Z3vg2FGvJsbTSKDECAQEDMgAEXiJuIWt1Q/CPCkuULechh37UsXPmbUANOeN5U9sOQROE4o/NEFeFEejROHYwwehF;;",
@@ -1290,8 +1290,8 @@ def build_conf_obj(kty="EC", crv="P-256",
     elif not no_signed_connector:
         payload = '{"groups":[{"groupId":"*","netRole":"sta"}],"netAccessKey":{"kty":"EC","crv":"P-256","x":"aTF4JEGIPKSZ0Xv9zdCMjm-tn5XpMsYIVZ9wySAz1gI","y":"QGcHWA_6rbU9XDXAztoX-M5Q3suTnMaqEhULtn7SSXw"}}'
         sign = "_sm6YswxMf6hJLVTyYoU1uYUeY2VVkUNjrzjSiEhY42StD_RWowStEE-9CRsdCvLmsTptZ72_g40vTFwdId20A"
-        conn = base64.urlsafe_b64encode(prot_hdr).rstrip('=') + '.'
-        conn += base64.urlsafe_b64encode(payload).rstrip('=') + '.'
+        conn = base64.urlsafe_b64encode(prot_hdr.encode()).decode().rstrip('=') + '.'
+        conn += base64.urlsafe_b64encode(payload.encode()).decode().rstrip('=') + '.'
         conn += sign
         conf += '"signedConnector":"%s",' % conn
 
@@ -1556,7 +1556,7 @@ def ecdsa_sign(pkey, message, alg="sha256"):
         raise Exception("Extra data at the end of ECDSA signature")
 
     raw_sign = r + s
-    return base64.urlsafe_b64encode(raw_sign).rstrip('=')
+    return base64.urlsafe_b64encode(raw_sign).decode().rstrip('=')
 
 p256_priv_key = """-----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIBVQij9ah629f1pu3tarDQGQvrzHgAkgYd1jHGiLxNajoAoGCCqGSM49
@@ -1572,11 +1572,11 @@ def run_dpp_config_connector(dev, apdev, expiry=None, payload=None,
         raise HwsimSkip("OpenSSL python method not available")
     pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM,
                                           p256_priv_key)
-    x = base64.urlsafe_b64encode(p256_pub_key_x).rstrip('=')
-    y = base64.urlsafe_b64encode(p256_pub_key_y).rstrip('=')
+    x = base64.urlsafe_b64encode(p256_pub_key_x).decode().rstrip('=')
+    y = base64.urlsafe_b64encode(p256_pub_key_y).decode().rstrip('=')
 
-    pubkey = '\04' + p256_pub_key_x + p256_pub_key_y
-    kid = base64.urlsafe_b64encode(hashlib.sha256(pubkey).digest()).rstrip('=')
+    pubkey = b'\x04' + p256_pub_key_x + p256_pub_key_y
+    kid = base64.urlsafe_b64encode(hashlib.sha256(pubkey).digest()).decode().rstrip('=')
 
     prot_hdr = '{"typ":"dppCon","kid":"%s","alg":"ES256"}' % kid
 
@@ -1585,8 +1585,8 @@ def run_dpp_config_connector(dev, apdev, expiry=None, payload=None,
         if expiry:
             payload += ',"expiry":"%s"' % expiry
         payload += '}'
-    conn = base64.urlsafe_b64encode(prot_hdr).rstrip('=') + '.'
-    conn += base64.urlsafe_b64encode(payload).rstrip('=')
+    conn = base64.urlsafe_b64encode(prot_hdr.encode()).decode().rstrip('=') + '.'
+    conn += base64.urlsafe_b64encode(payload.encode()).decode().rstrip('=')
     sign = ecdsa_sign(pkey, conn)
     conn += '.' + sign
     run_dpp_config_error(dev, apdev,
