@@ -1097,7 +1097,7 @@ def test_grpform_go_neg_dup_on_restart(dev):
     attrs = p2p_attr_capability(dev_capab=0x25, group_capab=0x08)
     attrs += p2p_attr_go_intent(go_intent=7, tie_breaker=1)
     attrs += p2p_attr_config_timeout()
-    attrs += p2p_attr_listen_channel(chan=(int(peer['listen_freq']) - 2407) / 5)
+    attrs += p2p_attr_listen_channel(chan=(int(peer['listen_freq']) - 2407) // 5)
     attrs += p2p_attr_intended_interface_addr(lower.p2p_dev_addr())
     attrs += p2p_attr_channel_list()
     attrs += p2p_attr_device_info(addr_low, config_methods=0x80, name="Device A")

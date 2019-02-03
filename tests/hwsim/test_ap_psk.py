@@ -1617,7 +1617,7 @@ def build_eapol_key_3_4(anonce, kck, key_data, replay_counter=2,
     return msg
 
 def aes_wrap(kek, plain):
-    n = len(plain) / 8
+    n = len(plain) // 8
     a = 0xa6a6a6a6a6a6a6a6
     enc = AES.new(kek).encrypt
     r = [plain[i * 8:(i + 1) * 8] for i in range(0, n)]

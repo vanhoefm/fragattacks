@@ -6280,7 +6280,7 @@ def wsc_kdf(key, label, bits):
         m = hmac.new(key, data, hashlib.sha256)
         result += m.digest()
         i += 1
-    return result[0:bits / 8]
+    return result[0:bits // 8]
 
 def wsc_keys(kdk):
     keys = wsc_kdf(kdk, "Wi-Fi Easy and Secure Key Derivation", 640)
@@ -6294,8 +6294,8 @@ def wsc_dev_pw_half_psk(authkey, dev_pw):
     return m.digest()[0:16]
 
 def wsc_dev_pw_psk(authkey, dev_pw):
-    dev_pw_1 = dev_pw[0:len(dev_pw) / 2]
-    dev_pw_2 = dev_pw[len(dev_pw) / 2:]
+    dev_pw_1 = dev_pw[0:len(dev_pw) // 2]
+    dev_pw_2 = dev_pw[len(dev_pw) // 2:]
     psk1 = wsc_dev_pw_half_psk(authkey, dev_pw_1)
     psk2 = wsc_dev_pw_half_psk(authkey, dev_pw_2)
     return psk1,psk2
@@ -6365,7 +6365,7 @@ def wsc_dh_kdf(peer_pk, own_private, mac_addr, e_nonce, r_nonce):
     peer_public = int(binascii.hexlify(peer_pk), 16)
     if peer_public < 2 or peer_public >= group_5_prime:
         raise Exception("Invalid peer public key")
-    if pow(peer_public, (group_5_prime - 1) / 2, group_5_prime) != 1:
+    if pow(peer_public, (group_5_prime - 1) // 2, group_5_prime) != 1:
         raise Exception("Unexpected Legendre symbol for peer public key")
 
     shared_secret = pow(peer_public, own_private, group_5_prime)
