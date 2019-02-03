@@ -5280,8 +5280,8 @@ def run_busctl(service, obj):
     cmd.wait()
     logger.info("busctl stdout:\n%s" % out[0].strip())
     if len(out[1]) > 0:
-        logger.info("busctl stderr: %s" % out[1].strip())
-    if "Duplicate property" in out[1]:
+        logger.info("busctl stderr: %s" % out[1].decode().strip())
+    if "Duplicate property" in out[1].decode():
         raise Exception("Duplicate property")
 
 def test_dbus_introspect_busctl(dev, apdev):

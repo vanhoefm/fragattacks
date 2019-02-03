@@ -1617,7 +1617,7 @@ def test_wpas_ctrl_wait(dev, apdev, test_params):
         prg = '../../wpa_supplicant/wpa_supplicant'
     arg = [ prg ]
     cmd = subprocess.Popen(arg, stdout=subprocess.PIPE)
-    out = cmd.communicate()[0]
+    out = cmd.communicate()[0].decode()
     cmd.wait()
     tracing = "Linux tracing" in out
 

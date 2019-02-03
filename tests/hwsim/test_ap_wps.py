@@ -3905,7 +3905,7 @@ def test_ap_wps_wpa_cli_action(dev, apdev, test_params):
 
     arg = [ 'ps', 'ax' ]
     cmd = subprocess.Popen(arg, stdout=subprocess.PIPE)
-    out = cmd.communicate()[0]
+    out = cmd.communicate()[0].decode()
     cmd.wait()
     logger.debug("Processes:\n" + out)
     if "wpa_cli -P %s -B -i %s" % (pidfile, dev[0].ifname) not in out:
@@ -3931,7 +3931,7 @@ def test_ap_wps_wpa_cli_action(dev, apdev, test_params):
 
     arg = [ 'ps', 'ax' ]
     cmd = subprocess.Popen(arg, stdout=subprocess.PIPE)
-    out = cmd.communicate()[0]
+    out = cmd.communicate()[0].decode()
     cmd.wait()
     logger.debug("Remaining processes:\n" + out)
     if "wpa_cli -P %s -B -i %s" % (pidfile, dev[0].ifname) in out:

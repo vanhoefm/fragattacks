@@ -4564,7 +4564,7 @@ def send_arp(dev, dst_ll="ff:ff:ff:ff:ff:ff", src_ll=None, opcode=1,
 
 def get_permanent_neighbors(ifname):
     cmd = subprocess.Popen(['ip', 'nei'], stdout=subprocess.PIPE)
-    res = cmd.stdout.read()
+    res = cmd.stdout.read().decode()
     cmd.stdout.close()
     return [ line for line in res.splitlines() if "PERMANENT" in line and ifname in line ]
 
@@ -4678,13 +4678,13 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
     time.sleep(0.1)
 
     brcmd = subprocess.Popen(['brctl', 'show'], stdout=subprocess.PIPE)
-    res = brcmd.stdout.read()
+    res = brcmd.stdout.read().decode()
     brcmd.stdout.close()
     logger.info("Bridge setup: " + res)
 
     brcmd = subprocess.Popen(['brctl', 'showstp', 'ap-br0'],
                              stdout=subprocess.PIPE)
-    res = brcmd.stdout.read()
+    res = brcmd.stdout.read().decode()
     brcmd.stdout.close()
     logger.info("Bridge showstp: " + res)
 
@@ -4873,7 +4873,7 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
     if ebtables:
         cmd = subprocess.Popen(['ebtables', '-L', '--Lc'],
                                stdout=subprocess.PIPE)
-        res = cmd.stdout.read()
+        res = cmd.stdout.read().decode()
         cmd.stdout.close()
         logger.info("ebtables results:\n" + res)
 
@@ -5024,13 +5024,13 @@ def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
     time.sleep(0.1)
 
     brcmd = subprocess.Popen(['brctl', 'show'], stdout=subprocess.PIPE)
-    res = brcmd.stdout.read()
+    res = brcmd.stdout.read().decode()
     brcmd.stdout.close()
     logger.info("Bridge setup: " + res)
 
     brcmd = subprocess.Popen(['brctl', 'showstp', 'ap-br0'],
                              stdout=subprocess.PIPE)
-    res = brcmd.stdout.read()
+    res = brcmd.stdout.read().decode()
     brcmd.stdout.close()
     logger.info("Bridge showstp: " + res)
 
@@ -5130,7 +5130,7 @@ def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
     if ebtables:
         cmd = subprocess.Popen(['ebtables', '-L', '--Lc'],
                                stdout=subprocess.PIPE)
-        res = cmd.stdout.read()
+        res = cmd.stdout.read().decode()
         cmd.stdout.close()
         logger.info("ebtables results:\n" + res)
 

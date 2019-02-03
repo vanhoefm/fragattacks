@@ -4224,7 +4224,7 @@ def ica_ocsp(cert, md="-sha256"):
             "-cert", cert, "-no_nonce", "-text" ]
     cmd = subprocess.Popen(arg, stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE)
-    res = cmd.stdout.read() + "\n" + cmd.stderr.read()
+    res = cmd.stdout.read().decode() + "\n" + cmd.stderr.read().decode()
     cmd.stdout.close()
     cmd.stderr.close()
     cmd.wait()
@@ -4241,7 +4241,7 @@ def ica_ocsp(cert, md="-sha256"):
             "-text" ]
     cmd = subprocess.Popen(arg, stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE)
-    res = cmd.stdout.read() + "\n" + cmd.stderr.read()
+    res = cmd.stdout.read().decode() + "\n" + cmd.stderr.read().decode()
     cmd.stdout.close()
     cmd.stderr.close()
     cmd.wait()
@@ -6028,7 +6028,7 @@ def test_ap_wpa2_eap_sim_db(dev, apdev, params):
             cmd = subprocess.Popen(['../../hostapd/hlr_auc_gw',
                                     '-m', fname, data],
                                    stdout=subprocess.PIPE)
-            res = cmd.stdout.read().strip()
+            res = cmd.stdout.read().decode().strip()
             cmd.stdout.close()
             logger.debug("hlr_auc_gw response: " + res)
             socket.sendto(res, self.client_address)
@@ -6465,7 +6465,7 @@ def test_ap_wpa2_eap_psk_mac_addr_change(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
 
     cmd = subprocess.Popen(['ps', '-eo', 'pid,command'], stdout=subprocess.PIPE)
-    res = cmd.stdout.read()
+    res = cmd.stdout.read().decode()
     cmd.stdout.close()
     pid = 0
     for p in res.splitlines():
