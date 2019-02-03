@@ -8,6 +8,7 @@ from remotehost import remote_compatible
 import logging
 logger = logging.getLogger()
 import struct
+import sys
 
 import hwsim_utils
 import hostapd
@@ -201,7 +202,8 @@ def test_tspec_protocol(dev, apdev):
     msg['sa'] = apdev[0]['bssid']
 
     # modified parameters
-    msg['payload'] = struct.pack('BBBB', 17, 1, dialog, 1) + payload[4:12] + struct.pack('B', ord(payload[12]) & ~0x60) + payload[13:]
+    p12int = payload[12] if sys.version_info[0] > 2 else ord(payload[12])
+    msg['payload'] = struct.pack('BBBB', 17, 1, dialog, 1) + payload[4:12] + struct.pack('B', p12int & ~0x60) + payload[13:]
     hapd.mgmt_tx(msg)
 
     # reject request
