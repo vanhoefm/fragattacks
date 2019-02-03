@@ -6179,7 +6179,7 @@ def get_wsc_msg(dev):
     # Parse EAP expanded header
     if len(data) < 1:
         raise Exception("No EAP type included")
-    msg['eap_type'], = struct.unpack('B', data[0])
+    msg['eap_type'], = struct.unpack('B', data[0:1])
     data = data[1:]
 
     if msg['eap_type'] == 254:
@@ -6324,7 +6324,7 @@ def decrypt_attr_encr_settings(authkey, keywrapkey, data):
     encr = data[16:]
     aes = AES.new(keywrapkey, AES.MODE_CBC, iv)
     decrypted = aes.decrypt(encr)
-    pad_len, = struct.unpack('B', decrypted[-1])
+    pad_len, = struct.unpack('B', decrypted[-1:])
     if pad_len > len(decrypted):
         raise Exception("Invalid padding in Encrypted Settings")
     for i in range(-pad_len, -1):
