@@ -1586,7 +1586,7 @@ def test_ap_hs20_disallow_aps(dev, apdev):
     dev[0].scan_for_bss(bssid, freq="2412")
 
     logger.info("Verify disallow_aps bssid")
-    dev[0].request("SET disallow_aps bssid " + bssid.translate(None, ':'))
+    dev[0].request("SET disallow_aps bssid " + bssid.replace(':', ''))
     dev[0].request("INTERWORKING_SELECT auto")
     ev = dev[0].wait_event(["INTERWORKING-NO-MATCH"], timeout=15)
     if ev is None:
@@ -1605,7 +1605,7 @@ def test_ap_hs20_disallow_aps(dev, apdev):
     dev[0].request("SET disallow_aps ")
     interworking_select(dev[0], bssid, "home", freq="2412")
 
-    dev[0].request("SET disallow_aps bssid " + bssid.translate(None, ':'))
+    dev[0].request("SET disallow_aps bssid " + bssid.replace(':', ''))
     ret = dev[0].request("INTERWORKING_CONNECT " + bssid)
     if "FAIL" not in ret:
         raise Exception("INTERWORKING_CONNECT to disallowed BSS not rejected")
