@@ -2923,7 +2923,7 @@ def test_ap_hs20_fetch_osu(dev, apdev):
     params['osu_server_uri'] = "https://example.org/osu/"
     hostapd.add_ap(apdev[1], params)
 
-    with open("w1fi_logo.png", "r") as f:
+    with open("w1fi_logo.png", "rb") as f:
         orig_logo = f.read()
     dev[0].hs20_enable()
     dir = "/tmp/osu-fetch"
@@ -2956,7 +2956,7 @@ def test_ap_hs20_fetch_osu(dev, apdev):
             if "OSU provider fetch completed" in ev:
                 break
             if "RX-HS20-ANQP-ICON" in ev:
-                with open(ev.split(' ')[1], "r") as f:
+                with open(ev.split(' ')[1], "rb") as f:
                     logo = f.read()
                     if logo == orig_logo:
                         icons += 1
@@ -3024,7 +3024,7 @@ def test_ap_hs20_fetch_osu(dev, apdev):
     hex = binascii.hexlify(icon).decode()
     if not hex.startswith("0009696d6167652f706e677d1d"):
         raise Exception("Unexpected beacon binary header: " + hex)
-    with open('w1fi_logo.png', 'r') as f:
+    with open('w1fi_logo.png', 'rb') as f:
         data = f.read()
         if icon[13:] != data:
             raise Exception("Unexpected icon data")
@@ -3304,12 +3304,12 @@ def run_req_hs20_icon(dev, bssid):
     hdr, data1 = get_icon(dev[0], bssid, "w1fi_logo")
     hdr, data2 = get_icon(dev[0], bssid, "test_logo")
 
-    with open('w1fi_logo.png', 'r') as f:
+    with open('w1fi_logo.png', 'rb') as f:
         data = f.read()
         if data1 != data:
             raise Exception("Unexpected icon data (1)")
 
-    with open('auth_serv/sha512-server.pem', 'r') as f:
+    with open('auth_serv/sha512-server.pem', 'rb') as f:
         data = f.read()
         if data2 != data:
             raise Exception("Unexpected icon data (2)")
@@ -3458,12 +3458,12 @@ def test_ap_hs20_req_hs20_icon_parallel(dev, apdev):
     hdr, data1 = get_icon(dev[0], bssid, "w1fi_logo")
     hdr, data2 = get_icon(dev[0], bssid, "test_logo")
 
-    with open('w1fi_logo.png', 'r') as f:
+    with open('w1fi_logo.png', 'rb') as f:
         data = f.read()
         if data1 != data:
             raise Exception("Unexpected icon data (1)")
 
-    with open('auth_serv/sha512-server.pem', 'r') as f:
+    with open('auth_serv/sha512-server.pem', 'rb') as f:
         data = f.read()
         if data2 != data:
             raise Exception("Unexpected icon data (2)")
