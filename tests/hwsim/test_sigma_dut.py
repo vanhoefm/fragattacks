@@ -102,8 +102,8 @@ def stop_sigma_dut(sigma):
     sigma.terminate()
     sigma.wait()
     out, err = sigma.communicate()
-    logger.debug("sigma_dut stdout: " + str(out))
-    logger.debug("sigma_dut stderr: " + str(err))
+    logger.debug("sigma_dut stdout: " + str(out.decode()))
+    logger.debug("sigma_dut stderr: " + str(err.decode()))
 
 def sigma_dut_wait_connected(ifname):
     for i in range(50):
