@@ -236,7 +236,7 @@ class FstLauncher:
         pid = -1
         try:
             for i in range(3):
-                pf = file(pidfile, 'r')
+                pf = open(pidfile, 'r')
                 pidtxt = pf.read().strip()
                 self.logger.debug("kill_pid: %s: '%s'" % (pidfile, pidtxt))
                 pf.close()
