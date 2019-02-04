@@ -2705,8 +2705,9 @@ DBusMessage * wpas_dbus_handler_p2p_delete_service(
 				bonjour = 1;
 			else
 				goto error_clear;
-			wpa_dbus_dict_entry_clear(&entry);
 		}
+
+		wpa_dbus_dict_entry_clear(&entry);
 	}
 	if (upnp == 1) {
 		while (wpa_dbus_dict_has_dict_entry(&iter_dict)) {
