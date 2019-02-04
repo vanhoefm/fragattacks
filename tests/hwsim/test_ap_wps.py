@@ -619,7 +619,7 @@ def test_ap_wps_reg_override_ap_settings(dev, apdev):
     data += build_wsc_attr(ATTR_ENCR_TYPE, b'\x00\x01')
     data += build_wsc_attr(ATTR_NETWORK_KEY, b'')
     data += build_wsc_attr(ATTR_MAC_ADDR, binascii.unhexlify(apdev[1]['bssid'].replace(':', '')))
-    with open(ap_settings, "w") as f:
+    with open(ap_settings, "wb") as f:
         f.write(data)
     ssid = "test-wps-reg-ap-pin"
     appin = "12345670"
