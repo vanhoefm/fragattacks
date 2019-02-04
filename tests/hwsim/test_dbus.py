@@ -475,7 +475,7 @@ def _test_dbus_get_set_wps(dev, apdev):
 
         def propertiesChanged(self, properties):
             logger.debug("PropertiesChanged: " + str(properties))
-            if properties.has_key("ProcessCredentials"):
+            if "ProcessCredentials" in properties:
                 self.signal_received_deprecated = True
                 if self.sets_done and self.signal_received:
                     self.loop.quit()
@@ -485,7 +485,7 @@ def _test_dbus_get_set_wps(dev, apdev):
             logger.debug("propertiesChanged2: interface_name=%s changed_properties=%s invalidated_properties=%s" % (interface_name, str(changed_properties), str(invalidated_properties)))
             if interface_name != WPAS_DBUS_IFACE_WPS:
                 return
-            if changed_properties.has_key("ProcessCredentials"):
+            if "ProcessCredentials" in changed_properties:
                 self.signal_received = True
                 if self.sets_done and self.signal_received_deprecated:
                     self.loop.quit()
