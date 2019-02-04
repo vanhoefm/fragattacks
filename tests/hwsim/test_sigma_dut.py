@@ -2618,6 +2618,8 @@ def test_sigma_dut_ap_hs20(dev, apdev, params):
     """sigma_dut controlled AP with Hotspot 2.0 parameters"""
     logdir = os.path.join(params['logdir'],
                           "sigma_dut_ap_hs20.sigma-hostapd")
+    conffile = os.path.join(params['logdir'],
+                            "sigma_dut_ap_hs20.sigma-conf")
     with HWSimRadio() as (radio, iface):
         sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
         try:
@@ -2636,8 +2638,9 @@ def test_sigma_dut_ap_hs20(dev, apdev, params):
             sigma_dut_cmd_check("ap_set_hs2,NAME,AP,WLAN_TAG,2,OSU,1")
             sigma_dut_cmd_check("ap_config_commit,NAME,AP")
 
-            with open("/tmp/sigma_dut-ap.conf", "r") as f:
-                logger.debug("hostapd.conf from sigma_dut:\n" + f.read())
+            with open("/tmp/sigma_dut-ap.conf", "rb") as f:
+                with open(conffile, "wb") as f2:
+                    f2.write(f.read())
 
             sigma_dut_cmd_check("ap_reset_default")
         finally:
