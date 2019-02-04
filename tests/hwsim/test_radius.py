@@ -730,7 +730,10 @@ def add_message_auth_req(req):
 
     # request attributes
     req.AddAttribute("Message-Authenticator", 16*b"\x00")
-    attrs = req._PktEncodeAttributes()
+    attrs = b''
+    for code,datalst in sorted(req.items()):
+        for data in datalst:
+            attrs += req._PktEncodeAttribute(code, data)
 
     # Length
     flen = 4 + 16 + len(attrs)

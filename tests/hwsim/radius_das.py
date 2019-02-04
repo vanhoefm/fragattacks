@@ -16,7 +16,10 @@ class DisconnectPacket(pyrad.packet.Packet):
                                      **attributes)
 
     def RequestPacket(self):
-        attr = self._PktEncodeAttributes()
+        attr = b''
+        for code,datalst in sorted(self.items()):
+            for data in datalst:
+                attr += self._PktEncodeAttribute(code, data)
 
         if self.id is None:
             self.id = random.randrange(0, 256)
