@@ -4107,10 +4107,10 @@ def gen_wps_event(sid='uuid:7eb3342a-8a5f-47fe-a585-0785bfec6d8a'):
 
 class WPSAPHTTPServer(StreamRequestHandler):
     def handle(self):
-        data = self.rfile.readline().strip()
+        data = self.rfile.readline().decode().strip()
         logger.info("HTTP server received: " + data)
         while True:
-            hdr = self.rfile.readline().strip()
+            hdr = self.rfile.readline().decode().strip()
             if len(hdr) == 0:
                 break
             logger.info("HTTP header: " + hdr)
