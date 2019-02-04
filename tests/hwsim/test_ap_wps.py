@@ -2885,7 +2885,7 @@ def test_ap_wps_upnp(dev, apdev):
     resp = upnp_soap_action(conn, ctrlurl.path, "GetDeviceInfo")
     if resp.status != 200:
         raise Exception("Unexpected HTTP response: %d" % resp.status)
-    dev = resp.read()
+    dev = resp.read().decode()
     if "NewDeviceInfo" not in dev:
         raise Exception("Unexpected GetDeviceInfo response")
 
