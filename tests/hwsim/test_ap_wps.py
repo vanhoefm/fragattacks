@@ -2806,16 +2806,14 @@ def upnp_soap_action(conn, path, action, include_soap_action=True,
     if neweventmac:
         msg = ET.SubElement(act, "NewWLANEventMAC")
         msg.text = neweventmac
-    tree = ET.ElementTree(root)
-    soap = StringIO()
-    tree.write(soap, xml_declaration=True, encoding='utf-8')
 
     headers = { "Content-type": 'text/xml; charset="utf-8"' }
     if include_soap_action:
         headers["SOAPAction"] = '"urn:schemas-wifialliance-org:service:WFAWLANConfig:1#%s"' % action
     elif soap_action_override:
         headers["SOAPAction"] = soap_action_override
-    conn.request("POST", path, soap.getvalue(), headers)
+    decl = b'<?xml version=\'1.0\' encoding=\'utf8\'?>\n'
+    conn.request("POST", path, decl + ET.tostring(root), headers)
     return conn.getresponse()
 
 def test_ap_wps_upnp(dev, apdev):
