@@ -1497,7 +1497,7 @@ def elem_capab(capab):
 
 def elem_ssid(ssid):
     # SSID element
-    return struct.pack('BB', 0, len(ssid)) + ssid
+    return struct.pack('BB', 0, len(ssid)) + ssid.encode()
 
 def elem_bssid_index(index):
     # Multiple BSSID-index element (85 = 0x55)
@@ -1508,7 +1508,7 @@ def elem_multibssid(profiles, max_bssid_indic):
     if 1 + len(profiles) > 255:
         raise Exception("Too long Multiple BSSID element")
     elem = struct.pack('BBB', 71, 1 + len(profiles), max_bssid_indic) + profiles
-    return binascii.hexlify(elem)
+    return binascii.hexlify(elem).decode()
 
 def run_scans(dev, check):
     for i in range(2):
@@ -1540,7 +1540,7 @@ def test_scan_multi_bssid(dev, apdev):
 
     params = { "ssid": "test-scan" }
     # Max BSSID Indicator 0 (max 1 BSSID) and no subelements
-    params['vendor_elements'] = elem_multibssid('', 0)
+    params['vendor_elements'] = elem_multibssid(b'', 0)
     hostapd.add_ap(apdev[0], params)
 
     params = { "ssid": "test-scan" }
@@ -1700,7 +1700,7 @@ def test_scan_multi_bssid_check_ie(dev, apdev):
     if 71 in list(beacon_ie.keys()):
         ie_list = list(beacon_ie.keys())
         ie_list.remove(71)
-        if ie_list != list(nontx_beacon_ie.keys()):
+        if sorted(ie_list) != sorted(list(nontx_beacon_ie.keys())):
             raise Exception("check IE failed")
 
 def elem_fms1():
@@ -1730,7 +1730,7 @@ def test_scan_multi_bssid_fms(dev, apdev):
     profile2 = struct.pack('BB', 0, len(elems)) + elems
 
     profiles = profile1 + profile2
-    params['vendor_elements'] = elem_multibssid(profiles, 2) + binascii.hexlify(elem_fms1())
+    params['vendor_elements'] = elem_multibssid(profiles, 2) + binascii.hexlify(elem_fms1()).decode()
     hostapd.add_ap(apdev[0], params)
 
     bssid = apdev[0]['bssid']
@@ -1758,7 +1758,7 @@ def test_scan_multi_bssid_fms(dev, apdev):
 
     beacon_ie = parse_ie(trans_bss['beacon_ie'])
     trans_bss_fms = beacon_ie[86]
-    logger.info("trans_bss fms ie: " + binascii.hexlify(trans_bss_fms))
+    logger.info("trans_bss fms ie: " + binascii.hexlify(trans_bss_fms).decode())
 
     bssid = bssid[0:16] + '1'
     nontrans_bss1 = dev[0].get_bss(bssid)
@@ -1770,7 +1770,7 @@ def test_scan_multi_bssid_fms(dev, apdev):
 
     nontrans_beacon_ie = parse_ie(nontrans_bss1['beacon_ie'])
     nontrans_bss_fms = nontrans_beacon_ie[86]
-    logger.info("nontrans_bss fms ie: " + binascii.hexlify(nontrans_bss_fms))
+    logger.info("nontrans_bss fms ie: " + binascii.hexlify(nontrans_bss_fms).decode())
 
     if binascii.hexlify(trans_bss_fms) == binascii.hexlify(nontrans_bss_fms):
         raise Exception("Nontrans BSS has the same FMS IE as trans BSS")
