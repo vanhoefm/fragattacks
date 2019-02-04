@@ -9,6 +9,7 @@ import logging
 logger = logging.getLogger()
 import subprocess
 import time
+import struct
 import sys
 
 try:
@@ -3553,11 +3554,7 @@ def test_dbus_p2p_autogo(dev, apdev):
             logger.debug("provisionDiscoveryRequestDisplayPin - peer=%s pin=%s" % (peer_object, pin))
             self.peer_path = peer_object
             peer = binascii.unhexlify(peer_object.split('/')[-1])
-            addr = ""
-            for p in peer:
-                if len(addr) > 0:
-                    addr += ':'
-                addr += '%02x' % ord(p)
+            addr = ':'.join([ "%02x" % i for i in struct.unpack('6B', peer) ])
 
             params = { 'Role': 'registrar',
                        'P2PDeviceAddress': self.peer['DeviceAddress'],
@@ -3767,11 +3764,7 @@ def test_dbus_p2p_autogo_pbc(dev, apdev):
             logger.debug("provisionDiscoveryPBCRequest - peer=%s" % peer_object)
             self.peer_path = peer_object
             peer = binascii.unhexlify(peer_object.split('/')[-1])
-            addr = ""
-            for p in peer:
-                if len(addr) > 0:
-                    addr += ':'
-                addr += '%02x' % ord(p)
+            addr = ':'.join([ "%02x" % i for i in struct.unpack('6B', peer) ])
             params = { 'Role': 'registrar',
                        'P2PDeviceAddress': self.peer['DeviceAddress'],
                        'Type': 'pbc' }
@@ -3832,7 +3825,7 @@ def test_dbus_p2p_autogo_legacy(dev, apdev):
             res = g_obj.GetAll(WPAS_DBUS_GROUP,
                                dbus_interface=dbus.PROPERTIES_IFACE,
                                byte_arrays=True)
-            bssid = ':'.join([binascii.hexlify(l) for l in res['BSSID']])
+            bssid = ':'.join([ "%02x" % i for i in struct.unpack('6B', res['BSSID']) ])
 
             pin = '12345670'
             params = { 'Role': 'enrollee',
@@ -4279,7 +4272,7 @@ def test_dbus_p2p_reinvoke_persistent(dev, apdev):
                 res = g_obj.GetAll(WPAS_DBUS_GROUP,
                                    dbus_interface=dbus.PROPERTIES_IFACE,
                                    byte_arrays=True)
-                bssid = ':'.join([binascii.hexlify(l) for l in res['BSSID']])
+                bssid = ':'.join([ "%02x" % i for i in struct.unpack('6B', res['BSSID']) ])
                 dev1 = WpaSupplicant('wlan1', '/tmp/wpas-wlan1')
                 dev1.scan_for_bss(bssid, freq=2412)
                 dev1.global_request("P2P_CONNECT " + addr0 + " 12345670 join")
@@ -4328,11 +4321,7 @@ def test_dbus_p2p_reinvoke_persistent(dev, apdev):
             logger.debug("provisionDiscoveryRequestDisplayPin - peer=%s pin=%s" % (peer_object, pin))
             self.peer_path = peer_object
             peer = binascii.unhexlify(peer_object.split('/')[-1])
-            addr = ""
-            for p in peer:
-                if len(addr) > 0:
-                    addr += ':'
-                addr += '%02x' % ord(p)
+            addr = ':'.join([ "%02x" % i for i in struct.unpack('6B', peer) ])
             params = { 'Role': 'registrar',
                        'P2PDeviceAddress': self.peer['DeviceAddress'],
                        'Bssid': self.peer['DeviceAddress'],
@@ -5021,7 +5010,7 @@ def test_dbus_p2p_two_groups(dev, apdev):
                 g_wps = dbus.Interface(self.g2_if_obj, WPAS_DBUS_IFACE_WPS)
                 g_wps.Start(params)
 
-                bssid = ':'.join([binascii.hexlify(l) for l in self.g2_bssid])
+                bssid = ':'.join([ "%02x" % i for i in struct.unpack('6B', self.g2_bssid) ])
                 dev2 = WpaSupplicant('wlan2', '/tmp/wpas-wlan2')
                 dev2.scan_for_bss(bssid, freq=2412)
                 dev2.global_request("P2P_CONNECT " + bssid + " 12345670 join freq=2412")
