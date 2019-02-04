@@ -89,7 +89,7 @@ def start_radius_server(eap_handler):
     class TestServer(pyrad.server.Server):
         def _HandleAuthPacket(self, pkt):
             pyrad.server.Server._HandleAuthPacket(self, pkt)
-            eap = ""
+            eap = b''
             for p in pkt[79]:
                 eap += p
             eap_req = self.eap_handler(self.ctx, eap)
@@ -111,8 +111,7 @@ def start_radius_server(eap_handler):
             hmac_obj.update(struct.pack("B", reply.id))
 
             # reply attributes
-            reply.AddAttribute("Message-Authenticator",
-                               "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+            reply.AddAttribute("Message-Authenticator", 16*b'\x00')
             attrs = reply._PktEncodeAttributes()
 
             # Length
@@ -149,7 +148,7 @@ def start_radius_server(eap_handler):
     srv = TestServer(dict=pyrad.dictionary.Dictionary("dictionary.radius"),
                      authport=18138, acctport=18139)
     srv.hosts["127.0.0.1"] = pyrad.server.RemoteHost("127.0.0.1",
-                                                     "radius",
+                                                     b"radius",
                                                      "localhost")
     srv.BindToAddress("")
     t_stop = threading.Event()
@@ -172,7 +171,7 @@ def test_eap_proto(dev, apdev):
     """EAP protocol tests"""
     check_eap_capa(dev[0], "MD5")
     def eap_handler(ctx, req):
-        logger.info("eap_handler - RX " + req.encode("hex"))
+        logger.info("eap_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -393,7 +392,7 @@ def test_eap_proto(dev, apdev):
 def test_eap_proto_notification_errors(dev, apdev):
     """EAP Notification errors"""
     def eap_handler(ctx, req):
-        logger.info("eap_handler - RX " + req.encode("hex"))
+        logger.info("eap_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -494,7 +493,7 @@ def test_eap_proto_sake(dev, apdev):
                            EAP_SAKE_AT_RAND_S, 18, 0, 0, 0, 0)
 
     def sake_handler(ctx, req):
-        logger.info("sake_handler - RX " + req.encode("hex"))
+        logger.info("sake_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] += 1
@@ -830,7 +829,7 @@ def test_eap_proto_sake_errors(dev, apdev):
 def test_eap_proto_sake_errors2(dev, apdev):
     """EAP-SAKE protocol tests (2)"""
     def sake_handler(ctx, req):
-        logger.info("sake_handler - RX " + req.encode("hex"))
+        logger.info("sake_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] += 1
@@ -872,7 +871,7 @@ def test_eap_proto_leap(dev, apdev):
     """EAP-LEAP protocol tests"""
     check_eap_capa(dev[0], "LEAP")
     def leap_handler(ctx, req):
-        logger.info("leap_handler - RX " + req.encode("hex"))
+        logger.info("leap_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -1040,7 +1039,7 @@ def test_eap_proto_leap_errors(dev, apdev):
     check_eap_capa(dev[0], "LEAP")
 
     def leap_handler2(ctx, req):
-        logger.info("leap_handler2 - RX " + req.encode("hex"))
+        logger.info("leap_handler2 - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -1341,7 +1340,7 @@ def test_eap_proto_md5(dev, apdev):
     check_eap_capa(dev[0], "MD5")
 
     def md5_handler(ctx, req):
-        logger.info("md5_handler - RX " + req.encode("hex"))
+        logger.info("md5_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -1424,7 +1423,7 @@ def test_eap_proto_md5_errors(dev, apdev):
 def test_eap_proto_otp(dev, apdev):
     """EAP-OTP protocol tests"""
     def otp_handler(ctx, req):
-        logger.info("otp_handler - RX " + req.encode("hex"))
+        logger.info("otp_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -1487,7 +1486,7 @@ def test_eap_proto_otp(dev, apdev):
 def test_eap_proto_otp_errors(dev, apdev):
     """EAP-OTP local error cases"""
     def otp_handler2(ctx, req):
-        logger.info("otp_handler2 - RX " + req.encode("hex"))
+        logger.info("otp_handler2 - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -1531,7 +1530,7 @@ EAP_GPSK_OPCODE_PROTECTED_FAIL = 6
 def test_eap_proto_gpsk(dev, apdev):
     """EAP-GPSK protocol tests"""
     def gpsk_handler(ctx, req):
-        logger.info("gpsk_handler - RX " + req.encode("hex"))
+        logger.info("gpsk_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -1975,7 +1974,7 @@ EAP_EKE_FAILURE = 4
 def test_eap_proto_eke(dev, apdev):
     """EAP-EKE protocol tests"""
     def eke_handler(ctx, req):
-        logger.info("eke_handler - RX " + req.encode("hex"))
+        logger.info("eke_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -2406,7 +2405,7 @@ def test_eap_proto_pax(dev, apdev):
                                0xf0, 0xac, 0xcf, 0xc4, 0x66, 0xcd, 0x2d, 0xbf)
 
     def pax_handler(ctx, req):
-        logger.info("pax_handler - RX " + req.encode("hex"))
+        logger.info("pax_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -2752,7 +2751,7 @@ def test_eap_proto_pax_errors(dev, apdev):
 def test_eap_proto_psk(dev, apdev):
     """EAP-PSK protocol tests"""
     def psk_handler(ctx, req):
-        logger.info("psk_handler - RX " + req.encode("hex"))
+        logger.info("psk_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -3009,7 +3008,7 @@ EAP_SIM_AT_BIDDING = 136
 def test_eap_proto_aka(dev, apdev):
     """EAP-AKA protocol tests"""
     def aka_handler(ctx, req):
-        logger.info("aka_handler - RX " + req.encode("hex"))
+        logger.info("aka_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -3704,7 +3703,7 @@ def test_eap_proto_aka(dev, apdev):
 def test_eap_proto_aka_prime(dev, apdev):
     """EAP-AKA' protocol tests"""
     def aka_prime_handler(ctx, req):
-        logger.info("aka_prime_handler - RX " + req.encode("hex"))
+        logger.info("aka_prime_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -4130,7 +4129,7 @@ def test_eap_proto_aka_prime(dev, apdev):
 def test_eap_proto_sim(dev, apdev):
     """EAP-SIM protocol tests"""
     def sim_handler(ctx, req):
-        logger.info("sim_handler - RX " + req.encode("hex"))
+        logger.info("sim_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -4850,7 +4849,7 @@ def test_eap_proto_ikev2(dev, apdev):
     eap_proto_ikev2_test_done = False
 
     def ikev2_handler(ctx, req):
-        logger.info("ikev2_handler - RX " + req.encode("hex"))
+        logger.info("ikev2_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -5000,7 +4999,7 @@ def test_eap_proto_ikev2(dev, apdev):
                                0, 0, 0, 0,
                                0, 0x20, 34, 0x08, 0, 28)
 
-        def build_ike(id, next=0, exch_type=34, flags=0x00, ike=''):
+        def build_ike(id, next=0, exch_type=34, flags=0x00, ike=b''):
             return struct.pack(">BBHBB2L2LBBBBLL", EAP_CODE_REQUEST, id,
                                4 + 1 + 1 + 28 + len(ike),
                                EAP_TYPE_IKEV2, flags,
@@ -5188,7 +5187,7 @@ def test_eap_proto_ikev2(dev, apdev):
             logger.info("Test: Mismatch in DH Group in SAi1")
             ike = build_sa(next=34)
             ike += struct.pack(">BBHHH", 0, 0, 4 + 4 + 96, 12345, 0)
-            ike += 96*'\x00'
+            ike += 96*b'\x00'
             return build_ike(ctx['id'], next=33, ike=ike)
         idx += 1
         if ctx['num'] == idx:
@@ -5200,12 +5199,12 @@ def test_eap_proto_ikev2(dev, apdev):
             logger.info("Test: Invalid DH public value length in SAi1")
             ike = build_sa(next=34)
             ike += struct.pack(">BBHHH", 0, 0, 4 + 4 + 96, 5, 0)
-            ike += 96*'\x00'
+            ike += 96*b'\x00'
             return build_ike(ctx['id'], next=33, ike=ike)
 
         def build_ke(next=0):
             ke = struct.pack(">BBHHH", next, 0, 4 + 4 + 192, 5, 0)
-            ke += 191*'\x00'+'\x02'
+            ke += 191*b'\x00'+b'\x02'
             return ke
 
         idx += 1
@@ -5228,11 +5227,11 @@ def test_eap_proto_ikev2(dev, apdev):
             logger.info("Test: Too long Ni in SAi1")
             ike = build_sa(next=34)
             ike += build_ke(next=40)
-            ike += struct.pack(">BBH", 0, 0, 4 + 257) + 257*'\x00'
+            ike += struct.pack(">BBH", 0, 0, 4 + 257) + 257*b'\x00'
             return build_ike(ctx['id'], next=33, ike=ike)
 
         def build_ni(next=0):
-            return struct.pack(">BBH", next, 0, 4 + 256) + 256*'\x00'
+            return struct.pack(">BBH", next, 0, 4 + 256) + 256*b'\x00'
 
         def build_sai1(id):
             ike = build_sa(next=34)
@@ -5256,7 +5255,7 @@ def test_eap_proto_ikev2(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: No integrity checksum")
-            ike = ''
+            ike = b''
             return build_ike(ctx['id'], next=37, ike=ike)
 
         idx += 1
@@ -5278,7 +5277,7 @@ def test_eap_proto_ikev2(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Invalid integrity checksum")
-            ike = ''
+            ike = b''
             return build_ike(ctx['id'], next=37, flags=0x20, ike=ike)
 
         idx += 1
@@ -5347,7 +5346,7 @@ def GenerateAuthenticatorResponse(password, nt_response, peer_challenge,
     data = password_hash_hash + nt_response + magic1
     digest = hashlib.sha1(data).digest()
 
-    challenge = ChallengeHash(peer_challenge, auth_challenge, username)
+    challenge = ChallengeHash(peer_challenge, auth_challenge, username.encode())
 
     data = digest + challenge + magic2
     resp = hashlib.sha1(data).digest()
@@ -5519,7 +5518,7 @@ def test_eap_proto_mschapv2(dev, apdev):
     check_eap_capa(dev[0], "MSCHAPV2")
 
     def mschapv2_handler(ctx, req):
-        logger.info("mschapv2_handler - RX " + req.encode("hex"))
+        logger.info("mschapv2_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -5574,7 +5573,7 @@ def test_eap_proto_mschapv2(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Failure before challenge - invalid failure challenge len")
-            payload = 'C=12'
+            payload = b'C=12'
             return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + len(payload),
                                EAP_TYPE_MSCHAPV2,
@@ -5587,7 +5586,7 @@ def test_eap_proto_mschapv2(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Failure before challenge - invalid failure challenge len")
-            payload = 'C=12 V=3'
+            payload = b'C=12 V=3'
             return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + len(payload),
                                EAP_TYPE_MSCHAPV2,
@@ -5600,7 +5599,7 @@ def test_eap_proto_mschapv2(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Failure before challenge - invalid failure challenge")
-            payload = 'C=00112233445566778899aabbccddeefQ '
+            payload = b'C=00112233445566778899aabbccddeefQ '
             return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + len(payload),
                                EAP_TYPE_MSCHAPV2,
@@ -5613,7 +5612,7 @@ def test_eap_proto_mschapv2(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Failure before challenge - password expired")
-            payload = 'E=648 R=1 C=00112233445566778899aabbccddeeff V=3 M=Password expired'
+            payload = b'E=648 R=1 C=00112233445566778899aabbccddeeff V=3 M=Password expired'
             return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + len(payload),
                                EAP_TYPE_MSCHAPV2,
@@ -5621,7 +5620,7 @@ def test_eap_proto_mschapv2(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Success after password change")
-            payload = "S=1122334455667788990011223344556677889900"
+            payload = b"S=1122334455667788990011223344556677889900"
             return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + len(payload),
                                EAP_TYPE_MSCHAPV2,
@@ -5649,11 +5648,11 @@ def test_eap_proto_mschapv2(dev, apdev):
             return struct.pack(">BBHBBBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + 1 + 16 + 6,
                                EAP_TYPE_MSCHAPV2,
-                               1, 0, 4 + 1 + 16 + 6, 16) + 16*'A' + 'foobar'
+                               1, 0, 4 + 1 + 16 + 6, 16) + 16*b'A' + b'foobar'
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Failure - password expired")
-            payload = 'E=648 R=1 C=00112233445566778899aabbccddeeff V=3 M=Password expired'
+            payload = b'E=648 R=1 C=00112233445566778899aabbccddeeff V=3 M=Password expired'
             return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + len(payload),
                                EAP_TYPE_MSCHAPV2,
@@ -5676,19 +5675,19 @@ def test_eap_proto_mschapv2(dev, apdev):
             nt_response = data[0:24]
             data = data[24:]
             flags = data
-            logger.info("enc_hash: " + enc_hash.encode("hex"))
-            logger.info("peer_challenge: " + peer_challenge.encode("hex"))
-            logger.info("nt_response: " + nt_response.encode("hex"))
-            logger.info("flags: " + flags.encode("hex"))
+            logger.info("enc_hash: " + binascii.hexlify(enc_hash).decode())
+            logger.info("peer_challenge: " + binascii.hexlify(peer_challenge).decode())
+            logger.info("nt_response: " + binascii.hexlify(nt_response).decode())
+            logger.info("flags: " + binascii.hexlify(flags).decode())
 
             auth_challenge = binascii.unhexlify("00112233445566778899aabbccddeeff")
-            logger.info("auth_challenge: " + auth_challenge.encode("hex"))
+            logger.info("auth_challenge: " + binascii.hexlify(auth_challenge).decode())
 
             auth_resp = GenerateAuthenticatorResponse("new-pw", nt_response,
                                                       peer_challenge,
                                                       auth_challenge, "user")
-            payload = "S=" + auth_resp.encode('hex').upper()
-            logger.info("Success message payload: " + payload)
+            payload = b"S=" + binascii.hexlify(auth_resp).decode().upper().encode()
+            logger.info("Success message payload: " + payload.decode())
             return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + len(payload),
                                EAP_TYPE_MSCHAPV2,
@@ -5701,7 +5700,7 @@ def test_eap_proto_mschapv2(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Failure - password expired")
-            payload = 'E=648 R=1 C=00112233445566778899aabbccddeeff V=3 M=Password expired'
+            payload = b'E=648 R=1 C=00112233445566778899aabbccddeeff V=3 M=Password expired'
             return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + len(payload),
                                EAP_TYPE_MSCHAPV2,
@@ -5724,19 +5723,19 @@ def test_eap_proto_mschapv2(dev, apdev):
             nt_response = data[0:24]
             data = data[24:]
             flags = data
-            logger.info("enc_hash: " + enc_hash.encode("hex"))
-            logger.info("peer_challenge: " + peer_challenge.encode("hex"))
-            logger.info("nt_response: " + nt_response.encode("hex"))
-            logger.info("flags: " + flags.encode("hex"))
+            logger.info("enc_hash: " + binascii.hexlify(enc_hash).decode())
+            logger.info("peer_challenge: " + binascii.hexlify(peer_challenge).decode())
+            logger.info("nt_response: " + binascii.hexlify(nt_response).decode())
+            logger.info("flags: " + binascii.hexlify(flags).decode())
 
             auth_challenge = binascii.unhexlify("00112233445566778899aabbccddeeff")
-            logger.info("auth_challenge: " + auth_challenge.encode("hex"))
+            logger.info("auth_challenge: " + binascii.hexlify(auth_challenge).decode())
 
             auth_resp = GenerateAuthenticatorResponse("new-pw", nt_response,
                                                       peer_challenge,
                                                       auth_challenge, "user")
-            payload = "S=" + auth_resp.encode('hex').upper()
-            logger.info("Success message payload: " + payload)
+            payload = b"S=" + binascii.hexlify(auth_resp).decode().upper().encode()
+            logger.info("Success message payload: " + payload.decode())
             return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + len(payload),
                                EAP_TYPE_MSCHAPV2,
@@ -5752,11 +5751,11 @@ def test_eap_proto_mschapv2(dev, apdev):
             return struct.pack(">BBHBBBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + 1 + 16 + 6,
                                EAP_TYPE_MSCHAPV2,
-                               1, 0, 4 + 1 + 16 + 6, 16) + 16*'A' + 'foobar'
+                               1, 0, 4 + 1 + 16 + 6, 16) + 16*b'A' + b'foobar'
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Failure - authentication failure")
-            payload = 'E=691 R=1 C=00112233445566778899aabbccddeeff V=3 M=Authentication failed'
+            payload = b'E=691 R=1 C=00112233445566778899aabbccddeeff V=3 M=Authentication failed'
             return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + len(payload),
                                EAP_TYPE_MSCHAPV2,
@@ -5768,11 +5767,11 @@ def test_eap_proto_mschapv2(dev, apdev):
             return struct.pack(">BBHBBBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + 1 + 16 + 6,
                                EAP_TYPE_MSCHAPV2,
-                               1, 0, 4 + 1 + 16 + 6, 16) + 16*'A' + 'foobar'
+                               1, 0, 4 + 1 + 16 + 6, 16) + 16*b'A' + b'foobar'
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Failure - authentication failure")
-            payload = 'E=691 R=1 C=00112233445566778899aabbccddeeff V=3 M=Authentication failed (2)'
+            payload = b'E=691 R=1 C=00112233445566778899aabbccddeeff V=3 M=Authentication failed (2)'
             return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + len(payload),
                                EAP_TYPE_MSCHAPV2,
@@ -5788,7 +5787,7 @@ def test_eap_proto_mschapv2(dev, apdev):
             return struct.pack(">BBHBBBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + 1 + 16 + 6,
                                EAP_TYPE_MSCHAPV2,
-                               1, 0, 4 + 1 + 16 + 6 + 1, 16) + 16*'A' + 'foobar'
+                               1, 0, 4 + 1 + 16 + 6 + 1, 16) + 16*b'A' + b'foobar'
 
         return None
 
@@ -5884,7 +5883,7 @@ def test_eap_proto_mschapv2_errors(dev, apdev):
 
     def mschapv2_fail_password_expired(ctx):
         logger.info("Test: Failure before challenge - password expired")
-        payload = 'E=648 R=1 C=00112233445566778899aabbccddeeff V=3 M=Password expired'
+        payload = b'E=648 R=1 C=00112233445566778899aabbccddeeff V=3 M=Password expired'
         return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                            4 + 1 + 4 + len(payload),
                            EAP_TYPE_MSCHAPV2,
@@ -5893,7 +5892,7 @@ def test_eap_proto_mschapv2_errors(dev, apdev):
     def mschapv2_success_after_password_change(ctx, req=None):
         logger.info("Test: Success after password change")
         if req is None or len(req) != 591:
-            payload = "S=1122334455667788990011223344556677889900"
+            payload = b"S=1122334455667788990011223344556677889900"
         else:
             data = req[9:]
             enc_pw = data[0:516]
@@ -5907,25 +5906,25 @@ def test_eap_proto_mschapv2_errors(dev, apdev):
             nt_response = data[0:24]
             data = data[24:]
             flags = data
-            logger.info("enc_hash: " + enc_hash.encode("hex"))
-            logger.info("peer_challenge: " + peer_challenge.encode("hex"))
-            logger.info("nt_response: " + nt_response.encode("hex"))
-            logger.info("flags: " + flags.encode("hex"))
+            logger.info("enc_hash: " + binascii.hexlify(enc_hash).decode())
+            logger.info("peer_challenge: " + binascii.hexlify(peer_challenge).decode())
+            logger.info("nt_response: " + binascii.hexlify(nt_response).decode())
+            logger.info("flags: " + binascii.hexlify(flags).decode())
 
             auth_challenge = binascii.unhexlify("00112233445566778899aabbccddeeff")
-            logger.info("auth_challenge: " + auth_challenge.encode("hex"))
+            logger.info("auth_challenge: " + binascii.hexlify(auth_challenge).decode())
 
             auth_resp = GenerateAuthenticatorResponse("new-pw", nt_response,
                                                       peer_challenge,
                                                       auth_challenge, "user")
-            payload = "S=" + auth_resp.encode('hex').upper()
+            payload = b"S=" + binascii.hexlify(auth_resp).decode().upper().encode()
         return struct.pack(">BBHBBBH", EAP_CODE_REQUEST, ctx['id'],
                            4 + 1 + 4 + len(payload),
                            EAP_TYPE_MSCHAPV2,
                            3, 0, 4 + len(payload)) + payload
 
     def mschapv2_handler(ctx, req):
-        logger.info("mschapv2_handler - RX " + req.encode("hex"))
+        logger.info("mschapv2_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -6097,7 +6096,7 @@ def test_eap_proto_pwd(dev, apdev):
     eap_proto_pwd_test_wait = False
 
     def pwd_handler(ctx, req):
-        logger.info("pwd_handler - RX " + req.encode("hex"))
+        logger.info("pwd_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -6244,7 +6243,7 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Commit payload with all zeros values --> Shared key at infinity")
-            payload = struct.pack(">B", 0x02) + 96*'\0'
+            payload = struct.pack(">B", 0x02) + 96*b'\0'
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
 
@@ -6290,7 +6289,7 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Confirm payload with incorrect value")
-            payload = struct.pack(">B", 0x03) + 32*'\0'
+            payload = struct.pack(">B", 0x03) + 32*b'\0'
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
 
@@ -6535,7 +6534,7 @@ def test_eap_proto_erp(dev, apdev):
     eap_proto_erp_test_done = False
 
     def erp_handler(ctx, req):
-        logger.info("erp_handler - RX " + req.encode("hex"))
+        logger.info("erp_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] += 1
@@ -6564,7 +6563,7 @@ def test_eap_proto_erp(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Zero-length TVs/TLVs")
-            payload = ""
+            payload = b""
             return struct.pack(">BBHBB", EAP_CODE_INITIATE, ctx['id'],
                                4 + 1 + 1 + len(payload),
                                EAP_ERP_TYPE_REAUTH_START, 0) + payload
@@ -7069,7 +7068,7 @@ def test_eap_proto_expanded(dev, apdev):
     eap_proto_expanded_test_done = False
 
     def expanded_handler(ctx, req):
-        logger.info("expanded_handler - RX " + req.encode("hex"))
+        logger.info("expanded_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] += 1
@@ -7115,7 +7114,7 @@ def test_eap_proto_expanded(dev, apdev):
             return struct.pack(">BBHBBBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 4 + 1 + 16 + 6,
                                EAP_TYPE_MSCHAPV2,
-                               1, 0, 4 + 1 + 16 + 6, 16) + 16*'A' + 'foobar'
+                               1, 0, 4 + 1 + 16 + 6, 16) + 16*b'A' + b'foobar'
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Invalid expanded frame type")
@@ -7180,7 +7179,7 @@ def test_eap_proto_tls(dev, apdev):
     eap_proto_tls_test_wait = False
 
     def tls_handler(ctx, req):
-        logger.info("tls_handler - RX " + req.encode("hex"))
+        logger.info("tls_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] += 1
@@ -7279,7 +7278,7 @@ def test_eap_proto_tls(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Fragmented TLS message (long; first)")
-            payload = 1450*'A'
+            payload = 1450*b'A'
             return struct.pack(">BBHBBL", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + 4 + len(payload),
                                EAP_TYPE_TLS, 0xc0, 65536) + payload
@@ -7289,7 +7288,7 @@ def test_eap_proto_tls(dev, apdev):
             if ctx['num'] == idx:
                 logger.info("Test: Fragmented TLS message (long; cont %d)" % i)
                 eap_proto_tls_test_wait = True
-                payload = 1470*'A'
+                payload = 1470*b'A'
                 return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                    4 + 1 + 1 + len(payload),
                                    EAP_TYPE_TLS, 0x40) + payload
@@ -7367,7 +7366,7 @@ def test_eap_proto_tnc(dev, apdev):
     eap_proto_tnc_test_done = False
 
     def tnc_handler(ctx, req):
-        logger.info("tnc_handler - RX " + req.encode("hex"))
+        logger.info("tnc_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] += 1
@@ -7477,8 +7476,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = "FOO"
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b"FOO"
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7491,8 +7490,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = "</TNCCS-Batch><TNCCS-Batch>"
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b"</TNCCS-Batch><TNCCS-Batch>"
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7505,8 +7504,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = "<TNCCS-Batch    foo=3></TNCCS-Batch>"
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b"<TNCCS-Batch    foo=3></TNCCS-Batch>"
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7519,8 +7518,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = "<TNCCS-Batch    BatchId=123456789></TNCCS-Batch>"
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b"<TNCCS-Batch    BatchId=123456789></TNCCS-Batch>"
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7533,8 +7532,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = "<TNCCS-Batch BatchId=2><IMC-IMV-Message><TNCC-TNCS-Message></TNCCS-Batch>"
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b"<TNCCS-Batch BatchId=2><IMC-IMV-Message><TNCC-TNCS-Message></TNCCS-Batch>"
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7550,8 +7549,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = "<TNCCS-Batch BatchId=2><IMC-IMV-Message></IMC-IMV-Message><TNCC-TNCS-Message></TNCC-TNCS-Message></TNCCS-Batch>"
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b"<TNCCS-Batch BatchId=2><IMC-IMV-Message></IMC-IMV-Message><TNCC-TNCS-Message></TNCC-TNCS-Message></TNCCS-Batch>"
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7567,8 +7566,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = "<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><XML></TNCC-TNCS-Message></TNCCS-Batch>"
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b"<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><XML></TNCC-TNCS-Message></TNCCS-Batch>"
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7584,8 +7583,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = "<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type></TNCC-TNCS-Message></TNCCS-Batch>"
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b"<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type></TNCC-TNCS-Message></TNCCS-Batch>"
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7601,8 +7600,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = "<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><Base64>abc</TNCC-TNCS-Message></TNCCS-Batch>"
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b"<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><Base64>abc</TNCC-TNCS-Message></TNCCS-Batch>"
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7618,8 +7617,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = "<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><Base64>aGVsbG8=</Base64></TNCC-TNCS-Message></TNCCS-Batch>"
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b"<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><Base64>aGVsbG8=</Base64></TNCC-TNCS-Message></TNCCS-Batch>"
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7635,8 +7634,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = "<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><XML>hello</XML></TNCC-TNCS-Message></TNCCS-Batch>"
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b"<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><XML>hello</XML></TNCC-TNCS-Message></TNCCS-Batch>"
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7652,8 +7651,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = '<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><XML><TNCCS-Recommendation foo=1></TNCCS-Recommendation></XML></TNCC-TNCS-Message></TNCCS-Batch>'
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b'<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><XML><TNCCS-Recommendation foo=1></TNCCS-Recommendation></XML></TNCC-TNCS-Message></TNCCS-Batch>'
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7669,8 +7668,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = '<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><XML><TNCCS-Recommendation type="none"></TNCCS-Recommendation></XML></TNCC-TNCS-Message></TNCCS-Batch>'
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b'<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><XML><TNCCS-Recommendation type="none"></TNCCS-Recommendation></XML></TNCC-TNCS-Message></TNCCS-Batch>'
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7686,8 +7685,8 @@ def test_eap_proto_tnc(dev, apdev):
                                EAP_TYPE_TNC, 0x21)
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Received TNCCS-Batch: " + req[6:])
-            resp = '<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><XML><TNCCS-Recommendation type="isolate"></TNCCS-Recommendation></XML></TNCC-TNCS-Message></TNCCS-Batch>'
+            logger.info("Received TNCCS-Batch: " + binascii.hexlify(req[6:]).decode())
+            resp = b'<TNCCS-Batch BatchId=2><TNCC-TNCS-Message><Type>00000001</Type><XML><TNCCS-Recommendation type="isolate"></TNCCS-Recommendation></XML></TNCC-TNCS-Message></TNCCS-Batch>'
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(resp),
                                EAP_TYPE_TNC, 0x01) + resp
@@ -7733,7 +7732,7 @@ def test_eap_canned_success_after_identity(dev, apdev):
     """EAP protocol tests for canned EAP-Success after identity"""
     check_eap_capa(dev[0], "MD5")
     def eap_canned_success_handler(ctx, req):
-        logger.info("eap_canned_success_handler - RX " + req.encode("hex"))
+        logger.info("eap_canned_success_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -7789,7 +7788,7 @@ def test_eap_proto_wsc(dev, apdev):
     eap_proto_wsc_test_done = False
 
     def wsc_handler(ctx, req):
-        logger.info("wsc_handler - RX " + req.encode("hex"))
+        logger.info("wsc_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] += 1
@@ -8086,7 +8085,7 @@ def eap_fast_start(ctx):
     logger.info("Send EAP-FAST/Start")
     return struct.pack(">BBHBBHH", EAP_CODE_REQUEST, ctx['id'],
                        4 + 1 + 1 + 4 + 16,
-                       EAP_TYPE_FAST, 0x21, 4, 16) + 16*'A'
+                       EAP_TYPE_FAST, 0x21, 4, 16) + 16*b'A'
 
 def test_eap_fast_proto(dev, apdev):
     """EAP-FAST Phase protocol testing"""
@@ -8095,7 +8094,7 @@ def test_eap_fast_proto(dev, apdev):
     eap_fast_proto_ctx = None
 
     def eap_handler(ctx, req):
-        logger.info("eap_handler - RX " + req.encode("hex"))
+        logger.info("eap_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1
@@ -8114,7 +8113,7 @@ def test_eap_fast_proto(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("EAP-FAST: TLS processing failed")
-            data = 'ABCDEFGHIK'
+            data = b'ABCDEFGHIK'
             return struct.pack(">BBHBB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + 1 + len(data),
                                EAP_TYPE_FAST, 0x01) + data
@@ -8204,7 +8203,7 @@ def run_eap_fast_phase2(dev, test_payload, test_failure=True):
                            EAP_TYPE_FAST, 0x01) + data
 
     def eap_handler(ctx, req):
-        logger.info("eap_handler - RX " + req.encode("hex"))
+        logger.info("eap_handler - RX " + binascii.hexlify(req).decode())
         if 'num' not in ctx:
             ctx['num'] = 0
         ctx['num'] = ctx['num'] + 1

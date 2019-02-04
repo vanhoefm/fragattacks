@@ -6102,7 +6102,7 @@ def test_ap_hs20_terms_and_conditions_coa(dev, apdev):
     dict = pyrad.dictionary.Dictionary("dictionary.radius")
 
     srv = pyrad.client.Client(server="127.0.0.1", acctport=3799,
-                              secret="secret", dict=dict)
+                              secret=b"secret", dict=dict)
     srv.retries = 1
     srv.timeout = 1
 
@@ -6111,7 +6111,7 @@ def test_ap_hs20_terms_and_conditions_coa(dev, apdev):
 
     logger.info("CoA-Request with matching Acct-Session-Id")
     vsa = binascii.unhexlify('00009f68090600000000')
-    req = radius_das.CoAPacket(dict=dict, secret="secret",
+    req = radius_das.CoAPacket(dict=dict, secret=b"secret",
                                NAS_IP_Address="127.0.0.1",
                                Acct_Multi_Session_Id=multi_sess_id,
                                Chargeable_User_Identity="hs20-cui",
