@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import os
 import time
+import sys
 import stat
 import subprocess
 import logging
@@ -2768,7 +2769,10 @@ def ssdp_get_location(uuid):
     return location
 
 def upnp_get_urls(location):
-    conn = urlopen(location, proxies={})
+    if sys.version_info[0] > 2:
+        conn = urlopen(location)
+    else:
+        conn = urlopen(location, proxies={})
     tree = ET.parse(conn)
     root = tree.getroot()
     urn = '{urn:schemas-upnp-org:device-1-0}'
@@ -2822,12 +2826,23 @@ def test_ap_wps_upnp(dev, apdev):
     location = ssdp_get_location(ap_uuid)
     urls = upnp_get_urls(location)
 
-    conn = urlopen(urls['scpd_url'], proxies={})
+    if sys.version_info[0] > 2:
+        conn = urlopen(urls['scpd_url'])
+    else:
+        conn = urlopen(urls['scpd_url'], proxies={})
     scpd = conn.read()
 
-    conn = urlopen(urljoin(location, "unknown.html"), proxies={})
-    if conn.getcode() != 404:
-        raise Exception("Unexpected HTTP response to GET unknown URL")
+    if sys.version_info[0] > 2:
+        try:
+            conn = urlopen(urljoin(location, "unknown.html"))
+            raise Exception("Unexpected HTTP response to GET unknown URL")
+        except HTTPError as e:
+            if e.code != 404:
+                raise Exception("Unexpected HTTP response to GET unknown URL")
+    else:
+        conn = urlopen(urljoin(location, "unknown.html"), proxies={})
+        if conn.getcode() != 404:
+            raise Exception("Unexpected HTTP response to GET unknown URL")
 
     url = urlparse(location)
     conn = HTTPConnection(url.netloc)
