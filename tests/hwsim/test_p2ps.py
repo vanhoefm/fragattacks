@@ -1576,40 +1576,41 @@ def test_p2ps_channel_active_go_and_station_different(dev, apdev):
 @remote_compatible
 def test_p2ps_channel_active_go_and_station_different_mcc(dev, apdev):
     """P2PS connection, active P2P GO and station on channel"""
-    if dev[0].get_mcc() == 1:
-        raise HwsimSkip('Skip due to MCC not being enabled')
+    with HWSimRadio(n_channels=2) as (radio, iface):
+        wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+        wpas.interface_add(iface)
 
-    set_no_group_iface(dev[0], 0)
-    set_no_group_iface(dev[1], 0)
+        set_no_group_iface(wpas, 0)
+        set_no_group_iface(dev[1], 0)
 
-    try:
-        hapd = hostapd.add_ap(apdev[0],
-                              { "ssid": 'bss-channel-6', "channel": '6' })
+        try:
+            hapd = hostapd.add_ap(apdev[0],
+                                  { "ssid": 'bss-channel-6', "channel": '6' })
 
-        dev[0].connect("bss-channel-6", key_mgmt="NONE", scan_freq="2437")
+            wpas.connect("bss-channel-6", key_mgmt="NONE", scan_freq="2437")
 
-        # Add a P2P GO on the seeker
-        dev[1].global_request("P2P_GROUP_ADD freq=2462 persistent")
-        ev = dev[1].wait_global_event(["P2P-GROUP-STARTED"], timeout=10)
-        if ev is None:
-            raise Exception("P2P-GROUP-STARTED timeout on " + dev[1].p2p_dev_addr())
+            # Add a P2P GO on the seeker
+            dev[1].global_request("P2P_GROUP_ADD freq=2462 persistent")
+            ev = dev[1].wait_global_event(["P2P-GROUP-STARTED"], timeout=10)
+            if ev is None:
+                raise Exception("P2P-GROUP-STARTED timeout on " + dev[1].p2p_dev_addr())
 
-        dev[1].group_form_result(ev)
+            dev[1].group_form_result(ev)
 
-        p2ps_advertise(r_dev=dev[0], r_role='2',
-                       svc_name='org.wi-fi.wfds.send.rx',
-                       srv_info='I can receive files upto size 2 GB')
-        [adv_id, rcvd_svc_name] = p2ps_exact_seek(i_dev=dev[1], r_dev=dev[0],
-                                                  svc_name='org.wi-fi.wfds.send.rx',
-                                                  srv_info='2 GB')
+            p2ps_advertise(r_dev=wpas, r_role='2',
+                           svc_name='org.wi-fi.wfds.send.rx',
+                           srv_info='I can receive files upto size 2 GB')
+            [adv_id, rcvd_svc_name] = p2ps_exact_seek(i_dev=dev[1], r_dev=wpas,
+                                                      svc_name='org.wi-fi.wfds.send.rx',
+                                                      srv_info='2 GB')
 
-        ev1, ev0 = p2ps_provision(dev[1], dev[0], adv_id)
-        p2ps_connect_pd(dev[0], dev[1], ev0, ev1)
-    finally:
-        dev[0].request("DISCONNECT")
-        hapd.disable()
-        dev[0].global_request("P2P_SERVICE_DEL asp all")
-        remove_group(dev[0], dev[1])
+            ev1, ev0 = p2ps_provision(dev[1], wpas, adv_id)
+            p2ps_connect_pd(wpas, dev[1], ev0, ev1)
+        finally:
+            wpas.request("DISCONNECT")
+            hapd.disable()
+            wpas.global_request("P2P_SERVICE_DEL asp all")
+            remove_group(wpas, dev[1])
 
 def test_p2ps_connect_p2p_device(dev):
     """P2PS connection using cfg80211 P2P Device"""
