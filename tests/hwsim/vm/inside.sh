@@ -36,6 +36,8 @@ ln -s /proc/self/fd/0 /dev/stdin
 ln -s /proc/self/fd/1 /dev/stdout
 ln -s /proc/self/fd/2 /dev/stderr
 
+echo "VM has started up" > /dev/ttyS0
+
 # create dummy sudo - everything runs as uid 0
 mkdir /tmp/bin
 cat > /tmp/bin/sudo << EOF
