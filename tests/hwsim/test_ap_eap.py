@@ -4185,7 +4185,7 @@ def root_ocsp(cert):
     logger.info(' '.join(arg))
     cmd = subprocess.Popen(arg, stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE)
-    res = cmd.stdout.read() + "\n" + cmd.stderr.read()
+    res = cmd.stdout.read().decode() + "\n" + cmd.stderr.read().decode()
     cmd.stdout.close()
     cmd.stderr.close()
     cmd.wait()
@@ -4202,7 +4202,7 @@ def root_ocsp(cert):
             "-text" ]
     cmd = subprocess.Popen(arg, stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE)
-    res = cmd.stdout.read() + "\n" + cmd.stderr.read()
+    res = cmd.stdout.read().decode() + "\n" + cmd.stderr.read().decode()
     cmd.stdout.close()
     cmd.stderr.close()
     cmd.wait()
@@ -4404,14 +4404,14 @@ def test_ap_wpa2_eap_tls_intermediate_ca_ocsp_multi(dev, apdev, params):
     fn2 = root_ocsp("auth_serv/iCA-server/cacert.pem")
     params["ocsp_stapling_response"] = fn
 
-    with open(fn, "r") as f:
+    with open(fn, "rb") as f:
         resp_server = f.read()
-    with open(fn2, "r") as f:
+    with open(fn2, "rb") as f:
         resp_ica = f.read()
 
     fd3, fn3 = tempfile.mkstemp()
     try:
-        f = os.fdopen(fd3, 'w')
+        f = os.fdopen(fd3, 'wb')
         f.write(struct.pack(">L", len(resp_server))[1:4])
         f.write(resp_server)
         f.write(struct.pack(">L", len(resp_ica))[1:4])
@@ -4456,9 +4456,9 @@ def test_ap_wpa2_eap_tls_ocsp_multi_revoked(dev, apdev, params):
     if not os.path.exists(ocsp_unknown):
         raise HwsimSkip("No OCSP response(unknown) available")
 
-    with open(ocsp_revoked, "r") as f:
+    with open(ocsp_revoked, "rb") as f:
         resp_revoked = f.read()
-    with open(ocsp_unknown, "r") as f:
+    with open(ocsp_unknown, "rb") as f:
         resp_unknown = f.read()
 
     fd, fn = tempfile.mkstemp()
@@ -4466,7 +4466,7 @@ def test_ap_wpa2_eap_tls_ocsp_multi_revoked(dev, apdev, params):
         # This is not really a valid order of the OCSPResponse items in the
         # list, but this works for now to verify parsing and processing of
         # multiple responses.
-        f = os.fdopen(fd, 'w')
+        f = os.fdopen(fd, 'wb')
         f.write(struct.pack(">L", len(resp_unknown))[1:4])
         f.write(resp_unknown)
         f.write(struct.pack(">L", len(resp_revoked))[1:4])
