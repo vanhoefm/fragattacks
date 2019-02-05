@@ -50,6 +50,9 @@ echo
 
 $OPENSSL ocsp -CAfile test-ca/cacert.pem -issuer test-ca/cacert.pem -cert server.pem -reqout ocsp-req.der -no_nonce
 $OPENSSL ocsp -index test-ca/index.txt -rsigner test-ca/cacert.pem -rkey test-ca/private/cakey.pem -CA test-ca/cacert.pem -resp_no_certs -reqin ocsp-req.der -respout ocsp-server-cache.der
+SIZ=`ls -l ocsp-server-cache.der | cut -f5 -d' '`
+(echo -n 000; echo "obase=16;$SIZ" | bc) | xxd -r -ps > ocsp-multi-server-cache.der
+cat ocsp-server-cache.der >> ocsp-multi-server-cache.der
 
 echo
 echo "---[ Additional steps ]-------------------------------------------------"
