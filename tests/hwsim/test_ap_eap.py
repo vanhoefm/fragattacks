@@ -5074,10 +5074,24 @@ def test_wpa2_eap_ttls_pap_key_lifetime_in_memory(dev, apdev, params):
     p = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     hapd = hostapd.add_ap(apdev[0], p)
     password = "63d2d21ac3c09ed567ee004a34490f1d16e7fa5835edf17ddba70a63f1a90a25"
-    pid = find_wpas_process(dev[0])
     id = eap_connect(dev[0], hapd, "TTLS", "pap-secret",
                      anonymous_identity="ttls", password=password,
                      ca_cert="auth_serv/ca.pem", phase2="auth=PAP")
+    run_eap_key_lifetime_in_memory(dev, params, id, password)
+
+def test_wpa2_eap_peap_gtc_key_lifetime_in_memory(dev, apdev, params):
+    """Key lifetime in memory with WPA2-Enterprise using PEAP/GTC"""
+    p = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hapd = hostapd.add_ap(apdev[0], p)
+    password = "63d2d21ac3c09ed567ee004a34490f1d16e7fa5835edf17ddba70a63f1a90a25"
+    id = eap_connect(dev[0], hapd, "PEAP", "user-secret",
+                     anonymous_identity="peap", password=password,
+                     ca_cert="auth_serv/ca.pem", phase2="auth=GTC")
+    run_eap_key_lifetime_in_memory(dev, params, id, password)
+
+def run_eap_key_lifetime_in_memory(dev, params, id, password):
+    pid = find_wpas_process(dev[0])
+
     # The decrypted copy of GTK is freed only after the CTRL-EVENT-CONNECTED
     # event has been delivered, so verify that wpa_supplicant has returned to
     # eloop before reading process memory.
@@ -5097,10 +5111,12 @@ def test_wpa2_eap_ttls_pap_key_lifetime_in_memory(dev, apdev, params):
     gtk = None
     with open(os.path.join(params['logdir'], 'log0'), 'r') as f:
         for l in f.readlines():
-            if "EAP-TTLS: Derived key - hexdump" in l:
+            if "EAP-TTLS: Derived key - hexdump" in l or \
+               "EAP-PEAP: Derived key - hexdump" in l:
                 val = l.strip().split(':')[3].replace(' ', '')
                 msk = binascii.unhexlify(val)
-            if "EAP-TTLS: Derived EMSK - hexdump" in l:
+            if "EAP-TTLS: Derived EMSK - hexdump" in l or \
+               "EAP-PEAP: Derived EMSK - hexdump" in l:
                 val = l.strip().split(':')[3].replace(' ', '')
                 emsk = binascii.unhexlify(val)
             if "WPA: PMK - hexdump" in l:
