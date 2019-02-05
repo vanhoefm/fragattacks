@@ -493,7 +493,7 @@ static void write_str(FILE *f, const char *field, struct wpa_ssid *ssid)
 	if (value == NULL)
 		return;
 	fprintf(f, "\t%s=%s\n", field, value);
-	os_free(value);
+	str_clear_free(value);
 }
 
 
