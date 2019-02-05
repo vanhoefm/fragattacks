@@ -51,6 +51,8 @@ TIMESTAMP=$(date +%s)
 DATE=$TIMESTAMP
 CODECOV=no
 TIMEWARP=0
+TELNET_QEMU=
+TELNET_ARG=0
 DELAY=0
 CODECOV_DIR=
 while [ "$1" != "" ]; do
@@ -72,6 +74,11 @@ while [ "$1" != "" ]; do
 			;;
 		--timewrap ) shift
 			TIMEWARP=1
+			;;
+		--telnet ) shift
+			TELNET_ARG=1
+			TELNET_QEMU="-net nic,model=virtio -net user,id=telnet,restrict=on,net=172.16.0.0/24,hostfwd=tcp:127.0.0.1:$1-:23"
+			shift
 			;;
 	        --delay ) shift
 			DELAY=$1
@@ -134,7 +141,8 @@ $KVM \
 	-fsdev local,security_model=none,id=fsdev-logs,path="$LOGDIR",writeout=immediate \
 	-device virtio-9p-pci,id=fs-logs,fsdev=fsdev-logs,mount_tag=logshare \
 	-monitor null -serial stdio -serial file:$LOGDIR/console \
-	-append "mac80211_hwsim.support_p2p_device=0 mac80211_hwsim.channels=$CHANNELS mac80211_hwsim.radios=7 cfg80211.dyndbg=+p mac80211.dyndbg=+p mac80211_hwsim.dyndbg=+p init=$CMD testdir=$TESTDIR timewarp=$TIMEWARP console=$KVMOUT root=/dev/root rootflags=trans=virtio,version=9p2000.u ro rootfstype=9p EPATH=$EPATH ARGS=$argsfile" | \
+	$TELNET_QEMU \
+	-append "mac80211_hwsim.support_p2p_device=0 mac80211_hwsim.channels=$CHANNELS mac80211_hwsim.radios=7 cfg80211.dyndbg=+p mac80211.dyndbg=+p mac80211_hwsim.dyndbg=+p init=$CMD testdir=$TESTDIR timewarp=$TIMEWARP TELNET=$TELNET_ARG console=$KVMOUT root=/dev/root rootflags=trans=virtio,version=9p2000.u ro rootfstype=9p EPATH=$EPATH ARGS=$argsfile" | \
 	sed -u '0,/VM has started up/d'
 
 if [ $CODECOV = "yes" ]; then

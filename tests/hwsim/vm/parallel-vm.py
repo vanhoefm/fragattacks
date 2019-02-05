@@ -356,6 +356,8 @@ def main():
     p.add_argument('--valgrind', dest='valgrind', action='store_const',
                    const=True, default=False,
                    help="run tests under valgrind")
+    p.add_argument('--telnet', dest='telnet', metavar='<baseport>', type=int,
+                   help="enable telnet server inside VMs, specify the base port here")
     p.add_argument('params', nargs='*')
     args = p.parse_args()
 
@@ -435,6 +437,8 @@ def main():
                '--timestamp', str(timestamp),
                '--ext', 'srv.%d' % (i + 1),
                '-i'] + codecov_args + extra_args
+        if args.telnet:
+            cmd += [ '--telnet', str(args.telnet + i) ]
         vm[i] = {}
         vm[i]['first_run_done'] = False
         vm[i]['proc'] = subprocess.Popen(cmd,
