@@ -8163,7 +8163,7 @@ def run_eap_fast_phase2(dev, test_payload, test_failure=True):
         except AttributeError:
             state = conn.get_state_string()
         if state:
-            logger.info("State: " + state)
+            logger.info("State: " + str(state))
 
     def process_clienthello(ctx, payload):
         logger.info("Process ClientHello")
