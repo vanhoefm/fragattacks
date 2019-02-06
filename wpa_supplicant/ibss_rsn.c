@@ -459,7 +459,7 @@ static int ibss_rsn_auth_init(struct ibss_rsn *ibss_rsn,
 	}
 
 	/* TODO: get peer RSN IE with Probe Request */
-	if (wpa_validate_wpa_ie(ibss_rsn->auth_group, peer->auth,
+	if (wpa_validate_wpa_ie(ibss_rsn->auth_group, peer->auth, 0,
 				(u8 *) "\x30\x14\x01\x00"
 				"\x00\x0f\xac\x04"
 				"\x01\x00\x00\x0f\xac\x04"

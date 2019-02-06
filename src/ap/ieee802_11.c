@@ -1328,6 +1328,7 @@ void handle_auth_fils(struct hostapd_data *hapd, struct sta_info *sta,
 	}
 
 	res = wpa_validate_wpa_ie(hapd->wpa_auth, sta->wpa_sm,
+				  hapd->iface->freq,
 				  elems.rsn_ie - 2, elems.rsn_ie_len + 2,
 				  elems.mdie, elems.mdie_len, NULL, 0);
 	resp = wpa_res_to_status_code(res);
@@ -2700,6 +2701,7 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 			return WLAN_STATUS_UNSPECIFIED_FAILURE;
 		}
 		res = wpa_validate_wpa_ie(hapd->wpa_auth, sta->wpa_sm,
+					  hapd->iface->freq,
 					  wpa_ie, wpa_ie_len,
 					  elems.mdie, elems.mdie_len,
 					  elems.owe_dh, elems.owe_dh_len);

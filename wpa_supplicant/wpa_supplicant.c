@@ -1189,6 +1189,18 @@ static int wpa_supplicant_suites_from_ai(struct wpa_supplicant *wpa_s,
 }
 
 
+static int matching_ciphers(struct wpa_ssid *ssid, struct wpa_ie_data *ie,
+			    int freq)
+{
+	if (!ie->has_group)
+		ie->group_cipher = wpa_default_rsn_cipher(freq);
+	if (!ie->has_pairwise)
+		ie->pairwise_cipher = wpa_default_rsn_cipher(freq);
+	return (ie->group_cipher & ssid->group_cipher) &&
+		(ie->pairwise_cipher & ssid->pairwise_cipher);
+}
+
+
 /**
  * wpa_supplicant_set_suites - Set authentication and encryption parameters
  * @wpa_s: Pointer to wpa_supplicant data
@@ -1220,8 +1232,7 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 
 	if (bss_rsn && (ssid->proto & WPA_PROTO_RSN) &&
 	    wpa_parse_wpa_ie(bss_rsn, 2 + bss_rsn[1], &ie) == 0 &&
-	    (ie.group_cipher & ssid->group_cipher) &&
-	    (ie.pairwise_cipher & ssid->pairwise_cipher) &&
+	    matching_ciphers(ssid, &ie, bss->freq) &&
 	    (ie.key_mgmt & ssid->key_mgmt)) {
 		wpa_dbg(wpa_s, MSG_DEBUG, "RSN: using IEEE 802.11i/D9.0");
 		proto = WPA_PROTO_RSN;

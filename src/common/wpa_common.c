@@ -1209,6 +1209,7 @@ int wpa_parse_wpa_ie_rsn(const u8 *rsn_ie, size_t rsn_ie_len,
 		left = rsn_ie_len - 6;
 
 		data->group_cipher = WPA_CIPHER_GTK_NOT_USED;
+		data->has_group = 1;
 		data->key_mgmt = WPA_KEY_MGMT_OSEN;
 		data->proto = WPA_PROTO_OSEN;
 	} else {
@@ -1230,6 +1231,7 @@ int wpa_parse_wpa_ie_rsn(const u8 *rsn_ie, size_t rsn_ie_len,
 
 	if (left >= RSN_SELECTOR_LEN) {
 		data->group_cipher = rsn_selector_to_bitfield(pos);
+		data->has_group = 1;
 		if (!wpa_cipher_valid_group(data->group_cipher)) {
 			wpa_printf(MSG_DEBUG,
 				   "%s: invalid group cipher 0x%x (%08x)",
@@ -1255,6 +1257,8 @@ int wpa_parse_wpa_ie_rsn(const u8 *rsn_ie, size_t rsn_ie_len,
 				   "count %u left %u", __func__, count, left);
 			return -4;
 		}
+		if (count)
+			data->has_pairwise = 1;
 		for (i = 0; i < count; i++) {
 			data->pairwise_cipher |= rsn_selector_to_bitfield(pos);
 			pos += RSN_SELECTOR_LEN;
@@ -1470,6 +1474,15 @@ int wpa_parse_wpa_ie_wpa(const u8 *wpa_ie, size_t wpa_ie_len,
 	}
 
 	return 0;
+}
+
+
+int wpa_default_rsn_cipher(int freq)
+{
+	if (freq > 56160)
+		return WPA_CIPHER_GCMP; /* DMG */
+
+	return WPA_CIPHER_CCMP;
 }
 
 

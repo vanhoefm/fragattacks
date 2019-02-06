@@ -530,7 +530,7 @@ static int wpa_auth_okc_iter(struct wpa_authenticator *a, void *ctx)
 
 
 int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
-			struct wpa_state_machine *sm,
+			struct wpa_state_machine *sm, int freq,
 			const u8 *wpa_ie, size_t wpa_ie_len,
 			const u8 *mdie, size_t mdie_len,
 			const u8 *owe_dh, size_t owe_dh_len)
@@ -560,6 +560,10 @@ int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 
 	if (version == WPA_PROTO_RSN) {
 		res = wpa_parse_wpa_ie_rsn(wpa_ie, wpa_ie_len, &data);
+		if (!data.has_pairwise)
+			data.pairwise_cipher = wpa_default_rsn_cipher(freq);
+		if (!data.has_group)
+			data.group_cipher = wpa_default_rsn_cipher(freq);
 
 		if (wpa_key_mgmt_ft(data.key_mgmt) && !mdie &&
 		    !wpa_key_mgmt_only_ft(data.key_mgmt)) {
