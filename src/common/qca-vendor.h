@@ -5556,6 +5556,16 @@ enum qca_wlan_he_om_ctrl_ch_bw {
  * @QCA_WLAN_VENDOR_ATTR_HE_OMI_TX_NSTS: Mandatory 8-bit unsigned value
  * indicates the maximum number of space-time streams, NSTS, that
  * the STA supports in transmission and is set to NSTS - 1.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_HE_OMI_ULMU_DATA_DISABLE: 8-bit unsigned value
+ * combined with the UL MU Disable subfield and the recipient's setting
+ * of the OM Control UL MU Data Disable RX Support subfield in the HE MAC
+ * capabilities to determine which HE TB PPDUs are possible by the
+ * STA to transmit.
+ * 0 - UL MU data operations are enabled by the STA.
+ * 1 - Determine which HE TB PPDU types are allowed by the STA if UL MU disable
+ * bit is not set, else UL MU Tx is suspended.
+ *
  */
 enum qca_wlan_vendor_attr_he_omi_tx {
 	QCA_WLAN_VENDOR_ATTR_HE_OMI_INVALID = 0,
@@ -5563,6 +5573,7 @@ enum qca_wlan_vendor_attr_he_omi_tx {
 	QCA_WLAN_VENDOR_ATTR_HE_OMI_CH_BW = 2,
 	QCA_WLAN_VENDOR_ATTR_HE_OMI_ULMU_DISABLE = 3,
 	QCA_WLAN_VENDOR_ATTR_HE_OMI_TX_NSTS = 4,
+	QCA_WLAN_VENDOR_ATTR_HE_OMI_ULMU_DATA_DISABLE = 5,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_HE_OMI_AFTER_LAST,
