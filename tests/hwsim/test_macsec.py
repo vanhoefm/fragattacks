@@ -167,7 +167,7 @@ def add_wpas_interfaces(count=2):
             wpa.append(wpas)
     except Exception as e:
         if "Failed to add a dynamic wpa_supplicant interface" in str(e):
-            raise HwsimSkip("macsec supported (wpa_supplicant CONFIG_MACSEC, CONFIG_MACSEC_LINUX; kernel CONFIG_MACSEC)")
+            raise HwsimSkip("macsec supported (wpa_supplicant CONFIG_MACSEC, CONFIG_DRIVER_MACSEC_LINUX; kernel CONFIG_MACSEC)")
         raise
 
     return wpa
@@ -575,7 +575,7 @@ def run_macsec_psk_ns(dev, apdev, params):
     try:
         subprocess.check_call(arg)
     except subprocess.CalledProcessError:
-        raise HwsimSkip("macsec supported (wpa_supplicant CONFIG_MACSEC, CONFIG_MACSEC_LINUX; kernel CONFIG_MACSEC)")
+        raise HwsimSkip("macsec supported (wpa_supplicant CONFIG_MACSEC, CONFIG_DRIVER_MACSEC_LINUX; kernel CONFIG_MACSEC)")
 
     if os.path.exists("wpa_supplicant-macsec2"):
         logger.info("Use alternative wpa_supplicant binary for one of the macsec devices")
