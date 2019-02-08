@@ -1322,27 +1322,27 @@ const char * fc2str(u16 fc)
 int mb_ies_info_by_ies(struct mb_ies_info *info, const u8 *ies_buf,
 		       size_t ies_len)
 {
+	const struct element *elem;
+
 	os_memset(info, 0, sizeof(*info));
 
-	while (ies_buf && ies_len >= 2 &&
-	       info->nof_ies < MAX_NOF_MB_IES_SUPPORTED) {
-		size_t len = 2 + ies_buf[1];
+	if (!ies_buf)
+		return 0;
 
-		if (len > ies_len) {
-			wpa_hexdump(MSG_DEBUG, "Truncated IEs",
-				    ies_buf, ies_len);
-			return -1;
-		}
+	for_each_element_id(elem, WLAN_EID_MULTI_BAND, ies_buf, ies_len) {
+		if (info->nof_ies >= MAX_NOF_MB_IES_SUPPORTED)
+			return 0;
 
-		if (ies_buf[0] == WLAN_EID_MULTI_BAND) {
-			wpa_printf(MSG_DEBUG, "MB IE of %zu bytes found", len);
-			info->ies[info->nof_ies].ie = ies_buf + 2;
-			info->ies[info->nof_ies].ie_len = ies_buf[1];
-			info->nof_ies++;
-		}
+		wpa_printf(MSG_DEBUG, "MB IE of %u bytes found",
+			   elem->datalen + 2);
+		info->ies[info->nof_ies].ie = elem->data;
+		info->ies[info->nof_ies].ie_len = elem->datalen;
+		info->nof_ies++;
+	}
 
-		ies_len -= len;
-		ies_buf += len;
+	if (!for_each_element_completed(elem, ies_buf, ies_len)) {
+		wpa_hexdump(MSG_DEBUG, "Truncated IEs", ies_buf, ies_len);
+		return -1;
 	}
 
 	return 0;
