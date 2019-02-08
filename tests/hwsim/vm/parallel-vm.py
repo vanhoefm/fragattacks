@@ -213,7 +213,7 @@ def show_progress(scr):
                     continue
                 else:
                     name = tests.pop(0)
-                    vm[i]['proc'].stdin.write(name + '\n')
+                    vm[i]['proc'].stdin.write(name.encode() + b'\n')
                     scr.addstr(name)
                     logger.debug("VM[%d] start test %s" % (i, name))
 
@@ -269,12 +269,12 @@ def show_progress(scr):
                 scr.clrtoeol()
                 updated = True
                 if not rerun_tests:
-                    vm[i]['proc'].stdin.write('\n')
+                    vm[i]['proc'].stdin.write(b'\n')
                     scr.addstr("shutting down")
                     logger.info("VM[%d] shutting down" % i)
                 else:
                     name = rerun_tests.pop(0)
-                    vm[i]['proc'].stdin.write(name + '\n')
+                    vm[i]['proc'].stdin.write(name.encode() + b'\n')
                     scr.addstr(name + "(*)")
                     logger.debug("VM[%d] start test %s (*)" % (i, name))
 
