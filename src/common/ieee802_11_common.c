@@ -560,24 +560,17 @@ struct wpabuf * ieee802_11_vendor_ie_concat(const u8 *ies, size_t ies_len,
 					    u32 oui_type)
 {
 	struct wpabuf *buf;
-	const u8 *end, *pos, *ie;
+	const struct element *elem, *found = NULL;
 
-	pos = ies;
-	end = ies + ies_len;
-	ie = NULL;
-
-	while (end - pos > 1) {
-		if (2 + pos[1] > end - pos)
-			return NULL;
-		if (pos[0] == WLAN_EID_VENDOR_SPECIFIC && pos[1] >= 4 &&
-		    WPA_GET_BE32(&pos[2]) == oui_type) {
-			ie = pos;
+	for_each_element_id(elem, WLAN_EID_VENDOR_SPECIFIC, ies, ies_len) {
+		if (elem->datalen >= 4 &&
+		    WPA_GET_BE32(elem->data) == oui_type) {
+			found = elem;
 			break;
 		}
-		pos += 2 + pos[1];
 	}
 
-	if (ie == NULL)
+	if (!found)
 		return NULL; /* No specified vendor IE found */
 
 	buf = wpabuf_alloc(ies_len);
@@ -588,13 +581,9 @@ struct wpabuf * ieee802_11_vendor_ie_concat(const u8 *ies, size_t ies_len,
 	 * There may be multiple vendor IEs in the message, so need to
 	 * concatenate their data fields.
 	 */
-	while (end - pos > 1) {
-		if (2 + pos[1] > end - pos)
-			break;
-		if (pos[0] == WLAN_EID_VENDOR_SPECIFIC && pos[1] >= 4 &&
-		    WPA_GET_BE32(&pos[2]) == oui_type)
-			wpabuf_put_data(buf, pos + 6, pos[1] - 4);
-		pos += 2 + pos[1];
+	for_each_element_id(elem, WLAN_EID_VENDOR_SPECIFIC, ies, ies_len) {
+		if (elem->datalen >= 4 && WPA_GET_BE32(elem->data) == oui_type)
+			wpabuf_put_data(buf, elem->data + 4, elem->datalen - 4);
 	}
 
 	return buf;
