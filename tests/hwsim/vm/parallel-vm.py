@@ -93,6 +93,7 @@ def vm_read_stdout(vm, i):
         out = vm['proc'].stdout.read()
         if out == None:
             return False
+        out = out.decode()
     except:
         return False
     logger.debug("VM[%d] stdout.read[%s]" % (i, out))
@@ -195,6 +196,7 @@ def show_progress(scr):
             try:
                 err = vm[i]['proc'].stderr.read()
                 if err != None:
+                    err = err.decode()
                     vm[i]['err'] += err
                     logger.debug("VM[%d] stderr.read[%s]" % (i, err))
             except:
@@ -250,6 +252,7 @@ def show_progress(scr):
             try:
                 err = vm[i]['proc'].stderr.read()
                 if err != None:
+                    err = err.decode()
                     vm[i]['err'] += err
                     logger.debug("VM[%d] stderr.read[%s]" % (i, err))
             except:
@@ -404,7 +407,7 @@ def main():
             cmd += args.testmodules
         lst = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         for l in lst.stdout.readlines():
-            name = l.split(' ')[0]
+            name = l.decode().split(' ')[0]
             tests.append(name)
     if len(tests) == 0:
         sys.exit("No test cases selected")
