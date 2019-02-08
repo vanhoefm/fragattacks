@@ -543,21 +543,14 @@ ParseRes ieee802_11_parse_elems(const u8 *start, size_t len,
 
 int ieee802_11_ie_count(const u8 *ies, size_t ies_len)
 {
+	const struct element *elem;
 	int count = 0;
-	const u8 *pos, *end;
 
 	if (ies == NULL)
 		return 0;
 
-	pos = ies;
-	end = ies + ies_len;
-
-	while (end - pos >= 2) {
-		if (2 + pos[1] > end - pos)
-			break;
+	for_each_element(elem, ies, ies_len)
 		count++;
-		pos += 2 + pos[1];
-	}
 
 	return count;
 }
