@@ -91,6 +91,8 @@ def vm_read_stdout(vm, i):
     ready = False
     try:
         out = vm['proc'].stdout.read()
+        if out == None:
+            return False
     except:
         return False
     logger.debug("VM[%d] stdout.read[%s]" % (i, out))
@@ -192,8 +194,9 @@ def show_progress(scr):
             first_running = True
             try:
                 err = vm[i]['proc'].stderr.read()
-                vm[i]['err'] += err
-                logger.debug("VM[%d] stderr.read[%s]" % (i, err))
+                if err != None:
+                    vm[i]['err'] += err
+                    logger.debug("VM[%d] stderr.read[%s]" % (i, err))
             except:
                 pass
 
@@ -246,8 +249,9 @@ def show_progress(scr):
             running = True
             try:
                 err = vm[i]['proc'].stderr.read()
-                vm[i]['err'] += err
-                logger.debug("VM[%d] stderr.read[%s]" % (i, err))
+                if err != None:
+                    vm[i]['err'] += err
+                    logger.debug("VM[%d] stderr.read[%s]" % (i, err))
             except:
                 pass
 
