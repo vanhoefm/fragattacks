@@ -1465,22 +1465,13 @@ size_t global_op_class_size = ARRAY_SIZE(global_op_class);
  */
 const u8 * get_ie(const u8 *ies, size_t len, u8 eid)
 {
-	const u8 *end;
+	const struct element *elem;
 
 	if (!ies)
 		return NULL;
 
-	end = ies + len;
-
-	while (end - ies > 1) {
-		if (2 + ies[1] > end - ies)
-			break;
-
-		if (ies[0] == eid)
-			return ies;
-
-		ies += 2 + ies[1];
-	}
+	for_each_element_id(elem, eid, ies, len)
+		return &elem->id;
 
 	return NULL;
 }
@@ -1498,23 +1489,13 @@ const u8 * get_ie(const u8 *ies, size_t len, u8 eid)
  */
 const u8 * get_ie_ext(const u8 *ies, size_t len, u8 ext)
 {
-	const u8 *end;
+	const struct element *elem;
 
 	if (!ies)
 		return NULL;
 
-	end = ies + len;
-
-	while (end - ies > 1) {
-		if (2 + ies[1] > end - ies)
-			break;
-
-		if (ies[0] == WLAN_EID_EXTENSION && ies[1] >= 1 &&
-		    ies[2] == ext)
-			return ies;
-
-		ies += 2 + ies[1];
-	}
+	for_each_element_extid(elem, ext, ies, len)
+		return &elem->id;
 
 	return NULL;
 }
@@ -1522,16 +1503,12 @@ const u8 * get_ie_ext(const u8 *ies, size_t len, u8 ext)
 
 const u8 * get_vendor_ie(const u8 *ies, size_t len, u32 vendor_type)
 {
-	const u8 *pos = ies, *end = ies + len;
+	const struct element *elem;
 
-	while (end - pos > 1) {
-		if (2 + pos[1] > end - pos)
-			break;
-
-		if (pos[0] == WLAN_EID_VENDOR_SPECIFIC && pos[1] >= 4 &&
-		    vendor_type == WPA_GET_BE32(&pos[2]))
-			return pos;
-		pos += 2 + pos[1];
+	for_each_element_id(elem, WLAN_EID_VENDOR_SPECIFIC, ies, len) {
+		if (elem->datalen >= 4 &&
+		    vendor_type == WPA_GET_BE32(elem->data))
+			return &elem->id;
 	}
 
 	return NULL;
