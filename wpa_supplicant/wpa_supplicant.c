@@ -4428,10 +4428,10 @@ static int wpa_disable_max_amsdu(struct wpa_supplicant *wpa_s,
 {
 	le16 msk;
 
-	wpa_msg(wpa_s, MSG_DEBUG, "set_disable_max_amsdu: %d", disabled);
-
 	if (disabled == -1)
 		return 0;
+
+	wpa_msg(wpa_s, MSG_DEBUG, "set_disable_max_amsdu: %d", disabled);
 
 	msk = host_to_le16(HT_CAP_INFO_MAX_AMSDU_SIZE);
 	htcaps_mask->ht_capabilities_info |= msk;
@@ -4449,10 +4449,10 @@ static int wpa_set_ampdu_factor(struct wpa_supplicant *wpa_s,
 				struct ieee80211_ht_capabilities *htcaps_mask,
 				int factor)
 {
-	wpa_msg(wpa_s, MSG_DEBUG, "set_ampdu_factor: %d", factor);
-
 	if (factor == -1)
 		return 0;
+
+	wpa_msg(wpa_s, MSG_DEBUG, "set_ampdu_factor: %d", factor);
 
 	if (factor < 0 || factor > 3) {
 		wpa_msg(wpa_s, MSG_ERROR, "ampdu_factor: %d out of range. "
@@ -4473,10 +4473,10 @@ static int wpa_set_ampdu_density(struct wpa_supplicant *wpa_s,
 				 struct ieee80211_ht_capabilities *htcaps_mask,
 				 int density)
 {
-	wpa_msg(wpa_s, MSG_DEBUG, "set_ampdu_density: %d", density);
-
 	if (density == -1)
 		return 0;
+
+	wpa_msg(wpa_s, MSG_DEBUG, "set_ampdu_density: %d", density);
 
 	if (density < 0 || density > 7) {
 		wpa_msg(wpa_s, MSG_ERROR,
@@ -4498,7 +4498,8 @@ static int wpa_set_disable_ht40(struct wpa_supplicant *wpa_s,
 				struct ieee80211_ht_capabilities *htcaps_mask,
 				int disabled)
 {
-	wpa_msg(wpa_s, MSG_DEBUG, "set_disable_ht40: %d", disabled);
+	if (disabled)
+		wpa_msg(wpa_s, MSG_DEBUG, "set_disable_ht40: %d", disabled);
 
 	set_disable_ht40(htcaps, disabled);
 	set_disable_ht40(htcaps_mask, 0);
@@ -4516,7 +4517,8 @@ static int wpa_set_disable_sgi(struct wpa_supplicant *wpa_s,
 	le16 msk = host_to_le16(HT_CAP_INFO_SHORT_GI20MHZ |
 				HT_CAP_INFO_SHORT_GI40MHZ);
 
-	wpa_msg(wpa_s, MSG_DEBUG, "set_disable_sgi: %d", disabled);
+	if (disabled)
+		wpa_msg(wpa_s, MSG_DEBUG, "set_disable_sgi: %d", disabled);
 
 	if (disabled)
 		htcaps->ht_capabilities_info &= ~msk;
@@ -4537,7 +4539,8 @@ static int wpa_set_disable_ldpc(struct wpa_supplicant *wpa_s,
 	/* Masking these out disables LDPC */
 	le16 msk = host_to_le16(HT_CAP_INFO_LDPC_CODING_CAP);
 
-	wpa_msg(wpa_s, MSG_DEBUG, "set_disable_ldpc: %d", disabled);
+	if (disabled)
+		wpa_msg(wpa_s, MSG_DEBUG, "set_disable_ldpc: %d", disabled);
 
 	if (disabled)
 		htcaps->ht_capabilities_info &= ~msk;
@@ -4557,10 +4560,10 @@ static int wpa_set_tx_stbc(struct wpa_supplicant *wpa_s,
 {
 	le16 msk = host_to_le16(HT_CAP_INFO_TX_STBC);
 
-	wpa_msg(wpa_s, MSG_DEBUG, "set_tx_stbc: %d", tx_stbc);
-
 	if (tx_stbc == -1)
 		return 0;
+
+	wpa_msg(wpa_s, MSG_DEBUG, "set_tx_stbc: %d", tx_stbc);
 
 	if (tx_stbc < 0 || tx_stbc > 1) {
 		wpa_msg(wpa_s, MSG_ERROR,
@@ -4583,10 +4586,10 @@ static int wpa_set_rx_stbc(struct wpa_supplicant *wpa_s,
 {
 	le16 msk = host_to_le16(HT_CAP_INFO_RX_STBC_MASK);
 
-	wpa_msg(wpa_s, MSG_DEBUG, "set_rx_stbc: %d", rx_stbc);
-
 	if (rx_stbc == -1)
 		return 0;
+
+	wpa_msg(wpa_s, MSG_DEBUG, "set_rx_stbc: %d", rx_stbc);
 
 	if (rx_stbc < 0 || rx_stbc > 3) {
 		wpa_msg(wpa_s, MSG_ERROR,
