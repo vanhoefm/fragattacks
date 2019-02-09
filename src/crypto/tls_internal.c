@@ -726,12 +726,20 @@ int tls_connection_client_hello_ext(void *tls_ctx, struct tls_connection *conn,
 
 int tls_connection_get_failed(void *tls_ctx, struct tls_connection *conn)
 {
+#ifdef CONFIG_TLS_INTERNAL_SERVER
+	if (conn->server)
+		return tlsv1_server_get_failed(conn->server);
+#endif /* CONFIG_TLS_INTERNAL_SERVER */
 	return 0;
 }
 
 
 int tls_connection_get_read_alerts(void *tls_ctx, struct tls_connection *conn)
 {
+#ifdef CONFIG_TLS_INTERNAL_SERVER
+	if (conn->server)
+		return tlsv1_server_get_read_alerts(conn->server);
+#endif /* CONFIG_TLS_INTERNAL_SERVER */
 	return 0;
 }
 
@@ -739,6 +747,10 @@ int tls_connection_get_read_alerts(void *tls_ctx, struct tls_connection *conn)
 int tls_connection_get_write_alerts(void *tls_ctx,
 				    struct tls_connection *conn)
 {
+#ifdef CONFIG_TLS_INTERNAL_SERVER
+	if (conn->server)
+		return tlsv1_server_get_write_alerts(conn->server);
+#endif /* CONFIG_TLS_INTERNAL_SERVER */
 	return 0;
 }
 

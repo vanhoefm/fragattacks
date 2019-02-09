@@ -204,6 +204,7 @@ failed:
 		msg = tlsv1_server_send_alert(conn, conn->alert_level,
 					      conn->alert_description,
 					      out_len);
+		conn->write_alerts++;
 	}
 
 	return msg;
@@ -296,6 +297,7 @@ int tlsv1_server_decrypt(struct tlsv1_server *conn,
 			}
 			tlsv1_server_log(conn, "Received alert %d:%d",
 					 out_pos[0], out_pos[1]);
+			conn->read_alerts++;
 			if (out_pos[0] == TLS_ALERT_LEVEL_WARNING) {
 				/* Continue processing */
 				pos += used;
@@ -705,6 +707,24 @@ void tlsv1_server_set_log_cb(struct tlsv1_server *conn,
 {
 	conn->log_cb = cb;
 	conn->log_cb_ctx = ctx;
+}
+
+
+int tlsv1_server_get_failed(struct tlsv1_server *conn)
+{
+	return conn->state == FAILED;
+}
+
+
+int tlsv1_server_get_read_alerts(struct tlsv1_server *conn)
+{
+	return conn->read_alerts;
+}
+
+
+int tlsv1_server_get_write_alerts(struct tlsv1_server *conn)
+{
+	return conn->write_alerts;
 }
 
 
