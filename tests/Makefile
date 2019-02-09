@@ -17,6 +17,11 @@ ifndef CFLAGS
 CFLAGS = -MMD -O2 -Wall -g
 endif
 
+ifdef TEST_FUZZ
+CFLAGS += -DCONFIG_NO_RANDOM_POOL
+CFLAGS += -DTEST_FUZZ
+endif
+
 CFLAGS += -I../src
 CFLAGS += -I../src/utils
 
@@ -77,6 +82,9 @@ test-sha1: test-sha1.o $(LIBS)
 test-sha256: test-sha256.o $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
+test-tls: test-tls.o $(LIBS)
+	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
+
 test-x509: test-x509.o $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
@@ -99,6 +107,7 @@ clean:
 	$(MAKE) -C ../src clean
 	rm -f $(TESTS) *~ *.o *.d
 	rm -f test-https
+	rm -f test-tls
 	rm -f test_x509v3_nist.out.*
 	rm -f test_x509v3_nist2.out.*
 
