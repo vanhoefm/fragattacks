@@ -26,7 +26,7 @@ static size_t tls_server_cert_chain_der_len(struct tlsv1_server *conn)
 	size_t len = 0;
 	struct x509_certificate *cert;
 
-	cert = conn->cred->cert;
+	cert = conn->cred ? conn->cred->cert : NULL;
 	while (cert) {
 		len += 3 + cert->cert_len;
 		if (x509_certificate_self_signed(cert))
