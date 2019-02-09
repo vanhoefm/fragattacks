@@ -164,7 +164,8 @@ u8 * tlsv1_server_handshake(struct tlsv1_server *conn,
 			/* need more data */
 			wpa_printf(MSG_DEBUG, "TLSv1: Partial processing not "
 				   "yet supported");
-			tlsv1_server_alert(conn, TLS_ALERT_LEVEL_FATAL, alert);
+			tlsv1_server_alert(conn, TLS_ALERT_LEVEL_FATAL,
+					   TLS_ALERT_INTERNAL_ERROR);
 			goto failed;
 		}
 		ct = pos[0];
