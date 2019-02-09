@@ -3477,8 +3477,8 @@ retry:
 			goto fail;
 	}
 	if (params->ssid) {
-		wpa_hexdump_ascii(MSG_DEBUG, "  * SSID",
-				  params->ssid, params->ssid_len);
+		wpa_printf(MSG_DEBUG, "  * SSID=%s",
+			   wpa_ssid_txt(params->ssid, params->ssid_len));
 		if (nla_put(msg, NL80211_ATTR_SSID, params->ssid_len,
 			    params->ssid))
 			goto fail;
@@ -4074,8 +4074,8 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 	wpa_printf(MSG_DEBUG, "nl80211: beacon_rate=%u", params->beacon_rate);
 	wpa_printf(MSG_DEBUG, "nl80211: rate_type=%d", params->rate_type);
 	wpa_printf(MSG_DEBUG, "nl80211: dtim_period=%d", params->dtim_period);
-	wpa_hexdump_ascii(MSG_DEBUG, "nl80211: ssid",
-			  params->ssid, params->ssid_len);
+	wpa_printf(MSG_DEBUG, "nl80211: ssid=%s",
+		   wpa_ssid_txt(params->ssid, params->ssid_len));
 	if (!(msg = nl80211_bss_msg(bss, 0, cmd)) ||
 	    nla_put(msg, NL80211_ATTR_BEACON_HEAD, params->head_len,
 		    params->head) ||
@@ -5289,8 +5289,8 @@ retry:
 	    params->ssid == NULL || params->ssid_len > sizeof(drv->ssid))
 		goto fail;
 
-	wpa_hexdump_ascii(MSG_DEBUG, "  * SSID",
-			  params->ssid, params->ssid_len);
+	wpa_printf(MSG_DEBUG, "  * SSID=%s",
+		   wpa_ssid_txt(params->ssid, params->ssid_len));
 	if (nla_put(msg, NL80211_ATTR_SSID, params->ssid_len, params->ssid))
 		goto fail;
 	os_memcpy(drv->ssid, params->ssid, params->ssid_len);
@@ -5451,8 +5451,8 @@ static int nl80211_connect_common(struct wpa_driver_nl80211_data *drv,
 	}
 
 	if (params->ssid) {
-		wpa_hexdump_ascii(MSG_DEBUG, "  * SSID",
-				  params->ssid, params->ssid_len);
+		wpa_printf(MSG_DEBUG, "  * SSID=%s",
+			   wpa_ssid_txt(params->ssid, params->ssid_len));
 		if (nla_put(msg, NL80211_ATTR_SSID, params->ssid_len,
 			    params->ssid))
 			return -1;
@@ -9435,8 +9435,8 @@ static int nl80211_put_mesh_id(struct nl_msg *msg, const u8 *mesh_id,
 			       size_t mesh_id_len)
 {
 	if (mesh_id) {
-		wpa_hexdump_ascii(MSG_DEBUG, "  * Mesh ID (SSID)",
-				  mesh_id, mesh_id_len);
+		wpa_printf(MSG_DEBUG, "  * Mesh ID (SSID)=%s",
+			   wpa_ssid_txt(mesh_id, mesh_id_len));
 		return nla_put(msg, NL80211_ATTR_MESH_ID, mesh_id_len, mesh_id);
 	}
 
