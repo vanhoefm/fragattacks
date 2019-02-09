@@ -1245,6 +1245,7 @@ static int tls_process_client_finished(struct tlsv1_server *conn, u8 ct,
 
 	if (os_memcmp_const(pos, verify_data, TLS_VERIFY_DATA_LEN) != 0) {
 		tlsv1_server_log(conn, "Mismatch in verify_data");
+		conn->state = FAILED;
 		return -1;
 	}
 
