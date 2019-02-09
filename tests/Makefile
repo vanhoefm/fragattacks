@@ -61,6 +61,9 @@ test-https: test-https.o $(LIBS)
 test-https_server: test-https_server.o $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
+test-json: test-json.o $(LIBS)
+	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
+
 test-list: test-list.o $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
@@ -107,6 +110,7 @@ clean:
 	$(MAKE) -C ../src clean
 	rm -f $(TESTS) *~ *.o *.d
 	rm -f test-https
+	rm -f test-json
 	rm -f test-tls
 	rm -f test_x509v3_nist.out.*
 	rm -f test_x509v3_nist2.out.*
