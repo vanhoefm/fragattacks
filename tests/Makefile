@@ -53,6 +53,9 @@ test-base64: test-base64.o $(LIBS)
 test-https: test-https.o $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
+test-https_server: test-https_server.o $(LIBS)
+	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
+
 test-list: test-list.o $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 

@@ -2,6 +2,7 @@ test-aes
 test-asn1
 test-base64
 test-https
+test-https_server
 test-list
 test-md4
 test-md5
