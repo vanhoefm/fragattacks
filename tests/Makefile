@@ -22,12 +22,28 @@ CFLAGS += -DCONFIG_NO_RANDOM_POOL
 CFLAGS += -DTEST_FUZZ
 endif
 
+CFLAGS += -DCONFIG_IEEE80211R_AP
+CFLAGS += -DCONFIG_IEEE80211W
+CFLAGS += -DCONFIG_IEEE80211R
+CFLAGS += -DCONFIG_TDLS
+
 CFLAGS += -I../src
 CFLAGS += -I../src/utils
 
 SLIBS = ../src/utils/libutils.a
 
 DLIBS = ../src/crypto/libcrypto.a \
+	../src/common/libcommon.a \
+	../src/ap/libap.a \
+	../src/eapol_auth/libeapol_auth.a \
+	../src/eapol_supp/libeapol_supp.a \
+	../src/eap_peer/libeap_peer.a \
+	../src/eap_server/libeap_server.a \
+	../src/eap_common/libeap_common.a \
+	../src/radius/libradius.a \
+	../src/l2_packet/libl2_packet.a \
+	../src/wps/libwps.a \
+	../src/rsn_supp/librsn_supp.a \
 	../src/tls/libtls.a
 
 LIBS = $(SLIBS) $(DLIBS)
@@ -39,11 +55,44 @@ LLIBS += -lrt
 ../src/utils/libutils.a:
 	$(MAKE) -C ../src/utils
 
+../src/common/libcommon.a:
+	$(MAKE) -C ../src/common
+
 ../src/crypto/libcrypto.a:
 	$(MAKE) -C ../src/crypto
 
 ../src/tls/libtls.a:
 	$(MAKE) -C ../src/tls
+
+../src/ap/libap.a:
+	$(MAKE) -C ../src/ap
+
+../src/radius/libradius.a:
+	$(MAKE) -C ../src/radius
+
+../src/l2_packet/libl2_packet.a:
+	$(MAKE) -C ../src/l2_packet
+
+../src/wps/libwps.a:
+	$(MAKE) -C ../src/wps
+
+../src/eap_peer/libeap_peer.a:
+	$(MAKE) -C ../src/eap_peer
+
+../src/eap_server/libeap_server.a:
+	$(MAKE) -C ../src/eap_server
+
+../src/eap_common/libeap_common.a:
+	$(MAKE) -C ../src/eap_common
+
+../src/eapol_auth/libeapol_auth.a:
+	$(MAKE) -C ../src/eapol_auth
+
+../src/eapol_supp/libeapol_supp.a:
+	$(MAKE) -C ../src/eapol_supp
+
+../src/rsn_supp/librsn_supp.a:
+	$(MAKE) -C ../src/rsn_supp
 
 
 test-aes: test-aes.o $(LIBS)
@@ -54,6 +103,9 @@ test-asn1: test-asn1.o $(LIBS)
 
 test-base64: test-base64.o $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
+
+test-eapol: test-eapol.o $(LIBS)
+	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
 test-https: test-https.o $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
@@ -109,6 +161,7 @@ run-tests: $(TESTS)
 clean:
 	$(MAKE) -C ../src clean
 	rm -f $(TESTS) *~ *.o *.d
+	rm -f test-eapol
 	rm -f test-https
 	rm -f test-json
 	rm -f test-tls

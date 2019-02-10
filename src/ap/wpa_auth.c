@@ -345,6 +345,10 @@ static int wpa_group_init_gmk_and_counter(struct wpa_authenticator *wpa_auth,
 	wpa_get_ntp_timestamp(buf + ETH_ALEN);
 	ptr = (unsigned long) group;
 	os_memcpy(buf + ETH_ALEN + 8, &ptr, sizeof(ptr));
+#ifdef TEST_FUZZ
+	os_memset(buf + ETH_ALEN, 0xab, 8);
+	os_memset(buf + ETH_ALEN + 8, 0xcd, sizeof(ptr));
+#endif /* TEST_FUZZ */
 	if (random_get_bytes(rkey, sizeof(rkey)) < 0)
 		return -1;
 
@@ -1217,6 +1221,11 @@ continue_processing:
 		     wpa_try_alt_snonce(sm, data, data_len))) {
 			wpa_auth_logger(wpa_auth, sm->addr, LOGGER_INFO,
 					"received EAPOL-Key with invalid MIC");
+#ifdef TEST_FUZZ
+			wpa_printf(MSG_INFO,
+				   "TEST: Ignore Key MIC failure for fuzz testing");
+			goto continue_fuzz;
+#endif /* TEST_FUZZ */
 			return;
 		}
 #ifdef CONFIG_FILS
@@ -1225,9 +1234,17 @@ continue_processing:
 				     &key_data_length) < 0) {
 			wpa_auth_logger(wpa_auth, sm->addr, LOGGER_INFO,
 					"received EAPOL-Key with invalid MIC");
+#ifdef TEST_FUZZ
+			wpa_printf(MSG_INFO,
+				   "TEST: Ignore Key MIC failure for fuzz testing");
+			goto continue_fuzz;
+#endif /* TEST_FUZZ */
 			return;
 		}
 #endif /* CONFIG_FILS */
+#ifdef TEST_FUZZ
+	continue_fuzz:
+#endif /* TEST_FUZZ */
 		sm->MICVerified = TRUE;
 		eloop_cancel_timeout(wpa_send_eapol_timeout, wpa_auth, sm);
 		sm->pending_1_of_4_timeout = 0;
@@ -1332,6 +1349,9 @@ static int wpa_gmk_to_gtk(const u8 *gmk, const char *label, const u8 *addr,
 	os_memcpy(data + ETH_ALEN, gnonce, WPA_NONCE_LEN);
 	pos = data + ETH_ALEN + WPA_NONCE_LEN;
 	wpa_get_ntp_timestamp(pos);
+#ifdef TEST_FUZZ
+	os_memset(pos, 0xef, 8);
+#endif /* TEST_FUZZ */
 	pos += 8;
 	if (random_get_bytes(pos, gtk_len) < 0)
 		ret = -1;
@@ -1611,6 +1631,9 @@ static void wpa_send_eapol(struct wpa_authenticator *wpa_auth,
 		timeout_ms = eapol_key_timeout_no_retrans;
 	if (pairwise && ctr == 1 && !(key_info & WPA_KEY_INFO_MIC))
 		sm->pending_1_of_4_timeout = 1;
+#ifdef TEST_FUZZ
+	timeout_ms = 1;
+#endif /* TEST_FUZZ */
 	wpa_printf(MSG_DEBUG, "WPA: Use EAPOL-Key timeout of %u ms (retry "
 		   "counter %u)", timeout_ms, ctr);
 	eloop_register_timeout(timeout_ms / 1000, (timeout_ms % 1000) * 1000,
