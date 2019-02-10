@@ -1,6 +1,6 @@
 /*
  * wpa_supplicant - WNM fuzzer
- * Copyright (c) 2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2015-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -16,6 +16,7 @@
 #include "../../wpa_supplicant/wpa_supplicant_i.h"
 #include "../../wpa_supplicant/bss.h"
 #include "../../wpa_supplicant/wnm_sta.h"
+#include "../../wpa_supplicant/config.h"
 
 
 struct arg_ctx {
@@ -24,6 +25,7 @@ struct arg_ctx {
 	struct wpa_bss bss;
 	struct wpa_driver_ops driver;
 	struct wpa_sm wpa;
+	struct wpa_config conf;
 };
 
 
@@ -60,6 +62,7 @@ static int init_wpa(struct arg_ctx *ctx)
 	ctx->wpa_s.current_bss = &ctx->bss;
 	ctx->wpa_s.driver = &ctx->driver;
 	ctx->wpa_s.wpa = &ctx->wpa;
+	ctx->wpa_s.conf = &ctx->conf;
 
 	return 0;
 }
