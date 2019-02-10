@@ -14,6 +14,7 @@ import os
 import subprocess
 import sys
 import time
+import errno
 
 logger = logging.getLogger()
 
@@ -94,8 +95,10 @@ def vm_read_stdout(vm, i):
         if out == None:
             return False
         out = out.decode()
-    except:
-        return False
+    except IOError as e:
+        if e.errno == errno.EAGAIN:
+            return False
+        raise
     logger.debug("VM[%d] stdout.read[%s]" % (i, out))
     pending = vm['pending'] + out
     lines = []
@@ -199,8 +202,9 @@ def show_progress(scr):
                     err = err.decode()
                     vm[i]['err'] += err
                     logger.debug("VM[%d] stderr.read[%s]" % (i, err))
-            except:
-                pass
+            except IOError as e:
+                if e.errno != errno.EAGAIN:
+                    raise
 
             if vm_read_stdout(vm[i], i):
                 scr.move(i + 1, 10)
@@ -256,8 +260,9 @@ def show_progress(scr):
                     err = err.decode()
                     vm[i]['err'] += err
                     logger.debug("VM[%d] stderr.read[%s]" % (i, err))
-            except:
-                pass
+            except IOError as e:
+                if e.errno != errno.EAGAIN:
+                    raise
 
             ready = False
             if vm[i]['first_run_done']:
@@ -374,8 +379,9 @@ def main():
     dir = os.environ.get('HWSIM_TEST_LOG_DIR', '/tmp/hwsim-test-logs')
     try:
         os.makedirs(dir)
-    except:
-        pass
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
 
     num_servers = args.num_servers
     rerun_failures = not args.no_retry
