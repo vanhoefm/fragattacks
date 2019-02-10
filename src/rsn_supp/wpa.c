@@ -715,7 +715,9 @@ static void wpa_supplicant_key_neg_complete(struct wpa_sm *sm,
 		 * likelihood of the first preauth EAPOL-Start frame getting to
 		 * the target AP.
 		 */
-		eloop_register_timeout(1, 0, wpa_sm_start_preauth, sm, NULL);
+		if (!dl_list_empty(&sm->pmksa_candidates))
+			eloop_register_timeout(1, 0, wpa_sm_start_preauth,
+					       sm, NULL);
 	}
 
 	if (sm->cur_pmksa && sm->cur_pmksa->opportunistic) {
