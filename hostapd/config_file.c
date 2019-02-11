@@ -1380,10 +1380,26 @@ static int hostapd_config_vht_capab(struct hostapd_config *conf,
 
 
 #ifdef CONFIG_IEEE80211AX
+
+static u8 find_bit_offset(u8 val)
+{
+	u8 res = 0;
+
+	for (; val; val >>= 1) {
+		if (val & 1)
+			break;
+		res++;
+	}
+
+	return res;
+}
+
+
 static u8 set_he_cap(int val, u8 mask)
 {
-	return (u8) (mask & (val << ffs(mask)));
+	return (u8) (mask & (val << find_bit_offset(mask)));
 }
+
 #endif /* CONFIG_IEEE80211AX */
 
 
