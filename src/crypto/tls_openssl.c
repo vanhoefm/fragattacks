@@ -329,8 +329,7 @@ static X509_STORE * tls_crl_cert_reload(const char *ca_cert, int check_crl)
 		return NULL;
 	}
 
-	if (check_crl)
-		flags = X509_V_FLAG_CRL_CHECK;
+	flags = check_crl ? X509_V_FLAG_CRL_CHECK : 0;
 	if (check_crl == 2)
 		flags |= X509_V_FLAG_CRL_CHECK_ALL;
 
