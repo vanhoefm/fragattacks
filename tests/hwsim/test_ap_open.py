@@ -864,3 +864,26 @@ def test_ap_open_no_reflection(dev, apdev):
             raise Exception("STA can unexpectedly talk to itself")
     finally:
         dev[0].request('DATA_TEST_CONFIG 0')
+
+def test_ap_no_auth_ack(dev, apdev):
+    """AP not receiving Authentication frame ACK"""
+    hapd = hostapd.add_ap(apdev[0], { "ssid": "open",
+                                      "ap_max_inactivity": "1" })
+    hapd.set("ext_mgmt_frame_handling", "1")
+    bssid = hapd.own_addr()
+    addr = "02:01:02:03:04:05"
+    frame = "b0003a01" + bssid.replace(':', '') + addr.replace(':', '') + bssid.replace(':', '') + "1000" + "000001000000"
+    if "OK" not in hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + frame):
+        raise Exception("MGMT_RX_PROCESS failed")
+    ev = hapd.wait_event(["MGMT-TX-STATUS"], timeout=5)
+    if ev is None:
+        raise Exception("TX status for Authentication frame not reported")
+    if "ok=0 buf=b0" not in ev:
+        raise Exception("Unexpected TX status contents: " + ev)
+
+    # wait for STA to be removed due to timeout
+    ev = hapd.wait_event(["MGMT-TX-STATUS"], timeout=5)
+    if ev is None:
+        raise Exception("TX status for Deauthentication frame not reported")
+    if "ok=0 buf=c0" not in ev:
+        raise Exception("Unexpected TX status contents (disconnect): " + ev)
