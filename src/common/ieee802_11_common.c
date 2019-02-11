@@ -299,29 +299,17 @@ ParseRes ieee802_11_parse_elems(const u8 *start, size_t len,
 				struct ieee802_11_elems *elems,
 				int show_errors)
 {
-	size_t left = len;
-	const u8 *pos = start;
+	const struct element *elem;
 	int unknown = 0;
 
 	os_memset(elems, 0, sizeof(*elems));
 
-	while (left >= 2) {
-		u8 id, elen;
+	if (!start)
+		return ParseOK;
 
-		id = *pos++;
-		elen = *pos++;
-		left -= 2;
-
-		if (elen > left) {
-			if (show_errors) {
-				wpa_printf(MSG_DEBUG, "IEEE 802.11 element "
-					   "parse failed (id=%d elen=%d "
-					   "left=%lu)",
-					   id, elen, (unsigned long) left);
-				wpa_hexdump(MSG_MSGDUMP, "IEs", start, len);
-			}
-			return ParseFailed;
-		}
+	for_each_element(elem, start, len) {
+		u8 id = elem->id, elen = elem->datalen;
+		const u8 *pos = elem->data;
 
 		switch (id) {
 		case WLAN_EID_SSID:
@@ -469,8 +457,7 @@ ParseRes ieee802_11_parse_elems(const u8 *start, size_t len,
 			elems->mic = pos;
 			elems->mic_len = elen;
 			/* after mic everything is encrypted, so stop. */
-			left = elen;
-			break;
+			goto done;
 		case WLAN_EID_MULTI_BAND:
 			if (elems->mb_ies.nof_ies >= MAX_NOF_MB_IES_SUPPORTED) {
 				wpa_printf(MSG_MSGDUMP,
@@ -529,14 +516,19 @@ ParseRes ieee802_11_parse_elems(const u8 *start, size_t len,
 				   id, elen);
 			break;
 		}
-
-		left -= elen;
-		pos += elen;
 	}
 
-	if (left)
+	if (!for_each_element_completed(elem, start, len)) {
+		if (show_errors) {
+			wpa_printf(MSG_DEBUG,
+				   "IEEE 802.11 element parse failed @%d",
+				   (int) (start + len - (const u8 *) elem));
+			wpa_hexdump(MSG_MSGDUMP, "IEs", start, len);
+		}
 		return ParseFailed;
+	}
 
+done:
 	return unknown ? ParseUnknown : ParseOK;
 }
 
