@@ -204,7 +204,8 @@ int wps_build_version(struct wpabuf *msg)
 
 
 int wps_build_wfa_ext(struct wpabuf *msg, int req_to_enroll,
-		      const u8 *auth_macs, size_t auth_macs_count)
+		      const u8 *auth_macs, size_t auth_macs_count,
+		      u8 multi_ap_subelem)
 {
 	u8 *len;
 
@@ -243,6 +244,14 @@ int wps_build_wfa_ext(struct wpabuf *msg, int req_to_enroll,
 		for (i = 0; i < auth_macs_count; i++)
 			wpa_printf(MSG_DEBUG, "WPS:    AuthorizedMAC: " MACSTR,
 				   MAC2STR(&auth_macs[i * ETH_ALEN]));
+	}
+
+	if (multi_ap_subelem) {
+		wpa_printf(MSG_DEBUG, "WPS:  * Multi-AP (0x%x)",
+			   multi_ap_subelem);
+		wpabuf_put_u8(msg, WFA_ELEM_MULTI_AP);
+		wpabuf_put_u8(msg, 1); /* length */
+		wpabuf_put_u8(msg, multi_ap_subelem);
 	}
 
 	WPA_PUT_BE16(len, (u8 *) wpabuf_put(msg, 0) - len - 2);
