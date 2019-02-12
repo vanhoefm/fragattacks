@@ -59,7 +59,5 @@ def test_multi_ap_fronthaul_on_ap(dev, apdev):
     dev[0].request("DISCONNECT")
     if ev is None:
         raise Exception("Connection result not reported")
-    if "CTRL-EVENT-ASSOC-REJECT" not in ev:
-        raise Exception("Association rejection not reported")
-    if "status_code=12" not in ev:
-        raise Exception("Unexpected association status code: " + ev)
+    if "CTRL-EVENT-DISCONNECTED" not in ev:
+        raise Exception("Unexpected connection result")
