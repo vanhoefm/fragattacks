@@ -37,9 +37,9 @@ DBusMessage * wpas_dbus_iface_wps_pbc(DBusMessage *message,
 		return wpas_dbus_new_invalid_opts_error(message, NULL);
 
 	if (os_strcmp(arg_bssid, "any") == 0)
-		ret = wpas_wps_start_pbc(wpa_s, NULL, 0);
+		ret = wpas_wps_start_pbc(wpa_s, NULL, 0, 0);
 	else if (!hwaddr_aton(arg_bssid, bssid))
-		ret = wpas_wps_start_pbc(wpa_s, bssid, 0);
+		ret = wpas_wps_start_pbc(wpa_s, bssid, 0, 0);
 	else {
 		return wpas_dbus_new_invalid_opts_error(message,
 							"Invalid BSSID");

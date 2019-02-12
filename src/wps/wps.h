@@ -187,6 +187,12 @@ struct wps_config {
 	 * peer_pubkey_hash - Peer public key hash or %NULL if not known
 	 */
 	const u8 *peer_pubkey_hash;
+
+	/**
+	 * multi_ap_backhaul_sta - Whether this is a Multi-AP backhaul STA
+	 * enrollee
+	 */
+	int multi_ap_backhaul_sta;
 };
 
 struct wps_data * wps_init(const struct wps_config *cfg);

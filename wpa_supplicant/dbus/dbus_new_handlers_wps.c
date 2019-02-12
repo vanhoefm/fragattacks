@@ -293,7 +293,7 @@ DBusMessage * wpas_dbus_handler_wps_start(DBusMessage *message,
 					message, "invalid PIN");
 		}
 	} else {
-		ret = wpas_wps_start_pbc(wpa_s, params.bssid, 0);
+		ret = wpas_wps_start_pbc(wpa_s, params.bssid, 0, 0);
 	}
 
 	if (ret < 0) {

@@ -125,6 +125,8 @@ struct wps_data {
 	int pbc_in_m1;
 
 	struct wps_nfc_pw_token *nfc_pw_token;
+
+	int multi_ap_backhaul_sta;
 };
 
 

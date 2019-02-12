@@ -2305,6 +2305,13 @@ static void multi_ap_process_assoc_resp(struct wpa_supplicant *wpa_s,
 	}
 
 	if (!(map_sub_elem[2] & MULTI_AP_BACKHAUL_BSS)) {
+		if ((map_sub_elem[2] & MULTI_AP_FRONTHAUL_BSS) &&
+		    wpa_s->current_ssid->key_mgmt & WPA_KEY_MGMT_WPS) {
+			wpa_printf(MSG_INFO,
+				   "WPS active, accepting fronthaul-only BSS");
+			/* Don't set 4addr mode in this case, so just return */
+			return;
+		}
 		wpa_printf(MSG_INFO, "AP doesn't support backhaul BSS");
 		goto fail;
 	}
@@ -4829,7 +4836,7 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		break;
 	case EVENT_WPS_BUTTON_PUSHED:
 #ifdef CONFIG_WPS
-		wpas_wps_start_pbc(wpa_s, NULL, 0);
+		wpas_wps_start_pbc(wpa_s, NULL, 0, 0);
 #endif /* CONFIG_WPS */
 		break;
 	case EVENT_AVOID_FREQUENCIES:

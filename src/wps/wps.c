@@ -145,6 +145,8 @@ struct wps_data * wps_init(const struct wps_config *cfg)
 		data->peer_pubkey_hash_set = 1;
 	}
 
+	data->multi_ap_backhaul_sta = cfg->multi_ap_backhaul_sta;
+
 	return data;
 }
 
