@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
 # Test case executor
 # Copyright (c) 2013-2015, Jouni Malinen <j@w1.fi>

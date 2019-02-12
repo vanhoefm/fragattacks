@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
 # Parallel VM test case executor
 # Copyright (c) 2014-2018, Jouni Malinen <j@w1.fi>
