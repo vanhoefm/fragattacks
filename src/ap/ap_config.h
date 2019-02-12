@@ -467,6 +467,7 @@ struct hostapd_bss_config {
 	int force_per_enrollee_psk;
 	u8 *ap_settings;
 	size_t ap_settings_len;
+	struct hostapd_ssid multi_ap_backhaul_ssid;
 	char *upnp_iface;
 	char *friendly_name;
 	char *manufacturer_url;

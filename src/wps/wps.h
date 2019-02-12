@@ -100,6 +100,7 @@ struct wps_device_data {
 	struct wpabuf *vendor_ext[MAX_WPS_VENDOR_EXTENSIONS];
 
 	int p2p;
+	u8 multi_ap_ext;
 };
 
 /**
@@ -401,6 +402,37 @@ struct wps_registrar_config {
 	 * PSK is set for a network.
 	 */
 	int force_per_enrollee_psk;
+
+	/**
+	 * multi_ap_backhaul_ssid - SSID to supply to a Multi-AP backhaul
+	 * enrollee
+	 *
+	 * This SSID is used by the Registrar to fill in information for
+	 * Credentials when the enrollee advertises it is a Multi-AP backhaul
+	 * STA.
+	 */
+	const u8 *multi_ap_backhaul_ssid;
+
+	/**
+	 * multi_ap_backhaul_ssid_len - Length of multi_ap_backhaul_ssid in
+	 * octets
+	 */
+	size_t multi_ap_backhaul_ssid_len;
+
+	/**
+	 * multi_ap_backhaul_network_key - The Network Key (PSK) for the
+	 * Multi-AP backhaul enrollee.
+	 *
+	 * This key can be either the ASCII passphrase (8..63 characters) or the
+	 * 32-octet PSK (64 hex characters).
+	 */
+	const u8 *multi_ap_backhaul_network_key;
+
+	/**
+	 * multi_ap_backhaul_network_key_len - Length of
+	 * multi_ap_backhaul_network_key in octets
+	 */
+	size_t multi_ap_backhaul_network_key_len;
 };
 
 

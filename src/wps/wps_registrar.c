@@ -188,6 +188,37 @@ struct wps_registrar {
 #ifdef WPS_WORKAROUNDS
 	struct os_reltime pbc_ignore_start;
 #endif /* WPS_WORKAROUNDS */
+
+	/**
+	 * multi_ap_backhaul_ssid - SSID to supply to a Multi-AP backhaul
+	 * enrollee
+	 *
+	 * This SSID is used by the Registrar to fill in information for
+	 * Credentials when the enrollee advertises it is a Multi-AP backhaul
+	 * STA.
+	 */
+	u8 multi_ap_backhaul_ssid[SSID_MAX_LEN];
+
+	/**
+	 * multi_ap_backhaul_ssid_len - Length of multi_ap_backhaul_ssid in
+	 * octets
+	 */
+	size_t multi_ap_backhaul_ssid_len;
+
+	/**
+	 * multi_ap_backhaul_network_key - The Network Key (PSK) for the
+	 * Multi-AP backhaul enrollee.
+	 *
+	 * This key can be either the ASCII passphrase (8..63 characters) or the
+	 * 32-octet PSK (64 hex characters).
+	 */
+	u8 *multi_ap_backhaul_network_key;
+
+	/**
+	 * multi_ap_backhaul_network_key_len - Length of
+	 * multi_ap_backhaul_network_key in octets
+	 */
+	size_t multi_ap_backhaul_network_key_len;
 };
 
 
@@ -667,6 +698,18 @@ wps_registrar_init(struct wps_context *wps,
 	reg->dualband = cfg->dualband;
 	reg->force_per_enrollee_psk = cfg->force_per_enrollee_psk;
 
+	os_memcpy(reg->multi_ap_backhaul_ssid, cfg->multi_ap_backhaul_ssid,
+		  cfg->multi_ap_backhaul_ssid_len);
+	reg->multi_ap_backhaul_ssid_len = cfg->multi_ap_backhaul_ssid_len;
+	if (cfg->multi_ap_backhaul_network_key) {
+		reg->multi_ap_backhaul_network_key =
+			os_memdup(cfg->multi_ap_backhaul_network_key,
+				  cfg->multi_ap_backhaul_network_key_len);
+		if (reg->multi_ap_backhaul_network_key)
+			reg->multi_ap_backhaul_network_key_len =
+				cfg->multi_ap_backhaul_network_key_len;
+	}
+
 	if (wps_set_ie(reg)) {
 		wps_registrar_deinit(reg);
 		return NULL;
@@ -704,6 +747,8 @@ void wps_registrar_deinit(struct wps_registrar *reg)
 	eloop_cancel_timeout(wps_registrar_set_selected_timeout, reg, NULL);
 	wps_registrar_flush(reg);
 	wpabuf_clear_free(reg->extra_cred);
+	bin_clear_free(reg->multi_ap_backhaul_network_key,
+		       reg->multi_ap_backhaul_network_key_len);
 	os_free(reg);
 }
 
@@ -1592,6 +1637,7 @@ int wps_build_credential_wrap(struct wpabuf *msg,
 int wps_build_cred(struct wps_data *wps, struct wpabuf *msg)
 {
 	struct wpabuf *cred;
+	struct wps_registrar *reg = wps->wps->registrar;
 
 	if (wps->wps->registrar->skip_cred_build)
 		goto skip_cred_build;
@@ -1602,6 +1648,29 @@ int wps_build_cred(struct wps_data *wps, struct wpabuf *msg)
 		goto use_provided;
 	}
 	os_memset(&wps->cred, 0, sizeof(wps->cred));
+
+	if (wps->peer_dev.multi_ap_ext == MULTI_AP_BACKHAUL_STA &&
+	    reg->multi_ap_backhaul_ssid_len) {
+		wpa_printf(MSG_DEBUG, "WPS: Use backhaul STA credentials");
+		os_memcpy(wps->cred.ssid, reg->multi_ap_backhaul_ssid,
+			  reg->multi_ap_backhaul_ssid_len);
+		wps->cred.ssid_len = reg->multi_ap_backhaul_ssid_len;
+		/* Backhaul is always WPA2PSK */
+		wps->cred.auth_type = WPS_AUTH_WPA2PSK;
+		wps->cred.encr_type = WPS_ENCR_AES;
+		/* Set MAC address in the Credential to be the Enrollee's MAC
+		 * address
+		 */
+		os_memcpy(wps->cred.mac_addr, wps->mac_addr_e, ETH_ALEN);
+		if (reg->multi_ap_backhaul_network_key) {
+			os_memcpy(wps->cred.key,
+				  reg->multi_ap_backhaul_network_key,
+				  reg->multi_ap_backhaul_network_key_len);
+			wps->cred.key_len =
+				reg->multi_ap_backhaul_network_key_len;
+		}
+		goto use_provided;
+	}
 
 	os_memcpy(wps->cred.ssid, wps->wps->ssid, wps->wps->ssid_len);
 	wps->cred.ssid_len = wps->wps->ssid_len;
@@ -2705,6 +2774,7 @@ static enum wps_process_res wps_process_m1(struct wps_data *wps,
 		wps->use_psk_key = 1;
 	}
 #endif /* WPS_WORKAROUNDS */
+	wps_process_vendor_ext_m1(&wps->peer_dev, attr->multi_ap_ext);
 
 	wps->state = SEND_M2;
 	return WPS_CONTINUE;

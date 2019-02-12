@@ -644,6 +644,8 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 	os_free(conf->ap_pin);
 	os_free(conf->extra_cred);
 	os_free(conf->ap_settings);
+	hostapd_config_clear_wpa_psk(&conf->multi_ap_backhaul_ssid.wpa_psk);
+	str_clear_free(conf->multi_ap_backhaul_ssid.wpa_passphrase);
 	os_free(conf->upnp_iface);
 	os_free(conf->friendly_name);
 	os_free(conf->manufacturer_url);
