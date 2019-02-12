@@ -2297,28 +2297,30 @@ static u16 check_multi_ap(struct hostapd_data *hapd, struct sta_info *sta,
 		}
 	}
 
-	if (multi_ap_value == MULTI_AP_BACKHAUL_STA)
-		sta->flags |= WLAN_STA_MULTI_AP;
+	if (multi_ap_value && multi_ap_value != MULTI_AP_BACKHAUL_STA)
+		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
+			       HOSTAPD_LEVEL_INFO,
+			       "Multi-AP IE with unexpected value 0x%02x",
+			       multi_ap_value);
 
-	if ((hapd->conf->multi_ap & BACKHAUL_BSS) &&
-	    multi_ap_value == MULTI_AP_BACKHAUL_STA)
-		return WLAN_STATUS_SUCCESS;
+	if (!(multi_ap_value & MULTI_AP_BACKHAUL_STA)) {
+		if (hapd->conf->multi_ap & FRONTHAUL_BSS)
+			return WLAN_STATUS_SUCCESS;
 
-	if (hapd->conf->multi_ap & FRONTHAUL_BSS) {
-		if (multi_ap_value == MULTI_AP_BACKHAUL_STA) {
-			hostapd_logger(hapd, sta->addr,
-				       HOSTAPD_MODULE_IEEE80211,
-				       HOSTAPD_LEVEL_INFO,
-				       "Backhaul STA tries to associate with fronthaul-only BSS");
-			return WLAN_STATUS_ASSOC_DENIED_UNSPEC;
-		}
-		return WLAN_STATUS_SUCCESS;
+		hostapd_logger(hapd, sta->addr,
+			       HOSTAPD_MODULE_IEEE80211,
+			       HOSTAPD_LEVEL_INFO,
+			       "Non-Multi-AP STA tries to associate with backhaul-only BSS");
+		return WLAN_STATUS_ASSOC_DENIED_UNSPEC;
 	}
 
-	hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
-		       HOSTAPD_LEVEL_INFO,
-		       "Non-Multi-AP STA tries to associate with backhaul-only BSS");
-	return WLAN_STATUS_ASSOC_DENIED_UNSPEC;
+	if (!(hapd->conf->multi_ap & BACKHAUL_BSS))
+		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
+			       HOSTAPD_LEVEL_DEBUG,
+			       "Backhaul STA tries to associate with fronthaul-only BSS");
+
+	sta->flags |= WLAN_STA_MULTI_AP;
+	return WLAN_STATUS_SUCCESS;
 }
 
 
