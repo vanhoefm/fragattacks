@@ -28,21 +28,18 @@ def test_multi_ap_association_shared_bss(dev, apdev):
     run_multi_ap_association(dev, apdev, 3)
     dev[1].connect("multi-ap", psk="12345678", scan_freq="2412")
 
-def run_multi_ap_association(dev, apdev, multi_ap):
+def run_multi_ap_association(dev, apdev, multi_ap, wait_connect=True):
     params = hostapd.wpa2_params(ssid="multi-ap", passphrase="12345678")
-    params["multi_ap"] = str(multi_ap)
+    if multi_ap:
+        params["multi_ap"] = str(multi_ap)
     hapd = hostapd.add_ap(apdev[0], params)
 
-    dev[0].connect("multi-ap", psk="12345678", multi_ap_backhaul_sta="1",
-                   scan_freq="2412")
+    dev[0].connect("multi-ap", psk="12345678", scan_freq="2412",
+                   multi_ap_backhaul_sta="1", wait_connect=wait_connect)
 
 def test_multi_ap_disabled_on_ap(dev, apdev):
     """Multi-AP association attempt when disabled on AP"""
-    params = hostapd.wpa2_params(ssid="multi-ap", passphrase="12345678")
-    hapd = hostapd.add_ap(apdev[0], params)
-
-    dev[0].connect("multi-ap", psk="12345678", multi_ap_backhaul_sta="1",
-                   scan_freq="2412", wait_connect=False)
+    run_multi_ap_association(dev, apdev, 0, wait_connect=False)
     ev = dev[0].wait_event([ "CTRL-EVENT-DISCONNECTED",
                              "CTRL-EVENT-CONNECTED" ],
                            timeout=5)
@@ -54,12 +51,7 @@ def test_multi_ap_disabled_on_ap(dev, apdev):
 
 def test_multi_ap_fronthaul_on_ap(dev, apdev):
     """Multi-AP association attempt when only fronthaul BSS on AP"""
-    params = hostapd.wpa2_params(ssid="multi-ap", passphrase="12345678")
-    params["multi_ap"] = "2"
-    hapd = hostapd.add_ap(apdev[0], params)
-
-    dev[0].connect("multi-ap", psk="12345678", multi_ap_backhaul_sta="1",
-                   scan_freq="2412", wait_connect=False)
+    run_multi_ap_association(dev, apdev, 2, wait_connect=False)
     ev = dev[0].wait_event([ "CTRL-EVENT-DISCONNECTED",
                              "CTRL-EVENT-CONNECTED",
                              "CTRL-EVENT-ASSOC-REJECT" ],
