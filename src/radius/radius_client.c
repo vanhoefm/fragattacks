@@ -457,7 +457,7 @@ static int radius_client_retransmit(struct radius_client_data *radius,
 	}
 
 	/* retransmit; remove entry if too many attempts */
-	if (entry->accu_attempts > RADIUS_CLIENT_MAX_FAILOVER *
+	if (entry->accu_attempts >= RADIUS_CLIENT_MAX_FAILOVER *
 	    RADIUS_CLIENT_NUM_FAILOVER * num_servers) {
 		wpa_printf(MSG_INFO,
 			   "RADIUS: Removing un-ACKed message due to too many failed retransmit attempts");
@@ -507,7 +507,7 @@ static void radius_client_timer(void *eloop_ctx, void *timeout_ctx)
 		if (now.sec >= entry->next_try) {
 			s = entry->msg_type == RADIUS_AUTH ? radius->auth_sock :
 				radius->acct_sock;
-			if (entry->attempts > RADIUS_CLIENT_NUM_FAILOVER ||
+			if (entry->attempts >= RADIUS_CLIENT_NUM_FAILOVER ||
 			    (s < 0 && entry->attempts > 0)) {
 				if (entry->msg_type == RADIUS_ACCT ||
 				    entry->msg_type == RADIUS_ACCT_INTERIM)
@@ -1116,7 +1116,7 @@ radius_change_server(struct radius_client_data *radius,
 		    (!auth && entry->msg_type != RADIUS_ACCT))
 			continue;
 		entry->next_try = entry->first_try + RADIUS_CLIENT_FIRST_WAIT;
-		entry->attempts = 1;
+		entry->attempts = 0;
 		entry->next_wait = RADIUS_CLIENT_FIRST_WAIT * 2;
 	}
 
