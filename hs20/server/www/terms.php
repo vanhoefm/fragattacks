@@ -2,6 +2,13 @@
 
 require('config.php');
 
+function print_header()
+{
+   echo "<html>\n";
+   echo "<head><title>HS 2.0 Terms and Conditions</title></head>\n";
+   echo "<body>\n";
+}
+
 $db = new PDO($osu_db);
 if (!$db) {
    die($sqliteerror);
@@ -21,26 +28,20 @@ if (!$row) {
    die("No pending session for the specified MAC address");
 }
 $identity = $row[0];
-?>
-<html>
-<head><title>HS 2.0 Terms and Conditions</title></head>
-<body>
-
-<?php
 
 if (!$accept) {
+   print_header();
+
    echo "<p>Accept the following terms and conditions by clicking here: <a href=\"terms.php?addr=$addr&accept=yes\">Accept</a></p>\n<hr>\n";
    readfile($t_c_file);
 } else {
    $res = $db->prepare("UPDATE users SET t_c_timestamp=? WHERE identity=?");
    if (!$res->execute(array($t_c_timestamp, $identity))) {
-      echo "<p>Failed to update user account.</p>";
-   } else {
-      $res = $db->prepare("DELETE FROM pending_tc WHERE mac_addr=?");
-      $res->execute(array($addr));
-
-      echo "<p>Terms and conditions were accepted.</p>";
+      die("Failed to update user account.");
    }
+
+   $res = $db->prepare("DELETE FROM pending_tc WHERE mac_addr=?");
+   $res->execute(array($addr));
 
    $fp = fsockopen($hostapd_ctrl);
    if (!$fp) {
@@ -69,8 +70,13 @@ if (!$accept) {
       sleep(1);
    }
    if ($ack) {
+      header('X-WFA-Hotspot20-Filtering: removed');
+      print_header();
+      echo "<p>Terms and conditions were accepted.</p>\n";
+
       echo "<P>Filtering disabled.</P>\n";
    } else {
+      print_header();
       echo "<P>Failed to disable filtering.</P>\n";
    }
 }
