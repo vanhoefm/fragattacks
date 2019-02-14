@@ -709,3 +709,24 @@ def test_ap_vlan_reconnect(dev, apdev):
     logger.info("reconnect sta")
     dev[0].connect("test-vlan", psk="12345678", scan_freq="2412")
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
+
+def test_ap_vlan_psk(dev, apdev, params):
+    """AP VLAN based on PSK/passphrase"""
+    psk_file = os.path.join(params['logdir'], 'ap_vlan_psk.wpa_psk')
+    with open(psk_file, 'w') as f:
+        f.write('vlanid=1 00:00:00:00:00:00 passphrase-for-vlan-1\n')
+        f.write('vlanid=2 00:00:00:00:00:00 passphrase-for-vlan-2\n')
+        f.write('vlanid=3 00:00:00:00:00:00 passphrase-for-vlan-3\n')
+
+    ssid = 'test-vlan-rsn'
+    params = hostapd.wpa2_params(ssid=ssid)
+    params['dynamic_vlan'] = "1"
+    params['wpa_psk_file'] = psk_file
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect(ssid, psk="passphrase-for-vlan-1", scan_freq="2412")
+    dev[1].connect(ssid, psk="passphrase-for-vlan-2", scan_freq="2412")
+    dev[2].connect(ssid, psk="passphrase-for-vlan-3", scan_freq="2412")
+    hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
+    hwsim_utils.test_connectivity_iface(dev[1], hapd, "brvlan2")
+    hwsim_utils.test_connectivity_iface(dev[2], hapd, "brvlan3")
