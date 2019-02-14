@@ -5844,3 +5844,50 @@ def run_dpp_network_addition_failure(dev, apdev):
                 raise Exception("Config object not processed")
             wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
         dev[0].dump_monitor()
+
+def test_dpp_two_initiators(dev, apdev):
+    """DPP and two initiators"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    check_dpp_capab(dev[2])
+
+    addr = dev[0].own_addr().replace(':', '')
+    id = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
+    if "FAIL" in id:
+        raise Exception("Failed to set key for " + curve)
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI " + id)
+
+    if "OK" not in dev[0].request("DPP_LISTEN 2412"):
+        raise Exception("Failed to start listen operation")
+
+    res = dev[1].request("DPP_QR_CODE " + uri)
+    if "FAIL" in res:
+        raise Exception("Failed to parse QR Code URI")
+    res = dev[2].request("DPP_QR_CODE " + uri)
+    if "FAIL" in res:
+        raise Exception("Failed to parse QR Code URI")
+
+    if "OK" not in dev[1].request("DPP_AUTH_INIT peer=" + res):
+        raise Exception("Failed to initiate DPP Authentication")
+    ev = dev[0].wait_event(["DPP-RX"], timeout=5)
+    if ev is None:
+        raise Exeption("No DPP Authentication Request seen")
+    if "OK" not in dev[2].request("DPP_AUTH_INIT peer=" + res):
+        raise Exception("Failed to initiate DPP Authentication (2)")
+
+    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
+    if ev is None:
+        raise Exeption("No DPP failure seen")
+    if "DPP-FAIL Already in DPP authentication exchange - ignore new one" not in ev:
+        raise Exception("Second DPP authentication exchange not reported as ignored")
+
+    ev = dev[0].wait_event(["DPP-CONF-FAILED"], timeout=2)
+    if ev is None:
+        raise Exception("DPP configuration result not seen (Enrollee)")
+    ev = dev[1].wait_event(["DPP-CONF-SENT"], timeout=2)
+    if ev is None:
+        raise Exception("DPP configuration result not seen (Responder)")
+
+    dev[0].request("DPP_STOP_LISTEN")
+    dev[1].request("DPP_STOP_LISTEN")
+    dev[2].request("DPP_STOP_LISTEN")
