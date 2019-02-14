@@ -11,6 +11,7 @@ logger = logging.getLogger()
 import struct
 
 import hostapd
+from wpasupplicant import WpaSupplicant
 from utils import HwsimSkip, alloc_fail, parse_ie
 import hwsim_utils
 from test_ap_csa import csa_supported
@@ -71,6 +72,33 @@ def test_ap_ht40_scan(dev, apdev):
     dev[0].connect("test-ht40", key_mgmt="NONE", scan_freq=freq)
     sta = hapd.get_sta(dev[0].own_addr())
     logger.info("hostapd STA: " + str(sta))
+
+def test_ap_ht_wifi_generation(dev, apdev):
+    """HT and wifi_generation"""
+    clear_scan_cache(apdev[0])
+    params = { "ssid": "test-ht",
+               "channel": "6" }
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("test-ht", key_mgmt="NONE", scan_freq="2437")
+    status = dev[0].get_status()
+    if 'wifi_generation' not in status:
+        # For now, assume this is because of missing kernel support
+        raise HwsimSkip("Association Request IE reporting not supported")
+        #raise Exception("Missing wifi_generation information")
+    if status['wifi_generation'] != "4":
+        raise Exception("Unexpected wifi_generation value: " + status['wifi_generation'])
+
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
+    wpas.connect("test-ht", key_mgmt="NONE", scan_freq="2437")
+    status = wpas.get_status()
+    if 'wifi_generation' not in status:
+        # For now, assume this is because of missing kernel support
+        raise HwsimSkip("Association Request IE reporting not supported")
+        #raise Exception("Missing wifi_generation information (connect)")
+    if status['wifi_generation'] != "4":
+        raise Exception("Unexpected wifi_generation value (connect): " + status['wifi_generation'])
 
 @remote_compatible
 def test_ap_ht40_scan_conflict(dev, apdev):
