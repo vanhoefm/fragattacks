@@ -279,6 +279,8 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 	}
 
 	while (fgets(buf, sizeof(buf), f)) {
+		int vlan_id = 0;
+
 		line++;
 
 		if (buf[0] == '#')
@@ -306,6 +308,8 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 				value = "";
 			if (!os_strcmp(name, "keyid")) {
 				keyid = value;
+			} else if (!os_strcmp(name, "vlanid")) {
+				vlan_id = atoi(value);
 			} else {
 				wpa_printf(MSG_ERROR,
 					   "Unrecognized '%s=%s' on line %d in '%s'",
@@ -333,6 +337,7 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 			ret = -1;
 			break;
 		}
+		psk->vlan_id = vlan_id;
 		if (is_zero_ether_addr(addr))
 			psk->group = 1;
 		else
@@ -858,10 +863,13 @@ const char * hostapd_get_vlan_id_ifname(struct hostapd_vlan *vlan, int vlan_id)
 
 const u8 * hostapd_get_psk(const struct hostapd_bss_config *conf,
 			   const u8 *addr, const u8 *p2p_dev_addr,
-			   const u8 *prev_psk)
+			   const u8 *prev_psk, int *vlan_id)
 {
 	struct hostapd_wpa_psk *psk;
 	int next_ok = prev_psk == NULL;
+
+	if (vlan_id)
+		*vlan_id = 0;
 
 	if (p2p_dev_addr && !is_zero_ether_addr(p2p_dev_addr)) {
 		wpa_printf(MSG_DEBUG, "Searching a PSK for " MACSTR
@@ -880,8 +888,11 @@ const u8 * hostapd_get_psk(const struct hostapd_bss_config *conf,
 		     (addr && os_memcmp(psk->addr, addr, ETH_ALEN) == 0) ||
 		     (!addr && p2p_dev_addr &&
 		      os_memcmp(psk->p2p_dev_addr, p2p_dev_addr, ETH_ALEN) ==
-		      0)))
+		      0))) {
+			if (vlan_id)
+				*vlan_id = psk->vlan_id;
 			return psk->psk;
+		}
 
 		if (psk->psk == prev_psk)
 			next_ok = 1;

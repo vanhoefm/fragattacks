@@ -152,6 +152,7 @@ struct hostapd_wpa_psk {
 	u8 psk[PMK_LEN];
 	u8 addr[ETH_ALEN];
 	u8 p2p_dev_addr[ETH_ALEN];
+	int vlan_id;
 };
 
 struct hostapd_eap_user {
@@ -872,7 +873,7 @@ int hostapd_maclist_found(struct mac_acl_entry *list, int num_entries,
 int hostapd_rate_found(int *list, int rate);
 const u8 * hostapd_get_psk(const struct hostapd_bss_config *conf,
 			   const u8 *addr, const u8 *p2p_dev_addr,
-			   const u8 *prev_psk);
+			   const u8 *prev_psk, int *vlan_id);
 int hostapd_setup_wpa_psk(struct hostapd_bss_config *conf);
 int hostapd_vlan_valid(struct hostapd_vlan *vlan,
 		       struct vlan_description *vlan_desc);

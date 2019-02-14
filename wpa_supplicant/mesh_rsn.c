@@ -76,7 +76,7 @@ static void auth_logger(void *ctx, const u8 *addr, logger_level level,
 
 static const u8 *auth_get_psk(void *ctx, const u8 *addr,
 			      const u8 *p2p_dev_addr, const u8 *prev_psk,
-			      size_t *psk_len)
+			      size_t *psk_len, int *vlan_id)
 {
 	struct mesh_rsn *mesh_rsn = ctx;
 	struct hostapd_data *hapd = mesh_rsn->wpa_s->ifmsh->bss[0];
@@ -84,6 +84,8 @@ static const u8 *auth_get_psk(void *ctx, const u8 *addr,
 
 	if (psk_len)
 		*psk_len = PMK_LEN;
+	if (vlan_id)
+		*vlan_id = 0;
 	wpa_printf(MSG_DEBUG, "AUTH: %s (addr=" MACSTR " prev_psk=%p)",
 		   __func__, MAC2STR(addr), prev_psk);
 

@@ -246,12 +246,15 @@ static int hostapd_wpa_auth_get_eapol(void *ctx, const u8 *addr,
 
 static const u8 * hostapd_wpa_auth_get_psk(void *ctx, const u8 *addr,
 					   const u8 *p2p_dev_addr,
-					   const u8 *prev_psk, size_t *psk_len)
+					   const u8 *prev_psk, size_t *psk_len,
+					   int *vlan_id)
 {
 	struct hostapd_data *hapd = ctx;
 	struct sta_info *sta = ap_get_sta(hapd, addr);
 	const u8 *psk;
 
+	if (vlan_id)
+		*vlan_id = 0;
 	if (psk_len)
 		*psk_len = PMK_LEN;
 
@@ -287,7 +290,8 @@ static const u8 * hostapd_wpa_auth_get_psk(void *ctx, const u8 *addr,
 	}
 #endif /* CONFIG_OWE */
 
-	psk = hostapd_get_psk(hapd->conf, addr, p2p_dev_addr, prev_psk);
+	psk = hostapd_get_psk(hapd->conf, addr, p2p_dev_addr, prev_psk,
+			      vlan_id);
 	/*
 	 * This is about to iterate over all psks, prev_psk gives the last
 	 * returned psk which should not be returned again.
@@ -295,6 +299,9 @@ static const u8 * hostapd_wpa_auth_get_psk(void *ctx, const u8 *addr,
 	 */
 	if (sta && sta->psk && !psk) {
 		struct hostapd_sta_wpa_psk_short *pos;
+
+		if (vlan_id)
+			*vlan_id = 0;
 		psk = sta->psk->psk;
 		for (pos = sta->psk; pos; pos = pos->next) {
 			if (pos->is_passphrase) {
@@ -788,6 +795,45 @@ static int hostapd_channel_info(void *ctx, struct wpa_channel_info *ci)
 }
 
 
+static int hostapd_wpa_auth_update_vlan(void *ctx, const u8 *addr, int vlan_id)
+{
+#ifndef CONFIG_NO_VLAN
+	struct hostapd_data *hapd = ctx;
+	struct sta_info *sta;
+	struct vlan_description vlan_desc;
+
+	sta = ap_get_sta(hapd, addr);
+	if (!sta)
+		return -1;
+
+	os_memset(&vlan_desc, 0, sizeof(vlan_desc));
+	vlan_desc.notempty = 1;
+	vlan_desc.untagged = vlan_id;
+	if (!hostapd_vlan_valid(hapd->conf->vlan, &vlan_desc)) {
+		wpa_printf(MSG_INFO, "Invalid VLAN ID %d in wpa_psk_file",
+			   vlan_id);
+		return -1;
+	}
+
+	if (ap_sta_set_vlan(hapd, sta, &vlan_desc) < 0) {
+		wpa_printf(MSG_INFO,
+			   "Failed to assign VLAN ID %d from wpa_psk_file to "
+			   MACSTR, vlan_id, MAC2STR(sta->addr));
+		return -1;
+	}
+
+	wpa_printf(MSG_INFO,
+		   "Assigned VLAN ID %d from wpa_psk_file to " MACSTR,
+		   vlan_id, MAC2STR(sta->addr));
+	if ((sta->flags & WLAN_STA_ASSOC) &&
+	    ap_sta_bind_vlan(hapd, sta) < 0)
+		return -1;
+#endif /* CONFIG_NO_VLAN */
+
+	return 0;
+}
+
+
 #ifdef CONFIG_OCV
 static int hostapd_get_sta_tx_params(void *ctx, const u8 *addr,
 				     int ap_max_chanwidth, int ap_seg1_idx,
@@ -1229,6 +1275,7 @@ int hostapd_setup_wpa(struct hostapd_data *hapd)
 		.send_ether = hostapd_wpa_auth_send_ether,
 		.send_oui = hostapd_wpa_auth_send_oui,
 		.channel_info = hostapd_channel_info,
+		.update_vlan = hostapd_wpa_auth_update_vlan,
 #ifdef CONFIG_OCV
 		.get_sta_tx_params = hostapd_get_sta_tx_params,
 #endif /* CONFIG_OCV */
