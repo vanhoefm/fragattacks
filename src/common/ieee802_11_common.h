@@ -93,6 +93,7 @@ struct ieee802_11_elems {
 	const u8 *password_id;
 	const u8 *oci;
 	const u8 *multi_ap;
+	const u8 *he_capabilities;
 
 	u8 ssid_len;
 	u8 supp_rates_len;
@@ -141,6 +142,7 @@ struct ieee802_11_elems {
 	u8 password_id_len;
 	u8 oci_len;
 	u8 multi_ap_len;
+	u8 he_capabilities_len;
 
 	struct mb_ies_info mb_ies;
 };

@@ -270,6 +270,10 @@ static int ieee802_11_parse_extension(const u8 *pos, size_t elen,
 		elems->password_id = pos;
 		elems->password_id_len = elen;
 		break;
+	case WLAN_EID_EXT_HE_CAPABILITIES:
+		elems->he_capabilities = pos;
+		elems->he_capabilities_len = elen;
+		break;
 	case WLAN_EID_EXT_OCV_OCI:
 		elems->oci = pos;
 		elems->oci_len = elen;
