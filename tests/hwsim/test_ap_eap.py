@@ -2003,6 +2003,14 @@ def test_ap_wpa2_eap_peap_params(dev, apdev):
                 phase1="tls_allow_md5=1 tls_disable_session_ticket=1 tls_disable_tlsv1_0=0 tls_disable_tlsv1_1=0 tls_disable_tlsv1_2=0 tls_ext_cert_check=0",
                 phase2="auth=MSCHAPV2")
 
+def test_ap_wpa2_eap_peap_eap_gtc(dev, apdev, params):
+    """WPA2-Enterprise connection using EAP-PEAP/EAP-GTC"""
+    p = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hapd = hostapd.add_ap(apdev[0], p)
+    eap_connect(dev[0], hapd, "PEAP", "user", phase1="peapver=1",
+                anonymous_identity="peap", password="password",
+                ca_cert="auth_serv/ca.pem", phase2="auth=GTC")
+
 def test_ap_wpa2_eap_peap_eap_tls(dev, apdev):
     """WPA2-Enterprise connection using EAP-PEAP/EAP-TLS"""
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
