@@ -2712,7 +2712,10 @@ def test_ap_wpa_ie_parsing(dev, apdev):
             if "OK" not in dev[0].request("VENDOR_ELEM_ADD 13 " + t):
                 raise Exception("VENDOR_ELEM_ADD failed")
             dev[0].select_network(id)
-            dev[0].wait_connected()
+            ev = dev[0].wait_event(['CTRL-EVENT-CONNECTED',
+                                    'WPA: 4-Way Handshake failed'], timeout=10)
+            if ev is None:
+                raise Exception("Association failed unexpectedly")
             dev[0].request("DISCONNECT")
             dev[0].dump_monitor()
         finally:
