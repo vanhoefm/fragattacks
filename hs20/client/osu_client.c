@@ -612,8 +612,8 @@ int hs20_add_pps_mo(struct hs20_osu_client *ctx, const char *uri,
 		}
 	}
 
-	android_update_permission("SP", S_IRWXU | S_IRGRP | S_IXGRP);
-	android_update_permission(fname, S_IRWXU | S_IRGRP | S_IXGRP);
+	android_update_permission("SP", S_IRWXU | S_IRWXG);
+	android_update_permission(fname, S_IRWXU | S_IRWXG);
 
 	snprintf(fname, fname_len, "SP/%s/pps.xml", fqdn);
 
