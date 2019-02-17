@@ -710,11 +710,12 @@ static struct sta_info * mesh_mpm_add_peer(struct wpa_supplicant *wpa_s,
 	}
 
 	sta = ap_get_sta(data, addr);
-	if (!sta) {
-		sta = ap_sta_add(data, addr);
-		if (!sta)
-			return NULL;
-	}
+	if (sta)
+		return NULL;
+
+	sta = ap_sta_add(data, addr);
+	if (!sta)
+		return NULL;
 
 	/* Set WMM by default since Mesh STAs are QoS STAs */
 	sta->flags |= WLAN_STA_WMM;
