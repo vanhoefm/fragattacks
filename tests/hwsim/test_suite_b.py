@@ -609,3 +609,61 @@ def run_suite_b_192_rsa_radius_rsa2048_client(dev, apdev, ecdhe):
         raise Exception("Disconnection not reported")
     if "reason=23" not in ev:
         raise Exception("Unexpected disconnection reason: " + ev)
+
+def test_openssl_ecdh_curves(dev, apdev):
+    """OpenSSL ECDH curve configuration"""
+    check_suite_b_192_capa(dev)
+    dev[0].flush_scan_cache()
+    params = suite_b_192_ap_params()
+    params['wpa_key_mgmt'] = "WPA-EAP"
+    del params['openssl_ciphers']
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("test-suite-b", key_mgmt="WPA-EAP",
+                   ieee80211w="2",
+                   openssl_ciphers="SUITEB192",
+                   eap="TLS", identity="tls user",
+                   ca_cert="auth_serv/ec2-ca.pem",
+                   client_cert="auth_serv/ec2-user.pem",
+                   private_key="auth_serv/ec2-user.key",
+                   pairwise="GCMP-256", group="GCMP-256", scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+
+    hapd.disable()
+    hapd.set('openssl_ecdh_curves', 'foo')
+    if not "FAIL" in hapd.request("ENABLE"):
+        raise Exception("Invalid openssl_ecdh_curves value accepted")
+    hapd.set('openssl_ecdh_curves', 'P-384')
+    hapd.enable()
+
+    dev[0].connect("test-suite-b", key_mgmt="WPA-EAP",
+                   ieee80211w="2",
+                   openssl_ciphers="SUITEB192",
+                   eap="TLS", identity="tls user",
+                   ca_cert="auth_serv/ec2-ca.pem",
+                   client_cert="auth_serv/ec2-user.pem",
+                   private_key="auth_serv/ec2-user.key",
+                   pairwise="GCMP-256", group="GCMP-256", scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+
+    # Check with server enforcing P-256 and client allowing only P-384
+    hapd.disable()
+    hapd.set('openssl_ecdh_curves', 'P-256')
+    hapd.enable()
+
+    dev[0].connect("test-suite-b", key_mgmt="WPA-EAP",
+                   ieee80211w="2",
+                   openssl_ciphers="SUITEB192",
+                   eap="TLS", identity="tls user",
+                   ca_cert="auth_serv/ec2-ca.pem",
+                   client_cert="auth_serv/ec2-user.pem",
+                   private_key="auth_serv/ec2-user.key",
+                   pairwise="GCMP-256", group="GCMP-256", scan_freq="2412",
+                   wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"], timeout=10)
+    if ev is None:
+        raise Exception("EAP failure not reported")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
