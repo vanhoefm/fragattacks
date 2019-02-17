@@ -1076,7 +1076,7 @@ static int p2p_run_after_scan(struct p2p_data *p2p)
 				      p2p->after_scan_tx->bssid,
 				      (u8 *) (p2p->after_scan_tx + 1),
 				      p2p->after_scan_tx->len,
-				      p2p->after_scan_tx->wait_time);
+				      p2p->after_scan_tx->wait_time, NULL);
 		os_free(p2p->after_scan_tx);
 		p2p->after_scan_tx = NULL;
 		return 1;
@@ -4973,6 +4973,8 @@ int p2p_send_action(struct p2p_data *p2p, unsigned int freq, const u8 *dst,
 		    const u8 *src, const u8 *bssid, const u8 *buf,
 		    size_t len, unsigned int wait_time)
 {
+	int res, scheduled;
+
 	if (p2p->p2p_scan_running) {
 		p2p_dbg(p2p, "Delay Action frame TX until p2p_scan completes");
 		if (p2p->after_scan_tx) {
@@ -4993,8 +4995,16 @@ int p2p_send_action(struct p2p_data *p2p, unsigned int freq, const u8 *dst,
 		return 0;
 	}
 
-	return p2p->cfg->send_action(p2p->cfg->cb_ctx, freq, dst, src, bssid,
-				     buf, len, wait_time);
+	res = p2p->cfg->send_action(p2p->cfg->cb_ctx, freq, dst, src, bssid,
+				    buf, len, wait_time, &scheduled);
+	if (res == 0 && scheduled && p2p->in_listen && freq > 0 &&
+	    (unsigned int) p2p->drv_in_listen != freq) {
+		p2p_dbg(p2p,
+			"Stop listen on %d MHz to allow a frame to be sent immediately on %d MHz",
+			p2p->drv_in_listen, freq);
+		p2p_stop_listen_for_freq(p2p, freq);
+	}
+	return res;
 }
 
 

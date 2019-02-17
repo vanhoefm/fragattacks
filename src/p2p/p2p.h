@@ -665,6 +665,8 @@ struct p2p_config {
 	 * @buf: Frame body (starting from Category field)
 	 * @len: Length of buf in octets
 	 * @wait_time: How many msec to wait for a response frame
+	 * @scheduled: Return value indicating whether the transmissions was
+	 *	scheduled to happen once the radio is available
 	 * Returns: 0 on success, -1 on failure
 	 *
 	 * The Action frame may not be transmitted immediately and the status
@@ -675,7 +677,7 @@ struct p2p_config {
 	 */
 	int (*send_action)(void *ctx, unsigned int freq, const u8 *dst,
 			   const u8 *src, const u8 *bssid, const u8 *buf,
-			   size_t len, unsigned int wait_time);
+			   size_t len, unsigned int wait_time, int *scheduled);
 
 	/**
 	 * send_action_done - Notify that Action frame sequence was completed
