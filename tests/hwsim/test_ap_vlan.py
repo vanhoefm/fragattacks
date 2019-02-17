@@ -730,3 +730,26 @@ def test_ap_vlan_psk(dev, apdev, params):
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "brvlan2")
     hwsim_utils.test_connectivity_iface(dev[2], hapd, "brvlan3")
+
+def test_ap_vlan_sae(dev, apdev, params):
+    """AP VLAN based on SAE Password Identifier"""
+    for i in range(3):
+        if "SAE" not in dev[i].get_capability("auth_alg"):
+            raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae-vlan")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = [ 'pw1|vlanid=1|id=id1',
+                               'pw2|mac=ff:ff:ff:ff:ff:ff|vlanid=2|id=id2',
+                               'pw3|vlanid=3|id=id3' ]
+    params['dynamic_vlan'] = "1"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    for i in range(3):
+        dev[i].request("SET sae_groups ")
+        dev[i].connect("test-sae-vlan", sae_password="pw%d" % (i + 1),
+                       sae_password_id="id%d" % (i + 1),
+                       key_mgmt="SAE", scan_freq="2412")
+
+    hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
+    hwsim_utils.test_connectivity_iface(dev[1], hapd, "brvlan2")
+    hwsim_utils.test_connectivity_iface(dev[2], hapd, "brvlan3")
