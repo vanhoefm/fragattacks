@@ -2333,6 +2333,14 @@ static int parse_sae_password(struct hostapd_bss_config *bss, const char *val)
 		pos = pos2 + ETH_ALEN * 3 - 1;
 	}
 
+	pos2 = os_strstr(pos, "|vlanid=");
+	if (pos2) {
+		if (!end)
+			end = pos2;
+		pos2 += 8;
+		pw->vlan_id = atoi(pos2);
+	}
+
 	pos2 = os_strstr(pos, "|id=");
 	if (pos2) {
 		if (!end)

@@ -420,6 +420,15 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 		return NULL;
 	}
 
+	if (pw && pw->vlan_id) {
+		if (!sta->sae->tmp) {
+			wpa_printf(MSG_INFO,
+				   "SAE: No temporary data allocated - cannot store VLAN ID");
+			return NULL;
+		}
+		sta->sae->tmp->vlan_id = pw->vlan_id;
+	}
+
 	buf = wpabuf_alloc(SAE_COMMIT_MAX_LEN +
 			   (rx_id ? 3 + os_strlen(rx_id) : 0));
 	if (buf == NULL)
@@ -629,6 +638,35 @@ static void sae_set_retransmit_timer(struct hostapd_data *hapd,
 
 void sae_accept_sta(struct hostapd_data *hapd, struct sta_info *sta)
 {
+#ifndef CONFIG_NO_VLAN
+	struct vlan_description vlan_desc;
+
+	if (sta->sae->tmp && sta->sae->tmp->vlan_id > 0) {
+		wpa_printf(MSG_DEBUG, "SAE: Assign STA " MACSTR
+			   " to VLAN ID %d",
+			   MAC2STR(sta->addr), sta->sae->tmp->vlan_id);
+
+		os_memset(&vlan_desc, 0, sizeof(vlan_desc));
+		vlan_desc.notempty = 1;
+		vlan_desc.untagged = sta->sae->tmp->vlan_id;
+		if (!hostapd_vlan_valid(hapd->conf->vlan, &vlan_desc)) {
+			wpa_printf(MSG_INFO,
+				   "Invalid VLAN ID %d in sae_password",
+				   sta->sae->tmp->vlan_id);
+			return;
+		}
+
+		if (ap_sta_set_vlan(hapd, sta, &vlan_desc) < 0 ||
+		    ap_sta_bind_vlan(hapd, sta) < 0) {
+			wpa_printf(MSG_INFO,
+				   "Failed to assign VLAN ID %d from sae_password to "
+				   MACSTR, sta->sae->tmp->vlan_id,
+				   MAC2STR(sta->addr));
+			return;
+		}
+	}
+#endif /* CONFIG_NO_VLAN */
+
 	sta->flags |= WLAN_STA_AUTH;
 	sta->auth_alg = WLAN_AUTH_SAE;
 	mlme_authenticate_indication(hapd, sta);

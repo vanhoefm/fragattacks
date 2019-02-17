@@ -249,6 +249,7 @@ struct sae_password_entry {
 	char *password;
 	char *identifier;
 	u8 peer_addr[ETH_ALEN];
+	int vlan_id;
 };
 
 /**
