@@ -367,8 +367,12 @@ def go_neg_pbc_authorized(i_dev, r_dev, i_intent=None, r_intent=None,
     logger.info("Group formed")
     return [i_res, r_res]
 
-def remove_group(dev1, dev2):
-    dev1.remove_group()
+def remove_group(dev1, dev2, allow_failure=False):
+    try:
+        dev1.remove_group()
+    except:
+        if not allow_failure:
+            raise
     try:
         dev2.remove_group()
     except:

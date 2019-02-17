@@ -1587,9 +1587,11 @@ def test_p2ps_channel_active_go_and_station_different_mcc(dev, apdev):
             hapd = hostapd.add_ap(apdev[0],
                                   { "ssid": 'bss-channel-6', "channel": '6' })
 
+            wpas.global_request("P2P_SET listen_channel 1")
             wpas.connect("bss-channel-6", key_mgmt="NONE", scan_freq="2437")
 
             # Add a P2P GO on the seeker
+            dev[1].global_request("P2P_SET listen_channel 1")
             dev[1].global_request("P2P_GROUP_ADD freq=2462 persistent")
             ev = dev[1].wait_global_event(["P2P-GROUP-STARTED"], timeout=10)
             if ev is None:
@@ -1607,10 +1609,12 @@ def test_p2ps_channel_active_go_and_station_different_mcc(dev, apdev):
             ev1, ev0 = p2ps_provision(dev[1], wpas, adv_id)
             p2ps_connect_pd(wpas, dev[1], ev0, ev1)
         finally:
+            set_random_listen_chan(dev[1])
+            set_random_listen_chan(wpas)
             wpas.request("DISCONNECT")
             hapd.disable()
             wpas.global_request("P2P_SERVICE_DEL asp all")
-            remove_group(wpas, dev[1])
+            remove_group(wpas, dev[1], allow_failure=True)
 
 def test_p2ps_connect_p2p_device(dev):
     """P2PS connection using cfg80211 P2P Device"""
