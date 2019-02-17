@@ -2461,7 +2461,7 @@ p2p_reply_probe(struct p2p_data *p2p, const u8 *addr, const u8 *dst,
 	if (msg.wps_attributes &&
 	    !p2p_match_dev_type(p2p, msg.wps_attributes)) {
 		/* No match with Requested Device Type */
-		p2p_dbg(p2p, "Probe Req requestred Device Type did not match - ignore it");
+		p2p_dbg(p2p, "Probe Req requested Device Type did not match - ignore it");
 		p2p_parse_free(&msg);
 		return P2P_PREQ_NOT_PROCESSED;
 	}
