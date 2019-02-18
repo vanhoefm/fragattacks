@@ -375,6 +375,13 @@ def test_ap_wpa2_psk_file_errors(dev, apdev):
             raise Exception("Unexpected ENABLE success")
         hapd.request("DISABLE")
 
+        # empty token at the end of the line
+        with open(pskfile, "w") as f:
+            f.write("=\n")
+        if "FAIL" not in hapd.request("ENABLE"):
+            raise Exception("Unexpected ENABLE success")
+        hapd.request("DISABLE")
+
         # valid PSK file
         with open(pskfile, "w") as f:
             f.write("00:11:22:33:44:55 12345678\n")
