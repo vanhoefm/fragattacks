@@ -333,7 +333,7 @@ def main():
     logger.addHandler(stdout_handler)
 
     file_name = os.path.join(args.logdir, 'run-tests.log')
-    log_handler = logging.FileHandler(file_name)
+    log_handler = logging.FileHandler(file_name, encoding='utf-8')
     log_handler.setLevel(logging.DEBUG)
     fmt = "%(asctime)s %(levelname)s %(message)s"
     log_formatter = logging.Formatter(fmt)
@@ -460,7 +460,7 @@ def main():
             log_handler.stream.close()
             logger.removeHandler(log_handler)
             file_name = os.path.join(args.logdir, name + '.log')
-            log_handler = logging.FileHandler(file_name)
+            log_handler = logging.FileHandler(file_name, encoding='utf-8')
             log_handler.setLevel(logging.DEBUG)
             log_handler.setFormatter(log_formatter)
             logger.addHandler(log_handler)
@@ -630,7 +630,7 @@ def main():
         log_handler.stream.close()
         logger.removeHandler(log_handler)
         file_name = os.path.join(args.logdir, 'run-tests.log')
-        log_handler = logging.FileHandler(file_name)
+        log_handler = logging.FileHandler(file_name, encoding='utf-8')
         log_handler.setLevel(logging.DEBUG)
         log_handler.setFormatter(log_formatter)
         logger.addHandler(log_handler)
