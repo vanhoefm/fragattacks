@@ -303,6 +303,8 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 				break;
 			context2 = NULL;
 			name = str_token(token, "=", &context2);
+			if (!name)
+				break;
 			value = str_token(token, "", &context2);
 			if (!value)
 				value = "";
