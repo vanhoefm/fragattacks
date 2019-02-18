@@ -197,7 +197,7 @@ static int wpas_mesh_complete(struct wpa_supplicant *wpa_s)
 	struct wpa_ssid *ssid = wpa_s->current_ssid;
 	int ret;
 
-	if (!params || !ssid) {
+	if (!params || !ssid || !ifmsh) {
 		wpa_printf(MSG_ERROR, "mesh: %s called without active mesh",
 			   __func__);
 		return -1;
@@ -217,13 +217,11 @@ static int wpas_mesh_complete(struct wpa_supplicant *wpa_s)
 		wpa_s->mgmt_group_cipher = wpa_s->mesh_rsn->mgmt_group_cipher;
 	}
 
-	if (ifmsh) {
-		params->ies = ifmsh->mconf->rsn_ie;
-		params->ie_len = ifmsh->mconf->rsn_ie_len;
-		params->basic_rates = ifmsh->basic_rates;
-		params->conf.flags |= WPA_DRIVER_MESH_CONF_FLAG_HT_OP_MODE;
-		params->conf.ht_opmode = ifmsh->bss[0]->iface->ht_op_mode;
-	}
+	params->ies = ifmsh->mconf->rsn_ie;
+	params->ie_len = ifmsh->mconf->rsn_ie_len;
+	params->basic_rates = ifmsh->basic_rates;
+	params->conf.flags |= WPA_DRIVER_MESH_CONF_FLAG_HT_OP_MODE;
+	params->conf.ht_opmode = ifmsh->bss[0]->iface->ht_op_mode;
 
 	wpa_msg(wpa_s, MSG_INFO, "joining mesh %s",
 		wpa_ssid_txt(ssid->ssid, ssid->ssid_len));
