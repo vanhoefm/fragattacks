@@ -77,7 +77,7 @@ CONFIG_DRIVER_WIRED=y
 #CONFIG_DRIVER_MACSEC_QCA=y
 
 # Driver interface for Linux MACsec drivers
-#CONFIG_DRIVER_MACSEC_LINUX=y
+CONFIG_DRIVER_MACSEC_LINUX=y
 
 # Driver interface for the Broadcom RoboSwitch family
 #CONFIG_DRIVER_ROBOSWITCH=y
@@ -183,7 +183,7 @@ CONFIG_EAP_IKEV2=y
 #CONFIG_EAP_EKE=y
 
 # MACsec
-#CONFIG_MACSEC=y
+CONFIG_MACSEC=y
 
 # PKCS#12 (PFX) support (used to read private key and certificate file from
 # a file that usually has extension .p12 or .pfx)
