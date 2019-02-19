@@ -112,7 +112,7 @@ CONFIG_EAP_TTLS=y
 # Note: If OpenSSL is used as the TLS library, OpenSSL 1.0 or newer is needed
 # for EAP-FAST support. Older OpenSSL releases would need to be patched, e.g.,
 # with openssl-0.9.8x-tls-extensions.patch, to add the needed functions.
-#CONFIG_EAP_FAST=y
+CONFIG_EAP_FAST=y
 
 # EAP-GTC
 CONFIG_EAP_GTC=y
@@ -127,10 +127,10 @@ CONFIG_EAP_OTP=y
 #CONFIG_EAP_PSK=y
 
 # EAP-pwd (secure authentication using only a password)
-#CONFIG_EAP_PWD=y
+CONFIG_EAP_PWD=y
 
 # EAP-PAX
-#CONFIG_EAP_PAX=y
+CONFIG_EAP_PAX=y
 
 # LEAP
 CONFIG_EAP_LEAP=y
@@ -146,15 +146,15 @@ CONFIG_EAP_LEAP=y
 #CONFIG_USIM_SIMULATOR=y
 
 # EAP-SAKE
-#CONFIG_EAP_SAKE=y
+CONFIG_EAP_SAKE=y
 
 # EAP-GPSK
-#CONFIG_EAP_GPSK=y
+CONFIG_EAP_GPSK=y
 # Include support for optional SHA256 cipher suite in EAP-GPSK
-#CONFIG_EAP_GPSK_SHA256=y
+CONFIG_EAP_GPSK_SHA256=y
 
 # EAP-TNC and related Trusted Network Connect support (experimental)
-#CONFIG_EAP_TNC=y
+CONFIG_EAP_TNC=y
 
 # Wi-Fi Protected Setup (WPS)
 CONFIG_WPS=y
@@ -167,7 +167,7 @@ CONFIG_WPS=y
 #CONFIG_WPS_NFC=y
 
 # EAP-IKEv2
-#CONFIG_EAP_IKEV2=y
+CONFIG_EAP_IKEV2=y
 
 # EAP-EKE
 #CONFIG_EAP_EKE=y
