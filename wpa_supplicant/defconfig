@@ -391,10 +391,10 @@ CONFIG_BACKEND=file
 #CONFIG_IEEE80211R=y
 
 # Add support for writing debug log to a file (/tmp/wpa_supplicant-log-#.txt)
-#CONFIG_DEBUG_FILE=y
+CONFIG_DEBUG_FILE=y
 
 # Send debug messages to syslog instead of stdout
-#CONFIG_DEBUG_SYSLOG=y
+CONFIG_DEBUG_SYSLOG=y
 # Set syslog facility for debug messages
 #CONFIG_DEBUG_SYSLOG_FACILITY=LOG_DAEMON
 
