@@ -299,7 +299,7 @@ CONFIG_BACKEND=file
 
 # IEEE 802.11w (management frame protection), also known as PMF
 # Driver support is also needed for IEEE 802.11w.
-#CONFIG_IEEE80211W=y
+CONFIG_IEEE80211W=y
 
 # Support Operating Channel Validation
 #CONFIG_OCV=y
