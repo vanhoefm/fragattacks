@@ -4908,6 +4908,10 @@ enum qca_wlan_vendor_attr_offloaded_packets {
 	QCA_WLAN_VENDOR_ATTR_OFFLOADED_PACKETS_DST_MAC_ADDR,
 	/* Unsigned 32-bit value, in milli seconds */
 	QCA_WLAN_VENDOR_ATTR_OFFLOADED_PACKETS_PERIOD,
+	/* This optional unsigned 16-bit attribute is used for specifying
+	 * ethernet protocol type. If not specified ethertype defaults to IPv4.
+	 */
+	QCA_WLAN_VENDOR_ATTR_OFFLOADED_PACKETS_ETHER_PROTO_TYPE,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_OFFLOADED_PACKETS_AFTER_LAST,
