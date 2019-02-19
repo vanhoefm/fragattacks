@@ -599,3 +599,8 @@ CONFIG_BACKEND=file
 # Opportunistic Wireless Encryption (OWE)
 # Experimental implementation of draft-harkins-owe-07.txt
 #CONFIG_OWE=y
+
+# Device Provisioning Protocol (DPP)
+# This requires CONFIG_IEEE80211W=y to be enabled, too. (see
+# wpa_supplicant/README-DPP for details)
+CONFIG_DPP=y
