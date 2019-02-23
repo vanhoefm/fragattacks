@@ -1,6 +1,6 @@
 /*
  * wpa_supplicant/hostapd / common helper functions, etc.
- * Copyright (c) 2002-2007, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2002-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -1073,7 +1073,8 @@ size_t utf8_unescape(const char *inp, size_t in_size,
 		in_size--;
 	}
 
-	while (in_size--) {
+	while (in_size) {
+		in_size--;
 		if (res_size >= out_size)
 			return 0;
 
@@ -1084,8 +1085,9 @@ size_t utf8_unescape(const char *inp, size_t in_size,
 			return res_size;
 
 		case '\\':
-			if (!in_size--)
+			if (!in_size)
 				return 0;
+			in_size--;
 			inp++;
 			/* fall through */
 
@@ -1116,7 +1118,8 @@ size_t utf8_escape(const char *inp, size_t in_size,
 	if (!in_size)
 		in_size = os_strlen(inp);
 
-	while (in_size--) {
+	while (in_size) {
+		in_size--;
 		if (res_size++ >= out_size)
 			return 0;
 
