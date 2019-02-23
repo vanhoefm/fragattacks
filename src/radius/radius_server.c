@@ -1,6 +1,6 @@
 /*
  * RADIUS authentication server
- * Copyright (c) 2005-2009, 2011-2014, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2005-2009, 2011-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -2251,7 +2251,7 @@ radius_server_read_clients(const char *client_file, int ipv6)
 			entry->addr.s_addr = addr.s_addr;
 			val = 0;
 			for (i = 0; i < mask; i++)
-				val |= 1 << (31 - i);
+				val |= 1U << (31 - i);
 			entry->mask.s_addr = htonl(val);
 		}
 #ifdef CONFIG_IPV6
