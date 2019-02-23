@@ -658,8 +658,10 @@ static int hostapd_validate_bssid_configuration(struct hostapd_iface *iface)
 	for (i = 5; i > 5 - j; i--)
 		mask[i] = 0;
 	j = bits % 8;
-	while (j--)
+	while (j) {
+		j--;
 		mask[i] <<= 1;
+	}
 
 skip_mask_ext:
 	wpa_printf(MSG_DEBUG, "BSS count %lu, BSSID mask " MACSTR " (%d bits)",
