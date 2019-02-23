@@ -1888,11 +1888,14 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
 		if (j)
 			os_memcpy(hapd->own_addr, prev_addr, ETH_ALEN);
 		if (hostapd_setup_bss(hapd, j == 0)) {
-			do {
+			for (;;) {
 				hapd = iface->bss[j];
 				hostapd_bss_deinit_no_free(hapd);
 				hostapd_free_hapd_data(hapd);
-			} while (j-- > 0);
+				if (j == 0)
+					break;
+				j--;
+			}
 			goto fail;
 		}
 		if (is_zero_ether_addr(hapd->conf->bssid))
