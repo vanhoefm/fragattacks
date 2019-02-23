@@ -348,7 +348,7 @@ static void hostapd_free_hapd_data(struct hostapd_data *hapd)
 
 	if (!hapd->started) {
 		wpa_printf(MSG_ERROR, "%s: Interface %s wasn't started",
-			   __func__, hapd->conf->iface);
+			   __func__, hapd->conf ? hapd->conf->iface : "N/A");
 		return;
 	}
 	hapd->started = 0;
@@ -431,7 +431,7 @@ static void hostapd_free_hapd_data(struct hostapd_data *hapd)
 static void hostapd_cleanup(struct hostapd_data *hapd)
 {
 	wpa_printf(MSG_DEBUG, "%s(hapd=%p (%s))", __func__, hapd,
-		   hapd->conf->iface);
+		   hapd->conf ? hapd->conf->iface : "N/A");
 	if (hapd->iface->interfaces &&
 	    hapd->iface->interfaces->ctrl_iface_deinit) {
 		wpa_msg(hapd->msg_ctx, MSG_INFO, WPA_EVENT_TERMINATING);
@@ -506,7 +506,7 @@ static void hostapd_cleanup_iface(struct hostapd_iface *iface)
 
 static void hostapd_clear_wep(struct hostapd_data *hapd)
 {
-	if (hapd->drv_priv && !hapd->iface->driver_ap_teardown) {
+	if (hapd->drv_priv && !hapd->iface->driver_ap_teardown && hapd->conf) {
 		hostapd_set_privacy(hapd, 0);
 		hostapd_broadcast_wep_clear(hapd);
 	}
@@ -2155,7 +2155,7 @@ static void hostapd_bss_deinit(struct hostapd_data *hapd)
 	if (!hapd)
 		return;
 	wpa_printf(MSG_DEBUG, "%s: deinit bss %s", __func__,
-		   hapd->conf->iface);
+		   hapd->conf ? hapd->conf->iface : "N/A");
 	hostapd_bss_deinit_no_free(hapd);
 	wpa_msg(hapd->msg_ctx, MSG_INFO, AP_EVENT_DISABLED);
 	hostapd_cleanup(hapd);
