@@ -39,7 +39,7 @@ struct ieee802_1x_kay;
 struct ieee802_1x_mka_peer_id {
 	u8 mi[MI_LEN];
 	be32 mn;
-};
+} STRUCT_PACKED;
 
 struct ieee802_1x_kay_peer {
 	struct ieee802_1x_mka_sci sci;
