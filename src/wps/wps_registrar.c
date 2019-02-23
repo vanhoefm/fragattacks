@@ -698,9 +698,13 @@ wps_registrar_init(struct wps_context *wps,
 	reg->dualband = cfg->dualband;
 	reg->force_per_enrollee_psk = cfg->force_per_enrollee_psk;
 
-	os_memcpy(reg->multi_ap_backhaul_ssid, cfg->multi_ap_backhaul_ssid,
-		  cfg->multi_ap_backhaul_ssid_len);
-	reg->multi_ap_backhaul_ssid_len = cfg->multi_ap_backhaul_ssid_len;
+	if (cfg->multi_ap_backhaul_ssid) {
+		os_memcpy(reg->multi_ap_backhaul_ssid,
+			  cfg->multi_ap_backhaul_ssid,
+			  cfg->multi_ap_backhaul_ssid_len);
+		reg->multi_ap_backhaul_ssid_len =
+			cfg->multi_ap_backhaul_ssid_len;
+	}
 	if (cfg->multi_ap_backhaul_network_key) {
 		reg->multi_ap_backhaul_network_key =
 			os_memdup(cfg->multi_ap_backhaul_network_key,
