@@ -1,6 +1,6 @@
 /*
  * hostapd / Initialization and configuration
- * Copyright (c) 2002-2014, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2002-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -2182,7 +2182,7 @@ void hostapd_interface_deinit(struct hostapd_iface *iface)
 	}
 #endif /* CONFIG_FST */
 
-	for (j = iface->num_bss - 1; j >= 0; j--) {
+	for (j = (int) iface->num_bss - 1; j >= 0; j--) {
 		if (!iface->bss)
 			break;
 		hostapd_bss_deinit(iface->bss[j]);
