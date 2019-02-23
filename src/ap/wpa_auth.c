@@ -1,6 +1,6 @@
 /*
  * IEEE 802.11 RSN / WPA Authenticator
- * Copyright (c) 2004-2018, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -2729,7 +2729,7 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 	struct ieee802_1x_hdr *hdr;
 	struct wpa_eapol_key *key;
 	struct wpa_eapol_ie_parse kde;
-	int vlan_id;
+	int vlan_id = 0;
 
 	SM_ENTRY_MA(WPA_PTK, PTKCALCNEGOTIATING, wpa_ptk);
 	sm->EAPOLKeyReceived = FALSE;
