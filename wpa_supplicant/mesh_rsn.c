@@ -643,7 +643,7 @@ int mesh_rsn_process_ampe(struct wpa_supplicant *wpa_s, struct sta_info *sta,
 	size_t crypt_len;
 	const u8 *aad[] = { sta->addr, wpa_s->own_addr, cat };
 	const size_t aad_len[] = { ETH_ALEN, ETH_ALEN,
-				   (elems->mic - 2) - cat };
+				   elems->mic ? (elems->mic - 2) - cat : 0 };
 	size_t key_len;
 
 	if (!sta->sae) {
