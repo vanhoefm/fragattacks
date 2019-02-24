@@ -45,6 +45,15 @@ cat > json-examples/1.json <<EOF
 EOF
 afl-fuzz -i json-examples -o json-findings -- $PWD/test-json @@
 
+Alternatively, using libFuzzer from LLVM:
+make clean
+make test-json LIBFUZZER=y
+mkdir json-examples
+cat > json-examples/1.json <<EOF
+{"a":[[]],"b":1,"c":"q","d":{"e":[{}]}}
+EOF
+./test-json json-examples
+
 ##### EAPOL-Key Supplicant
 make clean
 CC=afl-gcc make test-eapol TEST_FUZZ=y

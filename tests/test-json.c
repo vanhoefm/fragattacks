@@ -7,15 +7,47 @@
  */
 
 #include "utils/includes.h"
+#include "utils/common.h"
 #include "utils/os.h"
 #include "utils/json.h"
+#include "utils/wpa_debug.h"
 
 
+void run_test(const char *buf, size_t len)
+{
+	struct json_token *root;
+	char *txt;
+	size_t buflen = 10000;
+
+	root = json_parse(buf, len);
+	if (!root) {
+		wpa_printf(MSG_DEBUG, "JSON parsing failed");
+		return;
+	}
+
+	txt = os_zalloc(buflen);
+	if (txt) {
+		json_print_tree(root, txt, buflen);
+		wpa_printf(MSG_DEBUG, "%s", txt);
+		os_free(txt);
+	}
+	json_free(root);
+}
+
+
+#ifdef TEST_LIBFUZZER
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+{
+	run_test((const char *) data, size);
+	return 0;
+}
+#else /* TEST_LIBFUZZER */
 int main(int argc, char *argv[])
 {
 	char *buf;
 	size_t len;
-	struct json_token *root;
+
+	wpa_debug_level = 0;
 
 	if (argc < 2)
 		return -1;
@@ -24,21 +56,9 @@ int main(int argc, char *argv[])
 	if (!buf)
 		return -1;
 
-	root = json_parse(buf, len);
+	run_test(buf, len);
 	os_free(buf);
-	if (root) {
-		size_t buflen = 10000;
-
-		buf = os_zalloc(buflen);
-		if (buf) {
-			json_print_tree(root, buf, buflen);
-			printf("%s\n", buf);
-			os_free(buf);
-		}
-		json_free(root);
-	} else {
-		printf("JSON parsing failed\n");
-	}
 
 	return 0;
 }
+#endif /* TEST_LIBFUZZER */

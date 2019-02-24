@@ -5,6 +5,15 @@ TESTS=test-base64 test-md4 test-milenage \
 
 all: $(TESTS)
 
+ifdef LIBFUZZER
+CC=clang
+CFLAGS = -MMD -O2 -Wall -g
+CFLAGS += -fsanitize=fuzzer,address,signed-integer-overflow,unsigned-integer-overflow
+CFLAGS += -DTEST_LIBFUZZER
+LDFLAGS += -fsanitize=fuzzer,address,signed-integer-overflow,unsigned-integer-overflow
+TEST_FUZZ=y
+endif
+
 ifndef CC
 CC=gcc
 endif
