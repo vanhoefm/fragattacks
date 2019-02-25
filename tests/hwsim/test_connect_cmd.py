@@ -230,3 +230,4 @@ def test_connect_cmd_bssid_hint(dev, apdev):
         wpas.dump_monitor()
     finally:
         wpas.request("AP_SCAN 1")
+    wpas.flush_scan_cache()
