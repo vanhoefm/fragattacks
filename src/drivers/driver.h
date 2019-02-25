@@ -2156,6 +2156,7 @@ enum wpa_drv_update_connect_params_mask {
  *	use %WLAN_STATUS_UNSPECIFIED_FAILURE if wpa_supplicant cannot give
  *	the real status code for failures. Used only for the request interface
  *	from user space to the driver.
+ * @pmkid: Generated PMKID as part of external auth exchange (e.g., SAE).
  */
 struct external_auth {
 	enum {
@@ -2167,6 +2168,7 @@ struct external_auth {
 	size_t ssid_len;
 	unsigned int key_mgmt_suite;
 	u16 status;
+	const u8 *pmkid;
 };
 
 /**
