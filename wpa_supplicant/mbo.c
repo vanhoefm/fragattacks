@@ -293,10 +293,10 @@ static int wpa_non_pref_chan_cmp(const void *_a, const void *_b)
 	const struct wpa_mbo_non_pref_channel *a = _a, *b = _b;
 
 	if (a->oper_class != b->oper_class)
-		return a->oper_class - b->oper_class;
+		return (int) a->oper_class - (int) b->oper_class;
 	if (a->reason != b->reason)
-		return a->reason - b->reason;
-	return a->preference - b->preference;
+		return (int) a->reason - (int) b->reason;
+	return (int) a->preference - (int) b->preference;
 }
 
 
