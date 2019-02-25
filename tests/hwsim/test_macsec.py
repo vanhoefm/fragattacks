@@ -325,6 +325,7 @@ def cleanup_macsec_br(count):
         wpas.interface_remove("veth%d" % i)
         subprocess.call(["ip", "link", "del", "veth%d" % i],
                         stderr=open('/dev/null', 'w'))
+    del wpas
     subprocess.call(["ip", "link", "set", "brveth", "down"])
     subprocess.call(["brctl", "delbr", "brveth"])
 
@@ -426,6 +427,11 @@ def run_macsec_psk_br(dev, apdev, count, mka_priority):
             raise Exception("Data traffic test failed")
         else:
             logger.info("Data traffic test failed - ignore for now for >= 3 device cases")
+
+    for i in range(count):
+        wpa[i].dump_monitor()
+    for i in range(count):
+        del wpa[0]
 
 def test_macsec_psk_ns(dev, apdev, params):
     """MACsec PSK (netns)"""
