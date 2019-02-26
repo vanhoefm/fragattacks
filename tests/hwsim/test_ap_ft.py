@@ -132,7 +132,8 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
               pairwise_cipher="CCMP", group_cipher="TKIP CCMP", ptk_rekey="0",
               test_connectivity=True, eap_identity="gpsk user", conndev=False,
               force_initial_conn_to_first_ap=False, sha384=False,
-              group_mgmt=None, ocv=None):
+              group_mgmt=None, ocv=None, sae_password=None,
+              sae_password_id=None):
     logger.info("Connect to first AP")
 
     copts = {}
@@ -156,7 +157,12 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
             copts["key_mgmt"] = "FT-SAE"
         else:
             copts["key_mgmt"] = "FT-PSK"
-        copts["psk"] = passphrase
+        if passphrase:
+            copts["psk"] = passphrase
+        if sae_password:
+            copts["sae_password"] = sae_password
+        if sae_password_id:
+            copts["sae_password_id"] = sae_password_id
     if force_initial_conn_to_first_ap:
         copts["bssid"] = apdev[0]['bssid']
     dev.connect(ssid, **copts)
@@ -903,6 +909,27 @@ def test_ap_ft_sae_over_ds(dev, apdev):
     dev[0].request("SET sae_groups ")
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, sae=True,
               over_ds=True)
+
+def test_ap_ft_sae_pw_id(dev, apdev):
+    """FT-SAE with Password Identifier"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    ssid = "test-ft"
+
+    params = ft_params1(ssid=ssid)
+    params["ieee80211w"] = "2"
+    params['wpa_key_mgmt'] = "FT-SAE"
+    params['sae_password'] = 'secret|id=pwid'
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid)
+    params["ieee80211w"] = "2"
+    params['wpa_key_mgmt'] = "FT-SAE"
+    params['sae_password'] = 'secret|id=pwid'
+    hapd = hostapd.add_ap(apdev[1], params)
+
+    dev[0].request("SET sae_groups ")
+    run_roams(dev[0], apdev, hapd0, hapd, ssid, passphrase=None, sae=True,
+              sae_password="secret", sae_password_id="pwid")
 
 def generic_ap_ft_eap(dev, apdev, vlan=False, cui=False, over_ds=False,
                       discovery=False, roams=1):
