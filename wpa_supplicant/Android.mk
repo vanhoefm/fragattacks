@@ -1422,43 +1422,24 @@ endif
 OBJS += ctrl_iface.c ctrl_iface_$(CONFIG_CTRL_IFACE).c
 endif
 
-ifdef CONFIG_CTRL_IFACE_DBUS
-DBUS=y
-DBUS_CFLAGS += -DCONFIG_CTRL_IFACE_DBUS -DDBUS_API_SUBJECT_TO_CHANGE
-DBUS_OBJS += dbus/dbus_old.c dbus/dbus_old_handlers.c
-ifdef CONFIG_WPS
-DBUS_OBJS += dbus/dbus_old_handlers_wps.c
-endif
-DBUS_OBJS += dbus/dbus_dict_helpers.c
-DBUS_CFLAGS += $(DBUS_INCLUDE)
-endif
-
 ifdef CONFIG_CTRL_IFACE_DBUS_NEW
-DBUS=y
-DBUS_CFLAGS += -DCONFIG_CTRL_IFACE_DBUS_NEW
-DBUS_OBJS ?= dbus/dbus_dict_helpers.c
-DBUS_OBJS += dbus/dbus_new_helpers.c
-DBUS_OBJS += dbus/dbus_new.c dbus/dbus_new_handlers.c
+L_CFLAGS += -DCONFIG_CTRL_IFACE_DBUS_NEW
+OBJS += dbus/dbus_dict_helpers.c
+OBJS += dbus/dbus_new_helpers.c
+OBJS += dbus/dbus_new.c dbus/dbus_new_handlers.c
+OBJS += dbus/dbus_common.c
 ifdef CONFIG_WPS
-DBUS_OBJS += dbus/dbus_new_handlers_wps.c
+OBJS += dbus/dbus_new_handlers_wps.c
 endif
 ifdef CONFIG_P2P
-DBUS_OBJS += dbus/dbus_new_handlers_p2p.c
+OBJS += dbus/dbus_new_handlers_p2p.c
 endif
 ifdef CONFIG_CTRL_IFACE_DBUS_INTRO
-DBUS_OBJS += dbus/dbus_new_introspect.c
-DBUS_CFLAGS += -DCONFIG_CTRL_IFACE_DBUS_INTRO
+OBJS += dbus/dbus_new_introspect.c
+L_CFLAGS += -DCONFIG_CTRL_IFACE_DBUS_INTRO
 endif
-DBUS_CFLAGS += $(DBUS_INCLUDE)
+L_CFLAGS += $(DBUS_INCLUDE)
 endif
-
-ifdef DBUS
-DBUS_CFLAGS += -DCONFIG_DBUS
-DBUS_OBJS += dbus/dbus_common.c
-endif
-
-OBJS += $(DBUS_OBJS)
-L_CFLAGS += $(DBUS_CFLAGS)
 
 ifdef CONFIG_CTRL_IFACE_BINDER
 WPA_SUPPLICANT_USE_BINDER=y
