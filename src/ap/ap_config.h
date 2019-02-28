@@ -392,6 +392,7 @@ struct hostapd_bss_config {
 	char *server_cert;
 	char *private_key;
 	char *private_key_passwd;
+	char *check_cert_subject;
 	int check_crl;
 	int check_crl_strict;
 	unsigned int crl_reload_interval;

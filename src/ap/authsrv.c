@@ -233,6 +233,7 @@ int authsrv_init(struct hostapd_data *hapd)
 			hapd->conf->ocsp_stapling_response;
 		params.ocsp_stapling_response_multi =
 			hapd->conf->ocsp_stapling_response_multi;
+		params.check_cert_subject = hapd->conf->check_cert_subject;
 
 		if (tls_global_set_params(hapd->ssl_ctx, &params)) {
 			wpa_printf(MSG_ERROR, "Failed to set TLS parameters");

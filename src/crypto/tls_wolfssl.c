@@ -1487,6 +1487,9 @@ int tls_global_set_params(void *tls_ctx,
 {
 	wpa_printf(MSG_DEBUG, "SSL: global set params");
 
+	if (params->check_cert_subject)
+		return -1; /* not yet supported */
+
 	if (tls_global_ca_cert(tls_ctx, params->ca_cert) < 0) {
 		wpa_printf(MSG_INFO, "SSL: Failed to load ca cert file '%s'",
 			   params->ca_cert);

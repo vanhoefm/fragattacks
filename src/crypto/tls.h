@@ -42,6 +42,7 @@ enum tls_fail_reason {
 	TLS_FAIL_DOMAIN_SUFFIX_MISMATCH = 9,
 	TLS_FAIL_DOMAIN_MISMATCH = 10,
 	TLS_FAIL_INSUFFICIENT_KEY_LEN = 11,
+	TLS_FAIL_DN_MISMATCH = 12,
 };
 
 
@@ -156,6 +157,7 @@ struct tls_config {
  * @ocsp_stapling_response_multi: DER encoded file with cached OCSP stapling
  *	response list (OCSPResponseList for ocsp_multi in RFC 6961) or %NULL if
  *	ocsp_multi is not enabled
+ * @check_cert_subject: Client certificate subject name matching string
  *
  * TLS connection parameters to be configured with tls_connection_set_params()
  * and tls_global_set_params().
@@ -198,6 +200,7 @@ struct tls_connection_params {
 	unsigned int flags;
 	const char *ocsp_stapling_response;
 	const char *ocsp_stapling_response_multi;
+	const char *check_cert_subject;
 };
 
 

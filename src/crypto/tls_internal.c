@@ -309,6 +309,9 @@ int tls_global_set_params(void *tls_ctx,
 	struct tls_global *global = tls_ctx;
 	struct tlsv1_credentials *cred;
 
+	if (params->check_cert_subject)
+		return -1; /* not yet supported */
+
 	/* Currently, global parameters are only set when running in server
 	 * mode. */
 	global->server = 1;

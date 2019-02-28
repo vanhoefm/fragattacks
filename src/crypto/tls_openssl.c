@@ -219,6 +219,7 @@ struct tls_data {
 	char *ca_cert;
 	unsigned int crl_reload_interval;
 	struct os_reltime crl_last_reload;
+	char *check_cert_subject;
 };
 
 struct tls_connection {
@@ -232,6 +233,7 @@ struct tls_connection {
 	EVP_PKEY *private_key; /* the private key if using engine */
 #endif /* OPENSSL_NO_ENGINE */
 	char *subject_match, *altsubject_match, *suffix_match, *domain_match;
+	char *check_cert_subject;
 	int read_alerts, write_alerts, failed;
 
 	tls_session_ticket_cb session_ticket_cb;
@@ -1134,6 +1136,7 @@ void tls_deinit(void *ssl_ctx)
 		tls_global = NULL;
 	}
 
+	os_free(data->check_cert_subject);
 	os_free(data);
 }
 
@@ -1611,6 +1614,7 @@ void tls_connection_deinit(void *ssl_ctx, struct tls_connection *conn)
 	os_free(conn->altsubject_match);
 	os_free(conn->suffix_match);
 	os_free(conn->domain_match);
+	os_free(conn->check_cert_subject);
 	os_free(conn->session_ticket);
 	os_free(conn);
 }
@@ -1761,6 +1765,219 @@ static int domain_suffix_match(const u8 *val, size_t len, const char *match,
 	return 0;
 }
 #endif /* CONFIG_NATIVE_WINDOWS */
+
+
+struct tls_dn_field_order_cnt {
+	u8 cn;
+	u8 c;
+	u8 l;
+	u8 st;
+	u8 o;
+	u8 ou;
+	u8 email;
+};
+
+
+static int get_dn_field_index(const struct tls_dn_field_order_cnt *dn_cnt,
+			      int nid)
+{
+	switch (nid) {
+	case NID_commonName:
+		return dn_cnt->cn;
+	case NID_countryName:
+		return dn_cnt->c;
+	case NID_localityName:
+		return dn_cnt->l;
+	case NID_stateOrProvinceName:
+		return dn_cnt->st;
+	case NID_organizationName:
+		return dn_cnt->o;
+	case NID_organizationalUnitName:
+		return dn_cnt->ou;
+	case NID_pkcs9_emailAddress:
+		return dn_cnt->email;
+	default:
+		wpa_printf(MSG_ERROR,
+			   "TLS: Unknown NID '%d' in check_cert_subject",
+			   nid);
+		return -1;
+	}
+}
+
+
+/**
+ * match_dn_field - Match configuration DN field against Certificate DN field
+ * @cert: Certificate
+ * @nid: NID of DN field
+ * @field: Field name
+ * @value DN field value which is passed from configuration
+ *	e.g., if configuration have C=US and this argument will point to US.
+ * @dn_cnt: DN matching context
+ * Returns: 1 on success and 0 on failure
+ */
+static int match_dn_field(const X509 *cert, int nid, const char *field,
+			  const char *value,
+			  const struct tls_dn_field_order_cnt *dn_cnt)
+{
+	int i, ret = 0, len, config_dn_field_index, match_index = 0;
+	X509_NAME *name;
+
+	len = os_strlen(value);
+	name = X509_get_subject_name(cert);
+
+	/* Assign incremented cnt for every field of DN to check DN field in
+	 * right order */
+	config_dn_field_index = get_dn_field_index(dn_cnt, nid);
+	if (config_dn_field_index < 0)
+		return 0;
+
+	/* Fetch value based on NID */
+	for (i = -1; (i = X509_NAME_get_index_by_NID(name, nid, i)) > -1;) {
+		X509_NAME_ENTRY *e;
+		ASN1_STRING *cn;
+
+		e = X509_NAME_get_entry(name, i);
+		if (!e)
+			continue;
+
+		cn = X509_NAME_ENTRY_get_data(e);
+		if (!cn)
+			continue;
+
+		match_index++;
+
+		/* check for more than one DN field with same name */
+		if (match_index != config_dn_field_index)
+			continue;
+
+		/* Check wildcard at the right end side */
+		/* E.g., if OU=develop* mentioned in configuration, allow 'OU'
+		 * of the subject in the client certificate to start with
+		 * 'develop' */
+		if (len > 0 && value[len - 1] == '*') {
+			/* Compare actual certificate DN field value with
+			 * configuration DN field value up to the specified
+			 * length. */
+			ret = ASN1_STRING_length(cn) >= len - 1 &&
+				os_memcmp(ASN1_STRING_get0_data(cn), value,
+					  len - 1) == 0;
+		} else {
+			/* Compare actual certificate DN field value with
+			 * configuration DN field value */
+			ret = ASN1_STRING_length(cn) == len &&
+				os_memcmp(ASN1_STRING_get0_data(cn), value,
+					  len) == 0;
+		}
+		if (!ret) {
+			wpa_printf(MSG_ERROR,
+				   "OpenSSL: Failed to match %s '%s' with certificate DN field value '%s'",
+				   field, value, ASN1_STRING_get0_data(cn));
+		}
+		break;
+	}
+
+	return ret;
+}
+
+
+/**
+ * get_value_from_field - Get value from DN field
+ * @cert: Certificate
+ * @field_str: DN field string which is passed from configuration file (e.g.,
+ *	 C=US)
+ * @dn_cnt: DN matching context
+ * Returns: 1 on success and 0 on failure
+ */
+static int get_value_from_field(const X509 *cert, char *field_str,
+				struct tls_dn_field_order_cnt *dn_cnt)
+{
+	int nid;
+	char *context = NULL, *name, *value;
+
+	if (os_strcmp(field_str, "*") == 0)
+		return 1; /* wildcard matches everything */
+
+	name = str_token(field_str, "=", &context);
+	if (!name)
+		return 0;
+
+	/* Compare all configured DN fields and assign nid based on that to
+	 * fetch correct value from certificate subject */
+	if (os_strcmp(name, "CN") == 0) {
+		nid = NID_commonName;
+		dn_cnt->cn++;
+	} else if(os_strcmp(name, "C") == 0) {
+		nid = NID_countryName;
+		dn_cnt->c++;
+	} else if (os_strcmp(name, "L") == 0) {
+		nid = NID_localityName;
+		dn_cnt->l++;
+	} else if (os_strcmp(name, "ST") == 0) {
+		nid = NID_stateOrProvinceName;
+		dn_cnt->st++;
+	} else if (os_strcmp(name, "O") == 0) {
+		nid = NID_organizationName;
+		dn_cnt->o++;
+	} else if (os_strcmp(name, "OU") == 0) {
+		nid = NID_organizationalUnitName;
+		dn_cnt->ou++;
+	} else if (os_strcmp(name, "emailAddress") == 0) {
+		nid = NID_pkcs9_emailAddress;
+		dn_cnt->email++;
+	} else {
+		wpa_printf(MSG_ERROR,
+			"TLS: Unknown field '%s' in check_cert_subject", name);
+		return 0;
+	}
+
+	value = str_token(field_str, "=", &context);
+	if (!value) {
+		wpa_printf(MSG_ERROR,
+			   "TLS: Distinguished Name field '%s' value is not defined in check_cert_subject",
+			   name);
+		return 0;
+	}
+
+	return match_dn_field(cert, nid, name, value, dn_cnt);
+}
+
+
+/**
+ * tls_match_dn_field - Match subject DN field with check_cert_subject
+ * @cert: Certificate
+ * @match: check_cert_subject string
+ * Returns: Return 1 on success and 0 on failure
+*/
+static int tls_match_dn_field(X509 *cert, const char *match)
+{
+	const char *token, *last = NULL;
+	char field[256];
+	struct tls_dn_field_order_cnt dn_cnt;
+
+	os_memset(&dn_cnt, 0, sizeof(dn_cnt));
+
+	/* Maximum length of each DN field is 255 characters */
+
+	/* Process each '/' delimited field */
+	while ((token = cstr_token(match, "/", &last))) {
+		if (last - token >= (int) sizeof(field)) {
+			wpa_printf(MSG_ERROR,
+				   "OpenSSL: Too long DN matching field value in '%s'",
+				   match);
+			return 0;
+		}
+		os_memcpy(field, token, last - token);
+		field[last - token] = '\0';
+
+		if (!get_value_from_field(cert, field, &dn_cnt)) {
+			wpa_printf(MSG_DEBUG, "OpenSSL: No match for DN '%s'",
+				   field);
+			return 0;
+		}
+	}
+
+	return 1;
+}
 
 
 static int tls_match_suffix(X509 *cert, const char *match, int full)
@@ -2027,6 +2244,7 @@ static int tls_verify_cb(int preverify_ok, X509_STORE_CTX *x509_ctx)
 	struct tls_connection *conn;
 	struct tls_context *context;
 	char *match, *altmatch, *suffix_match, *domain_match;
+	const char *check_cert_subject;
 	const char *err_str;
 
 	err_cert = X509_STORE_CTX_get_current_cert(x509_ctx);
@@ -2127,6 +2345,18 @@ static int tls_verify_cb(int preverify_ok, X509_STORE_CTX *x509_ctx)
 		   "err=%d (%s) ca_cert_verify=%d depth=%d buf='%s'",
 		   preverify_ok, err, err_str,
 		   conn->ca_cert_verify, depth, buf);
+	check_cert_subject = conn->check_cert_subject;
+	if (!check_cert_subject)
+		check_cert_subject = conn->data->check_cert_subject;
+	if (check_cert_subject) {
+		if (depth == 0 &&
+		    !tls_match_dn_field(err_cert, check_cert_subject)) {
+			preverify_ok = 0;
+			openssl_tls_fail_event(conn, err_cert, err, depth, buf,
+					       "Distinguished Name",
+					       TLS_FAIL_DN_MISMATCH);
+		}
+	}
 	if (depth == 0 && match && os_strstr(buf, match) == NULL) {
 		wpa_printf(MSG_WARNING, "TLS: Subject '%s' did not "
 			   "match with '%s'", buf, match);
@@ -2503,7 +2733,8 @@ static int tls_connection_set_subject_match(struct tls_connection *conn,
 					    const char *subject_match,
 					    const char *altsubject_match,
 					    const char *suffix_match,
-					    const char *domain_match)
+					    const char *domain_match,
+					    const char *check_cert_subject)
 {
 	os_free(conn->subject_match);
 	conn->subject_match = NULL;
@@ -2534,6 +2765,14 @@ static int tls_connection_set_subject_match(struct tls_connection *conn,
 	if (domain_match) {
 		conn->domain_match = os_strdup(domain_match);
 		if (conn->domain_match == NULL)
+			return -1;
+	}
+
+	os_free(conn->check_cert_subject);
+	conn->check_cert_subject = NULL;
+	if (check_cert_subject) {
+		conn->check_cert_subject = os_strdup(check_cert_subject);
+		if (!conn->check_cert_subject)
 			return -1;
 	}
 
@@ -4591,7 +4830,8 @@ int tls_connection_set_params(void *tls_ctx, struct tls_connection *conn,
 					     params->subject_match,
 					     params->altsubject_match,
 					     params->suffix_match,
-					     params->domain_match))
+					     params->domain_match,
+					     params->check_cert_subject))
 		return -1;
 
 	if (engine_id && ca_cert_id) {
@@ -4730,6 +4970,15 @@ int tls_global_set_params(void *tls_ctx,
 	while ((err = ERR_get_error())) {
 		wpa_printf(MSG_INFO, "%s: Clearing pending SSL error: %s",
 			   __func__, ERR_error_string(err, NULL));
+	}
+
+	os_free(data->check_cert_subject);
+	data->check_cert_subject = NULL;
+	if (params->check_cert_subject) {
+		data->check_cert_subject =
+			os_strdup(params->check_cert_subject);
+		if (!data->check_cert_subject)
+			return -1;
 	}
 
 	if (tls_global_ca_cert(data, params->ca_cert) ||

@@ -197,6 +197,48 @@ struct eap_peer_config {
 	char *subject_match;
 
 	/**
+	 * check_cert_subject - Constraint for server certificate subject fields
+	 *
+	 * If check_cert_subject is set, the value of every field will be
+	 * checked against the DN of the subject in the authentication server
+	 * certificate. If the values do not match, the certificate verification
+	 * will fail, rejecting the server. This option allows wpa_supplicant to
+	 * match every individual field in the right order against the DN of the
+	 * subject in the server certificate.
+	 *
+	 * For example, check_cert_subject=C=US/O=XX/OU=ABC/OU=XYZ/CN=1234 will
+	 * check every individual DN field of the subject in the server
+	 * certificate. If OU=XYZ comes first in terms of the order in the
+	 * server certificate (DN field of server certificate
+	 * C=US/O=XX/OU=XYZ/OU=ABC/CN=1234), wpa_supplicant will reject the
+	 * server because the order of 'OU' is not matching the specified string
+	 * in check_cert_subject.
+	 *
+	 * This option also allows '*' as a wildcard. This option has some
+	 * limitation.
+	 * It can only be used as per the following example.
+	 *
+	 * For example, check_cert_subject=C=US/O=XX/OU=Production* and we have
+	 * two servers and DN of the subject in the first server certificate is
+	 * (C=US/O=XX/OU=Production Unit) and DN of the subject in the second
+	 * server is (C=US/O=XX/OU=Production Factory). In this case,
+	 * wpa_supplicant will allow both servers because the value of 'OU'
+	 * field in both server certificates matches 'OU' value in
+	 * 'check_cert_subject' up to 'wildcard'.
+	 *
+	 * (Allow all servers, e.g., check_cert_subject=*)
+	 */
+	char *check_cert_subject;
+
+	/**
+	 * check_cert_subject2 - Constraint for server certificate subject fields
+	 *
+	 * This field is like check_cert_subject, but used for phase 2 (inside
+	 * EAP-TTLS/PEAP/FAST tunnel) authentication.
+	 */
+	char *check_cert_subject2;
+
+	/**
 	 * altsubject_match - Constraint for server certificate alt. subject
 	 *
 	 * Semicolon separated string of entries to be matched against the
