@@ -510,6 +510,13 @@ enum qca_radiotap_vendor_ids {
  * @QCA_NL80211_VENDOR_SUBCMD_GET_FW_STATE: This command is used to get firmware
  *	state from the driver. It returns the firmware state in the attribute
  *	QCA_WLAN_VENDOR_ATTR_FW_STATE.
+ * @QCA_NL80211_VENDOR_SUBCMD_PEER_STATS_CACHE_FLUSH: This vendor subcommand
+ *	is used by the driver to flush per-peer cached statistics to user space
+ *	application. This interface is used as an event from the driver to
+ *	user space application. Attributes for this event are specified in
+ *	enum qca_wlan_vendor_attr_peer_stats_cache_params.
+ *	QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_DATA attribute is expected to be
+ *	sent in the event.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -676,6 +683,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_COEX_CONFIG = 175,
 	QCA_NL80211_VENDOR_SUBCMD_GET_SUPPORTED_AKMS = 176,
 	QCA_NL80211_VENDOR_SUBCMD_GET_FW_STATE = 177,
+	QCA_NL80211_VENDOR_SUBCMD_PEER_STATS_CACHE_FLUSH = 178,
 };
 
 enum qca_wlan_vendor_attr {
@@ -6497,6 +6505,56 @@ enum qca_wlan_vendor_attr_link_properties {
 	QCA_VENDOR_ATTR_LINK_PROPERTIES_AFTER_LAST,
 	QCA_VENDOR_ATTR_LINK_PROPERTIES_MAX =
 	QCA_VENDOR_ATTR_LINK_PROPERTIES_AFTER_LAST - 1,
+};
+
+/**
+ * enum qca_vendor_attr_peer_stats_cache_type - Represents peer stats cache type
+ * This enum defines the valid set of values of peer stats cache types. These
+ * values are used by attribute
+ * %QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_TYPE.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_TX_RATE_STATS: Represents peer TX rate statistics
+ * @QCA_WLAN_VENDOR_ATTR_PEER_RX_RATE_STATS: Represents peer RX rate statistics
+ * @QCA_WLAN_VENDOR_ATTR_PEER_TX_SOJOURN_STATS: Represents peer TX sojourn
+ * statistics
+ */
+enum qca_vendor_attr_peer_stats_cache_type {
+	QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_TYPE_INVALID = 0,
+
+	QCA_WLAN_VENDOR_ATTR_PEER_TX_RATE_STATS,
+	QCA_WLAN_VENDOR_ATTR_PEER_RX_RATE_STATS,
+	QCA_WLAN_VENDOR_ATTR_PEER_TX_SOJOURN_STATS,
+};
+
+/**
+ * enum qca_wlan_vendor_attr_peer_stats_cache_params - This enum defines
+ * attributes required for QCA_NL80211_VENDOR_SUBCMD_PEER_STATS_CACHE_FLUSH
+ * Information in these attributes is used to flush peer rate statistics from
+ * the driver to user application.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_TYPE: Unsigned 32-bit attribute
+ * Indicate peer statistics cache type.
+ * The statistics types are 32-bit values from
+ * enum qca_vendor_attr_peer_stats_cache_type.
+ * @QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_PEER_MAC: Unsigned 8-bit array
+ * of size 6 octets, representing the peer MAC address.
+ * @QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_DATA: Opaque data attribute
+ * containing buffer of statistics to send to application layer entity.
+ * @QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_PEER_COOKIE: Unsigned 64-bit attribute
+ * representing a cookie for peer unique session.
+ */
+enum qca_wlan_vendor_attr_peer_stats_cache_params {
+	QCA_WLAN_VENDOR_ATTR_PEER_STATS_INVALID = 0,
+
+	QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_TYPE = 1,
+	QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_PEER_MAC = 2,
+	QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_DATA = 3,
+	QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_PEER_COOKIE = 4,
+
+	/* Keep last */
+	QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_LAST,
+	QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_MAX =
+		QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_LAST - 1
 };
 
 #endif /* QCA_VENDOR_H */
