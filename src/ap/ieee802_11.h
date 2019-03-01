@@ -175,4 +175,6 @@ int ieee802_11_allowed_address(struct hostapd_data *hapd, const u8 *addr,
 int get_tx_parameters(struct sta_info *sta, int ap_max_chanwidth,
 		      int ap_seg1_idx, int *bandwidth, int *seg1_idx);
 
+void auth_sae_process_commit(void *eloop_ctx, void *user_ctx);
+
 #endif /* IEEE802_11_H */

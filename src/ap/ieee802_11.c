@@ -62,6 +62,9 @@ prepare_auth_resp_fils(struct hostapd_data *hapd,
 		       const u8 *msk, size_t msk_len,
 		       int *is_pub);
 #endif /* CONFIG_FILS */
+static void handle_auth(struct hostapd_data *hapd,
+			const struct ieee80211_mgmt *mgmt, size_t len,
+			int rssi, int from_queue);
 
 
 u8 * hostapd_eid_multi_ap(struct hostapd_data *hapd, u8 *eid)
@@ -517,6 +520,13 @@ static int use_sae_anti_clogging(struct hostapd_data *hapd)
 		if (open >= hapd->conf->sae_anti_clogging_threshold)
 			return 1;
 	}
+
+	/* In addition to already existing open SAE sessions, check whether
+	 * there are enough pending commit messages in the processing queue to
+	 * potentially result in too many open sessions. */
+	if (open + dl_list_len(&hapd->sae_commit_queue) >=
+	    hapd->conf->sae_anti_clogging_threshold)
+		return 1;
 
 	return 0;
 }
@@ -1176,6 +1186,62 @@ int auth_sae_init_committed(struct hostapd_data *hapd, struct sta_info *sta)
 	return 0;
 }
 
+
+void auth_sae_process_commit(void *eloop_ctx, void *user_ctx)
+{
+	struct hostapd_data *hapd = eloop_ctx;
+	struct hostapd_sae_commit_queue *q;
+	unsigned int queue_len;
+
+	q = dl_list_first(&hapd->sae_commit_queue,
+			  struct hostapd_sae_commit_queue, list);
+	if (!q)
+		return;
+	wpa_printf(MSG_DEBUG,
+		   "SAE: Process next available commit message from queue");
+	dl_list_del(&q->list);
+	handle_auth(hapd, (const struct ieee80211_mgmt *) q->msg, q->len,
+		    q->rssi, 1);
+	os_free(q);
+
+	if (eloop_is_timeout_registered(auth_sae_process_commit, hapd, NULL))
+		return;
+	queue_len = dl_list_len(&hapd->sae_commit_queue);
+	eloop_register_timeout(0, queue_len * 50000, auth_sae_process_commit,
+			       hapd, NULL);
+}
+
+
+static void auth_sae_queue_commit(struct hostapd_data *hapd,
+				  const struct ieee80211_mgmt *mgmt, size_t len,
+				  int rssi)
+{
+	struct hostapd_sae_commit_queue *q;
+	unsigned int queue_len;
+
+	queue_len = dl_list_len(&hapd->sae_commit_queue);
+	if (queue_len >= 15) {
+		wpa_printf(MSG_DEBUG,
+			   "SAE: No more room in commit message queue - drop the new frame from "
+			   MACSTR, MAC2STR(mgmt->sa));
+		return;
+	}
+
+	wpa_printf(MSG_DEBUG, "SAE: Queue Authentication commit message from "
+		   MACSTR " for processing", MAC2STR(mgmt->sa));
+	q = os_zalloc(sizeof(*q) + len);
+	if (!q)
+		return;
+	q->rssi = rssi;
+	q->len = len;
+	os_memcpy(q->msg, mgmt, len);
+	dl_list_add_tail(&hapd->sae_commit_queue, &q->list);
+	if (eloop_is_timeout_registered(auth_sae_process_commit, hapd, NULL))
+		return;
+	eloop_register_timeout(0, queue_len * 50000, auth_sae_process_commit,
+			       hapd, NULL);
+}
+
 #endif /* CONFIG_SAE */
 
 
@@ -1807,7 +1873,7 @@ ieee802_11_set_radius_info(struct hostapd_data *hapd, struct sta_info *sta,
 
 static void handle_auth(struct hostapd_data *hapd,
 			const struct ieee80211_mgmt *mgmt, size_t len,
-			int rssi)
+			int rssi, int from_queue)
 {
 	u16 auth_alg, auth_transaction, status_code;
 	u16 resp = WLAN_STATUS_SUCCESS;
@@ -1854,11 +1920,12 @@ static void handle_auth(struct hostapd_data *hapd,
 
 	wpa_printf(MSG_DEBUG, "authentication: STA=" MACSTR " auth_alg=%d "
 		   "auth_transaction=%d status_code=%d wep=%d%s "
-		   "seq_ctrl=0x%x%s",
+		   "seq_ctrl=0x%x%s%s",
 		   MAC2STR(mgmt->sa), auth_alg, auth_transaction,
 		   status_code, !!(fc & WLAN_FC_ISWEP),
 		   challenge ? " challenge" : "",
-		   seq_ctrl, (fc & WLAN_FC_RETRY) ? " retry" : "");
+		   seq_ctrl, (fc & WLAN_FC_RETRY) ? " retry" : "",
+		   from_queue ? " (from queue)" : "");
 
 #ifdef CONFIG_NO_RC4
 	if (auth_alg == WLAN_AUTH_SHARED_KEY) {
@@ -1985,6 +2052,16 @@ static void handle_auth(struct hostapd_data *hapd,
 	}
 	if (res == HOSTAPD_ACL_PENDING)
 		return;
+
+#ifdef CONFIG_SAE
+	if (auth_alg == WLAN_AUTH_SAE && auth_transaction == 1 && !from_queue) {
+		/* Handle SAE Authentication commit message through a queue to
+		 * provide more control for postponing the needed heavy
+		 * processing under a possible DoS attack scenario. */
+		auth_sae_queue_commit(hapd, mgmt, len, rssi);
+		return;
+	}
+#endif /* CONFIG_SAE */
 
 	sta = ap_get_sta(hapd, mgmt->sa);
 	if (sta) {
@@ -4245,7 +4322,7 @@ int ieee802_11_mgmt(struct hostapd_data *hapd, const u8 *buf, size_t len,
 	switch (stype) {
 	case WLAN_FC_STYPE_AUTH:
 		wpa_printf(MSG_DEBUG, "mgmt::auth");
-		handle_auth(hapd, mgmt, len, ssi_signal);
+		handle_auth(hapd, mgmt, len, ssi_signal, 0);
 		ret = 1;
 		break;
 	case WLAN_FC_STYPE_ASSOC_REQ:

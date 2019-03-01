@@ -417,6 +417,20 @@ static void hostapd_free_hapd_data(struct hostapd_data *hapd)
 
 	hostapd_clean_rrm(hapd);
 	fils_hlp_deinit(hapd);
+
+#ifdef CONFIG_SAE
+	{
+		struct hostapd_sae_commit_queue *q;
+
+		while ((q = dl_list_first(&hapd->sae_commit_queue,
+					  struct hostapd_sae_commit_queue,
+					  list))) {
+			dl_list_del(&q->list);
+			os_free(q);
+		}
+	}
+	eloop_cancel_timeout(auth_sae_process_commit, hapd, NULL);
+#endif /* CONFIG_SAE */
 }
 
 
@@ -2150,6 +2164,9 @@ hostapd_alloc_bss_data(struct hostapd_iface *hapd_iface,
 	dl_list_init(&hapd->l2_queue);
 	dl_list_init(&hapd->l2_oui_queue);
 #endif /* CONFIG_IEEE80211R_AP */
+#ifdef CONFIG_SAE
+	dl_list_init(&hapd->sae_commit_queue);
+#endif /* CONFIG_SAE */
 
 	return hapd;
 }

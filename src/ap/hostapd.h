@@ -129,6 +129,13 @@ struct hostapd_neighbor_entry {
 	int stationary;
 };
 
+struct hostapd_sae_commit_queue {
+	struct dl_list list;
+	int rssi;
+	size_t len;
+	u8 msg[];
+};
+
 /**
  * struct hostapd_data - hostapd per-BSS data structure
  */
@@ -308,6 +315,7 @@ struct hostapd_data {
 	u8 sae_token_key[8];
 	struct os_reltime last_sae_token_key_update;
 	int dot11RSNASAERetransPeriod; /* msec */
+	struct dl_list sae_commit_queue; /* struct hostapd_sae_commit_queue */
 #endif /* CONFIG_SAE */
 
 #ifdef CONFIG_TESTING_OPTIONS
