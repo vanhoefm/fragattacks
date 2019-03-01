@@ -532,17 +532,46 @@ static int use_sae_anti_clogging(struct hostapd_data *hapd)
 }
 
 
+static u8 sae_token_hash(struct hostapd_data *hapd, const u8 *addr)
+{
+	u8 hash[SHA256_MAC_LEN];
+
+	hmac_sha256(hapd->sae_token_key, sizeof(hapd->sae_token_key),
+		    addr, ETH_ALEN, hash);
+	return hash[0];
+}
+
+
 static int check_sae_token(struct hostapd_data *hapd, const u8 *addr,
 			   const u8 *token, size_t token_len)
 {
 	u8 mac[SHA256_MAC_LEN];
+	const u8 *addrs[2];
+	size_t len[2];
+	u16 token_idx;
+	u8 idx;
 
 	if (token_len != SHA256_MAC_LEN)
 		return -1;
-	if (hmac_sha256(hapd->sae_token_key, sizeof(hapd->sae_token_key),
-			addr, ETH_ALEN, mac) < 0 ||
-	    os_memcmp_const(token, mac, SHA256_MAC_LEN) != 0)
+	idx = sae_token_hash(hapd, addr);
+	token_idx = hapd->sae_pending_token_idx[idx];
+	if (token_idx == 0 || token_idx != WPA_GET_BE16(token)) {
+		wpa_printf(MSG_DEBUG, "SAE: Invalid anti-clogging token from "
+			   MACSTR " - token_idx 0x%04x, expected 0x%04x",
+			   MAC2STR(addr), WPA_GET_BE16(token), token_idx);
 		return -1;
+	}
+
+	addrs[0] = addr;
+	len[0] = ETH_ALEN;
+	addrs[1] = token;
+	len[1] = 2;
+	if (hmac_sha256_vector(hapd->sae_token_key, sizeof(hapd->sae_token_key),
+			       2, addrs, len, mac) < 0 ||
+	    os_memcmp_const(token + 2, &mac[2], SHA256_MAC_LEN - 2) != 0)
+		return -1;
+
+	hapd->sae_pending_token_idx[idx] = 0; /* invalidate used token */
 
 	return 0;
 }
@@ -554,16 +583,25 @@ static struct wpabuf * auth_build_token_req(struct hostapd_data *hapd,
 	struct wpabuf *buf;
 	u8 *token;
 	struct os_reltime now;
+	u8 idx[2];
+	const u8 *addrs[2];
+	size_t len[2];
+	u8 p_idx;
+	u16 token_idx;
 
 	os_get_reltime(&now);
 	if (!os_reltime_initialized(&hapd->last_sae_token_key_update) ||
-	    os_reltime_expired(&now, &hapd->last_sae_token_key_update, 60)) {
+	    os_reltime_expired(&now, &hapd->last_sae_token_key_update, 60) ||
+	    hapd->sae_token_idx == 0xffff) {
 		if (random_get_bytes(hapd->sae_token_key,
 				     sizeof(hapd->sae_token_key)) < 0)
 			return NULL;
 		wpa_hexdump(MSG_DEBUG, "SAE: Updated token key",
 			    hapd->sae_token_key, sizeof(hapd->sae_token_key));
 		hapd->last_sae_token_key_update = now;
+		hapd->sae_token_idx = 0;
+		os_memset(hapd->sae_pending_token_idx, 0,
+			  sizeof(hapd->sae_pending_token_idx));
 	}
 
 	buf = wpabuf_alloc(sizeof(le16) + SHA256_MAC_LEN);
@@ -572,9 +610,25 @@ static struct wpabuf * auth_build_token_req(struct hostapd_data *hapd,
 
 	wpabuf_put_le16(buf, group); /* Finite Cyclic Group */
 
+	p_idx = sae_token_hash(hapd, addr);
+	token_idx = hapd->sae_pending_token_idx[p_idx];
+	if (!token_idx) {
+		hapd->sae_token_idx++;
+		token_idx = hapd->sae_token_idx;
+		hapd->sae_pending_token_idx[p_idx] = token_idx;
+	}
+	WPA_PUT_BE16(idx, token_idx);
 	token = wpabuf_put(buf, SHA256_MAC_LEN);
-	hmac_sha256(hapd->sae_token_key, sizeof(hapd->sae_token_key),
-		    addr, ETH_ALEN, token);
+	addrs[0] = addr;
+	len[0] = ETH_ALEN;
+	addrs[1] = idx;
+	len[1] = sizeof(idx);
+	if (hmac_sha256_vector(hapd->sae_token_key, sizeof(hapd->sae_token_key),
+			       2, addrs, len, token) < 0) {
+		wpabuf_free(buf);
+		return NULL;
+	}
+	WPA_PUT_BE16(token, token_idx);
 
 	return buf;
 }

@@ -314,6 +314,8 @@ struct hostapd_data {
 	/** Key used for generating SAE anti-clogging tokens */
 	u8 sae_token_key[8];
 	struct os_reltime last_sae_token_key_update;
+	u16 sae_token_idx;
+	u16 sae_pending_token_idx[256];
 	int dot11RSNASAERetransPeriod; /* msec */
 	struct dl_list sae_commit_queue; /* struct hostapd_sae_commit_queue */
 #endif /* CONFIG_SAE */
