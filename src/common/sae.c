@@ -601,22 +601,27 @@ fail:
 }
 
 
+static int sae_modp_group_require_masking(int group)
+{
+	/* Groups for which pwd-value is likely to be >= p frequently */
+	return group == 22 || group == 23 || group == 24;
+}
+
+
 static int sae_derive_pwe_ffc(struct sae_data *sae, const u8 *addr1,
 			      const u8 *addr2, const u8 *password,
 			      size_t password_len, const char *identifier)
 {
-	u8 counter;
+	u8 counter, k;
 	u8 addrs[2 * ETH_ALEN];
 	const u8 *addr[3];
 	size_t len[3];
 	size_t num_elem;
 	int found = 0;
+	struct crypto_bignum *pwe = NULL;
 
-	if (sae->tmp->pwe_ffc == NULL) {
-		sae->tmp->pwe_ffc = crypto_bignum_init();
-		if (sae->tmp->pwe_ffc == NULL)
-			return -1;
-	}
+	crypto_bignum_deinit(sae->tmp->pwe_ffc, 1);
+	sae->tmp->pwe_ffc = NULL;
 
 	wpa_hexdump_ascii_key(MSG_DEBUG, "SAE: password",
 			      password, password_len);
@@ -640,7 +645,9 @@ static int sae_derive_pwe_ffc(struct sae_data *sae, const u8 *addr1,
 	len[num_elem] = sizeof(counter);
 	num_elem++;
 
-	for (counter = 1; !found; counter++) {
+	k = sae_modp_group_require_masking(sae->group) ? 40 : 1;
+
+	for (counter = 1; counter <= k || !found; counter++) {
 		u8 pwd_seed[SHA256_MAC_LEN];
 		int res;
 
@@ -650,18 +657,29 @@ static int sae_derive_pwe_ffc(struct sae_data *sae, const u8 *addr1,
 			break;
 		}
 
-		wpa_printf(MSG_DEBUG, "SAE: counter = %u", counter);
+		wpa_printf(MSG_DEBUG, "SAE: counter = %02u", counter);
 		if (hmac_sha256_vector(addrs, sizeof(addrs), num_elem,
 				       addr, len, pwd_seed) < 0)
 			break;
-		res = sae_test_pwd_seed_ffc(sae, pwd_seed, sae->tmp->pwe_ffc);
+		if (!pwe) {
+			pwe = crypto_bignum_init();
+			if (!pwe)
+				break;
+		}
+		res = sae_test_pwd_seed_ffc(sae, pwd_seed, pwe);
 		if (res < 0)
 			break;
 		if (res > 0) {
-			wpa_printf(MSG_DEBUG, "SAE: Use this PWE");
 			found = 1;
+			if (!sae->tmp->pwe_ffc) {
+				wpa_printf(MSG_DEBUG, "SAE: Use this PWE");
+				sae->tmp->pwe_ffc = pwe;
+				pwe = NULL;
+			}
 		}
 	}
+
+	crypto_bignum_deinit(pwe, 1);
 
 	return found ? 0 : -1;
 }
