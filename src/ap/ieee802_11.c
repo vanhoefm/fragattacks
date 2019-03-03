@@ -742,7 +742,7 @@ void sae_accept_sta(struct hostapd_data *hapd, struct sta_info *sta)
 
 
 static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
-		       const u8 *bssid, u8 auth_transaction)
+		       const u8 *bssid, u8 auth_transaction, int allow_reuse)
 {
 	int ret;
 
@@ -755,7 +755,8 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 	switch (sta->sae->state) {
 	case SAE_NOTHING:
 		if (auth_transaction == 1) {
-			ret = auth_sae_send_commit(hapd, sta, bssid, 1);
+			ret = auth_sae_send_commit(hapd, sta, bssid,
+						   !allow_reuse);
 			if (ret)
 				return ret;
 			sae_set_state(sta, SAE_COMMITTED, "Sent Commit");
@@ -844,7 +845,8 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 			 * step to get to Accepted without waiting for
 			 * additional events.
 			 */
-			return sae_sm_step(hapd, sta, bssid, auth_transaction);
+			return sae_sm_step(hapd, sta, bssid, auth_transaction,
+					   0);
 		}
 		break;
 	case SAE_CONFIRMED:
@@ -1011,6 +1013,8 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 	if (auth_transaction == 1) {
 		const u8 *token = NULL, *pos, *end;
 		size_t token_len = 0;
+		int allow_reuse = 0;
+
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_DEBUG,
 			       "start SAE authentication (RX commit, status=%u)",
@@ -1088,9 +1092,22 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 			 * to use a different group and that would not be
 			 * allowed if we remain in Committed state with the
 			 * previously set parameters. */
-			sae_set_state(sta, SAE_NOTHING,
-				      "Clear existing state to allow restart");
-			sae_clear_data(sta->sae);
+			pos = mgmt->u.auth.variable;
+			end = ((const u8 *) mgmt) + len;
+			if (end - pos >= (int) sizeof(le16) &&
+			    sae_group_allowed(sta->sae, groups,
+					      WPA_GET_LE16(pos)) ==
+			    WLAN_STATUS_SUCCESS) {
+				/* Do not waste resources deriving the same PWE
+				 * again since the same group is reused. */
+				sae_set_state(sta, SAE_NOTHING,
+					      "Allow previous PWE to be reused");
+				allow_reuse = 1;
+			} else {
+				sae_set_state(sta, SAE_NOTHING,
+					      "Clear existing state to allow restart");
+				sae_clear_data(sta->sae);
+			}
 		}
 
 		resp = sae_parse_commit(sta->sae, mgmt->u.auth.variable,
@@ -1126,7 +1143,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 		if (resp != WLAN_STATUS_SUCCESS)
 			goto reply;
 
-		if (!token && use_sae_anti_clogging(hapd)) {
+		if (!token && use_sae_anti_clogging(hapd) && !allow_reuse) {
 			wpa_printf(MSG_DEBUG,
 				   "SAE: Request anti-clogging token from "
 				   MACSTR, MAC2STR(sta->addr));
@@ -1139,7 +1156,8 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 			goto reply;
 		}
 
-		resp = sae_sm_step(hapd, sta, mgmt->bssid, auth_transaction);
+		resp = sae_sm_step(hapd, sta, mgmt->bssid, auth_transaction,
+				   allow_reuse);
 	} else if (auth_transaction == 2) {
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_DEBUG,
@@ -1180,7 +1198,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 			}
 			sta->sae->rc = peer_send_confirm;
 		}
-		resp = sae_sm_step(hapd, sta, mgmt->bssid, auth_transaction);
+		resp = sae_sm_step(hapd, sta, mgmt->bssid, auth_transaction, 0);
 	} else {
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_DEBUG,
