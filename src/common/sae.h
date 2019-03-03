@@ -41,6 +41,7 @@ struct sae_temporary_data {
 	struct wpabuf *anti_clogging_token;
 	char *pw_id;
 	int vlan_id;
+	u8 bssid[ETH_ALEN];
 };
 
 enum sae_state {
