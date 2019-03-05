@@ -850,18 +850,21 @@ static void sae_pick_next_group(struct hostapd_data *hapd, struct sta_info *sta)
 {
 	struct sae_data *sae = sta->sae;
 	int i, *groups = hapd->conf->sae_groups;
+	int default_groups[] = { 19, 0 };
 
 	if (sae->state != SAE_COMMITTED)
 		return;
 
 	wpa_printf(MSG_DEBUG, "SAE: Previously selected group: %d", sae->group);
 
-	for (i = 0; groups && groups[i] > 0; i++) {
+	if (!groups)
+		groups = default_groups;
+	for (i = 0; groups[i] > 0; i++) {
 		if (sae->group == groups[i])
 			break;
 	}
 
-	if (!groups || groups[i] <= 0) {
+	if (groups[i] <= 0) {
 		wpa_printf(MSG_DEBUG,
 			   "SAE: Previously selected group not found from the current configuration");
 		return;
@@ -890,6 +893,11 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 {
 	int resp = WLAN_STATUS_SUCCESS;
 	struct wpabuf *data = NULL;
+	int *groups = hapd->conf->sae_groups;
+	int default_groups[] = { 19, 0 };
+
+	if (!groups)
+		groups = default_groups;
 
 #ifdef CONFIG_TESTING_OPTIONS
 	if (hapd->conf->sae_reflection_attack && auth_transaction == 1) {
@@ -955,8 +963,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 				resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
 				goto reply;
 			}
-			resp = sae_group_allowed(sta->sae,
-						 hapd->conf->sae_groups,
+			resp = sae_group_allowed(sta->sae, groups,
 						 WPA_GET_LE16(pos));
 			if (resp != WLAN_STATUS_SUCCESS) {
 				wpa_printf(MSG_ERROR,
@@ -1025,7 +1032,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 		resp = sae_parse_commit(sta->sae, mgmt->u.auth.variable,
 					((const u8 *) mgmt) + len -
 					mgmt->u.auth.variable, &token,
-					&token_len, hapd->conf->sae_groups);
+					&token_len, groups);
 		if (resp == SAE_SILENTLY_DISCARD) {
 			wpa_printf(MSG_DEBUG,
 				   "SAE: Drop commit message from " MACSTR " due to reflection attack",
