@@ -474,6 +474,7 @@ def test_sae_oom_wpas(dev, apdev):
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
+    params['sae_groups'] = '19 25 26'
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].request("SET sae_groups 25")
