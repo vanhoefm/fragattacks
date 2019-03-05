@@ -57,7 +57,7 @@ static int index_within_array(const int *array, int idx)
 static int sme_set_sae_group(struct wpa_supplicant *wpa_s)
 {
 	int *groups = wpa_s->conf->sae_groups;
-	int default_groups[] = { 19, 20, 21, 25, 26, 0 };
+	int default_groups[] = { 19, 20, 21, 0 };
 
 	if (!groups || groups[0] <= 0)
 		groups = default_groups;
@@ -1037,7 +1037,7 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 	    status_code == WLAN_STATUS_ANTI_CLOGGING_TOKEN_REQ &&
 	    wpa_s->sme.sae.state == SAE_COMMITTED &&
 	    (external || wpa_s->current_bss) && wpa_s->current_ssid) {
-		int default_groups[] = { 19, 20, 21, 25, 26, 0 };
+		int default_groups[] = { 19, 20, 21, 0 };
 		u16 group;
 
 		groups = wpa_s->conf->sae_groups;
