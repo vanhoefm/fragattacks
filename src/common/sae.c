@@ -1487,23 +1487,31 @@ int sae_check_confirm(struct sae_data *sae, const u8 *data, size_t len)
 
 	wpa_printf(MSG_DEBUG, "SAE: peer-send-confirm %u", WPA_GET_LE16(data));
 
-	if (sae->tmp == NULL) {
+	if (!sae->tmp || !sae->peer_commit_scalar ||
+	    !sae->tmp->own_commit_scalar) {
 		wpa_printf(MSG_DEBUG, "SAE: Temporary data not yet available");
 		return -1;
 	}
 
-	if (sae->tmp->ec)
+	if (sae->tmp->ec) {
+		if (!sae->tmp->peer_commit_element_ecc ||
+		    !sae->tmp->own_commit_element_ecc)
+			return -1;
 		sae_cn_confirm_ecc(sae, data, sae->peer_commit_scalar,
 				   sae->tmp->peer_commit_element_ecc,
 				   sae->tmp->own_commit_scalar,
 				   sae->tmp->own_commit_element_ecc,
 				   verifier);
-	else
+	} else {
+		if (!sae->tmp->peer_commit_element_ffc ||
+		    !sae->tmp->own_commit_element_ffc)
+			return -1;
 		sae_cn_confirm_ffc(sae, data, sae->peer_commit_scalar,
 				   sae->tmp->peer_commit_element_ffc,
 				   sae->tmp->own_commit_scalar,
 				   sae->tmp->own_commit_element_ffc,
 				   verifier);
+	}
 
 	if (os_memcmp_const(verifier, data + 2, SHA256_MAC_LEN) != 0) {
 		wpa_printf(MSG_DEBUG, "SAE: Confirm mismatch");
