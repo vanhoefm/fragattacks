@@ -826,6 +826,7 @@ done:
 
 
 int crypto_dh_derive_secret(u8 generator, const u8 *prime, size_t prime_len,
+			    const u8 *order, size_t order_len,
 			    const u8 *privkey, size_t privkey_len,
 			    const u8 *pubkey, size_t pubkey_len,
 			    u8 *secret, size_t *len)
