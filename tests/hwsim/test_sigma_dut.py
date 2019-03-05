@@ -268,6 +268,7 @@ def test_sigma_dut_sae(dev, apdev):
     params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params["ieee80211w"] = "2"
+    params['sae_groups'] = '19 20 21'
     hapd = hostapd.add_ap(apdev[0], params)
 
     sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
