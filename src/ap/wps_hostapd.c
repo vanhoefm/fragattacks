@@ -354,6 +354,18 @@ static int hapd_wps_reconfig_in_memory(struct hostapd_data *hapd,
 							    bss->wpa_pairwise,
 							    bss->rsn_pairwise);
 
+		if (hapd->conf->wps_cred_add_sae &&
+		    (cred->auth_type & WPS_AUTH_WPA2PSK) &&
+		    cred->key_len != 2 * PMK_LEN) {
+			bss->wpa_key_mgmt |= WPA_KEY_MGMT_SAE;
+#ifdef CONFIG_IEEE80211W
+			if (bss->ieee80211w == NO_MGMT_FRAME_PROTECTION)
+				bss->ieee80211w =
+					MGMT_FRAME_PROTECTION_OPTIONAL;
+			bss->sae_require_mfp = 1;
+#endif /* CONFIG_IEEE80211W */
+		}
+
 		if (cred->key_len >= 8 && cred->key_len < 64) {
 			os_free(bss->ssid.wpa_passphrase);
 			bss->ssid.wpa_passphrase = os_zalloc(cred->key_len + 1);
@@ -401,6 +413,7 @@ static int hapd_wps_cred_cb(struct hostapd_data *hapd, void *ctx)
 	char buf[1024];
 	int multi_bss;
 	int wpa;
+	int pmf_changed = 0;
 
 	if (hapd->wps == NULL)
 		return 0;
@@ -520,6 +533,10 @@ static int hapd_wps_cred_cb(struct hostapd_data *hapd, void *ctx)
 
 	if (wpa) {
 		char *prefix;
+#ifdef CONFIG_IEEE80211W
+		int sae = 0;
+#endif /* CONFIG_IEEE80211W */
+
 		fprintf(nconf, "wpa=%d\n", wpa);
 
 		fprintf(nconf, "wpa_key_mgmt=");
@@ -528,9 +545,29 @@ static int hapd_wps_cred_cb(struct hostapd_data *hapd, void *ctx)
 			fprintf(nconf, "WPA-EAP");
 			prefix = " ";
 		}
-		if (cred->auth_type & (WPS_AUTH_WPA2PSK | WPS_AUTH_WPAPSK))
+		if (cred->auth_type & (WPS_AUTH_WPA2PSK | WPS_AUTH_WPAPSK)) {
 			fprintf(nconf, "%sWPA-PSK", prefix);
+			prefix = " ";
+		}
+		if (hapd->conf->wps_cred_add_sae &&
+		    (cred->auth_type & WPS_AUTH_WPA2PSK) &&
+		    cred->key_len != 2 * PMK_LEN) {
+			fprintf(nconf, "%sSAE", prefix);
+#ifdef CONFIG_IEEE80211W
+			sae = 1;
+#endif /* CONFIG_IEEE80211W */
+		}
 		fprintf(nconf, "\n");
+
+#ifdef CONFIG_IEEE80211W
+		if (sae && hapd->conf->ieee80211w == NO_MGMT_FRAME_PROTECTION) {
+			fprintf(nconf, "ieee80211w=%d\n",
+				MGMT_FRAME_PROTECTION_OPTIONAL);
+			pmf_changed = 1;
+		}
+		if (sae)
+			fprintf(nconf, "sae_require_mfp=1\n");
+#endif /* CONFIG_IEEE80211W */
 
 		fprintf(nconf, "wpa_pairwise=");
 		prefix = "";
@@ -585,6 +622,7 @@ static int hapd_wps_cred_cb(struct hostapd_data *hapd, void *ctx)
 		     str_starts(buf, "wep_default_key=") ||
 		     str_starts(buf, "wep_key") ||
 		     str_starts(buf, "wps_state=") ||
+		     (pmf_changed && str_starts(buf, "ieee80211w=")) ||
 		     str_starts(buf, "wpa=") ||
 		     str_starts(buf, "wpa_psk=") ||
 		     str_starts(buf, "wpa_pairwise=") ||

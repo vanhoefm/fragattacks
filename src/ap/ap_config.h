@@ -464,6 +464,7 @@ struct hostapd_bss_config {
 	u8 *extra_cred;
 	size_t extra_cred_len;
 	int wps_cred_processing;
+	int wps_cred_add_sae;
 	int force_per_enrollee_psk;
 	u8 *ap_settings;
 	size_t ap_settings_len;
