@@ -238,6 +238,7 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 		 *
 		 *      y^2 = x^3 + ax + b
 		 */
+		crypto_bignum_deinit(tmp2, 1);
 		tmp2 = crypto_ec_point_compute_y_sqr(grp->group, x_candidate);
 		if (!tmp2)
 			goto fail;
