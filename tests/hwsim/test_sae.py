@@ -822,6 +822,49 @@ def test_sae_proto_hostapd(dev, apdev):
     # "SAE: Unsupported Finite Cyclic Group 65535"
     hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + hdr2 + "030001000000" + "ffff" + scalar[:-2])
 
+def test_sae_proto_hostapd_ecc(dev, apdev):
+    """SAE protocol testing with hostapd (ECC)"""
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="foofoofoo")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_groups'] = "19"
+    hapd = hostapd.add_ap(apdev[0], params)
+    hapd.set("ext_mgmt_frame_handling", "1")
+    bssid = hapd.own_addr().replace(':', '')
+    addr = "020000000000"
+    addr2 = "020000000001"
+    hdr = "b0003a01" + bssid + addr + bssid + "1000"
+    hdr2 = "b0003a01" + bssid + addr2 + bssid + "1000"
+    group = "1300"
+    scalar = "9e9a959bf2dda875a4a29ce9b2afef46f2d83060930124cd9e39ddce798cd69a"
+    element_x = "dfc55fd8622b91d362f4d1fc9646474d7fba0ff7cce6ca58b8e96a931e070220"
+    element_y = "dac8a4e80724f167c1349cc9e1f9dd82a7c77b29d49789b63b72b4c849301a28"
+    # sae_parse_commit_element_ecc() failure to parse peer element
+    # (depending on crypto library, either crypto_ec_point_from_bin() failure
+    # or crypto_ec_point_is_on_curve() returning 0)
+    hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + hdr + "030001000000" + group + scalar + element_x + element_y)
+    # Unexpected continuation of the connection attempt with confirm
+    hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + hdr + "030002000000" + "0000" + "fd7b081ff4e8676f03612a4140eedcd3c179ab3a13b93863c6f7ca451340b9ae")
+
+def test_sae_proto_hostapd_ffc(dev, apdev):
+    """SAE protocol testing with hostapd (FFC)"""
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="foofoofoo")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_groups'] = "22"
+    hapd = hostapd.add_ap(apdev[0], params)
+    hapd.set("ext_mgmt_frame_handling", "1")
+    bssid = hapd.own_addr().replace(':', '')
+    addr = "020000000000"
+    addr2 = "020000000001"
+    hdr = "b0003a01" + bssid + addr + bssid + "1000"
+    hdr2 = "b0003a01" + bssid + addr2 + bssid + "1000"
+    group = "1600"
+    scalar = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044cc46a73c07ef479dc66ec1f5e8ccf25131fa40"
+    element = "0f1d67025e12fc874cf718c35b19d1ab2db858215623f1ce661cbd1d7b1d7a09ceda7dba46866cf37044259b5cac4db15e7feb778edc8098854b93a84347c1850c02ee4d7dac46db79c477c731085d5b39f56803cda1eeac4a2fbbccb9a546379e258c00ebe93dfdd0a34cf8ce5c55cf905a89564a590b7e159fb89198e9d5cd"
+    # sae_parse_commit_element_ffc() failure to parse peer element
+    hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + hdr + "030001000000" + group + scalar + element)
+    # Unexpected continuation of the connection attempt with confirm
+    hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + hdr + "030002000000" + "0000" + "fd7b081ff4e8676f03612a4140eedcd3c179ab3a13b93863c6f7ca451340b9ae")
+
 @remote_compatible
 def test_sae_no_ffc_by_default(dev, apdev):
     """SAE and default groups rejecting FFC"""
