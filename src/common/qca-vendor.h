@@ -517,6 +517,13 @@ enum qca_radiotap_vendor_ids {
  *	enum qca_wlan_vendor_attr_peer_stats_cache_params.
  *	QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_DATA attribute is expected to be
  *	sent in the event.
+ * @QCA_NL80211_VENDOR_SUBCMD_MPTA_HELPER_CONFIG: This sub command is used to
+ *	improve the success rate of Zigbee joining network.
+ *	Due to PTA master limitation, Zigbee joining network success rate is
+ *	low while WLAN is working. The WLAN driver needs to configure some
+ *	parameters including Zigbee state and specific WLAN periods to enhance
+ *	PTA master. All these parameters are delivered by the attributes
+ *	defined in enum qca_mpta_helper_vendor_attr.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -684,6 +691,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_GET_SUPPORTED_AKMS = 176,
 	QCA_NL80211_VENDOR_SUBCMD_GET_FW_STATE = 177,
 	QCA_NL80211_VENDOR_SUBCMD_PEER_STATS_CACHE_FLUSH = 178,
+	QCA_NL80211_VENDOR_SUBCMD_MPTA_HELPER_CONFIG = 179,
 };
 
 enum qca_wlan_vendor_attr {
@@ -6555,6 +6563,96 @@ enum qca_wlan_vendor_attr_peer_stats_cache_params {
 	QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_LAST,
 	QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_MAX =
 		QCA_WLAN_VENDOR_ATTR_PEER_STATS_CACHE_LAST - 1
+};
+
+/**
+ * enum qca_mpta_helper_attr_zigbee_state - Current Zigbee state
+ * This enum defines all the possible states of Zigbee, which can be
+ * delivered in the QCA_MPTA_HELPER_VENDOR_ATTR_ZIGBEE_STATE attribute.
+ *
+ * @ZIGBEE_IDLE: Zigbee in idle state
+ * @ZIGBEE_FORM_NETWORK: Zigbee forming network
+ * @ZIGBEE_WAIT_JOIN: Zigbee waiting for joining network
+ * @ZIGBEE_JOIN: Zigbee joining network
+ * @ZIGBEE_NETWORK_UP: Zigbee network is up
+ * @ZIGBEE_HMI: Zigbee in HMI mode
+ */
+enum qca_mpta_helper_attr_zigbee_state {
+	ZIGBEE_IDLE = 0,
+	ZIGBEE_FORM_NETWORK = 1,
+	ZIGBEE_WAIT_JOIN = 2,
+	ZIGBEE_JOIN = 3,
+	ZIGBEE_NETWORK_UP = 4,
+	ZIGBEE_HMI = 5,
+};
+
+/*
+ * enum qca_mpta_helper_vendor_attr - Attributes used in vendor sub-command
+ * QCA_NL80211_VENDOR_SUBCMD_MPTA_HELPER_CONFIG.
+ */
+enum qca_mpta_helper_vendor_attr {
+	QCA_MPTA_HELPER_VENDOR_ATTR_INVALID = 0,
+	/* Optional attribute used to update Zigbee state.
+	 * enum qca_mpta_helper_attr_zigbee_state.
+	 * NLA_U32 attribute.
+	 */
+	QCA_MPTA_HELPER_VENDOR_ATTR_ZIGBEE_STATE = 1,
+	/* Optional attribute used to configure WLAN duration for Shape-OCS
+	 * during interrupt.
+	 * Set in pair with QCA_MPTA_HELPER_VENDOR_ATTR_INT_NON_WLAN_DURATION.
+	 * Value range 0 ~ 300 (ms).
+	 * NLA_U32 attribute.
+	 */
+	QCA_MPTA_HELPER_VENDOR_ATTR_INT_WLAN_DURATION = 2,
+	/* Optional attribute used to configure non-WLAN duration for Shape-OCS
+	 * during interrupt.
+	 * Set in pair with QCA_MPTA_HELPER_VENDOR_ATTR_INT_WLAN_DURATION.
+	 * Value range 0 ~ 300 (ms).
+	 * NLA_U32 attribute.
+	 */
+	QCA_MPTA_HELPER_VENDOR_ATTR_INT_NON_WLAN_DURATION  = 3,
+	/* Optional attribute used to configure WLAN duration for Shape-OCS
+	 * monitor period.
+	 * Set in pair with QCA_MPTA_HELPER_VENDOR_ATTR_MON_NON_WLAN_DURATION.
+	 * Value range 0 ~ 300 (ms)
+	 * NLA_U32 attribute
+	 */
+	QCA_MPTA_HELPER_VENDOR_ATTR_MON_WLAN_DURATION = 4,
+	/* Optional attribute used to configure non-WLAN duration for Shape-OCS
+	 * monitor period.
+	 * Set in pair with QCA_MPTA_HELPER_VENDOR_ATTR_MON_WLAN_DURATION.
+	 * Value range 0 ~ 300 (ms)
+	 * NLA_U32 attribute
+	 */
+	QCA_MPTA_HELPER_VENDOR_ATTR_MON_NON_WLAN_DURATION  = 5,
+	/* Optional attribute used to configure OCS interrupt duration.
+	 * Set in pair with QCA_MPTA_HELPER_VENDOR_ATTR_MON_OCS_DURATION.
+	 * Value range 1000 ~ 20000 (ms)
+	 * NLA_U32 attribute
+	 */
+	QCA_MPTA_HELPER_VENDOR_ATTR_INT_OCS_DURATION  = 6,
+	/* Optional attribute used to configure OCS monitor duration.
+	 * Set in pair with QCA_MPTA_HELPER_VENDOR_ATTR_INT_OCS_DURATION.
+	 * Value range 1000 ~ 20000 (ms)
+	 * NLA_U32 attribute
+	 */
+	QCA_MPTA_HELPER_VENDOR_ATTR_MON_OCS_DURATION  = 7,
+	/* Optional attribute used to notify WLAN firmware the current Zigbee
+	 * channel.
+	 * Value range 11 ~ 26
+	 * NLA_U32 attribute
+	 */
+	QCA_MPTA_HELPER_VENDOR_ATTR_ZIGBEE_CHAN = 8,
+	/* Optional attribute used to configure WLAN mute duration.
+	 * Value range 0 ~ 400 (ms)
+	 * NLA_U32 attribute
+	 */
+	QCA_MPTA_HELPER_VENDOR_ATTR_WLAN_MUTE_DURATION	= 9,
+
+	/* keep last */
+	QCA_MPTA_HELPER_VENDOR_ATTR_AFTER_LAST,
+	QCA_MPTA_HELPER_VENDOR_ATTR_MAX =
+		QCA_MPTA_HELPER_VENDOR_ATTR_AFTER_LAST - 1
 };
 
 #endif /* QCA_VENDOR_H */
