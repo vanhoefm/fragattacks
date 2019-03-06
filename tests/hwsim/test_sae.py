@@ -141,9 +141,9 @@ def test_sae_groups(dev, apdev):
     # MODP) and group 21 (521-bit random ECP group) are a bit too slow on some
     # VMs and can result in hitting the mac80211 authentication timeout, so
     # allow them to fail and just report such failures in the debug log.
-    sae_groups = [ 19, 25, 26, 20, 21, 2, 5, 14, 15, 16, 22, 23, 24 ]
+    sae_groups = [ 19, 25, 26, 20, 21, 1, 2, 5, 14, 15, 16, 22, 23, 24 ]
     tls = dev[0].request("GET tls_library")
-    if tls.startswith("OpenSSL") and "build=OpenSSL 1.0.2" in tls and "run=OpenSSL 1.0.2" in tls:
+    if tls.startswith("OpenSSL") and "run=OpenSSL 1." in tls:
         logger.info("Add Brainpool EC groups since OpenSSL is new enough")
         sae_groups += [ 27, 28, 29, 30 ]
     heavy_groups = [ 14, 15, 16 ]
