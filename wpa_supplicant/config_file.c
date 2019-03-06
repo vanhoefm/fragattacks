@@ -1187,6 +1187,9 @@ static void wpa_config_write_global(FILE *f, struct wpa_config *config)
 	if (config->wps_cred_processing)
 		fprintf(f, "wps_cred_processing=%d\n",
 			config->wps_cred_processing);
+	if (config->wps_cred_add_sae)
+		fprintf(f, "wps_cred_add_sae=%d\n",
+			config->wps_cred_add_sae);
 	if (config->wps_vendor_ext_m1) {
 		int i, len = wpabuf_len(config->wps_vendor_ext_m1);
 		const u8 *p = wpabuf_head_u8(config->wps_vendor_ext_m1);

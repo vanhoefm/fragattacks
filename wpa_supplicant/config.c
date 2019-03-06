@@ -4753,6 +4753,7 @@ static const struct global_parse_data global_fields[] = {
 	{ FUNC(os_version), CFG_CHANGED_OS_VERSION },
 	{ STR(config_methods), CFG_CHANGED_CONFIG_METHODS },
 	{ INT_RANGE(wps_cred_processing, 0, 2), 0 },
+	{ INT_RANGE(wps_cred_add_sae, 0, 1), 0 },
 	{ FUNC(wps_vendor_ext_m1), CFG_CHANGED_VENDOR_EXTENSION },
 #endif /* CONFIG_WPS */
 #ifdef CONFIG_P2P

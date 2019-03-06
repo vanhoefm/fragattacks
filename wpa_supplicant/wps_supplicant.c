@@ -530,11 +530,18 @@ static int wpa_supplicant_wps_cred(void *ctx,
 	case WPS_AUTH_WPA2PSK:
 		ssid->auth_alg = WPA_AUTH_ALG_OPEN;
 		ssid->key_mgmt = WPA_KEY_MGMT_PSK;
+		if (wpa_s->conf->wps_cred_add_sae &&
+		    cred->key_len != 2 * PMK_LEN) {
+			ssid->key_mgmt |= WPA_KEY_MGMT_SAE;
+#ifdef CONFIG_IEEE80211W
+			ssid->ieee80211w = MGMT_FRAME_PROTECTION_OPTIONAL;
+#endif /* CONFIG_IEEE80211W */
+		}
 		ssid->proto = WPA_PROTO_RSN;
 		break;
 	}
 
-	if (ssid->key_mgmt == WPA_KEY_MGMT_PSK) {
+	if (ssid->key_mgmt & WPA_KEY_MGMT_PSK) {
 		if (cred->key_len == 2 * PMK_LEN) {
 			if (hexstr2bin((const char *) cred->key, ssid->psk,
 				       PMK_LEN)) {

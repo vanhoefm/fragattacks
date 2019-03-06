@@ -745,6 +745,16 @@ struct wpa_config {
 	 */
 	int wps_cred_processing;
 
+	/**
+	 * wps_cred_add_sae - Whether to enable SAE automatically for WPS
+	 *
+	 * 0 = only add the explicitly listed WPA2-PSK configuration
+	 * 1 = add both the WPA2-PSK and SAE configuration and enable PMF so
+	 *     that the station gets configured in WPA3-Personal transition mode
+	 *     (supports both WPA2-Personal (PSK) and WPA3-Personal (SAE) APs).
+	 */
+	int wps_cred_add_sae;
+
 #define MAX_SEC_DEVICE_TYPES 5
 	/**
 	 * sec_device_types - Secondary Device Types (P2P)
