@@ -10057,3 +10057,101 @@ def run_ap_wps_conf_pin_cipher(dev, apdev, cipher):
     dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412")
     dev[0].request("WPS_PIN %s %s" % (apdev[0]['bssid'], pin))
     dev[0].wait_connected(timeout=15)
+
+def test_ap_wps_and_sae(dev, apdev):
+    """Initial AP configuration with first WPS Enrollee and adding SAE"""
+    try:
+        run_ap_wps_and_sae(dev, apdev)
+    finally:
+        dev[0].set("wps_cred_add_sae", "0")
+
+def run_ap_wps_and_sae(dev, apdev):
+    ssid = "test-wps-sae"
+    hapd = hostapd.add_ap(apdev[0],
+                          { "ssid": ssid, "eap_server": "1", "wps_state": "1",
+                            "wps_cred_add_sae": "1" })
+    logger.info("WPS provisioning step")
+    pin = dev[0].wps_read_pin()
+    hapd.request("WPS_PIN any " + pin)
+
+    dev[0].set("wps_cred_add_sae", "1")
+    dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412", force_scan=True)
+    dev[0].request("WPS_PIN " + apdev[0]['bssid'] + " " + pin)
+    dev[0].wait_connected(timeout=30)
+    status = dev[0].get_status()
+    if status['key_mgmt'] != "SAE":
+        raise Exception("SAE not used")
+    if 'pmf' not in status or status['pmf'] != "1":
+        raise Exception("PMF not enabled")
+
+    pin = dev[1].wps_read_pin()
+    hapd.request("WPS_PIN any " + pin)
+    dev[1].scan_for_bss(apdev[0]['bssid'], freq="2412", force_scan=True)
+    dev[1].request("WPS_PIN " + apdev[0]['bssid'] + " " + pin)
+    dev[1].wait_connected(timeout=30)
+    status = dev[1].get_status()
+    if status['key_mgmt'] != "WPA2-PSK":
+        raise Exception("WPA2-PSK not used")
+    if 'pmf' in status:
+        raise Exception("PMF enabled")
+
+def test_ap_wps_conf_and_sae(dev, apdev):
+    """WPS PBC provisioning with configured AP using PSK+SAE"""
+    try:
+        run_ap_wps_conf_and_sae(dev, apdev)
+    finally:
+        dev[0].set("wps_cred_add_sae", "0")
+
+def run_ap_wps_conf_and_sae(dev, apdev):
+    ssid = "test-wps-conf-sae"
+    hapd = hostapd.add_ap(apdev[0],
+                          { "ssid": ssid, "eap_server": "1", "wps_state": "2",
+                            "wpa_passphrase": "12345678", "wpa": "2",
+                            "ieee80211w": "1", "sae_require_mfp": "1",
+                            "wpa_key_mgmt": "WPA-PSK SAE",
+                            "rsn_pairwise": "CCMP" })
+
+    dev[0].set("wps_cred_add_sae", "1")
+    dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412")
+    pin = dev[0].wps_read_pin()
+    hapd.request("WPS_PIN any " + pin)
+    dev[0].request("WPS_PIN " + apdev[0]['bssid'] + " " + pin)
+    dev[0].wait_connected(timeout=30)
+    status = dev[0].get_status()
+    if status['key_mgmt'] != "SAE":
+        raise Exception("SAE not used")
+    if 'pmf' not in status or status['pmf'] != "1":
+        raise Exception("PMF not enabled")
+
+    dev[1].connect(ssid, psk="12345678", scan_freq="2412", proto="WPA2",
+                   key_mgmt="WPA-PSK", ieee80211w="0")
+
+def test_ap_wps_reg_config_and_sae(dev, apdev):
+    """WPS registrar configuring an AP using AP PIN and using PSK+SAE"""
+    try:
+        run_ap_wps_reg_config_and_sae(dev, apdev)
+    finally:
+        dev[0].set("wps_cred_add_sae", "0")
+
+def run_ap_wps_reg_config_and_sae(dev, apdev):
+    ssid = "test-wps-init-ap-pin-sae"
+    appin = "12345670"
+    hostapd.add_ap(apdev[0],
+                   { "ssid": ssid, "eap_server": "1", "wps_state": "2",
+                     "ap_pin": appin, "wps_cred_add_sae": "1" })
+    logger.info("WPS configuration step")
+    dev[0].set("wps_cred_add_sae", "1")
+    dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
+    dev[0].dump_monitor()
+    new_ssid = "wps-new-ssid"
+    new_passphrase = "1234567890"
+    dev[0].wps_reg(apdev[0]['bssid'], appin, new_ssid, "WPA2PSK", "CCMP",
+                   new_passphrase)
+    status = dev[0].get_status()
+    if status['key_mgmt'] != "SAE":
+        raise Exception("SAE not used")
+    if 'pmf' not in status or status['pmf'] != "1":
+        raise Exception("PMF not enabled")
+
+    dev[1].connect(new_ssid, psk=new_passphrase, scan_freq="2412", proto="WPA2",
+                   key_mgmt="WPA-PSK", ieee80211w="0")
