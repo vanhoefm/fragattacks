@@ -24,6 +24,7 @@
 #endif /* CONFIG_ECC */
 
 #include "common.h"
+#include "utils/const_time.h"
 #include "wpabuf.h"
 #include "dh_group5.h"
 #include "sha1.h"
@@ -1500,6 +1501,7 @@ int crypto_bignum_legendre(const struct crypto_bignum *a,
 	BN_CTX *bnctx;
 	BIGNUM *exp = NULL, *tmp = NULL;
 	int res = -2;
+	unsigned int mask;
 
 	if (TEST_FAIL())
 		return -2;
@@ -1518,12 +1520,13 @@ int crypto_bignum_legendre(const struct crypto_bignum *a,
 				       (const BIGNUM *) p, bnctx, NULL))
 		goto fail;
 
-	if (BN_is_word(tmp, 1))
-		res = 1;
-	else if (BN_is_zero(tmp))
-		res = 0;
-	else
-		res = -1;
+	/* Return 1 if tmp == 1, 0 if tmp == 0, or -1 otherwise. Need to use
+	 * constant time selection to avoid branches here. */
+	res = -1;
+	mask = const_time_eq(BN_is_word(tmp, 1), 1);
+	res = const_time_select_int(mask, 1, res);
+	mask = const_time_eq(BN_is_zero(tmp), 1);
+	res = const_time_select_int(mask, 0, res);
 
 fail:
 	BN_clear_free(tmp);
