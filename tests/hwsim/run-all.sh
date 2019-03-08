@@ -134,6 +134,11 @@ if [ ! -z "$VALGRIND" ] ; then
     fi
 fi
 
+if tail -100 $LOGDIR/auth_serv | grep -q MEMLEAK; then
+    echo "Mark as failed due to authentication server memory leak"
+    errors=1
+fi
+
 if [ ! -z "$CODECOV" ] ; then
 	lcov -q --capture --directory ../../wpa_supplicant --output-file $LOGDIR/wpas_lcov.info
 	genhtml -q $LOGDIR/wpas_lcov.info --output-directory $LOGDIR/wpas_lcov
