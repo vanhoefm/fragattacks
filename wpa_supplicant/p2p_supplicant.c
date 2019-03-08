@@ -980,6 +980,7 @@ static int wpas_p2p_group_delete(struct wpa_supplicant *wpa_s,
 	os_free(wpa_s->p2p_group_common_freqs);
 	wpa_s->p2p_group_common_freqs = NULL;
 	wpa_s->p2p_group_common_freqs_num = 0;
+	wpa_s->p2p_go_do_acs = 0;
 
 	wpa_s->waiting_presence_resp = 0;
 

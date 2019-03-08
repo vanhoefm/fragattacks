@@ -6418,6 +6418,8 @@ static int p2p_ctrl_group_add(struct wpa_supplicant *wpa_s, char *cmd)
 			wpa_s->p2p_go_acs_band = HOSTAPD_MODE_IEEE80211ANY;
 			wpa_s->p2p_go_do_acs = 1;
 		}
+	} else {
+		wpa_s->p2p_go_do_acs = 0;
 	}
 #endif /* CONFIG_ACS */
 
