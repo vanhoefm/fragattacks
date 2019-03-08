@@ -961,14 +961,13 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 	struct wpabuf *data = NULL;
 	int *groups = hapd->conf->sae_groups;
 	int default_groups[] = { 19, 0 };
+	const u8 *pos, *end;
 
 	if (!groups)
 		groups = default_groups;
 
 #ifdef CONFIG_TESTING_OPTIONS
 	if (hapd->conf->sae_reflection_attack && auth_transaction == 1) {
-		const u8 *pos, *end;
-
 		wpa_printf(MSG_DEBUG, "SAE: TESTING - reflection attack");
 		pos = mgmt->u.auth.variable;
 		end = ((const u8 *) mgmt) + len;
@@ -1011,7 +1010,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 	}
 
 	if (auth_transaction == 1) {
-		const u8 *token = NULL, *pos, *end;
+		const u8 *token = NULL;
 		size_t token_len = 0;
 		int allow_reuse = 0;
 
@@ -1211,6 +1210,15 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 
 reply:
 	if (resp != WLAN_STATUS_SUCCESS) {
+		pos = mgmt->u.auth.variable;
+		end = ((const u8 *) mgmt) + len;
+
+		/* Copy the Finite Cyclic Group field from the request if we
+		 * rejected it as unsupported group. */
+		if (resp == WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED &&
+		    !data && end - pos >= 2)
+			data = wpabuf_alloc_copy(pos, 2);
+
 		send_auth_reply(hapd, mgmt->sa, mgmt->bssid, WLAN_AUTH_SAE,
 				auth_transaction, resp,
 				data ? wpabuf_head(data) : (u8 *) "",
