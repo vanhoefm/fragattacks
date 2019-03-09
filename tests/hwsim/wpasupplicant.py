@@ -1340,3 +1340,23 @@ class WpaSupplicant:
         if "FAIL" in res:
             raise Exception("Failed to parse QR Code URI")
         return int(res)
+
+    def dpp_bootstrap_gen(self, type="qrcode", chan=None, mac=None, info=None,
+                          curve=None, key=None):
+        cmd = "DPP_BOOTSTRAP_GEN type=" + type
+        if chan:
+            cmd += " chan=" + chan
+        if mac:
+            if mac is True:
+                mac = self.own_addr()
+            cmd += " mac=" + mac.replace(':', '')
+        if info:
+            cmd += " info=" + info
+        if curve:
+            cmd += " curve=" + curve
+        if key:
+            cmd += " key=" + key
+        res = self.request(cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to generate bootstrapping info")
+        return int(res)

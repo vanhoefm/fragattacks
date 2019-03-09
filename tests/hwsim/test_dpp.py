@@ -78,18 +78,15 @@ def test_dpp_qr_code_parsing(dev, apdev):
     if "OK" not in dev[0].request("DPP_BOOTSTRAP_REMOVE %d" % id[1]):
         raise Exception("DPP_BOOTSTRAP_REMOVE failed")
 
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode")
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % int(res))
+    id = dev[0].dpp_bootstrap_gen()
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id)
     logger.info("Generated URI: " + uri)
 
     dev[0].dpp_qr_code(uri)
 
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1,115/36 mac=010203040506 info=foo")
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % int(res))
+    id = dev[0].dpp_bootstrap_gen(chan="81/1,115/36", mac="010203040506",
+                                  info="foo")
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id)
     logger.info("Generated URI: " + uri)
 
     dev[0].dpp_qr_code(uri)
@@ -127,10 +124,8 @@ def test_dpp_qr_code_curves(dev, apdev):
               ("secp384r1", dpp_key_p384),
               ("secp521r1", dpp_key_p521) ]
     for curve, hex in tests:
-        id = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode key=" + hex)
-        if "FAIL" in id:
-            raise Exception("Failed to set key for " + curve)
-        info = dev[0].request("DPP_BOOTSTRAP_INFO " + id)
+        id = dev[0].dpp_bootstrap_gen(key=hex)
+        info = dev[0].request("DPP_BOOTSTRAP_INFO %d" % id)
         if "FAIL" in info:
             raise Exception("Failed to get info for " + curve)
         if "curve=" + curve not in info:
@@ -143,10 +138,8 @@ def test_dpp_qr_code_curves_brainpool(dev, apdev):
               ("brainpoolP384r1", dpp_key_bp384),
               ("brainpoolP512r1", dpp_key_bp512) ]
     for curve, hex in tests:
-        id = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode key=" + hex)
-        if "FAIL" in id:
-            raise Exception("Failed to set key for " + curve)
-        info = dev[0].request("DPP_BOOTSTRAP_INFO " + id)
+        id = dev[0].dpp_bootstrap_gen(key=hex)
+        info = dev[0].request("DPP_BOOTSTRAP_INFO %d" % id)
         if "FAIL" in info:
             raise Exception("Failed to get info for " + curve)
         if "curve=" + curve not in info:
@@ -184,21 +177,18 @@ def test_dpp_qr_code_curve_select(dev, apdev):
     check_dpp_capab(dev[0], brainpool=True)
     check_dpp_capab(dev[1], brainpool=True)
 
-    addr = dev[0].own_addr().replace(':', '')
     bi = []
     for key in [ dpp_key_p256, dpp_key_p384, dpp_key_p521,
                  dpp_key_bp256, dpp_key_bp384, dpp_key_bp512 ]:
-        id = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr + " key=" + key)
-        if "FAIL" in id:
-            raise Exception("Failed to set key for " + curve)
-        info = dev[0].request("DPP_BOOTSTRAP_INFO " + id)
+        id = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True, key=key)
+        info = dev[0].request("DPP_BOOTSTRAP_INFO %d" % id)
         for i in info.splitlines():
             if '=' in i:
                 name, val = i.split('=')
                 if name == "curve":
                     curve = val
                     break
-        uri = dev[0].request("DPP_BOOTSTRAP_GET_URI " + id)
+        uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id)
         bi.append((curve, uri))
 
     for curve, uri in bi:
@@ -233,10 +223,7 @@ def test_dpp_qr_code_auth_broadcast(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     logger.info("dev0 displays QR Code")
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1")
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1")
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
@@ -308,16 +295,7 @@ def run_dpp_qr_code_auth_unicast(dev, apdev, curve, netrole=None, key=None,
         conf_id = int(res)
 
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    if curve:
-        cmd += " curve=" + curve
-    if key:
-        cmd += " key=" + key
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True, curve=curve, key=key)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
@@ -363,22 +341,14 @@ def test_dpp_qr_code_auth_mutual(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 displays QR Code")
-    addr = dev[1].own_addr().replace(':', '')
-    res = dev[1].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1b = int(res)
+    id1b = dev[1].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri1b = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1b)
 
     logger.info("dev0 scans QR Code")
@@ -409,22 +379,14 @@ def test_dpp_qr_code_auth_mutual2(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 displays QR Code")
-    addr = dev[1].own_addr().replace(':', '')
-    res = dev[1].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1b = int(res)
+    id1b = dev[1].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri1b = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1b)
 
     logger.info("dev1 initiates DPP Authentication")
@@ -485,13 +447,7 @@ def run_dpp_qr_code_auth_mutual(dev, apdev, curve):
     check_dpp_capab(dev[0], curve and "BP-" in curve)
     check_dpp_capab(dev[1], curve and "BP-" in curve)
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    cmd += " curve=" + curve
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True, curve=curve)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
@@ -537,22 +493,14 @@ def test_dpp_auth_resp_retries(dev, apdev):
     dev[0].set("dpp_resp_retry_time", "100")
 
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 displays QR Code")
-    addr = dev[1].own_addr().replace(':', '')
-    res = dev[1].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1b = int(res)
+    id1b = dev[1].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri1b = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1b)
 
     logger.info("dev1 initiates DPP Authentication")
@@ -596,22 +544,14 @@ def test_dpp_qr_code_auth_mutual_not_used(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 displays QR Code")
-    addr = dev[1].own_addr().replace(':', '')
-    res = dev[1].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1b = int(res)
+    id1b = dev[1].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri1b = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1b)
 
     logger.info("dev0 does not scan QR Code")
@@ -641,22 +581,14 @@ def test_dpp_qr_code_auth_mutual_curve_mismatch(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 displays QR Code")
-    addr = dev[1].own_addr().replace(':', '')
-    res = dev[1].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr + " curve=secp384r1")
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1b = int(res)
+    id1b = dev[1].dpp_bootstrap_gen(chan="81/1", mac=True, curve="secp384r1")
     uri1b = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1b)
 
     logger.info("dev0 scans QR Code")
@@ -673,23 +605,14 @@ def test_dpp_qr_code_auth_hostapd_mutual2(dev, apdev):
     check_dpp_capab(hapd)
 
     logger.info("AP displays QR Code")
-    addr = hapd.own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = hapd.request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id_h = int(res)
+    id_h = hapd.dpp_bootstrap_gen(chan="81/1", mac=True)
     uri_h = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id_h)
 
     logger.info("dev0 scans QR Code")
     id0 = dev[0].dpp_qr_code(uri_h)
 
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0b = int(res)
+    id0b = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0b)
 
     logger.info("dev0 initiates DPP Authentication")
@@ -721,11 +644,7 @@ def test_dpp_qr_code_listen_continue(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
@@ -753,11 +672,7 @@ def test_dpp_qr_code_auth_initiator_enrollee(dev, apdev):
     dev[0].request("SET gas_address3 1")
     dev[1].request("SET gas_address3 1")
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
@@ -803,11 +718,7 @@ def run_dpp_qr_code_auth_initiator_either(dev, apdev, resp_role,
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
@@ -841,11 +752,7 @@ def run_init_incompatible_roles(dev, role="enrollee"):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
@@ -931,12 +838,7 @@ def test_dpp_qr_code_auth_neg_chan(dev, apdev):
     conf_id = int(res)
 
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
@@ -1611,12 +1513,7 @@ def test_dpp_gas_timeout(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
@@ -1898,14 +1795,7 @@ def run_dpp_ap_config(dev, apdev, curve=None, conf_curve=None,
     hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
     check_dpp_capab(hapd)
 
-    addr = hapd.own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    if curve:
-        cmd += " curve=" + curve
-    res = hapd.request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id_h = int(res)
+    id_h = hapd.dpp_bootstrap_gen(chan="81/1", mac=True, curve=curve)
     uri = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id_h)
 
     cmd = "DPP_CONFIGURATOR_ADD"
@@ -1943,14 +1833,7 @@ def run_dpp_ap_config(dev, apdev, curve=None, conf_curve=None,
 
     update_hapd_config(hapd)
 
-    addr = dev[1].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    if curve:
-        cmd += " curve=" + curve
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id1 = dev[1].dpp_bootstrap_gen(chan="81/1", mac=True, curve=curve)
     uri1 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
 
     id0b = dev[0].dpp_qr_code(uri1)
@@ -2078,12 +1961,7 @@ def run_dpp_auto_connect(dev, apdev, processing):
     conf_id = int(res)
 
     dev[0].set("dpp_config_processing", str(processing))
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = dev[1].dpp_qr_code(uri0)
@@ -2174,12 +2052,7 @@ def run_dpp_auto_connect_legacy(dev, apdev, conf='sta-psk',
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].set("dpp_config_processing", "2")
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = dev[1].dpp_qr_code(uri0)
@@ -2224,12 +2097,7 @@ def run_dpp_auto_connect_legacy_pmf_required(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].set("dpp_config_processing", "2")
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = dev[1].dpp_qr_code(uri0)
@@ -2274,12 +2142,7 @@ def run_dpp_qr_code_auth_responder_configurator(dev, apdev, extra):
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = dev[1].dpp_qr_code(uri0)
@@ -2321,12 +2184,7 @@ def test_dpp_qr_code_hostapd_init(dev, apdev):
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/6", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     dev[0].set("dpp_configurator_params",
@@ -2375,12 +2233,7 @@ def run_dpp_qr_code_hostapd_init_offchannel(dev, apdev, extra):
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1,81/11 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1,81/11", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     dev[0].set("dpp_configurator_params",
@@ -2418,12 +2271,7 @@ def test_dpp_test_vector_p_256(dev, apdev):
 
     # Responder bootstrapping key
     priv = "54ce181a98525f217216f59b245f60e9df30ac7f6b26c939418cfc3c42d1afa0"
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/11 mac=" + addr + " key=30310201010420" + priv + "a00a06082a8648ce3d030107"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/11", mac=True, key="30310201010420" + priv + "a00a06082a8648ce3d030107")
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     # Responder protocol keypair override
@@ -2435,11 +2283,7 @@ def test_dpp_test_vector_p_256(dev, apdev):
 
     # Initiator bootstrapping key
     priv = "15b2a83c5a0a38b61f2aa8200ee4994b8afdc01c58507d10d0a38f7eedf051bb"
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode key=30310201010420" + priv + "a00a06082a8648ce3d030107"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id1 = dev[1].dpp_bootstrap_gen(key="30310201010420" + priv + "a00a06082a8648ce3d030107")
     uri1 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
 
     # Initiator protocol keypair override
@@ -2474,12 +2318,7 @@ def test_dpp_test_vector_p_256_b(dev, apdev):
 
     # Responder bootstrapping key
     priv = "54ce181a98525f217216f59b245f60e9df30ac7f6b26c939418cfc3c42d1afa0"
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/11 mac=" + addr + " key=30310201010420" + priv + "a00a06082a8648ce3d030107"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/11", mac=True, key="30310201010420" + priv + "a00a06082a8648ce3d030107")
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     # Responder protocol keypair override
@@ -2491,11 +2330,7 @@ def test_dpp_test_vector_p_256_b(dev, apdev):
 
     # Initiator bootstrapping key
     priv = "15b2a83c5a0a38b61f2aa8200ee4994b8afdc01c58507d10d0a38f7eedf051bb"
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode key=30310201010420" + priv + "a00a06082a8648ce3d030107"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id1 = dev[1].dpp_bootstrap_gen(key="30310201010420" + priv + "a00a06082a8648ce3d030107")
     uri1 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
 
     # Initiator protocol keypair override
@@ -2536,13 +2371,8 @@ def test_dpp_test_vector_p_521(dev, apdev):
 
     # Responder bootstrapping key
     priv = "0061e54f518cdf859735da3dd64c6f72c2f086f41a6fd52915152ea2fe0f24ddaecd8883730c9c9fd82cf7c043a41021696388cf5190b731dd83638bcd56d8b6c743"
-    addr = dev[0].own_addr().replace(':', '')
-    #cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/11 mac=" + addr + " key=" + der_prefix + priv + der_postfix
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/11 mac=" + addr + " key=" + der_priv_key_p_521(priv)
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/11", mac=True,
+                                   key=der_priv_key_p_521(priv))
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     # Responder protocol keypair override
@@ -2554,11 +2384,7 @@ def test_dpp_test_vector_p_521(dev, apdev):
 
     # Initiator bootstrapping key
     priv = "0060c10df14af5ef27f6e362d31bdd9eeb44be77a323ba64b08f3f03d58b92cbfe05c182a91660caa081ca344243c47b5aa088bcdf738840eb35f0218b9f26881e02"
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode key=" + der_priv_key_p_521(priv)
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id1 = dev[1].dpp_bootstrap_gen(key=der_priv_key_p_521(priv))
     uri1 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
 
     # Initiator protocol keypair override
@@ -2653,21 +2479,8 @@ def run_dpp_pkex(dev, apdev, curve=None, init_extra="", check_config=False,
     check_dpp_capab(dev[0], curve and "brainpool" in curve)
     check_dpp_capab(dev[1], curve and "brainpool" in curve)
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    if curve:
-        cmd += " curve=" + curve
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
-
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    if curve:
-        cmd += " curve=" + curve
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex", curve=curve)
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex", curve=curve)
 
     identifier = " identifier=" + identifier_r if identifier_r else ""
     cmd = "DPP_PKEX_ADD own=%d%s code=secret" % (id0, identifier)
@@ -2732,17 +2545,8 @@ def run_dpp_pkex_5ghz(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
-
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex")
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
     res = dev[0].request(cmd)
@@ -2796,22 +2600,16 @@ def test_dpp_pkex_test_vector(dev, apdev):
     dev[1].set("dpp_pkex_peer_mac_override", resp_addr)
 
     # Responder bootstrapping key
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex key=" + p256_prefix + resp_priv + p256_postfix
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex",
+                                   key=p256_prefix + resp_priv + p256_postfix)
 
     # Responder y/Y keypair override
     dev[0].set("dpp_pkex_ephemeral_key_override",
                p256_prefix + resp_y_priv + p256_postfix)
 
     # Initiator bootstrapping key
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex key=" + p256_prefix + init_priv + p256_postfix
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex",
+                                   key=p256_prefix + init_priv + p256_postfix)
 
     # Initiator x/X keypair override
     dev[1].set("dpp_pkex_ephemeral_key_override",
@@ -2842,17 +2640,8 @@ def test_dpp_pkex_code_mismatch(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
-
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex")
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
     res = dev[0].request(cmd)
@@ -2893,17 +2682,8 @@ def test_dpp_pkex_code_mismatch_limit(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
-
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex")
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
     res = dev[0].request(cmd)
@@ -2936,17 +2716,8 @@ def test_dpp_pkex_curve_mismatch(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex curve=P-256"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
-
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex curve=P-384"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex", curve="P-256")
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex", curve="P-384")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
     res = dev[0].request(cmd)
@@ -2986,17 +2757,8 @@ def run_dpp_pkex_curve_mismatch_failure(dev, apdev, func):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex curve=P-256"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
-
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex curve=P-384"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex", curve="P-256")
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex", curve="P-384")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
     res = dev[0].request(cmd)
@@ -3023,17 +2785,8 @@ def test_dpp_pkex_exchange_resp_processing_failure(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
-
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex")
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
     res = dev[0].request(cmd)
@@ -3055,17 +2808,8 @@ def test_dpp_pkex_commit_reveal_req_processing_failure(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
-
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex")
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
     res = dev[0].request(cmd)
@@ -3101,21 +2845,8 @@ def run_dpp_pkex2(dev, apdev, curve=None, init_extra=""):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    if curve:
-        cmd += " curve=" + curve
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
-
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    if curve:
-        cmd += " curve=" + curve
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex", curve=curve)
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex", curve=curve)
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
     res = dev[0].request(cmd)
@@ -3148,11 +2879,7 @@ def test_dpp_pkex_no_responder(dev, apdev):
     """DPP and PKEX with no responder (retry behavior)"""
     check_dpp_capab(dev[0])
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d init=1 identifier=test code=secret" % (id0)
     res = dev[0].request(cmd)
@@ -3173,11 +2900,7 @@ def test_dpp_pkex_after_retry(dev, apdev):
     """DPP and PKEX completing after retry"""
     check_dpp_capab(dev[0])
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d init=1 identifier=test code=secret" % (id0)
     res = dev[0].request(cmd)
@@ -3185,11 +2908,7 @@ def test_dpp_pkex_after_retry(dev, apdev):
         raise Exception("Failed to set PKEX data (initiator)")
 
     time.sleep(0.1)
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id1)
     res = dev[1].request(cmd)
@@ -3217,11 +2936,7 @@ def test_dpp_pkex_hostapd_responder(dev, apdev):
                                       "channel": "6" })
     check_dpp_capab(hapd)
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = hapd.request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info (hostapd)")
-    id_h = int(res)
+    id_h = hapd.dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id_h)
     res = hapd.request(cmd)
@@ -3234,11 +2949,7 @@ def test_dpp_pkex_hostapd_responder(dev, apdev):
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info (wpa_supplicant)")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 conf=ap-dpp configurator=%d code=secret" % (id0, conf_id)
     res = dev[0].request(cmd)
@@ -3273,11 +2984,7 @@ def test_dpp_pkex_hostapd_initiator(dev, apdev):
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info (wpa_supplicant)")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex")
 
     dev[0].set("dpp_configurator_params",
                " conf=ap-dpp configurator=%d" % conf_id)
@@ -3291,11 +2998,7 @@ def test_dpp_pkex_hostapd_initiator(dev, apdev):
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to start listen operation")
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = hapd.request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info (hostapd)")
-    id_h = int(res)
+    id_h = hapd.dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 role=enrollee code=secret" % (id_h)
     res = hapd.request(cmd)
@@ -3330,12 +3033,7 @@ def test_dpp_hostapd_configurator(dev, apdev):
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = hapd.dpp_qr_code(uri0)
@@ -3386,12 +3084,7 @@ def test_dpp_hostapd_configurator_responder(dev, apdev):
     hapd.set("dpp_configurator_params",
              " conf=sta-dpp configurator=%d" % conf_id)
 
-    addr = hapd.own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = hapd.request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = hapd.dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = dev[0].dpp_qr_code(uri0)
@@ -3442,12 +3135,7 @@ def run_dpp_own_config(dev, apdev, own_curve=None, expect_failure=False,
     hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
     check_dpp_capab(hapd)
 
-    addr = hapd.own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = hapd.request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id_h = int(res)
+    id_h = hapd.dpp_bootstrap_gen(chan="81/1", mac=True)
     uri = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id_h)
 
     cmd = "DPP_CONFIGURATOR_ADD"
@@ -3550,12 +3238,7 @@ def run_dpp_own_config_ap(dev, apdev, reconf_configurator=False, extra=""):
             raise Exception("Failed to add configurator (reconf)")
         conf_id = int(res)
 
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id = int(res)
+    id = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id)
 
     id = hapd.dpp_qr_code(uri)
@@ -3603,12 +3286,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
     hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
     check_dpp_capab(hapd)
 
-    addr = hapd.own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = hapd.request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id_h = int(res)
+    id_h = hapd.dpp_bootstrap_gen(chan="81/1", mac=True)
     uri = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id_h)
 
     logger.info("Provision AP with DPP configuration")
@@ -3627,12 +3305,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
 
     logger.info("Provision STA0 with DPP Connector that has mismatching groupId")
     dev[0].set("dpp_config_processing", "2")
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = dev[1].dpp_qr_code(uri0)
@@ -3654,12 +3327,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
 
     logger.info("Provision STA2 with DPP Connector that has mismatching C-sign-key")
     dev[2].set("dpp_config_processing", "2")
-    addr = dev[2].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[2].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id2 = int(res)
+    id2 = dev[2].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri2 = dev[2].request("DPP_BOOTSTRAP_GET_URI %d" % id2)
 
     id1 = dev[1].dpp_qr_code(uri2)
@@ -3685,13 +3353,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
 
     logger.info("Provision STA5 with DPP Connector that has mismatching netAccessKey EC group")
     wpas.set("dpp_config_processing", "2")
-    addr = wpas.own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    cmd += " curve=P-521"
-    res = wpas.request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id5 = int(res)
+    id5 = wpas.dpp_bootstrap_gen(chan="81/1", mac=True, curve="P-521")
     uri5 = wpas.request("DPP_BOOTSTRAP_GET_URI %d" % id5)
 
     id1 = dev[1].dpp_qr_code(uri5)
@@ -3746,26 +3408,13 @@ def run_dpp_proto_init(dev, test_dev, test, mutual=False, unicast=True,
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode"
-    if chan:
-        cmd += " chan=" + chan
-    if unicast:
-        cmd += " mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan=chan, mac=unicast)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = dev[1].dpp_qr_code(uri0)
 
     if mutual:
-        addr = dev[1].own_addr().replace(':', '')
-        res = dev[1].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-        if "FAIL" in res:
-            raise Exception("Failed to generate bootstrapping info")
-        id1b = int(res)
+        id1b = dev[1].dpp_bootstrap_gen(chan="81/1", mac=True)
         uri1b = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1b)
 
         id0b = dev[0].dpp_qr_code(uri1b)
@@ -4359,17 +4008,8 @@ def run_dpp_proto_init_pkex(dev, test_dev, test):
     check_dpp_capab(dev[1])
     dev[test_dev].set("dpp_test", str(test))
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
-
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex")
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id0)
     res = dev[0].request(cmd)
@@ -4677,16 +4317,7 @@ def run_dpp_qr_code_chan_list(dev, apdev, unicast, listen_freq, chanlist,
     dev[1].set("dpp_resp_wait_time", "1000")
 
     logger.info("dev0 displays QR Code")
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode"
-    if chanlist:
-        cmd += " chan=" + chanlist
-    if unicast:
-        addr = dev[0].own_addr().replace(':', '')
-        cmd += " mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan=chanlist, mac=unicast)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
@@ -4719,11 +4350,7 @@ def test_dpp_qr_code_chan_list_no_match(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=123/123"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="123/123")
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = dev[1].dpp_qr_code(uri0)
@@ -4752,17 +4379,8 @@ def test_dpp_pkex_alloc_fail(dev, apdev):
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
-
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex")
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex")
 
     # Local error cases on the Initiator
     tests = [ (1, "dpp_get_pubkey_point"),
@@ -4902,17 +4520,8 @@ def test_dpp_pkex_test_fail(dev, apdev):
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
-
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(type="pkex")
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex")
 
     # Local error cases on the Initiator
     tests = [ (1, "aes_siv_encrypt;dpp_auth_build_req"),
@@ -5032,12 +4641,7 @@ def wait_conf_completion(configurator, enrollee):
         raise Exception("DPP configuration not completed (Enrollee)")
 
 def start_dpp(dev):
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = dev[1].dpp_qr_code(uri0)
@@ -5197,12 +4801,7 @@ def test_dpp_bootstrap_key_autogen_issues(dev, apdev):
     check_dpp_capab(dev[1])
 
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
@@ -5238,12 +4837,7 @@ def test_dpp_auth_resp_aes_siv_issue(dev, apdev):
     check_dpp_capab(dev[1])
 
     logger.info("dev0 displays QR Code")
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
@@ -5267,12 +4861,7 @@ def test_dpp_invalid_legacy_params(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = dev[1].dpp_qr_code(uri0)
@@ -5287,12 +4876,7 @@ def test_dpp_invalid_legacy_params2(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = dev[1].dpp_qr_code(uri0)
@@ -5317,12 +4901,7 @@ def test_dpp_legacy_params_failure(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     id1 = dev[1].dpp_qr_code(uri0)
@@ -5568,24 +5147,22 @@ def run_dpp_bootstrap_gen_failures(dev, hostapd):
         if "FAIL" not in dev.request("DPP_BOOTSTRAP_GEN " + t):
             raise Exception("Command accepted unexpectedly")
 
-    id = dev.request("DPP_BOOTSTRAP_GEN type=qrcode")
-    if "FAIL" in id:
-        raise Exception("Failed to generate bootstrap info")
-    uri = dev.request("DPP_BOOTSTRAP_GET_URI " + id)
+    id = dev.dpp_bootstrap_gen()
+    uri = dev.request("DPP_BOOTSTRAP_GET_URI %d" % id)
     if not uri.startswith("DPP:"):
         raise Exception("Could not get URI")
     if "FAIL" not in dev.request("DPP_BOOTSTRAP_GET_URI 0"):
         raise Exception("Failure not reported")
-    info = dev.request("DPP_BOOTSTRAP_INFO " + id)
+    info = dev.request("DPP_BOOTSTRAP_INFO %d" % id)
     if not info.startswith("type=QRCODE"):
         raise Exception("Could not get info")
     if "FAIL" not in dev.request("DPP_BOOTSTRAP_REMOVE 0"):
         raise Exception("Failure not reported")
     if "FAIL" in dev.request("DPP_BOOTSTRAP_REMOVE *"):
         raise Exception("Failed to remove bootstrap info")
-    if "FAIL" not in dev.request("DPP_BOOTSTRAP_GET_URI " + id):
+    if "FAIL" not in dev.request("DPP_BOOTSTRAP_GET_URI %d" % id):
         raise Exception("Failure not reported")
-    if "FAIL" not in dev.request("DPP_BOOTSTRAP_INFO " + id):
+    if "FAIL" not in dev.request("DPP_BOOTSTRAP_INFO %d" % id):
         raise Exception("Failure not reported")
 
     func = "hostapd_dpp_bootstrap_gen" if hostapd else "wpas_dpp_bootstrap_gen"
@@ -5611,11 +5188,8 @@ def test_dpp_listen_continue(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    addr = dev[0].own_addr().replace(':', '')
-    id = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in id:
-        raise Exception("Failed to set key for " + curve)
-    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI " + id)
+    id = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id)
 
     if "OK" not in dev[0].request("DPP_LISTEN 2412"):
         raise Exception("Failed to start listen operation")
@@ -5685,11 +5259,8 @@ def test_dpp_two_initiators(dev, apdev):
     check_dpp_capab(dev[1])
     check_dpp_capab(dev[2])
 
-    addr = dev[0].own_addr().replace(':', '')
-    id = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr)
-    if "FAIL" in id:
-        raise Exception("Failed to set key for " + curve)
-    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI " + id)
+    id = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id)
 
     if "OK" not in dev[0].request("DPP_LISTEN 2412"):
         raise Exception("Failed to start listen operation")

@@ -1022,12 +1022,7 @@ def test_sigma_dut_dpp_qr_init_enrollee(dev, apdev):
             raise Exception("Failed to add configurator")
         conf_id = int(res)
 
-        addr = dev[1].own_addr().replace(':', '')
-        cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-        res = dev[1].request(cmd)
-        if "FAIL" in res:
-            raise Exception("Failed to generate bootstrapping info")
-        id0 = int(res)
+        id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         dev[1].set("dpp_configurator_params",
@@ -1088,12 +1083,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra=''):
             raise Exception("Failed to add configurator")
         conf_id = int(res)
 
-        addr = dev[1].own_addr().replace(':', '')
-        cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-        res = dev[1].request(cmd)
-        if "FAIL" in res:
-            raise Exception("Failed to generate bootstrapping info")
-        id0 = int(res)
+        id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         dev[1].set("dpp_configurator_params",
@@ -1175,12 +1165,7 @@ def run_sigma_dut_dpp_qr_mutual_resp_enrollee(dev, apdev, extra=None):
             raise Exception("Failed to add configurator")
         conf_id = int(res)
 
-        addr = dev[1].own_addr().replace(':', '')
-        cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-        res = dev[1].request(cmd)
-        if "FAIL" in res:
-            raise Exception("Failed to generate bootstrapping info")
-        id0 = int(res)
+        id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPCryptoIdentifier,P-256,DPPBS,QR")
@@ -1269,12 +1254,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee(dev, apdev, resp_pending):
             raise Exception("Failed to add configurator")
         conf_id = int(res)
 
-        addr = dev[1].own_addr().replace(':', '')
-        cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-        res = dev[1].request(cmd)
-        if "FAIL" in res:
-            raise Exception("Failed to generate bootstrapping info")
-        id0 = int(res)
+        id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPCryptoIdentifier,P-256,DPPBS,QR")
@@ -1325,12 +1305,7 @@ def test_sigma_dut_dpp_qr_init_enrollee_psk(dev, apdev):
             raise Exception("Failed to add configurator")
         conf_id = int(res)
 
-        addr = dev[1].own_addr().replace(':', '')
-        cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-        res = dev[1].request(cmd)
-        if "FAIL" in res:
-            raise Exception("Failed to generate bootstrapping info")
-        id0 = int(res)
+        id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         dev[1].set("dpp_configurator_params",
@@ -1373,12 +1348,7 @@ def test_sigma_dut_dpp_qr_init_enrollee_sae(dev, apdev):
             raise Exception("Failed to add configurator")
         conf_id = int(res)
 
-        addr = dev[1].own_addr().replace(':', '')
-        cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-        res = dev[1].request(cmd)
-        if "FAIL" in res:
-            raise Exception("Failed to generate bootstrapping info")
-        id0 = int(res)
+        id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         dev[1].set("dpp_configurator_params",
@@ -1441,12 +1411,7 @@ def run_sigma_dut_dpp_qr_init_configurator(dev, apdev, conf_idx,
     check_dpp_capab(dev[1])
     sigma = start_sigma_dut(dev[0].ifname)
     try:
-        addr = dev[1].own_addr().replace(':', '')
-        cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-        res = dev[1].request(cmd)
-        if "FAIL" in res:
-            raise Exception("Failed to generate bootstrapping info")
-        id0 = int(res)
+        id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         cmd = "DPP_LISTEN 2437 role=enrollee"
@@ -1481,12 +1446,7 @@ def test_sigma_dut_dpp_incompatible_roles_init(dev, apdev):
 
         id1 = dev[1].dpp_qr_code(uri)
 
-        addr = dev[1].own_addr().replace(':', '')
-        cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-        res = dev[1].request(cmd)
-        if "FAIL" in res:
-            raise Exception("Failed to generate bootstrapping info")
-        id0 = int(res)
+        id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         cmd = "DPP_LISTEN 2437 role=enrollee"
@@ -1532,12 +1492,7 @@ def test_sigma_dut_dpp_incompatible_roles_resp(dev, apdev):
 
         id1 = dev[1].dpp_qr_code(uri)
 
-        addr = dev[1].own_addr().replace(':', '')
-        cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-        res = dev[1].request(cmd)
-        if "FAIL" in res:
-            raise Exception("Failed to generate bootstrapping info")
-        id0 = int(res)
+        id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
         res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
@@ -1560,11 +1515,7 @@ def test_sigma_dut_dpp_pkex_init_configurator(dev, apdev):
     check_dpp_capab(dev[1])
     sigma = start_sigma_dut(dev[0].ifname)
     try:
-        cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-        res = dev[1].request(cmd)
-        if "FAIL" in res:
-            raise Exception("Failed to generate bootstrapping info")
-        id1 = int(res)
+        id1 = dev[1].dpp_bootstrap_gen(type="pkex")
         cmd = "DPP_PKEX_ADD own=%d identifier=test code=secret" % (id1)
         res = dev[1].request(cmd)
         if "FAIL" in res:
@@ -1633,12 +1584,7 @@ def run_sigma_dut_ap_dpp_qr(dev, apdev, params, ap_conf, sta_conf, extra=""):
             if "ConfResult,OK" not in res:
                 raise Exception("Unexpected result: " + res)
 
-            addr = dev[1].own_addr().replace(':', '')
-            cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-            res = dev[1].request(cmd)
-            if "FAIL" in res:
-                raise Exception("Failed to generate bootstrapping info")
-            id1 = int(res)
+            id1 = dev[1].dpp_bootstrap_gen(chan="81/1", mac=True)
             uri1 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
 
             id0b = dev[0].dpp_qr_code(uri1)
@@ -1672,11 +1618,7 @@ def test_sigma_dut_ap_dpp_pkex_responder(dev, apdev, params):
 def dpp_init_conf_pkex(dev, conf_id, check_config=True):
     logger.info("Starting DPP PKEX initiator/configurator in a thread")
     time.sleep(1.5)
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev.request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id = int(res)
+    id = dev.dpp_bootstrap_gen(type="pkex")
     cmd = "DPP_PKEX_ADD own=%d init=1 conf=ap-dpp configurator=%d code=password" % (id, conf_id)
     res = dev.request(cmd)
     if "FAIL" in res:
@@ -1775,12 +1717,7 @@ def test_sigma_dut_dpp_proto_initiator(dev, apdev):
             stop_sigma_dut(sigma)
 
 def run_sigma_dut_dpp_proto_initiator(dev, step, frame, attr, result, fail):
-    addr = dev[1].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
     uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     cmd = "DPP_LISTEN 2437 role=enrollee"
@@ -1869,12 +1806,7 @@ def test_sigma_dut_dpp_proto_stop_at_initiator(dev, apdev):
             stop_sigma_dut(sigma)
 
 def run_sigma_dut_dpp_proto_stop_at_initiator(dev, frame, result, fail):
-    addr = dev[1].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
     uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     cmd = "DPP_LISTEN 2437 role=enrollee"
@@ -1916,12 +1848,7 @@ def test_sigma_dut_dpp_proto_stop_at_initiator_enrollee(dev, apdev):
 
 def run_sigma_dut_dpp_proto_stop_at_initiator_enrollee(dev, frame, result,
                                                        fail):
-    addr = dev[1].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
     uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     cmd = "DPP_LISTEN 2437 role=configurator"
@@ -1997,11 +1924,7 @@ def dpp_proto_init_pkex(dev):
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev.request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id = int(res)
+    id = dev.dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d init=1 conf=sta-dpp configurator=%d code=secret" % (id, conf_id)
     if "FAIL" in dev.request(cmd):
@@ -2031,11 +1954,7 @@ def test_sigma_dut_dpp_proto_initiator_pkex(dev, apdev):
             stop_sigma_dut(sigma)
 
 def run_sigma_dut_dpp_proto_initiator_pkex(dev, step, frame, attr, result, fail):
-    cmd = "DPP_BOOTSTRAP_GEN type=pkex"
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id1 = int(res)
+    id1 = dev[1].dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d code=secret" % (id1)
     res = dev[1].request(cmd)
@@ -2127,12 +2046,7 @@ def init_sigma_dut_dpp_proto_peer_disc_req(dev, apdev):
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    addr = dev[1].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
-    res = dev[1].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id0 = int(res)
+    id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
     uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     dev[1].set("dpp_configurator_params",
@@ -2169,12 +2083,7 @@ def test_sigma_dut_dpp_self_config(dev, apdev):
     sigma = start_sigma_dut(dev[0].ifname)
     try:
         dev[0].set("dpp_config_processing", "2")
-        addr = hapd.own_addr().replace(':', '')
-        cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/1 mac=" + addr
-        res = hapd.request(cmd)
-        if "FAIL" in res:
-            raise Exception("Failed to generate bootstrapping info")
-        id = int(res)
+        id = hapd.dpp_bootstrap_gen(chan="81/1", mac=True)
         uri = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id)
 
         res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri))
@@ -2217,12 +2126,7 @@ def run_sigma_dut_ap_dpp_self_config(dev, apdev):
 
     dev[0].set("dpp_config_processing", "2")
 
-    addr = dev[0].own_addr().replace(':', '')
-    cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/11 mac=" + addr
-    res = dev[0].request(cmd)
-    if "FAIL" in res:
-        raise Exception("Failed to generate bootstrapping info")
-    id = int(res)
+    id = dev[0].dpp_bootstrap_gen(chan="81/11", mac=True)
     uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id)
     cmd = "DPP_LISTEN 2462 role=enrollee"
     if "OK" not in dev[0].request(cmd):
