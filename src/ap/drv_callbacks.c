@@ -1073,6 +1073,7 @@ fail:
 }
 
 
+#ifndef NEED_AP_MLME
 static void hostapd_action_rx(struct hostapd_data *hapd,
 			      struct rx_mgmt *drv_mgmt)
 {
@@ -1145,6 +1146,7 @@ static void hostapd_action_rx(struct hostapd_data *hapd,
 	}
 #endif /* CONFIG_DPP */
 }
+#endif /* NEED_AP_MLME */
 
 
 #ifdef NEED_AP_MLME
@@ -1606,10 +1608,10 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		if (!data->rx_mgmt.frame)
 			break;
 #ifdef NEED_AP_MLME
-		if (hostapd_mgmt_rx(hapd, &data->rx_mgmt) > 0)
-			break;
-#endif /* NEED_AP_MLME */
+		hostapd_mgmt_rx(hapd, &data->rx_mgmt);
+#else /* NEED_AP_MLME */
 		hostapd_action_rx(hapd, &data->rx_mgmt);
+#endif /* NEED_AP_MLME */
 		break;
 	case EVENT_RX_PROBE_REQ:
 		if (data->rx_probe_req.sa == NULL ||
