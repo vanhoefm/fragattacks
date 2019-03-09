@@ -4102,26 +4102,6 @@ static void handle_beacon(struct hostapd_data *hapd,
 
 
 #ifdef CONFIG_IEEE80211W
-
-static int hostapd_sa_query_action(struct hostapd_data *hapd,
-				   const struct ieee80211_mgmt *mgmt,
-				   size_t len)
-{
-	const u8 *end;
-
-	end = mgmt->u.action.u.sa_query_resp.trans_id +
-		WLAN_SA_QUERY_TR_ID_LEN;
-	if (((u8 *) mgmt) + len < end) {
-		wpa_printf(MSG_DEBUG, "IEEE 802.11: Too short SA Query Action "
-			   "frame (len=%lu)", (unsigned long) len);
-		return 0;
-	}
-
-	ieee802_11_sa_query_action(hapd, mgmt, len);
-	return 1;
-}
-
-
 static int robust_action_frame(u8 category)
 {
 	return category != WLAN_ACTION_PUBLIC &&
@@ -4207,7 +4187,8 @@ static int handle_action(struct hostapd_data *hapd,
 		return 1;
 #ifdef CONFIG_IEEE80211W
 	case WLAN_ACTION_SA_QUERY:
-		return hostapd_sa_query_action(hapd, mgmt, len);
+		ieee802_11_sa_query_action(hapd, mgmt, len);
+		return 1;
 #endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_WNM_AP
 	case WLAN_ACTION_WNM:

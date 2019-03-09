@@ -1110,8 +1110,9 @@ static void hostapd_action_rx(struct hostapd_data *hapd,
 	}
 #endif /* CONFIG_IEEE80211R_AP */
 #ifdef CONFIG_IEEE80211W
-	if (mgmt->u.action.category == WLAN_ACTION_SA_QUERY && plen >= 4) {
+	if (mgmt->u.action.category == WLAN_ACTION_SA_QUERY) {
 		ieee802_11_sa_query_action(hapd, mgmt, drv_mgmt->frame_len);
+		return;
 	}
 #endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_WNM_AP

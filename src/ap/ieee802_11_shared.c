@@ -213,6 +213,14 @@ void ieee802_11_sa_query_action(struct hostapd_data *hapd,
 	const u8 action_type = mgmt->u.action.u.sa_query_resp.action;
 	const u8 *trans_id = mgmt->u.action.u.sa_query_resp.trans_id;
 
+	if (((const u8 *) mgmt) + len <
+	    mgmt->u.action.u.sa_query_resp.variable) {
+		wpa_printf(MSG_DEBUG,
+			   "IEEE 802.11: Too short SA Query Action frame (len=%lu)",
+			   (unsigned long) len);
+		return;
+	}
+
 	sta = ap_get_sta(hapd, sa);
 
 #ifdef CONFIG_OCV
