@@ -381,6 +381,12 @@ class Hostapd:
             return vals
         return None
 
+    def dpp_qr_code(self, uri):
+        res = self.request("DPP_QR_CODE " + uri)
+        if "FAIL" in res:
+            raise Exception("Failed to parse QR Code URI")
+        return int(res)
+
 def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30,
            global_ctrl_override=None):
         if isinstance(apdev, dict):

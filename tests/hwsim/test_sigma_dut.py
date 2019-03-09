@@ -975,10 +975,7 @@ def run_sigma_dut_dpp_qr_resp(dev, apdev, conf_idx, chan_list=None,
         uri = from_hex(hex)
         logger.info("URI from sigma_dut: " + uri)
 
-        res = dev[1].request("DPP_QR_CODE " + uri)
-        if "FAIL" in res:
-            raise Exception("Failed to parse QR Code URI")
-        id1 = int(res)
+        id1 = dev[1].dpp_qr_code(uri)
 
         t = threading.Thread(target=dpp_init_enrollee, args=(dev[1], id1))
         t.start()
@@ -1112,10 +1109,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra=''):
         uri = from_hex(hex)
         logger.info("URI from sigma_dut: " + uri)
 
-        res = dev[1].request("DPP_QR_CODE " + uri)
-        if "FAIL" in res:
-            raise Exception("Failed to parse QR Code URI")
-        id1 = int(res)
+        id1 = dev[1].dpp_qr_code(uri)
 
         res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
         if "status,COMPLETE" not in res:
@@ -1196,10 +1190,7 @@ def run_sigma_dut_dpp_qr_mutual_resp_enrollee(dev, apdev, extra=None):
         uri = from_hex(hex)
         logger.info("URI from sigma_dut: " + uri)
 
-        res = dev[1].request("DPP_QR_CODE " + uri)
-        if "FAIL" in res:
-            raise Exception("Failed to parse QR Code URI")
-        id1 = int(res)
+        id1 = dev[1].dpp_qr_code(uri)
 
         res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
         if "status,COMPLETE" not in res:
@@ -1232,9 +1223,7 @@ def dpp_resp_conf_mutual(dev, conf_id, uri):
         ev = dev.wait_event(["DPP-SCAN-PEER-QR-CODE"], timeout=10)
         if ev is None:
             raise Exception("QR Code scan for mutual authentication not requested")
-        res = dev.request("DPP_QR_CODE " + uri)
-        if "FAIL" in res:
-            raise Exception("Failed to parse QR Code URI")
+        dev.dpp_qr_code(uri)
     ev = dev.wait_event(["DPP-CONF-SENT"], timeout=10)
     if ev is None:
         raise Exception("DPP configuration not completed (Configurator)")
@@ -1296,9 +1285,7 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee(dev, apdev, resp_pending):
         logger.info("URI from sigma_dut: " + uri)
 
         if not resp_pending:
-            res = dev[1].request("DPP_QR_CODE " + uri)
-            if "FAIL" in res:
-                raise Exception("Failed to parse QR Code URI")
+            dev[1].dpp_qr_code(uri)
             uri = None
 
         res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
@@ -1492,10 +1479,7 @@ def test_sigma_dut_dpp_incompatible_roles_init(dev, apdev):
         uri = from_hex(hex)
         logger.info("URI from sigma_dut: " + uri)
 
-        res = dev[1].request("DPP_QR_CODE " + uri)
-        if "FAIL" in res:
-            raise Exception("Failed to parse QR Code URI")
-        id1 = int(res)
+        id1 = dev[1].dpp_qr_code(uri)
 
         addr = dev[1].own_addr().replace(':', '')
         cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
@@ -1546,10 +1530,7 @@ def test_sigma_dut_dpp_incompatible_roles_resp(dev, apdev):
         uri = from_hex(hex)
         logger.info("URI from sigma_dut: " + uri)
 
-        res = dev[1].request("DPP_QR_CODE " + uri)
-        if "FAIL" in res:
-            raise Exception("Failed to parse QR Code URI")
-        id1 = int(res)
+        id1 = dev[1].dpp_qr_code(uri)
 
         addr = dev[1].own_addr().replace(':', '')
         cmd = "DPP_BOOTSTRAP_GEN type=qrcode chan=81/6 mac=" + addr
@@ -1642,10 +1623,7 @@ def run_sigma_dut_ap_dpp_qr(dev, apdev, params, ap_conf, sta_conf, extra=""):
                 raise Exception("Failed to add configurator")
             conf_id = int(res)
 
-            res = dev[0].request("DPP_QR_CODE " + uri)
-            if "FAIL" in res:
-                raise Exception("Failed to parse QR Code URI")
-            id1 = int(res)
+            id1 = dev[0].dpp_qr_code(uri)
 
             t = threading.Thread(target=dpp_init_conf,
                                  args=(dev[0], id1, ap_conf, conf_id, extra))
@@ -1663,10 +1641,7 @@ def run_sigma_dut_ap_dpp_qr(dev, apdev, params, ap_conf, sta_conf, extra=""):
             id1 = int(res)
             uri1 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
 
-            res = dev[0].request("DPP_QR_CODE " + uri1)
-            if "FAIL" in res:
-                raise Exception("Failed to parse QR Code URI")
-            id0b = int(res)
+            id0b = dev[0].dpp_qr_code(uri1)
 
             dev[1].set("dpp_config_processing", "2")
             cmd = "DPP_LISTEN 2412"
@@ -1857,10 +1832,7 @@ def run_sigma_dut_dpp_proto_responder(dev, step, frame, attr, result, fail):
     uri = from_hex(hex)
     logger.info("URI from sigma_dut: " + uri)
 
-    res = dev[1].request("DPP_QR_CODE " + uri)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri)
 
     t = threading.Thread(target=dpp_proto_init, args=(dev[1], id1))
     t.start()
@@ -1999,10 +1971,7 @@ def run_sigma_dut_dpp_proto_stop_at_responder(dev, frame, result, fail):
     uri = from_hex(hex)
     logger.info("URI from sigma_dut: " + uri)
 
-    res = dev[1].request("DPP_QR_CODE " + uri)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri)
 
     t = threading.Thread(target=dpp_proto_init, args=(dev[1], id1))
     t.start()

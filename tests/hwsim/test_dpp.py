@@ -44,10 +44,7 @@ def test_dpp_qr_code_parsing(dev, apdev):
               "DPP:I:SN=4774LH2b4044;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;",
               "DPP:I:;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;" ]
     for uri in tests:
-        res = dev[0].request("DPP_QR_CODE " + uri)
-        if "FAIL" in res:
-            raise Exception("Failed to parse QR Code")
-        id.append(int(res))
+        id.append(dev[0].dpp_qr_code(uri))
 
         uri2 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id[-1])
         if uri != uri2:
@@ -87,9 +84,7 @@ def test_dpp_qr_code_parsing(dev, apdev):
     uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % int(res))
     logger.info("Generated URI: " + uri)
 
-    res = dev[0].request("DPP_QR_CODE " + uri)
-    if "FAIL" in res:
-        raise Exception("Failed to parse self-generated QR Code URI")
+    dev[0].dpp_qr_code(uri)
 
     res = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode chan=81/1,115/36 mac=010203040506 info=foo")
     if "FAIL" in res:
@@ -97,9 +92,7 @@ def test_dpp_qr_code_parsing(dev, apdev):
     uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % int(res))
     logger.info("Generated URI: " + uri)
 
-    res = dev[0].request("DPP_QR_CODE " + uri)
-    if "FAIL" in res:
-        raise Exception("Failed to parse self-generated QR Code URI")
+    dev[0].dpp_qr_code(uri)
 
 def test_dpp_qr_code_parsing_fail(dev, apdev):
     """DPP QR Code parsing local failure"""
@@ -215,10 +208,8 @@ def test_dpp_qr_code_curve_select(dev, apdev):
         if "OK" not in dev[0].request("DPP_LISTEN 2412"):
             raise Exception("Failed to start listen operation")
 
-        res = dev[1].request("DPP_QR_CODE " + uri)
-        if "FAIL" in res:
-            raise Exception("Failed to parse QR Code URI")
-        if "OK" not in dev[1].request("DPP_AUTH_INIT peer=" + res):
+        res = dev[1].dpp_qr_code(uri)
+        if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d" % res):
             raise Exception("Failed to initiate DPP Authentication")
         ev = dev[0].wait_event(["DPP-AUTH-SUCCESS"], timeout=5)
         if ev is None:
@@ -249,10 +240,7 @@ def test_dpp_qr_code_auth_broadcast(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
     if "OK" not in dev[0].request("DPP_LISTEN 2412"):
@@ -333,10 +321,7 @@ def run_dpp_qr_code_auth_unicast(dev, apdev, curve, netrole=None, key=None,
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
     cmd = "DPP_LISTEN 2412"
@@ -386,10 +371,7 @@ def test_dpp_qr_code_auth_mutual(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 displays QR Code")
     addr = dev[1].own_addr().replace(':', '')
@@ -400,10 +382,7 @@ def test_dpp_qr_code_auth_mutual(dev, apdev):
     uri1b = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1b)
 
     logger.info("dev0 scans QR Code")
-    res = dev[0].request("DPP_QR_CODE " + uri1b)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id0b = int(res)
+    id0b = dev[0].dpp_qr_code(uri1b)
 
     logger.info("dev1 initiates DPP Authentication")
     if "OK" not in dev[0].request("DPP_LISTEN 2412"):
@@ -438,10 +417,7 @@ def test_dpp_qr_code_auth_mutual2(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 displays QR Code")
     addr = dev[1].own_addr().replace(':', '')
@@ -465,10 +441,7 @@ def test_dpp_qr_code_auth_mutual2(dev, apdev):
         raise Exception("QR Code scan for mutual authentication not requested")
 
     logger.info("dev0 scans QR Code")
-    res = dev[0].request("DPP_QR_CODE " + uri1b)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id0b = int(res)
+    id0b = dev[0].dpp_qr_code(uri1b)
 
     ev = dev[1].wait_event(["DPP-AUTH-DIRECTION"], timeout=5)
     if ev is None:
@@ -522,10 +495,7 @@ def run_dpp_qr_code_auth_mutual(dev, apdev, curve):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
     if "OK" not in dev[0].request("DPP_LISTEN 2412 qr=mutual"):
@@ -543,9 +513,7 @@ def run_dpp_qr_code_auth_mutual(dev, apdev, curve):
         raise Exception("QR Code scan for mutual authentication not requested")
 
     logger.info("dev0 scans QR Code")
-    res = dev[0].request("DPP_QR_CODE " + uri)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
+    dev[0].dpp_qr_code(uri)
 
     ev = dev[1].wait_event(["DPP-AUTH-DIRECTION"], timeout=5)
     if ev is None:
@@ -577,10 +545,7 @@ def test_dpp_auth_resp_retries(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 displays QR Code")
     addr = dev[1].own_addr().replace(':', '')
@@ -611,10 +576,7 @@ def test_dpp_auth_resp_retries(dev, apdev):
     dev[0].dump_monitor()
 
     logger.info("dev0 scans QR Code")
-    res = dev[0].request("DPP_QR_CODE " + uri1b)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id0b = int(res)
+    id0b = dev[0].dpp_qr_code(uri1b)
 
     ev = dev[0].wait_event(["DPP-TX"], timeout=5)
     if ev is None or "type=1" not in ev:
@@ -642,10 +604,7 @@ def test_dpp_qr_code_auth_mutual_not_used(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 displays QR Code")
     addr = dev[1].own_addr().replace(':', '')
@@ -690,10 +649,7 @@ def test_dpp_qr_code_auth_mutual_curve_mismatch(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 displays QR Code")
     addr = dev[1].own_addr().replace(':', '')
@@ -704,10 +660,7 @@ def test_dpp_qr_code_auth_mutual_curve_mismatch(dev, apdev):
     uri1b = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1b)
 
     logger.info("dev0 scans QR Code")
-    res = dev[0].request("DPP_QR_CODE " + uri1b)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id0b = int(res)
+    id0b = dev[0].dpp_qr_code(uri1b)
 
     res = dev[1].request("DPP_AUTH_INIT peer=%d own=%d" % (id1, id1b))
     if "FAIL" not in res:
@@ -729,10 +682,7 @@ def test_dpp_qr_code_auth_hostapd_mutual2(dev, apdev):
     uri_h = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id_h)
 
     logger.info("dev0 scans QR Code")
-    res = dev[0].request("DPP_QR_CODE " + uri_h)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id0 = int(res)
+    id0 = dev[0].dpp_qr_code(uri_h)
 
     logger.info("dev0 displays QR Code")
     addr = dev[0].own_addr().replace(':', '')
@@ -756,9 +706,7 @@ def test_dpp_qr_code_auth_hostapd_mutual2(dev, apdev):
         raise Exception("QR Code scan for mutual authentication not requested")
 
     logger.info("AP scans QR Code")
-    res = hapd.request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
+    hapd.dpp_qr_code(uri0)
 
     ev = hapd.wait_event(["DPP-AUTH-SUCCESS"], timeout=5)
     if ev is None:
@@ -781,10 +729,7 @@ def test_dpp_qr_code_listen_continue(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     if "OK" not in dev[0].request("DPP_LISTEN 2412"):
         raise Exception("Failed to start listen operation")
@@ -816,10 +761,7 @@ def test_dpp_qr_code_auth_initiator_enrollee(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
     if "OK" not in dev[0].request("DPP_LISTEN 2412"):
@@ -869,10 +811,7 @@ def run_dpp_qr_code_auth_initiator_either(dev, apdev, resp_role,
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
     cmd = "DPP_LISTEN 2412"
@@ -910,10 +849,7 @@ def run_init_incompatible_roles(dev, role="enrollee"):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
     if "OK" not in dev[0].request("DPP_LISTEN 2412 role=%s" % role):
@@ -1004,10 +940,7 @@ def test_dpp_qr_code_auth_neg_chan(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
     cmd = "DPP_LISTEN 2412"
@@ -1687,10 +1620,7 @@ def test_dpp_gas_timeout(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
     dev[0].set("ext_mgmt_frame_handling", "1")
@@ -1991,10 +1921,7 @@ def run_dpp_ap_config(dev, apdev, curve=None, conf_curve=None,
         if "FAIL" in csign or len(csign) == 0:
             raise Exception("DPP_CONFIGURATOR_GET_KEY failed")
 
-    res = dev[0].request("DPP_QR_CODE " + uri)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id = int(res)
+    id = dev[0].dpp_qr_code(uri)
 
     cmd = "DPP_AUTH_INIT peer=%d conf=ap-dpp configurator=%d" % (id, conf_id)
     if "OK" not in dev[0].request(cmd):
@@ -2026,10 +1953,7 @@ def run_dpp_ap_config(dev, apdev, curve=None, conf_curve=None,
     id1 = int(res)
     uri1 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
 
-    res = dev[0].request("DPP_QR_CODE " + uri1)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id0b = int(res)
+    id0b = dev[0].dpp_qr_code(uri1)
 
     if reconf_configurator:
         res = dev[0].request("DPP_CONFIGURATOR_REMOVE %d" % conf_id)
@@ -2162,10 +2086,7 @@ def run_dpp_auto_connect(dev, apdev, processing):
     id0 = int(res)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     cmd = "DPP_LISTEN 2412"
     if "OK" not in dev[0].request(cmd):
@@ -2261,10 +2182,7 @@ def run_dpp_auto_connect_legacy(dev, apdev, conf='sta-psk',
     id0 = int(res)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     cmd = "DPP_LISTEN 2412"
     if "OK" not in dev[0].request(cmd):
@@ -2314,10 +2232,7 @@ def run_dpp_auto_connect_legacy_pmf_required(dev, apdev):
     id0 = int(res)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     cmd = "DPP_LISTEN 2412"
     if "OK" not in dev[0].request(cmd):
@@ -2367,10 +2282,7 @@ def run_dpp_qr_code_auth_responder_configurator(dev, apdev, extra):
     id0 = int(res)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     dev[0].set("dpp_configurator_params",
                " conf=sta-dpp configurator=%d%s" % (conf_id, extra))
@@ -2423,10 +2335,7 @@ def test_dpp_qr_code_hostapd_init(dev, apdev):
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to start listen operation")
 
-    res = hapd.request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = hapd.dpp_qr_code(uri0)
 
     cmd = "DPP_AUTH_INIT peer=%d role=enrollee" % id1
     if "OK" not in hapd.request(cmd):
@@ -2480,10 +2389,7 @@ def run_dpp_qr_code_hostapd_init_offchannel(dev, apdev, extra):
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to start listen operation")
 
-    res = hapd.request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = hapd.dpp_qr_code(uri0)
 
     cmd = "DPP_AUTH_INIT peer=%d role=enrollee" % id1
     if extra:
@@ -2543,15 +2449,8 @@ def test_dpp_test_vector_p_256(dev, apdev):
 
     dev[1].set("dpp_nonce_override", "13f4602a16daeb69712263b9c46cba31")
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1peer = int(res)
-
-    res = dev[0].request("DPP_QR_CODE " + uri1)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id0peer = int(res)
+    id1peer = dev[1].dpp_qr_code(uri0)
+    id0peer = dev[0].dpp_qr_code(uri1)
 
     cmd = "DPP_LISTEN 2462 qr=mutual"
     if "OK" not in dev[0].request(cmd):
@@ -2606,10 +2505,7 @@ def test_dpp_test_vector_p_256_b(dev, apdev):
 
     dev[1].set("dpp_nonce_override", "13f4602a16daeb69712263b9c46cba31")
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1peer = int(res)
+    id1peer = dev[1].dpp_qr_code(uri0)
 
     cmd = "DPP_LISTEN 2462"
     if "OK" not in dev[0].request(cmd):
@@ -2672,15 +2568,8 @@ def test_dpp_test_vector_p_521(dev, apdev):
     dev[1].set("dpp_nonce_override",
                "de972af3847bec3ba2aedd9f5c21cfdec7bf0bc5fe8b276cbcd0267807fb15b0")
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1peer = int(res)
-
-    res = dev[0].request("DPP_QR_CODE " + uri1)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id0peer = int(res)
+    id1peer = dev[1].dpp_qr_code(uri0)
+    id0peer = dev[0].dpp_qr_code(uri1)
 
     cmd = "DPP_LISTEN 2462 qr=mutual"
     if "OK" not in dev[0].request(cmd):
@@ -3449,10 +3338,7 @@ def test_dpp_hostapd_configurator(dev, apdev):
     id0 = int(res)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = hapd.request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = hapd.dpp_qr_code(uri0)
 
     res = hapd.request("DPP_BOOTSTRAP_INFO %d" % id0)
     if "FAIL" in res:
@@ -3508,10 +3394,7 @@ def test_dpp_hostapd_configurator_responder(dev, apdev):
     id0 = int(res)
     uri0 = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = dev[0].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[0].dpp_qr_code(uri0)
 
     cmd = "DPP_AUTH_INIT peer=%d role=enrollee" % (id1)
     if "OK" not in dev[0].request(cmd):
@@ -3573,10 +3456,7 @@ def run_dpp_own_config(dev, apdev, own_curve=None, expect_failure=False,
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    res = dev[0].request("DPP_QR_CODE " + uri)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id = int(res)
+    id = dev[0].dpp_qr_code(uri)
 
     cmd = "DPP_AUTH_INIT peer=%d conf=ap-dpp configurator=%d%s" % (id, conf_id, extra)
     if "OK" not in dev[0].request(cmd):
@@ -3678,10 +3558,7 @@ def run_dpp_own_config_ap(dev, apdev, reconf_configurator=False, extra=""):
     id = int(res)
     uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id)
 
-    res = hapd.request("DPP_QR_CODE " + uri)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id = int(res)
+    id = hapd.dpp_qr_code(uri)
 
     dev[0].set("dpp_config_processing", "2")
     if "OK" not in dev[0].request("DPP_LISTEN 2412"):
@@ -3740,10 +3617,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
         raise Exception("Failed to add configurator")
     conf_id = int(res)
 
-    res = dev[1].request("DPP_QR_CODE " + uri)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id = int(res)
+    id = dev[1].dpp_qr_code(uri)
 
     dev[1].set("dpp_groups_override", '[{"groupId":"a","netRole":"ap"}]')
     cmd = "DPP_AUTH_INIT peer=%d conf=ap-dpp configurator=%d" % (id, conf_id)
@@ -3761,10 +3635,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
     id0 = int(res)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     cmd = "DPP_LISTEN 2412"
     if "OK" not in dev[0].request(cmd):
@@ -3791,10 +3662,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
     id2 = int(res)
     uri2 = dev[2].request("DPP_BOOTSTRAP_GET_URI %d" % id2)
 
-    res = dev[1].request("DPP_QR_CODE " + uri2)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri2)
 
     cmd = "DPP_LISTEN 2412"
     if "OK" not in dev[2].request(cmd):
@@ -3826,10 +3694,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
     id5 = int(res)
     uri5 = wpas.request("DPP_BOOTSTRAP_GET_URI %d" % id5)
 
-    res = dev[1].request("DPP_QR_CODE " + uri5)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri5)
 
     cmd = "DPP_LISTEN 2412"
     if "OK" not in wpas.request(cmd):
@@ -3893,10 +3758,7 @@ def run_dpp_proto_init(dev, test_dev, test, mutual=False, unicast=True,
     id0 = int(res)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     if mutual:
         addr = dev[1].own_addr().replace(':', '')
@@ -3906,10 +3768,7 @@ def run_dpp_proto_init(dev, test_dev, test, mutual=False, unicast=True,
         id1b = int(res)
         uri1b = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1b)
 
-        res = dev[0].request("DPP_QR_CODE " + uri1b)
-        if "FAIL" in res:
-            raise Exception("Failed to parse QR Code URI")
-        id0b = int(res)
+        id0b = dev[0].dpp_qr_code(uri1b)
 
         cmd = "DPP_LISTEN 2412 qr=mutual"
     else:
@@ -4831,10 +4690,7 @@ def run_dpp_qr_code_chan_list(dev, apdev, unicast, listen_freq, chanlist,
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
     cmd = "DPP_LISTEN %d" % listen_freq
@@ -4870,10 +4726,7 @@ def test_dpp_qr_code_chan_list_no_match(dev, apdev):
     id0 = int(res)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     cmd = "DPP_AUTH_INIT peer=%d" % id1
     if "FAIL" not in dev[1].request(cmd):
@@ -5187,10 +5040,7 @@ def start_dpp(dev):
     id0 = int(res)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     conf = '{"wi-fi_tech":"infra", "discovery":{"ssid":"test"},"cred":{"akm":"psk","pass":"secret passphrase"}}' + 3000*' '
     dev[0].set("dpp_config_obj_override", conf)
@@ -5356,10 +5206,7 @@ def test_dpp_bootstrap_key_autogen_issues(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
     cmd = "DPP_LISTEN 2412"
@@ -5400,10 +5247,7 @@ def test_dpp_auth_resp_aes_siv_issue(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code")
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
     cmd = "DPP_LISTEN 2412"
@@ -5431,10 +5275,7 @@ def test_dpp_invalid_legacy_params(dev, apdev):
     id0 = int(res)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     # No pass/psk
     cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk ssid=%s" % (id1, binascii.hexlify(b"dpp-legacy").decode())
@@ -5454,10 +5295,7 @@ def test_dpp_invalid_legacy_params2(dev, apdev):
     id0 = int(res)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     dev[0].set("dpp_configurator_params",
                " conf=sta-psk ssid=%s" % (binascii.hexlify(b"dpp-legacy").decode()))
@@ -5487,10 +5325,7 @@ def test_dpp_legacy_params_failure(dev, apdev):
     id0 = int(res)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
-    res = dev[1].request("DPP_QR_CODE " + uri0)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    id1 = int(res)
+    id1 = dev[1].dpp_qr_code(uri0)
 
     if "OK" not in dev[0].request("DPP_LISTEN 2412"):
         raise Exception("Failed to start listen operation")
@@ -5786,10 +5621,8 @@ def test_dpp_listen_continue(dev, apdev):
         raise Exception("Failed to start listen operation")
     time.sleep(5.1)
 
-    res = dev[1].request("DPP_QR_CODE " + uri)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    if "OK" not in dev[1].request("DPP_AUTH_INIT peer=" + res):
+    id = dev[1].dpp_qr_code(uri)
+    if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d" % id):
         raise Exception("Failed to initiate DPP Authentication")
     ev = dev[0].wait_event(["DPP-CONF-FAILED"], timeout=2)
     if ev is None:
@@ -5861,19 +5694,15 @@ def test_dpp_two_initiators(dev, apdev):
     if "OK" not in dev[0].request("DPP_LISTEN 2412"):
         raise Exception("Failed to start listen operation")
 
-    res = dev[1].request("DPP_QR_CODE " + uri)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
-    res = dev[2].request("DPP_QR_CODE " + uri)
-    if "FAIL" in res:
-        raise Exception("Failed to parse QR Code URI")
+    id1 = dev[1].dpp_qr_code(uri)
+    id2 = dev[2].dpp_qr_code(uri)
 
-    if "OK" not in dev[1].request("DPP_AUTH_INIT peer=" + res):
+    if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d" % id1):
         raise Exception("Failed to initiate DPP Authentication")
     ev = dev[0].wait_event(["DPP-RX"], timeout=5)
     if ev is None:
         raise Exeption("No DPP Authentication Request seen")
-    if "OK" not in dev[2].request("DPP_AUTH_INIT peer=" + res):
+    if "OK" not in dev[2].request("DPP_AUTH_INIT peer=%d" % id2):
         raise Exception("Failed to initiate DPP Authentication (2)")
 
     ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)

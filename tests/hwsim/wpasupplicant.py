@@ -1334,3 +1334,9 @@ class WpaSupplicant:
                     break
             else:
                 break
+
+    def dpp_qr_code(self, uri):
+        res = self.request("DPP_QR_CODE " + uri)
+        if "FAIL" in res:
+            raise Exception("Failed to parse QR Code URI")
+        return int(res)
