@@ -1249,11 +1249,19 @@ static void wpas_dpp_process_config(struct wpa_supplicant *wpa_s,
 		return;
 
 	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_NETWORK_ID "%d", ssid->id);
+	if (wpa_s->conf->dpp_config_processing == 2)
+		ssid->disabled = 0;
+
+#ifndef CONFIG_NO_CONFIG_WRITE
+	if (wpa_s->conf->update_config &&
+	    wpa_config_write(wpa_s->confname, wpa_s->conf))
+		wpa_printf(MSG_DEBUG, "DPP: Failed to update configuration");
+#endif /* CONFIG_NO_CONFIG_WRITE */
+
 	if (wpa_s->conf->dpp_config_processing < 2)
 		return;
 
 	wpa_printf(MSG_DEBUG, "DPP: Trying to connect to the new network");
-	ssid->disabled = 0;
 	wpa_s->disconnected = 0;
 	wpa_s->reassociate = 1;
 	wpa_s->scan_runs = 0;
