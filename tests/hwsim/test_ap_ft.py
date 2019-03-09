@@ -790,6 +790,8 @@ def test_ap_ft_pmf_over_ds(dev, apdev):
     params["ieee80211w"] = "2"
     hapd1 = hostapd.add_ap(apdev[1], params)
 
+    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True)
+
 def test_ap_ft_pmf_bip_cmac_128_over_ds(dev, apdev):
     """WPA2-PSK-FT AP over DS with PMF/BIP-CMAC-128"""
     run_ap_ft_pmf_bip_over_ds(dev, apdev, "AES-128-CMAC")
