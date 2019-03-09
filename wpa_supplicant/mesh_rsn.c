@@ -657,7 +657,9 @@ int mesh_rsn_process_ampe(struct wpa_supplicant *wpa_s, struct sta_info *sta,
 		mesh_rsn_auth_sae_sta(wpa_s, sta);
 	}
 
-	if (chosen_pmk && os_memcmp(chosen_pmk, sta->sae->pmkid, PMKID_LEN)) {
+	if (chosen_pmk &&
+	    (!sta->sae ||
+	     os_memcmp(chosen_pmk, sta->sae->pmkid, PMKID_LEN) != 0)) {
 		wpa_msg(wpa_s, MSG_DEBUG,
 			"Mesh RSN: Invalid PMKID (Chosen PMK did not match calculated PMKID)");
 		return -1;
