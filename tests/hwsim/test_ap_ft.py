@@ -816,6 +816,11 @@ def run_ap_ft_pmf_bip_over_ds(dev, apdev, cipher):
         params["group_mgmt_cipher"] = cipher
     hapd1 = hostapd.add_ap(apdev[1], params)
 
+    Wlantest.setup(hapd0)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase(passphrase)
+
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
               group_mgmt=cipher)
 
