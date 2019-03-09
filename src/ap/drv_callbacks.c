@@ -1118,6 +1118,7 @@ static void hostapd_action_rx(struct hostapd_data *hapd,
 #ifdef CONFIG_WNM_AP
 	if (mgmt->u.action.category == WLAN_ACTION_WNM) {
 		ieee802_11_rx_wnm_action_ap(hapd, mgmt, drv_mgmt->frame_len);
+		return;
 	}
 #endif /* CONFIG_WNM_AP */
 #ifdef CONFIG_FST
