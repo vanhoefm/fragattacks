@@ -10,6 +10,7 @@ import binascii
 import hashlib
 import logging
 logger = logging.getLogger()
+import os
 import struct
 import subprocess
 import time
@@ -5891,3 +5892,28 @@ def test_dpp_two_initiators(dev, apdev):
     dev[0].request("DPP_STOP_LISTEN")
     dev[1].request("DPP_STOP_LISTEN")
     dev[2].request("DPP_STOP_LISTEN")
+
+def test_dpp_conf_file_update(dev, apdev, params):
+    """DPP provisioning updating wpa_supplicant configuration file"""
+    config = os.path.join(params['logdir'], 'dpp_conf_file_update.conf')
+    with open(config, "w") as f:
+        f.write("update_config=1\n")
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5", config=config)
+    wpas.set("dpp_config_processing", "1")
+    run_dpp_qr_code_auth_unicast([ wpas, dev[1] ], apdev, None,
+                                 init_extra="conf=sta-dpp",
+                                 require_conf_success=True,
+                                 configurator=True)
+    wpas.interface_remove("wlan5")
+
+    with open(config, "r") as f:
+        res = f.read()
+    for i in [ "network={", "dpp_connector=", "key_mgmt=DPP", "ieee80211w=2",
+               "dpp_netaccesskey=", "dpp_csign=" ]:
+        if i not in res:
+            raise Exception("Configuration file missing '%s'" % i)
+
+    wpas.interface_add("wlan5", config=config)
+    if len(wpas.list_networks()) != 1:
+        raise Exception("Unexpected number of networks")
