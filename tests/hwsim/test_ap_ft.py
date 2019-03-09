@@ -780,17 +780,7 @@ def test_ap_ft_over_ds_unexpected(dev, apdev):
 
 def test_ap_ft_pmf_over_ds(dev, apdev):
     """WPA2-PSK-FT AP over DS with PMF"""
-    ssid = "test-ft"
-    passphrase="12345678"
-
-    params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params["ieee80211w"] = "2"
-    hapd0 = hostapd.add_ap(apdev[0], params)
-    params = ft_params2(ssid=ssid, passphrase=passphrase)
-    params["ieee80211w"] = "2"
-    hapd1 = hostapd.add_ap(apdev[1], params)
-
-    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True)
+    run_ap_ft_pmf_bip_over_ds(dev, apdev, None)
 
 def test_ap_ft_pmf_bip_cmac_128_over_ds(dev, apdev):
     """WPA2-PSK-FT AP over DS with PMF/BIP-CMAC-128"""
@@ -809,7 +799,7 @@ def test_ap_ft_pmf_bip_cmac_256_over_ds(dev, apdev):
     run_ap_ft_pmf_bip_over_ds(dev, apdev, "BIP-CMAC-256")
 
 def run_ap_ft_pmf_bip_over_ds(dev, apdev, cipher):
-    if cipher not in dev[0].get_capability("group_mgmt"):
+    if cipher and cipher not in dev[0].get_capability("group_mgmt"):
         raise HwsimSkip("Cipher %s not supported" % cipher)
 
     ssid = "test-ft"
@@ -817,11 +807,13 @@ def run_ap_ft_pmf_bip_over_ds(dev, apdev, cipher):
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
     params["ieee80211w"] = "2"
-    params["group_mgmt_cipher"] = cipher
+    if cipher:
+        params["group_mgmt_cipher"] = cipher
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params["ieee80211w"] = "2"
-    params["group_mgmt_cipher"] = cipher
+    if cipher:
+        params["group_mgmt_cipher"] = cipher
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
