@@ -1085,7 +1085,7 @@ static void hostapd_action_rx(struct hostapd_data *hapd,
 	if (drv_mgmt->frame_len < IEEE80211_HDRLEN + 2 + 1)
 		return;
 
-	plen = drv_mgmt->frame_len - IEEE80211_HDRLEN - 1;
+	plen = drv_mgmt->frame_len - IEEE80211_HDRLEN;
 
 	mgmt = (struct ieee80211_mgmt *) drv_mgmt->frame;
 	fc = le_to_host16(mgmt->frame_control);
@@ -1105,9 +1105,8 @@ static void hostapd_action_rx(struct hostapd_data *hapd,
 	}
 #ifdef CONFIG_IEEE80211R_AP
 	if (mgmt->u.action.category == WLAN_ACTION_FT) {
-		const u8 *payload = drv_mgmt->frame + 24 + 1;
-
-		wpa_ft_action_rx(sta->wpa_sm, payload, plen);
+		wpa_ft_action_rx(sta->wpa_sm, (u8 *) &mgmt->u.action, plen);
+		return;
 	}
 #endif /* CONFIG_IEEE80211R_AP */
 #ifdef CONFIG_IEEE80211W
@@ -1127,7 +1126,7 @@ static void hostapd_action_rx(struct hostapd_data *hapd,
 	}
 #endif /* CONFIG_FST */
 #ifdef CONFIG_DPP
-	if (plen >= 1 + 4 &&
+	if (plen >= 2 + 4 &&
 	    mgmt->u.action.u.vs_public_action.action ==
 	    WLAN_PA_VENDOR_SPECIFIC &&
 	    WPA_GET_BE24(mgmt->u.action.u.vs_public_action.oui) ==
