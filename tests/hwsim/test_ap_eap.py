@@ -48,6 +48,11 @@ def check_subject_match_support(dev):
     if not tls.startswith("OpenSSL") and not tls.startswith("wolfSSL"):
         raise HwsimSkip("subject_match not supported with this TLS library: " + tls)
 
+def check_check_cert_subject_support(dev):
+    tls = dev.request("GET tls_library")
+    if not tls.startswith("OpenSSL"):
+        raise HwsimSkip("check_cert_subject not supported with this TLS library: " + tls)
+
 def check_altsubject_match_support(dev):
     tls = dev.request("GET tls_library")
     if not tls.startswith("OpenSSL") and not tls.startswith("wolfSSL"):
@@ -130,7 +135,8 @@ def read_pem(fname):
 
 def eap_connect(dev, hapd, method, identity,
                 sha256=False, expect_failure=False, local_error_report=False,
-                maybe_local_error=False, report_failure=False, **kwargs):
+                maybe_local_error=False, report_failure=False,
+                expect_cert_error=None, **kwargs):
     id = dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP WPA-EAP-SHA256",
                      eap=method, identity=identity,
                      wait_connect=False, scan_freq="2412", ieee80211w="1",
@@ -139,7 +145,8 @@ def eap_connect(dev, hapd, method, identity,
                    expect_failure=expect_failure,
                    local_error_report=local_error_report,
                    maybe_local_error=maybe_local_error,
-                   report_failure=report_failure)
+                   report_failure=report_failure,
+                   expect_cert_error=expect_cert_error)
     if expect_failure:
         return id
     ev = hapd.wait_event([ "AP-STA-CONNECTED" ], timeout=5)
@@ -149,7 +156,8 @@ def eap_connect(dev, hapd, method, identity,
 
 def eap_check_auth(dev, method, initial, rsn=True, sha256=False,
                    expect_failure=False, local_error_report=False,
-                   maybe_local_error=False, report_failure=False):
+                   maybe_local_error=False, report_failure=False,
+                   expect_cert_error=None):
     ev = dev.wait_event(["CTRL-EVENT-EAP-STARTED"], timeout=16)
     if ev is None:
         raise Exception("Association and EAP start timed out")
@@ -163,10 +171,19 @@ def eap_check_auth(dev, method, initial, rsn=True, sha256=False,
         raise Exception("Could not select EAP method")
     if method not in ev:
         raise Exception("Unexpected EAP method")
+    if expect_cert_error is not None:
+        ev = dev.wait_event(["CTRL-EVENT-EAP-TLS-CERT-ERROR",
+                             "CTRL-EVENT-EAP-FAILURE",
+                             "CTRL-EVENT-EAP-SUCCESS"], timeout=5)
+        if ev is None or "reason=%d " % expect_cert_error not in ev:
+            raise Exception("Expected certificate error not reported")
     if expect_failure:
-        ev = dev.wait_event(["CTRL-EVENT-EAP-FAILURE"])
+        ev = dev.wait_event(["CTRL-EVENT-EAP-FAILURE",
+                             "CTRL-EVENT-EAP-SUCCESS"], timeout=5)
         if ev is None:
             raise Exception("EAP failure timed out")
+        if "CTRL-EVENT-EAP-SUCCESS" in ev:
+            raise Exception("Unexpected EAP success")
         ev = dev.wait_disconnected(timeout=10)
         if maybe_local_error and "locally_generated=1" in ev:
             return
@@ -1264,6 +1281,51 @@ def test_ap_wpa2_eap_ttls_pap_subject_match(dev, apdev):
                 subject_match="/C=FI/O=w1.fi/CN=server.w1.fi",
                 altsubject_match="EMAIL:noone@example.com;DNS:server.w1.fi;URI:http://example.com/")
     eap_reauth(dev[0], "TTLS")
+
+def test_ap_wpa2_eap_ttls_pap_check_cert_subject(dev, apdev):
+    """EAP-TTLS/PAP and check_cert_subject"""
+    check_check_cert_subject_support(dev[0])
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hapd = hostapd.add_ap(apdev[0], params)
+    tests = [ "C=FI/O=w1.fi/CN=server.w1.fi",
+              "C=FI/O=w1.fi",
+              "C=FI/CN=server.w1.fi",
+              "O=w1.fi/CN=server.w1.fi",
+              "C=FI",
+              "O=w1.fi",
+              "O=w1.*",
+              "CN=server.w1.fi",
+              "*" ]
+    for test in tests:
+        eap_connect(dev[0], hapd, "TTLS", "pap user",
+                    anonymous_identity="ttls", password="password",
+                    ca_cert="auth_serv/ca.pem", phase2="auth=PAP",
+                    check_cert_subject=test)
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].wait_disconnected()
+        dev[0].dump_monitor()
+
+def test_ap_wpa2_eap_ttls_pap_check_cert_subject_neg(dev, apdev):
+    """EAP-TTLS/PAP and check_cert_subject (negative)"""
+    check_check_cert_subject_support(dev[0])
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hapd = hostapd.add_ap(apdev[0], params)
+    tests = [ "C=US",
+              "C",
+              "C=FI1*",
+              "O=w1.f",
+              "O=w1.fi1",
+              "O=w1.fi/O=foo",
+              "O=foo/O=w1.fi",
+              "O=w1.fi/O=w1.fi" ]
+    for test in tests:
+        eap_connect(dev[0], hapd, "TTLS", "pap user",
+                    anonymous_identity="ttls", password="password",
+                    ca_cert="auth_serv/ca.pem", phase2="auth=PAP",
+                    expect_failure=True, expect_cert_error=12,
+                    check_cert_subject=test)
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].dump_monitor()
 
 def test_ap_wpa2_eap_ttls_pap_incorrect_password(dev, apdev):
     """WPA2-Enterprise connection using EAP-TTLS/PAP - incorrect password"""
@@ -5356,6 +5418,28 @@ def test_ap_wpa2_eap_tls_crl_reload(dev, apdev, params):
                 private_key="auth_serv/user.key")
     dev[0].request("REMOVE_NETWORK all")
     dev[0].wait_disconnected()
+
+def test_ap_wpa2_eap_tls_check_cert_subject(dev, apdev):
+    """EAP-TLS and server checking client subject name"""
+    params = int_eap_server_params()
+    params['check_cert_subject'] = 'C=FI/O=w1.fi/CN=Test User'
+    hapd = hostapd.add_ap(apdev[0], params)
+    check_check_cert_subject_support(hapd)
+
+    eap_connect(dev[0], hapd, "TLS", "tls user", ca_cert="auth_serv/ca.pem",
+                client_cert="auth_serv/user.pem",
+                private_key="auth_serv/user.key")
+
+def test_ap_wpa2_eap_tls_check_cert_subject_neg(dev, apdev):
+    """EAP-TLS and server checking client subject name (negative)"""
+    params = int_eap_server_params()
+    params['check_cert_subject'] = 'C=FI/O=example'
+    hapd = hostapd.add_ap(apdev[0], params)
+    check_check_cert_subject_support(hapd)
+
+    eap_connect(dev[0], hapd, "TLS", "tls user", ca_cert="auth_serv/ca.pem",
+                client_cert="auth_serv/user.pem",
+                private_key="auth_serv/user.key", expect_failure=True)
 
 def test_ap_wpa2_eap_tls_oom(dev, apdev):
     """EAP-TLS and OOM"""
