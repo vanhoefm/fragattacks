@@ -331,7 +331,7 @@ static int eap_peap_derive_cmk(struct eap_sm *sm, struct eap_peap_data *data)
 	 * phase 1 of PEAP (based on TLS).
 	 */
 	tk = eap_server_tls_derive_key(sm, &data->ssl, "client EAP encryption",
-				       EAP_TLS_KEY_LEN);
+				       NULL, 0, EAP_TLS_KEY_LEN);
 	if (tk == NULL)
 		return -1;
 	wpa_hexdump_key(MSG_DEBUG, "EAP-PEAP: TK", tk, 60);
@@ -1333,7 +1333,7 @@ static u8 * eap_peap_getKey(struct eap_sm *sm, void *priv, size_t *len)
 
 	/* TODO: PEAPv1 - different label in some cases */
 	eapKeyData = eap_server_tls_derive_key(sm, &data->ssl,
-					       "client EAP encryption",
+					       "client EAP encryption", NULL, 0,
 					       EAP_TLS_KEY_LEN + EAP_EMSK_LEN);
 	if (eapKeyData) {
 		os_memset(eapKeyData + EAP_TLS_KEY_LEN, 0, EAP_EMSK_LEN);
@@ -1363,7 +1363,7 @@ static u8 * eap_peap_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 
 	/* TODO: PEAPv1 - different label in some cases */
 	eapKeyData = eap_server_tls_derive_key(sm, &data->ssl,
-					       "client EAP encryption",
+					       "client EAP encryption", NULL, 0,
 					       EAP_TLS_KEY_LEN + EAP_EMSK_LEN);
 	if (eapKeyData) {
 		emsk = os_memdup(eapKeyData + EAP_TLS_KEY_LEN, EAP_EMSK_LEN);

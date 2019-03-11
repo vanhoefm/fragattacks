@@ -452,8 +452,11 @@ static int tls_connection_prf(void *tls_ctx, struct tls_connection *conn,
 
 
 int tls_connection_export_key(void *tls_ctx, struct tls_connection *conn,
-			      const char *label, u8 *out, size_t out_len)
+			      const char *label, const u8 *context,
+			      size_t context_len, u8 *out, size_t out_len)
 {
+	if (context)
+		return -1;
 	return tls_connection_prf(tls_ctx, conn, label, 0, 0, out, out_len);
 }
 

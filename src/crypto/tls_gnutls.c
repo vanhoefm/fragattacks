@@ -898,14 +898,23 @@ int tls_connection_get_random(void *ssl_ctx, struct tls_connection *conn,
 
 
 int tls_connection_export_key(void *tls_ctx, struct tls_connection *conn,
-			      const char *label, u8 *out, size_t out_len)
+			      const char *label, const u8 *context,
+			      size_t context_len, u8 *out, size_t out_len)
 {
 	if (conn == NULL || conn->session == NULL)
 		return -1;
 
+#if GNUTLS_VERSION_NUMBER >= 0x030404
+	return gnutls_prf_rfc5705(conn->session, os_strlen(label), label,
+				  context_len, (const char *) context,
+				  out_len, (char *) out);
+#else /* 3.4.4 */
+	if (context)
+		return -1;
 	return gnutls_prf(conn->session, os_strlen(label), label,
 			  0 /* client_random first */, 0, NULL, out_len,
 			  (char *) out);
+#endif /* 3.4.4 */
 }
 
 

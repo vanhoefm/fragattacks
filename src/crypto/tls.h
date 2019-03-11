@@ -370,15 +370,21 @@ int __must_check tls_connection_get_random(void *tls_ctx,
  * @tls_ctx: TLS context data from tls_init()
  * @conn: Connection context data from tls_connection_init()
  * @label: Label (e.g., description of the key) for PRF
+ * @context: Optional extra upper-layer context (max len 2^16)
+ * @context_len: The length of the context value
  * @out: Buffer for output data from TLS-PRF
  * @out_len: Length of the output buffer
  * Returns: 0 on success, -1 on failure
  *
- * Exports keying material using the mechanism described in RFC 5705.
+ * Exports keying material using the mechanism described in RFC 5705. If
+ * context is %NULL, context is not provided; otherwise, context is provided
+ * (including the case of empty context with context_len == 0).
  */
 int __must_check tls_connection_export_key(void *tls_ctx,
 					   struct tls_connection *conn,
 					   const char *label,
+					   const u8 *context,
+					   size_t context_len,
 					   u8 *out, size_t out_len);
 
 /**

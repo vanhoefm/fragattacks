@@ -3908,11 +3908,13 @@ static int openssl_get_keyblock_size(SSL *ssl)
 
 
 int tls_connection_export_key(void *tls_ctx, struct tls_connection *conn,
-			      const char *label, u8 *out, size_t out_len)
+			      const char *label, const u8 *context,
+			      size_t context_len, u8 *out, size_t out_len)
 {
 	if (!conn ||
 	    SSL_export_keying_material(conn->ssl, out, out_len, label,
-				       os_strlen(label), NULL, 0, 0) != 1)
+				       os_strlen(label), context, context_len,
+				       context != NULL) != 1)
 		return -1;
 	return 0;
 }
