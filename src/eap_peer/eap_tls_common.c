@@ -108,14 +108,14 @@ static void eap_tls_params_flags(struct tls_connection_params *params,
 static void eap_tls_params_from_conf1(struct tls_connection_params *params,
 				      struct eap_peer_config *config)
 {
-	params->ca_cert = (char *) config->ca_cert;
-	params->ca_path = (char *) config->ca_path;
-	params->client_cert = (char *) config->client_cert;
-	params->private_key = (char *) config->private_key;
-	params->private_key_passwd = (char *) config->private_key_passwd;
-	params->dh_file = (char *) config->dh_file;
-	params->subject_match = (char *) config->subject_match;
-	params->altsubject_match = (char *) config->altsubject_match;
+	params->ca_cert = config->ca_cert;
+	params->ca_path = config->ca_path;
+	params->client_cert = config->client_cert;
+	params->private_key = config->private_key;
+	params->private_key_passwd = config->private_key_passwd;
+	params->dh_file = config->dh_file;
+	params->subject_match = config->subject_match;
+	params->altsubject_match = config->altsubject_match;
 	params->suffix_match = config->domain_suffix_match;
 	params->domain_match = config->domain_match;
 	params->engine = config->engine;
@@ -131,14 +131,14 @@ static void eap_tls_params_from_conf1(struct tls_connection_params *params,
 static void eap_tls_params_from_conf2(struct tls_connection_params *params,
 				      struct eap_peer_config *config)
 {
-	params->ca_cert = (char *) config->ca_cert2;
-	params->ca_path = (char *) config->ca_path2;
-	params->client_cert = (char *) config->client_cert2;
-	params->private_key = (char *) config->private_key2;
-	params->private_key_passwd = (char *) config->private_key2_passwd;
-	params->dh_file = (char *) config->dh_file2;
-	params->subject_match = (char *) config->subject_match2;
-	params->altsubject_match = (char *) config->altsubject_match2;
+	params->ca_cert = config->ca_cert2;
+	params->ca_path = config->ca_path2;
+	params->client_cert = config->client_cert2;
+	params->private_key = config->private_key2;
+	params->private_key_passwd = config->private_key2_passwd;
+	params->dh_file = config->dh_file2;
+	params->subject_match = config->subject_match2;
+	params->altsubject_match = config->altsubject_match2;
 	params->suffix_match = config->domain_suffix_match2;
 	params->domain_match = config->domain_match2;
 	params->engine = config->engine2;
