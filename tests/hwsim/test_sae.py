@@ -203,6 +203,25 @@ def test_sae_group_nego(dev, apdev):
     if dev[0].get_status_field('sae_group') != '19':
         raise Exception("Expected SAE group not used")
 
+def test_sae_group_nego_no_match(dev, apdev):
+    """SAE group negotiation (no match)"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae-group-nego",
+                                 passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    # None-existing SAE group to force all attempts to be rejected
+    params['sae_groups'] = '0'
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].request("SET sae_groups ")
+    dev[0].connect("test-sae-group-nego", psk="12345678", key_mgmt="SAE",
+                   scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event([ "CTRL-EVENT-SSID-TEMP-DISABLED" ], timeout=10)
+    dev[0].request("REMOVE_NETWORK all")
+    if ev is None:
+        raise Exception("Network profile disabling not reported")
+
 @remote_compatible
 def test_sae_anti_clogging(dev, apdev):
     """SAE anti clogging"""
