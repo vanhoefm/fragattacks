@@ -1454,7 +1454,7 @@ def test_scan_specific_bssid(dev, apdev):
 
     if not bss2:
         raise Exception("Did not find BSS")
-    if bss1 and 'beacon_ie' in bss1 and 'ie' in bss1 and bss1['beacon_ie'] != bss2['ie']:
+    if bss1 and 'beacon_ie' in bss1 and 'ie' in bss1 and bss1['beacon_ie'] != bss1['ie']:
         raise Exception("First scan for unknown BSSID returned unexpected response")
     if bss2 and 'beacon_ie' in bss2 and 'ie' in bss2 and bss2['beacon_ie'] == bss2['ie']:
         raise Exception("Second scan did find Probe Response frame")
