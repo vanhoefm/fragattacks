@@ -1883,15 +1883,17 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
 		}
 	}
 
-	if (hapd->iconf->rts_threshold > -1 &&
-	    hostapd_set_rts(hapd, hapd->iconf->rts_threshold)) {
+	if (hapd->iconf->rts_threshold >= -1 &&
+	    hostapd_set_rts(hapd, hapd->iconf->rts_threshold) &&
+	    hapd->iconf->rts_threshold >= -1) {
 		wpa_printf(MSG_ERROR, "Could not set RTS threshold for "
 			   "kernel driver");
 		goto fail;
 	}
 
-	if (hapd->iconf->fragm_threshold > -1 &&
-	    hostapd_set_frag(hapd, hapd->iconf->fragm_threshold)) {
+	if (hapd->iconf->fragm_threshold >= -1 &&
+	    hostapd_set_frag(hapd, hapd->iconf->fragm_threshold) &&
+	    hapd->iconf->fragm_threshold != -1) {
 		wpa_printf(MSG_ERROR, "Could not set fragmentation threshold "
 			   "for kernel driver");
 		goto fail;
