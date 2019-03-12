@@ -28,6 +28,11 @@ def test_ap_fragmentation_rts_set_high(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, psk=passphrase, scan_freq="2412")
     hwsim_utils.test_connectivity(dev[0], hapd)
+    dev[0].request("DISCONNECT")
+    hapd.disable()
+    hapd.set('fragm_threshold', '-1')
+    hapd.set('rts_threshold', '-1')
+    hapd.enable()
 
 @remote_compatible
 def test_ap_fragmentation_open(dev, apdev):
@@ -39,6 +44,10 @@ def test_ap_fragmentation_open(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
     hwsim_utils.test_connectivity(dev[0], hapd)
+    dev[0].request("DISCONNECT")
+    hapd.disable()
+    hapd.set('fragm_threshold', '-1')
+    hapd.enable()
 
 @remote_compatible
 def test_ap_fragmentation_wpa2(dev, apdev):
@@ -50,6 +59,10 @@ def test_ap_fragmentation_wpa2(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, psk=passphrase, scan_freq="2412")
     hwsim_utils.test_connectivity(dev[0], hapd)
+    dev[0].request("DISCONNECT")
+    hapd.disable()
+    hapd.set('fragm_threshold', '-1')
+    hapd.enable()
 
 def test_ap_vendor_elements(dev, apdev):
     """WPA2-PSK AP with vendor elements added"""
