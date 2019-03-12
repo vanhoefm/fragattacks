@@ -293,6 +293,7 @@ def test_eap_proto(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                        eap="MD5", identity="user", password="password",
@@ -437,6 +438,7 @@ def test_eap_proto_notification_errors(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         with alloc_fail(dev[0], 1, "eap_sm_processNotify"):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -747,6 +749,7 @@ def test_eap_proto_sake(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         while not eap_proto_sake_test_done:
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -776,6 +779,7 @@ def test_eap_proto_sake_errors(dev, apdev):
     check_eap_capa(dev[0], "SAKE")
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     for i in range(1, 3):
         with alloc_fail(dev[0], i, "eap_sake_init"):
@@ -851,6 +855,7 @@ def test_eap_proto_sake_errors2(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         with alloc_fail(dev[0], 1, "eap_msg_alloc;eap_sake_build_msg;eap_sake_process_identity"):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -1018,6 +1023,7 @@ def test_eap_proto_leap(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         for i in range(0, 12):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -1231,6 +1237,7 @@ def test_eap_proto_leap_errors(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         with alloc_fail(dev[0], 1, "eap_leap_init"):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -1381,6 +1388,7 @@ def test_eap_proto_md5(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         for i in range(0, 4):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -1399,6 +1407,7 @@ def test_eap_proto_md5_errors(dev, apdev):
     check_eap_capa(dev[0], "MD5")
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     with fail_test(dev[0], 1, "chap_md5"):
         dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -1458,6 +1467,7 @@ def test_eap_proto_otp(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         for i in range(0, 1):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -1509,6 +1519,7 @@ def test_eap_proto_otp_errors(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         with alloc_fail(dev[0], 1, "eap_msg_alloc;eap_otp_process"):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -1948,6 +1959,7 @@ def test_eap_proto_gpsk(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         for i in range(0, 27):
             if i == 12:
@@ -2254,6 +2266,7 @@ def test_eap_proto_eke(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         for i in range(0, 14):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -2293,6 +2306,7 @@ def test_eap_proto_eke_errors(dev, apdev):
     check_eap_capa(dev[0], "EKE")
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     for i in range(1, 3):
         with alloc_fail(dev[0], i, "eap_eke_init"):
@@ -2658,6 +2672,7 @@ def test_eap_proto_pax(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         for i in range(0, 18):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -2703,6 +2718,7 @@ def test_eap_proto_pax_errors(dev, apdev):
     check_eap_capa(dev[0], "PAX")
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     for i in range(1, 3):
         with alloc_fail(dev[0], i, "eap_pax_init"):
@@ -2845,6 +2861,7 @@ def test_eap_proto_psk(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         for i in range(0, 6):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -2877,6 +2894,7 @@ def test_eap_proto_psk_errors(dev, apdev):
     check_eap_capa(dev[0], "PSK")
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     for i in range(1, 3):
         with alloc_fail(dev[0], i, "eap_psk_init"):
@@ -3677,6 +3695,7 @@ def test_eap_proto_aka(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         for i in range(0, 49):
             eap = "AKA AKA'" if i == 11 else "AKA"
@@ -4104,6 +4123,7 @@ def test_eap_proto_aka_prime(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         for i in range(0, 18):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -4509,6 +4529,7 @@ def test_eap_proto_sim(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         for i in range(0, 25):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -4536,6 +4557,7 @@ def test_eap_proto_sim_errors(dev, apdev):
     check_hlr_auc_gw_support()
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     with alloc_fail(dev[0], 1, "eap_sim_init"):
         dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -4649,7 +4671,8 @@ def test_eap_proto_sim_errors(dev, apdev):
     params = int_eap_server_params()
     params['eap_sim_db'] = "unix:/tmp/hlr_auc_gw.sock"
     params['eap_sim_aka_result_ind'] = "1"
-    hostapd.add_ap(apdev[1], params)
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    dev[0].scan_for_bss(hapd2.own_addr(), freq=2412)
 
     with alloc_fail(dev[0], 1,
                     "eap_sim_msg_init;eap_sim_response_notification"):
@@ -4703,6 +4726,7 @@ def test_eap_proto_aka_errors(dev, apdev):
     check_hlr_auc_gw_support()
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     with alloc_fail(dev[0], 1, "eap_aka_init"):
         dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -4737,7 +4761,8 @@ def test_eap_proto_aka_errors(dev, apdev):
     params = int_eap_server_params()
     params['eap_sim_db'] = "unix:/tmp/hlr_auc_gw.sock"
     params['eap_sim_aka_result_ind'] = "1"
-    hostapd.add_ap(apdev[1], params)
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    dev[0].scan_for_bss(hapd2.own_addr(), freq=2412)
 
     with alloc_fail(dev[0], 1,
                     "eap_sim_msg_init;eap_aka_response_notification"):
@@ -4790,6 +4815,7 @@ def test_eap_proto_aka_prime_errors(dev, apdev):
     check_hlr_auc_gw_support()
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     with alloc_fail(dev[0], 1, "eap_aka_init"):
         dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -5294,6 +5320,7 @@ def test_eap_proto_ikev2(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         i = 0
         while not eap_proto_ikev2_test_done:
@@ -5357,6 +5384,7 @@ def test_eap_proto_ikev2_errors(dev, apdev):
     check_eap_capa(dev[0], "IKEV2")
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     for i in range(1, 5):
         with alloc_fail(dev[0], i, "eap_ikev2_init"):
@@ -5488,7 +5516,8 @@ def test_eap_proto_ikev2_errors(dev, apdev):
                "rsn_pairwise": "CCMP", "ieee8021x": "1",
                "eap_server": "1", "eap_user_file": "auth_serv/eap_user.conf",
                "fragment_size": "50" }
-    hostapd.add_ap(apdev[1], params)
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    dev[0].scan_for_bss(hapd2.own_addr(), freq=2412)
 
     tests = [ (1, "eap_ikev2_build_frag_ack"),
               (1, "wpabuf_alloc;eap_ikev2_process_fragment") ]
@@ -5795,6 +5824,7 @@ def test_eap_proto_mschapv2(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         for i in range(0, 16):
             logger.info("RUN: %d" % i)
@@ -6029,6 +6059,7 @@ def test_eap_proto_mschapv2_errors(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         tests = [ "os_get_random;eap_mschapv2_change_password",
                   "generate_nt_response;eap_mschapv2_change_password",
@@ -6309,6 +6340,7 @@ def test_eap_proto_pwd(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         i = 0
         while not eap_proto_pwd_test_done:
@@ -6349,6 +6381,7 @@ def test_eap_proto_pwd_errors(dev, apdev):
     check_eap_capa(dev[0], "PWD")
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     for i in range(1, 4):
         with alloc_fail(dev[0], i, "eap_pwd_init"):
@@ -6501,7 +6534,8 @@ def test_eap_proto_pwd_errors(dev, apdev):
                "rsn_pairwise": "CCMP", "ieee8021x": "1",
                "eap_server": "1", "eap_user_file": "auth_serv/eap_user.conf",
                "pwd_group": "19", "fragment_size": "40" }
-    hostapd.add_ap(apdev[1], params)
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    dev[0].scan_for_bss(hapd2.own_addr(), freq=2412)
 
     with alloc_fail(dev[0], 1, "wpabuf_alloc;=eap_pwd_process"):
         dev[0].connect("eap-test2", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -6659,6 +6693,7 @@ def test_eap_proto_erp(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         i = 0
         while not eap_proto_erp_test_done:
@@ -6683,6 +6718,7 @@ def test_eap_proto_fast_errors(dev, apdev):
     check_eap_capa(dev[0], "FAST")
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     for i in range(1, 5):
         with alloc_fail(dev[0], i, "eap_fast_init"):
@@ -6867,6 +6903,7 @@ def test_eap_proto_peap_errors(dev, apdev):
     check_eap_capa(dev[0], "MSCHAPV2")
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     for i in range(1, 5):
         with alloc_fail(dev[0], i, "eap_peap_init"):
@@ -6945,6 +6982,7 @@ def test_eap_proto_ttls_errors(dev, apdev):
     check_eap_capa(dev[0], "MSCHAPV2")
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     for i in range(1, 5):
         with alloc_fail(dev[0], i, "eap_ttls_init"):
@@ -7131,6 +7169,7 @@ def test_eap_proto_expanded(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         i = 0
         while not eap_proto_expanded_test_done:
@@ -7324,6 +7363,7 @@ def test_eap_proto_tls(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         i = 0
         while not eap_proto_tls_test_done:
@@ -7703,6 +7743,7 @@ def test_eap_proto_tnc(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         i = 0
         while not eap_proto_tnc_test_done:
@@ -7757,6 +7798,7 @@ def test_eap_canned_success_after_identity(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                        phase1="allow_canned_success=1",
@@ -7935,6 +7977,7 @@ def test_eap_proto_wsc(dev, apdev):
 
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
         i = 0
         while not eap_proto_wsc_test_done:
@@ -7965,6 +8008,7 @@ def test_eap_canned_success_before_method(dev, apdev):
     """EAP protocol tests for canned EAP-Success before any method"""
     params = int_eap_server_params()
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
     bssid = apdev[0]['bssid']
     hapd.request("SET ext_eapol_frame_io 1")
 
@@ -7991,6 +8035,7 @@ def test_eap_canned_failure_before_method(dev, apdev):
     """EAP protocol tests for canned EAP-Failure before any method"""
     params = int_eap_server_params()
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
     bssid = apdev[0]['bssid']
     hapd.request("SET ext_eapol_frame_io 1")
     dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -8017,6 +8062,7 @@ def test_eap_nak_oom(dev, apdev):
     check_eap_capa(dev[0], "MD5")
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
     with alloc_fail(dev[0], 1, "eap_msg_alloc;eap_sm_buildNak"):
         dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                        eap="MD5", identity="sake user", password="password",
@@ -8031,6 +8077,7 @@ def test_eap_nak_expanded(dev, apdev):
     check_eap_capa(dev[0], "VENDOR-TEST")
     params = hostapd.wpa2_eap_params(ssid="eap-test")
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
     dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                    eap="VENDOR-TEST WSC",
                    identity="sake user", password="password",
@@ -8128,6 +8175,7 @@ def test_eap_fast_proto(dev, apdev):
     srv = start_radius_server(eap_handler)
     try:
         hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
         dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                        eap="FAST", anonymous_identity="FAST",
                        identity="user", password="password",
@@ -8272,6 +8320,7 @@ def test_eap_fast_proto_phase2(dev, apdev):
         raise HwsimSkip("OpenSSL python method not available")
     check_eap_capa(dev[0], "FAST")
     hapd = start_ap(apdev[0])
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     tests = [ ("Too short Phase 2 TLV frame (len=3)",
                "ABC",
@@ -8413,6 +8462,7 @@ def test_eap_fast_tlv_nak_oom(dev, apdev):
         raise HwsimSkip("OpenSSL python method not available")
     check_eap_capa(dev[0], "FAST")
     hapd = start_ap(apdev[0])
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     with alloc_fail(dev[0], 1, "eap_fast_tlv_nak"):
         run_eap_fast_phase2(dev, struct.pack(">HHB", EAP_TLV_TYPE_MANDATORY,
