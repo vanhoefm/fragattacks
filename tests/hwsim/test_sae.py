@@ -1505,7 +1505,7 @@ def run_sae_anti_clogging_during_attack(dev, apdev):
             count += 1
             if count == 10:
                 break
-    if count < 10:
+    if count < 5:
         raise Exception("Too few token responses in second round: %d" % count)
 
     dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
