@@ -4622,6 +4622,7 @@ def rx_process_frame(dev):
     if "OK" not in dev.request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(
         msg['freq'], msg['datarate'], msg['ssi_signal'], binascii.hexlify(msg['frame']).decode())):
         raise Exception("MGMT_RX_PROCESS failed")
+    return msg
 
 def wait_auth_success(responder, initiator):
     ev = responder.wait_event(["DPP-AUTH-SUCCESS"], timeout=5)
@@ -5317,3 +5318,55 @@ def test_dpp_conf_file_update(dev, apdev, params):
     wpas.interface_add("wlan5", config=config)
     if len(wpas.list_networks()) != 1:
         raise Exception("Unexpected number of networks")
+
+def test_dpp_duplicated_auth_resp(dev, apdev):
+    """DPP and duplicated Authentication Response"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+    id1 = dev[1].dpp_qr_code(uri0)
+
+    dev[0].set("ext_mgmt_frame_handling", "1")
+    dev[1].set("ext_mgmt_frame_handling", "1")
+
+    cmd = "DPP_LISTEN 2412"
+    if "OK" not in dev[0].request(cmd):
+        raise Exception("Failed to start listen operation")
+
+    cmd = "DPP_AUTH_INIT peer=%d" % id1
+    if "OK" not in dev[1].request(cmd):
+        raise Exception("Failed to initiate DPP Authentication")
+
+    # DPP Authentication Request
+    rx_process_frame(dev[0])
+
+    # DPP Authentication Response
+    msg = rx_process_frame(dev[1])
+    frame = binascii.hexlify(msg['frame']).decode()
+    # Duplicated frame
+    if "OK" not in dev[1].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], frame)):
+        raise Exception("MGMT_RX_PROCESS failed")
+    # Modified frame - nonzero status
+    if frame[2*32:2*37] != "0010010000":
+        raise Exception("Could not find Status attribute")
+    frame2 = frame[0:2*32] + "0010010001" + frame[2*37:]
+    if "OK" not in dev[1].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], frame2)):
+        raise Exception("MGMT_RX_PROCESS failed")
+    frame2 = frame[0:2*32] + "00100100ff" + frame[2*37:]
+    if "OK" not in dev[1].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], frame2)):
+        raise Exception("MGMT_RX_PROCESS failed")
+
+    # DPP Authentication Confirmation
+    rx_process_frame(dev[0])
+
+    wait_auth_success(dev[0], dev[1])
+
+    # DPP Configuration Request
+    rx_process_frame(dev[1])
+
+    # DPP Configuration Response
+    rx_process_frame(dev[0])
+
+    wait_conf_completion(dev[1], dev[0])
