@@ -667,6 +667,13 @@ def test_dpp_qr_code_listen_continue(dev, apdev):
 
 def test_dpp_qr_code_auth_initiator_enrollee(dev, apdev):
     """DPP QR Code and authentication exchange (Initiator in Enrollee role)"""
+    try:
+        run_dpp_qr_code_auth_initiator_enrollee(dev, apdev)
+    finally:
+        dev[0].set("gas_address3", "0")
+        dev[1].set("gas_address3", "0")
+
+def run_dpp_qr_code_auth_initiator_enrollee(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     dev[0].request("SET gas_address3 1")
