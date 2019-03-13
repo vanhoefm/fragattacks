@@ -3634,6 +3634,9 @@ def test_ap_wps_ap_scan_2(dev, apdev):
     wpas.request("REASSOCIATE")
     wpas.wait_connected(timeout=30)
     wpas.dump_monitor()
+    wpas.request("DISCONNECT")
+    wpas.wait_disconnected()
+    wpas.flush_scan_cache()
 
 @remote_compatible
 def test_ap_wps_eapol_workaround(dev, apdev):
@@ -9734,6 +9737,7 @@ def test_ap_wps_pbc_2ap(dev, apdev):
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
     wpas.dump_monitor()
+    wpas.flush_scan_cache()
 
     wpas.scan_for_bss(apdev[0]['bssid'], freq="2412", force_scan=True)
     wpas.scan_for_bss(apdev[1]['bssid'], freq="2412")
