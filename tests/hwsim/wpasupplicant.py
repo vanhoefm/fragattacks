@@ -1062,8 +1062,9 @@ class WpaSupplicant:
             cmd += " passive=1"
         if not no_wait:
             self.dump_monitor()
-        if not "OK" in self.request(cmd):
-            raise Exception("Failed to trigger scan")
+        res = self.request(cmd)
+        if not "OK" in res:
+            raise Exception("Failed to trigger scan: " + str(res))
         if no_wait:
             return
         ev = self.wait_event(["CTRL-EVENT-SCAN-RESULTS",
@@ -1089,6 +1090,7 @@ class WpaSupplicant:
         self.scan(freq=freq, only_new=True)
         res = self.request("SCAN_RESULTS")
         if len(res.splitlines()) > 1:
+            logger.debug("Scan results remaining after first attempt to flush the results:\n" + res)
             self.request("BSS_FLUSH 0")
             self.scan(freq=2422, only_new=True)
             res = self.request("SCAN_RESULTS")

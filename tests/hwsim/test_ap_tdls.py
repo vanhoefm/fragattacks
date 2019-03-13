@@ -363,12 +363,16 @@ def tdls_clear_reg(hapd, dev):
     if hapd:
         hapd.request("DISABLE")
     dev[0].request("DISCONNECT")
-    dev[0].request("ABORT_SCAN")
+    res0 = dev[0].request("ABORT_SCAN")
     dev[1].request("DISCONNECT")
-    dev[1].request("ABORT_SCAN")
-    dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+    res1 = dev[1].request("ABORT_SCAN")
+    for i in range(2 if "OK" in res0 else 1):
+        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED",
+                           "CTRL-EVENT-SCAN-RESULTS"], timeout=0.5)
     dev[0].dump_monitor()
-    dev[1].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+    for i in range(2 if "OK" in res1 else 1):
+        dev[1].wait_event(["CTRL-EVENT-DISCONNECTED",
+                           "CTRL-EVENT-SCAN-RESULTS"], timeout=0.5)
     dev[1].dump_monitor()
     subprocess.call(['iw', 'reg', 'set', '00'])
     dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
