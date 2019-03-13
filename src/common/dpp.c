@@ -1,6 +1,7 @@
 /*
  * DPP functionality shared between hostapd and wpa_supplicant
  * Copyright (c) 2017, Qualcomm Atheros, Inc.
+ * Copyright (c) 2018-2019, The Linux Foundation
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -1537,6 +1538,9 @@ static struct wpabuf * dpp_auth_build_req(struct dpp_authentication *auth,
 		4 + sizeof(wrapped_data);
 	if (neg_freq > 0)
 		attr_len += 4 + 2;
+#ifdef CONFIG_DPP2
+	attr_len += 5;
+#endif /* CONFIG_DPP2 */
 #ifdef CONFIG_TESTING_OPTIONS
 	if (dpp_test == DPP_TEST_AFTER_WRAPPED_DATA_AUTH_REQ)
 		attr_len += 5;
@@ -1578,6 +1582,13 @@ static struct wpabuf * dpp_auth_build_req(struct dpp_authentication *auth,
 		wpabuf_put_u8(msg, op_class);
 		wpabuf_put_u8(msg, channel);
 	}
+
+#ifdef CONFIG_DPP2
+	/* Protocol Version */
+	wpabuf_put_le16(msg, DPP_ATTR_PROTOCOL_VERSION);
+	wpabuf_put_le16(msg, 1);
+	wpabuf_put_u8(msg, 2);
+#endif /* CONFIG_DPP2 */
 
 #ifdef CONFIG_TESTING_OPTIONS
 	if (dpp_test == DPP_TEST_NO_WRAPPED_DATA_AUTH_REQ) {
@@ -1705,6 +1716,9 @@ static struct wpabuf * dpp_auth_build_resp(struct dpp_authentication *auth,
 	/* Build DPP Authentication Response frame attributes */
 	attr_len = 4 + 1 + 2 * (4 + SHA256_MAC_LEN) +
 		4 + (pr ? wpabuf_len(pr) : 0) + 4 + sizeof(wrapped_data);
+#ifdef CONFIG_DPP2
+	attr_len += 5;
+#endif /* CONFIG_DPP2 */
 #ifdef CONFIG_TESTING_OPTIONS
 	if (dpp_test == DPP_TEST_AFTER_WRAPPED_DATA_AUTH_RESP)
 		attr_len += 5;
@@ -1731,6 +1745,13 @@ static struct wpabuf * dpp_auth_build_resp(struct dpp_authentication *auth,
 		wpabuf_put_le16(msg, wpabuf_len(pr));
 		wpabuf_put_buf(msg, pr);
 	}
+
+#ifdef CONFIG_DPP2
+	/* Protocol Version */
+	wpabuf_put_le16(msg, DPP_ATTR_PROTOCOL_VERSION);
+	wpabuf_put_le16(msg, 1);
+	wpabuf_put_u8(msg, 2);
+#endif /* CONFIG_DPP2 */
 
 	attr_end = wpabuf_put(msg, 0);
 
@@ -2893,6 +2914,10 @@ dpp_auth_req_rx(void *msg_ctx, u8 dpp_allowed_roles, int qr_mutual,
 	u16 wrapped_data_len, i_proto_len, i_nonce_len, i_capab_len,
 		i_bootstrap_len, channel_len;
 	struct dpp_authentication *auth = NULL;
+#ifdef CONFIG_DPP2
+	const u8 *version;
+	u16 version_len;
+#endif /* CONFIG_DPP2 */
 
 #ifdef CONFIG_TESTING_OPTIONS
 	if (dpp_test == DPP_TEST_STOP_AT_AUTH_REQ) {
@@ -2921,6 +2946,22 @@ dpp_auth_req_rx(void *msg_ctx, u8 dpp_allowed_roles, int qr_mutual,
 	auth->own_bi = own_bi;
 	auth->curve = own_bi->curve;
 	auth->curr_freq = freq;
+
+	auth->peer_version = 1; /* default to the first version */
+#ifdef CONFIG_DPP2
+	version = dpp_get_attr(attr_start, attr_len, DPP_ATTR_PROTOCOL_VERSION,
+			       &version_len);
+	if (version) {
+		if (version_len < 1 || version[0] == 0) {
+			dpp_auth_fail(auth,
+				      "Invalid Protocol Version attribute");
+			goto fail;
+		}
+		auth->peer_version = version[0];
+		wpa_printf(MSG_DEBUG, "DPP: Peer protocol version %u",
+			   auth->peer_version);
+	}
+#endif /* CONFIG_DPP2 */
 
 	channel = dpp_get_attr(attr_start, attr_len, DPP_ATTR_CHANNEL,
 			       &channel_len);
@@ -3450,6 +3491,10 @@ dpp_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 		wrapped2_len, r_auth_len;
 	u8 r_auth2[DPP_MAX_HASH_LEN];
 	u8 role;
+#ifdef CONFIG_DPP2
+	const u8 *version;
+	u16 version_len;
+#endif /* CONFIG_DPP2 */
 
 #ifdef CONFIG_TESTING_OPTIONS
 	if (dpp_test == DPP_TEST_STOP_AT_AUTH_RESP) {
@@ -3523,6 +3568,22 @@ dpp_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 			      "Missing Initiator Bootstrapping Key Hash attribute");
 		return NULL;
 	}
+
+	auth->peer_version = 1; /* default to the first version */
+#ifdef CONFIG_DPP2
+	version = dpp_get_attr(attr_start, attr_len, DPP_ATTR_PROTOCOL_VERSION,
+			       &version_len);
+	if (version) {
+		if (version_len < 1 || version[0] == 0) {
+			dpp_auth_fail(auth,
+				      "Invalid Protocol Version attribute");
+			return NULL;
+		}
+		auth->peer_version = version[0];
+		wpa_printf(MSG_DEBUG, "DPP: Peer protocol version %u",
+			   auth->peer_version);
+	}
+#endif /* CONFIG_DPP2 */
 
 	status = dpp_get_attr(attr_start, attr_len, DPP_ATTR_STATUS,
 			      &status_len);

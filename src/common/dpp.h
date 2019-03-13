@@ -1,6 +1,7 @@
 /*
  * DPP functionality shared between hostapd and wpa_supplicant
  * Copyright (c) 2017, Qualcomm Atheros, Inc.
+ * Copyright (c) 2018-2019, The Linux Foundation
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -54,6 +55,8 @@ enum dpp_attribute_id {
 	DPP_ATTR_TRANSACTION_ID = 0x1016,
 	DPP_ATTR_BOOTSTRAP_INFO = 0x1017,
 	DPP_ATTR_CHANNEL = 0x1018,
+	DPP_ATTR_PROTOCOL_VERSION = 0x1019,
+	DPP_ATTR_ENVELOPED_DATA = 0x101A,
 };
 
 enum dpp_status_error {
@@ -162,6 +165,7 @@ struct dpp_configuration {
 
 struct dpp_authentication {
 	void *msg_ctx;
+	u8 peer_version;
 	const struct dpp_curve_params *curve;
 	struct dpp_bootstrap_info *peer_bi;
 	struct dpp_bootstrap_info *own_bi;
