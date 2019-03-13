@@ -28,8 +28,10 @@ def clear_regdom_state(dev, hapd, hapd2):
         if hapd2:
             hapd2.request("DISABLE")
         dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        res = dev[0].request("ABORT_SCAN")
+        for i in range(2 if "OK" in res else 1):
+                dev[0].wait_event(["CTRL-EVENT-DISCONNECTED",
+                                   "CTRL-EVENT-SCAN-RESULTS"], timeout=0.5)
         dev[0].dump_monitor()
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
@@ -1136,11 +1138,13 @@ def stop_wnm_tm(hapd, dev):
         hapd.request("DISABLE")
         time.sleep(0.1)
     dev[0].request("DISCONNECT")
-    dev[0].request("ABORT_SCAN")
+    res = dev[0].request("ABORT_SCAN")
     try:
         dev[0].wait_disconnected()
     except:
         pass
+    if "OK" in res:
+        dev[0].wait_event(["CTRL-EVENT-SCAN-RESULTS"], timeout=0.5)
     subprocess.call(['iw', 'reg', 'set', '00'])
     wait_regdom_changes(dev[0])
     country = dev[0].get_driver_status_field("country")
@@ -1881,8 +1885,10 @@ def test_wnm_bss_tm_reject(dev, apdev):
         if hapd:
             hapd.request("DISABLE")
         dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        res = dev[0].request("ABORT_SCAN")
+        for i in range(2 if "OK" in res else 1):
+                dev[0].wait_event(["CTRL-EVENT-DISCONNECTED",
+                                   "CTRL-EVENT-SCAN-RESULTS"], timeout=0.5)
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
