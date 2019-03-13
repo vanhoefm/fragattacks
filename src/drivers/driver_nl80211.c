@@ -6132,6 +6132,7 @@ static int get_key_handler(struct nl_msg *msg, void *arg)
 	if (tb[NL80211_ATTR_KEY_SEQ])
 		memcpy(arg, nla_data(tb[NL80211_ATTR_KEY_SEQ]),
 		       min_int(nla_len(tb[NL80211_ATTR_KEY_SEQ]), 6));
+	nl80211_nlmsg_clear(msg);
 	return NL_SKIP;
 }
 
