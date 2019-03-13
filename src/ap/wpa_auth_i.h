@@ -22,6 +22,7 @@ struct wpa_state_machine {
 
 	u8 addr[ETH_ALEN];
 	u8 p2p_dev_addr[ETH_ALEN];
+	u16 auth_alg;
 
 	enum {
 		WPA_PTK_INITIALIZE, WPA_PTK_DISCONNECT, WPA_PTK_DISCONNECTED,

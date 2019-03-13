@@ -852,6 +852,21 @@ int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 	else
 		sm->wpa = WPA_VERSION_WPA;
 
+#if defined(CONFIG_IEEE80211R_AP) && defined(CONFIG_FILS)
+	if ((sm->wpa_key_mgmt == WPA_KEY_MGMT_FT_FILS_SHA256 ||
+	     sm->wpa_key_mgmt == WPA_KEY_MGMT_FT_FILS_SHA384) &&
+	    (sm->auth_alg == WLAN_AUTH_FILS_SK ||
+	     sm->auth_alg == WLAN_AUTH_FILS_SK_PFS ||
+	     sm->auth_alg == WLAN_AUTH_FILS_PK) &&
+	    (data.num_pmkid != 1 || !data.pmkid || !sm->pmk_r1_name_valid ||
+	     os_memcmp_const(data.pmkid, sm->pmk_r1_name,
+			     WPA_PMK_NAME_LEN) != 0)) {
+		wpa_auth_vlogger(wpa_auth, sm->addr, LOGGER_DEBUG,
+				 "No PMKR1Name match for FILS+FT");
+		return WPA_INVALID_PMKID;
+	}
+#endif /* CONFIG_IEEE80211R_AP && CONFIG_FILS */
+
 	sm->pmksa = NULL;
 	for (i = 0; i < data.num_pmkid; i++) {
 		wpa_hexdump(MSG_DEBUG, "RSN IE: STA PMKID",

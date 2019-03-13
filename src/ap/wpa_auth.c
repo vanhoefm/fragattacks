@@ -2210,6 +2210,16 @@ int fils_auth_pmk_to_ptk(struct wpa_state_machine *sm, const u8 *pmk,
 			    pmk_r0_name, WPA_PMK_NAME_LEN);
 		wpa_ft_store_pmk_fils(sm, pmk_r0, pmk_r0_name);
 		os_memset(fils_ft, 0, sizeof(fils_ft));
+
+		res = wpa_derive_pmk_r1_name(pmk_r0_name, conf->r1_key_holder,
+					     sm->addr, sm->pmk_r1_name,
+					     use_sha384);
+		os_memset(pmk_r0, 0, PMK_LEN_MAX);
+		if (res < 0)
+			return -1;
+		wpa_hexdump(MSG_DEBUG, "FILS+FT: PMKR1Name", sm->pmk_r1_name,
+			    WPA_PMK_NAME_LEN);
+		sm->pmk_r1_name_valid = 1;
 	}
 #endif /* CONFIG_IEEE80211R_AP */
 
@@ -4810,6 +4820,13 @@ void wpa_auth_get_fils_aead_params(struct wpa_state_machine *sm,
 }
 
 #endif /* CONFIG_FILS */
+
+
+void wpa_auth_set_auth_alg(struct wpa_state_machine *sm, u16 auth_alg)
+{
+	if (sm)
+		sm->auth_alg = auth_alg;
+}
 
 
 #ifdef CONFIG_TESTING_OPTIONS

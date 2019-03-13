@@ -2386,10 +2386,24 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 
 	end = pos + max_len;
 
-	if (auth_alg == WLAN_AUTH_FT) {
+	if (auth_alg == WLAN_AUTH_FT ||
+	    ((auth_alg == WLAN_AUTH_FILS_SK ||
+	      auth_alg == WLAN_AUTH_FILS_SK_PFS ||
+	      auth_alg == WLAN_AUTH_FILS_PK) &&
+	     (sm->wpa_key_mgmt & (WPA_KEY_MGMT_FT_FILS_SHA256 |
+				  WPA_KEY_MGMT_FT_FILS_SHA384)))) {
+		if (!sm->pmk_r1_name_valid) {
+			wpa_printf(MSG_ERROR,
+				   "FT: PMKR1Name is not valid for Assoc Resp RSNE");
+			return NULL;
+		}
+		wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name for Assoc Resp RSNE",
+			    sm->pmk_r1_name, WPA_PMK_NAME_LEN);
 		/*
 		 * RSN (only present if this is a Reassociation Response and
-		 * part of a fast BSS transition)
+		 * part of a fast BSS transition; or if this is a
+		 * (Re)Association Response frame during an FT initial mobility
+		 * domain association using FILS)
 		 */
 		res = wpa_write_rsn_ie(conf, pos, end - pos, sm->pmk_r1_name);
 		if (res < 0)

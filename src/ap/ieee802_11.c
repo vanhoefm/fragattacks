@@ -2865,6 +2865,7 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 				   "state machine");
 			return WLAN_STATUS_UNSPECIFIED_FAILURE;
 		}
+		wpa_auth_set_auth_alg(sta->wpa_sm, sta->auth_alg);
 		res = wpa_validate_wpa_ie(hapd->wpa_auth, sta->wpa_sm,
 					  hapd->iface->freq,
 					  wpa_ie, wpa_ie_len,
