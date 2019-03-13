@@ -3632,6 +3632,10 @@ def run_dpp_proto_auth_resp_missing(dev, test, reason,
     run_dpp_proto_init(dev, 0, test, mutual=True,
                        incompatible_roles=incompatible_roles)
     if reason is None:
+        if incompatible_roles:
+            ev = dev[0].wait_event(["DPP-NOT-COMPATIBLE"], timeout=5)
+            if ev is None:
+                raise Exception("DPP-NOT-COMPATIBLE not reported")
         time.sleep(0.1)
         return
     ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
