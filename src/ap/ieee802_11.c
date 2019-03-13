@@ -1753,7 +1753,8 @@ prepare_auth_resp_fils(struct hostapd_data *hapd,
 			}
 
 			sta->fils_erp_pmkid_set = 0;
-			if (wpa_auth_pmksa_add2(
+			if (!hapd->conf->disable_pmksa_caching &&
+			    wpa_auth_pmksa_add2(
 				    hapd->wpa_auth, sta->addr,
 				    pmk, pmk_len,
 				    sta->fils_erp_pmkid,
