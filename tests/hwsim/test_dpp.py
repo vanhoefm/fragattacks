@@ -5391,3 +5391,57 @@ def test_dpp_duplicated_auth_resp(dev, apdev):
     rx_process_frame(dev[0])
 
     wait_conf_completion(dev[1], dev[0])
+
+def test_dpp_enrollee_reject_config(dev, apdev):
+    """DPP and Enrollee rejecting Config Object"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    dev[0].set("dpp_test", "91")
+
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+    id1 = dev[1].dpp_qr_code(uri0)
+
+    cmd = "DPP_LISTEN 2412"
+    if "OK" not in dev[0].request(cmd):
+        raise Exception("Failed to start listen operation")
+
+    cmd = "DPP_AUTH_INIT peer=%d conf=sta-sae ssid=%s pass=%s" % (id1,
+        binascii.hexlify(b"dpp-legacy").decode(),
+        binascii.hexlify(b"secret passphrase").decode())
+    if "OK" not in dev[1].request(cmd):
+        raise Exception("Failed to initiate DPP Authentication")
+    ev = dev[1].wait_event(["DPP-CONF-FAILED"], timeout=10)
+    if ev is None:
+        raise Exception("DPP configuration failure not reported by Configurator")
+    ev = dev[0].wait_event(["DPP-CONF-FAILED"], timeout=2)
+    if ev is None:
+        raise Exception("Forced DPP configuration failure not reported by Enrollee")
+
+def test_dpp_enrollee_ap_reject_config(dev, apdev):
+    """DPP and Enrollee AP rejecting Config Object"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    check_dpp_capab(hapd)
+    hapd.set("dpp_test", "91")
+
+    cmd = "DPP_CONFIGURATOR_ADD"
+    res = dev[0].request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to add configurator")
+    conf_id = int(res)
+
+    id_h = hapd.dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id_h)
+    id = dev[0].dpp_qr_code(uri)
+
+    cmd = "DPP_AUTH_INIT peer=%d conf=ap-dpp configurator=%d" % (id, conf_id)
+    if "OK" not in dev[0].request(cmd):
+        raise Exception("Failed to initiate DPP Authentication")
+    ev = dev[0].wait_event(["DPP-CONF-FAILED"], timeout=10)
+    if ev is None:
+        raise Exception("DPP configuration failure not reported by Configurator")
+    ev = hapd.wait_event(["DPP-CONF-FAILED"], timeout=2)
+    if ev is None:
+        raise Exception("Forced DPP configuration failure not reported by Enrollee")
