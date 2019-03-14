@@ -354,6 +354,16 @@ void hostapd_dpp_tx_status(struct hostapd_data *hapd, const u8 *dst,
 		return;
 	}
 
+#ifdef CONFIG_DPP2
+	if (auth->connect_on_tx_status) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Complete exchange on configuration result");
+		dpp_auth_deinit(hapd->dpp_auth);
+		hapd->dpp_auth = NULL;
+		return;
+	}
+#endif /* CONFIG_DPP2 */
+
 	if (hapd->dpp_auth->remove_on_tx_status) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Terminate authentication exchange due to an earlier error");
@@ -1072,6 +1082,7 @@ static void hostapd_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 	struct hostapd_data *hapd = ctx;
 	const u8 *pos;
 	struct dpp_authentication *auth = hapd->dpp_auth;
+	enum dpp_status_error status = DPP_STATUS_CONFIG_REJECTED;
 
 	if (!auth || !auth->auth_success) {
 		wpa_printf(MSG_DEBUG, "DPP: No matching exchange in progress");
@@ -1107,12 +1118,35 @@ static void hostapd_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 	}
 
 	hostapd_dpp_handle_config_obj(hapd, auth);
-	dpp_auth_deinit(hapd->dpp_auth);
-	hapd->dpp_auth = NULL;
-	return;
-
+	status = DPP_STATUS_OK;
 fail:
-	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONF_FAILED);
+	if (status != DPP_STATUS_OK)
+		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONF_FAILED);
+#ifdef CONFIG_DPP2
+	if (auth->peer_version >= 2 &&
+	    auth->conf_resp_status == DPP_STATUS_OK) {
+		struct wpabuf *msg;
+
+		wpa_printf(MSG_DEBUG, "DPP: Send DPP Configuration Result");
+		msg = dpp_build_conf_result(auth, status);
+		if (!msg)
+			goto fail2;
+
+		wpa_msg(hapd->msg_ctx, MSG_INFO,
+			DPP_EVENT_TX "dst=" MACSTR " freq=%u type=%d",
+			MAC2STR(addr), auth->curr_freq,
+			DPP_PA_CONFIGURATION_RESULT);
+		hostapd_drv_send_action(hapd, auth->curr_freq, 0,
+					addr, wpabuf_head(msg),
+					wpabuf_len(msg));
+		wpabuf_free(msg);
+
+		/* This exchange will be terminated in the TX status handler */
+		auth->connect_on_tx_status = 1;
+		return;
+	}
+fail2:
+#endif /* CONFIG_DPP2 */
 	dpp_auth_deinit(hapd->dpp_auth);
 	hapd->dpp_auth = NULL;
 }
@@ -1279,6 +1313,63 @@ static void hostapd_dpp_rx_auth_conf(struct hostapd_data *hapd, const u8 *src,
 
 	hostapd_dpp_auth_success(hapd, 0);
 }
+
+
+#ifdef CONFIG_DPP2
+
+static void hostapd_dpp_config_result_wait_timeout(void *eloop_ctx,
+						   void *timeout_ctx)
+{
+	struct hostapd_data *hapd = eloop_ctx;
+	struct dpp_authentication *auth = hapd->dpp_auth;
+
+	if (!auth || !auth->waiting_conf_result)
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Timeout while waiting for Configuration Result");
+	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONF_FAILED);
+	dpp_auth_deinit(auth);
+	hapd->dpp_auth = NULL;
+}
+
+
+static void hostapd_dpp_rx_conf_result(struct hostapd_data *hapd, const u8 *src,
+				       const u8 *hdr, const u8 *buf, size_t len)
+{
+	struct dpp_authentication *auth = hapd->dpp_auth;
+	enum dpp_status_error status;
+
+	wpa_printf(MSG_DEBUG, "DPP: Configuration Result from " MACSTR,
+		   MAC2STR(src));
+
+	if (!auth || !auth->waiting_conf_result) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No DPP Configuration waiting for result - drop");
+		return;
+	}
+
+	if (os_memcmp(src, auth->peer_mac_addr, ETH_ALEN) != 0) {
+		wpa_printf(MSG_DEBUG, "DPP: MAC address mismatch (expected "
+			   MACSTR ") - drop", MAC2STR(auth->peer_mac_addr));
+		return;
+	}
+
+	status = dpp_conf_result_rx(auth, hdr, buf, len);
+
+	hostapd_drv_send_action_cancel_wait(hapd);
+	hostapd_dpp_listen_stop(hapd);
+	if (status == DPP_STATUS_OK)
+		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONF_SENT);
+	else
+		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONF_FAILED);
+	dpp_auth_deinit(auth);
+	hapd->dpp_auth = NULL;
+	eloop_cancel_timeout(hostapd_dpp_config_result_wait_timeout, hapd,
+			     NULL);
+}
+
+#endif /* CONFIG_DPP2 */
 
 
 static void hostapd_dpp_send_peer_disc_resp(struct hostapd_data *hapd,
@@ -1744,6 +1835,11 @@ void hostapd_dpp_rx_action(struct hostapd_data *hapd, const u8 *src,
 		hostapd_dpp_rx_pkex_commit_reveal_resp(hapd, src, hdr, buf, len,
 						       freq);
 		break;
+#ifdef CONFIG_DPP2
+	case DPP_PA_CONFIGURATION_RESULT:
+		hostapd_dpp_rx_conf_result(hapd, src, hdr, buf, len);
+		break;
+#endif /* CONFIG_DPP2 */
 	default:
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Ignored unsupported frame subtype %d", type);
@@ -1790,11 +1886,28 @@ hostapd_dpp_gas_req_handler(struct hostapd_data *hapd, const u8 *sa,
 
 void hostapd_dpp_gas_status_handler(struct hostapd_data *hapd, int ok)
 {
-	if (!hapd->dpp_auth)
+	struct dpp_authentication *auth = hapd->dpp_auth;
+
+	if (!auth)
 		return;
 
+	wpa_printf(MSG_DEBUG, "DPP: Configuration exchange completed (ok=%d)",
+		   ok);
 	eloop_cancel_timeout(hostapd_dpp_reply_wait_timeout, hapd, NULL);
 	eloop_cancel_timeout(hostapd_dpp_auth_resp_retry_timeout, hapd, NULL);
+#ifdef CONFIG_DPP2
+	if (ok && auth->peer_version >= 2 &&
+	    auth->conf_resp_status == DPP_STATUS_OK) {
+		wpa_printf(MSG_DEBUG, "DPP: Wait for Configuration Result");
+		auth->waiting_conf_result = 1;
+		eloop_cancel_timeout(hostapd_dpp_config_result_wait_timeout,
+				     hapd, NULL);
+		eloop_register_timeout(2, 0,
+				       hostapd_dpp_config_result_wait_timeout,
+				       hapd, NULL);
+		return;
+	}
+#endif /* CONFIG_DPP2 */
 	hostapd_drv_send_action_cancel_wait(hapd);
 
 	if (ok)
@@ -2070,6 +2183,10 @@ void hostapd_dpp_deinit(struct hostapd_data *hapd)
 	eloop_cancel_timeout(hostapd_dpp_reply_wait_timeout, hapd, NULL);
 	eloop_cancel_timeout(hostapd_dpp_init_timeout, hapd, NULL);
 	eloop_cancel_timeout(hostapd_dpp_auth_resp_retry_timeout, hapd, NULL);
+#ifdef CONFIG_DPP2
+	eloop_cancel_timeout(hostapd_dpp_config_result_wait_timeout, hapd,
+			     NULL);
+#endif /* CONFIG_DPP2 */
 	dpp_auth_deinit(hapd->dpp_auth);
 	hapd->dpp_auth = NULL;
 	hostapd_dpp_pkex_remove(hapd, "*");

@@ -28,6 +28,7 @@ enum dpp_public_action_frame_type {
 	DPP_PA_PKEX_EXCHANGE_RESP = 8,
 	DPP_PA_PKEX_COMMIT_REVEAL_REQ = 9,
 	DPP_PA_PKEX_COMMIT_REVEAL_RESP = 10,
+	DPP_PA_CONFIGURATION_RESULT = 11,
 };
 
 enum dpp_attribute_id {
@@ -69,6 +70,7 @@ enum dpp_status_error {
 	DPP_STATUS_RESPONSE_PENDING = 6,
 	DPP_STATUS_INVALID_CONNECTOR = 7,
 	DPP_STATUS_NO_MATCH = 8,
+	DPP_STATUS_CONFIG_REJECTED = 9,
 };
 
 #define DPP_CAPAB_ENROLLEE BIT(0)
@@ -173,6 +175,7 @@ struct dpp_authentication {
 	u8 waiting_pubkey_hash[SHA256_MAC_LEN];
 	int response_pending;
 	enum dpp_status_error auth_resp_status;
+	enum dpp_status_error conf_resp_status;
 	u8 peer_mac_addr[ETH_ALEN];
 	u8 i_nonce[DPP_MAX_NONCE_LEN];
 	u8 r_nonce[DPP_MAX_NONCE_LEN];
@@ -208,6 +211,8 @@ struct dpp_authentication {
 	u8 allowed_roles;
 	int configurator;
 	int remove_on_tx_status;
+	int connect_on_tx_status;
+	int waiting_conf_result;
 	int auth_success;
 	struct wpabuf *conf_req;
 	const struct wpabuf *conf_resp; /* owned by GAS server */
@@ -393,6 +398,11 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 		size_t attr_len);
 int dpp_conf_resp_rx(struct dpp_authentication *auth,
 		     const struct wpabuf *resp);
+enum dpp_status_error dpp_conf_result_rx(struct dpp_authentication *auth,
+					 const u8 *hdr,
+					 const u8 *attr_start, size_t attr_len);
+struct wpabuf * dpp_build_conf_result(struct dpp_authentication *auth,
+				      enum dpp_status_error status);
 struct wpabuf * dpp_alloc_msg(enum dpp_public_action_frame_type type,
 			      size_t len);
 const u8 * dpp_get_attr(const u8 *buf, size_t len, u16 req_id, u16 *ret_len);

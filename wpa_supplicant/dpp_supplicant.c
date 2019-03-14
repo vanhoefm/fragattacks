@@ -364,6 +364,18 @@ static void wpas_dpp_auth_resp_retry(struct wpa_supplicant *wpa_s)
 }
 
 
+static void wpas_dpp_try_to_connect(struct wpa_supplicant *wpa_s)
+{
+	wpa_printf(MSG_DEBUG, "DPP: Trying to connect to the new network");
+	wpa_s->disconnected = 0;
+	wpa_s->reassociate = 1;
+	wpa_s->scan_runs = 0;
+	wpa_s->normal_scans = 0;
+	wpa_supplicant_cancel_sched_scan(wpa_s);
+	wpa_supplicant_req_scan(wpa_s, 0, 0);
+}
+
+
 static void wpas_dpp_tx_status(struct wpa_supplicant *wpa_s,
 			       unsigned int freq, const u8 *dst,
 			       const u8 *src, const u8 *bssid,
@@ -386,6 +398,17 @@ static void wpas_dpp_tx_status(struct wpa_supplicant *wpa_s,
 			   "DPP: Ignore TX status since there is no ongoing authentication exchange");
 		return;
 	}
+
+#ifdef CONFIG_DPP2
+	if (auth->connect_on_tx_status) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Try to connect after completed configuration result");
+		wpas_dpp_try_to_connect(wpa_s);
+		dpp_auth_deinit(wpa_s->dpp_auth);
+		wpa_s->dpp_auth = NULL;
+		return;
+	}
+#endif /* CONFIG_DPP2 */
 
 	if (wpa_s->dpp_auth->remove_on_tx_status) {
 		wpa_printf(MSG_DEBUG,
@@ -1165,6 +1188,27 @@ static struct wpa_ssid * wpas_dpp_add_network(struct wpa_supplicant *wpa_s,
 {
 	struct wpa_ssid *ssid;
 
+#ifdef CONFIG_DPP2
+	if (auth->akm == DPP_AKM_SAE) {
+#ifdef CONFIG_SAE
+		struct wpa_driver_capa capa;
+		int res;
+
+		res = wpa_drv_get_capa(wpa_s, &capa);
+		if (res == 0 &&
+		    !(capa.key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_SAE) &&
+		    !(wpa_s->drv_flags & WPA_DRIVER_FLAGS_SAE)) {
+			wpa_printf(MSG_DEBUG,
+				   "DPP: SAE not supported by the driver");
+			return NULL;
+		}
+#else /* CONFIG_SAE */
+		wpa_printf(MSG_DEBUG, "DPP: SAE not supported in the build");
+		return NULL;
+#endif /* CONFIG_SAE */
+	}
+#endif /* CONFIG_DPP2 */
+
 	ssid = wpa_config_add_network(wpa_s->conf);
 	if (!ssid)
 		return NULL;
@@ -1236,17 +1280,17 @@ fail:
 }
 
 
-static void wpas_dpp_process_config(struct wpa_supplicant *wpa_s,
-				    struct dpp_authentication *auth)
+static int wpas_dpp_process_config(struct wpa_supplicant *wpa_s,
+				   struct dpp_authentication *auth)
 {
 	struct wpa_ssid *ssid;
 
 	if (wpa_s->conf->dpp_config_processing < 1)
-		return;
+		return 0;
 
 	ssid = wpas_dpp_add_network(wpa_s, auth);
 	if (!ssid)
-		return;
+		return -1;
 
 	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_NETWORK_ID "%d", ssid->id);
 	if (wpa_s->conf->dpp_config_processing == 2)
@@ -1259,20 +1303,24 @@ static void wpas_dpp_process_config(struct wpa_supplicant *wpa_s,
 #endif /* CONFIG_NO_CONFIG_WRITE */
 
 	if (wpa_s->conf->dpp_config_processing < 2)
-		return;
+		return 0;
 
-	wpa_printf(MSG_DEBUG, "DPP: Trying to connect to the new network");
-	wpa_s->disconnected = 0;
-	wpa_s->reassociate = 1;
-	wpa_s->scan_runs = 0;
-	wpa_s->normal_scans = 0;
-	wpa_supplicant_cancel_sched_scan(wpa_s);
-	wpa_supplicant_req_scan(wpa_s, 0, 0);
+#ifdef CONFIG_DPP2
+	if (auth->peer_version >= 2) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Postpone connection attempt to wait for completion of DPP Configuration Result");
+		auth->connect_on_tx_status = 1;
+		return 0;
+	}
+#endif /* CONFIG_DPP2 */
+
+	wpas_dpp_try_to_connect(wpa_s);
+	return 0;
 }
 
 
-static void wpas_dpp_handle_config_obj(struct wpa_supplicant *wpa_s,
-				       struct dpp_authentication *auth)
+static int wpas_dpp_handle_config_obj(struct wpa_supplicant *wpa_s,
+				      struct dpp_authentication *auth)
 {
 	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONF_RECEIVED);
 	if (auth->ssid_len)
@@ -1324,7 +1372,7 @@ static void wpas_dpp_handle_config_obj(struct wpa_supplicant *wpa_s,
 		}
 	}
 
-	wpas_dpp_process_config(wpa_s, auth);
+	return wpas_dpp_process_config(wpa_s, auth);
 }
 
 
@@ -1336,6 +1384,8 @@ static void wpas_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 	struct wpa_supplicant *wpa_s = ctx;
 	const u8 *pos;
 	struct dpp_authentication *auth = wpa_s->dpp_auth;
+	int res;
+	enum dpp_status_error status = DPP_STATUS_CONFIG_REJECTED;
 
 	wpa_s->dpp_gas_dialog_token = -1;
 
@@ -1373,13 +1423,40 @@ static void wpas_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 		goto fail;
 	}
 
-	wpas_dpp_handle_config_obj(wpa_s, auth);
-	dpp_auth_deinit(wpa_s->dpp_auth);
-	wpa_s->dpp_auth = NULL;
-	return;
+	res = wpas_dpp_handle_config_obj(wpa_s, auth);
+	if (res < 0)
+		goto fail;
 
+	status = DPP_STATUS_OK;
 fail:
-	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONF_FAILED);
+	if (status != DPP_STATUS_OK)
+		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONF_FAILED);
+#ifdef CONFIG_DPP2
+	if (auth->peer_version >= 2 &&
+	    auth->conf_resp_status == DPP_STATUS_OK) {
+		struct wpabuf *msg;
+
+		wpa_printf(MSG_DEBUG, "DPP: Send DPP Configuration Result");
+		msg = dpp_build_conf_result(auth, status);
+		if (!msg)
+			goto fail2;
+
+		wpa_msg(wpa_s, MSG_INFO,
+			DPP_EVENT_TX "dst=" MACSTR " freq=%u type=%d",
+			MAC2STR(addr), auth->curr_freq,
+			DPP_PA_CONFIGURATION_RESULT);
+		offchannel_send_action(wpa_s, auth->curr_freq,
+				       addr, wpa_s->own_addr, broadcast,
+				       wpabuf_head(msg),
+				       wpabuf_len(msg),
+				       500, wpas_dpp_tx_status, 0);
+		wpabuf_free(msg);
+
+		/* This exchange will be terminated in the TX status handler */
+		return;
+	}
+fail2:
+#endif /* CONFIG_DPP2 */
 	dpp_auth_deinit(wpa_s->dpp_auth);
 	wpa_s->dpp_auth = NULL;
 }
@@ -1560,6 +1637,62 @@ static void wpas_dpp_rx_auth_conf(struct wpa_supplicant *wpa_s, const u8 *src,
 
 	wpas_dpp_auth_success(wpa_s, 0);
 }
+
+
+#ifdef CONFIG_DPP2
+
+static void wpas_dpp_config_result_wait_timeout(void *eloop_ctx,
+						void *timeout_ctx)
+{
+	struct wpa_supplicant *wpa_s = eloop_ctx;
+	struct dpp_authentication *auth = wpa_s->dpp_auth;
+
+	if (!auth || !auth->waiting_conf_result)
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Timeout while waiting for Configuration Result");
+	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONF_FAILED);
+	dpp_auth_deinit(auth);
+	wpa_s->dpp_auth = NULL;
+}
+
+
+static void wpas_dpp_rx_conf_result(struct wpa_supplicant *wpa_s, const u8 *src,
+				    const u8 *hdr, const u8 *buf, size_t len)
+{
+	struct dpp_authentication *auth = wpa_s->dpp_auth;
+	enum dpp_status_error status;
+
+	wpa_printf(MSG_DEBUG, "DPP: Configuration Result from " MACSTR,
+		   MAC2STR(src));
+
+	if (!auth || !auth->waiting_conf_result) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No DPP Configuration waiting for result - drop");
+		return;
+	}
+
+	if (os_memcmp(src, auth->peer_mac_addr, ETH_ALEN) != 0) {
+		wpa_printf(MSG_DEBUG, "DPP: MAC address mismatch (expected "
+			   MACSTR ") - drop", MAC2STR(auth->peer_mac_addr));
+		return;
+	}
+
+	status = dpp_conf_result_rx(auth, hdr, buf, len);
+
+	offchannel_send_action_done(wpa_s);
+	wpas_dpp_listen_stop(wpa_s);
+	if (status == DPP_STATUS_OK)
+		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONF_SENT);
+	else
+		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONF_FAILED);
+	dpp_auth_deinit(auth);
+	wpa_s->dpp_auth = NULL;
+	eloop_cancel_timeout(wpas_dpp_config_result_wait_timeout, wpa_s, NULL);
+}
+
+#endif /* CONFIG_DPP2 */
 
 
 static void wpas_dpp_rx_peer_disc_resp(struct wpa_supplicant *wpa_s,
@@ -2105,6 +2238,11 @@ void wpas_dpp_rx_action(struct wpa_supplicant *wpa_s, const u8 *src,
 		wpas_dpp_rx_pkex_commit_reveal_resp(wpa_s, src, hdr, buf, len,
 						    freq);
 		break;
+#ifdef CONFIG_DPP2
+	case DPP_PA_CONFIGURATION_RESULT:
+		wpas_dpp_rx_conf_result(wpa_s, src, hdr, buf, len);
+		break;
+#endif /* CONFIG_DPP2 */
 	default:
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Ignored unsupported frame subtype %d", type);
@@ -2174,6 +2312,21 @@ wpas_dpp_gas_status_handler(void *ctx, struct wpabuf *resp, int ok)
 		   ok);
 	eloop_cancel_timeout(wpas_dpp_reply_wait_timeout, wpa_s, NULL);
 	eloop_cancel_timeout(wpas_dpp_auth_resp_retry_timeout, wpa_s, NULL);
+#ifdef CONFIG_DPP2
+	if (ok && auth->peer_version >= 2 &&
+	    auth->conf_resp_status == DPP_STATUS_OK) {
+		wpa_printf(MSG_DEBUG, "DPP: Wait for Configuration Result");
+		auth->waiting_conf_result = 1;
+		auth->conf_resp = NULL;
+		wpabuf_free(resp);
+		eloop_cancel_timeout(wpas_dpp_config_result_wait_timeout,
+				     wpa_s, NULL);
+		eloop_register_timeout(2, 0,
+				       wpas_dpp_config_result_wait_timeout,
+				       wpa_s, NULL);
+		return;
+	}
+#endif /* CONFIG_DPP2 */
 	offchannel_send_action_done(wpa_s);
 	wpas_dpp_listen_stop(wpa_s);
 	if (ok)
@@ -2286,10 +2439,8 @@ int wpas_dpp_configurator_sign(struct wpa_supplicant *wpa_s, const char *cmd)
 	curve = get_param(cmd, " curve=");
 	wpas_dpp_set_testing_options(wpa_s, auth);
 	if (wpas_dpp_set_configurator(wpa_s, auth, cmd) == 0 &&
-	    dpp_configurator_own_config(auth, curve, 0) == 0) {
-		wpas_dpp_handle_config_obj(wpa_s, auth);
-		ret = 0;
-	}
+	    dpp_configurator_own_config(auth, curve, 0) == 0)
+		ret = wpas_dpp_handle_config_obj(wpa_s, auth);
 
 	dpp_auth_deinit(auth);
 	os_free(curve);
@@ -2610,6 +2761,9 @@ void wpas_dpp_deinit(struct wpa_supplicant *wpa_s)
 	eloop_cancel_timeout(wpas_dpp_reply_wait_timeout, wpa_s, NULL);
 	eloop_cancel_timeout(wpas_dpp_init_timeout, wpa_s, NULL);
 	eloop_cancel_timeout(wpas_dpp_auth_resp_retry_timeout, wpa_s, NULL);
+#ifdef CONFIG_DPP2
+	eloop_cancel_timeout(wpas_dpp_config_result_wait_timeout, wpa_s, NULL);
+#endif /* CONFIG_DPP2 */
 	offchannel_send_action_done(wpa_s);
 	wpas_dpp_listen_stop(wpa_s);
 	dpp_bootstrap_del(wpa_s, 0);
