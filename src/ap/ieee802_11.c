@@ -1278,7 +1278,7 @@ void auth_sae_process_commit(void *eloop_ctx, void *user_ctx)
 	if (!q)
 		return;
 	wpa_printf(MSG_DEBUG,
-		   "SAE: Process next available commit message from queue");
+		   "SAE: Process next available message from queue");
 	dl_list_del(&q->list);
 	handle_auth(hapd, (const struct ieee80211_mgmt *) q->msg, q->len,
 		    q->rssi, 1);
@@ -1292,34 +1292,77 @@ void auth_sae_process_commit(void *eloop_ctx, void *user_ctx)
 }
 
 
-static void auth_sae_queue_commit(struct hostapd_data *hapd,
-				  const struct ieee80211_mgmt *mgmt, size_t len,
-				  int rssi)
+static void auth_sae_queue(struct hostapd_data *hapd,
+			   const struct ieee80211_mgmt *mgmt, size_t len,
+			   int rssi)
 {
-	struct hostapd_sae_commit_queue *q;
+	struct hostapd_sae_commit_queue *q, *q2;
 	unsigned int queue_len;
+	const struct ieee80211_mgmt *mgmt2;
 
 	queue_len = dl_list_len(&hapd->sae_commit_queue);
 	if (queue_len >= 15) {
 		wpa_printf(MSG_DEBUG,
-			   "SAE: No more room in commit message queue - drop the new frame from "
+			   "SAE: No more room in message queue - drop the new frame from "
 			   MACSTR, MAC2STR(mgmt->sa));
 		return;
 	}
 
-	wpa_printf(MSG_DEBUG, "SAE: Queue Authentication commit message from "
-		   MACSTR " for processing", MAC2STR(mgmt->sa));
+	wpa_printf(MSG_DEBUG, "SAE: Queue Authentication message from "
+		   MACSTR " for processing (queue_len %u)", MAC2STR(mgmt->sa),
+		   queue_len);
 	q = os_zalloc(sizeof(*q) + len);
 	if (!q)
 		return;
 	q->rssi = rssi;
 	q->len = len;
 	os_memcpy(q->msg, mgmt, len);
+
+	/* Check whether there is already a queued Authentication frame from the
+	 * same station with the same transaction number and if so, replace that
+	 * queue entry with the new one. This avoids issues with a peer that
+	 * sends multiple times (e.g., due to frequent SAE retries). There is no
+	 * point in us trying to process the old attempts after a new one has
+	 * obsoleted them. */
+	dl_list_for_each(q2, &hapd->sae_commit_queue,
+			 struct hostapd_sae_commit_queue, list) {
+		mgmt2 = (const struct ieee80211_mgmt *) q2->msg;
+		if (os_memcmp(mgmt->sa, mgmt2->sa, ETH_ALEN) == 0 &&
+		    mgmt->u.auth.auth_transaction ==
+		    mgmt2->u.auth.auth_transaction) {
+			wpa_printf(MSG_DEBUG,
+				   "SAE: Replace queued message from same STA with same transaction number");
+			dl_list_add(&q2->list, &q->list);
+			dl_list_del(&q2->list);
+			os_free(q2);
+			goto queued;
+		}
+	}
+
+	/* No pending identical entry, so add to the end of the queue */
 	dl_list_add_tail(&hapd->sae_commit_queue, &q->list);
+
+queued:
 	if (eloop_is_timeout_registered(auth_sae_process_commit, hapd, NULL))
 		return;
 	eloop_register_timeout(0, queue_len * 50000, auth_sae_process_commit,
 			       hapd, NULL);
+}
+
+
+static int auth_sae_queued_addr(struct hostapd_data *hapd, const u8 *addr)
+{
+	struct hostapd_sae_commit_queue *q;
+	const struct ieee80211_mgmt *mgmt;
+
+	dl_list_for_each(q, &hapd->sae_commit_queue,
+			 struct hostapd_sae_commit_queue, list) {
+		mgmt = (const struct ieee80211_mgmt *) q->msg;
+		if (os_memcmp(addr, mgmt->sa, ETH_ALEN) == 0)
+			return 1;
+	}
+
+	return 0;
 }
 
 #endif /* CONFIG_SAE */
@@ -2135,11 +2178,17 @@ static void handle_auth(struct hostapd_data *hapd,
 		return;
 
 #ifdef CONFIG_SAE
-	if (auth_alg == WLAN_AUTH_SAE && auth_transaction == 1 && !from_queue) {
+	if (auth_alg == WLAN_AUTH_SAE && !from_queue &&
+	    (auth_transaction == 1 ||
+	     (auth_transaction == 2 && auth_sae_queued_addr(hapd, mgmt->sa)))) {
 		/* Handle SAE Authentication commit message through a queue to
 		 * provide more control for postponing the needed heavy
-		 * processing under a possible DoS attack scenario. */
-		auth_sae_queue_commit(hapd, mgmt, len, rssi);
+		 * processing under a possible DoS attack scenario. In addition,
+		 * queue SAE Authentication confirm message if there happens to
+		 * be a queued commit message from the same peer. This is needed
+		 * to avoid reordering Authentication frames within the same
+		 * SAE exchange. */
+		auth_sae_queue(hapd, mgmt, len, rssi);
 		return;
 	}
 #endif /* CONFIG_SAE */
