@@ -33,6 +33,10 @@ def check_dpp_capab(dev, brainpool=False):
         tls = dev.request("GET tls_library")
         if not tls.startswith("OpenSSL") or "run=BoringSSL" in tls:
             raise HwsimSkip("Crypto library does not support Brainpool curves: " + tls)
+    capa = dev.request("GET_CAPABILITY dpp")
+    if capa.startswith("DPP="):
+        return int(capa[4:])
+    return 1
 
 def test_dpp_qr_code_parsing(dev, apdev):
     """DPP QR Code parsing"""
@@ -320,9 +324,11 @@ def run_dpp_qr_code_auth_unicast(dev, apdev, curve, netrole=None, key=None,
     ev = dev[1].wait_event(["DPP-AUTH-SUCCESS"], timeout=5)
     if ev is None:
         raise Exception("DPP authentication did not succeed (Initiator)")
-    ev = dev[1].wait_event(["DPP-CONF-SENT"], timeout=5)
+    ev = dev[1].wait_event(["DPP-CONF-SENT", "DPP-CONF-FAILED"], timeout=5)
     if ev is None:
         raise Exception("DPP configuration not completed (Configurator)")
+    if "DPP-CONF-FAILED" in ev and not require_conf_failure:
+        raise Exception("Unexpected failure on Configurator")
     ev = dev[0].wait_event(["DPP-CONF-RECEIVED", "DPP-CONF-FAILED"], timeout=5)
     if ev is None:
         raise Exception("DPP configuration not completed (Enrollee)")
@@ -4630,6 +4636,8 @@ def test_dpp_keygen_configurator_error(dev, apdev):
 
 def rx_process_frame(dev):
     msg = dev.mgmt_rx()
+    if msg is None:
+        raise Exception("No management frame RX reported")
     if "OK" not in dev.request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(
         msg['freq'], msg['datarate'], msg['ssi_signal'], binascii.hexlify(msg['frame']).decode())):
         raise Exception("MGMT_RX_PROCESS failed")
@@ -4728,8 +4736,8 @@ def test_dpp_gas_comeback_after_failure(dev, apdev):
 
 def test_dpp_gas(dev, apdev):
     """DPP and GAS protocol testing"""
-    check_dpp_capab(dev[0])
-    check_dpp_capab(dev[1])
+    ver0 = check_dpp_capab(dev[0])
+    ver1 = check_dpp_capab(dev[1])
     start_dpp(dev)
 
     # DPP Authentication Request
@@ -4778,6 +4786,10 @@ def test_dpp_gas(dev, apdev):
 
     # DPP Configuration Request (GAS Comeback Request frame)
     rx_process_frame(dev[0])
+
+    if ver0 >= 2 and ver1 >= 2:
+        # DPP Configuration Result
+        rx_process_frame(dev[0])
 
     wait_conf_completion(dev[0], dev[1])
 
@@ -5244,11 +5256,10 @@ def run_dpp_network_addition_failure(dev, apdev):
     for count,func in tests:
         with alloc_fail(dev[0], count, func):
             res = dev[0].request(cmd)
-            if "FAIL" in res:
-                raise Exception("Failed to generate own configuration")
-            ev = dev[0].wait_event(["DPP-NET-ACCESS-KEY"], timeout=2)
-            if ev is None:
-                raise Exception("Config object not processed")
+            if "OK" in res:
+                ev = dev[0].wait_event(["DPP-NET-ACCESS-KEY"], timeout=2)
+                if ev is None:
+                    raise Exception("Config object not processed")
             wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
         dev[0].dump_monitor()
 
@@ -5257,11 +5268,10 @@ def run_dpp_network_addition_failure(dev, apdev):
     for count,func in tests:
         with alloc_fail(dev[0], count, func):
             res = dev[0].request(cmd)
-            if "FAIL" in res:
-                raise Exception("Failed to generate own configuration")
-            ev = dev[0].wait_event(["DPP-NET-ACCESS-KEY"], timeout=2)
-            if ev is None:
-                raise Exception("Config object not processed")
+            if "OK" in res:
+                ev = dev[0].wait_event(["DPP-NET-ACCESS-KEY"], timeout=2)
+                if ev is None:
+                    raise Exception("Config object not processed")
             wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
         dev[0].dump_monitor()
 
