@@ -1823,7 +1823,7 @@ static int match_dn_field(const X509 *cert, int nid, const char *field,
 	X509_NAME *name;
 
 	len = os_strlen(value);
-	name = X509_get_subject_name(cert);
+	name = X509_get_subject_name((X509 *) cert);
 
 	/* Assign incremented cnt for every field of DN to check DN field in
 	 * right order */
