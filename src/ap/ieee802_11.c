@@ -1287,7 +1287,7 @@ void auth_sae_process_commit(void *eloop_ctx, void *user_ctx)
 	if (eloop_is_timeout_registered(auth_sae_process_commit, hapd, NULL))
 		return;
 	queue_len = dl_list_len(&hapd->sae_commit_queue);
-	eloop_register_timeout(0, queue_len * 50000, auth_sae_process_commit,
+	eloop_register_timeout(0, queue_len * 10000, auth_sae_process_commit,
 			       hapd, NULL);
 }
 
@@ -1345,7 +1345,7 @@ static void auth_sae_queue(struct hostapd_data *hapd,
 queued:
 	if (eloop_is_timeout_registered(auth_sae_process_commit, hapd, NULL))
 		return;
-	eloop_register_timeout(0, queue_len * 50000, auth_sae_process_commit,
+	eloop_register_timeout(0, queue_len * 10000, auth_sae_process_commit,
 			       hapd, NULL);
 }
 
