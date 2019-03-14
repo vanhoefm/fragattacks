@@ -345,6 +345,7 @@ enum dpp_test_behavior {
 	DPP_TEST_STOP_AT_AUTH_RESP = 88,
 	DPP_TEST_STOP_AT_AUTH_CONF = 89,
 	DPP_TEST_STOP_AT_CONF_REQ = 90,
+	DPP_TEST_REJECT_CONFIG = 91,
 };
 
 extern enum dpp_test_behavior dpp_test;

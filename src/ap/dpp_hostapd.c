@@ -1119,6 +1119,12 @@ static void hostapd_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 
 	hostapd_dpp_handle_config_obj(hapd, auth);
 	status = DPP_STATUS_OK;
+#ifdef CONFIG_TESTING_OPTIONS
+	if (dpp_test == DPP_TEST_REJECT_CONFIG) {
+		wpa_printf(MSG_INFO, "DPP: TESTING - Reject Config Object");
+		status = DPP_STATUS_CONFIG_REJECTED;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 fail:
 	if (status != DPP_STATUS_OK)
 		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONF_FAILED);

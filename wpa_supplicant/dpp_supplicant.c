@@ -1428,6 +1428,12 @@ static void wpas_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 		goto fail;
 
 	status = DPP_STATUS_OK;
+#ifdef CONFIG_TESTING_OPTIONS
+	if (dpp_test == DPP_TEST_REJECT_CONFIG) {
+		wpa_printf(MSG_INFO, "DPP: TESTING - Reject Config Object");
+		status = DPP_STATUS_CONFIG_REJECTED;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 fail:
 	if (status != DPP_STATUS_OK)
 		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONF_FAILED);
