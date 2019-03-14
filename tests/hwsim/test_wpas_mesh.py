@@ -19,6 +19,8 @@ from wpasupplicant import WpaSupplicant
 from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger
 from tshark import run_tshark, run_tshark_json
 from test_ap_ht import set_world_reg
+from test_sae import radiotap_build, start_monitor, stop_monitor, \
+    build_sae_commit, sae_rx_commit_token_req
 from hwsim_utils import set_group_map
 
 def check_mesh_support(dev, secure=False):
@@ -2414,3 +2416,60 @@ def test_mesh_forwarding_secure(dev):
         set_group_map(dev[0], 1)
         set_group_map(dev[1], 1)
         set_group_map(dev[2], 1)
+
+def test_mesh_sae_anti_clogging(dev, apdev):
+    """Mesh using SAE and anti-clogging"""
+    try:
+        run_mesh_sae_anti_clogging(dev, apdev)
+    finally:
+        stop_monitor(apdev[1]["ifname"])
+
+def run_mesh_sae_anti_clogging(dev, apdev):
+    check_mesh_support(dev[0], secure=True)
+    check_mesh_support(dev[1], secure=True)
+    check_mesh_support(dev[2], secure=True)
+
+    sock = start_monitor(apdev[1]["ifname"])
+    radiotap = radiotap_build()
+
+    dev[0].request("SET sae_groups 21")
+    id = add_mesh_secure_net(dev[0])
+    dev[0].mesh_group_add(id)
+    check_mesh_group_added(dev[0])
+
+    # This flood of SAE authentication frames is from not yet known mesh STAs,
+    # so the messages get dropped.
+    addr0 = binascii.unhexlify(dev[0].own_addr().replace(':', ''))
+    for i in range(16):
+        addr = binascii.unhexlify("f2%010x" % i)
+        frame = build_sae_commit(addr0, addr)
+        sock.send(radiotap + frame)
+
+    dev[1].request("SET sae_groups 21")
+    id = add_mesh_secure_net(dev[1])
+    dev[1].mesh_group_add(id)
+    check_mesh_group_added(dev[1])
+    check_mesh_connected2(dev)
+
+    # Inject Beacon frames to make the sources of the second flood known to the
+    # target.
+    bcn1 = binascii.unhexlify("80000000" + "ffffffffffff")
+    bcn2 = binascii.unhexlify("0000dd20c44015840500e80310000000010882848b968c1298240301010504000200003204b048606c30140100000fac040100000fac040100000fac0800002d1afe131bffff0000000000000000000001000000000000000000003d16010000000000ffff0000000000000000000000000000720d777061732d6d6573682d736563710701010001010009")
+    for i in range(16):
+        addr = binascii.unhexlify("f4%010x" % i)
+        frame = bcn1 + addr + addr + bcn2
+        sock.send(radiotap + frame)
+
+    # This flood of SAE authentication frames is from known mesh STAs, so the
+    # target will need to process these.
+    for i in range(16):
+        addr = binascii.unhexlify("f4%010x" % i)
+        frame = build_sae_commit(addr0, addr)
+        sock.send(radiotap + frame)
+
+    dev[2].request("SET sae_groups 21")
+    id = add_mesh_secure_net(dev[2])
+    dev[2].mesh_group_add(id)
+    check_mesh_group_added(dev[2])
+    check_mesh_peer_connected(dev[2])
+    check_mesh_peer_connected(dev[0])

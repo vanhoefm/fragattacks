@@ -1400,9 +1400,7 @@ def test_sae_anti_clogging_during_attack(dev, apdev):
     try:
         run_sae_anti_clogging_during_attack(dev, apdev)
     finally:
-        subprocess.call(["ip", "link", "set", "dev", apdev[1]["ifname"],
-                         "down"])
-        subprocess.call(["iw", apdev[1]["ifname"], "set", "type", "managed"])
+        stop_monitor(apdev[1]["ifname"])
 
 def build_sae_commit(bssid, addr, group=21, token=None):
     if group == 19:
@@ -1450,6 +1448,30 @@ def sae_rx_commit_token_req(sock, radiotap, send_two=False):
         sock.send(radiotap + frame)
     return True
 
+def radiotap_build():
+    radiotap_payload = struct.pack('BB', 0x08, 0)
+    radiotap_payload += struct.pack('BB', 0, 0)
+    radiotap_payload += struct.pack('BB', 0, 0)
+    radiotap_hdr = struct.pack('<BBHL', 0, 0, 8 + len(radiotap_payload),
+                               0xc002)
+    return radiotap_hdr + radiotap_payload
+
+def start_monitor(ifname, freq=2412):
+    subprocess.check_call(["iw", ifname, "set", "type", "monitor"])
+    subprocess.call(["ip", "link", "set", "dev", ifname, "up"])
+    subprocess.check_call(["iw", ifname, "set", "freq", str(freq)])
+
+    ETH_P_ALL = 3
+    sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
+                         socket.htons(ETH_P_ALL))
+    sock.bind((ifname, 0))
+    sock.settimeout(0.5)
+    return sock
+
+def stop_monitor(ifname):
+    subprocess.call(["ip", "link", "set", "dev", ifname, "down"])
+    subprocess.call(["iw", ifname, "set", "type", "managed"])
+
 def run_sae_anti_clogging_during_attack(dev, apdev):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
@@ -1463,21 +1485,8 @@ def run_sae_anti_clogging_during_attack(dev, apdev):
     dev[1].scan_for_bss(hapd.own_addr(), freq=2412)
     dev[1].request("SET sae_groups 21")
 
-    subprocess.check_call(["iw", apdev[1]["ifname"], "set", "type", "monitor"])
-    subprocess.call(["ip", "link", "set", "dev", apdev[1]["ifname"], "up"])
-    subprocess.check_call(["iw", apdev[1]["ifname"], "set", "freq", "2412"])
-
-    ETH_P_ALL = 3
-    sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
-                         socket.htons(ETH_P_ALL))
-    sock.bind((apdev[1]["ifname"], 0))
-    sock.settimeout(0.5)
-    radiotap_payload = struct.pack('BB', 0x08, 0)
-    radiotap_payload += struct.pack('BB', 0, 0)
-    radiotap_payload += struct.pack('BB', 0, 0)
-    radiotap_hdr = struct.pack('<BBHL', 0, 0, 8 + len(radiotap_payload),
-                               0xc002)
-    radiotap = radiotap_hdr + radiotap_payload
+    sock = start_monitor(apdev[1]["ifname"])
+    radiotap = radiotap_build()
 
     bssid = binascii.unhexlify(hapd.own_addr().replace(':', ''))
     for i in range(16):
