@@ -1050,6 +1050,8 @@ class WpaSupplicant:
 
     def scan(self, type=None, freq=None, no_wait=False, only_new=False,
              passive=False):
+        if not no_wait:
+            self.dump_monitor()
         if type:
             cmd = "SCAN TYPE=" + type
         else:
