@@ -282,7 +282,7 @@ def main():
                 line = line.strip()
                 if not line or line.startswith('#'):
                     continue
-                    args.testmodules.append(line)
+                args.testmodules.append(line)
 
     tests_to_run = []
     if args.tests:
