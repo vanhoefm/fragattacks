@@ -4572,7 +4572,7 @@ def get_bridge_macs(ifname):
                            stdout=subprocess.PIPE)
     res = cmd.stdout.read()
     cmd.stdout.close()
-    return res
+    return res.decode()
 
 def tshark_get_arp(cap, filter):
     res = run_tshark(cap, filter,
