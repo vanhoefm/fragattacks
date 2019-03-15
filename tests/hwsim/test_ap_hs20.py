@@ -4945,6 +4945,7 @@ def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
     prefix = "proxyarp_open"
     if ebtables:
         prefix += "_ebtables"
+    prefix += "_ipv6"
     cap_br = os.path.join(params['logdir'], prefix + ".ap-br0.pcap")
     cap_dev0 = os.path.join(params['logdir'],
                             prefix + ".%s.pcap" % dev[0].ifname)
