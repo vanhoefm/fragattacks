@@ -101,3 +101,33 @@ def test_radio_work_cancel(dev, apdev):
     wpas.interface_remove("wlan5")
     # add to allow log file renaming
     wpas.interface_add("wlan5")
+
+def test_ext_radio_work_disconnect_connect(dev, apdev):
+    """External radio work and DISCONNECT clearing connection attempt"""
+    hapd = hostapd.add_ap(apdev[0], { "ssid": "open" })
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+
+    # Start a radio work to block connection attempt
+    id1 = dev[0].request("RADIO_WORK add test-work-a")
+    if "FAIL" in id1:
+        raise Exception("Failed to add radio work")
+    ev = dev[0].wait_event(["EXT-RADIO-WORK-START"])
+    if ev is None:
+        raise Exception("Timeout while waiting radio work to start")
+
+    dev[0].connect("open", key_mgmt="NONE", scan_freq="2412",
+                   wait_connect=False)
+    items = dev[0].request("RADIO_WORK show")
+    if "connect" not in items:
+        raise Exception("Connection radio work not scheduled")
+    dev[0].request("DISCONNECT")
+    items = dev[0].request("RADIO_WORK show")
+    if "connect" in items:
+        raise Exception("Connection radio work not removed on DISCONNECT")
+
+    # Clear radio work to allow any pending work to be started
+    dev[0].request("RADIO_WORK done " + id1)
+
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=0.5)
+    if ev is not None:
+        raise Exception("Unexpected connection seen")
