@@ -720,9 +720,9 @@ class STAConnection:
         freq = params.pop("freq")
         if sta_params is None:
             sta_params = dict()
-        if not "ocv" in sta_params:
+        if "ocv" not in sta_params:
             sta_params["ocv"] = "1"
-        if not "ieee80211w" in sta_params:
+        if "ieee80211w" not in sta_params:
             sta_params["ieee80211w"] = "1"
 
         params.update(hostapd.wpa2_params(ssid=self.ssid,

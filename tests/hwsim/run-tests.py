@@ -138,7 +138,7 @@ class DataCollector(object):
                                                stderr=open('/dev/null', 'w'),
                                                cwd=self._logdir)
             l = self._trace_cmd.stdout.read(7)
-            while self._trace_cmd.poll() is None and not 'STARTED' in l:
+            while self._trace_cmd.poll() is None and 'STARTED' not in l:
                 l += self._trace_cmd.stdout.read(1)
             res = self._trace_cmd.returncode
             if res:
@@ -254,7 +254,7 @@ def main():
     if args.tests:
         fail = False
         for t in args.tests:
-            if not t in test_names:
+            if t not in test_names:
                 print('Invalid arguments - test "%s" not known' % t)
                 fail = True
         if fail:
@@ -295,7 +295,7 @@ def main():
         for t in tests:
             name = t.__name__.replace('test_', '', 1)
             if args.testmodules:
-                if not t.__module__.replace('test_', '', 1) in args.testmodules:
+                if t.__module__.replace('test_', '', 1) not in args.testmodules:
                     continue
             tests_to_run.append(t)
 

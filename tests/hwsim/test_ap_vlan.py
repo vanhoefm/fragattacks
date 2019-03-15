@@ -362,14 +362,14 @@ def ap_vlan_iface_test_and_prepare_environ():
     subprocess.call(['ifconfig', 'dummy0', 'up'])
 
     ifaces = netifaces.interfaces()
-    if not("dummy0" in ifaces):
+    if "dummy0" not in ifaces:
         raise HwsimSkip("failed to add dummy0 - missing kernel config DUMMY ?")
 
     subprocess.call(['ip', 'link', 'add', 'link', 'dummy0', 'name', 'dummy0.1',
                      'type', 'vlan', 'id', '1'])
 
     ifaces = netifaces.interfaces()
-    if not("dummy0.1" in ifaces):
+    if "dummy0.1" not in ifaces:
         raise HwsimSkip("failed to add dummy0.1 - missing kernel config VLAN_8021Q ?")
 
     subprocess.call(['ip', 'link', 'del', 'dummy0.1'])
@@ -423,7 +423,7 @@ def ap_vlan_iface_cleanup_multibss(dev, apdev, cfgfile):
                        scan_freq="2412")
 
         ifaces = netifaces.interfaces()
-        if not("brvlan1" in ifaces):
+        if "brvlan1" not in ifaces:
             raise Exception("bridge brvlan1 was not created")
 
         hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
@@ -458,7 +458,7 @@ def ap_vlan_iface_cleanup_multibss(dev, apdev, cfgfile):
             raise Exception("Unexpected state after reauth: " + state)
 
         ifaces = netifaces.interfaces()
-        if not ("brvlan1" in ifaces):
+        if "brvlan1" not in ifaces:
             raise Exception("bridge brvlan1 has been removed too early")
 
         hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan2",

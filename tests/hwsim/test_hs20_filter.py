@@ -33,7 +33,7 @@ class IPAssign(object):
             # wait for DAD to finish
             while True:
                 o = subprocess.check_output(self._cmd + ['show', 'tentative', 'dev', self._iface]).decode()
-                if not self._addr in o:
+                if self._addr not in o:
                     break
                 time.sleep(0.1)
     def __exit__(self, type, value, traceback):

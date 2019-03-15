@@ -212,7 +212,7 @@ class WpaSupplicant:
     def reset(self):
         self.dump_monitor()
         res = self.request("FLUSH")
-        if not "OK" in res:
+        if "OK" not in res:
             logger.info("FLUSH to " + self.ifname + " failed: " + res)
         self.global_request("REMOVE_NETWORK all")
         self.global_request("SET p2p_no_group_iface 1")
@@ -259,7 +259,7 @@ class WpaSupplicant:
             logger.info("No PING response from " + self.ifname + " after reset")
 
     def set(self, field, value):
-        if not "OK" in self.request("SET " + field + " " + value):
+        if "OK" not in self.request("SET " + field + " " + value):
             raise Exception("Failed to set wpa_supplicant parameter " + field)
 
     def add_network(self):
@@ -969,7 +969,7 @@ class WpaSupplicant:
         if "tsid=%d" % (tsid) not in ev:
             raise Exception("ADDTS failed (invalid tsid in TSPEC-ADDED)")
 
-        if not (tsid, up) in self.tspecs():
+        if (tsid, up) not in self.tspecs():
             raise Exception("ADDTS failed (tsid not in tspec list)")
 
     def del_ts(self, tsid):
@@ -1063,7 +1063,7 @@ class WpaSupplicant:
         if not no_wait:
             self.dump_monitor()
         res = self.request(cmd)
-        if not "OK" in res:
+        if "OK" not in res:
             raise Exception("Failed to trigger scan: " + str(res))
         if no_wait:
             return

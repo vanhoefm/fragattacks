@@ -85,17 +85,17 @@ class HostapdGlobal:
         if driver:
             cmd += " " + driver
         res = self.request(cmd)
-        if not "OK" in res:
+        if "OK" not in res:
             raise Exception("Could not add hostapd interface " + ifname)
 
     def add_iface(self, ifname, confname):
         res = self.request("ADD " + ifname + " config=" + confname)
-        if not "OK" in res:
+        if "OK" not in res:
             raise Exception("Could not add hostapd interface")
 
     def add_bss(self, phy, confname, ignore_error=False):
         res = self.request("ADD bss_config=" + phy + ":" + confname)
-        if not "OK" in res:
+        if "OK" not in res:
             if not ignore_error:
                 raise Exception("Could not add hostapd BSS")
 
@@ -187,7 +187,7 @@ class Hostapd:
         return "PONG" in self.request("PING")
 
     def set(self, field, value):
-        if not "OK" in self.request("SET " + field + " " + value):
+        if "OK" not in self.request("SET " + field + " " + value):
             raise Exception("Failed to set hostapd parameter " + field)
 
     def set_defaults(self):
@@ -233,11 +233,11 @@ class Hostapd:
         self.set("wep_key0", key)
 
     def enable(self):
-        if not "OK" in self.request("ENABLE"):
+        if "OK" not in self.request("ENABLE"):
             raise Exception("Failed to enable hostapd interface " + self.ifname)
 
     def disable(self):
-        if not "OK" in self.request("DISABLE"):
+        if "OK" not in self.request("DISABLE"):
             raise Exception("Failed to disable hostapd interface " + self.ifname)
 
     def dump_monitor(self):

@@ -238,7 +238,7 @@ def fst_initiate_session(apdev, test_params, bad_param_type, init_on_ap):
             initiator.wait_for_session_event(5, [], ["EVENT_FST_SESSION_STATE"])
             setup_event = responder.wait_for_session_event(5, [],
                                                            ['EVENT_FST_SETUP'])
-            if not 'id' in setup_event:
+            if 'id' not in setup_event:
                 raise Exception("No session id in FST setup event")
             responder.send_session_setup_response(str(setup_event['id']),
                                                   "reject")
@@ -2233,7 +2233,7 @@ def test_fst_session_respond_fail(dev, apdev, test_params):
         sta1.send_session_setup_request(sid)
         sta1.wait_for_session_event(5, [], ["EVENT_FST_SESSION_STATE"])
         ev = ap1.wait_for_session_event(5, [], ['EVENT_FST_SETUP'])
-        if not 'id' in ev:
+        if 'id' not in ev:
             raise Exception("No session id in FST setup event")
         # Disconnect STA to make SESSION_RESPOND fail due to no peer found
         sta = sta1.get_instance()

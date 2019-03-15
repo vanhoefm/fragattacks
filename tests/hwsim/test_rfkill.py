@@ -154,7 +154,7 @@ def _test_rfkill_p2p_discovery(dev0, dev1):
             if dev0.get_status_field("wpa_state") != "INTERFACE_DISABLED" and dev1.get_status_field("wpa_state") != "INTERFACE_DISABLED":
                 break
 
-        if not "OK" in dev0.p2p_listen():
+        if "OK" not in dev0.p2p_listen():
             raise Exception("P2P Listen failed after unblocking rfkill")
 
         if not dev1.discover_peer(addr0, social=True):

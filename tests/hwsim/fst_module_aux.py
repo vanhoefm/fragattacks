@@ -438,7 +438,7 @@ class FstDevice:
                 if event['type'] in events_to_ignore:
                     continue
             elif len(events_to_count) > 0:
-                if not event['type'] in events_to_count:
+                if event['type'] not in events_to_count:
                     continue
             return event
 

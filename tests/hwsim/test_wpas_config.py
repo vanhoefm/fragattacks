@@ -577,7 +577,7 @@ def test_wpas_config_file_key_mgmt(dev, apdev, params):
               "FT-FILS-SHA256", "FT-FILS-SHA384", "OWE", "DPP" ]
     supported_key_mgmts = dev[0].get_capability("key_mgmt")
     for key_mgmt in tests:
-        if key_mgmt == "WPA-EAP-SUITE-B-192" and not key_mgmt in supported_key_mgmts:
+        if key_mgmt == "WPA-EAP-SUITE-B-192" and key_mgmt not in supported_key_mgmts:
             logger.info("Skip unsupported " + key_mgmt)
             continue
         wpas.set_network(id, "key_mgmt", key_mgmt)

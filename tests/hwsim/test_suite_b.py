@@ -632,7 +632,7 @@ def test_openssl_ecdh_curves(dev, apdev):
 
     hapd.disable()
     hapd.set('openssl_ecdh_curves', 'foo')
-    if not "FAIL" in hapd.request("ENABLE"):
+    if "FAIL" not in hapd.request("ENABLE"):
         raise Exception("Invalid openssl_ecdh_curves value accepted")
     hapd.set('openssl_ecdh_curves', 'P-384')
     hapd.enable()

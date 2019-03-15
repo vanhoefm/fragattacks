@@ -159,7 +159,7 @@ def test_p2p_service_discovery_fragmentation(dev):
     """P2P service discovery with fragmentation"""
     for dst in [ "00:00:00:00:00:00", dev[0].p2p_dev_addr() ]:
         ev = run_sd(dev, dst, "02000001", fragment=True)
-        if not "long response" in ev:
+        if "long response" not in ev:
             if "0b5f6166706f766572746370c00c000c01" not in ev:
                 raise Exception("Unexpected service discovery response contents (Bonjour)")
             if "496e7465726e6574" not in ev:
