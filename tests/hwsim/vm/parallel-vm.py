@@ -476,7 +476,19 @@ def main():
 
     with open('{}/{}-parallel.log'.format(dir, timestamp), 'w') as f:
         for i in range(0, num_servers):
-            f.write('VM {}\n{}\n{}\n'.format(i, vm[i]['out'], vm[i]['err']))
+            f.write('VM {}\n{}\n{}\n'.format(i + 1, vm[i]['out'], vm[i]['err']))
+        first = True
+        for i in range(0, num_servers):
+            for line in vm[i]['out'].splitlines():
+                if line.startswith("FAIL "):
+                    if first:
+                        first = False
+                        print("Logs for failed test cases:")
+                        f.write("Logs for failed test cases:\n")
+                    fname = "%s/%d.srv.%d/%s.log" % (dir, timestamp, i + 1,
+                                                     line.split(' ')[1])
+                    print(fname)
+                    f.write("%s\n" % fname)
 
     failed = get_failed(vm)
 
