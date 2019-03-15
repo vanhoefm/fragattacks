@@ -2029,9 +2029,12 @@ def test_ap_wpa2_eap_peap_params(dev, apdev):
     ev = dev[0].wait_event(["CTRL-EVENT-EAP-SUCCESS"], timeout=15)
     if ev is None:
         raise Exception("No EAP success seen")
-    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
-    if ev is not None:
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-DISCONNECTED"], timeout=1)
+    if ev and "CTRL-EVENT-CONNECTED" in ev:
         raise Exception("Unexpected connection")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].request("ABORT_SCAN")
 
     tests = [ ("peap-ver0", ""),
               ("peap-ver1", ""),
