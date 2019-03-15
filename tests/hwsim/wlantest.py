@@ -241,4 +241,4 @@ class Wlantest:
         for tid in range(0, 17):
             tx[tid] = self.get_tx_tid(bssid, addr, tid)
             rx[tid] = self.get_rx_tid(bssid, addr, tid)
-        return [ tx, rx ]
+        return [tx, rx]

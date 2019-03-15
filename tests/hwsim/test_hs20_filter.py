@@ -62,12 +62,12 @@ def hs20_filters_connect(dev, apdev, disable_dgaf=False, proxy_arp=False):
 
     dev[0].hs20_enable()
 
-    id = dev[0].add_cred_values({ 'realm': "example.com",
-                                  'username': "hs20-test",
-                                  'password': "password",
-                                  'ca_cert': "auth_serv/ca.pem",
-                                  'domain': "example.com",
-                                  'update_identifier': "1234" })
+    id = dev[0].add_cred_values({'realm': "example.com",
+                                 'username': "hs20-test",
+                                 'password': "password",
+                                 'ca_cert': "auth_serv/ca.pem",
+                                 'domain': "example.com",
+                                 'update_identifier': "1234"})
     interworking_select(dev[0], bssid, "home", freq="2412")
     interworking_connect(dev[0], bssid, "TTLS")
 
@@ -97,7 +97,7 @@ def _test_ip4_gtk_drop(devs, apdevs, params, dst):
             raise Exception("DATA_TEST_FRAME failed")
         try:
             logger.info(s.recvfrom(1024))
-            logger.info("procfile=" + procfile + " val=" + open(procfile,'r').read().rstrip())
+            logger.info("procfile=" + procfile + " val=" + open(procfile, 'r').read().rstrip())
             raise Exception("erroneously received frame!")
         except socket.timeout:
             # this is the expected behaviour
@@ -133,7 +133,7 @@ def _test_ip6_gtk_drop(devs, apdevs, params, dst):
             raise Exception("DATA_TEST_FRAME failed")
         try:
             logger.info(s.recvfrom(1024))
-            logger.info("procfile=" + procfile + " val=" + open(procfile,'r').read().rstrip())
+            logger.info("procfile=" + procfile + " val=" + open(procfile, 'r').read().rstrip())
             raise Exception("erroneously received frame!")
         except socket.timeout:
             # this is the expected behaviour

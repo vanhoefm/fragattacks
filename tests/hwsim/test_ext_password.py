@@ -74,8 +74,8 @@ def test_ext_password_interworking(dev, apdev):
 
     dev[0].hs20_enable()
     dev[0].request("SET ext_password_backend test:pw1=password")
-    id = dev[0].add_cred_values({ 'realm': "example.com",
-                                  'username': "hs20-test" })
+    id = dev[0].add_cred_values({'realm': "example.com",
+                                 'username': "hs20-test"})
     dev[0].set_cred(id, "password", "ext:pw1")
     interworking_select(dev[0], bssid, freq="2412")
     interworking_connect(dev[0], bssid, "TTLS")

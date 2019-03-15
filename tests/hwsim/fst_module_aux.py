@@ -141,7 +141,7 @@ def disconnect_external_sta(sta, ap, check_disconnect=True):
     sta.request("DISCONNECT")
     if check_disconnect:
         hap = ap.get_instance()
-        ev = hap.wait_event([ "AP-STA-DISCONNECTED" ], timeout=10)
+        ev = hap.wait_event(["AP-STA-DISCONNECTED"], timeout=10)
         if ev is None:
             raise Exception("No disconnection event received from %s" % ap.get_ssid())
 
@@ -313,7 +313,7 @@ class FstDevice:
             return None
         return res.splitlines()
 
-    def configure_session(self, sid, new_iface, old_iface = None):
+    def configure_session(self, sid, new_iface, old_iface=None):
         """Calls session_set for a number of parameters some of which are stored
         in "self" while others are passed to this function explicitly. If
         old_iface is None, current iface is used; if old_iface is an empty
@@ -370,7 +370,7 @@ class FstDevice:
         return s
 
     def send_test_session_setup_request(self, fsts_id,
-                                        additional_parameter = None):
+                                        additional_parameter=None):
         request = "FST-MANAGER TEST_REQUEST SEND_SETUP_REQUEST " + fsts_id
         if additional_parameter is not None:
             request += " " + additional_parameter
@@ -380,7 +380,7 @@ class FstDevice:
         return s
 
     def send_test_session_setup_response(self, fsts_id,
-                                         response, additional_parameter = None):
+                                         response, additional_parameter=None):
         request = "FST-MANAGER TEST_REQUEST SEND_SETUP_RESPONSE " + fsts_id + " " + response
         if additional_parameter is not None:
             request += " " + additional_parameter
@@ -453,7 +453,7 @@ class FstDevice:
         s = self.grequest("FST-MANAGER SESSION_INITIATE"+ strsid)
         if not s.startswith('OK'):
             raise Exception("Cannot initiate fst session: %s" % s)
-        ev = self.peer_obj.wait_gevent([ "FST-EVENT-SESSION" ], timeout=5)
+        ev = self.peer_obj.wait_gevent(["FST-EVENT-SESSION"], timeout=5)
         if ev is None:
             raise Exception("No FST-EVENT-SESSION received")
         # We got FST event
@@ -520,7 +520,7 @@ class FstDevice:
             raise Exception("Cannot transfer fst session: %s" % s)
         result = ''
         while result == '':
-            ev = self.peer_obj.wait_gevent([ "FST-EVENT-SESSION" ], timeout=5)
+            ev = self.peer_obj.wait_gevent(["FST-EVENT-SESSION"], timeout=5)
             if ev is None:
                 raise Exception("Missing session transfer event")
             # We got FST event. We expect TRANSITION_CONFIRMED state and then
@@ -536,7 +536,7 @@ class FstDevice:
         return result
 
     def wait_for_tear_down(self):
-        ev = self.wait_gevent([ "FST-EVENT-SESSION" ], timeout=5)
+        ev = self.wait_gevent(["FST-EVENT-SESSION"], timeout=5)
         if ev is None:
             raise Exception("No FST-EVENT-SESSION received")
         # We got FST event
@@ -582,7 +582,7 @@ class FstDevice:
 #
 # FstAP class
 #
-class FstAP (FstDevice):
+class FstAP(FstDevice):
     def __init__(self, iface, ssid, mode, chan, fst_group, fst_pri,
                  fst_llt=None, rsn=False):
         """If fst_group is empty, then FST parameters will not be set
@@ -610,7 +610,7 @@ class FstAP (FstDevice):
             params['wpa_key_mgmt'] = 'WPA-PSK'
             params['rsn_pairwise'] = 'CCMP'
             params['wpa_passphrase'] = '12345678'
-        self.hapd=hostapd.add_ap(self.iface, params)
+        self.hapd = hostapd.add_ap(self.iface, params)
         if not self.hapd.ping():
             raise Exception("Could not ping FST hostapd")
         self.reg_ctrl.start()
@@ -660,7 +660,7 @@ class FstAP (FstDevice):
             # Maybe station is not connected?
             addr = None
         else:
-            addr=sta['addr']
+            addr = sta['addr']
         return addr
 
     def grequest(self, req):
@@ -688,7 +688,7 @@ class FstAP (FstDevice):
 #
 # FstSTA class
 #
-class FstSTA (FstDevice):
+class FstSTA(FstDevice):
     def __init__(self, iface, fst_group, fst_pri, fst_llt=None, rsn=False):
         """If fst_group is empty, then FST parameters will not be set
         If fst_llt is empty, the parameter will not be set and the default value
@@ -790,7 +790,7 @@ class FstSTA (FstDevice):
         h.connect(ssid, **kwargs)
         self.connected = ap
         if check_connection:
-            ev = ap.wait_event([ "AP-STA-CONNECTED" ], timeout=10)
+            ev = ap.wait_event(["AP-STA-CONNECTED"], timeout=10)
             if ev is None:
                 self.connected = None
                 raise Exception("No connection event received from %s" % ssid)
@@ -804,7 +804,7 @@ class FstSTA (FstDevice):
             h.request("DISCONNECT")
             if check_disconnect:
                 hap = self.connected.get_instance()
-                ev = hap.wait_event([ "AP-STA-DISCONNECTED" ], timeout=10)
+                ev = hap.wait_event(["AP-STA-DISCONNECTED"], timeout=10)
                 if ev is None:
                     raise Exception("No disconnection event received from %s" % self.connected.get_ssid())
                 h.dump_monitor()
@@ -820,7 +820,7 @@ class FstSTA (FstDevice):
             h.request("DISCONNECT")
             if check_disconnect:
                 hap = self.connected
-                ev = hap.wait_event([ "AP-STA-DISCONNECTED" ], timeout=10)
+                ev = hap.wait_event(["AP-STA-DISCONNECTED"], timeout=10)
                 if ev is None:
                     raise Exception("No disconnection event received from AP")
                 h.dump_monitor()

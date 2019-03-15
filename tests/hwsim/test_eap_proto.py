@@ -155,7 +155,7 @@ def start_radius_server(eap_handler):
     t = threading.Thread(target=run_pyrad_server, args=(srv, t_stop, eap_handler))
     t.start()
 
-    return { 'srv': srv, 'stop': t_stop, 'thread': t }
+    return {'srv': srv, 'stop': t_stop, 'thread': t}
 
 def stop_radius_server(srv):
     srv['stop'].set()
@@ -794,15 +794,15 @@ def test_eap_proto_sake_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ ( 1, "eap_msg_alloc;eap_sake_build_msg;eap_sake_process_challenge" ),
-              ( 1, "=eap_sake_process_challenge" ),
-              ( 1, "eap_sake_compute_mic;eap_sake_process_challenge" ),
-              ( 1, "eap_sake_build_msg;eap_sake_process_confirm" ),
-              ( 1, "eap_sake_compute_mic;eap_sake_process_confirm" ),
-              ( 2, "eap_sake_compute_mic;eap_sake_process_confirm" ),
-              ( 1, "eap_sake_getKey" ),
-              ( 1, "eap_sake_get_emsk" ),
-              ( 1, "eap_sake_get_session_id" ) ]
+    tests = [(1, "eap_msg_alloc;eap_sake_build_msg;eap_sake_process_challenge"),
+             (1, "=eap_sake_process_challenge"),
+             (1, "eap_sake_compute_mic;eap_sake_process_challenge"),
+             (1, "eap_sake_build_msg;eap_sake_process_confirm"),
+             (1, "eap_sake_compute_mic;eap_sake_process_confirm"),
+             (2, "eap_sake_compute_mic;eap_sake_process_confirm"),
+             (1, "eap_sake_getKey"),
+             (1, "eap_sake_get_emsk"),
+             (1, "eap_sake_get_session_id")]
     for count, func in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -2276,7 +2276,7 @@ def test_eap_proto_eke(dev, apdev):
                                    timeout=15)
             if ev is None:
                 raise Exception("Timeout on EAP start")
-            if i in [ 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 ]:
+            if i in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]:
                 ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"],
                                        timeout=10)
                 if ev is None:
@@ -2292,8 +2292,8 @@ def eap_eke_test_fail(dev, phase1=None, success=False):
     dev.connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                 eap="EKE", identity="eke user@domain", password="hello",
                 phase1=phase1, erp="1", wait_connect=False)
-    ev = dev.wait_event([ "CTRL-EVENT-EAP-FAILURE",
-                          "CTRL-EVENT-EAP-SUCCESS" ], timeout=5)
+    ev = dev.wait_event(["CTRL-EVENT-EAP-FAILURE",
+                         "CTRL-EVENT-EAP-SUCCESS"], timeout=5)
     if ev is None:
         raise Exception("Timeout on EAP failure")
     if not success and "CTRL-EVENT-EAP-FAILURE" not in ev:
@@ -2320,55 +2320,55 @@ def test_eap_proto_eke_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "eap_eke_dh_init", None),
-              (1, "eap_eke_prf_hmac_sha1", "dhgroup=3 encr=1 prf=1 mac=1"),
-              (1, "eap_eke_prf_hmac_sha256", "dhgroup=5 encr=1 prf=2 mac=2"),
-              (1, "eap_eke_prf", None),
-              (1, "os_get_random;eap_eke_dhcomp", None),
-              (1, "aes_128_cbc_encrypt;eap_eke_dhcomp", None),
-              (1, "aes_128_cbc_decrypt;eap_eke_shared_secret", None),
-              (1, "eap_eke_prf;eap_eke_shared_secret", None),
-              (1, "eap_eke_prfplus;eap_eke_derive_ke_ki", None),
-              (1, "eap_eke_prfplus;eap_eke_derive_ka", None),
-              (1, "eap_eke_prfplus;eap_eke_derive_msk", None),
-              (1, "os_get_random;eap_eke_prot", None),
-              (1, "aes_128_cbc_decrypt;eap_eke_decrypt_prot", None),
-              (1, "eap_eke_derive_key;eap_eke_process_commit", None),
-              (1, "eap_eke_dh_init;eap_eke_process_commit", None),
-              (1, "eap_eke_shared_secret;eap_eke_process_commit", None),
-              (1, "eap_eke_derive_ke_ki;eap_eke_process_commit", None),
-              (1, "eap_eke_dhcomp;eap_eke_process_commit", None),
-              (1, "os_get_random;eap_eke_process_commit", None),
-              (1, "os_get_random;=eap_eke_process_commit", None),
-              (1, "eap_eke_prot;eap_eke_process_commit", None),
-              (1, "eap_eke_decrypt_prot;eap_eke_process_confirm", None),
-              (1, "eap_eke_derive_ka;eap_eke_process_confirm", None),
-              (1, "eap_eke_auth;eap_eke_process_confirm", None),
-              (2, "eap_eke_auth;eap_eke_process_confirm", None),
-              (1, "eap_eke_prot;eap_eke_process_confirm", None),
-              (1, "eap_eke_derive_msk;eap_eke_process_confirm", None) ]
+    tests = [(1, "eap_eke_dh_init", None),
+             (1, "eap_eke_prf_hmac_sha1", "dhgroup=3 encr=1 prf=1 mac=1"),
+             (1, "eap_eke_prf_hmac_sha256", "dhgroup=5 encr=1 prf=2 mac=2"),
+             (1, "eap_eke_prf", None),
+             (1, "os_get_random;eap_eke_dhcomp", None),
+             (1, "aes_128_cbc_encrypt;eap_eke_dhcomp", None),
+             (1, "aes_128_cbc_decrypt;eap_eke_shared_secret", None),
+             (1, "eap_eke_prf;eap_eke_shared_secret", None),
+             (1, "eap_eke_prfplus;eap_eke_derive_ke_ki", None),
+             (1, "eap_eke_prfplus;eap_eke_derive_ka", None),
+             (1, "eap_eke_prfplus;eap_eke_derive_msk", None),
+             (1, "os_get_random;eap_eke_prot", None),
+             (1, "aes_128_cbc_decrypt;eap_eke_decrypt_prot", None),
+             (1, "eap_eke_derive_key;eap_eke_process_commit", None),
+             (1, "eap_eke_dh_init;eap_eke_process_commit", None),
+             (1, "eap_eke_shared_secret;eap_eke_process_commit", None),
+             (1, "eap_eke_derive_ke_ki;eap_eke_process_commit", None),
+             (1, "eap_eke_dhcomp;eap_eke_process_commit", None),
+             (1, "os_get_random;eap_eke_process_commit", None),
+             (1, "os_get_random;=eap_eke_process_commit", None),
+             (1, "eap_eke_prot;eap_eke_process_commit", None),
+             (1, "eap_eke_decrypt_prot;eap_eke_process_confirm", None),
+             (1, "eap_eke_derive_ka;eap_eke_process_confirm", None),
+             (1, "eap_eke_auth;eap_eke_process_confirm", None),
+             (2, "eap_eke_auth;eap_eke_process_confirm", None),
+             (1, "eap_eke_prot;eap_eke_process_confirm", None),
+             (1, "eap_eke_derive_msk;eap_eke_process_confirm", None)]
     for count, func, phase1 in tests:
         with fail_test(dev[0], count, func):
             eap_eke_test_fail(dev[0], phase1)
 
-    tests = [ (1, "=eap_eke_derive_ke_ki", None),
-              (1, "=eap_eke_derive_ka", None),
-              (1, "=eap_eke_derive_msk", None),
-              (1, "eap_eke_build_msg;eap_eke_process_id", None),
-              (1, "wpabuf_alloc;eap_eke_process_id", None),
-              (1, "=eap_eke_process_id", None),
-              (1, "wpabuf_alloc;=eap_eke_process_id", None),
-              (1, "wpabuf_alloc;eap_eke_process_id", None),
-              (1, "eap_eke_build_msg;eap_eke_process_commit", None),
-              (1, "wpabuf_resize;eap_eke_process_commit", None),
-              (1, "eap_eke_build_msg;eap_eke_process_confirm", None) ]
+    tests = [(1, "=eap_eke_derive_ke_ki", None),
+             (1, "=eap_eke_derive_ka", None),
+             (1, "=eap_eke_derive_msk", None),
+             (1, "eap_eke_build_msg;eap_eke_process_id", None),
+             (1, "wpabuf_alloc;eap_eke_process_id", None),
+             (1, "=eap_eke_process_id", None),
+             (1, "wpabuf_alloc;=eap_eke_process_id", None),
+             (1, "wpabuf_alloc;eap_eke_process_id", None),
+             (1, "eap_eke_build_msg;eap_eke_process_commit", None),
+             (1, "wpabuf_resize;eap_eke_process_commit", None),
+             (1, "eap_eke_build_msg;eap_eke_process_confirm", None)]
     for count, func, phase1 in tests:
         with alloc_fail(dev[0], count, func):
             eap_eke_test_fail(dev[0], phase1)
 
-    tests = [ (1, "eap_eke_getKey", None),
-              (1, "eap_eke_get_emsk", None),
-              (1, "eap_eke_get_session_id", None) ]
+    tests = [(1, "eap_eke_getKey", None),
+             (1, "eap_eke_get_emsk", None),
+             (1, "eap_eke_get_session_id", None)]
     for count, func, phase1 in tests:
         with alloc_fail(dev[0], count, func):
             eap_eke_test_fail(dev[0], phase1, success=True)
@@ -2733,11 +2733,11 @@ def test_eap_proto_pax_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ "eap_msg_alloc;eap_pax_alloc_resp;eap_pax_process_std_1",
-              "eap_msg_alloc;eap_pax_alloc_resp;eap_pax_process_std_3",
-              "eap_pax_getKey",
-              "eap_pax_get_emsk",
-              "eap_pax_get_session_id" ]
+    tests = ["eap_msg_alloc;eap_pax_alloc_resp;eap_pax_process_std_1",
+             "eap_msg_alloc;eap_pax_alloc_resp;eap_pax_process_std_3",
+             "eap_pax_getKey",
+             "eap_pax_get_emsk",
+             "eap_pax_get_session_id"]
     for func in tests:
         with alloc_fail(dev[0], 1, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -2748,12 +2748,12 @@ def test_eap_proto_pax_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "os_get_random;eap_pax_process_std_1"),
-              (1, "eap_pax_initial_key_derivation"),
-              (1, "eap_pax_mac;eap_pax_process_std_3"),
-              (2, "eap_pax_mac;eap_pax_process_std_3"),
-              (1, "eap_pax_kdf;eap_pax_getKey"),
-              (1, "eap_pax_kdf;eap_pax_get_emsk") ]
+    tests = [(1, "os_get_random;eap_pax_process_std_1"),
+             (1, "eap_pax_initial_key_derivation"),
+             (1, "eap_pax_mac;eap_pax_process_std_3"),
+             (2, "eap_pax_mac;eap_pax_process_std_3"),
+             (1, "eap_pax_kdf;eap_pax_getKey"),
+             (1, "eap_pax_kdf;eap_pax_get_emsk")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -2922,15 +2922,15 @@ def test_eap_proto_psk_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "=eap_psk_process_1"),
-              (2, "=eap_psk_process_1"),
-              (1, "eap_msg_alloc;eap_psk_process_1"),
-              (1, "=eap_psk_process_3"),
-              (2, "=eap_psk_process_3"),
-              (1, "eap_msg_alloc;eap_psk_process_3"),
-              (1, "eap_psk_getKey"),
-              (1, "eap_psk_get_session_id"),
-              (1, "eap_psk_get_emsk") ]
+    tests = [(1, "=eap_psk_process_1"),
+             (2, "=eap_psk_process_1"),
+             (1, "eap_msg_alloc;eap_psk_process_1"),
+             (1, "=eap_psk_process_3"),
+             (2, "=eap_psk_process_3"),
+             (1, "eap_msg_alloc;eap_psk_process_3"),
+             (1, "eap_psk_getKey"),
+             (1, "eap_psk_get_session_id"),
+             (1, "eap_psk_get_emsk")]
     for count, func in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -2946,26 +2946,26 @@ def test_eap_proto_psk_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "os_get_random;eap_psk_process_1"),
-              (1, "omac1_aes_128;eap_psk_process_3"),
-              (1, "aes_128_eax_decrypt;eap_psk_process_3"),
-              (2, "aes_128_eax_decrypt;eap_psk_process_3"),
-              (3, "aes_128_eax_decrypt;eap_psk_process_3"),
-              (1, "aes_128_eax_encrypt;eap_psk_process_3"),
-              (2, "aes_128_eax_encrypt;eap_psk_process_3"),
-              (3, "aes_128_eax_encrypt;eap_psk_process_3"),
-              (1, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
-              (2, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
-              (3, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
-              (4, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
-              (5, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
-              (6, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
-              (7, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
-              (8, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
-              (9, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
-              (10, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
-              (1, "aes_ctr_encrypt;aes_128_eax_decrypt;eap_psk_process_3"),
-              (1, "aes_ctr_encrypt;aes_128_eax_encrypt;eap_psk_process_3") ]
+    tests = [(1, "os_get_random;eap_psk_process_1"),
+             (1, "omac1_aes_128;eap_psk_process_3"),
+             (1, "aes_128_eax_decrypt;eap_psk_process_3"),
+             (2, "aes_128_eax_decrypt;eap_psk_process_3"),
+             (3, "aes_128_eax_decrypt;eap_psk_process_3"),
+             (1, "aes_128_eax_encrypt;eap_psk_process_3"),
+             (2, "aes_128_eax_encrypt;eap_psk_process_3"),
+             (3, "aes_128_eax_encrypt;eap_psk_process_3"),
+             (1, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
+             (2, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
+             (3, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
+             (4, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
+             (5, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
+             (6, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
+             (7, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
+             (8, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
+             (9, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
+             (10, "aes_128_encrypt_block;eap_psk_derive_keys;eap_psk_process_3"),
+             (1, "aes_ctr_encrypt;aes_128_eax_decrypt;eap_psk_process_3"),
+             (1, "aes_ctr_encrypt;aes_128_eax_encrypt;eap_psk_process_3")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -3707,7 +3707,7 @@ def test_eap_proto_aka(dev, apdev):
                                    timeout=15)
             if ev is None:
                 raise Exception("Timeout on EAP start")
-            if i in [ 0, 15 ]:
+            if i in [0, 15]:
                 time.sleep(0.1)
             else:
                 ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"],
@@ -4134,7 +4134,7 @@ def test_eap_proto_aka_prime(dev, apdev):
                                    timeout=15)
             if ev is None:
                 raise Exception("Timeout on EAP start")
-            if i in [ 0 ]:
+            if i in [0]:
                 time.sleep(0.1)
             else:
                 ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"],
@@ -4540,7 +4540,7 @@ def test_eap_proto_sim(dev, apdev):
                                    timeout=15)
             if ev is None:
                 raise Exception("Timeout on EAP start")
-            if i in [ 0 ]:
+            if i in [0]:
                 time.sleep(0.1)
             else:
                 ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"],
@@ -4635,18 +4635,18 @@ def test_eap_proto_sim_errors(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].dump_monitor()
 
-    tests = [ (1, "eap_sim_verify_mac;eap_sim_process_challenge"),
-              (1, "eap_sim_parse_encr;eap_sim_process_challenge"),
-              (1, "eap_sim_msg_init;eap_sim_response_start"),
-              (1, "wpabuf_alloc;eap_sim_msg_init;eap_sim_response_start"),
-              (1, "=eap_sim_learn_ids"),
-              (2, "=eap_sim_learn_ids"),
-              (2, "eap_sim_learn_ids"),
-              (3, "eap_sim_learn_ids"),
-              (1, "eap_sim_process_start"),
-              (1, "eap_sim_getKey"),
-              (1, "eap_sim_get_emsk"),
-              (1, "eap_sim_get_session_id") ]
+    tests = [(1, "eap_sim_verify_mac;eap_sim_process_challenge"),
+             (1, "eap_sim_parse_encr;eap_sim_process_challenge"),
+             (1, "eap_sim_msg_init;eap_sim_response_start"),
+             (1, "wpabuf_alloc;eap_sim_msg_init;eap_sim_response_start"),
+             (1, "=eap_sim_learn_ids"),
+             (2, "=eap_sim_learn_ids"),
+             (2, "eap_sim_learn_ids"),
+             (3, "eap_sim_learn_ids"),
+             (1, "eap_sim_process_start"),
+             (1, "eap_sim_getKey"),
+             (1, "eap_sim_get_emsk"),
+             (1, "eap_sim_get_session_id")]
     for count, func in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -4657,7 +4657,7 @@ def test_eap_proto_sim_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].dump_monitor()
 
-    tests = [ (1, "aes_128_cbc_decrypt;eap_sim_parse_encr") ]
+    tests = [(1, "aes_128_cbc_decrypt;eap_sim_parse_encr")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -4686,8 +4686,8 @@ def test_eap_proto_sim_errors(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].dump_monitor()
 
-    tests = [ "eap_sim_msg_add_encr_start;eap_sim_response_notification",
-              "aes_128_cbc_encrypt;eap_sim_response_notification" ]
+    tests = ["eap_sim_msg_add_encr_start;eap_sim_response_notification",
+             "aes_128_cbc_encrypt;eap_sim_response_notification"]
     for func in tests:
         with fail_test(dev[0], 1, func):
             dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
@@ -4704,7 +4704,7 @@ def test_eap_proto_sim_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].dump_monitor()
 
-    tests = [ "eap_sim_parse_encr;eap_sim_process_notification_reauth" ]
+    tests = ["eap_sim_parse_encr;eap_sim_process_notification_reauth"]
     for func in tests:
         with alloc_fail(dev[0], 1, func):
             dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
@@ -4740,14 +4740,14 @@ def test_eap_proto_aka_errors(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
 
-    tests = [ (1, "=eap_aka_learn_ids"),
-              (2, "=eap_aka_learn_ids"),
-              (1, "eap_sim_parse_encr;eap_aka_process_challenge"),
-              (1, "wpabuf_dup;eap_aka_add_id_msg"),
-              (1, "wpabuf_resize;eap_aka_add_id_msg"),
-              (1, "eap_aka_getKey"),
-              (1, "eap_aka_get_emsk"),
-              (1, "eap_aka_get_session_id") ]
+    tests = [(1, "=eap_aka_learn_ids"),
+             (2, "=eap_aka_learn_ids"),
+             (1, "eap_sim_parse_encr;eap_aka_process_challenge"),
+             (1, "wpabuf_dup;eap_aka_add_id_msg"),
+             (1, "wpabuf_resize;eap_aka_add_id_msg"),
+             (1, "eap_aka_getKey"),
+             (1, "eap_aka_get_emsk"),
+             (1, "eap_aka_get_session_id")]
     for count, func in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -4775,8 +4775,8 @@ def test_eap_proto_aka_errors(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].dump_monitor()
 
-    tests = [ "eap_sim_msg_add_encr_start;eap_aka_response_notification",
-              "aes_128_cbc_encrypt;eap_aka_response_notification" ]
+    tests = ["eap_sim_msg_add_encr_start;eap_aka_response_notification",
+             "aes_128_cbc_encrypt;eap_aka_response_notification"]
     for func in tests:
         with fail_test(dev[0], 1, func):
             dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
@@ -4793,7 +4793,7 @@ def test_eap_proto_aka_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].dump_monitor()
 
-    tests = [ "eap_sim_parse_encr;eap_aka_process_notification_reauth" ]
+    tests = ["eap_sim_parse_encr;eap_aka_process_notification_reauth"]
     for func in tests:
         with alloc_fail(dev[0], 1, func):
             dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
@@ -4855,8 +4855,8 @@ def test_eap_proto_aka_prime_errors(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].dump_monitor()
 
-    tests = [ (1, "eap_sim_verify_mac_sha256"),
-              (1, "=eap_aka_process_challenge") ]
+    tests = [(1, "eap_sim_verify_mac_sha256"),
+             (1, "=eap_aka_process_challenge")]
     for count, func in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -5337,7 +5337,7 @@ def test_eap_proto_ikev2(dev, apdev):
                                    timeout=15)
             if ev is None:
                 raise Exception("Timeout on EAP method start")
-            if i in [ 41, 46 ]:
+            if i in [41, 46]:
                 ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"],
                                        timeout=10)
                 if ev is None:
@@ -5399,40 +5399,40 @@ def test_eap_proto_ikev2_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "ikev2_encr_encrypt"),
-              (1, "ikev2_encr_decrypt"),
-              (1, "ikev2_derive_auth_data"),
-              (2, "ikev2_derive_auth_data"),
-              (1, "=ikev2_decrypt_payload"),
-              (1, "ikev2_encr_decrypt;ikev2_decrypt_payload"),
-              (1, "ikev2_encr_encrypt;ikev2_build_encrypted"),
-              (1, "ikev2_derive_sk_keys"),
-              (2, "ikev2_derive_sk_keys"),
-              (3, "ikev2_derive_sk_keys"),
-              (4, "ikev2_derive_sk_keys"),
-              (5, "ikev2_derive_sk_keys"),
-              (6, "ikev2_derive_sk_keys"),
-              (7, "ikev2_derive_sk_keys"),
-              (8, "ikev2_derive_sk_keys"),
-              (1, "eap_ikev2_derive_keymat;eap_ikev2_peer_keymat"),
-              (1, "eap_msg_alloc;eap_ikev2_build_msg"),
-              (1, "eap_ikev2_getKey"),
-              (1, "eap_ikev2_get_emsk"),
-              (1, "eap_ikev2_get_session_id"),
-              (1, "=ikev2_derive_keys"),
-              (2, "=ikev2_derive_keys"),
-              (1, "wpabuf_alloc;ikev2_process_kei"),
-              (1, "=ikev2_process_idi"),
-              (1, "ikev2_derive_auth_data;ikev2_build_auth"),
-              (1, "wpabuf_alloc;ikev2_build_sa_init"),
-              (2, "wpabuf_alloc;ikev2_build_sa_init"),
-              (3, "wpabuf_alloc;ikev2_build_sa_init"),
-              (4, "wpabuf_alloc;ikev2_build_sa_init"),
-              (5, "wpabuf_alloc;ikev2_build_sa_init"),
-              (6, "wpabuf_alloc;ikev2_build_sa_init"),
-              (1, "wpabuf_alloc;ikev2_build_sa_auth"),
-              (2, "wpabuf_alloc;ikev2_build_sa_auth"),
-              (1, "ikev2_build_auth;ikev2_build_sa_auth") ]
+    tests = [(1, "ikev2_encr_encrypt"),
+             (1, "ikev2_encr_decrypt"),
+             (1, "ikev2_derive_auth_data"),
+             (2, "ikev2_derive_auth_data"),
+             (1, "=ikev2_decrypt_payload"),
+             (1, "ikev2_encr_decrypt;ikev2_decrypt_payload"),
+             (1, "ikev2_encr_encrypt;ikev2_build_encrypted"),
+             (1, "ikev2_derive_sk_keys"),
+             (2, "ikev2_derive_sk_keys"),
+             (3, "ikev2_derive_sk_keys"),
+             (4, "ikev2_derive_sk_keys"),
+             (5, "ikev2_derive_sk_keys"),
+             (6, "ikev2_derive_sk_keys"),
+             (7, "ikev2_derive_sk_keys"),
+             (8, "ikev2_derive_sk_keys"),
+             (1, "eap_ikev2_derive_keymat;eap_ikev2_peer_keymat"),
+             (1, "eap_msg_alloc;eap_ikev2_build_msg"),
+             (1, "eap_ikev2_getKey"),
+             (1, "eap_ikev2_get_emsk"),
+             (1, "eap_ikev2_get_session_id"),
+             (1, "=ikev2_derive_keys"),
+             (2, "=ikev2_derive_keys"),
+             (1, "wpabuf_alloc;ikev2_process_kei"),
+             (1, "=ikev2_process_idi"),
+             (1, "ikev2_derive_auth_data;ikev2_build_auth"),
+             (1, "wpabuf_alloc;ikev2_build_sa_init"),
+             (2, "wpabuf_alloc;ikev2_build_sa_init"),
+             (3, "wpabuf_alloc;ikev2_build_sa_init"),
+             (4, "wpabuf_alloc;ikev2_build_sa_init"),
+             (5, "wpabuf_alloc;ikev2_build_sa_init"),
+             (6, "wpabuf_alloc;ikev2_build_sa_init"),
+             (1, "wpabuf_alloc;ikev2_build_sa_auth"),
+             (2, "wpabuf_alloc;ikev2_build_sa_auth"),
+             (1, "ikev2_build_auth;ikev2_build_sa_auth")]
     for count, func in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -5454,9 +5454,9 @@ def test_eap_proto_ikev2_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "wpabuf_alloc;ikev2_build_notify"),
-              (2, "wpabuf_alloc;ikev2_build_notify"),
-              (1, "ikev2_build_encrypted;ikev2_build_notify") ]
+    tests = [(1, "wpabuf_alloc;ikev2_build_notify"),
+             (2, "wpabuf_alloc;ikev2_build_notify"),
+             (1, "ikev2_build_encrypted;ikev2_build_notify")]
     for count, func in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -5479,18 +5479,18 @@ def test_eap_proto_ikev2_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "ikev2_integ_hash"),
-              (1, "ikev2_integ_hash;ikev2_decrypt_payload"),
-              (1, "os_get_random;ikev2_build_encrypted"),
-              (1, "ikev2_prf_plus;ikev2_derive_sk_keys"),
-              (1, "eap_ikev2_derive_keymat;eap_ikev2_peer_keymat"),
-              (1, "os_get_random;ikev2_build_sa_init"),
-              (2, "os_get_random;ikev2_build_sa_init"),
-              (1, "ikev2_integ_hash;eap_ikev2_validate_icv"),
-              (1, "hmac_sha1_vector;?ikev2_prf_hash;ikev2_derive_keys"),
-              (1, "hmac_sha1_vector;?ikev2_prf_hash;ikev2_derive_auth_data"),
-              (2, "hmac_sha1_vector;?ikev2_prf_hash;ikev2_derive_auth_data"),
-              (3, "hmac_sha1_vector;?ikev2_prf_hash;ikev2_derive_auth_data") ]
+    tests = [(1, "ikev2_integ_hash"),
+             (1, "ikev2_integ_hash;ikev2_decrypt_payload"),
+             (1, "os_get_random;ikev2_build_encrypted"),
+             (1, "ikev2_prf_plus;ikev2_derive_sk_keys"),
+             (1, "eap_ikev2_derive_keymat;eap_ikev2_peer_keymat"),
+             (1, "os_get_random;ikev2_build_sa_init"),
+             (2, "os_get_random;ikev2_build_sa_init"),
+             (1, "ikev2_integ_hash;eap_ikev2_validate_icv"),
+             (1, "hmac_sha1_vector;?ikev2_prf_hash;ikev2_derive_keys"),
+             (1, "hmac_sha1_vector;?ikev2_prf_hash;ikev2_derive_auth_data"),
+             (2, "hmac_sha1_vector;?ikev2_prf_hash;ikev2_derive_auth_data"),
+             (3, "hmac_sha1_vector;?ikev2_prf_hash;ikev2_derive_auth_data")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -5512,15 +5512,15 @@ def test_eap_proto_ikev2_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    params = { "ssid": "eap-test2", "wpa": "2", "wpa_key_mgmt": "WPA-EAP",
-               "rsn_pairwise": "CCMP", "ieee8021x": "1",
-               "eap_server": "1", "eap_user_file": "auth_serv/eap_user.conf",
-               "fragment_size": "50" }
+    params = {"ssid": "eap-test2", "wpa": "2", "wpa_key_mgmt": "WPA-EAP",
+              "rsn_pairwise": "CCMP", "ieee8021x": "1",
+              "eap_server": "1", "eap_user_file": "auth_serv/eap_user.conf",
+              "fragment_size": "50"}
     hapd2 = hostapd.add_ap(apdev[1], params)
     dev[0].scan_for_bss(hapd2.own_addr(), freq=2412)
 
-    tests = [ (1, "eap_ikev2_build_frag_ack"),
-              (1, "wpabuf_alloc;eap_ikev2_process_fragment") ]
+    tests = [(1, "eap_ikev2_build_frag_ack"),
+             (1, "wpabuf_alloc;eap_ikev2_process_fragment")]
     for count, func in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("eap-test2", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -5851,14 +5851,14 @@ def test_eap_proto_mschapv2(dev, apdev):
             if ev is None:
                 raise Exception("Timeout on EAP start")
 
-            if i in [ 8, 11, 12 ]:
+            if i in [8, 11, 12]:
                 ev = dev[0].wait_event(["CTRL-REQ-NEW_PASSWORD"],
                                        timeout=10)
                 if ev is None:
                     raise Exception("Timeout on new password request")
                 id = ev.split(':')[0].split('-')[-1]
                 dev[0].request("CTRL-RSP-NEW_PASSWORD-" + id + ":new-pw")
-                if i in [ 11, 12 ]:
+                if i in [11, 12]:
                     ev = dev[0].wait_event(["CTRL-EVENT-PASSWORD-CHANGED"],
                                        timeout=10)
                     if ev is None:
@@ -5873,7 +5873,7 @@ def test_eap_proto_mschapv2(dev, apdev):
                     if ev is None:
                         raise Exception("Timeout on EAP failure")
 
-            if i in [ 13 ]:
+            if i in [13]:
                 ev = dev[0].wait_event(["CTRL-REQ-IDENTITY"],
                                        timeout=10)
                 if ev is None:
@@ -5895,7 +5895,7 @@ def test_eap_proto_mschapv2(dev, apdev):
                 if ev is None:
                     raise Exception("Timeout on EAP failure")
 
-            if i in [ 4, 5, 6, 7, 14 ]:
+            if i in [4, 5, 6, 7, 14]:
                 ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"],
                                        timeout=10)
                 if ev is None:
@@ -6061,11 +6061,11 @@ def test_eap_proto_mschapv2_errors(dev, apdev):
         hapd = start_ap(apdev[0])
         dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
-        tests = [ "os_get_random;eap_mschapv2_change_password",
-                  "generate_nt_response;eap_mschapv2_change_password",
-                  "get_master_key;eap_mschapv2_change_password",
-                  "nt_password_hash;eap_mschapv2_change_password",
-                  "old_nt_password_hash_encrypted_with_new_nt_password_hash" ]
+        tests = ["os_get_random;eap_mschapv2_change_password",
+                 "generate_nt_response;eap_mschapv2_change_password",
+                 "get_master_key;eap_mschapv2_change_password",
+                 "nt_password_hash;eap_mschapv2_change_password",
+                 "old_nt_password_hash_encrypted_with_new_nt_password_hash"]
         for func in tests:
             with fail_test(dev[0], 1, func):
                 dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -6081,9 +6081,9 @@ def test_eap_proto_mschapv2_errors(dev, apdev):
                 dev[0].request("REMOVE_NETWORK all")
                 dev[0].wait_disconnected(timeout=1)
 
-        tests = [ "encrypt_pw_block_with_password_hash;eap_mschapv2_change_password",
-                  "nt_password_hash;eap_mschapv2_change_password",
-                  "nt_password_hash;eap_mschapv2_success" ]
+        tests = ["encrypt_pw_block_with_password_hash;eap_mschapv2_change_password",
+                 "nt_password_hash;eap_mschapv2_change_password",
+                 "nt_password_hash;eap_mschapv2_success"]
         for func in tests:
             with fail_test(dev[0], 1, func):
                 dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -6100,7 +6100,7 @@ def test_eap_proto_mschapv2_errors(dev, apdev):
                 dev[0].request("REMOVE_NETWORK all")
                 dev[0].wait_disconnected(timeout=1)
 
-        tests = [ "eap_msg_alloc;eap_mschapv2_change_password" ]
+        tests = ["eap_msg_alloc;eap_mschapv2_change_password"]
         for func in tests:
             with alloc_fail(dev[0], 1, func):
                 dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -6404,7 +6404,7 @@ def test_eap_proto_pwd_errors(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
 
-    funcs = [ "eap_pwd_getkey", "eap_pwd_get_emsk" ]
+    funcs = ["eap_pwd_getkey", "eap_pwd_get_emsk"]
     for func in funcs:
         with alloc_fail(dev[0], 1, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -6530,10 +6530,10 @@ def test_eap_proto_pwd_errors(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
 
-    params = { "ssid": "eap-test2", "wpa": "2", "wpa_key_mgmt": "WPA-EAP",
-               "rsn_pairwise": "CCMP", "ieee8021x": "1",
-               "eap_server": "1", "eap_user_file": "auth_serv/eap_user.conf",
-               "pwd_group": "19", "fragment_size": "40" }
+    params = {"ssid": "eap-test2", "wpa": "2", "wpa_key_mgmt": "WPA-EAP",
+              "rsn_pairwise": "CCMP", "ieee8021x": "1",
+              "eap_server": "1", "eap_user_file": "auth_serv/eap_user.conf",
+              "pwd_group": "19", "fragment_size": "40"}
     hapd2 = hostapd.add_ap(apdev[1], params)
     dev[0].scan_for_bss(hapd2.own_addr(), freq=2412)
 
@@ -6736,16 +6736,16 @@ def test_eap_proto_fast_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "wpabuf_alloc;eap_fast_tlv_eap_payload"),
-              (1, "eap_fast_derive_key;eap_fast_derive_key_auth"),
-              (1, "eap_msg_alloc;eap_peer_tls_phase2_nak"),
-              (1, "wpabuf_alloc;eap_fast_tlv_result"),
-              (1, "wpabuf_alloc;eap_fast_tlv_pac_ack"),
-              (1, "=eap_peer_tls_derive_session_id;eap_fast_process_crypto_binding"),
-              (1, "eap_peer_tls_decrypt;eap_fast_decrypt"),
-              (1, "eap_fast_getKey"),
-              (1, "eap_fast_get_session_id"),
-              (1, "eap_fast_get_emsk") ]
+    tests = [(1, "wpabuf_alloc;eap_fast_tlv_eap_payload"),
+             (1, "eap_fast_derive_key;eap_fast_derive_key_auth"),
+             (1, "eap_msg_alloc;eap_peer_tls_phase2_nak"),
+             (1, "wpabuf_alloc;eap_fast_tlv_result"),
+             (1, "wpabuf_alloc;eap_fast_tlv_pac_ack"),
+             (1, "=eap_peer_tls_derive_session_id;eap_fast_process_crypto_binding"),
+             (1, "eap_peer_tls_decrypt;eap_fast_decrypt"),
+             (1, "eap_fast_getKey"),
+             (1, "eap_fast_get_session_id"),
+             (1, "eap_fast_get_emsk")]
     for count, func in tests:
         dev[0].request("SET blob fast_pac_auth_errors ")
         with alloc_fail(dev[0], count, func):
@@ -6765,14 +6765,14 @@ def test_eap_proto_fast_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "eap_fast_derive_key;eap_fast_derive_key_provisioning"),
-              (1, "eap_mschapv2_getKey;eap_fast_get_phase2_key"),
-              (1, "=eap_fast_use_pac_opaque"),
-              (1, "eap_fast_copy_buf"),
-              (1, "=eap_fast_add_pac"),
-              (1, "=eap_fast_init_pac_data"),
-              (1, "=eap_fast_write_pac"),
-              (2, "=eap_fast_write_pac") ]
+    tests = [(1, "eap_fast_derive_key;eap_fast_derive_key_provisioning"),
+             (1, "eap_mschapv2_getKey;eap_fast_get_phase2_key"),
+             (1, "=eap_fast_use_pac_opaque"),
+             (1, "eap_fast_copy_buf"),
+             (1, "=eap_fast_add_pac"),
+             (1, "=eap_fast_init_pac_data"),
+             (1, "=eap_fast_write_pac"),
+             (2, "=eap_fast_write_pac")]
     for count, func in tests:
         dev[0].request("SET blob fast_pac_errors ")
         with alloc_fail(dev[0], count, func):
@@ -6792,9 +6792,9 @@ def test_eap_proto_fast_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "eap_fast_get_cmk;eap_fast_process_crypto_binding"),
-              (1, "eap_fast_derive_eap_msk;eap_fast_process_crypto_binding"),
-              (1, "eap_fast_derive_eap_emsk;eap_fast_process_crypto_binding") ]
+    tests = [(1, "eap_fast_get_cmk;eap_fast_process_crypto_binding"),
+             (1, "eap_fast_derive_eap_msk;eap_fast_process_crypto_binding"),
+             (1, "eap_fast_derive_eap_emsk;eap_fast_process_crypto_binding")]
     for count, func in tests:
         dev[0].request("SET blob fast_pac_auth_errors ")
         with fail_test(dev[0], count, func):
@@ -6851,19 +6851,19 @@ def test_eap_proto_fast_errors(dev, apdev):
     dev[0].request("REMOVE_NETWORK all")
     dev[0].wait_disconnected()
 
-    tests = [ "FOOBAR\n",
-              "wpa_supplicant EAP-FAST PAC file - version 1\nFOOBAR\n",
-              "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\n",
-              "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nSTART\n",
-              "wpa_supplicant EAP-FAST PAC file - version 1\nEND\n",
-              "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nPAC-Type=12345\nEND\n"
-              "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nPAC-Key=12\nEND\n",
-              "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nPAC-Key=1\nEND\n",
-              "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nPAC-Key=1q\nEND\n",
-              "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nPAC-Opaque=1\nEND\n",
-              "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nA-ID=1\nEND\n",
-              "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nI-ID=1\nEND\n",
-              "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nA-ID-Info=1\nEND\n" ]
+    tests = ["FOOBAR\n",
+             "wpa_supplicant EAP-FAST PAC file - version 1\nFOOBAR\n",
+             "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\n",
+             "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nSTART\n",
+             "wpa_supplicant EAP-FAST PAC file - version 1\nEND\n",
+             "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nPAC-Type=12345\nEND\n"
+             "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nPAC-Key=12\nEND\n",
+             "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nPAC-Key=1\nEND\n",
+             "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nPAC-Key=1q\nEND\n",
+             "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nPAC-Opaque=1\nEND\n",
+             "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nA-ID=1\nEND\n",
+             "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nI-ID=1\nEND\n",
+             "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nA-ID-Info=1\nEND\n"]
     for pac in tests:
         blob = binascii.hexlify(pac.encode()).decode()
         dev[0].request("SET blob fast_pac_errors " + blob)
@@ -6881,8 +6881,8 @@ def test_eap_proto_fast_errors(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
 
-    tests = [ "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nEND\n",
-              "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nEND\nSTART\nEND\nSTART\nEND\n" ]
+    tests = ["wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nEND\n",
+             "wpa_supplicant EAP-FAST PAC file - version 1\nSTART\nEND\nSTART\nEND\nSTART\nEND\n"]
     for pac in tests:
         blob = binascii.hexlify(pac.encode()).decode()
         dev[0].request("SET blob fast_pac_errors " + blob)
@@ -6919,17 +6919,17 @@ def test_eap_proto_peap_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "eap_mschapv2_getKey;eap_peap_get_isk;eap_peap_derive_cmk"),
-              (1, "eap_msg_alloc;eap_tlv_build_result"),
-              (1, "eap_mschapv2_init;eap_peap_phase2_request"),
-              (1, "eap_peer_tls_decrypt;eap_peap_decrypt"),
-              (1, "wpabuf_alloc;=eap_peap_decrypt"),
-              (1, "eap_peer_tls_encrypt;eap_peap_decrypt"),
-              (1, "eap_peer_tls_process_helper;eap_peap_process"),
-              (1, "eap_peer_tls_derive_key;eap_peap_process"),
-              (1, "eap_peer_tls_derive_session_id;eap_peap_process"),
-              (1, "eap_peap_getKey"),
-              (1, "eap_peap_get_session_id") ]
+    tests = [(1, "eap_mschapv2_getKey;eap_peap_get_isk;eap_peap_derive_cmk"),
+             (1, "eap_msg_alloc;eap_tlv_build_result"),
+             (1, "eap_mschapv2_init;eap_peap_phase2_request"),
+             (1, "eap_peer_tls_decrypt;eap_peap_decrypt"),
+             (1, "wpabuf_alloc;=eap_peap_decrypt"),
+             (1, "eap_peer_tls_encrypt;eap_peap_decrypt"),
+             (1, "eap_peer_tls_process_helper;eap_peap_process"),
+             (1, "eap_peer_tls_derive_key;eap_peap_process"),
+             (1, "eap_peer_tls_derive_session_id;eap_peap_process"),
+             (1, "eap_peap_getKey"),
+             (1, "eap_peap_get_session_id")]
     for count, func in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -6946,9 +6946,9 @@ def test_eap_proto_peap_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "peap_prfplus;eap_peap_derive_cmk"),
-              (1, "eap_tlv_add_cryptobinding;eap_tlv_build_result"),
-              (1, "peap_prfplus;eap_peap_getKey") ]
+    tests = [(1, "peap_prfplus;eap_peap_derive_cmk"),
+             (1, "eap_tlv_add_cryptobinding;eap_tlv_build_result"),
+             (1, "peap_prfplus;eap_peap_getKey")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -6999,56 +6999,56 @@ def test_eap_proto_ttls_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "eap_peer_tls_derive_key;eap_ttls_v0_derive_key",
-               "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
-              (1, "eap_peer_tls_derive_session_id;eap_ttls_v0_derive_key",
-               "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
-              (1, "wpabuf_alloc;eap_ttls_phase2_request_mschapv2",
-               "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
-              (1, "eap_peer_tls_derive_key;eap_ttls_phase2_request_mschapv2",
-               "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
-              (1, "eap_peer_tls_encrypt;eap_ttls_encrypt_response;eap_ttls_implicit_identity_request",
-               "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
-              (1, "eap_peer_tls_decrypt;eap_ttls_decrypt",
-               "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
-              (1, "eap_ttls_getKey",
-               "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
-              (1, "eap_ttls_get_session_id",
-               "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
-              (1, "eap_ttls_get_emsk",
-               "mschapv2 user@domain", "auth=MSCHAPV2"),
-              (1, "wpabuf_alloc;eap_ttls_phase2_request_mschap",
-               "mschap user", "auth=MSCHAP"),
-              (1, "eap_peer_tls_derive_key;eap_ttls_phase2_request_mschap",
-               "mschap user", "auth=MSCHAP"),
-              (1, "wpabuf_alloc;eap_ttls_phase2_request_chap",
-               "chap user", "auth=CHAP"),
-              (1, "eap_peer_tls_derive_key;eap_ttls_phase2_request_chap",
-               "chap user", "auth=CHAP"),
-              (1, "wpabuf_alloc;eap_ttls_phase2_request_pap",
-               "pap user", "auth=PAP"),
-              (1, "wpabuf_alloc;eap_ttls_avp_encapsulate",
-               "user", "autheap=MSCHAPV2"),
-              (1, "eap_mschapv2_init;eap_ttls_phase2_request_eap_method",
-               "user", "autheap=MSCHAPV2"),
-              (1, "eap_sm_buildIdentity;eap_ttls_phase2_request_eap",
-               "user", "autheap=MSCHAPV2"),
-              (1, "eap_ttls_avp_encapsulate;eap_ttls_phase2_request_eap",
-               "user", "autheap=MSCHAPV2"),
-              (1, "eap_ttls_parse_attr_eap",
-               "user", "autheap=MSCHAPV2"),
-              (1, "eap_peer_tls_encrypt;eap_ttls_encrypt_response;eap_ttls_process_decrypted",
-               "user", "autheap=MSCHAPV2"),
-              (1, "eap_ttls_fake_identity_request",
-               "user", "autheap=MSCHAPV2"),
-              (1, "eap_msg_alloc;eap_tls_process_output",
-               "user", "autheap=MSCHAPV2"),
-              (1, "eap_msg_alloc;eap_peer_tls_build_ack",
-               "user", "autheap=MSCHAPV2"),
-              (1, "tls_connection_decrypt;eap_peer_tls_decrypt",
-               "user", "autheap=MSCHAPV2"),
-              (1, "eap_peer_tls_phase2_nak;eap_ttls_phase2_request_eap_method",
-               "cert user", "autheap=MSCHAPV2") ]
+    tests = [(1, "eap_peer_tls_derive_key;eap_ttls_v0_derive_key",
+              "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
+             (1, "eap_peer_tls_derive_session_id;eap_ttls_v0_derive_key",
+              "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
+             (1, "wpabuf_alloc;eap_ttls_phase2_request_mschapv2",
+              "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
+             (1, "eap_peer_tls_derive_key;eap_ttls_phase2_request_mschapv2",
+              "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
+             (1, "eap_peer_tls_encrypt;eap_ttls_encrypt_response;eap_ttls_implicit_identity_request",
+              "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
+             (1, "eap_peer_tls_decrypt;eap_ttls_decrypt",
+              "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
+             (1, "eap_ttls_getKey",
+              "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
+             (1, "eap_ttls_get_session_id",
+              "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
+             (1, "eap_ttls_get_emsk",
+              "mschapv2 user@domain", "auth=MSCHAPV2"),
+             (1, "wpabuf_alloc;eap_ttls_phase2_request_mschap",
+              "mschap user", "auth=MSCHAP"),
+             (1, "eap_peer_tls_derive_key;eap_ttls_phase2_request_mschap",
+              "mschap user", "auth=MSCHAP"),
+             (1, "wpabuf_alloc;eap_ttls_phase2_request_chap",
+              "chap user", "auth=CHAP"),
+             (1, "eap_peer_tls_derive_key;eap_ttls_phase2_request_chap",
+              "chap user", "auth=CHAP"),
+             (1, "wpabuf_alloc;eap_ttls_phase2_request_pap",
+              "pap user", "auth=PAP"),
+             (1, "wpabuf_alloc;eap_ttls_avp_encapsulate",
+              "user", "autheap=MSCHAPV2"),
+             (1, "eap_mschapv2_init;eap_ttls_phase2_request_eap_method",
+              "user", "autheap=MSCHAPV2"),
+             (1, "eap_sm_buildIdentity;eap_ttls_phase2_request_eap",
+              "user", "autheap=MSCHAPV2"),
+             (1, "eap_ttls_avp_encapsulate;eap_ttls_phase2_request_eap",
+              "user", "autheap=MSCHAPV2"),
+             (1, "eap_ttls_parse_attr_eap",
+              "user", "autheap=MSCHAPV2"),
+             (1, "eap_peer_tls_encrypt;eap_ttls_encrypt_response;eap_ttls_process_decrypted",
+              "user", "autheap=MSCHAPV2"),
+             (1, "eap_ttls_fake_identity_request",
+              "user", "autheap=MSCHAPV2"),
+             (1, "eap_msg_alloc;eap_tls_process_output",
+              "user", "autheap=MSCHAPV2"),
+             (1, "eap_msg_alloc;eap_peer_tls_build_ack",
+              "user", "autheap=MSCHAPV2"),
+             (1, "tls_connection_decrypt;eap_peer_tls_decrypt",
+              "user", "autheap=MSCHAPV2"),
+             (1, "eap_peer_tls_phase2_nak;eap_ttls_phase2_request_eap_method",
+              "cert user", "autheap=MSCHAPV2")]
     for count, func, identity, phase2 in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -7065,8 +7065,8 @@ def test_eap_proto_ttls_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "os_get_random;eap_ttls_phase2_request_mschapv2"),
-              (1, "mschapv2_derive_response;eap_ttls_phase2_request_mschapv2") ]
+    tests = [(1, "os_get_random;eap_ttls_phase2_request_mschapv2"),
+             (1, "mschapv2_derive_response;eap_ttls_phase2_request_mschapv2")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -7083,7 +7083,7 @@ def test_eap_proto_ttls_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
-    tests = [ (1, "nt_challenge_response;eap_ttls_phase2_request_mschap") ]
+    tests = [(1, "nt_challenge_response;eap_ttls_phase2_request_mschap")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -7187,14 +7187,14 @@ def test_eap_proto_expanded(dev, apdev):
             ev = dev[0].wait_event(["CTRL-EVENT-EAP-STARTED"], timeout=5)
             if ev is None:
                 raise Exception("Timeout on EAP start")
-            if i in [ 1 ]:
+            if i in [1]:
                 ev = dev[0].wait_event(["CTRL-EVENT-EAP-METHOD"], timeout=5)
                 if ev is None:
                     raise Exception("Timeout on EAP method start")
                 ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"], timeout=5)
                 if ev is None:
                     raise Exception("Timeout on EAP failure")
-            elif i in [ 2, 3 ]:
+            elif i in [2, 3]:
                 ev = dev[0].wait_event(["CTRL-EVENT-EAP-PROPOSED-METHOD"],
                                        timeout=5)
                 if ev is None:
@@ -8322,136 +8322,136 @@ def test_eap_fast_proto_phase2(dev, apdev):
     hapd = start_ap(apdev[0])
     dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
-    tests = [ ("Too short Phase 2 TLV frame (len=3)",
-               "ABC",
-               False),
-              ("EAP-FAST: TLV overflow",
-               struct.pack(">HHB", 0, 2, 0xff),
-               False),
-              ("EAP-FAST: Unknown TLV (optional and mandatory)",
-               struct.pack(">HHB", 0, 1, 0xff) +
-               struct.pack(">HHB", EAP_TLV_TYPE_MANDATORY, 1, 0xff),
-               True),
-              ("EAP-FAST: More than one EAP-Payload TLV in the message",
-               struct.pack(">HHBHHB",
-                           EAP_TLV_EAP_PAYLOAD_TLV, 1, 0xff,
-                           EAP_TLV_EAP_PAYLOAD_TLV, 1, 0xff),
-               True),
-              ("EAP-FAST: Unknown Result 255 and More than one Result TLV in the message",
-               struct.pack(">HHHHHH",
-                           EAP_TLV_RESULT_TLV, 2, 0xff,
-                           EAP_TLV_RESULT_TLV, 2, 0xff),
-               True),
-              ("EAP-FAST: Too short Result TLV",
-               struct.pack(">HHB", EAP_TLV_RESULT_TLV, 1, 0xff),
-               True),
-              ("EAP-FAST: Unknown Intermediate Result 255 and More than one Intermediate-Result TLV in the message",
-               struct.pack(">HHHHHH",
-                           EAP_TLV_INTERMEDIATE_RESULT_TLV, 2, 0xff,
-                           EAP_TLV_INTERMEDIATE_RESULT_TLV, 2, 0xff),
-               True),
-              ("EAP-FAST: Too short Intermediate-Result TLV",
-               struct.pack(">HHB", EAP_TLV_INTERMEDIATE_RESULT_TLV, 1, 0xff),
-               True),
-              ("EAP-FAST: More than one Crypto-Binding TLV in the message",
-               struct.pack(">HH", EAP_TLV_CRYPTO_BINDING_TLV, 60) + 60*b'A' +
-               struct.pack(">HH", EAP_TLV_CRYPTO_BINDING_TLV, 60) + 60*b'A',
-               True),
-              ("EAP-FAST: Too short Crypto-Binding TLV",
-               struct.pack(">HHB", EAP_TLV_CRYPTO_BINDING_TLV, 1, 0xff),
-               True),
-              ("EAP-FAST: More than one Request-Action TLV in the message",
-               struct.pack(">HHBBHHBB",
-                           EAP_TLV_REQUEST_ACTION_TLV, 2, 0xff, 0xff,
-                           EAP_TLV_REQUEST_ACTION_TLV, 2, 0xff, 0xff),
-               True),
-              ("EAP-FAST: Too short Request-Action TLV",
-               struct.pack(">HHB", EAP_TLV_REQUEST_ACTION_TLV, 1, 0xff),
-               True),
-              ("EAP-FAST: More than one PAC TLV in the message",
-               struct.pack(">HHBHHB",
-                           EAP_TLV_PAC_TLV, 1, 0xff,
-                           EAP_TLV_PAC_TLV, 1, 0xff),
-               True),
-              ("EAP-FAST: Too short EAP Payload TLV (Len=3)",
-               struct.pack(">HH3B",
-                           EAP_TLV_EAP_PAYLOAD_TLV, 3, 0, 0, 0),
-               False),
-              ("EAP-FAST: Too short Phase 2 request (Len=0)",
-               struct.pack(">HHBBH",
-                           EAP_TLV_EAP_PAYLOAD_TLV, 4,
-                           EAP_CODE_REQUEST, 0, 0),
-               False),
-              ("EAP-FAST: EAP packet overflow in EAP Payload TLV",
-               struct.pack(">HHBBH",
-                           EAP_TLV_EAP_PAYLOAD_TLV, 4,
-                           EAP_CODE_REQUEST, 0, 4 + 1),
-               False),
-              ("EAP-FAST: Unexpected code=0 in Phase 2 EAP header",
-               struct.pack(">HHBBH",
-                           EAP_TLV_EAP_PAYLOAD_TLV, 4,
-                           0, 0, 0),
-               False),
-              ("EAP-FAST: PAC TLV without Result TLV acknowledging success",
-               struct.pack(">HHB", EAP_TLV_PAC_TLV, 1, 0xff),
-               True),
-              ("EAP-FAST: PAC TLV does not include all the required fields",
-               struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
-                           EAP_TLV_RESULT_SUCCESS) +
-               struct.pack(">HHB", EAP_TLV_PAC_TLV, 1, 0xff),
-               True),
-              ("EAP-FAST: Invalid PAC-Key length 0, Ignored unknown PAC type 0, and PAC TLV overrun (type=0 len=2 left=1)",
-               struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
-                           EAP_TLV_RESULT_SUCCESS) +
-               struct.pack(">HHHHHHHHB", EAP_TLV_PAC_TLV, 4 + 4 + 5,
-                           PAC_TYPE_PAC_KEY, 0, 0, 0, 0, 2, 0),
-               True),
-              ("EAP-FAST: PAC-Info does not include all the required fields",
-               struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
-                           EAP_TLV_RESULT_SUCCESS) +
-               struct.pack(">HHHHHHHH", EAP_TLV_PAC_TLV, 4 + 4 + 4 + 32,
-                           PAC_TYPE_PAC_OPAQUE, 0,
-                           PAC_TYPE_PAC_INFO, 0,
-                           PAC_TYPE_PAC_KEY, 32) + 32*b'A',
-               True),
-              ("EAP-FAST: Invalid CRED_LIFETIME length, Ignored unknown PAC-Info type 0, and Invalid PAC-Type length 1",
-               struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
-                           EAP_TLV_RESULT_SUCCESS) +
-               struct.pack(">HHHHHHHHHHHHBHH", EAP_TLV_PAC_TLV, 4 + 4 + 13 + 4 + 32,
-                           PAC_TYPE_PAC_OPAQUE, 0,
-                           PAC_TYPE_PAC_INFO, 13, PAC_TYPE_CRED_LIFETIME, 0,
-                           0, 0, PAC_TYPE_PAC_TYPE, 1, 0,
-                           PAC_TYPE_PAC_KEY, 32) + 32*b'A',
-               True),
-              ("EAP-FAST: Unsupported PAC-Type 0",
-               struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
-                           EAP_TLV_RESULT_SUCCESS) +
-               struct.pack(">HHHHHHHHHHH", EAP_TLV_PAC_TLV, 4 + 4 + 6 + 4 + 32,
-                           PAC_TYPE_PAC_OPAQUE, 0,
-                           PAC_TYPE_PAC_INFO, 6, PAC_TYPE_PAC_TYPE, 2, 0,
-                           PAC_TYPE_PAC_KEY, 32) + 32*b'A',
-               True),
-              ("EAP-FAST: PAC-Info overrun (type=0 len=2 left=1)",
-               struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
-                           EAP_TLV_RESULT_SUCCESS) +
-               struct.pack(">HHHHHHHHBHH", EAP_TLV_PAC_TLV, 4 + 4 + 5 + 4 + 32,
-                           PAC_TYPE_PAC_OPAQUE, 0,
-                           PAC_TYPE_PAC_INFO, 5, 0, 2, 1,
-                           PAC_TYPE_PAC_KEY, 32) + 32*b'A',
-               True),
-              ("EAP-FAST: Valid PAC",
-               struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
-                           EAP_TLV_RESULT_SUCCESS) +
-               struct.pack(">HHHHHHHHBHHBHH", EAP_TLV_PAC_TLV,
-                           4 + 4 + 10 + 4 + 32,
-                           PAC_TYPE_PAC_OPAQUE, 0,
-                           PAC_TYPE_PAC_INFO, 10, PAC_TYPE_A_ID, 1, 0x41,
-                           PAC_TYPE_A_ID_INFO, 1, 0x42,
-                           PAC_TYPE_PAC_KEY, 32) + 32*b'A',
-               True),
-              ("EAP-FAST: Invalid version/subtype in Crypto-Binding TLV",
-               struct.pack(">HH", EAP_TLV_CRYPTO_BINDING_TLV, 60) + 60*b'A',
-               True) ]
+    tests = [("Too short Phase 2 TLV frame (len=3)",
+              "ABC",
+              False),
+             ("EAP-FAST: TLV overflow",
+              struct.pack(">HHB", 0, 2, 0xff),
+              False),
+             ("EAP-FAST: Unknown TLV (optional and mandatory)",
+              struct.pack(">HHB", 0, 1, 0xff) +
+              struct.pack(">HHB", EAP_TLV_TYPE_MANDATORY, 1, 0xff),
+              True),
+             ("EAP-FAST: More than one EAP-Payload TLV in the message",
+              struct.pack(">HHBHHB",
+                          EAP_TLV_EAP_PAYLOAD_TLV, 1, 0xff,
+                          EAP_TLV_EAP_PAYLOAD_TLV, 1, 0xff),
+              True),
+             ("EAP-FAST: Unknown Result 255 and More than one Result TLV in the message",
+              struct.pack(">HHHHHH",
+                          EAP_TLV_RESULT_TLV, 2, 0xff,
+                          EAP_TLV_RESULT_TLV, 2, 0xff),
+              True),
+             ("EAP-FAST: Too short Result TLV",
+              struct.pack(">HHB", EAP_TLV_RESULT_TLV, 1, 0xff),
+              True),
+             ("EAP-FAST: Unknown Intermediate Result 255 and More than one Intermediate-Result TLV in the message",
+              struct.pack(">HHHHHH",
+                          EAP_TLV_INTERMEDIATE_RESULT_TLV, 2, 0xff,
+                          EAP_TLV_INTERMEDIATE_RESULT_TLV, 2, 0xff),
+              True),
+             ("EAP-FAST: Too short Intermediate-Result TLV",
+              struct.pack(">HHB", EAP_TLV_INTERMEDIATE_RESULT_TLV, 1, 0xff),
+              True),
+             ("EAP-FAST: More than one Crypto-Binding TLV in the message",
+              struct.pack(">HH", EAP_TLV_CRYPTO_BINDING_TLV, 60) + 60*b'A' +
+              struct.pack(">HH", EAP_TLV_CRYPTO_BINDING_TLV, 60) + 60*b'A',
+              True),
+             ("EAP-FAST: Too short Crypto-Binding TLV",
+              struct.pack(">HHB", EAP_TLV_CRYPTO_BINDING_TLV, 1, 0xff),
+              True),
+             ("EAP-FAST: More than one Request-Action TLV in the message",
+              struct.pack(">HHBBHHBB",
+                          EAP_TLV_REQUEST_ACTION_TLV, 2, 0xff, 0xff,
+                          EAP_TLV_REQUEST_ACTION_TLV, 2, 0xff, 0xff),
+              True),
+             ("EAP-FAST: Too short Request-Action TLV",
+              struct.pack(">HHB", EAP_TLV_REQUEST_ACTION_TLV, 1, 0xff),
+              True),
+             ("EAP-FAST: More than one PAC TLV in the message",
+              struct.pack(">HHBHHB",
+                          EAP_TLV_PAC_TLV, 1, 0xff,
+                          EAP_TLV_PAC_TLV, 1, 0xff),
+              True),
+             ("EAP-FAST: Too short EAP Payload TLV (Len=3)",
+              struct.pack(">HH3B",
+                          EAP_TLV_EAP_PAYLOAD_TLV, 3, 0, 0, 0),
+              False),
+             ("EAP-FAST: Too short Phase 2 request (Len=0)",
+              struct.pack(">HHBBH",
+                          EAP_TLV_EAP_PAYLOAD_TLV, 4,
+                          EAP_CODE_REQUEST, 0, 0),
+              False),
+             ("EAP-FAST: EAP packet overflow in EAP Payload TLV",
+              struct.pack(">HHBBH",
+                          EAP_TLV_EAP_PAYLOAD_TLV, 4,
+                          EAP_CODE_REQUEST, 0, 4 + 1),
+              False),
+             ("EAP-FAST: Unexpected code=0 in Phase 2 EAP header",
+              struct.pack(">HHBBH",
+                          EAP_TLV_EAP_PAYLOAD_TLV, 4,
+                          0, 0, 0),
+              False),
+             ("EAP-FAST: PAC TLV without Result TLV acknowledging success",
+              struct.pack(">HHB", EAP_TLV_PAC_TLV, 1, 0xff),
+              True),
+             ("EAP-FAST: PAC TLV does not include all the required fields",
+              struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
+                          EAP_TLV_RESULT_SUCCESS) +
+              struct.pack(">HHB", EAP_TLV_PAC_TLV, 1, 0xff),
+              True),
+             ("EAP-FAST: Invalid PAC-Key length 0, Ignored unknown PAC type 0, and PAC TLV overrun (type=0 len=2 left=1)",
+              struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
+                          EAP_TLV_RESULT_SUCCESS) +
+              struct.pack(">HHHHHHHHB", EAP_TLV_PAC_TLV, 4 + 4 + 5,
+                          PAC_TYPE_PAC_KEY, 0, 0, 0, 0, 2, 0),
+              True),
+             ("EAP-FAST: PAC-Info does not include all the required fields",
+              struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
+                          EAP_TLV_RESULT_SUCCESS) +
+              struct.pack(">HHHHHHHH", EAP_TLV_PAC_TLV, 4 + 4 + 4 + 32,
+                          PAC_TYPE_PAC_OPAQUE, 0,
+                          PAC_TYPE_PAC_INFO, 0,
+                          PAC_TYPE_PAC_KEY, 32) + 32*b'A',
+              True),
+             ("EAP-FAST: Invalid CRED_LIFETIME length, Ignored unknown PAC-Info type 0, and Invalid PAC-Type length 1",
+              struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
+                          EAP_TLV_RESULT_SUCCESS) +
+              struct.pack(">HHHHHHHHHHHHBHH", EAP_TLV_PAC_TLV, 4 + 4 + 13 + 4 + 32,
+                          PAC_TYPE_PAC_OPAQUE, 0,
+                          PAC_TYPE_PAC_INFO, 13, PAC_TYPE_CRED_LIFETIME, 0,
+                          0, 0, PAC_TYPE_PAC_TYPE, 1, 0,
+                          PAC_TYPE_PAC_KEY, 32) + 32*b'A',
+              True),
+             ("EAP-FAST: Unsupported PAC-Type 0",
+              struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
+                          EAP_TLV_RESULT_SUCCESS) +
+              struct.pack(">HHHHHHHHHHH", EAP_TLV_PAC_TLV, 4 + 4 + 6 + 4 + 32,
+                          PAC_TYPE_PAC_OPAQUE, 0,
+                          PAC_TYPE_PAC_INFO, 6, PAC_TYPE_PAC_TYPE, 2, 0,
+                          PAC_TYPE_PAC_KEY, 32) + 32*b'A',
+              True),
+             ("EAP-FAST: PAC-Info overrun (type=0 len=2 left=1)",
+              struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
+                          EAP_TLV_RESULT_SUCCESS) +
+              struct.pack(">HHHHHHHHBHH", EAP_TLV_PAC_TLV, 4 + 4 + 5 + 4 + 32,
+                          PAC_TYPE_PAC_OPAQUE, 0,
+                          PAC_TYPE_PAC_INFO, 5, 0, 2, 1,
+                          PAC_TYPE_PAC_KEY, 32) + 32*b'A',
+              True),
+             ("EAP-FAST: Valid PAC",
+              struct.pack(">HHH", EAP_TLV_RESULT_TLV, 2,
+                          EAP_TLV_RESULT_SUCCESS) +
+              struct.pack(">HHHHHHHHBHHBHH", EAP_TLV_PAC_TLV,
+                          4 + 4 + 10 + 4 + 32,
+                          PAC_TYPE_PAC_OPAQUE, 0,
+                          PAC_TYPE_PAC_INFO, 10, PAC_TYPE_A_ID, 1, 0x41,
+                          PAC_TYPE_A_ID_INFO, 1, 0x42,
+                          PAC_TYPE_PAC_KEY, 32) + 32*b'A',
+              True),
+             ("EAP-FAST: Invalid version/subtype in Crypto-Binding TLV",
+              struct.pack(">HH", EAP_TLV_CRYPTO_BINDING_TLV, 60) + 60*b'A',
+              True)]
     for title, payload, failure in tests:
         logger.info("Phase 2 test: " + title)
         run_eap_fast_phase2(dev, payload, failure)

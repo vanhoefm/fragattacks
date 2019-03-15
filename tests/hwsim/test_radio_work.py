@@ -104,7 +104,7 @@ def test_radio_work_cancel(dev, apdev):
 
 def test_ext_radio_work_disconnect_connect(dev, apdev):
     """External radio work and DISCONNECT clearing connection attempt"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "open" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
     dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
 
     # Start a radio work to block connection attempt

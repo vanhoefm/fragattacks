@@ -28,8 +28,8 @@ def _run_tshark(filename, filter, display=None, wait=True):
         time.sleep(0.1)
 
     try:
-        arg = [ "tshark", "-r", filename,
-                _tshark_filter_arg, filter ]
+        arg = ["tshark", "-r", filename,
+               _tshark_filter_arg, filter]
         if display:
             arg.append('-Tfields')
             for d in display:
@@ -102,8 +102,8 @@ def run_tshark(filename, filter, display=None, wait=True):
                            wait)
 
 def run_tshark_json(filename, filter):
-    arg = [ "tshark", "-r", filename,
-            _tshark_filter_arg, filter ]
+    arg = ["tshark", "-r", filename,
+           _tshark_filter_arg, filter]
     arg.append('-Tjson')
     arg.append('-x')
     try:

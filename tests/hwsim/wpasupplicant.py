@@ -323,7 +323,7 @@ class WpaSupplicant:
         for l in lines:
             if "network id" in l:
                 continue
-            [id,ssid,bssid,flags] = l.split('\t')
+            [id, ssid, bssid, flags] = l.split('\t')
             network = {}
             network['id'] = id
             network['ssid'] = ssid
@@ -376,20 +376,20 @@ class WpaSupplicant:
     def add_cred_values(self, params):
         id = self.add_cred()
 
-        quoted = [ "realm", "username", "password", "domain", "imsi",
-                   "excluded_ssid", "milenage", "ca_cert", "client_cert",
-                   "private_key", "domain_suffix_match", "provisioning_sp",
-                   "roaming_partner", "phase1", "phase2", "private_key_passwd",
-                   "roaming_consortiums" ]
+        quoted = ["realm", "username", "password", "domain", "imsi",
+                  "excluded_ssid", "milenage", "ca_cert", "client_cert",
+                  "private_key", "domain_suffix_match", "provisioning_sp",
+                  "roaming_partner", "phase1", "phase2", "private_key_passwd",
+                  "roaming_consortiums"]
         for field in quoted:
             if field in params:
                 self.set_cred_quoted(id, field, params[field])
 
-        not_quoted = [ "eap", "roaming_consortium", "priority",
-                       "required_roaming_consortium", "sp_priority",
-                       "max_bss_load", "update_identifier", "req_conn_capab",
-                       "min_dl_bandwidth_home", "min_ul_bandwidth_home",
-                       "min_dl_bandwidth_roaming", "min_ul_bandwidth_roaming" ]
+        not_quoted = ["eap", "roaming_consortium", "priority",
+                      "required_roaming_consortium", "sp_priority",
+                      "max_bss_load", "update_identifier", "req_conn_capab",
+                      "min_dl_bandwidth_home", "min_ul_bandwidth_home",
+                      "min_dl_bandwidth_roaming", "min_ul_bandwidth_roaming"]
         for field in not_quoted:
             if field in params:
                 self.set_cred(id, field, params[field])
@@ -436,7 +436,7 @@ class WpaSupplicant:
         vals = dict()
         for l in lines:
             try:
-                [name,value] = l.split('=', 1)
+                [name, value] = l.split('=', 1)
                 vals[name] = value
             except ValueError as e:
                 logger.info(self.ifname + ": Ignore unexpected STATUS line: " + l)
@@ -458,7 +458,7 @@ class WpaSupplicant:
         vals = dict()
         for l in lines:
             try:
-                [name,value] = l.split('=', 1)
+                [name, value] = l.split('=', 1)
             except ValueError:
                 logger.info(self.ifname + ": Ignore unexpected status line: " + l)
                 continue
@@ -482,7 +482,7 @@ class WpaSupplicant:
         vals = dict()
         for l in lines:
             try:
-                [name,value] = l.split('=', 1)
+                [name, value] = l.split('=', 1)
             except ValueError:
                 logger.info(self.ifname + ": Ignore unexpected status-driver line: " + l)
                 continue
@@ -505,7 +505,7 @@ class WpaSupplicant:
         vals = dict()
         for l in lines:
             try:
-                [name,value] = l.split('=', 1)
+                [name, value] = l.split('=', 1)
                 vals[name] = value
             except ValueError as e:
                 logger.info(self.ifname + ": Ignore unexpected MIB line: " + l)
@@ -589,7 +589,7 @@ class WpaSupplicant:
         vals = dict()
         for l in lines:
             if '=' in l:
-                [name,value] = l.split('=', 1)
+                [name, value] = l.split('=', 1)
                 vals[name] = value
         return vals
 
@@ -994,34 +994,34 @@ class WpaSupplicant:
         elif ssid2:
             self.set_network(id, "ssid", ssid2)
 
-        quoted = [ "psk", "identity", "anonymous_identity", "password",
-                   "ca_cert", "client_cert", "private_key",
-                   "private_key_passwd", "ca_cert2", "client_cert2",
-                   "private_key2", "phase1", "phase2", "domain_suffix_match",
-                   "altsubject_match", "subject_match", "pac_file", "dh_file",
-                   "bgscan", "ht_mcs", "id_str", "openssl_ciphers",
-                   "domain_match", "dpp_connector", "sae_password",
-                   "sae_password_id", "check_cert_subject" ]
+        quoted = ["psk", "identity", "anonymous_identity", "password",
+                  "ca_cert", "client_cert", "private_key",
+                  "private_key_passwd", "ca_cert2", "client_cert2",
+                  "private_key2", "phase1", "phase2", "domain_suffix_match",
+                  "altsubject_match", "subject_match", "pac_file", "dh_file",
+                  "bgscan", "ht_mcs", "id_str", "openssl_ciphers",
+                  "domain_match", "dpp_connector", "sae_password",
+                  "sae_password_id", "check_cert_subject"]
         for field in quoted:
             if field in kwargs and kwargs[field]:
                 self.set_network_quoted(id, field, kwargs[field])
 
-        not_quoted = [ "proto", "key_mgmt", "ieee80211w", "pairwise",
-                       "group", "wep_key0", "wep_key1", "wep_key2", "wep_key3",
-                       "wep_tx_keyidx", "scan_freq", "freq_list", "eap",
-                       "eapol_flags", "fragment_size", "scan_ssid", "auth_alg",
-                       "wpa_ptk_rekey", "disable_ht", "disable_vht", "bssid",
-                       "disable_max_amsdu", "ampdu_factor", "ampdu_density",
-                       "disable_ht40", "disable_sgi", "disable_ldpc",
-                       "ht40_intolerant", "update_identifier", "mac_addr",
-                       "erp", "bg_scan_period", "bssid_blacklist",
-                       "bssid_whitelist", "mem_only_psk", "eap_workaround",
-                       "engine", "fils_dh_group", "bssid_hint",
-                       "dpp_csign", "dpp_csign_expiry",
-                       "dpp_netaccesskey", "dpp_netaccesskey_expiry",
-                       "group_mgmt", "owe_group",
-                       "roaming_consortium_selection", "ocv",
-                       "multi_ap_backhaul_sta", "rx_stbc", "tx_stbc" ]
+        not_quoted = ["proto", "key_mgmt", "ieee80211w", "pairwise",
+                      "group", "wep_key0", "wep_key1", "wep_key2", "wep_key3",
+                      "wep_tx_keyidx", "scan_freq", "freq_list", "eap",
+                      "eapol_flags", "fragment_size", "scan_ssid", "auth_alg",
+                      "wpa_ptk_rekey", "disable_ht", "disable_vht", "bssid",
+                      "disable_max_amsdu", "ampdu_factor", "ampdu_density",
+                      "disable_ht40", "disable_sgi", "disable_ldpc",
+                      "ht40_intolerant", "update_identifier", "mac_addr",
+                      "erp", "bg_scan_period", "bssid_blacklist",
+                      "bssid_whitelist", "mem_only_psk", "eap_workaround",
+                      "engine", "fils_dh_group", "bssid_hint",
+                      "dpp_csign", "dpp_csign_expiry",
+                      "dpp_netaccesskey", "dpp_netaccesskey_expiry",
+                      "group_mgmt", "owe_group",
+                      "roaming_consortium_selection", "ocv",
+                      "multi_ap_backhaul_sta", "rx_stbc", "tx_stbc"]
         for field in not_quoted:
             if field in kwargs and kwargs[field]:
                 self.set_network(id, field, kwargs[field])
@@ -1191,7 +1191,7 @@ class WpaSupplicant:
         lines = res.splitlines()
         vals = dict()
         for l in lines:
-            [name,value] = l.split('=', 1)
+            [name, value] = l.split('=', 1)
             vals[name] = value
         if len(vals) == 0:
             return None
@@ -1205,10 +1205,10 @@ class WpaSupplicant:
                 continue
             vals = dict()
             try:
-                [index,aa,pmkid,expiration,opportunistic] = l.split(' ')
+                [index, aa, pmkid, expiration, opportunistic] = l.split(' ')
                 cache_id = None
             except ValueError:
-                [index,aa,pmkid,expiration,opportunistic,cache_id] = l.split(' ')
+                [index, aa, pmkid, expiration, opportunistic, cache_id] = l.split(' ')
             vals['index'] = index
             vals['pmkid'] = pmkid
             vals['expiration'] = expiration
@@ -1234,7 +1234,7 @@ class WpaSupplicant:
                 vals['addr'] = l
                 first = False
             else:
-                [name,value] = l.split('=', 1)
+                [name, value] = l.split('=', 1)
                 vals[name] = value
         return vals
 
@@ -1244,17 +1244,17 @@ class WpaSupplicant:
             return None
         msg = {}
         items = ev.split(' ')
-        field,val = items[1].split('=')
+        field, val = items[1].split('=')
         if field != "freq":
             raise Exception("Unexpected MGMT-RX event format: " + ev)
         msg['freq'] = val
 
-        field,val = items[2].split('=')
+        field, val = items[2].split('=')
         if field != "datarate":
             raise Exception("Unexpected MGMT-RX event format: " + ev)
         msg['datarate'] = val
 
-        field,val = items[3].split('=')
+        field, val = items[3].split('=')
         if field != "ssi_signal":
             raise Exception("Unexpected MGMT-RX event format: " + ev)
         msg['ssi_signal'] = val
@@ -1303,7 +1303,7 @@ class WpaSupplicant:
         lines = res.splitlines()
         vals = dict()
         for l in lines:
-            [name,value] = l.split('=', 1)
+            [name, value] = l.split('=', 1)
             vals[name] = value
         return vals
 

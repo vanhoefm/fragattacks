@@ -11,9 +11,9 @@ def test_multi_ap_association(dev, apdev):
     run_multi_ap_association(dev, apdev, 1)
     dev[1].connect("multi-ap", psk="12345678", scan_freq="2412",
                    wait_connect=False)
-    ev = dev[1].wait_event([ "CTRL-EVENT-DISCONNECTED",
-                             "CTRL-EVENT-CONNECTED",
-                             "CTRL-EVENT-ASSOC-REJECT" ],
+    ev = dev[1].wait_event(["CTRL-EVENT-DISCONNECTED",
+                            "CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-ASSOC-REJECT"],
                            timeout=5)
     dev[1].request("DISCONNECT")
     if ev is None:
@@ -40,8 +40,8 @@ def run_multi_ap_association(dev, apdev, multi_ap, wait_connect=True):
 def test_multi_ap_disabled_on_ap(dev, apdev):
     """Multi-AP association attempt when disabled on AP"""
     run_multi_ap_association(dev, apdev, 0, wait_connect=False)
-    ev = dev[0].wait_event([ "CTRL-EVENT-DISCONNECTED",
-                             "CTRL-EVENT-CONNECTED" ],
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED",
+                            "CTRL-EVENT-CONNECTED"],
                            timeout=5)
     dev[0].request("DISCONNECT")
     if ev is None:
@@ -52,9 +52,9 @@ def test_multi_ap_disabled_on_ap(dev, apdev):
 def test_multi_ap_fronthaul_on_ap(dev, apdev):
     """Multi-AP association attempt when only fronthaul BSS on AP"""
     run_multi_ap_association(dev, apdev, 2, wait_connect=False)
-    ev = dev[0].wait_event([ "CTRL-EVENT-DISCONNECTED",
-                             "CTRL-EVENT-CONNECTED",
-                             "CTRL-EVENT-ASSOC-REJECT" ],
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED",
+                            "CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-ASSOC-REJECT"],
                            timeout=5)
     dev[0].request("DISCONNECT")
     if ev is None:
@@ -73,7 +73,7 @@ def run_multi_ap_wps(dev, apdev, params, multi_ap_bssid=None):
 
     if multi_ap_bssid is None:
         multi_ap_bssid = apdev[0]['bssid']
-    params.update({ "wps_state": "2", "eap_server": "1" })
+    params.update({"wps_state": "2", "eap_server": "1"})
 
     # WPS with multi-ap station dev[0]
     hapd = hostapd.add_ap(apdev[0], params)
@@ -134,9 +134,9 @@ def test_multi_ap_wps_shared(dev, apdev):
     ssid = "multi-ap-wps"
     passphrase = "12345678"
     params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
-    params.update({ "multi_ap": "3",
-                    "multi_ap_backhaul_ssid": '"%s"' % ssid,
-                    "multi_ap_backhaul_wpa_passphrase": passphrase })
+    params.update({"multi_ap": "3",
+                   "multi_ap_backhaul_ssid": '"%s"' % ssid,
+                   "multi_ap_backhaul_wpa_passphrase": passphrase})
     run_multi_ap_wps(dev, apdev, params)
 
 def test_multi_ap_wps_shared_psk(dev, apdev):
@@ -144,10 +144,10 @@ def test_multi_ap_wps_shared_psk(dev, apdev):
     ssid = "multi-ap-wps"
     psk = "1234567890abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     params = hostapd.wpa2_params(ssid=ssid)
-    params.update({ "wpa_psk": psk,
-                    "multi_ap": "3",
-                    "multi_ap_backhaul_ssid": '"%s"' % ssid,
-                    "multi_ap_backhaul_wpa_psk": psk })
+    params.update({"wpa_psk": psk,
+                   "multi_ap": "3",
+                   "multi_ap_backhaul_ssid": '"%s"' % ssid,
+                   "multi_ap_backhaul_wpa_psk": psk})
     run_multi_ap_wps(dev, apdev, params)
 
 def test_multi_ap_wps_split(dev, apdev):
@@ -156,12 +156,12 @@ def test_multi_ap_wps_split(dev, apdev):
     backhaul_passphrase = "87654321"
     params = hostapd.wpa2_params(ssid="multi-ap-fronthaul-wps",
                                  passphrase="12345678")
-    params.update({ "multi_ap": "2",
-                    "multi_ap_backhaul_ssid": '"%s"' % backhaul_ssid,
-                    "multi_ap_backhaul_wpa_passphrase": backhaul_passphrase })
+    params.update({"multi_ap": "2",
+                   "multi_ap_backhaul_ssid": '"%s"' % backhaul_ssid,
+                   "multi_ap_backhaul_wpa_passphrase": backhaul_passphrase})
     params_backhaul = hostapd.wpa2_params(ssid=backhaul_ssid,
                                           passphrase=backhaul_passphrase)
-    params_backhaul.update({ "multi_ap": "1" })
+    params_backhaul.update({"multi_ap": "1"})
     hapd_backhaul = hostapd.add_ap(apdev[1], params_backhaul)
 
     run_multi_ap_wps(dev, apdev, params, hapd_backhaul.own_addr())
@@ -172,11 +172,11 @@ def test_multi_ap_wps_split_psk(dev, apdev):
     backhaul_psk = "1234567890abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     params = hostapd.wpa2_params(ssid="multi-ap-fronthaul-wps",
                                  passphrase="12345678")
-    params.update({ "multi_ap": "2",
-                    "multi_ap_backhaul_ssid": '"%s"' % backhaul_ssid,
-                    "multi_ap_backhaul_wpa_psk": backhaul_psk })
+    params.update({"multi_ap": "2",
+                   "multi_ap_backhaul_ssid": '"%s"' % backhaul_ssid,
+                   "multi_ap_backhaul_wpa_psk": backhaul_psk})
     params_backhaul = hostapd.wpa2_params(ssid=backhaul_ssid)
-    params_backhaul.update({ "multi_ap": "1", "wpa_psk": backhaul_psk })
+    params_backhaul.update({"multi_ap": "1", "wpa_psk": backhaul_psk})
     hapd_backhaul = hostapd.add_ap(apdev[1], params_backhaul)
 
     run_multi_ap_wps(dev, apdev, params, hapd_backhaul.own_addr())
@@ -187,12 +187,12 @@ def test_multi_ap_wps_split_mixed(dev, apdev):
     backhaul_passphrase = "87654321"
     params = hostapd.wpa_mixed_params(ssid="multi-ap-fronthaul-wps",
                                       passphrase="12345678")
-    params.update({ "multi_ap": "2",
-                    "multi_ap_backhaul_ssid": '"%s"' % backhaul_ssid,
-                    "multi_ap_backhaul_wpa_passphrase": backhaul_passphrase })
+    params.update({"multi_ap": "2",
+                   "multi_ap_backhaul_ssid": '"%s"' % backhaul_ssid,
+                   "multi_ap_backhaul_wpa_passphrase": backhaul_passphrase})
     params_backhaul = hostapd.wpa2_params(ssid=backhaul_ssid,
                                           passphrase=backhaul_passphrase)
-    params_backhaul.update({ "multi_ap": "1" })
+    params_backhaul.update({"multi_ap": "1"})
     hapd_backhaul = hostapd.add_ap(apdev[1], params_backhaul)
 
     run_multi_ap_wps(dev, apdev, params, hapd_backhaul.own_addr())
@@ -201,12 +201,12 @@ def test_multi_ap_wps_split_open(dev, apdev):
     """WPS on split fronthaul and backhaul AP with open fronthaul"""
     backhaul_ssid = "multi-ap-backhaul-wps"
     backhaul_passphrase = "87654321"
-    params = { "ssid": "multi-ap-wps-fronthaul", "multi_ap": "2",
-               "multi_ap_backhaul_ssid": '"%s"' % backhaul_ssid,
-               "multi_ap_backhaul_wpa_passphrase": backhaul_passphrase }
+    params = {"ssid": "multi-ap-wps-fronthaul", "multi_ap": "2",
+              "multi_ap_backhaul_ssid": '"%s"' % backhaul_ssid,
+              "multi_ap_backhaul_wpa_passphrase": backhaul_passphrase}
     params_backhaul = hostapd.wpa2_params(ssid=backhaul_ssid,
                                           passphrase=backhaul_passphrase)
-    params_backhaul.update({ "multi_ap": "1" })
+    params_backhaul.update({"multi_ap": "1"})
     hapd_backhaul = hostapd.add_ap(apdev[1], params_backhaul)
 
     run_multi_ap_wps(dev, apdev, params, hapd_backhaul.own_addr())
@@ -215,7 +215,7 @@ def test_multi_ap_wps_fail_non_multi_ap(dev, apdev):
     """Multi-AP WPS on non-WPS AP fails"""
 
     params = hostapd.wpa2_params(ssid="non-multi-ap-wps", passphrase="12345678")
-    params.update({ "wps_state": "2", "eap_server": "1" })
+    params.update({"wps_state": "2", "eap_server": "1"})
 
     hapd = hostapd.add_ap(apdev[0], params)
     hapd.request("WPS_PBC")
@@ -229,8 +229,8 @@ def test_multi_ap_wps_fail_non_multi_ap(dev, apdev):
     # to change the timeout from 2 minutes. Instead of waiting for the timeout,
     # just check that WPS doesn't finish within reasonable time.
     for i in range(2):
-        ev = dev[0].wait_event([ "WPS-SUCCESS", "WPS-FAIL",
-                                 "CTRL-EVENT-DISCONNECTED"], timeout=10)
+        ev = dev[0].wait_event(["WPS-SUCCESS", "WPS-FAIL",
+                                "CTRL-EVENT-DISCONNECTED"], timeout=10)
         if ev and "WPS-" in ev:
             raise Exception("WPS operation completed: " + ev)
     dev[0].request("WPS_CANCEL")

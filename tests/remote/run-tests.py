@@ -161,7 +161,7 @@ def main():
         if m:
             mod = __import__(m.group(1))
             test_modules.append(mod.__name__.replace('test_', '', 1))
-            for key,val in mod.__dict__.items():
+            for key, val in mod.__dict__.items():
                 if key.startswith("test_"):
                     tests.append(val)
     test_names = list(set([t.__name__.replace('test_', '', 1) for t in tests]))
@@ -173,7 +173,7 @@ def main():
         if m:
             mod = __import__(m.group(1))
             test_modules.append(mod.__name__.replace('test_', '', 1))
-            for key,val in mod.__dict__.items():
+            for key, val in mod.__dict__.items():
                 if key.startswith("test_"):
                     hwsim_tests.append(val)
 

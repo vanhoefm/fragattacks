@@ -16,19 +16,19 @@ logger = logging.getLogger()
 # You can put your settings in cfg.py file with setup_params, devices
 # definitions in the format as below. In other case HWSIM cfg will be used.
 #
-setup_params = { "setup_hw" : "./tests/setup_hw.sh",
-                 "hostapd" : "./tests/hostapd",
-                 "wpa_supplicant" : "./tests/wpa_supplicant",
-                 "iperf" : "iperf",
-                 "wlantest" : "./tests/wlantest",
-                 "wlantest_cli" : "./tests/wlantest_cli",
-                 "country" : "US",
-                 "log_dir" : "/tmp/",
-                 "ipv4_test_net" : "192.168.12.0",
-                 "trace_start" : "./tests/trace_start.sh",
-                 "trace_stop" : "./tests/trace_stop.sh",
-                 "perf_start" : "./tests/perf_start.sh",
-                 "perf_stop" : "./tests/perf_stop.sh" }
+setup_params = {"setup_hw" : "./tests/setup_hw.sh",
+                "hostapd" : "./tests/hostapd",
+                "wpa_supplicant" : "./tests/wpa_supplicant",
+                "iperf" : "iperf",
+                "wlantest" : "./tests/wlantest",
+                "wlantest_cli" : "./tests/wlantest_cli",
+                "country" : "US",
+                "log_dir" : "/tmp/",
+                "ipv4_test_net" : "192.168.12.0",
+                "trace_start" : "./tests/trace_start.sh",
+                "trace_stop" : "./tests/trace_stop.sh",
+                "perf_start" : "./tests/perf_start.sh",
+                "perf_stop" : "./tests/perf_stop.sh"}
 
 #
 #devices = [{"hostname": "192.168.254.58", "ifname" : "wlan0", "port": "9877", "name" : "t2-ath9k", "flags" : "AP_HT40 STA_HT40"},

@@ -43,7 +43,7 @@ def p2p_attr_capability(dev_capab=0, group_capab=0):
     return struct.pack("<BHBB", P2P_ATTR_CAPABILITY, 2, dev_capab, group_capab)
 
 def p2p_attr_device_id(addr):
-    val = struct.unpack('6B', binascii.unhexlify(addr.replace(':','')))
+    val = struct.unpack('6B', binascii.unhexlify(addr.replace(':', '')))
     t = (P2P_ATTR_DEVICE_ID, 6) + val
     return struct.pack('<BH6B', *t)
 
@@ -60,7 +60,7 @@ def p2p_attr_listen_channel(op_class=81, chan=1):
                        0x58, 0x58, 0x04, op_class, chan)
 
 def p2p_attr_group_bssid(addr):
-    val = struct.unpack('6B', binascii.unhexlify(addr.replace(':','')))
+    val = struct.unpack('6B', binascii.unhexlify(addr.replace(':', '')))
     t = (P2P_ATTR_GROUP_BSSID, 6) + val
     return struct.pack('<BH6B', *t)
 
@@ -68,7 +68,7 @@ def p2p_attr_ext_listen_timing(period=0, interval=0):
     return struct.pack("<BHHH", P2P_ATTR_EXT_LISTEN_TIMING, 4, period, interval)
 
 def p2p_attr_intended_interface_addr(addr):
-    val = struct.unpack('6B', binascii.unhexlify(addr.replace(':','')))
+    val = struct.unpack('6B', binascii.unhexlify(addr.replace(':', '')))
     t = (P2P_ATTR_INTENDED_INTERFACE_ADDR, 6) + val
     return struct.pack('<BH6B', *t)
 
@@ -81,14 +81,14 @@ def p2p_attr_channel_list():
                        81, 11, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 
 def p2p_attr_device_info(addr, name="Test", config_methods=0, dev_type="00010050F2040001"):
-    val = struct.unpack('6B', binascii.unhexlify(addr.replace(':','')))
+    val = struct.unpack('6B', binascii.unhexlify(addr.replace(':', '')))
     val2 = struct.unpack('8B', binascii.unhexlify(dev_type))
     t = (P2P_ATTR_DEVICE_INFO, 6 + 2 + 8 + 1 + 4 + len(name)) + val
     t2 = val2 + (0,)
     return struct.pack("<BH6B", *t) + struct.pack(">H", config_methods) + struct.pack("8BB", *t2) + struct.pack('>HH', 0x1011, len(name)) + name.encode()
 
 def p2p_attr_group_id(addr, ssid):
-    val = struct.unpack('6B', binascii.unhexlify(addr.replace(':','')))
+    val = struct.unpack('6B', binascii.unhexlify(addr.replace(':', '')))
     t = (P2P_ATTR_GROUP_ID, 6 + len(ssid)) + val
     return struct.pack('<BH6B', *t) + ssid.encode()
 
@@ -133,7 +133,7 @@ def start_p2p(dev, apdev):
     peer = dev[1].get_peer(addr0)
 
     bssid = apdev[0]['bssid']
-    params = { 'ssid': "test", 'beacon_int': "2000" }
+    params = {'ssid': "test", 'beacon_int': "2000"}
     if peer['listen_freq'] == "2412":
         params['channel'] = '1'
     elif peer['listen_freq'] == "2437":
@@ -162,25 +162,25 @@ def parse_p2p_public_action(payload):
     if action != 9:
         return None
     pos = pos[2:]
-    (oui1,oui2,oui3,subtype) = struct.unpack('BBBB', pos[0:4])
+    (oui1, oui2, oui3, subtype) = struct.unpack('BBBB', pos[0:4])
     if oui1 != 0x50 or oui2 != 0x6f or oui3 != 0x9a or subtype != 9:
         return None
     pos = pos[4:]
-    (subtype,dialog_token) = struct.unpack('BB', pos[0:2])
+    (subtype, dialog_token) = struct.unpack('BB', pos[0:2])
     p2p = {}
     p2p['subtype'] = subtype
     p2p['dialog_token'] = dialog_token
     pos = pos[2:]
     p2p['elements'] = pos
     while len(pos) > 2:
-        (id,elen) = struct.unpack('BB', pos[0:2])
+        (id, elen) = struct.unpack('BB', pos[0:2])
         pos = pos[2:]
         if elen > len(pos):
             raise Exception("Truncated IE in P2P Public Action frame (elen=%d left=%d)" % (elen, len(pos)))
         if id == WLAN_EID_VENDOR_SPECIFIC:
             if elen < 4:
                 raise Exception("Too short vendor specific IE in P2P Public Action frame (elen=%d)" % elen)
-            (oui1,oui2,oui3,subtype) = struct.unpack('BBBB', pos[0:4])
+            (oui1, oui2, oui3, subtype) = struct.unpack('BBBB', pos[0:4])
             if oui1 == 0x50 and oui2 == 0x6f and oui3 == 0x9a and subtype == 9:
                 if 'p2p' in p2p:
                     p2p['p2p'] += pos[4:elen]
@@ -196,7 +196,7 @@ def parse_p2p_public_action(payload):
         p2p['p2p_attrs'] = {}
         pos = p2p['p2p']
         while len(pos) >= 3:
-            (id,alen) = struct.unpack('<BH', pos[0:3])
+            (id, alen) = struct.unpack('<BH', pos[0:3])
             pos = pos[3:]
             if alen > len(pos):
                 logger.info("P2P payload: " + binascii.hexlify(p2p['p2p']))
@@ -210,7 +210,7 @@ def parse_p2p_public_action(payload):
         p2p['wsc_attrs'] = {}
         pos = p2p['wsc']
         while len(pos) >= 4:
-            (id,alen) = struct.unpack('>HH', pos[0:4])
+            (id, alen) = struct.unpack('>HH', pos[0:4])
             pos = pos[4:]
             if alen > len(pos):
                 logger.info("WSC payload: " + binascii.hexlify(p2p['wsc']))
@@ -1955,13 +1955,13 @@ def test_p2p_msg_group_info(dev):
         dev[0].request("VENDOR_ELEM_REMOVE 2 *")
 
 def _test_p2p_msg_group_info(dev):
-    tests = [ "dd08506f9a090e010001",
-              "dd08506f9a090e010000",
-              "dd20506f9a090e190018" + "112233445566" + "aabbccddeeff" + "00" + "0000" + "0000000000000000" + "ff",
-              "dd20506f9a090e190018" + "112233445566" + "aabbccddeeff" + "00" + "0000" + "0000000000000000" + "00",
-              "dd24506f9a090e1d001c" + "112233445566" + "aabbccddeeff" + "00" + "0000" + "0000000000000000" + "00" + "00000000",
-              "dd24506f9a090e1d001c" + "112233445566" + "aabbccddeeff" + "00" + "0000" + "0000000000000000" + "00" + "10110001",
-              "dd24506f9a090e1d001c" + "112233445566" + "aabbccddeeff" + "00" + "0000" + "0000000000000000" + "00" + "1011ffff" ]
+    tests = ["dd08506f9a090e010001",
+             "dd08506f9a090e010000",
+             "dd20506f9a090e190018" + "112233445566" + "aabbccddeeff" + "00" + "0000" + "0000000000000000" + "ff",
+             "dd20506f9a090e190018" + "112233445566" + "aabbccddeeff" + "00" + "0000" + "0000000000000000" + "00",
+             "dd24506f9a090e1d001c" + "112233445566" + "aabbccddeeff" + "00" + "0000" + "0000000000000000" + "00" + "00000000",
+             "dd24506f9a090e1d001c" + "112233445566" + "aabbccddeeff" + "00" + "0000" + "0000000000000000" + "00" + "10110001",
+             "dd24506f9a090e1d001c" + "112233445566" + "aabbccddeeff" + "00" + "0000" + "0000000000000000" + "00" + "1011ffff"]
     for t in tests:
         dev[0].request("VENDOR_ELEM_REMOVE 2 *")
         if "OK" not in dev[0].request("VENDOR_ELEM_ADD 2 " + t):

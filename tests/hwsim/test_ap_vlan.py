@@ -26,9 +26,9 @@ from tshark import run_tshark
 
 def test_ap_vlan_open(dev, apdev):
     """AP VLAN with open network"""
-    params = { "ssid": "test-vlan-open",
-               "dynamic_vlan": "1",
-               "accept_mac_file": "hostapd.accept" }
+    params = {"ssid": "test-vlan-open",
+              "dynamic_vlan": "1",
+              "accept_mac_file": "hostapd.accept"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-vlan-open", key_mgmt="NONE", scan_freq="2412")
@@ -40,10 +40,10 @@ def test_ap_vlan_open(dev, apdev):
 
 def test_ap_vlan_file_open(dev, apdev):
     """AP VLAN with open network and vlan_file mapping"""
-    params = { "ssid": "test-vlan-open",
-               "dynamic_vlan": "1",
-               "vlan_file": "hostapd.vlan",
-               "accept_mac_file": "hostapd.accept" }
+    params = {"ssid": "test-vlan-open",
+              "dynamic_vlan": "1",
+              "vlan_file": "hostapd.vlan",
+              "accept_mac_file": "hostapd.accept"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-vlan-open", key_mgmt="NONE", scan_freq="2412")
@@ -55,10 +55,10 @@ def test_ap_vlan_file_open(dev, apdev):
 
 def test_ap_vlan_file_open2(dev, apdev):
     """AP VLAN with open network and vlan_file mapping (2)"""
-    params = { "ssid": "test-vlan-open",
-               "dynamic_vlan": "1",
-               "vlan_file": "hostapd.vlan2",
-               "accept_mac_file": "hostapd.accept2" }
+    params = {"ssid": "test-vlan-open",
+              "dynamic_vlan": "1",
+              "vlan_file": "hostapd.vlan2",
+              "accept_mac_file": "hostapd.accept2"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-vlan-open", key_mgmt="NONE", scan_freq="2412")
@@ -71,12 +71,12 @@ def test_ap_vlan_file_open2(dev, apdev):
 def test_ap_vlan_file_parsing(dev, apdev, params):
     """hostapd vlan_file/mac_file parsing"""
     tmp = os.path.join(params['logdir'], 'ap_vlan_file_parsing.tmp')
-    params = { "ssid": "test-vlan-open", "dynamic_vlan": "1" }
+    params = {"ssid": "test-vlan-open", "dynamic_vlan": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
 
-    tests = [ "#\n\n0\t11\n",
-              "* ",
-              "1 netdev12345678901234567890" ]
+    tests = ["#\n\n0\t11\n",
+             "* ",
+             "1 netdev12345678901234567890"]
     for t in tests:
         with open(tmp, "w") as f:
             f.write(t)
@@ -89,11 +89,11 @@ def test_ap_vlan_file_parsing(dev, apdev, params):
         if "FAIL" not in hapd.request("SET vlan_file " + tmp):
             raise Exception("vlan_file accepted during OOM")
 
-    tests = [ "#\n\n0\tvlan\n",
-              "4095\tvlan\n",
-              "vlan\n",
-              "1\t1234567890abcdef1234567890\n",
-              "1\n" ]
+    tests = ["#\n\n0\tvlan\n",
+             "4095\tvlan\n",
+             "vlan\n",
+             "1\t1234567890abcdef1234567890\n",
+             "1\n"]
     for t in tests:
         with open(tmp, "w") as f:
             f.write(t)
@@ -207,15 +207,15 @@ def test_ap_vlan_tagged_wpa2_radius_id_change(dev, apdev):
         subprocess.call(['ip', 'link', 'del', ifname2])
 
 def generic_ap_vlan_wpa2_radius_id_change(dev, apdev, tagged):
-    as_params = { "ssid": "as",
-                  "beacon_int": "2000",
-                  "radius_server_clients": "auth_serv/radius_clients.conf",
-                  "radius_server_auth_port": '18128',
-                  "eap_server": "1",
-                  "eap_user_file": "auth_serv/eap_user.conf",
-                  "ca_cert": "auth_serv/ca.pem",
-                  "server_cert": "auth_serv/server.pem",
-                  "private_key": "auth_serv/server.key" }
+    as_params = {"ssid": "as",
+                 "beacon_int": "2000",
+                 "radius_server_clients": "auth_serv/radius_clients.conf",
+                 "radius_server_auth_port": '18128',
+                 "eap_server": "1",
+                 "eap_user_file": "auth_serv/eap_user.conf",
+                 "ca_cert": "auth_serv/ca.pem",
+                 "server_cert": "auth_serv/server.pem",
+                 "private_key": "auth_serv/server.key"}
     authserv = hostapd.add_ap(apdev[1], as_params)
 
     params = hostapd.wpa2_eap_params(ssid="test-vlan")
@@ -328,10 +328,10 @@ def test_ap_vlan_wpa2_radius_required(dev, apdev):
 
 def test_ap_vlan_tagged(dev, apdev):
     """AP VLAN with tagged interface"""
-    params = { "ssid": "test-vlan-open",
-               "dynamic_vlan": "1",
-               "vlan_tagged_interface": "lo",
-               "accept_mac_file": "hostapd.accept" }
+    params = {"ssid": "test-vlan-open",
+              "dynamic_vlan": "1",
+              "vlan_tagged_interface": "lo",
+              "accept_mac_file": "hostapd.accept"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-vlan-open", key_mgmt="NONE", scan_freq="2412")
@@ -344,8 +344,8 @@ def test_ap_vlan_tagged(dev, apdev):
 def ap_vlan_iface_cleanup_multibss_cleanup():
     subprocess.call(['ifconfig', 'dummy0', 'down'],
                     stderr=open('/dev/null', 'w'))
-    ifnames = [ 'wlan3.1', 'wlan3.2', 'wlan3-2.1', 'wlan3-2.2', 'dummy0.2',
-                'dummy0.1', 'dummy0', 'brvlan1', 'brvlan2' ]
+    ifnames = ['wlan3.1', 'wlan3.2', 'wlan3-2.1', 'wlan3-2.2', 'dummy0.2',
+               'dummy0.1', 'dummy0', 'brvlan1', 'brvlan2']
     for ifname in ifnames:
         subprocess.call(['ip', 'link', 'del', ifname],
                         stderr=open('/dev/null', 'w'))
@@ -394,16 +394,16 @@ def ap_vlan_iface_cleanup_multibss(dev, apdev, cfgfile):
         ap_vlan_iface_cleanup_multibss_cleanup()
         ap_vlan_iface_test_and_prepare_environ()
 
-        as_params = { "ssid": "as",
-                      "beacon_int": "2000",
-                      "radius_server_clients": "auth_serv/radius_clients.conf",
-                      "radius_server_auth_port": '18128',
-                      "eap_server": "1",
-                      "eap_user_file": "auth_serv/eap_user.conf",
-                      "ca_cert": "auth_serv/ca.pem",
-                      "server_cert": "auth_serv/server.pem",
-                      "private_key": "auth_serv/server.key",
-                      "vlan_naming": "1" }
+        as_params = {"ssid": "as",
+                     "beacon_int": "2000",
+                     "radius_server_clients": "auth_serv/radius_clients.conf",
+                     "radius_server_auth_port": '18128',
+                     "eap_server": "1",
+                     "eap_user_file": "auth_serv/eap_user.conf",
+                     "ca_cert": "auth_serv/ca.pem",
+                     "server_cert": "auth_serv/server.pem",
+                     "private_key": "auth_serv/server.key",
+                     "vlan_naming": "1"}
         authserv = hostapd.add_ap(apdev[1], as_params)
 
         # start the actual test
@@ -616,8 +616,8 @@ def test_ap_vlan_without_station(dev, apdev, p):
 @remote_compatible
 def test_ap_open_per_sta_vif(dev, apdev):
     """AP VLAN with open network"""
-    params = { "ssid": "test-vlan-open",
-               "per_sta_vif": "1" }
+    params = {"ssid": "test-vlan-open",
+              "per_sta_vif": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-vlan-open", key_mgmt="NONE", scan_freq="2412")
@@ -627,9 +627,9 @@ def test_ap_open_per_sta_vif(dev, apdev):
 @remote_compatible
 def test_ap_vlan_open_per_sta_vif(dev, apdev):
     """AP VLAN (dynamic) with open network"""
-    params = { "ssid": "test-vlan-open",
-               "per_sta_vif": "1",
-               "dynamic_vlan": "1" }
+    params = {"ssid": "test-vlan-open",
+              "per_sta_vif": "1",
+              "dynamic_vlan": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-vlan-open", key_mgmt="NONE", scan_freq="2412")
@@ -738,9 +738,9 @@ def test_ap_vlan_sae(dev, apdev, params):
             raise HwsimSkip("SAE not supported")
     params = hostapd.wpa2_params(ssid="test-sae-vlan")
     params['wpa_key_mgmt'] = 'SAE'
-    params['sae_password'] = [ 'pw1|vlanid=1|id=id1',
-                               'pw2|mac=ff:ff:ff:ff:ff:ff|vlanid=2|id=id2',
-                               'pw3|vlanid=3|id=id3' ]
+    params['sae_password'] = ['pw1|vlanid=1|id=id1',
+                              'pw2|mac=ff:ff:ff:ff:ff:ff|vlanid=2|id=id2',
+                              'pw3|vlanid=3|id=id3']
     params['dynamic_vlan'] = "1"
     hapd = hostapd.add_ap(apdev[0], params)
 

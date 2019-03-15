@@ -17,7 +17,7 @@ class DisconnectPacket(pyrad.packet.Packet):
 
     def RequestPacket(self):
         attr = b''
-        for code,datalst in sorted(self.items()):
+        for code, datalst in sorted(self.items()):
             for data in datalst:
                 attr += self._PktEncodeAttribute(code, data)
 

@@ -134,14 +134,14 @@ def test_ieee8021x_proto(dev, apdev):
 
     start = dev[0].get_mib()
 
-    tests = [ "11",
-              "11223344",
-              "020000050a93000501",
-              "020300050a93000501",
-              "0203002c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-              "0203002c0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-              "0203002c0100050000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-              "02aa00050a93000501" ]
+    tests = ["11",
+             "11223344",
+             "020000050a93000501",
+             "020300050a93000501",
+             "0203002c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+             "0203002c0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+             "0203002c0100050000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+             "02aa00050a93000501"]
     for frame in tests:
         res = dev[0].request("EAPOL_RX " + bssid + " " + frame)
         if "OK" not in res:
@@ -153,8 +153,8 @@ def test_ieee8021x_proto(dev, apdev):
     logger.info("MIB before test frames: " + str(start))
     logger.info("MIB after test frames: " + str(stop))
 
-    vals = [ 'dot1xSuppInvalidEapolFramesRx',
-             'dot1xSuppEapLengthErrorFramesRx' ]
+    vals = ['dot1xSuppInvalidEapolFramesRx',
+            'dot1xSuppEapLengthErrorFramesRx']
     for val in vals:
         if int(stop[val]) <= int(start[val]):
             raise Exception(val + " did not increase")
@@ -230,8 +230,8 @@ def test_ieee8021x_held(dev, apdev):
             time.sleep(0.25)
         if held:
             raise Exception("PAE state HELD not left")
-        ev = dev[0].wait_event([ "CTRL-EVENT-CONNECTED",
-                                 "CTRL-EVENT-DISCONNECTED" ], timeout=10)
+        ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                "CTRL-EVENT-DISCONNECTED"], timeout=10)
         if ev is None:
             raise Exception("Connection timed out")
         if "CTRL-EVENT-DISCONNECTED" in ev:
@@ -381,34 +381,34 @@ def test_ieee8021x_set_conf(dev, apdev):
                    scan_freq="2412")
 
     addr0 = dev[0].own_addr()
-    tests = [ "EAPOL_SET 1",
-              "EAPOL_SET %sfoo bar" % addr0,
-              "EAPOL_SET %s foo" % addr0,
-              "EAPOL_SET %s foo bar" % addr0,
-              "EAPOL_SET %s AdminControlledDirections bar" % addr0,
-              "EAPOL_SET %s AdminControlledPortControl bar" % addr0,
-              "EAPOL_SET %s reAuthEnabled bar" % addr0,
-              "EAPOL_SET %s KeyTransmissionEnabled bar" % addr0,
-              "EAPOL_SET 11:22:33:44:55:66 AdminControlledDirections Both" ]
+    tests = ["EAPOL_SET 1",
+             "EAPOL_SET %sfoo bar" % addr0,
+             "EAPOL_SET %s foo" % addr0,
+             "EAPOL_SET %s foo bar" % addr0,
+             "EAPOL_SET %s AdminControlledDirections bar" % addr0,
+             "EAPOL_SET %s AdminControlledPortControl bar" % addr0,
+             "EAPOL_SET %s reAuthEnabled bar" % addr0,
+             "EAPOL_SET %s KeyTransmissionEnabled bar" % addr0,
+             "EAPOL_SET 11:22:33:44:55:66 AdminControlledDirections Both"]
     for t in tests:
         if "FAIL" not in hapd.request(t):
             raise Exception("Invalid EAPOL_SET command accepted: " + t)
 
-    tests = [ ("AdminControlledDirections", "adminControlledDirections", "In"),
-              ("AdminControlledDirections", "adminControlledDirections",
-               "Both"),
-              ("quietPeriod", "quietPeriod", "13"),
-              ("serverTimeout", "serverTimeout", "7"),
-              ("reAuthPeriod", "reAuthPeriod", "1234"),
-              ("reAuthEnabled", "reAuthEnabled", "FALSE"),
-              ("reAuthEnabled", "reAuthEnabled", "TRUE"),
-              ("KeyTransmissionEnabled", "keyTxEnabled", "TRUE"),
-              ("KeyTransmissionEnabled", "keyTxEnabled", "FALSE"),
-              ("AdminControlledPortControl", "portControl", "ForceAuthorized"),
-              ("AdminControlledPortControl", "portControl",
-               "ForceUnauthorized"),
-              ("AdminControlledPortControl", "portControl", "Auto") ]
-    for param,mibparam,val in tests:
+    tests = [("AdminControlledDirections", "adminControlledDirections", "In"),
+             ("AdminControlledDirections", "adminControlledDirections",
+              "Both"),
+             ("quietPeriod", "quietPeriod", "13"),
+             ("serverTimeout", "serverTimeout", "7"),
+             ("reAuthPeriod", "reAuthPeriod", "1234"),
+             ("reAuthEnabled", "reAuthEnabled", "FALSE"),
+             ("reAuthEnabled", "reAuthEnabled", "TRUE"),
+             ("KeyTransmissionEnabled", "keyTxEnabled", "TRUE"),
+             ("KeyTransmissionEnabled", "keyTxEnabled", "FALSE"),
+             ("AdminControlledPortControl", "portControl", "ForceAuthorized"),
+             ("AdminControlledPortControl", "portControl",
+              "ForceUnauthorized"),
+             ("AdminControlledPortControl", "portControl", "Auto")]
+    for param, mibparam, val in tests:
         if "OK" not in hapd.request("EAPOL_SET %s %s %s" % (addr0, param, val)):
             raise Exception("Failed to set %s %s" % (param, val))
         mib = hapd.get_sta(addr0, info="eapol")

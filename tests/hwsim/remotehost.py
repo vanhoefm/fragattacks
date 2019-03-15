@@ -80,10 +80,10 @@ class Host():
         if self.host is None:
             cmd = command
         else:
-            cmd = ["ssh",  self.user + "@" + self.host, ' '.join(command)]
+            cmd = ["ssh", self.user + "@" + self.host, ' '.join(command)]
         _cmd = self.name + " execute_run: " + ' '.join(cmd)
         logger.debug(_cmd)
-        t = threading.Thread(target = execute_thread, args=(cmd, res))
+        t = threading.Thread(target=execute_thread, args=(cmd, res))
         t.start()
         return t
 

@@ -492,11 +492,11 @@ def test_p2p_peer_command(dev):
 
     res0 = dev[0].request("P2P_PEER FIRST")
     peer = res0.splitlines()[0]
-    if peer not in [ addr1, addr2 ]:
+    if peer not in [addr1, addr2]:
         raise Exception("Unexpected P2P_PEER FIRST address")
     res1 = dev[0].request("P2P_PEER NEXT-" + peer)
     peer2 = res1.splitlines()[0]
-    if peer2 not in [ addr1, addr2 ] or peer == peer2:
+    if peer2 not in [addr1, addr2] or peer == peer2:
         raise Exception("Unexpected P2P_PEER NEXT address")
 
     if "FAIL" not in dev[0].request("P2P_PEER NEXT-foo"):
@@ -679,7 +679,7 @@ def run_discovery_while_go(wpas, dev, params):
     terminate_group(wpas, dev[1])
 
     out = run_tshark(os.path.join(params['logdir'], "hwsim0.pcapng"),
-                     "wifi_p2p.public_action.subtype == 8", [ "wlan.da" ])
+                     "wifi_p2p.public_action.subtype == 8", ["wlan.da"])
     da = out.splitlines()
     logger.info("PD Response DAs: " + str(da))
     if len(da) != 3:
@@ -714,7 +714,7 @@ def run_discovery_while_cli(wpas, dev, params):
     terminate_group(dev[1], wpas)
 
     out = run_tshark(os.path.join(params['logdir'], "hwsim0.pcapng"),
-                     "wifi_p2p.public_action.subtype == 8", [ "wlan.da" ])
+                     "wifi_p2p.public_action.subtype == 8", ["wlan.da"])
     da = out.splitlines()
     logger.info("PD Response DAs: " + str(da))
     if len(da) != 3:

@@ -16,7 +16,7 @@ from datetime import datetime
 from utils import HwsimSkip
 
 def check_set_tx_power(dev, apdev):
-    hapd = hostapd.add_ap(apdev[0], {'ssid' : 'check_tx_power'})
+    hapd = hostapd.add_ap(apdev[0], {'ssid': 'check_tx_power'})
     set_rx_rssi(hapd, -50)
 
     dev[0].scan(freq=2412)
@@ -38,9 +38,9 @@ def check_set_tx_power(dev, apdev):
 def run_rssi_based_assoc_rej_timeout(dev, apdev, params):
     rssi_retry_to = 5
 
-    ap_params = { 'ssid': "test-RSSI-ar-to",
-                  'rssi_reject_assoc_rssi': '-45',
-                  'rssi_reject_assoc_timeout': str(rssi_retry_to) }
+    ap_params = {'ssid': "test-RSSI-ar-to",
+                 'rssi_reject_assoc_rssi': '-45',
+                 'rssi_reject_assoc_timeout': str(rssi_retry_to)}
 
     logger.info("Set APs RSSI rejection threshold to -45 dBm, retry timeout: " +
                 str(rssi_retry_to))
@@ -88,9 +88,9 @@ def test_rssi_based_assoc_rej_timeout(dev, apdev, params):
         dev[0].request("SCAN_INTERVAL 5")
 
 def run_rssi_based_assoc_rej_good_rssi(dev, apdev):
-    ap_params = { 'ssid': "test-RSSI-ar-to",
-                  'rssi_reject_assoc_rssi': '-45',
-                  'rssi_reject_assoc_timeout': '60' }
+    ap_params = {'ssid': "test-RSSI-ar-to",
+                 'rssi_reject_assoc_rssi': '-45',
+                 'rssi_reject_assoc_timeout': '60'}
 
     logger.info("Set APs RSSI rejection threshold to -45 dBm")
     hapd = hostapd.add_ap(apdev[0], ap_params)
@@ -139,9 +139,9 @@ def test_rssi_based_assoc_rssi_change(dev, apdev):
     """RSSI-based association rejection: connect after improving RSSI"""
     check_set_tx_power(dev, apdev)
     try:
-        ap_params = { 'ssid': "test-RSSI-ar-to",
-                      'rssi_reject_assoc_rssi': '-45',
-                      'rssi_reject_assoc_timeout': '60' }
+        ap_params = {'ssid': "test-RSSI-ar-to",
+                     'rssi_reject_assoc_rssi': '-45',
+                     'rssi_reject_assoc_timeout': '60'}
 
         logger.info("Set APs RSSI rejection threshold to -45 dBm, retry timeout: 60")
         hapd = hostapd.add_ap(apdev[0], ap_params)

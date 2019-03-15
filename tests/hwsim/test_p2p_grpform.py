@@ -648,7 +648,7 @@ def clear_pbc_overlap(dev, ap):
 @remote_compatible
 def test_grpform_pbc_overlap(dev, apdev):
     """P2P group formation during PBC overlap"""
-    params = { "ssid": "wps", "eap_server": "1", "wps_state": "1" }
+    params = {"ssid": "wps", "eap_server": "1", "wps_state": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
     hapd.request("WPS_PBC")
     time.sleep(0.1)
@@ -688,8 +688,8 @@ def test_grpform_pbc_overlap_group_iface(dev, apdev):
     """P2P group formation during PBC overlap using group interfaces"""
     # Note: Need to include P2P IE from the AP to get the P2P interface BSS
     # update use this information.
-    params = { "ssid": "wps", "eap_server": "1", "wps_state": "1",
-               "beacon_int": "15", 'manage_p2p': '1' }
+    params = {"ssid": "wps", "eap_server": "1", "wps_state": "1",
+              "beacon_int": "15", 'manage_p2p': '1'}
     hapd = hostapd.add_ap(apdev[0], params)
     hapd.request("WPS_PBC")
 
@@ -877,14 +877,14 @@ def test_grpform_wait_peer(dev):
 def test_invalid_p2p_connect_command(dev):
     """P2P_CONNECT error cases"""
     id = dev[0].add_network()
-    for cmd in [ "foo",
-                 "00:11:22:33:44:55",
-                 "00:11:22:33:44:55 pbc persistent=123",
-                 "00:11:22:33:44:55 pbc persistent=%d" % id,
-                 "00:11:22:33:44:55 pbc go_intent=-1",
-                 "00:11:22:33:44:55 pbc go_intent=16",
-                 "00:11:22:33:44:55 pin",
-                 "00:11:22:33:44:55 pbc freq=0" ]:
+    for cmd in ["foo",
+                "00:11:22:33:44:55",
+                "00:11:22:33:44:55 pbc persistent=123",
+                "00:11:22:33:44:55 pbc persistent=%d" % id,
+                "00:11:22:33:44:55 pbc go_intent=-1",
+                "00:11:22:33:44:55 pbc go_intent=16",
+                "00:11:22:33:44:55 pin",
+                "00:11:22:33:44:55 pbc freq=0"]:
         if "FAIL" not in dev[0].request("P2P_CONNECT " + cmd):
             raise Exception("Invalid P2P_CONNECT command accepted: " + cmd)
 

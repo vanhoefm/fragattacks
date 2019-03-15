@@ -248,8 +248,8 @@ def set_rx_rssi(dev, val):
     """
     tx_power = (val + 50) * 100
     ifname = dev.get_driver_status_field("ifname")
-    (res, data) = dev.cmd_execute([ 'iw', ifname, 'set', 'txpower',
-                                    'fixed', str(tx_power)] )
+    (res, data) = dev.cmd_execute(['iw', ifname, 'set', 'txpower',
+                                   'fixed', str(tx_power)])
     if res != 0:
         raise Exception("Failed to set RSSI to %d" % val)
 

@@ -12,15 +12,15 @@ import hostapd
 
 logger = logging.getLogger()
 
-fst_test_def_group='fstg0'
-fst_test_def_freq_g='2412' # Channel 1
-fst_test_def_freq_a='5180' # Channel 36
-fst_test_def_chan_g='1'
-fst_test_def_chan_a='36'
-fst_test_def_prio_low='100'
-fst_test_def_prio_high='110'
-fst_test_def_llt='100'
-fst_test_def_reg_domain='00'
+fst_test_def_group = 'fstg0'
+fst_test_def_freq_g = '2412' # Channel 1
+fst_test_def_freq_a = '5180' # Channel 36
+fst_test_def_chan_g = '1'
+fst_test_def_chan_a = '36'
+fst_test_def_prio_low = '100'
+fst_test_def_prio_high = '110'
+fst_test_def_llt = '100'
+fst_test_def_reg_domain = '00'
 
 class HapdRegCtrl:
     def __init__(self):
@@ -89,7 +89,7 @@ class HapdRegCtrl:
         logger.debug("fst hostapd: regulatory domain ready")
 
 def fst_clear_regdom():
-    cmd = subprocess.Popen([ "iw", "reg", "get" ], stdout=subprocess.PIPE)
+    cmd = subprocess.Popen(["iw", "reg", "get"], stdout=subprocess.PIPE)
     res = cmd.stdout.read().decode()
     cmd.stdout.close()
     if "country 00:" not in res:

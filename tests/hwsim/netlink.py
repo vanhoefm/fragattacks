@@ -32,7 +32,7 @@ class Attr(object):
     def _dump(self):
         hdr = struct.pack("HH", len(self._data) + 4, self._type)
         length = len(self._data)
-        pad = ((length + 4 - 1) & ~3 ) - length
+        pad = ((length + 4 - 1) & ~3) - length
         return hdr + self._data + b'\x00' * pad
 
     def __repr__(self):
@@ -87,23 +87,23 @@ class Nested(Attr):
         hdr = struct.pack("HH", length+4, self.type)
         return hdr + contents
 
-NETLINK_ROUTE		= 0
-NETLINK_UNUSED		= 1
-NETLINK_USERSOCK	= 2
-NETLINK_FIREWALL	= 3
-NETLINK_INET_DIAG	= 4
-NETLINK_NFLOG		= 5
-NETLINK_XFRM		= 6
-NETLINK_SELINUX		= 7
-NETLINK_ISCSI		= 8
-NETLINK_AUDIT		= 9
-NETLINK_FIB_LOOKUP	= 10
-NETLINK_CONNECTOR	= 11
-NETLINK_NETFILTER	= 12
-NETLINK_IP6_FW		= 13
-NETLINK_DNRTMSG		= 14
-NETLINK_KOBJECT_UEVENT	= 15
-NETLINK_GENERIC 	= 16
+NETLINK_ROUTE = 0
+NETLINK_UNUSED = 1
+NETLINK_USERSOCK = 2
+NETLINK_FIREWALL = 3
+NETLINK_INET_DIAG = 4
+NETLINK_NFLOG = 5
+NETLINK_XFRM = 6
+NETLINK_SELINUX = 7
+NETLINK_ISCSI = 8
+NETLINK_AUDIT = 9
+NETLINK_FIB_LOOKUP = 10
+NETLINK_CONNECTOR = 11
+NETLINK_NETFILTER = 12
+NETLINK_IP6_FW = 13
+NETLINK_DNRTMSG = 14
+NETLINK_KOBJECT_UEVENT = 15
+NETLINK_GENERIC = 16
 
 class Message(object):
     def __init__(self, msg_type, flags=0, seq=-1, payload=None):
@@ -184,30 +184,30 @@ def parse_attributes(data):
     while len(data):
         attr_len, attr_type = struct.unpack("HH", data[:4])
         attrs[attr_type] = Attr(attr_type, data[4:attr_len])
-        attr_len = ((attr_len + 4 - 1) & ~3 )
+        attr_len = ((attr_len + 4 - 1) & ~3)
         data = data[attr_len:]
     return attrs
 
 
 
-CTRL_CMD_UNSPEC		= 0
-CTRL_CMD_NEWFAMILY	= 1
-CTRL_CMD_DELFAMILY	= 2
-CTRL_CMD_GETFAMILY	= 3
-CTRL_CMD_NEWOPS		= 4
-CTRL_CMD_DELOPS		= 5
-CTRL_CMD_GETOPS		= 6
+CTRL_CMD_UNSPEC = 0
+CTRL_CMD_NEWFAMILY = 1
+CTRL_CMD_DELFAMILY = 2
+CTRL_CMD_GETFAMILY = 3
+CTRL_CMD_NEWOPS = 4
+CTRL_CMD_DELOPS = 5
+CTRL_CMD_GETOPS = 6
 
-CTRL_ATTR_UNSPEC	= 0
-CTRL_ATTR_FAMILY_ID	= 1
-CTRL_ATTR_FAMILY_NAME	= 2
-CTRL_ATTR_VERSION	= 3
-CTRL_ATTR_HDRSIZE	= 4
-CTRL_ATTR_MAXATTR	= 5
-CTRL_ATTR_OPS		= 6
+CTRL_ATTR_UNSPEC = 0
+CTRL_ATTR_FAMILY_ID = 1
+CTRL_ATTR_FAMILY_NAME = 2
+CTRL_ATTR_VERSION = 3
+CTRL_ATTR_HDRSIZE = 4
+CTRL_ATTR_MAXATTR = 5
+CTRL_ATTR_OPS = 6
 
 class GenlHdr(object):
-    def __init__(self, cmd, version = 0):
+    def __init__(self, cmd, version=0):
         self.cmd = cmd
         self.version = version
     def _dump(self):
@@ -216,7 +216,7 @@ class GenlHdr(object):
 def _genl_hdr_parse(data):
     return GenlHdr(*struct.unpack("BBxx", data))
 
-GENL_ID_CTRL		= NLMSG_MIN_TYPE
+GENL_ID_CTRL = NLMSG_MIN_TYPE
 
 class GenlMessage(Message):
     def __init__(self, family, cmd, attrs=[], flags=0):

@@ -30,10 +30,10 @@ def create(devices, setup_params, refs, duts, monitors):
         if dev is None:
             continue
 
-        host = Host(host = dev['hostname'],
-                    ifname = dev['ifname'],
-                    port = dev['port'],
-                    name = dev['name'])
+        host = Host(host=dev['hostname'],
+                    ifname=dev['ifname'],
+                    port=dev['port'],
+                    name=dev['name'])
 
         try:
             host.execute(["iw", "reg", "set", setup_params['country']])
@@ -145,8 +145,8 @@ def get_monitor_params(wpa, is_p2p=False):
         get_status_field_f = wpa.get_status_field
     freq = get_status_field_f("freq")
     bw = "20"
-    center_freq1=""
-    center_freq2=""
+    center_freq1 = ""
+    center_freq2 = ""
 
     vht_oper_chwidth = get_status_field_f("vht_oper_chwidth")
     secondary_channel = get_status_field_f("secondary_channel")
@@ -173,9 +173,9 @@ def get_monitor_params(wpa, is_p2p=False):
     else:
         pass
 
-    monitor_params = { "freq" : freq,
-                       "bw" : bw,
-                       "center_freq1" : center_freq1,
-                       "center_freq2" : center_freq2 }
+    monitor_params = {"freq" : freq,
+                      "bw" : bw,
+                      "center_freq1" : center_freq1,
+                      "center_freq2" : center_freq2}
 
     return monitor_params

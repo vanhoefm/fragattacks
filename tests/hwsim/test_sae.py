@@ -102,7 +102,7 @@ def test_sae_pmksa_caching(dev, apdev):
     dev[0].request("SET sae_groups ")
     dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
                    scan_freq="2412")
-    ev = hapd.wait_event([ "AP-STA-CONNECTED" ], timeout=5)
+    ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=5)
     if ev is None:
         raise Exception("No connection event received from hostapd")
     dev[0].request("DISCONNECT")
@@ -126,7 +126,7 @@ def test_sae_pmksa_caching_disabled(dev, apdev):
     dev[0].request("SET sae_groups ")
     dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
                    scan_freq="2412")
-    ev = hapd.wait_event([ "AP-STA-CONNECTED" ], timeout=5)
+    ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=5)
     if ev is None:
         raise Exception("No connection event received from hostapd")
     dev[0].request("DISCONNECT")
@@ -144,12 +144,12 @@ def test_sae_groups(dev, apdev):
     # MODP) and group 21 (521-bit random ECP group) are a bit too slow on some
     # VMs and can result in hitting the mac80211 authentication timeout, so
     # allow them to fail and just report such failures in the debug log.
-    sae_groups = [ 19, 25, 26, 20, 21, 1, 2, 5, 14, 15, 16, 22, 23, 24 ]
+    sae_groups = [19, 25, 26, 20, 21, 1, 2, 5, 14, 15, 16, 22, 23, 24]
     tls = dev[0].request("GET tls_library")
     if tls.startswith("OpenSSL") and "run=OpenSSL 1." in tls:
         logger.info("Add Brainpool EC groups since OpenSSL is new enough")
-        sae_groups += [ 27, 28, 29, 30 ]
-    heavy_groups = [ 14, 15, 16 ]
+        sae_groups += [27, 28, 29, 30]
+    heavy_groups = [14, 15, 16]
     groups = [str(g) for g in sae_groups]
     params = hostapd.wpa2_params(ssid="test-sae-groups",
                                  passphrase="12345678")
@@ -174,7 +174,7 @@ def test_sae_groups(dev, apdev):
         else:
             ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=10)
             if ev is None:
-                if "BoringSSL" in tls and int(g) in [ 25 ]:
+                if "BoringSSL" in tls and int(g) in [25]:
                     logger.info("Ignore connection failure with group " + g + " with BoringSSL")
                     dev[0].remove_network(id)
                     dev[0].dump_monitor()
@@ -217,7 +217,7 @@ def test_sae_group_nego_no_match(dev, apdev):
     dev[0].request("SET sae_groups ")
     dev[0].connect("test-sae-group-nego", psk="12345678", key_mgmt="SAE",
                    scan_freq="2412", wait_connect=False)
-    ev = dev[0].wait_event([ "CTRL-EVENT-SSID-TEMP-DISABLED" ], timeout=10)
+    ev = dev[0].wait_event(["CTRL-EVENT-SSID-TEMP-DISABLED"], timeout=10)
     dev[0].request("REMOVE_NETWORK all")
     if ev is None:
         raise Exception("Network profile disabling not reported")
@@ -550,39 +550,39 @@ def test_sae_proto_ecc(dev, apdev):
 
     dev[0].request("SET sae_groups 19")
 
-    tests = [ ("Confirm mismatch",
-               "1300" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
-               "0000800edebc3f260dc1fe7e0b20888af2b8a3316252ec37388a8504e25b73dc4240"),
-              ("Commit without even full cyclic group field",
-               "13",
-               None),
-              ("Too short commit",
-               "1300" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02",
-               None),
-              ("Invalid commit scalar (0)",
-               "1300" + "0000000000000000000000000000000000000000000000000000000000000000" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
-               None),
-              ("Invalid commit scalar (1)",
-               "1300" + "0000000000000000000000000000000000000000000000000000000000000001" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
-               None),
-              ("Invalid commit scalar (> r)",
-               "1300" + "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
-               None),
-              ("Commit element not on curve",
-               "1300" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728d0000000000000000000000000000000000000000000000000000000000000000",
-               None),
-              ("Invalid commit element (y coordinate > P)",
-               "1300" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-               None),
-              ("Invalid commit element (x coordinate > P)",
-               "1300" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
-               None),
-              ("Different group in commit",
-               "1400" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
-               None),
-              ("Too short confirm",
-               "1300" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
-               "0000800edebc3f260dc1fe7e0b20888af2b8a3316252ec37388a8504e25b73dc42")]
+    tests = [("Confirm mismatch",
+              "1300" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
+              "0000800edebc3f260dc1fe7e0b20888af2b8a3316252ec37388a8504e25b73dc4240"),
+             ("Commit without even full cyclic group field",
+              "13",
+              None),
+             ("Too short commit",
+              "1300" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02",
+              None),
+             ("Invalid commit scalar (0)",
+              "1300" + "0000000000000000000000000000000000000000000000000000000000000000" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
+              None),
+             ("Invalid commit scalar (1)",
+              "1300" + "0000000000000000000000000000000000000000000000000000000000000001" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
+              None),
+             ("Invalid commit scalar (> r)",
+              "1300" + "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
+              None),
+             ("Commit element not on curve",
+              "1300" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728d0000000000000000000000000000000000000000000000000000000000000000",
+              None),
+             ("Invalid commit element (y coordinate > P)",
+              "1300" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              None),
+             ("Invalid commit element (x coordinate > P)",
+              "1300" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
+              None),
+             ("Different group in commit",
+              "1400" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
+              None),
+             ("Too short confirm",
+              "1300" + "033d3635b39666ed427fd4a3e7d37acec2810afeaf1687f746a14163ff0e6d03" + "559cb8928db4ce4e3cbd6555e837591995e5ebe503ef36b503d9ca519d63728dd3c7c676b8e8081831b6bc3a64bdf136061a7de175e17d1965bfa41983ed02f8",
+              "0000800edebc3f260dc1fe7e0b20888af2b8a3316252ec37388a8504e25b73dc42")]
     for (note, commit, confirm) in tests:
         logger.info(note)
         dev[0].scan_for_bss(bssid, freq=2412)
@@ -649,21 +649,21 @@ def test_sae_proto_ffc(dev, apdev):
 
     dev[0].request("SET sae_groups 2")
 
-    tests = [ ("Confirm mismatch",
-               "0200" + "0c70519d874e3e4930a917cc5e17ea7a26028211159f217bab28b8d6c56691805e49f03249b2c6e22c7c9f86b30e04ccad2deedd5e5108ae07b737c00001c59cd0eb08b1dfc7f1b06a1542e2b6601a963c066e0c65940983a03917ae57a101ce84b5cbbc76ff33ebb990aac2e54aa0f0ab6ec0a58113d927683502b2cb2347d2" + "a8c00117493cdffa5dd671e934bc9cb1a69f39e25e9dd9cd9afd3aea2441a0f5491211c7ba50a753563f9ce943b043557cb71193b28e86ed9544f4289c471bf91b70af5c018cf4663e004165b0fd0bc1d8f3f78adf42eee92bcbc55246fd3ee9f107ab965dc7d4986f23eb71d616ebfe6bfe0a6c1ac5dc1718acee17c9a17486",
-               "0000f3116a9731f1259622e3eb55d4b3b50ba16f8c5f5565b28e609b180c51460251"),
-              ("Too short commit",
-               "0200" + "0c70519d874e3e4930a917cc5e17ea7a26028211159f217bab28b8d6c56691805e49f03249b2c6e22c7c9f86b30e04ccad2deedd5e5108ae07b737c00001c59cd0eb08b1dfc7f1b06a1542e2b6601a963c066e0c65940983a03917ae57a101ce84b5cbbc76ff33ebb990aac2e54aa0f0ab6ec0a58113d927683502b2cb2347d2" + "a8c00117493cdffa5dd671e934bc9cb1a69f39e25e9dd9cd9afd3aea2441a0f5491211c7ba50a753563f9ce943b043557cb71193b28e86ed9544f4289c471bf91b70af5c018cf4663e004165b0fd0bc1d8f3f78adf42eee92bcbc55246fd3ee9f107ab965dc7d4986f23eb71d616ebfe6bfe0a6c1ac5dc1718acee17c9a174",
-               None),
-              ("Invalid element (0) in commit",
-               "0200" + "0c70519d874e3e4930a917cc5e17ea7a26028211159f217bab28b8d6c56691805e49f03249b2c6e22c7c9f86b30e04ccad2deedd5e5108ae07b737c00001c59cd0eb08b1dfc7f1b06a1542e2b6601a963c066e0c65940983a03917ae57a101ce84b5cbbc76ff33ebb990aac2e54aa0f0ab6ec0a58113d927683502b2cb2347d2" + "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-               None),
-              ("Invalid element (1) in commit",
-               "0200" + "0c70519d874e3e4930a917cc5e17ea7a26028211159f217bab28b8d6c56691805e49f03249b2c6e22c7c9f86b30e04ccad2deedd5e5108ae07b737c00001c59cd0eb08b1dfc7f1b06a1542e2b6601a963c066e0c65940983a03917ae57a101ce84b5cbbc76ff33ebb990aac2e54aa0f0ab6ec0a58113d927683502b2cb2347d2" + "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
-               None),
-              ("Invalid element (> P) in commit",
-               "0200" + "0c70519d874e3e4930a917cc5e17ea7a26028211159f217bab28b8d6c56691805e49f03249b2c6e22c7c9f86b30e04ccad2deedd5e5108ae07b737c00001c59cd0eb08b1dfc7f1b06a1542e2b6601a963c066e0c65940983a03917ae57a101ce84b5cbbc76ff33ebb990aac2e54aa0f0ab6ec0a58113d927683502b2cb2347d2" + "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-               None) ]
+    tests = [("Confirm mismatch",
+              "0200" + "0c70519d874e3e4930a917cc5e17ea7a26028211159f217bab28b8d6c56691805e49f03249b2c6e22c7c9f86b30e04ccad2deedd5e5108ae07b737c00001c59cd0eb08b1dfc7f1b06a1542e2b6601a963c066e0c65940983a03917ae57a101ce84b5cbbc76ff33ebb990aac2e54aa0f0ab6ec0a58113d927683502b2cb2347d2" + "a8c00117493cdffa5dd671e934bc9cb1a69f39e25e9dd9cd9afd3aea2441a0f5491211c7ba50a753563f9ce943b043557cb71193b28e86ed9544f4289c471bf91b70af5c018cf4663e004165b0fd0bc1d8f3f78adf42eee92bcbc55246fd3ee9f107ab965dc7d4986f23eb71d616ebfe6bfe0a6c1ac5dc1718acee17c9a17486",
+              "0000f3116a9731f1259622e3eb55d4b3b50ba16f8c5f5565b28e609b180c51460251"),
+             ("Too short commit",
+              "0200" + "0c70519d874e3e4930a917cc5e17ea7a26028211159f217bab28b8d6c56691805e49f03249b2c6e22c7c9f86b30e04ccad2deedd5e5108ae07b737c00001c59cd0eb08b1dfc7f1b06a1542e2b6601a963c066e0c65940983a03917ae57a101ce84b5cbbc76ff33ebb990aac2e54aa0f0ab6ec0a58113d927683502b2cb2347d2" + "a8c00117493cdffa5dd671e934bc9cb1a69f39e25e9dd9cd9afd3aea2441a0f5491211c7ba50a753563f9ce943b043557cb71193b28e86ed9544f4289c471bf91b70af5c018cf4663e004165b0fd0bc1d8f3f78adf42eee92bcbc55246fd3ee9f107ab965dc7d4986f23eb71d616ebfe6bfe0a6c1ac5dc1718acee17c9a174",
+              None),
+             ("Invalid element (0) in commit",
+              "0200" + "0c70519d874e3e4930a917cc5e17ea7a26028211159f217bab28b8d6c56691805e49f03249b2c6e22c7c9f86b30e04ccad2deedd5e5108ae07b737c00001c59cd0eb08b1dfc7f1b06a1542e2b6601a963c066e0c65940983a03917ae57a101ce84b5cbbc76ff33ebb990aac2e54aa0f0ab6ec0a58113d927683502b2cb2347d2" + "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              None),
+             ("Invalid element (1) in commit",
+              "0200" + "0c70519d874e3e4930a917cc5e17ea7a26028211159f217bab28b8d6c56691805e49f03249b2c6e22c7c9f86b30e04ccad2deedd5e5108ae07b737c00001c59cd0eb08b1dfc7f1b06a1542e2b6601a963c066e0c65940983a03917ae57a101ce84b5cbbc76ff33ebb990aac2e54aa0f0ab6ec0a58113d927683502b2cb2347d2" + "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+              None),
+             ("Invalid element (> P) in commit",
+              "0200" + "0c70519d874e3e4930a917cc5e17ea7a26028211159f217bab28b8d6c56691805e49f03249b2c6e22c7c9f86b30e04ccad2deedd5e5108ae07b737c00001c59cd0eb08b1dfc7f1b06a1542e2b6601a963c066e0c65940983a03917ae57a101ce84b5cbbc76ff33ebb990aac2e54aa0f0ab6ec0a58113d927683502b2cb2347d2" + "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              None)]
     for (note, commit, confirm) in tests:
         logger.info(note)
         dev[0].scan_for_bss(bssid, freq=2412)
@@ -1005,10 +1005,10 @@ def test_sae_no_random(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].request("SET sae_groups ")
-    tests = [ (1, "os_get_random;sae_get_rand"),
-              (1, "os_get_random;get_rand_1_to_p_1"),
-              (1, "os_get_random;get_random_qr_qnr"),
-              (1, "os_get_random;sae_derive_pwe_ecc") ]
+    tests = [(1, "os_get_random;sae_get_rand"),
+             (1, "os_get_random;get_rand_1_to_p_1"),
+             (1, "os_get_random;get_random_qr_qnr"),
+             (1, "os_get_random;sae_derive_pwe_ecc")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
@@ -1068,33 +1068,33 @@ def test_sae_bignum_failure(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].request("SET sae_groups 19")
-    tests = [ (1, "crypto_bignum_init_set;get_rand_1_to_p_1"),
-              (1, "crypto_bignum_init;is_quadratic_residue_blind"),
-              (1, "crypto_bignum_mulmod;is_quadratic_residue_blind"),
-              (2, "crypto_bignum_mulmod;is_quadratic_residue_blind"),
-              (3, "crypto_bignum_mulmod;is_quadratic_residue_blind"),
-              (1, "crypto_bignum_legendre;is_quadratic_residue_blind"),
-              (1, "crypto_bignum_init_set;sae_test_pwd_seed_ecc"),
-              (1, "crypto_ec_point_compute_y_sqr;sae_test_pwd_seed_ecc"),
-              (1, "crypto_bignum_init_set;get_random_qr_qnr"),
-              (1, "crypto_bignum_to_bin;sae_derive_pwe_ecc"),
-              (1, "crypto_ec_point_init;sae_derive_pwe_ecc"),
-              (1, "crypto_ec_point_solve_y_coord;sae_derive_pwe_ecc"),
-              (1, "crypto_ec_point_init;sae_derive_commit_element_ecc"),
-              (1, "crypto_ec_point_mul;sae_derive_commit_element_ecc"),
-              (1, "crypto_ec_point_invert;sae_derive_commit_element_ecc"),
-              (1, "crypto_bignum_init;=sae_derive_commit"),
-              (1, "crypto_ec_point_init;sae_derive_k_ecc"),
-              (1, "crypto_ec_point_mul;sae_derive_k_ecc"),
-              (1, "crypto_ec_point_add;sae_derive_k_ecc"),
-              (2, "crypto_ec_point_mul;sae_derive_k_ecc"),
-              (1, "crypto_ec_point_to_bin;sae_derive_k_ecc"),
-              (1, "crypto_bignum_legendre;get_random_qr_qnr"),
-              (1, "sha256_prf;sae_derive_keys"),
-              (1, "crypto_bignum_init;sae_derive_keys"),
-              (1, "crypto_bignum_init_set;sae_parse_commit_scalar"),
-              (1, "crypto_bignum_to_bin;sae_parse_commit_element_ecc"),
-              (1, "crypto_ec_point_from_bin;sae_parse_commit_element_ecc") ]
+    tests = [(1, "crypto_bignum_init_set;get_rand_1_to_p_1"),
+             (1, "crypto_bignum_init;is_quadratic_residue_blind"),
+             (1, "crypto_bignum_mulmod;is_quadratic_residue_blind"),
+             (2, "crypto_bignum_mulmod;is_quadratic_residue_blind"),
+             (3, "crypto_bignum_mulmod;is_quadratic_residue_blind"),
+             (1, "crypto_bignum_legendre;is_quadratic_residue_blind"),
+             (1, "crypto_bignum_init_set;sae_test_pwd_seed_ecc"),
+             (1, "crypto_ec_point_compute_y_sqr;sae_test_pwd_seed_ecc"),
+             (1, "crypto_bignum_init_set;get_random_qr_qnr"),
+             (1, "crypto_bignum_to_bin;sae_derive_pwe_ecc"),
+             (1, "crypto_ec_point_init;sae_derive_pwe_ecc"),
+             (1, "crypto_ec_point_solve_y_coord;sae_derive_pwe_ecc"),
+             (1, "crypto_ec_point_init;sae_derive_commit_element_ecc"),
+             (1, "crypto_ec_point_mul;sae_derive_commit_element_ecc"),
+             (1, "crypto_ec_point_invert;sae_derive_commit_element_ecc"),
+             (1, "crypto_bignum_init;=sae_derive_commit"),
+             (1, "crypto_ec_point_init;sae_derive_k_ecc"),
+             (1, "crypto_ec_point_mul;sae_derive_k_ecc"),
+             (1, "crypto_ec_point_add;sae_derive_k_ecc"),
+             (2, "crypto_ec_point_mul;sae_derive_k_ecc"),
+             (1, "crypto_ec_point_to_bin;sae_derive_k_ecc"),
+             (1, "crypto_bignum_legendre;get_random_qr_qnr"),
+             (1, "sha256_prf;sae_derive_keys"),
+             (1, "crypto_bignum_init;sae_derive_keys"),
+             (1, "crypto_bignum_init_set;sae_parse_commit_scalar"),
+             (1, "crypto_bignum_to_bin;sae_parse_commit_element_ecc"),
+             (1, "crypto_ec_point_from_bin;sae_parse_commit_element_ecc")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             hapd.request("NOTE STA failure testing %d:%s" % (count, func))
@@ -1106,24 +1106,24 @@ def test_sae_bignum_failure(dev, apdev):
             hapd.dump_monitor()
 
     dev[0].request("SET sae_groups 5")
-    tests = [ (1, "crypto_bignum_init_set;sae_set_group"),
-              (2, "crypto_bignum_init_set;sae_set_group"),
-              (1, "crypto_bignum_init_set;sae_get_rand"),
-              (1, "crypto_bignum_init_set;sae_test_pwd_seed_ffc"),
-              (1, "crypto_bignum_exptmod;sae_test_pwd_seed_ffc"),
-              (1, "crypto_bignum_init;sae_derive_pwe_ffc"),
-              (1, "crypto_bignum_init;sae_derive_commit_element_ffc"),
-              (1, "crypto_bignum_exptmod;sae_derive_commit_element_ffc"),
-              (1, "crypto_bignum_inverse;sae_derive_commit_element_ffc"),
-              (1, "crypto_bignum_init;sae_derive_k_ffc"),
-              (1, "crypto_bignum_exptmod;sae_derive_k_ffc"),
-              (1, "crypto_bignum_mulmod;sae_derive_k_ffc"),
-              (2, "crypto_bignum_exptmod;sae_derive_k_ffc"),
-              (1, "crypto_bignum_to_bin;sae_derive_k_ffc"),
-              (1, "crypto_bignum_init_set;sae_parse_commit_element_ffc"),
-              (1, "crypto_bignum_init;sae_parse_commit_element_ffc"),
-              (2, "crypto_bignum_init_set;sae_parse_commit_element_ffc"),
-              (1, "crypto_bignum_exptmod;sae_parse_commit_element_ffc") ]
+    tests = [(1, "crypto_bignum_init_set;sae_set_group"),
+             (2, "crypto_bignum_init_set;sae_set_group"),
+             (1, "crypto_bignum_init_set;sae_get_rand"),
+             (1, "crypto_bignum_init_set;sae_test_pwd_seed_ffc"),
+             (1, "crypto_bignum_exptmod;sae_test_pwd_seed_ffc"),
+             (1, "crypto_bignum_init;sae_derive_pwe_ffc"),
+             (1, "crypto_bignum_init;sae_derive_commit_element_ffc"),
+             (1, "crypto_bignum_exptmod;sae_derive_commit_element_ffc"),
+             (1, "crypto_bignum_inverse;sae_derive_commit_element_ffc"),
+             (1, "crypto_bignum_init;sae_derive_k_ffc"),
+             (1, "crypto_bignum_exptmod;sae_derive_k_ffc"),
+             (1, "crypto_bignum_mulmod;sae_derive_k_ffc"),
+             (2, "crypto_bignum_exptmod;sae_derive_k_ffc"),
+             (1, "crypto_bignum_to_bin;sae_derive_k_ffc"),
+             (1, "crypto_bignum_init_set;sae_parse_commit_element_ffc"),
+             (1, "crypto_bignum_init;sae_parse_commit_element_ffc"),
+             (2, "crypto_bignum_init_set;sae_parse_commit_element_ffc"),
+             (1, "crypto_bignum_exptmod;sae_parse_commit_element_ffc")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             hapd.request("NOTE STA failure testing %d:%s" % (count, func))
@@ -1135,9 +1135,9 @@ def test_sae_bignum_failure(dev, apdev):
             hapd.dump_monitor()
 
     dev[0].request("SET sae_groups 22")
-    tests = [ (1, "crypto_bignum_init_set;sae_test_pwd_seed_ffc"),
-              (1, "crypto_bignum_sub;sae_test_pwd_seed_ffc"),
-              (1, "crypto_bignum_div;sae_test_pwd_seed_ffc") ]
+    tests = [(1, "crypto_bignum_init_set;sae_test_pwd_seed_ffc"),
+             (1, "crypto_bignum_sub;sae_test_pwd_seed_ffc"),
+             (1, "crypto_bignum_div;sae_test_pwd_seed_ffc")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             hapd.request("NOTE STA failure testing %d:%s" % (count, func))
@@ -1306,9 +1306,9 @@ def run_sae_password_id(dev, apdev, groups=None):
         params['sae_groups'] = groups
     else:
         groups = ""
-    params['sae_password'] = [ 'secret|mac=ff:ff:ff:ff:ff:ff|id=pw id',
-                               'foo|mac=02:02:02:02:02:02',
-                               'another secret|mac=ff:ff:ff:ff:ff:ff|id=' + 29*'A' ]
+    params['sae_password'] = ['secret|mac=ff:ff:ff:ff:ff:ff|id=pw id',
+                              'foo|mac=02:02:02:02:02:02',
+                              'another secret|mac=ff:ff:ff:ff:ff:ff|id=' + 29*'A']
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].request("SET sae_groups " + groups)
@@ -1424,9 +1424,9 @@ def build_sae_commit(bssid, addr, group=21, token=None):
 
 def sae_rx_commit_token_req(sock, radiotap, send_two=False):
     msg = sock.recv(1500)
-    ver,pad,len,present = struct.unpack('<BBHL', msg[0:8])
+    ver, pad, len, present = struct.unpack('<BBHL', msg[0:8])
     frame = msg[len:]
-    fc,duration = struct.unpack('<HH', frame[0:4])
+    fc, duration = struct.unpack('<HH', frame[0:4])
     if fc != 0xb0:
         return False
     frame = frame[4:]
@@ -1437,7 +1437,7 @@ def sae_rx_commit_token_req(sock, radiotap, send_two=False):
     bssid = frame[12:18]
     body = frame[20:]
 
-    alg,seq,status,group = struct.unpack('<HHHH', body[0:8])
+    alg, seq, status, group = struct.unpack('<HHHH', body[0:8])
     if alg != 3 or seq != 1 or status != 76:
         return False
     token = body[8:]

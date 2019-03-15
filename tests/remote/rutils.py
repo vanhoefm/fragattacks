@@ -19,10 +19,10 @@ class TestSkip(Exception):
 # get host based on name
 def get_host(devices, dev_name):
     dev = config.get_device(devices, dev_name)
-    host = Host(host = dev['hostname'],
-                ifname = dev['ifname'],
-                port = dev['port'],
-                name = dev['name'])
+    host = Host(host=dev['hostname'],
+                ifname=dev['ifname'],
+                port=dev['port'],
+                name=dev['name'])
     host.dev = dev
     return host
 
@@ -191,13 +191,13 @@ def get_ap_params(channel="1", bw="HT20", country="US", security="open", ht_capa
     elif security == "mixed":
         sec_params = hostapd.wpa_mixed_params(passphrase="testtest")
     elif security == "wep":
-        sec_params = { "wep_key0" : "123456789a",
-                       "wep_default_key" : "0",
-                       "auth_algs" : "1"}
+        sec_params = {"wep_key0" : "123456789a",
+                      "wep_default_key" : "0",
+                      "auth_algs" : "1"}
     elif security == "wep_shared":
-        sec_params = { "wep_key0" : "123456789a",
-                       "wep_default_key" : "0",
-                       "auth_algs" : "2" }
+        sec_params = {"wep_key0" : "123456789a",
+                      "wep_default_key" : "0",
+                      "auth_algs" : "2"}
     else:
         sec_params = {}
 
@@ -339,7 +339,7 @@ def ping_wait(host, thread, timeout=None):
 def flush_arp_cache(host):
     host.execute(["ip", "-s", "-s", "neigh", "flush", "all"])
 
-def check_connectivity(a, b, addr_type = "ipv4", deadline="5", qos=None):
+def check_connectivity(a, b, addr_type="ipv4", deadline="5", qos=None):
     addr_a = get_ip(a, addr_type)
     addr_b = get_ip(b, addr_type)
 
@@ -399,7 +399,7 @@ def get_iperf_speed(iperf_res, pattern="Mbits/sec"):
 
     # first find last SUM line
     for line in lines:
-        res  = line.find("[SUM]")
+        res = line.find("[SUM]")
         if res != -1:
             sum_line = line
 
@@ -461,7 +461,7 @@ def iperf_run(server, client, server_ip, client_res, server_res,
         iperf_server = iperf_server + ["-p", port]
     elif l3 == "ipv6":
         iperf_client = [iperf, "-V", "-c", server_ip  + "%" + ifname, "-p", port]
-        iperf_server = iperf_server + ["-V", "-p",  port]
+        iperf_server = iperf_server + ["-V", "-p", port]
     else:
         return -1, -1
 
@@ -474,7 +474,7 @@ def iperf_run(server, client, server_ip, client_res, server_res,
     if l4 == "udp":
         if iperf != "iperf3":
             iperf_server = iperf_server + ["-u"]
-        iperf_client = iperf_client + ["-u", "-b",  bw]
+        iperf_client = iperf_client + ["-u", "-b", bw]
 
     if qos:
         iperf_client = iperf_client + ["-Q", ac_to_iperf_ac(qos)]

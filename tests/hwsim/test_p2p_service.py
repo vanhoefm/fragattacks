@@ -93,26 +93,26 @@ def run_sd(dev, dst, query, exp_query=None, fragment=False, query2=None):
 def test_p2p_service_discovery(dev):
     """P2P service discovery"""
     addr0 = dev[0].p2p_dev_addr()
-    for dst in [ "00:00:00:00:00:00", addr0 ]:
+    for dst in ["00:00:00:00:00:00", addr0]:
         ev = run_sd(dev, dst, "02000001")
         if "0b5f6166706f766572746370c00c000c01" not in ev:
             raise Exception("Unexpected service discovery response contents (Bonjour)")
         if "496e7465726e6574" not in ev:
             raise Exception("Unexpected service discovery response contents (UPnP)")
 
-    for req in [ "foo 02000001",
-                 addr0,
-                 addr0 + " upnp qq urn:schemas-upnp-org:device:InternetGatewayDevice:1",
-                 addr0 + " upnp 10",
-                 addr0 + " 123",
-                 addr0 + " qq" ]:
+    for req in ["foo 02000001",
+                addr0,
+                addr0 + " upnp qq urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+                addr0 + " upnp 10",
+                addr0 + " 123",
+                addr0 + " qq"]:
         if "FAIL" not in dev[1].global_request("P2P_SERV_DISC_REQ " + req):
             raise Exception("Invalid P2P_SERV_DISC_REQ accepted: " + req)
 
 def test_p2p_service_discovery2(dev):
     """P2P service discovery with one peer having no services"""
     dev[2].p2p_listen()
-    for dst in [ "00:00:00:00:00:00", dev[0].p2p_dev_addr() ]:
+    for dst in ["00:00:00:00:00:00", dev[0].p2p_dev_addr()]:
         ev = run_sd(dev, dst, "02000001")
         if "0b5f6166706f766572746370c00c000c01" not in ev:
             raise Exception("Unexpected service discovery response contents (Bonjour)")
@@ -122,7 +122,7 @@ def test_p2p_service_discovery2(dev):
 def test_p2p_service_discovery3(dev):
     """P2P service discovery for Bonjour with one peer having no services"""
     dev[2].p2p_listen()
-    for dst in [ "00:00:00:00:00:00", dev[0].p2p_dev_addr() ]:
+    for dst in ["00:00:00:00:00:00", dev[0].p2p_dev_addr()]:
         ev = run_sd(dev, dst, "02000101")
         if "0b5f6166706f766572746370c00c000c01" not in ev:
             raise Exception("Unexpected service discovery response contents (Bonjour)")
@@ -130,7 +130,7 @@ def test_p2p_service_discovery3(dev):
 def test_p2p_service_discovery4(dev):
     """P2P service discovery for UPnP with one peer having no services"""
     dev[2].p2p_listen()
-    for dst in [ "00:00:00:00:00:00", dev[0].p2p_dev_addr() ]:
+    for dst in ["00:00:00:00:00:00", dev[0].p2p_dev_addr()]:
         ev = run_sd(dev, dst, "02000201")
         if "496e7465726e6574" not in ev:
             raise Exception("Unexpected service discovery response contents (UPnP)")
@@ -138,7 +138,7 @@ def test_p2p_service_discovery4(dev):
 @remote_compatible
 def test_p2p_service_discovery_multiple_queries(dev):
     """P2P service discovery with multiple queries"""
-    for dst in [ "00:00:00:00:00:00", dev[0].p2p_dev_addr() ]:
+    for dst in ["00:00:00:00:00:00", dev[0].p2p_dev_addr()]:
         ev = run_sd(dev, dst, "02000201", query2="02000101")
         if "0b5f6166706f766572746370c00c000c01" not in ev[0] + ev[1]:
             raise Exception("Unexpected service discovery response contents (Bonjour)")
@@ -148,7 +148,7 @@ def test_p2p_service_discovery_multiple_queries(dev):
 def test_p2p_service_discovery_multiple_queries2(dev):
     """P2P service discovery with multiple queries with one peer having no services"""
     dev[2].p2p_listen()
-    for dst in [ "00:00:00:00:00:00", dev[0].p2p_dev_addr() ]:
+    for dst in ["00:00:00:00:00:00", dev[0].p2p_dev_addr()]:
         ev = run_sd(dev, dst, "02000201", query2="02000101")
         if "0b5f6166706f766572746370c00c000c01" not in ev[0] + ev[1]:
             raise Exception("Unexpected service discovery response contents (Bonjour)")
@@ -157,7 +157,7 @@ def test_p2p_service_discovery_multiple_queries2(dev):
 
 def test_p2p_service_discovery_fragmentation(dev):
     """P2P service discovery with fragmentation"""
-    for dst in [ "00:00:00:00:00:00", dev[0].p2p_dev_addr() ]:
+    for dst in ["00:00:00:00:00:00", dev[0].p2p_dev_addr()]:
         ev = run_sd(dev, dst, "02000001", fragment=True)
         if "long response" not in ev:
             if "0b5f6166706f766572746370c00c000c01" not in ev:
@@ -391,13 +391,13 @@ def _test_p2p_service_discovery_external(dev):
     if ver == ver2:
         raise Exception("Service list version did not change")
 
-    for cmd in [ "%s%s%s%s" % (arg[2], arg[3], arg[4], resp),
-                 "%s %s %s %s" % ("0", arg[3], arg[4], resp),
-                 "%s %s %s %s" % (arg[2], "foo", arg[4], resp),
-                 "%s %s%s%s" % (arg[2], arg[3], arg[4], resp),
-                 "%s %s %s%s" % (arg[2], arg[3], arg[4], resp),
-                 "%s %s %s %s" % (arg[2], arg[3], arg[4], "12345"),
-                 "%s %s %s %s" % (arg[2], arg[3], arg[4], "qq") ]:
+    for cmd in ["%s%s%s%s" % (arg[2], arg[3], arg[4], resp),
+                "%s %s %s %s" % ("0", arg[3], arg[4], resp),
+                "%s %s %s %s" % (arg[2], "foo", arg[4], resp),
+                "%s %s%s%s" % (arg[2], arg[3], arg[4], resp),
+                "%s %s %s%s" % (arg[2], arg[3], arg[4], resp),
+                "%s %s %s %s" % (arg[2], arg[3], arg[4], "12345"),
+                "%s %s %s %s" % (arg[2], arg[3], arg[4], "qq")]:
         if "FAIL" not in dev[0].global_request("P2P_SERV_DISC_RESP " + cmd):
             raise Exception("Invalid P2P_SERV_DISC_RESP accepted: " + cmd)
 
@@ -412,25 +412,25 @@ def test_p2p_service_discovery_external(dev):
 @remote_compatible
 def test_p2p_service_discovery_invalid_commands(dev):
     """P2P service discovery invalid commands"""
-    for cmd in [ "bonjour",
-                 "bonjour 12",
-                 "bonjour 123 12",
-                 "bonjour qq 12",
-                 "bonjour 12 123",
-                 "bonjour 12 qq",
-                 "upnp 10",
-                 "upnp qq uuid:",
-                 "foo bar" ]:
+    for cmd in ["bonjour",
+                "bonjour 12",
+                "bonjour 123 12",
+                "bonjour qq 12",
+                "bonjour 12 123",
+                "bonjour 12 qq",
+                "upnp 10",
+                "upnp qq uuid:",
+                "foo bar"]:
         if "FAIL" not in dev[0].global_request("P2P_SERVICE_ADD " + cmd):
             raise Exception("Invalid P2P_SERVICE_ADD accepted: " + cmd)
 
-    for cmd in [ "bonjour",
-                 "bonjour 123",
-                 "bonjour qq",
-                 "upnp 10",
-                 "upnp  ",
-                 "upnp qq uuid:",
-                 "foo bar" ]:
+    for cmd in ["bonjour",
+                "bonjour 123",
+                "bonjour qq",
+                "upnp 10",
+                "upnp  ",
+                "upnp qq uuid:",
+                "foo bar"]:
         if "FAIL" not in dev[0].global_request("P2P_SERVICE_DEL " + cmd):
             raise Exception("Invalid P2P_SERVICE_DEL accepted: " + cmd)
 

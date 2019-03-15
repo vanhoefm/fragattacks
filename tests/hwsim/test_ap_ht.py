@@ -36,9 +36,9 @@ def set_world_reg(apdev0=None, apdev1=None, dev0=None):
 def test_ap_ht40_scan(dev, apdev):
     """HT40 co-ex scan"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "test-ht40",
-               "channel": "5",
-               "ht_capab": "[HT40-]"}
+    params = {"ssid": "test-ht40",
+              "channel": "5",
+              "ht_capab": "[HT40-]"}
     hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
 
     state = hapd.get_status_field("state")
@@ -76,8 +76,8 @@ def test_ap_ht40_scan(dev, apdev):
 def test_ap_ht_wifi_generation(dev, apdev):
     """HT and wifi_generation"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "test-ht",
-               "channel": "6" }
+    params = {"ssid": "test-ht",
+              "channel": "6"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-ht", key_mgmt="NONE", scan_freq="2437")
@@ -104,14 +104,14 @@ def test_ap_ht_wifi_generation(dev, apdev):
 def test_ap_ht40_scan_conflict(dev, apdev):
     """HT40 co-ex scan conflict"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "test-ht40",
-               "channel": "6",
-               "ht_capab": "[HT40+]"}
+    params = {"ssid": "test-ht40",
+              "channel": "6",
+              "ht_capab": "[HT40+]"}
     hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-ht40",
-               "channel": "5",
-               "ht_capab": "[HT40-]"}
+    params = {"ssid": "test-ht40",
+              "channel": "5",
+              "ht_capab": "[HT40-]"}
     hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
 
     state = hapd.get_status_field("state")
@@ -145,14 +145,14 @@ def test_ap_ht40_scan_conflict(dev, apdev):
 def test_ap_ht40_scan_conflict2(dev, apdev):
     """HT40 co-ex scan conflict (HT40-)"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "test-ht40",
-               "channel": "11",
-               "ht_capab": "[HT40-]"}
+    params = {"ssid": "test-ht40",
+              "channel": "11",
+              "ht_capab": "[HT40-]"}
     hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-ht40",
-               "channel": "1",
-               "ht_capab": "[HT40+]"}
+    params = {"ssid": "test-ht40",
+              "channel": "1",
+              "ht_capab": "[HT40+]"}
     hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
 
     state = hapd.get_status_field("state")
@@ -185,8 +185,8 @@ def test_ap_ht40_scan_conflict2(dev, apdev):
 def test_ap_ht40_scan_not_affected(dev, apdev):
     """HT40 co-ex scan and other BSS not affected"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "test-ht20",
-               "channel": "11" }
+    params = {"ssid": "test-ht20",
+              "channel": "11"}
     hostapd.add_ap(apdev[1], params)
 
     hostapd.cmd_execute(apdev[0], ['ifconfig', apdev[0]['ifname'], 'up'])
@@ -197,9 +197,9 @@ def test_ap_ht40_scan_not_affected(dev, apdev):
     time.sleep(0.1)
     hostapd.cmd_execute(apdev[0], ['ifconfig', apdev[0]['ifname'], 'down'])
 
-    params = { "ssid": "test-ht40",
-               "channel": "1",
-               "ht_capab": "[HT40+]"}
+    params = {"ssid": "test-ht40",
+              "channel": "1",
+              "ht_capab": "[HT40+]"}
     hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
 
     state = hapd.get_status_field("state")
@@ -233,13 +233,13 @@ def test_ap_ht40_scan_not_affected(dev, apdev):
 def test_ap_ht40_scan_legacy_conflict(dev, apdev):
     """HT40 co-ex scan conflict with legacy 20 MHz AP"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "legacy-20",
-               "channel": "7", "ieee80211n": "0" }
+    params = {"ssid": "legacy-20",
+              "channel": "7", "ieee80211n": "0"}
     hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-ht40",
-               "channel": "5",
-               "ht_capab": "[HT40-]"}
+    params = {"ssid": "test-ht40",
+              "channel": "5",
+              "ht_capab": "[HT40-]"}
     hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
 
     state = hapd.get_status_field("state")
@@ -273,13 +273,13 @@ def test_ap_ht40_scan_legacy_conflict(dev, apdev):
 def test_ap_ht40_scan_ht20_conflict(dev, apdev):
     """HT40 co-ex scan conflict with HT 20 MHz AP"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "ht-20",
-               "channel": "7", "ieee80211n": "1" }
+    params = {"ssid": "ht-20",
+              "channel": "7", "ieee80211n": "1"}
     hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-ht40",
-               "channel": "5",
-               "ht_capab": "[HT40-]"}
+    params = {"ssid": "test-ht40",
+              "channel": "5",
+              "ht_capab": "[HT40-]"}
     hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
 
     state = hapd.get_status_field("state")
@@ -312,14 +312,14 @@ def test_ap_ht40_scan_ht20_conflict(dev, apdev):
 def test_ap_ht40_scan_intolerant(dev, apdev):
     """HT40 co-ex scan finding an AP advertising 40 MHz intolerant"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "another-bss",
-               "channel": "1",
-               "ht_capab": "[40-INTOLERANT]" }
+    params = {"ssid": "another-bss",
+              "channel": "1",
+              "ht_capab": "[40-INTOLERANT]"}
     hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-ht40",
-               "channel": "1",
-               "ht_capab": "[HT40+]"}
+    params = {"ssid": "test-ht40",
+              "channel": "1",
+              "ht_capab": "[HT40+]"}
     hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
 
     state = hapd.get_status_field("state")
@@ -352,14 +352,14 @@ def test_ap_ht40_scan_intolerant(dev, apdev):
 def test_ap_ht40_scan_match(dev, apdev):
     """HT40 co-ex scan matching configuration"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "test-ht40",
-               "channel": "5",
-               "ht_capab": "[HT40-]"}
+    params = {"ssid": "test-ht40",
+              "channel": "5",
+              "ht_capab": "[HT40-]"}
     hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-ht40",
-               "channel": "5",
-               "ht_capab": "[HT40-]"}
+    params = {"ssid": "test-ht40",
+              "channel": "5",
+              "ht_capab": "[HT40-]"}
     hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
 
     state = hapd.get_status_field("state")
@@ -395,17 +395,17 @@ def test_ap_ht40_5ghz_match(dev, apdev):
     try:
         hapd = None
         hapd2 = None
-        params = { "ssid": "test-ht40",
-                   "hw_mode": "a",
-                   "channel": "36",
-                   "country_code": "US",
-                   "ht_capab": "[HT40+]"}
+        params = {"ssid": "test-ht40",
+                  "hw_mode": "a",
+                  "channel": "36",
+                  "country_code": "US",
+                  "ht_capab": "[HT40+]"}
         hapd2 = hostapd.add_ap(apdev[1], params)
 
-        params = { "ssid": "test-ht40",
-                   "hw_mode": "a",
-                   "channel": "36",
-                   "ht_capab": "[HT40+]"}
+        params = {"ssid": "test-ht40",
+                  "hw_mode": "a",
+                  "channel": "36",
+                  "ht_capab": "[HT40+]"}
         hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
 
         state = hapd.get_status_field("state")
@@ -449,17 +449,17 @@ def test_ap_ht40_5ghz_switch(dev, apdev):
     try:
         hapd = None
         hapd2 = None
-        params = { "ssid": "test-ht40",
-                   "hw_mode": "a",
-                   "channel": "36",
-                   "country_code": "US",
-                   "ht_capab": "[HT40+]"}
+        params = {"ssid": "test-ht40",
+                  "hw_mode": "a",
+                  "channel": "36",
+                  "country_code": "US",
+                  "ht_capab": "[HT40+]"}
         hapd2 = hostapd.add_ap(apdev[1], params)
 
-        params = { "ssid": "test-ht40",
-                   "hw_mode": "a",
-                   "channel": "40",
-                   "ht_capab": "[HT40-]"}
+        params = {"ssid": "test-ht40",
+                  "hw_mode": "a",
+                  "channel": "40",
+                  "ht_capab": "[HT40-]"}
         hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
 
         state = hapd.get_status_field("state")
@@ -502,11 +502,11 @@ def test_ap_ht40_5ghz_switch2(dev, apdev):
     try:
         hapd = None
         hapd2 = None
-        params = { "ssid": "test-ht40",
-                   "hw_mode": "a",
-                   "channel": "36",
-                   "country_code": "US",
-                   "ht_capab": "[HT40+]"}
+        params = {"ssid": "test-ht40",
+                  "hw_mode": "a",
+                  "channel": "36",
+                  "country_code": "US",
+                  "ht_capab": "[HT40+]"}
         hapd2 = hostapd.add_ap(apdev[1], params)
 
         id = dev[0].add_network()
@@ -518,10 +518,10 @@ def test_ap_ht40_5ghz_switch2(dev, apdev):
         dev[0].select_network(id)
         time.sleep(1)
 
-        params = { "ssid": "test-ht40",
-                   "hw_mode": "a",
-                   "channel": "40",
-                   "ht_capab": "[HT40-]"}
+        params = {"ssid": "test-ht40",
+                  "hw_mode": "a",
+                  "channel": "40",
+                  "ht_capab": "[HT40-]"}
         hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
 
         state = hapd.get_status_field("state")
@@ -561,29 +561,29 @@ def test_ap_ht40_5ghz_switch2(dev, apdev):
 
 def test_obss_scan(dev, apdev):
     """Overlapping BSS scan request"""
-    params = { "ssid": "obss-scan",
-               "channel": "6",
-               "ht_capab": "[HT40-]",
-               "obss_interval": "10" }
+    params = {"ssid": "obss-scan",
+              "channel": "6",
+              "ht_capab": "[HT40-]",
+              "obss_interval": "10"}
     hapd = hostapd.add_ap(apdev[0], params)
 
-    params = { "ssid": "another-bss",
-               "channel": "9",
-               "ieee80211n": "0" }
+    params = {"ssid": "another-bss",
+              "channel": "9",
+              "ieee80211n": "0"}
     hostapd.add_ap(apdev[1], params)
     run_obss_scan(hapd, dev)
 
 def test_obss_scan_ht40_plus(dev, apdev):
     """Overlapping BSS scan request (HT40+)"""
-    params = { "ssid": "obss-scan",
-               "channel": "6",
-               "ht_capab": "[HT40+]",
-               "obss_interval": "10" }
+    params = {"ssid": "obss-scan",
+              "channel": "6",
+              "ht_capab": "[HT40+]",
+              "obss_interval": "10"}
     hapd = hostapd.add_ap(apdev[0], params)
 
-    params = { "ssid": "another-bss",
-               "channel": "9",
-               "ieee80211n": "0" }
+    params = {"ssid": "another-bss",
+              "channel": "9",
+              "ieee80211n": "0"}
     hostapd.add_ap(apdev[1], params)
     run_obss_scan(hapd, dev)
 
@@ -621,15 +621,15 @@ def run_obss_scan(hapd, dev):
 
 def test_obss_scan_40_intolerant(dev, apdev):
     """Overlapping BSS scan request with 40 MHz intolerant AP"""
-    params = { "ssid": "obss-scan",
-               "channel": "6",
-               "ht_capab": "[HT40-]",
-               "obss_interval": "10" }
+    params = {"ssid": "obss-scan",
+              "channel": "6",
+              "ht_capab": "[HT40-]",
+              "obss_interval": "10"}
     hapd = hostapd.add_ap(apdev[0], params)
 
-    params = { "ssid": "another-bss",
-               "channel": "7",
-               "ht_capab": "[40-INTOLERANT]" }
+    params = {"ssid": "another-bss",
+              "channel": "7",
+              "ht_capab": "[40-INTOLERANT]"}
     hostapd.add_ap(apdev[1], params)
 
     dev[0].connect("obss-scan", key_mgmt="NONE", scan_freq="2437")
@@ -666,9 +666,9 @@ def test_obss_scan_40_intolerant(dev, apdev):
 def test_obss_coex_report_handling(dev, apdev):
     """Overlapping BSS scan report handling with obss_interval=0"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "obss-scan",
-               "channel": "6",
-               "ht_capab": "[HT40-]" }
+    params = {"ssid": "obss-scan",
+              "channel": "6",
+              "ht_capab": "[HT40-]"}
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = apdev[0]['bssid']
     dev[0].connect("obss-scan", key_mgmt="NONE", scan_freq="2437")
@@ -679,10 +679,10 @@ def test_obss_coex_report_handling(dev, apdev):
 
     # 20/40 MHz co-ex report tests: number of invalid reports and a valid report
     # that forces 20 MHz channel.
-    tests = [ '0400', '040048', '04004801', '0400480000', '0400490100',
-              '040048ff0000', '04004801ff49ff00', '04004801004900',
-              '0400480100490101', '0400480100490201ff',
-              '040048010449020005' ]
+    tests = ['0400', '040048', '04004801', '0400480000', '0400490100',
+             '040048ff0000', '04004801ff49ff00', '04004801004900',
+             '0400480100490101', '0400480100490201ff',
+             '040048010449020005']
     for msg in tests:
         req = "MGMT_TX {} {} freq=2437 action={}".format(bssid, bssid, msg)
         if "OK" not in dev[0].request(req):
@@ -695,10 +695,10 @@ def test_obss_coex_report_handling(dev, apdev):
 def test_obss_coex_report_handling1(dev, apdev):
     """Overlapping BSS scan report handling with obss_interval=1"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "obss-scan",
-               "channel": "6",
-               "ht_capab": "[HT40+]",
-               "obss_interval": "1" }
+    params = {"ssid": "obss-scan",
+              "channel": "6",
+              "ht_capab": "[HT40+]",
+              "obss_interval": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = apdev[0]['bssid']
     dev[0].connect("obss-scan", key_mgmt="NONE", scan_freq="2437")
@@ -729,10 +729,10 @@ def test_obss_coex_report_handling1(dev, apdev):
 def test_obss_coex_report_handling2(dev, apdev):
     """Overlapping BSS scan report handling with obss_interval=1 and no overlap"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "obss-scan",
-               "channel": "6",
-               "ht_capab": "[HT40+]",
-               "obss_interval": "1" }
+    params = {"ssid": "obss-scan",
+              "channel": "6",
+              "ht_capab": "[HT40+]",
+              "obss_interval": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = apdev[0]['bssid']
     dev[0].connect("obss-scan", key_mgmt="NONE", scan_freq="2437")
@@ -765,19 +765,19 @@ def test_obss_coex_report_handling2(dev, apdev):
 
 def test_olbc(dev, apdev):
     """OLBC detection"""
-    params = { "ssid": "test-olbc",
-               "channel": "6",
-               "ht_capab": "[HT40-]",
-               "ap_table_expiration_time": "2" }
+    params = {"ssid": "test-olbc",
+              "channel": "6",
+              "ht_capab": "[HT40-]",
+              "ap_table_expiration_time": "2"}
     hapd = hostapd.add_ap(apdev[0], params)
     status = hapd.get_status()
     if status['olbc'] != '0' or status['olbc_ht'] != '0':
         raise Exception("Unexpected OLBC information")
 
-    params = { "ssid": "olbc-ap",
-               "hw_mode": "b",
-               "channel": "6",
-               "wmm_enabled": "0" }
+    params = {"ssid": "olbc-ap",
+              "hw_mode": "b",
+              "channel": "6",
+              "wmm_enabled": "0"}
     hostapd.add_ap(apdev[1], params)
     time.sleep(0.5)
     status = hapd.get_status()
@@ -806,9 +806,9 @@ def test_olbc_table_limit(dev, apdev):
     hostapd.add_bss(apdev[0], ifname2, 'bss-2.conf')
     hostapd.add_bss(apdev[0], ifname3, 'bss-3.conf')
 
-    params = { "ssid": "test-olbc",
-               "channel": "1",
-               "ap_table_max_size": "2" }
+    params = {"ssid": "test-olbc",
+              "channel": "1",
+              "ap_table_max_size": "2"}
     hapd = hostapd.add_ap(apdev[1], params)
 
     time.sleep(0.3)
@@ -824,22 +824,22 @@ def test_olbc_5ghz(dev, apdev):
     try:
         hapd = None
         hapd2 = None
-        params = { "ssid": "test-olbc",
-                   "country_code": "FI",
-                   "hw_mode": "a",
-                   "channel": "36",
-                   "ht_capab": "[HT40+]" }
+        params = {"ssid": "test-olbc",
+                  "country_code": "FI",
+                  "hw_mode": "a",
+                  "channel": "36",
+                  "ht_capab": "[HT40+]"}
         hapd = hostapd.add_ap(apdev[0], params)
         status = hapd.get_status()
         if status['olbc'] != '0' or status['olbc_ht'] != '0':
             raise Exception("Unexpected OLBC information")
 
-        params = { "ssid": "olbc-ap",
-                   "country_code": "FI",
-                   "hw_mode": "a",
-                   "channel": "36",
-                   "ieee80211n": "0",
-                   "wmm_enabled": "0" }
+        params = {"ssid": "olbc-ap",
+                  "country_code": "FI",
+                  "hw_mode": "a",
+                  "channel": "36",
+                  "ieee80211n": "0",
+                  "wmm_enabled": "0"}
         hapd2 = hostapd.add_ap(apdev[1], params)
         found = False
         for i in range(20):
@@ -860,8 +860,8 @@ def test_olbc_5ghz(dev, apdev):
 
 def test_ap_require_ht(dev, apdev):
     """Require HT"""
-    params = { "ssid": "require-ht",
-               "require_ht": "1" }
+    params = {"ssid": "require-ht",
+              "require_ht": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[1].connect("require-ht", key_mgmt="NONE", scan_freq="2412",
@@ -881,7 +881,7 @@ def test_ap_require_ht(dev, apdev):
 
 def test_ap_ht_stbc(dev, apdev):
     """HT STBC overrides"""
-    params = { "ssid": "ht" }
+    params = {"ssid": "ht"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("ht", key_mgmt="NONE", scan_freq="2412")
@@ -893,9 +893,9 @@ def test_ap_ht_stbc(dev, apdev):
 @remote_compatible
 def test_ap_require_ht_limited_rates(dev, apdev):
     """Require HT with limited supported rates"""
-    params = { "ssid": "require-ht",
-               "supported_rates": "60 120 240 360 480 540",
-               "require_ht": "1" }
+    params = {"ssid": "require-ht",
+              "supported_rates": "60 120 240 360 480 540",
+              "require_ht": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[1].connect("require-ht", key_mgmt="NONE", scan_freq="2412",
@@ -911,9 +911,9 @@ def test_ap_require_ht_limited_rates(dev, apdev):
 @remote_compatible
 def test_ap_ht_capab_not_supported(dev, apdev):
     """HT configuration with driver not supporting all ht_capab entries"""
-    params = { "ssid": "test-ht40",
-               "channel": "5",
-               "ht_capab": "[HT40-][LDPC][SMPS-STATIC][SMPS-DYNAMIC][GF][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][RX-STBC12][RX-STBC123][DELAYED-BA][MAX-AMSDU-7935][DSSS_CCK-40][LSIG-TXOP-PROT]"}
+    params = {"ssid": "test-ht40",
+              "channel": "5",
+              "ht_capab": "[HT40-][LDPC][SMPS-STATIC][SMPS-DYNAMIC][GF][SHORT-GI-20][SHORT-GI-40][TX-STBC][RX-STBC1][RX-STBC12][RX-STBC123][DELAYED-BA][MAX-AMSDU-7935][DSSS_CCK-40][LSIG-TXOP-PROT]"}
     hapd = hostapd.add_ap(apdev[0], params, no_enable=True)
     if "FAIL" not in hapd.request("ENABLE"):
         raise Exception("Unexpected ENABLE success")
@@ -921,9 +921,9 @@ def test_ap_ht_capab_not_supported(dev, apdev):
 def test_ap_ht_40mhz_intolerant_sta(dev, apdev):
     """Associated STA indicating 40 MHz intolerant"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "intolerant",
-               "channel": "6",
-               "ht_capab": "[HT40-]" }
+    params = {"ssid": "intolerant",
+              "channel": "6",
+              "ht_capab": "[HT40-]"}
     hapd = hostapd.add_ap(apdev[0], params)
     if hapd.get_status_field("num_sta_ht40_intolerant") != "0":
         raise Exception("Unexpected num_sta_ht40_intolerant value")
@@ -954,10 +954,10 @@ def test_ap_ht_40mhz_intolerant_sta(dev, apdev):
 def test_ap_ht_40mhz_intolerant_sta_deinit(dev, apdev):
     """Associated STA indicating 40 MHz intolerant and hostapd deinit"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "intolerant",
-               "channel": "6",
-               "ht_capab": "[HT40-]",
-               "obss_interval": "0" }
+    params = {"ssid": "intolerant",
+              "channel": "6",
+              "ht_capab": "[HT40-]",
+              "obss_interval": "0"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("intolerant", key_mgmt="NONE", scan_freq="2437",
@@ -973,10 +973,10 @@ def test_ap_ht_40mhz_intolerant_sta_deinit(dev, apdev):
 def test_ap_ht_40mhz_intolerant_ap(dev, apdev):
     """Associated STA reports 40 MHz intolerant AP after association"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "ht",
-               "channel": "6",
-               "ht_capab": "[HT40-]",
-               "obss_interval": "3" }
+    params = {"ssid": "ht",
+              "channel": "6",
+              "ht_capab": "[HT40-]",
+              "obss_interval": "3"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("ht", key_mgmt="NONE", scan_freq="2437")
@@ -985,9 +985,9 @@ def test_ap_ht_40mhz_intolerant_ap(dev, apdev):
         raise Exception("Unexpected secondary channel information")
 
     logger.info("Start 40 MHz intolerant AP")
-    params = { "ssid": "intolerant",
-               "channel": "5",
-               "ht_capab": "[40-INTOLERANT]" }
+    params = {"ssid": "intolerant",
+              "channel": "5",
+              "ht_capab": "[40-INTOLERANT]"}
     hapd2 = hostapd.add_ap(apdev[1], params)
 
     logger.info("Waiting for co-ex report from STA")
@@ -1025,12 +1025,12 @@ def test_ap_ht40_csa(dev, apdev):
     csa_supported(dev[0])
     try:
         hapd = None
-        params = { "ssid": "ht",
-                   "country_code": "US",
-                   "hw_mode": "a",
-                   "channel": "36",
-                   "ht_capab": "[HT40+]",
-                   "ieee80211n": "1" }
+        params = {"ssid": "ht",
+                  "country_code": "US",
+                  "hw_mode": "a",
+                  "channel": "36",
+                  "ht_capab": "[HT40+]",
+                  "ieee80211n": "1"}
         hapd = hostapd.add_ap(apdev[0], params)
 
         dev[0].connect("ht", key_mgmt="NONE", scan_freq="5180")
@@ -1069,12 +1069,12 @@ def test_ap_ht40_csa2(dev, apdev):
     csa_supported(dev[0])
     try:
         hapd = None
-        params = { "ssid": "ht",
-                   "country_code": "US",
-                   "hw_mode": "a",
-                   "channel": "36",
-                   "ht_capab": "[HT40+]",
-                   "ieee80211n": "1" }
+        params = {"ssid": "ht",
+                  "country_code": "US",
+                  "hw_mode": "a",
+                  "channel": "36",
+                  "ht_capab": "[HT40+]",
+                  "ieee80211n": "1"}
         hapd = hostapd.add_ap(apdev[0], params)
 
         dev[0].connect("ht", key_mgmt="NONE", scan_freq="5180")
@@ -1113,12 +1113,12 @@ def test_ap_ht40_csa3(dev, apdev):
     csa_supported(dev[0])
     try:
         hapd = None
-        params = { "ssid": "ht",
-                   "country_code": "US",
-                   "hw_mode": "a",
-                   "channel": "36",
-                   "ht_capab": "[HT40+]",
-                   "ieee80211n": "1" }
+        params = {"ssid": "ht",
+                  "country_code": "US",
+                  "hw_mode": "a",
+                  "channel": "36",
+                  "ht_capab": "[HT40+]",
+                  "ieee80211n": "1"}
         hapd = hostapd.add_ap(apdev[0], params)
 
         dev[0].connect("ht", key_mgmt="NONE", scan_freq="5180")
@@ -1155,12 +1155,12 @@ def test_ap_ht40_csa3(dev, apdev):
 @remote_compatible
 def test_ap_ht_smps(dev, apdev):
     """SMPS AP configuration options"""
-    params = { "ssid": "ht1", "ht_capab": "[SMPS-STATIC]" }
+    params = {"ssid": "ht1", "ht_capab": "[SMPS-STATIC]"}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
     except:
         raise HwsimSkip("Assume mac80211_hwsim was not recent enough to support SMPS")
-    params = { "ssid": "ht2", "ht_capab": "[SMPS-DYNAMIC]" }
+    params = {"ssid": "ht2", "ht_capab": "[SMPS-DYNAMIC]"}
     hapd2 = hostapd.add_ap(apdev[1], params)
 
     dev[0].connect("ht1", key_mgmt="NONE", scan_freq="2412")
@@ -1171,14 +1171,14 @@ def test_ap_ht_smps(dev, apdev):
 @remote_compatible
 def test_prefer_ht20(dev, apdev):
     """Preference on HT20 over no-HT"""
-    params = { "ssid": "test",
-               "channel": "1",
-               "ieee80211n": "0" }
+    params = {"ssid": "test",
+              "channel": "1",
+              "ieee80211n": "0"}
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = apdev[0]['bssid']
-    params = { "ssid": "test",
-               "channel": "1",
-               "ieee80211n": "1" }
+    params = {"ssid": "test",
+              "channel": "1",
+              "ieee80211n": "1"}
     hapd2 = hostapd.add_ap(apdev[1], params)
     bssid2 = apdev[1]['bssid']
 
@@ -1198,15 +1198,15 @@ def test_prefer_ht20(dev, apdev):
 
 def test_prefer_ht40(dev, apdev):
     """Preference on HT40 over HT20"""
-    params = { "ssid": "test",
-               "channel": "1",
-               "ieee80211n": "1" }
+    params = {"ssid": "test",
+              "channel": "1",
+              "ieee80211n": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = apdev[0]['bssid']
-    params = { "ssid": "test",
-               "channel": "1",
-               "ieee80211n": "1",
-               "ht_capab": "[HT40+]" }
+    params = {"ssid": "test",
+              "channel": "1",
+              "ieee80211n": "1",
+              "ht_capab": "[HT40+]"}
     hapd2 = hostapd.add_ap(apdev[1], params)
     bssid2 = apdev[1]['bssid']
 
@@ -1227,18 +1227,18 @@ def test_prefer_ht40(dev, apdev):
 @remote_compatible
 def test_prefer_ht20_during_roam(dev, apdev):
     """Preference on HT20 over no-HT in roaming consideration"""
-    params = { "ssid": "test",
-               "channel": "1",
-               "ieee80211n": "0" }
+    params = {"ssid": "test",
+              "channel": "1",
+              "ieee80211n": "0"}
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = apdev[0]['bssid']
 
     dev[0].scan_for_bss(bssid, freq=2412)
     dev[0].connect("test", key_mgmt="NONE", scan_freq="2412")
 
-    params = { "ssid": "test",
-               "channel": "1",
-               "ieee80211n": "1" }
+    params = {"ssid": "test",
+              "channel": "1",
+              "ieee80211n": "1"}
     hapd2 = hostapd.add_ap(apdev[1], params)
     bssid2 = apdev[1]['bssid']
     dev[0].scan_for_bss(bssid2, freq=2412)
@@ -1253,11 +1253,11 @@ def test_ap_ht40_5ghz_invalid_pair(dev, apdev):
     """HT40 on 5 GHz with invalid channel pair"""
     clear_scan_cache(apdev[0])
     try:
-        params = { "ssid": "test-ht40",
-                   "hw_mode": "a",
-                   "channel": "40",
-                   "country_code": "US",
-                   "ht_capab": "[HT40+]"}
+        params = {"ssid": "test-ht40",
+                  "hw_mode": "a",
+                  "channel": "40",
+                  "country_code": "US",
+                  "ht_capab": "[HT40+]"}
         hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
         ev = hapd.wait_event(["AP-DISABLED", "AP-ENABLED"], timeout=10)
         if not ev:
@@ -1274,11 +1274,11 @@ def test_ap_ht40_5ghz_disabled_sec(dev, apdev):
     """HT40 on 5 GHz with disabled secondary channel"""
     clear_scan_cache(apdev[0])
     try:
-        params = { "ssid": "test-ht40",
-                   "hw_mode": "a",
-                   "channel": "48",
-                   "country_code": "US",
-                   "ht_capab": "[HT40+]"}
+        params = {"ssid": "test-ht40",
+                  "hw_mode": "a",
+                  "channel": "48",
+                  "country_code": "US",
+                  "ht_capab": "[HT40+]"}
         hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
         ev = hapd.wait_event(["AP-DISABLED", "AP-ENABLED"], timeout=10)
         if not ev:
@@ -1295,15 +1295,15 @@ def test_ap_ht40_scan_broken_ap(dev, apdev):
     clear_scan_cache(apdev[0])
 
     # Broken AP: Include HT Capabilities element but not HT Operation element
-    params = { "ssid": "legacy-20",
-               "channel": "7", "ieee80211n": "0",
-               "wmm_enabled": "1",
-               "vendor_elements": "2d1a0e001bffff000000000000000000000100000000000000000000" }
+    params = {"ssid": "legacy-20",
+              "channel": "7", "ieee80211n": "0",
+              "wmm_enabled": "1",
+              "vendor_elements": "2d1a0e001bffff000000000000000000000100000000000000000000"}
     hapd2 = hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-ht40",
-               "channel": "5",
-               "ht_capab": "[HT40-]"}
+    params = {"ssid": "test-ht40",
+              "channel": "5",
+              "ht_capab": "[HT40-]"}
     hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
 
     state = hapd.get_status_field("state")
@@ -1340,10 +1340,10 @@ def run_op_class(dev, apdev, hw_mode, channel, country, ht_capab, sec_chan,
                  freq, opclass):
     clear_scan_cache(apdev[0])
     try:
-        params = { "ssid": "test-ht40",
-                   "hw_mode": hw_mode,
-                   "channel": channel,
-                   "ht_capab": ht_capab }
+        params = {"ssid": "test-ht40",
+                  "hw_mode": hw_mode,
+                  "channel": channel,
+                  "ht_capab": ht_capab}
         if country:
             params['country_code'] = country
         hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
@@ -1439,9 +1439,9 @@ def test_ap_ht_op_class_127(dev, apdev):
 def test_ap_ht40_plus_minus1(dev, apdev):
     """HT40 with both plus and minus allowed (1)"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "test-ht40",
-               "channel": "11",
-               "ht_capab": "[HT40+][HT40-]"}
+    params = {"ssid": "test-ht40",
+              "channel": "11",
+              "ht_capab": "[HT40+][HT40-]"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     freq = hapd.get_status_field("freq")
@@ -1459,9 +1459,9 @@ def test_ap_ht40_plus_minus1(dev, apdev):
 def test_ap_ht40_plus_minus2(dev, apdev):
     """HT40 with both plus and minus allowed (2)"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "test-ht40",
-               "channel": "1",
-               "ht_capab": "[HT40+][HT40-]"}
+    params = {"ssid": "test-ht40",
+              "channel": "1",
+              "ht_capab": "[HT40+][HT40-]"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     freq = hapd.get_status_field("freq")
@@ -1479,9 +1479,9 @@ def test_ap_ht40_plus_minus2(dev, apdev):
 def test_ap_ht40_disable(dev, apdev):
     """HT40 disabling"""
     clear_scan_cache(apdev[0])
-    params = { "ssid": "test-ht40",
-               "channel": "6",
-               "ht_capab": "[HT40-]"}
+    params = {"ssid": "test-ht40",
+              "channel": "6",
+              "ht_capab": "[HT40-]"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     sec = hapd.get_status_field("secondary_channel")

@@ -114,7 +114,7 @@ def p2ps_nonexact_seek(i_dev, r_dev, svc_name, srv_info=None, adv_num=None):
     if r_dev.p2p_dev_addr() not in ev1:
         raise Exception("Unexpected peer")
     ev_list = []
-    for i in range (0, adv_num):
+    for i in range(0, adv_num):
         ev1 = i_dev.wait_global_event(["P2P-SERV-ASP-RESP"], timeout=10)
         if ev1 is None:
             raise Exception("Failed to receive Service Discovery Response")
@@ -683,14 +683,14 @@ def test_p2ps_service_discovery_multiple_queries(dev):
                 break
     dev[1].p2p_stop_find()
 
-    for test in [ ("seek=org.wi-fi.wfds.display.TX",
-                   "asp_svc=org.wi-fi.wfds.display.tx"),
-                  ("seek=foo seek=org.wi-fi.wfds.display.tx seek=bar",
-                   "asp_svc=org.wi-fi.wfds.display.tx"),
-                  ("seek=1 seek=2 seek=3 seek=org.wi-fi.wfds.display.tx seek=4 seek=5 seek=6",
-                   "asp_svc=org.wi-fi.wfds.display.tx"),
-                  ("seek=not-found", None),
-                  ("seek=org.wi-fi.wfds", "asp_svc=org.wi-fi.wfds")]:
+    for test in [("seek=org.wi-fi.wfds.display.TX",
+                  "asp_svc=org.wi-fi.wfds.display.tx"),
+                 ("seek=foo seek=org.wi-fi.wfds.display.tx seek=bar",
+                  "asp_svc=org.wi-fi.wfds.display.tx"),
+                 ("seek=1 seek=2 seek=3 seek=org.wi-fi.wfds.display.tx seek=4 seek=5 seek=6",
+                  "asp_svc=org.wi-fi.wfds.display.tx"),
+                 ("seek=not-found", None),
+                 ("seek=org.wi-fi.wfds", "asp_svc=org.wi-fi.wfds")]:
         dev[2].global_request("P2P_FIND 10 type=social " + test[0])
         if test[1] is None:
             ev = dev[2].wait_global_event(["P2P-DEVICE-FOUND"], timeout=1)
@@ -1118,7 +1118,7 @@ def test_p2ps_many_services_in_probe(dev):
     long3 = 'org.example.0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789.c'
     long4 = 'org.example.0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789.d'
     long5 = 'org.example.0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789.e'
-    for name in [ long1, long2, long3, long4, long5 ]:
+    for name in [long1, long2, long3, long4, long5]:
         p2ps_advertise(r_dev=dev[0], r_role='1',
                        svc_name=name,
                        srv_info='I can do stuff')
@@ -1136,7 +1136,7 @@ def test_p2ps_many_services_in_probe(dev):
         events = events + ev
     dev[1].p2p_stop_find()
     dev[1].dump_monitor()
-    for name in [ long2, long3, long4, long5 ]:
+    for name in [long2, long3, long4, long5]:
         if name not in events:
             raise Exception("Service missing from peer events")
 
@@ -1222,7 +1222,7 @@ def test_p2ps_channel_one_connected(dev, apdev):
 
     try:
         hapd = hostapd.add_ap(apdev[0],
-                              { "ssid": 'bss-2.4ghz', "channel": '7' })
+                              {"ssid": 'bss-2.4ghz', "channel": '7'})
         dev[1].connect("bss-2.4ghz", key_mgmt="NONE", scan_freq="2442")
 
         (grp_ifname0, grp_ifname1, ifnames) = p2ps_connect_p2ps_method(dev, keep_group=True, join_extra=" freq=2442")
@@ -1251,12 +1251,12 @@ def test_p2ps_channel_both_connected_same(dev, apdev):
 
     try:
         hapd = hostapd.add_ap(apdev[0],
-                              { "ssid": 'bss-2.4ghz', "channel": '6' })
+                              {"ssid": 'bss-2.4ghz', "channel": '6'})
 
         dev[2].connect("bss-2.4ghz", key_mgmt="NONE", scan_freq="2437")
         dev[1].connect("bss-2.4ghz", key_mgmt="NONE", scan_freq="2437")
 
-        tmpdev = [ dev[2], dev[1] ]
+        tmpdev = [dev[2], dev[1]]
         (grp_ifname0, grp_ifname1, ifnames) = p2ps_connect_p2ps_method(tmpdev, keep_group=True, join_extra=" freq=2437", flush=False)
         freq = dev[2].get_group_status_field('freq')
 
@@ -1282,10 +1282,10 @@ def test_p2ps_channel_both_connected_different(dev, apdev):
 
     try:
         hapd1 = hostapd.add_ap(apdev[0],
-                               { "ssid": 'bss-channel-3', "channel": '3' })
+                               {"ssid": 'bss-channel-3', "channel": '3'})
 
         hapd2 = hostapd.add_ap(apdev[1],
-                               { "ssid": 'bss-channel-10', "channel": '10' })
+                               {"ssid": 'bss-channel-10', "channel": '10'})
 
         dev[0].connect("bss-channel-3", key_mgmt="NONE", scan_freq="2422")
         dev[1].connect("bss-channel-10", key_mgmt="NONE", scan_freq="2457")
@@ -1318,15 +1318,15 @@ def test_p2ps_channel_both_connected_different_mcc(dev, apdev):
 
         try:
             hapd1 = hostapd.add_ap(apdev[0],
-                                   { "ssid": 'bss-channel-3', "channel": '3' })
+                                   {"ssid": 'bss-channel-3', "channel": '3'})
 
             hapd2 = hostapd.add_ap(apdev[1],
-                                   { "ssid": 'bss-channel-10', "channel": '10' })
+                                   {"ssid": 'bss-channel-10', "channel": '10'})
 
             wpas.connect("bss-channel-3", key_mgmt="NONE", scan_freq="2422")
             dev[1].connect("bss-channel-10", key_mgmt="NONE", scan_freq="2457")
 
-            (grp_ifname0, grp_ifname1, ifnames) = p2ps_connect_p2ps_method([ wpas, dev[1] ], keep_group=True)
+            (grp_ifname0, grp_ifname1, ifnames) = p2ps_connect_p2ps_method([wpas, dev[1]], keep_group=True)
             freq = wpas.get_group_status_field('freq')
 
             if freq != '2422' and freq != '2457':
@@ -1380,7 +1380,7 @@ def test_p2ps_channel_sta_connected_disallow_freq(dev, apdev):
     try:
         dev[0].global_request("P2P_SET disallow_freq 2437")
         hapd = hostapd.add_ap(apdev[0],
-                              { "ssid": 'bss-channel-6', "channel": '6' })
+                              {"ssid": 'bss-channel-6', "channel": '6'})
 
         dev[1].connect("bss-channel-6", key_mgmt="NONE", scan_freq="2437")
 
@@ -1418,11 +1418,11 @@ def test_p2ps_channel_sta_connected_disallow_freq_mcc(dev, apdev):
         try:
             dev[0].global_request("P2P_SET disallow_freq 2437")
             hapd1 = hostapd.add_ap(apdev[0],
-                                   { "ssid": 'bss-channel-6', "channel": '6' })
+                                   {"ssid": 'bss-channel-6', "channel": '6'})
 
             wpas.connect("bss-channel-6", key_mgmt="NONE", scan_freq="2437")
 
-            tmpdev = [ dev[0], wpas ]
+            tmpdev = [dev[0], wpas]
             (grp_ifname0, grp_ifname1, ifnames) = p2ps_connect_p2ps_method(tmpdev, keep_group=True)
 
             freq = dev[0].get_group_status_field('freq')
@@ -1503,7 +1503,7 @@ def test_p2ps_channel_active_go_and_station_same(dev, apdev):
     dev[1].global_request("P2P_SET listen_channel 11")
     try:
         hapd = hostapd.add_ap(apdev[0],
-                              { "ssid": 'bss-channel-11', "channel": '11' })
+                              {"ssid": 'bss-channel-11', "channel": '11'})
 
         dev[2].connect("bss-channel-11", key_mgmt="NONE", scan_freq="2462")
 
@@ -1540,7 +1540,7 @@ def test_p2ps_channel_active_go_and_station_different(dev, apdev):
 
     try:
         hapd = hostapd.add_ap(apdev[0],
-                              { "ssid": 'bss-channel-2', "channel": '2' })
+                              {"ssid": 'bss-channel-2', "channel": '2'})
 
         dev[0].connect("bss-channel-2", key_mgmt="NONE", scan_freq="2417")
 
@@ -1585,7 +1585,7 @@ def test_p2ps_channel_active_go_and_station_different_mcc(dev, apdev):
 
         try:
             hapd = hostapd.add_ap(apdev[0],
-                                  { "ssid": 'bss-channel-6', "channel": '6' })
+                                  {"ssid": 'bss-channel-6', "channel": '6'})
 
             wpas.global_request("P2P_SET listen_channel 1")
             wpas.connect("bss-channel-6", key_mgmt="NONE", scan_freq="2437")

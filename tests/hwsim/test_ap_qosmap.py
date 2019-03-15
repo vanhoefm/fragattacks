@@ -25,12 +25,12 @@ def check_qos_map(ap, hapd, dev, sta, dscp, tid, ap_tid=None):
     time.sleep(sleep_time)
     tx = wt.get_tx_tid(bssid, sta, tid)
     if tx == 0:
-        [ tx, rx ] = wt.get_tid_counters(bssid, sta)
+        [tx, rx] = wt.get_tid_counters(bssid, sta)
         logger.info("Expected TX DSCP " + str(dscp) + " with TID " + str(tid) + " but counters: " + str(tx))
         raise Exception("No STA->AP data frame using the expected TID")
     rx = wt.get_rx_tid(bssid, sta, ap_tid)
     if rx == 0:
-        [ tx, rx ] = wt.get_tid_counters(bssid, sta)
+        [tx, rx] = wt.get_tid_counters(bssid, sta)
         logger.info("Expected RX DSCP " + str(dscp) + " with TID " + str(ap_tid) + " but counters: " + str(rx))
         raise Exception("No AP->STA data frame using the expected TID")
 
@@ -41,7 +41,7 @@ def test_ap_qosmap(dev, apdev):
     if int(drv_flags, 0) & 0x40000000 == 0:
         raise HwsimSkip("Driver does not support QoS Map")
     ssid = "test-qosmap"
-    params = { "ssid": ssid }
+    params = {"ssid": ssid}
     params['qos_map_set'] = '53,2,22,6,8,15,0,7,255,255,16,31,32,39,255,255,40,47,48,55'
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
@@ -79,14 +79,14 @@ def test_ap_qosmap(dev, apdev):
 def test_ap_qosmap_default(dev, apdev):
     """QoS mapping with default values"""
     ssid = "test-qosmap-default"
-    params = { "ssid": ssid }
+    params = {"ssid": ssid}
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
     addr = dev[0].p2p_interface_addr()
     dev[0].request("DATA_TEST_CONFIG 1")
     hapd.request("DATA_TEST_CONFIG 1")
     Wlantest.setup(hapd)
-    for dscp in [ 0, 7, 8, 15, 16, 23, 24, 31, 32, 39, 40, 47, 48, 55, 56, 63]:
+    for dscp in [0, 7, 8, 15, 16, 23, 24, 31, 32, 39, 40, 47, 48, 55, 56, 63]:
         check_qos_map(apdev[0], hapd, dev[0], addr, dscp, dscp >> 3)
     dev[0].request("DATA_TEST_CONFIG 0")
     hapd.request("DATA_TEST_CONFIG 0")
@@ -95,38 +95,38 @@ def test_ap_qosmap_default(dev, apdev):
 def test_ap_qosmap_default_acm(dev, apdev):
     """QoS mapping with default values and ACM=1 for VO/VI"""
     ssid = "test-qosmap-default"
-    params = { "ssid": ssid,
-               "wmm_ac_bk_aifs": "7",
-               "wmm_ac_bk_cwmin": "4",
-               "wmm_ac_bk_cwmax": "10",
-               "wmm_ac_bk_txop_limit": "0",
-               "wmm_ac_bk_acm": "0",
-               "wmm_ac_be_aifs": "3",
-               "wmm_ac_be_cwmin": "4",
-               "wmm_ac_be_cwmax": "10",
-               "wmm_ac_be_txop_limit": "0",
-               "wmm_ac_be_acm": "0",
-               "wmm_ac_vi_aifs": "2",
-               "wmm_ac_vi_cwmin": "3",
-               "wmm_ac_vi_cwmax": "4",
-               "wmm_ac_vi_txop_limit": "94",
-               "wmm_ac_vi_acm": "1",
-               "wmm_ac_vo_aifs": "2",
-               "wmm_ac_vo_cwmin": "2",
-               "wmm_ac_vo_cwmax": "2",
-               "wmm_ac_vo_txop_limit": "47",
-               "wmm_ac_vo_acm": "1"  }
+    params = {"ssid": ssid,
+              "wmm_ac_bk_aifs": "7",
+              "wmm_ac_bk_cwmin": "4",
+              "wmm_ac_bk_cwmax": "10",
+              "wmm_ac_bk_txop_limit": "0",
+              "wmm_ac_bk_acm": "0",
+              "wmm_ac_be_aifs": "3",
+              "wmm_ac_be_cwmin": "4",
+              "wmm_ac_be_cwmax": "10",
+              "wmm_ac_be_txop_limit": "0",
+              "wmm_ac_be_acm": "0",
+              "wmm_ac_vi_aifs": "2",
+              "wmm_ac_vi_cwmin": "3",
+              "wmm_ac_vi_cwmax": "4",
+              "wmm_ac_vi_txop_limit": "94",
+              "wmm_ac_vi_acm": "1",
+              "wmm_ac_vo_aifs": "2",
+              "wmm_ac_vo_cwmin": "2",
+              "wmm_ac_vo_cwmax": "2",
+              "wmm_ac_vo_txop_limit": "47",
+              "wmm_ac_vo_acm": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
     addr = dev[0].p2p_interface_addr()
     dev[0].request("DATA_TEST_CONFIG 1")
     hapd.request("DATA_TEST_CONFIG 1")
     Wlantest.setup(hapd)
-    for dscp in [ 0, 7, 8, 15, 16, 23, 24, 31, 32, 39, 40, 47, 48, 55, 56, 63]:
+    for dscp in [0, 7, 8, 15, 16, 23, 24, 31, 32, 39, 40, 47, 48, 55, 56, 63]:
         ap_tid = dscp >> 3
         tid = ap_tid
         # downgrade VI/VO to BE
-        if tid in [ 4, 5, 6, 7 ]:
+        if tid in [4, 5, 6, 7]:
             tid = 3
         check_qos_map(apdev[0], hapd, dev[0], addr, dscp, tid, ap_tid)
     dev[0].request("DATA_TEST_CONFIG 0")
@@ -136,7 +136,7 @@ def test_ap_qosmap_default_acm(dev, apdev):
 def test_ap_qosmap_invalid(dev, apdev):
     """QoS mapping ctrl_iface error handling"""
     ssid = "test-qosmap"
-    params = { "ssid": ssid }
+    params = {"ssid": ssid}
     hapd = hostapd.add_ap(apdev[0], params)
     if "FAIL" not in hapd.request("SEND_QOS_MAP_CONF 00:11:22:33:44:55"):
         raise Exception("Unexpected SEND_QOS_MAP_CONF success")

@@ -73,21 +73,21 @@ def sigma_dut_cmd_check(cmd, port=9000, timeout=2):
 def start_sigma_dut(ifname, debug=False, hostapd_logdir=None, cert_path=None,
                     bridge=None):
     check_sigma_dut()
-    cmd = [ './sigma_dut',
-            '-M', ifname,
-            '-S', ifname,
-            '-F', '../../hostapd/hostapd',
-            '-G',
-            '-w', '/var/run/wpa_supplicant/',
-            '-j', ifname ]
+    cmd = ['./sigma_dut',
+           '-M', ifname,
+           '-S', ifname,
+           '-F', '../../hostapd/hostapd',
+           '-G',
+           '-w', '/var/run/wpa_supplicant/',
+           '-j', ifname]
     if debug:
-        cmd += [ '-d' ]
+        cmd += ['-d']
     if hostapd_logdir:
-        cmd += [ '-H', hostapd_logdir ]
+        cmd += ['-H', hostapd_logdir]
     if cert_path:
-        cmd += [ '-C', cert_path ]
+        cmd += ['-C', cert_path]
     if bridge:
-        cmd += [ '-b', bridge ]
+        cmd += ['-b', bridge]
     sigma = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
     for i in range(20):
@@ -122,11 +122,11 @@ def test_sigma_dut_basic(dev, apdev):
     if "status,INVALID,errorCode,Unknown command" not in res:
         raise Exception("Unexpected sigma_dut response to unknown command")
 
-    tests = [ ("ca_get_version", "status,COMPLETE,version,1.0"),
-              ("device_get_info", "status,COMPLETE,vendor"),
-              ("device_list_interfaces,interfaceType,foo", "status,ERROR"),
-              ("device_list_interfaces,interfaceType,802.11",
-               "status,COMPLETE,interfaceType,802.11,interfaceID," + dev[0].ifname) ]
+    tests = [("ca_get_version", "status,COMPLETE,version,1.0"),
+             ("device_get_info", "status,COMPLETE,vendor"),
+             ("device_list_interfaces,interfaceType,foo", "status,ERROR"),
+             ("device_list_interfaces,interfaceType,802.11",
+              "status,COMPLETE,interfaceType,802.11,interfaceID," + dev[0].ifname)]
     for cmd, response in tests:
         res = sigma_dut_cmd(cmd)
         if response not in res:
@@ -145,7 +145,7 @@ def run_sigma_dut_open(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "open" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
 
     sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
     sigma_dut_cmd_check("sta_set_encryption,interface,%s,ssid,%s,encpType,none" % (ifname, "open"))
@@ -339,8 +339,8 @@ def run_sigma_dut_sta_override_rsne(dev, apdev):
 
     sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
 
-    tests = [ "30120100000fac040100000fac040100000fac02",
-              "30140100000fac040100000fac040100000fac02ffff" ]
+    tests = ["30120100000fac040100000fac040100000fac02",
+             "30140100000fac040100000fac040100000fac02ffff"]
     for test in tests:
         sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,type,PSK,passphrase,%s,EncpType,aes-ccmp,KeyMgmtType,wpa2" % (ifname, "test-psk", "12345678"))
         sigma_dut_cmd_check("dev_configure_ie,interface,%s,IE_Name,RSNE,Contents,%s" % (ifname, test))
@@ -440,17 +440,17 @@ def test_sigma_dut_suite_b(dev, apdev, params):
     params['openssl_ciphers'] = 'SUITEB192'
     hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-suite-b",
-               "wpa": "2",
-               "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
-               "rsn_pairwise": "GCMP-256",
-               "group_mgmt_cipher": "BIP-GMAC-256",
-               "ieee80211w": "2",
-               "ieee8021x": "1",
-               'auth_server_addr': "127.0.0.1",
-               'auth_server_port': "18129",
-               'auth_server_shared_secret': "radius",
-               'nas_identifier': "nas.w1.fi" }
+    params = {"ssid": "test-suite-b",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
+              "rsn_pairwise": "GCMP-256",
+              "group_mgmt_cipher": "BIP-GMAC-256",
+              "ieee80211w": "2",
+              "ieee8021x": "1",
+              'auth_server_addr': "127.0.0.1",
+              'auth_server_port': "18129",
+              'auth_server_shared_secret': "radius",
+              'nas_identifier': "nas.w1.fi"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     ifname = dev[0].ifname
@@ -491,9 +491,9 @@ def test_sigma_dut_suite_b_rsa(dev, apdev, params):
 
     cmd = "sta_set_security,type,eaptls,interface,%s,ssid,%s,PairwiseCipher,AES-GCMP-256,GroupCipher,AES-GCMP-256,GroupMgntCipher,BIP-GMAC-256,keymgmttype,SuiteB,clientCertificate,suite_b_rsa.pem,trustedRootCA,suite_b_ca_rsa.pem,CertType,RSA" % (ifname, "test-suite-b")
 
-    tests = [ "",
-              ",TLSCipher,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-              ",TLSCipher,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384" ]
+    tests = ["",
+             ",TLSCipher,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+             ",TLSCipher,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"]
     for extra in tests:
         sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
         sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
@@ -749,11 +749,11 @@ def run_sigma_dut_owe(dev, apdev):
     sigma = start_sigma_dut(ifname)
 
     try:
-        params = { "ssid": "owe",
-                   "wpa": "2",
-                   "wpa_key_mgmt": "OWE",
-                   "ieee80211w": "2",
-                   "rsn_pairwise": "CCMP" }
+        params = {"ssid": "owe",
+                  "wpa": "2",
+                  "wpa_key_mgmt": "OWE",
+                  "ieee80211w": "2",
+                  "rsn_pairwise": "CCMP"}
         hapd = hostapd.add_ap(apdev[0], params)
         bssid = hapd.own_addr()
 
@@ -999,14 +999,14 @@ def test_sigma_dut_dpp_qr_init_enrollee(dev, apdev):
     ap_connector = "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiJwYWtZbXVzd1dCdWpSYTl5OEsweDViaTVrT3VNT3dzZHRlaml2UG55ZHZzIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7Imdyb3VwSWQiOiIqIiwibmV0Um9sZSI6ImFwIn1dLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiIybU5vNXZuRkI5bEw3d1VWb1hJbGVPYzBNSEE1QXZKbnpwZXZULVVTYzVNIiwieSI6IlhzS3dqVHJlLTg5WWdpU3pKaG9CN1haeUttTU05OTl3V2ZaSVl0bi01Q3MifX0.XhjFpZgcSa7G2lHy0OCYTvaZFRo5Hyx6b7g7oYyusLC7C_73AJ4_BxEZQVYJXAtDuGvb3dXSkHEKxREP9Q6Qeg"
     ap_netaccesskey = "30770201010420ceba752db2ad5200fa7bc565b9c05c69b7eb006751b0b329b0279de1c19ca67ca00a06082a8648ce3d030107a14403420004da6368e6f9c507d94bef0515a1722578e73430703902f267ce97af4fe51273935ec2b08d3adefbcf588224b3261a01ed76722a630cf7df7059f64862d9fee42b"
 
-    params = { "ssid": "DPPNET01",
-               "wpa": "2",
-               "ieee80211w": "2",
-               "wpa_key_mgmt": "DPP",
-               "rsn_pairwise": "CCMP",
-               "dpp_connector": ap_connector,
-               "dpp_csign": csign_pub,
-               "dpp_netaccesskey": ap_netaccesskey }
+    params = {"ssid": "DPPNET01",
+              "wpa": "2",
+              "ieee80211w": "2",
+              "wpa_key_mgmt": "DPP",
+              "rsn_pairwise": "CCMP",
+              "dpp_connector": ap_connector,
+              "dpp_csign": csign_pub,
+              "dpp_netaccesskey": ap_netaccesskey}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
     except:
@@ -1060,14 +1060,14 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra=''):
     ap_connector = "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiJwYWtZbXVzd1dCdWpSYTl5OEsweDViaTVrT3VNT3dzZHRlaml2UG55ZHZzIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7Imdyb3VwSWQiOiIqIiwibmV0Um9sZSI6ImFwIn1dLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiIybU5vNXZuRkI5bEw3d1VWb1hJbGVPYzBNSEE1QXZKbnpwZXZULVVTYzVNIiwieSI6IlhzS3dqVHJlLTg5WWdpU3pKaG9CN1haeUttTU05OTl3V2ZaSVl0bi01Q3MifX0.XhjFpZgcSa7G2lHy0OCYTvaZFRo5Hyx6b7g7oYyusLC7C_73AJ4_BxEZQVYJXAtDuGvb3dXSkHEKxREP9Q6Qeg"
     ap_netaccesskey = "30770201010420ceba752db2ad5200fa7bc565b9c05c69b7eb006751b0b329b0279de1c19ca67ca00a06082a8648ce3d030107a14403420004da6368e6f9c507d94bef0515a1722578e73430703902f267ce97af4fe51273935ec2b08d3adefbcf588224b3261a01ed76722a630cf7df7059f64862d9fee42b"
 
-    params = { "ssid": "DPPNET01",
-               "wpa": "2",
-               "ieee80211w": "2",
-               "wpa_key_mgmt": "DPP",
-               "rsn_pairwise": "CCMP",
-               "dpp_connector": ap_connector,
-               "dpp_csign": csign_pub,
-               "dpp_netaccesskey": ap_netaccesskey }
+    params = {"ssid": "DPPNET01",
+              "wpa": "2",
+              "ieee80211w": "2",
+              "wpa_key_mgmt": "DPP",
+              "rsn_pairwise": "CCMP",
+              "dpp_connector": ap_connector,
+              "dpp_csign": csign_pub,
+              "dpp_netaccesskey": ap_netaccesskey}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
     except:
@@ -1142,14 +1142,14 @@ def run_sigma_dut_dpp_qr_mutual_resp_enrollee(dev, apdev, extra=None):
     ap_connector = "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiJwYWtZbXVzd1dCdWpSYTl5OEsweDViaTVrT3VNT3dzZHRlaml2UG55ZHZzIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7Imdyb3VwSWQiOiIqIiwibmV0Um9sZSI6ImFwIn1dLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiIybU5vNXZuRkI5bEw3d1VWb1hJbGVPYzBNSEE1QXZKbnpwZXZULVVTYzVNIiwieSI6IlhzS3dqVHJlLTg5WWdpU3pKaG9CN1haeUttTU05OTl3V2ZaSVl0bi01Q3MifX0.XhjFpZgcSa7G2lHy0OCYTvaZFRo5Hyx6b7g7oYyusLC7C_73AJ4_BxEZQVYJXAtDuGvb3dXSkHEKxREP9Q6Qeg"
     ap_netaccesskey = "30770201010420ceba752db2ad5200fa7bc565b9c05c69b7eb006751b0b329b0279de1c19ca67ca00a06082a8648ce3d030107a14403420004da6368e6f9c507d94bef0515a1722578e73430703902f267ce97af4fe51273935ec2b08d3adefbcf588224b3261a01ed76722a630cf7df7059f64862d9fee42b"
 
-    params = { "ssid": "DPPNET01",
-               "wpa": "2",
-               "ieee80211w": "2",
-               "wpa_key_mgmt": "DPP",
-               "rsn_pairwise": "CCMP",
-               "dpp_connector": ap_connector,
-               "dpp_csign": csign_pub,
-               "dpp_netaccesskey": ap_netaccesskey }
+    params = {"ssid": "DPPNET01",
+              "wpa": "2",
+              "ieee80211w": "2",
+              "wpa_key_mgmt": "DPP",
+              "rsn_pairwise": "CCMP",
+              "dpp_connector": ap_connector,
+              "dpp_csign": csign_pub,
+              "dpp_netaccesskey": ap_netaccesskey}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
     except:
@@ -1231,14 +1231,14 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee(dev, apdev, resp_pending):
     ap_connector = "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiJwYWtZbXVzd1dCdWpSYTl5OEsweDViaTVrT3VNT3dzZHRlaml2UG55ZHZzIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7Imdyb3VwSWQiOiIqIiwibmV0Um9sZSI6ImFwIn1dLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiIybU5vNXZuRkI5bEw3d1VWb1hJbGVPYzBNSEE1QXZKbnpwZXZULVVTYzVNIiwieSI6IlhzS3dqVHJlLTg5WWdpU3pKaG9CN1haeUttTU05OTl3V2ZaSVl0bi01Q3MifX0.XhjFpZgcSa7G2lHy0OCYTvaZFRo5Hyx6b7g7oYyusLC7C_73AJ4_BxEZQVYJXAtDuGvb3dXSkHEKxREP9Q6Qeg"
     ap_netaccesskey = "30770201010420ceba752db2ad5200fa7bc565b9c05c69b7eb006751b0b329b0279de1c19ca67ca00a06082a8648ce3d030107a14403420004da6368e6f9c507d94bef0515a1722578e73430703902f267ce97af4fe51273935ec2b08d3adefbcf588224b3261a01ed76722a630cf7df7059f64862d9fee42b"
 
-    params = { "ssid": "DPPNET01",
-               "wpa": "2",
-               "ieee80211w": "2",
-               "wpa_key_mgmt": "DPP",
-               "rsn_pairwise": "CCMP",
-               "dpp_connector": ap_connector,
-               "dpp_csign": csign_pub,
-               "dpp_netaccesskey": ap_netaccesskey }
+    params = {"ssid": "DPPNET01",
+              "wpa": "2",
+              "ieee80211w": "2",
+              "wpa_key_mgmt": "DPP",
+              "rsn_pairwise": "CCMP",
+              "dpp_connector": ap_connector,
+              "dpp_csign": csign_pub,
+              "dpp_netaccesskey": ap_netaccesskey}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
     except:
@@ -1691,21 +1691,21 @@ def test_sigma_dut_dpp_proto_initiator(dev, apdev):
     """sigma_dut DPP protocol testing - Initiator"""
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-    tests = [ ("InvalidValue", "AuthenticationRequest", "WrappedData",
-               "BootstrapResult,OK,AuthResult,Errorsent",
-               None),
-              ("InvalidValue", "AuthenticationConfirm", "WrappedData",
-               "BootstrapResult,OK,AuthResult,Errorsent",
-               None),
-              ("MissingAttribute", "AuthenticationRequest", "InitCapabilities",
-               "BootstrapResult,OK,AuthResult,Errorsent",
-               "Missing or invalid I-capabilities"),
-              ("InvalidValue", "AuthenticationConfirm", "InitAuthTag",
-               "BootstrapResult,OK,AuthResult,Errorsent",
-               "Mismatching Initiator Authenticating Tag"),
-              ("MissingAttribute", "ConfigurationResponse", "EnrolleeNonce",
-               "BootstrapResult,OK,AuthResult,OK,ConfResult,Errorsent",
-               "Missing or invalid Enrollee Nonce attribute") ]
+    tests = [("InvalidValue", "AuthenticationRequest", "WrappedData",
+              "BootstrapResult,OK,AuthResult,Errorsent",
+              None),
+             ("InvalidValue", "AuthenticationConfirm", "WrappedData",
+              "BootstrapResult,OK,AuthResult,Errorsent",
+              None),
+             ("MissingAttribute", "AuthenticationRequest", "InitCapabilities",
+              "BootstrapResult,OK,AuthResult,Errorsent",
+              "Missing or invalid I-capabilities"),
+             ("InvalidValue", "AuthenticationConfirm", "InitAuthTag",
+              "BootstrapResult,OK,AuthResult,Errorsent",
+              "Mismatching Initiator Authenticating Tag"),
+             ("MissingAttribute", "ConfigurationResponse", "EnrolleeNonce",
+              "BootstrapResult,OK,AuthResult,OK,ConfResult,Errorsent",
+              "Missing or invalid Enrollee Nonce attribute")]
     for step, frame, attr, result, fail in tests:
         dev[0].request("FLUSH")
         dev[1].request("FLUSH")
@@ -1745,12 +1745,12 @@ def test_sigma_dut_dpp_proto_responder(dev, apdev):
     """sigma_dut DPP protocol testing - Responder"""
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-    tests = [ ("MissingAttribute", "AuthenticationResponse", "DPPStatus",
-               "BootstrapResult,OK,AuthResult,Errorsent",
-               "Missing or invalid required DPP Status attribute"),
-              ("MissingAttribute", "ConfigurationRequest", "EnrolleeNonce",
-               "BootstrapResult,OK,AuthResult,OK,ConfResult,Errorsent",
-               "Missing or invalid Enrollee Nonce attribute") ]
+    tests = [("MissingAttribute", "AuthenticationResponse", "DPPStatus",
+              "BootstrapResult,OK,AuthResult,Errorsent",
+              "Missing or invalid required DPP Status attribute"),
+             ("MissingAttribute", "ConfigurationRequest", "EnrolleeNonce",
+              "BootstrapResult,OK,AuthResult,OK,ConfResult,Errorsent",
+              "Missing or invalid Enrollee Nonce attribute")]
     for step, frame, attr, result, fail in tests:
         dev[0].request("FLUSH")
         dev[1].request("FLUSH")
@@ -1790,12 +1790,12 @@ def test_sigma_dut_dpp_proto_stop_at_initiator(dev, apdev):
     """sigma_dut DPP protocol testing - Stop at RX on Initiator"""
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-    tests = [ ("AuthenticationResponse",
-               "BootstrapResult,OK,AuthResult,Errorsent",
-               None),
-              ("ConfigurationRequest",
-               "BootstrapResult,OK,AuthResult,OK,ConfResult,Errorsent",
-               None)]
+    tests = [("AuthenticationResponse",
+              "BootstrapResult,OK,AuthResult,Errorsent",
+              None),
+             ("ConfigurationRequest",
+              "BootstrapResult,OK,AuthResult,OK,ConfResult,Errorsent",
+              None)]
     for frame, result, fail in tests:
         dev[0].request("FLUSH")
         dev[1].request("FLUSH")
@@ -1833,9 +1833,9 @@ def test_sigma_dut_dpp_proto_stop_at_initiator_enrollee(dev, apdev):
     """sigma_dut DPP protocol testing - Stop at TX on Initiator/Enrollee"""
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-    tests = [ ("AuthenticationConfirm",
-               "BootstrapResult,OK,AuthResult,Errorsent,LastFrameReceived,AuthenticationResponse",
-               None) ]
+    tests = [("AuthenticationConfirm",
+              "BootstrapResult,OK,AuthResult,Errorsent,LastFrameReceived,AuthenticationResponse",
+              None)]
     for frame, result, fail in tests:
         dev[0].request("FLUSH")
         dev[1].request("FLUSH")
@@ -1875,12 +1875,12 @@ def test_sigma_dut_dpp_proto_stop_at_responder(dev, apdev):
     """sigma_dut DPP protocol testing - Stop at RX on Responder"""
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-    tests = [ ("AuthenticationRequest",
-               "BootstrapResult,OK,AuthResult,Errorsent",
-               None),
-              ("AuthenticationConfirm",
-               "BootstrapResult,OK,AuthResult,Errorsent",
-               None) ]
+    tests = [("AuthenticationRequest",
+              "BootstrapResult,OK,AuthResult,Errorsent",
+              None),
+             ("AuthenticationConfirm",
+              "BootstrapResult,OK,AuthResult,Errorsent",
+              None)]
     for frame, result, fail in tests:
         dev[0].request("FLUSH")
         dev[1].request("FLUSH")
@@ -1934,15 +1934,15 @@ def test_sigma_dut_dpp_proto_initiator_pkex(dev, apdev):
     """sigma_dut DPP protocol testing - Initiator (PKEX)"""
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-    tests = [ ("InvalidValue", "PKEXCRRequest", "WrappedData",
-               "BootstrapResult,Errorsent",
-               None),
-              ("MissingAttribute", "PKEXExchangeRequest", "FiniteCyclicGroup",
-               "BootstrapResult,Errorsent",
-               "Missing or invalid Finite Cyclic Group attribute"),
-              ("MissingAttribute", "PKEXCRRequest", "BSKey",
-               "BootstrapResult,Errorsent",
-               "No valid peer bootstrapping key found") ]
+    tests = [("InvalidValue", "PKEXCRRequest", "WrappedData",
+              "BootstrapResult,Errorsent",
+              None),
+             ("MissingAttribute", "PKEXExchangeRequest", "FiniteCyclicGroup",
+              "BootstrapResult,Errorsent",
+              "Missing or invalid Finite Cyclic Group attribute"),
+             ("MissingAttribute", "PKEXCRRequest", "BSKey",
+              "BootstrapResult,Errorsent",
+              "No valid peer bootstrapping key found")]
     for step, frame, attr, result, fail in tests:
         dev[0].request("FLUSH")
         dev[1].request("FLUSH")
@@ -1981,15 +1981,15 @@ def test_sigma_dut_dpp_proto_responder_pkex(dev, apdev):
     """sigma_dut DPP protocol testing - Responder (PKEX)"""
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-    tests = [ ("InvalidValue", "PKEXCRResponse", "WrappedData",
-               "BootstrapResult,Errorsent",
-               None),
-              ("MissingAttribute", "PKEXExchangeResponse", "DPPStatus",
-               "BootstrapResult,Errorsent",
-               "No DPP Status attribute"),
-              ("MissingAttribute", "PKEXCRResponse", "BSKey",
-               "BootstrapResult,Errorsent",
-               "No valid peer bootstrapping key found") ]
+    tests = [("InvalidValue", "PKEXCRResponse", "WrappedData",
+              "BootstrapResult,Errorsent",
+              None),
+             ("MissingAttribute", "PKEXExchangeResponse", "DPPStatus",
+              "BootstrapResult,Errorsent",
+              "No DPP Status attribute"),
+             ("MissingAttribute", "PKEXCRResponse", "BSKey",
+              "BootstrapResult,Errorsent",
+              "No valid peer bootstrapping key found")]
     for step, frame, attr, result, fail in tests:
         dev[0].request("FLUSH")
         dev[1].request("FLUSH")
@@ -2025,14 +2025,14 @@ def init_sigma_dut_dpp_proto_peer_disc_req(dev, apdev):
     ap_connector = "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiJwYWtZbXVzd1dCdWpSYTl5OEsweDViaTVrT3VNT3dzZHRlaml2UG55ZHZzIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7Imdyb3VwSWQiOiIqIiwibmV0Um9sZSI6ImFwIn1dLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiIybU5vNXZuRkI5bEw3d1VWb1hJbGVPYzBNSEE1QXZKbnpwZXZULVVTYzVNIiwieSI6IlhzS3dqVHJlLTg5WWdpU3pKaG9CN1haeUttTU05OTl3V2ZaSVl0bi01Q3MifX0.XhjFpZgcSa7G2lHy0OCYTvaZFRo5Hyx6b7g7oYyusLC7C_73AJ4_BxEZQVYJXAtDuGvb3dXSkHEKxREP9Q6Qeg"
     ap_netaccesskey = "30770201010420ceba752db2ad5200fa7bc565b9c05c69b7eb006751b0b329b0279de1c19ca67ca00a06082a8648ce3d030107a14403420004da6368e6f9c507d94bef0515a1722578e73430703902f267ce97af4fe51273935ec2b08d3adefbcf588224b3261a01ed76722a630cf7df7059f64862d9fee42b"
 
-    params = { "ssid": "DPPNET01",
-               "wpa": "2",
-               "ieee80211w": "2",
-               "wpa_key_mgmt": "DPP",
-               "rsn_pairwise": "CCMP",
-               "dpp_connector": ap_connector,
-               "dpp_csign": csign_pub,
-               "dpp_netaccesskey": ap_netaccesskey }
+    params = {"ssid": "DPPNET01",
+              "wpa": "2",
+              "ieee80211w": "2",
+              "wpa_key_mgmt": "DPP",
+              "rsn_pairwise": "CCMP",
+              "dpp_connector": ap_connector,
+              "dpp_csign": csign_pub,
+              "dpp_netaccesskey": ap_netaccesskey}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
     except:
@@ -2077,7 +2077,7 @@ def test_sigma_dut_dpp_self_config(dev, apdev):
     """sigma_dut DPP Configurator enrolling an AP and using self-configuration"""
     check_dpp_capab(dev[0])
 
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
     check_dpp_capab(hapd)
 
     sigma = start_sigma_dut(dev[0].ifname)
@@ -2179,9 +2179,9 @@ def test_sigma_dut_wps_pbc(dev, apdev):
 def run_sigma_dut_wps_pbc(dev, apdev):
     ssid = "test-wps-conf"
     hapd = hostapd.add_ap(apdev[0],
-                          { "ssid": "wps", "eap_server": "1", "wps_state": "2",
-                            "wpa_passphrase": "12345678", "wpa": "2",
-                            "wpa_key_mgmt": "WPA-PSK", "rsn_pairwise": "CCMP" })
+                          {"ssid": "wps", "eap_server": "1", "wps_state": "2",
+                           "wpa_passphrase": "12345678", "wpa": "2",
+                           "wpa_key_mgmt": "WPA-PSK", "rsn_pairwise": "CCMP"})
     hapd.request("WPS_PBC")
 
     ifname = dev[0].ifname
@@ -2200,7 +2200,7 @@ def run_sigma_dut_wps_pbc(dev, apdev):
 
 def test_sigma_dut_sta_scan_bss(dev, apdev):
     """sigma_dut sta_scan_bss"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "test" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "test"})
     sigma = start_sigma_dut(dev[0].ifname)
     try:
         cmd = "sta_scan_bss,Interface,%s,BSSID,%s" % (dev[0].ifname, \
@@ -2412,8 +2412,8 @@ def run_sigma_dut_venue_url(dev, apdev):
     url2 = "https://example.org/venue-info/"
     params["venue_group"] = str(venue_group)
     params["venue_type"] = str(venue_type)
-    params["venue_name"] = [ lang1 + ":" + name1, lang2 + ":" + name2 ]
-    params["venue_url"] = [ "1:" + url1, "2:" + url2 ]
+    params["venue_name"] = [lang1 + ":" + name1, lang2 + ":" + name2]
+    params["venue_url"] = ["1:" + url1, "2:" + url2]
 
     hapd = hostapd.add_ap(apdev[0], params)
 

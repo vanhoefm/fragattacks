@@ -16,15 +16,15 @@ from test_dfs import wait_dfs_event
 def force_prev_ap_on_24g(ap):
     # For now, make sure the last operating channel was on 2.4 GHz band to get
     # sufficient survey data from mac80211_hwsim.
-    hostapd.add_ap(ap, { "ssid": "open" })
+    hostapd.add_ap(ap, {"ssid": "open"})
     time.sleep(0.1)
     hostapd.remove_bss(ap)
 
 def force_prev_ap_on_5g(ap):
     # For now, make sure the last operating channel was on 5 GHz band to get
     # sufficient survey data from mac80211_hwsim.
-    hostapd.add_ap(ap, { "ssid": "open", "hw_mode": "a",
-                         "channel": "36", "country_code": "US" })
+    hostapd.add_ap(ap, {"ssid": "open", "hw_mode": "a",
+                        "channel": "36", "country_code": "US"})
     time.sleep(0.1)
     hostapd.remove_bss(ap)
 
@@ -424,7 +424,7 @@ def test_ap_acs_dfs(dev, apdev, params):
             raise Exception("Unexpected interface state")
 
         freq = int(hapd.get_status_field("freq"))
-        if freq not in [ 5260, 5280, 5300, 5320 ]:
+        if freq not in [5260, 5280, 5300, 5320]:
             raise Exception("Unexpected frequency: %d" % freq)
 
         dev[0].connect("test-acs", psk="12345678", scan_freq=str(freq))
@@ -473,7 +473,7 @@ def test_ap_acs_vht160_dfs(dev, apdev, params):
             raise Exception("Unexpected interface state")
 
         freq = int(hapd.get_status_field("freq"))
-        if freq not in [ 5180, 5500 ]:
+        if freq not in [5180, 5500]:
             raise Exception("Unexpected frequency: %d" % freq)
 
         dev[0].connect("test-acs", psk="12345678", scan_freq=str(freq))

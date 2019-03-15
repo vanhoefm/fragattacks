@@ -75,7 +75,7 @@ def test_p2p_channel_random_social(dev):
                                                test_data=False)
         check_grpform_results(i_res, r_res)
         freq = int(i_res['freq'])
-        if freq not in [ 2412, 2437, 2462 ]:
+        if freq not in [2412, 2437, 2462]:
             raise Exception("Unexpected channel %d MHz - did not pick random social channel" % freq)
         remove_group(dev[0], dev[1])
     finally:
@@ -94,7 +94,7 @@ def test_p2p_channel_random(dev):
                                                test_data=False)
         check_grpform_results(i_res, r_res)
         freq = int(i_res['freq'])
-        if freq > 2500 or freq in [ 2412, 2437, 2462 ]:
+        if freq > 2500 or freq in [2412, 2437, 2462]:
             raise Exception("Unexpected channel %d MHz" % freq)
         remove_group(dev[0], dev[1])
     finally:
@@ -125,7 +125,7 @@ def test_p2p_channel_random_social_with_op_class_change(dev, apdev, params):
                                                test_data=False)
         check_grpform_results(i_res, r_res)
         freq = int(i_res['freq'])
-        if freq not in [ 2412, 2437, 2462 ]:
+        if freq not in [2412, 2437, 2462]:
             raise Exception("Unexpected channel %d MHz - did not pick random social channel" % freq)
         remove_group(dev[0], dev[1])
 
@@ -162,7 +162,7 @@ def test_p2p_channel_avoid(dev):
                                                test_data=False)
         check_grpform_results(i_res, r_res)
         freq = int(i_res['freq'])
-        if freq > 2500 or freq in [ 2412, 2437, 2462 ]:
+        if freq > 2500 or freq in [2412, 2437, 2462]:
             raise Exception("Unexpected channel %d MHz" % freq)
 
         if "OK" not in dev[0].request("DRIVER_EVENT AVOID_FREQUENCIES"):
@@ -260,10 +260,10 @@ def test_autogo_following_bss(dev, apdev):
 
     dev[0].global_request("SET p2p_no_group_iface 0")
 
-    channels = { 3 : "2422", 5 : "2432", 9 : "2452" }
+    channels = {3: "2422", 5: "2432", 9: "2452"}
     for key in channels:
-        hapd = hostapd.add_ap(apdev[0], { "ssid" : 'ap-test',
-                                          "channel" : str(key) })
+        hapd = hostapd.add_ap(apdev[0], {"ssid": 'ap-test',
+                                         "channel": str(key)})
         dev[0].connect("ap-test", key_mgmt="NONE",
                        scan_freq=str(channels[key]))
         res_go = autogo(dev[0])
@@ -281,7 +281,7 @@ def test_go_neg_with_bss_connected(dev, apdev):
     dev[0].global_request("SET p2p_no_group_iface 0")
 
     hapd = hostapd.add_ap(apdev[0],
-                          { "ssid": 'bss-2.4ghz', "channel": '5' })
+                          {"ssid": 'bss-2.4ghz', "channel": '5'})
     dev[0].connect("bss-2.4ghz", key_mgmt="NONE", scan_freq="2432")
     #dev[0] as GO
     [i_res, r_res] = go_neg_pbc(i_dev=dev[0], i_intent=10, r_dev=dev[1],
@@ -328,8 +328,8 @@ def test_autogo_with_bss_on_disallowed_chan(dev, apdev):
            raise Exception("New radio does not support MCC")
 
         try:
-            hapd = hostapd.add_ap(apdev[0], { "ssid": 'bss-2.4ghz',
-                                              "channel": '1' })
+            hapd = hostapd.add_ap(apdev[0], {"ssid": 'bss-2.4ghz',
+                                             "channel": '1'})
             wpas.global_request("P2P_SET disallow_freq 2412")
             wpas.connect("bss-2.4ghz", key_mgmt="NONE", scan_freq="2412")
             res = autogo(wpas)
@@ -353,7 +353,7 @@ def test_go_neg_with_bss_on_disallowed_chan(dev, apdev):
 
         try:
             hapd = hostapd.add_ap(apdev[0],
-                                  { "ssid": 'bss-2.4ghz', "channel": '1' })
+                                  {"ssid": 'bss-2.4ghz', "channel": '1'})
             # make sure PBC overlap from old test cases is not maintained
             dev[1].flush_scan_cache()
             wpas.connect("bss-2.4ghz", key_mgmt="NONE", scan_freq="2412")
@@ -406,10 +406,10 @@ def test_autogo_force_diff_channel(dev, apdev):
         wpas.global_request("SET p2p_no_group_iface 0")
 
         hapd = hostapd.add_ap(apdev[0],
-                              {"ssid" : 'ap-test', "channel" : '1'})
-        wpas.connect("ap-test", key_mgmt = "NONE", scan_freq = "2412")
+                              {"ssid": 'ap-test', "channel": '1'})
+        wpas.connect("ap-test", key_mgmt="NONE", scan_freq="2412")
         wpas.dump_monitor()
-        channels = { 2 : 2417, 5 : 2432, 9 : 2452 }
+        channels = {2: 2417, 5: 2432, 9: 2452}
         for key in channels:
             res_go = autogo(wpas, channels[key])
             wpas.dump_monitor()
@@ -434,9 +434,9 @@ def test_go_neg_forced_freq_diff_than_bss_freq(dev, apdev):
         wpas.global_request("SET p2p_no_group_iface 0")
 
         hapd = hostapd.add_ap(apdev[0],
-                              { "country_code": 'US',
-                                "ssid": 'bss-5ghz', "hw_mode": 'a',
-                                "channel": '40' })
+                              {"country_code": 'US',
+                               "ssid": 'bss-5ghz', "hw_mode": 'a',
+                               "channel": '40'})
         wpas.connect("bss-5ghz", key_mgmt="NONE", scan_freq="5200")
 
         # GO and peer force the same freq, different than BSS freq,
@@ -478,8 +478,8 @@ def test_go_pref_chan_bss_on_diff_chan(dev, apdev):
     dev[0].global_request("SET p2p_no_group_iface 0")
 
     try:
-        hapd = hostapd.add_ap(apdev[0], { "ssid": 'bss-2.4ghz',
-                                          "channel": '1' })
+        hapd = hostapd.add_ap(apdev[0], {"ssid": 'bss-2.4ghz',
+                                         "channel": '1'})
         dev[0].global_request("SET p2p_pref_chan 81:2")
         dev[0].connect("bss-2.4ghz", key_mgmt="NONE", scan_freq="2412")
         res = autogo(dev[0])
@@ -501,8 +501,8 @@ def test_go_pref_chan_bss_on_disallowed_chan(dev, apdev):
         wpas.global_request("SET p2p_no_group_iface 0")
 
         try:
-            hapd = hostapd.add_ap(apdev[0], { "ssid": 'bss-2.4ghz',
-                                              "channel": '1' })
+            hapd = hostapd.add_ap(apdev[0], {"ssid": 'bss-2.4ghz',
+                                             "channel": '1'})
             wpas.global_request("P2P_SET disallow_freq 2412")
             wpas.global_request("SET p2p_pref_chan 81:2")
             wpas.connect("bss-2.4ghz", key_mgmt="NONE", scan_freq="2412")
@@ -580,7 +580,7 @@ def test_p2p_autogo_pref_chan_disallowed(dev, apdev):
        dev[0].global_request("P2P_SET disallow_freq 2412,2422,2437,2452,2462")
        for i in range(0, 5):
            res = autogo(dev[0])
-           if res['freq'] in [ "2412", "2422", "2437", "2452", "2462" ]:
+           if res['freq'] in ["2412", "2422", "2437", "2452", "2462"]:
                raise Exception("GO channel is disallowed")
            dev[0].remove_group(res['ifname'])
     finally:
@@ -668,7 +668,7 @@ def test_p2p_listen_chan_optimize(dev, apdev):
 
         channel = "1" if lfreq != '2412' else "6"
         freq = "2412" if lfreq != '2412' else "2437"
-        params = { "ssid": "test-open", "channel": channel }
+        params = {"ssid": "test-open", "channel": channel}
         hapd = hostapd.add_ap(apdev[0], params)
 
         id = wpas.connect("test-open", key_mgmt="NONE", scan_freq=freq)
@@ -811,15 +811,15 @@ def test_p2p_go_move_active(dev, apdev):
         if wpas.get_mcc() < 2:
             raise Exception("New radio does not support MCC")
 
-        ndev = [ wpas, dev[1] ]
+        ndev = [wpas, dev[1]]
         _test_p2p_go_move_active(ndev, apdev)
 
 def _test_p2p_go_move_active(dev, apdev):
     dev[0].global_request("SET p2p_no_group_iface 0")
     try:
         dev[0].global_request("P2P_SET disallow_freq 2430-6000")
-        hapd = hostapd.add_ap(apdev[0], { "ssid" : 'ap-test',
-                                          "channel" : '11' })
+        hapd = hostapd.add_ap(apdev[0], {"ssid": 'ap-test',
+                                         "channel": '11'})
         dev[0].connect("ap-test", key_mgmt="NONE",
                        scan_freq="2462")
 
@@ -858,15 +858,15 @@ def test_p2p_go_move_scm(dev, apdev):
         if wpas.get_mcc() < 2:
             raise Exception("New radio does not support MCC")
 
-        ndev = [ wpas, dev[1] ]
+        ndev = [wpas, dev[1]]
         _test_p2p_go_move_scm(ndev, apdev)
 
 def _test_p2p_go_move_scm(dev, apdev):
     dev[0].global_request("SET p2p_no_group_iface 0")
     try:
         dev[0].global_request("P2P_SET disallow_freq 2430-6000")
-        hapd = hostapd.add_ap(apdev[0], { "ssid" : 'ap-test',
-                                          "channel" : '11' })
+        hapd = hostapd.add_ap(apdev[0], {"ssid": 'ap-test',
+                                         "channel": '11'})
         dev[0].connect("ap-test", key_mgmt="NONE",
                        scan_freq="2462")
 
@@ -912,7 +912,7 @@ def test_p2p_go_move_scm_peer_supports(dev, apdev):
         if wpas.get_mcc() < 2:
             raise Exception("New radio does not support MCC")
 
-        ndev = [ wpas, dev[1] ]
+        ndev = [wpas, dev[1]]
         _test_p2p_go_move_scm_peer_supports(ndev, apdev)
 
 def _test_p2p_go_move_scm_peer_supports(dev, apdev):
@@ -929,8 +929,8 @@ def _test_p2p_go_move_scm_peer_supports(dev, apdev):
         if freq < 5000:
             raise Exception("Unexpected channel %d MHz - did not follow 5 GHz preference" % freq)
 
-        hapd = hostapd.add_ap(apdev[0], { "ssid" : 'ap-test',
-                                          "channel" : '11' })
+        hapd = hostapd.add_ap(apdev[0], {"ssid": 'ap-test',
+                                         "channel": '11'})
         logger.info('Connecting client to to an AP on channel 11')
         dev[0].connect("ap-test", key_mgmt="NONE",
                        scan_freq="2462")
@@ -960,7 +960,7 @@ def test_p2p_go_move_scm_peer_does_not_support(dev, apdev):
         if wpas.get_mcc() < 2:
             raise Exception("New radio does not support MCC")
 
-        ndev = [ wpas, dev[1] ]
+        ndev = [wpas, dev[1]]
         _test_p2p_go_move_scm_peer_does_not_support(ndev, apdev)
 
 def _test_p2p_go_move_scm_peer_does_not_support(dev, apdev):
@@ -979,8 +979,8 @@ def _test_p2p_go_move_scm_peer_does_not_support(dev, apdev):
         if freq < 5000:
             raise Exception("Unexpected channel %d MHz - did not follow 5 GHz preference" % freq)
 
-        hapd = hostapd.add_ap(apdev[0], { "ssid" : 'ap-test',
-                                          "channel" : '11' })
+        hapd = hostapd.add_ap(apdev[0], {"ssid": 'ap-test',
+                                         "channel": '11'})
         logger.info('Connecting client to to an AP on channel 11')
         dev[0].connect("ap-test", key_mgmt="NONE",
                        scan_freq="2462")
@@ -1006,15 +1006,15 @@ def test_p2p_go_move_scm_multi(dev, apdev):
         if wpas.get_mcc() < 2:
             raise Exception("New radio does not support MCC")
 
-        ndev = [ wpas, dev[1] ]
+        ndev = [wpas, dev[1]]
         _test_p2p_go_move_scm_multi(ndev, apdev)
 
 def _test_p2p_go_move_scm_multi(dev, apdev):
     dev[0].request("SET p2p_no_group_iface 0")
     try:
         dev[0].global_request("P2P_SET disallow_freq 2430-6000")
-        hapd = hostapd.add_ap(apdev[0], { "ssid" : 'ap-test-1',
-                                          "channel" : '11' })
+        hapd = hostapd.add_ap(apdev[0], {"ssid": 'ap-test-1',
+                                         "channel": '11'})
         dev[0].connect("ap-test-1", key_mgmt="NONE",
                        scan_freq="2462")
 
@@ -1046,8 +1046,8 @@ def _test_p2p_go_move_scm_multi(dev, apdev):
         if freq != '2462':
             raise Exception("Unexpected freq after group reform=" + freq)
 
-        hapd = hostapd.add_ap(apdev[0], { "ssid" : 'ap-test-2',
-                                          "channel" : '6' })
+        hapd = hostapd.add_ap(apdev[0], {"ssid": 'ap-test-2',
+                                         "channel": '6'})
         dev[0].connect("ap-test-2", key_mgmt="NONE",
                        scan_freq="2437")
 
@@ -1087,8 +1087,8 @@ def test_p2p_delay_go_csa(dev, apdev, params):
                 raise Exception("Peer " + addr1 + " not found")
             wpas.p2p_stop_find()
 
-            hapd = hostapd.add_ap(apdev[0], { "ssid": 'bss-2.4ghz',
-                                              "channel": '1' })
+            hapd = hostapd.add_ap(apdev[0], {"ssid": 'bss-2.4ghz',
+                                             "channel": '1'})
 
             wpas.connect("bss-2.4ghz", key_mgmt="NONE", scan_freq="2412")
 

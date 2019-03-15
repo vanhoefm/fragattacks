@@ -49,7 +49,7 @@ def test_wpas_ap_open(dev):
 
     addr1 = dev[1].p2p_interface_addr()
     addr2 = dev[2].p2p_interface_addr()
-    addrs = [ addr1, addr2 ]
+    addrs = [addr1, addr2]
     sta = dev[0].get_sta(None)
     if sta['addr'] not in addrs:
         raise Exception("Unexpected STA address")
@@ -497,7 +497,7 @@ def test_wpas_ap_failures(dev):
     dev[0].set_network(id, "frequency", "2412")
     dev[0].set_network(id, "scan_freq", "2412")
     dev[0].select_network(id)
-    ev = dev[0].wait_event([ "CTRL-EVENT-CONNECTED" ], timeout=0.1)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=0.1)
     if ev is not None:
         raise Exception("Unexpected connection event")
     dev[0].request("REMOVE_NETWORK all")
@@ -512,8 +512,8 @@ def test_wpas_ap_failures(dev):
     dev[0].set_network(id, "scan_freq", "2412")
     dev[0].set_network(id, "pbss", "2")
     dev[0].select_network(id)
-    ev = dev[0].wait_event([ "CTRL-EVENT-CONNECTED",
-                             "CTRL-EVENT-DISCONNECTED" ], timeout=0.1)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-DISCONNECTED"], timeout=0.1)
     if ev is not None and "CTRL-EVENT-CONNECTED" in ev:
         raise Exception("Unexpected connection event(2)")
     dev[0].request("REMOVE_NETWORK all")
@@ -573,8 +573,8 @@ def test_wpas_ap_oom(dev):
     for i in range(5):
         with alloc_fail(wpas, i, "=wpa_supplicant_conf_ap"):
             wpas.select_network(id)
-            ev = dev[0].wait_event([ "CTRL-EVENT-CONNECTED",
-                                     "CTRL-EVENT-DISCONNECTED" ], timeout=1)
+            ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                    "CTRL-EVENT-DISCONNECTED"], timeout=1)
         wpas.request("DISCONNECT")
         wpas.wait_disconnected()
 

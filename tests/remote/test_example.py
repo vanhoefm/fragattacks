@@ -58,8 +58,8 @@ def test_example(devices, setup_params, refs, duts, monitors):
         # connect to hostapd/wpa_supplicant UDP CTRL iface
         hapd = hostapd.add_ap(ap.dev, ap_params)
         freq = hapd.get_status_field("freq")
-        wpas = WpaSupplicant(hostname = sta.host, global_iface="udp",
-                             global_port = sta.port)
+        wpas = WpaSupplicant(hostname=sta.host, global_iface="udp",
+                             global_port=sta.port)
         wpas.interface_add(sta.ifname)
 
         # setup standalone monitor based on hapd; could be multi interface

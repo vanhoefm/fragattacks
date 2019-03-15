@@ -338,14 +338,14 @@ def build_nl80211_attr_flag(id):
     return build_nl80211_attr(id, b'')
 
 def build_nl80211_attr_mac(id, val):
-    addr = struct.unpack('6B', binascii.unhexlify(val.replace(':','')))
+    addr = struct.unpack('6B', binascii.unhexlify(val.replace(':', '')))
     aval = struct.pack('<6B', *addr)
     return build_nl80211_attr(id, aval)
 
 def parse_nl80211_attrs(msg):
     attrs = {}
     while len(msg) >= 4:
-        alen,attr = struct.unpack("@HH", msg[0:4])
+        alen, attr = struct.unpack("@HH", msg[0:4])
         if alen < 4:
             raise Exception("Too short nl80211 attribute")
         alen -= 4

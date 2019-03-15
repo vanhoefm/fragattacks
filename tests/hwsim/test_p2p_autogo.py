@@ -746,7 +746,7 @@ def _test_autogo_many_clients(dev):
         raise Exception("Could not find peer (3)")
     dev[1].p2p_stop_find()
 
-    for i in [ name0, name2, name3 ]:
+    for i in [name0, name2, name3]:
         if i not in ev1 and i not in ev2 and i not in ev3:
             raise Exception('name "%s" not found' % i)
 

@@ -117,8 +117,8 @@ def report(conn, prefill, build, commit, run, test, result, duration, logdir,
             print("sql: %r" % (params, ))
 
         if result == "FAIL":
-            for log in [ "log", "log0", "log1", "log2", "log3", "log5",
-                         "hostapd", "dmesg", "hwsim0", "hwsim0.pcapng" ]:
+            for log in ["log", "log0", "log1", "log2", "log3", "log5",
+                        "hostapd", "dmesg", "hwsim0", "hwsim0.pcapng"]:
                 add_log_file(conn, test, run, log,
                              logdir + "/" + test + "." + log)
 
@@ -194,7 +194,7 @@ def main():
             logger.debug("Import test cases from " + t)
             mod = __import__(m.group(1))
             test_modules.append(mod.__name__.replace('test_', '', 1))
-            for key,val in mod.__dict__.items():
+            for key, val in mod.__dict__.items():
                 if key.startswith("test_"):
                     tests.append(val)
     test_names = list(set([t.__name__.replace('test_', '', 1) for t in tests]))
@@ -343,8 +343,8 @@ def main():
     dev0 = WpaSupplicant('wlan0', '/tmp/wpas-wlan0')
     dev1 = WpaSupplicant('wlan1', '/tmp/wpas-wlan1')
     dev2 = WpaSupplicant('wlan2', '/tmp/wpas-wlan2')
-    dev = [ dev0, dev1, dev2 ]
-    apdev = [ ]
+    dev = [dev0, dev1, dev2]
+    apdev = []
     apdev.append({"ifname": 'wlan3', "bssid": "02:00:00:00:03:00"})
     apdev.append({"ifname": 'wlan4', "bssid": "02:00:00:00:04:00"})
 
@@ -385,7 +385,7 @@ def main():
         logger.info("Parallel execution - %d/%d" % (split_server, split_total))
         split_server -= 1
         tests_to_run.sort(key=lambda t: t.__name__)
-        tests_to_run = [x for i,x in enumerate(tests_to_run) if i % split_total == split_server]
+        tests_to_run = [x for i, x in enumerate(tests_to_run) if i % split_total == split_server]
 
     if args.shuffle_tests:
         from random import shuffle

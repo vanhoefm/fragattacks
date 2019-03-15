@@ -567,13 +567,13 @@ def test_fils_sk_multiple_realms(dev, apdev, params):
     params['wpa_key_mgmt'] = "FILS-SHA256"
     params['auth_server_port'] = "18128"
     params['erp_domain'] = 'example.com'
-    fils_realms = [ 'r1.example.org', 'r2.EXAMPLE.org', 'r3.example.org',
-                    'r4.example.org', 'r5.example.org', 'r6.example.org',
-                    'r7.example.org', 'r8.example.org',
-                    'example.com',
-                    'r9.example.org', 'r10.example.org', 'r11.example.org',
-                    'r12.example.org', 'r13.example.org', 'r14.example.org',
-                    'r15.example.org', 'r16.example.org' ]
+    fils_realms = ['r1.example.org', 'r2.EXAMPLE.org', 'r3.example.org',
+                   'r4.example.org', 'r5.example.org', 'r6.example.org',
+                   'r7.example.org', 'r8.example.org',
+                   'example.com',
+                   'r9.example.org', 'r10.example.org', 'r11.example.org',
+                   'r12.example.org', 'r13.example.org', 'r14.example.org',
+                   'r15.example.org', 'r16.example.org']
     params['fils_realm'] = fils_realms
     params['fils_cache_id'] = "1234"
     params['hessid'] = bssid
@@ -644,22 +644,22 @@ def test_fils_sk_multiple_realms(dev, apdev, params):
     hwsim_utils.test_connectivity(dev[0], hapd)
 
 # DHCP message op codes
-BOOTREQUEST=1
-BOOTREPLY=2
+BOOTREQUEST = 1
+BOOTREPLY = 2
 
-OPT_PAD=0
-OPT_DHCP_MESSAGE_TYPE=53
-OPT_RAPID_COMMIT=80
-OPT_END=255
+OPT_PAD = 0
+OPT_DHCP_MESSAGE_TYPE = 53
+OPT_RAPID_COMMIT = 80
+OPT_END = 255
 
-DHCPDISCOVER=1
-DHCPOFFER=2
-DHCPREQUEST=3
-DHCPDECLINE=4
-DHCPACK=5
-DHCPNAK=6
-DHCPRELEASE=7
-DHCPINFORM=8
+DHCPDISCOVER = 1
+DHCPOFFER = 2
+DHCPREQUEST = 3
+DHCPDECLINE = 4
+DHCPACK = 5
+DHCPNAK = 6
+DHCPRELEASE = 7
+DHCPINFORM = 8
 
 def build_dhcp(req, dhcp_msg, chaddr, giaddr="0.0.0.0",
                ip_src="0.0.0.0", ip_dst="255.255.255.255",
@@ -673,7 +673,7 @@ def build_dhcp(req, dhcp_msg, chaddr, giaddr="0.0.0.0",
     _yiaddr = b'\x00\x00\x00\x00'
     _siaddr = b'\x00\x00\x00\x00'
     _giaddr = socket.inet_pton(socket.AF_INET, giaddr)
-    _chaddr = binascii.unhexlify(chaddr.replace(':','')) + 10 * b'\x00'
+    _chaddr = binascii.unhexlify(chaddr.replace(':', '')) + 10 * b'\x00'
     htype = 1 # Hardware address type; 1 = Ethernet
     hlen = 6 # Hardware address length
     hops = 0
@@ -764,19 +764,19 @@ def run_fils_sk_hlp(dev, apdev, rapid_commit_server, params):
     dev[0].request("ERP_FLUSH")
     if "OK" not in dev[0].request("FILS_HLP_REQ_FLUSH"):
         raise Exception("Failed to flush pending FILS HLP requests")
-    tests = [ "",
-              "q",
-              "ff:ff:ff:ff:ff:ff",
-              "ff:ff:ff:ff:ff:ff q" ]
+    tests = ["",
+             "q",
+             "ff:ff:ff:ff:ff:ff",
+             "ff:ff:ff:ff:ff:ff q"]
     for t in tests:
         if "FAIL" not in dev[0].request("FILS_HLP_REQ_ADD " + t):
             raise Exception("Invalid FILS_HLP_REQ_ADD accepted: " + t)
     dhcpdisc = build_dhcp(req=True, dhcp_msg=DHCPDISCOVER,
                           chaddr=dev[0].own_addr())
-    tests = [ "ff:ff:ff:ff:ff:ff aabb",
-              "ff:ff:ff:ff:ff:ff " + 255*'cc',
-              hapd.own_addr() + " ddee010203040506070809",
-              "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc).decode() ]
+    tests = ["ff:ff:ff:ff:ff:ff aabb",
+             "ff:ff:ff:ff:ff:ff " + 255*'cc',
+             hapd.own_addr() + " ddee010203040506070809",
+             "ff:ff:ff:ff:ff:ff " + binascii.hexlify(dhcpdisc).decode()]
     for t in tests:
         if "OK" not in dev[0].request("FILS_HLP_REQ_ADD " + t):
             raise Exception("FILS_HLP_REQ_ADD failed: " + t)
@@ -791,7 +791,7 @@ def run_fils_sk_hlp(dev, apdev, rapid_commit_server, params):
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
 
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     if rapid_commit_server:
         # TODO: Proper rapid commit response
@@ -802,7 +802,7 @@ def run_fils_sk_hlp(dev, apdev, rapid_commit_server, params):
         dhcpdisc = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
                               chaddr=dev[0].own_addr(), giaddr="127.0.0.3")
         sock.sendto(dhcpdisc[2+20+8:], addr)
-        (msg,addr) = sock.recvfrom(1000)
+        (msg, addr) = sock.recvfrom(1000)
         logger.debug("Received DHCP message from %s" % str(addr))
         dhcpdisc = build_dhcp(req=False, dhcp_msg=DHCPACK, rapid_commit=False,
                               chaddr=dev[0].own_addr(), giaddr="127.0.0.3")
@@ -827,7 +827,7 @@ def run_fils_sk_hlp(dev, apdev, rapid_commit_server, params):
         raise Exception("Unexpected UDP port in HLP response")
     dhcp = frame[0:28]
     frame = frame[28:]
-    op,htype,hlen,hops,xid,secs,flags,ciaddr,yiaddr,siaddr,giaddr = struct.unpack('>4BL2H4L', dhcp)
+    op, htype, hlen, hops, xid, secs, flags, ciaddr, yiaddr, siaddr, giaddr = struct.unpack('>4BL2H4L', dhcp)
     chaddr = frame[0:16]
     frame = frame[16:]
     sname = frame[0:64]
@@ -881,7 +881,7 @@ def test_fils_sk_hlp_timeout(dev, apdev, params):
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
 
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     # Wait for HLP wait timeout to hit
     # FILS: HLP response timeout - continue with association response
@@ -946,7 +946,7 @@ def test_fils_sk_hlp_oom(dev, apdev, params):
     dev[0].dump_monitor()
     with alloc_fail(hapd, 1, "wpabuf_alloc;fils_dhcp_handler"):
         dev[0].select_network(id, freq=2412)
-        (msg,addr) = sock.recvfrom(1000)
+        (msg, addr) = sock.recvfrom(1000)
         logger.debug("Received DHCP message from %s" % str(addr))
         dhcpdisc = build_dhcp(req=False, dhcp_msg=DHCPACK,
                               chaddr=dev[0].own_addr(), giaddr="127.0.0.3")
@@ -958,7 +958,7 @@ def test_fils_sk_hlp_oom(dev, apdev, params):
     dev[0].dump_monitor()
     with alloc_fail(hapd, 1, "wpabuf_resize;fils_dhcp_handler"):
         dev[0].select_network(id, freq=2412)
-        (msg,addr) = sock.recvfrom(1000)
+        (msg, addr) = sock.recvfrom(1000)
         logger.debug("Received DHCP message from %s" % str(addr))
         dhcpdisc = build_dhcp(req=False, dhcp_msg=DHCPACK,
                               chaddr=dev[0].own_addr(), giaddr="127.0.0.3")
@@ -969,7 +969,7 @@ def test_fils_sk_hlp_oom(dev, apdev, params):
 
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     dhcpoffer = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
                            chaddr=dev[0].own_addr(), giaddr="127.0.0.3")
@@ -1068,19 +1068,19 @@ def test_fils_sk_hlp_req_parsing(dev, apdev, params):
     dhcp_valid = build_dhcp(req=True, dhcp_msg=DHCPDISCOVER,
                             chaddr=dev[0].own_addr())
 
-    tests = [ "ff",
-              "0800",
-              "0800" + 20*"00",
-              "0800" + binascii.hexlify(ipv4_overflow).decode(),
-              "0800" + binascii.hexlify(ipv4_unknown_proto).decode(),
-              "0800" + binascii.hexlify(ipv4_missing_udp_hdr).decode(),
-              "0800" + binascii.hexlify(udp_overflow).decode(),
-              "0800" + binascii.hexlify(udp_underflow).decode(),
-              "0800" + binascii.hexlify(udp_unknown_port).decode(),
-              "0800" + binascii.hexlify(dhcp_missing_data).decode(),
-              binascii.hexlify(dhcp_not_req).decode(),
-              binascii.hexlify(dhcp_no_magic).decode(),
-              binascii.hexlify(dhcp_unknown_magic).decode() ]
+    tests = ["ff",
+             "0800",
+             "0800" + 20*"00",
+             "0800" + binascii.hexlify(ipv4_overflow).decode(),
+             "0800" + binascii.hexlify(ipv4_unknown_proto).decode(),
+             "0800" + binascii.hexlify(ipv4_missing_udp_hdr).decode(),
+             "0800" + binascii.hexlify(udp_overflow).decode(),
+             "0800" + binascii.hexlify(udp_underflow).decode(),
+             "0800" + binascii.hexlify(udp_unknown_port).decode(),
+             "0800" + binascii.hexlify(dhcp_missing_data).decode(),
+             binascii.hexlify(dhcp_not_req).decode(),
+             binascii.hexlify(dhcp_no_magic).decode(),
+             binascii.hexlify(dhcp_unknown_magic).decode()]
     for t in tests:
         if "OK" not in dev[0].request("FILS_HLP_REQ_ADD ff:ff:ff:ff:ff:ff " + t):
             raise Exception("FILS_HLP_REQ_ADD failed: " + t)
@@ -1099,8 +1099,8 @@ def test_fils_sk_hlp_req_parsing(dev, apdev, params):
     dev[0].wait_disconnected()
 
     dev[0].request("FILS_HLP_REQ_FLUSH")
-    tests = [ binascii.hexlify(dhcp_opts).decode(),
-              binascii.hexlify(dhcp_opts2).decode() ]
+    tests = [binascii.hexlify(dhcp_opts).decode(),
+             binascii.hexlify(dhcp_opts2).decode()]
     for t in tests:
         if "OK" not in dev[0].request("FILS_HLP_REQ_ADD ff:ff:ff:ff:ff:ff " + t):
             raise Exception("FILS_HLP_REQ_ADD failed: " + t)
@@ -1192,21 +1192,21 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
 
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     dhcpdisc = build_dhcp(req=False, dhcp_msg=DHCPACK,
                           chaddr=dev[0].own_addr(), giaddr="127.0.0.3")
     #sock.sendto(dhcpdisc[2+20+8:], addr)
-    chaddr = binascii.unhexlify(dev[0].own_addr().replace(':','')) + 10*b'\x00'
-    tests = [ b"\x00",
-              b"\x02" + 500 * b"\x00",
-              b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + 500*b"\x00",
-              b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + 16*b"\x00" + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63",
-              b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + 16*b"\x00" + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63" + b"\x00\x11",
-              b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + 16*b"\x00" + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63" + b"\x11\x01",
-              b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + chaddr + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63" + b"\x35\x00\xff",
-              b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + chaddr + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63" + b"\x35\x01\x00\xff",
-              1501 * b"\x00" ]
+    chaddr = binascii.unhexlify(dev[0].own_addr().replace(':', '')) + 10*b'\x00'
+    tests = [b"\x00",
+             b"\x02" + 500 * b"\x00",
+             b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + 500*b"\x00",
+             b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + 16*b"\x00" + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63",
+             b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + 16*b"\x00" + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63" + b"\x00\x11",
+             b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + 16*b"\x00" + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63" + b"\x11\x01",
+             b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + chaddr + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63" + b"\x35\x00\xff",
+             b"\x02\x00\x00\x00" + 20*b"\x00" + b"\x7f\x00\x00\x03" + chaddr + 64*b"\x00" + 128*b"\x00" + b"\x63\x82\x53\x63" + b"\x35\x01\x00\xff",
+             1501 * b"\x00"]
     for t in tests:
         sock.sendto(t, addr)
     dev[0].wait_connected()
@@ -1216,7 +1216,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     # FILS: DHCP sendto failed: Invalid argument for second DHCP TX in proxy
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     hapd.set("dhcp_server_port", "0")
     dhcpoffer = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
@@ -1230,13 +1230,13 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     # Options in DHCPOFFER
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     dhcpoffer = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
                            chaddr=dev[0].own_addr(), giaddr="127.0.0.3",
                            extra_op=b"\x00\x11", opt_end=False)
     sock.sendto(dhcpoffer[2+20+8:], addr)
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     dev[0].wait_connected()
     dev[0].request("DISCONNECT")
@@ -1245,13 +1245,13 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     # Options in DHCPOFFER (2)
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     dhcpoffer = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
                            chaddr=dev[0].own_addr(), giaddr="127.0.0.3",
                            extra_op=b"\x11\x01", opt_end=False)
     sock.sendto(dhcpoffer[2+20+8:], addr)
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     dev[0].wait_connected()
     dev[0].request("DISCONNECT")
@@ -1260,13 +1260,13 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
     # Server ID in DHCPOFFER
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     dhcpoffer = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
                            chaddr=dev[0].own_addr(), giaddr="127.0.0.3",
                            extra_op=b"\x36\x01\x30")
     sock.sendto(dhcpoffer[2+20+8:], addr)
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     dev[0].wait_connected()
     dev[0].request("DISCONNECT")
@@ -1281,7 +1281,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
         raise Exception("FILS_HLP_REQ_ADD failed")
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     dhcpoffer = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
                            chaddr=dev[0].own_addr(), giaddr="127.0.0.3",
@@ -1300,7 +1300,7 @@ def test_fils_sk_hlp_dhcp_parsing(dev, apdev, params):
         raise Exception("FILS_HLP_REQ_ADD failed")
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
-    (msg,addr) = sock.recvfrom(1000)
+    (msg, addr) = sock.recvfrom(1000)
     logger.debug("Received DHCP message from %s" % str(addr))
     dhcpoffer = build_dhcp(req=False, dhcp_msg=DHCPOFFER, rapid_commit=False,
                            chaddr=dev[0].own_addr(), giaddr="127.0.0.3",
@@ -1356,7 +1356,7 @@ def test_fils_sk_erp_sim(dev, apdev, params):
     check_fils_capa(dev[0])
     check_erp_capa(dev[0])
 
-    realm='wlan.mnc001.mcc232.3gppnetwork.org'
+    realm = 'wlan.mnc001.mcc232.3gppnetwork.org'
     start_erp_as(apdev[1], erp_domain=realm,
                  msk_dump=os.path.join(params['logdir'], "msk.lst"))
 
@@ -1431,10 +1431,10 @@ def run_fils_sk_pfs(dev, apdev, group, params):
     check_erp_capa(dev[0])
 
     tls = dev[0].request("GET tls_library")
-    if int(group) in [ 25 ]:
+    if int(group) in [25]:
         if not (tls.startswith("OpenSSL") and ("build=OpenSSL 1.0.2" in tls or "build=OpenSSL 1.1" in tls) and ("run=OpenSSL 1.0.2" in tls or "run=OpenSSL 1.1" in tls)):
             raise HwsimSkip("EC group not supported")
-    if int(group) in [ 27, 28, 29, 30 ]:
+    if int(group) in [27, 28, 29, 30]:
         if not (tls.startswith("OpenSSL") and ("build=OpenSSL 1.0.2" in tls or "build=OpenSSL 1.1" in tls) and ("run=OpenSSL 1.0.2" in tls or "run=OpenSSL 1.1" in tls)):
             raise HwsimSkip("Brainpool EC group not supported")
 
@@ -1744,7 +1744,7 @@ def test_fils_and_ft(dev, apdev, params):
     params["reassociation_deadline"] = "1000"
     params['nas_identifier'] = "nas1.w1.fi"
     params['r1_key_holder'] = "000102030405"
-    params['r0kh'] = [ "02:00:00:00:04:00 nas2.w1.fi 300102030405060708090a0b0c0d0e0f" ]
+    params['r0kh'] = ["02:00:00:00:04:00 nas2.w1.fi 300102030405060708090a0b0c0d0e0f"]
     params['r1kh'] = "02:00:00:00:04:00 00:01:02:03:04:06 200102030405060708090a0b0c0d0e0f"
     params['ieee80211w'] = "1"
     hapd = hostapd.add_ap(apdev[0]['ifname'], params)
@@ -1781,7 +1781,7 @@ def test_fils_and_ft(dev, apdev, params):
     params['wpa_key_mgmt'] = "FT-EAP"
     params['nas_identifier'] = "nas2.w1.fi"
     params['r1_key_holder'] = "000102030406"
-    params['r0kh'] = [ "02:00:00:00:03:00 nas1.w1.fi 200102030405060708090a0b0c0d0e0f" ]
+    params['r0kh'] = ["02:00:00:00:03:00 nas1.w1.fi 200102030405060708090a0b0c0d0e0f"]
     params['r1kh'] = "02:00:00:00:03:00 00:01:02:03:04:05 300102030405060708090a0b0c0d0e0f"
     hapd2 = hostapd.add_ap(apdev[1]['ifname'], params)
 
@@ -1893,8 +1893,8 @@ def run_fils_and_ft_setup(dev, apdev, params, key_mgmt):
     params["reassociation_deadline"] = "1000"
     params['nas_identifier'] = "nas1.w1.fi"
     params['r1_key_holder'] = "000102030405"
-    params['r0kh'] = [ "02:00:00:00:03:00 nas1.w1.fi 100102030405060708090a0b0c0d0e0f100102030405060708090a0b0c0d0e0f",
-                       "02:00:00:00:04:00 nas2.w1.fi 300102030405060708090a0b0c0d0e0f" ]
+    params['r0kh'] = ["02:00:00:00:03:00 nas1.w1.fi 100102030405060708090a0b0c0d0e0f100102030405060708090a0b0c0d0e0f",
+                      "02:00:00:00:04:00 nas2.w1.fi 300102030405060708090a0b0c0d0e0f"]
     params['r1kh'] = "02:00:00:00:04:00 00:01:02:03:04:06 200102030405060708090a0b0c0d0e0f"
     params['ieee80211w'] = "2"
     hapd = hostapd.add_ap(apdev[0]['ifname'], params)
@@ -1924,8 +1924,8 @@ def run_fils_and_ft_setup(dev, apdev, params, key_mgmt):
     params['wpa_key_mgmt'] = key_mgmt
     params['nas_identifier'] = "nas2.w1.fi"
     params['r1_key_holder'] = "000102030406"
-    params['r0kh'] = [ "02:00:00:00:03:00 nas1.w1.fi 200102030405060708090a0b0c0d0e0f",
-                       "02:00:00:00:04:00 nas2.w1.fi 000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f" ]
+    params['r0kh'] = ["02:00:00:00:03:00 nas1.w1.fi 200102030405060708090a0b0c0d0e0f",
+                      "02:00:00:00:04:00 nas2.w1.fi 000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"]
     params['r1kh'] = "02:00:00:00:03:00 00:01:02:03:04:05 300102030405060708090a0b0c0d0e0f"
     hapd2 = hostapd.add_ap(apdev[1]['ifname'], params)
 
@@ -2009,7 +2009,7 @@ def test_fils_assoc_replay(dev, apdev, params):
     filt = "wlan.fc.type == 2 && " + \
            "wlan.da == " + sta + " && " + \
            "wlan.sa == " + ap + " && wlan.ccmp.extiv"
-    fields = [ "wlan.ccmp.extiv" ]
+    fields = ["wlan.ccmp.extiv"]
     res = run_tshark(capfile, filt, fields)
     vals = res.splitlines()
     logger.info("CCMP PN: " + str(vals))

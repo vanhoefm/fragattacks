@@ -47,8 +47,8 @@ def test_tnc_peap_soh_errors(dev, apdev):
     params["tnc"] = "1"
     hostapd.add_ap(apdev[0], params)
 
-    tests = [ (1, "tncc_build_soh"),
-              (1, "eap_msg_alloc;=eap_peap_phase2_request") ]
+    tests = [(1, "tncc_build_soh"),
+             (1, "eap_msg_alloc;=eap_peap_phase2_request")]
     for count, func in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
@@ -121,36 +121,36 @@ def test_tnc_ttls_errors(dev, apdev):
     params["fragment_size"] = "150"
     hostapd.add_ap(apdev[0], params)
 
-    tests = [ (1, "eap_ttls_process_phase2_eap;eap_ttls_process_tnc_start",
-               "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
-              (1, "eap_ttls_process_phase2_eap;eap_ttls_process_tnc_start",
-               "mschap user", "auth=MSCHAP"),
-              (1, "=eap_tnc_init", "chap user", "auth=CHAP"),
-              (1, "tncc_init;eap_tnc_init", "pap user", "auth=PAP"),
-              (1, "eap_msg_alloc;eap_tnc_build_frag_ack",
-               "pap user", "auth=PAP"),
-              (1, "eap_msg_alloc;eap_tnc_build_msg",
-               "pap user", "auth=PAP"),
-              (1, "wpabuf_alloc;=eap_tnc_process_fragment",
-               "pap user", "auth=PAP"),
-              (1, "eap_msg_alloc;=eap_tnc_process", "pap user", "auth=PAP"),
-              (1, "wpabuf_alloc;=eap_tnc_process", "pap user", "auth=PAP"),
-              (1, "dup_binstr;tncc_process_if_tnccs", "pap user", "auth=PAP"),
-              (1, "tncc_get_base64;tncc_process_if_tnccs",
-               "pap user", "auth=PAP"),
-              (1, "tncc_if_tnccs_start", "pap user", "auth=PAP"),
-              (1, "tncc_if_tnccs_end", "pap user", "auth=PAP"),
-              (1, "tncc_parse_imc", "pap user", "auth=PAP"),
-              (2, "tncc_parse_imc", "pap user", "auth=PAP"),
-              (3, "tncc_parse_imc", "pap user", "auth=PAP"),
-              (1, "os_readfile;tncc_read_config", "pap user", "auth=PAP"),
-              (1, "tncc_init", "pap user", "auth=PAP"),
-              (1, "TNC_TNCC_ReportMessageTypes", "pap user", "auth=PAP"),
-              (1, "base64_gen_encode;?base64_encode;TNC_TNCC_SendMessage",
-               "pap user", "auth=PAP"),
-              (1, "=TNC_TNCC_SendMessage", "pap user", "auth=PAP"),
-              (1, "tncc_get_base64;tncc_process_if_tnccs",
-               "pap user", "auth=PAP") ]
+    tests = [(1, "eap_ttls_process_phase2_eap;eap_ttls_process_tnc_start",
+              "DOMAIN\mschapv2 user", "auth=MSCHAPV2"),
+             (1, "eap_ttls_process_phase2_eap;eap_ttls_process_tnc_start",
+              "mschap user", "auth=MSCHAP"),
+             (1, "=eap_tnc_init", "chap user", "auth=CHAP"),
+             (1, "tncc_init;eap_tnc_init", "pap user", "auth=PAP"),
+             (1, "eap_msg_alloc;eap_tnc_build_frag_ack",
+              "pap user", "auth=PAP"),
+             (1, "eap_msg_alloc;eap_tnc_build_msg",
+              "pap user", "auth=PAP"),
+             (1, "wpabuf_alloc;=eap_tnc_process_fragment",
+              "pap user", "auth=PAP"),
+             (1, "eap_msg_alloc;=eap_tnc_process", "pap user", "auth=PAP"),
+             (1, "wpabuf_alloc;=eap_tnc_process", "pap user", "auth=PAP"),
+             (1, "dup_binstr;tncc_process_if_tnccs", "pap user", "auth=PAP"),
+             (1, "tncc_get_base64;tncc_process_if_tnccs",
+              "pap user", "auth=PAP"),
+             (1, "tncc_if_tnccs_start", "pap user", "auth=PAP"),
+             (1, "tncc_if_tnccs_end", "pap user", "auth=PAP"),
+             (1, "tncc_parse_imc", "pap user", "auth=PAP"),
+             (2, "tncc_parse_imc", "pap user", "auth=PAP"),
+             (3, "tncc_parse_imc", "pap user", "auth=PAP"),
+             (1, "os_readfile;tncc_read_config", "pap user", "auth=PAP"),
+             (1, "tncc_init", "pap user", "auth=PAP"),
+             (1, "TNC_TNCC_ReportMessageTypes", "pap user", "auth=PAP"),
+             (1, "base64_gen_encode;?base64_encode;TNC_TNCC_SendMessage",
+              "pap user", "auth=PAP"),
+             (1, "=TNC_TNCC_SendMessage", "pap user", "auth=PAP"),
+             (1, "tncc_get_base64;tncc_process_if_tnccs",
+              "pap user", "auth=PAP")]
     for count, func, identity, phase2 in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
@@ -174,7 +174,7 @@ def test_tnc_fast(dev, apdev):
     check_eap_capa(dev[0], "FAST")
     params = int_eap_server_params()
     params["tnc"] = "1"
-    params["pac_opaque_encr_key"] ="000102030405060708090a0b0c0d0e00"
+    params["pac_opaque_encr_key"] = "000102030405060708090a0b0c0d0e00"
     params["eap_fast_a_id"] = "101112131415161718191a1b1c1d1e00"
     params["eap_fast_a_id_info"] = "test server2"
 

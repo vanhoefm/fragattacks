@@ -14,8 +14,8 @@ from utils import alloc_fail, fail_test
 
 def test_bgscan_simple(dev, apdev):
     """bgscan_simple"""
-    hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
-    hostapd.add_ap(apdev[1], { "ssid": "bgscan" })
+    hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
+    hostapd.add_ap(apdev[1], {"ssid": "bgscan"})
 
     dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
                    bgscan="simple:1:-20:2")
@@ -71,7 +71,7 @@ def test_bgscan_simple(dev, apdev):
 
 def test_bgscan_simple_beacon_loss(dev, apdev):
     """bgscan_simple and beacon loss"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
 
     dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
                    bgscan="simple:1:-20:2")
@@ -84,7 +84,7 @@ def test_bgscan_simple_beacon_loss(dev, apdev):
 
 def test_bgscan_simple_scan_failure(dev, apdev):
     """bgscan_simple and scan failure"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
 
     dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
                    bgscan="simple:1:-20:2")
@@ -99,7 +99,7 @@ def test_bgscan_simple_scan_failure(dev, apdev):
 
 def test_bgscan_simple_scanning(dev, apdev):
     """bgscan_simple and scanning behavior"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
 
     dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
                    bgscan="simple:1:-20:2")
@@ -113,7 +113,7 @@ def test_bgscan_simple_scanning(dev, apdev):
 
 def test_bgscan_simple_same_scan_int(dev, apdev):
     """bgscan_simple and same short/long scan interval"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
 
     dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
                    bgscan="simple:1:-20:1")
@@ -124,7 +124,7 @@ def test_bgscan_simple_same_scan_int(dev, apdev):
 
 def test_bgscan_simple_oom(dev, apdev):
     """bgscan_simple OOM"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
 
     with alloc_fail(dev[0], 1, "bgscan_simple_init"):
         dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
@@ -132,7 +132,7 @@ def test_bgscan_simple_oom(dev, apdev):
 
 def test_bgscan_simple_driver_conf_failure(dev, apdev):
     """bgscan_simple driver configuration failure"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
 
     with fail_test(dev[0], 1, "bgscan_simple_init"):
         dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
@@ -140,8 +140,8 @@ def test_bgscan_simple_driver_conf_failure(dev, apdev):
 
 def test_bgscan_learn(dev, apdev):
     """bgscan_learn"""
-    hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
-    hostapd.add_ap(apdev[1], { "ssid": "bgscan" })
+    hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
+    hostapd.add_ap(apdev[1], {"ssid": "bgscan"})
 
     try:
         os.remove("/tmp/test_bgscan_learn.bgscan")
@@ -238,7 +238,7 @@ def test_bgscan_learn(dev, apdev):
 
 def test_bgscan_learn_beacon_loss(dev, apdev):
     """bgscan_simple and beacon loss"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
 
     dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
                    bgscan="learn:1:-20:2")
@@ -251,7 +251,7 @@ def test_bgscan_learn_beacon_loss(dev, apdev):
 
 def test_bgscan_learn_scan_failure(dev, apdev):
     """bgscan_learn and scan failure"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
 
     dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
                    bgscan="learn:1:-20:2")
@@ -266,7 +266,7 @@ def test_bgscan_learn_scan_failure(dev, apdev):
 
 def test_bgscan_learn_oom(dev, apdev):
     """bgscan_learn OOM"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
 
     with alloc_fail(dev[0], 1, "bgscan_learn_init"):
         dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
@@ -274,7 +274,7 @@ def test_bgscan_learn_oom(dev, apdev):
 
 def test_bgscan_learn_driver_conf_failure(dev, apdev):
     """bgscan_learn driver configuration failure"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
 
     with fail_test(dev[0], 1, "bgscan_learn_init"):
         dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
@@ -282,6 +282,6 @@ def test_bgscan_learn_driver_conf_failure(dev, apdev):
 
 def test_bgscan_unknown_module(dev, apdev):
     """bgscan init failing due to unknown module"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "bgscan" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
     dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
                    bgscan="unknown:-20:2")

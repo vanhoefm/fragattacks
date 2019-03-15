@@ -35,7 +35,7 @@ def test_p2p_device_grpform(dev, apdev):
         found = False
         for l in lines:
             try:
-                [name,value] = l.split('=', 1)
+                [name, value] = l.split('=', 1)
                 if name == "wdev_id":
                     found = True
                     break
@@ -169,7 +169,7 @@ def run_p2p_device_nfc_invite(dev, apdev, no_group_iface):
 
 def test_p2p_device_misuses(dev, apdev):
     """cfg80211 P2P Device misuses"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "open" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
     with HWSimRadio(use_p2p_device=True) as (radio, iface):
         wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
         wpas.interface_add(iface)
@@ -214,7 +214,7 @@ def test_p2p_device_misuses(dev, apdev):
         time.sleep(1)
         hwsim_utils.test_connectivity(wpas, hapd)
 
-        ev = hapd.wait_event([ "AP-STA-DISCONNECTED" ], timeout=0.1)
+        ev = hapd.wait_event(["AP-STA-DISCONNECTED"], timeout=0.1)
         if ev is not None:
             raise Exception("Unexpected disconnection event received from hostapd")
         ev = wpas.wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.1)

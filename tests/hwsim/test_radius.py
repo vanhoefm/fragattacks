@@ -166,10 +166,10 @@ def test_radius_acct(dev, apdev):
     params['acct_server_addr'] = "127.0.0.1"
     params['acct_server_port'] = "1813"
     params['acct_server_shared_secret'] = "radius"
-    params['radius_auth_req_attr'] = [ "126:s:Operator", "77:s:testing",
-                                       "62:d:1" ]
-    params['radius_acct_req_attr'] = [ "126:s:Operator", "62:d:1",
-                                       "77:s:testing" ]
+    params['radius_auth_req_attr'] = ["126:s:Operator", "77:s:testing",
+                                      "62:d:1"]
+    params['radius_acct_req_attr'] = ["126:s:Operator", "62:d:1",
+                                      "77:s:testing"]
     hapd = hostapd.add_ap(apdev[0], params)
     connect(dev[0], "radius-acct")
     dev[1].connect("radius-acct", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -231,7 +231,7 @@ def test_radius_acct_pmksa_caching(dev, apdev):
     dev[1].connect("radius-acct", key_mgmt="WPA-EAP", scan_freq="2412",
                    eap="PAX", identity="test-class",
                    password_hex="0123456789abcdef0123456789abcdef")
-    for d in [ dev[0], dev[1] ]:
+    for d in [dev[0], dev[1]]:
         d.request("REASSOCIATE")
         d.wait_connected(timeout=15, error="Reassociation timed out")
 
@@ -328,13 +328,13 @@ def test_radius_acct_ipaddr(dev, apdev):
                         stderr=open('/dev/null', 'w'))
 
 def _test_radius_acct_ipaddr(dev, apdev):
-    params = { "ssid": "radius-acct-open",
-               'acct_server_addr': "127.0.0.1",
-               'acct_server_port': "1813",
-               'acct_server_shared_secret': "radius",
-               'proxy_arp': '1',
-               'ap_isolate': '1',
-               'bridge': 'ap-br0' }
+    params = {"ssid": "radius-acct-open",
+              'acct_server_addr': "127.0.0.1",
+              'acct_server_port': "1813",
+              'acct_server_shared_secret': "radius",
+              'proxy_arp': '1',
+              'ap_isolate': '1',
+              'bridge': 'ap-br0'}
     hapd = hostapd.add_ap(apdev[0], params, no_enable=True)
     try:
         hapd.enable()
@@ -731,7 +731,7 @@ def add_message_auth_req(req):
     # request attributes
     req.AddAttribute("Message-Authenticator", 16*b"\x00")
     attrs = b''
-    for code,datalst in sorted(req.items()):
+    for code, datalst in sorted(req.items()):
         for data in datalst:
             attrs += req._PktEncodeAttribute(code, data)
 
@@ -1508,14 +1508,14 @@ def test_ap_vlan_wpa2_psk_radius_required(dev, apdev):
 
 def test_radius_mppe_failure(dev, apdev):
     """RADIUS failure when adding MPPE keys"""
-    params = { "ssid": "as", "beacon_int": "2000",
-               "radius_server_clients": "auth_serv/radius_clients.conf",
-               "radius_server_auth_port": '18127',
-               "eap_server": "1",
-               "eap_user_file": "auth_serv/eap_user.conf",
-               "ca_cert": "auth_serv/ca.pem",
-               "server_cert": "auth_serv/server.pem",
-               "private_key": "auth_serv/server.key" }
+    params = {"ssid": "as", "beacon_int": "2000",
+              "radius_server_clients": "auth_serv/radius_clients.conf",
+              "radius_server_auth_port": '18127',
+              "eap_server": "1",
+              "eap_user_file": "auth_serv/eap_user.conf",
+              "ca_cert": "auth_serv/ca.pem",
+              "server_cert": "auth_serv/server.pem",
+              "private_key": "auth_serv/server.key"}
     authsrv = hostapd.add_ap(apdev[1], params)
 
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
@@ -1535,26 +1535,26 @@ def test_radius_acct_failure(dev, apdev):
     """RADIUS Accounting and failure to add attributes"""
     # Connection goes through, but Accounting-Request cannot be sent out due to
     # NAS-Identifier being too long to fit into a RADIUS attribute.
-    params = { "ssid": "radius-acct-open",
-               'acct_server_addr': "127.0.0.1",
-               'acct_server_port': "1813",
-               'acct_server_shared_secret': "radius",
-               'nas_identifier': 255*'A' }
+    params = {"ssid": "radius-acct-open",
+              'acct_server_addr': "127.0.0.1",
+              'acct_server_port': "1813",
+              'acct_server_shared_secret': "radius",
+              'nas_identifier': 255*'A'}
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect("radius-acct-open", key_mgmt="NONE", scan_freq="2412")
 
 def test_radius_acct_failure_oom(dev, apdev):
     """RADIUS Accounting and failure to add attributes due to OOM"""
-    params = { "ssid": "radius-acct-open",
-               'acct_server_addr': "127.0.0.1",
-               'acct_server_port': "1813",
-               'acct_server_shared_secret': "radius",
-               'radius_acct_interim_interval': "1",
-               'nas_identifier': 250*'A',
-               'radius_acct_req_attr': [ "126:s:" + 250*'B',
-                                         "77:s:" + 250*'C',
-                                         "127:s:" + 250*'D',
-                                         "181:s:" + 250*'E' ] }
+    params = {"ssid": "radius-acct-open",
+              'acct_server_addr': "127.0.0.1",
+              'acct_server_port': "1813",
+              'acct_server_shared_secret': "radius",
+              'radius_acct_interim_interval': "1",
+              'nas_identifier': 250*'A',
+              'radius_acct_req_attr': ["126:s:" + 250*'B',
+                                       "77:s:" + 250*'C',
+                                       "127:s:" + 250*'D',
+                                       "181:s:" + 250*'E']}
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = hapd.own_addr()
 
@@ -1572,9 +1572,9 @@ def test_radius_acct_failure_oom(dev, apdev):
         dev[1].request("REMOVE_NETWORK all")
         dev[1].wait_disconnected()
 
-    tests = [ (1, "radius_msg_add_attr;?radius_msg_add_attr_int32;=accounting_msg"),
-              (2, "radius_msg_add_attr;accounting_msg"),
-              (3, "radius_msg_add_attr;accounting_msg") ]
+    tests = [(1, "radius_msg_add_attr;?radius_msg_add_attr_int32;=accounting_msg"),
+             (2, "radius_msg_add_attr;accounting_msg"),
+             (3, "radius_msg_add_attr;accounting_msg")]
     for count, func in tests:
         with fail_test(hapd, count, func):
             dev[0].connect("radius-acct-open", key_mgmt="NONE",
@@ -1600,11 +1600,11 @@ def test_radius_acct_failure_oom_rsn(dev, apdev):
     params['acct_server_port'] = "1813"
     params['acct_server_shared_secret'] = "radius"
     params['radius_acct_interim_interval'] = "1"
-    params['nas_identifier'] =  250*'A'
-    params['radius_acct_req_attr'] = [ "126:s:" + 250*'B',
-                                       "77:s:" + 250*'C',
-                                       "127:s:" + 250*'D',
-                                       "181:s:" + 250*'E' ]
+    params['nas_identifier'] = 250*'A'
+    params['radius_acct_req_attr'] = ["126:s:" + 250*'B',
+                                      "77:s:" + 250*'C',
+                                      "127:s:" + 250*'D',
+                                      "181:s:" + 250*'E']
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = hapd.own_addr()
 
@@ -1631,10 +1631,10 @@ def test_radius_acct_failure_oom_rsn(dev, apdev):
 
 def test_radius_acct_failure_sta_data(dev, apdev):
     """RADIUS Accounting and failure to get STA data"""
-    params = { "ssid": "radius-acct-open",
-               'acct_server_addr': "127.0.0.1",
-               'acct_server_port': "1813",
-               'acct_server_shared_secret': "radius" }
+    params = {"ssid": "radius-acct-open",
+              'acct_server_addr': "127.0.0.1",
+              'acct_server_port': "1813",
+              'acct_server_shared_secret': "radius"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     with fail_test(hapd, 1, "accounting_sta_update_stats"):

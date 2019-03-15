@@ -14,8 +14,8 @@ import hostapd
 from utils import HwsimSkip
 
 def connect(dev, apdev, **kwargs):
-    params = { "ssid": "ap-csa",
-               "channel": "1" }
+    params = {"ssid": "ap-csa",
+              "channel": "1"}
     params.update(kwargs)
     ap = hostapd.add_ap(apdev[0], params)
     dev.connect("ap-csa", key_mgmt="NONE", scan_freq="2412")
@@ -146,7 +146,7 @@ def test_ap_csa_invalid(dev, apdev):
     csa_supported(dev[0])
     ap = connect(dev[0], apdev)
 
-    vals = [ 2461, 4900, 4901, 5181, 5746, 5699, 5895, 5899 ]
+    vals = [2461, 4900, 4901, 5181, 5746, 5699, 5895, 5899]
     for val in vals:
         if "FAIL" not in ap.request("CHAN_SWITCH 1 %d" % val):
             raise Exception("Invalid channel accepted: %d" % val)

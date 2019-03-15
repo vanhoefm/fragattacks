@@ -15,10 +15,10 @@ import hostapd
 from utils import fail_test
 
 def add_wmm_ap(apdev, acm_list):
-    params = { "ssid": "wmm_ac",
-               "hw_mode": "g",
-               "channel": "11",
-               "wmm_enabled" : "1"}
+    params = {"ssid": "wmm_ac",
+              "hw_mode": "g",
+              "channel": "11",
+              "wmm_enabled": "1"}
 
     for ac in acm_list:
         params["wmm_ac_%s_acm" % (ac.lower())] = "1"
@@ -220,10 +220,10 @@ def test_tspec_protocol(dev, apdev):
 @remote_compatible
 def test_tspec_not_enabled(dev, apdev):
     """addts failing if AP does not support WMM"""
-    params = { "ssid": "wmm_no_ac",
-               "hw_mode": "g",
-               "channel": "11",
-               "wmm_enabled" : "0" }
+    params = {"ssid": "wmm_no_ac",
+              "hw_mode": "g",
+              "channel": "11",
+              "wmm_enabled": "0"}
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect("wmm_no_ac", key_mgmt="NONE", scan_freq="2462")
     status = dev[0].request("WMM_AC_STATUS")
@@ -298,7 +298,7 @@ def test_wmm_element(dev, apdev):
         dev[0].request("VENDOR_ELEM_REMOVE 13 *")
 
 def run_wmm_element(dev, apdev):
-    params = { "ssid": "wmm" }
+    params = {"ssid": "wmm"}
     hapd = hostapd.add_ap(apdev[0]['ifname'], params)
     bssid = hapd.own_addr()
 
@@ -349,10 +349,10 @@ def test_tspec_ap_parsing(dev, apdev):
     dev[0].connect("wmm_ac", key_mgmt="NONE", scan_freq="2462")
     addr = dev[0].own_addr()
 
-    tests = [ "WMM_AC_ADDTS downlink tsid=5 up=6 nominal_msdu_size=1500 sba=9000 mean_data_rate=1500 min_phy_rate=600000",
-              "WMM_AC_ADDTS downlink tsid=5 up=6 nominal_msdu_size=1500 sba=8192 mean_data_rate=1500 min_phy_rate=6000000",
-              "WMM_AC_ADDTS downlink tsid=5 up=6 nominal_msdu_size=32767 sba=65535 mean_data_rate=1500 min_phy_rate=1000000",
-              "WMM_AC_ADDTS downlink tsid=5 up=6 nominal_msdu_size=10000 sba=65535 mean_data_rate=2147483647 min_phy_rate=1000000" ]
+    tests = ["WMM_AC_ADDTS downlink tsid=5 up=6 nominal_msdu_size=1500 sba=9000 mean_data_rate=1500 min_phy_rate=600000",
+             "WMM_AC_ADDTS downlink tsid=5 up=6 nominal_msdu_size=1500 sba=8192 mean_data_rate=1500 min_phy_rate=6000000",
+             "WMM_AC_ADDTS downlink tsid=5 up=6 nominal_msdu_size=32767 sba=65535 mean_data_rate=1500 min_phy_rate=1000000",
+             "WMM_AC_ADDTS downlink tsid=5 up=6 nominal_msdu_size=10000 sba=65535 mean_data_rate=2147483647 min_phy_rate=1000000"]
     for t in tests:
         if "OK" not in dev[0].request(t):
             raise Exception("WMM_AC_ADDTS failed")
@@ -362,13 +362,13 @@ def test_tspec_ap_parsing(dev, apdev):
 
     tests = []
     # WMM: Invalid Nominal MSDU Size (0)
-    tests += [ "11000400dd3d0050f2020201aa300000000000000000000000000000000000000000000000000000000000ffffff7f00000000000000000000000040420f00ffff0000" ]
+    tests += ["11000400dd3d0050f2020201aa300000000000000000000000000000000000000000000000000000000000ffffff7f00000000000000000000000040420f00ffff0000"]
     # hostapd_wmm_action - missing or wrong length tspec
-    tests += [ "11000400dd3e0050f2020201aa300010270000000000000000000000000000000000000000000000000000ffffff7f00000000000000000000000040420f00ffff000000" ]
+    tests += ["11000400dd3e0050f2020201aa300010270000000000000000000000000000000000000000000000000000ffffff7f00000000000000000000000040420f00ffff000000"]
     # hostapd_wmm_action - could not parse wmm action
-    tests += [ "11000400dd3d0050f2020201aa300010270000000000000000000000000000000000000000000000000000ffffff7f00000000000000000000000040420f00ffff00" ]
+    tests += ["11000400dd3d0050f2020201aa300010270000000000000000000000000000000000000000000000000000ffffff7f00000000000000000000000040420f00ffff00"]
     # valid form
-    tests += [ "11000400dd3d0050f2020201aa300010270000000000000000000000000000000000000000000000000000ffffff7f00000000000000000000000040420f00ffff0000" ]
+    tests += ["11000400dd3d0050f2020201aa300010270000000000000000000000000000000000000000000000000000ffffff7f00000000000000000000000040420f00ffff0000"]
 
     hdr = "d0003a01" + bssid.replace(':', '') + addr.replace(':', '') + bssid.replace(':', '') + "1000"
     hapd.set("ext_mgmt_frame_handling", "1")
@@ -380,7 +380,7 @@ def test_tspec_ap_parsing(dev, apdev):
 
 def test_wmm_disabled(dev, apdev):
     """WMM disabled and unexpected TSPEC"""
-    params = { "ssid": "no-wmm", "ieee80211n": "0", "wmm_enabled": "0" }
+    params = {"ssid": "no-wmm", "ieee80211n": "0", "wmm_enabled": "0"}
     hapd = hostapd.add_ap(apdev[0]['ifname'], params)
     bssid = hapd.own_addr()
     dev[0].connect("no-wmm", key_mgmt="NONE", scan_freq="2412")

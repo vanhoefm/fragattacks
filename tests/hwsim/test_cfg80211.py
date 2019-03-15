@@ -27,9 +27,9 @@ def nl80211_command(dev, cmd, attr):
 @remote_compatible
 def test_cfg80211_disassociate(dev, apdev):
     """cfg80211 disassociation command"""
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "open" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
     dev[0].connect("open", key_mgmt="NONE", scan_freq="2412")
-    ev = hapd.wait_event([ "AP-STA-CONNECTED" ], timeout=5)
+    ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=5)
     if ev is None:
         raise Exception("No connection event received from hostapd")
 
@@ -39,7 +39,7 @@ def test_cfg80211_disassociate(dev, apdev):
     attrs += build_nl80211_attr_mac('MAC', apdev[0]['bssid'])
     nl80211_command(dev[0], 'DISASSOCIATE', attrs)
 
-    ev = hapd.wait_event([ "AP-STA-DISCONNECTED" ], timeout=5)
+    ev = hapd.wait_event(["AP-STA-DISCONNECTED"], timeout=5)
     if ev is None:
         raise Exception("No disconnection event received from hostapd")
 
@@ -102,10 +102,10 @@ def test_cfg80211_tx_frame(dev, apdev, params):
 def test_cfg80211_wep_key_idx_change(dev, apdev):
     """WEP Shared Key authentication and key index change without deauth"""
     hapd = hostapd.add_ap(apdev[0],
-                          { "ssid": "wep-shared-key",
-                            "wep_key0": '"hello12345678"',
-                            "wep_key1": '"other12345678"',
-                            "auth_algs": "2" })
+                          {"ssid": "wep-shared-key",
+                           "wep_key0": '"hello12345678"',
+                           "wep_key1": '"other12345678"',
+                           "auth_algs": "2"})
     id = dev[0].connect("wep-shared-key", key_mgmt="NONE", auth_alg="SHARED",
                         wep_key0='"hello12345678"',
                         wep_key1='"other12345678"',
@@ -131,8 +131,7 @@ def test_cfg80211_wep_key_idx_change(dev, apdev):
 @remote_compatible
 def test_cfg80211_hostapd_ext_sta_remove(dev, apdev):
     """cfg80211 DEL_STATION issued externally to hostapd"""
-    hapd = hostapd.add_ap(apdev[0],
-                          { "ssid": "open" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
     id = dev[0].connect("open", key_mgmt="NONE", scan_freq="2412")
 
     ifindex = int(hapd.get_driver_status_field("ifindex"))

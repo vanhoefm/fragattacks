@@ -30,7 +30,7 @@ def test_wext_open(dev, apdev):
     """WEXT driver interface with open network"""
     wpas = get_wext_interface()
 
-    params = { "ssid": "wext-open" }
+    params = {"ssid": "wext-open"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     wpas.connect("wext-open", key_mgmt="NONE")
@@ -151,8 +151,8 @@ def test_wext_wep_open_auth(dev, apdev):
     wpas = get_wext_interface()
 
     hapd = hostapd.add_ap(apdev[0],
-                          { "ssid": "wep-open",
-                            "wep_key0": '"hello"' })
+                          {"ssid": "wep-open",
+                           "wep_key0": '"hello"'})
     wpas.connect("wep-open", key_mgmt="NONE", wep_key0='"hello"',
                  scan_freq="2412")
     hwsim_utils.test_connectivity(wpas, hapd)
@@ -164,9 +164,9 @@ def test_wext_wep_shared_key_auth(dev, apdev):
     wpas = get_wext_interface()
 
     hapd = hostapd.add_ap(apdev[0],
-                          { "ssid": "wep-shared-key",
-                            "wep_key0": '"hello12345678"',
-                            "auth_algs": "2" })
+                          {"ssid": "wep-shared-key",
+                           "wep_key0": '"hello12345678"',
+                           "auth_algs": "2"})
     wpas.connect("wep-shared-key", key_mgmt="NONE", auth_alg="SHARED",
                  wep_key0='"hello12345678"', scan_freq="2412")
     hwsim_utils.test_connectivity(wpas, hapd)
@@ -197,10 +197,10 @@ def test_wext_scan_hidden(dev, apdev):
     """WEXT with hidden SSID"""
     wpas = get_wext_interface()
 
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "test-scan",
-                                      "ignore_broadcast_ssid": "1" })
-    hapd2 = hostapd.add_ap(apdev[1], { "ssid": "test-scan2",
-                                       "ignore_broadcast_ssid": "1" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "test-scan",
+                                     "ignore_broadcast_ssid": "1"})
+    hapd2 = hostapd.add_ap(apdev[1], {"ssid": "test-scan2",
+                                      "ignore_broadcast_ssid": "1"})
 
     id1 = wpas.connect("test-scan", key_mgmt="NONE", scan_ssid="1",
                        only_add_network=True)
@@ -234,7 +234,7 @@ def test_wext_rfkill(dev, apdev):
 
     wpas = get_wext_interface()
 
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "open" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
     wpas.connect("open", key_mgmt="NONE", scan_freq="2412")
     try:
         logger.info("rfkill block")

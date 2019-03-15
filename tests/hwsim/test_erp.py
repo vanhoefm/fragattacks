@@ -108,21 +108,21 @@ def test_erp_server_no_match(dev, apdev):
     dev[0].wait_connected(timeout=15, error="Reconnection timed out")
 
 def start_erp_as(apdev, erp_domain="example.com", msk_dump=None, tls13=False):
-    params = { "ssid": "as", "beacon_int": "2000",
-               "radius_server_clients": "auth_serv/radius_clients.conf",
-               "radius_server_auth_port": '18128',
-               "eap_server": "1",
-               "eap_user_file": "auth_serv/eap_user.conf",
-               "ca_cert": "auth_serv/ca.pem",
-               "server_cert": "auth_serv/server.pem",
-               "private_key": "auth_serv/server.key",
-               "eap_sim_db": "unix:/tmp/hlr_auc_gw.sock",
-               "dh_file": "auth_serv/dh.conf",
-               "pac_opaque_encr_key": "000102030405060708090a0b0c0d0e0f",
-               "eap_fast_a_id": "101112131415161718191a1b1c1d1e1f",
-               "eap_fast_a_id_info": "test server",
-               "eap_server_erp": "1",
-               "erp_domain": erp_domain }
+    params = {"ssid": "as", "beacon_int": "2000",
+              "radius_server_clients": "auth_serv/radius_clients.conf",
+              "radius_server_auth_port": '18128',
+              "eap_server": "1",
+              "eap_user_file": "auth_serv/eap_user.conf",
+              "ca_cert": "auth_serv/ca.pem",
+              "server_cert": "auth_serv/server.pem",
+              "private_key": "auth_serv/server.key",
+              "eap_sim_db": "unix:/tmp/hlr_auc_gw.sock",
+              "dh_file": "auth_serv/dh.conf",
+              "pac_opaque_encr_key": "000102030405060708090a0b0c0d0e0f",
+              "eap_fast_a_id": "101112131415161718191a1b1c1d1e1f",
+              "eap_fast_a_id_info": "test server",
+              "eap_server_erp": "1",
+              "erp_domain": erp_domain}
     if msk_dump:
         params["dump_msk_file"] = msk_dump
     if tls13:
@@ -176,7 +176,7 @@ def erp_test(dev, hapd, **kwargs):
     if "EAP re-authentication completed successfully" not in ev:
         raise Exception("Did not use ERP")
     dev.wait_connected(timeout=15, error="Reconnection timed out")
-    ev = hapd.wait_event([ "AP-STA-CONNECTED" ], timeout=5)
+    ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=5)
     if ev is None:
         raise Exception("No connection event received from hostapd")
     dev.request("DISCONNECT")

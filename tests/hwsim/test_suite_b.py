@@ -27,7 +27,7 @@ def check_suite_b_tls_lib(dev, dhe=False, level128=False):
     if not tls.startswith("OpenSSL"):
         raise HwsimSkip("TLS library not supported for Suite B: " + tls)
     supported = False
-    for ver in [ '1.0.2', '1.1.0', '1.1.1' ]:
+    for ver in ['1.0.2', '1.1.0', '1.1.1']:
         if "build=OpenSSL " + ver in tls and "run=OpenSSL " + ver in tls:
             supported = True
             break
@@ -38,20 +38,20 @@ def check_suite_b_tls_lib(dev, dhe=False, level128=False):
         raise HwsimSkip("OpenSSL version not supported for Suite B: " + tls)
 
 def suite_b_ap_params():
-    params = { "ssid": "test-suite-b",
-               "wpa": "2",
-               "wpa_key_mgmt": "WPA-EAP-SUITE-B",
-               "rsn_pairwise": "GCMP",
-               "group_mgmt_cipher": "BIP-GMAC-128",
-               "ieee80211w": "2",
-               "ieee8021x": "1",
-               "openssl_ciphers": "SUITEB128",
-               #"dh_file": "auth_serv/dh.conf",
-               "eap_server": "1",
-               "eap_user_file": "auth_serv/eap_user.conf",
-               "ca_cert": "auth_serv/ec-ca.pem",
-               "server_cert": "auth_serv/ec-server.pem",
-               "private_key": "auth_serv/ec-server.key" }
+    params = {"ssid": "test-suite-b",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP-SUITE-B",
+              "rsn_pairwise": "GCMP",
+              "group_mgmt_cipher": "BIP-GMAC-128",
+              "ieee80211w": "2",
+              "ieee8021x": "1",
+              "openssl_ciphers": "SUITEB128",
+              #"dh_file": "auth_serv/dh.conf",
+              "eap_server": "1",
+              "eap_user_file": "auth_serv/eap_user.conf",
+              "ca_cert": "auth_serv/ec-ca.pem",
+              "server_cert": "auth_serv/ec-server.pem",
+              "private_key": "auth_serv/ec-server.key"}
     return params
 
 def test_suite_b(dev, apdev):
@@ -126,17 +126,17 @@ def test_suite_b_radius(dev, apdev):
     params = suite_b_as_params()
     hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-suite-b",
-               "wpa": "2",
-               "wpa_key_mgmt": "WPA-EAP-SUITE-B",
-               "rsn_pairwise": "GCMP",
-               "group_mgmt_cipher": "BIP-GMAC-128",
-               "ieee80211w": "2",
-               "ieee8021x": "1",
-               'auth_server_addr': "127.0.0.1",
-               'auth_server_port': "18129",
-               'auth_server_shared_secret': "radius",
-               'nas_identifier': "nas.w1.fi" }
+    params = {"ssid": "test-suite-b",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP-SUITE-B",
+              "rsn_pairwise": "GCMP",
+              "group_mgmt_cipher": "BIP-GMAC-128",
+              "ieee80211w": "2",
+              "ieee8021x": "1",
+              'auth_server_addr': "127.0.0.1",
+              'auth_server_port': "18129",
+              'auth_server_shared_secret': "radius",
+              'nas_identifier': "nas.w1.fi"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-suite-b", key_mgmt="WPA-EAP-SUITE-B", ieee80211w="2",
@@ -157,19 +157,19 @@ def check_suite_b_192_capa(dev, dhe=False):
     check_suite_b_tls_lib(dev, dhe=dhe)
 
 def suite_b_192_ap_params():
-    params = { "ssid": "test-suite-b",
-               "wpa": "2",
-               "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
-               "rsn_pairwise": "GCMP-256",
-               "group_mgmt_cipher": "BIP-GMAC-256",
-               "ieee80211w": "2",
-               "ieee8021x": "1",
-               "openssl_ciphers": "SUITEB192",
-               "eap_server": "1",
-               "eap_user_file": "auth_serv/eap_user.conf",
-               "ca_cert": "auth_serv/ec2-ca.pem",
-               "server_cert": "auth_serv/ec2-server.pem",
-               "private_key": "auth_serv/ec2-server.key" }
+    params = {"ssid": "test-suite-b",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
+              "rsn_pairwise": "GCMP-256",
+              "group_mgmt_cipher": "BIP-GMAC-256",
+              "ieee80211w": "2",
+              "ieee8021x": "1",
+              "openssl_ciphers": "SUITEB192",
+              "eap_server": "1",
+              "eap_user_file": "auth_serv/eap_user.conf",
+              "ca_cert": "auth_serv/ec2-ca.pem",
+              "server_cert": "auth_serv/ec2-server.pem",
+              "private_key": "auth_serv/ec2-server.key"}
     return params
 
 def test_suite_b_192(dev, apdev):
@@ -238,17 +238,17 @@ def test_suite_b_192_radius(dev, apdev):
     params['openssl_ciphers'] = 'SUITEB192'
     hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-suite-b",
-               "wpa": "2",
-               "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
-               "rsn_pairwise": "GCMP-256",
-               "group_mgmt_cipher": "BIP-GMAC-256",
-               "ieee80211w": "2",
-               "ieee8021x": "1",
-               'auth_server_addr': "127.0.0.1",
-               'auth_server_port': "18129",
-               'auth_server_shared_secret': "radius",
-               'nas_identifier': "nas.w1.fi" }
+    params = {"ssid": "test-suite-b",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
+              "rsn_pairwise": "GCMP-256",
+              "group_mgmt_cipher": "BIP-GMAC-256",
+              "ieee80211w": "2",
+              "ieee8021x": "1",
+              'auth_server_addr': "127.0.0.1",
+              'auth_server_port': "18129",
+              'auth_server_shared_secret': "radius",
+              'nas_identifier': "nas.w1.fi"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-suite-b", key_mgmt="WPA-EAP-SUITE-B-192",
@@ -271,17 +271,17 @@ def test_suite_b_192_radius_and_p256_cert(dev, apdev):
     params['openssl_ciphers'] = 'SUITEB192'
     hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-suite-b",
-               "wpa": "2",
-               "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
-               "rsn_pairwise": "GCMP-256",
-               "group_mgmt_cipher": "BIP-GMAC-256",
-               "ieee80211w": "2",
-               "ieee8021x": "1",
-               'auth_server_addr': "127.0.0.1",
-               'auth_server_port': "18129",
-               'auth_server_shared_secret': "radius",
-               'nas_identifier': "nas.w1.fi" }
+    params = {"ssid": "test-suite-b",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
+              "rsn_pairwise": "GCMP-256",
+              "group_mgmt_cipher": "BIP-GMAC-256",
+              "ieee80211w": "2",
+              "ieee8021x": "1",
+              'auth_server_addr': "127.0.0.1",
+              'auth_server_port': "18129",
+              'auth_server_shared_secret': "radius",
+              'nas_identifier': "nas.w1.fi"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-suite-b", key_mgmt="WPA-EAP-SUITE-B-192",
@@ -375,20 +375,20 @@ def test_suite_b_192_mic_failure(dev, apdev):
         dev[0].wait_disconnected()
 
 def suite_b_192_rsa_ap_params():
-    params = { "ssid": "test-suite-b",
-               "wpa": "2",
-               "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
-               "rsn_pairwise": "GCMP-256",
-               "group_mgmt_cipher": "BIP-GMAC-256",
-               "ieee80211w": "2",
-               "ieee8021x": "1",
-               "tls_flags": "[SUITEB]",
-               "dh_file": "auth_serv/dh_param_3072.pem",
-               "eap_server": "1",
-               "eap_user_file": "auth_serv/eap_user.conf",
-               "ca_cert": "auth_serv/rsa3072-ca.pem",
-               "server_cert": "auth_serv/rsa3072-server.pem",
-               "private_key": "auth_serv/rsa3072-server.key" }
+    params = {"ssid": "test-suite-b",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
+              "rsn_pairwise": "GCMP-256",
+              "group_mgmt_cipher": "BIP-GMAC-256",
+              "ieee80211w": "2",
+              "ieee8021x": "1",
+              "tls_flags": "[SUITEB]",
+              "dh_file": "auth_serv/dh_param_3072.pem",
+              "eap_server": "1",
+              "eap_user_file": "auth_serv/eap_user.conf",
+              "ca_cert": "auth_serv/rsa3072-ca.pem",
+              "server_cert": "auth_serv/rsa3072-server.pem",
+              "private_key": "auth_serv/rsa3072-server.key"}
     return params
 
 def test_suite_b_192_rsa(dev, apdev):
@@ -523,17 +523,17 @@ def test_suite_b_192_rsa_radius(dev, apdev):
 
     hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-suite-b",
-               "wpa": "2",
-               "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
-               "rsn_pairwise": "GCMP-256",
-               "group_mgmt_cipher": "BIP-GMAC-256",
-               "ieee80211w": "2",
-               "ieee8021x": "1",
-               'auth_server_addr': "127.0.0.1",
-               'auth_server_port': "18129",
-               'auth_server_shared_secret': "radius",
-               'nas_identifier': "nas.w1.fi" }
+    params = {"ssid": "test-suite-b",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
+              "rsn_pairwise": "GCMP-256",
+              "group_mgmt_cipher": "BIP-GMAC-256",
+              "ieee80211w": "2",
+              "ieee8021x": "1",
+              'auth_server_addr': "127.0.0.1",
+              'auth_server_port': "18129",
+              'auth_server_shared_secret': "radius",
+              'nas_identifier': "nas.w1.fi"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-suite-b", key_mgmt="WPA-EAP-SUITE-B-192",
@@ -577,17 +577,17 @@ def run_suite_b_192_rsa_radius_rsa2048_client(dev, apdev, ecdhe):
 
     hostapd.add_ap(apdev[1], params)
 
-    params = { "ssid": "test-suite-b",
-               "wpa": "2",
-               "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
-               "rsn_pairwise": "GCMP-256",
-               "group_mgmt_cipher": "BIP-GMAC-256",
-               "ieee80211w": "2",
-               "ieee8021x": "1",
-               'auth_server_addr': "127.0.0.1",
-               'auth_server_port': "18129",
-               'auth_server_shared_secret': "radius",
-               'nas_identifier': "nas.w1.fi" }
+    params = {"ssid": "test-suite-b",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP-SUITE-B-192",
+              "rsn_pairwise": "GCMP-256",
+              "group_mgmt_cipher": "BIP-GMAC-256",
+              "ieee80211w": "2",
+              "ieee8021x": "1",
+              'auth_server_addr': "127.0.0.1",
+              'auth_server_port': "18129",
+              'auth_server_shared_secret': "radius",
+              'nas_identifier': "nas.w1.fi"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect("test-suite-b", key_mgmt="WPA-EAP-SUITE-B-192",

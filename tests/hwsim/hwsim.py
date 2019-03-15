@@ -10,13 +10,13 @@
 import netlink, os
 
 # constants
-HWSIM_CMD_CREATE_RADIO		= 4
-HWSIM_CMD_DESTROY_RADIO		= 5
+HWSIM_CMD_CREATE_RADIO = 4
+HWSIM_CMD_DESTROY_RADIO = 5
 
-HWSIM_ATTR_CHANNELS		= 9
-HWSIM_ATTR_RADIO_ID		= 10
-HWSIM_ATTR_SUPPORT_P2P_DEVICE	= 14
-HWSIM_ATTR_USE_CHANCTX		= 15
+HWSIM_ATTR_CHANNELS = 9
+HWSIM_ATTR_RADIO_ID = 10
+HWSIM_ATTR_SUPPORT_P2P_DEVICE = 14
+HWSIM_ATTR_USE_CHANCTX = 15
 
 # the controller class
 class HWSimController(object):
@@ -35,17 +35,17 @@ class HWSimController(object):
             attrs.append(netlink.FlagAttr(HWSIM_ATTR_SUPPORT_P2P_DEVICE))
 
         msg = netlink.GenlMessage(self._fid, HWSIM_CMD_CREATE_RADIO,
-                                  flags = netlink.NLM_F_REQUEST |
-                                          netlink.NLM_F_ACK,
-                                  attrs = attrs)
+                                  flags=netlink.NLM_F_REQUEST |
+                                        netlink.NLM_F_ACK,
+                                  attrs=attrs)
         return msg.send_and_recv(self._conn).ret
 
     def destroy_radio(self, radio_id):
         attrs = [netlink.U32Attr(HWSIM_ATTR_RADIO_ID, radio_id)]
         msg = netlink.GenlMessage(self._fid, HWSIM_CMD_DESTROY_RADIO,
-                                  flags = netlink.NLM_F_REQUEST |
-                                          netlink.NLM_F_ACK,
-                                  attrs = attrs)
+                                  flags=netlink.NLM_F_REQUEST |
+                                        netlink.NLM_F_ACK,
+                                  attrs=attrs)
         msg.send_and_recv(self._conn)
 
 class HWSimRadio(object):

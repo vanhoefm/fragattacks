@@ -8,16 +8,16 @@ import hostapd
 from utils import alloc_fail, fail_test, wait_fail_trigger
 
 def authsrv_params():
-    params = { "ssid": "as", "beacon_int": "2000",
-               "radius_server_clients": "auth_serv/radius_clients.conf",
-               "radius_server_auth_port": '18128',
-               "eap_server": "1",
-               "eap_user_file": "auth_serv/eap_user.conf",
-               "eap_sim_db": "unix:/tmp/hlr_auc_gw.sock",
-               "ca_cert": "auth_serv/ca.pem",
-               "server_cert": "auth_serv/server.pem",
-               "private_key": "auth_serv/server.key",
-               "eap_message": "hello" }
+    params = {"ssid": "as", "beacon_int": "2000",
+              "radius_server_clients": "auth_serv/radius_clients.conf",
+              "radius_server_auth_port": '18128',
+              "eap_server": "1",
+              "eap_user_file": "auth_serv/eap_user.conf",
+              "eap_sim_db": "unix:/tmp/hlr_auc_gw.sock",
+              "ca_cert": "auth_serv/ca.pem",
+              "server_cert": "auth_serv/server.pem",
+              "private_key": "auth_serv/server.key",
+              "eap_message": "hello"}
     return params
 
 def test_authsrv_oom(dev, apdev):
@@ -84,8 +84,8 @@ def test_authsrv_oom(dev, apdev):
     dev[0].request("REMOVE_NETWORK all")
     dev[0].dump_monitor()
 
-    tests = [ "radius_server_encapsulate_eap",
-              "radius_server_receive_auth" ]
+    tests = ["radius_server_encapsulate_eap",
+             "radius_server_receive_auth"]
     for t in tests:
         with alloc_fail(authsrv, 1, t):
             dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
@@ -98,9 +98,9 @@ def test_authsrv_oom(dev, apdev):
         dev[0].wait_disconnected()
         dev[0].dump_monitor()
 
-    tests = [ "radius_msg_add_attr;radius_server_encapsulate_eap",
-              "radius_msg_add_eap;radius_server_encapsulate_eap",
-              "radius_msg_finish_srv;radius_server_encapsulate_eap" ]
+    tests = ["radius_msg_add_attr;radius_server_encapsulate_eap",
+             "radius_msg_add_eap;radius_server_encapsulate_eap",
+             "radius_msg_finish_srv;radius_server_encapsulate_eap"]
     for t in tests:
         with fail_test(authsrv, 1, t):
             dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
@@ -204,16 +204,16 @@ def test_authsrv_testing_options(dev, apdev):
     # The first two would be fine to run with any server build; the rest are
     # actually supposed to fail, but they don't fail when using a server build
     # that does not support the TLS protocol tests.
-    tests = [ "foo@test-unknown",
-              "foo@test-tls-unknown",
-              "foo@test-tls-1",
-              "foo@test-tls-2",
-              "foo@test-tls-3",
-              "foo@test-tls-4",
-              "foo@test-tls-5",
-              "foo@test-tls-6",
-              "foo@test-tls-7",
-              "foo@test-tls-8" ]
+    tests = ["foo@test-unknown",
+             "foo@test-tls-unknown",
+             "foo@test-tls-1",
+             "foo@test-tls-2",
+             "foo@test-tls-3",
+             "foo@test-tls-4",
+             "foo@test-tls-5",
+             "foo@test-tls-6",
+             "foo@test-tls-7",
+             "foo@test-tls-8"]
     for t in tests:
         dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
                        eap="TTLS", identity="user",

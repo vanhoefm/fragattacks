@@ -19,7 +19,7 @@ hapd_ctrl = '/var/run/hostapd'
 hapd_global = '/var/run/hostapd-global'
 
 def mac2tuple(mac):
-    return struct.unpack('6B', binascii.unhexlify(mac.replace(':','')))
+    return struct.unpack('6B', binascii.unhexlify(mac.replace(':', '')))
 
 class HostapdGlobal:
     def __init__(self, apdev=None, global_ctrl_override=None):
@@ -267,7 +267,7 @@ class Hostapd:
         lines = res.splitlines()
         vals = dict()
         for l in lines:
-            [name,value] = l.split('=', 1)
+            [name, value] = l.split('=', 1)
             vals[name] = value
         return vals
 
@@ -282,7 +282,7 @@ class Hostapd:
         lines = res.splitlines()
         vals = dict()
         for l in lines:
-            [name,value] = l.split('=', 1)
+            [name, value] = l.split('=', 1)
             vals[name] = value
         return vals
 
@@ -297,7 +297,7 @@ class Hostapd:
         lines = res.splitlines()
         vals = dict()
         for l in lines:
-            [name,value] = l.split('=', 1)
+            [name, value] = l.split('=', 1)
             vals[name] = value
         return vals
 
@@ -349,7 +349,7 @@ class Hostapd:
                 vals['addr'] = l
                 first = False
             else:
-                [name,value] = l.split('=', 1)
+                [name, value] = l.split('=', 1)
                 vals[name] = value
         return vals
 
@@ -373,7 +373,7 @@ class Hostapd:
             if addr not in l:
                 continue
             vals = dict()
-            [index,aa,pmkid,expiration,opportunistic] = l.split(' ')
+            [index, aa, pmkid, expiration, opportunistic] = l.split(' ')
             vals['index'] = index
             vals['pmkid'] = pmkid
             vals['expiration'] = expiration
@@ -433,14 +433,14 @@ def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30,
         if not hapd.ping():
             raise Exception("Could not ping hostapd")
         hapd.set_defaults()
-        fields = [ "ssid", "wpa_passphrase", "nas_identifier", "wpa_key_mgmt",
-                   "wpa",
-                   "wpa_pairwise", "rsn_pairwise", "auth_server_addr",
-                   "acct_server_addr", "osu_server_uri" ]
+        fields = ["ssid", "wpa_passphrase", "nas_identifier", "wpa_key_mgmt",
+                  "wpa",
+                  "wpa_pairwise", "rsn_pairwise", "auth_server_addr",
+                  "acct_server_addr", "osu_server_uri"]
         for field in fields:
             if field in params:
                 hapd.set(field, params[field])
-        for f,v in list(params.items()):
+        for f, v in list(params.items()):
             if f in fields:
                 continue
             if isinstance(v, list):
@@ -518,9 +518,9 @@ def terminate(apdev):
     hapd_global.terminate()
 
 def wpa2_params(ssid=None, passphrase=None):
-    params = { "wpa": "2",
-               "wpa_key_mgmt": "WPA-PSK",
-               "rsn_pairwise": "CCMP" }
+    params = {"wpa": "2",
+              "wpa_key_mgmt": "WPA-PSK",
+              "rsn_pairwise": "CCMP"}
     if ssid:
         params["ssid"] = ssid
     if passphrase:
@@ -528,9 +528,9 @@ def wpa2_params(ssid=None, passphrase=None):
     return params
 
 def wpa_params(ssid=None, passphrase=None):
-    params = { "wpa": "1",
-               "wpa_key_mgmt": "WPA-PSK",
-               "wpa_pairwise": "TKIP" }
+    params = {"wpa": "1",
+              "wpa_key_mgmt": "WPA-PSK",
+              "wpa_pairwise": "TKIP"}
     if ssid:
         params["ssid"] = ssid
     if passphrase:
@@ -538,10 +538,10 @@ def wpa_params(ssid=None, passphrase=None):
     return params
 
 def wpa_mixed_params(ssid=None, passphrase=None):
-    params = { "wpa": "3",
-               "wpa_key_mgmt": "WPA-PSK",
-               "wpa_pairwise": "TKIP",
-               "rsn_pairwise": "CCMP" }
+    params = {"wpa": "3",
+              "wpa_key_mgmt": "WPA-PSK",
+              "wpa_pairwise": "TKIP",
+              "rsn_pairwise": "CCMP"}
     if ssid:
         params["ssid"] = ssid
     if passphrase:
@@ -549,10 +549,10 @@ def wpa_mixed_params(ssid=None, passphrase=None):
     return params
 
 def radius_params():
-    params = { "auth_server_addr": "127.0.0.1",
-               "auth_server_port": "1812",
-               "auth_server_shared_secret": "radius",
-               "nas_identifier": "nas.w1.fi" }
+    params = {"auth_server_addr": "127.0.0.1",
+              "auth_server_port": "1812",
+              "auth_server_shared_secret": "radius",
+              "nas_identifier": "nas.w1.fi"}
     return params
 
 def wpa_eap_params(ssid=None):
@@ -576,8 +576,8 @@ def wpa2_eap_params(ssid=None):
     return params
 
 def b_only_params(channel="1", ssid=None, country=None):
-    params = { "hw_mode" : "b",
-               "channel" : channel }
+    params = {"hw_mode": "b",
+              "channel": channel}
     if ssid:
         params["ssid"] = ssid
     if country:
@@ -585,8 +585,8 @@ def b_only_params(channel="1", ssid=None, country=None):
     return params
 
 def g_only_params(channel="1", ssid=None, country=None):
-    params = { "hw_mode" : "g",
-               "channel" : channel }
+    params = {"hw_mode": "g",
+              "channel": channel}
     if ssid:
         params["ssid"] = ssid
     if country:
@@ -594,8 +594,8 @@ def g_only_params(channel="1", ssid=None, country=None):
     return params
 
 def a_only_params(channel="36", ssid=None, country=None):
-    params = { "hw_mode" : "a",
-               "channel" : channel }
+    params = {"hw_mode": "a",
+              "channel": channel}
     if ssid:
         params["ssid"] = ssid
     if country:
@@ -603,9 +603,9 @@ def a_only_params(channel="36", ssid=None, country=None):
     return params
 
 def ht20_params(channel="1", ssid=None, country=None):
-    params = { "ieee80211n" : "1",
-               "channel" : channel,
-               "hw_mode" : "g" }
+    params = {"ieee80211n": "1",
+              "channel": channel,
+              "hw_mode": "g"}
     if int(channel) > 14:
         params["hw_mode"] = "a"
     if ssid:

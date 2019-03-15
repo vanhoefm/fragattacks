@@ -19,65 +19,65 @@ import errno
 logger = logging.getLogger()
 
 # Test cases that take significantly longer time to execute than average.
-long_tests = [ "ap_roam_open",
-               "wpas_mesh_password_mismatch_retry",
-               "wpas_mesh_password_mismatch",
-               "hostapd_oom_wpa2_psk_connect",
-               "ap_hs20_fetch_osu_stop",
-               "ap_roam_wpa2_psk",
-               "ibss_wpa_none_ccmp",
-               "nfc_wps_er_handover_pk_hash_mismatch_sta",
-               "go_neg_peers_force_diff_freq",
-               "p2p_cli_invite",
-               "sta_ap_scan_2b",
-               "ap_pmf_sta_unprot_deauth_burst",
-               "ap_bss_add_remove_during_ht_scan",
-               "wext_scan_hidden",
-               "autoscan_exponential",
-               "nfc_p2p_client",
-               "wnm_bss_keep_alive",
-               "ap_inactivity_disconnect",
-               "scan_bss_expiration_age",
-               "autoscan_periodic",
-               "discovery_group_client",
-               "concurrent_p2pcli",
-               "ap_bss_add_remove",
-               "wpas_ap_wps",
-               "wext_pmksa_cache",
-               "ibss_wpa_none",
-               "ap_ht_40mhz_intolerant_ap",
-               "ibss_rsn",
-               "discovery_pd_retries",
-               "ap_wps_setup_locked_timeout",
-               "ap_vht160",
-               "dfs_radar",
-               "dfs",
-               "dfs_ht40_minus",
-               "dfs_etsi",
-               "ap_acs_dfs",
-               "grpform_cred_ready_timeout",
-               "hostapd_oom_wpa2_eap_connect",
-               "wpas_ap_dfs",
-               "autogo_many",
-               "hostapd_oom_wpa2_eap",
-               "ibss_open",
-               "proxyarp_open_ebtables",
-               "proxyarp_open_ebtables_ipv6",
-               "radius_failover",
-               "obss_scan_40_intolerant",
-               "dbus_connect_oom",
-               "proxyarp_open",
-               "proxyarp_open_ipv6",
-               "ap_wps_iteration",
-               "ap_wps_iteration_error",
-               "ap_wps_pbc_timeout",
-               "ap_wps_http_timeout",
-               "p2p_go_move_reg_change",
-               "p2p_go_move_active",
-               "p2p_go_move_scm",
-               "p2p_go_move_scm_peer_supports",
-               "p2p_go_move_scm_peer_does_not_support",
-               "p2p_go_move_scm_multi" ]
+long_tests = ["ap_roam_open",
+              "wpas_mesh_password_mismatch_retry",
+              "wpas_mesh_password_mismatch",
+              "hostapd_oom_wpa2_psk_connect",
+              "ap_hs20_fetch_osu_stop",
+              "ap_roam_wpa2_psk",
+              "ibss_wpa_none_ccmp",
+              "nfc_wps_er_handover_pk_hash_mismatch_sta",
+              "go_neg_peers_force_diff_freq",
+              "p2p_cli_invite",
+              "sta_ap_scan_2b",
+              "ap_pmf_sta_unprot_deauth_burst",
+              "ap_bss_add_remove_during_ht_scan",
+              "wext_scan_hidden",
+              "autoscan_exponential",
+              "nfc_p2p_client",
+              "wnm_bss_keep_alive",
+              "ap_inactivity_disconnect",
+              "scan_bss_expiration_age",
+              "autoscan_periodic",
+              "discovery_group_client",
+              "concurrent_p2pcli",
+              "ap_bss_add_remove",
+              "wpas_ap_wps",
+              "wext_pmksa_cache",
+              "ibss_wpa_none",
+              "ap_ht_40mhz_intolerant_ap",
+              "ibss_rsn",
+              "discovery_pd_retries",
+              "ap_wps_setup_locked_timeout",
+              "ap_vht160",
+              "dfs_radar",
+              "dfs",
+              "dfs_ht40_minus",
+              "dfs_etsi",
+              "ap_acs_dfs",
+              "grpform_cred_ready_timeout",
+              "hostapd_oom_wpa2_eap_connect",
+              "wpas_ap_dfs",
+              "autogo_many",
+              "hostapd_oom_wpa2_eap",
+              "ibss_open",
+              "proxyarp_open_ebtables",
+              "proxyarp_open_ebtables_ipv6",
+              "radius_failover",
+              "obss_scan_40_intolerant",
+              "dbus_connect_oom",
+              "proxyarp_open",
+              "proxyarp_open_ipv6",
+              "ap_wps_iteration",
+              "ap_wps_iteration_error",
+              "ap_wps_pbc_timeout",
+              "ap_wps_http_timeout",
+              "p2p_go_move_reg_change",
+              "p2p_go_move_active",
+              "p2p_go_move_scm",
+              "p2p_go_move_scm_peer_supports",
+              "p2p_go_move_scm_peer_does_not_support",
+              "p2p_go_move_scm_multi"]
 
 def get_failed(vm):
     failed = []
@@ -389,9 +389,9 @@ def main():
         debug_level = logging.DEBUG
     extra_args = []
     if args.valgrind:
-        extra_args += [ '--valgrind' ]
+        extra_args += ['--valgrind']
     if args.long:
-        extra_args += [ '--long' ]
+        extra_args += ['--long']
     if args.codecov:
         print("Code coverage - build separate binaries")
         logdir = os.path.join(dir, str(timestamp))
@@ -409,10 +409,9 @@ def main():
         tests = args.params
     else:
         tests = []
-        cmd = [ os.path.join(os.path.dirname(scriptsdir), 'run-tests.py'),
-                '-L' ]
+        cmd = [os.path.join(os.path.dirname(scriptsdir), 'run-tests.py'), '-L']
         if args.testmodules:
-            cmd += [ "-f" ]
+            cmd += ["-f"]
             cmd += args.testmodules
         lst = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         for l in lst.stdout.readlines():
@@ -454,7 +453,7 @@ def main():
                '--ext', 'srv.%d' % (i + 1),
                '-i'] + codecov_args + extra_args
         if args.telnet:
-            cmd += [ '--telnet', str(args.telnet + i) ]
+            cmd += ['--telnet', str(args.telnet + i)]
         vm[i] = {}
         vm[i]['first_run_done'] = False
         vm[i]['proc'] = subprocess.Popen(cmd,
@@ -466,7 +465,7 @@ def main():
         vm[i]['err'] = ""
         vm[i]['failed'] = []
         vm[i]['fail_seq'] = []
-        for stream in [ vm[i]['proc'].stdout, vm[i]['proc'].stderr ]:
+        for stream in [vm[i]['proc'].stdout, vm[i]['proc'].stderr]:
             fd = stream.fileno()
             fl = fcntl.fcntl(fd, fcntl.F_GETFL)
             fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)

@@ -46,10 +46,10 @@ def test_dpp_qr_code_parsing(dev, apdev):
     check_dpp_capab(dev[0])
     id = []
 
-    tests = [ "DPP:C:81/1,115/36;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkq/24e0rsrfMP9K1Tm8gx+ovP0I=;;",
-              "DPP:C:81/1,81/2,81/3,81/4,81/5,81/6,81/7,81/8,81/9,81/10,81/11,81/12,81/13,82/14,83/1,83/2,83/3,83/4,83/5,83/6,83/7,83/8,83/9,84/5,84/6,84/7,84/8,84/9,84/10,84/11,84/12,84/13,115/36;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkq/24e0rsrfMP9K1Tm8gx+ovP0I=;;",
-              "DPP:I:SN=4774LH2b4044;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;",
-              "DPP:I:;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;" ]
+    tests = ["DPP:C:81/1,115/36;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkq/24e0rsrfMP9K1Tm8gx+ovP0I=;;",
+             "DPP:C:81/1,81/2,81/3,81/4,81/5,81/6,81/7,81/8,81/9,81/10,81/11,81/12,81/13,82/14,83/1,83/2,83/3,83/4,83/5,83/6,83/7,83/8,83/9,84/5,84/6,84/7,84/8,84/9,84/10,84/11,84/12,84/13,115/36;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkq/24e0rsrfMP9K1Tm8gx+ovP0I=;;",
+             "DPP:I:SN=4774LH2b4044;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;",
+             "DPP:I:;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;"]
     for uri in tests:
         id.append(dev[0].dpp_qr_code(uri))
 
@@ -57,20 +57,20 @@ def test_dpp_qr_code_parsing(dev, apdev):
         if uri != uri2:
             raise Exception("Returned URI does not match")
 
-    tests = [ "foo",
-              "DPP:",
-              "DPP:;;",
-              "DPP:C:1/2;M:;K;;",
-              "DPP:I:;M:01020304050;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;",
-              "DPP:K:" + base64.b64encode(b"hello").decode() + ";;",
-              "DPP:K:MEkwEwYHKoZIzj0CAQYIKoZIzj0DAQEDMgAEXiJuIWt1Q/CPCkuULechh37UsXPmbUANOeN5U9sOQROE4o/NEFeFEejROHYwwehF;;",
-              "DPP:K:MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANNZaZA4T/kRDjnmpI1ACOJhAuTIIEk2KFOpS6XPpGF+EVr/ao3XemkE0/nzXmGaLzLqTUCJknSdxTnVPeWfCVsCAwEAAQ==;;",
-              "DPP:K:MIIBCjCB0wYHKoZIzj0CATCBxwIBATAkBgcqhkjOPQEBAhkA/////////////////////v//////////MEsEGP////////////////////7//////////AQYZCEFGeWcgOcPp+mrciQwSf643uzBRrmxAxUAMEWub8hCL2TtV5Uo04Eg6uEhltUEMQQYjagOsDCQ9ny/IOtDoYgA9P8K/YL/EBIHGSuV/8jaeGMQEe1rJM3Vc/l3oR55SBECGQD///////////////+Z3vg2FGvJsbTSKDECAQEDMgAEXiJuIWt1Q/CPCkuULechh37UsXPmbUANOeN5U9sOQROE4o/NEFeFEejROHYwwehF;;",
-              "DPP:I:foo\tbar;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;",
-              "DPP:C:1;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkqa24e0rsrfMP9K1Tm8gx+ovP0I=;;",
-              "DPP:C:81/1a;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkqa24e0rsrfMP9K1Tm8gx+ovP0I=;;",
-              "DPP:C:1/2000,81/-1;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkqa24e0rsrfMP9K1Tm8gx+ovP0I=;;",
-              "DPP:C:-1/1;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkqa24e0rsrfMP9K1Tm8gx+ovP0I=;;" ]
+    tests = ["foo",
+             "DPP:",
+             "DPP:;;",
+             "DPP:C:1/2;M:;K;;",
+             "DPP:I:;M:01020304050;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;",
+             "DPP:K:" + base64.b64encode(b"hello").decode() + ";;",
+             "DPP:K:MEkwEwYHKoZIzj0CAQYIKoZIzj0DAQEDMgAEXiJuIWt1Q/CPCkuULechh37UsXPmbUANOeN5U9sOQROE4o/NEFeFEejROHYwwehF;;",
+             "DPP:K:MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANNZaZA4T/kRDjnmpI1ACOJhAuTIIEk2KFOpS6XPpGF+EVr/ao3XemkE0/nzXmGaLzLqTUCJknSdxTnVPeWfCVsCAwEAAQ==;;",
+             "DPP:K:MIIBCjCB0wYHKoZIzj0CATCBxwIBATAkBgcqhkjOPQEBAhkA/////////////////////v//////////MEsEGP////////////////////7//////////AQYZCEFGeWcgOcPp+mrciQwSf643uzBRrmxAxUAMEWub8hCL2TtV5Uo04Eg6uEhltUEMQQYjagOsDCQ9ny/IOtDoYgA9P8K/YL/EBIHGSuV/8jaeGMQEe1rJM3Vc/l3oR55SBECGQD///////////////+Z3vg2FGvJsbTSKDECAQEDMgAEXiJuIWt1Q/CPCkuULechh37UsXPmbUANOeN5U9sOQROE4o/NEFeFEejROHYwwehF;;",
+             "DPP:I:foo\tbar;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;",
+             "DPP:C:1;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkqa24e0rsrfMP9K1Tm8gx+ovP0I=;;",
+             "DPP:C:81/1a;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkqa24e0rsrfMP9K1Tm8gx+ovP0I=;;",
+             "DPP:C:1/2000,81/-1;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkqa24e0rsrfMP9K1Tm8gx+ovP0I=;;",
+             "DPP:C:-1/1;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkqa24e0rsrfMP9K1Tm8gx+ovP0I=;;"]
     for t in tests:
         res = dev[0].request("DPP_QR_CODE " + t)
         if "FAIL" not in res:
@@ -117,7 +117,7 @@ def test_dpp_qr_code_parsing_fail(dev, apdev):
         if "FAIL" not in dev[0].request("DPP_QR_CODE DPP:I:SN=4774LH2b4044;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;"):
             raise Exception("DPP_QR_CODE failure not reported")
 
-dpp_key_p256 ="30570201010420777fc55dc51e967c10ec051b91d860b5f1e6c934e48d5daffef98d032c64b170a00a06082a8648ce3d030107a124032200020c804188c7f85beb6e91070d2b3e5e39b90ca77b4d3c5251bc1844d6ca29dcad"
+dpp_key_p256 = "30570201010420777fc55dc51e967c10ec051b91d860b5f1e6c934e48d5daffef98d032c64b170a00a06082a8648ce3d030107a124032200020c804188c7f85beb6e91070d2b3e5e39b90ca77b4d3c5251bc1844d6ca29dcad"
 dpp_key_p384 = "307402010104302f56fdd83b5345cacb630eb7c22fa5ad5daba37307c95191e2a75756d137003bd8b32dbcb00eb5650c1eb499ecfcaec0a00706052b81040022a13403320003615ec2141b5b77aebb6523f8a012755f9a34405a8398d2ceeeebca7f5ce868bf55056cba4c4ec62fad3ed26dd29e0f23"
 dpp_key_p521 = "308198020101044200c8010d5357204c252551aaf4e210343111e503fd1dc615b257058997c49b6b643c975226e93be8181cca3d83a7072defd161dfbdf433c19abe1f2ad51867a05761a00706052b81040023a1460344000301cdf3608b1305fe34a1f976095dcf001182b9973354efe156291a66830292f9babd8f412ad462958663e7a75d1d0610abdfc3dd95d40669f7ab3bc001668cfb3b7c"
 dpp_key_bp256 = "3058020101042057133a676fb60bf2a3e6797e19833c7b0f89dc192ab99ab5fa377ae23a157765a00b06092b2403030208010107a12403220002945d9bf7ce30c9c1ac0ff21ca62b984d5bb80ff69d2be8c9716ab39a10d2caf0"
@@ -127,9 +127,9 @@ dpp_key_bp512 = "30819802010104405803494226eb7e50bf0e90633f37e7e35d33f5fa502165e
 def test_dpp_qr_code_curves(dev, apdev):
     """DPP QR Code and supported curves"""
     check_dpp_capab(dev[0])
-    tests = [ ("prime256v1", dpp_key_p256),
-              ("secp384r1", dpp_key_p384),
-              ("secp521r1", dpp_key_p521) ]
+    tests = [("prime256v1", dpp_key_p256),
+             ("secp384r1", dpp_key_p384),
+             ("secp521r1", dpp_key_p521)]
     for curve, hex in tests:
         id = dev[0].dpp_bootstrap_gen(key=hex)
         info = dev[0].request("DPP_BOOTSTRAP_INFO %d" % id)
@@ -141,9 +141,9 @@ def test_dpp_qr_code_curves(dev, apdev):
 def test_dpp_qr_code_curves_brainpool(dev, apdev):
     """DPP QR Code and supported Brainpool curves"""
     check_dpp_capab(dev[0], brainpool=True)
-    tests = [ ("brainpoolP256r1", dpp_key_bp256),
-              ("brainpoolP384r1", dpp_key_bp384),
-              ("brainpoolP512r1", dpp_key_bp512) ]
+    tests = [("brainpoolP256r1", dpp_key_bp256),
+             ("brainpoolP384r1", dpp_key_bp384),
+             ("brainpoolP512r1", dpp_key_bp512)]
     for curve, hex in tests:
         id = dev[0].dpp_bootstrap_gen(key=hex)
         info = dev[0].request("DPP_BOOTSTRAP_INFO %d" % id)
@@ -160,8 +160,8 @@ def test_dpp_qr_code_unsupported_curve(dev, apdev):
     if "FAIL" not in id:
         raise Exception("Unsupported curve accepted")
 
-    tests = [ "30",
-              "305f02010104187f723ed9e1b41979ec5cd02eb82696efc76b40e277661049a00a06082a8648ce3d030101a134033200043f292614dea97c43f500f069e79ae9fb48f8b07369180de5eec8fa2bc9eea5af7a46dc335f52f10cb1c0e9464201d41b" ]
+    tests = ["30",
+             "305f02010104187f723ed9e1b41979ec5cd02eb82696efc76b40e277661049a00a06082a8648ce3d030101a134033200043f292614dea97c43f500f069e79ae9fb48f8b07369180de5eec8fa2bc9eea5af7a46dc335f52f10cb1c0e9464201d41b"]
     for hex in tests:
         id = dev[0].request("DPP_BOOTSTRAP_GEN type=qrcode key=" + hex)
         if "FAIL" not in id:
@@ -185,8 +185,8 @@ def test_dpp_qr_code_curve_select(dev, apdev):
     check_dpp_capab(dev[1], brainpool=True)
 
     bi = []
-    for key in [ dpp_key_p256, dpp_key_p384, dpp_key_p521,
-                 dpp_key_bp256, dpp_key_bp384, dpp_key_bp512 ]:
+    for key in [dpp_key_p256, dpp_key_p384, dpp_key_p521,
+                dpp_key_bp256, dpp_key_bp384, dpp_key_bp512]:
         id = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True, key=key)
         info = dev[0].request("DPP_BOOTSTRAP_INFO %d" % id)
         for i in info.splitlines():
@@ -610,7 +610,7 @@ def test_dpp_qr_code_auth_mutual_curve_mismatch(dev, apdev):
 def test_dpp_qr_code_auth_hostapd_mutual2(dev, apdev):
     """DPP QR Code and authentication exchange (hostapd mutual2)"""
     check_dpp_capab(dev[0])
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
     check_dpp_capab(hapd)
 
     logger.info("AP displays QR Code")
@@ -1226,32 +1226,32 @@ def test_dpp_config_jws_error_prot_hdr_not_an_object(dev, apdev):
 
 def test_dpp_config_jws_error_prot_hdr_no_typ(dev, apdev):
     """DPP Config Object JWS error - protected header - no typ"""
-    prot_hdr='{"kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU","alg":"ES256"}'
+    prot_hdr = '{"kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU","alg":"ES256"}'
     run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr=prot_hdr))
 
 def test_dpp_config_jws_error_prot_hdr_unsupported_typ(dev, apdev):
     """DPP Config Object JWS error - protected header - unsupported typ"""
-    prot_hdr='{"typ":"unsupported","kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU","alg":"ES256"}'
+    prot_hdr = '{"typ":"unsupported","kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU","alg":"ES256"}'
     run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr=prot_hdr))
 
 def test_dpp_config_jws_error_prot_hdr_no_alg(dev, apdev):
     """DPP Config Object JWS error - protected header - no alg"""
-    prot_hdr='{"typ":"dppCon","kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU"}'
+    prot_hdr = '{"typ":"dppCon","kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU"}'
     run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr=prot_hdr))
 
 def test_dpp_config_jws_error_prot_hdr_unexpected_alg(dev, apdev):
     """DPP Config Object JWS error - protected header - unexpected alg"""
-    prot_hdr='{"typ":"dppCon","kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU","alg":"unexpected"}'
+    prot_hdr = '{"typ":"dppCon","kid":"TnGKjIlNZaatrEAYrbbjiB67rjkL_AGVWXO6q9hDJKU","alg":"unexpected"}'
     run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr=prot_hdr))
 
 def test_dpp_config_jws_error_prot_hdr_no_kid(dev, apdev):
     """DPP Config Object JWS error - protected header - no kid"""
-    prot_hdr='{"typ":"dppCon","alg":"ES256"}'
+    prot_hdr = '{"typ":"dppCon","alg":"ES256"}'
     run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr=prot_hdr))
 
 def test_dpp_config_jws_error_prot_hdr_unexpected_kid(dev, apdev):
     """DPP Config Object JWS error - protected header - unexpected kid"""
-    prot_hdr='{"typ":"dppCon","kid":"MTIz","alg":"ES256"}'
+    prot_hdr = '{"typ":"dppCon","kid":"MTIz","alg":"ES256"}'
     run_dpp_config_error(dev, apdev, build_conf_obj(prot_hdr=prot_hdr))
 
 def test_dpp_config_signed_connector_error_no_dot_1(dev, apdev):
@@ -1368,14 +1368,14 @@ def test_dpp_config_error_legacy_too_short_psk(dev, apdev):
 
 def ecdsa_sign(pkey, message, alg="sha256"):
     sign = OpenSSL.crypto.sign(pkey, message, alg)
-    a,b = struct.unpack('BB', sign[0:2])
+    a, b = struct.unpack('BB', sign[0:2])
     if a != 0x30:
         raise Exception("Invalid DER encoding of ECDSA signature")
     if b != len(sign) - 2:
         raise Exception("Invalid length of ECDSA signature")
     sign = sign[2:]
 
-    a,b = struct.unpack('BB', sign[0:2])
+    a, b = struct.unpack('BB', sign[0:2])
     if a != 0x02:
         raise Exception("Invalid DER encoding of ECDSA signature r")
     if b > len(sign) - 2:
@@ -1390,7 +1390,7 @@ def ecdsa_sign(pkey, message, alg="sha256"):
     else:
         raise Exception("Invalid length of ECDSA signature r")
 
-    a,b = struct.unpack('BB', sign[0:2])
+    a, b = struct.unpack('BB', sign[0:2])
     if a != 0x02:
         raise Exception("Invalid DER encoding of ECDSA signature s")
     if b > len(sign) - 2:
@@ -1608,11 +1608,11 @@ def test_dpp_akm_sha512(dev, apdev):
 def run_dpp_akm(dev, apdev, pmk_len):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-    params = { "ssid": "dpp",
-               "wpa": "2",
-               "wpa_key_mgmt": "DPP",
-               "rsn_pairwise": "CCMP",
-               "ieee80211w": "2" }
+    params = {"ssid": "dpp",
+              "wpa": "2",
+              "wpa_key_mgmt": "DPP",
+              "rsn_pairwise": "CCMP",
+              "ieee80211w": "2"}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
     except:
@@ -1664,14 +1664,14 @@ def test_dpp_network_introduction(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    params = { "ssid": "dpp",
-               "wpa": "2",
-               "wpa_key_mgmt": "DPP",
-               "ieee80211w": "2",
-               "rsn_pairwise": "CCMP",
-               "dpp_connector": params1_ap_connector,
-               "dpp_csign": params1_csign,
-               "dpp_netaccesskey": params1_ap_netaccesskey }
+    params = {"ssid": "dpp",
+              "wpa": "2",
+              "wpa_key_mgmt": "DPP",
+              "ieee80211w": "2",
+              "rsn_pairwise": "CCMP",
+              "dpp_connector": params1_ap_connector,
+              "dpp_csign": params1_csign,
+              "dpp_netaccesskey": params1_ap_netaccesskey}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
     except:
@@ -1693,15 +1693,15 @@ def test_dpp_and_sae_akm(dev, apdev):
     if "SAE" not in dev[1].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
 
-    params = { "ssid": "dpp+sae",
-               "wpa": "2",
-               "wpa_key_mgmt": "DPP SAE",
-               "ieee80211w": "2",
-               "rsn_pairwise": "CCMP",
-               "sae_password": "sae-password",
-               "dpp_connector": params1_ap_connector,
-               "dpp_csign": params1_csign,
-               "dpp_netaccesskey": params1_ap_netaccesskey }
+    params = {"ssid": "dpp+sae",
+              "wpa": "2",
+              "wpa_key_mgmt": "DPP SAE",
+              "ieee80211w": "2",
+              "rsn_pairwise": "CCMP",
+              "sae_password": "sae-password",
+              "dpp_connector": params1_ap_connector,
+              "dpp_csign": params1_csign,
+              "dpp_netaccesskey": params1_ap_netaccesskey}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
     except:
@@ -1808,7 +1808,7 @@ def run_dpp_ap_config(dev, apdev, curve=None, conf_curve=None,
                       reconf_configurator=False):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
     check_dpp_capab(hapd)
 
     id_h = hapd.dpp_bootstrap_gen(chan="81/1", mac=True, curve=curve)
@@ -1942,7 +1942,7 @@ def test_dpp_auto_connect_2_connect_cmd(dev, apdev):
     """DPP and auto connect (2) using connect_cmd"""
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
-    dev_new = [ wpas, dev[1] ]
+    dev_new = [wpas, dev[1]]
     try:
         run_dpp_auto_connect(dev_new, apdev, 2)
     finally:
@@ -1957,14 +1957,14 @@ def run_dpp_auto_connect(dev, apdev, processing):
     ap_connector = "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiJwYWtZbXVzd1dCdWpSYTl5OEsweDViaTVrT3VNT3dzZHRlaml2UG55ZHZzIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7Imdyb3VwSWQiOiIqIiwibmV0Um9sZSI6ImFwIn1dLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiIybU5vNXZuRkI5bEw3d1VWb1hJbGVPYzBNSEE1QXZKbnpwZXZULVVTYzVNIiwieSI6IlhzS3dqVHJlLTg5WWdpU3pKaG9CN1haeUttTU05OTl3V2ZaSVl0bi01Q3MifX0.XhjFpZgcSa7G2lHy0OCYTvaZFRo5Hyx6b7g7oYyusLC7C_73AJ4_BxEZQVYJXAtDuGvb3dXSkHEKxREP9Q6Qeg"
     ap_netaccesskey = "30770201010420ceba752db2ad5200fa7bc565b9c05c69b7eb006751b0b329b0279de1c19ca67ca00a06082a8648ce3d030107a14403420004da6368e6f9c507d94bef0515a1722578e73430703902f267ce97af4fe51273935ec2b08d3adefbcf588224b3261a01ed76722a630cf7df7059f64862d9fee42b"
 
-    params = { "ssid": "test",
-               "wpa": "2",
-               "wpa_key_mgmt": "DPP",
-               "ieee80211w": "2",
-               "rsn_pairwise": "CCMP",
-               "dpp_connector": ap_connector,
-               "dpp_csign": csign_pub,
-               "dpp_netaccesskey": ap_netaccesskey }
+    params = {"ssid": "test",
+              "wpa": "2",
+              "wpa_key_mgmt": "DPP",
+              "ieee80211w": "2",
+              "rsn_pairwise": "CCMP",
+              "dpp_connector": ap_connector,
+              "dpp_csign": csign_pub,
+              "dpp_netaccesskey": ap_netaccesskey}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
     except:
@@ -2190,8 +2190,8 @@ def run_dpp_qr_code_auth_responder_configurator(dev, apdev, extra):
 def test_dpp_qr_code_hostapd_init(dev, apdev):
     """DPP QR Code and hostapd as initiator"""
     check_dpp_capab(dev[0])
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured",
-                                      "channel": "6" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured",
+                                     "channel": "6"})
     check_dpp_capab(hapd)
 
     cmd = "DPP_CONFIGURATOR_ADD"
@@ -2239,8 +2239,8 @@ def test_dpp_qr_code_hostapd_init_offchannel_neg_freq(dev, apdev):
 
 def run_dpp_qr_code_hostapd_init_offchannel(dev, apdev, extra):
     check_dpp_capab(dev[0])
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured",
-                                      "channel": "6" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured",
+                                     "channel": "6"})
     check_dpp_capab(hapd)
 
     cmd = "DPP_CONFIGURATOR_ADD"
@@ -2948,8 +2948,8 @@ def test_dpp_pkex_after_retry(dev, apdev):
 def test_dpp_pkex_hostapd_responder(dev, apdev):
     """DPP PKEX with hostapd as responder"""
     check_dpp_capab(dev[0])
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured",
-                                      "channel": "6" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured",
+                                     "channel": "6"})
     check_dpp_capab(hapd)
 
     id_h = hapd.dpp_bootstrap_gen(type="pkex")
@@ -2990,8 +2990,8 @@ def test_dpp_pkex_hostapd_responder(dev, apdev):
 def test_dpp_pkex_hostapd_initiator(dev, apdev):
     """DPP PKEX with hostapd as initiator"""
     check_dpp_capab(dev[0])
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured",
-                                      "channel": "6" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured",
+                                     "channel": "6"})
     check_dpp_capab(hapd)
 
     cmd = "DPP_CONFIGURATOR_ADD"
@@ -3039,8 +3039,8 @@ def test_dpp_pkex_hostapd_initiator(dev, apdev):
 def test_dpp_hostapd_configurator(dev, apdev):
     """DPP with hostapd as configurator/initiator"""
     check_dpp_capab(dev[0])
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured",
-                                      "channel": "1" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured",
+                                     "channel": "1"})
     check_dpp_capab(hapd)
 
     cmd = "DPP_CONFIGURATOR_ADD"
@@ -3087,8 +3087,8 @@ def test_dpp_hostapd_configurator(dev, apdev):
 def test_dpp_hostapd_configurator_responder(dev, apdev):
     """DPP with hostapd as configurator/responder"""
     check_dpp_capab(dev[0])
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured",
-                                      "channel": "1" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured",
+                                     "channel": "1"})
     check_dpp_capab(hapd)
 
     cmd = "DPP_CONFIGURATOR_ADD"
@@ -3148,7 +3148,7 @@ def test_dpp_own_config_curve_mismatch(dev, apdev):
 def run_dpp_own_config(dev, apdev, own_curve=None, expect_failure=False,
                        extra=""):
     check_dpp_capab(dev[0], own_curve and "BP" in own_curve)
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
     check_dpp_capab(hapd)
 
     id_h = hapd.dpp_bootstrap_gen(chan="81/1", mac=True)
@@ -3224,7 +3224,7 @@ def test_dpp_own_config_ap_reconf(dev, apdev):
 
 def run_dpp_own_config_ap(dev, apdev, reconf_configurator=False, extra=""):
     check_dpp_capab(dev[0])
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
     check_dpp_capab(hapd)
 
     cmd = "DPP_CONFIGURATOR_ADD"
@@ -3299,7 +3299,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
     check_dpp_capab(dev[2])
 
     logger.info("Start AP in unconfigured state")
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
     check_dpp_capab(hapd)
 
     id_h = hapd.dpp_bootstrap_gen(chan="81/1", mac=True)
@@ -4226,20 +4226,20 @@ def test_dpp_proto_network_introduction(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    params = { "ssid": "dpp",
-               "wpa": "2",
-               "wpa_key_mgmt": "DPP",
-               "ieee80211w": "2",
-               "rsn_pairwise": "CCMP",
-               "dpp_connector": params1_ap_connector,
-               "dpp_csign": params1_csign,
-               "dpp_netaccesskey": params1_ap_netaccesskey }
+    params = {"ssid": "dpp",
+              "wpa": "2",
+              "wpa_key_mgmt": "DPP",
+              "ieee80211w": "2",
+              "rsn_pairwise": "CCMP",
+              "dpp_connector": params1_ap_connector,
+              "dpp_csign": params1_csign,
+              "dpp_netaccesskey": params1_ap_netaccesskey}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
     except:
         raise HwsimSkip("DPP not supported")
 
-    for test in [ 60, 61, 80, 82 ]:
+    for test in [60, 61, 80, 82]:
         dev[0].set("dpp_test", str(test))
         dev[0].connect("dpp", key_mgmt="DPP", scan_freq="2412", ieee80211w="2",
                        dpp_csign=params1_csign,
@@ -4270,7 +4270,7 @@ def test_dpp_proto_network_introduction(dev, apdev):
         hapd.dump_monitor()
     dev[0].set("dpp_test", "0")
 
-    for test in [ 62, 63, 64, 77, 78, 79 ]:
+    for test in [62, 63, 64, 77, 78, 79]:
         hapd.set("dpp_test", str(test))
         dev[0].connect("dpp", key_mgmt="DPP", scan_freq="2412", ieee80211w="2",
                        dpp_csign=params1_csign,
@@ -4384,8 +4384,8 @@ def test_dpp_pkex_alloc_fail(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    tests = [ (1, "=dpp_keygen_configurator"),
-              (1, "base64_gen_encode;dpp_keygen_configurator") ]
+    tests = [(1, "=dpp_keygen_configurator"),
+             (1, "base64_gen_encode;dpp_keygen_configurator")]
     for count, func in tests:
         with alloc_fail(dev[1], count, func):
             cmd = "DPP_CONFIGURATOR_ADD"
@@ -4403,39 +4403,39 @@ def test_dpp_pkex_alloc_fail(dev, apdev):
     id1 = dev[1].dpp_bootstrap_gen(type="pkex")
 
     # Local error cases on the Initiator
-    tests = [ (1, "dpp_get_pubkey_point"),
-              (1, "dpp_alloc_msg;dpp_pkex_build_exchange_req"),
-              (1, "dpp_alloc_msg;dpp_pkex_build_commit_reveal_req"),
-              (1, "dpp_alloc_msg;dpp_auth_build_req"),
-              (1, "dpp_alloc_msg;dpp_auth_build_conf"),
-              (1, "dpp_bootstrap_key_hash"),
-              (1, "dpp_auth_init"),
-              (1, "=dpp_auth_resp_rx"),
-              (2, "=dpp_auth_resp_rx"),
-              (1, "dpp_build_conf_start"),
-              (1, "dpp_build_conf_obj_dpp"),
-              (2, "dpp_build_conf_obj_dpp"),
-              (3, "dpp_build_conf_obj_dpp"),
-              (4, "dpp_build_conf_obj_dpp"),
-              (5, "dpp_build_conf_obj_dpp"),
-              (6, "dpp_build_conf_obj_dpp"),
-              (7, "dpp_build_conf_obj_dpp"),
-              (8, "dpp_build_conf_obj_dpp"),
-              (1, "dpp_conf_req_rx"),
-              (2, "dpp_conf_req_rx"),
-              (3, "dpp_conf_req_rx"),
-              (4, "dpp_conf_req_rx"),
-              (5, "dpp_conf_req_rx"),
-              (6, "dpp_conf_req_rx"),
-              (7, "dpp_conf_req_rx"),
-              (1, "dpp_pkex_init"),
-              (2, "dpp_pkex_init"),
-              (3, "dpp_pkex_init"),
-              (1, "dpp_pkex_derive_z"),
-              (1, "=dpp_pkex_rx_commit_reveal_resp"),
-              (1, "dpp_get_pubkey_point;dpp_build_jwk"),
-              (2, "dpp_get_pubkey_point;dpp_build_jwk"),
-              (1, "dpp_get_pubkey_point;dpp_auth_init") ]
+    tests = [(1, "dpp_get_pubkey_point"),
+             (1, "dpp_alloc_msg;dpp_pkex_build_exchange_req"),
+             (1, "dpp_alloc_msg;dpp_pkex_build_commit_reveal_req"),
+             (1, "dpp_alloc_msg;dpp_auth_build_req"),
+             (1, "dpp_alloc_msg;dpp_auth_build_conf"),
+             (1, "dpp_bootstrap_key_hash"),
+             (1, "dpp_auth_init"),
+             (1, "=dpp_auth_resp_rx"),
+             (2, "=dpp_auth_resp_rx"),
+             (1, "dpp_build_conf_start"),
+             (1, "dpp_build_conf_obj_dpp"),
+             (2, "dpp_build_conf_obj_dpp"),
+             (3, "dpp_build_conf_obj_dpp"),
+             (4, "dpp_build_conf_obj_dpp"),
+             (5, "dpp_build_conf_obj_dpp"),
+             (6, "dpp_build_conf_obj_dpp"),
+             (7, "dpp_build_conf_obj_dpp"),
+             (8, "dpp_build_conf_obj_dpp"),
+             (1, "dpp_conf_req_rx"),
+             (2, "dpp_conf_req_rx"),
+             (3, "dpp_conf_req_rx"),
+             (4, "dpp_conf_req_rx"),
+             (5, "dpp_conf_req_rx"),
+             (6, "dpp_conf_req_rx"),
+             (7, "dpp_conf_req_rx"),
+             (1, "dpp_pkex_init"),
+             (2, "dpp_pkex_init"),
+             (3, "dpp_pkex_init"),
+             (1, "dpp_pkex_derive_z"),
+             (1, "=dpp_pkex_rx_commit_reveal_resp"),
+             (1, "dpp_get_pubkey_point;dpp_build_jwk"),
+             (2, "dpp_get_pubkey_point;dpp_build_jwk"),
+             (1, "dpp_get_pubkey_point;dpp_auth_init")]
     for count, func in tests:
         dev[0].request("DPP_STOP_LISTEN")
         dev[1].request("DPP_STOP_LISTEN")
@@ -4460,36 +4460,36 @@ def test_dpp_pkex_alloc_fail(dev, apdev):
                 dev[0].wait_event(["GAS-QUERY-DONE"], timeout=3)
 
     # Local error cases on the Responder
-    tests = [ (1, "dpp_get_pubkey_point"),
-              (1, "dpp_alloc_msg;dpp_pkex_build_exchange_resp"),
-              (1, "dpp_alloc_msg;dpp_pkex_build_commit_reveal_resp"),
-              (1, "dpp_alloc_msg;dpp_auth_build_resp"),
-              (1, "dpp_get_pubkey_point;dpp_auth_build_resp_ok"),
-              (1, "=dpp_auth_req_rx"),
-              (2, "=dpp_auth_req_rx"),
-              (1, "=dpp_auth_conf_rx"),
-              (1, "json_parse;dpp_parse_jws_prot_hdr"),
-              (1, "json_get_member_base64url;dpp_parse_jws_prot_hdr"),
-              (1, "json_get_member_base64url;dpp_parse_jwk"),
-              (2, "json_get_member_base64url;dpp_parse_jwk"),
-              (1, "json_parse;dpp_parse_connector"),
-              (1, "dpp_parse_jwk;dpp_parse_connector"),
-              (1, "dpp_parse_jwk;dpp_parse_cred_dpp"),
-              (1, "dpp_get_pubkey_point;dpp_check_pubkey_match"),
-              (1, "base64_gen_decode;dpp_process_signed_connector"),
-              (1, "dpp_parse_jws_prot_hdr;dpp_process_signed_connector"),
-              (2, "base64_gen_decode;dpp_process_signed_connector"),
-              (3, "base64_gen_decode;dpp_process_signed_connector"),
-              (4, "base64_gen_decode;dpp_process_signed_connector"),
-              (1, "json_parse;dpp_parse_conf_obj"),
-              (1, "dpp_conf_resp_rx"),
-              (1, "=dpp_pkex_derive_z"),
-              (1, "=dpp_pkex_rx_exchange_req"),
-              (2, "=dpp_pkex_rx_exchange_req"),
-              (3, "=dpp_pkex_rx_exchange_req"),
-              (1, "=dpp_pkex_rx_commit_reveal_req"),
-              (1, "dpp_get_pubkey_point;dpp_pkex_rx_commit_reveal_req"),
-              (1, "dpp_bootstrap_key_hash") ]
+    tests = [(1, "dpp_get_pubkey_point"),
+             (1, "dpp_alloc_msg;dpp_pkex_build_exchange_resp"),
+             (1, "dpp_alloc_msg;dpp_pkex_build_commit_reveal_resp"),
+             (1, "dpp_alloc_msg;dpp_auth_build_resp"),
+             (1, "dpp_get_pubkey_point;dpp_auth_build_resp_ok"),
+             (1, "=dpp_auth_req_rx"),
+             (2, "=dpp_auth_req_rx"),
+             (1, "=dpp_auth_conf_rx"),
+             (1, "json_parse;dpp_parse_jws_prot_hdr"),
+             (1, "json_get_member_base64url;dpp_parse_jws_prot_hdr"),
+             (1, "json_get_member_base64url;dpp_parse_jwk"),
+             (2, "json_get_member_base64url;dpp_parse_jwk"),
+             (1, "json_parse;dpp_parse_connector"),
+             (1, "dpp_parse_jwk;dpp_parse_connector"),
+             (1, "dpp_parse_jwk;dpp_parse_cred_dpp"),
+             (1, "dpp_get_pubkey_point;dpp_check_pubkey_match"),
+             (1, "base64_gen_decode;dpp_process_signed_connector"),
+             (1, "dpp_parse_jws_prot_hdr;dpp_process_signed_connector"),
+             (2, "base64_gen_decode;dpp_process_signed_connector"),
+             (3, "base64_gen_decode;dpp_process_signed_connector"),
+             (4, "base64_gen_decode;dpp_process_signed_connector"),
+             (1, "json_parse;dpp_parse_conf_obj"),
+             (1, "dpp_conf_resp_rx"),
+             (1, "=dpp_pkex_derive_z"),
+             (1, "=dpp_pkex_rx_exchange_req"),
+             (2, "=dpp_pkex_rx_exchange_req"),
+             (3, "=dpp_pkex_rx_exchange_req"),
+             (1, "=dpp_pkex_rx_commit_reveal_req"),
+             (1, "dpp_get_pubkey_point;dpp_pkex_rx_commit_reveal_req"),
+             (1, "dpp_bootstrap_key_hash")]
     for count, func in tests:
         dev[0].request("DPP_STOP_LISTEN")
         dev[1].request("DPP_STOP_LISTEN")
@@ -4518,7 +4518,7 @@ def test_dpp_pkex_test_fail(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    tests = [ (1, "dpp_keygen_configurator") ]
+    tests = [(1, "dpp_keygen_configurator")]
     for count, func in tests:
         with fail_test(dev[1], count, func):
             cmd = "DPP_CONFIGURATOR_ADD"
@@ -4526,7 +4526,7 @@ def test_dpp_pkex_test_fail(dev, apdev):
             if "FAIL" not in res:
                 raise Exception("Unexpected DPP_CONFIGURATOR_ADD success")
 
-    tests = [ (1, "dpp_keygen") ]
+    tests = [(1, "dpp_keygen")]
     for count, func in tests:
         with fail_test(dev[1], count, func):
             cmd = "DPP_BOOTSTRAP_GEN type=pkex"
@@ -4544,24 +4544,24 @@ def test_dpp_pkex_test_fail(dev, apdev):
     id1 = dev[1].dpp_bootstrap_gen(type="pkex")
 
     # Local error cases on the Initiator
-    tests = [ (1, "aes_siv_encrypt;dpp_auth_build_req"),
-              (1, "os_get_random;dpp_auth_init"),
-              (1, "dpp_derive_k1;dpp_auth_init"),
-              (1, "dpp_hkdf_expand;dpp_derive_k1;dpp_auth_init"),
-              (1, "dpp_gen_i_auth;dpp_auth_build_conf"),
-              (1, "aes_siv_encrypt;dpp_auth_build_conf"),
-              (1, "dpp_derive_k2;dpp_auth_resp_rx"),
-              (1, "dpp_hkdf_expand;dpp_derive_k2;dpp_auth_resp_rx"),
-              (1, "dpp_derive_ke;dpp_auth_resp_rx"),
-              (1, "dpp_hkdf_expand;dpp_derive_ke;dpp_auth_resp_rx"),
-              (1, "dpp_gen_r_auth;dpp_auth_resp_rx"),
-              (1, "aes_siv_encrypt;dpp_build_conf_resp"),
-              (1, "dpp_pkex_derive_Qi;dpp_pkex_build_exchange_req"),
-              (1, "aes_siv_encrypt;dpp_pkex_build_commit_reveal_req"),
-              (1, "hmac_sha256_vector;dpp_pkex_rx_exchange_resp"),
-              (1, "aes_siv_decrypt;dpp_pkex_rx_commit_reveal_resp"),
-              (1, "hmac_sha256_vector;dpp_pkex_rx_commit_reveal_resp"),
-              (1, "dpp_bootstrap_key_hash") ]
+    tests = [(1, "aes_siv_encrypt;dpp_auth_build_req"),
+             (1, "os_get_random;dpp_auth_init"),
+             (1, "dpp_derive_k1;dpp_auth_init"),
+             (1, "dpp_hkdf_expand;dpp_derive_k1;dpp_auth_init"),
+             (1, "dpp_gen_i_auth;dpp_auth_build_conf"),
+             (1, "aes_siv_encrypt;dpp_auth_build_conf"),
+             (1, "dpp_derive_k2;dpp_auth_resp_rx"),
+             (1, "dpp_hkdf_expand;dpp_derive_k2;dpp_auth_resp_rx"),
+             (1, "dpp_derive_ke;dpp_auth_resp_rx"),
+             (1, "dpp_hkdf_expand;dpp_derive_ke;dpp_auth_resp_rx"),
+             (1, "dpp_gen_r_auth;dpp_auth_resp_rx"),
+             (1, "aes_siv_encrypt;dpp_build_conf_resp"),
+             (1, "dpp_pkex_derive_Qi;dpp_pkex_build_exchange_req"),
+             (1, "aes_siv_encrypt;dpp_pkex_build_commit_reveal_req"),
+             (1, "hmac_sha256_vector;dpp_pkex_rx_exchange_resp"),
+             (1, "aes_siv_decrypt;dpp_pkex_rx_commit_reveal_resp"),
+             (1, "hmac_sha256_vector;dpp_pkex_rx_commit_reveal_resp"),
+             (1, "dpp_bootstrap_key_hash")]
     for count, func in tests:
         dev[0].request("DPP_STOP_LISTEN")
         dev[1].request("DPP_STOP_LISTEN")
@@ -4586,28 +4586,28 @@ def test_dpp_pkex_test_fail(dev, apdev):
                 dev[0].wait_event(["GAS-QUERY-DONE"], timeout=3)
 
     # Local error cases on the Responder
-    tests = [ (1, "aes_siv_encrypt;dpp_auth_build_resp"),
-              (1, "aes_siv_encrypt;dpp_auth_build_resp;dpp_auth_build_resp_ok"),
-              (1, "os_get_random;dpp_build_conf_req"),
-              (1, "aes_siv_encrypt;dpp_build_conf_req"),
-              (1, "os_get_random;dpp_auth_build_resp_ok"),
-              (1, "dpp_derive_k2;dpp_auth_build_resp_ok"),
-              (1, "dpp_derive_ke;dpp_auth_build_resp_ok"),
-              (1, "dpp_gen_r_auth;dpp_auth_build_resp_ok"),
-              (1, "aes_siv_encrypt;dpp_auth_build_resp_ok"),
-              (1, "dpp_derive_k1;dpp_auth_req_rx"),
-              (1, "aes_siv_decrypt;dpp_auth_req_rx"),
-              (1, "aes_siv_decrypt;dpp_auth_conf_rx"),
-              (1, "dpp_gen_i_auth;dpp_auth_conf_rx"),
-              (1, "dpp_check_pubkey_match"),
-              (1, "aes_siv_decrypt;dpp_conf_resp_rx"),
-              (1, "hmac_sha256_kdf;dpp_pkex_derive_z"),
-              (1, "dpp_pkex_derive_Qi;dpp_pkex_rx_exchange_req"),
-              (1, "dpp_pkex_derive_Qr;dpp_pkex_rx_exchange_req"),
-              (1, "aes_siv_encrypt;dpp_pkex_build_commit_reveal_resp"),
-              (1, "aes_siv_decrypt;dpp_pkex_rx_commit_reveal_req"),
-              (1, "hmac_sha256_vector;dpp_pkex_rx_commit_reveal_req"),
-              (2, "hmac_sha256_vector;dpp_pkex_rx_commit_reveal_req") ]
+    tests = [(1, "aes_siv_encrypt;dpp_auth_build_resp"),
+             (1, "aes_siv_encrypt;dpp_auth_build_resp;dpp_auth_build_resp_ok"),
+             (1, "os_get_random;dpp_build_conf_req"),
+             (1, "aes_siv_encrypt;dpp_build_conf_req"),
+             (1, "os_get_random;dpp_auth_build_resp_ok"),
+             (1, "dpp_derive_k2;dpp_auth_build_resp_ok"),
+             (1, "dpp_derive_ke;dpp_auth_build_resp_ok"),
+             (1, "dpp_gen_r_auth;dpp_auth_build_resp_ok"),
+             (1, "aes_siv_encrypt;dpp_auth_build_resp_ok"),
+             (1, "dpp_derive_k1;dpp_auth_req_rx"),
+             (1, "aes_siv_decrypt;dpp_auth_req_rx"),
+             (1, "aes_siv_decrypt;dpp_auth_conf_rx"),
+             (1, "dpp_gen_i_auth;dpp_auth_conf_rx"),
+             (1, "dpp_check_pubkey_match"),
+             (1, "aes_siv_decrypt;dpp_conf_resp_rx"),
+             (1, "hmac_sha256_kdf;dpp_pkex_derive_z"),
+             (1, "dpp_pkex_derive_Qi;dpp_pkex_rx_exchange_req"),
+             (1, "dpp_pkex_derive_Qr;dpp_pkex_rx_exchange_req"),
+             (1, "aes_siv_encrypt;dpp_pkex_build_commit_reveal_resp"),
+             (1, "aes_siv_decrypt;dpp_pkex_rx_commit_reveal_req"),
+             (1, "hmac_sha256_vector;dpp_pkex_rx_commit_reveal_req"),
+             (2, "hmac_sha256_vector;dpp_pkex_rx_commit_reveal_req")]
     for count, func in tests:
         dev[0].request("DPP_STOP_LISTEN")
         dev[1].request("DPP_STOP_LISTEN")
@@ -4976,11 +4976,11 @@ def test_dpp_own_config_sign_fail(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
     conf_id = int(res)
-    tests = [ "",
-              " ",
-              " conf=sta-dpp",
-              " configurator=%d" % conf_id,
-              " conf=sta-dpp configurator=%d curve=unsupported" % conf_id ]
+    tests = ["",
+             " ",
+             " conf=sta-dpp",
+             " configurator=%d" % conf_id,
+             " conf=sta-dpp configurator=%d curve=unsupported" % conf_id]
     for t in tests:
         if "FAIL" not in dev[0].request("DPP_CONFIGURATOR_SIGN " + t):
             raise Exception("Invalid command accepted: " + t)
@@ -4994,7 +4994,7 @@ def test_dpp_peer_intro_failures(dev, apdev):
 
 def run_dpp_peer_intro_failures(dev, apdev):
     check_dpp_capab(dev[0])
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
     check_dpp_capab(hapd)
 
     res = hapd.request("DPP_CONFIGURATOR_ADD key=" + dpp_key_p256)
@@ -5035,9 +5035,9 @@ def run_dpp_peer_intro_failures(dev, apdev):
     dev[0].wait_disconnected()
     dev[0].dump_monitor()
 
-    tests = [ "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiIwTlNSNTlxRTc0alFfZTFLVGVPV1lYY1pTWnFUaDdNXzU0aHJPcFRpaFJnIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOltdLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiJiVmFMRGlBT09OQmFjcVFVN1pYamFBVEtEMVhhbDVlUExqOUZFZUl3VkN3IiwieSI6Il95c25JR1hTYjBvNEsyMWg0anZmSkZxMHdVNnlPNWp1VUFPd3FuM0dHVHMifX0.WgzZBOJaisWBRxvtXPbVYPXU7OIZxs6sZD-cPOLmJVTIYZKdMkSOMvP5b6si_j61FIrjhm43tmGq1P6cpoxB_g",
-              "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiIwTlNSNTlxRTc0alFfZTFLVGVPV1lYY1pTWnFUaDdNXzU0aHJPcFRpaFJnIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7fV0sIm5ldEFjY2Vzc0tleSI6eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IkJhY3BWSDNpNDBrZklNS0RHa1FFRzhCODBCaEk4cEFmTWpLbzM5NlFZT2ciLCJ5IjoiMjBDYjhDNjRsSjFzQzV2NXlKMnBFZXRRempxMjI4YVV2cHMxNmQ0M3EwQSJ9fQ.dG2y8VvZQJ5hfob8E5F2FAeR7Nd700qstYkxDgA2QfARaNMZ0_SfKfoG-yKXsIZNM-TvGBfACgfhagG9Oaw_Xw",
-              "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiIwTlNSNTlxRTc0alFfZTFLVGVPV1lYY1pTWnFUaDdNXzU0aHJPcFRpaFJnIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7Imdyb3VwSWQiOiIqIn1dLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiJkc2VmcmJWWlhad0RMWHRpLWlObDBBYkFIOXpqeFFKd0R1SUd5NzNuZGU0IiwieSI6IjZFQnExN3cwYW1fZlh1OUQ4UGxWYk9XZ2I3b19DcTUxWHlmSG8wcHJyeDQifX0.caBvdDUtXrhnS61-juVZ_2FQdprepv0yZjC04G4ERvLUpeX7cgu0Hp-A1aFDogP1PEFGpkaEdcAWRQnSSRiIKQ" ]
+    tests = ["eyJ0eXAiOiJkcHBDb24iLCJraWQiOiIwTlNSNTlxRTc0alFfZTFLVGVPV1lYY1pTWnFUaDdNXzU0aHJPcFRpaFJnIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOltdLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiJiVmFMRGlBT09OQmFjcVFVN1pYamFBVEtEMVhhbDVlUExqOUZFZUl3VkN3IiwieSI6Il95c25JR1hTYjBvNEsyMWg0anZmSkZxMHdVNnlPNWp1VUFPd3FuM0dHVHMifX0.WgzZBOJaisWBRxvtXPbVYPXU7OIZxs6sZD-cPOLmJVTIYZKdMkSOMvP5b6si_j61FIrjhm43tmGq1P6cpoxB_g",
+             "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiIwTlNSNTlxRTc0alFfZTFLVGVPV1lYY1pTWnFUaDdNXzU0aHJPcFRpaFJnIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7fV0sIm5ldEFjY2Vzc0tleSI6eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IkJhY3BWSDNpNDBrZklNS0RHa1FFRzhCODBCaEk4cEFmTWpLbzM5NlFZT2ciLCJ5IjoiMjBDYjhDNjRsSjFzQzV2NXlKMnBFZXRRempxMjI4YVV2cHMxNmQ0M3EwQSJ9fQ.dG2y8VvZQJ5hfob8E5F2FAeR7Nd700qstYkxDgA2QfARaNMZ0_SfKfoG-yKXsIZNM-TvGBfACgfhagG9Oaw_Xw",
+             "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiIwTlNSNTlxRTc0alFfZTFLVGVPV1lYY1pTWnFUaDdNXzU0aHJPcFRpaFJnIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7Imdyb3VwSWQiOiIqIn1dLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiJkc2VmcmJWWlhad0RMWHRpLWlObDBBYkFIOXpqeFFKd0R1SUd5NzNuZGU0IiwieSI6IjZFQnExN3cwYW1fZlh1OUQ4UGxWYk9XZ2I3b19DcTUxWHlmSG8wcHJyeDQifX0.caBvdDUtXrhnS61-juVZ_2FQdprepv0yZjC04G4ERvLUpeX7cgu0Hp-A1aFDogP1PEFGpkaEdcAWRQnSSRiIKQ"]
     for t in tests:
         dev[0].set_network_quoted(id, "dpp_connector", t)
         dev[0].select_network(id, freq=2412)
@@ -5052,22 +5052,22 @@ def test_dpp_peer_intro_local_failures(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    params = { "ssid": "dpp",
-               "wpa": "2",
-               "wpa_key_mgmt": "DPP",
-               "ieee80211w": "2",
-               "rsn_pairwise": "CCMP",
-               "dpp_connector": params1_ap_connector,
-               "dpp_csign": params1_csign,
-               "dpp_netaccesskey": params1_ap_netaccesskey }
+    params = {"ssid": "dpp",
+              "wpa": "2",
+              "wpa_key_mgmt": "DPP",
+              "ieee80211w": "2",
+              "rsn_pairwise": "CCMP",
+              "dpp_connector": params1_ap_connector,
+              "dpp_csign": params1_csign,
+              "dpp_netaccesskey": params1_ap_netaccesskey}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
     except:
         raise HwsimSkip("DPP not supported")
 
-    tests = [ "dpp_derive_pmk",
-              "dpp_hkdf_expand;dpp_derive_pmk",
-              "dpp_derive_pmkid" ]
+    tests = ["dpp_derive_pmk",
+             "dpp_hkdf_expand;dpp_derive_pmk",
+             "dpp_derive_pmkid"]
     for func in tests:
         with fail_test(dev[0], 1, func):
             dev[0].connect("dpp", key_mgmt="DPP", scan_freq="2412",
@@ -5082,12 +5082,12 @@ def test_dpp_peer_intro_local_failures(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].dump_monitor()
 
-    tests = [ (1, "base64_gen_decode;dpp_peer_intro"),
-              (1, "json_parse;dpp_peer_intro"),
-              (50, "json_parse;dpp_peer_intro"),
-              (1, "=dpp_peer_intro"),
-              (1, "dpp_parse_jwk") ]
-    for count,func in tests:
+    tests = [(1, "base64_gen_decode;dpp_peer_intro"),
+             (1, "json_parse;dpp_peer_intro"),
+             (50, "json_parse;dpp_peer_intro"),
+             (1, "=dpp_peer_intro"),
+             (1, "dpp_parse_jwk")]
+    for count, func in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("dpp", key_mgmt="DPP", scan_freq="2412",
                            ieee80211w="2",
@@ -5102,7 +5102,7 @@ def test_dpp_peer_intro_local_failures(dev, apdev):
             dev[0].dump_monitor()
 
     parts = params1_ap_connector.split('.')
-    for ap_connector in [ '.'.join(parts[0:2]), '.'.join(parts[0:1]) ]:
+    for ap_connector in ['.'.join(parts[0:2]), '.'.join(parts[0:1])]:
         hapd.set("dpp_connector", ap_connector)
         dev[0].connect("dpp", key_mgmt="DPP", scan_freq="2412",
                        ieee80211w="2",
@@ -5158,18 +5158,18 @@ def run_dpp_configurator_id_unknown(dev):
 def test_dpp_configurator_id_unknown(dev, apdev):
     """DPP and unknown configurator id"""
     run_dpp_configurator_id_unknown(dev[0])
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
     run_dpp_configurator_id_unknown(hapd)
 
 def run_dpp_bootstrap_gen_failures(dev, hostapd):
     check_dpp_capab(dev)
 
-    tests = [ "type=unsupported",
-              "type=qrcode chan=-1",
-              "type=qrcode mac=a",
-              "type=qrcode key=qq",
-              "type=qrcode key=",
-              "type=qrcode info=abc\tdef" ]
+    tests = ["type=unsupported",
+             "type=qrcode chan=-1",
+             "type=qrcode mac=a",
+             "type=qrcode key=qq",
+             "type=qrcode key=",
+             "type=qrcode info=abc\tdef"]
     for t in tests:
         if "FAIL" not in dev.request("DPP_BOOTSTRAP_GEN " + t):
             raise Exception("Command accepted unexpectedly")
@@ -5207,7 +5207,7 @@ def run_dpp_bootstrap_gen_failures(dev, hostapd):
 def test_dpp_bootstrap_gen_failures(dev, apdev):
     """DPP_BOOTSTRAP_GEN/REMOVE/GET_URI/INFO error cases"""
     run_dpp_bootstrap_gen_failures(dev[0], False)
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
     run_dpp_bootstrap_gen_failures(hapd, True)
 
 def test_dpp_listen_continue(dev, apdev):
@@ -5251,12 +5251,12 @@ def run_dpp_network_addition_failure(dev, apdev):
 
     dev[0].set("dpp_config_processing", "1")
     cmd = "DPP_CONFIGURATOR_SIGN  conf=sta-dpp configurator=%d" % conf_id
-    tests = [ (1, "=wpas_dpp_add_network"),
-              (2, "=wpas_dpp_add_network"),
-              (3, "=wpas_dpp_add_network"),
-              (4, "=wpas_dpp_add_network"),
-              (1, "wpa_config_add_network;wpas_dpp_add_network") ]
-    for count,func in tests:
+    tests = [(1, "=wpas_dpp_add_network"),
+             (2, "=wpas_dpp_add_network"),
+             (3, "=wpas_dpp_add_network"),
+             (4, "=wpas_dpp_add_network"),
+             (1, "wpa_config_add_network;wpas_dpp_add_network")]
+    for count, func in tests:
         with alloc_fail(dev[0], count, func):
             res = dev[0].request(cmd)
             if "OK" in res:
@@ -5267,8 +5267,8 @@ def run_dpp_network_addition_failure(dev, apdev):
         dev[0].dump_monitor()
 
     cmd = "DPP_CONFIGURATOR_SIGN  conf=sta-psk pass=%s configurator=%d" % (binascii.hexlify(b"passphrase").decode(), conf_id)
-    tests = [ (1, "wpa_config_set_quoted;wpas_dpp_add_network") ]
-    for count,func in tests:
+    tests = [(1, "wpa_config_set_quoted;wpas_dpp_add_network")]
+    for count, func in tests:
         with alloc_fail(dev[0], count, func):
             res = dev[0].request(cmd)
             if "OK" in res:
@@ -5326,7 +5326,7 @@ def test_dpp_conf_file_update(dev, apdev, params):
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     wpas.interface_add("wlan5", config=config)
     wpas.set("dpp_config_processing", "1")
-    run_dpp_qr_code_auth_unicast([ wpas, dev[1] ], apdev, None,
+    run_dpp_qr_code_auth_unicast([wpas, dev[1]], apdev, None,
                                  init_extra="conf=sta-dpp",
                                  require_conf_success=True,
                                  configurator=True)
@@ -5334,8 +5334,8 @@ def test_dpp_conf_file_update(dev, apdev, params):
 
     with open(config, "r") as f:
         res = f.read()
-    for i in [ "network={", "dpp_connector=", "key_mgmt=DPP", "ieee80211w=2",
-               "dpp_netaccesskey=", "dpp_csign=" ]:
+    for i in ["network={", "dpp_connector=", "key_mgmt=DPP", "ieee80211w=2",
+              "dpp_netaccesskey=", "dpp_csign="]:
         if i not in res:
             raise Exception("Configuration file missing '%s'" % i)
 
@@ -5425,7 +5425,7 @@ def test_dpp_enrollee_ap_reject_config(dev, apdev):
     """DPP and Enrollee AP rejecting Config Object"""
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-    hapd = hostapd.add_ap(apdev[0], { "ssid": "unconfigured" })
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
     check_dpp_capab(hapd)
     hapd.set("dpp_test", "91")
 

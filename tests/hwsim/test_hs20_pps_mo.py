@@ -30,8 +30,8 @@ def test_hs20_pps_mo_1(dev, apdev):
     bssid = apdev[0]['bssid']
     params = hs20_ap_params()
     params['hessid'] = bssid
-    params['nai_realm'] = [ "0,w1.fi,13[5:6],21[2:4][5:7]",
-                            "0,another.example.com" ]
+    params['nai_realm'] = ["0,w1.fi,13[5:6],21[2:4][5:7]",
+                           "0,another.example.com"]
     params['domain_name'] = "w1.fi"
     hapd = hostapd.add_ap(apdev[0], params)
 

@@ -19,7 +19,7 @@ class LocalVariables:
 CFG = """
 ifaces :
 {
-    ids = ["%s", "%s" ]
+    ids = ["%s", "%s"]
     links = (
         (0, 1, 30)
     )
@@ -47,7 +47,7 @@ model:
 CFG3 = """
 ifaces :
 {
-    ids = ["%s", "%s", "%s", "%s", "%s" ]
+    ids = ["%s", "%s", "%s", "%s", "%s"]
 }
 
 model:
@@ -284,8 +284,8 @@ def _test_wmediumd_path_ttl(dev, ok):
             raise Exception("Unexpected mode: " + mode)
 
     # set mesh path request ttl
-    subprocess.check_call([ "iw", "dev", dev[0].ifname, "set", "mesh_param",
-                            "mesh_element_ttl=" + ("4" if ok else "3") ])
+    subprocess.check_call(["iw", "dev", dev[0].ifname, "set", "mesh_param",
+                           "mesh_element_ttl=" + ("4" if ok else "3")])
 
     # Check for peer connected
     for i in range(0, 5):
@@ -350,7 +350,7 @@ def test_wmediumd_path_rann(dev, apdev, params):
     filt = "wlan.fc.type_subtype == 0x000d && " + \
            "wlan_mgt.fixed.mesh_action == 0x01 && " + \
            "wlan_mgt.tag.number == 126"
-    out = run_tshark(capfile, filt, [ "wlan.rann.root_sta" ])
+    out = run_tshark(capfile, filt, ["wlan.rann.root_sta"])
     if out is None:
         raise Exception("No captured data found\n")
     if out.find(dev[2].own_addr()) == -1 or \
@@ -363,7 +363,7 @@ def test_wmediumd_path_rann(dev, apdev, params):
            "wlan.fc.type_subtype == 0x000d && " + \
            "wlan_mgt.fixed.mesh_action == 0x01 && " + \
            "wlan_mgt.tag.number == 126"
-    out = run_tshark(capfile, filt, [ "frame.time_relative" ])
+    out = run_tshark(capfile, filt, ["frame.time_relative"])
     if out is None:
         raise Exception("No captured data found\n")
     lines = out.splitlines()
@@ -380,7 +380,7 @@ def test_wmediumd_path_rann(dev, apdev, params):
            "wlan.fc.type_subtype == 0x000d && " + \
            "wlan_mgt.fixed.mesh_action == 0x01 && " + \
            "wlan_mgt.tag.number == 130"
-    out = run_tshark(capfile, filt, [ "wlan.sa", "wlan.da" ])
+    out = run_tshark(capfile, filt, ["wlan.sa", "wlan.da"])
     if out is None:
         raise Exception("No captured data found\n")
     if len(out) > 0:

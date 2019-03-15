@@ -89,7 +89,7 @@ def test_persistent_group_per_sta_psk(dev):
     logger.info("Join another client to the group")
     pin = dev[2].wps_read_pin()
     dev[0].p2p_go_authorize_client(pin)
-    social = int(i_res['freq']) in [ 2412, 2437, 2462 ]
+    social = int(i_res['freq']) in [2412, 2437, 2462]
     c_res = dev[2].p2p_connect_group(addr0, pin, timeout=60, social=social,
                                      freq=i_res['freq'])
     if not c_res['persistent']:
@@ -152,7 +152,8 @@ def test_persistent_group_per_sta_psk(dev):
     dev[2].dump_monitor()
     peer = dev[2].get_peer(addr0)
     dev[2].global_request("P2P_GROUP_ADD persistent=" + peer['persistent'] + " freq=2412")
-    ev = dev[2].wait_global_event(["P2P-GROUP-STARTED","WPA: 4-Way Handshake failed"], timeout=30)
+    ev = dev[2].wait_global_event(["P2P-GROUP-STARTED",
+                                   "WPA: 4-Way Handshake failed"], timeout=30)
     if ev is None:
         raise Exception("Timeout on group restart (on client)")
     if "P2P-GROUP-STARTED" not in ev:
@@ -168,7 +169,8 @@ def test_persistent_group_per_sta_psk(dev):
     dev[2].dump_monitor()
     peer = dev[2].get_peer(addr0)
     dev[2].global_request("P2P_GROUP_ADD persistent=" + peer['persistent'] + " freq=2412")
-    ev = dev[2].wait_global_event(["P2P-GROUP-STARTED","WPA: 4-Way Handshake failed"], timeout=30)
+    ev = dev[2].wait_global_event(["P2P-GROUP-STARTED",
+                                   "WPA: 4-Way Handshake failed"], timeout=30)
     if ev is None:
         raise Exception("Timeout on group restart (on client)")
     if "P2P-GROUP-STARTED" in ev:
@@ -192,7 +194,8 @@ def test_persistent_group_per_sta_psk(dev):
     dev[1].global_request("P2P_INVITE persistent=" + peer['persistent'] + " peer=" + addr0)
     ev = dev[0].wait_global_event(["P2P-GROUP-STARTED"], timeout=30)
     dev[0].group_form_result(ev)
-    ev = dev[1].wait_global_event(["P2P-GROUP-STARTED","WPA: 4-Way Handshake failed"], timeout=30)
+    ev = dev[1].wait_global_event(["P2P-GROUP-STARTED",
+                                   "WPA: 4-Way Handshake failed"], timeout=30)
     if ev is None:
         raise Exception("Timeout on group restart (on client)")
     if "P2P-GROUP-STARTED" in ev:
@@ -228,12 +231,12 @@ def test_persistent_group_invite_removed_client(dev):
         raise Exception("Timeout on invitation")
     if "sa=" + addr0 + " persistent=" not in ev:
         raise Exception("Unexpected invitation event")
-    [event,addr,persistent] = ev.split(' ', 2)
+    [event, addr, persistent] = ev.split(' ', 2)
     dev[1].global_request("P2P_GROUP_ADD " + persistent)
     ev = dev[1].wait_global_event(["P2P-PERSISTENT-PSK-FAIL"], timeout=30)
     if ev is None:
         raise Exception("Did not receive PSK failure report")
-    [tmp,id] = ev.split('=', 1)
+    [tmp, id] = ev.split('=', 1)
     ev = dev[1].wait_global_event(["P2P-GROUP-REMOVED"], timeout=10)
     if ev is None:
         raise Exception("Group removal event timed out")
@@ -533,8 +536,8 @@ def test_persistent_group_missed_inv_resp(dev):
     dev[1].p2p_stop_find()
 
     # Verify that group re-invocation goes through
-    ev = dev[1].wait_global_event([ "P2P-GROUP-STARTED",
-                                    "P2P-GROUP-FORMATION-FAILURE" ],
+    ev = dev[1].wait_global_event(["P2P-GROUP-STARTED",
+                                   "P2P-GROUP-FORMATION-FAILURE"],
                                   timeout=20)
     if ev is None:
         raise Exception("Group start event timed out")
@@ -542,7 +545,7 @@ def test_persistent_group_missed_inv_resp(dev):
         raise Exception("Group re-invocation failed")
     dev[0].group_form_result(ev)
 
-    ev = dev[0].wait_global_event([ "P2P-GROUP-STARTED" ], timeout=5)
+    ev = dev[0].wait_global_event(["P2P-GROUP-STARTED"], timeout=5)
     if ev is None:
         raise Exception("Group start event timed out on GO")
     dev[0].group_form_result(ev)
@@ -552,7 +555,7 @@ def test_persistent_group_missed_inv_resp(dev):
 @remote_compatible
 def test_persistent_group_profile_add(dev):
     """Create a P2P persistent group with ADD_NETWORK"""
-    passphrase="passphrase here"
+    passphrase = "passphrase here"
     id = dev[0].p2pdev_add_network()
     dev[0].p2pdev_set_network_quoted(id, "ssid", "DIRECT-ab")
     dev[0].p2pdev_set_network_quoted(id, "psk", passphrase)
