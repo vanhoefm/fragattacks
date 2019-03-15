@@ -130,14 +130,11 @@ def test_connect_cmd_reject_assoc(dev, apdev):
     wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
     wpas.connect("sta-connect", key_mgmt="NONE", scan_freq="2412",
                  disable_ht="1", wait_connect=False)
-    # Reject event gets reported twice since we force connect command to be used
-    # with a driver that supports auth+assoc for testing purposes.
-    for i in range(0, 2):
-        ev = wpas.wait_event(["CTRL-EVENT-ASSOC-REJECT"], timeout=15)
-        if ev is None:
-            raise Exception("Association rejection timed out")
-        if "status_code=27" not in ev:
-            raise Exception("Unexpected rejection status code")
+    ev = wpas.wait_event(["CTRL-EVENT-ASSOC-REJECT"], timeout=15)
+    if ev is None:
+        raise Exception("Association rejection timed out")
+    if "status_code=27" not in ev:
+        raise Exception("Unexpected rejection status code")
 
     wpas.request("DISCONNECT")
     wpas.dump_monitor()
