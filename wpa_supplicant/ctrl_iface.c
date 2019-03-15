@@ -9517,16 +9517,16 @@ static void wpas_ctrl_neighbor_rep_cb(void *ctx, struct wpabuf *neighbor_rep)
 
 		if (pos[0] != WLAN_EID_NEIGHBOR_REPORT ||
 		    nr_len < NR_IE_MIN_LEN) {
-			wpa_printf(MSG_DEBUG,
-				   "CTRL: Invalid Neighbor Report element: id=%u len=%u",
-				   data[0], nr_len);
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"CTRL: Invalid Neighbor Report element: id=%u len=%u",
+				data[0], nr_len);
 			goto out;
 		}
 
 		if (2U + nr_len > len) {
-			wpa_printf(MSG_DEBUG,
-				   "CTRL: Invalid Neighbor Report element: id=%u len=%zu nr_len=%u",
-				   data[0], len, nr_len);
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"CTRL: Invalid Neighbor Report element: id=%u len=%zu nr_len=%u",
+				data[0], len, nr_len);
 			goto out;
 		}
 		pos += 2;
@@ -9596,8 +9596,8 @@ static int wpas_ctrl_iface_send_neighbor_rep(struct wpa_supplicant *wpa_s,
 	ssid_s = os_strstr(cmd, "ssid=");
 	if (ssid_s) {
 		if (ssid_parse(ssid_s + 5, &ssid)) {
-			wpa_printf(MSG_ERROR,
-				   "CTRL: Send Neighbor Report: bad SSID");
+			wpa_msg(wpa_s, MSG_INFO,
+				"CTRL: Send Neighbor Report: bad SSID");
 			return -1;
 		}
 
