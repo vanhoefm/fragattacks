@@ -7075,6 +7075,8 @@ void wpas_request_disconnection(struct wpa_supplicant *wpa_s)
 	wpa_supplicant_cancel_scan(wpa_s);
 	wpa_supplicant_deauthenticate(wpa_s, WLAN_REASON_DEAUTH_LEAVING);
 	eloop_cancel_timeout(wpas_network_reenabled, wpa_s, NULL);
+	radio_remove_works(wpa_s, "connect", 0);
+	radio_remove_works(wpa_s, "sme-connect", 0);
 }
 
 
