@@ -1,7 +1,7 @@
 /*
  * wpa_supplicant - DPP
  * Copyright (c) 2017, Qualcomm Atheros, Inc.
- * Copyright (c) 2018, The Linux Foundation
+ * Copyright (c) 2018-2019, The Linux Foundation
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -1112,12 +1112,14 @@ static struct wpa_ssid * wpas_dpp_add_network(struct wpa_supplicant *wpa_s,
 		ssid->dpp_netaccesskey_expiry = auth->net_access_key_expiry;
 	}
 
-	if (!auth->connector) {
-		ssid->key_mgmt = 0;
-		if (auth->akm == DPP_AKM_PSK || auth->akm == DPP_AKM_PSK_SAE)
+	if (!auth->connector || dpp_akm_psk(auth->akm) ||
+	    dpp_akm_sae(auth->akm)) {
+		if (!auth->connector)
+			ssid->key_mgmt = 0;
+		if (dpp_akm_psk(auth->akm))
 			ssid->key_mgmt |= WPA_KEY_MGMT_PSK |
 				WPA_KEY_MGMT_PSK_SHA256 | WPA_KEY_MGMT_FT_PSK;
-		if (auth->akm == DPP_AKM_SAE || auth->akm == DPP_AKM_PSK_SAE)
+		if (dpp_akm_sae(auth->akm))
 			ssid->key_mgmt |= WPA_KEY_MGMT_SAE |
 				WPA_KEY_MGMT_FT_SAE;
 		ssid->ieee80211w = MGMT_FRAME_PROTECTION_OPTIONAL;

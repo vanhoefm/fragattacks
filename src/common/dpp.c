@@ -4074,8 +4074,15 @@ struct dpp_configuration * dpp_configuration_alloc(const char *type)
 		conf->akm = DPP_AKM_PSK;
 	else if (bin_str_eq(type, len, "sae"))
 		conf->akm = DPP_AKM_SAE;
-	else if (bin_str_eq(type, len, "psk-sae"))
+	else if (bin_str_eq(type, len, "psk-sae") ||
+		 bin_str_eq(type, len, "psk+sae"))
 		conf->akm = DPP_AKM_PSK_SAE;
+	else if (bin_str_eq(type, len, "sae-dpp") ||
+		 bin_str_eq(type, len, "dpp+sae"))
+		conf->akm = DPP_AKM_SAE_DPP;
+	else if (bin_str_eq(type, len, "psk-sae-dpp") ||
+		 bin_str_eq(type, len, "dpp+psk+sae"))
+		conf->akm = DPP_AKM_PSK_SAE_DPP;
 	else if (bin_str_eq(type, len, "dpp"))
 		conf->akm = DPP_AKM_DPP;
 	else
@@ -4088,15 +4095,37 @@ fail:
 }
 
 
-static int dpp_akm_psk(enum dpp_akm akm)
+int dpp_akm_psk(enum dpp_akm akm)
 {
-	return akm == DPP_AKM_PSK || akm == DPP_AKM_PSK_SAE;
+	return akm == DPP_AKM_PSK || akm == DPP_AKM_PSK_SAE ||
+		akm == DPP_AKM_PSK_SAE_DPP;
 }
 
 
-static int dpp_akm_sae(enum dpp_akm akm)
+int dpp_akm_sae(enum dpp_akm akm)
 {
-	return akm == DPP_AKM_SAE || akm == DPP_AKM_PSK_SAE;
+	return akm == DPP_AKM_SAE || akm == DPP_AKM_PSK_SAE ||
+		akm == DPP_AKM_SAE_DPP || akm == DPP_AKM_PSK_SAE_DPP;
+}
+
+
+int dpp_akm_legacy(enum dpp_akm akm)
+{
+	return akm == DPP_AKM_PSK || akm == DPP_AKM_PSK_SAE ||
+		akm == DPP_AKM_SAE;
+}
+
+
+int dpp_akm_dpp(enum dpp_akm akm)
+{
+	return akm == DPP_AKM_DPP || akm == DPP_AKM_SAE_DPP ||
+		akm == DPP_AKM_PSK_SAE_DPP;
+}
+
+
+int dpp_akm_ver2(enum dpp_akm akm)
+{
+	return akm == DPP_AKM_SAE_DPP || akm == DPP_AKM_PSK_SAE_DPP;
 }
 
 
@@ -4328,6 +4357,31 @@ fail:
 }
 
 
+static void dpp_build_legacy_cred_params(struct wpabuf *buf,
+					 struct dpp_configuration *conf)
+{
+	if (conf->passphrase && os_strlen(conf->passphrase) < 64) {
+		char pass[63 * 6 + 1];
+
+		json_escape_string(pass, sizeof(pass), conf->passphrase,
+				   os_strlen(conf->passphrase));
+		wpabuf_put_str(buf, "\"pass\":\"");
+		wpabuf_put_str(buf, pass);
+		wpabuf_put_str(buf, "\"");
+		os_memset(pass, 0, sizeof(pass));
+	} else if (conf->psk_set) {
+		char psk[2 * sizeof(conf->psk) + 1];
+
+		wpa_snprintf_hex(psk, sizeof(psk),
+				 conf->psk, sizeof(conf->psk));
+		wpabuf_put_str(buf, "\"psk_hex\":\"");
+		wpabuf_put_str(buf, psk);
+		wpabuf_put_str(buf, "\"");
+		os_memset(psk, 0, sizeof(psk));
+	}
+}
+
+
 static struct wpabuf *
 dpp_build_conf_obj_dpp(struct dpp_authentication *auth, int ap,
 		       struct dpp_configuration *conf)
@@ -4348,6 +4402,8 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth, int ap,
 	const EVP_MD *sign_md;
 	const BIGNUM *r, *s;
 	size_t extra_len = 1000;
+	int incl_legacy;
+	enum dpp_akm akm;
 
 	if (!auth->conf) {
 		wpa_printf(MSG_INFO,
@@ -4364,6 +4420,13 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth, int ap,
 	} else {
 		wpa_printf(MSG_DEBUG, "DPP: Unknown signature algorithm");
 		goto fail;
+	}
+
+	akm = conf->akm;
+	if (dpp_akm_ver2(akm) && auth->peer_version < 2) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Convert DPP+legacy credential to DPP-only for peer that does not support version 2");
+		akm = DPP_AKM_DPP;
 	}
 
 #ifdef CONFIG_TESTING_OPTIONS
@@ -4483,14 +4546,22 @@ skip_groups:
 	if (!signed3)
 		goto fail;
 
+	incl_legacy = dpp_akm_psk(akm) || dpp_akm_sae(akm);
 	tailroom = 1000;
 	tailroom += 2 * curve->prime_len * 4 / 3 + os_strlen(auth->conf->kid);
 	tailroom += signed1_len + signed2_len + signed3_len;
+	if (incl_legacy)
+		tailroom += 1000;
 	buf = dpp_build_conf_start(auth, conf, tailroom);
 	if (!buf)
 		goto fail;
 
-	wpabuf_put_str(buf, "\"cred\":{\"akm\":\"dpp\",\"signedConnector\":\"");
+	wpabuf_printf(buf, "\"cred\":{\"akm\":\"%s\",", dpp_akm_str(akm));
+	if (incl_legacy) {
+		dpp_build_legacy_cred_params(buf, conf);
+		wpabuf_put_str(buf, ",");
+	}
+	wpabuf_put_str(buf, "\"signedConnector\":\"");
 	wpabuf_put_str(buf, signed1);
 	wpabuf_put_u8(buf, '.');
 	wpabuf_put_str(buf, signed2);
@@ -4536,28 +4607,7 @@ dpp_build_conf_obj_legacy(struct dpp_authentication *auth, int ap,
 		return NULL;
 
 	wpabuf_printf(buf, "\"cred\":{\"akm\":\"%s\",", dpp_akm_str(conf->akm));
-	if (conf->passphrase) {
-		char pass[63 * 6 + 1];
-
-		if (os_strlen(conf->passphrase) > 63) {
-			wpabuf_free(buf);
-			return NULL;
-		}
-
-		json_escape_string(pass, sizeof(pass), conf->passphrase,
-				   os_strlen(conf->passphrase));
-		wpabuf_put_str(buf, "\"pass\":\"");
-		wpabuf_put_str(buf, pass);
-		wpabuf_put_str(buf, "\"");
-	} else {
-		char psk[2 * sizeof(conf->psk) + 1];
-
-		wpa_snprintf_hex(psk, sizeof(psk),
-				 conf->psk, sizeof(conf->psk));
-		wpabuf_put_str(buf, "\"psk_hex\":\"");
-		wpabuf_put_str(buf, psk);
-		wpabuf_put_str(buf, "\"");
-	}
+	dpp_build_legacy_cred_params(buf, conf);
 	wpabuf_put_str(buf, "}}");
 
 	wpa_hexdump_ascii_key(MSG_DEBUG, "DPP: Configuration Object (legacy)",
@@ -4588,7 +4638,7 @@ dpp_build_conf_obj(struct dpp_authentication *auth, int ap)
 		return NULL;
 	}
 
-	if (conf->akm == DPP_AKM_DPP)
+	if (dpp_akm_dpp(conf->akm))
 		return dpp_build_conf_obj_dpp(auth, ap, conf);
 	return dpp_build_conf_obj_legacy(auth, ap, conf);
 }
@@ -4950,7 +5000,7 @@ static int dpp_parse_cred_legacy(struct dpp_authentication *auth,
 		os_strlcpy(auth->passphrase, pass->string,
 			   sizeof(auth->passphrase));
 	} else if (psk_hex && psk_hex->type == JSON_STRING) {
-		if (auth->akm == DPP_AKM_SAE) {
+		if (dpp_akm_sae(auth->akm) && !dpp_akm_psk(auth->akm)) {
 			wpa_printf(MSG_DEBUG,
 				   "DPP: Unexpected psk_hex with akm=sae");
 			return -1;
@@ -4968,8 +5018,7 @@ static int dpp_parse_cred_legacy(struct dpp_authentication *auth,
 		return -1;
 	}
 
-	if ((auth->akm == DPP_AKM_SAE || auth->akm == DPP_AKM_PSK_SAE) &&
-	    !auth->passphrase[0]) {
+	if (dpp_akm_sae(auth->akm) && !auth->passphrase[0]) {
 		wpa_printf(MSG_DEBUG, "DPP: No pass for sae found");
 		return -1;
 	}
@@ -5482,6 +5531,13 @@ static int dpp_parse_cred_dpp(struct dpp_authentication *auth,
 
 	os_memset(&info, 0, sizeof(info));
 
+	if (dpp_akm_psk(auth->akm) || dpp_akm_sae(auth->akm)) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Legacy credential included in Connector credential");
+		if (dpp_parse_cred_legacy(auth, cred) < 0)
+			return -1;
+	}
+
 	wpa_printf(MSG_DEBUG, "DPP: Connector credential");
 
 	csign = json_get_member(cred, "csign");
@@ -5547,6 +5603,10 @@ const char * dpp_akm_str(enum dpp_akm akm)
 		return "sae";
 	case DPP_AKM_PSK_SAE:
 		return "psk+sae";
+	case DPP_AKM_SAE_DPP:
+		return "dpp+sae";
+	case DPP_AKM_PSK_SAE_DPP:
+		return "dpp+psk+sae";
 	default:
 		return "??";
 	}
@@ -5563,6 +5623,10 @@ static enum dpp_akm dpp_akm_from_str(const char *akm)
 		return DPP_AKM_PSK_SAE;
 	if (os_strcmp(akm, "dpp") == 0)
 		return DPP_AKM_DPP;
+	if (os_strcmp(akm, "dpp+sae") == 0)
+		return DPP_AKM_SAE_DPP;
+	if (os_strcmp(akm, "dpp+psk+sae") == 0)
+		return DPP_AKM_PSK_SAE_DPP;
 	return DPP_AKM_UNKNOWN;
 }
 
@@ -5626,11 +5690,10 @@ static int dpp_parse_conf_obj(struct dpp_authentication *auth,
 	}
 	auth->akm = dpp_akm_from_str(token->string);
 
-	if (auth->akm == DPP_AKM_PSK || auth->akm == DPP_AKM_SAE ||
-	    auth->akm == DPP_AKM_PSK_SAE) {
+	if (dpp_akm_legacy(auth->akm)) {
 		if (dpp_parse_cred_legacy(auth, cred) < 0)
 			goto fail;
-	} else if (auth->akm == DPP_AKM_DPP) {
+	} else if (dpp_akm_dpp(auth->akm)) {
 		if (dpp_parse_cred_dpp(auth, cred) < 0)
 			goto fail;
 	} else {

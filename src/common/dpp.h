@@ -146,7 +146,9 @@ enum dpp_akm {
 	DPP_AKM_DPP,
 	DPP_AKM_PSK,
 	DPP_AKM_SAE,
-	DPP_AKM_PSK_SAE
+	DPP_AKM_PSK_SAE,
+	DPP_AKM_SAE_DPP,
+	DPP_AKM_PSK_SAE_DPP,
 };
 
 struct dpp_configuration {
@@ -394,6 +396,11 @@ int dpp_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 int dpp_notify_new_qr_code(struct dpp_authentication *auth,
 			   struct dpp_bootstrap_info *peer_bi);
 struct dpp_configuration * dpp_configuration_alloc(const char *type);
+int dpp_akm_psk(enum dpp_akm akm);
+int dpp_akm_sae(enum dpp_akm akm);
+int dpp_akm_legacy(enum dpp_akm akm);
+int dpp_akm_dpp(enum dpp_akm akm);
+int dpp_akm_ver2(enum dpp_akm akm);
 int dpp_configuration_valid(const struct dpp_configuration *conf);
 void dpp_configuration_free(struct dpp_configuration *conf);
 int dpp_configuration_parse(struct dpp_authentication *auth, const char *cmd);
