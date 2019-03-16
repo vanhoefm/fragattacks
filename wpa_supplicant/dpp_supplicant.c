@@ -2356,9 +2356,15 @@ int wpas_dpp_check_connect(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 	struct os_time now;
 	struct wpabuf *msg;
 	unsigned int wait_time;
+	const u8 *rsn;
+	struct wpa_ie_data ied;
 
 	if (!(ssid->key_mgmt & WPA_KEY_MGMT_DPP) || !bss)
 		return 0; /* Not using DPP AKM - continue */
+	rsn = wpa_bss_get_ie(bss, WLAN_EID_RSN);
+	if (rsn && wpa_parse_wpa_ie(rsn, 2 + rsn[1], &ied) == 0 &&
+	    !(ied.key_mgmt & WPA_KEY_MGMT_DPP))
+		return 0; /* AP does not support DPP AKM - continue */
 	if (wpa_sm_pmksa_exists(wpa_s->wpa, bss->bssid, ssid))
 		return 0; /* PMKSA exists for DPP AKM - continue */
 

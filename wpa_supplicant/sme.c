@@ -313,6 +313,12 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 		if (!rsn) {
 			wpa_dbg(wpa_s, MSG_DEBUG,
 				"SAE enabled, but target BSS does not advertise RSN");
+#ifdef CONFIG_DPP
+		} else if (wpa_parse_wpa_ie(rsn, 2 + rsn[1], &ied) == 0 &&
+			   (ssid->key_mgmt & WPA_KEY_MGMT_DPP) &&
+			   (ied.key_mgmt & WPA_KEY_MGMT_DPP)) {
+			wpa_dbg(wpa_s, MSG_DEBUG, "Prefer DPP over SAE when both are enabled");
+#endif /* CONFIG_DPP */
 		} else if (wpa_parse_wpa_ie(rsn, 2 + rsn[1], &ied) == 0 &&
 			   wpa_key_mgmt_sae(ied.key_mgmt)) {
 			wpa_dbg(wpa_s, MSG_DEBUG, "Using SAE auth_alg");

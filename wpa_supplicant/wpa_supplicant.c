@@ -1454,6 +1454,11 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		wpa_s->key_mgmt = WPA_KEY_MGMT_FT_PSK;
 		wpa_dbg(wpa_s, MSG_DEBUG, "WPA: using KEY_MGMT FT/PSK");
 #endif /* CONFIG_IEEE80211R */
+#ifdef CONFIG_DPP
+	} else if (sel & WPA_KEY_MGMT_DPP) {
+		wpa_s->key_mgmt = WPA_KEY_MGMT_DPP;
+		wpa_dbg(wpa_s, MSG_DEBUG, "RSN: using KEY_MGMT DPP");
+#endif /* CONFIG_DPP */
 #ifdef CONFIG_SAE
 	} else if (sel & WPA_KEY_MGMT_SAE) {
 		wpa_s->key_mgmt = WPA_KEY_MGMT_SAE;
@@ -1491,11 +1496,6 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		wpa_s->key_mgmt = WPA_KEY_MGMT_OWE;
 		wpa_dbg(wpa_s, MSG_DEBUG, "RSN: using KEY_MGMT OWE");
 #endif /* CONFIG_OWE */
-#ifdef CONFIG_DPP
-	} else if (sel & WPA_KEY_MGMT_DPP) {
-		wpa_s->key_mgmt = WPA_KEY_MGMT_DPP;
-		wpa_dbg(wpa_s, MSG_DEBUG, "RSN: using KEY_MGMT DPP");
-#endif /* CONFIG_DPP */
 	} else {
 		wpa_msg(wpa_s, MSG_WARNING, "WPA: Failed to select "
 			"authenticated key management type");
@@ -1548,7 +1548,13 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		return -1;
 	}
 
-	if (wpa_key_mgmt_wpa_psk(ssid->key_mgmt)) {
+	if (0) {
+#ifdef CONFIG_DPP
+	} else if (wpa_s->key_mgmt == WPA_KEY_MGMT_DPP) {
+		/* Use PMK from DPP network introduction (PMKSA entry) */
+		wpa_sm_set_pmk_from_pmksa(wpa_s->wpa);
+#endif /* CONFIG_DPP */
+	} else if (wpa_key_mgmt_wpa_psk(ssid->key_mgmt)) {
 		int psk_set = 0;
 		int sae_only;
 
