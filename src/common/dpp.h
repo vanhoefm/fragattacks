@@ -163,6 +163,7 @@ struct dpp_configuration {
 	/* For legacy configuration */
 	char *passphrase;
 	u8 psk[32];
+	int psk_set;
 };
 
 struct dpp_authentication {
@@ -392,7 +393,10 @@ int dpp_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 		     const u8 *attr_start, size_t attr_len);
 int dpp_notify_new_qr_code(struct dpp_authentication *auth,
 			   struct dpp_bootstrap_info *peer_bi);
+struct dpp_configuration * dpp_configuration_alloc(const char *type);
+int dpp_configuration_valid(const struct dpp_configuration *conf);
 void dpp_configuration_free(struct dpp_configuration *conf);
+int dpp_configuration_parse(struct dpp_authentication *auth, const char *cmd);
 void dpp_auth_deinit(struct dpp_authentication *auth);
 struct wpabuf *
 dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,

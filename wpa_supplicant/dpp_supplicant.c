@@ -554,169 +554,30 @@ static int wpas_dpp_set_configurator(struct wpa_supplicant *wpa_s,
 				     struct dpp_authentication *auth,
 				     const char *cmd)
 {
-	const char *pos, *end;
-	struct dpp_configuration *conf_sta = NULL, *conf_ap = NULL;
-	struct dpp_configurator *conf = NULL;
-	u8 ssid[32] = { "test" };
-	size_t ssid_len = 4;
-	char pass[64] = { };
-	size_t pass_len = 0;
-	u8 psk[PMK_LEN];
-	int psk_set = 0;
-	char *group_id = NULL;
+	const char *pos;
 
 	if (!cmd)
 		return 0;
 
 	wpa_printf(MSG_DEBUG, "DPP: Set configurator parameters: %s", cmd);
-	pos = os_strstr(cmd, " ssid=");
-	if (pos) {
-		pos += 6;
-		end = os_strchr(pos, ' ');
-		ssid_len = end ? (size_t) (end - pos) : os_strlen(pos);
-		ssid_len /= 2;
-		if (ssid_len > sizeof(ssid) ||
-		    hexstr2bin(pos, ssid, ssid_len) < 0)
-			goto fail;
-	}
-
-	pos = os_strstr(cmd, " pass=");
-	if (pos) {
-		pos += 6;
-		end = os_strchr(pos, ' ');
-		pass_len = end ? (size_t) (end - pos) : os_strlen(pos);
-		pass_len /= 2;
-		if (pass_len > sizeof(pass) - 1 || pass_len < 8 ||
-		    hexstr2bin(pos, (u8 *) pass, pass_len) < 0)
-			goto fail;
-	}
-
-	pos = os_strstr(cmd, " psk=");
-	if (pos) {
-		pos += 5;
-		if (hexstr2bin(pos, psk, PMK_LEN) < 0)
-			goto fail;
-		psk_set = 1;
-	}
-
-	pos = os_strstr(cmd, " group_id=");
-	if (pos) {
-		size_t group_id_len;
-
-		pos += 10;
-		end = os_strchr(pos, ' ');
-		group_id_len = end ? (size_t) (end - pos) : os_strlen(pos);
-		group_id = os_malloc(group_id_len + 1);
-		if (!group_id)
-			goto fail;
-		os_memcpy(group_id, pos, group_id_len);
-		group_id[group_id_len] = '\0';
-	}
-
-	if (os_strstr(cmd, " conf=sta-")) {
-		conf_sta = os_zalloc(sizeof(struct dpp_configuration));
-		if (!conf_sta)
-			goto fail;
-		os_memcpy(conf_sta->ssid, ssid, ssid_len);
-		conf_sta->ssid_len = ssid_len;
-		if (os_strstr(cmd, " conf=sta-psk") ||
-		    os_strstr(cmd, " conf=sta-sae") ||
-		    os_strstr(cmd, " conf=sta-psk-sae")) {
-			if (os_strstr(cmd, " conf=sta-psk-sae"))
-				conf_sta->akm = DPP_AKM_PSK_SAE;
-			else if (os_strstr(cmd, " conf=sta-sae"))
-				conf_sta->akm = DPP_AKM_SAE;
-			else
-				conf_sta->akm = DPP_AKM_PSK;
-			if (psk_set) {
-				os_memcpy(conf_sta->psk, psk, PMK_LEN);
-			} else if (pass_len > 0) {
-				conf_sta->passphrase = os_strdup(pass);
-				if (!conf_sta->passphrase)
-					goto fail;
-			} else {
-				goto fail;
-			}
-		} else if (os_strstr(cmd, " conf=sta-dpp")) {
-			conf_sta->akm = DPP_AKM_DPP;
-		} else {
-			goto fail;
-		}
-		if (os_strstr(cmd, " group_id=")) {
-			conf_sta->group_id = group_id;
-			group_id = NULL;
-		}
-	}
-
-	if (os_strstr(cmd, " conf=ap-")) {
-		conf_ap = os_zalloc(sizeof(struct dpp_configuration));
-		if (!conf_ap)
-			goto fail;
-		os_memcpy(conf_ap->ssid, ssid, ssid_len);
-		conf_ap->ssid_len = ssid_len;
-		if (os_strstr(cmd, " conf=ap-psk") ||
-		    os_strstr(cmd, " conf=ap-sae") ||
-		    os_strstr(cmd, " conf=ap-psk-sae")) {
-			if (os_strstr(cmd, " conf=ap-psk-sae"))
-				conf_ap->akm = DPP_AKM_PSK_SAE;
-			else if (os_strstr(cmd, " conf=ap-sae"))
-				conf_ap->akm = DPP_AKM_SAE;
-			else
-				conf_ap->akm = DPP_AKM_PSK;
-			if (psk_set) {
-				os_memcpy(conf_ap->psk, psk, PMK_LEN);
-			} else {
-				conf_ap->passphrase = os_strdup(pass);
-				if (!conf_ap->passphrase)
-					goto fail;
-			}
-		} else if (os_strstr(cmd, " conf=ap-dpp")) {
-			conf_ap->akm = DPP_AKM_DPP;
-		} else {
-			goto fail;
-		}
-		if (os_strstr(cmd, " group_id=")) {
-			conf_ap->group_id = group_id;
-			group_id = NULL;
-		}
-	}
-
-	pos = os_strstr(cmd, " expiry=");
-	if (pos) {
-		long int val;
-
-		pos += 8;
-		val = strtol(pos, NULL, 0);
-		if (val <= 0)
-			goto fail;
-		if (conf_sta)
-			conf_sta->netaccesskey_expiry = val;
-		if (conf_ap)
-			conf_ap->netaccesskey_expiry = val;
-	}
 
 	pos = os_strstr(cmd, " configurator=");
 	if (pos) {
 		pos += 14;
-		conf = dpp_configurator_get_id(wpa_s, atoi(pos));
-		if (!conf) {
+		auth->conf = dpp_configurator_get_id(wpa_s, atoi(pos));
+		if (!auth->conf) {
 			wpa_printf(MSG_INFO,
 				   "DPP: Could not find the specified configurator");
-			goto fail;
+			return -1;
 		}
 	}
-	auth->conf_sta = conf_sta;
-	auth->conf_ap = conf_ap;
-	auth->conf = conf;
-	os_free(group_id);
-	return 0;
 
-fail:
-	wpa_msg(wpa_s, MSG_INFO, "DPP: Failed to set configurator parameters");
-	dpp_configuration_free(conf_sta);
-	dpp_configuration_free(conf_ap);
-	os_free(group_id);
-	return -1;
+	if (dpp_configuration_parse(auth, cmd) < 0) {
+		wpa_msg(wpa_s, MSG_INFO,
+			"DPP: Failed to set configurator parameters");
+		return -1;
+	}
+	return 0;
 }
 
 

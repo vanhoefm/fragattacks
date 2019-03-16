@@ -4048,6 +4048,70 @@ fail:
 }
 
 
+static int bin_str_eq(const char *val, size_t len, const char *cmp)
+{
+	return os_strlen(cmp) == len && os_memcmp(val, cmp, len) == 0;
+}
+
+
+struct dpp_configuration * dpp_configuration_alloc(const char *type)
+{
+	struct dpp_configuration *conf;
+	const char *end;
+	size_t len;
+
+	conf = os_zalloc(sizeof(*conf));
+	if (!conf)
+		goto fail;
+
+	end = os_strchr(type, ' ');
+	if (end)
+		len = end - type;
+	else
+		len = os_strlen(type);
+
+	if (bin_str_eq(type, len, "psk"))
+		conf->akm = DPP_AKM_PSK;
+	else if (bin_str_eq(type, len, "sae"))
+		conf->akm = DPP_AKM_SAE;
+	else if (bin_str_eq(type, len, "psk-sae"))
+		conf->akm = DPP_AKM_PSK_SAE;
+	else if (bin_str_eq(type, len, "dpp"))
+		conf->akm = DPP_AKM_DPP;
+	else
+		goto fail;
+
+	return conf;
+fail:
+	dpp_configuration_free(conf);
+	return NULL;
+}
+
+
+static int dpp_akm_psk(enum dpp_akm akm)
+{
+	return akm == DPP_AKM_PSK || akm == DPP_AKM_PSK_SAE;
+}
+
+
+static int dpp_akm_sae(enum dpp_akm akm)
+{
+	return akm == DPP_AKM_SAE || akm == DPP_AKM_PSK_SAE;
+}
+
+
+int dpp_configuration_valid(const struct dpp_configuration *conf)
+{
+	if (conf->ssid_len == 0)
+		return 0;
+	if (dpp_akm_psk(conf->akm) && !conf->passphrase && !conf->psk_set)
+		return 0;
+	if (dpp_akm_sae(conf->akm) && !conf->passphrase)
+		return 0;
+	return 1;
+}
+
+
 void dpp_configuration_free(struct dpp_configuration *conf)
 {
 	if (!conf)
@@ -4055,6 +4119,113 @@ void dpp_configuration_free(struct dpp_configuration *conf)
 	str_clear_free(conf->passphrase);
 	os_free(conf->group_id);
 	bin_clear_free(conf, sizeof(*conf));
+}
+
+
+int dpp_configuration_parse(struct dpp_authentication *auth, const char *cmd)
+{
+	const char *pos, *end;
+	struct dpp_configuration *conf_sta = NULL, *conf_ap = NULL;
+	struct dpp_configuration *conf = NULL;
+
+	pos = os_strstr(cmd, " conf=sta-");
+	if (pos) {
+		conf_sta = dpp_configuration_alloc(pos + 10);
+		if (!conf_sta)
+			goto fail;
+		conf = conf_sta;
+	}
+
+	pos = os_strstr(cmd, " conf=ap-");
+	if (pos) {
+		conf_ap = dpp_configuration_alloc(pos + 9);
+		if (!conf_ap)
+			goto fail;
+		conf = conf_ap;
+	}
+
+	if (!conf)
+		return 0;
+
+	pos = os_strstr(cmd, " ssid=");
+	if (pos) {
+		pos += 6;
+		end = os_strchr(pos, ' ');
+		conf->ssid_len = end ? (size_t) (end - pos) : os_strlen(pos);
+		conf->ssid_len /= 2;
+		if (conf->ssid_len > sizeof(conf->ssid) ||
+		    hexstr2bin(pos, conf->ssid, conf->ssid_len) < 0)
+			goto fail;
+	} else {
+#ifdef CONFIG_TESTING_OPTIONS
+		/* use a default SSID for legacy testing reasons */
+		os_memcpy(conf->ssid, "test", 4);
+		conf->ssid_len = 4;
+#else /* CONFIG_TESTING_OPTIONS */
+		goto fail;
+#endif /* CONFIG_TESTING_OPTIONS */
+	}
+
+	pos = os_strstr(cmd, " pass=");
+	if (pos) {
+		size_t pass_len;
+
+		pos += 6;
+		end = os_strchr(pos, ' ');
+		pass_len = end ? (size_t) (end - pos) : os_strlen(pos);
+		pass_len /= 2;
+		if (pass_len > 63 || pass_len < 8)
+			goto fail;
+		conf->passphrase = os_zalloc(pass_len + 1);
+		if (!conf->passphrase ||
+		    hexstr2bin(pos, (u8 *) conf->passphrase, pass_len) < 0)
+			goto fail;
+	}
+
+	pos = os_strstr(cmd, " psk=");
+	if (pos) {
+		pos += 5;
+		if (hexstr2bin(pos, conf->psk, PMK_LEN) < 0)
+			goto fail;
+		conf->psk_set = 1;
+	}
+
+	pos = os_strstr(cmd, " group_id=");
+	if (pos) {
+		size_t group_id_len;
+
+		pos += 10;
+		end = os_strchr(pos, ' ');
+		group_id_len = end ? (size_t) (end - pos) : os_strlen(pos);
+		conf->group_id = os_malloc(group_id_len + 1);
+		if (!conf->group_id)
+			goto fail;
+		os_memcpy(conf->group_id, pos, group_id_len);
+		conf->group_id[group_id_len] = '\0';
+	}
+
+	pos = os_strstr(cmd, " expiry=");
+	if (pos) {
+		long int val;
+
+		pos += 8;
+		val = strtol(pos, NULL, 0);
+		if (val <= 0)
+			goto fail;
+		conf->netaccesskey_expiry = val;
+	}
+
+	if (!dpp_configuration_valid(conf))
+		goto fail;
+
+	auth->conf_sta = conf_sta;
+	auth->conf_ap = conf_ap;
+	return 0;
+
+fail:
+	dpp_configuration_free(conf_sta);
+	dpp_configuration_free(conf_ap);
+	return -1;
 }
 
 
