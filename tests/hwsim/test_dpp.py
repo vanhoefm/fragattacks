@@ -1,6 +1,6 @@
 # Test cases for Device Provisioning Protocol (DPP)
 # Copyright (c) 2017, Qualcomm Atheros, Inc.
-# Copyright (c) 2018, The Linux Foundation
+# Copyright (c) 2018-2019, The Linux Foundation
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -26,7 +26,7 @@ try:
 except ImportError:
     openssl_imported = False
 
-def check_dpp_capab(dev, brainpool=False):
+def check_dpp_capab(dev, brainpool=False, min_ver=1):
     if "UNKNOWN COMMAND" in dev.request("DPP_BOOTSTRAP_GET_URI 0"):
         raise HwsimSkip("DPP not supported")
     if brainpool:
@@ -34,9 +34,12 @@ def check_dpp_capab(dev, brainpool=False):
         if not tls.startswith("OpenSSL") or "run=BoringSSL" in tls:
             raise HwsimSkip("Crypto library does not support Brainpool curves: " + tls)
     capa = dev.request("GET_CAPABILITY dpp")
+    ver = 1
     if capa.startswith("DPP="):
-        return int(capa[4:])
-    return 1
+        ver = int(capa[4:])
+    if ver < min_ver:
+        raise HwsimSkip("DPP version %d not supported" % min_ver)
+    return ver
 
 def test_dpp_qr_code_parsing(dev, apdev):
     """DPP QR Code parsing"""
@@ -5445,3 +5448,99 @@ def test_dpp_enrollee_ap_reject_config(dev, apdev):
     ev = hapd.wait_event(["DPP-CONF-FAILED"], timeout=2)
     if ev is None:
         raise Exception("Forced DPP configuration failure not reported by Enrollee")
+
+def test_dpp_legacy_and_dpp_akm(dev, apdev):
+    """DPP and provisoning DPP and legacy AKMs"""
+    try:
+        run_dpp_legacy_and_dpp_akm(dev, apdev)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+
+def run_dpp_legacy_and_dpp_akm(dev, apdev):
+    check_dpp_capab(dev[0], min_ver=2)
+    check_dpp_capab(dev[1], min_ver=2)
+
+    csign = "30770201010420768240a3fc89d6662d9782f120527fe7fb9edc6366ab0b9c7dde96125cfd250fa00a06082a8648ce3d030107a144034200042908e1baf7bf413cc66f9e878a03e8bb1835ba94b033dbe3d6969fc8575d5eb5dfda1cb81c95cee21d0cd7d92ba30541ffa05cb6296f5dd808b0c1c2a83c0708"
+    csign_pub = "3059301306072a8648ce3d020106082a8648ce3d030107034200042908e1baf7bf413cc66f9e878a03e8bb1835ba94b033dbe3d6969fc8575d5eb5dfda1cb81c95cee21d0cd7d92ba30541ffa05cb6296f5dd808b0c1c2a83c0708"
+    ap_connector = "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiJwYWtZbXVzd1dCdWpSYTl5OEsweDViaTVrT3VNT3dzZHRlaml2UG55ZHZzIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7Imdyb3VwSWQiOiIqIiwibmV0Um9sZSI6ImFwIn1dLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiIybU5vNXZuRkI5bEw3d1VWb1hJbGVPYzBNSEE1QXZKbnpwZXZULVVTYzVNIiwieSI6IlhzS3dqVHJlLTg5WWdpU3pKaG9CN1haeUttTU05OTl3V2ZaSVl0bi01Q3MifX0.XhjFpZgcSa7G2lHy0OCYTvaZFRo5Hyx6b7g7oYyusLC7C_73AJ4_BxEZQVYJXAtDuGvb3dXSkHEKxREP9Q6Qeg"
+    ap_netaccesskey = "30770201010420ceba752db2ad5200fa7bc565b9c05c69b7eb006751b0b329b0279de1c19ca67ca00a06082a8648ce3d030107a14403420004da6368e6f9c507d94bef0515a1722578e73430703902f267ce97af4fe51273935ec2b08d3adefbcf588224b3261a01ed76722a630cf7df7059f64862d9fee42b"
+
+    ssid = "dpp-both"
+    passphrase = "secret passphrase"
+    params = {"ssid": ssid,
+              "wpa": "2",
+              "wpa_key_mgmt": "DPP WPA-PSK SAE",
+              "ieee80211w": "1",
+              "sae_require_mfp": '1',
+              "rsn_pairwise": "CCMP",
+              "wpa_passphrase": passphrase,
+              "dpp_connector": ap_connector,
+              "dpp_csign": csign_pub,
+              "dpp_netaccesskey": ap_netaccesskey}
+    try:
+        hapd = hostapd.add_ap(apdev[0], params)
+    except:
+        raise HwsimSkip("DPP not supported")
+
+    cmd = "DPP_CONFIGURATOR_ADD key=" + csign
+    res = dev[1].request(cmd)
+    if "FAIL" in res:
+        raise Exception("DPP_CONFIGURATOR_ADD failed")
+    conf_id = int(res)
+
+    dev[0].set("dpp_config_processing", "1")
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+
+    id1 = dev[1].dpp_qr_code(uri0)
+
+    cmd = "DPP_LISTEN 2412"
+    if "OK" not in dev[0].request(cmd):
+        raise Exception("Failed to start listen operation")
+
+    cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk-sae-dpp ssid=%s pass=%s configurator=%d" % \
+          (id1, binascii.hexlify(ssid.encode()).decode(),
+           binascii.hexlify(passphrase.encode()).decode(), conf_id)
+    if "OK" not in dev[1].request(cmd):
+        raise Exception("Failed to initiate DPP Authentication")
+    ev = dev[1].wait_event(["DPP-CONF-SENT", "DPP-CONF-FAILED"], timeout=10)
+    if ev is None or "DPP-CONF-SENT" not in ev:
+        raise Exception("DPP configuration not completed (Configurator)")
+    ev = dev[0].wait_event(["DPP-CONF-RECEIVED", "DPP-CONF-FAILED"], timeout=2)
+    if ev is None or "DPP-CONF-FAILED" in ev:
+        raise Exception("DPP configuration not completed (Enrollee)")
+    ev = dev[0].wait_event(["DPP-NETWORK-ID"], timeout=1)
+    if ev is None:
+        raise Exception("DPP network profile not generated")
+    id0 = ev.split(' ')[1]
+
+    key_mgmt = dev[0].get_network(id0, "key_mgmt").split(' ')
+    for m in ["SAE", "WPA-PSK", "DPP"]:
+        if m not in key_mgmt:
+            raise Exception("%s missing from key_mgmt" % m)
+
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+    dev[0].select_network(id0, freq=2412)
+    dev[0].wait_connected()
+
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    hapd.disable()
+
+    params = {"ssid": ssid,
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-PSK SAE",
+              "ieee80211w": "1",
+              "sae_require_mfp": '1',
+              "rsn_pairwise": "CCMP",
+              "wpa_passphrase": passphrase}
+    hapd2 = hostapd.add_ap(apdev[1], params)
+
+    dev[0].request("BSS_FLUSH 0")
+    dev[0].scan_for_bss(hapd2.own_addr(), freq=2412, force_scan=True,
+                        only_new=True)
+    dev[0].select_network(id0, freq=2412)
+    dev[0].wait_connected()
+
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
