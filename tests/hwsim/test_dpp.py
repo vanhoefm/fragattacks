@@ -1366,8 +1366,28 @@ def test_dpp_config_error_legacy_too_short_psk(dev, apdev):
     conf = '{"wi-fi_tech":"infra","discovery":{"ssid":"test"},"cred":{"akm":"psk","psk_hex":"%s"}}' % (31*"12")
     run_dpp_config_error(dev, apdev, conf)
 
+def get_der_int_32(val):
+    a, b = struct.unpack('BB', val[0:2])
+    if a != 0x02:
+        raise Exception("Invalid DER encoding of INTEGER")
+    if b > len(val) - 2:
+        raise Exception("Invalid length of INTEGER (truncated)")
+    val = val[2:]
+    if b == 32:
+        r = val[0:32]
+    elif b == 33:
+        if val[0] != 0:
+            raise Exception("Too large INTEGER (32)")
+        r = val[1:33]
+    elif b < 32:
+        r = (32 - b) * b'\x00' + val[0:b]
+    else:
+        raise Exception("Invalid length of INTEGER (32): %d" % b)
+    return r, val[b:]
+
 def ecdsa_sign(pkey, message, alg="sha256"):
     sign = OpenSSL.crypto.sign(pkey, message, alg)
+    logger.debug("sign=" + binascii.hexlify(sign).decode())
     a, b = struct.unpack('BB', sign[0:2])
     if a != 0x30:
         raise Exception("Invalid DER encoding of ECDSA signature")
@@ -1375,38 +1395,13 @@ def ecdsa_sign(pkey, message, alg="sha256"):
         raise Exception("Invalid length of ECDSA signature")
     sign = sign[2:]
 
-    a, b = struct.unpack('BB', sign[0:2])
-    if a != 0x02:
-        raise Exception("Invalid DER encoding of ECDSA signature r")
-    if b > len(sign) - 2:
-        raise Exception("Invalid length of ECDSA signature r")
-    sign = sign[2:]
-    if b == 32:
-        r = sign[0:32]
-        sign = sign[32:]
-    elif b == 33:
-        r = sign[1:33]
-        sign = sign[33:]
-    else:
-        raise Exception("Invalid length of ECDSA signature r")
-
-    a, b = struct.unpack('BB', sign[0:2])
-    if a != 0x02:
-        raise Exception("Invalid DER encoding of ECDSA signature s")
-    if b > len(sign) - 2:
-        raise Exception("Invalid length of ECDSA signature s")
-    sign = sign[2:]
-    if b == 32:
-        s = sign[0:32]
-        sign = sign[32:]
-    elif b == 33:
-        s = sign[1:33]
-        sign = sign[33:]
-    else:
-        raise Exception("Invalid length of ECDSA signature s")
+    r, sign = get_der_int_32(sign)
+    s, sign = get_der_int_32(sign)
     if len(sign) != 0:
         raise Exception("Extra data at the end of ECDSA signature")
 
+    logger.info("r=" + binascii.hexlify(r).decode())
+    logger.info("s=" + binascii.hexlify(s).decode())
     raw_sign = r + s
     return base64.urlsafe_b64encode(raw_sign).decode().rstrip('=')
 
