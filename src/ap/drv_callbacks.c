@@ -15,6 +15,7 @@
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
 #include "common/wpa_ctrl.h"
+#include "common/dpp.h"
 #include "crypto/random.h"
 #include "p2p/p2p.h"
 #include "wps/wps.h"
@@ -564,6 +565,38 @@ skip_wpa_check:
 			goto fail;
 	}
 #endif /* CONFIG_OWE */
+
+#ifdef CONFIG_DPP2
+		dpp_pfs_free(sta->dpp_pfs);
+		sta->dpp_pfs = NULL;
+
+		if ((hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_DPP) &&
+		    hapd->conf->dpp_netaccesskey && sta->wpa_sm &&
+		    wpa_auth_sta_key_mgmt(sta->wpa_sm) == WPA_KEY_MGMT_DPP &&
+		    elems.owe_dh) {
+			sta->dpp_pfs = dpp_pfs_init(
+				wpabuf_head(hapd->conf->dpp_netaccesskey),
+				wpabuf_len(hapd->conf->dpp_netaccesskey));
+			if (!sta->dpp_pfs) {
+				wpa_printf(MSG_DEBUG,
+					   "DPP: Could not initialize PFS");
+				/* Try to continue without PFS */
+				goto pfs_fail;
+			}
+
+			if (dpp_pfs_process(sta->dpp_pfs, elems.owe_dh,
+					    elems.owe_dh_len) < 0) {
+				dpp_pfs_free(sta->dpp_pfs);
+				sta->dpp_pfs = NULL;
+				reason = WLAN_REASON_UNSPECIFIED;
+				goto fail;
+			}
+		}
+
+		wpa_auth_set_dpp_z(sta->wpa_sm, sta->dpp_pfs ?
+				   sta->dpp_pfs->secret : NULL);
+	pfs_fail:
+#endif /* CONFIG_DPP2 */
 
 #if defined(CONFIG_IEEE80211R_AP) || defined(CONFIG_FILS) || defined(CONFIG_OWE)
 	hostapd_sta_assoc(hapd, addr, reassoc, status, buf, p - buf);

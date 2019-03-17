@@ -16,6 +16,7 @@
 #include "eapol_supp/eapol_supp_sm.h"
 #include "common/wpa_common.h"
 #include "common/sae.h"
+#include "common/dpp.h"
 #include "rsn_supp/wpa.h"
 #include "rsn_supp/pmksa_cache.h"
 #include "config.h"
@@ -1570,6 +1571,36 @@ void sme_associate(struct wpa_supplicant *wpa_s, enum wpas_mode mode,
 		wpabuf_free(owe_ie);
 	}
 #endif /* CONFIG_OWE */
+
+#ifdef CONFIG_DPP2
+	if (wpa_s->key_mgmt == WPA_KEY_MGMT_DPP && wpa_s->current_ssid &&
+	    wpa_s->current_ssid->dpp_netaccesskey) {
+		struct wpa_ssid *ssid = wpa_s->current_ssid;
+
+		dpp_pfs_free(wpa_s->dpp_pfs);
+		wpa_s->dpp_pfs = dpp_pfs_init(ssid->dpp_netaccesskey,
+					      ssid->dpp_netaccesskey_len);
+		if (!wpa_s->dpp_pfs) {
+			wpa_printf(MSG_DEBUG, "DPP: Could not initialize PFS");
+			/* Try to continue without PFS */
+			goto pfs_fail;
+		}
+		if (wpa_s->sme.assoc_req_ie_len +
+		    wpabuf_len(wpa_s->dpp_pfs->ie) >
+		    sizeof(wpa_s->sme.assoc_req_ie)) {
+			wpa_printf(MSG_ERROR,
+				   "DPP: Not enough buffer room for own Association Request frame elements");
+			dpp_pfs_free(wpa_s->dpp_pfs);
+			wpa_s->dpp_pfs = NULL;
+			goto pfs_fail;
+		}
+		os_memcpy(wpa_s->sme.assoc_req_ie + wpa_s->sme.assoc_req_ie_len,
+			  wpabuf_head(wpa_s->dpp_pfs->ie),
+			  wpabuf_len(wpa_s->dpp_pfs->ie));
+		wpa_s->sme.assoc_req_ie_len += wpabuf_len(wpa_s->dpp_pfs->ie);
+	}
+pfs_fail:
+#endif /* CONFIG_DPP2 */
 
 	if (wpa_s->current_ssid && wpa_s->current_ssid->multi_ap_backhaul_sta) {
 		size_t multi_ap_ie_len;

@@ -13,6 +13,7 @@
 #include "common/ieee802_11_defs.h"
 #include "common/wpa_ctrl.h"
 #include "common/sae.h"
+#include "common/dpp.h"
 #include "radius/radius.h"
 #include "radius/radius_client.h"
 #include "p2p/p2p.h"
@@ -361,6 +362,11 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
 	bin_clear_free(sta->owe_pmk, sta->owe_pmk_len);
 	crypto_ecdh_deinit(sta->owe_ecdh);
 #endif /* CONFIG_OWE */
+
+#ifdef CONFIG_DPP2
+	dpp_pfs_free(sta->dpp_pfs);
+	sta->dpp_pfs = NULL;
+#endif /* CONFIG_DPP2 */
 
 	os_free(sta->ext_capability);
 

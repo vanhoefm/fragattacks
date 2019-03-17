@@ -21,6 +21,7 @@
 #include "common/ieee802_11_common.h"
 #include "common/wpa_ctrl.h"
 #include "common/sae.h"
+#include "common/dpp.h"
 #include "common/ocv.h"
 #include "radius/radius.h"
 #include "radius/radius_client.h"
@@ -3008,6 +3009,37 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 		}
 #endif /* CONFIG_OWE */
 
+#ifdef CONFIG_DPP2
+		dpp_pfs_free(sta->dpp_pfs);
+		sta->dpp_pfs = NULL;
+
+		if ((hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_DPP) &&
+		    hapd->conf->dpp_netaccesskey && sta->wpa_sm &&
+		    wpa_auth_sta_key_mgmt(sta->wpa_sm) == WPA_KEY_MGMT_DPP &&
+		    elems.owe_dh) {
+			sta->dpp_pfs = dpp_pfs_init(
+				wpabuf_head(hapd->conf->dpp_netaccesskey),
+				wpabuf_len(hapd->conf->dpp_netaccesskey));
+			if (!sta->dpp_pfs) {
+				wpa_printf(MSG_DEBUG,
+					   "DPP: Could not initialize PFS");
+				/* Try to continue without PFS */
+				goto pfs_fail;
+			}
+
+			if (dpp_pfs_process(sta->dpp_pfs, elems.owe_dh,
+					    elems.owe_dh_len) < 0) {
+				dpp_pfs_free(sta->dpp_pfs);
+				sta->dpp_pfs = NULL;
+				return WLAN_STATUS_UNSPECIFIED_FAILURE;
+			}
+		}
+
+		wpa_auth_set_dpp_z(sta->wpa_sm, sta->dpp_pfs ?
+				   sta->dpp_pfs->secret : NULL);
+	pfs_fail:
+#endif /* CONFIG_DPP2 */
+
 #ifdef CONFIG_IEEE80211N
 		if ((sta->flags & (WLAN_STA_HT | WLAN_STA_VHT)) &&
 		    wpa_auth_get_pairwise(sta->wpa_sm) == WPA_CIPHER_TKIP) {
@@ -3278,6 +3310,10 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 	if (sta && (hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_OWE))
 		buflen += 150;
 #endif /* CONFIG_OWE */
+#ifdef CONFIG_DPP2
+	if (sta && sta->dpp_pfs)
+		buflen += 5 + sta->dpp_pfs->curve->prime_len;
+#endif /* CONFIG_DPP2 */
 	buf = os_zalloc(buflen);
 	if (!buf) {
 		res = WLAN_STATUS_UNSPECIFIED_FAILURE;
@@ -3384,6 +3420,16 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 		p += wpabuf_len(hapd->iface->fst_ies);
 	}
 #endif /* CONFIG_FST */
+
+#ifdef CONFIG_DPP2
+	if ((hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_DPP) &&
+	    sta && sta->dpp_pfs && status_code == WLAN_STATUS_SUCCESS &&
+	    wpa_auth_sta_key_mgmt(sta->wpa_sm) == WPA_KEY_MGMT_DPP) {
+		os_memcpy(p, wpabuf_head(sta->dpp_pfs->ie),
+			  wpabuf_len(sta->dpp_pfs->ie));
+		p += wpabuf_len(sta->dpp_pfs->ie);
+	}
+#endif /* CONFIG_DPP2 */
 
 #ifdef CONFIG_IEEE80211AC
 	if (sta && hapd->conf->vendor_vht && (sta->flags & WLAN_STA_VENDOR_VHT))

@@ -151,6 +151,10 @@ struct wpa_state_machine {
 	unsigned int fils_completed:1;
 #endif /* CONFIG_FILS */
 
+#ifdef CONFIG_DPP2
+	struct wpabuf *dpp_z;
+#endif /* CONFIG_DPP2 */
+
 #ifdef CONFIG_TESTING_OPTIONS
 	void (*eapol_status_cb)(void *ctx1, void *ctx2);
 	void *eapol_status_cb_ctx1;

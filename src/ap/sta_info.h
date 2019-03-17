@@ -265,6 +265,10 @@ struct sta_info {
 	u8 *ext_capability;
 	char *ifname_wds; /* WDS ifname, if in use */
 
+#ifdef CONFIG_DPP2
+	struct dpp_pfs *dpp_pfs;
+#endif /* CONFIG_DPP2 */
+
 #ifdef CONFIG_TESTING_OPTIONS
 	enum wpa_alg last_tk_alg;
 	int last_tk_key_idx;

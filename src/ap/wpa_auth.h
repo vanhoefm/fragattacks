@@ -474,6 +474,7 @@ u8 * wpa_auth_write_assoc_resp_owe(struct wpa_state_machine *sm,
 				   u8 *pos, size_t max_len,
 				   const u8 *req_ies, size_t req_ies_len);
 void wpa_auth_set_auth_alg(struct wpa_state_machine *sm, u16 auth_alg);
+void wpa_auth_set_dpp_z(struct wpa_state_machine *sm, const struct wpabuf *z);
 
 int wpa_auth_resend_m1(struct wpa_state_machine *sm, int change_anonce,
 		       void (*cb)(void *ctx1, void *ctx2),

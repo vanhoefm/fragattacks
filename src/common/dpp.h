@@ -16,6 +16,8 @@
 #include "common/wpa_common.h"
 #include "crypto/sha256.h"
 
+struct crypto_ecdh;
+
 #define DPP_HDR_LEN (4 + 2) /* OUI, OUI Type, Crypto Suite, DPP frame type */
 
 enum dpp_public_action_frame_type {
@@ -457,5 +459,18 @@ int dpp_pkex_rx_commit_reveal_resp(struct dpp_pkex *pkex, const u8 *hdr,
 void dpp_pkex_free(struct dpp_pkex *pkex);
 
 char * dpp_corrupt_connector_signature(const char *connector);
+
+
+struct dpp_pfs {
+	struct crypto_ecdh *ecdh;
+	const struct dpp_curve_params *curve;
+	struct wpabuf *ie;
+	struct wpabuf *secret;
+};
+
+struct dpp_pfs * dpp_pfs_init(const u8 *net_access_key,
+			      size_t net_access_key_len);
+int dpp_pfs_process(struct dpp_pfs *pfs, const u8 *peer_ie, size_t peer_ie_len);
+void dpp_pfs_free(struct dpp_pfs *pfs);
 
 #endif /* DPP_H */

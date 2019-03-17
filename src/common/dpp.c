@@ -8131,3 +8131,87 @@ fail:
 	goto out;
 }
 #endif /* CONFIG_TESTING_OPTIONS */
+
+
+#ifdef CONFIG_DPP2
+
+struct dpp_pfs * dpp_pfs_init(const u8 *net_access_key,
+			      size_t net_access_key_len)
+{
+	struct wpabuf *pub = NULL;
+	EVP_PKEY *own_key;
+	struct dpp_pfs *pfs;
+
+	pfs = os_zalloc(sizeof(*pfs));
+	if (!pfs)
+		return NULL;
+
+	own_key = dpp_set_keypair(&pfs->curve, net_access_key,
+				  net_access_key_len);
+	if (!own_key) {
+		wpa_printf(MSG_ERROR, "DPP: Failed to parse own netAccessKey");
+		goto fail;
+	}
+	EVP_PKEY_free(own_key);
+
+	pfs->ecdh = crypto_ecdh_init(pfs->curve->ike_group);
+	if (!pfs->ecdh)
+		goto fail;
+
+	pub = crypto_ecdh_get_pubkey(pfs->ecdh, 0);
+	pub = wpabuf_zeropad(pub, pfs->curve->prime_len);
+	if (!pub)
+		goto fail;
+
+	pfs->ie = wpabuf_alloc(5 + wpabuf_len(pub));
+	if (!pfs->ie)
+		goto fail;
+	wpabuf_put_u8(pfs->ie, WLAN_EID_EXTENSION);
+	wpabuf_put_u8(pfs->ie, 1 + 2 + wpabuf_len(pub));
+	wpabuf_put_u8(pfs->ie, WLAN_EID_EXT_OWE_DH_PARAM);
+	wpabuf_put_le16(pfs->ie, pfs->curve->ike_group);
+	wpabuf_put_buf(pfs->ie, pub);
+	wpabuf_free(pub);
+	wpa_hexdump_buf(MSG_DEBUG, "DPP: Diffie-Hellman Parameter element",
+			pfs->ie);
+
+	return pfs;
+fail:
+	wpabuf_free(pub);
+	dpp_pfs_free(pfs);
+	return NULL;
+}
+
+
+int dpp_pfs_process(struct dpp_pfs *pfs, const u8 *peer_ie, size_t peer_ie_len)
+{
+	if (peer_ie_len < 2)
+		return -1;
+	if (WPA_GET_LE16(peer_ie) != pfs->curve->ike_group) {
+		wpa_printf(MSG_DEBUG, "DPP: Peer used different group for PFS");
+		return -1;
+	}
+
+	pfs->secret = crypto_ecdh_set_peerkey(pfs->ecdh, 0, peer_ie + 2,
+					      peer_ie_len - 2);
+	pfs->secret = wpabuf_zeropad(pfs->secret, pfs->curve->prime_len);
+	if (!pfs->secret) {
+		wpa_printf(MSG_DEBUG, "DPP: Invalid peer DH public key");
+		return -1;
+	}
+	wpa_hexdump_buf_key(MSG_DEBUG, "DPP: DH shared secret", pfs->secret);
+	return 0;
+}
+
+
+void dpp_pfs_free(struct dpp_pfs *pfs)
+{
+	if (!pfs)
+		return;
+	crypto_ecdh_deinit(pfs->ecdh);
+	wpabuf_free(pfs->ie);
+	wpabuf_clear_free(pfs->secret);
+	os_free(pfs);
+}
+
+#endif /* CONFIG_DPP2 */

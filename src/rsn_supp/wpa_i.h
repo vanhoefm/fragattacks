@@ -168,6 +168,10 @@ struct wpa_sm {
 	struct crypto_ecdh *owe_ecdh;
 	u16 owe_group;
 #endif /* CONFIG_OWE */
+
+#ifdef CONFIG_DPP2
+	struct wpabuf *dpp_z;
+#endif /* CONFIG_DPP2 */
 };
 
 

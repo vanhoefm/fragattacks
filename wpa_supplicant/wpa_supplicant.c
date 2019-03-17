@@ -39,6 +39,7 @@
 #include "common/ieee802_11_defs.h"
 #include "common/hw_features_common.h"
 #include "common/gas_server.h"
+#include "common/dpp.h"
 #include "p2p/p2p.h"
 #include "fst/fst.h"
 #include "blacklist.h"
@@ -2831,6 +2832,28 @@ static u8 * wpas_populate_assoc_ies(
 		}
 	}
 #endif /* CONFIG_OWE */
+
+#ifdef CONFIG_DPP2
+	if (wpa_sm_get_key_mgmt(wpa_s->wpa) == WPA_KEY_MGMT_DPP &&
+	    ssid->dpp_netaccesskey) {
+		dpp_pfs_free(wpa_s->dpp_pfs);
+		wpa_s->dpp_pfs = dpp_pfs_init(ssid->dpp_netaccesskey,
+					      ssid->dpp_netaccesskey_len);
+		if (!wpa_s->dpp_pfs) {
+			wpa_printf(MSG_DEBUG, "DPP: Could not initialize PFS");
+			/* Try to continue without PFS */
+			goto pfs_fail;
+		}
+		if (wpabuf_len(wpa_s->dpp_pfs->ie) <=
+		    max_wpa_ie_len - wpa_ie_len) {
+			os_memcpy(wpa_ie + wpa_ie_len,
+				  wpabuf_head(wpa_s->dpp_pfs->ie),
+				  wpabuf_len(wpa_s->dpp_pfs->ie));
+			wpa_ie_len += wpabuf_len(wpa_s->dpp_pfs->ie);
+		}
+	}
+pfs_fail:
+#endif /* CONFIG_DPP2 */
 
 #ifdef CONFIG_IEEE80211R
 	/*
