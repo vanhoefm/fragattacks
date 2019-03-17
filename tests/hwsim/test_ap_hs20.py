@@ -1,5 +1,5 @@
 # Hotspot 2.0 tests
-# Copyright (c) 2013-2015, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -5469,6 +5469,7 @@ def test_ap_hs20_interworking_oom(dev, apdev):
             if ev is None:
                 raise Exception("ANQP did not start")
             wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
+            dev[0].dump_monitor()
 
 def test_ap_hs20_no_cred_connect(dev, apdev):
     """Hotspot 2.0 and connect attempt without credential"""
