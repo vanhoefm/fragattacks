@@ -425,9 +425,7 @@ def test_ap_vht160(dev, apdev):
     finally:
         if hapd:
             hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        dev[0].disconnect_and_stop_scan()
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
@@ -499,9 +497,7 @@ def test_ap_vht160b(dev, apdev):
     finally:
         if hapd:
             hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        dev[0].disconnect_and_stop_scan()
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
@@ -579,9 +575,7 @@ def run_ap_vht160_no_dfs(dev, apdev, channel, ht_capab):
     finally:
         if hapd:
             hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        dev[0].disconnect_and_stop_scan()
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
@@ -1021,9 +1015,7 @@ def test_ap_vht80_pwr_constraint(dev, apdev):
     finally:
         if hapd:
             hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        dev[0].disconnect_and_stop_scan()
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
@@ -1132,9 +1124,7 @@ def test_ap_vht_40_fallback_to_20(devs, apdevs):
     finally:
         if hapd:
             hapd.request("DISABLE")
-        dev.request("DISCONNECT")
-        dev.request("ABORT_SCAN")
-        dev.wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        dev.disconnect_and_stop_scan()
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev.wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev.flush_scan_cache()

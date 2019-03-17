@@ -2034,7 +2034,7 @@ def test_ap_wpa2_eap_peap_params(dev, apdev):
     if ev and "CTRL-EVENT-CONNECTED" in ev:
         raise Exception("Unexpected connection")
     dev[0].request("REMOVE_NETWORK all")
-    dev[0].request("ABORT_SCAN")
+    dev[0].disconnect_and_stop_scan()
 
     tests = [("peap-ver0", ""),
              ("peap-ver1", ""),

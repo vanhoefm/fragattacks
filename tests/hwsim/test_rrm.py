@@ -1670,9 +1670,7 @@ def test_rrm_beacon_req_passive_scan_vht(dev, apdev):
     finally:
         if hapd:
             hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        dev[0].disconnect_and_stop_scan()
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
@@ -1719,9 +1717,7 @@ def test_rrm_beacon_req_passive_scan_vht160(dev, apdev):
     finally:
         if hapd:
             hapd.request("DISABLE")
-        dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        dev[0].disconnect_and_stop_scan()
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()

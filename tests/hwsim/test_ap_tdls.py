@@ -362,18 +362,9 @@ def test_ap_wpa2_tdls_responder_teardown(dev, apdev):
 def tdls_clear_reg(hapd, dev):
     if hapd:
         hapd.request("DISABLE")
-    dev[0].request("DISCONNECT")
-    res0 = dev[0].request("ABORT_SCAN")
     dev[1].request("DISCONNECT")
-    res1 = dev[1].request("ABORT_SCAN")
-    for i in range(2 if "OK" in res0 else 1):
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED",
-                           "CTRL-EVENT-SCAN-RESULTS"], timeout=0.5)
-    dev[0].dump_monitor()
-    for i in range(2 if "OK" in res1 else 1):
-        dev[1].wait_event(["CTRL-EVENT-DISCONNECTED",
-                           "CTRL-EVENT-SCAN-RESULTS"], timeout=0.5)
-    dev[1].dump_monitor()
+    dev[0].disconnect_and_stop_scan()
+    dev[1].disconnect_and_stop_scan()
     subprocess.call(['iw', 'reg', 'set', '00'])
     dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
     dev[0].flush_scan_cache()

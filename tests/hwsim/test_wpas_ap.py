@@ -384,9 +384,7 @@ def _test_wpas_ap_dfs(dev):
     dev[1].connect("wpas-ap-dfs", key_mgmt="NONE")
     dev[1].wait_regdom(country_ie=True)
     dev[0].request("DISCONNECT")
-    dev[1].request("DISCONNECT")
-    dev[1].request("ABORT_SCAN")
-    dev[1].wait_disconnected()
+    dev[1].disconnect_and_stop_scan()
 
 @remote_compatible
 def test_wpas_ap_disable(dev):

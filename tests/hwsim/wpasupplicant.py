@@ -1152,6 +1152,14 @@ class WpaSupplicant:
             if len(res.splitlines()) > 1:
                 logger.info("flush_scan_cache: Could not clear all BSS entries. These remain:\n" + res)
 
+    def disconnect_and_stop_scan(self):
+        self.request("DISCONNECT")
+        res = self.request("ABORT_SCAN")
+        for i in range(2 if "OK" in res else 1):
+                self.wait_event(["CTRL-EVENT-DISCONNECTED",
+                                 "CTRL-EVENT-SCAN-RESULTS"], timeout=0.5)
+        self.dump_monitor()
+
     def roam(self, bssid, fail_test=False, assoc_reject_ok=False):
         self.dump_monitor()
         if "OK" not in self.request("ROAM " + bssid):

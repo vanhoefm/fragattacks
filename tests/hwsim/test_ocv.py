@@ -334,9 +334,8 @@ def run_wpa2_ocv_vht80plus80(dev, apdev):
         hapd.disable()
         for i in range(3):
             dev[i].request("DISCONNECT")
-            dev[i].request("ABORT_SCAN")
         for i in range(3):
-            dev[i].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+            dev[i].disconnect_and_stop_scan()
 
 class APConnection:
     def init_params(self):
@@ -520,9 +519,7 @@ def run_wpa2_ocv_ap_vht160_mismatch(dev, apdev):
     dev[0].dump_monitor()
     if conn.hapd:
         conn.hapd.request("DISABLE")
-    dev[0].request("DISCONNECT")
-    dev[0].request("ABORT_SCAN")
-    dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+    dev[0].disconnect_and_stop_scan()
 
 @remote_compatible
 def test_wpa2_ocv_ap_vht80plus80_mismatch(dev, apdev):
@@ -556,9 +553,7 @@ def run_wpa2_ocv_ap_vht80plus80_mismatch(dev, apdev):
     dev[0].dump_monitor()
     if conn.hapd:
         conn.hapd.request("DISABLE")
-    dev[0].request("DISCONNECT")
-    dev[0].request("ABORT_SCAN")
-    dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+    dev[0].disconnect_and_stop_scan()
 
 @remote_compatible
 def test_wpa2_ocv_ap_unexpected1(dev, apdev):
@@ -857,9 +852,7 @@ def run_wpa2_ocv_vht160_mismatch_client(dev, apdev):
     dev[0].dump_monitor()
     if conn.hapd:
         conn.hapd.request("DISABLE")
-    dev[0].request("DISCONNECT")
-    dev[0].request("ABORT_SCAN")
-    dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+    dev[0].disconnect_and_stop_scan()
 
 def test_wpa2_ocv_sta_group_hs(dev, apdev):
     """OCV group handshake (STA)"""
