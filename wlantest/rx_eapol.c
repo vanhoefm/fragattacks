@@ -130,7 +130,7 @@ static int try_pmk(struct wlantest *wt, struct wlantest_bss *bss,
 				  "Pairwise key expansion",
 				  bss->bssid, sta->addr, sta->anonce,
 				  sta->snonce, &ptk, sta->key_mgmt,
-				  sta->pairwise_cipher) < 0 ||
+				  sta->pairwise_cipher, NULL, 0) < 0 ||
 		   check_mic(ptk.kck, ptk.kck_len, sta->key_mgmt, ver, data,
 			     len) < 0) {
 		return -1;

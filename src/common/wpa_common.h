@@ -347,7 +347,8 @@ int wpa_eapol_key_mic(const u8 *key, size_t key_len, int akmp, int ver,
 int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 		   const u8 *addr1, const u8 *addr2,
 		   const u8 *nonce1, const u8 *nonce2,
-		   struct wpa_ptk *ptk, int akmp, int cipher);
+		   struct wpa_ptk *ptk, int akmp, int cipher,
+		   const u8 *z, size_t z_len);
 int fils_rmsk_to_pmk(int akmp, const u8 *rmsk, size_t rmsk_len,
 		     const u8 *snonce, const u8 *anonce, const u8 *dh_ss,
 		     size_t dh_ss_len, u8 *pmk, size_t *pmk_len);

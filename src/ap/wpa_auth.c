@@ -2160,7 +2160,7 @@ static int wpa_derive_ptk(struct wpa_state_machine *sm, const u8 *snonce,
 
 	return wpa_pmk_to_ptk(pmk, pmk_len, "Pairwise key expansion",
 			      sm->wpa_auth->addr, sm->addr, sm->ANonce, snonce,
-			      ptk, sm->wpa_key_mgmt, sm->pairwise);
+			      ptk, sm->wpa_key_mgmt, sm->pairwise, NULL, 0);
 }
 
 

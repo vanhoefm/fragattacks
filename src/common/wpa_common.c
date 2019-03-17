@@ -340,14 +340,21 @@ int wpa_eapol_key_mic(const u8 *key, size_t key_len, int akmp, int ver,
  * IEEE Std 802.11i-2004 - 8.5.1.2 Pairwise key hierarchy
  * PTK = PRF-X(PMK, "Pairwise key expansion",
  *             Min(AA, SA) || Max(AA, SA) ||
- *             Min(ANonce, SNonce) || Max(ANonce, SNonce))
+ *             Min(ANonce, SNonce) || Max(ANonce, SNonce)
+ *             [ || Z.x ])
+ *
+ * The optional Z.x component is used only with DPP and that part is not defined
+ * in IEEE 802.11.
  */
 int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 		   const u8 *addr1, const u8 *addr2,
 		   const u8 *nonce1, const u8 *nonce2,
-		   struct wpa_ptk *ptk, int akmp, int cipher)
+		   struct wpa_ptk *ptk, int akmp, int cipher,
+		   const u8 *z, size_t z_len)
 {
-	u8 data[2 * ETH_ALEN + 2 * WPA_NONCE_LEN];
+#define MAX_Z_LEN 66 /* with NIST P-521 */
+	u8 data[2 * ETH_ALEN + 2 * WPA_NONCE_LEN + MAX_Z_LEN];
+	size_t data_len = 2 * ETH_ALEN + 2 * WPA_NONCE_LEN;
 	u8 tmp[WPA_KCK_MAX_LEN + WPA_KEK_MAX_LEN + WPA_TK_MAX_LEN];
 	size_t ptk_len;
 
@@ -355,6 +362,9 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 		wpa_printf(MSG_ERROR, "WPA: No PMK set for PTK derivation");
 		return -1;
 	}
+
+	if (z_len > MAX_Z_LEN)
+		return -1;
 
 	if (os_memcmp(addr1, addr2, ETH_ALEN) < 0) {
 		os_memcpy(data, addr1, ETH_ALEN);
@@ -374,6 +384,11 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 			  WPA_NONCE_LEN);
 	}
 
+	if (z && z_len) {
+		os_memcpy(data + 2 * ETH_ALEN + 2 * WPA_NONCE_LEN, z, z_len);
+		data_len += z_len;
+	}
+
 	ptk->kck_len = wpa_kck_len(akmp, pmk_len);
 	ptk->kek_len = wpa_kek_len(akmp, pmk_len);
 	ptk->tk_len = wpa_cipher_key_len(cipher);
@@ -388,7 +403,7 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 	if (wpa_key_mgmt_sha384(akmp)) {
 #if defined(CONFIG_SUITEB192) || defined(CONFIG_FILS)
 		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA384)");
-		if (sha384_prf(pmk, pmk_len, label, data, sizeof(data),
+		if (sha384_prf(pmk, pmk_len, label, data, data_len,
 			       tmp, ptk_len) < 0)
 			return -1;
 #else /* CONFIG_SUITEB192 || CONFIG_FILS */
@@ -397,7 +412,7 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 	} else if (wpa_key_mgmt_sha256(akmp) || akmp == WPA_KEY_MGMT_OWE) {
 #if defined(CONFIG_IEEE80211W) || defined(CONFIG_SAE) || defined(CONFIG_FILS)
 		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA256)");
-		if (sha256_prf(pmk, pmk_len, label, data, sizeof(data),
+		if (sha256_prf(pmk, pmk_len, label, data, data_len,
 			       tmp, ptk_len) < 0)
 			return -1;
 #else /* CONFIG_IEEE80211W or CONFIG_SAE or CONFIG_FILS */
@@ -406,17 +421,17 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 #ifdef CONFIG_DPP
 	} else if (akmp == WPA_KEY_MGMT_DPP && pmk_len == 32) {
 		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA256)");
-		if (sha256_prf(pmk, pmk_len, label, data, sizeof(data),
+		if (sha256_prf(pmk, pmk_len, label, data, data_len,
 			       tmp, ptk_len) < 0)
 			return -1;
 	} else if (akmp == WPA_KEY_MGMT_DPP && pmk_len == 48) {
 		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA384)");
-		if (sha384_prf(pmk, pmk_len, label, data, sizeof(data),
+		if (sha384_prf(pmk, pmk_len, label, data, data_len,
 			       tmp, ptk_len) < 0)
 			return -1;
 	} else if (akmp == WPA_KEY_MGMT_DPP && pmk_len == 64) {
 		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA512)");
-		if (sha512_prf(pmk, pmk_len, label, data, sizeof(data),
+		if (sha512_prf(pmk, pmk_len, label, data, data_len,
 			       tmp, ptk_len) < 0)
 			return -1;
 	} else if (akmp == WPA_KEY_MGMT_DPP) {
@@ -426,7 +441,7 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 #endif /* CONFIG_DPP */
 	} else {
 		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA1)");
-		if (sha1_prf(pmk, pmk_len, label, data, sizeof(data), tmp,
+		if (sha1_prf(pmk, pmk_len, label, data, data_len, tmp,
 			     ptk_len) < 0)
 			return -1;
 	}
@@ -435,6 +450,8 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 		   MAC2STR(addr1), MAC2STR(addr2));
 	wpa_hexdump(MSG_DEBUG, "WPA: Nonce1", nonce1, WPA_NONCE_LEN);
 	wpa_hexdump(MSG_DEBUG, "WPA: Nonce2", nonce2, WPA_NONCE_LEN);
+	if (z && z_len)
+		wpa_hexdump_key(MSG_DEBUG, "WPA: Z.x", z, z_len);
 	wpa_hexdump_key(MSG_DEBUG, "WPA: PMK", pmk, pmk_len);
 	wpa_hexdump_key(MSG_DEBUG, "WPA: PTK", tmp, ptk_len);
 
@@ -451,6 +468,7 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 	ptk->kck2_len = 0;
 
 	os_memset(tmp, 0, sizeof(tmp));
+	os_memset(data, 0, data_len);
 	return 0;
 }
 

@@ -542,7 +542,7 @@ static int wpa_derive_ptk(struct wpa_sm *sm, const unsigned char *src_addr,
 	return wpa_pmk_to_ptk(sm->pmk, sm->pmk_len, "Pairwise key expansion",
 			      sm->own_addr, sm->bssid, sm->snonce,
 			      key->key_nonce, ptk, sm->key_mgmt,
-			      sm->pairwise_cipher);
+			      sm->pairwise_cipher, NULL, 0);
 }
 
 
