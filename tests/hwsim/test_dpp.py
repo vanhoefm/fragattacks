@@ -41,6 +41,13 @@ def check_dpp_capab(dev, brainpool=False, min_ver=1):
         raise HwsimSkip("DPP version %d not supported" % min_ver)
     return ver
 
+def wait_dpp_fail(dev, expected=None):
+    ev = dev.wait_event(["DPP-FAIL"], timeout=5)
+    if ev is None:
+        raise Exception("Failure not reported")
+    if expected and expected not in ev:
+        raise Exception("Unexpected result: " + ev)
+
 def test_dpp_qr_code_parsing(dev, apdev):
     """DPP QR Code parsing"""
     check_dpp_capab(dev[0])
@@ -714,9 +721,7 @@ def test_dpp_qr_code_auth_incompatible_roles_failure3(dev, apdev):
     with fail_test(dev[1], 1, "dpp_auth_resp_rx_status"):
         if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d role=configurator" % id1):
             raise Exception("Failed to initiate DPP Authentication")
-        ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
-        if ev is None or "AES-SIV decryption failed" not in ev:
-            raise Exception("AES-SIV decryption failure not reported")
+        wait_dpp_fail(dev[1], "AES-SIV decryption failed")
 
 def test_dpp_qr_code_auth_neg_chan(dev, apdev):
     """DPP QR Code and authentication exchange with requested different channel"""
@@ -2331,11 +2336,7 @@ def test_dpp_pkex_code_mismatch(dev, apdev):
     check_dpp_capab(dev[1])
     dev[0].dpp_pkex_resp(2437, identifier="test", code="secret")
     id1 = dev[1].dpp_pkex_init(identifier="test", code="unknown")
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("Failure not reported")
-    if "possible PKEX code mismatch" not in ev:
-        raise Exception("Unexpected result: " + ev)
+    wait_dpp_fail(dev[0], "possible PKEX code mismatch")
     dev[0].dump_monitor()
     dev[1].dump_monitor()
     dev[1].dpp_pkex_init(identifier="test", code="secret", use_id=id1)
@@ -2353,11 +2354,7 @@ def test_dpp_pkex_code_mismatch_limit(dev, apdev):
         dev[1].dump_monitor()
         id1 = dev[1].dpp_pkex_init(identifier="test", code="unknown",
                                    use_id=id1)
-        ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-        if ev is None:
-            raise Exception("Failure not reported")
-        if "possible PKEX code mismatch" not in ev:
-            raise Exception("Unexpected result: " + ev)
+        wait_dpp_fail(dev[0], "possible PKEX code mismatch")
 
     ev = dev[0].wait_event(["DPP-PKEX-T-LIMIT"], timeout=1)
     if ev is None:
@@ -2369,18 +2366,8 @@ def test_dpp_pkex_curve_mismatch(dev, apdev):
     check_dpp_capab(dev[1])
     dev[0].dpp_pkex_resp(2437, identifier="test", code="secret", curve="P-256")
     dev[1].dpp_pkex_init(identifier="test", code="secret", curve="P-384")
-
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("Failure not reported (dev 0)")
-    if "Mismatching PKEX curve: peer=20 own=19" not in ev:
-        raise Exception("Unexpected result: " + ev)
-
-    ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("Failure not reported (dev 1)")
-    if "Peer indicated mismatching PKEX group - proposed 19" not in ev:
-        raise Exception("Unexpected result: " + ev)
+    wait_dpp_fail(dev[0], "Mismatching PKEX curve: peer=20 own=19")
+    wait_dpp_fail(dev[1], "Peer indicated mismatching PKEX group - proposed 19")
 
 def test_dpp_pkex_curve_mismatch_failure(dev, apdev):
     """DPP and PKEX with mismatching curve (local failure)"""
@@ -2404,6 +2391,7 @@ def run_dpp_pkex_curve_mismatch_failure(dev, apdev, func):
             raise Exception("Failure not reported (dev 0)")
         if "Mismatching PKEX curve: peer=20 own=19" not in ev:
             raise Exception("Unexpected result: " + ev)
+        wait_dpp_fail(dev[0], "Mismatching PKEX curve: peer=20 own=19")
 
 def test_dpp_pkex_exchange_resp_processing_failure(dev, apdev):
     """DPP and PKEX with local failure in processing Exchange Resp"""
@@ -2977,11 +2965,7 @@ def test_dpp_proto_after_wrapped_data_conf_resp(dev, apdev):
 def test_dpp_proto_zero_i_capab(dev, apdev):
     """DPP protocol testing - zero I-capability in Auth Req"""
     run_dpp_proto_init(dev, 1, 8)
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if "Invalid role in I-capabilities 0x00" not in ev:
-        raise Exception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[0], "Invalid role in I-capabilities 0x00")
     ev = dev[1].wait_event(["DPP-RX"], timeout=0.1)
     if ev is not None:
         raise Exception("Unexpected DPP message seen")
@@ -2989,11 +2973,7 @@ def test_dpp_proto_zero_i_capab(dev, apdev):
 def test_dpp_proto_zero_r_capab(dev, apdev):
     """DPP protocol testing - zero R-capability in Auth Resp"""
     run_dpp_proto_init(dev, 0, 9)
-    ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if "Unexpected role in R-capabilities 0x00" not in ev:
-        raise Exception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[1], "Unexpected role in R-capabilities 0x00")
     ev = dev[0].wait_event(["DPP-RX"], timeout=1)
     if ev is None or "type=0" not in ev:
         raise Exception("DPP Authentication Request not seen")
@@ -3003,11 +2983,7 @@ def test_dpp_proto_zero_r_capab(dev, apdev):
 
 def run_dpp_proto_auth_req_missing(dev, test, reason, mutual=False):
     run_dpp_proto_init(dev, 1, test, mutual=mutual)
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if reason not in ev:
-        raise Exception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[0], reason)
     ev = dev[1].wait_event(["DPP-RX"], timeout=0.1)
     if ev is not None:
         raise Exception("Unexpected DPP message seen")
@@ -3069,11 +3045,7 @@ def run_dpp_proto_auth_resp_missing(dev, test, reason,
                 raise Exception("DPP-NOT-COMPATIBLE not reported")
         time.sleep(0.1)
         return
-    ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if reason not in ev:
-        raise Exception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[1], reason)
     ev = dev[0].wait_event(["DPP-RX"], timeout=1)
     if ev is None or "type=0" not in ev:
         raise Exception("DPP Authentication Request not seen")
@@ -3169,11 +3141,7 @@ def test_dpp_proto_auth_resp_no_wrapped_data(dev, apdev):
 def test_dpp_proto_auth_resp_i_nonce_mismatch(dev, apdev):
     """DPP protocol testing - I-nonce mismatch in Auth Resp"""
     run_dpp_proto_init(dev, 0, 30, mutual=True)
-    ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if "I-nonce mismatch" not in ev:
-        raise Exception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[1], "I-nonce mismatch")
     ev = dev[0].wait_event(["DPP-RX"], timeout=1)
     if ev is None or "type=0" not in ev:
         raise Exception("DPP Authentication Request not seen")
@@ -3184,61 +3152,33 @@ def test_dpp_proto_auth_resp_i_nonce_mismatch(dev, apdev):
 def test_dpp_proto_auth_resp_incompatible_r_capab(dev, apdev):
     """DPP protocol testing - Incompatible R-capab in Auth Resp"""
     run_dpp_proto_init(dev, 0, 31, mutual=True)
-    ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if "Unexpected role in R-capabilities 0x02" not in ev:
-        raise Exception("Unexpected failure: " + ev)
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if "Peer reported incompatible R-capab role" not in ev:
-        raise Exception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[1], "Unexpected role in R-capabilities 0x02")
+    wait_dpp_fail(dev[0], "Peer reported incompatible R-capab role")
 
 def test_dpp_proto_auth_resp_r_auth_mismatch(dev, apdev):
     """DPP protocol testing - R-auth mismatch in Auth Resp"""
     run_dpp_proto_init(dev, 0, 32, mutual=True)
-    ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if "Mismatching Responder Authenticating Tag" not in ev:
-        raise Exception("Unexpected failure: " + ev)
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if "Peer reported authentication failure" not in ev:
-        raise Exception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[1], "Mismatching Responder Authenticating Tag")
+    wait_dpp_fail(dev[0], "Peer reported authentication failure")
 
 def test_dpp_proto_auth_resp_r_auth_mismatch_failure(dev, apdev):
     """DPP protocol testing - Auth Conf RX processing failure"""
     with alloc_fail(dev[0], 1, "dpp_auth_conf_rx_failure"):
         run_dpp_proto_init(dev, 0, 32, mutual=True)
-        ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-        if ev is None:
-            raise Exception("DPP failure not seen")
-        if "Authentication failed" not in ev:
-            raise Exception("Unexpected failure: " + ev)
+        wait_dpp_fail(dev[0], "Authentication failed")
 
 def test_dpp_proto_auth_resp_r_auth_mismatch_failure2(dev, apdev):
     """DPP protocol testing - Auth Conf RX processing failure 2"""
     with fail_test(dev[0], 1, "dpp_auth_conf_rx_failure"):
         run_dpp_proto_init(dev, 0, 32, mutual=True)
-        ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-        if ev is None:
-            raise Exception("DPP failure not seen")
-        if "AES-SIV decryption failed" not in ev:
-            raise Exception("Unexpected failure: " + ev)
+        wait_dpp_fail(dev[0], "AES-SIV decryption failed")
 
 def run_dpp_proto_auth_conf_missing(dev, test, reason):
     run_dpp_proto_init(dev, 1, test, mutual=True)
     if reason is None:
         time.sleep(0.1)
         return
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if reason not in ev:
-        raise Exception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[0], reason)
 
 def test_dpp_proto_auth_conf_no_status(dev, apdev):
     """DPP protocol testing - no Status in Auth Conf"""
@@ -3275,28 +3215,16 @@ def test_dpp_proto_auth_conf_no_wrapped_data(dev, apdev):
 def test_dpp_proto_auth_conf_i_auth_mismatch(dev, apdev):
     """DPP protocol testing - I-auth mismatch in Auth Conf"""
     run_dpp_proto_init(dev, 1, 33, mutual=True)
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if "Mismatching Initiator Authenticating Tag" not in ev:
-        raise Excception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[0], "Mismatching Initiator Authenticating Tag")
 
 def test_dpp_proto_auth_conf_replaced_by_resp(dev, apdev):
     """DPP protocol testing - Auth Conf replaced by Resp"""
     run_dpp_proto_init(dev, 1, 65, mutual=True)
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if "Unexpected Authentication Response" not in ev:
-        raise Excception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[0], "Unexpected Authentication Response")
 
 def run_dpp_proto_conf_req_missing(dev, test, reason):
     run_dpp_proto_init(dev, 0, test)
-    ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if reason not in ev:
-        raise Exception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[1], reason)
 
 def test_dpp_proto_conf_req_no_e_nonce(dev, apdev):
     """DPP protocol testing - no E-nonce in Conf Req"""
@@ -3325,11 +3253,7 @@ def test_dpp_proto_conf_req_no_wrapped_data(dev, apdev):
 
 def run_dpp_proto_conf_resp_missing(dev, test, reason):
     run_dpp_proto_init(dev, 1, test)
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if reason not in ev:
-        raise Exception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[0], reason)
 
 def test_dpp_proto_conf_resp_no_e_nonce(dev, apdev):
     """DPP protocol testing - no E-nonce in Conf Resp"""
@@ -3461,19 +3385,11 @@ def test_dpp_proto_after_wrapped_data_pkex_cr_resp(dev, apdev):
 
 def run_dpp_proto_pkex_req_missing(dev, test, reason):
     run_dpp_proto_init_pkex(dev, 1, test)
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if reason not in ev:
-        raise Exception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[0], reason)
 
 def run_dpp_proto_pkex_resp_missing(dev, test, reason):
     run_dpp_proto_init_pkex(dev, 0, test)
-    ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exception("DPP failure not seen")
-    if reason not in ev:
-        raise Exception("Unexpected failure: " + ev)
+    wait_dpp_fail(dev[1], reason)
 
 def test_dpp_proto_pkex_exchange_req_no_finite_cyclic_group(dev, apdev):
     """DPP protocol testing - no Finite Cyclic Group in PKEX Exchange Request"""
@@ -4258,9 +4174,7 @@ def test_dpp_auth_resp_aes_siv_issue(dev, apdev):
     with fail_test(dev[1], 1, "aes_siv_decrypt;dpp_auth_resp_rx"):
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to initiate DPP Authentication")
-        ev = dev[1].wait_event(["DPP-FAIL"], timeout=5)
-        if ev is None or "AES-SIV decryption failed" not in ev:
-            raise Exception("AES-SIV decryption failure not reported")
+        wait_dpp_fail(dev[1], "AES-SIV decryption failed")
     dev[0].request("DPP_STOP_LISTEN")
 
 def test_dpp_invalid_legacy_params(dev, apdev):
@@ -4674,11 +4588,8 @@ def test_dpp_two_initiators(dev, apdev):
     if "OK" not in dev[2].request("DPP_AUTH_INIT peer=%d" % id2):
         raise Exception("Failed to initiate DPP Authentication (2)")
 
-    ev = dev[0].wait_event(["DPP-FAIL"], timeout=5)
-    if ev is None:
-        raise Exeption("No DPP failure seen")
-    if "DPP-FAIL Already in DPP authentication exchange - ignore new one" not in ev:
-        raise Exception("Second DPP authentication exchange not reported as ignored")
+    wait_dpp_fail(dev[0],
+                  "DPP-FAIL Already in DPP authentication exchange - ignore new one")
 
     ev = dev[0].wait_event(["DPP-CONF-FAILED"], timeout=2)
     if ev is None:
