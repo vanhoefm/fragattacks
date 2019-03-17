@@ -1823,6 +1823,7 @@ def test_mesh_sae_groups_invalid(dev, apdev):
     # wpa_s->mesh_rsn->sae_group_index.
     dev[0].dump_monitor()
     dev[1].dump_monitor()
+    dev[2].request("SET sae_groups ")
     id = add_mesh_secure_net(dev[2])
     dev[2].mesh_group_add(id)
     check_mesh_group_added(dev[2])
@@ -1837,6 +1838,7 @@ def test_mesh_sae_groups_invalid(dev, apdev):
 
     dev[0].request("SET sae_groups ")
     dev[1].request("SET sae_groups ")
+    dev[2].request("SET sae_groups ")
 
 def test_mesh_sae_failure(dev, apdev):
     """Mesh and local SAE failures"""
