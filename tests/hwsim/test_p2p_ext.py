@@ -311,6 +311,9 @@ def _test_p2p_ext_vendor_elem_invitation(dev):
     dev[0].p2p_stop_find()
     dev[1].p2p_stop_find()
 
+    dev[0].dump_monitor()
+    dev[1].dump_monitor()
+
     dev[0].p2p_listen()
     if "FAIL" in dev[1].request("SET ext_mgmt_frame_handling 0"):
         raise Exception("Failed to disable external management frame handling")
@@ -329,6 +332,11 @@ def _test_p2p_ext_vendor_elem_invitation(dev):
             break
     if "dd050011223307" not in ev:
         raise Exception("Vendor element not found from Invitation Response frame")
+    ev = dev[0].wait_global_event(["P2P-GROUP-STARTED"], timeout=5)
+    if ev is None:
+        raise Exception("Group start not reported")
+    dev[0].group_form_result(ev)
+    dev[0].remove_group()
     dev[0].p2p_stop_find()
     dev[1].p2p_stop_find()
 
