@@ -15,7 +15,7 @@ def test_ap_mixed_security(dev, apdev):
     """WPA/WPA2 with PSK, EAP, SAE, FT in a single BSS"""
     skip_with_fips(dev[0])
     dev[0].flush_scan_cache()
-    sae = "SAE" in dev[0].get_capability("auth_alg")
+    sae = "SAE" in dev[2].get_capability("auth_alg")
     ssid = "test-mixed"
     passphrase = 'qwertyuiop'
     params = hostapd.wpa_mixed_params(ssid=ssid, passphrase=passphrase)
