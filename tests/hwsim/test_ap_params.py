@@ -132,8 +132,11 @@ def test_ap_country(dev, apdev):
         if hapd:
             hapd.request("DISABLE")
         dev[0].request("DISCONNECT")
-        dev[0].request("ABORT_SCAN")
-        dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+        res = dev[0].request("ABORT_SCAN")
+        for i in range(2 if "OK" in res else 1):
+                dev[0].wait_event(["CTRL-EVENT-DISCONNECTED",
+                                   "CTRL-EVENT-SCAN-RESULTS"], timeout=0.5)
+        dev[0].dump_monitor()
         hostapd.cmd_execute(apdev[0], ['iw', 'reg', 'set', '00'])
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
