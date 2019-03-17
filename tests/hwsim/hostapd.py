@@ -418,6 +418,38 @@ class Hostapd:
         if "OK" not in self.request(cmd):
             raise Exception("Failed to start listen operation")
 
+    def dpp_pkex_init(self, identifier, code, role=None, key=None, curve=None,
+                      extra=None, use_id=None):
+        if use_id is None:
+            id1 = self.dpp_bootstrap_gen(type="pkex", key=key, curve=curve)
+        else:
+            id1 = use_id
+        cmd = "own=%d " % id1
+        if identifier:
+            cmd += "identifier=%s " % identifier
+        cmd += "init=1 "
+        if role:
+            cmd += "role=%s " % role
+        if extra:
+            cmd += extra + " "
+        cmd += "code=%s" % code
+        res = self.request("DPP_PKEX_ADD " + cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to set PKEX data (initiator)")
+        return id1
+
+    def dpp_pkex_resp(self, freq, identifier, code, key=None, curve=None,
+                      listen_role=None):
+        id0 = self.dpp_bootstrap_gen(type="pkex", key=key, curve=curve)
+        cmd = "own=%d " % id0
+        if identifier:
+            cmd += "identifier=%s " % identifier
+        cmd += "code=%s" % code
+        res = self.request("DPP_PKEX_ADD " + cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to set PKEX data (responder)")
+        self.dpp_listen(freq, role=listen_role)
+
 def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30,
            global_ctrl_override=None):
         if isinstance(apdev, dict):
