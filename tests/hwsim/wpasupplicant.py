@@ -23,7 +23,12 @@ class WpaSupplicant:
         self.monitor = monitor
         self.hostname = hostname
         self.group_ifname = None
+        self.global_mon = None
+        self.global_ctrl = None
         self.gctrl_mon = None
+        self.ctrl = None
+        self.mon = None
+        self.ifname = None
         self.host = remotehost.Host(hostname, ifname)
         self._group_dbg = None
         if ifname:
@@ -33,12 +38,9 @@ class WpaSupplicant:
                 self.p2p_dev_ifname = 'p2p-dev-' + self.ifname
             else:
                 self.p2p_dev_ifname = ifname
-        else:
-            self.ifname = None
 
         self.global_iface = global_iface
         if global_iface:
-            self.global_mon = None
             if hostname != None:
                 self.global_ctrl = wpaspy.Ctrl(hostname, global_port)
                 if self.monitor:
@@ -51,8 +53,77 @@ class WpaSupplicant:
                 self.global_dbg = ""
             if self.monitor:
                 self.global_mon.attach()
-        else:
-            self.global_mon = None
+
+    def __del__(self):
+        self.close_monitor()
+        self.close_control()
+
+    def close_control_ctrl(self):
+        if self.ctrl:
+            del self.ctrl
+            self.ctrl = None
+
+    def close_control_global(self):
+        if self.global_ctrl:
+            del self.global_ctrl
+            self.global_ctrl = None
+
+    def close_control(self):
+        self.close_control_ctrl()
+        self.close_control_global()
+
+    def close_monitor_mon(self):
+        if not self.mon:
+            return
+        try:
+            while self.mon.pending():
+                ev = self.mon.recv()
+                logger.debug(self.dbg + ": " + ev)
+        except:
+            pass
+        try:
+            self.mon.detach()
+        except ConnectionRefusedError:
+            pass
+        del self.mon
+        self.mon = None
+
+    def close_monitor_global(self):
+        if not self.global_mon:
+            return
+        try:
+            while self.global_mon.pending():
+                ev = self.global_mon.recv()
+                logger.debug(self.global_dbg + ": " + ev)
+        except:
+            pass
+        try:
+            self.global_mon.detach()
+        except ConnectionRefusedError:
+            pass
+        del self.global_mon
+        self.global_mon = None
+
+    def close_monitor_group(self):
+        if not self.gctrl_mon:
+            return
+        try:
+            while self.gctrl_mon.pending():
+                ev = self.gctrl_mon.recv()
+                logger.debug(self.dbg + ": " + ev)
+        except:
+            pass
+        try:
+            self.gctrl_mon.detach()
+        except:
+            pass
+        del self.gctrl_mon
+        self.gctrl_mon = None
+
+    def close_monitor(self):
+        self.close_monitor_mon()
+        self.close_monitor_global()
+        self.close_monitor_group()
 
     def cmd_execute(self, cmd_array, shell=False):
         if self.hostname is None:
@@ -70,19 +141,17 @@ class WpaSupplicant:
 
     def terminate(self):
         if self.global_mon:
-            self.global_mon.detach()
-            self.global_mon = None
+            self.close_monitor_global()
             self.global_ctrl.terminate()
             self.global_ctrl = None
 
     def close_ctrl(self):
-        if self.global_mon:
-            self.global_mon.detach()
-            self.global_mon = None
-            self.global_ctrl = None
+        self.close_monitor_global()
+        self.close_control_global()
         self.remove_ifname()
 
     def set_ifname(self, ifname, hostname=None, port=9877):
+        self.remove_ifname()
         self.ifname = ifname
         if hostname != None:
             self.ctrl = wpaspy.Ctrl(hostname, port)
@@ -99,11 +168,9 @@ class WpaSupplicant:
             self.mon.attach()
 
     def remove_ifname(self):
-        if self.ifname:
-            self.mon.detach()
-            self.mon = None
-            self.ctrl = None
-            self.ifname = None
+        self.close_monitor_mon()
+        self.close_control_ctrl()
+        self.ifname = None
 
     def get_ctrl_iface_port(self, ifname):
         if self.hostname is None:
@@ -217,12 +284,7 @@ class WpaSupplicant:
         self.global_request("REMOVE_NETWORK all")
         self.global_request("SET p2p_no_group_iface 1")
         self.global_request("P2P_FLUSH")
-        if self.gctrl_mon:
-            try:
-                self.gctrl_mon.detach()
-            except:
-                pass
-            self.gctrl_mon = None
+        self.close_monitor_group()
         self.group_ifname = None
         self.dump_monitor()
 
@@ -814,12 +876,7 @@ class WpaSupplicant:
         return self.wait_event(events, timeout)
 
     def wait_go_ending_session(self):
-        if self.gctrl_mon:
-            try:
-                self.gctrl_mon.detach()
-            except:
-                pass
-            self.gctrl_mon = None
+        self.close_monitor_group()
         timeout = 3 if self.hostname is None else 10
         ev = self.wait_global_event(["P2P-GROUP-REMOVED"], timeout=timeout)
         if ev is None:
@@ -841,12 +898,7 @@ class WpaSupplicant:
         return (count_iface, count_global)
 
     def remove_group(self, ifname=None):
-        if self.gctrl_mon:
-            try:
-                self.gctrl_mon.detach()
-            except:
-                pass
-            self.gctrl_mon = None
+        self.close_monitor_group()
         if ifname is None:
             ifname = self.group_ifname if self.group_ifname else self.ifname
         if "OK" not in self.global_request("P2P_GROUP_REMOVE " + ifname):

@@ -1,5 +1,5 @@
 # P2P helper functions
-# Copyright (c) 2013-2015, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -105,6 +105,7 @@ def go_neg_pin_authorized_persistent(i_dev, r_dev, i_intent=None, r_intent=None,
 
 def terminate_group(go, cli):
     logger.info("Terminate persistent group")
+    cli.close_monitor_group()
     go.remove_group()
     cli.wait_go_ending_session()
 

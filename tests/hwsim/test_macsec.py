@@ -1,5 +1,5 @@
 # Test cases for MACsec/MKA
-# Copyright (c) 2018, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2018-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -17,9 +17,10 @@ import hwsim_utils
 from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger
 
 def cleanup_macsec():
-    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5', monitor=False)
     wpas.interface_remove("veth0")
     wpas.interface_remove("veth1")
+    del wpas
     subprocess.call(["ip", "link", "del", "veth0"],
                     stderr=open('/dev/null', 'w'))
 
@@ -34,8 +35,9 @@ def test_macsec_psk_mka_life_time(dev, apdev, params):
     """MACsec PSK - MKA life time"""
     try:
         run_macsec_psk(dev, apdev, params, "macsec_psk_mka_life_time")
-        wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+        wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5', monitor=False)
         wpas.interface_remove("veth1")
+        del wpas
         # Wait for live peer to be removed on veth0
         time.sleep(6.1)
     finally:
@@ -319,7 +321,7 @@ def run_macsec_psk(dev, apdev, params, prefix, integ_only=False, port0=None,
         cmd[i].terminate()
 
 def cleanup_macsec_br(count):
-    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5', monitor=False)
     for i in range(count):
         wpas.interface_remove("veth%d" % i)
         subprocess.call(["ip", "link", "del", "veth%d" % i],
@@ -428,8 +430,9 @@ def run_macsec_psk_br(dev, apdev, count, mka_priority):
             logger.info("Data traffic test failed - ignore for now for >= 3 device cases")
 
     for i in range(count):
-        wpa[i].dump_monitor()
+        wpa[i].close_monitor()
     for i in range(count):
+        wpa[0].close_control()
         del wpa[0]
 
 def test_macsec_psk_ns(dev, apdev, params):
@@ -651,9 +654,13 @@ def run_macsec_psk_ns(dev, apdev, params):
     if "2 packets transmitted, 2 received" not in res:
         raise Exception("ping did not work")
 
+    wpas0.close_monitor()
     wpas0.request("TERMINATE")
+    wpas0.close_control()
     del wpas0
+    wpas1.close_monitor()
     wpas1.request("TERMINATE")
+    wpas1.close_control()
     del wpas1
 
     time.sleep(1)

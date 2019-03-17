@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Test case executor
-# Copyright (c) 2013-2015, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -63,6 +63,7 @@ def reset_devs(dev, apdev):
         pass
     if wpas:
         wpas.close_ctrl()
+        del wpas
 
     try:
         hapd = HostapdGlobal()
@@ -560,7 +561,8 @@ def main():
                 reset_ok = reset_devs(dev, apdev)
             wpas = None
             try:
-                wpas = WpaSupplicant(global_iface="/tmp/wpas-wlan5")
+                wpas = WpaSupplicant(global_iface="/tmp/wpas-wlan5",
+                                     monitor=False)
                 rename_log(args.logdir, 'log5', name, wpas)
                 if not args.no_reset:
                     wpas.remove_ifname()
@@ -568,6 +570,7 @@ def main():
                 pass
             if wpas:
                 wpas.close_ctrl()
+                del wpas
 
             for i in range(0, 3):
                 rename_log(args.logdir, 'log' + str(i), name, dev[i])
