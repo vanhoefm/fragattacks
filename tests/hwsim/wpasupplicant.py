@@ -884,14 +884,14 @@ class WpaSupplicant:
         if "reason=GO_ENDING_SESSION" not in ev:
             raise Exception("Unexpected group removal reason")
 
-    def dump_monitor(self):
+    def dump_monitor(self, mon=True, global_mon=True):
         count_iface = 0
         count_global = 0
-        while self.monitor and self.mon.pending():
+        while mon and self.monitor and self.mon.pending():
             ev = self.mon.recv()
             logger.debug(self.dbg + ": " + ev)
             count_iface += 1
-        while self.monitor and self.global_mon and self.global_mon.pending():
+        while global_mon and self.monitor and self.global_mon and self.global_mon.pending():
             ev = self.global_mon.recv()
             logger.debug(self.global_dbg + self.ifname + "(global): " + ev)
             count_global += 1

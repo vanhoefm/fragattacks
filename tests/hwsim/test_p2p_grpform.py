@@ -1,5 +1,5 @@
 # P2P group formation test cases
-# Copyright (c) 2013-2014, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -766,7 +766,11 @@ def test_grpform_cred_ready_timeout(dev, apdev, params):
     dev[2].dump_monitor()
     logger.info("Starting p2p_find to change state")
     dev[2].p2p_find()
-    ev = dev[2].wait_global_event(["P2P-GO-NEG-FAILURE"], timeout=100)
+    for i in range(10):
+        ev = dev[2].wait_global_event(["P2P-GO-NEG-FAILURE"], timeout=10)
+        if ev:
+            break
+        dev[2].dump_monitor(global_mon=False)
     if ev is None:
         raise Exception("GO Negotiation failure timed out(2)")
     dev[2].dump_monitor()
@@ -785,7 +789,10 @@ def test_grpform_cred_ready_timeout(dev, apdev, params):
     if wpas.p2p_dev_addr() not in ev:
         raise Exception("Unexpected device found: " + ev)
     dev[2].p2p_stop_find()
+    dev[2].dump_monitor()
     wpas.p2p_stop_find()
+    wpas.close_monitor()
+    del wpas
 
     # Finally, verify without p2p_find
     ev = dev[0].wait_global_event(["P2P-GO-NEG-FAILURE"], timeout=120)
