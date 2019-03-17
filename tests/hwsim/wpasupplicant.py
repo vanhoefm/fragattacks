@@ -627,7 +627,8 @@ class WpaSupplicant:
             else:
                 port = self.get_ctrl_iface_port(self.group_ifname)
                 self.gctrl_mon = wpaspy.Ctrl(self.hostname, port)
-            self.gctrl_mon.attach()
+            if self.monitor:
+                self.gctrl_mon.attach()
         except:
             logger.debug("Could not open monitor socket for group interface")
             self.gctrl_mon = None
@@ -829,11 +830,11 @@ class WpaSupplicant:
     def dump_monitor(self):
         count_iface = 0
         count_global = 0
-        while self.mon.pending():
+        while self.monitor and self.mon.pending():
             ev = self.mon.recv()
             logger.debug(self.dbg + ": " + ev)
             count_iface += 1
-        while self.global_mon and self.global_mon.pending():
+        while self.monitor and self.global_mon and self.global_mon.pending():
             ev = self.global_mon.recv()
             logger.debug(self.global_dbg + self.ifname + "(global): " + ev)
             count_global += 1
