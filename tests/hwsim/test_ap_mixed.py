@@ -33,6 +33,7 @@ def test_ap_mixed_security(dev, apdev):
                    password="abcdefghijklmnop0123456789abcdef",
                    scan_freq="2412")
     if sae:
+        dev[2].request("SET sae_groups ")
         dev[2].connect(ssid, psk=passphrase, key_mgmt="SAE", scan_freq="2412")
 
     logger.debug(dev[0].request("SCAN_RESULTS"))
