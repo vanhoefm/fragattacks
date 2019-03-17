@@ -407,6 +407,17 @@ class Hostapd:
             raise Exception("Failed to generate bootstrapping info")
         return int(res)
 
+    def dpp_listen(self, freq, netrole=None, qr=None, role=None):
+        cmd = "DPP_LISTEN " + str(freq)
+        if netrole:
+            cmd += " netrole=" + netrole
+        if qr:
+            cmd += " qr=" + qr
+        if role:
+            cmd += " role=" + role
+        if "OK" not in self.request(cmd):
+            raise Exception("Failed to start listen operation")
+
 def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30,
            global_ctrl_override=None):
         if isinstance(apdev, dict):

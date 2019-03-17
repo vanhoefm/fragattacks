@@ -1425,3 +1425,14 @@ class WpaSupplicant:
         if "FAIL" in res:
             raise Exception("Failed to generate bootstrapping info")
         return int(res)
+
+    def dpp_listen(self, freq, netrole=None, qr=None, role=None):
+        cmd = "DPP_LISTEN " + str(freq)
+        if netrole:
+            cmd += " netrole=" + netrole
+        if qr:
+            cmd += " qr=" + qr
+        if role:
+            cmd += " role=" + role
+        if "OK" not in self.request(cmd):
+            raise Exception("Failed to start listen operation")

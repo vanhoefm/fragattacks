@@ -202,9 +202,7 @@ def test_dpp_qr_code_curve_select(dev, apdev):
         logger.info("Curve: " + curve)
         logger.info("URI: " + uri)
 
-        if "OK" not in dev[0].request("DPP_LISTEN 2412"):
-            raise Exception("Failed to start listen operation")
-
+        dev[0].dpp_listen(2412)
         res = dev[1].dpp_qr_code(uri)
         if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d" % res):
             raise Exception("Failed to initiate DPP Authentication")
@@ -237,8 +235,7 @@ def test_dpp_qr_code_auth_broadcast(dev, apdev):
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
-    if "OK" not in dev[0].request("DPP_LISTEN 2412"):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
     if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d" % id1):
         raise Exception("Failed to initiate DPP Authentication")
     ev = dev[0].wait_event(["DPP-AUTH-SUCCESS"], timeout=5)
@@ -309,11 +306,7 @@ def run_dpp_qr_code_auth_unicast(dev, apdev, curve, netrole=None, key=None,
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
-    cmd = "DPP_LISTEN 2412"
-    if netrole:
-        cmd += " netrole=" + netrole
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412, netrole=netrole)
     cmd = "DPP_AUTH_INIT peer=%d" % id1
     if init_extra:
         cmd += " " + init_extra
@@ -364,8 +357,7 @@ def test_dpp_qr_code_auth_mutual(dev, apdev):
     id0b = dev[0].dpp_qr_code(uri1b)
 
     logger.info("dev1 initiates DPP Authentication")
-    if "OK" not in dev[0].request("DPP_LISTEN 2412"):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
     if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d own=%d" % (id1, id1b)):
         raise Exception("Failed to initiate DPP Authentication")
 
@@ -399,8 +391,7 @@ def test_dpp_qr_code_auth_mutual2(dev, apdev):
     uri1b = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1b)
 
     logger.info("dev1 initiates DPP Authentication")
-    if "OK" not in dev[0].request("DPP_LISTEN 2412 qr=mutual"):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412, qr="mutual")
     if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d own=%d" % (id1, id1b)):
         raise Exception("Failed to initiate DPP Authentication")
 
@@ -463,8 +454,7 @@ def run_dpp_qr_code_auth_mutual(dev, apdev, curve):
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
-    if "OK" not in dev[0].request("DPP_LISTEN 2412 qr=mutual"):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412, qr="mutual")
     if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d" % (id1)):
         raise Exception("Failed to initiate DPP Authentication")
 
@@ -513,8 +503,7 @@ def test_dpp_auth_resp_retries(dev, apdev):
     uri1b = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1b)
 
     logger.info("dev1 initiates DPP Authentication")
-    if "OK" not in dev[0].request("DPP_LISTEN 2412 qr=mutual"):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412, qr="mutual")
     if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d own=%d" % (id1, id1b)):
         raise Exception("Failed to initiate DPP Authentication")
 
@@ -566,8 +555,7 @@ def test_dpp_qr_code_auth_mutual_not_used(dev, apdev):
     logger.info("dev0 does not scan QR Code")
 
     logger.info("dev1 initiates DPP Authentication")
-    if "OK" not in dev[0].request("DPP_LISTEN 2412"):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
     if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d own=%d" % (id1, id1b)):
         raise Exception("Failed to initiate DPP Authentication")
 
@@ -625,8 +613,7 @@ def test_dpp_qr_code_auth_hostapd_mutual2(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0b)
 
     logger.info("dev0 initiates DPP Authentication")
-    if "OK" not in hapd.request("DPP_LISTEN 2412 qr=mutual"):
-        raise Exception("Failed to start listen operation")
+    hapd.dpp_listen(2412, qr="mutual")
     if "OK" not in dev[0].request("DPP_AUTH_INIT peer=%d own=%d" % (id0, id0b)):
         raise Exception("Failed to initiate DPP Authentication")
 
@@ -659,8 +646,7 @@ def test_dpp_qr_code_listen_continue(dev, apdev):
     logger.info("dev1 scans QR Code")
     id1 = dev[1].dpp_qr_code(uri0)
 
-    if "OK" not in dev[0].request("DPP_LISTEN 2412"):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
     logger.info("Wait for listen to expire and get restarted")
     time.sleep(5.5)
     logger.info("dev1 initiates DPP Authentication")
@@ -695,8 +681,7 @@ def run_dpp_qr_code_auth_initiator_enrollee(dev, apdev):
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
-    if "OK" not in dev[0].request("DPP_LISTEN 2412"):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
     if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d role=enrollee" % id1):
         raise Exception("Failed to initiate DPP Authentication")
     ev = dev[0].wait_event(["DPP-AUTH-SUCCESS"], timeout=5)
@@ -741,11 +726,7 @@ def run_dpp_qr_code_auth_initiator_either(dev, apdev, resp_role,
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
-    cmd = "DPP_LISTEN 2412"
-    if resp_role:
-        cmd += " role=" + resp_role
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412, role=resp_role)
     if "OK" not in dev[1].request("DPP_AUTH_INIT peer=%d role=either" % id1):
         raise Exception("Failed to initiate DPP Authentication")
     ev = dev[0].wait_event(["DPP-AUTH-SUCCESS"], timeout=5)
@@ -775,8 +756,7 @@ def run_init_incompatible_roles(dev, role="enrollee"):
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
-    if "OK" not in dev[0].request("DPP_LISTEN 2412 role=%s" % role):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412, role=role)
     return id1
 
 def test_dpp_qr_code_auth_incompatible_roles(dev, apdev):
@@ -861,9 +841,7 @@ def test_dpp_qr_code_auth_neg_chan(dev, apdev):
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d configurator=%d conf=sta-dpp neg_freq=2462" % (id1, conf_id)
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
@@ -1532,9 +1510,7 @@ def test_dpp_gas_timeout(dev, apdev):
 
     logger.info("dev1 initiates DPP Authentication")
     dev[0].set("ext_mgmt_frame_handling", "1")
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
 
     # Force GAS fragmentation
     conf = '{"wi-fi_tech":"infra", "discovery":{"ssid":"test"},"cred":{"akm":"psk","pass":"secret passphrase"}}' + 3000*' '
@@ -1862,9 +1838,7 @@ def run_dpp_ap_config(dev, apdev, curve=None, conf_curve=None,
             raise Exception("Failed to add configurator (reconf)")
         conf_id = int(res)
 
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[1].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[1].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d conf=sta-dpp configurator=%d" % (id0b, conf_id)
     if "OK" not in dev[0].request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
@@ -1977,10 +1951,7 @@ def run_dpp_auto_connect(dev, apdev, processing):
 
     id1 = dev[1].dpp_qr_code(uri0)
 
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d conf=sta-dpp configurator=%d" % (id1, conf_id)
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
@@ -2068,10 +2039,7 @@ def run_dpp_auto_connect_legacy(dev, apdev, conf='sta-psk',
 
     id1 = dev[1].dpp_qr_code(uri0)
 
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d conf=%s ssid=%s pass=%s" % (id1, conf,
         binascii.hexlify(b"dpp-legacy").decode(),
         binascii.hexlify(b"secret passphrase").decode())
@@ -2113,10 +2081,7 @@ def run_dpp_auto_connect_legacy_pmf_required(dev, apdev):
 
     id1 = dev[1].dpp_qr_code(uri0)
 
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk ssid=%s pass=%s" % (id1,
         binascii.hexlify(b"dpp-legacy").decode(),
         binascii.hexlify(b"secret passphrase").decode())
@@ -2160,9 +2125,7 @@ def run_dpp_qr_code_auth_responder_configurator(dev, apdev, extra):
 
     dev[0].set("dpp_configurator_params",
                " conf=sta-dpp configurator=%d%s" % (conf_id, extra))
-    cmd = "DPP_LISTEN 2412 role=configurator"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412, role="configurator")
     cmd = "DPP_AUTH_INIT peer=%d role=enrollee" % id1
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
@@ -2200,10 +2163,7 @@ def test_dpp_qr_code_hostapd_init(dev, apdev):
 
     dev[0].set("dpp_configurator_params",
                " conf=ap-dpp configurator=%d" % conf_id)
-    cmd = "DPP_LISTEN 2437 role=configurator"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2437, role="configurator")
     id1 = hapd.dpp_qr_code(uri0)
 
     cmd = "DPP_AUTH_INIT peer=%d role=enrollee" % id1
@@ -2249,10 +2209,7 @@ def run_dpp_qr_code_hostapd_init_offchannel(dev, apdev, extra):
 
     dev[0].set("dpp_configurator_params",
                " conf=ap-dpp configurator=%d" % conf_id)
-    cmd = "DPP_LISTEN 2462 role=configurator"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2462, role="configurator")
     id1 = hapd.dpp_qr_code(uri0)
 
     cmd = "DPP_AUTH_INIT peer=%d role=enrollee" % id1
@@ -2307,10 +2264,7 @@ def test_dpp_test_vector_p_256(dev, apdev):
     id1peer = dev[1].dpp_qr_code(uri0)
     id0peer = dev[0].dpp_qr_code(uri1)
 
-    cmd = "DPP_LISTEN 2462 qr=mutual"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2462, qr="mutual")
     cmd = "DPP_AUTH_INIT peer=%d own=%d neg_freq=2412" % (id1peer, id1)
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to initiate operation")
@@ -2353,10 +2307,7 @@ def test_dpp_test_vector_p_256_b(dev, apdev):
 
     id1peer = dev[1].dpp_qr_code(uri0)
 
-    cmd = "DPP_LISTEN 2462"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2462)
     cmd = "DPP_AUTH_INIT peer=%d own=%d neg_freq=2412" % (id1peer, id1)
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to initiate operation")
@@ -2408,10 +2359,7 @@ def test_dpp_test_vector_p_521(dev, apdev):
     id1peer = dev[1].dpp_qr_code(uri0)
     id0peer = dev[0].dpp_qr_code(uri1)
 
-    cmd = "DPP_LISTEN 2462 qr=mutual"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2462, qr="mutual")
     cmd = "DPP_AUTH_INIT peer=%d own=%d neg_freq=2412" % (id1peer, id1)
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to initiate operation")
@@ -2498,9 +2446,7 @@ def run_dpp_pkex(dev, apdev, curve=None, init_extra="", check_config=False,
     res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
-    cmd = "DPP_LISTEN 2437"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2437)
 
     identifier = " identifier=" + identifier_i if identifier_i else ""
     cmd = "DPP_PKEX_ADD own=%d%s init=1 %s code=secret" % (id1, identifier,
@@ -2563,9 +2509,7 @@ def run_dpp_pkex_5ghz(dev, apdev):
     res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
-    cmd = "DPP_LISTEN 5745"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(5745)
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 code=secret" % (id1)
     res = dev[1].request(cmd)
@@ -2630,9 +2574,7 @@ def test_dpp_pkex_test_vector(dev, apdev):
     res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
-    cmd = "DPP_LISTEN 2437"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2437)
 
     cmd = "DPP_PKEX_ADD own=%d identifier=%s init=1 code=%s" % (id1, identifier, code)
     res = dev[1].request(cmd)
@@ -2658,9 +2600,7 @@ def test_dpp_pkex_code_mismatch(dev, apdev):
     res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
-    cmd = "DPP_LISTEN 2437"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2437)
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 code=unknown" % id1
     res = dev[1].request(cmd)
@@ -2700,9 +2640,7 @@ def test_dpp_pkex_code_mismatch_limit(dev, apdev):
     res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
-    cmd = "DPP_LISTEN 2437"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2437)
 
     for i in range(5):
         dev[0].dump_monitor()
@@ -2734,9 +2672,7 @@ def test_dpp_pkex_curve_mismatch(dev, apdev):
     res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
-    cmd = "DPP_LISTEN 2437"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2437)
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 code=secret" % id1
     res = dev[1].request(cmd)
@@ -2775,9 +2711,7 @@ def run_dpp_pkex_curve_mismatch_failure(dev, apdev, func):
     res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
-    cmd = "DPP_LISTEN 2437"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2437)
 
     with alloc_fail(dev[0], 1, func):
         cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 code=secret" % id1
@@ -2803,9 +2737,7 @@ def test_dpp_pkex_exchange_resp_processing_failure(dev, apdev):
     res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
-    cmd = "DPP_LISTEN 2437"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2437)
 
     with fail_test(dev[1], 1, "dpp_pkex_derive_Qr;dpp_pkex_rx_exchange_resp"):
         cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 code=secret" % id1
@@ -2826,9 +2758,7 @@ def test_dpp_pkex_commit_reveal_req_processing_failure(dev, apdev):
     res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
-    cmd = "DPP_LISTEN 2437"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2437)
 
     with alloc_fail(dev[0], 1,
                     "dpp_get_pubkey_point;dpp_pkex_rx_commit_reveal_req"):
@@ -2863,9 +2793,7 @@ def run_dpp_pkex2(dev, apdev, curve=None, init_extra=""):
     res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
-    cmd = "DPP_LISTEN 2437 role=configurator"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2437, role="configurator")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 role=enrollee %s code=secret" % (id1, init_extra)
     res = dev[1].request(cmd)
@@ -2925,9 +2853,7 @@ def test_dpp_pkex_after_retry(dev, apdev):
     res = dev[1].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
-    cmd = "DPP_LISTEN 2437"
-    if "OK" not in dev[1].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[1].dpp_listen(2437)
 
     ev = dev[1].wait_event(["DPP-AUTH-SUCCESS"], timeout=10)
     if ev is None:
@@ -3005,10 +2931,7 @@ def test_dpp_pkex_hostapd_initiator(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder/wpa_supplicant)")
 
-    cmd = "DPP_LISTEN 2437 role=configurator"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2437, role="configurator")
     id_h = hapd.dpp_bootstrap_gen(type="pkex")
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 role=enrollee code=secret" % (id_h)
@@ -3057,9 +2980,7 @@ def test_dpp_hostapd_configurator(dev, apdev):
     if "mac_addr=" + dev[0].own_addr() not in res:
         raise Exception("DPP_BOOTSTRAP_INFO did not report correct mac_addr")
 
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d configurator=%d conf=sta-dpp" % (id1, conf_id)
     if "OK" not in hapd.request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
@@ -3255,8 +3176,7 @@ def run_dpp_own_config_ap(dev, apdev, reconf_configurator=False, extra=""):
     id = hapd.dpp_qr_code(uri)
 
     dev[0].set("dpp_config_processing", "2")
-    if "OK" not in dev[0].request("DPP_LISTEN 2412"):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d conf=sta-dpp configurator=%d%s" % (id, conf_id, extra)
     if "OK" not in hapd.request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
@@ -3321,10 +3241,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
 
     id1 = dev[1].dpp_qr_code(uri0)
 
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2412)
     dev[1].set("dpp_groups_override", '[{"groupId":"b","netRole":"sta"}]')
     cmd = "DPP_AUTH_INIT peer=%d conf=sta-dpp configurator=%d" % (id1, conf_id)
     if "OK" not in dev[1].request(cmd):
@@ -3343,10 +3260,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
 
     id1 = dev[1].dpp_qr_code(uri2)
 
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[2].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[2].dpp_listen(2412)
     res = dev[1].request("DPP_CONFIGURATOR_ADD")
     if "FAIL" in res:
         raise Exception("Failed to add configurator")
@@ -3369,10 +3283,7 @@ def run_dpp_intro_mismatch(dev, apdev, wpas):
 
     id1 = dev[1].dpp_qr_code(uri5)
 
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in wpas.request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    wpas.dpp_listen(2412)
     dev[1].set("dpp_groups_override", '')
     cmd = "DPP_AUTH_INIT peer=%d conf=sta-dpp configurator=%d" % (id1, conf_id)
     if "OK" not in dev[1].request(cmd):
@@ -3429,24 +3340,24 @@ def run_dpp_proto_init(dev, test_dev, test, mutual=False, unicast=True,
         uri1b = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1b)
 
         id0b = dev[0].dpp_qr_code(uri1b)
-
-        cmd = "DPP_LISTEN 2412 qr=mutual"
+        qr = "mutual"
     else:
-        cmd = "DPP_LISTEN 2412"
+        qr = None
 
     if init_enrollee:
         if incompatible_roles:
-            cmd += " role=enrollee"
+            role = "enrollee"
         else:
-            cmd += " role=configurator"
+            role = "configurator"
         dev[0].set("dpp_configurator_params",
                    " conf=sta-dpp configurator=%d" % conf_id)
     elif incompatible_roles:
-        cmd += " role=enrollee"
+        role = "enrollee"
+    else:
+        role = None
 
     if listen:
-        if "OK" not in dev[0].request(cmd):
-            raise Exception("Failed to start listen operation")
+        dev[0].dpp_listen(2412, qr=qr, role=role)
 
     if init_enrollee:
         cmd = "DPP_AUTH_INIT peer=%d role=enrollee" % (id1)
@@ -4030,9 +3941,7 @@ def run_dpp_proto_init_pkex(dev, test_dev, test):
     res = dev[0].request(cmd)
     if "FAIL" in res:
         raise Exception("Failed to set PKEX data (responder)")
-    cmd = "DPP_LISTEN 2437"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2437)
 
     cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 code=secret" % id1
     res = dev[1].request(cmd)
@@ -4339,9 +4248,7 @@ def run_dpp_qr_code_chan_list(dev, apdev, unicast, listen_freq, chanlist,
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
-    cmd = "DPP_LISTEN %d" % listen_freq
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(listen_freq)
     cmd = "DPP_AUTH_INIT peer=%d" % id1
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
@@ -4441,9 +4348,7 @@ def test_dpp_pkex_alloc_fail(dev, apdev):
         res = dev[0].request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to set PKEX data (responder)")
-        cmd = "DPP_LISTEN 2437"
-        if "OK" not in dev[0].request(cmd):
-            raise Exception("Failed to start listen operation")
+        dev[0].dpp_listen(2437)
 
         with alloc_fail(dev[1], count, func):
             cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 conf=sta-dpp configurator=%d code=secret" % (id1, conf_id)
@@ -4495,9 +4400,7 @@ def test_dpp_pkex_alloc_fail(dev, apdev):
         res = dev[0].request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to set PKEX data (responder)")
-        cmd = "DPP_LISTEN 2437"
-        if "OK" not in dev[0].request(cmd):
-            raise Exception("Failed to start listen operation")
+        dev[0].dpp_listen(2437)
 
         with alloc_fail(dev[0], count, func):
             cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 conf=sta-dpp configurator=%d code=secret" % (id1, conf_id)
@@ -4567,9 +4470,7 @@ def test_dpp_pkex_test_fail(dev, apdev):
         res = dev[0].request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to set PKEX data (responder)")
-        cmd = "DPP_LISTEN 2437"
-        if "OK" not in dev[0].request(cmd):
-            raise Exception("Failed to start listen operation")
+        dev[0].dpp_listen(2437)
 
         with fail_test(dev[1], count, func):
             cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 conf=sta-dpp configurator=%d code=secret" % (id1, conf_id)
@@ -4613,9 +4514,7 @@ def test_dpp_pkex_test_fail(dev, apdev):
         res = dev[0].request(cmd)
         if "FAIL" in res:
             raise Exception("Failed to set PKEX data (responder)")
-        cmd = "DPP_LISTEN 2437"
-        if "OK" not in dev[0].request(cmd):
-            raise Exception("Failed to start listen operation")
+        dev[0].dpp_listen(2437)
 
         with fail_test(dev[0], count, func):
             cmd = "DPP_PKEX_ADD own=%d identifier=test init=1 conf=sta-dpp configurator=%d code=secret" % (id1, conf_id)
@@ -4668,9 +4567,7 @@ def start_dpp(dev):
     dev[0].set("dpp_config_obj_override", conf)
 
     dev[0].set("ext_mgmt_frame_handling", "1")
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d role=enrollee" % id1
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
@@ -4830,9 +4727,7 @@ def test_dpp_bootstrap_key_autogen_issues(dev, apdev):
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
     with alloc_fail(dev[1], 1, "dpp_autogen_bootstrap_key"):
         cmd = "DPP_AUTH_INIT peer=%d" % id1
         if "FAIL" not in dev[1].request(cmd):
@@ -4866,9 +4761,7 @@ def test_dpp_auth_resp_aes_siv_issue(dev, apdev):
     id1 = dev[1].dpp_qr_code(uri0)
 
     logger.info("dev1 initiates DPP Authentication")
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d" % id1
     with fail_test(dev[1], 1, "aes_siv_decrypt;dpp_auth_resp_rx"):
         if "OK" not in dev[1].request(cmd):
@@ -4905,9 +4798,7 @@ def test_dpp_invalid_legacy_params2(dev, apdev):
 
     dev[0].set("dpp_configurator_params",
                " conf=sta-psk ssid=%s" % (binascii.hexlify(b"dpp-legacy").decode()))
-    cmd = "DPP_LISTEN 2412 role=configurator"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412, role="configurator")
 
     # No pass/psk
     cmd = "DPP_AUTH_INIT peer=%d role=enrollee" % id1
@@ -4928,9 +4819,7 @@ def test_dpp_legacy_params_failure(dev, apdev):
 
     id1 = dev[1].dpp_qr_code(uri0)
 
-    if "OK" not in dev[0].request("DPP_LISTEN 2412"):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk pass=%s ssid=%s" % (id1,
         binascii.hexlify(b"passphrase").decode(),
         binascii.hexlify(b"dpp-legacy").decode())
@@ -5213,8 +5102,7 @@ def test_dpp_listen_continue(dev, apdev):
     id = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id)
 
-    if "OK" not in dev[0].request("DPP_LISTEN 2412"):
-        raise Exception("Failed to start listen operation")
+    dev[0].dpp_listen(2412)
     time.sleep(5.1)
 
     id = dev[1].dpp_qr_code(uri)
@@ -5282,9 +5170,7 @@ def test_dpp_two_initiators(dev, apdev):
     id = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id)
 
-    if "OK" not in dev[0].request("DPP_LISTEN 2412"):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2412)
     id1 = dev[1].dpp_qr_code(uri)
     id2 = dev[2].dpp_qr_code(uri)
 
@@ -5350,10 +5236,7 @@ def test_dpp_duplicated_auth_resp(dev, apdev):
     dev[0].set("ext_mgmt_frame_handling", "1")
     dev[1].set("ext_mgmt_frame_handling", "1")
 
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d" % id1
     if "OK" not in dev[1].request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
@@ -5400,10 +5283,7 @@ def test_dpp_enrollee_reject_config(dev, apdev):
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
     id1 = dev[1].dpp_qr_code(uri0)
 
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d conf=sta-sae ssid=%s pass=%s" % (id1,
         binascii.hexlify(b"dpp-legacy").decode(),
         binascii.hexlify(b"secret passphrase").decode())
@@ -5489,10 +5369,7 @@ def run_dpp_legacy_and_dpp_akm(dev, apdev):
 
     id1 = dev[1].dpp_qr_code(uri0)
 
-    cmd = "DPP_LISTEN 2412"
-    if "OK" not in dev[0].request(cmd):
-        raise Exception("Failed to start listen operation")
-
+    dev[0].dpp_listen(2412)
     cmd = "DPP_AUTH_INIT peer=%d conf=sta-psk-sae-dpp ssid=%s pass=%s configurator=%d" % \
           (id1, binascii.hexlify(ssid.encode()).decode(),
            binascii.hexlify(passphrase.encode()).decode(), conf_id)
