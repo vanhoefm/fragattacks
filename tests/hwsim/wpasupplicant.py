@@ -1505,3 +1505,19 @@ class WpaSupplicant:
             raise Exception("Failed to set PKEX data (responder)")
         self.dpp_listen(freq, role=listen_role)
         return id0
+
+    def dpp_configurator_add(self, curve=None, key=None):
+        cmd = "DPP_CONFIGURATOR_ADD"
+        if curve:
+            cmd += " curve=" + curve
+        if key:
+            cmd += " key=" + key
+        res = self.request(cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to add configurator")
+        return int(res)
+
+    def dpp_configurator_remove(self, conf_id):
+        res = self.request("DPP_CONFIGURATOR_REMOVE %d" % conf_id)
+        if "OK" not in res:
+            raise Exception("DPP_CONFIGURATOR_REMOVE failed")
