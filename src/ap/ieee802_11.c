@@ -3421,6 +3421,29 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 	}
 #endif /* CONFIG_FST */
 
+#ifdef CONFIG_OWE
+	if ((hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_OWE) &&
+	    sta && sta->owe_ecdh && status_code == WLAN_STATUS_SUCCESS &&
+	    wpa_auth_sta_key_mgmt(sta->wpa_sm) == WPA_KEY_MGMT_OWE) {
+		struct wpabuf *pub;
+
+		pub = crypto_ecdh_get_pubkey(sta->owe_ecdh, 0);
+		if (!pub) {
+			res = WLAN_STATUS_UNSPECIFIED_FAILURE;
+			goto done;
+		}
+		/* OWE Diffie-Hellman Parameter element */
+		*p++ = WLAN_EID_EXTENSION; /* Element ID */
+		*p++ = 1 + 2 + wpabuf_len(pub); /* Length */
+		*p++ = WLAN_EID_EXT_OWE_DH_PARAM; /* Element ID Extension */
+		WPA_PUT_LE16(p, sta->owe_group);
+		p += 2;
+		os_memcpy(p, wpabuf_head(pub), wpabuf_len(pub));
+		p += wpabuf_len(pub);
+		wpabuf_free(pub);
+	}
+#endif /* CONFIG_OWE */
+
 #ifdef CONFIG_DPP2
 	if ((hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_DPP) &&
 	    sta && sta->dpp_pfs && status_code == WLAN_STATUS_SUCCESS &&
@@ -3526,30 +3549,6 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 		}
 	}
 #endif /* CONFIG_FILS */
-
-#ifdef CONFIG_OWE
-	if ((hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_OWE) &&
-	    sta && sta->owe_ecdh && status_code == WLAN_STATUS_SUCCESS &&
-	    wpa_auth_sta_key_mgmt(sta->wpa_sm) == WPA_KEY_MGMT_OWE) {
-		struct wpabuf *pub;
-
-		pub = crypto_ecdh_get_pubkey(sta->owe_ecdh, 0);
-		if (!pub) {
-			res = WLAN_STATUS_UNSPECIFIED_FAILURE;
-			goto done;
-		}
-		/* OWE Diffie-Hellman Parameter element */
-		*p++ = WLAN_EID_EXTENSION; /* Element ID */
-		*p++ = 1 + 2 + wpabuf_len(pub); /* Length */
-		*p++ = WLAN_EID_EXT_OWE_DH_PARAM; /* Element ID Extension */
-		WPA_PUT_LE16(p, sta->owe_group);
-		p += 2;
-		os_memcpy(p, wpabuf_head(pub), wpabuf_len(pub));
-		p += wpabuf_len(pub);
-		send_len += 3 + 2 + wpabuf_len(pub);
-		wpabuf_free(pub);
-	}
-#endif /* CONFIG_OWE */
 
 	if (hostapd_drv_send_mlme(hapd, reply, send_len, 0) < 0) {
 		wpa_printf(MSG_INFO, "Failed to send assoc resp: %s",
