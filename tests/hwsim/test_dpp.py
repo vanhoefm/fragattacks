@@ -1616,6 +1616,34 @@ def test_dpp_ap_config_p521_p521(dev, apdev):
     """DPP and AP configuration (P-521 + P-521)"""
     run_dpp_ap_config(dev, apdev, curve="P-521", conf_curve="P-521")
 
+def test_dpp_ap_config_bp256_bp256(dev, apdev):
+    """DPP and AP configuration (BP-256 + BP-256)"""
+    run_dpp_ap_config(dev, apdev, curve="BP-256", conf_curve="BP-256")
+
+def test_dpp_ap_config_bp384_bp384(dev, apdev):
+    """DPP and AP configuration (BP-384 + BP-384)"""
+    run_dpp_ap_config(dev, apdev, curve="BP-384", conf_curve="BP-384")
+
+def test_dpp_ap_config_bp512_bp512(dev, apdev):
+    """DPP and AP configuration (BP-512 + BP-512)"""
+    run_dpp_ap_config(dev, apdev, curve="BP-512", conf_curve="BP-512")
+
+def test_dpp_ap_config_p256_bp256(dev, apdev):
+    """DPP and AP configuration (P-256 + BP-256)"""
+    run_dpp_ap_config(dev, apdev, curve="P-256", conf_curve="BP-256")
+
+def test_dpp_ap_config_bp256_p256(dev, apdev):
+    """DPP and AP configuration (BP-256 + P-256)"""
+    run_dpp_ap_config(dev, apdev, curve="BP-256", conf_curve="P-256")
+
+def test_dpp_ap_config_p521_bp512(dev, apdev):
+    """DPP and AP configuration (P-521 + BP-512)"""
+    run_dpp_ap_config(dev, apdev, curve="P-521", conf_curve="BP-512")
+
+def test_dpp_ap_config_bp512_p521(dev, apdev):
+    """DPP and AP configuration (BP-512 + P-521)"""
+    run_dpp_ap_config(dev, apdev, curve="BP-512", conf_curve="P-521")
+
 def test_dpp_ap_config_reconfig_configurator(dev, apdev):
     """DPP and AP configuration with Configurator reconfiguration"""
     run_dpp_ap_config(dev, apdev, reconf_configurator=True)
