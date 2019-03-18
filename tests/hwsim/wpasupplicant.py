@@ -1437,6 +1437,37 @@ class WpaSupplicant:
         if "OK" not in self.request(cmd):
             raise Exception("Failed to start listen operation")
 
+    def dpp_auth_init(self, peer=None, uri=None, conf=None, configurator=None,
+                      extra=None, own=None, role=None, neg_freq=None,
+                      ssid=None, passphrase=None, expect_fail=False):
+        cmd = "DPP_AUTH_INIT"
+        if peer is None:
+            peer = self.dpp_qr_code(uri)
+        cmd += " peer=%d" % peer
+        if own is not None:
+            cmd += " own=%d" % own
+        if role:
+            cmd += " role=" + role
+        if extra:
+            cmd += " " + extra
+        if conf:
+            cmd += " conf=" + conf
+        if configurator is not None:
+            cmd += " configurator=%d" % configurator
+        if neg_freq:
+            cmd += " neg_freq=%d" % neg_freq
+        if ssid:
+            cmd += " ssid=" + binascii.hexlify(ssid.encode()).decode()
+        if passphrase:
+            cmd += " pass=" + binascii.hexlify(passphrase.encode()).decode()
+        res = self.request(cmd)
+        if expect_fail:
+            if "FAIL" not in res:
+                raise Exception("DPP authentication started unexpectedly")
+            return
+        if "OK" not in res:
+            raise Exception("Failed to initiate DPP Authentication")
+
     def dpp_pkex_init(self, identifier, code, role=None, key=None, curve=None,
                       extra=None, use_id=None, allow_fail=False):
         if use_id is None:
