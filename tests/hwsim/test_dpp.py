@@ -286,7 +286,6 @@ def run_dpp_qr_code_auth_unicast(dev, apdev, curve, netrole=None, key=None,
                       allow_configurator_failure=not require_conf_success,
                       require_configurator_failure=require_conf_failure,
                       stop_responder=True)
-    dev[1].dump_monitor()
 
 def test_dpp_qr_code_auth_mutual(dev, apdev):
     """DPP QR Code and authentication exchange (mutual)"""
@@ -709,7 +708,6 @@ def test_dpp_qr_code_auth_neg_chan(dev, apdev):
 
     wait_auth_success(dev[0], dev[1], configurator=dev[1], enrollee=dev[0],
                       stop_responder=True)
-    dev[1].dump_monitor()
 
 def test_dpp_config_legacy(dev, apdev):
     """DPP Config Object for legacy network using passphrase"""
@@ -4067,7 +4065,6 @@ def test_dpp_peer_intro_local_failures(dev, apdev):
     if ev is None:
         raise Exception("No TX status reported")
     dev[0].request("REMOVE_NETWORK all")
-    dev[0].dump_monitor()
 
 def run_dpp_configurator_id_unknown(dev):
     check_dpp_capab(dev)
