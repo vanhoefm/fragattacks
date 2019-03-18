@@ -1341,6 +1341,7 @@ def test_sigma_dut_dpp_qr_init_enrollee_sae(dev, apdev):
     sigma = start_sigma_dut(dev[0].ifname)
     try:
         dev[0].set("dpp_config_processing", "2")
+        dev[0].set("sae_groups", "")
 
         cmd = "DPP_CONFIGURATOR_ADD"
         res = dev[1].request(cmd)
