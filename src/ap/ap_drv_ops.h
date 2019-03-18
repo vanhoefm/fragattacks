@@ -364,4 +364,14 @@ static inline int hostapd_drv_channel_info(struct hostapd_data *hapd,
 	return hapd->driver->channel_info(hapd->drv_priv, ci);
 }
 
+static inline int
+hostapd_drv_send_external_auth_status(struct hostapd_data *hapd,
+				      struct external_auth *params)
+{
+	if (!hapd->driver || !hapd->drv_priv ||
+	    !hapd->driver->send_external_auth_status)
+		return -1;
+	return hapd->driver->send_external_auth_status(hapd->drv_priv, params);
+}
+
 #endif /* AP_DRV_OPS */

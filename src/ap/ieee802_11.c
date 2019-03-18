@@ -701,6 +701,21 @@ static void sae_set_retransmit_timer(struct hostapd_data *hapd,
 }
 
 
+static void sae_sme_send_external_auth_status(struct hostapd_data *hapd,
+					      struct sta_info *sta, u16 status)
+{
+	struct external_auth params;
+
+	os_memset(&params, 0, sizeof(params));
+	params.status = status;
+	os_memcpy(params.bssid, sta->addr, ETH_ALEN);
+	if (status == WLAN_STATUS_SUCCESS && sta->sae)
+		params.pmkid = sta->sae->pmkid;
+
+	hostapd_drv_send_external_auth_status(hapd, &params);
+}
+
+
 void sae_accept_sta(struct hostapd_data *hapd, struct sta_info *sta)
 {
 #ifndef CONFIG_NO_VLAN
@@ -739,6 +754,7 @@ void sae_accept_sta(struct hostapd_data *hapd, struct sta_info *sta)
 	sae_set_state(sta, SAE_ACCEPTED, "Accept Confirm");
 	wpa_auth_pmksa_add_sae(hapd->wpa_auth, sta->addr,
 			       sta->sae->pmk, sta->sae->pmkid);
+	sae_sme_send_external_auth_status(hapd, sta, WLAN_STATUS_SUCCESS);
 }
 
 
@@ -1220,6 +1236,7 @@ reply:
 		    !data && end - pos >= 2)
 			data = wpabuf_alloc_copy(pos, 2);
 
+		sae_sme_send_external_auth_status(hapd, sta, resp);
 		send_auth_reply(hapd, mgmt->sa, mgmt->bssid, WLAN_AUTH_SAE,
 				auth_transaction, resp,
 				data ? wpabuf_head(data) : (u8 *) "",
