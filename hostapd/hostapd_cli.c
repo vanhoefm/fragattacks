@@ -1315,21 +1315,7 @@ static int hostapd_cli_cmd_set_neighbor(struct wpa_ctrl *ctrl, int argc,
 static int hostapd_cli_cmd_remove_neighbor(struct wpa_ctrl *ctrl, int argc,
 					   char *argv[])
 {
-	char cmd[400];
-	int res;
-
-	if (argc != 2) {
-		printf("Invalid remove_neighbor command: needs 2 arguments\n");
-		return -1;
-	}
-
-	res = os_snprintf(cmd, sizeof(cmd), "REMOVE_NEIGHBOR %s %s",
-			  argv[0], argv[1]);
-	if (os_snprintf_error(sizeof(cmd), res)) {
-		printf("Too long REMOVE_NEIGHBOR command.\n");
-		return -1;
-	}
-	return wpa_ctrl_command(ctrl, cmd);
+	return hostapd_cli_cmd(ctrl, "REMOVE_NEIGHBOR", 1, argc, argv);
 }
 
 
@@ -1637,7 +1623,7 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
 	  "<addr> <ssid=> <nr=> [lci=] [civic=] [stat]\n"
 	  "  = add AP to neighbor database" },
 	{ "remove_neighbor", hostapd_cli_cmd_remove_neighbor, NULL,
-	  "<addr> <ssid=> = remove AP from neighbor database" },
+	  "<addr> [ssid=<hex>] = remove AP from neighbor database" },
 	{ "req_lci", hostapd_cli_cmd_req_lci, hostapd_complete_stations,
 	  "<addr> = send LCI request to a station"},
 	{ "req_range", hostapd_cli_cmd_req_range, NULL,

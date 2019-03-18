@@ -2813,6 +2813,7 @@ static int hostapd_ctrl_iface_remove_neighbor(struct hostapd_data *hapd,
 					      char *buf)
 {
 	struct wpa_ssid_value ssid;
+	struct wpa_ssid_value *ssidp = NULL;
 	u8 bssid[ETH_ALEN];
 	char *tmp;
 
@@ -2822,13 +2823,16 @@ static int hostapd_ctrl_iface_remove_neighbor(struct hostapd_data *hapd,
 	}
 
 	tmp = os_strstr(buf, "ssid=");
-	if (!tmp || ssid_parse(tmp + 5, &ssid)) {
-		wpa_printf(MSG_ERROR,
-			   "CTRL: REMOVE_NEIGHBORr: Bad or missing SSID");
-		return -1;
+	if (tmp) {
+		ssidp = &ssid;
+		if (ssid_parse(tmp + 5, &ssid)) {
+			wpa_printf(MSG_ERROR,
+				   "CTRL: REMOVE_NEIGHBOR: Bad SSID");
+			return -1;
+		}
 	}
 
-	return hostapd_neighbor_remove(hapd, bssid, &ssid);
+	return hostapd_neighbor_remove(hapd, bssid, ssidp);
 }
 
 
