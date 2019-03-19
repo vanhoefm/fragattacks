@@ -7515,10 +7515,14 @@ static int wpa_driver_nl80211_send_action(struct i802_bss *bss,
 	int ret = -1;
 	u8 *buf;
 	struct ieee80211_hdr *hdr;
+	int offchanok = 1;
+
+	if (is_ap_interface(drv->nlmode) && (int) freq == bss->freq)
+		offchanok = 0;
 
 	wpa_printf(MSG_DEBUG, "nl80211: Send Action frame (ifindex=%d, "
-		   "freq=%u MHz wait=%d ms no_cck=%d)",
-		   drv->ifindex, freq, wait_time, no_cck);
+		   "freq=%u MHz wait=%d ms no_cck=%d offchanok=%d)",
+		   drv->ifindex, freq, wait_time, no_cck, offchanok);
 
 	buf = os_zalloc(24 + data_len);
 	if (buf == NULL)
@@ -7544,12 +7548,12 @@ static int wpa_driver_nl80211_send_action(struct i802_bss *bss,
 	     (int) freq == bss->freq || drv->device_ap_sme ||
 	     !drv->use_monitor))
 		ret = wpa_driver_nl80211_send_mlme(bss, buf, 24 + data_len,
-						   0, freq, no_cck, 1,
+						   0, freq, no_cck, offchanok,
 						   wait_time, NULL, 0, 0);
 	else
 		ret = nl80211_send_frame_cmd(bss, freq, wait_time, buf,
 					     24 + data_len,
-					     1, no_cck, 0, 1, NULL, 0);
+					     1, no_cck, 0, offchanok, NULL, 0);
 
 	os_free(buf);
 	return ret;
