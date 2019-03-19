@@ -2707,6 +2707,20 @@ static int hostapd_ctrl_iface_req_beacon(struct hostapd_data *hapd,
 }
 
 
+static int hostapd_ctrl_iface_show_neighbor(struct hostapd_data *hapd,
+					    char *buf, size_t buflen)
+{
+	if (!(hapd->conf->radio_measurements[0] &
+	      WLAN_RRM_CAPS_NEIGHBOR_REPORT)) {
+		wpa_printf(MSG_ERROR,
+			   "CTRL: SHOW_NEIGHBOR: Neighbor report is not enabled");
+		return -1;
+	}
+
+	return hostapd_neighbor_show(hapd, buf, buflen);
+}
+
+
 static int hostapd_ctrl_iface_set_neighbor(struct hostapd_data *hapd, char *buf)
 {
 	struct wpa_ssid_value ssid;
@@ -3255,6 +3269,9 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 	} else if (os_strncmp(buf, "SET_NEIGHBOR ", 13) == 0) {
 		if (hostapd_ctrl_iface_set_neighbor(hapd, buf + 13))
 			reply_len = -1;
+	} else if (os_strcmp(buf, "SHOW_NEIGHBOR") == 0) {
+		reply_len = hostapd_ctrl_iface_show_neighbor(hapd, reply,
+							     reply_size);
 	} else if (os_strncmp(buf, "REMOVE_NEIGHBOR ", 16) == 0) {
 		if (hostapd_ctrl_iface_remove_neighbor(hapd, buf + 16))
 			reply_len = -1;
