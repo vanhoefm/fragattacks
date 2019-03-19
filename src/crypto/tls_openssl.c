@@ -3119,7 +3119,8 @@ static int tls_connection_client_cert(struct tls_connection *conn,
 		return 0;
 	}
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L && \
+	!defined(LIBRESSL_VERSION_NUMBER) && !defined(OPENSSL_IS_BORINGSSL)
 	if (SSL_use_certificate_chain_file(conn->ssl, client_cert) == 1) {
 		ERR_clear_error();
 		wpa_printf(MSG_DEBUG, "OpenSSL: SSL_use_certificate_chain_file"
