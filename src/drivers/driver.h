@@ -1768,6 +1768,8 @@ struct hostap_sta_driver_data {
 	unsigned long tx_retry_failed;
 	unsigned long tx_retry_count;
 	s8 last_ack_rssi;
+	unsigned long backlog_packets;
+	unsigned long backlog_bytes;
 	s8 signal;
 	u8 rx_vhtmcs;
 	u8 tx_vhtmcs;
