@@ -1791,7 +1791,7 @@ int wpa_pmk_r1_to_ptk(const u8 *pmk_r1, size_t pmk_r1_len,
 	os_memcpy(ptk->tk, tmp + offset, ptk->tk_len);
 	offset += ptk->tk_len;
 	os_memcpy(ptk->kck2, tmp + offset, ptk->kck2_len);
-	offset = ptk->kck2_len;
+	offset += ptk->kck2_len;
 	os_memcpy(ptk->kek2, tmp + offset, ptk->kek2_len);
 
 	wpa_hexdump_key(MSG_DEBUG, "FT: KCK", ptk->kck, ptk->kck_len);
