@@ -2313,6 +2313,42 @@ static unsigned int parse_tls_flags(const char *val)
 #endif /* EAP_SERVER */
 
 
+#ifdef CONFIG_AIRTIME_POLICY
+static int add_airtime_weight(struct hostapd_bss_config *bss, char *value)
+{
+	struct airtime_sta_weight *wt;
+	char *pos, *next;
+
+	wt = os_zalloc(sizeof(*wt));
+	if (!wt)
+		return -1;
+
+	/* 02:01:02:03:04:05 10 */
+	pos = value;
+	next = os_strchr(pos, ' ');
+	if (next)
+		*next++ = '\0';
+	if (!next || hwaddr_aton(pos, wt->addr)) {
+		wpa_printf(MSG_ERROR, "Invalid station address: '%s'", pos);
+		os_free(wt);
+		return -1;
+	}
+
+	pos = next;
+	wt->weight = atoi(pos);
+	if (!wt->weight) {
+		wpa_printf(MSG_ERROR, "Invalid weight: '%s'", pos);
+		os_free(wt);
+		return -1;
+	}
+
+	wt->next = bss->airtime_weight_list;
+	bss->airtime_weight_list = wt;
+	return 0;
+}
+#endif /* CONFIG_AIRTIME_POLICY */
+
+
 #ifdef CONFIG_SAE
 static int parse_sae_password(struct hostapd_bss_config *bss, const char *val)
 {
@@ -4392,6 +4428,38 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		conf->rssi_reject_assoc_timeout = atoi(pos);
 	} else if (os_strcmp(buf, "pbss") == 0) {
 		bss->pbss = atoi(pos);
+#ifdef CONFIG_AIRTIME_POLICY
+	} else if (os_strcmp(buf, "airtime_mode") == 0) {
+		int val = atoi(pos);
+
+		if (val < 0 || val > AIRTIME_MODE_MAX) {
+			wpa_printf(MSG_ERROR, "Line %d: Unknown airtime_mode",
+				   line);
+			return 1;
+		}
+		conf->airtime_mode = val;
+	} else if (os_strcmp(buf, "airtime_update_interval") == 0) {
+		conf->airtime_update_interval = atoi(pos);
+	} else if (os_strcmp(buf, "airtime_bss_weight") == 0) {
+		bss->airtime_weight = atoi(pos);
+	} else if (os_strcmp(buf, "airtime_bss_limit") == 0) {
+		int val = atoi(pos);
+
+		if (val < 0 || val > 1) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: Invalid airtime_bss_limit (must be 0 or 1)",
+				   line);
+			return 1;
+		}
+		bss->airtime_limit = val;
+	} else if (os_strcmp(buf, "airtime_sta_weight") == 0) {
+		if (add_airtime_weight(bss, pos) < 0) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: Invalid airtime weight '%s'",
+				   line, pos);
+			return 1;
+		}
+#endif /* CONFIG_AIRTIME_POLICY */
 	} else {
 		wpa_printf(MSG_ERROR,
 			   "Line %d: unknown configuration item '%s'",

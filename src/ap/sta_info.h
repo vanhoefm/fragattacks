@@ -275,6 +275,10 @@ struct sta_info {
 	u8 last_tk[WPA_TK_MAX_LEN];
 	size_t last_tk_len;
 #endif /* CONFIG_TESTING_OPTIONS */
+#ifdef CONFIG_AIRTIME_POLICY
+	unsigned int airtime_weight;
+	struct os_reltime backlogged_until;
+#endif /* CONFIG_AIRTIME_POLICY */
 };
 
 

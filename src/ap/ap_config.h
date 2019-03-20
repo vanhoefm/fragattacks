@@ -259,6 +259,12 @@ struct dpp_controller_conf {
 	struct hostapd_ip_addr ipaddr;
 };
 
+struct airtime_sta_weight {
+	struct airtime_sta_weight *next;
+	unsigned int weight;
+	u8 addr[ETH_ALEN];
+};
+
 /**
  * struct hostapd_bss_config - Per-BSS configuration
  */
@@ -719,6 +725,12 @@ struct hostapd_bss_config {
 #define BACKHAUL_BSS 1
 #define FRONTHAUL_BSS 2
 	int multi_ap; /* bitmap of BACKHAUL_BSS, FRONTHAUL_BSS */
+
+#ifdef CONFIG_AIRTIME_POLICY
+	unsigned int airtime_weight;
+	int airtime_limit;
+	struct airtime_sta_weight *airtime_weight_list;
+#endif /* CONFIG_AIRTIME_POLICY */
 };
 
 /**
@@ -884,6 +896,18 @@ struct hostapd_config {
 
 	int rssi_reject_assoc_rssi;
 	int rssi_reject_assoc_timeout;
+
+#ifdef CONFIG_AIRTIME_POLICY
+	enum {
+		AIRTIME_MODE_OFF = 0,
+		AIRTIME_MODE_STATIC = 1,
+		AIRTIME_MODE_DYNAMIC = 2,
+		AIRTIME_MODE_LIMIT = 3,
+		__AIRTIME_MODE_MAX,
+	} airtime_mode;
+	unsigned int airtime_update_interval;
+#define AIRTIME_MODE_MAX (__AIRTIME_MODE_MAX - 1)
+#endif /* CONFIG_AIRTIME_POLICY */
 };
 
 

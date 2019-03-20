@@ -327,6 +327,11 @@ NEED_SHA384=y
 NEED_SHA512=y
 endif
 
+ifdef CONFIG_AIRTIME_POLICY
+CFLAGS += -DCONFIG_AIRTIME_POLICY
+OBJS += ../src/ap/airtime_policy.o
+endif
+
 ifdef CONFIG_FILS
 CFLAGS += -DCONFIG_FILS
 OBJS += ../src/ap/fils_hlp.o

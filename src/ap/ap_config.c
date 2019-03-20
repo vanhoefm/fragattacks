@@ -19,6 +19,7 @@
 #include "eap_server/eap.h"
 #include "wpa_auth.h"
 #include "sta_info.h"
+#include "airtime_policy.h"
 #include "ap_config.h"
 
 
@@ -248,6 +249,10 @@ struct hostapd_config * hostapd_config_defaults(void)
 
 	conf->rssi_reject_assoc_rssi = 0;
 	conf->rssi_reject_assoc_timeout = 30;
+
+#ifdef CONFIG_AIRTIME_POLICY
+	conf->airtime_update_interval = AIRTIME_DEFAULT_UPDATE_INTERVAL;
+#endif /* CONFIG_AIRTIME_POLICY */
 
 	return conf;
 }
@@ -766,6 +771,20 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 
 	hostapd_config_free_sae_passwords(conf);
 
+#ifdef CONFIG_AIRTIME_POLICY
+	{
+		struct airtime_sta_weight *wt, *wt_prev;
+
+		wt = conf->airtime_weight_list;
+		conf->airtime_weight_list = NULL;
+		while (wt) {
+			wt_prev = wt;
+			wt = wt->next;
+			os_free(wt_prev);
+		}
+	}
+#endif /* CONFIG_AIRTIME_POLICY */
+
 	os_free(conf);
 }
 
@@ -1162,6 +1181,13 @@ int hostapd_config_check(struct hostapd_config *conf, int full_config)
 		return -1;
 	}
 
+#ifdef CONFIG_AIRTIME_POLICY
+	if (full_config && conf->airtime_mode > AIRTIME_MODE_STATIC &&
+	    !conf->airtime_update_interval) {
+		wpa_printf(MSG_ERROR, "Airtime update interval cannot be zero");
+		return -1;
+	}
+#endif /* CONFIG_AIRTIME_POLICY */
 	for (i = 0; i < NUM_TX_QUEUES; i++) {
 		if (hostapd_config_check_cw(conf, i))
 			return -1;

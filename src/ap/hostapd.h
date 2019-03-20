@@ -379,6 +379,11 @@ struct hostapd_data {
 	unsigned int dpp_ignore_netaccesskey_mismatch:1;
 #endif /* CONFIG_TESTING_OPTIONS */
 #endif /* CONFIG_DPP */
+
+#ifdef CONFIG_AIRTIME_POLICY
+	unsigned int num_backlogged_sta;
+	unsigned int airtime_weight;
+#endif /* CONFIG_AIRTIME_POLICY */
 };
 
 
@@ -541,6 +546,9 @@ struct hostapd_iface {
 	unsigned int num_sta_seen;
 
 	u8 dfs_domain;
+#ifdef CONFIG_AIRTIME_POLICY
+	unsigned int airtime_quantum;
+#endif /* CONFIG_AIRTIME_POLICY */
 };
 
 /* hostapd.c */
