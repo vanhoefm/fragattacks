@@ -1759,6 +1759,7 @@ struct hostapd_data;
 struct hostap_sta_driver_data {
 	unsigned long rx_packets, tx_packets;
 	unsigned long long rx_bytes, tx_bytes;
+	unsigned long long rx_airtime, tx_airtime;
 	int bytes_64bit; /* whether 64-bit byte counters are supported */
 	unsigned long current_tx_rate;
 	unsigned long current_rx_rate;
