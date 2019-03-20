@@ -583,6 +583,16 @@ int hostapd_sta_set_flags(struct hostapd_data *hapd, u8 *addr,
 }
 
 
+int hostapd_sta_set_airtime_weight(struct hostapd_data *hapd, const u8 *addr,
+				   unsigned int weight)
+{
+	if (!hapd->driver || !hapd->driver->sta_set_airtime_weight)
+		return 0;
+	return hapd->driver->sta_set_airtime_weight(hapd->drv_priv, addr,
+						    weight);
+}
+
+
 int hostapd_set_country(struct hostapd_data *hapd, const char *country)
 {
 	if (hapd->driver == NULL ||

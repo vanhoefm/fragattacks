@@ -5183,6 +5183,28 @@ fail:
 }
 
 
+static int driver_nl80211_sta_set_airtime_weight(void *priv, const u8 *addr,
+						 unsigned int weight)
+{
+	struct i802_bss *bss = priv;
+	struct nl_msg *msg;
+
+	wpa_printf(MSG_DEBUG,
+		   "nl80211: Set STA airtime weight - ifname=%s addr=" MACSTR
+		   " weight=%u", bss->ifname, MAC2STR(addr), weight);
+
+	if (!(msg = nl80211_bss_msg(bss, 0, NL80211_CMD_SET_STATION)) ||
+	    nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN, addr) ||
+	    nla_put_u16(msg, NL80211_ATTR_AIRTIME_WEIGHT, weight))
+		goto fail;
+
+	return send_and_recv_msgs(bss->drv, msg, NULL, NULL);
+fail:
+	nlmsg_free(msg);
+	return -ENOBUFS;
+}
+
+
 static int wpa_driver_nl80211_ap(struct wpa_driver_nl80211_data *drv,
 				 struct wpa_driver_associate_params *params)
 {

@@ -67,6 +67,8 @@ int hostapd_set_rts(struct hostapd_data *hapd, int rts);
 int hostapd_set_frag(struct hostapd_data *hapd, int frag);
 int hostapd_sta_set_flags(struct hostapd_data *hapd, u8 *addr,
 			  int total_flags, int flags_or, int flags_and);
+int hostapd_sta_set_airtime_weight(struct hostapd_data *hapd, const u8 *addr,
+				   unsigned int weight);
 int hostapd_set_country(struct hostapd_data *hapd, const char *country);
 int hostapd_set_tx_queue_params(struct hostapd_data *hapd, int queue, int aifs,
 				int cw_min, int cw_max, int burst_time);

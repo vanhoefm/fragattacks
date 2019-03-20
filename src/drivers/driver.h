@@ -2948,6 +2948,16 @@ struct wpa_driver_ops {
 			     unsigned int flags_and);
 
 	/**
+	 * sta_set_airtime_weight - Set station airtime weight (AP only)
+	 * @priv: Private driver interface data
+	 * @addr: Station address
+	 * @weight: New weight for station airtime assignment
+	 * Returns: 0 on success, -1 on failure
+	 */
+	int (*sta_set_airtime_weight)(void *priv, const u8 *addr,
+				      unsigned int weight);
+
+	/**
 	 * set_tx_queue_params - Set TX queue parameters
 	 * @priv: Private driver interface data
 	 * @queue: Queue number (0 = VO, 1 = VI, 2 = BE, 3 = BK)
