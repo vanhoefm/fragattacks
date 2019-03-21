@@ -2212,6 +2212,19 @@ def test_sigma_dut_sta_scan_bss(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
+def test_sigma_dut_sta_scan_ssid_bssid(dev, apdev):
+    """sigma_dut sta_scan GetParameter,SSID_BSSID"""
+    hostapd.add_ap(apdev[0], {"ssid": "abcdef"})
+    hostapd.add_ap(apdev[1], {"ssid": "qwerty"})
+    sigma = start_sigma_dut(dev[0].ifname, debug=True)
+    try:
+        cmd = "sta_scan,Interface,%s,GetParameter,SSID_BSSID" % dev[0].ifname
+        res = sigma_dut_cmd(cmd, timeout=10)
+        if "abcdef" not in res or "qwerty" not in res:
+            raise Exception("Unexpected result: " + res)
+    finally:
+        stop_sigma_dut(sigma)
+
 def test_sigma_dut_ap_osen(dev, apdev, params):
     """sigma_dut controlled AP with OSEN"""
     logdir = os.path.join(params['logdir'],
