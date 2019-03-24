@@ -4082,7 +4082,7 @@ def test_dpp_configurator_id_unknown(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
     run_dpp_configurator_id_unknown(hapd)
 
-def run_dpp_bootstrap_gen_failures(dev, hostapd):
+def run_dpp_bootstrap_gen_failures(dev):
     check_dpp_capab(dev)
 
     tests = ["type=unsupported",
@@ -4113,7 +4113,7 @@ def run_dpp_bootstrap_gen_failures(dev, hostapd):
     if "FAIL" not in dev.request("DPP_BOOTSTRAP_INFO %d" % id):
         raise Exception("Failure not reported")
 
-    func = "hostapd_dpp_bootstrap_gen" if hostapd else "wpas_dpp_bootstrap_gen"
+    func = "dpp_bootstrap_gen"
     with alloc_fail(dev, 1, "=" + func):
         if "FAIL" not in dev.request("DPP_BOOTSTRAP_GEN type=qrcode"):
             raise Exception("Command accepted unexpectedly")
@@ -4127,9 +4127,9 @@ def run_dpp_bootstrap_gen_failures(dev, hostapd):
 
 def test_dpp_bootstrap_gen_failures(dev, apdev):
     """DPP_BOOTSTRAP_GEN/REMOVE/GET_URI/INFO error cases"""
-    run_dpp_bootstrap_gen_failures(dev[0], False)
+    run_dpp_bootstrap_gen_failures(dev[0])
     hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
-    run_dpp_bootstrap_gen_failures(hapd, True)
+    run_dpp_bootstrap_gen_failures(hapd)
 
 def test_dpp_listen_continue(dev, apdev):
     """DPP and continue listen state"""
