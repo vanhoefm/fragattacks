@@ -11,6 +11,7 @@
 
 #include "utils/common.h"
 #include "utils/eloop.h"
+#include "utils/ip_addr.h"
 #include "common/dpp.h"
 #include "common/gas.h"
 #include "common/gas_server.h"
@@ -2248,3 +2249,23 @@ void wpas_dpp_deinit(struct wpa_supplicant *wpa_s)
 	os_free(wpa_s->dpp_configurator_params);
 	wpa_s->dpp_configurator_params = NULL;
 }
+
+
+#ifdef CONFIG_DPP2
+int wpas_dpp_controller_start(struct wpa_supplicant *wpa_s, const char *cmd)
+{
+	struct dpp_controller_config config;
+	const char *pos;
+
+	os_memset(&config, 0, sizeof(config));
+	if (cmd) {
+		pos = os_strstr(cmd, " tcp_port=");
+		if (pos) {
+			pos += 10;
+			config.tcp_port = atoi(pos);
+		}
+	}
+	config.configurator_params = wpa_s->dpp_configurator_params;
+	return dpp_controller_start(wpa_s->dpp, &config);
+}
+#endif /* CONFIG_DPP2 */
