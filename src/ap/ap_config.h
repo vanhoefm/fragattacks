@@ -15,6 +15,7 @@
 #include "common/wpa_common.h"
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
+#include "crypto/sha256.h"
 #include "wps/wps.h"
 #include "fst/fst.h"
 #include "vlan.h"
@@ -250,6 +251,12 @@ struct sae_password_entry {
 	char *identifier;
 	u8 peer_addr[ETH_ALEN];
 	int vlan_id;
+};
+
+struct dpp_controller_conf {
+	struct dpp_controller_conf *next;
+	u8 pkhash[SHA256_MAC_LEN];
+	struct hostapd_ip_addr ipaddr;
 };
 
 /**
@@ -692,6 +699,9 @@ struct hostapd_bss_config {
 	struct wpabuf *dpp_netaccesskey;
 	unsigned int dpp_netaccesskey_expiry;
 	struct wpabuf *dpp_csign;
+#ifdef CONFIG_DPP2
+	struct dpp_controller_conf *dpp_controller;
+#endif /* CONFIG_DPP2 */
 #endif /* CONFIG_DPP */
 
 #ifdef CONFIG_OWE

@@ -2376,6 +2376,36 @@ fail:
 #endif /* CONFIG_SAE */
 
 
+#ifdef CONFIG_DPP2
+static int hostapd_dpp_controller_parse(struct hostapd_bss_config *bss,
+					const char *pos)
+{
+	struct dpp_controller_conf *conf;
+	char *val;
+
+	conf = os_zalloc(sizeof(*conf));
+	if (!conf)
+		return -1;
+	val = get_param(pos, "ipaddr=");
+	if (!val || hostapd_parse_ip_addr(val, &conf->ipaddr))
+		goto fail;
+	os_free(val);
+	val = get_param(pos, "pkhash=");
+	if (!val || os_strlen(val) != 2 * SHA256_MAC_LEN ||
+	    hexstr2bin(val, conf->pkhash, SHA256_MAC_LEN) < 0)
+		goto fail;
+	os_free(val);
+	conf->next = bss->dpp_controller;
+	bss->dpp_controller = conf;
+	return 0;
+fail:
+	os_free(val);
+	os_free(conf);
+	return -1;
+}
+#endif /* CONFIG_DPP2 */
+
+
 static int hostapd_config_fill(struct hostapd_config *conf,
 			       struct hostapd_bss_config *bss,
 			       const char *buf, char *pos, int line)
@@ -4298,6 +4328,11 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "dpp_csign") == 0) {
 		if (parse_wpabuf_hex(line, buf, &bss->dpp_csign, pos))
 			return 1;
+#ifdef CONFIG_DPP2
+	} else if (os_strcmp(buf, "dpp_controller") == 0) {
+		if (hostapd_dpp_controller_parse(bss, pos))
+			return 1;
+#endif /* CONFIG_DPP2 */
 #endif /* CONFIG_DPP */
 #ifdef CONFIG_OWE
 	} else if (os_strcmp(buf, "owe_transition_bssid") == 0) {
