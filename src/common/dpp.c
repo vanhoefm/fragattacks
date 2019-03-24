@@ -8534,20 +8534,25 @@ int dpp_bootstrap_info(struct dpp_global *dpp, int id,
 		       char *reply, int reply_size)
 {
 	struct dpp_bootstrap_info *bi;
+	char pkhash[2 * SHA256_MAC_LEN + 1];
 
 	bi = dpp_bootstrap_get_id(dpp, id);
 	if (!bi)
 		return -1;
+	wpa_snprintf_hex(pkhash, sizeof(pkhash), bi->pubkey_hash,
+			 SHA256_MAC_LEN);
 	return os_snprintf(reply, reply_size, "type=%s\n"
 			   "mac_addr=" MACSTR "\n"
 			   "info=%s\n"
 			   "num_freq=%u\n"
-			   "curve=%s\n",
+			   "curve=%s\n"
+			   "pkhash=%s\n",
 			   dpp_bootstrap_type_txt(bi->type),
 			   MAC2STR(bi->mac_addr),
 			   bi->info ? bi->info : "",
 			   bi->num_freq,
-			   bi->curve->name);
+			   bi->curve->name,
+			   pkhash);
 }
 
 
