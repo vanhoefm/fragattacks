@@ -1207,9 +1207,7 @@ struct wpa_supplicant {
 	int last_auth_timeout_sec;
 
 #ifdef CONFIG_DPP
-	struct dl_list dpp_bootstrap; /* struct dpp_bootstrap_info */
-	struct dl_list dpp_configurator; /* struct dpp_configurator */
-	int dpp_init_done;
+	struct dpp_global *dpp;
 	struct dpp_authentication *dpp_auth;
 	struct wpa_radio_work *dpp_listen_work;
 	unsigned int dpp_pending_listen_freq;

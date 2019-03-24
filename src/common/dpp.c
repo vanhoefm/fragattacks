@@ -69,6 +69,11 @@ static void ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **pr,
 #endif
 
 
+struct dpp_global {
+	struct dl_list bootstrap; /* struct dpp_bootstrap_info */
+	struct dl_list configurator; /* struct dpp_configurator */
+};
+
 static const struct dpp_curve_params dpp_curves[] = {
 	/* The mandatory to support and the default NIST P-256 curve needs to
 	 * be the first entry on this list. */
@@ -4151,7 +4156,8 @@ void dpp_configuration_free(struct dpp_configuration *conf)
 }
 
 
-int dpp_configuration_parse(struct dpp_authentication *auth, const char *cmd)
+static int dpp_configuration_parse(struct dpp_authentication *auth,
+				   const char *cmd)
 {
 	const char *pos, *end;
 	struct dpp_configuration *conf_sta = NULL, *conf_ap = NULL;
@@ -4255,6 +4261,54 @@ fail:
 	dpp_configuration_free(conf_sta);
 	dpp_configuration_free(conf_ap);
 	return -1;
+}
+
+
+static struct dpp_configurator *
+dpp_configurator_get_id(struct dpp_global *dpp, unsigned int id)
+{
+	struct dpp_configurator *conf;
+
+	if (!dpp)
+		return NULL;
+
+	dl_list_for_each(conf, &dpp->configurator,
+			 struct dpp_configurator, list) {
+		if (conf->id == id)
+			return conf;
+	}
+	return NULL;
+}
+
+
+int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
+			 struct dpp_authentication *auth,
+			 const char *cmd)
+{
+	const char *pos;
+
+	if (!cmd)
+		return 0;
+
+	wpa_printf(MSG_DEBUG, "DPP: Set configurator parameters: %s", cmd);
+
+	pos = os_strstr(cmd, " configurator=");
+	if (pos) {
+		pos += 14;
+		auth->conf = dpp_configurator_get_id(dpp, atoi(pos));
+		if (!auth->conf) {
+			wpa_printf(MSG_INFO,
+				   "DPP: Could not find the specified configurator");
+			return -1;
+		}
+	}
+
+	if (dpp_configuration_parse(auth, cmd) < 0) {
+		wpa_msg(msg_ctx, MSG_INFO,
+			"DPP: Failed to set configurator parameters");
+		return -1;
+	}
+	return 0;
 }
 
 
@@ -8215,3 +8269,403 @@ void dpp_pfs_free(struct dpp_pfs *pfs)
 }
 
 #endif /* CONFIG_DPP2 */
+
+
+static unsigned int dpp_next_id(struct dpp_global *dpp)
+{
+	struct dpp_bootstrap_info *bi;
+	unsigned int max_id = 0;
+
+	dl_list_for_each(bi, &dpp->bootstrap, struct dpp_bootstrap_info, list) {
+		if (bi->id > max_id)
+			max_id = bi->id;
+	}
+	return max_id + 1;
+}
+
+
+static int dpp_bootstrap_del(struct dpp_global *dpp, unsigned int id)
+{
+	struct dpp_bootstrap_info *bi, *tmp;
+	int found = 0;
+
+	if (!dpp)
+		return -1;
+
+	dl_list_for_each_safe(bi, tmp, &dpp->bootstrap,
+			      struct dpp_bootstrap_info, list) {
+		if (id && bi->id != id)
+			continue;
+		found = 1;
+		dl_list_del(&bi->list);
+		dpp_bootstrap_info_free(bi);
+	}
+
+	if (id == 0)
+		return 0; /* flush succeeds regardless of entries found */
+	return found ? 0 : -1;
+}
+
+
+struct dpp_bootstrap_info * dpp_add_qr_code(struct dpp_global *dpp,
+					    const char *uri)
+{
+	struct dpp_bootstrap_info *bi;
+
+	if (!dpp)
+		return NULL;
+
+	bi = dpp_parse_qr_code(uri);
+	if (!bi)
+		return NULL;
+
+	bi->id = dpp_next_id(dpp);
+	dl_list_add(&dpp->bootstrap, &bi->list);
+	return bi;
+}
+
+
+int dpp_bootstrap_gen(struct dpp_global *dpp, const char *cmd)
+{
+	char *chan = NULL, *mac = NULL, *info = NULL, *pk = NULL, *curve = NULL;
+	char *key = NULL;
+	u8 *privkey = NULL;
+	size_t privkey_len = 0;
+	size_t len;
+	int ret = -1;
+	struct dpp_bootstrap_info *bi;
+
+	if (!dpp)
+		return -1;
+
+	bi = os_zalloc(sizeof(*bi));
+	if (!bi)
+		goto fail;
+
+	if (os_strstr(cmd, "type=qrcode"))
+		bi->type = DPP_BOOTSTRAP_QR_CODE;
+	else if (os_strstr(cmd, "type=pkex"))
+		bi->type = DPP_BOOTSTRAP_PKEX;
+	else
+		goto fail;
+
+	chan = get_param(cmd, " chan=");
+	mac = get_param(cmd, " mac=");
+	info = get_param(cmd, " info=");
+	curve = get_param(cmd, " curve=");
+	key = get_param(cmd, " key=");
+
+	if (key) {
+		privkey_len = os_strlen(key) / 2;
+		privkey = os_malloc(privkey_len);
+		if (!privkey ||
+		    hexstr2bin(key, privkey, privkey_len) < 0)
+			goto fail;
+	}
+
+	pk = dpp_keygen(bi, curve, privkey, privkey_len);
+	if (!pk)
+		goto fail;
+
+	len = 4; /* "DPP:" */
+	if (chan) {
+		if (dpp_parse_uri_chan_list(bi, chan) < 0)
+			goto fail;
+		len += 3 + os_strlen(chan); /* C:...; */
+	}
+	if (mac) {
+		if (dpp_parse_uri_mac(bi, mac) < 0)
+			goto fail;
+		len += 3 + os_strlen(mac); /* M:...; */
+	}
+	if (info) {
+		if (dpp_parse_uri_info(bi, info) < 0)
+			goto fail;
+		len += 3 + os_strlen(info); /* I:...; */
+	}
+	len += 4 + os_strlen(pk);
+	bi->uri = os_malloc(len + 1);
+	if (!bi->uri)
+		goto fail;
+	os_snprintf(bi->uri, len + 1, "DPP:%s%s%s%s%s%s%s%s%sK:%s;;",
+		    chan ? "C:" : "", chan ? chan : "", chan ? ";" : "",
+		    mac ? "M:" : "", mac ? mac : "", mac ? ";" : "",
+		    info ? "I:" : "", info ? info : "", info ? ";" : "",
+		    pk);
+	bi->id = dpp_next_id(dpp);
+	dl_list_add(&dpp->bootstrap, &bi->list);
+	ret = bi->id;
+	bi = NULL;
+fail:
+	os_free(curve);
+	os_free(pk);
+	os_free(chan);
+	os_free(mac);
+	os_free(info);
+	str_clear_free(key);
+	bin_clear_free(privkey, privkey_len);
+	dpp_bootstrap_info_free(bi);
+	return ret;
+}
+
+
+struct dpp_bootstrap_info *
+dpp_bootstrap_get_id(struct dpp_global *dpp, unsigned int id)
+{
+	struct dpp_bootstrap_info *bi;
+
+	if (!dpp)
+		return NULL;
+
+	dl_list_for_each(bi, &dpp->bootstrap, struct dpp_bootstrap_info, list) {
+		if (bi->id == id)
+			return bi;
+	}
+	return NULL;
+}
+
+
+int dpp_bootstrap_remove(struct dpp_global *dpp, const char *id)
+{
+	unsigned int id_val;
+
+	if (os_strcmp(id, "*") == 0) {
+		id_val = 0;
+	} else {
+		id_val = atoi(id);
+		if (id_val == 0)
+			return -1;
+	}
+
+	return dpp_bootstrap_del(dpp, id_val);
+}
+
+
+struct dpp_bootstrap_info *
+dpp_pkex_finish(struct dpp_global *dpp, struct dpp_pkex *pkex, const u8 *peer,
+		unsigned int freq)
+{
+	struct dpp_bootstrap_info *bi;
+
+	bi = os_zalloc(sizeof(*bi));
+	if (!bi)
+		return NULL;
+	bi->id = dpp_next_id(dpp);
+	bi->type = DPP_BOOTSTRAP_PKEX;
+	os_memcpy(bi->mac_addr, peer, ETH_ALEN);
+	bi->num_freq = 1;
+	bi->freq[0] = freq;
+	bi->curve = pkex->own_bi->curve;
+	bi->pubkey = pkex->peer_bootstrap_key;
+	pkex->peer_bootstrap_key = NULL;
+	if (dpp_bootstrap_key_hash(bi) < 0) {
+		dpp_bootstrap_info_free(bi);
+		return NULL;
+	}
+	dpp_pkex_free(pkex);
+	dl_list_add(&dpp->bootstrap, &bi->list);
+	return bi;
+}
+
+
+const char * dpp_bootstrap_get_uri(struct dpp_global *dpp, unsigned int id)
+{
+	struct dpp_bootstrap_info *bi;
+
+	bi = dpp_bootstrap_get_id(dpp, id);
+	if (!bi)
+		return NULL;
+	return bi->uri;
+}
+
+
+int dpp_bootstrap_info(struct dpp_global *dpp, int id,
+		       char *reply, int reply_size)
+{
+	struct dpp_bootstrap_info *bi;
+
+	bi = dpp_bootstrap_get_id(dpp, id);
+	if (!bi)
+		return -1;
+	return os_snprintf(reply, reply_size, "type=%s\n"
+			   "mac_addr=" MACSTR "\n"
+			   "info=%s\n"
+			   "num_freq=%u\n"
+			   "curve=%s\n",
+			   dpp_bootstrap_type_txt(bi->type),
+			   MAC2STR(bi->mac_addr),
+			   bi->info ? bi->info : "",
+			   bi->num_freq,
+			   bi->curve->name);
+}
+
+
+void dpp_bootstrap_find_pair(struct dpp_global *dpp, const u8 *i_bootstrap,
+			     const u8 *r_bootstrap,
+			     struct dpp_bootstrap_info **own_bi,
+			     struct dpp_bootstrap_info **peer_bi)
+{
+	struct dpp_bootstrap_info *bi;
+
+	*own_bi = NULL;
+	*peer_bi = NULL;
+	if (!dpp)
+		return;
+
+	dl_list_for_each(bi, &dpp->bootstrap, struct dpp_bootstrap_info, list) {
+		if (!*own_bi && bi->own &&
+		    os_memcmp(bi->pubkey_hash, r_bootstrap,
+			      SHA256_MAC_LEN) == 0) {
+			wpa_printf(MSG_DEBUG,
+				   "DPP: Found matching own bootstrapping information");
+			*own_bi = bi;
+		}
+
+		if (!*peer_bi && !bi->own &&
+		    os_memcmp(bi->pubkey_hash, i_bootstrap,
+			      SHA256_MAC_LEN) == 0) {
+			wpa_printf(MSG_DEBUG,
+				   "DPP: Found matching peer bootstrapping information");
+			*peer_bi = bi;
+		}
+
+		if (*own_bi && *peer_bi)
+			break;
+	}
+
+}
+
+
+static unsigned int dpp_next_configurator_id(struct dpp_global *dpp)
+{
+	struct dpp_configurator *conf;
+	unsigned int max_id = 0;
+
+	dl_list_for_each(conf, &dpp->configurator, struct dpp_configurator,
+			 list) {
+		if (conf->id > max_id)
+			max_id = conf->id;
+	}
+	return max_id + 1;
+}
+
+
+int dpp_configurator_add(struct dpp_global *dpp, const char *cmd)
+{
+	char *curve = NULL;
+	char *key = NULL;
+	u8 *privkey = NULL;
+	size_t privkey_len = 0;
+	int ret = -1;
+	struct dpp_configurator *conf = NULL;
+
+	curve = get_param(cmd, " curve=");
+	key = get_param(cmd, " key=");
+
+	if (key) {
+		privkey_len = os_strlen(key) / 2;
+		privkey = os_malloc(privkey_len);
+		if (!privkey ||
+		    hexstr2bin(key, privkey, privkey_len) < 0)
+			goto fail;
+	}
+
+	conf = dpp_keygen_configurator(curve, privkey, privkey_len);
+	if (!conf)
+		goto fail;
+
+	conf->id = dpp_next_configurator_id(dpp);
+	dl_list_add(&dpp->configurator, &conf->list);
+	ret = conf->id;
+	conf = NULL;
+fail:
+	os_free(curve);
+	str_clear_free(key);
+	bin_clear_free(privkey, privkey_len);
+	dpp_configurator_free(conf);
+	return ret;
+}
+
+
+static int dpp_configurator_del(struct dpp_global *dpp, unsigned int id)
+{
+	struct dpp_configurator *conf, *tmp;
+	int found = 0;
+
+	if (!dpp)
+		return -1;
+
+	dl_list_for_each_safe(conf, tmp, &dpp->configurator,
+			      struct dpp_configurator, list) {
+		if (id && conf->id != id)
+			continue;
+		found = 1;
+		dl_list_del(&conf->list);
+		dpp_configurator_free(conf);
+	}
+
+	if (id == 0)
+		return 0; /* flush succeeds regardless of entries found */
+	return found ? 0 : -1;
+}
+
+
+int dpp_configurator_remove(struct dpp_global *dpp, const char *id)
+{
+	unsigned int id_val;
+
+	if (os_strcmp(id, "*") == 0) {
+		id_val = 0;
+	} else {
+		id_val = atoi(id);
+		if (id_val == 0)
+			return -1;
+	}
+
+	return dpp_configurator_del(dpp, id_val);
+}
+
+
+int dpp_configurator_get_key_id(struct dpp_global *dpp, unsigned int id,
+				char *buf, size_t buflen)
+{
+	struct dpp_configurator *conf;
+
+	conf = dpp_configurator_get_id(dpp, id);
+	if (!conf)
+		return -1;
+
+	return dpp_configurator_get_key(conf, buf, buflen);
+}
+
+
+struct dpp_global * dpp_global_init(void)
+{
+	struct dpp_global *dpp;
+
+	dpp = os_zalloc(sizeof(*dpp));
+	if (!dpp)
+		return NULL;
+
+	dl_list_init(&dpp->bootstrap);
+	dl_list_init(&dpp->configurator);
+
+	return dpp;
+}
+
+
+void dpp_global_clear(struct dpp_global *dpp)
+{
+	if (!dpp)
+		return;
+
+	dpp_bootstrap_del(dpp, 0);
+	dpp_configurator_del(dpp, 0);
+}
+
+
+void dpp_global_deinit(struct dpp_global *dpp)
+{
+	dpp_global_clear(dpp);
+	os_free(dpp);
+}

@@ -1224,3 +1224,28 @@ u8 rssi_to_rcpi(int rssi)
 		return 220;
 	return (rssi + 110) * 2;
 }
+
+
+char * get_param(const char *cmd, const char *param)
+{
+	const char *pos, *end;
+	char *val;
+	size_t len;
+
+	pos = os_strstr(cmd, param);
+	if (!pos)
+		return NULL;
+
+	pos += os_strlen(param);
+	end = os_strchr(pos, ' ');
+	if (end)
+		len = end - pos;
+	else
+		len = os_strlen(pos);
+	val = os_malloc(len + 1);
+	if (!val)
+		return NULL;
+	os_memcpy(val, pos, len);
+	val[len] = '\0';
+	return val;
+}

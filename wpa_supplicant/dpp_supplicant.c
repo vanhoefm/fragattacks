@@ -52,34 +52,6 @@ static const u8 broadcast[ETH_ALEN] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 static const u8 TRANSACTION_ID = 1;
 
 
-static struct dpp_configurator *
-dpp_configurator_get_id(struct wpa_supplicant *wpa_s, unsigned int id)
-{
-	struct dpp_configurator *conf;
-
-	dl_list_for_each(conf, &wpa_s->dpp_configurator,
-			 struct dpp_configurator, list) {
-		if (conf->id == id)
-			return conf;
-	}
-	return NULL;
-}
-
-
-static unsigned int wpas_dpp_next_id(struct wpa_supplicant *wpa_s)
-{
-	struct dpp_bootstrap_info *bi;
-	unsigned int max_id = 0;
-
-	dl_list_for_each(bi, &wpa_s->dpp_bootstrap, struct dpp_bootstrap_info,
-			 list) {
-		if (bi->id > max_id)
-			max_id = bi->id;
-	}
-	return max_id + 1;
-}
-
-
 /**
  * wpas_dpp_qr_code - Parse and add DPP bootstrapping info from a QR Code
  * @wpa_s: Pointer to wpa_supplicant data
@@ -91,12 +63,9 @@ int wpas_dpp_qr_code(struct wpa_supplicant *wpa_s, const char *cmd)
 	struct dpp_bootstrap_info *bi;
 	struct dpp_authentication *auth = wpa_s->dpp_auth;
 
-	bi = dpp_parse_qr_code(cmd);
+	bi = dpp_add_qr_code(wpa_s->dpp, cmd);
 	if (!bi)
 		return -1;
-
-	bi->id = wpas_dpp_next_id(wpa_s);
-	dl_list_add(&wpa_s->dpp_bootstrap, &bi->list);
 
 	if (auth && auth->response_pending &&
 	    dpp_notify_new_qr_code(auth, bi) == 1) {
@@ -115,195 +84,6 @@ int wpas_dpp_qr_code(struct wpa_supplicant *wpa_s, const char *cmd)
 	}
 
 	return bi->id;
-}
-
-
-static char * get_param(const char *cmd, const char *param)
-{
-	const char *pos, *end;
-	char *val;
-	size_t len;
-
-	pos = os_strstr(cmd, param);
-	if (!pos)
-		return NULL;
-
-	pos += os_strlen(param);
-	end = os_strchr(pos, ' ');
-	if (end)
-		len = end - pos;
-	else
-		len = os_strlen(pos);
-	val = os_malloc(len + 1);
-	if (!val)
-		return NULL;
-	os_memcpy(val, pos, len);
-	val[len] = '\0';
-	return val;
-}
-
-
-int wpas_dpp_bootstrap_gen(struct wpa_supplicant *wpa_s, const char *cmd)
-{
-	char *chan = NULL, *mac = NULL, *info = NULL, *pk = NULL, *curve = NULL;
-	char *key = NULL;
-	u8 *privkey = NULL;
-	size_t privkey_len = 0;
-	size_t len;
-	int ret = -1;
-	struct dpp_bootstrap_info *bi;
-
-	bi = os_zalloc(sizeof(*bi));
-	if (!bi)
-		goto fail;
-
-	if (os_strstr(cmd, "type=qrcode"))
-		bi->type = DPP_BOOTSTRAP_QR_CODE;
-	else if (os_strstr(cmd, "type=pkex"))
-		bi->type = DPP_BOOTSTRAP_PKEX;
-	else
-		goto fail;
-
-	chan = get_param(cmd, " chan=");
-	mac = get_param(cmd, " mac=");
-	info = get_param(cmd, " info=");
-	curve = get_param(cmd, " curve=");
-	key = get_param(cmd, " key=");
-
-	if (key) {
-		privkey_len = os_strlen(key) / 2;
-		privkey = os_malloc(privkey_len);
-		if (!privkey ||
-		    hexstr2bin(key, privkey, privkey_len) < 0)
-			goto fail;
-	}
-
-	pk = dpp_keygen(bi, curve, privkey, privkey_len);
-	if (!pk)
-		goto fail;
-
-	len = 4; /* "DPP:" */
-	if (chan) {
-		if (dpp_parse_uri_chan_list(bi, chan) < 0)
-			goto fail;
-		len += 3 + os_strlen(chan); /* C:...; */
-	}
-	if (mac) {
-		if (dpp_parse_uri_mac(bi, mac) < 0)
-			goto fail;
-		len += 3 + os_strlen(mac); /* M:...; */
-	}
-	if (info) {
-		if (dpp_parse_uri_info(bi, info) < 0)
-			goto fail;
-		len += 3 + os_strlen(info); /* I:...; */
-	}
-	len += 4 + os_strlen(pk);
-	bi->uri = os_malloc(len + 1);
-	if (!bi->uri)
-		goto fail;
-	os_snprintf(bi->uri, len + 1, "DPP:%s%s%s%s%s%s%s%s%sK:%s;;",
-		    chan ? "C:" : "", chan ? chan : "", chan ? ";" : "",
-		    mac ? "M:" : "", mac ? mac : "", mac ? ";" : "",
-		    info ? "I:" : "", info ? info : "", info ? ";" : "",
-		    pk);
-	bi->id = wpas_dpp_next_id(wpa_s);
-	dl_list_add(&wpa_s->dpp_bootstrap, &bi->list);
-	ret = bi->id;
-	bi = NULL;
-fail:
-	os_free(curve);
-	os_free(pk);
-	os_free(chan);
-	os_free(mac);
-	os_free(info);
-	str_clear_free(key);
-	bin_clear_free(privkey, privkey_len);
-	dpp_bootstrap_info_free(bi);
-	return ret;
-}
-
-
-static struct dpp_bootstrap_info *
-dpp_bootstrap_get_id(struct wpa_supplicant *wpa_s, unsigned int id)
-{
-	struct dpp_bootstrap_info *bi;
-
-	dl_list_for_each(bi, &wpa_s->dpp_bootstrap, struct dpp_bootstrap_info,
-			 list) {
-		if (bi->id == id)
-			return bi;
-	}
-	return NULL;
-}
-
-
-static int dpp_bootstrap_del(struct wpa_supplicant *wpa_s, unsigned int id)
-{
-	struct dpp_bootstrap_info *bi, *tmp;
-	int found = 0;
-
-	dl_list_for_each_safe(bi, tmp, &wpa_s->dpp_bootstrap,
-			      struct dpp_bootstrap_info, list) {
-		if (id && bi->id != id)
-			continue;
-		found = 1;
-		dl_list_del(&bi->list);
-		dpp_bootstrap_info_free(bi);
-	}
-
-	if (id == 0)
-		return 0; /* flush succeeds regardless of entries found */
-	return found ? 0 : -1;
-}
-
-
-int wpas_dpp_bootstrap_remove(struct wpa_supplicant *wpa_s, const char *id)
-{
-	unsigned int id_val;
-
-	if (os_strcmp(id, "*") == 0) {
-		id_val = 0;
-	} else {
-		id_val = atoi(id);
-		if (id_val == 0)
-			return -1;
-	}
-
-	return dpp_bootstrap_del(wpa_s, id_val);
-}
-
-
-const char * wpas_dpp_bootstrap_get_uri(struct wpa_supplicant *wpa_s,
-					unsigned int id)
-{
-	struct dpp_bootstrap_info *bi;
-
-	bi = dpp_bootstrap_get_id(wpa_s, id);
-	if (!bi)
-		return NULL;
-	return bi->uri;
-}
-
-
-int wpas_dpp_bootstrap_info(struct wpa_supplicant *wpa_s, int id,
-			    char *reply, int reply_size)
-{
-	struct dpp_bootstrap_info *bi;
-
-	bi = dpp_bootstrap_get_id(wpa_s, id);
-	if (!bi)
-		return -1;
-	return os_snprintf(reply, reply_size, "type=%s\n"
-			   "mac_addr=" MACSTR "\n"
-			   "info=%s\n"
-			   "num_freq=%u\n"
-			   "curve=%s\n",
-			   dpp_bootstrap_type_txt(bi->type),
-			   MAC2STR(bi->mac_addr),
-			   bi->info ? bi->info : "",
-			   bi->num_freq,
-			   bi->curve->name);
 }
 
 
@@ -550,37 +330,6 @@ static void wpas_dpp_set_testing_options(struct wpa_supplicant *wpa_s,
 }
 
 
-static int wpas_dpp_set_configurator(struct wpa_supplicant *wpa_s,
-				     struct dpp_authentication *auth,
-				     const char *cmd)
-{
-	const char *pos;
-
-	if (!cmd)
-		return 0;
-
-	wpa_printf(MSG_DEBUG, "DPP: Set configurator parameters: %s", cmd);
-
-	pos = os_strstr(cmd, " configurator=");
-	if (pos) {
-		pos += 14;
-		auth->conf = dpp_configurator_get_id(wpa_s, atoi(pos));
-		if (!auth->conf) {
-			wpa_printf(MSG_INFO,
-				   "DPP: Could not find the specified configurator");
-			return -1;
-		}
-	}
-
-	if (dpp_configuration_parse(auth, cmd) < 0) {
-		wpa_msg(wpa_s, MSG_INFO,
-			"DPP: Failed to set configurator parameters");
-		return -1;
-	}
-	return 0;
-}
-
-
 static void wpas_dpp_init_timeout(void *eloop_ctx, void *timeout_ctx)
 {
 	struct wpa_supplicant *wpa_s = eloop_ctx;
@@ -693,7 +442,7 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 	if (!pos)
 		return -1;
 	pos += 6;
-	peer_bi = dpp_bootstrap_get_id(wpa_s, atoi(pos));
+	peer_bi = dpp_bootstrap_get_id(wpa_s->dpp, atoi(pos));
 	if (!peer_bi) {
 		wpa_printf(MSG_INFO,
 			   "DPP: Could not find bootstrapping info for the identified peer");
@@ -703,7 +452,7 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 	pos = os_strstr(cmd, " own=");
 	if (pos) {
 		pos += 5;
-		own_bi = dpp_bootstrap_get_id(wpa_s, atoi(pos));
+		own_bi = dpp_bootstrap_get_id(wpa_s->dpp, atoi(pos));
 		if (!own_bi) {
 			wpa_printf(MSG_INFO,
 				   "DPP: Could not find bootstrapping info for the identified local entry");
@@ -756,7 +505,7 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 	if (!wpa_s->dpp_auth)
 		goto fail;
 	wpas_dpp_set_testing_options(wpa_s, wpa_s->dpp_auth);
-	if (wpas_dpp_set_configurator(wpa_s, wpa_s->dpp_auth, cmd) < 0) {
+	if (dpp_set_configurator(wpa_s->dpp, wpa_s, wpa_s->dpp_auth, cmd) < 0) {
 		dpp_auth_deinit(wpa_s->dpp_auth);
 		wpa_s->dpp_auth = NULL;
 		goto fail;
@@ -940,7 +689,10 @@ static void wpas_dpp_rx_auth_req(struct wpa_supplicant *wpa_s, const u8 *src,
 {
 	const u8 *r_bootstrap, *i_bootstrap;
 	u16 r_bootstrap_len, i_bootstrap_len;
-	struct dpp_bootstrap_info *bi, *own_bi = NULL, *peer_bi = NULL;
+	struct dpp_bootstrap_info *own_bi = NULL, *peer_bi = NULL;
+
+	if (!wpa_s->dpp)
+		return;
 
 	wpa_printf(MSG_DEBUG, "DPP: Authentication Request from " MACSTR,
 		   MAC2STR(src));
@@ -967,28 +719,8 @@ static void wpas_dpp_rx_auth_req(struct wpa_supplicant *wpa_s, const u8 *src,
 
 	/* Try to find own and peer bootstrapping key matches based on the
 	 * received hash values */
-	dl_list_for_each(bi, &wpa_s->dpp_bootstrap, struct dpp_bootstrap_info,
-			 list) {
-		if (!own_bi && bi->own &&
-		    os_memcmp(bi->pubkey_hash, r_bootstrap,
-			      SHA256_MAC_LEN) == 0) {
-			wpa_printf(MSG_DEBUG,
-				   "DPP: Found matching own bootstrapping information");
-			own_bi = bi;
-		}
-
-		if (!peer_bi && !bi->own &&
-		    os_memcmp(bi->pubkey_hash, i_bootstrap,
-			      SHA256_MAC_LEN) == 0) {
-			wpa_printf(MSG_DEBUG,
-				   "DPP: Found matching peer bootstrapping information");
-			peer_bi = bi;
-		}
-
-		if (own_bi && peer_bi)
-			break;
-	}
-
+	dpp_bootstrap_find_pair(wpa_s->dpp, i_bootstrap, r_bootstrap,
+				&own_bi, &peer_bi);
 	if (!own_bi) {
 		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_FAIL
 			"No matching own bootstrapping key found - ignore message");
@@ -1011,8 +743,8 @@ static void wpas_dpp_rx_auth_req(struct wpa_supplicant *wpa_s, const u8 *src,
 		return;
 	}
 	wpas_dpp_set_testing_options(wpa_s, wpa_s->dpp_auth);
-	if (wpas_dpp_set_configurator(wpa_s, wpa_s->dpp_auth,
-				      wpa_s->dpp_configurator_params) < 0) {
+	if (dpp_set_configurator(wpa_s->dpp, wpa_s, wpa_s->dpp_auth,
+				 wpa_s->dpp_configurator_params) < 0) {
 		dpp_auth_deinit(wpa_s->dpp_auth);
 		wpa_s->dpp_auth = NULL;
 		return;
@@ -1924,27 +1656,12 @@ static struct dpp_bootstrap_info *
 wpas_dpp_pkex_finish(struct wpa_supplicant *wpa_s, const u8 *peer,
 		     unsigned int freq)
 {
-	struct dpp_pkex *pkex = wpa_s->dpp_pkex;
 	struct dpp_bootstrap_info *bi;
 
-	bi = os_zalloc(sizeof(*bi));
+	bi = dpp_pkex_finish(wpa_s->dpp, wpa_s->dpp_pkex, peer, freq);
 	if (!bi)
 		return NULL;
-	bi->id = wpas_dpp_next_id(wpa_s);
-	bi->type = DPP_BOOTSTRAP_PKEX;
-	os_memcpy(bi->mac_addr, peer, ETH_ALEN);
-	bi->num_freq = 1;
-	bi->freq[0] = freq;
-	bi->curve = pkex->own_bi->curve;
-	bi->pubkey = pkex->peer_bootstrap_key;
-	pkex->peer_bootstrap_key = NULL;
-	dpp_pkex_free(pkex);
 	wpa_s->dpp_pkex = NULL;
-	if (dpp_bootstrap_key_hash(bi) < 0) {
-		dpp_bootstrap_info_free(bi);
-		return NULL;
-	}
-	dl_list_add(&wpa_s->dpp_bootstrap, &bi->list);
 	return bi;
 }
 
@@ -2208,93 +1925,6 @@ wpas_dpp_gas_status_handler(void *ctx, struct wpabuf *resp, int ok)
 }
 
 
-static unsigned int wpas_dpp_next_configurator_id(struct wpa_supplicant *wpa_s)
-{
-	struct dpp_configurator *conf;
-	unsigned int max_id = 0;
-
-	dl_list_for_each(conf, &wpa_s->dpp_configurator,
-			 struct dpp_configurator, list) {
-		if (conf->id > max_id)
-			max_id = conf->id;
-	}
-	return max_id + 1;
-}
-
-
-int wpas_dpp_configurator_add(struct wpa_supplicant *wpa_s, const char *cmd)
-{
-	char *curve = NULL;
-	char *key = NULL;
-	u8 *privkey = NULL;
-	size_t privkey_len = 0;
-	int ret = -1;
-	struct dpp_configurator *conf = NULL;
-
-	curve = get_param(cmd, " curve=");
-	key = get_param(cmd, " key=");
-
-	if (key) {
-		privkey_len = os_strlen(key) / 2;
-		privkey = os_malloc(privkey_len);
-		if (!privkey ||
-		    hexstr2bin(key, privkey, privkey_len) < 0)
-			goto fail;
-	}
-
-	conf = dpp_keygen_configurator(curve, privkey, privkey_len);
-	if (!conf)
-		goto fail;
-
-	conf->id = wpas_dpp_next_configurator_id(wpa_s);
-	dl_list_add(&wpa_s->dpp_configurator, &conf->list);
-	ret = conf->id;
-	conf = NULL;
-fail:
-	os_free(curve);
-	str_clear_free(key);
-	bin_clear_free(privkey, privkey_len);
-	dpp_configurator_free(conf);
-	return ret;
-}
-
-
-static int dpp_configurator_del(struct wpa_supplicant *wpa_s, unsigned int id)
-{
-	struct dpp_configurator *conf, *tmp;
-	int found = 0;
-
-	dl_list_for_each_safe(conf, tmp, &wpa_s->dpp_configurator,
-			      struct dpp_configurator, list) {
-		if (id && conf->id != id)
-			continue;
-		found = 1;
-		dl_list_del(&conf->list);
-		dpp_configurator_free(conf);
-	}
-
-	if (id == 0)
-		return 0; /* flush succeeds regardless of entries found */
-	return found ? 0 : -1;
-}
-
-
-int wpas_dpp_configurator_remove(struct wpa_supplicant *wpa_s, const char *id)
-{
-	unsigned int id_val;
-
-	if (os_strcmp(id, "*") == 0) {
-		id_val = 0;
-	} else {
-		id_val = atoi(id);
-		if (id_val == 0)
-			return -1;
-	}
-
-	return dpp_configurator_del(wpa_s, id_val);
-}
-
-
 int wpas_dpp_configurator_sign(struct wpa_supplicant *wpa_s, const char *cmd)
 {
 	struct dpp_authentication *auth;
@@ -2307,7 +1937,7 @@ int wpas_dpp_configurator_sign(struct wpa_supplicant *wpa_s, const char *cmd)
 
 	curve = get_param(cmd, " curve=");
 	wpas_dpp_set_testing_options(wpa_s, auth);
-	if (wpas_dpp_set_configurator(wpa_s, auth, cmd) == 0 &&
+	if (dpp_set_configurator(wpa_s->dpp, wpa_s, auth, cmd) == 0 &&
 	    dpp_configurator_own_config(auth, curve, 0) == 0)
 		ret = wpas_dpp_handle_config_obj(wpa_s, auth);
 
@@ -2315,19 +1945,6 @@ int wpas_dpp_configurator_sign(struct wpa_supplicant *wpa_s, const char *cmd)
 	os_free(curve);
 
 	return ret;
-}
-
-
-int wpas_dpp_configurator_get_key(struct wpa_supplicant *wpa_s, unsigned int id,
-				  char *buf, size_t buflen)
-{
-	struct dpp_configurator *conf;
-
-	conf = dpp_configurator_get_id(wpa_s, id);
-	if (!conf)
-		return -1;
-
-	return dpp_configurator_get_key(conf, buf, buflen);
 }
 
 
@@ -2479,7 +2096,7 @@ int wpas_dpp_pkex_add(struct wpa_supplicant *wpa_s, const char *cmd)
 	if (!pos)
 		return -1;
 	pos += 5;
-	own_bi = dpp_bootstrap_get_id(wpa_s, atoi(pos));
+	own_bi = dpp_bootstrap_get_id(wpa_s->dpp, atoi(pos));
 	if (!own_bi) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Identified bootstrap info not found");
@@ -2612,10 +2229,8 @@ int wpas_dpp_init(struct wpa_supplicant *wpa_s)
 				sizeof(adv_proto_id), wpas_dpp_gas_req_handler,
 				wpas_dpp_gas_status_handler, wpa_s) < 0)
 		return -1;
-	dl_list_init(&wpa_s->dpp_bootstrap);
-	dl_list_init(&wpa_s->dpp_configurator);
-	wpa_s->dpp_init_done = 1;
-	return 0;
+	wpa_s->dpp = dpp_global_init();
+	return wpa_s->dpp ? 0 : -1;
 }
 
 
@@ -2630,8 +2245,9 @@ void wpas_dpp_deinit(struct wpa_supplicant *wpa_s)
 	wpa_s->dpp_groups_override = NULL;
 	wpa_s->dpp_ignore_netaccesskey_mismatch = 0;
 #endif /* CONFIG_TESTING_OPTIONS */
-	if (!wpa_s->dpp_init_done)
+	if (!wpa_s->dpp)
 		return;
+	dpp_global_clear(wpa_s->dpp);
 	eloop_cancel_timeout(wpas_dpp_pkex_retry_timeout, wpa_s, NULL);
 	eloop_cancel_timeout(wpas_dpp_reply_wait_timeout, wpa_s, NULL);
 	eloop_cancel_timeout(wpas_dpp_init_timeout, wpa_s, NULL);
@@ -2643,8 +2259,6 @@ void wpas_dpp_deinit(struct wpa_supplicant *wpa_s)
 #endif /* CONFIG_DPP2 */
 	offchannel_send_action_done(wpa_s);
 	wpas_dpp_listen_stop(wpa_s);
-	dpp_bootstrap_del(wpa_s, 0);
-	dpp_configurator_del(wpa_s, 0);
 	wpas_dpp_stop(wpa_s);
 	wpas_dpp_pkex_remove(wpa_s, "*");
 	os_memset(wpa_s->dpp_intro_bssid, 0, ETH_ALEN);

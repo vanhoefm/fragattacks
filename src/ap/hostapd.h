@@ -66,9 +66,7 @@ struct hapd_interfaces {
 	int eloop_initialized;
 
 #ifdef CONFIG_DPP
-	int dpp_init_done;
-	struct dl_list dpp_bootstrap; /* struct dpp_bootstrap_info */
-	struct dl_list dpp_configurator; /* struct dpp_configurator */
+	struct dpp_global *dpp;
 #endif /* CONFIG_DPP */
 };
 

@@ -17,6 +17,7 @@
 #include "crypto/sha256.h"
 
 struct crypto_ecdh;
+struct dpp_global;
 
 #define DPP_HDR_LEN (4 + 2) /* OUI, OUI Type, Crypto Suite, DPP frame type */
 
@@ -405,7 +406,9 @@ int dpp_akm_dpp(enum dpp_akm akm);
 int dpp_akm_ver2(enum dpp_akm akm);
 int dpp_configuration_valid(const struct dpp_configuration *conf);
 void dpp_configuration_free(struct dpp_configuration *conf);
-int dpp_configuration_parse(struct dpp_authentication *auth, const char *cmd);
+int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
+			 struct dpp_authentication *auth,
+			 const char *cmd);
 void dpp_auth_deinit(struct dpp_authentication *auth);
 struct wpabuf *
 dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
@@ -472,5 +475,29 @@ struct dpp_pfs * dpp_pfs_init(const u8 *net_access_key,
 			      size_t net_access_key_len);
 int dpp_pfs_process(struct dpp_pfs *pfs, const u8 *peer_ie, size_t peer_ie_len);
 void dpp_pfs_free(struct dpp_pfs *pfs);
+
+struct dpp_bootstrap_info * dpp_add_qr_code(struct dpp_global *dpp,
+					    const char *uri);
+int dpp_bootstrap_gen(struct dpp_global *dpp, const char *cmd);
+struct dpp_bootstrap_info *
+dpp_bootstrap_get_id(struct dpp_global *dpp, unsigned int id);
+int dpp_bootstrap_remove(struct dpp_global *dpp, const char *id);
+struct dpp_bootstrap_info *
+dpp_pkex_finish(struct dpp_global *dpp, struct dpp_pkex *pkex, const u8 *peer,
+		unsigned int freq);
+const char * dpp_bootstrap_get_uri(struct dpp_global *dpp, unsigned int id);
+int dpp_bootstrap_info(struct dpp_global *dpp, int id,
+		       char *reply, int reply_size);
+void dpp_bootstrap_find_pair(struct dpp_global *dpp, const u8 *i_bootstrap,
+			     const u8 *r_bootstrap,
+			     struct dpp_bootstrap_info **own_bi,
+			     struct dpp_bootstrap_info **peer_bi);
+int dpp_configurator_add(struct dpp_global *dpp, const char *cmd);
+int dpp_configurator_remove(struct dpp_global *dpp, const char *id);
+int dpp_configurator_get_key_id(struct dpp_global *dpp, unsigned int id,
+				char *buf, size_t buflen);
+struct dpp_global * dpp_global_init(void);
+void dpp_global_clear(struct dpp_global *dpp);
+void dpp_global_deinit(struct dpp_global *dpp);
 
 #endif /* DPP_H */
