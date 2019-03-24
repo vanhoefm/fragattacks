@@ -434,8 +434,15 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 {
 	const char *pos;
 	struct dpp_bootstrap_info *peer_bi, *own_bi = NULL;
+	struct dpp_authentication *auth;
 	u8 allowed_roles = DPP_CAPAB_CONFIGURATOR;
 	unsigned int neg_freq = 0;
+	int tcp = 0;
+#ifdef CONFIG_DPP2
+	int tcp_port = DPP_TCP_PORT;
+	struct hostapd_ip_addr ipaddr;
+	char *addr;
+#endif /* CONFIG_DPP2 */
 
 	wpa_s->dpp_gas_client = 0;
 
@@ -449,6 +456,25 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 			   "DPP: Could not find bootstrapping info for the identified peer");
 		return -1;
 	}
+
+#ifdef CONFIG_DPP2
+	pos = os_strstr(cmd, " tcp_port=");
+	if (pos) {
+		pos += 10;
+		tcp_port = atoi(pos);
+	}
+
+	addr = get_param(cmd, " tcp_addr=");
+	if (addr) {
+		int res;
+
+		res = hostapd_parse_ip_addr(addr, &ipaddr);
+		os_free(addr);
+		if (res)
+			return -1;
+		tcp = 1;
+	}
+#endif /* CONFIG_DPP2 */
 
 	pos = os_strstr(cmd, " own=");
 	if (pos) {
@@ -492,32 +518,37 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 	if (pos)
 		neg_freq = atoi(pos + 10);
 
-	if (wpa_s->dpp_auth) {
+	if (!tcp && wpa_s->dpp_auth) {
 		eloop_cancel_timeout(wpas_dpp_init_timeout, wpa_s, NULL);
 		eloop_cancel_timeout(wpas_dpp_reply_wait_timeout, wpa_s, NULL);
 		eloop_cancel_timeout(wpas_dpp_auth_resp_retry_timeout, wpa_s,
 				     NULL);
 		offchannel_send_action_done(wpa_s);
 		dpp_auth_deinit(wpa_s->dpp_auth);
-	}
-	wpa_s->dpp_auth = dpp_auth_init(wpa_s, peer_bi, own_bi, allowed_roles,
-					neg_freq,
-					wpa_s->hw.modes, wpa_s->hw.num_modes);
-	if (!wpa_s->dpp_auth)
-		goto fail;
-	wpas_dpp_set_testing_options(wpa_s, wpa_s->dpp_auth);
-	if (dpp_set_configurator(wpa_s->dpp, wpa_s, wpa_s->dpp_auth, cmd) < 0) {
-		dpp_auth_deinit(wpa_s->dpp_auth);
 		wpa_s->dpp_auth = NULL;
+	}
+
+	auth = dpp_auth_init(wpa_s, peer_bi, own_bi, allowed_roles, neg_freq,
+			     wpa_s->hw.modes, wpa_s->hw.num_modes);
+	if (!auth)
+		goto fail;
+	wpas_dpp_set_testing_options(wpa_s, auth);
+	if (dpp_set_configurator(wpa_s->dpp, wpa_s, auth, cmd) < 0) {
+		dpp_auth_deinit(auth);
 		goto fail;
 	}
 
-	wpa_s->dpp_auth->neg_freq = neg_freq;
+	auth->neg_freq = neg_freq;
 
 	if (!is_zero_ether_addr(peer_bi->mac_addr))
-		os_memcpy(wpa_s->dpp_auth->peer_mac_addr, peer_bi->mac_addr,
-			  ETH_ALEN);
+		os_memcpy(auth->peer_mac_addr, peer_bi->mac_addr, ETH_ALEN);
 
+#ifdef CONFIG_DPP2
+	if (tcp)
+		return dpp_tcp_init(wpa_s->dpp, auth, &ipaddr, tcp_port);
+#endif /* CONFIG_DPP2 */
+
+	wpa_s->dpp_auth = auth;
 	return wpas_dpp_auth_init_next(wpa_s);
 fail:
 	return -1;
@@ -1271,6 +1302,15 @@ static void wpas_dpp_rx_conf_result(struct wpa_supplicant *wpa_s, const u8 *src,
 	dpp_auth_deinit(auth);
 	wpa_s->dpp_auth = NULL;
 	eloop_cancel_timeout(wpas_dpp_config_result_wait_timeout, wpa_s, NULL);
+}
+
+
+static int wpas_dpp_process_conf_obj(void *ctx,
+				     struct dpp_authentication *auth)
+{
+	struct wpa_supplicant *wpa_s = ctx;
+
+	return wpas_dpp_handle_config_obj(wpa_s, auth);
 }
 
 #endif /* CONFIG_DPP2 */
@@ -2213,6 +2253,10 @@ int wpas_dpp_init(struct wpa_supplicant *wpa_s)
 
 	os_memset(&config, 0, sizeof(config));
 	config.msg_ctx = wpa_s;
+	config.cb_ctx = wpa_s;
+#ifdef CONFIG_DPP2
+	config.process_conf_obj = wpas_dpp_process_conf_obj;
+#endif /* CONFIG_DPP2 */
 	wpa_s->dpp = dpp_global_init(&config);
 	return wpa_s->dpp ? 0 : -1;
 }
