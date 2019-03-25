@@ -322,6 +322,32 @@ def test_sigma_dut_sae_password(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
+def test_sigma_dut_sae_pw_id(dev, apdev):
+    """sigma_dut controlled SAE association with Password Identifier"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, debug=True)
+
+    ssid = "test-sae"
+    params = hostapd.wpa2_params(ssid=ssid)
+    params['wpa_key_mgmt'] = 'SAE'
+    params["ieee80211w"] = "2"
+    params['sae_password'] = 'secret|id=pw id'
+    params['sae_groups'] = '19'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+    sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,AKMSuiteType,8;9,PasswordID,pw id" % (ifname, "test-sae", "secret"))
+    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
+    sigma_dut_wait_connected(ifname)
+    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+
+    stop_sigma_dut(sigma)
+
 def test_sigma_dut_sta_override_rsne(dev, apdev):
     """sigma_dut and RSNE override on STA"""
     try:
@@ -674,6 +700,78 @@ def test_sigma_dut_ap_sae_password(dev, apdev, params):
                            ieee80211w="2", scan_freq="2412")
             if dev[0].get_status_field('sae_group') != '19':
                 raise Exception("Expected default SAE group not used")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_sae_pw_id(dev, apdev, params):
+    """sigma_dut controlled AP with SAE Password Identifier"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_sae_pw_id.sigma-hostapd")
+    conffile = os.path.join(params['logdir'],
+                            "sigma_dut_ap_sae_pw_id.sigma-conf")
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,AKMSuiteType,8,SAEPasswords,pw1:id1;pw2:id2;pw3;pw4:id4,PMF,Required")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            with open("/tmp/sigma_dut-ap.conf", "rb") as f:
+                with open(conffile, "wb") as f2:
+                    f2.write(f.read())
+
+            dev[0].request("SET sae_groups ")
+            tests = [("pw1", "id1"),
+                     ("pw2", "id2"),
+                     ("pw3", None),
+                     ("pw4", "id4")]
+            for pw, pw_id in tests:
+                dev[0].connect("test-sae", key_mgmt="SAE", sae_password=pw,
+                               sae_password_id=pw_id,
+                               ieee80211w="2", scan_freq="2412")
+                dev[0].request("REMOVE_NETWORK all")
+                dev[0].wait_disconnected()
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_sae_pw_id_ft(dev, apdev, params):
+    """sigma_dut controlled AP with SAE Password Identifier and FT"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_sae_pw_id_ft.sigma-hostapd")
+    conffile = os.path.join(params['logdir'],
+                            "sigma_dut_ap_sae_pw_id_ft.sigma-conf")
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng,DOMAIN,aabb")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,AKMSuiteType,8;9,SAEPasswords,pw1:id1;pw2:id2;pw3;pw4:id4,PMF,Required")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            with open("/tmp/sigma_dut-ap.conf", "rb") as f:
+                with open(conffile, "wb") as f2:
+                    f2.write(f.read())
+
+            dev[0].request("SET sae_groups ")
+            tests = [("pw1", "id1", "SAE"),
+                     ("pw2", "id2", "FT-SAE"),
+                     ("pw3", None, "FT-SAE"),
+                     ("pw4", "id4", "SAE")]
+            for pw, pw_id, key_mgmt in tests:
+                dev[0].connect("test-sae", key_mgmt=key_mgmt, sae_password=pw,
+                               sae_password_id=pw_id,
+                               ieee80211w="2", scan_freq="2412")
+                dev[0].request("REMOVE_NETWORK all")
+                dev[0].wait_disconnected()
 
             sigma_dut_cmd_check("ap_reset_default")
         finally:
