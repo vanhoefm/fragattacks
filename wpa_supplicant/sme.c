@@ -980,7 +980,7 @@ static void sme_handle_external_auth_start(struct wpa_supplicant *wpa_s,
 		if (!wpas_network_disabled(wpa_s, ssid) &&
 		    ssid_str_len == ssid->ssid_len &&
 		    os_memcmp(ssid_str, ssid->ssid, ssid_str_len) == 0 &&
-		    (ssid->key_mgmt & WPA_KEY_MGMT_SAE))
+		    (ssid->key_mgmt & (WPA_KEY_MGMT_SAE | WPA_KEY_MGMT_FT_SAE)))
 			break;
 	}
 	if (ssid)
