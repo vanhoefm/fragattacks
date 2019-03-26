@@ -74,7 +74,11 @@ static int wpa_ft_rrb_decrypt(const u8 *key, const size_t key_len,
 	const u8 *ad[3] = { src_addr, auth, &type };
 	size_t ad_len[3] = { ETH_ALEN, auth_len, sizeof(type) };
 
+	wpa_printf(MSG_DEBUG, "FT(RRB): src_addr=" MACSTR " type=%u",
+		   MAC2STR(src_addr), type);
 	wpa_hexdump_key(MSG_DEBUG, "FT(RRB): decrypt using key", key, key_len);
+	wpa_hexdump(MSG_DEBUG, "FT(RRB): encrypted TLVs", enc, enc_len);
+	wpa_hexdump(MSG_DEBUG, "FT(RRB): authenticated TLVs", auth, auth_len);
 
 	if (!key) { /* skip decryption */
 		*plain = os_memdup(enc, enc_len);
@@ -463,9 +467,12 @@ static int wpa_ft_rrb_encrypt(const u8 *key, const size_t key_len,
 	const u8 *ad[3] = { src_addr, auth, &type };
 	size_t ad_len[3] = { ETH_ALEN, auth_len, sizeof(type) };
 
+	wpa_printf(MSG_DEBUG, "FT(RRB): src_addr=" MACSTR " type=%u",
+		   MAC2STR(src_addr), type);
 	wpa_hexdump_key(MSG_DEBUG, "FT(RRB): plaintext message",
 			plain, plain_len);
 	wpa_hexdump_key(MSG_DEBUG, "FT(RRB): encrypt using key", key, key_len);
+	wpa_hexdump(MSG_DEBUG, "FT(RRB): authenticated TLVs", auth, auth_len);
 
 	if (!key) {
 		/* encryption not needed, return plaintext as packet */
@@ -475,6 +482,8 @@ static int wpa_ft_rrb_encrypt(const u8 *key, const size_t key_len,
 		wpa_printf(MSG_ERROR, "FT: Failed to encrypt RRB-OUI message");
 		return -1;
 	}
+	wpa_hexdump(MSG_DEBUG, "FT(RRB): encrypted TLVs",
+		    enc, plain_len + AES_BLOCK_SIZE);
 
 	return 0;
 }
@@ -529,6 +538,7 @@ static int wpa_ft_rrb_build(const u8 *key, const size_t key_len,
 	if (wpa_ft_rrb_encrypt(key, key_len, plain, plain_len, auth,
 			       auth_len, src_addr, type, pos) < 0)
 		goto out;
+	wpa_hexdump(MSG_MSGDUMP, "FT: RRB frame payload", *packet, *packet_len);
 
 	ret = 0;
 
@@ -596,8 +606,8 @@ static int wpa_ft_rrb_oui_send(struct wpa_authenticator *wpa_auth,
 {
 	if (!wpa_auth->cb->send_oui)
 		return -1;
-	wpa_printf(MSG_DEBUG, "FT: RRB-OUI type %u send to " MACSTR,
-		   oui_suffix, MAC2STR(dst));
+	wpa_printf(MSG_DEBUG, "FT: RRB-OUI type %u send to " MACSTR " (len=%u)",
+		   oui_suffix, MAC2STR(dst), (unsigned int) data_len);
 	return wpa_auth->cb->send_oui(wpa_auth->cb_ctx, dst, oui_suffix, data,
 				      data_len);
 }
@@ -907,6 +917,8 @@ wpa_ft_rrb_seq_req(struct wpa_authenticator *wpa_auth,
 		goto err;
 	}
 
+	wpa_printf(MSG_DEBUG, "FT: Send out sequence number request to " MACSTR,
+		   MAC2STR(src_addr));
 	item = os_zalloc(sizeof(*item));
 	if (!item)
 		goto err;
@@ -4387,6 +4399,7 @@ void wpa_ft_rrb_oui_rx(struct wpa_authenticator *wpa_auth, const u8 *src_addr,
 	wpa_printf(MSG_DEBUG, "FT: RRB-OUI received frame from remote AP "
 		   MACSTR, MAC2STR(src_addr));
 	wpa_printf(MSG_DEBUG, "FT: RRB-OUI frame - oui_suffix=%d", oui_suffix);
+	wpa_hexdump(MSG_MSGDUMP, "FT: RRB frame payload", data, data_len);
 
 	if (is_multicast_ether_addr(src_addr)) {
 		wpa_printf(MSG_DEBUG,
@@ -4415,8 +4428,10 @@ void wpa_ft_rrb_oui_rx(struct wpa_authenticator *wpa_auth, const u8 *src_addr,
 	}
 
 	auth = data + sizeof(u16);
+	wpa_hexdump(MSG_MSGDUMP, "FT: Authenticated payload", auth, alen);
 	enc = data + sizeof(u16) + alen;
 	elen = data_len - sizeof(u16) - alen;
+	wpa_hexdump(MSG_MSGDUMP, "FT: Encrypted payload", enc, elen);
 
 	switch (oui_suffix) {
 	case FT_PACKET_R0KH_R1KH_PULL:
