@@ -2060,6 +2060,10 @@ SM_STATE(WPA_PTK, INITPSK)
 		wpa_printf(MSG_DEBUG, "SAE: PMK from PMKSA cache");
 		os_memcpy(sm->PMK, sm->pmksa->pmk, sm->pmksa->pmk_len);
 		sm->pmk_len = sm->pmksa->pmk_len;
+#ifdef CONFIG_IEEE80211R_AP
+		os_memcpy(sm->xxkey, sm->pmksa->pmk, sm->pmksa->pmk_len);
+		sm->xxkey_len = sm->pmksa->pmk_len;
+#endif /* CONFIG_IEEE80211R_AP */
 	}
 #endif /* CONFIG_SAE */
 	sm->req_replay_counter_used = 0;
