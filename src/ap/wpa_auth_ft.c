@@ -66,7 +66,7 @@ struct tlv_list {
  * Returns: 0 on success, -1 on error
  */
 static int wpa_ft_rrb_decrypt(const u8 *key, const size_t key_len,
-			      const u8 *enc, const size_t enc_len,
+			      const u8 *enc, size_t enc_len,
 			      const u8 *auth, const size_t auth_len,
 			      const u8 *src_addr, u8 type,
 			      u8 **plain, size_t *plain_size)
@@ -101,8 +101,18 @@ static int wpa_ft_rrb_decrypt(const u8 *key, const size_t key_len,
 		goto err;
 
 	if (aes_siv_decrypt(key, key_len, enc, enc_len, 3, ad, ad_len,
-			    *plain) < 0)
-		goto err;
+			    *plain) < 0) {
+		if (enc_len < AES_BLOCK_SIZE + 2)
+			goto err;
+
+		/* Try to work around Ethernet devices that add extra
+		 * two octet padding even if the frame is longer than
+		 * the minimum Ethernet frame. */
+		enc_len -= 2;
+		if (aes_siv_decrypt(key, key_len, enc, enc_len, 3, ad, ad_len,
+				    *plain) < 0)
+			goto err;
+	}
 
 	*plain_size = enc_len - AES_BLOCK_SIZE;
 	wpa_hexdump_key(MSG_DEBUG, "FT(RRB): decrypted TLVs",
@@ -512,9 +522,10 @@ static int wpa_ft_rrb_build(const u8 *key, const size_t key_len,
 			    const u8 *src_addr, u8 type,
 			    u8 **packet, size_t *packet_len)
 {
-	u8 *plain = NULL, *auth = NULL, *pos;
+	u8 *plain = NULL, *auth = NULL, *pos, *tmp;
 	size_t plain_len = 0, auth_len = 0;
 	int ret = -1;
+	size_t pad_len = 0;
 
 	*packet = NULL;
 	if (wpa_ft_rrb_lin(tlvs_enc0, tlvs_enc1, vlan, &plain, &plain_len) < 0)
@@ -526,6 +537,28 @@ static int wpa_ft_rrb_build(const u8 *key, const size_t key_len,
 	*packet_len = sizeof(u16) + auth_len + plain_len;
 	if (key)
 		*packet_len += AES_BLOCK_SIZE;
+#define RRB_MIN_MSG_LEN 64
+	if (*packet_len < RRB_MIN_MSG_LEN) {
+		pad_len = RRB_MIN_MSG_LEN - *packet_len;
+		if (pad_len < sizeof(struct ft_rrb_tlv))
+			pad_len = sizeof(struct ft_rrb_tlv);
+		wpa_printf(MSG_DEBUG,
+			   "FT: Pad message to minimum Ethernet frame length (%d --> %d)",
+			   (int) *packet_len, (int) (*packet_len + pad_len));
+		*packet_len += pad_len;
+		tmp = os_realloc(auth, auth_len + pad_len);
+		if (!tmp)
+			goto out;
+		auth = tmp;
+		pos = auth + auth_len;
+		WPA_PUT_LE16(pos, FT_RRB_LAST_EMPTY);
+		pos += 2;
+		WPA_PUT_LE16(pos, pad_len - sizeof(struct ft_rrb_tlv));
+		pos += 2;
+		os_memset(pos, 0, pad_len - sizeof(struct ft_rrb_tlv));
+		auth_len += pad_len;
+
+	}
 	*packet = os_zalloc(*packet_len);
 	if (!*packet)
 		goto out;
