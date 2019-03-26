@@ -133,7 +133,7 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
               test_connectivity=True, eap_identity="gpsk user", conndev=False,
               force_initial_conn_to_first_ap=False, sha384=False,
               group_mgmt=None, ocv=None, sae_password=None,
-              sae_password_id=None):
+              sae_password_id=None, sae_and_psk=False):
     logger.info("Connect to first AP")
 
     copts = {}
@@ -154,7 +154,7 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
         copts["password"] = "abcdefghijklmnop0123456789abcdef"
     else:
         if sae:
-            copts["key_mgmt"] = "FT-SAE"
+            copts["key_mgmt"] = "SAE FT-SAE" if sae_and_psk else "FT-SAE"
         else:
             copts["key_mgmt"] = "FT-PSK"
         if passphrase:
@@ -929,6 +929,27 @@ def test_ap_ft_sae_pw_id(dev, apdev):
     dev[0].request("SET sae_groups ")
     run_roams(dev[0], apdev, hapd0, hapd, ssid, passphrase=None, sae=True,
               sae_password="secret", sae_password_id="pwid")
+
+def test_ap_ft_sae_with_both_akms(dev, apdev):
+    """SAE + FT-SAE configuration"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    ssid = "test-ft"
+    passphrase = "12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params['wpa_key_mgmt'] = "FT-SAE SAE"
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params['wpa_key_mgmt'] = "FT-SAE SAE"
+    hapd = hostapd.add_ap(apdev[1], params)
+    key_mgmt = hapd.get_config()['key_mgmt']
+    if key_mgmt.split(' ')[0] != "FT-SAE":
+        raise Exception("Unexpected GET_CONFIG(key_mgmt): " + key_mgmt)
+
+    dev[0].request("SET sae_groups ")
+    run_roams(dev[0], apdev, hapd0, hapd, ssid, passphrase, sae=True,
+              sae_and_psk=True)
 
 def generic_ap_ft_eap(dev, apdev, vlan=False, cui=False, over_ds=False,
                       discovery=False, roams=1):
