@@ -452,13 +452,14 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 	if (ie && ie[1] >= MOBILITY_DOMAIN_ID_LEN)
 		md = ie + 2;
 	wpa_sm_set_ft_params(wpa_s->wpa, ie, ie ? 2 + ie[1] : 0);
+	if (md && (!wpa_key_mgmt_ft(ssid->key_mgmt) ||
+		   !wpa_key_mgmt_ft(wpa_s->key_mgmt)))
+		md = NULL;
 	if (md) {
 		/* Prepare for the next transition */
 		wpa_ft_prepare_auth_request(wpa_s->wpa, ie);
 	}
 
-	if (md && !wpa_key_mgmt_ft(ssid->key_mgmt))
-		md = NULL;
 	if (md) {
 		wpa_dbg(wpa_s, MSG_DEBUG, "SME: FT mobility domain %02x%02x",
 			md[0], md[1]);
