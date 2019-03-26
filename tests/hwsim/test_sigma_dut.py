@@ -348,6 +348,48 @@ def test_sigma_dut_sae_pw_id(dev, apdev):
 
     stop_sigma_dut(sigma)
 
+def test_sigma_dut_sae_pw_id_ft(dev, apdev):
+    """sigma_dut controlled SAE association with Password Identifier and FT"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, debug=True)
+
+    ssid = "test-sae"
+    params = hostapd.wpa2_params(ssid=ssid)
+    params['wpa_key_mgmt'] = 'SAE FT-SAE'
+    params["ieee80211w"] = "2"
+    params['sae_password'] = ['pw1|id=id1', 'pw2|id=id2', 'pw3', 'pw4|id=id4']
+    params['mobility_domain'] = 'aabb'
+    params['ft_over_ds'] = '0'
+    bssid = apdev[0]['bssid'].replace(':', '')
+    params['nas_identifier'] = bssid + '.nas.example.com'
+    params['r1_key_holder'] = bssid
+    params['pmk_r1_push'] = '0'
+    params['r0kh'] = 'ff:ff:ff:ff:ff:ff * 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
+    params['r1kh'] = '00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+    sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,AKMSuiteType,8;9,PasswordID,id2" % (ifname, "test-sae", "pw2"))
+    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
+    sigma_dut_wait_connected(ifname)
+
+    bssid = apdev[1]['bssid'].replace(':', '')
+    params['nas_identifier'] = bssid + '.nas.example.com'
+    params['r1_key_holder'] = bssid
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    bssid = hapd2.own_addr()
+    sigma_dut_cmd("sta_reassoc,interface,%s,Channel,1,bssid,%s" % (ifname, bssid))
+    dev[0].wait_connected()
+
+    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+
+    stop_sigma_dut(sigma)
+
 def test_sigma_dut_sta_override_rsne(dev, apdev):
     """sigma_dut and RSNE override on STA"""
     try:
