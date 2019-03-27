@@ -133,7 +133,7 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
               test_connectivity=True, eap_identity="gpsk user", conndev=False,
               force_initial_conn_to_first_ap=False, sha384=False,
               group_mgmt=None, ocv=None, sae_password=None,
-              sae_password_id=None, sae_and_psk=False):
+              sae_password_id=None, sae_and_psk=False, pmksa_caching=False):
     logger.info("Connect to first AP")
 
     copts = {}
@@ -166,6 +166,16 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
     if force_initial_conn_to_first_ap:
         copts["bssid"] = apdev[0]['bssid']
     dev.connect(ssid, **copts)
+    if pmksa_caching:
+        dev.request("DISCONNECT")
+        dev.wait_disconnected()
+        dev.request("RECONNECT")
+        ev = dev.wait_event(["CTRL-EVENT-CONNECTED", "CTRL-EVENT-DISCONNECTED"],
+                            timeout=15)
+        if ev is None:
+            raise Exception("Reconnect timed out")
+        if "CTRL-EVENT-DISCONNECTED" in ev:
+            raise Exception("Unexpected disconnection after RECONNECT")
 
     if dev.get_status_field('bssid') == apdev[0]['bssid']:
         ap1 = apdev[0]
@@ -950,6 +960,27 @@ def test_ap_ft_sae_with_both_akms(dev, apdev):
     dev[0].request("SET sae_groups ")
     run_roams(dev[0], apdev, hapd0, hapd, ssid, passphrase, sae=True,
               sae_and_psk=True)
+
+def test_ap_ft_sae_pmksa_caching(dev, apdev):
+    """WPA2-FT-SAE AP and PMKSA caching for initial mobility domain association"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    ssid = "test-ft"
+    passphrase = "12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params['wpa_key_mgmt'] = "FT-SAE"
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params['wpa_key_mgmt'] = "FT-SAE"
+    hapd = hostapd.add_ap(apdev[1], params)
+    key_mgmt = hapd.get_config()['key_mgmt']
+    if key_mgmt.split(' ')[0] != "FT-SAE":
+        raise Exception("Unexpected GET_CONFIG(key_mgmt): " + key_mgmt)
+
+    dev[0].request("SET sae_groups ")
+    run_roams(dev[0], apdev, hapd0, hapd, ssid, passphrase, sae=True,
+              pmksa_caching=True)
 
 def generic_ap_ft_eap(dev, apdev, vlan=False, cui=False, over_ds=False,
                       discovery=False, roams=1):
