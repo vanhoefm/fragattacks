@@ -133,7 +133,8 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
               test_connectivity=True, eap_identity="gpsk user", conndev=False,
               force_initial_conn_to_first_ap=False, sha384=False,
               group_mgmt=None, ocv=None, sae_password=None,
-              sae_password_id=None, sae_and_psk=False, pmksa_caching=False):
+              sae_password_id=None, sae_and_psk=False, pmksa_caching=False,
+              roam_with_reassoc=False, also_non_ft=False):
     logger.info("Connect to first AP")
 
     copts = {}
@@ -148,7 +149,10 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
     if ocv:
         copts["ocv"] = ocv
     if eap:
-        copts["key_mgmt"] = "FT-EAP-SHA384" if sha384 else "FT-EAP"
+        if also_non_ft:
+            copts["key_mgmt"] = "WPA-EAP-SUITE-B-192 FT-EAP-SHA384" if sha384 else "WPA-EAP FT-EAP"
+        else:
+            copts["key_mgmt"] = "FT-EAP-SHA384" if sha384 else "FT-EAP"
         copts["eap"] = "GPSK"
         copts["identity"] = eap_identity
         copts["password"] = "abcdefghijklmnop0123456789abcdef"
@@ -165,7 +169,7 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
             copts["sae_password_id"] = sae_password_id
     if force_initial_conn_to_first_ap:
         copts["bssid"] = apdev[0]['bssid']
-    dev.connect(ssid, **copts)
+    netw = dev.connect(ssid, **copts)
     if pmksa_caching:
         dev.request("DISCONNECT")
         dev.wait_disconnected()
@@ -200,7 +204,11 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
         # set later.
         time.sleep(0.01)
         logger.info("Roam to the second AP")
-        if over_ds:
+        if roam_with_reassoc:
+            dev.set_network(netw, "bssid", ap2['bssid'])
+            dev.request("REASSOCIATE")
+            dev.wait_connected()
+        elif over_ds:
             dev.roam_over_ds(ap2['bssid'], fail_test=fail_test)
         else:
             dev.roam(ap2['bssid'], fail_test=fail_test)
@@ -218,7 +226,11 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
         # set later.
         time.sleep(0.01)
         logger.info("Roam back to the first AP")
-        if over_ds:
+        if roam_with_reassoc:
+            dev.set_network(netw, "bssid", ap1['bssid'])
+            dev.request("REASSOCIATE")
+            dev.wait_connected()
+        elif over_ds:
             dev.roam_over_ds(ap1['bssid'])
         else:
             dev.roam(ap1['bssid'])
@@ -2706,6 +2718,28 @@ def test_ap_ft_eap_sha384(dev, apdev):
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, eap=True,
               sha384=True)
+
+def test_ap_ft_eap_sha384_reassoc(dev, apdev):
+    """WPA2-EAP-FT with SHA384 using REASSOCIATE"""
+    ssid = "test-ft"
+    passphrase = "12345678"
+
+    radius = hostapd.radius_params()
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2"
+    params['wpa_key_mgmt'] = "WPA-EAP-SUITE-B-192 FT-EAP-SHA384"
+    params["ieee8021x"] = "1"
+    params = dict(list(radius.items()) + list(params.items()))
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2"
+    params['wpa_key_mgmt'] = "WPA-EAP-SUITE-B-192 FT-EAP-SHA384"
+    params["ieee8021x"] = "1"
+    params = dict(list(radius.items()) + list(params.items()))
+    hapd1 = hostapd.add_ap(apdev[1], params)
+
+    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, eap=True,
+              sha384=True, also_non_ft=True, roam_with_reassoc=True)
 
 def test_ap_ft_eap_sha384_over_ds(dev, apdev):
     """WPA2-EAP-FT with SHA384 over DS"""
