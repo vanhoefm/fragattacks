@@ -1401,6 +1401,21 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		sel &= ~(WPA_KEY_MGMT_SAE | WPA_KEY_MGMT_FT_SAE);
 #endif /* CONFIG_SAE */
 	if (0) {
+#ifdef CONFIG_IEEE80211R
+#ifdef CONFIG_SHA384
+	} else if (sel & WPA_KEY_MGMT_FT_IEEE8021X_SHA384) {
+		wpa_s->key_mgmt = WPA_KEY_MGMT_FT_IEEE8021X_SHA384;
+		wpa_dbg(wpa_s, MSG_DEBUG,
+			"WPA: using KEY_MGMT FT/802.1X-SHA384");
+		if (pmksa_cache_get_current(wpa_s->wpa)) {
+			/* PMKSA caching with FT is not fully functional, so
+			 * disable the case for now. */
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"WPA: Disable PMKSA caching for FT/802.1X connection");
+			pmksa_cache_clear_current(wpa_s->wpa);
+		}
+#endif /* CONFIG_SHA384 */
+#endif /* CONFIG_IEEE80211R */
 #ifdef CONFIG_SUITEB192
 	} else if (sel & WPA_KEY_MGMT_IEEE8021X_SUITE_B_192) {
 		wpa_s->key_mgmt = WPA_KEY_MGMT_IEEE8021X_SUITE_B_192;
@@ -1430,19 +1445,6 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		wpa_dbg(wpa_s, MSG_DEBUG, "WPA: using KEY_MGMT FILS-SHA256");
 #endif /* CONFIG_FILS */
 #ifdef CONFIG_IEEE80211R
-#ifdef CONFIG_SHA384
-	} else if (sel & WPA_KEY_MGMT_FT_IEEE8021X_SHA384) {
-		wpa_s->key_mgmt = WPA_KEY_MGMT_FT_IEEE8021X_SHA384;
-		wpa_dbg(wpa_s, MSG_DEBUG,
-			"WPA: using KEY_MGMT FT/802.1X-SHA384");
-		if (pmksa_cache_get_current(wpa_s->wpa)) {
-			/* PMKSA caching with FT is not fully functional, so
-			 * disable the case for now. */
-			wpa_dbg(wpa_s, MSG_DEBUG,
-				"WPA: Disable PMKSA caching for FT/802.1X connection");
-			pmksa_cache_clear_current(wpa_s->wpa);
-		}
-#endif /* CONFIG_SHA384 */
 	} else if (sel & WPA_KEY_MGMT_FT_IEEE8021X) {
 		wpa_s->key_mgmt = WPA_KEY_MGMT_FT_IEEE8021X;
 		wpa_dbg(wpa_s, MSG_DEBUG, "WPA: using KEY_MGMT FT/802.1X");
