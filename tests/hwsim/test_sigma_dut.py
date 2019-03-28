@@ -874,6 +874,40 @@ def test_sigma_dut_ap_psk_sae(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
 
+def test_sigma_dut_ap_psk_sae_ft(dev, apdev, params):
+    """sigma_dut controlled AP with PSK, SAE, FT"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_psk_sae_ft.sigma-hostapd")
+    conffile = os.path.join(params['logdir'],
+                            "sigma_dut_ap_psk_sae_ft.sigma-conf")
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default,NAME,AP,Program,WPA3")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae-psk,MODE,11ng,DOMAIN,aabb")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,AKMSuiteType,2;4;6;8;9,PSK,12345678,PairwiseCipher,AES-CCMP-128,GroupCipher,AES-CCMP-128")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,DOMAIN,0101,FT_OA,Enable")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,FT_BSS_LIST," + apdev[1]['bssid'])
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            with open("/tmp/sigma_dut-ap.conf", "rb") as f:
+                with open(conffile, "wb") as f2:
+                    f2.write(f.read())
+
+            dev[0].request("SET sae_groups ")
+            dev[0].connect("test-sae-psk", key_mgmt="SAE FT-SAE",
+                           sae_password="12345678", scan_freq="2412")
+            dev[1].connect("test-sae-psk", key_mgmt="WPA-PSK FT-PSK",
+                           psk="12345678", scan_freq="2412")
+            dev[2].connect("test-sae-psk", key_mgmt="WPA-PSK",
+                           psk="12345678", scan_freq="2412")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
 def test_sigma_dut_owe(dev, apdev):
     """sigma_dut controlled OWE station"""
     try:
