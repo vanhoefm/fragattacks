@@ -98,8 +98,10 @@ static struct wpabuf * sme_auth_build_sae_commit(struct wpa_supplicant *wpa_s,
 		buf = wpabuf_alloc(4 + wpabuf_len(wpa_s->sae_commit_override));
 		if (!buf)
 			return NULL;
-		wpabuf_put_le16(buf, 1); /* Transaction seq# */
-		wpabuf_put_le16(buf, WLAN_STATUS_SUCCESS);
+		if (!external) {
+			wpabuf_put_le16(buf, 1); /* Transaction seq# */
+			wpabuf_put_le16(buf, WLAN_STATUS_SUCCESS);
+		}
 		wpabuf_put_buf(buf, wpa_s->sae_commit_override);
 		return buf;
 	}
