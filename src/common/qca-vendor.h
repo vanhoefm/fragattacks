@@ -895,6 +895,49 @@ enum qca_roaming_policy {
 	QCA_ROAMING_ALLOWED_WITHIN_ESS,
 };
 
+/**
+ * enum qca_roam_reason - Represents the reason codes for roaming. Used by
+ * QCA_WLAN_VENDOR_ATTR_ROAM_AUTH_REASON.
+ *
+ * @QCA_ROAM_REASON_UNKNOWN: Any reason that do not classify under the below
+ * reasons.
+ *
+ * @QCA_ROAM_REASON_PER: Roam triggered when packet error rates (PER) breached
+ * the configured threshold.
+ *
+ * @QCA_ROAM_REASON_BEACON_MISS: Roam triggered due to the continuous configured
+ * beacon misses from the then connected AP.
+ *
+ * @QCA_ROAM_REASON_POOR_RSSI: Roam triggered due to the poor RSSI reported
+ * by the connected AP.
+ *
+ * @QCA_ROAM_REASON_BETTER_RSSI: Roam triggered for finding a BSS with a better
+ * RSSI than the connected BSS. Here the RSSI of the current BSS is not poor.
+ *
+ * @QCA_ROAM_REASON_CONGESTION: Roam triggered considering the connected channel
+ * or environment being very noisy or congested.
+ *
+ * @QCA_ROAM_REASON_EXPLICIT_REQUEST: Roam triggered due to an explicit request
+ * from the user (user space).
+ *
+ * @QCA_ROAM_REASON_BTM: Roam triggered due to BTM Request frame received from
+ * the connected AP.
+ *
+ * @QCA_ROAM_REASON_BSS_LOAD: Roam triggered due to the channel utilization
+ * breaching out the configured threshold.
+ */
+enum qca_roam_reason {
+	QCA_ROAM_REASON_UNKNOWN,
+	QCA_ROAM_REASON_PER,
+	QCA_ROAM_REASON_BEACON_MISS,
+	QCA_ROAM_REASON_POOR_RSSI,
+	QCA_ROAM_REASON_BETTER_RSSI,
+	QCA_ROAM_REASON_CONGESTION,
+	QCA_ROAM_REASON_USER_TRIGGER,
+	QCA_ROAM_REASON_BTM,
+	QCA_ROAM_REASON_BSS_LOAD,
+};
+
 enum qca_wlan_vendor_attr_roam_auth {
 	QCA_WLAN_VENDOR_ATTR_ROAM_AUTH_INVALID = 0,
 	QCA_WLAN_VENDOR_ATTR_ROAM_AUTH_BSSID,
@@ -937,6 +980,11 @@ enum qca_wlan_vendor_attr_roam_auth {
 	 * doing subsequent ERP based connections in the same realm.
 	 */
 	QCA_WLAN_VENDOR_ATTR_ROAM_AUTH_FILS_ERP_NEXT_SEQ_NUM = 13,
+	/* A 16-bit unsigned value representing the reasons for the roaming.
+	 * Defined by enum qca_roam_reason.
+	 */
+	QCA_WLAN_VENDOR_ATTR_ROAM_AUTH_REASON = 14,
+
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_ROAM_AUTH_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_ROAM_AUTH_MAX =
