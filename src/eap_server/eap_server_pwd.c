@@ -718,6 +718,26 @@ eap_pwd_process_commit_resp(struct eap_sm *sm, struct eap_pwd_data *data,
 		goto fin;
 	}
 
+	/* verify received scalar */
+	if (crypto_bignum_is_zero(data->peer_scalar) ||
+	    crypto_bignum_is_one(data->peer_scalar) ||
+	    crypto_bignum_cmp(data->peer_scalar,
+			      crypto_ec_get_order(data->grp->group)) >= 0) {
+		wpa_printf(MSG_INFO,
+			   "EAP-PWD (server): received scalar is invalid");
+		goto fin;
+	}
+
+	/* verify received element */
+	if (!crypto_ec_point_is_on_curve(data->grp->group,
+					 data->peer_element) ||
+	    crypto_ec_point_is_at_infinity(data->grp->group,
+					   data->peer_element)) {
+		wpa_printf(MSG_INFO,
+			   "EAP-PWD (server): received element is invalid");
+		goto fin;
+	}
+
 	/* check to ensure peer's element is not in a small sub-group */
 	if (!crypto_bignum_is_one(cofactor)) {
 		if (crypto_ec_point_mul(data->grp->group, data->peer_element,
