@@ -753,6 +753,15 @@ eap_pwd_process_commit_resp(struct eap_sm *sm, struct eap_pwd_data *data,
 		}
 	}
 
+	/* detect reflection attacks */
+	if (crypto_bignum_cmp(data->my_scalar, data->peer_scalar) == 0 ||
+	    crypto_ec_point_cmp(data->grp->group, data->my_element,
+				data->peer_element) == 0) {
+		wpa_printf(MSG_INFO,
+			   "EAP-PWD (server): detected reflection attack!");
+		goto fin;
+	}
+
 	/* compute the shared key, k */
 	if ((crypto_ec_point_mul(data->grp->group, data->grp->pwe,
 				 data->peer_scalar, K) < 0) ||
