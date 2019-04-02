@@ -6376,6 +6376,271 @@ def test_eap_proto_pwd(dev, apdev):
     finally:
         stop_radius_server(srv)
 
+def test_eap_proto_pwd_invalid_scalar(dev, apdev):
+    """EAP-pwd protocol tests - invalid server scalar"""
+    check_eap_capa(dev[0], "PWD")
+    run_eap_proto_pwd_invalid_scalar(dev, apdev, 32*b'\0')
+    run_eap_proto_pwd_invalid_scalar(dev, apdev, 31*b'\0' + b'\x01')
+    # Group Order
+    val = binascii.unhexlify("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551")
+    run_eap_proto_pwd_invalid_scalar(dev, apdev, val)
+    # Group Order - 1
+    val = binascii.unhexlify("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632550")
+    run_eap_proto_pwd_invalid_scalar(dev, apdev, val, valid_scalar=True)
+
+def run_eap_proto_pwd_invalid_scalar(dev, apdev, scalar, valid_scalar=False):
+    global eap_proto_pwd_invalid_scalar_fail
+    eap_proto_pwd_invalid_scalar_fail = False
+
+    def pwd_handler(ctx, req):
+        logger.info("pwd_handler - RX " + binascii.hexlify(req).decode())
+        if 'num' not in ctx:
+            ctx['num'] = 0
+        ctx['num'] = ctx['num'] + 1
+        if 'id' not in ctx:
+            ctx['id'] = 1
+        ctx['id'] = (ctx['id'] + 1) % 256
+        idx = 0
+
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Valid id exchange")
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 0)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Commit payload with invalid scalar")
+            payload = struct.pack(">B", 0x02) + binascii.unhexlify("67feb2b46d59e6dd3af3a429ec9c04a949337564615d3a2c19bdf6826eb6f5efa303aed86af3a072ed819d518d620adb2659f0e84c4f8b739629db8c93088cfc") + scalar
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Confirm message next - should not get here")
+            global eap_proto_pwd_invalid_scalar_fail
+            eap_proto_pwd_invalid_scalar_fail = True
+            payload = struct.pack(">B", 0x03) + 32*b'\0'
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        logger.info("No more test responses available - test case completed")
+        return struct.pack(">BBH", EAP_CODE_FAILURE, ctx['id'], 4)
+
+    srv = start_radius_server(pwd_handler)
+
+    try:
+        hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+
+        dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
+                       eap="PWD", identity="pwd user",
+                       password="secret password",
+                       wait_connect=False)
+        ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"], timeout=5)
+        if ev is None:
+            raise Exception("EAP failure not reported")
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].wait_disconnected(timeout=1)
+        dev[0].dump_monitor()
+    finally:
+        stop_radius_server(srv)
+
+    if valid_scalar and not eap_proto_pwd_invalid_scalar_fail:
+        raise Exception("Peer did not accept valid EAP-pwd-Commit scalar")
+    if not valid_scalar and eap_proto_pwd_invalid_scalar_fail:
+        raise Exception("Peer did not stop after invalid EAP-pwd-Commit scalar")
+
+def test_eap_proto_pwd_invalid_element(dev, apdev):
+    """EAP-pwd protocol tests - invalid server element"""
+    check_eap_capa(dev[0], "PWD")
+    # Invalid x,y coordinates
+    run_eap_proto_pwd_invalid_element(dev, apdev, 64*b'\x00')
+    run_eap_proto_pwd_invalid_element(dev, apdev, 32*b'\x00' + 32*b'\x01')
+    run_eap_proto_pwd_invalid_element(dev, apdev, 32*b'\x01' + 32*b'\x00')
+    run_eap_proto_pwd_invalid_element(dev, apdev, 32*b'\xff' + 32*b'\x01')
+    run_eap_proto_pwd_invalid_element(dev, apdev, 32*b'\x01' + 32*b'\xff')
+    run_eap_proto_pwd_invalid_element(dev, apdev, 64*b'\xff')
+    # Not on curve
+    run_eap_proto_pwd_invalid_element(dev, apdev, 64*b'\x01')
+
+def run_eap_proto_pwd_invalid_element(dev, apdev, element):
+    global eap_proto_pwd_invalid_element_fail
+    eap_proto_pwd_invalid_element_fail = False
+
+    def pwd_handler(ctx, req):
+        logger.info("pwd_handler - RX " + binascii.hexlify(req).decode())
+        if 'num' not in ctx:
+            ctx['num'] = 0
+        ctx['num'] = ctx['num'] + 1
+        if 'id' not in ctx:
+            ctx['id'] = 1
+        ctx['id'] = (ctx['id'] + 1) % 256
+        idx = 0
+
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Valid id exchange")
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 0)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Commit payload with invalid element")
+            payload = struct.pack(">B", 0x02) + element + 31*b'\0' + b'\x02'
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Confirm message next - should not get here")
+            global eap_proto_pwd_invalid_element_fail
+            eap_proto_pwd_invalid_element_fail = True
+            payload = struct.pack(">B", 0x03) + 32*b'\0'
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        logger.info("No more test responses available - test case completed")
+        return struct.pack(">BBH", EAP_CODE_FAILURE, ctx['id'], 4)
+
+    srv = start_radius_server(pwd_handler)
+
+    try:
+        hapd = start_ap(apdev[0])
+        dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+
+        dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
+                       eap="PWD", identity="pwd user",
+                       password="secret password",
+                       wait_connect=False)
+        ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"], timeout=5)
+        if ev is None:
+            raise Exception("EAP failure not reported")
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].wait_disconnected(timeout=1)
+        dev[0].dump_monitor()
+    finally:
+        stop_radius_server(srv)
+
+    if eap_proto_pwd_invalid_element_fail:
+        raise Exception("Peer did not stop after invalid EAP-pwd-Commit element")
+
+def rx_msg(src):
+    ev = src.wait_event(["EAPOL-TX"], timeout=5)
+    if ev is None:
+        raise Exception("No EAPOL-TX")
+    return ev.split(' ')[2]
+
+def tx_msg(src, dst, msg):
+    dst.request("EAPOL_RX " + src.own_addr() + " " + msg)
+
+def proxy_msg(src, dst):
+    msg = rx_msg(src)
+    tx_msg(src, dst, msg)
+    return msg
+
+def start_pwd_exchange(dev, ap):
+    check_eap_capa(dev, "PWD")
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hapd = hostapd.add_ap(ap, params)
+    hapd.request("SET ext_eapol_frame_io 1")
+    dev.request("SET ext_eapol_frame_io 1")
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                   eap="PWD", identity="pwd user", password="secret password",
+                   wait_connect=False, scan_freq="2412")
+    proxy_msg(hapd, dev) # EAP-Identity/Request
+    proxy_msg(dev, hapd) # EAP-Identity/Response
+    proxy_msg(hapd, dev) # EAP-pwd-ID/Request
+    proxy_msg(dev, hapd) # EAP-pwd-ID/Response
+    return hapd
+
+def test_eap_proto_pwd_reflection_attack(dev, apdev):
+    """EAP-pwd protocol tests - reflection attack on the server"""
+    hapd = start_pwd_exchange(dev[0], apdev[0])
+
+    # EAP-pwd-Commit/Request
+    req = proxy_msg(hapd, dev[0])
+    if len(req) != 212:
+        raise Exception("Unexpected EAP-pwd-Commit/Response length")
+
+    # EAP-pwd-Commit/Response
+    resp = rx_msg(dev[0])
+    # Reflect same Element/Scalar back to the server
+    msg = resp[0:20] + req[20:]
+    tx_msg(dev[0], hapd, msg)
+
+    # EAP-pwd-Commit/Response or EAP-Failure
+    req = rx_msg(hapd)
+    if req[8:10] != "04":
+        # reflect EAP-pwd-Confirm/Request
+        msg = req[0:8] + "02" + req[10:]
+        tx_msg(dev[0], hapd, msg)
+        req = rx_msg(hapd)
+        if req[8:10] == "03":
+            raise Exception("EAP-Success after reflected Element/Scalar")
+        raise Exception("No EAP-Failure to reject invalid EAP-pwd-Commit/Response")
+
+def test_eap_proto_pwd_invalid_scalar_peer(dev, apdev):
+    """EAP-pwd protocol tests - invalid peer scalar"""
+    run_eap_proto_pwd_invalid_scalar_peer(dev, apdev, 32*"00")
+    run_eap_proto_pwd_invalid_scalar_peer(dev, apdev, 31*"00" + "01")
+    # Group Order
+    run_eap_proto_pwd_invalid_scalar_peer(dev, apdev,
+                                          "FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551")
+    # Group Order - 1
+    run_eap_proto_pwd_invalid_scalar_peer(dev, apdev,
+                                          "FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632550",
+                                          valid_scalar=True)
+
+def run_eap_proto_pwd_invalid_scalar_peer(dev, apdev, scalar,
+                                          valid_scalar=False):
+    hapd = start_pwd_exchange(dev[0], apdev[0])
+    proxy_msg(hapd, dev[0]) # EAP-pwd-Commit/Request
+
+    # EAP-pwd-Commit/Response
+    resp = rx_msg(dev[0])
+    # Replace scalar with an invalid value
+    msg = resp[0:20] + resp[20:148] + scalar
+    tx_msg(dev[0], hapd, msg)
+
+    # EAP-pwd-Commit/Response or EAP-Failure
+    req = rx_msg(hapd)
+    if valid_scalar and req[8:10] == "04":
+        raise Exception("Unexpected EAP-Failure with valid scalar")
+    if not valid_scalar and req[8:10] != "04":
+        raise Exception("No EAP-Failure to reject invalid scalar")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected(timeout=1)
+    hapd.disable()
+
+def test_eap_proto_pwd_invalid_element_peer(dev, apdev):
+    """EAP-pwd protocol tests - invalid peer element"""
+    # Invalid x,y coordinates
+    run_eap_proto_pwd_invalid_element_peer(dev, apdev, 64*'00')
+    run_eap_proto_pwd_invalid_element_peer(dev, apdev, 32*'00' + 32*'01')
+    run_eap_proto_pwd_invalid_element_peer(dev, apdev, 32*'01' + 32*'00')
+    run_eap_proto_pwd_invalid_element_peer(dev, apdev, 32*'ff' + 32*'01')
+    run_eap_proto_pwd_invalid_element_peer(dev, apdev, 32*'01' + 32*'ff')
+    run_eap_proto_pwd_invalid_element_peer(dev, apdev, 64*'ff')
+    # Not on curve
+    run_eap_proto_pwd_invalid_element_peer(dev, apdev, 64*'01')
+
+def run_eap_proto_pwd_invalid_element_peer(dev, apdev, element):
+    hapd = start_pwd_exchange(dev[0], apdev[0])
+    proxy_msg(hapd, dev[0]) # EAP-pwd-Commit/Request
+
+    # EAP-pwd-Commit/Response
+    resp = rx_msg(dev[0])
+    # Replace element with an invalid value
+    msg = resp[0:20] + element + resp[148:]
+    tx_msg(dev[0], hapd, msg)
+
+    # EAP-pwd-Commit/Response or EAP-Failure
+    req = rx_msg(hapd)
+    if req[8:10] != "04":
+        raise Exception("No EAP-Failure to reject invalid element")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected(timeout=1)
+    hapd.disable()
+
 def test_eap_proto_pwd_errors(dev, apdev):
     """EAP-pwd local error cases"""
     check_eap_capa(dev[0], "PWD")
