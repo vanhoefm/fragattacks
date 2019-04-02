@@ -2959,6 +2959,34 @@ static void wpas_update_fils_connect_params(struct wpa_supplicant *wpa_s)
 #endif /* CONFIG_FILS && IEEE8021X_EAPOL */
 
 
+#ifdef CONFIG_MBO
+void wpas_update_mbo_connect_params(struct wpa_supplicant *wpa_s)
+{
+	struct wpa_driver_associate_params params;
+	u8 *wpa_ie;
+
+	/*
+	 * Update MBO connect params only in case of change of MBO attributes
+	 * when connected, if the AP support MBO.
+	 */
+
+	if (wpa_s->wpa_state != WPA_COMPLETED || !wpa_s->current_ssid ||
+	    !wpa_s->current_bss ||
+	    !wpa_bss_get_vendor_ie(wpa_s->current_bss, MBO_IE_VENDOR_TYPE))
+		return;
+
+	os_memset(&params, 0, sizeof(params));
+	wpa_ie = wpas_populate_assoc_ies(wpa_s, wpa_s->current_bss,
+					 wpa_s->current_ssid, &params, NULL);
+	if (!wpa_ie)
+		return;
+
+	wpa_drv_update_connect_params(wpa_s, &params, WPA_DRV_UPDATE_ASSOC_IES);
+	os_free(wpa_ie);
+}
+#endif /* CONFIG_MBO */
+
+
 static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 {
 	struct wpa_connect_work *cwork = work->ctx;

@@ -1402,6 +1402,7 @@ struct wpabuf * mbo_build_anqp_buf(struct wpa_supplicant *wpa_s,
 void mbo_parse_rx_anqp_resp(struct wpa_supplicant *wpa_s,
 			    struct wpa_bss *bss, const u8 *sa,
 			    const u8 *data, size_t slen);
+void wpas_update_mbo_connect_params(struct wpa_supplicant *wpa_s);
 
 /* op_classes.c */
 enum chan_allowed {

@@ -275,6 +275,7 @@ static void wpas_mbo_non_pref_chan_changed(struct wpa_supplicant *wpa_s)
 	wpas_mbo_non_pref_chan_attrs(wpa_s, buf, 1);
 	wpas_mbo_send_wnm_notification(wpa_s, wpabuf_head_u8(buf),
 				       wpabuf_len(buf));
+	wpas_update_mbo_connect_params(wpa_s);
 	wpabuf_free(buf);
 }
 
@@ -565,6 +566,7 @@ void wpas_mbo_update_cell_capa(struct wpa_supplicant *wpa_s, u8 mbo_cell_capa)
 
 	wpas_mbo_send_wnm_notification(wpa_s, cell_capa, 7);
 	wpa_supplicant_set_default_scan_ies(wpa_s);
+	wpas_update_mbo_connect_params(wpa_s);
 }
 
 
