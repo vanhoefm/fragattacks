@@ -1001,6 +1001,70 @@ def test_sae_commit_override2(dev, apdev):
     if ev is not None:
         raise Exception("Unexpected connection")
 
+def test_sae_commit_invalid_scalar_element_ap(dev, apdev):
+    """SAE commit invalid scalar/element from AP"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae",
+                                 passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_commit_override'] = '1300' + 96*'00'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].request("SET sae_groups ")
+    dev[0].connect("test-sae", psk="test-sae", key_mgmt="SAE",
+                   scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
+    if ev is not None:
+        raise Exception("Unexpected connection")
+
+def test_sae_commit_invalid_element_ap(dev, apdev):
+    """SAE commit invalid element from AP"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae",
+                                 passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_commit_override'] = '1300' + 31*'00' + '02' + 64*'00'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].request("SET sae_groups ")
+    dev[0].connect("test-sae", psk="test-sae", key_mgmt="SAE",
+                   scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
+    if ev is not None:
+        raise Exception("Unexpected connection")
+
+def test_sae_commit_invalid_scalar_element_sta(dev, apdev):
+    """SAE commit invalid scalar/element from STA"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae",
+                                 passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].request("SET sae_groups ")
+    dev[0].set('sae_commit_override', '1300' + 96*'00')
+    dev[0].connect("test-sae", psk="test-sae", key_mgmt="SAE",
+                   scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
+    if ev is not None:
+        raise Exception("Unexpected connection")
+
+def test_sae_commit_invalid_element_sta(dev, apdev):
+    """SAE commit invalid element from STA"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae",
+                                 passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].request("SET sae_groups ")
+    dev[0].set('sae_commit_override', '1300' + 31*'00' + '02' + 64*'00')
+    dev[0].connect("test-sae", psk="test-sae", key_mgmt="SAE",
+                   scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
+    if ev is not None:
+        raise Exception("Unexpected connection")
+
 @remote_compatible
 def test_sae_anti_clogging_proto(dev, apdev):
     """SAE anti clogging protocol testing"""
