@@ -2846,8 +2846,8 @@ static u8 * wpas_populate_assoc_ies(
 			os_memcpy(wpa_ie + wpa_ie_len,
 				  wpabuf_head(owe_ie), wpabuf_len(owe_ie));
 			wpa_ie_len += wpabuf_len(owe_ie);
-			wpabuf_free(owe_ie);
 		}
+		wpabuf_free(owe_ie);
 	}
 #endif /* CONFIG_OWE */
 
