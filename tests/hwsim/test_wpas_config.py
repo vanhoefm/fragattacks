@@ -541,7 +541,10 @@ def test_wpas_config_file_key_mgmt(dev, apdev, params):
 
     wpas.interface_add("wlan5", config=config)
 
-    from test_dpp import params1_csign, params1_sta_connector, params1_sta_netaccesskey
+    from test_dpp import params1_csign, params1_sta_connector, params1_sta_netaccesskey, check_dpp_capab
+
+    check_dpp_capab(wpas)
+
     id = wpas.add_network()
     wpas.set_network_quoted(id, "ssid", "foo")
     wpas.set_network(id, "key_mgmt", "DPP")
