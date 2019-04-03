@@ -2859,8 +2859,17 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 	}
 	wpa_supplicant_cancel_scan(wpa_s);
 
-	if ((wpa_s->drv_flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_PSK) &&
-	    wpa_key_mgmt_wpa_psk(wpa_s->key_mgmt)) {
+	if (ft_completed) {
+		/*
+		 * FT protocol completed - make sure EAPOL state machine ends
+		 * up in authenticated.
+		 */
+		wpa_supplicant_cancel_auth_timeout(wpa_s);
+		wpa_supplicant_set_state(wpa_s, WPA_COMPLETED);
+		eapol_sm_notify_portValid(wpa_s->eapol, TRUE);
+		eapol_sm_notify_eap_success(wpa_s->eapol, TRUE);
+	} else if ((wpa_s->drv_flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_PSK) &&
+		   wpa_key_mgmt_wpa_psk(wpa_s->key_mgmt)) {
 		/*
 		 * We are done; the driver will take care of RSN 4-way
 		 * handshake.
@@ -2877,15 +2886,6 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 		 * waiting for WPA supplicant.
 		 */
 		eapol_sm_notify_portValid(wpa_s->eapol, TRUE);
-	} else if (ft_completed) {
-		/*
-		 * FT protocol completed - make sure EAPOL state machine ends
-		 * up in authenticated.
-		 */
-		wpa_supplicant_cancel_auth_timeout(wpa_s);
-		wpa_supplicant_set_state(wpa_s, WPA_COMPLETED);
-		eapol_sm_notify_portValid(wpa_s->eapol, TRUE);
-		eapol_sm_notify_eap_success(wpa_s->eapol, TRUE);
 	}
 
 	wpa_s->last_eapol_matches_bssid = 0;
