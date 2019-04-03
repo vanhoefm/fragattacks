@@ -352,6 +352,7 @@ static void hostapd_free_hapd_data(struct hostapd_data *hapd)
 		return;
 	}
 	hapd->started = 0;
+	hapd->beacon_set_done = 0;
 
 	wpa_printf(MSG_DEBUG, "%s(%s)", __func__, hapd->conf->iface);
 	iapp_deinit(hapd->iapp);
