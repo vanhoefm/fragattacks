@@ -4188,6 +4188,9 @@ static void wpas_p2ps_prov_complete(void *ctx, u8 status, const u8 *dev,
 		return;
 	}
 
+	wpa_s->global->pending_p2ps_group = 0;
+	wpa_s->global->pending_p2ps_group_freq = 0;
+
 	if (conncap == P2PS_SETUP_GROUP_OWNER) {
 		/*
 		 * We need to copy the interface name. Simply saving a
@@ -4198,8 +4201,10 @@ static void wpas_p2ps_prov_complete(void *ctx, u8 status, const u8 *dev,
 
 		go_ifname[0] = '\0';
 		if (!go_wpa_s) {
-			wpa_s->global->pending_p2ps_group = 1;
-			wpa_s->global->pending_p2ps_group_freq = freq;
+			if (!response_done) {
+				wpa_s->global->pending_p2ps_group = 1;
+				wpa_s->global->pending_p2ps_group_freq = freq;
+			}
 
 			if (!wpas_p2p_create_iface(wpa_s))
 				os_memcpy(go_ifname, wpa_s->ifname,
