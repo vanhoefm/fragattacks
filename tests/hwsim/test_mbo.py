@@ -141,9 +141,14 @@ def run_mbo_supp_oper_class(dev, apdev, country, expected, inc5,
     # For now, allow operating classes 121-123 to be missing since not all
     # installed regdb files include the related US DFS channels.
     expected2 = expected2.replace('78797a7b7c', '787c')
-    if res2 != expected and res2 != expected2:
+    expected3 = expected
+    # For now, allow operating classes 124-127 to be missing for Finland
+    # since they were added only recently in regdb.
+    if country == "FI":
+        expected3 = expected3.replace("7b7c7d7e7f80", "7b80")
+    if res2 != expected and res2 != expected2 and res2 != expected3:
         raise Exception("Unexpected supp_op_class string (country=%s, 2.4 GHz): %s (expected: %s)" % (country, res2, expected))
-    if inc5 and res5 != expected and res5 != expected2:
+    if inc5 and res5 != expected and res5 != expected2 and res5 != expected3:
         raise Exception("Unexpected supp_op_class string (country=%s, 5 GHz): %s (expected: %s)" % (country, res5, expected))
 
 def test_mbo_supp_oper_classes_za(dev, apdev):
@@ -154,7 +159,7 @@ def test_mbo_supp_oper_classes_za(dev, apdev):
 def test_mbo_supp_oper_classes_fi(dev, apdev):
     """MBO and supported operating classes (FI)"""
     run_mbo_supp_oper_class(dev, apdev, "FI",
-                            "515354737475767778797a7b808182", True)
+                            "515354737475767778797a7b7c7d7e7f808182", True)
 
 def test_mbo_supp_oper_classes_us(dev, apdev):
     """MBO and supported operating classes (US)"""
