@@ -1,7 +1,7 @@
 /*
  * Qualcomm Atheros OUI and vendor specific assignments
  * Copyright (c) 2014-2017, Qualcomm Atheros, Inc.
- * Copyright (c) 2018, The Linux Foundation
+ * Copyright (c) 2018-2019, The Linux Foundation
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -524,6 +524,50 @@ enum qca_radiotap_vendor_ids {
  *	parameters including Zigbee state and specific WLAN periods to enhance
  *	PTA master. All these parameters are delivered by the attributes
  *	defined in enum qca_mpta_helper_vendor_attr.
+ * @QCA_NL80211_VENDOR_SUBCMD_BEACON_REPORTING: This sub command is used to
+ *	implement Beacon frame reporting feature.
+ *
+ *	Userspace can request the driver/firmware to periodically report
+ *	received Beacon frames whose BSSID is same as the current connected
+ *	BSS's MAC address.
+ *
+ *	In case the STA seamlessly (without sending disconnect indication to
+ *	userspace) roams to a different BSS, Beacon frame reporting will be
+ *	automatically enabled for the Beacon frames whose BSSID is same as the
+ *	MAC address of the new BSS. Beacon reporting will be stopped when the
+ *	STA is disconnected (when the disconnect indication is sent to
+ *	userspace) and need to be explicitly enabled by userspace for next
+ *	connection.
+ *
+ *	When a Beacon frame matching configured conditions is received, and if
+ *	userspace has requested to send asynchronous beacon reports, the
+ *	driver/firmware will encapsulate the details of the Beacon frame in an
+ *	event and send it to userspace along with updating the BSS information
+ *	in cfg80211 scan cache, otherwise driver will only update the cfg80211
+ *	scan cache with the information from the received Beacon frame but will
+ *	not send any active report to userspace.
+ *
+ *	The userspace can request the driver/firmware to stop reporting Beacon
+ *	frames. If the driver/firmware is not able to receive Beacon frames due
+ *	to other Wi-Fi operations such as off-channel activities, etc., the
+ *	driver/firmware will send a pause event to userspace and stop reporting
+ *	Beacon frames. Whether the beacon reporting will be automatically
+ *	resumed or not by the driver/firmware later will be reported to
+ *	userspace using the QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_AUTO_RESUMES
+ *	flag. The beacon reporting shall be resumed for all the cases except
+ *	disconnection case as indicated by setting
+ *	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_PAUSE_REASON to
+ *	QCA_WLAN_VENDOR_BEACON_REPORTING_PAUSE_REASON_DISCONNECTED by the
+ *	driver.
+ *
+ *	After QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_PAUSE event is received
+ *	by userspace with QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_AUTO_RESUMES
+ *	flag not set, the next first
+ *	QCA_WLAN_VENDOR_BEACON_REPORTING_OP_BEACON_INFO event from the driver
+ *	shall be considered as un-pause event.
+ *
+ *	All the attributes used with this command are defined in
+ *	enum qca_wlan_vendor_attr_beacon_reporting_params.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -692,6 +736,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_GET_FW_STATE = 177,
 	QCA_NL80211_VENDOR_SUBCMD_PEER_STATS_CACHE_FLUSH = 178,
 	QCA_NL80211_VENDOR_SUBCMD_MPTA_HELPER_CONFIG = 179,
+	QCA_NL80211_VENDOR_SUBCMD_BEACON_REPORTING = 180,
 };
 
 enum qca_wlan_vendor_attr {
@@ -6707,6 +6752,177 @@ enum qca_mpta_helper_vendor_attr {
 	QCA_MPTA_HELPER_VENDOR_ATTR_AFTER_LAST,
 	QCA_MPTA_HELPER_VENDOR_ATTR_MAX =
 		QCA_MPTA_HELPER_VENDOR_ATTR_AFTER_LAST - 1
+};
+
+/**
+ * enum qca_wlan_vendor_beacon_reporting_op_types - Defines different types of
+ * operations for which %QCA_NL80211_VENDOR_SUBCMD_BEACON_REPORTING can be used.
+ * Will be used by %QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE.
+ *
+ * @QCA_WLAN_VENDOR_BEACON_REPORTING_OP_START: Sent by userspace to the driver
+ * to request the driver to start reporting Beacon frames.
+ * @QCA_WLAN_VENDOR_BEACON_REPORTING_OP_STOP: Sent by userspace to the driver to
+ * request the driver to stop reporting Beacon frames.
+ * @QCA_WLAN_VENDOR_BEACON_REPORTING_OP_BEACON_INFO: Sent by the driver to
+ * userspace to report received Beacon frames.
+ * @QCA_WLAN_VENDOR_BEACON_REPORTING_OP_PAUSE: Sent by the driver to userspace
+ * to indicate that the driver is going to pause reporting Beacon frames.
+ */
+enum qca_wlan_vendor_beacon_reporting_op_types {
+	QCA_WLAN_VENDOR_BEACON_REPORTING_OP_START = 0,
+	QCA_WLAN_VENDOR_BEACON_REPORTING_OP_STOP = 1,
+	QCA_WLAN_VENDOR_BEACON_REPORTING_OP_BEACON_INFO = 2,
+	QCA_WLAN_VENDOR_BEACON_REPORTING_OP_PAUSE = 3,
+};
+
+/**
+ * enum qca_wlan_vendor_beacon_reporting_pause_reasons - Defines different types
+ * of reasons for which the driver is pausing reporting Beacon frames. Will be
+ * used by %QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_PAUSE_REASON.
+ *
+ * @QCA_WLAN_VENDOR_BEACON_REPORTING_PAUSE_REASON_UNSPECIFIED: For unspecified
+ * reasons.
+ * @QCA_WLAN_VENDOR_BEACON_REPORTING_PAUSE_REASON_SCAN_STARTED: When the
+ * driver/firmware is starting a scan.
+ * @QCA_WLAN_VENDOR_BEACON_REPORTING_PAUSE_REASON_DISCONNECTED: When the
+ * driver/firmware disconnects from the ESS and indicates the disconnection to
+ * userspace (non-seamless roaming case). This reason code will be used by the
+ * driver/firmware to indicate stopping of beacon report events. Userspace will
+ * need to start beacon reporting again (if desired) by sending vendor command
+ * QCA_NL80211_VENDOR_SUBCMD_BEACON_REPORTING with
+ * QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE set to
+ * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_START after the next connection is
+ * completed.
+ */
+enum qca_wlan_vendor_beacon_reporting_pause_reasons {
+	QCA_WLAN_VENDOR_BEACON_REPORTING_PAUSE_REASON_UNSPECIFIED = 0,
+	QCA_WLAN_VENDOR_BEACON_REPORTING_PAUSE_REASON_SCAN_STARTED = 1,
+	QCA_WLAN_VENDOR_BEACON_REPORTING_PAUSE_REASON_DISCONNECTED = 2,
+};
+
+/*
+ * enum qca_wlan_vendor_attr_beacon_reporting_params - List of attributes used
+ * in vendor sub-command QCA_NL80211_VENDOR_SUBCMD_BEACON_REPORTING.
+ */
+enum qca_wlan_vendor_attr_beacon_reporting_params {
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_INVALID = 0,
+	/* Specifies the type of operation that the vendor command/event is
+	 * intended for. Possible values for this attribute are defined in
+	 * enum qca_wlan_vendor_beacon_reporting_op_types. u32 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE = 1,
+	/* Optionally set by userspace to request the driver to report Beacon
+	 * frames using asynchronous vendor events when the
+	 * QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE is set to
+	 * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_START. NLA_FLAG attribute.
+	 * If this flag is not set, the driver will only update Beacon frames in
+	 * cfg80211 scan cache but not send any vendor events.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_ACTIVE_REPORTING = 2,
+	/* Optionally used by userspace to request the driver/firmware to report
+	 * Beacon frames periodically when the
+	 * QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE is set to
+	 * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_START.
+	 * u32 attribute, indicates the period of Beacon frames to be reported
+	 * and in the units of beacon interval.
+	 * If this attribute is missing in the command, then the default value
+	 * of 1 will be assumed by driver, i.e., to report every Beacon frame.
+	 * Zero is an invalid value.
+	 * If a valid value is received for this attribute, the driver will
+	 * update the cfg80211 scan cache periodically as per the value received
+	 * in this attribute in addition to updating the cfg80211 scan cache
+	 * when there is significant change in Beacon frame IEs.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_PERIOD = 3,
+	/* Used by the driver to encapsulate the SSID when the
+	 * QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE is set to
+	 * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_BEACON_INFO.
+	 * u8 array with a maximum size of 32.
+	 *
+	 * When generating beacon report from non-MBSSID Beacon frame, the SSID
+	 * will be taken from the SSID element of the received Beacon frame.
+	 *
+	 * When generating beacon report from Multiple BSSID Beacon frame and if
+	 * the BSSID of the current connected BSS matches the BSSID of the
+	 * transmitting BSS, the SSID will be taken from the SSID element of the
+	 * received Beacon frame.
+	 *
+	 * When generating beacon report from Multiple BSSID Beacon frame and if
+	 * the BSSID of the current connected BSS matches the BSSID of one of
+	 * the* nontransmitting BSSs, the SSID will be taken from the SSID field
+	 * included in the nontransmitted BSS profile whose derived BSSID is
+	 * same as the BSSID of the current connected BSS. When there is no
+	 * nontransmitted BSS profile whose derived BSSID is same as the BSSID
+	 * of current connected* BSS, this attribute will not be present.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_SSID = 4,
+	/* Used by the driver to encapsulate the BSSID of the AP to which STA is
+	 * currently connected to when the
+	 * QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE is set to
+	 * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_BEACON_INFO. u8 array with a
+	 * fixed size of 6 bytes.
+	 *
+	 * When generating beacon report from a Multiple BSSID beacon and the
+	 * current connected BSSID matches one of the nontransmitted BSSIDs in a
+	 * Multiple BSSID set, this BSSID will be that particular nontransmitted
+	 * BSSID and not the transmitted BSSID (i.e., the transmitting address
+	 * of the Beacon frame).
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_BSSID = 5,
+	/* Used by the driver to encapsulate the frequency in MHz on which
+	 * the Beacon frame was received when the
+	 * QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE is
+	 * set to QCA_WLAN_VENDOR_BEACON_REPORTING_OP_BEACON_INFO.
+	 * u32 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_FREQ = 6,
+	/* Used by the driver to encapsulate the Beacon interval
+	 * when the QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE is set to
+	 * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_BEACON_INFO.
+	 * u16 attribute. The value will be copied from the Beacon frame and the
+	 * units are TUs.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_BI = 7,
+	/* Used by the driver to encapsulate the Timestamp field from the Beacon
+	 * frame when the QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE is set
+	 * to QCA_WLAN_VENDOR_BEACON_REPORTING_OP_BEACON_INFO.
+	 * u64 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_TSF = 8,
+	/* Used by the driver to encapsulate the CLOCK_BOOTTIME when this
+	 * Beacon frame is received in the driver when the
+	 * QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE is set to
+	 * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_BEACON_INFO. u64 attribute, in
+	 * the units of nanoseconds. This value is expected to have accuracy of
+	 * about 10 ms.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_BOOTTIME_WHEN_RECEIVED = 9,
+	/* Used by the driver to encapsulate the IEs of the Beacon frame from
+	 * which this event is generated when the
+	 * QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE is set to
+	 * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_BEACON_INFO. u8 array.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_IES = 10,
+	/* Used by the driver to specify the reason for the driver/firmware to
+	 * pause sending beacons to userspace when the
+	 * QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE is set to
+	 * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_PAUSE. Possible values are
+	 * defined in enum qca_wlan_vendor_beacon_reporting_pause_reasons, u32
+	 * attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_PAUSE_REASON = 11,
+	/* Used by the driver to specify whether the driver will automatically
+	 * resume reporting beacon events to userspace later (for example after
+	 * the ongoing off-channel activity is completed etc.) when the
+	 * QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE is set to
+	 * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_PAUSE. NLA_FLAG attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_AUTO_RESUMES = 12,
+
+	/* Keep last */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_LAST,
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_MAX =
+		QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_LAST - 1
 };
 
 #endif /* QCA_VENDOR_H */
