@@ -1985,6 +1985,9 @@ void sme_clear_on_disassoc(struct wpa_supplicant *wpa_s)
 	if (wpa_s->sme.ft_ies || wpa_s->sme.ft_used)
 		sme_update_ft_ies(wpa_s, NULL, NULL, 0);
 #endif /* CONFIG_IEEE80211R */
+#ifdef CONFIG_IEEE80211W
+	sme_stop_sa_query(wpa_s);
+#endif /* CONFIG_IEEE80211W */
 }
 
 
@@ -1993,9 +1996,6 @@ void sme_deinit(struct wpa_supplicant *wpa_s)
 	os_free(wpa_s->sme.ft_ies);
 	wpa_s->sme.ft_ies = NULL;
 	wpa_s->sme.ft_ies_len = 0;
-#ifdef CONFIG_IEEE80211W
-	sme_stop_sa_query(wpa_s);
-#endif /* CONFIG_IEEE80211W */
 	sme_clear_on_disassoc(wpa_s);
 
 	eloop_cancel_timeout(sme_assoc_timer, wpa_s, NULL);
