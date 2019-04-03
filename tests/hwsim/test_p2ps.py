@@ -870,7 +870,7 @@ def test_p2ps_stale_group_removal(dev):
 
     # Drop the first persistent group on dev[1] and form new persistent groups
     # on both devices.
-    dev[1].request("FLUSH")
+    dev[1].p2pdev_request("FLUSH")
     go_neg_pin_authorized_persistent(i_dev=dev[0], i_intent=15,
                                      r_dev=dev[1], r_intent=0)
     dev[0].remove_group()
@@ -909,7 +909,7 @@ def test_p2ps_stale_group_removal2(dev):
 
     # Drop the first persistent group on dev[1] and form new persistent groups
     # on both devices.
-    dev[1].request("FLUSH")
+    dev[1].p2pdev_request("FLUSH")
     go_neg_pin_authorized_persistent(i_dev=dev[0], i_intent=0,
                                      r_dev=dev[1], r_intent=15)
     dev[1].remove_group()
