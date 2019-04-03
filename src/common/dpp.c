@@ -19,6 +19,7 @@
 #include "common/ieee802_11_common.h"
 #include "common/ieee802_11_defs.h"
 #include "common/wpa_ctrl.h"
+#include "common/gas.h"
 #include "crypto/crypto.h"
 #include "crypto/random.h"
 #include "crypto/aes.h"
@@ -2228,8 +2229,8 @@ fail:
 }
 
 
-struct wpabuf * dpp_build_conf_req(struct dpp_authentication *auth,
-				   const char *json)
+static struct wpabuf * dpp_build_conf_req_attr(struct dpp_authentication *auth,
+					       const char *json)
 {
 	size_t nonce_len;
 	size_t json_len, clear_len;
@@ -2330,6 +2331,55 @@ fail:
 	wpabuf_free(clear);
 	wpabuf_free(msg);
 	return NULL;
+}
+
+
+static void dpp_write_adv_proto(struct wpabuf *buf)
+{
+	/* Advertisement Protocol IE */
+	wpabuf_put_u8(buf, WLAN_EID_ADV_PROTO);
+	wpabuf_put_u8(buf, 8); /* Length */
+	wpabuf_put_u8(buf, 0x7f);
+	wpabuf_put_u8(buf, WLAN_EID_VENDOR_SPECIFIC);
+	wpabuf_put_u8(buf, 5);
+	wpabuf_put_be24(buf, OUI_WFA);
+	wpabuf_put_u8(buf, DPP_OUI_TYPE);
+	wpabuf_put_u8(buf, 0x01);
+}
+
+
+static void dpp_write_gas_query(struct wpabuf *buf, struct wpabuf *query)
+{
+	/* GAS Query */
+	wpabuf_put_le16(buf, wpabuf_len(query));
+	wpabuf_put_buf(buf, query);
+}
+
+
+struct wpabuf * dpp_build_conf_req(struct dpp_authentication *auth,
+				   const char *json)
+{
+	struct wpabuf *buf, *conf_req;
+
+	conf_req = dpp_build_conf_req_attr(auth, json);
+	if (!conf_req) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No configuration request data available");
+		return NULL;
+	}
+
+	buf = gas_build_initial_req(0, 10 + 2 + wpabuf_len(conf_req));
+	if (!buf) {
+		wpabuf_free(conf_req);
+		return NULL;
+	}
+
+	dpp_write_adv_proto(buf);
+	dpp_write_gas_query(buf, conf_req);
+	wpabuf_free(conf_req);
+	wpa_hexdump_buf(MSG_MSGDUMP, "DPP: GAS Config Request", buf);
+
+	return buf;
 }
 
 

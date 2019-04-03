@@ -755,7 +755,7 @@ fail2:
 static void hostapd_dpp_start_gas_client(struct hostapd_data *hapd)
 {
 	struct dpp_authentication *auth = hapd->dpp_auth;
-	struct wpabuf *buf, *conf_req;
+	struct wpabuf *buf;
 	char json[100];
 	int res;
 	int netrole_ap = 1;
@@ -767,33 +767,12 @@ static void hostapd_dpp_start_gas_client(struct hostapd_data *hapd)
 		    netrole_ap ? "ap" : "sta");
 	wpa_printf(MSG_DEBUG, "DPP: GAS Config Attributes: %s", json);
 
-	conf_req = dpp_build_conf_req(auth, json);
-	if (!conf_req) {
+	buf = dpp_build_conf_req(auth, json);
+	if (!buf) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No configuration request data available");
 		return;
 	}
-
-	buf = gas_build_initial_req(0, 10 + 2 + wpabuf_len(conf_req));
-	if (!buf) {
-		wpabuf_free(conf_req);
-		return;
-	}
-
-	/* Advertisement Protocol IE */
-	wpabuf_put_u8(buf, WLAN_EID_ADV_PROTO);
-	wpabuf_put_u8(buf, 8); /* Length */
-	wpabuf_put_u8(buf, 0x7f);
-	wpabuf_put_u8(buf, WLAN_EID_VENDOR_SPECIFIC);
-	wpabuf_put_u8(buf, 5);
-	wpabuf_put_be24(buf, OUI_WFA);
-	wpabuf_put_u8(buf, DPP_OUI_TYPE);
-	wpabuf_put_u8(buf, 0x01);
-
-	/* GAS Query */
-	wpabuf_put_le16(buf, wpabuf_len(conf_req));
-	wpabuf_put_buf(buf, conf_req);
-	wpabuf_free(conf_req);
 
 	wpa_printf(MSG_DEBUG, "DPP: GAS request to " MACSTR " (freq %u MHz)",
 		   MAC2STR(auth->peer_mac_addr), auth->curr_freq);
