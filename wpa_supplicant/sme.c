@@ -1993,9 +1993,6 @@ void sme_clear_on_disassoc(struct wpa_supplicant *wpa_s)
 
 void sme_deinit(struct wpa_supplicant *wpa_s)
 {
-	os_free(wpa_s->sme.ft_ies);
-	wpa_s->sme.ft_ies = NULL;
-	wpa_s->sme.ft_ies_len = 0;
 	sme_clear_on_disassoc(wpa_s);
 
 	eloop_cancel_timeout(sme_assoc_timer, wpa_s, NULL);
