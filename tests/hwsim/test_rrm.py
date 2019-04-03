@@ -875,7 +875,7 @@ def test_rrm_beacon_req_last_frame_indication(dev, apdev):
             raise Exception("Last Beacon Report Indication subelement missing")
 
         last = binascii.hexlify(report.last_indication).decode()
-        if last != '01':
+        if (i == 2 and last != '01') or (i != 2 and last != '00'):
             raise Exception("last beacon report indication is not set on last frame")
 
     # The request does not contain the last beacon report indication subelement
