@@ -102,6 +102,20 @@ enum reg_type {
 };
 
 /**
+ * struct hostapd_wmm_rule - WMM regulatory rule
+ * @min_cwmin: Lower bound of CW_min value
+ * @min_cwmax: Lower bound of CW_max value
+ * @min_aifs: Lower bound of AIFS value
+ * @max_txop: Upper bound of TXOP, value in units of 32 usec
+ */
+struct hostapd_wmm_rule {
+	int min_cwmin;
+	int min_cwmax;
+	int min_aifs;
+	int max_txop;
+};
+
+/**
  * struct hostapd_channel_data - Channel information
  */
 struct hostapd_channel_data {
@@ -156,6 +170,16 @@ struct hostapd_channel_data {
 	 * dfs_cac_ms - DFS CAC time in milliseconds
 	 */
 	unsigned int dfs_cac_ms;
+
+	/**
+	 * wmm_rules_valid - Indicates wmm_rules state
+	 */
+	int wmm_rules_valid;
+
+	/**
+	 * wmm_rules - WMM regulatory rules
+	 */
+	struct hostapd_wmm_rule wmm_rules[WMM_AC_NUM];
 };
 
 #define HE_MAX_MAC_CAPAB_SIZE	6

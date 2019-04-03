@@ -1394,6 +1394,57 @@ static void phy_info_freq(struct hostapd_hw_modes *mode,
 		chan->dfs_cac_ms = nla_get_u32(
 			tb_freq[NL80211_FREQUENCY_ATTR_DFS_CAC_TIME]);
 	}
+
+	chan->wmm_rules_valid = 0;
+	if (tb_freq[NL80211_FREQUENCY_ATTR_WMM]) {
+		static struct nla_policy wmm_policy[NL80211_WMMR_MAX + 1] = {
+			[NL80211_WMMR_CW_MIN] = { .type = NLA_U16 },
+			[NL80211_WMMR_CW_MAX] = { .type = NLA_U16 },
+			[NL80211_WMMR_AIFSN] = { .type = NLA_U8 },
+			[NL80211_WMMR_TXOP] = { .type = NLA_U16 },
+		};
+		struct nlattr *nl_wmm;
+		struct nlattr *tb_wmm[NL80211_WMMR_MAX + 1];
+		int rem_wmm, ac, count = 0;
+
+		nla_for_each_nested(nl_wmm, tb_freq[NL80211_FREQUENCY_ATTR_WMM],
+				    rem_wmm) {
+			if (nla_parse_nested(tb_wmm, NL80211_WMMR_MAX, nl_wmm,
+					     wmm_policy)) {
+				wpa_printf(MSG_DEBUG,
+					   "nl80211: Failed to parse WMM rules attribute");
+				return;
+			}
+			if (!tb_wmm[NL80211_WMMR_CW_MIN] ||
+			    !tb_wmm[NL80211_WMMR_CW_MAX] ||
+			    !tb_wmm[NL80211_WMMR_AIFSN] ||
+			    !tb_wmm[NL80211_WMMR_TXOP]) {
+				wpa_printf(MSG_DEBUG,
+					   "nl80211: Channel is missing WMM rule attribute");
+				return;
+			}
+			ac = nl_wmm->nla_type;
+			if (ac < 0 || ac >= WMM_AC_NUM) {
+				wpa_printf(MSG_DEBUG,
+					   "nl80211: Invalid AC value %d", ac);
+				return;
+			}
+
+			chan->wmm_rules[ac].min_cwmin =
+				nla_get_u16(tb_wmm[NL80211_WMMR_CW_MIN]);
+			chan->wmm_rules[ac].min_cwmax =
+				nla_get_u16(tb_wmm[NL80211_WMMR_CW_MAX]);
+			chan->wmm_rules[ac].min_aifs =
+				nla_get_u8(tb_wmm[NL80211_WMMR_AIFSN]);
+			chan->wmm_rules[ac].max_txop =
+				nla_get_u16(tb_wmm[NL80211_WMMR_TXOP]) / 32;
+			count++;
+		}
+
+		/* Set valid flag if all the AC rules are present */
+		if (count == WMM_AC_NUM)
+			chan->wmm_rules_valid = 1;
+	}
 }
 
 
