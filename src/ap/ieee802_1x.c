@@ -2733,7 +2733,8 @@ int ieee802_1x_get_mib_sta(struct hostapd_data *hapd, struct sta_info *sta,
 				   wpa_auth_sta_key_mgmt(sta->wpa_sm))) ?
 			  1 : 2,
 			  (unsigned int) diff.sec,
-			  sm->identity ? (char *) sm->identity : identity_buf);
+			  sm->identity ? (char *) sm->identity :
+					 (identity_buf ? identity_buf : "N/A"));
 	os_free(identity_buf);
 	if (os_snprintf_error(buflen - len, ret))
 		return len;
