@@ -334,10 +334,13 @@ static int wpa_supplicant_conf_ap(struct wpa_supplicant *wpa_s,
 			list[8] = -1;
 		}
 		conf->supported_rates = list;
+	}
+
 #ifdef CONFIG_IEEE80211AX
+	if (ssid->mode == WPAS_MODE_P2P_GO ||
+	    ssid->mode == WPAS_MODE_P2P_GROUP_FORMATION)
 		conf->ieee80211ax = ssid->he;
 #endif /* CONFIG_IEEE80211AX */
-	}
 
 	bss->isolate = !wpa_s->conf->p2p_intra_bss;
 	bss->force_per_enrollee_psk = wpa_s->global->p2p_per_sta_psk;
