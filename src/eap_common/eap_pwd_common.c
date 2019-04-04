@@ -428,3 +428,109 @@ int compute_keys(EAP_PWD_group *grp, const struct crypto_bignum *k,
 
 	return 1;
 }
+
+
+static int eap_pwd_element_coord_ok(const struct crypto_bignum *prime,
+				    const u8 *buf, size_t len)
+{
+	struct crypto_bignum *val;
+	int ok = 1;
+
+	val = crypto_bignum_init_set(buf, len);
+	if (!val || crypto_bignum_is_zero(val) ||
+	    crypto_bignum_cmp(val, prime) >= 0)
+		ok = 0;
+	crypto_bignum_deinit(val, 0);
+	return ok;
+}
+
+
+struct crypto_ec_point * eap_pwd_get_element(EAP_PWD_group *group,
+					     const u8 *buf)
+{
+	struct crypto_ec_point *element;
+	const struct crypto_bignum *prime;
+	size_t prime_len;
+	struct crypto_bignum *cofactor = NULL;
+
+	prime = crypto_ec_get_prime(group->group);
+	prime_len = crypto_ec_prime_len(group->group);
+
+	/* RFC 5931, 2.8.5.2.2: 0 < x,y < p */
+	if (!eap_pwd_element_coord_ok(prime, buf, prime_len) ||
+	    !eap_pwd_element_coord_ok(prime, buf + prime_len, prime_len)) {
+		wpa_printf(MSG_INFO, "EAP-pwd: Invalid coordinate in element");
+		return NULL;
+	}
+
+	element = crypto_ec_point_from_bin(group->group, buf);
+	if (!element) {
+		wpa_printf(MSG_INFO, "EAP-pwd: EC point from element failed");
+		return NULL;
+	}
+
+	/* RFC 5931, 2.8.5.2.2: on curve and not the point at infinity */
+	if (!crypto_ec_point_is_on_curve(group->group, element) ||
+	    crypto_ec_point_is_at_infinity(group->group, element)) {
+		wpa_printf(MSG_INFO, "EAP-pwd: Invalid element");
+		goto fail;
+	}
+
+	cofactor = crypto_bignum_init();
+	if (!cofactor || crypto_ec_cofactor(group->group, cofactor) < 0) {
+		wpa_printf(MSG_INFO,
+			   "EAP-pwd: Unable to get cofactor for curve");
+		goto fail;
+	}
+
+	if (!crypto_bignum_is_one(cofactor)) {
+		struct crypto_ec_point *point;
+		int ok = 1;
+
+		/* check to ensure peer's element is not in a small sub-group */
+		point = crypto_ec_point_init(group->group);
+		if (!point ||
+		    crypto_ec_point_mul(group->group, element,
+					cofactor, point) != 0 ||
+		    crypto_ec_point_is_at_infinity(group->group, point))
+			ok = 0;
+		crypto_ec_point_deinit(point, 0);
+
+		if (!ok) {
+			wpa_printf(MSG_INFO,
+				   "EAP-pwd: Small sub-group check on peer element failed");
+			goto fail;
+		}
+	}
+
+out:
+	crypto_bignum_deinit(cofactor, 0);
+	return element;
+fail:
+	crypto_ec_point_deinit(element, 0);
+	element = NULL;
+	goto out;
+}
+
+
+struct crypto_bignum * eap_pwd_get_scalar(EAP_PWD_group *group, const u8 *buf)
+{
+	struct crypto_bignum *scalar;
+	const struct crypto_bignum *order;
+	size_t order_len;
+
+	order = crypto_ec_get_order(group->group);
+	order_len = crypto_ec_order_len(group->group);
+
+	/* RFC 5931, 2.8.5.2: 1 < scalar < r */
+	scalar = crypto_bignum_init_set(buf, order_len);
+	if (!scalar || crypto_bignum_is_zero(scalar) ||
+	    crypto_bignum_is_one(scalar) ||
+	    crypto_bignum_cmp(scalar, order) >= 0) {
+		wpa_printf(MSG_INFO, "EAP-pwd: received scalar is invalid");
+		crypto_bignum_deinit(scalar, 0);
+		scalar = NULL;
+	}
+
+	return scalar;
+}

@@ -308,7 +308,7 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 				const struct wpabuf *reqData,
 				const u8 *payload, size_t payload_len)
 {
-	struct crypto_ec_point *K = NULL, *point = NULL;
+	struct crypto_ec_point *K = NULL;
 	struct crypto_bignum *mask = NULL, *cofactor = NULL;
 	const u8 *ptr = payload;
 	u8 *scalar = NULL, *element = NULL;
@@ -572,61 +572,25 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 	/* process the request */
 	data->k = crypto_bignum_init();
 	K = crypto_ec_point_init(data->grp->group);
-	point = crypto_ec_point_init(data->grp->group);
-	if (!data->k || !K || !point) {
+	if (!data->k || !K) {
 		wpa_printf(MSG_INFO, "EAP-PWD (peer): peer data allocation "
 			   "fail");
 		goto fin;
 	}
 
 	/* element, x then y, followed by scalar */
-	data->server_element = crypto_ec_point_from_bin(data->grp->group, ptr);
+	data->server_element = eap_pwd_get_element(data->grp, ptr);
 	if (!data->server_element) {
 		wpa_printf(MSG_INFO, "EAP-PWD (peer): setting peer element "
 			   "fail");
 		goto fin;
 	}
 	ptr += prime_len * 2;
-	data->server_scalar = crypto_bignum_init_set(ptr, order_len);
+	data->server_scalar = eap_pwd_get_scalar(data->grp, ptr);
 	if (!data->server_scalar) {
 		wpa_printf(MSG_INFO,
 			   "EAP-PWD (peer): setting peer scalar fail");
 		goto fin;
-	}
-
-	/* verify received scalar */
-	if (crypto_bignum_is_zero(data->server_scalar) ||
-	    crypto_bignum_is_one(data->server_scalar) ||
-	    crypto_bignum_cmp(data->server_scalar,
-			      crypto_ec_get_order(data->grp->group)) >= 0) {
-		wpa_printf(MSG_INFO,
-			   "EAP-PWD (peer): received scalar is invalid");
-		goto fin;
-	}
-
-	/* verify received element */
-	if (!crypto_ec_point_is_on_curve(data->grp->group,
-					 data->server_element) ||
-	    crypto_ec_point_is_at_infinity(data->grp->group,
-					   data->server_element)) {
-		wpa_printf(MSG_INFO,
-			   "EAP-PWD (peer): received element is invalid");
-		goto fin;
-	}
-
-	/* check to ensure server's element is not in a small sub-group */
-	if (!crypto_bignum_is_one(cofactor)) {
-		if (crypto_ec_point_mul(data->grp->group, data->server_element,
-					cofactor, point) < 0) {
-			wpa_printf(MSG_INFO, "EAP-PWD (peer): cannot multiply "
-				   "server element by order!\n");
-			goto fin;
-		}
-		if (crypto_ec_point_is_at_infinity(data->grp->group, point)) {
-			wpa_printf(MSG_INFO, "EAP-PWD (peer): server element "
-				   "is at infinity!\n");
-			goto fin;
-		}
 	}
 
 	/* compute the shared key, k */
@@ -702,7 +666,6 @@ fin:
 	crypto_bignum_deinit(mask, 1);
 	crypto_bignum_deinit(cofactor, 1);
 	crypto_ec_point_deinit(K, 1);
-	crypto_ec_point_deinit(point, 1);
 	if (data->outbuf == NULL)
 		eap_pwd_state(data, FAILURE);
 	else
