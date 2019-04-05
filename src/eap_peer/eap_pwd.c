@@ -311,7 +311,7 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 	struct crypto_ec_point *K = NULL;
 	struct crypto_bignum *mask = NULL, *cofactor = NULL;
 	const u8 *ptr = payload;
-	u8 *scalar = NULL, *element = NULL;
+	u8 *scalar, *element;
 	size_t prime_len, order_len;
 	const u8 *password;
 	size_t password_len;
@@ -623,12 +623,12 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 	}
 
 	/* now do the response */
-	scalar = os_zalloc(order_len);
-	element = os_zalloc(prime_len * 2);
-	if (!scalar || !element) {
-		wpa_printf(MSG_INFO, "EAP-PWD (peer): data allocation fail");
+	data->outbuf = wpabuf_alloc(2 * prime_len + order_len);
+	if (data->outbuf == NULL)
 		goto fin;
-	}
+	/* We send the element as (x,y) followed by the scalar */
+	element = wpabuf_put(data->outbuf, 2 * prime_len);
+	scalar = wpabuf_put(data->outbuf, order_len);
 
 	/*
 	 * bignums occupy as little memory as possible so one that is
@@ -642,17 +642,7 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 		goto fin;
 	}
 
-	data->outbuf = wpabuf_alloc(order_len + 2 * prime_len);
-	if (data->outbuf == NULL)
-		goto fin;
-
-	/* we send the element as (x,y) follwed by the scalar */
-	wpabuf_put_data(data->outbuf, element, 2 * prime_len);
-	wpabuf_put_data(data->outbuf, scalar, order_len);
-
 fin:
-	os_free(scalar);
-	os_free(element);
 	crypto_bignum_deinit(mask, 1);
 	crypto_bignum_deinit(cofactor, 1);
 	crypto_ec_point_deinit(K, 1);

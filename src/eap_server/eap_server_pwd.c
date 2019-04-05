@@ -236,7 +236,7 @@ static void eap_pwd_build_commit_req(struct eap_sm *sm,
 				     struct eap_pwd_data *data, u8 id)
 {
 	struct crypto_bignum *mask = NULL;
-	u8 *scalar = NULL, *element = NULL;
+	u8 *scalar, *element;
 	size_t prime_len, order_len;
 
 	wpa_printf(MSG_DEBUG, "EAP-pwd: Commit/Request");
@@ -279,22 +279,6 @@ static void eap_pwd_build_commit_req(struct eap_sm *sm,
 		goto fin;
 	}
 
-	scalar = os_malloc(order_len);
-	element = os_malloc(prime_len * 2);
-	if (!scalar || !element) {
-		wpa_printf(MSG_INFO, "EAP-PWD (server): data allocation fail");
-		goto fin;
-	}
-
-	if (crypto_ec_point_to_bin(data->grp->group, data->my_element, element,
-				   element + prime_len) < 0) {
-		wpa_printf(MSG_INFO, "EAP-PWD (server): point assignment "
-			   "fail");
-		goto fin;
-	}
-
-	crypto_bignum_to_bin(data->my_scalar, scalar, order_len, order_len);
-
 	data->outbuf = wpabuf_alloc(2 * prime_len + order_len +
 				    (data->salt ? 1 + data->salt_len : 0));
 	if (data->outbuf == NULL)
@@ -307,13 +291,18 @@ static void eap_pwd_build_commit_req(struct eap_sm *sm,
 	}
 
 	/* We send the element as (x,y) followed by the scalar */
-	wpabuf_put_data(data->outbuf, element, 2 * prime_len);
-	wpabuf_put_data(data->outbuf, scalar, order_len);
+	element = wpabuf_put(data->outbuf, 2 * prime_len);
+	scalar = wpabuf_put(data->outbuf, order_len);
+	crypto_bignum_to_bin(data->my_scalar, scalar, order_len, order_len);
+	if (crypto_ec_point_to_bin(data->grp->group, data->my_element, element,
+				   element + prime_len) < 0) {
+		wpa_printf(MSG_INFO, "EAP-PWD (server): point assignment "
+			   "fail");
+		goto fin;
+	}
 
 fin:
 	crypto_bignum_deinit(mask, 1);
-	os_free(scalar);
-	os_free(element);
 	if (data->outbuf == NULL)
 		eap_pwd_state(data, FAILURE);
 }
