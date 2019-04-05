@@ -542,19 +542,9 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 		goto fin;
 	}
 
-	if (crypto_bignum_rand(data->private_value,
-			       crypto_ec_get_order(data->grp->group)) < 0 ||
-	    crypto_bignum_rand(mask,
-			       crypto_ec_get_order(data->grp->group)) < 0 ||
-	    crypto_bignum_add(data->private_value, mask,
-			      data->my_scalar) < 0 ||
-	    crypto_bignum_mod(data->my_scalar,
-			      crypto_ec_get_order(data->grp->group),
-			      data->my_scalar) < 0) {
-		wpa_printf(MSG_INFO,
-			   "EAP-pwd (peer): unable to get randomness");
+	if (eap_pwd_get_rand_mask(data->grp, data->private_value, mask,
+				  data->my_scalar) < 0)
 		goto fin;
-	}
 
 	if (crypto_ec_point_mul(data->grp->group, data->grp->pwe, mask,
 				data->my_element) < 0) {

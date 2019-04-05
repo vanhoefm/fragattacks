@@ -261,18 +261,9 @@ static void eap_pwd_build_commit_req(struct eap_sm *sm,
 		goto fin;
 	}
 
-	if (crypto_bignum_rand(data->private_value,
-			       crypto_ec_get_order(data->grp->group)) < 0 ||
-	    crypto_bignum_rand(mask,
-			       crypto_ec_get_order(data->grp->group)) < 0 ||
-	    crypto_bignum_add(data->private_value, mask, data->my_scalar) < 0 ||
-	    crypto_bignum_mod(data->my_scalar,
-			      crypto_ec_get_order(data->grp->group),
-			      data->my_scalar) < 0) {
-		wpa_printf(MSG_INFO,
-			   "EAP-pwd (server): unable to get randomness");
+	if (eap_pwd_get_rand_mask(data->grp, data->private_value, mask,
+				  data->my_scalar) < 0)
 		goto fin;
-	}
 
 	if (crypto_ec_point_mul(data->grp->group, data->grp->pwe, mask,
 				data->my_element) < 0) {

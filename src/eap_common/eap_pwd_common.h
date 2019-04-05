@@ -70,5 +70,8 @@ void eap_pwd_h_final(struct crypto_hash *hash, u8 *digest);
 struct crypto_ec_point * eap_pwd_get_element(EAP_PWD_group *group,
 					     const u8 *buf);
 struct crypto_bignum * eap_pwd_get_scalar(EAP_PWD_group *group, const u8 *buf);
+int eap_pwd_get_rand_mask(EAP_PWD_group *group, struct crypto_bignum *_rand,
+			  struct crypto_bignum *_mask,
+			  struct crypto_bignum *scalar);
 
 #endif  /* EAP_PWD_COMMON_H */
