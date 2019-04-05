@@ -3136,9 +3136,10 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		 * cause problems with the current implementation.
 		 * Since it is unlikely that this small numbers are
 		 * useful in real life scenarios, do not allow beacon
-		 * period to be set below 15 TU. */
-		if (val < 15 || val > 65535) {
-			wpa_printf(MSG_ERROR, "Line %d: invalid beacon_int %d (expected 15..65535)",
+		 * period to be set below 10 TU. */
+		if (val < 10 || val > 65535) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: invalid beacon_int %d (expected 10..65535)",
 				   line, val);
 			return 1;
 		}
