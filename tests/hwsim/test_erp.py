@@ -156,6 +156,45 @@ def test_erp_radius(dev, apdev):
             raise Exception("Did not use ERP")
         dev[0].wait_connected(timeout=15, error="Reconnection timed out")
 
+def test_erp_radius_ext(dev, apdev):
+    """ERP enabled on a separate RADIUS server and peer"""
+    as_hapd = hostapd.Hostapd("as")
+    try:
+        as_hapd.disable()
+        as_hapd.set("eap_server_erp", "1")
+        as_hapd.set("erp_domain", "erp.example.com")
+        as_hapd.enable()
+        run_erp_radius_ext(dev, apdev)
+    finally:
+        as_hapd.disable()
+        as_hapd.set("eap_server_erp", "0")
+        as_hapd.set("erp_domain", "")
+        as_hapd.enable()
+
+def run_erp_radius_ext(dev, apdev):
+    check_erp_capa(dev[0])
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    params['erp_send_reauth_start'] = '1'
+    params['erp_domain'] = 'erp.example.com'
+    params['disable_pmksa_caching'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].request("ERP_FLUSH")
+    dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                   eap="PSK", identity="psk@erp.example.com",
+                   password_hex="0123456789abcdef0123456789abcdef",
+                   erp="1", scan_freq="2412")
+    for i in range(3):
+        dev[0].request("DISCONNECT")
+        dev[0].wait_disconnected(timeout=15)
+        dev[0].request("RECONNECT")
+        ev = dev[0].wait_event(["CTRL-EVENT-EAP-SUCCESS"], timeout=15)
+        if ev is None:
+            raise Exception("EAP success timed out")
+        if "EAP re-authentication completed successfully" not in ev:
+            raise Exception("Did not use ERP")
+        dev[0].wait_connected(timeout=15, error="Reconnection timed out")
+
 def erp_test(dev, hapd, **kwargs):
     res = dev.get_capability("eap")
     if kwargs['eap'] not in res:
