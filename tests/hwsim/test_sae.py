@@ -76,10 +76,10 @@ def test_sae_password_ffc(dev, apdev):
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
-    params['sae_groups'] = '22'
+    params['sae_groups'] = '15'
     hapd = hostapd.add_ap(apdev[0], params)
 
-    dev[0].request("SET sae_groups 22")
+    dev[0].request("SET sae_groups 15")
 
     for i in range(10):
         password = "12345678-" + str(i)
@@ -150,6 +150,7 @@ def test_sae_groups(dev, apdev):
         logger.info("Add Brainpool EC groups since OpenSSL is new enough")
         sae_groups += [27, 28, 29, 30]
     heavy_groups = [14, 15, 16]
+    suitable_groups = [15, 16, 17, 18, 19, 20, 21, 28, 29, 30]
     groups = [str(g) for g in sae_groups]
     params = hostapd.wpa2_params(ssid="test-sae-groups",
                                  passphrase="12345678")
@@ -176,6 +177,11 @@ def test_sae_groups(dev, apdev):
             if ev is None:
                 if "BoringSSL" in tls and int(g) in [25]:
                     logger.info("Ignore connection failure with group " + g + " with BoringSSL")
+                    dev[0].remove_network(id)
+                    dev[0].dump_monitor()
+                    continue
+                if int(g) not in suitable_groups:
+                    logger.info("Ignore connection failure with unsuitable group " + g)
                     dev[0].remove_network(id)
                     dev[0].dump_monitor()
                     continue
@@ -496,13 +502,10 @@ def test_sae_oom_wpas(dev, apdev):
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
-    params['sae_groups'] = '19 25 26'
+    params['sae_groups'] = '19 25 26 20'
     hapd = hostapd.add_ap(apdev[0], params)
 
-    dev[0].request("SET sae_groups 25")
-    tls = dev[0].request("GET tls_library")
-    if "BoringSSL" in tls:
-        dev[0].request("SET sae_groups 26")
+    dev[0].request("SET sae_groups 20")
     with alloc_fail(dev[0], 1, "sae_set_group"):
         dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
                        scan_freq="2412")
@@ -828,7 +831,7 @@ def test_sae_no_ffc_by_default(dev, apdev):
     params['wpa_key_mgmt'] = 'SAE'
     hapd = hostapd.add_ap(apdev[0], params)
 
-    dev[0].request("SET sae_groups 5")
+    dev[0].request("SET sae_groups 15")
     dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE", scan_freq="2412",
                    wait_connect=False)
     ev = dev[0].wait_event(["SME: Trying to authenticate"], timeout=3)
@@ -888,7 +891,7 @@ def test_sae_reflection_attack_ecc(dev, apdev):
 @remote_compatible
 def test_sae_reflection_attack_ffc(dev, apdev):
     """SAE reflection attack (FFC)"""
-    sae_reflection_attack(apdev[0], dev[0], 5)
+    sae_reflection_attack(apdev[0], dev[0], 15)
 
 def sae_reflection_attack_internal(apdev, dev, group):
     if "SAE" not in dev.get_capability("auth_alg"):
@@ -904,6 +907,9 @@ def sae_reflection_attack_internal(apdev, dev, group):
     dev.request("SET sae_groups %d" % group)
     dev.connect("test-sae", psk="reflection-attack", key_mgmt="SAE",
                 scan_freq="2412", wait_connect=False)
+    ev = dev.wait_event(["SME: Trying to authenticate"], timeout=10)
+    if ev is None:
+        raise Exception("No authentication attempt seen")
     ev = dev.wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
     if ev is not None:
         raise Exception("Unexpected connection")
@@ -916,7 +922,7 @@ def test_sae_reflection_attack_ecc_internal(dev, apdev):
 @remote_compatible
 def test_sae_reflection_attack_ffc_internal(dev, apdev):
     """SAE reflection attack (FFC) - internal"""
-    sae_reflection_attack_internal(apdev[0], dev[0], 5)
+    sae_reflection_attack_internal(apdev[0], dev[0], 15)
 
 @remote_compatible
 def test_sae_commit_override(dev, apdev):
@@ -1023,7 +1029,7 @@ def test_sae_pwe_failure(dev, apdev):
         raise HwsimSkip("SAE not supported")
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
-    params['sae_groups'] = '19 5'
+    params['sae_groups'] = '19 15'
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].request("SET sae_groups 19")
@@ -1038,14 +1044,14 @@ def test_sae_pwe_failure(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
 
-    dev[0].request("SET sae_groups 5")
+    dev[0].request("SET sae_groups 15")
     with fail_test(dev[0], 1, "hmac_sha256_vector;sae_derive_pwe_ffc"):
         dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
                        scan_freq="2412")
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
 
-    dev[0].request("SET sae_groups 5")
+    dev[0].request("SET sae_groups 15")
     with fail_test(dev[0], 1, "sae_test_pwd_seed_ffc"):
         dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
                        scan_freq="2412")
@@ -1064,7 +1070,7 @@ def test_sae_bignum_failure(dev, apdev):
         raise HwsimSkip("SAE not supported")
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
-    params['sae_groups'] = '19 5 22'
+    params['sae_groups'] = '19 15 22'
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].request("SET sae_groups 19")
@@ -1105,7 +1111,7 @@ def test_sae_bignum_failure(dev, apdev):
             dev[0].dump_monitor()
             hapd.dump_monitor()
 
-    dev[0].request("SET sae_groups 5")
+    dev[0].request("SET sae_groups 15")
     tests = [(1, "crypto_bignum_init_set;sae_set_group"),
              (2, "crypto_bignum_init_set;sae_set_group"),
              (1, "crypto_bignum_init_set;sae_get_rand"),
@@ -1133,6 +1139,15 @@ def test_sae_bignum_failure(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].dump_monitor()
             hapd.dump_monitor()
+
+def test_sae_bignum_failure_unsafe_group(dev, apdev):
+    """SAE and bignum failure unsafe group"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_groups'] = '22'
+    hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].request("SET sae_groups 22")
     tests = [(1, "crypto_bignum_init_set;sae_test_pwd_seed_ffc"),
@@ -1344,7 +1359,7 @@ def test_sae_password_id_ecc(dev, apdev):
 
 def test_sae_password_id_ffc(dev, apdev):
     """SAE and password identifier (FFC)"""
-    run_sae_password_id(dev, apdev, "22")
+    run_sae_password_id(dev, apdev, "15")
 
 def test_sae_password_id_only(dev, apdev):
     """SAE and password identifier (exclusively)"""
