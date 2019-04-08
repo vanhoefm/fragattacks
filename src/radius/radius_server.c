@@ -676,6 +676,23 @@ static void radius_server_testing_options(struct radius_session *sess,
 }
 
 
+#ifdef CONFIG_ERP
+static struct eap_server_erp_key *
+radius_server_erp_find_key(struct radius_server_data *data, const char *keyname)
+{
+	struct eap_server_erp_key *erp;
+
+	dl_list_for_each(erp, &data->erp_keys, struct eap_server_erp_key,
+			 list) {
+		if (os_strcmp(erp->keyname_nai, keyname) == 0)
+			return erp;
+	}
+
+	return NULL;
+}
+#endif /* CONFIG_ERP */
+
+
 static struct radius_session *
 radius_server_get_new_session(struct radius_server_data *data,
 			      struct radius_client *client,
@@ -702,6 +719,19 @@ radius_server_get_new_session(struct radius_server_data *data,
 		return NULL;
 
 	res = data->get_eap_user(data->conf_ctx, user, user_len, 0, tmp);
+#ifdef CONFIG_ERP
+	if (res != 0 && data->erp) {
+		char *username;
+
+		username = os_zalloc(user_len + 1);
+		if (username) {
+			os_memcpy(username, user, user_len);
+			if (radius_server_erp_find_key(data, username))
+				res = 0;
+			os_free(username);
+		}
+	}
+#endif /* CONFIG_ERP */
 	if (res != 0) {
 		RADIUS_DEBUG("User-Name not found from user database");
 		eap_user_free(tmp);
@@ -2706,15 +2736,8 @@ radius_server_erp_get_key(void *ctx, const char *keyname)
 {
 	struct radius_session *sess = ctx;
 	struct radius_server_data *data = sess->server;
-	struct eap_server_erp_key *erp;
 
-	dl_list_for_each(erp, &data->erp_keys, struct eap_server_erp_key,
-			 list) {
-		if (os_strcmp(erp->keyname_nai, keyname) == 0)
-			return erp;
-	}
-
-	return NULL;
+	return radius_server_erp_find_key(data, keyname);
 }
 
 
