@@ -1122,6 +1122,11 @@ enum hide_ssid {
 	HIDDEN_SSID_ZERO_CONTENTS
 };
 
+enum ch_switch_state {
+	CH_SW_STARTED,
+	CH_SW_FINISHED
+};
+
 struct wowlan_triggers {
 	u8 any;
 	u8 disconnect;
@@ -4540,6 +4545,15 @@ enum wpa_event_type {
 	 * */
 	EVENT_CH_SWITCH,
 
+	/**
+	 * EVENT_CH_SWITCH_STARTED - AP or GO started to switch channels
+	 *
+	 * This is a pre-switch event indicating the shortly following switch
+	 * of operating channels.
+	 *
+	 * Described in wpa_event_data.ch_switch
+	 */
+	EVENT_CH_SWITCH_STARTED,
 	/**
 	 * EVENT_WNM - Request WNM operation
 	 *

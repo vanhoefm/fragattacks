@@ -4462,18 +4462,24 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 				       data->rx_from_unknown.wds);
 		break;
 #endif /* CONFIG_AP */
+
+	case EVENT_CH_SWITCH_STARTED:
 	case EVENT_CH_SWITCH:
 		if (!data || !wpa_s->current_ssid)
 			break;
 
-		wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_CHANNEL_SWITCH
-			"freq=%d ht_enabled=%d ch_offset=%d ch_width=%s cf1=%d cf2=%d",
+		wpa_msg(wpa_s, MSG_INFO,
+			"%sfreq=%d ht_enabled=%d ch_offset=%d ch_width=%s cf1=%d cf2=%d",
+			event == EVENT_CH_SWITCH ? WPA_EVENT_CHANNEL_SWITCH :
+			WPA_EVENT_CHANNEL_SWITCH_STARTED,
 			data->ch_switch.freq,
 			data->ch_switch.ht_enabled,
 			data->ch_switch.ch_offset,
 			channel_width_to_string(data->ch_switch.ch_width),
 			data->ch_switch.cf1,
 			data->ch_switch.cf2);
+		if (event == EVENT_CH_SWITCH_STARTED)
+			break;
 
 		wpa_s->assoc_freq = data->ch_switch.freq;
 		wpa_s->current_ssid->frequency = data->ch_switch.freq;
@@ -4489,7 +4495,8 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 					  data->ch_switch.ch_offset,
 					  data->ch_switch.ch_width,
 					  data->ch_switch.cf1,
-					  data->ch_switch.cf2);
+					  data->ch_switch.cf2,
+					  1);
 		}
 #endif /* CONFIG_AP */
 

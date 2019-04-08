@@ -607,7 +607,8 @@ int hostapd_probe_req_rx(struct hostapd_data *hapd, const u8 *sa, const u8 *da,
 			 const u8 *bssid, const u8 *ie, size_t ie_len,
 			 int ssi_signal);
 void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
-			     int offset, int width, int cf1, int cf2);
+			     int offset, int width, int cf1, int cf2,
+			     int finished);
 struct survey_results;
 void hostapd_event_get_survey(struct hostapd_iface *iface,
 			      struct survey_results *survey_results);

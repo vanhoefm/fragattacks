@@ -534,7 +534,8 @@ static int calculate_chan_offset(int width, int freq, int cf1, int cf2)
 static void mlme_event_ch_switch(struct wpa_driver_nl80211_data *drv,
 				 struct nlattr *ifindex, struct nlattr *freq,
 				 struct nlattr *type, struct nlattr *bw,
-				 struct nlattr *cf1, struct nlattr *cf2)
+				 struct nlattr *cf1, struct nlattr *cf2,
+				 int finished)
 {
 	struct i802_bss *bss;
 	union wpa_event_data data;
@@ -542,7 +543,8 @@ static void mlme_event_ch_switch(struct wpa_driver_nl80211_data *drv,
 	int chan_offset = 0;
 	int ifidx;
 
-	wpa_printf(MSG_DEBUG, "nl80211: Channel switch event");
+	wpa_printf(MSG_DEBUG, "nl80211: Channel switch%s event",
+		   finished ? "" : " started");
 
 	if (!freq)
 		return;
@@ -596,7 +598,8 @@ static void mlme_event_ch_switch(struct wpa_driver_nl80211_data *drv,
 	bss->freq = data.ch_switch.freq;
 	drv->assoc_freq = data.ch_switch.freq;
 
-	wpa_supplicant_event(bss->ctx, EVENT_CH_SWITCH, &data);
+	wpa_supplicant_event(bss->ctx, finished ?
+			     EVENT_CH_SWITCH : EVENT_CH_SWITCH_STARTED, &data);
 }
 
 
@@ -2508,6 +2511,16 @@ static void do_process_drv_event(struct i802_bss *bss, int cmd,
 				   tb[NL80211_ATTR_PMK],
 				   tb[NL80211_ATTR_PMKID]);
 		break;
+	case NL80211_CMD_CH_SWITCH_STARTED_NOTIFY:
+		mlme_event_ch_switch(drv,
+				     tb[NL80211_ATTR_IFINDEX],
+				     tb[NL80211_ATTR_WIPHY_FREQ],
+				     tb[NL80211_ATTR_WIPHY_CHANNEL_TYPE],
+				     tb[NL80211_ATTR_CHANNEL_WIDTH],
+				     tb[NL80211_ATTR_CENTER_FREQ1],
+				     tb[NL80211_ATTR_CENTER_FREQ2],
+				     0);
+		break;
 	case NL80211_CMD_CH_SWITCH_NOTIFY:
 		mlme_event_ch_switch(drv,
 				     tb[NL80211_ATTR_IFINDEX],
@@ -2515,7 +2528,8 @@ static void do_process_drv_event(struct i802_bss *bss, int cmd,
 				     tb[NL80211_ATTR_WIPHY_CHANNEL_TYPE],
 				     tb[NL80211_ATTR_CHANNEL_WIDTH],
 				     tb[NL80211_ATTR_CENTER_FREQ1],
-				     tb[NL80211_ATTR_CENTER_FREQ2]);
+				     tb[NL80211_ATTR_CENTER_FREQ2],
+				     1);
 		break;
 	case NL80211_CMD_DISCONNECT:
 		mlme_event_disconnect(drv, tb[NL80211_ATTR_REASON_CODE],
