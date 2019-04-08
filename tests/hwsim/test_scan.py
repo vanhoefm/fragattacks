@@ -1700,7 +1700,12 @@ def test_scan_multi_bssid_check_ie(dev, apdev):
     if 71 in list(beacon_ie.keys()):
         ie_list = list(beacon_ie.keys())
         ie_list.remove(71)
-        if sorted(ie_list) != sorted(list(nontx_beacon_ie.keys())):
+        nontx_ie_list = list(nontx_beacon_ie.keys())
+        try:
+            nontx_ie_list.remove(85)
+        except ValueError:
+            pass
+        if sorted(ie_list) != sorted(nontx_ie_list):
             raise Exception("check IE failed")
 
 def elem_fms1():
