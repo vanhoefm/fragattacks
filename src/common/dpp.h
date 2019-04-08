@@ -10,6 +10,7 @@
 #ifndef DPP_H
 #define DPP_H
 
+#ifdef CONFIG_DPP
 #include <openssl/x509.h>
 
 #include "utils/list.h"
@@ -500,4 +501,5 @@ struct dpp_global * dpp_global_init(void);
 void dpp_global_clear(struct dpp_global *dpp);
 void dpp_global_deinit(struct dpp_global *dpp);
 
+#endif /* CONFIG_DPP */
 #endif /* DPP_H */
