@@ -259,18 +259,21 @@ struct eap_peer_config {
 	/**
 	 * domain_suffix_match - Constraint for server domain name
 	 *
-	 * If set, this FQDN is used as a suffix match requirement for the
-	 * server certificate in SubjectAltName dNSName element(s). If a
-	 * matching dNSName is found, this constraint is met. If no dNSName
-	 * values are present, this constraint is matched against SubjectName CN
-	 * using same suffix match comparison. Suffix match here means that the
-	 * host/domain name is compared one label at a time starting from the
-	 * top-level domain and all the labels in domain_suffix_match shall be
-	 * included in the certificate. The certificate may include additional
-	 * sub-level labels in addition to the required labels.
+	 * If set, this semicolon deliminated list of FQDNs is used as suffix
+	 * match requirements for the server certificate in SubjectAltName
+	 * dNSName element(s). If a matching dNSName is found against any of the
+	 * specified values, this constraint is met. If no dNSName values are
+	 * present, this constraint is matched against SubjectName CN using same
+	 * suffix match comparison. Suffix match here means that the host/domain
+	 * name is compared case-insentively one label at a time starting from
+	 * the top-level domain and all the labels in domain_suffix_match shall
+	 * be included in the certificate. The certificate may include
+	 * additional sub-level labels in addition to the required labels.
 	 *
 	 * For example, domain_suffix_match=example.com would match
-	 * test.example.com but would not match test-example.com.
+	 * test.example.com but would not match test-example.com. Multiple
+	 * match options can be specified in following manner:
+	 * example.org;example.com.
 	 */
 	char *domain_suffix_match;
 
@@ -286,6 +289,12 @@ struct eap_peer_config {
 	 * no subdomains or wildcard matches are allowed. Case-insensitive
 	 * comparison is used, so "Example.com" matches "example.com", but would
 	 * not match "test.Example.com".
+	 *
+	 * More than one match string can be provided by using semicolons to
+	 * separate the strings (e.g., example.org;example.com). When multiple
+	 * strings are specified, a match with any one of the values is
+	 * considered a sufficient match for the certificate, i.e., the
+	 * conditions are ORed together.
 	 */
 	char *domain_match;
 

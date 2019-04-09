@@ -1086,6 +1086,52 @@ ocsp_error:
 }
 
 
+static int tls_match_suffix_helper(gnutls_x509_crt_t cert, const char *match,
+				   int full)
+{
+	int res = -1;
+
+#if GNUTLS_VERSION_NUMBER >= 0x030300
+	if (full)
+		res = gnutls_x509_crt_check_hostname2(
+			cert, match,
+			GNUTLS_VERIFY_DO_NOT_ALLOW_WILDCARDS);
+#endif /* >= 3.3.0 */
+	if (res == -1)
+		res = gnutls_x509_crt_check_hostname(cert, match);
+
+	wpa_printf(MSG_DEBUG, "TLS: Match domain against %s%s --> res=%d",
+		   full ? "": "suffix ", match, res);
+	return res;
+}
+
+
+static int tls_match_suffix(gnutls_x509_crt_t cert, const char *match,
+			    int full)
+{
+	char *values, *token, *context = NULL;
+	int ret = 0;
+
+	if (!os_strchr(match, ';'))
+		return tls_match_suffix_helper(cert, match, full);
+
+	values = os_strdup(match);
+	if (!values)
+		return 0;
+
+	/* Process each match alternative separately until a match is found */
+	while ((token = str_token(values, ";", &context))) {
+		if (tls_match_suffix_helper(cert, token, full)) {
+			ret = 1;
+			break;
+		}
+	}
+
+	os_free(values);
+	return ret;
+}
+
+
 static int tls_connection_verify_peer(gnutls_session_t session)
 {
 	struct tls_connection *conn;
@@ -1281,8 +1327,7 @@ static int tls_connection_verify_peer(gnutls_session_t session)
 
 		if (i == 0) {
 			if (conn->suffix_match &&
-			    !gnutls_x509_crt_check_hostname(
-				    cert, conn->suffix_match)) {
+			    !tls_match_suffix(cert, conn->suffix_match, 0)) {
 				wpa_printf(MSG_WARNING,
 					   "TLS: Domain suffix match '%s' not found",
 					   conn->suffix_match);
@@ -1298,9 +1343,7 @@ static int tls_connection_verify_peer(gnutls_session_t session)
 
 #if GNUTLS_VERSION_NUMBER >= 0x030300
 			if (conn->domain_match &&
-			    !gnutls_x509_crt_check_hostname2(
-				    cert, conn->domain_match,
-				    GNUTLS_VERIFY_DO_NOT_ALLOW_WILDCARDS)) {
+			    !tls_match_suffix(cert, conn->domain_match, 1)) {
 				wpa_printf(MSG_WARNING,
 					   "TLS: Domain match '%s' not found",
 					   conn->domain_match);

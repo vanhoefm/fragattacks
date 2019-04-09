@@ -643,9 +643,9 @@ static int tls_match_alt_subject(WOLFSSL_X509 *cert, const char *match)
 
 
 static int domain_suffix_match(const char *val, size_t len, const char *match,
-			       int full)
+			       size_t match_len, int full)
 {
-	size_t i, match_len;
+	size_t i;
 
 	/* Check for embedded nuls that could mess up suffix matching */
 	for (i = 0; i < len; i++) {
@@ -656,7 +656,6 @@ static int domain_suffix_match(const char *val, size_t len, const char *match,
 		}
 	}
 
-	match_len = os_strlen(match);
 	if (match_len > len || (full && match_len != len))
 		return 0;
 
@@ -674,7 +673,8 @@ static int domain_suffix_match(const char *val, size_t len, const char *match,
 }
 
 
-static int tls_match_suffix(WOLFSSL_X509 *cert, const char *match, int full)
+static int tls_match_suffix_helper(WOLFSSL_X509 *cert, const char *match,
+				   size_t match_len, int full)
 {
 	WOLFSSL_ASN1_OBJECT *gen;
 	void *ext;
@@ -697,7 +697,7 @@ static int tls_match_suffix(WOLFSSL_X509 *cert, const char *match, int full)
 				  gen->obj, os_strlen((char *)gen->obj));
 		if (domain_suffix_match((const char *) gen->obj,
 					os_strlen((char *) gen->obj), match,
-					full) == 1) {
+					match_len, full) == 1) {
 			wpa_printf(MSG_DEBUG, "TLS: %s in dNSName found",
 				   full ? "Match" : "Suffix match");
 			wolfSSL_sk_ASN1_OBJECT_free(ext);
@@ -729,8 +729,8 @@ static int tls_match_suffix(WOLFSSL_X509 *cert, const char *match, int full)
 			continue;
 		wpa_hexdump_ascii(MSG_DEBUG, "TLS: Certificate commonName",
 				  cn->data, cn->length);
-		if (domain_suffix_match(cn->data, cn->length, match, full) == 1)
-		{
+		if (domain_suffix_match(cn->data, cn->length,
+					match, match_len, full) == 1) {
 			wpa_printf(MSG_DEBUG, "TLS: %s in commonName found",
 				   full ? "Match" : "Suffix match");
 			return 1;
@@ -739,6 +739,20 @@ static int tls_match_suffix(WOLFSSL_X509 *cert, const char *match, int full)
 
 	wpa_printf(MSG_DEBUG, "TLS: No CommonName %smatch found",
 		   full ? "" : "suffix ");
+	return 0;
+}
+
+
+static int tls_match_suffix(WOLFSSL_X509 *cert, const char *match, int full)
+{
+	const char *token, *last = NULL;
+
+	/* Process each match alternative separately until a match is found */
+	while ((token = cstr_token(match, ";", &last))) {
+		if (tls_match_suffix_helper(cert, token, last - token, full))
+			return 1;
+	}
+
 	return 0;
 }
 

@@ -120,12 +120,19 @@ struct tls_config {
  * %NULL to allow all subjects
  * @altsubject_match: String to match in the alternative subject of the peer
  * certificate or %NULL to allow all alternative subjects
- * @suffix_match: String to suffix match in the dNSName or CN of the peer
- * certificate or %NULL to allow all domain names. This may allow subdomains an
- * wildcard certificates. Each domain name label must have a full match.
+ * @suffix_match: Semicolon deliminated string of values to suffix match against
+ * the dNSName or CN of the peer certificate or %NULL to allow all domain names.
+ * This may allow subdomains and wildcard certificates. Each domain name label
+ * must have a full case-insensitive match.
  * @domain_match: String to match in the dNSName or CN of the peer
  * certificate or %NULL to allow all domain names. This requires a full,
  * case-insensitive match.
+ *
+ * More than one match string can be provided by using semicolons to
+ * separate the strings (e.g., example.org;example.com). When multiple
+ * strings are specified, a match with any one of the values is
+ * considered a sufficient match for the certificate, i.e., the
+ * conditions are ORed together.
  * @client_cert: File or reference name for client X.509 certificate in PEM or
  * DER format
  * @client_cert_blob: client_cert as inlined data or %NULL if not used
