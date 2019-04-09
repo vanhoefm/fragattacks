@@ -690,7 +690,7 @@ static int tls_match_suffix(WOLFSSL_X509 *cert, const char *match, int full)
 
 	for (j = 0; ext && j < wolfSSL_sk_num(ext); j++) {
 		gen = wolfSSL_sk_value(ext, j);
-		if (gen->type != ALT_NAMES_OID)
+		if (gen->type != ASN_DNS_TYPE)
 			continue;
 		dns_name++;
 		wpa_hexdump_ascii(MSG_DEBUG, "TLS: Certificate dNSName",
