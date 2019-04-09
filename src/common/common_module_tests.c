@@ -252,6 +252,7 @@ static int gas_tests(void)
 
 static int sae_tests(void)
 {
+#ifdef CONFIG_SAE
 	struct sae_data sae;
 	int ret = -1;
 	/* IEEE P802.11-REVmd/D2.1, Annex J.10 */
@@ -416,6 +417,9 @@ fail:
 	wpabuf_free(buf);
 	crypto_bignum_deinit(mask, 1);
 	return ret;
+#else /* CONFIG_SAE */
+	return 0;
+#endif /* CONFIG_SAE */
 }
 
 
