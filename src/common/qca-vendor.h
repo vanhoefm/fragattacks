@@ -98,6 +98,9 @@ enum qca_radiotap_vendor_ids {
  *	which supports DFS offloading, to indicate a radar pattern has been
  *	detected. The channel is now unusable.
  *
+ * @QCA_NL80211_VENDOR_SUBCMD_GET_WIFI_INFO: Get information from the driver.
+ *	Attributes defined in enum qca_wlan_vendor_attr_get_wifi_info.
+ *
  * @QCA_NL80211_VENDOR_SUBCMD_GET_LOGGER_FEATURE_SET: Get the feature bitmap
  *	based on enum wifi_logger_supported_features. Attributes defined in
  *	enum qca_wlan_vendor_attr_get_logger_features.
@@ -3249,11 +3252,28 @@ enum qca_vendor_attr_sar_limits {
 /**
  * enum qca_wlan_vendor_attr_get_wifi_info: Attributes for data used by
  * QCA_NL80211_VENDOR_SUBCMD_GET_WIFI_INFO sub command.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_WIFI_INFO_DRIVER_VERSION: In a request this attribute
+ *	should be set to any U8 value to indicate that the driver version
+ *	should be returned. When enabled in this manner, in a response this
+ *	attribute will contain a string representation of the driver version.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_WIFI_INFO_FIRMWARE_VERSION: In a request this attribute
+ *	should be set to any U8 value to indicate that the firmware version
+ *	should be returned. When enabled in this manner, in a response this
+ *	attribute will contain a string representation of the firmware version.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_WIFI_INFO_RADIO_INDEX: In a request this attribute
+ *	should be set to any U32 value to indicate that the current radio
+ *	index should be returned. When enabled in this manner, in a response
+ *	this attribute will contain a U32 radio index value.
+ *
  */
 enum qca_wlan_vendor_attr_get_wifi_info {
 	QCA_WLAN_VENDOR_ATTR_WIFI_INFO_GET_INVALID = 0,
 	QCA_WLAN_VENDOR_ATTR_WIFI_INFO_DRIVER_VERSION = 1,
 	QCA_WLAN_VENDOR_ATTR_WIFI_INFO_FIRMWARE_VERSION = 2,
+	QCA_WLAN_VENDOR_ATTR_WIFI_INFO_RADIO_INDEX = 3,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_WIFI_INFO_GET_AFTER_LAST,
