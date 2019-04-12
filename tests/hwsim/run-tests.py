@@ -139,7 +139,7 @@ class DataCollector(object):
                                                stderr=open('/dev/null', 'w'),
                                                cwd=self._logdir)
             l = self._trace_cmd.stdout.read(7)
-            while self._trace_cmd.poll() is None and 'STARTED' not in l:
+            while self._trace_cmd.poll() is None and b'STARTED' not in l:
                 l += self._trace_cmd.stdout.read(1)
             res = self._trace_cmd.returncode
             if res:
@@ -157,7 +157,8 @@ class DataCollector(object):
                 sys.exit(1)
     def __exit__(self, type, value, traceback):
         if self._tracing:
-            self._trace_cmd.stdin.write('DONE\n')
+            self._trace_cmd.stdin.write(b'DONE\n')
+            self._trace_cmd.stdin.flush()
             self._trace_cmd.wait()
         if self._dmesg:
             output = os.path.join(self._logdir, '%s.dmesg' % (self._testname, ))
