@@ -2269,11 +2269,9 @@ static void nl80211_external_auth(struct wpa_driver_nl80211_data *drv,
 	event.external_auth.ssid_len = nla_len(tb[NL80211_ATTR_SSID]);
 	if (event.external_auth.ssid_len > SSID_MAX_LEN)
 		return;
-	os_memcpy(event.external_auth.ssid, nla_data(tb[NL80211_ATTR_SSID]),
-		  event.external_auth.ssid_len);
+	event.external_auth.ssid = nla_data(tb[NL80211_ATTR_SSID]);
 
-	os_memcpy(event.external_auth.bssid, nla_data(tb[NL80211_ATTR_BSSID]),
-		  ETH_ALEN);
+	event.external_auth.bssid = nla_data(tb[NL80211_ATTR_BSSID]);
 
 	wpa_printf(MSG_DEBUG,
 		   "nl80211: External auth action: %u, AKM: 0x%x",

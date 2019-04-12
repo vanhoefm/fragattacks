@@ -10820,11 +10820,12 @@ static int nl80211_send_external_auth_status(void *priv,
 	msg = nl80211_drv_msg(drv, 0, NL80211_CMD_EXTERNAL_AUTH);
 	if (!msg ||
 	    nla_put_u16(msg, NL80211_ATTR_STATUS_CODE, params->status) ||
-	    (params->ssid_len &&
+	    (params->ssid && params->ssid_len &&
 	     nla_put(msg, NL80211_ATTR_SSID, params->ssid_len, params->ssid)) ||
 	    (params->pmkid &&
 	     nla_put(msg, NL80211_ATTR_PMKID, PMKID_LEN, params->pmkid)) ||
-	    nla_put(msg, NL80211_ATTR_BSSID, ETH_ALEN, params->bssid))
+	    (params->bssid &&
+	     nla_put(msg, NL80211_ATTR_BSSID, ETH_ALEN, params->bssid)))
 		goto fail;
 	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
 	msg = NULL;

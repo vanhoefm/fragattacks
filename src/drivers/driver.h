@@ -2163,8 +2163,8 @@ struct external_auth {
 		EXT_AUTH_START,
 		EXT_AUTH_ABORT,
 	} action;
-	u8 bssid[ETH_ALEN];
-	u8 ssid[SSID_MAX_LEN];
+	const u8 *bssid;
+	const u8 *ssid;
 	size_t ssid_len;
 	unsigned int key_mgmt_suite;
 	u16 status;

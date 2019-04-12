@@ -965,10 +965,9 @@ static void sme_send_external_auth_status(struct wpa_supplicant *wpa_s,
 
 	os_memset(&params, 0, sizeof(params));
 	params.status = status;
-	os_memcpy(params.ssid, wpa_s->sme.ext_auth.ssid,
-		  wpa_s->sme.ext_auth.ssid_len);
+	params.ssid = wpa_s->sme.ext_auth.ssid;
 	params.ssid_len = wpa_s->sme.ext_auth.ssid_len;
-	os_memcpy(params.bssid, wpa_s->sme.ext_auth.bssid, ETH_ALEN);
+	params.bssid = wpa_s->sme.ext_auth.bssid;
 	wpa_drv_send_external_auth_status(wpa_s, &params);
 }
 
@@ -978,7 +977,7 @@ static void sme_handle_external_auth_start(struct wpa_supplicant *wpa_s,
 {
 	struct wpa_ssid *ssid;
 	size_t ssid_str_len = data->external_auth.ssid_len;
-	u8 *ssid_str = data->external_auth.ssid;
+	const u8 *ssid_str = data->external_auth.ssid;
 
 	/* Get the SSID conf from the ssid string obtained */
 	for (ssid = wpa_s->conf->ssid; ssid; ssid = ssid->next) {
