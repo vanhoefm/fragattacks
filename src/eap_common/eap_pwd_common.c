@@ -85,10 +85,23 @@ static int eap_pwd_kdf(const u8 *key, size_t keylen, const u8 *label,
 }
 
 
+static int eap_pwd_suitable_group(u16 num)
+{
+	/* Do not allow ECC groups with prime under 256 bits based on guidance
+	 * for the similar design in SAE. */
+	return num == 19 || num == 20 || num == 21 ||
+		num == 28 || num == 29 || num == 30;
+}
+
+
 EAP_PWD_group * get_eap_pwd_group(u16 num)
 {
 	EAP_PWD_group *grp;
 
+	if (!eap_pwd_suitable_group(num)) {
+		wpa_printf(MSG_INFO, "EAP-pwd: unsuitable group %u", num);
+		return NULL;
+	}
 	grp = os_zalloc(sizeof(EAP_PWD_group));
 	if (!grp)
 		return NULL;
