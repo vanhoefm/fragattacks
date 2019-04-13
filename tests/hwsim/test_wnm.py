@@ -27,6 +27,7 @@ def clear_regdom_state(dev, hapd, hapd2):
             hapd.request("DISABLE")
         if hapd2:
             hapd2.request("DISABLE")
+        subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].disconnect_and_stop_scan()
         subprocess.call(['iw', 'reg', 'set', '00'])
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
