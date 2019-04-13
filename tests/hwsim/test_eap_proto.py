@@ -6783,10 +6783,19 @@ def test_eap_proto_pwd_errors(dev, apdev):
     dev[0].request("REMOVE_NETWORK all")
     dev[0].wait_disconnected()
 
-    funcs = ["hash_nt_password_hash;eap_pwd_perform_commit_exchange",
-             "crypto_hash_finish;eap_pwd_kdf"]
-    for func in funcs:
-        with fail_test(dev[0], 1, func):
+    funcs = [(1, "hash_nt_password_hash;eap_pwd_perform_commit_exchange"),
+             (1, "crypto_hash_finish;eap_pwd_kdf"),
+             (3, "crypto_bignum_init;compute_password_element"),
+             (4, "crypto_bignum_init;compute_password_element"),
+             (1, "crypto_bignum_init_set;compute_password_element"),
+             (2, "crypto_bignum_init_set;compute_password_element"),
+             (3, "crypto_bignum_init_set;compute_password_element"),
+             (1, "crypto_bignum_to_bin;compute_password_element"),
+             (1, "crypto_ec_point_compute_y_sqr;compute_password_element"),
+             (1, "crypto_ec_point_solve_y_coord;compute_password_element"),
+             (1, "crypto_bignum_sub;compute_password_element")]
+    for count, func in funcs:
+        with fail_test(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
                            eap="PWD", identity="pwd-hash",
                            password_hex="hash:e3718ece8ab74792cbbfffd316d2d19a",
