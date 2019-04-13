@@ -1054,6 +1054,9 @@ int crypto_hash_finish(struct crypto_hash *ctx, u8 *mac, size_t *len)
 	HMAC_CTX_free(ctx->ctx);
 	bin_clear_free(ctx, sizeof(*ctx));
 
+	if (TEST_FAIL())
+		return -1;
+
 	if (res == 1) {
 		*len = mdlen;
 		return 0;

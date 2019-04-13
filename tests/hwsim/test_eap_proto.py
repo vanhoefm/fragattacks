@@ -6783,17 +6783,19 @@ def test_eap_proto_pwd_errors(dev, apdev):
     dev[0].request("REMOVE_NETWORK all")
     dev[0].wait_disconnected()
 
-    with fail_test(dev[0], 1,
-                   "hash_nt_password_hash;eap_pwd_perform_commit_exchange"):
-        dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
-                       eap="PWD", identity="pwd-hash",
-                       password_hex="hash:e3718ece8ab74792cbbfffd316d2d19a",
-                       wait_connect=False)
-        ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"], timeout=10)
-        if ev is None:
-            raise Exception("No EAP-Failure reported")
-        dev[0].request("REMOVE_NETWORK all")
-        dev[0].wait_disconnected()
+    funcs = ["hash_nt_password_hash;eap_pwd_perform_commit_exchange",
+             "crypto_hash_finish;eap_pwd_kdf"]
+    for func in funcs:
+        with fail_test(dev[0], 1, func):
+            dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
+                           eap="PWD", identity="pwd-hash",
+                           password_hex="hash:e3718ece8ab74792cbbfffd316d2d19a",
+                           wait_connect=False)
+            ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"], timeout=10)
+            if ev is None:
+                raise Exception("No EAP-Failure reported")
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].wait_disconnected()
 
     params = {"ssid": "eap-test2", "wpa": "2", "wpa_key_mgmt": "WPA-EAP",
               "rsn_pairwise": "CCMP", "ieee8021x": "1",

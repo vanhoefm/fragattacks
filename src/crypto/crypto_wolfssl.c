@@ -953,6 +953,8 @@ int crypto_hash_finish(struct crypto_hash *ctx, u8 *mac, size_t *len)
 	ret = 0;
 done:
 	bin_clear_free(ctx, sizeof(*ctx));
+	if (TEST_FAIL())
+		return -1;
 	return ret;
 }
 
