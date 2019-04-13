@@ -6142,12 +6142,14 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Missing payload")
+            # EAP-pwd: Got a frame but pos is not NULL and len is 0
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'], 4 + 1,
                                EAP_TYPE_PWD)
 
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Missing Total-Length field")
+            # EAP-pwd: Frame too short to contain Total-Length field
             payload = struct.pack("B", 0x80)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6155,6 +6157,7 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Too large Total-Length")
+            # EAP-pwd: Incoming fragments whose total length = 65535
             payload = struct.pack(">BH", 0x80, 65535)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6163,12 +6166,16 @@ def test_eap_proto_pwd(dev, apdev):
         if ctx['num'] == idx:
             eap_proto_pwd_test_wait = True
             logger.info("Test: First fragment")
+            # EAP-pwd: Incoming fragments whose total length = 10
+            # EAP-pwd: ACKing a 0 byte fragment
             payload = struct.pack(">BH", 0xc0, 10)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Unexpected Total-Length value in the second fragment")
+            # EAP-pwd: Incoming fragments whose total length = 0
+            # EAP-pwd: Unexpected new fragment start when previous fragment is still in use
             payload = struct.pack(">BH", 0x80, 0)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6176,6 +6183,9 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: First and only fragment")
+            # EAP-pwd: Incoming fragments whose total length = 0
+            # EAP-pwd: processing frame: exch 0, len 0
+            # EAP-pwd: Ignoring message with unknown opcode 128
             payload = struct.pack(">BH", 0x80, 0)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6183,6 +6193,9 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: First and only fragment with extra data")
+            # EAP-pwd: Incoming fragments whose total length = 0
+            # EAP-pwd: processing frame: exch 0, len 1
+            # EAP-pwd: Ignoring message with unknown opcode 128
             payload = struct.pack(">BHB", 0x80, 0, 0)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6191,12 +6204,15 @@ def test_eap_proto_pwd(dev, apdev):
         if ctx['num'] == idx:
             eap_proto_pwd_test_wait = True
             logger.info("Test: First fragment")
+            # EAP-pwd: Incoming fragments whose total length = 2
+            # EAP-pwd: ACKing a 1 byte fragment
             payload = struct.pack(">BHB", 0xc0, 2, 1)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Extra data in the second fragment")
+            # EAP-pwd: Buffer overflow attack detected (3 vs. 1)!
             payload = struct.pack(">BBB", 0x0, 2, 3)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6204,6 +6220,8 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Too short id exchange")
+            # EAP-pwd: processing frame: exch 1, len 0
+            # EAP-PWD: PWD-ID-Req -> FAILURE
             payload = struct.pack(">B", 0x01)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6211,6 +6229,8 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Unsupported rand func in id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=0 random=0 prf=0 prep=0
+            # EAP-PWD: PWD-ID-Req -> FAILURE
             payload = struct.pack(">BHBBLB", 0x01, 0, 0, 0, 0, 0)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6218,6 +6238,8 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Unsupported prf in id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=0 prep=0
+            # EAP-PWD: PWD-ID-Req -> FAILURE
             payload = struct.pack(">BHBBLB", 0x01, 19, 1, 0, 0, 0)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6225,6 +6247,9 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Unsupported password pre-processing technique in id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=255
+            # EAP-PWD: Unsupported password pre-processing technique (Prep=255)
+            # EAP-PWD: PWD-ID-Req -> FAILURE
             payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 255)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6233,12 +6258,15 @@ def test_eap_proto_pwd(dev, apdev):
         if ctx['num'] == idx:
             eap_proto_pwd_test_wait = True
             logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=0
             payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 0)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Unexpected id exchange")
+            # EAP-pwd: processing frame: exch 1, len 9
+            # EAP-PWD: PWD-Commit-Req -> FAILURE
             payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 0)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6246,6 +6274,8 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Unexpected commit exchange")
+            # EAP-pwd: processing frame: exch 2, len 0
+            # EAP-PWD: PWD-ID-Req -> FAILURE
             payload = struct.pack(">B", 0x02)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6254,12 +6284,15 @@ def test_eap_proto_pwd(dev, apdev):
         if ctx['num'] == idx:
             eap_proto_pwd_test_wait = True
             logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=0
             payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 0)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
         idx += 1
         if ctx['num'] == idx:
-            logger.info("Test: Unexpected Commit payload length")
+            logger.info("Test: Unexpected Commit payload length (prep=None)")
+            # EAP-pwd commit request, password prep is NONE
+            # EAP-pwd: Unexpected Commit payload length 0 (expected 96)
             payload = struct.pack(">B", 0x02)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6268,12 +6301,14 @@ def test_eap_proto_pwd(dev, apdev):
         if ctx['num'] == idx:
             eap_proto_pwd_test_wait = True
             logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=0
             payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 0)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Commit payload with all zeros values --> Shared key at infinity")
+            # EAP-pwd: Invalid coordinate in element
             payload = struct.pack(">B", 0x02) + 96*b'\0'
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6282,6 +6317,7 @@ def test_eap_proto_pwd(dev, apdev):
         if ctx['num'] == idx:
             eap_proto_pwd_test_wait = True
             logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=0
             payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 0)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6289,6 +6325,7 @@ def test_eap_proto_pwd(dev, apdev):
         if ctx['num'] == idx:
             eap_proto_pwd_test_wait = True
             logger.info("Test: Commit payload with valid values")
+            # EAP-pwd commit request, password prep is NONE
             element = binascii.unhexlify("8dcab2862c5396839a6bac0c689ff03d962863108e7c275bbf1d6eedf634ee832a214db99f0d0a1a6317733eecdd97f0fc4cda19f57e1bb9bb9c8dcf8c60ba6f")
             scalar = binascii.unhexlify("450f31e058cf2ac2636a5d6e2b3c70b1fcc301957f0716e77f13aa69f9a2e5bd")
             payload = struct.pack(">B", 0x02) + element + scalar
@@ -6297,6 +6334,7 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Unexpected Confirm payload length 0")
+            # EAP-pwd: Unexpected Confirm payload length 0 (expected 32)
             payload = struct.pack(">B", 0x03)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6305,6 +6343,7 @@ def test_eap_proto_pwd(dev, apdev):
         if ctx['num'] == idx:
             eap_proto_pwd_test_wait = True
             logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=0
             payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 0)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6312,6 +6351,7 @@ def test_eap_proto_pwd(dev, apdev):
         if ctx['num'] == idx:
             eap_proto_pwd_test_wait = True
             logger.info("Test: Commit payload with valid values")
+            # EAP-pwd commit request, password prep is NONE
             element = binascii.unhexlify("8dcab2862c5396839a6bac0c689ff03d962863108e7c275bbf1d6eedf634ee832a214db99f0d0a1a6317733eecdd97f0fc4cda19f57e1bb9bb9c8dcf8c60ba6f")
             scalar = binascii.unhexlify("450f31e058cf2ac2636a5d6e2b3c70b1fcc301957f0716e77f13aa69f9a2e5bd")
             payload = struct.pack(">B", 0x02) + element + scalar
@@ -6320,6 +6360,7 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Confirm payload with incorrect value")
+            # EAP-PWD (peer): confirm did not verify
             payload = struct.pack(">B", 0x03) + 32*b'\0'
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
@@ -6327,7 +6368,189 @@ def test_eap_proto_pwd(dev, apdev):
         idx += 1
         if ctx['num'] == idx:
             logger.info("Test: Unexpected confirm exchange")
+            # EAP-pwd: processing frame: exch 3, len 0
+            # EAP-PWD: PWD-ID-Req -> FAILURE
             payload = struct.pack(">B", 0x03)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Unsupported password pre-processing technique SASLprep in id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=2
+            # EAP-PWD: Unsupported password pre-processing technique (Prep=2)
+            # EAP-PWD: PWD-ID-Req -> FAILURE
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 2)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        idx += 1
+        if ctx['num'] == idx:
+            eap_proto_pwd_test_wait = True
+            logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=1
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 1)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Unexpected Commit payload length (prep=MS)")
+            # EAP-pwd commit request, password prep is MS
+            # EAP-pwd: Unexpected Commit payload length 0 (expected 96)
+            payload = struct.pack(">B", 0x02)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        idx += 1
+        if ctx['num'] == idx:
+            eap_proto_pwd_test_wait = True
+            logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=3
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 3)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Unexpected Commit payload length (prep=ssha1)")
+            # EAP-pwd commit request, password prep is salted sha1
+            # EAP-pwd: Invalid Salt-len
+            payload = struct.pack(">B", 0x02)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        idx += 1
+        if ctx['num'] == idx:
+            eap_proto_pwd_test_wait = True
+            logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=3
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 3)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Unexpected Commit payload length (prep=ssha1)")
+            # EAP-pwd commit request, password prep is salted sha1
+            # EAP-pwd: Invalid Salt-len
+            payload = struct.pack(">BB", 0x02, 0)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        idx += 1
+        if ctx['num'] == idx:
+            eap_proto_pwd_test_wait = True
+            logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=3
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 3)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Unexpected Commit payload length (prep=ssha1)")
+            # EAP-pwd commit request, password prep is salted sha1
+            # EAP-pwd: Unexpected Commit payload length 1 (expected 98)
+            payload = struct.pack(">BB", 0x02, 1)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        idx += 1
+        if ctx['num'] == idx:
+            eap_proto_pwd_test_wait = True
+            logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=4
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 4)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Unexpected Commit payload length (prep=ssha256)")
+            # EAP-pwd commit request, password prep is salted sha256
+            # EAP-pwd: Invalid Salt-len
+            payload = struct.pack(">B", 0x02)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        idx += 1
+        if ctx['num'] == idx:
+            eap_proto_pwd_test_wait = True
+            logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=4
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 4)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Unexpected Commit payload length (prep=ssha256)")
+            # EAP-pwd commit request, password prep is salted sha256
+            # EAP-pwd: Invalid Salt-len
+            payload = struct.pack(">BB", 0x02, 0)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        idx += 1
+        if ctx['num'] == idx:
+            eap_proto_pwd_test_wait = True
+            logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=4
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 4)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Unexpected Commit payload length (prep=ssha256)")
+            # EAP-pwd commit request, password prep is salted sha256
+            # EAP-pwd: Unexpected Commit payload length 1 (expected 98)
+            payload = struct.pack(">BB", 0x02, 1)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        idx += 1
+        if ctx['num'] == idx:
+            eap_proto_pwd_test_wait = True
+            logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=5
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 5)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Unexpected Commit payload length (prep=ssha512)")
+            # EAP-pwd commit request, password prep is salted sha512
+            # EAP-pwd: Invalid Salt-len
+            payload = struct.pack(">B", 0x02)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        idx += 1
+        if ctx['num'] == idx:
+            eap_proto_pwd_test_wait = True
+            logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=5
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 5)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Unexpected Commit payload length (prep=ssha512)")
+            # EAP-pwd commit request, password prep is salted sha512
+            # EAP-pwd: Invalid Salt-len
+            payload = struct.pack(">BB", 0x02, 0)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+
+        idx += 1
+        if ctx['num'] == idx:
+            eap_proto_pwd_test_wait = True
+            logger.info("Test: Valid id exchange")
+            # EAP-PWD: Server EAP-pwd-ID proposal: group=19 random=1 prf=1 prep=5
+            payload = struct.pack(">BHBBLB", 0x01, 19, 1, 1, 0, 5)
+            return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
+                               4 + 1 + len(payload), EAP_TYPE_PWD) + payload
+        idx += 1
+        if ctx['num'] == idx:
+            logger.info("Test: Unexpected Commit payload length (prep=ssha512)")
+            # EAP-pwd commit request, password prep is salted sha512
+            # EAP-pwd: Unexpected Commit payload length 1 (expected 98)
+            payload = struct.pack(">BB", 0x02, 1)
             return struct.pack(">BBHB", EAP_CODE_REQUEST, ctx['id'],
                                4 + 1 + len(payload), EAP_TYPE_PWD) + payload
 
@@ -6366,10 +6589,12 @@ def test_eap_proto_pwd(dev, apdev):
             if not ok:
                 raise Exception("Expected EAP event not seen")
             if eap_proto_pwd_test_wait:
-                for k in range(10):
+                for k in range(20):
                     time.sleep(0.1)
                     if not eap_proto_pwd_test_wait:
                         break
+                if eap_proto_pwd_test_wait:
+                    raise Exception("eap_proto_pwd_test_wait not cleared")
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected(timeout=1)
             dev[0].dump_monitor()
