@@ -2848,12 +2848,24 @@ def test_ap_wpa2_eap_eke(dev, apdev):
         if ev is None:
             raise Exception("EAP success timed out")
         dev[0].wait_connected(timeout=10)
+    dev[0].dump_monitor()
 
     logger.info("Test failed algorithm negotiation")
     dev[0].set_network_quoted(id, "phase1", "dhgroup=9 encr=9 prf=9 mac=9")
     ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"], timeout=10)
     if ev is None:
         raise Exception("EAP failure timed out")
+    dev[0].dump_monitor()
+
+    logger.info("Test unsupported algorithm proposals")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].dump_monitor()
+    eap_connect(dev[0], hapd, "EKE", "eke user", password="hello",
+                phase1="dhgroup=2 encr=1 prf=1 mac=1", expect_failure=True)
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].dump_monitor()
+    eap_connect(dev[0], hapd, "EKE", "eke user", password="hello",
+                phase1="dhgroup=1 encr=1 prf=1 mac=1", expect_failure=True)
 
     logger.info("Negative test with incorrect password")
     dev[0].request("REMOVE_NETWORK all")
