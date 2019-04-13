@@ -511,8 +511,8 @@ def main():
                         country = d.get_driver_status_field("country")
                         if country != "00":
                             d.dump_monitor()
-                            logger.info("Country code not reset back to 00: is " + country)
-                            print("Country code not reset back to 00: is " + country)
+                            logger.info(d.ifname + ": Country code not reset back to 00: is " + country)
+                            print(d.ifname + ": Country code not reset back to 00: is " + country)
                             result = "FAIL"
 
                             # Try to wait for cfg80211 regulatory state to
@@ -524,8 +524,8 @@ def main():
                                 if country == "00":
                                     break
                             if country == "00":
-                                print("Country code cleared back to 00")
-                                logger.info("Country code cleared back to 00")
+                                print(d.ifname + ": Country code cleared back to 00")
+                                logger.info(d.ifname + ": Country code cleared back to 00")
                             else:
                                 print("Country code remains set - expect following test cases to fail")
                                 logger.info("Country code remains set - expect following test cases to fail")
