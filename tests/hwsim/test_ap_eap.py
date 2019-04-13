@@ -2760,14 +2760,20 @@ def test_ap_wpa2_eap_pwd_invalid_group(dev, apdev):
     params = {"ssid": "test-wpa2-eap", "wpa": "2", "wpa_key_mgmt": "WPA-EAP",
               "rsn_pairwise": "CCMP", "ieee8021x": "1",
               "eap_server": "1", "eap_user_file": "auth_serv/eap_user.conf"}
-    params['pwd_group'] = "0"
-    hostapd.add_ap(apdev[0], params)
-    dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="PWD",
-                   identity="pwd user", password="secret password",
-                   scan_freq="2412", wait_connect=False)
-    ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"])
-    if ev is None:
-        raise Exception("Timeout on EAP failure report")
+    for i in [0, 25, 26, 27]:
+        logger.info("Group %d" % i)
+        params['pwd_group'] = str(i)
+        hapd = hostapd.add_ap(apdev[0], params)
+        dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="PWD",
+                       identity="pwd user", password="secret password",
+                       scan_freq="2412", wait_connect=False)
+        ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"])
+        if ev is None:
+            raise Exception("Timeout on EAP failure report (group %d)" % i)
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].wait_disconnected()
+        dev[0].dump_monitor()
+        hapd.disable()
 
 def test_ap_wpa2_eap_pwd_as_frag(dev, apdev):
     """WPA2-Enterprise connection using EAP-pwd with server fragmentation"""
