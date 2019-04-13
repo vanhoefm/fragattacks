@@ -648,7 +648,6 @@ eap_pwd_process_commit_resp(struct eap_sm *sm, struct eap_pwd_data *data,
 			    const u8 *payload, size_t payload_len)
 {
 	const u8 *ptr;
-	struct crypto_bignum *cofactor = NULL;
 	struct crypto_ec_point *K = NULL;
 	int res = 0;
 	size_t prime_len, order_len;
@@ -667,17 +666,10 @@ eap_pwd_process_commit_resp(struct eap_sm *sm, struct eap_pwd_data *data,
 	}
 
 	data->k = crypto_bignum_init();
-	cofactor = crypto_bignum_init();
 	K = crypto_ec_point_init(data->grp->group);
-	if (!data->k || !cofactor || !K) {
+	if (!data->k || !K) {
 		wpa_printf(MSG_INFO, "EAP-PWD (server): peer data allocation "
 			   "fail");
-		goto fin;
-	}
-
-	if (crypto_ec_cofactor(data->grp->group, cofactor) < 0) {
-		wpa_printf(MSG_INFO, "EAP-PWD (server): unable to get "
-			   "cofactor for curve");
 		goto fin;
 	}
 
@@ -718,18 +710,8 @@ eap_pwd_process_commit_resp(struct eap_sm *sm, struct eap_pwd_data *data,
 		goto fin;
 	}
 
-	/* ensure that the shared key isn't in a small sub-group */
-	if (!crypto_bignum_is_one(cofactor)) {
-		if (crypto_ec_point_mul(data->grp->group, K, cofactor,
-					K) != 0) {
-			wpa_printf(MSG_INFO, "EAP-PWD (server): cannot "
-				   "multiply shared key point by order!\n");
-			goto fin;
-		}
-	}
-
 	/*
-	 * This check is strictly speaking just for the case above where
+	 * This check is strictly speaking just for the case where
 	 * co-factor > 1 but it was suggested that even though this is probably
 	 * never going to happen it is a simple and safe check "just to be
 	 * sure" so let's be safe.
@@ -748,7 +730,6 @@ eap_pwd_process_commit_resp(struct eap_sm *sm, struct eap_pwd_data *data,
 
 fin:
 	crypto_ec_point_deinit(K, 1);
-	crypto_bignum_deinit(cofactor, 1);
 
 	if (res)
 		eap_pwd_state(data, PWD_Confirm_Req);

@@ -309,7 +309,7 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 				const u8 *payload, size_t payload_len)
 {
 	struct crypto_ec_point *K = NULL;
-	struct crypto_bignum *mask = NULL, *cofactor = NULL;
+	struct crypto_bignum *mask = NULL;
 	const u8 *ptr = payload;
 	u8 *scalar, *element;
 	size_t prime_len, order_len;
@@ -527,18 +527,11 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 
 	data->private_value = crypto_bignum_init();
 	data->my_element = crypto_ec_point_init(data->grp->group);
-	cofactor = crypto_bignum_init();
 	data->my_scalar = crypto_bignum_init();
 	mask = crypto_bignum_init();
-	if (!data->private_value || !data->my_element || !cofactor ||
+	if (!data->private_value || !data->my_element ||
 	    !data->my_scalar || !mask) {
 		wpa_printf(MSG_INFO, "EAP-PWD (peer): scalar allocation fail");
-		goto fin;
-	}
-
-	if (crypto_ec_cofactor(data->grp->group, cofactor) < 0) {
-		wpa_printf(MSG_INFO, "EAP-pwd (peer): unable to get cofactor "
-			   "for curve");
 		goto fin;
 	}
 
@@ -595,17 +588,8 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 		goto fin;
 	}
 
-	/* ensure that the shared key isn't in a small sub-group */
-	if (!crypto_bignum_is_one(cofactor)) {
-		if (crypto_ec_point_mul(data->grp->group, K, cofactor, K) < 0) {
-			wpa_printf(MSG_INFO, "EAP-PWD (peer): cannot multiply "
-				   "shared key point by order");
-			goto fin;
-		}
-	}
-
 	/*
-	 * This check is strictly speaking just for the case above where
+	 * This check is strictly speaking just for the case where
 	 * co-factor > 1 but it was suggested that even though this is probably
 	 * never going to happen it is a simple and safe check "just to be
 	 * sure" so let's be safe.
@@ -644,7 +628,6 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 
 fin:
 	crypto_bignum_deinit(mask, 1);
-	crypto_bignum_deinit(cofactor, 1);
 	crypto_ec_point_deinit(K, 1);
 	if (data->outbuf == NULL)
 		eap_pwd_state(data, FAILURE);

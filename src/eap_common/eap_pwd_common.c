@@ -151,7 +151,7 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 	u8 found = 0; /* 0 (false) or 0xff (true) to be used as const_time_*
 		       * mask */
 	size_t primebytelen = 0, primebitlen;
-	struct crypto_bignum *x_candidate = NULL, *cofactor = NULL;
+	struct crypto_bignum *x_candidate = NULL;
 	const struct crypto_bignum *prime;
 	u8 mask, found_ctr = 0, is_odd = 0;
 
@@ -161,21 +161,15 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 	os_memset(x_bin, 0, sizeof(x_bin));
 
 	prime = crypto_ec_get_prime(grp->group);
-	cofactor = crypto_bignum_init();
 	grp->pwe = crypto_ec_point_init(grp->group);
 	tmp1 = crypto_bignum_init();
 	pm1 = crypto_bignum_init();
 	one = crypto_bignum_init_set((const u8 *) "\x01", 1);
-	if (!cofactor || !grp->pwe || !tmp1 || !pm1 || !one) {
+	if (!grp->pwe || !tmp1 || !pm1 || !one) {
 		wpa_printf(MSG_INFO, "EAP-pwd: unable to create bignums");
 		goto fail;
 	}
 
-	if (crypto_ec_cofactor(grp->group, cofactor) < 0) {
-		wpa_printf(MSG_INFO, "EAP-pwd: unable to get cofactor for "
-			   "curve");
-		goto fail;
-	}
 	primebitlen = crypto_ec_prime_len_bits(grp->group);
 	primebytelen = crypto_ec_prime_len(grp->group);
 	if ((prfbuf = os_malloc(primebytelen)) == NULL) {
@@ -340,19 +334,6 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 		goto fail;
 	}
 
-	if (!crypto_bignum_is_one(cofactor)) {
-		/* make sure the point is not in a small sub-group */
-		if (crypto_ec_point_mul(grp->group, grp->pwe, cofactor,
-					grp->pwe) != 0) {
-			wpa_printf(MSG_INFO,
-				   "EAP-pwd: cannot multiply generator by order");
-			goto fail;
-		}
-		if (crypto_ec_point_is_at_infinity(grp->group, grp->pwe)) {
-			wpa_printf(MSG_INFO, "EAP-pwd: point is at infinity");
-			goto fail;
-		}
-	}
 	wpa_printf(MSG_DEBUG, "EAP-pwd: found a PWE in %02d tries", found_ctr);
 
 	if (0) {
@@ -362,7 +343,6 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 		ret = 1;
 	}
 	/* cleanliness and order.... */
-	crypto_bignum_deinit(cofactor, 1);
 	crypto_bignum_deinit(x_candidate, 1);
 	crypto_bignum_deinit(pm1, 0);
 	crypto_bignum_deinit(tmp1, 1);
@@ -464,7 +444,6 @@ struct crypto_ec_point * eap_pwd_get_element(EAP_PWD_group *group,
 	struct crypto_ec_point *element;
 	const struct crypto_bignum *prime;
 	size_t prime_len;
-	struct crypto_bignum *cofactor = NULL;
 
 	prime = crypto_ec_get_prime(group->group);
 	prime_len = crypto_ec_prime_len(group->group);
@@ -489,35 +468,7 @@ struct crypto_ec_point * eap_pwd_get_element(EAP_PWD_group *group,
 		goto fail;
 	}
 
-	cofactor = crypto_bignum_init();
-	if (!cofactor || crypto_ec_cofactor(group->group, cofactor) < 0) {
-		wpa_printf(MSG_INFO,
-			   "EAP-pwd: Unable to get cofactor for curve");
-		goto fail;
-	}
-
-	if (!crypto_bignum_is_one(cofactor)) {
-		struct crypto_ec_point *point;
-		int ok = 1;
-
-		/* check to ensure peer's element is not in a small sub-group */
-		point = crypto_ec_point_init(group->group);
-		if (!point ||
-		    crypto_ec_point_mul(group->group, element,
-					cofactor, point) != 0 ||
-		    crypto_ec_point_is_at_infinity(group->group, point))
-			ok = 0;
-		crypto_ec_point_deinit(point, 0);
-
-		if (!ok) {
-			wpa_printf(MSG_INFO,
-				   "EAP-pwd: Small sub-group check on peer element failed");
-			goto fail;
-		}
-	}
-
 out:
-	crypto_bignum_deinit(cofactor, 0);
 	return element;
 fail:
 	crypto_ec_point_deinit(element, 0);
