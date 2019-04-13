@@ -704,14 +704,6 @@ struct crypto_ec * crypto_ec_init(int group);
 void crypto_ec_deinit(struct crypto_ec *e);
 
 /**
- * crypto_ec_cofactor - Set the cofactor into the big number
- * @e: EC context from crypto_ec_init()
- * @cofactor: Cofactor of curve.
- * Returns: 0 on success, -1 on failure
- */
-int crypto_ec_cofactor(struct crypto_ec *e, struct crypto_bignum *cofactor);
-
-/**
  * crypto_ec_prime_len - Get length of the prime in octets
  * @e: EC context from crypto_ec_init()
  * Returns: Length of the prime defining the group

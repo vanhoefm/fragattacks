@@ -1352,16 +1352,6 @@ void crypto_ec_deinit(struct crypto_ec* e)
 }
 
 
-int crypto_ec_cofactor(struct crypto_ec *e, struct crypto_bignum *cofactor)
-{
-	if (!e || !cofactor)
-		return -1;
-
-	mp_set((mp_int *) cofactor, e->key.dp->cofactor);
-	return 0;
-}
-
-
 struct crypto_ec_point * crypto_ec_point_init(struct crypto_ec *e)
 {
 	if (TEST_FAIL())

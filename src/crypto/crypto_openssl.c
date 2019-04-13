@@ -1636,13 +1636,6 @@ void crypto_ec_deinit(struct crypto_ec *e)
 }
 
 
-int crypto_ec_cofactor(struct crypto_ec *e, struct crypto_bignum *cofactor)
-{
-	return EC_GROUP_get_cofactor(e->group, (BIGNUM *) cofactor,
-				     e->bnctx) == 0 ? -1 : 0;
-}
-
-
 struct crypto_ec_point * crypto_ec_point_init(struct crypto_ec *e)
 {
 	if (TEST_FAIL())
