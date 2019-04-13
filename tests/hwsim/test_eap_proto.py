@@ -6894,7 +6894,8 @@ def test_eap_proto_pwd_errors(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
 
-    funcs = ["eap_pwd_getkey", "eap_pwd_get_emsk"]
+    funcs = ["eap_pwd_getkey", "eap_pwd_get_emsk",
+             "=wpabuf_alloc;eap_pwd_perform_commit_exchange"]
     for func in funcs:
         with alloc_fail(dev[0], 1, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
@@ -7009,6 +7010,15 @@ def test_eap_proto_pwd_errors(dev, apdev):
     dev[0].wait_disconnected()
 
     funcs = [(1, "hash_nt_password_hash;eap_pwd_perform_commit_exchange"),
+             (1, "=crypto_bignum_init;eap_pwd_perform_commit_exchange"),
+             (1, "=crypto_ec_point_init;eap_pwd_perform_commit_exchange"),
+             (2, "=crypto_ec_point_init;eap_pwd_perform_commit_exchange"),
+             (1, "=crypto_ec_point_mul;eap_pwd_perform_commit_exchange"),
+             (2, "=crypto_ec_point_mul;eap_pwd_perform_commit_exchange"),
+             (3, "=crypto_ec_point_mul;eap_pwd_perform_commit_exchange"),
+             (1, "=crypto_ec_point_add;eap_pwd_perform_commit_exchange"),
+             (1, "=crypto_ec_point_invert;eap_pwd_perform_commit_exchange"),
+             (1, "=crypto_ec_point_to_bin;eap_pwd_perform_commit_exchange"),
              (1, "crypto_hash_finish;eap_pwd_kdf"),
              (1, "crypto_ec_point_from_bin;eap_pwd_get_element"),
              (3, "crypto_bignum_init;compute_password_element"),
