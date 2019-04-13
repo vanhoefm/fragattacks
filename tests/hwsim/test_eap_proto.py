@@ -6785,6 +6785,7 @@ def test_eap_proto_pwd_errors(dev, apdev):
 
     funcs = [(1, "hash_nt_password_hash;eap_pwd_perform_commit_exchange"),
              (1, "crypto_hash_finish;eap_pwd_kdf"),
+             (1, "crypto_ec_point_from_bin;eap_pwd_get_element"),
              (3, "crypto_bignum_init;compute_password_element"),
              (4, "crypto_bignum_init;compute_password_element"),
              (1, "crypto_bignum_init_set;compute_password_element"),
