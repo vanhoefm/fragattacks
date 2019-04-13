@@ -5037,6 +5037,9 @@ int tls_global_set_params(void *tls_ctx,
 		return -1;
 #else /* OPENSSL_IS_BORINGSSL || < 1.0.2 */
 #ifndef OPENSSL_NO_EC
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+		SSL_CTX_set_ecdh_auto(ssl_ctx, 1);
+#endif
 		if (SSL_CTX_set1_curves_list(ssl_ctx,
 					     params->openssl_ecdh_curves) !=
 		    1) {
