@@ -6895,7 +6895,8 @@ def test_eap_proto_pwd_errors(dev, apdev):
         dev[0].wait_disconnected()
 
     funcs = ["eap_pwd_getkey", "eap_pwd_get_emsk",
-             "=wpabuf_alloc;eap_pwd_perform_commit_exchange"]
+             "=wpabuf_alloc;eap_pwd_perform_commit_exchange",
+             "=wpabuf_alloc;eap_pwd_perform_confirm_exchange"]
     for func in funcs:
         with alloc_fail(dev[0], 1, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
