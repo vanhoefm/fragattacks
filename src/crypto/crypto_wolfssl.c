@@ -1085,6 +1085,8 @@ int crypto_bignum_rand(struct crypto_bignum *r, const struct crypto_bignum *m)
 	int ret = 0;
 	WC_RNG rng;
 
+	if (TEST_FAIL())
+		return -1;
 	if (wc_InitRng(&rng) != 0)
 		return -1;
 	if (mp_rand_prime((mp_int *) r,
