@@ -307,6 +307,7 @@ void nl80211_mark_disconnected(struct wpa_driver_nl80211_data *drv)
 		os_memcpy(drv->prev_bssid, drv->bssid, ETH_ALEN);
 	drv->associated = 0;
 	os_memset(drv->bssid, 0, ETH_ALEN);
+	drv->first_bss->freq = 0;
 }
 
 
