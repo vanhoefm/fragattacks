@@ -1814,6 +1814,7 @@ def test_wnm_bss_tm_ap_proto(dev, apdev):
              "0a1a",
              "0a1a00",
              "0a1a0000",
+             "0a0c016015007f0f000000000000000000000000000000000000",
              "0aff"]
     for t in tests:
         if "OK" not in hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + hdr + t):
@@ -1892,3 +1893,24 @@ def test_wnm_coloc_intf_reporting(dev, apdev):
     finally:
         dev[0].set("coloc_intf_reporting", "0")
         dev[0].set("coloc_intf_elems", "")
+
+def test_wnm_coloc_intf_reporting_errors(dev, apdev):
+    """WNM Collocated Interference Reporting errors"""
+    hapd = start_wnm_ap(apdev[0], bss_transition=False,
+                        coloc_intf_reporting=True)
+    bssid = hapd.own_addr()
+    dev[0].set("coloc_intf_reporting", "1")
+    dev[0].connect("test-wnm", key_mgmt="NONE", scan_freq="2412")
+    addr = dev[0].own_addr()
+    if "FAIL" not in hapd.request("COLOC_INTF_REQ %s 4 5" % addr):
+        raise Exception("Invalid Collocated Interference Request accepted")
+    hdr = "d0003a01" + bssid.replace(':', '') + addr.replace(':', '') + bssid.replace(':', '') + "1000"
+    hapd.set("ext_mgmt_frame_handling", "1")
+    tests = ["0a0c016015007f0f000000000000000000000000000000000000",
+             "0a0c"]
+    with alloc_fail(hapd, 1, "ieee802_11_rx_wnm_coloc_intf_report"):
+        for t in tests:
+            if "OK" not in hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + hdr + t):
+                raise Exception("MGMT_RX_PROCESS failed")
+
+    hapd.set("ext_mgmt_frame_handling", "0")
