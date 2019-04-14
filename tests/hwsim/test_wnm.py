@@ -418,6 +418,31 @@ def test_wnm_sleep_mode_rsn_badocv(dev, apdev):
     if ev is None:
         raise Exception("STA did not report bad OCI element")
 
+def test_wnm_sleep_mode_rsn_ocv_failure(dev, apdev):
+    """WNM Sleep Mode - RSN with OCV - local failure"""
+    params = hostapd.wpa2_params("test-wnm-rsn", "12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    params["ocv"] = "1"
+    params["time_advertisement"] = "2"
+    params["time_zone"] = "EST5"
+    params["wnm_sleep_mode"] = "1"
+    params["bss_transition"] = "1"
+    try:
+        hapd = hostapd.add_ap(apdev[0], params)
+    except Exception as e:
+        if "Failed to set hostapd parameter ocv" in str(e):
+            raise HwsimSkip("OCV not supported")
+        raise
+
+    dev[0].connect("test-wnm-rsn", psk="12345678", ieee80211w="2", ocv="1",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
+    # Failed to allocate buffer for OCI element in WNM-Sleep Mode frame
+    with alloc_fail(hapd, 2, "ieee802_11_send_wnmsleep_resp"):
+            if "OK" not in dev[0].request("WNM_SLEEP enter"):
+                    raise Exception("WNM_SLEEP failed")
+            wait_fail_trigger(hapd, "GET_ALLOC_FAIL")
+
 def test_wnm_sleep_mode_rsn_pmf_key_workaround(dev, apdev):
     """WNM Sleep Mode - RSN with PMF and GTK/IGTK workaround"""
     params = hostapd.wpa2_params("test-wnm-rsn", "12345678")
