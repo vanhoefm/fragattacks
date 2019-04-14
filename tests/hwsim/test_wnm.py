@@ -837,6 +837,33 @@ def test_wnm_bss_tm(dev, apdev):
     finally:
         clear_regdom_state(dev, hapd, hapd2)
 
+def test_wnm_bss_tm_steering_timeout(dev, apdev):
+    """WNM BSS Transition Management and steering timeout"""
+    hapd = start_wnm_ap(apdev[0])
+    id = dev[0].connect("test-wnm", key_mgmt="NONE", scan_freq="2412")
+    hapd2 = start_wnm_ap(apdev[1])
+    dev[0].scan_for_bss(apdev[1]['bssid'], 2412)
+    hapd2.disable()
+    addr = dev[0].own_addr()
+    if "OK" not in hapd.request("BSS_TM_REQ " + addr + " pref=1 abridged=1 valid_int=255 neighbor=" + apdev[1]['bssid'] + ",0x0000,81,1,7,0301ff"):
+        raise Exception("BSS_TM_REQ command failed")
+    ev = hapd.wait_event(['BSS-TM-RESP'], timeout=5)
+    if ev is None:
+        raise Exception("No BSS Transition Management Response")
+    if "status_code=0" not in ev:
+        raise Exception("BSS transition request was not accepted: " + ev)
+    # Wait for the ap_sta_reset_steer_flag_timer timeout to occur
+    # "Reset steering flag for STA 02:00:00:00:00:00"
+    time.sleep(2.1)
+
+    ev = dev[0].wait_event(["Trying to authenticate"], timeout=5)
+    if ev is None:
+        raise Exception("No authentication attempt seen")
+    if hapd2.own_addr() not in ev:
+        raise Exception("Unexpected authentication target: " + ev)
+    # Wait for return back to the previous AP
+    dev[0].wait_connected()
+
 def test_wnm_bss_tm_errors(dev, apdev):
     """WNM BSS Transition Management errors"""
     hapd = start_wnm_ap(apdev[0])
