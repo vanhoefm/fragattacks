@@ -267,8 +267,6 @@ static void mlme_event_assoc(struct wpa_driver_nl80211_data *drv,
 		event.assoc_info.req_ies_len = nla_len(req_ie);
 	}
 
-	event.assoc_info.freq = drv->assoc_freq;
-
 	/* When this association was initiated outside of wpa_supplicant,
 	 * drv->ssid needs to be set here to satisfy later checking. */
 	ssid_len = nl80211_get_assoc_ssid(drv, drv->ssid);
@@ -278,6 +276,9 @@ static void mlme_event_assoc(struct wpa_driver_nl80211_data *drv,
 			   "nl80211: Set drv->ssid based on scan res info to '%s'",
 			   wpa_ssid_txt(drv->ssid, drv->ssid_len));
 	}
+
+	event.assoc_info.freq = drv->assoc_freq;
+	drv->first_bss->freq = drv->assoc_freq;
 
 	nl80211_parse_wmm_params(wmm, &event.assoc_info.wmm_params);
 
@@ -408,6 +409,7 @@ static void mlme_event_connect(struct wpa_driver_nl80211_data *drv,
 	}
 
 	event.assoc_info.freq = nl80211_get_assoc_freq(drv);
+	drv->first_bss->freq = drv->assoc_freq;
 
 	if ((!ssid || ssid[1] == 0 || ssid[1] > 32) &&
 	    (ssid_len = nl80211_get_assoc_ssid(drv, drv->ssid)) > 0) {
