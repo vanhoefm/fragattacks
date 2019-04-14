@@ -37,7 +37,7 @@ def start_wnm_ap(apdev, bss_transition=True, time_adv=False, ssid=None,
                  wnm_sleep_mode=False, wnm_sleep_mode_no_keys=False, rsn=False,
                  ocv=False, ap_max_inactivity=0, coloc_intf_reporting=False,
                  hw_mode=None, channel=None, country_code=None, country3=None,
-                 pmf=True, passphrase=None, ht=True, vht=False):
+                 pmf=True, passphrase=None, ht=True, vht=False, mbo=False):
     if rsn:
         if not ssid:
             ssid = "test-wnm-rsn"
@@ -79,6 +79,8 @@ def start_wnm_ap(apdev, bss_transition=True, time_adv=False, ssid=None,
         params['ieee80211ac'] = "1"
         params["vht_oper_chwidth"] = "0"
         params["vht_oper_centr_freq_seg0_idx"] = "0"
+    if mbo:
+        params["mbo"] = "1"
     hapd = hostapd.add_ap(apdev, params)
     if rsn:
         Wlantest.setup(hapd)
@@ -1648,6 +1650,25 @@ def test_wnm_bss_transition_mgmt_query(dev, apdev):
     ev = hapd.wait_event(["BSS-TM-RESP"], timeout=5)
     if ev is None:
         raise Exception("No BSS Transition Management Response frame seen")
+
+def test_wnm_bss_transition_mgmt_query_disabled_on_ap(dev, apdev):
+    """WNM BSS Transition Management query - TM disabled on AP"""
+    hapd = start_wnm_ap(apdev[0], bss_transition=False)
+    dev[0].connect("test-wnm", key_mgmt="NONE", scan_freq="2412")
+    # Ignore BSS Transition Management Query from 02:00:00:00:00:00 since BSS Transition Management is disabled
+    dev[0].request("WNM_BSS_QUERY 0 list")
+    ev = hapd.wait_event(["BSS-TM-RESP"], timeout=0.1)
+    if ev is not None:
+        raise Exception("Unexpected BSS TM Response reported")
+
+def test_wnm_bss_transition_mgmt_query_mbo(dev, apdev):
+    """WNM BSS Transition Management query - TM only due to MBO on AP"""
+    hapd = start_wnm_ap(apdev[0], bss_transition=False, mbo=True)
+    dev[0].connect("test-wnm", key_mgmt="NONE", scan_freq="2412")
+    dev[0].request("WNM_BSS_QUERY 0 list")
+    ev = hapd.wait_event(["BSS-TM-RESP"], timeout=5)
+    if ev is None:
+        raise Exception("No BSS TM Response reported")
 
 @remote_compatible
 def test_wnm_bss_tm_security_mismatch(dev, apdev):
