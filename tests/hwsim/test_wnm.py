@@ -1815,6 +1815,8 @@ def test_wnm_bss_tm_ap_proto(dev, apdev):
              "0a1a00",
              "0a1a0000",
              "0a0c016015007f0f000000000000000000000000000000000000",
+             "0a0700",
+             "0aff00",
              "0aff"]
     for t in tests:
         if "OK" not in hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=" + hdr + t):
