@@ -251,6 +251,14 @@ def test_wnm_sleep_mode_open_fail(dev, apdev):
         dev[0].request("WNM_SLEEP enter")
         wait_fail_trigger(hapd, "GET_FAIL")
 
+def test_wnm_sleep_mode_disabled_on_ap(dev, apdev):
+    """WNM Sleep Mode disabled on AP"""
+    hapd = start_wnm_ap(apdev[0], wnm_sleep_mode=False)
+    dev[0].connect("test-wnm", key_mgmt="NONE", scan_freq="2412")
+    # Ignore WNM-Sleep Mode Request from 02:00:00:00:00:00 since WNM-Sleep Mode is disabled
+    dev[0].request("WNM_SLEEP enter")
+    time.sleep(0.1)
+
 @remote_compatible
 def test_wnm_sleep_mode_rsn(dev, apdev):
     """WNM Sleep Mode - RSN"""
