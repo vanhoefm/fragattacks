@@ -896,8 +896,8 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 			wpa_printf(MSG_DEBUG, "SAE: remove the STA (" MACSTR
 				   ") doing reauthentication",
 				   MAC2STR(sta->addr));
-			ap_free_sta(hapd, sta);
 			wpa_auth_pmksa_remove(hapd->wpa_auth, sta->addr);
+			ap_free_sta(hapd, sta);
 		} else if (auth_transaction == 1) {
 			wpa_printf(MSG_DEBUG, "SAE: Start reauthentication");
 			ret = auth_sae_send_commit(hapd, sta, bssid, 1);
