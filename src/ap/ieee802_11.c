@@ -759,9 +759,12 @@ void sae_accept_sta(struct hostapd_data *hapd, struct sta_info *sta)
 
 
 static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
-		       const u8 *bssid, u8 auth_transaction, int allow_reuse)
+		       const u8 *bssid, u8 auth_transaction, int allow_reuse,
+		       int *sta_removed)
 {
 	int ret;
+
+	*sta_removed = 0;
 
 	if (auth_transaction != 1 && auth_transaction != 2)
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
@@ -863,7 +866,7 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 			 * additional events.
 			 */
 			return sae_sm_step(hapd, sta, bssid, auth_transaction,
-					   0);
+					   0, sta_removed);
 		}
 		break;
 	case SAE_CONFIRMED:
@@ -898,6 +901,7 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 				   MAC2STR(sta->addr));
 			wpa_auth_pmksa_remove(hapd->wpa_auth, sta->addr);
 			ap_free_sta(hapd, sta);
+			*sta_removed = 1;
 		} else if (auth_transaction == 1) {
 			wpa_printf(MSG_DEBUG, "SAE: Start reauthentication");
 			ret = auth_sae_send_commit(hapd, sta, bssid, 1);
@@ -979,6 +983,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 	int *groups = hapd->conf->sae_groups;
 	int default_groups[] = { 19, 0 };
 	const u8 *pos, *end;
+	int sta_removed = 0;
 
 	if (!groups)
 		groups = default_groups;
@@ -1173,7 +1178,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 		}
 
 		resp = sae_sm_step(hapd, sta, mgmt->bssid, auth_transaction,
-				   allow_reuse);
+				   allow_reuse, &sta_removed);
 	} else if (auth_transaction == 2) {
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_DEBUG,
@@ -1214,7 +1219,8 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 			}
 			sta->sae->rc = peer_send_confirm;
 		}
-		resp = sae_sm_step(hapd, sta, mgmt->bssid, auth_transaction, 0);
+		resp = sae_sm_step(hapd, sta, mgmt->bssid, auth_transaction, 0,
+			&sta_removed);
 	} else {
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_DEBUG,
@@ -1226,7 +1232,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 	}
 
 reply:
-	if (resp != WLAN_STATUS_SUCCESS) {
+	if (!sta_removed && resp != WLAN_STATUS_SUCCESS) {
 		pos = mgmt->u.auth.variable;
 		end = ((const u8 *) mgmt) + len;
 
@@ -1244,8 +1250,9 @@ reply:
 	}
 
 remove_sta:
-	if (sta->added_unassoc && (resp != WLAN_STATUS_SUCCESS ||
-				   status_code != WLAN_STATUS_SUCCESS)) {
+	if (!sta_removed && sta->added_unassoc &&
+	    (resp != WLAN_STATUS_SUCCESS ||
+	     status_code != WLAN_STATUS_SUCCESS)) {
 		hostapd_drv_sta_remove(hapd, sta->addr);
 		sta->added_unassoc = 0;
 	}
