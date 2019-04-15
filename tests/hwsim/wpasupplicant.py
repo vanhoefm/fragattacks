@@ -85,6 +85,11 @@ class WpaSupplicant:
             self.mon.detach()
         except ConnectionRefusedError:
             pass
+        except Exception as e:
+            if str(e) == "DETACH failed":
+                pass
+            else:
+                raise
         del self.mon
         self.mon = None
 
@@ -101,6 +106,11 @@ class WpaSupplicant:
             self.global_mon.detach()
         except ConnectionRefusedError:
             pass
+        except Exception as e:
+            if str(e) == "DETACH failed":
+                pass
+            else:
+                raise
         del self.global_mon
         self.global_mon = None
 

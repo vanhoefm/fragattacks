@@ -4593,6 +4593,9 @@ def test_dbus_p2p_go_neg_init(dev, apdev):
             if ev is None:
                 raise Exception("Group formation timed out")
             self.sta_group_ev = ev
+            dev1.close_monitor_global()
+            dev1.close_monitor_mon()
+            dev1 = None
 
         def goNegotiationSuccess(self, properties):
             logger.debug("goNegotiationSuccess: properties=%s" % str(properties))
@@ -4603,9 +4606,10 @@ def test_dbus_p2p_go_neg_init(dev, apdev):
                                       properties['interface_object'])
             group_p2p = dbus.Interface(g_if_obj, WPAS_DBUS_IFACE_P2PDEVICE)
             group_p2p.Disconnect()
-            dev1 = WpaSupplicant('wlan1', '/tmp/wpas-wlan1')
+            dev1 = WpaSupplicant('wlan1', '/tmp/wpas-wlan1', monitor=False)
             dev1.group_form_result(self.sta_group_ev)
             dev1.remove_group()
+            dev1 = None
 
         def groupFinished(self, properties):
             logger.debug("groupFinished: " + str(properties))
@@ -4688,6 +4692,9 @@ def test_dbus_p2p_group_termination_by_go(dev, apdev):
             if ev is None:
                 raise Exception("Group formation timed out")
             self.sta_group_ev = ev
+            dev1.close_monitor_global()
+            dev1.close_monitor_mon()
+            dev1 = None
 
         def goNegotiationSuccess(self, properties):
             logger.debug("goNegotiationSuccess: properties=%s" % str(properties))
@@ -4696,7 +4703,7 @@ def test_dbus_p2p_group_termination_by_go(dev, apdev):
             logger.debug("groupStarted: " + str(properties))
             g_if_obj = bus.get_object(WPAS_DBUS_SERVICE,
                                       properties['interface_object'])
-            dev1 = WpaSupplicant('wlan1', '/tmp/wpas-wlan1')
+            dev1 = WpaSupplicant('wlan1', '/tmp/wpas-wlan1', monitor=False)
             dev1.group_form_result(self.sta_group_ev)
             dev1.remove_group()
 
@@ -4784,6 +4791,9 @@ def _test_dbus_p2p_group_idle_timeout(dev, apdev):
             if ev is None:
                 raise Exception("Group formation timed out")
             self.sta_group_ev = ev
+            dev1.close_monitor_global()
+            dev1.close_monitor_mon()
+            dev1 = None
 
         def goNegotiationSuccess(self, properties):
             logger.debug("goNegotiationSuccess: properties=%s" % str(properties))
@@ -4793,7 +4803,7 @@ def _test_dbus_p2p_group_idle_timeout(dev, apdev):
             self.group_started = True
             g_if_obj = bus.get_object(WPAS_DBUS_SERVICE,
                                       properties['interface_object'])
-            dev1 = WpaSupplicant('wlan1', '/tmp/wpas-wlan1')
+            dev1 = WpaSupplicant('wlan1', '/tmp/wpas-wlan1', monitor=False)
             dev1.group_form_result(self.sta_group_ev)
             ifaddr = dev1.group_request("STA-FIRST").splitlines()[0]
             # Force disassociation with different reason code so that the
