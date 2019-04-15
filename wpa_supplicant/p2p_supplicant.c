@@ -7215,7 +7215,7 @@ void wpas_p2p_completed(struct wpa_supplicant *wpa_s)
 	u8 go_dev_addr[ETH_ALEN];
 	int persistent;
 	int freq;
-	u8 ip[3 * 4];
+	u8 ip[3 * 4], *ip_ptr = NULL;
 	char ip_addr[100];
 
 	if (ssid == NULL || ssid->mode != WPAS_MODE_P2P_GROUP_FORMATION) {
@@ -7262,6 +7262,7 @@ void wpas_p2p_completed(struct wpa_supplicant *wpa_s)
 				  ip[8], ip[9], ip[10], ip[11]);
 		if (os_snprintf_error(sizeof(ip_addr), res))
 			ip_addr[0] = '\0';
+		ip_ptr = ip;
 	}
 
 	wpas_p2p_group_started(wpa_s, 0, ssid, freq,
@@ -7274,7 +7275,7 @@ void wpas_p2p_completed(struct wpa_supplicant *wpa_s)
 		wpas_p2p_store_persistent_group(wpa_s->p2pdev,
 						ssid, go_dev_addr);
 
-	wpas_notify_p2p_group_started(wpa_s, ssid, persistent, 1, ip);
+	wpas_notify_p2p_group_started(wpa_s, ssid, persistent, 1, ip_ptr);
 }
 
 
