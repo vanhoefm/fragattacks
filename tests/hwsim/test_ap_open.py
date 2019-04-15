@@ -639,6 +639,22 @@ def test_ap_open_poll_sta(dev, apdev):
     if addr not in ev:
         raise Exception("Unexpected poll response: " + ev)
 
+def test_ap_open_poll_sta_no_ack(dev, apdev):
+    """AP with open mode and STA poll without ACK"""
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
+    dev[0].connect("open", key_mgmt="NONE", scan_freq="2412")
+    addr = dev[0].own_addr()
+
+    hapd.set("ext_mgmt_frame_handling", "1")
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    hapd.set("ext_mgmt_frame_handling", "0")
+    if "OK" not in hapd.request("POLL_STA " + addr):
+        raise Exception("POLL_STA failed")
+    ev = hapd.wait_event(["AP-STA-POLL-OK"], timeout=1)
+    if ev is not None:
+        raise Exception("Unexpected poll response reported")
+
 def test_ap_open_pmf_default(dev, apdev):
     """AP with open mode (no security) configuration and pmf=2"""
     hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
