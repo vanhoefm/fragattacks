@@ -36,6 +36,7 @@
 #include "rsn_supp/preauth.h"
 #include "rsn_supp/pmksa_cache.h"
 #include "common/wpa_ctrl.h"
+#include "common/ieee802_11_common.h"
 #include "common/ieee802_11_defs.h"
 #include "common/hw_features_common.h"
 #include "common/gas_server.h"
@@ -3428,9 +3429,10 @@ void wpa_supplicant_deauthenticate(struct wpa_supplicant *wpa_s,
 	int zero_addr = 0;
 
 	wpa_dbg(wpa_s, MSG_DEBUG, "Request to deauthenticate - bssid=" MACSTR
-		" pending_bssid=" MACSTR " reason=%d state=%s",
+		" pending_bssid=" MACSTR " reason=%d (%s) state=%s",
 		MAC2STR(wpa_s->bssid), MAC2STR(wpa_s->pending_bssid),
-		reason_code, wpa_supplicant_state_txt(wpa_s->wpa_state));
+		reason_code, reason2str(reason_code),
+		wpa_supplicant_state_txt(wpa_s->wpa_state));
 
 	if (!is_zero_ether_addr(wpa_s->pending_bssid) &&
 	    (wpa_s->wpa_state == WPA_AUTHENTICATING ||

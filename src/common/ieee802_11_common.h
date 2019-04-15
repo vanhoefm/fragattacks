@@ -185,6 +185,7 @@ int mb_ies_info_by_ies(struct mb_ies_info *info, const u8 *ies_buf,
 struct wpabuf * mb_ies_by_info(struct mb_ies_info *info);
 
 const char * fc2str(u16 fc);
+const char * reason2str(u16 reason);
 
 struct oper_class_map {
 	enum hostapd_hw_mode mode;

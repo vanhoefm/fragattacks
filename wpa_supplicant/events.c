@@ -3596,8 +3596,9 @@ static void wpas_event_disassoc(struct wpa_supplicant *wpa_s,
 		ie_len = info->ie_len;
 		reason_code = info->reason_code;
 		locally_generated = info->locally_generated;
-		wpa_dbg(wpa_s, MSG_DEBUG, " * reason %u%s", reason_code,
-			locally_generated ? " (locally generated)" : "");
+		wpa_dbg(wpa_s, MSG_DEBUG, " * reason %u (%s)%s", reason_code,
+			reason2str(reason_code),
+			locally_generated ? " locally_generated=1" : "");
 		if (addr)
 			wpa_dbg(wpa_s, MSG_DEBUG, " * address " MACSTR,
 				MAC2STR(addr));
@@ -3650,9 +3651,9 @@ static void wpas_event_deauth(struct wpa_supplicant *wpa_s,
 		ie_len = info->ie_len;
 		reason_code = info->reason_code;
 		locally_generated = info->locally_generated;
-		wpa_dbg(wpa_s, MSG_DEBUG, " * reason %u%s",
-			reason_code,
-			locally_generated ? " (locally generated)" : "");
+		wpa_dbg(wpa_s, MSG_DEBUG, " * reason %u (%s)%s",
+			reason_code, reason2str(reason_code),
+			locally_generated ? " locally_generated=1" : "");
 		if (addr) {
 			wpa_dbg(wpa_s, MSG_DEBUG, " * address " MACSTR,
 				MAC2STR(addr));
