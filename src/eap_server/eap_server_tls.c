@@ -322,16 +322,22 @@ static u8 * eap_tls_getKey(struct eap_sm *sm, void *priv, size_t *len)
 	struct eap_tls_data *data = priv;
 	u8 *eapKeyData;
 	const char *label;
+	const u8 eap_tls13_context[] = { EAP_TYPE_TLS };
+	const u8 *context = NULL;
+	size_t context_len = 0;
 
 	if (data->state != SUCCESS)
 		return NULL;
 
-	if (data->ssl.tls_v13)
+	if (data->ssl.tls_v13) {
 		label = "EXPORTER_EAP_TLS_Key_Material";
-	else
+		context = eap_tls13_context;
+		context_len = 1;
+	} else {
 		label = "client EAP encryption";
+	}
 	eapKeyData = eap_server_tls_derive_key(sm, &data->ssl, label,
-					       NULL, 0,
+					       context, context_len,
 					       EAP_TLS_KEY_LEN + EAP_EMSK_LEN);
 	if (eapKeyData) {
 		*len = EAP_TLS_KEY_LEN;
@@ -351,16 +357,22 @@ static u8 * eap_tls_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 	struct eap_tls_data *data = priv;
 	u8 *eapKeyData, *emsk;
 	const char *label;
+	const u8 eap_tls13_context[] = { EAP_TYPE_TLS };
+	const u8 *context = NULL;
+	size_t context_len = 0;
 
 	if (data->state != SUCCESS)
 		return NULL;
 
-	if (data->ssl.tls_v13)
+	if (data->ssl.tls_v13) {
 		label = "EXPORTER_EAP_TLS_Key_Material";
-	else
+		context = eap_tls13_context;
+		context_len = 1;
+	} else {
 		label = "client EAP encryption";
+	}
 	eapKeyData = eap_server_tls_derive_key(sm, &data->ssl, label,
-					       NULL, 0,
+					       context, context_len,
 					       EAP_TLS_KEY_LEN + EAP_EMSK_LEN);
 	if (eapKeyData) {
 		emsk = os_malloc(EAP_EMSK_LEN);
