@@ -2400,6 +2400,8 @@ static void sme_start_sa_query(struct wpa_supplicant *wpa_s)
 
 static void sme_stop_sa_query(struct wpa_supplicant *wpa_s)
 {
+	if (wpa_s->sme.sa_query_trans_id)
+		wpa_dbg(wpa_s, MSG_DEBUG, "SME: Stop SA Query");
 	eloop_cancel_timeout(sme_sa_query_timer, wpa_s, NULL);
 	os_free(wpa_s->sme.sa_query_trans_id);
 	wpa_s->sme.sa_query_trans_id = NULL;
