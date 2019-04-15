@@ -7715,7 +7715,7 @@ static int wpas_ctrl_iface_get_pref_freq_list(
 
 	wpa_printf(MSG_DEBUG,
 		   "CTRL_IFACE: GET_PREF_FREQ_LIST iface_type=%d (%s)",
-		   iface_type, buf);
+		   iface_type, cmd);
 
 	ret = wpa_drv_get_pref_freq_list(wpa_s, iface_type, &num, freq_list);
 	if (ret)
