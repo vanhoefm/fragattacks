@@ -595,3 +595,38 @@ def test_ap_pmf_tkip_reject(dev, apdev):
         raise Exception("Unexpected status code in rejection: " + ev)
     dev[2].request("DISCONNECT")
     dev[2].dump_monitor()
+
+def test_ap_pmf_sa_query_timeout(dev, apdev):
+    """SA Query timeout"""
+    ssid = "test-pmf-required"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].connect(ssid, psk="12345678", ieee80211w="2",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2",
+                   scan_freq="2412")
+
+    hapd.set("ext_mgmt_frame_handling", "1")
+    if "OK" not in dev[0].request("UNPROT_DEAUTH"):
+        raise Exception("Triggering SA Query from the STA failed")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=2)
+    if ev is None:
+        raise Exception("No disconnection on SA Query timeout seen")
+    hapd.set("ext_mgmt_frame_handling", "0")
+    dev[0].wait_connected()
+    dev[0].dump_monitor()
+
+    hapd.set("ext_mgmt_frame_handling", "1")
+    if "OK" not in dev[0].request("UNPROT_DEAUTH"):
+        raise Exception("Triggering SA Query from the STA failed")
+    ev = hapd.mgmt_rx()
+    hapd.set("ext_mgmt_frame_handling", "0")
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    dev[0].request("RECONNECT")
+    dev[0].wait_connected()
+    hapd.set("ext_mgmt_frame_handling", "1")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=1.5)
+    if ev is not None:
+        raise Exception("Unexpected disconnection after reconnection seen")
