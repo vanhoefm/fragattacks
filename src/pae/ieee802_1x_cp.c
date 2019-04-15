@@ -214,6 +214,10 @@ SM_STATE(CP, RECEIVE)
 	SM_ENTRY(CP, RECEIVE);
 	/* RECEIVE state machine not keep with Figure 12-2 in
 	 * IEEE Std 802.1X-2010 */
+	if (sm->oki) {
+		ieee802_1x_kay_delete_sas(sm->kay, sm->oki);
+		os_free(sm->oki);
+	}
 	sm->oki = sm->lki;
 	sm->oan = sm->lan;
 	sm->otx = sm->ltx;
