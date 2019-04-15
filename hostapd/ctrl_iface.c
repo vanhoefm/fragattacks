@@ -883,7 +883,7 @@ static int hostapd_ctrl_iface_bss_tm_req(struct hostapd_data *hapd,
 		/* TODO: TSF configurable/learnable */
 		bss_term_dur[0] = 4; /* Subelement ID */
 		bss_term_dur[1] = 10; /* Length */
-		os_memset(bss_term_dur, 2, 8);
+		os_memset(&bss_term_dur[2], 0, 8);
 		end = os_strchr(pos, ',');
 		if (end == NULL) {
 			wpa_printf(MSG_DEBUG, "Invalid bss_term data");
