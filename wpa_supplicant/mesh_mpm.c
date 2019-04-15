@@ -189,7 +189,7 @@ static void mesh_mpm_init_link(struct wpa_supplicant *wpa_s,
 
 	do {
 		if (os_get_random((u8 *) &llid, sizeof(llid)) < 0)
-			continue;
+			llid = 0; /* continue */
 	} while (!llid || llid_in_use(wpa_s, llid));
 
 	sta->my_lid = llid;
