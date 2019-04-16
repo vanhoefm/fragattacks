@@ -9535,6 +9535,18 @@ def test_ap_wps_eap_wsc_errors(dev, apdev):
             wait_scan_stopped(dev[0])
             dev[0].dump_monitor()
 
+    tests = [(1, "wps_decrypt_encr_settings"),
+             (2, "hmac_sha256;wps_derive_psk")]
+    for count, func in tests:
+        hapd.request("WPS_PIN any " + pin)
+        with fail_test(dev[0], count, func):
+            dev[0].request("WPS_PIN %s %s" % (bssid, pin))
+            wait_fail_trigger(dev[0], "GET_FAIL")
+            dev[0].request("WPS_CANCEL")
+            dev[0].wait_disconnected()
+            wait_scan_stopped(dev[0])
+            dev[0].dump_monitor()
+
     with alloc_fail(dev[0], 1, "eap_msg_alloc;eap_sm_build_expanded_nak"):
         dev[0].wps_reg(bssid, appin + " new_ssid=a", "new ssid", "WPA2PSK",
                        "CCMP", "new passphrase", no_wait=True)
