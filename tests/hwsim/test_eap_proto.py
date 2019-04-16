@@ -7440,6 +7440,31 @@ def test_eap_proto_fast_errors(dev, apdev):
 
     dev[0].request("SET blob fast_pac_errors ")
 
+def test_eap_proto_peap_errors_server(dev, apdev):
+    """EAP-PEAP local error cases on server"""
+    params = int_eap_server_params()
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+
+    tests = [(1, "get_asymetric_start_key;eap_mschapv2_getKey"),
+             (1, "generate_authenticator_response_pwhash;eap_mschapv2_process_response"),
+             (1, "hash_nt_password_hash;eap_mschapv2_process_response"),
+             (1, "get_master_key;eap_mschapv2_process_response")]
+    for count, func in tests:
+        with fail_test(hapd, count, func):
+            dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                           scan_freq="2412",
+                           eap="PEAP", anonymous_identity="peap",
+                           identity="user", password="password",
+                           phase1="peapver=0 crypto_binding=2",
+                           ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                           erp="1", wait_connect=False)
+            ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"], timeout=10)
+            if ev is None:
+                raise Exception("EAP-Failure not reported")
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].wait_disconnected()
+
 def test_eap_proto_peap_errors(dev, apdev):
     """EAP-PEAP local error cases"""
     check_eap_capa(dev[0], "PEAP")
@@ -7491,7 +7516,8 @@ def test_eap_proto_peap_errors(dev, apdev):
 
     tests = [(1, "peap_prfplus;eap_peap_derive_cmk"),
              (1, "eap_tlv_add_cryptobinding;eap_tlv_build_result"),
-             (1, "peap_prfplus;eap_peap_getKey")]
+             (1, "peap_prfplus;eap_peap_getKey"),
+             (1, "get_asymetric_start_key;eap_mschapv2_getKey")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
