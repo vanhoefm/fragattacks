@@ -2948,6 +2948,12 @@ def test_eap_proto_psk_errors(dev, apdev):
 
     tests = [(1, "os_get_random;eap_psk_process_1"),
              (1, "omac1_aes_128;eap_psk_process_3"),
+             (1, "=omac1_aes_vector;omac1_aes_128;aes_128_eax_encrypt"),
+             (2, "=omac1_aes_vector;omac1_aes_128;aes_128_eax_encrypt"),
+             (3, "=omac1_aes_vector;omac1_aes_128;aes_128_eax_encrypt"),
+             (1, "=omac1_aes_vector;omac1_aes_128;aes_128_eax_decrypt"),
+             (2, "=omac1_aes_vector;omac1_aes_128;aes_128_eax_decrypt"),
+             (3, "=omac1_aes_vector;omac1_aes_128;aes_128_eax_decrypt"),
              (1, "aes_128_eax_decrypt;eap_psk_process_3"),
              (2, "aes_128_eax_decrypt;eap_psk_process_3"),
              (3, "aes_128_eax_decrypt;eap_psk_process_3"),
@@ -2980,6 +2986,7 @@ def test_eap_proto_psk_errors(dev, apdev):
                               note="No failure seen for %d:%s" % (count, func))
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
+            dev[0].dump_monitor()
 
 EAP_SIM_SUBTYPE_START = 10
 EAP_SIM_SUBTYPE_CHALLENGE = 11
