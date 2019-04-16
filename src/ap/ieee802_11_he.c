@@ -127,3 +127,42 @@ u8 * hostapd_eid_he_mu_edca_parameter_set(struct hostapd_data *hapd, u8 *eid)
 
 	return pos;
 }
+
+
+u8 * hostapd_eid_spatial_reuse(struct hostapd_data *hapd, u8 *eid)
+{
+	struct ieee80211_spatial_reuse *spr;
+	u8 *pos = eid, *spr_param;
+	u8 sz = 1;
+
+	if (hapd->iface->conf->spr.sr_control &
+	    SPATIAL_REUSE_NON_SRG_OFFSET_PRESENT)
+		sz++;
+
+	if (hapd->iface->conf->spr.sr_control &
+	    SPATIAL_REUSE_SRG_INFORMATION_PRESENT)
+		sz += 18;
+
+	*pos++ = WLAN_EID_EXTENSION;
+	*pos++ = 1 + sz;
+	*pos++ = WLAN_EID_EXT_SPATIAL_REUSE;
+
+	spr = (struct ieee80211_spatial_reuse *) pos;
+	os_memset(spr, 0, sizeof(*spr));
+
+	spr->sr_ctrl = hapd->iface->conf->spr.sr_control;
+	pos++;
+	spr_param = spr->params;
+	if (spr->sr_ctrl & SPATIAL_REUSE_NON_SRG_OFFSET_PRESENT) {
+		*spr_param++ =
+			hapd->iface->conf->spr.non_srg_obss_pd_max_offset;
+		pos++;
+	}
+	if (spr->sr_ctrl & SPATIAL_REUSE_SRG_INFORMATION_PRESENT) {
+		*spr_param++ = hapd->iface->conf->spr.srg_obss_pd_min_offset;
+		*spr_param++ = hapd->iface->conf->spr.srg_obss_pd_max_offset;
+		pos += 18;
+	}
+
+	return pos;
+}

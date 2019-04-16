@@ -468,6 +468,7 @@
 #define WLAN_EID_EXT_HE_CAPABILITIES 35
 #define WLAN_EID_EXT_HE_OPERATION 36
 #define WLAN_EID_EXT_HE_MU_EDCA_PARAMS 38
+#define WLAN_EID_EXT_SPATIAL_REUSE 39
 #define WLAN_EID_EXT_OCV_OCI 54
 
 /* Extended Capabilities field */
@@ -2118,6 +2119,21 @@ struct ieee80211_he_operation {
 	/* Followed by conditional MaxBSSID Indicator subfield (u8) */
 } STRUCT_PACKED;
 
+/*
+ * IEEE P802.11ax/D4.0, 9.4.2.246 Spatial Reuse Parameter Set element
+ */
+struct ieee80211_spatial_reuse {
+	u8 sr_ctrl; /* SR Control */
+	/* Up to 19 octets of parameters:
+	 * Non-SRG OBSS PD Max Offset[0 or 1]
+	 * SRG OBSS PD Min Offset[0 or 1]
+	 * SRG OBSS PD Max Offset[0 or 1]
+	 * SRG BSS Color Bitmap[0 or 8]
+	 * SRG Partial BSSID Bitmap[0 or 8]
+	 */
+	u8 params[19];
+} STRUCT_PACKED;
+
 /* HE Capabilities Information defines */
 #define HE_PHYCAP_SU_BEAMFORMER_CAPAB_IDX	3
 #define HE_PHYCAP_SU_BEAMFORMER_CAPAB		((u8) BIT(7))
@@ -2144,6 +2160,13 @@ struct ieee80211_he_operation {
 #define HE_OPERATION_PARTIAL_BSS_COLOR		((u32) BIT(30))
 #define HE_OPERATION_BSS_COLOR_DISABLED		((u32) BIT(31))
 #define HE_OPERATION_BSS_COLOR_OFFSET		24
+
+/* Spatial Reuse defines */
+#define SPATIAL_REUSE_SRP_DISALLOWED		BIT(0)
+#define SPATIAL_REUSE_NON_SRG_OBSS_PD_SR_DISALLOWED	BIT(1)
+#define SPATIAL_REUSE_NON_SRG_OFFSET_PRESENT	BIT(2)
+#define SPATIAL_REUSE_SRG_INFORMATION_PRESENT	BIT(3)
+#define SPATIAL_REUSE_HESIGA_SR_VAL15_ALLOWED	BIT(4)
 
 struct ieee80211_he_mu_edca_parameter_set {
 	u8 he_qos_info;

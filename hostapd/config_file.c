@@ -3556,6 +3556,14 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "he_mu_edca_ac_vo_timer") == 0) {
 		conf->he_mu_edca.he_mu_ac_vo_param[HE_MU_AC_PARAM_TIMER_IDX] =
 			atoi(pos) & 0xff;
+	} else if (os_strcmp(buf, "he_srp_sr_control") == 0) {
+		conf->spr.sr_control = atoi(pos) & 0xff;
+	} else if (os_strcmp(buf, "he_srp_non_srg_obss_pd_max_offset") == 0) {
+		conf->spr.non_srg_obss_pd_max_offset = atoi(pos);
+	} else if (os_strcmp(buf, "he_srp_srg_obss_pd_min_offset") == 0) {
+		conf->spr.srg_obss_pd_min_offset = atoi(pos);
+	} else if (os_strcmp(buf, "he_srp_srg_obss_pd_max_offset") == 0) {
+		conf->spr.srg_obss_pd_max_offset = atoi(pos);
 #endif /* CONFIG_IEEE80211AX */
 	} else if (os_strcmp(buf, "max_listen_interval") == 0) {
 		bss->max_listen_interval = atoi(pos);
