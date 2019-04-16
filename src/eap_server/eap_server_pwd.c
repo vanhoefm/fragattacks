@@ -1038,14 +1038,6 @@ static u8 * eap_pwd_get_session_id(struct eap_sm *sm, void *priv, size_t *len)
 int eap_server_pwd_register(void)
 {
 	struct eap_method *eap;
-	struct timeval tp;
-	struct timezone tz;
-	u32 sr;
-
-	sr = 0xdeaddada;
-	(void) gettimeofday(&tp, &tz);
-	sr ^= (tp.tv_sec ^ tp.tv_usec);
-	srandom(sr);
 
 	eap = eap_server_method_alloc(EAP_SERVER_METHOD_INTERFACE_VERSION,
 				      EAP_VENDOR_IETF, EAP_TYPE_PWD,
