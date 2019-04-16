@@ -6806,6 +6806,17 @@ def start_pwd_exchange(dev, ap):
     proxy_msg(dev, hapd) # EAP-pwd-ID/Response
     return hapd
 
+def test_eap_proto_pwd_unexpected_fragment(dev, apdev):
+    """EAP-pwd protocol tests - unexpected more-fragment frame"""
+    hapd = start_pwd_exchange(dev[0], apdev[0])
+
+    # EAP-pwd-Commit/Request
+    req = rx_msg(hapd)
+    if req[18:20] != "02":
+        raise Exception("Unexpected EAP-pwd-Commit/Request flag")
+    msg = req[0:18] + "42" + req[20:]
+    tx_msg(hapd, dev[0], msg)
+
 def test_eap_proto_pwd_reflection_attack(dev, apdev):
     """EAP-pwd protocol tests - reflection attack on the server"""
     hapd = start_pwd_exchange(dev[0], apdev[0])
