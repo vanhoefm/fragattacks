@@ -3176,3 +3176,29 @@ def test_ap_wpa2_psk_mic_0(dev, apdev):
     if "EAPOL-TX" in ev:
         raise Exception("Unexpected EAPOL-Key message from wpa_supplicant")
     dev[0].request("DISCONNECT")
+
+def test_ap_wpa2_psk_local_error(dev, apdev):
+    """WPA2-PSK and local error cases on supplicant"""
+    ssid = "test-wpa2-psk"
+    passphrase = 'qwertyuiop'
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
+    params["wpa_key_mgmt"] = "WPA-PSK WPA-PSK-SHA256"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    with fail_test(dev[0], 1, "sha1_prf;wpa_pmk_to_ptk"):
+        id = dev[0].connect(ssid, key_mgmt="WPA-PSK", psk=passphrase,
+                            scan_freq="2412", wait_connect=False)
+        ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=5)
+        if ev is None:
+            raise Exception("Disconnection event not reported")
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].dump_monitor()
+
+    with fail_test(dev[0], 1, "sha256_prf;wpa_pmk_to_ptk"):
+        id = dev[0].connect(ssid, key_mgmt="WPA-PSK-SHA256", psk=passphrase,
+                            scan_freq="2412", wait_connect=False)
+        ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=5)
+        if ev is None:
+            raise Exception("Disconnection event not reported")
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].dump_monitor()
