@@ -4782,6 +4782,28 @@ def test_eap_proto_aka_errors(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].dump_monitor()
 
+    tests = [(1, "aes_128_encrypt_block;milenage_f1;milenage_check", None),
+             (2, "aes_128_encrypt_block;milenage_f1;milenage_check", None),
+             (1, "milenage_f2345;milenage_check", None),
+             (7, "aes_128_encrypt_block;milenage_f2345;milenage_check",
+              "ff0000000123"),
+             (1, "aes_128_encrypt_block;milenage_f1;milenage_check",
+              "fff000000123")]
+    for count, func, seq in tests:
+        if not seq:
+            seq = "000000000123"
+        with fail_test(dev[0], count, func):
+            dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                           scan_freq="2412",
+                           eap="AKA", identity="0232010000000000",
+                           phase1="result_ind=1",
+                           password="90dca4eda45b53cf0f12d7c9c3bc6a89:cb9cccc4b9258e6dca4760379fb82581:" + seq,
+                           wait_connect=False)
+            wait_fail_trigger(dev[0], "GET_FAIL")
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].wait_disconnected()
+            dev[0].dump_monitor()
+
     tests = ["eap_sim_msg_add_encr_start;eap_aka_response_notification",
              "aes_128_cbc_encrypt;eap_aka_response_notification"]
     for func in tests:
