@@ -1500,6 +1500,73 @@ static int phy_info_rates(struct hostapd_hw_modes *mode, struct nlattr *tb)
 }
 
 
+static int phy_info_iftype(struct hostapd_hw_modes *mode,
+			   struct nlattr *nl_iftype)
+{
+	struct nlattr *tb[NL80211_BAND_IFTYPE_ATTR_MAX + 1];
+	struct he_capabilities *he_capab = &mode->he_capab;
+	struct nlattr *tb_flags[NL80211_IFTYPE_MAX + 1];
+	size_t len;
+
+	nla_parse(tb, NL80211_BAND_IFTYPE_ATTR_MAX,
+		  nla_data(nl_iftype), nla_len(nl_iftype), NULL);
+
+	if (!tb[NL80211_BAND_IFTYPE_ATTR_IFTYPES])
+		return NL_STOP;
+
+	if (nla_parse_nested(tb_flags, NL80211_IFTYPE_MAX,
+			     tb[NL80211_BAND_IFTYPE_ATTR_IFTYPES], NULL))
+		return NL_STOP;
+
+	if (!nla_get_flag(tb_flags[NL80211_IFTYPE_AP]))
+		return NL_OK;
+
+	he_capab->he_supported = 1;
+
+	if (tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PHY]) {
+		len = nla_len(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PHY]);
+
+		if (len > sizeof(he_capab->phy_cap))
+			len = sizeof(he_capab->phy_cap);
+		os_memcpy(he_capab->phy_cap,
+			  nla_data(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PHY]),
+			  len);
+	}
+
+	if (tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MAC]) {
+		len = nla_len(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MAC]);
+
+		if (len > sizeof(he_capab->mac_cap))
+			len = sizeof(he_capab->mac_cap);
+		os_memcpy(he_capab->mac_cap,
+			  nla_data(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MAC]),
+			  len);
+	}
+
+	if (tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MCS_SET]) {
+		len = nla_len(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MCS_SET]);
+
+		if (len > sizeof(he_capab->mcs))
+			len = sizeof(he_capab->mcs);
+		os_memcpy(he_capab->mcs,
+			  nla_data(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_MCS_SET]),
+			  len);
+	}
+
+	if (tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PPE]) {
+		len = nla_len(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PPE]);
+
+		if (len > sizeof(he_capab->ppet))
+			len = sizeof(he_capab->ppet);
+		os_memcpy(&he_capab->ppet,
+			  nla_data(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PPE]),
+			  len);
+	}
+
+	return NL_OK;
+}
+
+
 static int phy_info_band(struct phy_info_arg *phy_info, struct nlattr *nl_band)
 {
 	struct nlattr *tb_band[NL80211_BAND_ATTR_MAX + 1];
@@ -1554,6 +1621,19 @@ static int phy_info_band(struct phy_info_arg *phy_info, struct nlattr *nl_band)
 	if (ret != NL_OK) {
 		phy_info->failed = 1;
 		return ret;
+	}
+
+	if (tb_band[NL80211_BAND_ATTR_IFTYPE_DATA]) {
+		struct nlattr *nl_iftype;
+		int rem_band;
+
+		nla_for_each_nested(nl_iftype,
+				    tb_band[NL80211_BAND_ATTR_IFTYPE_DATA],
+				    rem_band) {
+			ret = phy_info_iftype(mode, nl_iftype);
+			if (ret != NL_OK)
+				return ret;
+		}
 	}
 
 	return NL_OK;

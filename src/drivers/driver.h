@@ -159,7 +159,9 @@ struct hostapd_channel_data {
 };
 
 #define HE_MAX_NUM_SS 		8
-#define HE_MAX_PHY_CAPAB_SIZE	3
+#define HE_MAX_MAC_CAPAB_SIZE	6
+#define HE_MAX_PHY_CAPAB_SIZE	11
+#define HE_MAX_MCS_CAPAB_SIZE	12
 
 /**
  * struct he_ppe_threshold - IEEE 802.11ax HE PPE Threshold
@@ -175,9 +177,9 @@ struct he_ppe_threshold {
  */
 struct he_capabilities {
 	u8 he_supported;
-	u32 phy_cap[HE_MAX_PHY_CAPAB_SIZE];
-	u32 mac_cap;
-	u32 mcs;
+	u8 phy_cap[HE_MAX_PHY_CAPAB_SIZE];
+	u8 mac_cap[HE_MAX_MAC_CAPAB_SIZE];
+	u8 mcs[HE_MAX_MCS_CAPAB_SIZE];
 	struct he_ppe_threshold ppet;
 };
 
