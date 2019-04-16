@@ -13,7 +13,7 @@ import hostapd
 from wpasupplicant import WpaSupplicant
 import hwsim_utils
 from tshark import run_tshark
-from utils import HwsimSkip
+from utils import HwsimSkip, fail_test, alloc_fail, wait_fail_trigger
 
 def test_owe(dev, apdev):
     """Opportunistic Wireless Encryption"""
@@ -476,3 +476,66 @@ def test_owe_assoc_reject(dev, apdev):
             raise Exception("Unexpected unsupport group rejection")
     if "CTRL-EVENT-CONNECTED" not in ev:
         raise Exception("Did not connect successfully")
+
+def test_owe_local_errors(dev, apdev):
+    """Opportunistic Wireless Encryption - local errors on supplicant"""
+    if "OWE" not in dev[0].get_capability("key_mgmt"):
+        raise HwsimSkip("OWE not supported")
+    params = {"ssid": "owe",
+              "wpa": "2",
+              "ieee80211w": "2",
+              "wpa_key_mgmt": "OWE",
+              "rsn_pairwise": "CCMP"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    dev[0].scan_for_bss(bssid, freq="2412")
+
+    tests = [(1, "crypto_ecdh_init;owe_build_assoc_req"),
+             (1, "crypto_ecdh_get_pubkey;owe_build_assoc_req"),
+             (1, "wpabuf_alloc;owe_build_assoc_req")]
+    for count, func in tests:
+        with alloc_fail(dev[0], count, func):
+            dev[0].connect("owe", key_mgmt="OWE", owe_group="20",
+                           ieee80211w="2",
+                           scan_freq="2412", wait_connect=False)
+            wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].dump_monitor()
+
+    tests = [(1, "crypto_ecdh_set_peerkey;owe_process_assoc_resp"),
+             (1, "crypto_ecdh_get_pubkey;owe_process_assoc_resp"),
+             (1, "wpabuf_alloc;=owe_process_assoc_resp")]
+    for count, func in tests:
+        with alloc_fail(dev[0], count, func):
+            dev[0].connect("owe", key_mgmt="OWE", owe_group="20",
+                           ieee80211w="2",
+                           scan_freq="2412", wait_connect=False)
+            dev[0].wait_disconnected()
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].dump_monitor()
+
+    tests = [(1, "hmac_sha256;owe_process_assoc_resp", 19),
+             (1, "hmac_sha256_kdf;owe_process_assoc_resp", 19),
+             (1, "hmac_sha384;owe_process_assoc_resp", 20),
+             (1, "hmac_sha384_kdf;owe_process_assoc_resp", 20),
+             (1, "hmac_sha512;owe_process_assoc_resp", 21),
+             (1, "hmac_sha512_kdf;owe_process_assoc_resp", 21)]
+    for count, func, group in tests:
+        with fail_test(dev[0], count, func):
+            dev[0].connect("owe", key_mgmt="OWE", owe_group=str(group),
+                           ieee80211w="2",
+                           scan_freq="2412", wait_connect=False)
+            dev[0].wait_disconnected()
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].dump_monitor()
+
+    dev[0].connect("owe", key_mgmt="OWE", owe_group="18",
+                   ieee80211w="2",
+                   scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["SME: Trying to authenticate"], timeout=5)
+    if ev is None:
+        raise Exception("No authentication attempt")
+    time.sleep(0.5)
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].dump_monitor()
