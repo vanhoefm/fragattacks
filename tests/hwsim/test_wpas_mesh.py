@@ -1321,6 +1321,8 @@ def test_mesh_wpa_auth_init_oom(dev, apdev):
 def test_mesh_wpa_init_fail(dev, apdev):
     """Secure mesh network setup local failure"""
     check_mesh_support(dev[0], secure=True)
+    check_mesh_support(dev[1], secure=True)
+    check_mesh_support(dev[2], secure=True)
     dev[0].request("SET sae_groups ")
 
     with fail_test(dev[0], 1, "os_get_random;=__mesh_rsn_auth_init"):
@@ -1341,6 +1343,14 @@ def test_mesh_wpa_init_fail(dev, apdev):
         dev[1].request("SET sae_groups ")
         id = add_mesh_secure_net(dev[1])
         dev[1].mesh_group_add(id)
+        wait_fail_trigger(dev[0], "GET_FAIL")
+
+    with fail_test(dev[0], 2, "=omac1_aes_vector;aes_siv_encrypt"):
+        id = add_mesh_secure_net(dev[2])
+        dev[0].mesh_group_add(id)
+        dev[2].request("SET sae_groups ")
+        id = add_mesh_secure_net(dev[2])
+        dev[2].mesh_group_add(id)
         wait_fail_trigger(dev[0], "GET_FAIL")
 
 def test_wpas_mesh_reconnect(dev, apdev):
