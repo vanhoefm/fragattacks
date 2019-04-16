@@ -236,6 +236,11 @@ struct hostapd_config * hostapd_config_defaults(void)
 	conf->acs_num_scans = 5;
 #endif /* CONFIG_ACS */
 
+#ifdef CONFIG_IEEE80211AX
+	conf->he_op.he_rts_threshold = HE_OPERATION_RTS_THRESHOLD_MASK >>
+		HE_OPERATION_RTS_THRESHOLD_OFFSET;
+#endif /* CONFIG_IEEE80211AX */
+
 	/* The third octet of the country string uses an ASCII space character
 	 * by default to indicate that the regulations encompass all
 	 * environments for the current frequency band in the country. */

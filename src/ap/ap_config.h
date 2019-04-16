@@ -737,7 +737,7 @@ struct he_operation {
 	u8 he_bss_color;
 	u8 he_default_pe_duration;
 	u8 he_twt_required;
-	u8 he_rts_threshold;
+	u16 he_rts_threshold;
 };
 
 /**
