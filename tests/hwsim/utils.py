@@ -6,6 +6,7 @@
 
 import binascii
 import os
+import socket
 import struct
 import subprocess
 import time
@@ -162,3 +163,27 @@ def clear_regdom(hapd, dev, count=1):
         clear_country(dev)
     for i in range(count):
         dev[i].flush_scan_cache()
+
+def radiotap_build():
+    radiotap_payload = struct.pack('BB', 0x08, 0)
+    radiotap_payload += struct.pack('BB', 0, 0)
+    radiotap_payload += struct.pack('BB', 0, 0)
+    radiotap_hdr = struct.pack('<BBHL', 0, 0, 8 + len(radiotap_payload),
+                               0xc002)
+    return radiotap_hdr + radiotap_payload
+
+def start_monitor(ifname, freq=2412):
+    subprocess.check_call(["iw", ifname, "set", "type", "monitor"])
+    subprocess.call(["ip", "link", "set", "dev", ifname, "up"])
+    subprocess.check_call(["iw", ifname, "set", "freq", str(freq)])
+
+    ETH_P_ALL = 3
+    sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
+                         socket.htons(ETH_P_ALL))
+    sock.bind((ifname, 0))
+    sock.settimeout(0.5)
+    return sock
+
+def stop_monitor(ifname):
+    subprocess.call(["ip", "link", "set", "dev", ifname, "down"])
+    subprocess.call(["iw", ifname, "set", "type", "managed"])
