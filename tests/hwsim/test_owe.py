@@ -4,10 +4,12 @@
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
 
+import binascii
 import logging
 logger = logging.getLogger()
 import time
 import os
+import struct
 
 import hostapd
 from wpasupplicant import WpaSupplicant
@@ -537,5 +539,91 @@ def test_owe_local_errors(dev, apdev):
     if ev is None:
         raise Exception("No authentication attempt")
     time.sleep(0.5)
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].dump_monitor()
+
+def hapd_auth(hapd):
+    for i in range(0, 10):
+        req = hapd.mgmt_rx()
+        if req is None:
+            raise Exception("MGMT RX wait timed out")
+        if req['subtype'] == 11:
+            break
+        req = None
+    if not req:
+        raise Exception("Authentication frame not received")
+
+    resp = {}
+    resp['fc'] = req['fc']
+    resp['da'] = req['sa']
+    resp['sa'] = req['da']
+    resp['bssid'] = req['bssid']
+    resp['payload'] = struct.pack('<HHH', 0, 2, 0)
+    hapd.mgmt_tx(resp)
+
+def hapd_assoc(hapd, extra):
+    for i in range(0, 10):
+        req = hapd.mgmt_rx()
+        if req is None:
+            raise Exception("MGMT RX wait timed out")
+        if req['subtype'] == 0:
+            break
+        req = None
+    if not req:
+        raise Exception("Association Request frame not received")
+
+    resp = {}
+    resp['fc'] = 0x0010
+    resp['da'] = req['sa']
+    resp['sa'] = req['da']
+    resp['bssid'] = req['bssid']
+    payload = struct.pack('<HHH', 0x0411, 0, 0xc001)
+    payload += binascii.unhexlify("010882848b960c121824")
+    resp['payload'] = payload + extra
+    hapd.mgmt_tx(resp)
+
+def test_owe_invalid_assoc_resp(dev, apdev):
+    """Opportunistic Wireless Encryption - invalid Association Response frame"""
+    if "OWE" not in dev[0].get_capability("key_mgmt"):
+        raise HwsimSkip("OWE not supported")
+    params = {"ssid": "owe",
+              "wpa": "2",
+              "ieee80211w": "2",
+              "wpa_key_mgmt": "OWE",
+              "rsn_pairwise": "CCMP"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    dev[0].scan_for_bss(bssid, freq="2412")
+
+    hapd.set("ext_mgmt_frame_handling", "1")
+    # OWE: No Diffie-Hellman Parameter element found in Association Response frame
+    tests = [b'']
+    # No room for group --> no DH Params
+    tests += [binascii.unhexlify('ff0120')]
+    # OWE: Unexpected Diffie-Hellman group in response: 18
+    tests += [binascii.unhexlify('ff03201200')]
+    # OWE: Invalid peer DH public key
+    tests += [binascii.unhexlify('ff23201300' + 31*'00' + '01')]
+    # OWE: Invalid peer DH public key
+    tests += [binascii.unhexlify('ff24201300' + 33*'ee')]
+    for extra in tests:
+        dev[0].connect("owe", key_mgmt="OWE", owe_group="19", ieee80211w="2",
+                       scan_freq="2412", wait_connect=False)
+        hapd_auth(hapd)
+        hapd_assoc(hapd, extra)
+        dev[0].wait_disconnected()
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].dump_monitor()
+
+    # OWE: Empty public key (this ends up getting padded to a valid point)
+    dev[0].connect("owe", key_mgmt="OWE", owe_group="19", ieee80211w="2",
+                   scan_freq="2412", wait_connect=False)
+    hapd_auth(hapd)
+    hapd_assoc(hapd, binascii.unhexlify('ff03201300'))
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED", "PMKSA-CACHE-ADDED"],
+                           timeout=5)
+    if ev is None:
+        raise Exception("No result reported for empty public key")
     dev[0].request("REMOVE_NETWORK all")
     dev[0].dump_monitor()
