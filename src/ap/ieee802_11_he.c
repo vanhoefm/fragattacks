@@ -19,9 +19,10 @@
 u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid)
 {
 	struct ieee80211_he_capabilities *cap;
+	struct hostapd_hw_modes *mode = hapd->iface->current_mode;
 	u8 *pos = eid;
 
-	if (!hapd->iface->current_mode)
+	if (!mode)
 		return eid;
 
 	*pos++ = WLAN_EID_EXTENSION;
@@ -30,6 +31,13 @@ u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid)
 
 	cap = (struct ieee80211_he_capabilities *) pos;
 	os_memset(cap, 0, sizeof(*cap));
+
+	os_memcpy(cap->he_mac_capab_info, mode->he_capab.mac_cap,
+		  HE_MAX_MAC_CAPAB_SIZE);
+	os_memcpy(cap->he_phy_capab_info, mode->he_capab.phy_cap,
+		  HE_MAX_PHY_CAPAB_SIZE);
+	os_memcpy(cap->he_txrx_mcs_support, mode->he_capab.mcs,
+		  HE_MAX_MCS_CAPAB_SIZE);
 
 	if (hapd->iface->conf->he_phy_capab.he_su_beamformer)
 		cap->he_phy_capab_info[HE_PHYCAP_SU_BEAMFORMER_CAPAB_IDX] |=
