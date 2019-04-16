@@ -311,7 +311,7 @@ fin:
 static void eap_pwd_build_confirm_req(struct eap_sm *sm,
 				      struct eap_pwd_data *data, u8 id)
 {
-	struct crypto_hash *hash;
+	struct crypto_hash *hash = NULL;
 	u8 conf[SHA256_MAC_LEN], *cruft = NULL, *ptr;
 	u16 grp;
 	size_t prime_len, order_len;
@@ -392,6 +392,7 @@ static void eap_pwd_build_confirm_req(struct eap_sm *sm,
 
 	/* all done with the random function */
 	eap_pwd_h_final(hash, conf);
+	hash = NULL;
 	os_memcpy(data->my_confirm, conf, SHA256_MAC_LEN);
 
 	data->outbuf = wpabuf_alloc(SHA256_MAC_LEN);
@@ -404,6 +405,7 @@ fin:
 	bin_clear_free(cruft, prime_len * 2);
 	if (data->outbuf == NULL)
 		eap_pwd_state(data, FAILURE);
+	eap_pwd_h_final(hash, NULL);
 }
 
 
@@ -742,7 +744,7 @@ static void
 eap_pwd_process_confirm_resp(struct eap_sm *sm, struct eap_pwd_data *data,
 			     const u8 *payload, size_t payload_len)
 {
-	struct crypto_hash *hash;
+	struct crypto_hash *hash = NULL;
 	u32 cs;
 	u16 grp;
 	u8 conf[SHA256_MAC_LEN], *cruft = NULL, *ptr;
@@ -817,6 +819,7 @@ eap_pwd_process_confirm_resp(struct eap_sm *sm, struct eap_pwd_data *data,
 
 	/* all done */
 	eap_pwd_h_final(hash, conf);
+	hash = NULL;
 
 	ptr = (u8 *) payload;
 	if (os_memcmp_const(conf, ptr, SHA256_MAC_LEN)) {
@@ -836,6 +839,7 @@ eap_pwd_process_confirm_resp(struct eap_sm *sm, struct eap_pwd_data *data,
 
 fin:
 	bin_clear_free(cruft, prime_len * 2);
+	eap_pwd_h_final(hash, NULL);
 }
 
 
