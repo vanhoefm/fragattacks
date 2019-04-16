@@ -7103,6 +7103,88 @@ def test_eap_proto_pwd_errors(dev, apdev):
             dev[0].wait_disconnected()
             dev[0].dump_monitor()
 
+def run_eap_pwd_connect(dev, hash=True, fragment=2000):
+    if hash:
+        dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                    fragment_size=str(fragment),
+                    eap="PWD", identity="pwd-hash",
+                    password_hex="hash:e3718ece8ab74792cbbfffd316d2d19a",
+                    scan_freq="2412", wait_connect=False)
+    else:
+        dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                    fragment_size=str(fragment),
+                    eap="PWD", identity="pwd-hash-sha1",
+                    password="secret password",
+                    scan_freq="2412", wait_connect=False)
+    ev = dev.wait_event(["CTRL-EVENT-EAP-SUCCESS", "CTRL-EVENT-EAP-FAILURE",
+                         "CTRL-EVENT-DISCONNECTED"],
+                        timeout=1)
+    dev.request("REMOVE_NETWORK all")
+    if not ev or "CTRL-EVENT-DISCONNECTED" not in ev:
+        dev.wait_disconnected()
+    dev.dump_monitor()
+
+def test_eap_proto_pwd_errors_server(dev, apdev):
+    """EAP-pwd local error cases on server"""
+    check_eap_capa(dev[0], "PWD")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+
+    tests = [(1, "eap_pwd_init"),
+             (2, "eap_pwd_init"),
+             (3, "eap_pwd_init"),
+             (1, "eap_pwd_build_id_req"),
+             (1, "eap_pwd_build_commit_req"),
+             (1, "eap_pwd_build_confirm_req"),
+             (1, "eap_pwd_h_init;eap_pwd_build_confirm_req"),
+             (1, "wpabuf_alloc;eap_pwd_build_confirm_req"),
+             (1, "eap_msg_alloc;eap_pwd_build_req"),
+             (1, "eap_pwd_process_id_resp"),
+             (1, "get_eap_pwd_group;eap_pwd_process_id_resp"),
+             (1, "eap_pwd_process_confirm_resp"),
+             (1, "eap_pwd_h_init;eap_pwd_process_confirm_resp"),
+             (1, "compute_keys;eap_pwd_process_confirm_resp"),
+             (1, "eap_pwd_getkey"),
+             (1, "eap_pwd_get_emsk"),
+             (1, "eap_pwd_get_session_id")]
+    for count, func in tests:
+        with alloc_fail(hapd, count, func):
+            run_eap_pwd_connect(dev[0], hash=True)
+
+    tests = [(1, "eap_msg_alloc;eap_pwd_build_req"),
+             (2, "eap_msg_alloc;eap_pwd_build_req"),
+             (1, "wpabuf_alloc;eap_pwd_process")]
+    for count, func in tests:
+        with alloc_fail(hapd, count, func):
+            run_eap_pwd_connect(dev[0], hash=True, fragment=13)
+
+    tests = [(4, "eap_pwd_init")]
+    for count, func in tests:
+        with alloc_fail(hapd, count, func):
+            run_eap_pwd_connect(dev[0], hash=False)
+
+    tests = [(1, "eap_pwd_build_id_req"),
+             (1, "eap_pwd_build_commit_req"),
+             (1, "crypto_ec_point_mul;eap_pwd_build_commit_req"),
+             (1, "crypto_ec_point_invert;eap_pwd_build_commit_req"),
+             (1, "crypto_ec_point_to_bin;eap_pwd_build_commit_req"),
+             (1, "crypto_ec_point_to_bin;eap_pwd_build_confirm_req"),
+             (2, "=crypto_ec_point_to_bin;eap_pwd_build_confirm_req"),
+             (1, "hash_nt_password_hash;eap_pwd_process_id_resp"),
+             (1, "compute_password_element;eap_pwd_process_id_resp"),
+             (1, "crypto_bignum_init;eap_pwd_process_commit_resp"),
+             (1, "crypto_ec_point_mul;eap_pwd_process_commit_resp"),
+             (2, "crypto_ec_point_mul;eap_pwd_process_commit_resp"),
+             (1, "crypto_ec_point_add;eap_pwd_process_commit_resp"),
+             (1, "crypto_ec_point_to_bin;eap_pwd_process_confirm_resp"),
+             (2, "=crypto_ec_point_to_bin;eap_pwd_process_confirm_resp")]
+    for count, func in tests:
+        with fail_test(hapd, count, func):
+            run_eap_pwd_connect(dev[0], hash=True)
+
 def test_eap_proto_erp(dev, apdev):
     """ERP protocol tests"""
     check_erp_capa(dev[0])
