@@ -64,9 +64,6 @@ u8 * hostapd_eid_he_operation(struct hostapd_data *hapd, u8 *eid)
 	oper = (struct ieee80211_he_operation *) pos;
 	os_memset(oper, 0, sizeof(*oper));
 
-	if (hapd->iface->conf->he_op.he_bss_color)
-		oper->he_oper_params |= hapd->iface->conf->he_op.he_bss_color;
-
 	if (hapd->iface->conf->he_op.he_default_pe_duration)
 		oper->he_oper_params |=
 			(hapd->iface->conf->he_op.he_default_pe_duration <<
@@ -79,6 +76,11 @@ u8 * hostapd_eid_he_operation(struct hostapd_data *hapd, u8 *eid)
 		oper->he_oper_params |=
 			(hapd->iface->conf->he_op.he_rts_threshold <<
 			 HE_OPERATION_RTS_THRESHOLD_OFFSET);
+
+	if (hapd->iface->conf->he_op.he_bss_color)
+		oper->he_oper_params |=
+			(hapd->iface->conf->he_op.he_bss_color <<
+			 HE_OPERATION_BSS_COLOR_OFFSET);
 
 	/* TODO: conditional MaxBSSID Indicator subfield */
 
