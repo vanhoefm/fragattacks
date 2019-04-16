@@ -1021,8 +1021,6 @@ static int wpa_supplicant_pairwise_gtk(struct wpa_sm *sm,
 	}
 	os_memset(&gd, 0, sizeof(gd));
 
-	wpa_supplicant_key_neg_complete(sm, sm->bssid,
-					key_info & WPA_KEY_INFO_SECURE);
 	return 0;
 }
 
@@ -1503,8 +1501,11 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 	wpa_sm_set_state(sm, WPA_GROUP_HANDSHAKE);
 
 	if (sm->group_cipher == WPA_CIPHER_GTK_NOT_USED) {
-		wpa_supplicant_key_neg_complete(sm, sm->bssid,
-						key_info & WPA_KEY_INFO_SECURE);
+		/* No GTK to be set to the driver */
+	} else if (!ie.gtk && sm->proto == WPA_PROTO_RSN) {
+		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
+			"RSN: No GTK KDE included in EAPOL-Key msg 3/4");
+		goto failed;
 	} else if (ie.gtk &&
 	    wpa_supplicant_pairwise_gtk(sm, key,
 					ie.gtk, ie.gtk_len, key_info) < 0) {
@@ -1518,6 +1519,10 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 			"RSN: Failed to configure IGTK");
 		goto failed;
 	}
+
+	if (sm->group_cipher == WPA_CIPHER_GTK_NOT_USED || ie.gtk)
+		wpa_supplicant_key_neg_complete(sm, sm->bssid,
+						key_info & WPA_KEY_INFO_SECURE);
 
 	if (ie.gtk)
 		wpa_sm_set_rekey_offload(sm);
