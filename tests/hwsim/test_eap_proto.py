@@ -7196,6 +7196,155 @@ def test_eap_proto_pwd_errors_server(dev, apdev):
         with fail_test(hapd, count, func):
             run_eap_pwd_connect(dev[0], hash=True)
 
+def start_pwd_assoc(dev, hapd):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                eap="PWD", identity="pwd user", password="secret password",
+                wait_connect=False, scan_freq="2412")
+    proxy_msg(hapd, dev) # EAP-Identity/Request
+    proxy_msg(dev, hapd) # EAP-Identity/Response
+    proxy_msg(hapd, dev) # EAP-pwd-Identity/Request
+
+def stop_pwd_assoc(dev, hapd):
+    dev.request("REMOVE_NETWORK all")
+    dev.wait_disconnected()
+    dev.dump_monitor()
+    hapd.dump_monitor()
+
+def test_eap_proto_pwd_server(dev, apdev):
+    """EAP-pwd protocol testing for the server"""
+    check_eap_capa(dev[0], "PWD")
+    params = int_eap_server_params()
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+    hapd.request("SET ext_eapol_frame_io 1")
+    dev[0].request("SET ext_eapol_frame_io 1")
+
+    start_pwd_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Replace exch field with unexpected value
+    # --> EAP-pwd: Unexpected opcode=4 in state=0
+    msg = resp[0:18] + "04" + resp[20:]
+    tx_msg(dev[0], hapd, msg)
+
+    # Too short EAP-pwd header (no flags/exch field)
+    # --> EAP-pwd: Invalid frame
+    msg = resp[0:4] + "0005" + resp[8:12] + "0005" + "34"
+    tx_msg(dev[0], hapd, msg)
+
+    # Too short EAP-pwd header (L=1 but only one octet of total length field)
+    # --> EAP-pwd: Frame too short to contain Total-Length field
+    msg = resp[0:4] + "0007" + resp[8:12] + "0007" + "34" + "81ff"
+    tx_msg(dev[0], hapd, msg)
+    # server continues exchange, so start from scratch for the next step
+    rx_msg(hapd)
+    stop_pwd_assoc(dev[0], hapd)
+
+    start_pwd_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too large total length
+    msg = resp[0:4] + "0008" + resp[8:12] + "0008" + "34" + "c1ffff"
+    tx_msg(dev[0], hapd, msg)
+    # server continues exchange, so start from scratch for the next step
+    rx_msg(hapd)
+    stop_pwd_assoc(dev[0], hapd)
+
+    start_pwd_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # First fragment
+    msg = resp[0:4] + "0009" + resp[8:12] + "0009" + "34" + "c100ff" + "aa"
+    tx_msg(dev[0], hapd, msg)
+    # Ack
+    req = rx_msg(hapd)
+    # Unexpected first fragment
+    # --> EAP-pwd: Unexpected new fragment start when previous fragment is still in use
+    msg = resp[0:4] + "0009" + resp[8:10] + req[10:12] + "0009" + "34" + "c100ee" + "bb"
+    tx_msg(dev[0], hapd, msg)
+    # server continues exchange, so start from scratch for the next step
+    rx_msg(hapd)
+    stop_pwd_assoc(dev[0], hapd)
+
+    start_pwd_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too much data in first fragment
+    # --> EAP-pwd: Buffer overflow attack detected! (0+2 > 1)
+    msg = resp[0:4] + "000a" + resp[8:12] + "000a" + "34" + "c10001" + "aabb"
+    tx_msg(dev[0], hapd, msg)
+    # EAP-Failure
+    rx_msg(hapd)
+    stop_pwd_assoc(dev[0], hapd)
+
+    start_pwd_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Change parameters
+    # --> EAP-pwd: peer changed parameters
+    msg = resp[0:20] + "ff" + resp[22:]
+    tx_msg(dev[0], hapd, msg)
+    # EAP-Failure
+    rx_msg(hapd)
+    stop_pwd_assoc(dev[0], hapd)
+
+    start_pwd_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short ID response
+    # --> EAP-pwd: Invalid ID response
+    msg = resp[0:4] + "000a" + resp[8:12] + "000a" + "34" + "01ffeeddcc"
+    tx_msg(dev[0], hapd, msg)
+    # server continues exchange, so start from scratch for the next step
+    rx_msg(hapd)
+    stop_pwd_assoc(dev[0], hapd)
+
+    start_pwd_assoc(dev[0], hapd)
+    # EAP-pwd-Identity/Response
+    resp = rx_msg(dev[0])
+    tx_msg(dev[0], hapd, resp)
+    # EAP-pwd-Commit/Request
+    req = rx_msg(hapd)
+    # Unexpected EAP-pwd-Identity/Response
+    # --> EAP-pwd: Unexpected opcode=1 in state=1
+    msg = resp[0:10] + req[10:12] + resp[12:]
+    tx_msg(dev[0], hapd, msg)
+    # server continues exchange, so start from scratch for the next step
+    rx_msg(hapd)
+    stop_pwd_assoc(dev[0], hapd)
+
+    start_pwd_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # EAP-pwd-Identity/Response
+    proxy_msg(hapd, dev[0]) # EAP-pwd-Commit/Request
+    # EAP-pwd-Commit/Response
+    resp = rx_msg(dev[0])
+    # Too short Commit response
+    # --> EAP-pwd: Unexpected Commit payload length 4 (expected 96)
+    msg = resp[0:4] + "000a" + resp[8:12] + "000a" + "34" + "02ffeeddcc"
+    tx_msg(dev[0], hapd, msg)
+    # EAP-Failure
+    rx_msg(hapd)
+    stop_pwd_assoc(dev[0], hapd)
+
+    start_pwd_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # EAP-pwd-Identity/Response
+    proxy_msg(hapd, dev[0]) # EAP-pwd-Commit/Request
+    proxy_msg(dev[0], hapd) # EAP-pwd-Commit/Response
+    proxy_msg(hapd, dev[0]) # EAP-pwd-Confirm/Request
+    # EAP-pwd-Confirm/Response
+    resp = rx_msg(dev[0])
+    # Too short Confirm response
+    # --> EAP-pwd: Unexpected Confirm payload length 4 (expected 32)
+    msg = resp[0:4] + "000a" + resp[8:12] + "000a" + "34" + "03ffeeddcc"
+    tx_msg(dev[0], hapd, msg)
+    # EAP-Failure
+    rx_msg(hapd)
+    stop_pwd_assoc(dev[0], hapd)
+
+    start_pwd_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Set M=1
+    # --> EAP-pwd: No buffer for reassembly
+    msg = resp[0:18] + "41" + resp[20:]
+    tx_msg(dev[0], hapd, msg)
+    # EAP-Failure
+    rx_msg(hapd)
+    stop_pwd_assoc(dev[0], hapd)
+
 def test_eap_proto_erp(dev, apdev):
     """ERP protocol tests"""
     check_erp_capa(dev[0])
