@@ -320,6 +320,19 @@ static void wpa_rekey_ptk(void *eloop_ctx, void *timeout_ctx)
 }
 
 
+void wpa_auth_set_ptk_rekey_timer(struct wpa_state_machine *sm)
+{
+	if (sm && sm->wpa_auth->conf.wpa_ptk_rekey) {
+		wpa_printf(MSG_DEBUG, "WPA: Start PTK rekeying timer for "
+			   MACSTR " (%d seconds)", MAC2STR(sm->addr),
+			   sm->wpa_auth->conf.wpa_ptk_rekey);
+		eloop_cancel_timeout(wpa_rekey_ptk, sm->wpa_auth, sm);
+		eloop_register_timeout(sm->wpa_auth->conf.wpa_ptk_rekey, 0,
+				       wpa_rekey_ptk, sm->wpa_auth, sm);
+	}
+}
+
+
 static int wpa_auth_pmksa_clear_cb(struct wpa_state_machine *sm, void *ctx)
 {
 	if (sm->pmksa == ctx)
@@ -2124,6 +2137,21 @@ SM_STATE(WPA_PTK, PTKSTART)
 			wpa_printf(MSG_DEBUG,
 				   "RSN: No KCK available to derive PMKID for message 1/4");
 			pmkid = NULL;
+#ifdef CONFIG_FILS
+		} else if (wpa_key_mgmt_fils(sm->wpa_key_mgmt)) {
+			if (sm->pmkid_set) {
+				wpa_hexdump(MSG_DEBUG,
+					    "RSN: Message 1/4 PMKID from FILS/ERP",
+					    sm->pmkid, PMKID_LEN);
+				os_memcpy(&pmkid[2 + RSN_SELECTOR_LEN],
+					  sm->pmkid, PMKID_LEN);
+			} else {
+				/* No PMKID available */
+				wpa_printf(MSG_DEBUG,
+					   "RSN: No FILS/ERP PMKID available for message 1/4");
+				pmkid = NULL;
+			}
+#endif /* CONFIG_FILS */
 #ifdef CONFIG_SAE
 		} else if (wpa_key_mgmt_sae(sm->wpa_key_mgmt)) {
 			if (sm->pmkid_set) {
@@ -2790,6 +2818,12 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 			pmk_len = sm->pmk_len;
 		}
 
+		if ((!pmk || !pmk_len) && sm->pmksa) {
+			wpa_printf(MSG_DEBUG, "WPA: Use PMK from PMKSA cache");
+			pmk = sm->pmksa->pmk;
+			pmk_len = sm->pmksa->pmk_len;
+		}
+
 		if (wpa_derive_ptk(sm, sm->SNonce, pmk, pmk_len, &PTK) < 0)
 			break;
 
@@ -3287,12 +3321,7 @@ SM_STATE(WPA_PTK, PTKINITDONE)
 		/* FIX: MLME-SetProtection.Request(TA, Tx_Rx) */
 		sm->pairwise_set = TRUE;
 
-		if (sm->wpa_auth->conf.wpa_ptk_rekey) {
-			eloop_cancel_timeout(wpa_rekey_ptk, sm->wpa_auth, sm);
-			eloop_register_timeout(sm->wpa_auth->conf.
-					       wpa_ptk_rekey, 0, wpa_rekey_ptk,
-					       sm->wpa_auth, sm);
-		}
+		wpa_auth_set_ptk_rekey_timer(sm);
 
 		if (wpa_key_mgmt_wpa_psk(sm->wpa_key_mgmt) ||
 		    sm->wpa_key_mgmt == WPA_KEY_MGMT_DPP ||
@@ -4838,6 +4867,16 @@ void wpa_auth_get_fils_aead_params(struct wpa_state_machine *sm,
 	os_memcpy(fils_snonce, sm->SNonce, WPA_NONCE_LEN);
 	os_memcpy(fils_kek, sm->PTK.kek, WPA_KEK_MAX_LEN);
 	*fils_kek_len = sm->PTK.kek_len;
+}
+
+
+void wpa_auth_add_fils_pmk_pmkid(struct wpa_state_machine *sm, const u8 *pmk,
+				 size_t pmk_len, const u8 *pmkid)
+{
+	os_memcpy(sm->PMK, pmk, pmk_len);
+	sm->pmk_len = pmk_len;
+	os_memcpy(sm->pmkid, pmkid, PMKID_LEN);
+	sm->pmkid_set = 1;
 }
 
 #endif /* CONFIG_FILS */
