@@ -1654,8 +1654,8 @@ def test_fils_sk_auth_mismatch(dev, apdev, params):
     dev[0].wait_connected()
     hwsim_utils.test_connectivity(dev[0], hapd)
 
-def test_fils_auth_gtk_rekey(dev, apdev, params):
-    """GTK rekeying after FILS authentication"""
+def setup_fils_rekey(dev, apdev, params, wpa_ptk_rekey=0, wpa_group_rekey=0,
+                     pmksa_caching=True):
     check_fils_capa(dev[0])
     check_erp_capa(dev[0])
 
@@ -1667,7 +1667,12 @@ def test_fils_auth_gtk_rekey(dev, apdev, params):
     params['auth_server_port'] = "18128"
     params['erp_domain'] = 'example.com'
     params['fils_realm'] = 'example.com'
-    params['wpa_group_rekey'] = '1'
+    if wpa_ptk_rekey:
+        params['wpa_ptk_rekey'] = str(wpa_ptk_rekey)
+    if wpa_group_rekey:
+        params['wpa_group_rekey'] = str(wpa_group_rekey)
+    if not pmksa_caching:
+            params['disable_pmksa_caching'] = '1'
     hapd = hostapd.add_ap(apdev[0]['ifname'], params)
 
     dev[0].scan_for_bss(bssid, freq=2412)
@@ -1685,18 +1690,50 @@ def test_fils_auth_gtk_rekey(dev, apdev, params):
     ev = dev[0].wait_event(["CTRL-EVENT-EAP-STARTED",
                             "CTRL-EVENT-CONNECTED"], timeout=10)
     if ev is None:
-        raise Exception("Connection using PMKSA caching timed out")
+        raise Exception("Connection using ERP or PMKSA caching timed out")
     if "CTRL-EVENT-EAP-STARTED" in ev:
         raise Exception("Unexpected EAP exchange")
     dev[0].dump_monitor()
 
     hwsim_utils.test_connectivity(dev[0], hapd)
+    return hapd
+
+def test_fils_auth_gtk_rekey(dev, apdev, params):
+    """GTK rekeying after FILS authentication"""
+    hapd = setup_fils_rekey(dev, apdev, params, wpa_group_rekey=1)
     ev = dev[0].wait_event(["WPA: Group rekeying completed"], timeout=2)
     if ev is None:
         raise Exception("GTK rekey timed out")
     hwsim_utils.test_connectivity(dev[0], hapd)
 
     ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=5)
+    if ev is not None:
+        raise Exception("Rekeying failed - disconnected")
+    hwsim_utils.test_connectivity(dev[0], hapd)
+
+def test_fils_auth_ptk_rekey_ap(dev, apdev, params):
+    """PTK rekeying after FILS authentication triggered by AP"""
+    hapd = setup_fils_rekey(dev, apdev, params, wpa_ptk_rekey=2)
+    ev = dev[0].wait_event(["WPA: Key negotiation completed"], timeout=3)
+    if ev is None:
+        raise Exception("PTK rekey timed out")
+    hwsim_utils.test_connectivity(dev[0], hapd)
+
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=1)
+    if ev is not None:
+        raise Exception("Rekeying failed - disconnected")
+    hwsim_utils.test_connectivity(dev[0], hapd)
+
+def test_fils_auth_ptk_rekey_ap_erp(dev, apdev, params):
+    """PTK rekeying after FILS authentication triggered by AP (ERP)"""
+    hapd = setup_fils_rekey(dev, apdev, params, wpa_ptk_rekey=2,
+                            pmksa_caching=False)
+    ev = dev[0].wait_event(["WPA: Key negotiation completed"], timeout=3)
+    if ev is None:
+        raise Exception("PTK rekey timed out")
+    hwsim_utils.test_connectivity(dev[0], hapd)
+
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=1)
     if ev is not None:
         raise Exception("Rekeying failed - disconnected")
     hwsim_utils.test_connectivity(dev[0], hapd)
