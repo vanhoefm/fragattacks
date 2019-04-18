@@ -1748,6 +1748,8 @@ int wpa_auth_sm_event(struct wpa_state_machine *sm, enum wpa_event event)
 		sm->pmk_len = 0;
 		os_memset(sm->xxkey, 0, sizeof(sm->xxkey));
 		sm->xxkey_len = 0;
+		os_memset(sm->pmk_r1, 0, sizeof(sm->pmk_r1));
+		sm->pmk_r1_len = 0;
 #endif /* CONFIG_IEEE80211R_AP */
 		break;
 	case WPA_REAUTH:

@@ -119,6 +119,8 @@ struct wpa_state_machine {
 	u8 xxkey[PMK_LEN_MAX]; /* PSK or the second 256 bits of MSK, or the
 				* first 384 bits of MSK */
 	size_t xxkey_len;
+	u8 pmk_r1[PMK_LEN_MAX];
+	unsigned int pmk_r1_len;
 	u8 pmk_r1_name[WPA_PMK_NAME_LEN]; /* PMKR1Name derived from FT Auth
 					   * Request */
 	u8 r0kh_id[FT_R0KH_ID_MAX_LEN]; /* R0KH-ID from FT Auth Request */
