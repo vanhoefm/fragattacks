@@ -4171,8 +4171,10 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 	     nla_put_flag(msg, NL80211_ATTR_CONTROL_PORT_NO_ENCRYPT)))
 		goto fail;
 
-	if (drv->device_ap_sme && (params->key_mgmt_suites & WPA_KEY_MGMT_SAE))
-	     nla_put_flag(msg, NL80211_ATTR_EXTERNAL_AUTH_SUPPORT);
+	if (drv->device_ap_sme &&
+	    (params->key_mgmt_suites & WPA_KEY_MGMT_SAE) &&
+	    nla_put_flag(msg, NL80211_ATTR_EXTERNAL_AUTH_SUPPORT))
+		goto fail;
 
 	wpa_printf(MSG_DEBUG, "nl80211: pairwise_ciphers=0x%x",
 		   params->pairwise_ciphers);
