@@ -384,6 +384,11 @@ static int wpa_supplicant_get_pmk(struct wpa_sm *sm,
 
 			if (!sm->cur_pmksa)
 				sm->cur_pmksa = sa;
+#ifdef CONFIG_IEEE80211R
+		} else if (wpa_key_mgmt_ft(sm->key_mgmt) && sm->ft_protocol) {
+			wpa_printf(MSG_DEBUG,
+				   "FT: Continue 4-way handshake without PMK/PMKID for association using FT protocol");
+#endif /* CONFIG_IEEE80211R */
 		} else {
 			wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
 				"WPA: Failed to get master session key from "
@@ -2714,6 +2719,9 @@ void wpa_sm_notify_assoc(struct wpa_sm *sm, const u8 *bssid)
 		wpa_ft_prepare_auth_request(sm, NULL);
 
 		clear_keys = 0;
+		sm->ft_protocol = 1;
+	} else {
+		sm->ft_protocol = 0;
 	}
 #endif /* CONFIG_IEEE80211R */
 #ifdef CONFIG_FILS
@@ -2778,6 +2786,7 @@ void wpa_sm_notify_disassoc(struct wpa_sm *sm)
 #endif /* CONFIG_FILS */
 #ifdef CONFIG_IEEE80211R
 	sm->ft_reassoc_completed = 0;
+	sm->ft_protocol = 0;
 #endif /* CONFIG_IEEE80211R */
 
 	/* Keys are not needed in the WPA state machine anymore */
