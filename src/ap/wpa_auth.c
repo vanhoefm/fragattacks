@@ -2195,7 +2195,7 @@ static int wpa_derive_ptk(struct wpa_state_machine *sm, const u8 *snonce,
 
 #ifdef CONFIG_IEEE80211R_AP
 	if (wpa_key_mgmt_ft(sm->wpa_key_mgmt))
-		return wpa_auth_derive_ptk_ft(sm, pmk, ptk);
+		return wpa_auth_derive_ptk_ft(sm, ptk);
 #endif /* CONFIG_IEEE80211R_AP */
 
 #ifdef CONFIG_DPP2
