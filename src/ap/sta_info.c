@@ -812,6 +812,8 @@ void ap_sta_disassociate(struct hostapd_data *hapd, struct sta_info *sta,
 			       ap_handle_timer, hapd, sta);
 	accounting_sta_stop(hapd, sta);
 	ieee802_1x_free_station(hapd, sta);
+	wpa_auth_sta_deinit(sta->wpa_sm);
+	sta->wpa_sm = NULL;
 
 	sta->disassoc_reason = reason;
 	sta->flags |= WLAN_STA_PENDING_DISASSOC_CB;
