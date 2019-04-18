@@ -712,7 +712,7 @@ static void wpa_free_sta_sm(struct wpa_state_machine *sm)
 #ifdef CONFIG_DPP2
 	wpabuf_clear_free(sm->dpp_z);
 #endif /* CONFIG_DPP2 */
-	os_free(sm);
+	bin_clear_free(sm, sizeof(*sm));
 }
 
 
@@ -1743,6 +1743,12 @@ int wpa_auth_sm_event(struct wpa_state_machine *sm, enum wpa_event event)
 	case WPA_DEAUTH:
 	case WPA_DISASSOC:
 		sm->DeauthenticationRequest = TRUE;
+#ifdef CONFIG_IEEE80211R_AP
+		os_memset(sm->PMK, 0, sizeof(sm->PMK));
+		sm->pmk_len = 0;
+		os_memset(sm->xxkey, 0, sizeof(sm->xxkey));
+		sm->xxkey_len = 0;
+#endif /* CONFIG_IEEE80211R_AP */
 		break;
 	case WPA_REAUTH:
 	case WPA_REAUTH_EAPOL:
