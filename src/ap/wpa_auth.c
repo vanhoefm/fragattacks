@@ -2211,8 +2211,20 @@ static int wpa_derive_ptk(struct wpa_state_machine *sm, const u8 *snonce,
 	size_t z_len = 0;
 
 #ifdef CONFIG_IEEE80211R_AP
-	if (wpa_key_mgmt_ft(sm->wpa_key_mgmt))
+	if (wpa_key_mgmt_ft(sm->wpa_key_mgmt)) {
+		if (sm->ft_completed) {
+			u8 ptk_name[WPA_PMK_NAME_LEN];
+
+			return wpa_pmk_r1_to_ptk(sm->pmk_r1, sm->pmk_r1_len,
+						 sm->SNonce, sm->ANonce,
+						 sm->addr, sm->wpa_auth->addr,
+						 sm->pmk_r1_name,
+						 ptk, ptk_name,
+						 sm->wpa_key_mgmt,
+						 sm->pairwise);
+		}
 		return wpa_auth_derive_ptk_ft(sm, ptk);
+	}
 #endif /* CONFIG_IEEE80211R_AP */
 
 #ifdef CONFIG_DPP2
