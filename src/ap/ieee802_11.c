@@ -1038,8 +1038,8 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_DEBUG,
-			       "start SAE authentication (RX commit, status=%u)",
-			       status_code);
+			       "start SAE authentication (RX commit, status=%u (%s))",
+			       status_code, status2str(status_code));
 
 		if ((hapd->conf->mesh & MESH_ENABLED) &&
 		    status_code == WLAN_STATUS_ANTI_CLOGGING_TOKEN_REQ &&
@@ -1182,8 +1182,8 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 	} else if (auth_transaction == 2) {
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_DEBUG,
-			       "SAE authentication (RX confirm, status=%u)",
-			       status_code);
+			       "SAE authentication (RX confirm, status=%u (%s))",
+			       status_code, status2str(status_code));
 		if (status_code != WLAN_STATUS_SUCCESS)
 			goto remove_sta;
 		if (sta->sae->state >= SAE_CONFIRMED ||
@@ -1224,8 +1224,9 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 	} else {
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_DEBUG,
-			       "unexpected SAE authentication transaction %u (status=%u)",
-			       auth_transaction, status_code);
+			       "unexpected SAE authentication transaction %u (status=%u (%s))",
+			       auth_transaction, status_code,
+			       status2str(status_code));
 		if (status_code != WLAN_STATUS_SUCCESS)
 			goto remove_sta;
 		resp = WLAN_STATUS_UNKNOWN_AUTH_TRANSACTION;

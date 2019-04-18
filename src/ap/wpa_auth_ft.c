@@ -3090,8 +3090,9 @@ void wpa_ft_process_auth(struct wpa_state_machine *sm, const u8 *bssid,
 	status = res;
 
 	wpa_printf(MSG_DEBUG, "FT: FT authentication response: dst=" MACSTR
-		   " auth_transaction=%d status=%d",
-		   MAC2STR(sm->addr), auth_transaction + 1, status);
+		   " auth_transaction=%d status=%u (%s)",
+		   MAC2STR(sm->addr), auth_transaction + 1, status,
+		   status2str(status));
 	wpa_hexdump(MSG_DEBUG, "FT: Response IEs", resp_ies, resp_ies_len);
 	cb(ctx, sm->addr, bssid, auth_transaction + 1, status,
 	   resp_ies, resp_ies_len);
@@ -3449,8 +3450,9 @@ static int wpa_ft_send_rrb_auth_resp(struct wpa_state_machine *sm,
 	u8 *pos;
 
 	wpa_printf(MSG_DEBUG, "FT: RRB authentication response: STA=" MACSTR
-		   " CurrentAP=" MACSTR " status=%d",
-		   MAC2STR(sm->addr), MAC2STR(current_ap), status);
+		   " CurrentAP=" MACSTR " status=%u (%s)",
+		   MAC2STR(sm->addr), MAC2STR(current_ap), status,
+		   status2str(status));
 	wpa_hexdump(MSG_DEBUG, "FT: Response IEs", resp_ies, resp_ies_len);
 
 	/* RRB - Forward action frame response to the Current AP */
