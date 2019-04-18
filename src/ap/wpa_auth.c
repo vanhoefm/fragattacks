@@ -1783,6 +1783,7 @@ int wpa_auth_sm_event(struct wpa_state_machine *sm, enum wpa_event event)
 
 		/* Using FT protocol, not WPA auth state machine */
 		sm->ft_completed = 1;
+		wpa_auth_set_ptk_rekey_timer(sm);
 		return 0;
 #else /* CONFIG_IEEE80211R_AP */
 		break;
