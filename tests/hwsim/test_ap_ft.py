@@ -134,7 +134,7 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
               force_initial_conn_to_first_ap=False, sha384=False,
               group_mgmt=None, ocv=None, sae_password=None,
               sae_password_id=None, sae_and_psk=False, pmksa_caching=False,
-              roam_with_reassoc=False, also_non_ft=False):
+              roam_with_reassoc=False, also_non_ft=False, only_one_way=False):
     logger.info("Connect to first AP")
 
     copts = {}
@@ -222,6 +222,8 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
             else:
                 hwsim_utils.test_connectivity(dev, hapd2ap)
 
+        if only_one_way:
+            return
         # Roaming artificially fast can make data test fail because the key is
         # set later.
         time.sleep(0.01)
@@ -893,43 +895,81 @@ def test_ap_ft_over_ds_pull_vlan(dev, apdev):
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
               conndev="brvlan1")
 
-def test_ap_ft_sae(dev, apdev):
-    """WPA2-PSK-FT-SAE AP"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
+def start_ft_sae(dev, apdev, wpa_ptk_rekey=None):
+    if "SAE" not in dev.get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     ssid = "test-ft"
     passphrase = "12345678"
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
     params['wpa_key_mgmt'] = "FT-SAE"
+    if wpa_ptk_rekey:
+        params['wpa_ptk_rekey'] = str(wpa_ptk_rekey)
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params['wpa_key_mgmt'] = "FT-SAE"
-    hapd = hostapd.add_ap(apdev[1], params)
-    key_mgmt = hapd.get_config()['key_mgmt']
+    if wpa_ptk_rekey:
+        params['wpa_ptk_rekey'] = str(wpa_ptk_rekey)
+    hapd1 = hostapd.add_ap(apdev[1], params)
+    key_mgmt = hapd1.get_config()['key_mgmt']
     if key_mgmt.split(' ')[0] != "FT-SAE":
         raise Exception("Unexpected GET_CONFIG(key_mgmt): " + key_mgmt)
 
-    dev[0].request("SET sae_groups ")
-    run_roams(dev[0], apdev, hapd0, hapd, ssid, passphrase, sae=True)
+    dev.request("SET sae_groups ")
+    return hapd0, hapd1
+
+def test_ap_ft_sae(dev, apdev):
+    """WPA2-PSK-FT-SAE AP"""
+    hapd0, hapd1 = start_ft_sae(dev[0], apdev)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True)
+
+def test_ap_ft_sae_ptk_rekey0(dev, apdev):
+    """WPA2-PSK-FT-SAE AP and PTK rekey triggered by station"""
+    hapd0, hapd1 = start_ft_sae(dev[0], apdev)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
+              ptk_rekey="1", roams=0)
+    check_ptk_rekey(dev[0], hapd0, hapd1)
+
+def test_ap_ft_sae_ptk_rekey1(dev, apdev):
+    """WPA2-PSK-FT-SAE AP and PTK rekey triggered by station"""
+    hapd0, hapd1 = start_ft_sae(dev[0], apdev)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
+              ptk_rekey="1", only_one_way=True)
+    check_ptk_rekey(dev[0], hapd0, hapd1)
+
+def test_ap_ft_sae_ptk_rekey_ap(dev, apdev):
+    """WPA2-PSK-FT-SAE AP and PTK rekey triggered by AP"""
+    hapd0, hapd1 = start_ft_sae(dev[0], apdev, wpa_ptk_rekey=2)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
+              only_one_way=True)
+    check_ptk_rekey(dev[0], hapd0, hapd1)
 
 def test_ap_ft_sae_over_ds(dev, apdev):
     """WPA2-PSK-FT-SAE AP over DS"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
-    ssid = "test-ft"
-    passphrase = "12345678"
-
-    params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params['wpa_key_mgmt'] = "FT-SAE"
-    hapd0 = hostapd.add_ap(apdev[0], params)
-    params = ft_params2(ssid=ssid, passphrase=passphrase)
-    params['wpa_key_mgmt'] = "FT-SAE"
-    hapd1 = hostapd.add_ap(apdev[1], params)
-
-    dev[0].request("SET sae_groups ")
-    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, sae=True,
+    hapd0, hapd1 = start_ft_sae(dev[0], apdev)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
               over_ds=True)
+
+def test_ap_ft_sae_over_ds_ptk_rekey0(dev, apdev):
+    """WPA2-PSK-FT-SAE AP over DS and PTK rekey triggered by station"""
+    hapd0, hapd1 = start_ft_sae(dev[0], apdev)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
+              over_ds=True, ptk_rekey="1", roams=0)
+    check_ptk_rekey(dev[0], hapd0, hapd1)
+
+def test_ap_ft_sae_over_ds_ptk_rekey1(dev, apdev):
+    """WPA2-PSK-FT-SAE AP over DS and PTK rekey triggered by station"""
+    hapd0, hapd1 = start_ft_sae(dev[0], apdev)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
+              over_ds=True, ptk_rekey="1", only_one_way=True)
+    check_ptk_rekey(dev[0], hapd0, hapd1)
+
+def test_ap_ft_sae_over_ds_ptk_rekey_ap(dev, apdev):
+    """WPA2-PSK-FT-SAE AP over DS and PTK rekey triggered by AP"""
+    hapd0, hapd1 = start_ft_sae(dev[0], apdev, wpa_ptk_rekey=2)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
+              over_ds=True, only_one_way=True)
+    check_ptk_rekey(dev[0], hapd0, hapd1)
 
 def test_ap_ft_sae_pw_id(dev, apdev):
     """FT-SAE with Password Identifier"""
@@ -995,7 +1035,8 @@ def test_ap_ft_sae_pmksa_caching(dev, apdev):
               pmksa_caching=True)
 
 def generic_ap_ft_eap(dev, apdev, vlan=False, cui=False, over_ds=False,
-                      discovery=False, roams=1):
+                      discovery=False, roams=1, wpa_ptk_rekey=0,
+                      only_one_way=False):
     ssid = "test-ft"
     passphrase = "12345678"
     if vlan:
@@ -1024,16 +1065,20 @@ def generic_ap_ft_eap(dev, apdev, vlan=False, cui=False, over_ds=False,
     params["ieee8021x"] = "1"
     if vlan:
         params["dynamic_vlan"] = "1"
+    if wpa_ptk_rekey:
+        params["wpa_ptk_rekey"] = str(wpa_ptk_rekey)
     params = dict(list(radius.items()) + list(params.items()))
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd, hapd1, ssid, passphrase, eap=True,
               over_ds=over_ds, roams=roams, eap_identity=identity,
-              conndev=conndev)
+              conndev=conndev, only_one_way=only_one_way)
     if "[WPA2-FT/EAP-CCMP]" not in dev[0].request("SCAN_RESULTS"):
         raise Exception("Scan results missing RSN element info")
     check_mib(dev[0], [("dot11RSNAAuthenticationSuiteRequested", "00-0f-ac-3"),
                        ("dot11RSNAAuthenticationSuiteSelected", "00-0f-ac-3")])
+    if only_one_way:
+        return
 
     # Verify EAPOL reauthentication after FT protocol
     if dev[0].get_status_field('bssid') == apdev[0]['bssid']:
@@ -2298,57 +2343,67 @@ def test_rsn_ie_proto_ft_psk_sta(dev, apdev):
         raise Exception("Unexpected connection")
     dev[0].request("DISCONNECT")
 
-def test_ap_ft_ptk_rekey(dev, apdev):
-    """WPA2-PSK-FT PTK rekeying triggered by station after roam"""
+def start_ft(apdev, wpa_ptk_rekey=None):
     ssid = "test-ft"
     passphrase = "12345678"
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
+    if wpa_ptk_rekey:
+        params['wpa_ptk_rekey'] = str(wpa_ptk_rekey)
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
+    if wpa_ptk_rekey:
+        params['wpa_ptk_rekey'] = str(wpa_ptk_rekey)
     hapd1 = hostapd.add_ap(apdev[1], params)
 
-    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, ptk_rekey="1")
+    return hapd0, hapd1
 
-    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED",
-                            "WPA: Key negotiation completed"], timeout=5)
+def check_ptk_rekey(dev, hapd0=None, hapd1=None):
+    ev = dev.wait_event(["CTRL-EVENT-DISCONNECTED",
+                         "WPA: Key negotiation completed"], timeout=5)
     if ev is None:
         raise Exception("No event received after roam")
     if "CTRL-EVENT-DISCONNECTED" in ev:
         raise Exception("Unexpected disconnection after roam")
 
-    if dev[0].get_status_field('bssid') == apdev[0]['bssid']:
+    if not hapd0 or not hapd1:
+        return
+    if dev.get_status_field('bssid') == hapd0.own_addr():
         hapd = hapd0
     else:
         hapd = hapd1
-    hwsim_utils.test_connectivity(dev[0], hapd)
+    hwsim_utils.test_connectivity(dev, hapd)
+
+def test_ap_ft_ptk_rekey(dev, apdev):
+    """WPA2-PSK-FT PTK rekeying triggered by station after roam"""
+    hapd0, hapd1 = start_ft(apdev)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", ptk_rekey="1")
+    check_ptk_rekey(dev[0], hapd0, hapd1)
+
+def test_ap_ft_ptk_rekey2(dev, apdev):
+    """WPA2-PSK-FT PTK rekeying triggered by station after one roam"""
+    hapd0, hapd1 = start_ft(apdev)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", ptk_rekey="1",
+              only_one_way=True)
+    check_ptk_rekey(dev[0], hapd0, hapd1)
 
 def test_ap_ft_ptk_rekey_ap(dev, apdev):
     """WPA2-PSK-FT PTK rekeying triggered by AP after roam"""
-    ssid = "test-ft"
-    passphrase = "12345678"
+    hapd0, hapd1 = start_ft(apdev, wpa_ptk_rekey=2)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678")
+    check_ptk_rekey(dev[0], hapd0, hapd1)
 
-    params = ft_params1(ssid=ssid, passphrase=passphrase)
-    params['wpa_ptk_rekey'] = '2'
-    hapd0 = hostapd.add_ap(apdev[0], params)
-    params = ft_params2(ssid=ssid, passphrase=passphrase)
-    params['wpa_ptk_rekey'] = '2'
-    hapd1 = hostapd.add_ap(apdev[1], params)
+def test_ap_ft_ptk_rekey_ap2(dev, apdev):
+    """WPA2-PSK-FT PTK rekeying triggered by AP after one roam"""
+    hapd0, hapd1 = start_ft(apdev, wpa_ptk_rekey=2)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678",
+              only_one_way=True)
+    check_ptk_rekey(dev[0], hapd0, hapd1)
 
-    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase)
-
-    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED",
-                            "WPA: Key negotiation completed"], timeout=5)
-    if ev is None:
-        raise Exception("No event received after roam")
-    if "CTRL-EVENT-DISCONNECTED" in ev:
-        raise Exception("Unexpected disconnection after roam")
-
-    if dev[0].get_status_field('bssid') == apdev[0]['bssid']:
-        hapd = hapd0
-    else:
-        hapd = hapd1
-    hwsim_utils.test_connectivity(dev[0], hapd)
+def test_ap_ft_eap_ptk_rekey_ap(dev, apdev):
+    """WPA2-EAP-FT PTK rekeying triggered by AP"""
+    generic_ap_ft_eap(dev, apdev, only_one_way=True, wpa_ptk_rekey=2)
+    check_ptk_rekey(dev[0])
 
 def test_ap_ft_internal_rrb_check(dev, apdev):
     """RRB internal delivery only to WPA enabled BSS"""
