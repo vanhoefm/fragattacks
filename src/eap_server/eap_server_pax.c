@@ -205,7 +205,7 @@ static Boolean eap_pax_check(struct eap_sm *sm, void *priv,
 	u8 icvbuf[EAP_PAX_ICV_LEN], *icv;
 
 	pos = eap_hdr_validate(EAP_VENDOR_IETF, EAP_TYPE_PAX, respData, &len);
-	if (pos == NULL || len < sizeof(*resp)) {
+	if (pos == NULL || len < sizeof(*resp) + EAP_PAX_ICV_LEN) {
 		wpa_printf(MSG_INFO, "EAP-PAX: Invalid frame");
 		return TRUE;
 	}
