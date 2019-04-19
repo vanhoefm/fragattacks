@@ -2138,6 +2138,301 @@ def test_eap_proto_gpsk(dev, apdev):
     finally:
         stop_radius_server(srv)
 
+def run_eap_gpsk_connect(dev):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
+                eap="GPSK", identity="gpsk user",
+                password="abcdefghijklmnop0123456789abcdef",
+                wait_connect=False)
+    ev = dev.wait_event(["CTRL-EVENT-EAP-SUCCESS", "CTRL-EVENT-EAP-FAILURE",
+                         "CTRL-EVENT-DISCONNECTED"],
+                        timeout=1)
+    dev.request("REMOVE_NETWORK all")
+    if not ev or "CTRL-EVENT-DISCONNECTED" not in ev:
+        dev.wait_disconnected()
+    dev.dump_monitor()
+
+def test_eap_proto_gpsk_errors_server(dev, apdev):
+    """EAP-GPSK local error cases on server"""
+    check_eap_capa(dev[0], "GPSK")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+
+    tests = [(1, "eap_gpsk_init"),
+             (1, "eap_msg_alloc;eap_gpsk_build_gpsk_1"),
+             (1, "eap_msg_alloc;eap_gpsk_build_gpsk_3"),
+             (1, "eap_gpsk_process_gpsk_2"),
+             (1, "eap_gpsk_derive_keys;eap_gpsk_process_gpsk_2"),
+             (1, "eap_gpsk_derive_session_id;eap_gpsk_process_gpsk_2"),
+             (1, "eap_gpsk_getKey"),
+             (1, "eap_gpsk_get_emsk"),
+             (1, "eap_gpsk_get_session_id")]
+    for count, func in tests:
+        with alloc_fail(hapd, count, func):
+            run_eap_gpsk_connect(dev[0])
+
+    tests = [(1, "os_get_random;eap_gpsk_build_gpsk_1"),
+             (1, "eap_gpsk_compute_mic;eap_gpsk_build_gpsk_3"),
+             (1, "eap_gpsk_derive_keys;eap_gpsk_process_gpsk_2"),
+             (1, "eap_gpsk_derive_session_id;eap_gpsk_process_gpsk_2"),
+             (1, "eap_gpsk_compute_mic;eap_gpsk_process_gpsk_2"),
+             (1, "eap_gpsk_compute_mic;eap_gpsk_process_gpsk_4")]
+    for count, func in tests:
+        with fail_test(hapd, count, func):
+            run_eap_gpsk_connect(dev[0])
+
+def start_gpsk_assoc(dev, hapd):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
+                eap="GPSK", identity="gpsk user",
+                password="abcdefghijklmnop0123456789abcdef",
+                wait_connect=False)
+    proxy_msg(hapd, dev) # EAP-Identity/Request
+    proxy_msg(dev, hapd) # EAP-Identity/Response
+    proxy_msg(hapd, dev) # GPSK-1
+
+def stop_gpsk_assoc(dev, hapd):
+    dev.request("REMOVE_NETWORK all")
+    dev.wait_disconnected()
+    dev.dump_monitor()
+    hapd.dump_monitor()
+
+def test_eap_proto_gpsk_server(dev, apdev):
+    """EAP-GPSK protocol testing for the server"""
+    check_eap_capa(dev[0], "GPSK")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+    hapd.request("SET ext_eapol_frame_io 1")
+    dev[0].request("SET ext_eapol_frame_io 1")
+
+    # Successful exchange to verify proxying mechanism
+    start_gpsk_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # GPSK-2
+    proxy_msg(hapd, dev[0]) # GPSK-3
+    proxy_msg(dev[0], hapd) # GPSK-4
+    proxy_msg(hapd, dev[0]) # EAP-Success
+    proxy_msg(hapd, dev[0]) # EAPOL-Key msg 1/4
+    proxy_msg(dev[0], hapd) # EAPOL-Key msg 2/4
+    proxy_msg(hapd, dev[0]) # EAPOL-Key msg 3/4
+    proxy_msg(dev[0], hapd) # EAPOL-Key msg 4/4
+    dev[0].wait_connected()
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short EAP-GPSK header (no OP-Code)
+    # --> EAP-GPSK: Invalid frame
+    msg = resp[0:4] + "0005" + resp[8:12] + "0005" + "33"
+    tx_msg(dev[0], hapd, msg)
+    # Unknown OP-Code
+    # --> EAP-GPSK: Unexpected opcode=7 in state=0
+    msg = resp[0:4] + "0006" + resp[8:12] + "0006" + "3307"
+    tx_msg(dev[0], hapd, msg)
+    # Too short GPSK-2
+    # --> EAP-GPSK: Too short message for ID_Peer length
+    msg = resp[0:4] + "0006" + resp[8:12] + "0006" + "3302"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short GPSK-2
+    # --> EAP-GPSK: Too short message for ID_Peer
+    msg = resp[0:4] + "0008" + resp[8:12] + "0008" + "33020001"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short GPSK-2
+    # --> EAP-GPSK: Too short message for ID_Server length
+    msg = resp[0:4] + "0008" + resp[8:12] + "0008" + "33020000"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short GPSK-2
+    # --> EAP-GPSK: Too short message for ID_Server
+    msg = resp[0:4] + "000a" + resp[8:12] + "000a" + "330200000001"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # ID_Server mismatch
+    # --> EAP-GPSK: ID_Server in GPSK-1 and GPSK-2 did not match
+    msg = resp[0:4] + "000a" + resp[8:12] + "000a" + "330200000000"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short GPSK-2
+    # --> EAP-GPSK: Too short message for RAND_Peer
+    msg = resp[0:4] + "0011" + resp[8:12] + "0011" + "330200000007" + binascii.hexlify(b"hostapd").decode()
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short GPSK-2
+    # --> EAP-GPSK: Too short message for RAND_Server
+    msg = resp[0:4] + "0031" + resp[8:12] + "0031" + "330200000007" + binascii.hexlify(b"hostapd").decode() + 32*"00"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # RAND_Server mismatch
+    # --> EAP-GPSK: RAND_Server in GPSK-1 and GPSK-2 did not match
+    msg = resp[0:4] + "0051" + resp[8:12] + "0051" + "330200000007" + binascii.hexlify(b"hostapd").decode() + 32*"00" + 32*"00"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short GPSK-2
+    # --> EAP-GPSK: Too short message for CSuite_List length
+    msg = resp[0:4] + "005a" + resp[8:12] + "005a" + resp[16:188]
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short GPSK-2
+    # --> EAP-GPSK: Too short message for CSuite_List
+    msg = resp[0:4] + "005c" + resp[8:12] + "005c" + resp[16:192]
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short GPSK-2
+    # --> EAP-GPSK: CSuite_List in GPSK-1 and GPSK-2 did not match
+    msg = resp[0:4] + "005c" + resp[8:12] + "005c" + resp[16:188] + "0000"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short GPSK-2
+    # --> EAP-GPSK: Too short message for CSuite_Sel
+    msg = resp[0:4] + "0068" + resp[8:12] + "0068" + resp[16:216]
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Unsupported CSuite_Sel
+    # --> EAP-GPSK: Peer selected unsupported ciphersuite 0:255
+    msg = resp[0:4] + "006e" + resp[8:12] + "006e" + resp[16:226] + "ff"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short GPSK-2
+    # --> EAP-GPSK: Too short message for PD_Payload_1 length
+    msg = resp[0:4] + "006e" + resp[8:12] + "006e" + resp[16:228]
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short GPSK-2
+    # --> EAP-GPSK: Too short message for PD_Payload_1
+    msg = resp[0:4] + "0070" + resp[8:12] + "0070" + resp[16:230] + "ff"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short GPSK-2
+    # --> EAP-GPSK: Message too short for MIC (left=0 miclen=16)
+    msg = resp[0:4] + "0070" + resp[8:12] + "0070" + resp[16:232]
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Extra data in the end of GPSK-2
+    # --> EAP-GPSK: Ignored 1 bytes of extra data in the end of GPSK-2
+    msg = resp[0:4] + "0081" + resp[8:12] + "0081" + resp[16:264] + "00"
+    tx_msg(dev[0], hapd, msg)
+    proxy_msg(hapd, dev[0]) # GPSK-3
+    resp = rx_msg(dev[0])
+    # Too short GPSK-4
+    # --> EAP-GPSK: Too short message for PD_Payload_1 length
+    msg = resp[0:4] + "0006" + resp[8:12] + "0006" + "3304"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd) # EAP-Failure
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # GPSK-2
+    proxy_msg(hapd, dev[0]) # GPSK-3
+    resp = rx_msg(dev[0])
+    # Too short GPSK-4
+    # --> EAP-GPSK: Too short message for PD_Payload_1
+    msg = resp[0:4] + "0008" + resp[8:12] + "0008" + "33040001"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd) # EAP-Failure
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # GPSK-2
+    proxy_msg(hapd, dev[0]) # GPSK-3
+    resp = rx_msg(dev[0])
+    # Too short GPSK-4
+    # --> EAP-GPSK: Message too short for MIC (left=0 miclen=16)
+    msg = resp[0:4] + "0008" + resp[8:12] + "0008" + "33040000"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd) # EAP-Failure
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # GPSK-2
+    proxy_msg(hapd, dev[0]) # GPSK-3
+    resp = rx_msg(dev[0])
+    # Incorrect MIC in GPSK-4
+    # --> EAP-GPSK: Incorrect MIC in GPSK-4
+    msg = resp[0:4] + "0018" + resp[8:12] + "0018" + "33040000" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd) # EAP-Failure
+    stop_gpsk_assoc(dev[0], hapd)
+
+    start_gpsk_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # GPSK-2
+    proxy_msg(hapd, dev[0]) # GPSK-3
+    resp = rx_msg(dev[0])
+    # Incorrect MIC in GPSK-4
+    # --> EAP-GPSK: Ignored 1 bytes of extra data in the end of GPSK-4
+    msg = resp[0:4] + "0019" + resp[8:12] + "0019" + resp[16:] + "00"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd) # EAP-Success
+    stop_gpsk_assoc(dev[0], hapd)
+
 EAP_EKE_ID = 1
 EAP_EKE_COMMIT = 2
 EAP_EKE_CONFIRM = 3
