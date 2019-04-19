@@ -204,7 +204,7 @@ static struct wpabuf * eap_sake_build_confirm(struct eap_sm *sm,
 	{
 		wpa_printf(MSG_INFO, "EAP-SAKE: Failed to compute MIC");
 		data->state = FAILURE;
-		os_free(msg);
+		wpabuf_free(msg);
 		return NULL;
 	}
 
