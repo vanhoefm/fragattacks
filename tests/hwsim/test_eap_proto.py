@@ -3219,6 +3219,195 @@ def test_eap_proto_pax_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
+def run_eap_pax_connect(dev):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
+                eap="PAX", identity="pax.user@example.com",
+                password_hex="0123456789abcdef0123456789abcdef",
+                wait_connect=False)
+    ev = dev.wait_event(["CTRL-EVENT-EAP-SUCCESS", "CTRL-EVENT-EAP-FAILURE",
+                         "CTRL-EVENT-DISCONNECTED"],
+                        timeout=1)
+    dev.request("REMOVE_NETWORK all")
+    if not ev or "CTRL-EVENT-DISCONNECTED" not in ev:
+        dev.wait_disconnected()
+    dev.dump_monitor()
+
+def test_eap_proto_pax_errors_server(dev, apdev):
+    """EAP-PAX local error cases on server"""
+    check_eap_capa(dev[0], "PAX")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+
+    tests = [(1, "eap_pax_init"),
+             (1, "eap_msg_alloc;eap_pax_build_std_1"),
+             (1, "eap_msg_alloc;eap_pax_build_std_3"),
+             (1, "=eap_pax_process_std_2"),
+             (1, "eap_pax_getKey"),
+             (1, "eap_pax_get_emsk"),
+             (1, "eap_pax_get_session_id")]
+    for count, func in tests:
+        with alloc_fail(hapd, count, func):
+            run_eap_pax_connect(dev[0])
+
+    tests = [(1, "os_get_random;eap_pax_build_std_1"),
+             (1, "eap_pax_mac;eap_pax_build_std_1"),
+             (1, "eap_pax_mac;eap_pax_build_std_3"),
+             (2, "eap_pax_mac;=eap_pax_build_std_3"),
+             (1, "eap_pax_initial_key_derivation;eap_pax_process_std_2"),
+             (1, "eap_pax_mac;eap_pax_process_std_2"),
+             (2, "eap_pax_mac;=eap_pax_process_std_2"),
+             (1, "eap_pax_mac;eap_pax_check")]
+    for count, func in tests:
+        with fail_test(hapd, count, func):
+            run_eap_pax_connect(dev[0])
+
+def start_pax_assoc(dev, hapd):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
+                eap="PAX", identity="pax.user@example.com",
+                password_hex="0123456789abcdef0123456789abcdef",
+                wait_connect=False)
+    proxy_msg(hapd, dev) # EAP-Identity/Request
+    proxy_msg(dev, hapd) # EAP-Identity/Response
+    proxy_msg(hapd, dev) # PAX_STD-1
+
+def stop_pax_assoc(dev, hapd):
+    dev.request("REMOVE_NETWORK all")
+    dev.wait_disconnected()
+    dev.dump_monitor()
+    hapd.dump_monitor()
+
+def test_eap_proto_pax_server(dev, apdev):
+    """EAP-PAX protocol testing for the server"""
+    check_eap_capa(dev[0], "PAX")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+    hapd.request("SET ext_eapol_frame_io 1")
+    dev[0].request("SET ext_eapol_frame_io 1")
+
+    # Successful exchange to verify proxying mechanism
+    start_pax_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # PAX_STD-2
+    proxy_msg(hapd, dev[0]) # PAX_STD-3
+    proxy_msg(dev[0], hapd) # PAX-ACK
+    proxy_msg(hapd, dev[0]) # EAP-Success
+    proxy_msg(hapd, dev[0]) # EAPOL-Key msg 1/4
+    proxy_msg(dev[0], hapd) # EAPOL-Key msg 2/4
+    proxy_msg(hapd, dev[0]) # EAPOL-Key msg 3/4
+    proxy_msg(dev[0], hapd) # EAPOL-Key msg 4/4
+    dev[0].wait_connected()
+    stop_pax_assoc(dev[0], hapd)
+
+    start_pax_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short EAP-PAX header (no OP-Code)
+    hapd.note("EAP-PAX: Invalid frame")
+    msg = resp[0:4] + "0005" + resp[8:12] + "0005" + "2e"
+    tx_msg(dev[0], hapd, msg)
+    # Too short EAP-PAX message (no payload)
+    hapd.note("EAP-PAX: Invalid frame")
+    msg = resp[0:4] + "000a" + resp[8:12] + "000a" + "2e1100000000"
+    tx_msg(dev[0], hapd, msg)
+    # Unexpected PAX_SEC-2
+    hapd.note("EAP-PAX: Expected PAX_STD-2 - ignore op 17")
+    msg = resp[0:4] + "001a" + resp[8:12] + "001a" + "2e1100000000" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    # Unexpected MAC ID
+    hapd.note("EAP-PAX: Expected MAC ID 0x1, received 0xff")
+    msg = resp[0:4] + "001a" + resp[8:12] + "001a" + "2e0200ff0000" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    # Unexpected DH Group ID
+    hapd.note("EAP-PAX: Expected DH Group ID 0x0, received 0xff")
+    msg = resp[0:4] + "001a" + resp[8:12] + "001a" + "2e020001ff00" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    # Unexpected Public Key ID
+    hapd.note("EAP-PAX: Expected Public Key ID 0x0, received 0xff")
+    msg = resp[0:4] + "001a" + resp[8:12] + "001a" + "2e02000100ff" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    # Unsupported Flags - MF
+    hapd.note("EAP-PAX: fragmentation not supported")
+    msg = resp[0:4] + "001a" + resp[8:12] + "001a" + "2e0201010000" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    # Unsupported Flags - CE
+    hapd.note("EAP-PAX: Unexpected CE flag")
+    msg = resp[0:4] + "001a" + resp[8:12] + "001a" + "2e0202010000" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    # Too short Payload in PAX_STD-2
+    hapd.note("EAP-PAX: Too short PAX_STD-2 (B)")
+    msg = resp[0:4] + "001a" + resp[8:12] + "001a" + "2e0200010000" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_pax_assoc(dev[0], hapd)
+
+    start_pax_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short Payload in PAX_STD-2
+    hapd.note("EAP-PAX: Too short PAX_STD-2 (CID)")
+    msg = resp[0:4] + "002c" + resp[8:12] + "002c" + "2e0200010000" + "0020" + 32*"00"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_pax_assoc(dev[0], hapd)
+
+    start_pax_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short Payload in PAX_STD-2
+    hapd.note("EAP-PAX: Too short PAX_STD-2 (CID)")
+    msg = resp[0:4] + "002e" + resp[8:12] + "002e" + "2e0200010000" + "0020" + 32*"00" + "ffff"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_pax_assoc(dev[0], hapd)
+
+    start_pax_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too long CID in PAX_STD-2
+    hapd.note("EAP-PAX: Too long CID")
+    msg = resp[0:4] + "062e" + resp[8:12] + "062e" + "2e0200010000" + "0020" + 32*"00" + "0600" + 1536*"00"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_pax_assoc(dev[0], hapd)
+
+    start_pax_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short Payload in PAX_STD-2
+    hapd.note("EAP-PAX: Too short PAX_STD-2 (MAC_CK)")
+    msg = resp[0:4] + "003c" + resp[8:12] + "003c" + "2e0200010000" + "0020" + 32*"00" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_pax_assoc(dev[0], hapd)
+
+    start_pax_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Unknown CID for PAX
+    hapd.note("EAP-PAX: EAP-PAX not enabled for CID")
+    msg = resp[0:4] + "0041" + resp[8:12] + "0041" + "2e0200010000" + "0020" + 32*"00" + "0001" + "00" + "0010" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_pax_assoc(dev[0], hapd)
+
+    start_pax_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short ICV
+    hapd.note("EAP-PAX: Too short ICV (15) in PAX_STD-2")
+    msg = resp[0:4] + "0063" + resp[8:12] + "0063" + resp[16:206]
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_pax_assoc(dev[0], hapd)
+
+    start_pax_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # PAX_STD-2
+    proxy_msg(hapd, dev[0]) # PAX_STD-3
+    resp = rx_msg(dev[0])
+    # Unexpected PAX_STD-2
+    hapd.note("EAP-PAX: Expected PAX-ACK - ignore op 1")
+    msg = resp[0:4] + "001a" + resp[8:12] + "001a" + "2e0100000000" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    stop_pax_assoc(dev[0], hapd)
+
 def test_eap_proto_psk(dev, apdev):
     """EAP-PSK protocol tests"""
     def psk_handler(ctx, req):
