@@ -872,6 +872,160 @@ def test_eap_proto_sake_errors2(dev, apdev):
     finally:
         stop_radius_server(srv)
 
+def run_eap_sake_connect(dev):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
+                eap="SAKE", identity="sake user",
+                password_hex="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                wait_connect=False)
+    ev = dev.wait_event(["CTRL-EVENT-EAP-SUCCESS", "CTRL-EVENT-EAP-FAILURE",
+                         "CTRL-EVENT-DISCONNECTED"],
+                        timeout=1)
+    dev.request("REMOVE_NETWORK all")
+    if not ev or "CTRL-EVENT-DISCONNECTED" not in ev:
+        dev.wait_disconnected()
+    dev.dump_monitor()
+
+def test_eap_proto_sake_errors_server(dev, apdev):
+    """EAP-SAKE local error cases on server"""
+    check_eap_capa(dev[0], "SAKE")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+
+    tests = [(1, "eap_sake_init"),
+             (1, "eap_sake_build_msg;eap_sake_build_challenge"),
+             (1, "eap_sake_build_msg;eap_sake_build_confirm"),
+             (1, "eap_sake_compute_mic;eap_sake_build_confirm"),
+             (1, "eap_sake_process_challenge"),
+             (1, "eap_sake_getKey"),
+             (1, "eap_sake_get_emsk"),
+             (1, "eap_sake_get_session_id")]
+    for count, func in tests:
+        with alloc_fail(hapd, count, func):
+            run_eap_sake_connect(dev[0])
+
+    tests = [(1, "eap_sake_init"),
+             (1, "eap_sake_build_challenge"),
+             (1, "eap_sake_build_confirm"),
+             (1, "eap_sake_derive_keys;eap_sake_process_challenge"),
+             (1, "eap_sake_compute_mic;eap_sake_process_challenge"),
+             (1, "eap_sake_compute_mic;eap_sake_process_confirm"),
+             (1, "eap_sake_compute_mic;eap_sake_build_confirm"),
+             (1, "eap_sake_process_confirm")]
+    for count, func in tests:
+        with fail_test(hapd, count, func):
+            run_eap_sake_connect(dev[0])
+
+def start_sake_assoc(dev, hapd):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
+                eap="SAKE", identity="sake user",
+                password_hex="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                wait_connect=False)
+    proxy_msg(hapd, dev) # EAP-Identity/Request
+    proxy_msg(dev, hapd) # EAP-Identity/Response
+    proxy_msg(hapd, dev) # SAKE/Challenge/Request
+
+def stop_sake_assoc(dev, hapd):
+    dev.request("REMOVE_NETWORK all")
+    dev.wait_disconnected()
+    dev.dump_monitor()
+    hapd.dump_monitor()
+
+def test_eap_proto_sake_server(dev, apdev):
+    """EAP-SAKE protocol testing for the server"""
+    check_eap_capa(dev[0], "SAKE")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+    hapd.request("SET ext_eapol_frame_io 1")
+    dev[0].request("SET ext_eapol_frame_io 1")
+
+    # Successful exchange to verify proxying mechanism
+    start_sake_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # SAKE/Challenge/Response
+    proxy_msg(hapd, dev[0]) # SAKE/Confirm/Request
+    proxy_msg(dev[0], hapd) # SAKE/Confirm/Response
+    proxy_msg(hapd, dev[0]) # EAP-Success
+    proxy_msg(hapd, dev[0]) # EAPOL-Key msg 1/4
+    proxy_msg(dev[0], hapd) # EAPOL-Key msg 2/4
+    proxy_msg(hapd, dev[0]) # EAPOL-Key msg 3/4
+    proxy_msg(dev[0], hapd) # EAPOL-Key msg 4/4
+    dev[0].wait_connected()
+    stop_sake_assoc(dev[0], hapd)
+
+    start_sake_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short EAP-SAKE header
+    # --> EAP-SAKE: Invalid frame
+    msg = resp[0:4] + "0007" + resp[8:12] + "0007" + "300200"
+    tx_msg(dev[0], hapd, msg)
+    # Unknown version
+    # --> EAP-SAKE: Unknown version 1
+    msg = resp[0:4] + "0008" + resp[8:12] + "0008" + "30010000"
+    tx_msg(dev[0], hapd, msg)
+    # Unknown session
+    # --> EAP-SAKE: Session ID mismatch
+    sess, = struct.unpack('B', binascii.unhexlify(resp[20:22]))
+    sess = binascii.hexlify(struct.pack('B', sess + 1)).decode()
+    msg = resp[0:4] + "0008" + resp[8:12] + "0008" + "3002" + sess + "00"
+    tx_msg(dev[0], hapd, msg)
+    # Unknown subtype
+    # --> EAP-SAKE: Unexpected subtype=5 in state=1
+    msg = resp[0:22] + "05" + resp[24:]
+    tx_msg(dev[0], hapd, msg)
+    # Empty challenge
+    # --> EAP-SAKE: Response/Challenge did not include AT_RAND_P or AT_MIC_P
+    msg = resp[0:4] + "0008" + resp[8:12] + "0008" + resp[16:24]
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_sake_assoc(dev[0], hapd)
+
+    start_sake_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Invalid attribute in challenge
+    # --> EAP-SAKE: Too short attribute
+    msg = resp[0:4] + "0009" + resp[8:12] + "0009" + resp[16:26]
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_sake_assoc(dev[0], hapd)
+
+    start_sake_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # SAKE/Challenge/Response
+    proxy_msg(hapd, dev[0]) # SAKE/Confirm/Request
+    resp = rx_msg(dev[0])
+    # Empty confirm
+    # --> EAP-SAKE: Response/Confirm did not include AT_MIC_P
+    msg = resp[0:4] + "0008" + resp[8:12] + "0008" + resp[16:26]
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_sake_assoc(dev[0], hapd)
+
+    start_sake_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # SAKE/Challenge/Response
+    proxy_msg(hapd, dev[0]) # SAKE/Confirm/Request
+    resp = rx_msg(dev[0])
+    # Invalid attribute in confirm
+    # --> EAP-SAKE: Too short attribute
+    msg = resp[0:4] + "0009" + resp[8:12] + "0009" + resp[16:26]
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_sake_assoc(dev[0], hapd)
+
+    start_sake_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # SAKE/Challenge/Response
+    proxy_msg(hapd, dev[0]) # SAKE/Confirm/Request
+    resp = rx_msg(dev[0])
+    # Corrupted AT_MIC_P value
+    # --> EAP-SAKE: Incorrect AT_MIC_P
+    msg = resp[0:30] + "000000000000" + resp[42:]
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_sake_assoc(dev[0], hapd)
+
 def test_eap_proto_leap(dev, apdev):
     """EAP-LEAP protocol tests"""
     check_eap_capa(dev[0], "LEAP")
