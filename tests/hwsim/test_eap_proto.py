@@ -3443,6 +3443,151 @@ def test_eap_proto_psk_errors(dev, apdev):
             dev[0].wait_disconnected()
             dev[0].dump_monitor()
 
+def run_eap_psk_connect(dev):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
+                eap="PSK", identity="psk.user@example.com",
+                password_hex="0123456789abcdef0123456789abcdef",
+                wait_connect=False)
+    ev = dev.wait_event(["CTRL-EVENT-EAP-SUCCESS", "CTRL-EVENT-EAP-FAILURE",
+                         "CTRL-EVENT-DISCONNECTED"],
+                        timeout=1)
+    dev.request("REMOVE_NETWORK all")
+    if not ev or "CTRL-EVENT-DISCONNECTED" not in ev:
+        dev.wait_disconnected()
+    dev.dump_monitor()
+
+def test_eap_proto_psk_errors_server(dev, apdev):
+    """EAP-PSK local error cases on server"""
+    check_eap_capa(dev[0], "PSK")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+
+    tests = [(1, "eap_psk_init"),
+             (1, "eap_msg_alloc;eap_psk_build_1"),
+             (1, "eap_msg_alloc;eap_psk_build_3"),
+             (1, "=eap_psk_build_3"),
+             (1, "=eap_psk_process_2"),
+             (2, "=eap_psk_process_2"),
+             (1, "=eap_psk_process_4"),
+             (1, "aes_128_eax_decrypt;eap_psk_process_4"),
+             (1, "eap_psk_getKey"),
+             (1, "eap_psk_get_emsk"),
+             (1, "eap_psk_get_session_id")]
+    for count, func in tests:
+        with alloc_fail(hapd, count, func):
+            run_eap_psk_connect(dev[0])
+
+    tests = [(1, "os_get_random;eap_psk_build_1"),
+             (1, "omac1_aes_128;eap_psk_build_3"),
+             (1, "eap_psk_derive_keys;eap_psk_build_3"),
+             (1, "aes_128_eax_encrypt;eap_psk_build_3"),
+             (1, "eap_psk_key_setup;eap_psk_process_2"),
+             (1, "omac1_aes_128;eap_psk_process_2"),
+             (1, "aes_128_eax_decrypt;eap_psk_process_4")]
+    for count, func in tests:
+        with fail_test(hapd, count, func):
+            run_eap_psk_connect(dev[0])
+
+def start_psk_assoc(dev, hapd):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
+                eap="PSK", identity="psk.user@example.com",
+                password_hex="0123456789abcdef0123456789abcdef",
+                wait_connect=False)
+    proxy_msg(hapd, dev) # EAP-Identity/Request
+    proxy_msg(dev, hapd) # EAP-Identity/Response
+    proxy_msg(hapd, dev) # PSK-1
+
+def stop_psk_assoc(dev, hapd):
+    dev.request("REMOVE_NETWORK all")
+    dev.wait_disconnected()
+    dev.dump_monitor()
+    hapd.dump_monitor()
+
+def test_eap_proto_psk_server(dev, apdev):
+    """EAP-PSK protocol testing for the server"""
+    check_eap_capa(dev[0], "PSK")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+    hapd.request("SET ext_eapol_frame_io 1")
+    dev[0].request("SET ext_eapol_frame_io 1")
+
+    # Successful exchange to verify proxying mechanism
+    start_psk_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # PSK-2
+    proxy_msg(hapd, dev[0]) # PSK-3
+    proxy_msg(dev[0], hapd) # PSK-4
+    proxy_msg(hapd, dev[0]) # EAP-Success
+    proxy_msg(hapd, dev[0]) # EAPOL-Key msg 1/4
+    proxy_msg(dev[0], hapd) # EAPOL-Key msg 2/4
+    proxy_msg(hapd, dev[0]) # EAPOL-Key msg 3/4
+    proxy_msg(dev[0], hapd) # EAPOL-Key msg 4/4
+    dev[0].wait_connected()
+    stop_psk_assoc(dev[0], hapd)
+
+    start_psk_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short EAP-PSK header (no Flags)
+    hapd.note("EAP-PSK: Invalid frame")
+    msg = resp[0:4] + "0005" + resp[8:12] + "0005" + "2f"
+    tx_msg(dev[0], hapd, msg)
+    # Unexpected PSK-1
+    hapd.note("EAP-PSK: Expected PSK-2 - ignore T=0")
+    msg = resp[0:4] + "0006" + resp[8:12] + "0006" + "2f00"
+    tx_msg(dev[0], hapd, msg)
+    # Too short PSK-2
+    hapd.note("EAP-PSK: Too short frame")
+    msg = resp[0:4] + "0006" + resp[8:12] + "0006" + "2f40"
+    tx_msg(dev[0], hapd, msg)
+    # PSK-2 with unknown ID_P
+    hapd.note("EAP-PSK: EAP-PSK not enabled for ID_P")
+    msg = resp[0:4] + "004a" + resp[8:12] + "004a" + "2f40" + 3*16*"00" + 20*"00"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd) # EAP-Failure
+    stop_psk_assoc(dev[0], hapd)
+
+    start_psk_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # PSK-2
+    proxy_msg(hapd, dev[0]) # PSK-3
+    resp = rx_msg(dev[0])
+    # Unexpected PSK-2
+    hapd.note("EAP-PSK: Expected PSK-4 - ignore T=1")
+    msg = resp[0:4] + "0016" + resp[8:12] + "0016" + "2f40" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    # Too short PSK-4 (no PCHANNEL)
+    hapd.note("EAP-PSK: Too short PCHANNEL data in PSK-4 (len=0, expected 21)")
+    msg = resp[0:4] + "0016" + resp[8:12] + "0016" + "2fc0" + 16*"00"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd) # PSK-3 retry
+    stop_psk_assoc(dev[0], hapd)
+
+    start_psk_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # PSK-2
+    proxy_msg(hapd, dev[0]) # PSK-3
+    resp = rx_msg(dev[0])
+    # PCHANNEL Nonce did not increase
+    hapd.note("EAP-PSK: Nonce did not increase")
+    msg = resp[0:4] + "002b" + resp[8:12] + "002b" + "2fc0" + 16*"00" + 21*"00"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd) # PSK-3 retry
+    stop_psk_assoc(dev[0], hapd)
+
+    start_psk_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # PSK-2
+    proxy_msg(hapd, dev[0]) # PSK-3
+    resp = rx_msg(dev[0])
+    # Invalid PCHANNEL encryption
+    hapd.note("EAP-PSK: PCHANNEL decryption failed")
+    msg = resp[0:4] + "002b" + resp[8:12] + "002b" + "2fc0" + 16*"00" + 21*"11"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd) # PSK-3 retry
+    stop_psk_assoc(dev[0], hapd)
+
 EAP_SIM_SUBTYPE_START = 10
 EAP_SIM_SUBTYPE_CHALLENGE = 11
 EAP_SIM_SUBTYPE_NOTIFICATION = 12

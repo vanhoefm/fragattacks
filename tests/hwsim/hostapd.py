@@ -497,6 +497,9 @@ class Hostapd:
         if "OK" not in res:
             raise Exception("DPP_CONFIGURATOR_REMOVE failed")
 
+    def note(self, txt):
+        self.request("NOTE " + txt)
+
 def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30,
            global_ctrl_override=None):
         if isinstance(apdev, dict):
