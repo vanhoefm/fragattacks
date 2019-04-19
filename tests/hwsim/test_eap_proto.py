@@ -793,13 +793,14 @@ def test_eap_proto_sake_errors(dev, apdev):
                 raise Exception("Timeout on EAP start")
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
+            dev[0].dump_monitor()
 
     tests = [(1, "eap_msg_alloc;eap_sake_build_msg;eap_sake_process_challenge"),
              (1, "=eap_sake_process_challenge"),
              (1, "eap_sake_compute_mic;eap_sake_process_challenge"),
              (1, "eap_sake_build_msg;eap_sake_process_confirm"),
              (1, "eap_sake_compute_mic;eap_sake_process_confirm"),
-             (2, "eap_sake_compute_mic;eap_sake_process_confirm"),
+             (2, "eap_sake_compute_mic;=eap_sake_process_confirm"),
              (1, "eap_sake_getKey"),
              (1, "eap_sake_get_emsk"),
              (1, "eap_sake_get_session_id")]
@@ -817,18 +818,23 @@ def test_eap_proto_sake_errors(dev, apdev):
             wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
+            dev[0].dump_monitor()
 
-    with fail_test(dev[0], 1, "os_get_random;eap_sake_process_challenge"):
-        dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
-                       eap="SAKE", identity="sake user",
-                       password_hex="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                       wait_connect=False)
-        ev = dev[0].wait_event(["CTRL-EVENT-EAP-PROPOSED-METHOD"], timeout=15)
-        if ev is None:
-            raise Exception("Timeout on EAP start")
-        wait_fail_trigger(dev[0], "GET_FAIL")
-        dev[0].request("REMOVE_NETWORK all")
-        dev[0].wait_disconnected()
+    tests = [(1, "os_get_random;eap_sake_process_challenge"),
+             (1, "eap_sake_derive_keys;eap_sake_process_challenge")]
+    for count, func in tests:
+        with fail_test(dev[0], count, func):
+            dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
+                           eap="SAKE", identity="sake user",
+                           password_hex="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                           wait_connect=False)
+            ev = dev[0].wait_event(["CTRL-EVENT-EAP-PROPOSED-METHOD"], timeout=15)
+            if ev is None:
+                raise Exception("Timeout on EAP start")
+            wait_fail_trigger(dev[0], "GET_FAIL")
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].wait_disconnected()
+            dev[0].dump_monitor()
 
 def test_eap_proto_sake_errors2(dev, apdev):
     """EAP-SAKE protocol tests (2)"""
