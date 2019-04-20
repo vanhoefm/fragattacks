@@ -1589,6 +1589,86 @@ def test_eap_proto_md5_errors(dev, apdev):
         time.sleep(0.1)
         dev[0].request("REMOVE_NETWORK all")
 
+def run_eap_md5_connect(dev):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
+                eap="MD5", identity="phase1-user", password="password",
+                wait_connect=False)
+    ev = dev.wait_event(["CTRL-EVENT-EAP-SUCCESS", "CTRL-EVENT-EAP-FAILURE",
+                         "CTRL-EVENT-DISCONNECTED"],
+                        timeout=1)
+    dev.request("REMOVE_NETWORK all")
+    if not ev or "CTRL-EVENT-DISCONNECTED" not in ev:
+        dev.wait_disconnected()
+    dev.dump_monitor()
+
+def test_eap_proto_md5_errors_server(dev, apdev):
+    """EAP-MD5 local error cases on server"""
+    check_eap_capa(dev[0], "MD5")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+
+    tests = [(1, "eap_md5_init")]
+    for count, func in tests:
+        with alloc_fail(hapd, count, func):
+            run_eap_md5_connect(dev[0])
+
+    tests = [(1, "os_get_random;eap_md5_buildReq"),
+             (1, "chap_md5;eap_md5_process")]
+    for count, func in tests:
+        with fail_test(hapd, count, func):
+            run_eap_md5_connect(dev[0])
+
+def start_md5_assoc(dev, hapd):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
+                eap="MD5", identity="phase1-user", password="password",
+                wait_connect=False)
+    proxy_msg(hapd, dev) # EAP-Identity/Request
+    proxy_msg(dev, hapd) # EAP-Identity/Response
+    proxy_msg(hapd, dev) # MSCHAPV2/Request
+    proxy_msg(dev, hapd) # NAK
+    proxy_msg(hapd, dev) # MD5 Request
+
+def stop_md5_assoc(dev, hapd):
+    dev.request("REMOVE_NETWORK all")
+    dev.wait_disconnected()
+    dev.dump_monitor()
+    hapd.dump_monitor()
+
+def test_eap_proto_md5_server(dev, apdev):
+    """EAP-MD5 protocol testing for the server"""
+    check_eap_capa(dev[0], "MD5")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+    hapd.request("SET ext_eapol_frame_io 1")
+    dev[0].request("SET ext_eapol_frame_io 1")
+
+    # Successful exchange to verify proxying mechanism
+    start_md5_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # MD5 Response
+    proxy_msg(hapd, dev[0]) # EAP-Success
+    ev = dev[0].wait_event(["CTRL-EVENT-EAP-SUCCESS"], timeout=5)
+    if ev is None:
+        raise Exception("No EAP-Success reported")
+    stop_md5_assoc(dev[0], hapd)
+
+    start_md5_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short EAP-MD5 header (no length field)
+    hapd.note("EAP-MD5: Invalid frame")
+    msg = resp[0:4] + "0005" + resp[8:12] + "0005" + "04"
+    tx_msg(dev[0], hapd, msg)
+    # Too short EAP-MD5 header (no length field)
+    hapd.note("EAP-MD5: Invalid response (response_len=0 payload_len=1")
+    msg = resp[0:4] + "0006" + resp[8:12] + "0006" + "0400"
+    tx_msg(dev[0], hapd, msg)
+    stop_md5_assoc(dev[0], hapd)
+
 def test_eap_proto_otp(dev, apdev):
     """EAP-OTP protocol tests"""
     def otp_handler(ctx, req):
