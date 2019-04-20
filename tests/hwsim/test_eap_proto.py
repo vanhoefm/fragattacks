@@ -6440,6 +6440,218 @@ def test_eap_proto_ikev2_errors(dev, apdev):
             dev[0].request("REMOVE_NETWORK all")
             dev[0].wait_disconnected()
 
+def run_eap_ikev2_connect(dev):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
+                eap="IKEV2", identity="ikev2 user",
+                password="ike password",
+                fragment_size="30", wait_connect=False)
+    ev = dev.wait_event(["CTRL-EVENT-EAP-SUCCESS", "CTRL-EVENT-EAP-FAILURE",
+                         "CTRL-EVENT-DISCONNECTED"],
+                        timeout=1)
+    dev.request("REMOVE_NETWORK all")
+    if not ev or "CTRL-EVENT-DISCONNECTED" not in ev:
+        dev.wait_disconnected()
+    dev.dump_monitor()
+
+def test_eap_proto_ikev2_errors_server(dev, apdev):
+    """EAP-IKEV2 local error cases on server"""
+    check_eap_capa(dev[0], "IKEV2")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+
+    tests = [(1, "eap_ikev2_init"),
+             (2, "=eap_ikev2_init"),
+             (3, "=eap_ikev2_init"),
+             (1, "eap_msg_alloc;eap_ikev2_build_msg"),
+             (1, "ikev2_initiator_build;eap_ikev2_buildReq"),
+             (1, "eap_ikev2_process_fragment"),
+             (1, "wpabuf_alloc_copy;ikev2_process_ker"),
+             (1, "ikev2_process_idr"),
+             (1, "ikev2_derive_auth_data;ikev2_process_auth_secret"),
+             (1, "ikev2_decrypt_payload;ikev2_process_sa_auth"),
+             (1, "ikev2_process_sa_auth_decrypted;ikev2_process_sa_auth"),
+             (1, "dh_init;ikev2_build_kei"),
+             (1, "ikev2_build_auth"),
+             (1, "wpabuf_alloc;ikev2_build_sa_init"),
+             (1, "ikev2_build_sa_auth"),
+             (1, "=ikev2_build_sa_auth"),
+             (2, "=ikev2_derive_auth_data"),
+             (1, "wpabuf_alloc;ikev2_build_sa_auth"),
+             (2, "wpabuf_alloc;=ikev2_build_sa_auth"),
+             (1, "ikev2_decrypt_payload;ikev2_process_sa_init_encr"),
+             (1, "dh_derive_shared;ikev2_derive_keys"),
+             (1, "=ikev2_derive_keys"),
+             (2, "=ikev2_derive_keys"),
+             (1, "eap_ikev2_getKey"),
+             (1, "eap_ikev2_get_emsk"),
+             (1, "eap_ikev2_get_session_id")]
+    for count, func in tests:
+        with alloc_fail(hapd, count, func):
+            run_eap_ikev2_connect(dev[0])
+
+    tests = [(1, "eap_ikev2_validate_icv;eap_ikev2_process_icv"),
+             (1, "eap_ikev2_server_keymat"),
+             (1, "ikev2_build_auth"),
+             (1, "os_get_random;ikev2_build_sa_init"),
+             (2, "os_get_random;ikev2_build_sa_init"),
+             (1, "ikev2_derive_keys"),
+             (2, "ikev2_derive_keys"),
+             (3, "ikev2_derive_keys"),
+             (4, "ikev2_derive_keys"),
+             (5, "ikev2_derive_keys"),
+             (6, "ikev2_derive_keys"),
+             (7, "ikev2_derive_keys"),
+             (8, "ikev2_derive_keys"),
+             (1, "ikev2_decrypt_payload;ikev2_process_sa_auth"),
+             (1, "eap_ikev2_process_icv;eap_ikev2_process")]
+    for count, func in tests:
+        with fail_test(hapd, count, func):
+            run_eap_ikev2_connect(dev[0])
+
+def start_ikev2_assoc(dev, hapd):
+    dev.connect("test-wpa2-eap", key_mgmt="WPA-EAP", scan_freq="2412",
+                eap="IKEV2", identity="ikev2 user",
+                password="ike password", wait_connect=False)
+    proxy_msg(hapd, dev) # EAP-Identity/Request
+    proxy_msg(dev, hapd) # EAP-Identity/Response
+    proxy_msg(hapd, dev) # IKEV2 1
+
+def stop_ikev2_assoc(dev, hapd):
+    dev.request("REMOVE_NETWORK all")
+    dev.wait_disconnected()
+    dev.dump_monitor()
+    hapd.dump_monitor()
+
+def test_eap_proto_ikev2_server(dev, apdev):
+    """EAP-IKEV2 protocol testing for the server"""
+    check_eap_capa(dev[0], "IKEV2")
+    params = int_eap_server_params()
+    params['erp_domain'] = 'example.com'
+    params['eap_server_erp'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq=2412)
+    hapd.request("SET ext_eapol_frame_io 1")
+    dev[0].request("SET ext_eapol_frame_io 1")
+
+    # Successful exchange to verify proxying mechanism
+    start_ikev2_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # IKEV2 2
+    proxy_msg(hapd, dev[0]) # IKEV2 3
+    proxy_msg(dev[0], hapd) # IKEV2 4
+    proxy_msg(hapd, dev[0]) # EAP-Success
+    proxy_msg(hapd, dev[0]) # EAPOL-Key msg 1/4
+    proxy_msg(dev[0], hapd) # EAPOL-Key msg 2/4
+    proxy_msg(hapd, dev[0]) # EAPOL-Key msg 3/4
+    proxy_msg(dev[0], hapd) # EAPOL-Key msg 4/4
+    dev[0].wait_connected()
+    stop_ikev2_assoc(dev[0], hapd)
+
+    start_ikev2_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short EAP-IKEV2 header
+    hapd.note("IKEV2: Too short frame to include HDR")
+    msg = resp[0:4] + "0005" + resp[8:12] + "0005" + "31"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_ikev2_assoc(dev[0], hapd)
+
+    start_ikev2_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short EAP-IKEV2 header - missing Message Length field
+    hapd.note("EAP-IKEV2: Message underflow")
+    msg = resp[0:4] + "0006" + resp[8:12] + "0006" + "3180"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_ikev2_assoc(dev[0], hapd)
+
+    start_ikev2_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short EAP-IKEV2 header - too small Message Length
+    hapd.note("EAP-IKEV2: Invalid Message Length (0; 1 remaining in this msg)")
+    msg = resp[0:4] + "000b" + resp[8:12] + "000b" + "318000000000ff"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_ikev2_assoc(dev[0], hapd)
+
+    start_ikev2_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # Too short EAP-IKEV2 header - too large Message Length
+    hapd.note("EAP-IKEV2: Ignore too long message")
+    msg = resp[0:4] + "000b" + resp[8:12] + "000b" + "31c0bbccddeeff"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_ikev2_assoc(dev[0], hapd)
+
+    start_ikev2_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # No Message Length in first fragment
+    hapd.note("EAP-IKEV2: No Message Length field in a fragmented packet")
+    msg = resp[0:4] + "0007" + resp[8:12] + "0007" + "3140ff"
+    tx_msg(dev[0], hapd, msg)
+    rx_msg(hapd)
+    stop_ikev2_assoc(dev[0], hapd)
+
+    start_ikev2_assoc(dev[0], hapd)
+    resp = rx_msg(dev[0])
+    # First fragment (valid)
+    hapd.note("EAP-IKEV2: Received 1 bytes in first fragment, waiting for 255 bytes more")
+    msg = resp[0:4] + "000b" + resp[8:12] + "000b" + "31c000000100ff"
+    tx_msg(dev[0], hapd, msg)
+    req = rx_msg(hapd)
+    id, = struct.unpack('B', binascii.unhexlify(req)[5:6])
+    hapd.note("EAP-IKEV2: Received 1 bytes in first fragment, waiting for 254 bytes more")
+    payload = struct.pack('BBB', 49, 0x40, 0)
+    msg = struct.pack('>BBHBBH', 1, 0, 4 + len(payload), 2, id, 4 + len(payload)) + payload
+    tx_msg(dev[0], hapd, binascii.hexlify(msg).decode())
+    req = rx_msg(hapd)
+    id, = struct.unpack('B', binascii.unhexlify(req)[5:6])
+    hapd.note("EAP-IKEV2: Fragment overflow")
+    payload = struct.pack('BB', 49, 0x40) + 255*b'\x00'
+    msg = struct.pack('>BBHBBH', 1, 0, 4 + len(payload), 2, id, 4 + len(payload)) + payload
+    tx_msg(dev[0], hapd, binascii.hexlify(msg).decode())
+    rx_msg(hapd)
+    stop_ikev2_assoc(dev[0], hapd)
+
+    start_ikev2_assoc(dev[0], hapd)
+    proxy_msg(dev[0], hapd) # IKEV2 2
+    req = proxy_msg(hapd, dev[0]) # IKEV2 3
+    id, = struct.unpack('B', binascii.unhexlify(req)[5:6])
+    # Missing ICV
+    hapd.note("EAP-IKEV2: The message should have included integrity checksum")
+    payload = struct.pack('BB', 49, 0) + b'\x00'
+    msg = struct.pack('>BBHBBH', 1, 0, 4 + len(payload), 2, id, 4 + len(payload)) + payload
+    tx_msg(dev[0], hapd, binascii.hexlify(msg).decode())
+    rx_msg(hapd)
+    stop_ikev2_assoc(dev[0], hapd)
+
+    tests = [("Unsupported HDR version 0x0 (expected 0x20)",
+              struct.pack('BB', 49, 0) + 16*b'\x00' +
+              struct.pack('>BBBBLL', 0, 0, 0, 0, 0, 0)),
+             ("IKEV2: Invalid length (HDR: 0 != RX: 28)",
+              struct.pack('BB', 49, 0) + 16*b'\x00' +
+              struct.pack('>BBBBLL', 0, 0x20, 0, 0, 0, 0)),
+             ("IKEV2: Unexpected Exchange Type 0 in SA_INIT state",
+              struct.pack('BB', 49, 0) + 16*b'\x00' +
+              struct.pack('>BBBBLL', 0, 0x20, 0, 0, 0, 28)),
+             ("IKEV2: Unexpected Flags value 0x0",
+              struct.pack('BB', 49, 0) + 16*b'\x00' +
+              struct.pack('>BBBBLL', 0, 0x20, 34, 0, 0, 28)),
+             ("IKEV2: SAr1 not received",
+              struct.pack('BB', 49, 0) + 16*b'\x00' +
+              struct.pack('>BBBBLL', 0, 0x20, 34, 0x20, 0, 28))]
+    for txt, payload in tests:
+        start_ikev2_assoc(dev[0], hapd)
+        resp = rx_msg(dev[0])
+        id, = struct.unpack('B', binascii.unhexlify(resp)[5:6])
+        hapd.note(txt)
+        msg = struct.pack('>BBHBBH', 1, 0, 4 + len(payload), 2, id, 4 + len(payload)) + payload
+        tx_msg(dev[0], hapd, binascii.hexlify(msg).decode())
+        rx_msg(hapd)
+        stop_ikev2_assoc(dev[0], hapd)
+
 def test_eap_proto_mschapv2(dev, apdev):
     """EAP-MSCHAPv2 protocol tests"""
     check_eap_capa(dev[0], "MSCHAPV2")
