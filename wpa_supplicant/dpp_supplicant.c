@@ -2196,6 +2196,7 @@ void wpas_dpp_stop(struct wpa_supplicant *wpa_s)
 
 int wpas_dpp_init(struct wpa_supplicant *wpa_s)
 {
+	struct dpp_global_config config;
 	u8 adv_proto_id[7];
 
 	adv_proto_id[0] = WLAN_EID_VENDOR_SPECIFIC;
@@ -2208,7 +2209,10 @@ int wpas_dpp_init(struct wpa_supplicant *wpa_s)
 				sizeof(adv_proto_id), wpas_dpp_gas_req_handler,
 				wpas_dpp_gas_status_handler, wpa_s) < 0)
 		return -1;
-	wpa_s->dpp = dpp_global_init();
+
+	os_memset(&config, 0, sizeof(config));
+	config.msg_ctx = wpa_s;
+	wpa_s->dpp = dpp_global_init(&config);
 	return wpa_s->dpp ? 0 : -1;
 }
 

@@ -71,6 +71,7 @@ static void ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **pr,
 
 
 struct dpp_global {
+	void *msg_ctx;
 	struct dl_list bootstrap; /* struct dpp_bootstrap_info */
 	struct dl_list configurator; /* struct dpp_configurator */
 };
@@ -8689,13 +8690,14 @@ int dpp_configurator_get_key_id(struct dpp_global *dpp, unsigned int id,
 }
 
 
-struct dpp_global * dpp_global_init(void)
+struct dpp_global * dpp_global_init(struct dpp_global_config *config)
 {
 	struct dpp_global *dpp;
 
 	dpp = os_zalloc(sizeof(*dpp));
 	if (!dpp)
 		return NULL;
+	dpp->msg_ctx = config->msg_ctx;
 
 	dl_list_init(&dpp->bootstrap);
 	dl_list_init(&dpp->configurator);

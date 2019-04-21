@@ -497,7 +497,12 @@ int dpp_configurator_add(struct dpp_global *dpp, const char *cmd);
 int dpp_configurator_remove(struct dpp_global *dpp, const char *id);
 int dpp_configurator_get_key_id(struct dpp_global *dpp, unsigned int id,
 				char *buf, size_t buflen);
-struct dpp_global * dpp_global_init(void);
+
+struct dpp_global_config {
+	void *msg_ctx;
+};
+
+struct dpp_global * dpp_global_init(struct dpp_global_config *config);
 void dpp_global_clear(struct dpp_global *dpp);
 void dpp_global_deinit(struct dpp_global *dpp);
 
