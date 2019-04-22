@@ -742,6 +742,16 @@ def test_ap_vht80_csa(dev, apdev):
         hwsim_utils.test_connectivity(dev[0], hapd)
 
         hapd.request("CHAN_SWITCH 5 5180 ht vht blocktx center_freq1=5210 sec_channel_offset=1 bandwidth=80")
+        ev = hapd.wait_event(["CTRL-EVENT-STARTED-CHANNEL-SWITCH"], timeout=10)
+        if ev is None:
+            raise Exception("Channel switch start event not seen")
+        if "freq=5180" not in ev:
+            raise Exception("Unexpected channel in CS started")
+        ev = hapd.wait_event(["CTRL-EVENT-CHANNEL-SWITCH"], timeout=10)
+        if ev is None:
+            raise Exception("Channel switch completion event not seen")
+        if "freq=5180" not in ev:
+            raise Exception("Unexpected channel in CS completed")
         ev = hapd.wait_event(["AP-CSA-FINISHED"], timeout=10)
         if ev is None:
             raise Exception("CSA finished event timed out")

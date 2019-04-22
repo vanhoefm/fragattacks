@@ -23,6 +23,19 @@ def connect(dev, apdev, **kwargs):
 
 def switch_channel(ap, count, freq):
     ap.request("CHAN_SWITCH " + str(count) + " " + str(freq))
+
+    ev = ap.wait_event(["CTRL-EVENT-STARTED-CHANNEL-SWITCH"], timeout=10)
+    if ev is None:
+        raise Exception("Channel switch start event not seen")
+    if "freq=" + str(freq) not in ev:
+        raise Exception("Unexpected channel in CS started event")
+
+    ev = ap.wait_event(["CTRL-EVENT-CHANNEL-SWITCH"], timeout=10)
+    if ev is None:
+        raise Exception("Channel switch completed event not seen")
+    if "freq=" + str(freq) not in ev:
+        raise Exception("Unexpected channel in CS completed event")
+
     ev = ap.wait_event(["AP-CSA-FINISHED"], timeout=10)
     if ev is None:
         raise Exception("CSA finished event timed out")
@@ -30,6 +43,12 @@ def switch_channel(ap, count, freq):
         raise Exception("Unexpected channel in CSA finished event")
 
 def wait_channel_switch(dev, freq):
+    ev = dev.wait_event(["CTRL-EVENT-STARTED-CHANNEL-SWITCH"], timeout=5)
+    if ev is None:
+        raise Exception("Channel switch start not reported")
+    if "freq=%d" % freq not in ev:
+        raise Exception("Unexpected frequency in channel switch started: " + ev)
+
     ev = dev.wait_event(["CTRL-EVENT-CHANNEL-SWITCH"], timeout=5)
     if ev is None:
         raise Exception("Channel switch not reported")
