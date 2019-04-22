@@ -270,7 +270,7 @@ static void * supp_get_network_ctx(void *ctx)
 }
 
 
-static void supp_deauthenticate(void *ctx, int reason_code)
+static void supp_deauthenticate(void *ctx, u16 reason_code)
 {
 	wpa_printf(MSG_DEBUG, "SUPP: %s(%d)", __func__, reason_code);
 }

@@ -72,7 +72,7 @@ static void set_state(void *arg, enum wpa_states state)
 }
 
 
-static void deauthenticate(void *arg, int reason_code)
+static void deauthenticate(void *arg, u16 reason_code)
 {
 }
 

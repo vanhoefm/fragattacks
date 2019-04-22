@@ -2337,7 +2337,7 @@ struct wpa_driver_ops {
 	 *
 	 * Returns: 0 on success, -1 on failure
 	 */
-	int (*deauthenticate)(void *priv, const u8 *addr, int reason_code);
+	int (*deauthenticate)(void *priv, const u8 *addr, u16 reason_code);
 
 	/**
 	 * associate - Request driver to associate
@@ -2806,7 +2806,7 @@ struct wpa_driver_ops {
 	 * a Deauthentication frame to be sent to it.
 	 */
 	int (*sta_deauth)(void *priv, const u8 *own_addr, const u8 *addr,
-			  int reason);
+			  u16 reason);
 
 	/**
 	 * sta_disassoc - Disassociate a station (AP only)
@@ -2820,7 +2820,7 @@ struct wpa_driver_ops {
 	 * a Disassociation frame to be sent to it.
 	 */
 	int (*sta_disassoc)(void *priv, const u8 *own_addr, const u8 *addr,
-			    int reason);
+			    u16 reason);
 
 	/**
 	 * sta_remove - Remove a station entry (AP only)
