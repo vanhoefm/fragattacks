@@ -168,21 +168,8 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 		goto fail;
 
 	/* get a random quadratic residue and nonresidue */
-	while (!qr || !qnr) {
-		if (crypto_bignum_rand(tmp1, prime) < 0)
-			goto fail;
-		res = crypto_bignum_legendre(tmp1, prime);
-		if (!qr && res == 1) {
-			qr = tmp1;
-			tmp1 = crypto_bignum_init();
-		} else if (!qnr && res == -1) {
-			qnr = tmp1;
-			tmp1 = crypto_bignum_init();
-		}
-		if (!tmp1)
-			goto fail;
-	}
-	if (crypto_bignum_to_bin(qr, qr_bin, sizeof(qr_bin),
+	if (dragonfly_get_random_qr_qnr(prime, &qr, &qnr) < 0 ||
+	    crypto_bignum_to_bin(qr, qr_bin, sizeof(qr_bin),
 				 primebytelen) < 0 ||
 	    crypto_bignum_to_bin(qnr, qnr_bin, sizeof(qnr_bin),
 				 primebytelen) < 0)

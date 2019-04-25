@@ -10,6 +10,7 @@
 #include "utils/includes.h"
 
 #include "utils/common.h"
+#include "crypto/crypto.h"
 #include "dragonfly.h"
 
 
@@ -24,4 +25,36 @@ int dragonfly_suitable_group(int group, int ecc_only)
 		group == 28 || group == 29 || group == 30 ||
 		(!ecc_only &&
 		 (group == 15 || group == 16 || group == 17 || group == 18));
+}
+
+
+int dragonfly_get_random_qr_qnr(const struct crypto_bignum *prime,
+				struct crypto_bignum **qr,
+				struct crypto_bignum **qnr)
+{
+	*qr = *qnr = NULL;
+
+	while (!(*qr) || !(*qnr)) {
+		struct crypto_bignum *tmp;
+		int res;
+
+		tmp = crypto_bignum_init();
+		if (!tmp || crypto_bignum_rand(tmp, prime) < 0)
+			break;
+
+		res = crypto_bignum_legendre(tmp, prime);
+		if (res == 1 && !(*qr))
+			*qr = tmp;
+		else if (res == -1 && !(*qnr))
+			*qnr = tmp;
+		else
+			crypto_bignum_deinit(tmp, 0);
+	}
+
+	if (*qr && *qnr)
+		return 0;
+	crypto_bignum_deinit(*qr, 0);
+	crypto_bignum_deinit(*qnr, 0);
+	*qr = *qnr = NULL;
+	return -1;
 }
