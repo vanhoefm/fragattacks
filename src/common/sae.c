@@ -317,7 +317,7 @@ static int sae_test_pwd_seed_ecc(struct sae_data *sae, const u8 *pwd_seed,
 	wpa_hexdump_key(MSG_DEBUG, "SAE: pwd-value",
 			pwd_value, sae->tmp->prime_len);
 
-	if (os_memcmp(pwd_value, prime, sae->tmp->prime_len) >= 0)
+	if (const_time_memcmp(pwd_value, prime, sae->tmp->prime_len) >= 0)
 		return 0;
 
 	x_cand = crypto_bignum_init_set(pwd_value, sae->tmp->prime_len);
