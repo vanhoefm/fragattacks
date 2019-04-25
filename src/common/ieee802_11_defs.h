@@ -2110,8 +2110,8 @@ struct ieee80211_he_capabilities {
 } STRUCT_PACKED;
 
 struct ieee80211_he_operation {
-	u32 he_oper_params; /* HE Operation Parameters[3] and
-			     * BSS Color Information[1] */
+	le32 he_oper_params; /* HE Operation Parameters[3] and
+			      * BSS Color Information[1] */
 	u8 he_mcs_nss_set[2];
 	u8 vht_op_info_chwidth;
 	u8 vht_op_info_chan_center_freq_seg0_idx;
