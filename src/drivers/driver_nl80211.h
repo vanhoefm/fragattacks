@@ -163,7 +163,6 @@ struct wpa_driver_nl80211_data {
 	unsigned int scan_vendor_cmd_avail:1;
 	unsigned int connect_reassoc:1;
 	unsigned int set_wifi_conf_vendor_cmd_avail:1;
-	unsigned int he_capab_vendor_cmd_avail:1;
 	unsigned int fetch_bss_trans_status:1;
 	unsigned int roam_vendor_cmd_avail:1;
 	unsigned int get_supported_akm_suites_avail:1;
@@ -215,8 +214,6 @@ struct wpa_driver_nl80211_data {
 	 * (NL80211_CMD_VENDOR). 0 if no pending scan request.
 	 */
 	int last_scan_cmd;
-
-	struct he_capabilities he_capab;
 };
 
 struct nl_msg;
