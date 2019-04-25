@@ -1119,8 +1119,6 @@ def test_sae_no_random(dev, apdev):
 
     dev[0].request("SET sae_groups ")
     tests = [(1, "os_get_random;sae_get_rand"),
-             (1, "os_get_random;get_rand_1_to_p_1"),
-             (1, "os_get_random;get_random_qr_qnr"),
              (1, "os_get_random;sae_derive_pwe_ecc")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
@@ -1181,15 +1179,14 @@ def test_sae_bignum_failure(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].request("SET sae_groups 19")
-    tests = [(1, "crypto_bignum_init_set;get_rand_1_to_p_1"),
-             (1, "crypto_bignum_init;is_quadratic_residue_blind"),
-             (1, "crypto_bignum_mulmod;is_quadratic_residue_blind"),
-             (2, "crypto_bignum_mulmod;is_quadratic_residue_blind"),
-             (3, "crypto_bignum_mulmod;is_quadratic_residue_blind"),
-             (1, "crypto_bignum_legendre;is_quadratic_residue_blind"),
+    tests = [(1, "crypto_bignum_init_set;dragonfly_get_rand_1_to_p_1"),
+             (1, "crypto_bignum_init;dragonfly_is_quadratic_residue_blind"),
+             (1, "crypto_bignum_mulmod;dragonfly_is_quadratic_residue_blind"),
+             (2, "crypto_bignum_mulmod;dragonfly_is_quadratic_residue_blind"),
+             (3, "crypto_bignum_mulmod;dragonfly_is_quadratic_residue_blind"),
+             (1, "crypto_bignum_legendre;dragonfly_is_quadratic_residue_blind"),
              (1, "crypto_bignum_init_set;sae_test_pwd_seed_ecc"),
              (1, "crypto_ec_point_compute_y_sqr;sae_test_pwd_seed_ecc"),
-             (1, "crypto_bignum_init_set;get_random_qr_qnr"),
              (1, "crypto_bignum_to_bin;sae_derive_pwe_ecc"),
              (1, "crypto_ec_point_init;sae_derive_pwe_ecc"),
              (1, "crypto_ec_point_solve_y_coord;sae_derive_pwe_ecc"),
@@ -1202,7 +1199,7 @@ def test_sae_bignum_failure(dev, apdev):
              (1, "crypto_ec_point_add;sae_derive_k_ecc"),
              (2, "crypto_ec_point_mul;sae_derive_k_ecc"),
              (1, "crypto_ec_point_to_bin;sae_derive_k_ecc"),
-             (1, "crypto_bignum_legendre;get_random_qr_qnr"),
+             (1, "crypto_bignum_legendre;dragonfly_get_random_qr_qnr"),
              (1, "sha256_prf;sae_derive_keys"),
              (1, "crypto_bignum_init;sae_derive_keys"),
              (1, "crypto_bignum_init_set;sae_parse_commit_scalar"),
