@@ -61,12 +61,13 @@ u8 * hostapd_eid_he_operation(struct hostapd_data *hapd, u8 *eid)
 {
 	struct ieee80211_he_operation *oper;
 	u8 *pos = eid;
+	int oper_size = 6;
 
 	if (!hapd->iface->current_mode)
 		return eid;
 
 	*pos++ = WLAN_EID_EXTENSION;
-	*pos++ = 1 + sizeof(struct ieee80211_he_operation);
+	*pos++ = 1 + oper_size;
 	*pos++ = WLAN_EID_EXT_HE_OPERATION;
 
 	oper = (struct ieee80211_he_operation *) pos;
@@ -92,7 +93,7 @@ u8 * hostapd_eid_he_operation(struct hostapd_data *hapd, u8 *eid)
 
 	/* TODO: conditional MaxBSSID Indicator subfield */
 
-	pos += sizeof(*oper);
+	pos += oper_size;
 
 	return pos;
 }
