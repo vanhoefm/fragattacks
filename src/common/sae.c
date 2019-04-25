@@ -178,43 +178,12 @@ static void sae_pwd_seed_key(const u8 *addr1, const u8 *addr2, u8 *key)
 }
 
 
-static struct crypto_bignum *
-get_rand_1_to_p_1(const u8 *prime, size_t prime_len, size_t prime_bits,
-		  int *r_odd)
-{
-	for (;;) {
-		struct crypto_bignum *r;
-		u8 tmp[SAE_MAX_ECC_PRIME_LEN];
-
-		if (random_get_bytes(tmp, prime_len) < 0)
-			break;
-		if (prime_bits % 8)
-			buf_shift_right(tmp, prime_len, 8 - prime_bits % 8);
-		if (os_memcmp(tmp, prime, prime_len) >= 0)
-			continue;
-		r = crypto_bignum_init_set(tmp, prime_len);
-		if (!r)
-			break;
-		if (crypto_bignum_is_zero(r)) {
-			crypto_bignum_deinit(r, 0);
-			continue;
-		}
-
-		*r_odd = tmp[prime_len - 1] & 0x01;
-		return r;
-	}
-
-	return NULL;
-}
-
-
 static int is_quadratic_residue_blind(struct sae_data *sae,
-				      const u8 *prime, size_t bits,
 				      const u8 *qr, const u8 *qnr,
 				      const struct crypto_bignum *y_sqr)
 {
 	struct crypto_bignum *r, *num, *qr_or_qnr = NULL;
-	int r_odd, check, res = -1;
+	int check, res = -1;
 	u8 qr_or_qnr_bin[SAE_MAX_ECC_PRIME_LEN];
 	size_t prime_len = sae->tmp->prime_len;
 	unsigned int mask;
@@ -228,7 +197,7 @@ static int is_quadratic_residue_blind(struct sae_data *sae,
 	 * r = a random number between 1 and p-1, inclusive
 	 * num = (v * r * r) modulo p
 	 */
-	r = get_rand_1_to_p_1(prime, prime_len, bits, &r_odd);
+	r = dragonfly_get_rand_1_to_p_1(sae->tmp->prime);
 	if (!r)
 		return -1;
 
@@ -249,7 +218,7 @@ static int is_quadratic_residue_blind(struct sae_data *sae,
 	 * num = (num * qnr) module p
 	 * LGR(num, p) = -1 ==> quadratic residue
 	 */
-	mask = const_time_is_zero(r_odd);
+	mask = const_time_is_zero(crypto_bignum_is_odd(r));
 	const_time_select_bin(mask, qnr, qr, prime_len, qr_or_qnr_bin);
 	qr_or_qnr = crypto_bignum_init_set(qr_or_qnr_bin, prime_len);
 	if (!qr_or_qnr ||
@@ -306,7 +275,7 @@ static int sae_test_pwd_seed_ecc(struct sae_data *sae, const u8 *pwd_seed,
 	if (!y_sqr)
 		return -1;
 
-	res = is_quadratic_residue_blind(sae, prime, bits, qr, qnr, y_sqr);
+	res = is_quadratic_residue_blind(sae, qr, qnr, y_sqr);
 	crypto_bignum_deinit(y_sqr, 1);
 	return res;
 }

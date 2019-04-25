@@ -16,5 +16,7 @@ int dragonfly_suitable_group(int group, int ecc_only);
 int dragonfly_get_random_qr_qnr(const struct crypto_bignum *prime,
 				struct crypto_bignum **qr,
 				struct crypto_bignum **qnr);
+struct crypto_bignum *
+dragonfly_get_rand_1_to_p_1(const struct crypto_bignum *prime);
 
 #endif /* DRAGONFLY_H */

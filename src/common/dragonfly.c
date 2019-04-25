@@ -58,3 +58,25 @@ int dragonfly_get_random_qr_qnr(const struct crypto_bignum *prime,
 	*qr = *qnr = NULL;
 	return -1;
 }
+
+
+struct crypto_bignum *
+dragonfly_get_rand_1_to_p_1(const struct crypto_bignum *prime)
+{
+	struct crypto_bignum *tmp, *pm1, *one;
+
+	tmp = crypto_bignum_init();
+	pm1 = crypto_bignum_init();
+	one = crypto_bignum_init_set((const u8 *) "\x01", 1);
+	if (!tmp || !pm1 || !one ||
+	    crypto_bignum_sub(prime, one, pm1) < 0 ||
+	    crypto_bignum_rand(tmp, pm1) < 0 ||
+	    crypto_bignum_add(tmp, one, tmp) < 0) {
+		crypto_bignum_deinit(tmp, 0);
+		tmp = NULL;
+	}
+
+	crypto_bignum_deinit(pm1, 0);
+	crypto_bignum_deinit(one, 0);
+	return tmp;
+}

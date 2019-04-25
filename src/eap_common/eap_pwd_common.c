@@ -121,14 +121,14 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 			     const u8 *id_peer, size_t id_peer_len,
 			     const u8 *token)
 {
-	struct crypto_bignum *qr = NULL, *qnr = NULL, *one = NULL;
+	struct crypto_bignum *qr = NULL, *qnr = NULL;
 	struct crypto_bignum *qr_or_qnr = NULL;
 	u8 qr_bin[MAX_ECC_PRIME_LEN];
 	u8 qnr_bin[MAX_ECC_PRIME_LEN];
 	u8 qr_or_qnr_bin[MAX_ECC_PRIME_LEN];
 	u8 x_bin[MAX_ECC_PRIME_LEN];
 	u8 prime_bin[MAX_ECC_PRIME_LEN];
-	struct crypto_bignum *tmp1 = NULL, *tmp2 = NULL, *pm1 = NULL;
+	struct crypto_bignum *tmp1 = NULL, *tmp2 = NULL;
 	struct crypto_hash *hash;
 	unsigned char pwe_digest[SHA256_MAC_LEN], *prfbuf = NULL, ctr;
 	int ret = 0, check, res;
@@ -151,10 +151,7 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 				 primebytelen) < 0)
 		return -1;
 	grp->pwe = crypto_ec_point_init(grp->group);
-	tmp1 = crypto_bignum_init();
-	pm1 = crypto_bignum_init();
-	one = crypto_bignum_init_set((const u8 *) "\x01", 1);
-	if (!grp->pwe || !tmp1 || !pm1 || !one) {
+	if (!grp->pwe) {
 		wpa_printf(MSG_INFO, "EAP-pwd: unable to create bignums");
 		goto fail;
 	}
@@ -164,8 +161,6 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 			   "buffer");
 		goto fail;
 	}
-	if (crypto_bignum_sub(prime, one, pm1) < 0)
-		goto fail;
 
 	/* get a random quadratic residue and nonresidue */
 	if (dragonfly_get_random_qr_qnr(prime, &qr, &qnr) < 0 ||
@@ -242,7 +237,8 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 		 *
 		 * tmp1 is a random number between 1 and p-1
 		 */
-		if (crypto_bignum_rand(tmp1, pm1) < 0 ||
+		tmp1 = dragonfly_get_rand_1_to_p_1(prime);
+		if (!tmp1 ||
 		    crypto_bignum_mulmod(tmp2, tmp1, prime, tmp2) < 0 ||
 		    crypto_bignum_mulmod(tmp2, tmp1, prime, tmp2) < 0)
 			goto fail;
@@ -317,13 +313,11 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 	}
 	/* cleanliness and order.... */
 	crypto_bignum_deinit(x_candidate, 1);
-	crypto_bignum_deinit(pm1, 0);
 	crypto_bignum_deinit(tmp1, 1);
 	crypto_bignum_deinit(tmp2, 1);
 	crypto_bignum_deinit(qr, 1);
 	crypto_bignum_deinit(qnr, 1);
 	crypto_bignum_deinit(qr_or_qnr, 1);
-	crypto_bignum_deinit(one, 0);
 	bin_clear_free(prfbuf, primebytelen);
 	os_memset(qr_bin, 0, sizeof(qr_bin));
 	os_memset(qnr_bin, 0, sizeof(qnr_bin));
