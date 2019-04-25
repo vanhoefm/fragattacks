@@ -230,6 +230,16 @@ void inc_byte_array(u8 *counter, size_t len)
 }
 
 
+void buf_shift_right(u8 *buf, size_t len, size_t bits)
+{
+	size_t i;
+
+	for (i = len - 1; i > 0; i--)
+		buf[i] = (buf[i - 1] << (8 - bits)) | (buf[i] >> bits);
+	buf[0] >>= bits;
+}
+
+
 void wpa_get_ntp_timestamp(u8 *buf)
 {
 	struct os_time now;

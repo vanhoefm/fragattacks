@@ -119,15 +119,6 @@ EAP_PWD_group * get_eap_pwd_group(u16 num)
 }
 
 
-static void buf_shift_right(u8 *buf, size_t len, size_t bits)
-{
-	size_t i;
-	for (i = len - 1; i > 0; i--)
-		buf[i] = (buf[i - 1] << (8 - bits)) | (buf[i] >> bits);
-	buf[0] >>= bits;
-}
-
-
 /*
  * compute a "random" secret point on an elliptic curve based
  * on the password and identities.

@@ -134,15 +134,6 @@ void sae_clear_data(struct sae_data *sae)
 }
 
 
-static void buf_shift_right(u8 *buf, size_t len, size_t bits)
-{
-	size_t i;
-	for (i = len - 1; i > 0; i--)
-		buf[i] = (buf[i - 1] << (8 - bits)) | (buf[i] >> bits);
-	buf[0] >>= bits;
-}
-
-
 static struct crypto_bignum * sae_get_rand(struct sae_data *sae)
 {
 	u8 val[SAE_MAX_PRIME_LEN];
