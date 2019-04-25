@@ -178,72 +178,6 @@ static void sae_pwd_seed_key(const u8 *addr1, const u8 *addr2, u8 *key)
 }
 
 
-static int is_quadratic_residue_blind(struct sae_data *sae,
-				      const u8 *qr, const u8 *qnr,
-				      const struct crypto_bignum *y_sqr)
-{
-	struct crypto_bignum *r, *num, *qr_or_qnr = NULL;
-	int check, res = -1;
-	u8 qr_or_qnr_bin[SAE_MAX_ECC_PRIME_LEN];
-	size_t prime_len = sae->tmp->prime_len;
-	unsigned int mask;
-
-	/*
-	 * Use the blinding technique to mask y_sqr while determining
-	 * whether it is a quadratic residue modulo p to avoid leaking
-	 * timing information while determining the Legendre symbol.
-	 *
-	 * v = y_sqr
-	 * r = a random number between 1 and p-1, inclusive
-	 * num = (v * r * r) modulo p
-	 */
-	r = dragonfly_get_rand_1_to_p_1(sae->tmp->prime);
-	if (!r)
-		return -1;
-
-	num = crypto_bignum_init();
-	if (!num ||
-	    crypto_bignum_mulmod(y_sqr, r, sae->tmp->prime, num) < 0 ||
-	    crypto_bignum_mulmod(num, r, sae->tmp->prime, num) < 0)
-		goto fail;
-
-	/*
-	 * Need to minimize differences in handling different cases, so try to
-	 * avoid branches and timing differences.
-	 *
-	 * If r_odd:
-	 * num = (num * qr) module p
-	 * LGR(num, p) = 1 ==> quadratic residue
-	 * else:
-	 * num = (num * qnr) module p
-	 * LGR(num, p) = -1 ==> quadratic residue
-	 */
-	mask = const_time_is_zero(crypto_bignum_is_odd(r));
-	const_time_select_bin(mask, qnr, qr, prime_len, qr_or_qnr_bin);
-	qr_or_qnr = crypto_bignum_init_set(qr_or_qnr_bin, prime_len);
-	if (!qr_or_qnr ||
-	    crypto_bignum_mulmod(num, qr_or_qnr, sae->tmp->prime, num) < 0)
-		goto fail;
-	/* r_odd is 0 or 1; branchless version of check = r_odd ? 1 : -1, */
-	check = const_time_select_int(mask, -1, 1);
-
-	res = crypto_bignum_legendre(num, sae->tmp->prime);
-	if (res == -2) {
-		res = -1;
-		goto fail;
-	}
-	/* branchless version of res = res == check
-	 * (res is -1, 0, or 1; check is -1 or 1) */
-	mask = const_time_eq(res, check);
-	res = const_time_select_int(mask, 1, 0);
-fail:
-	crypto_bignum_deinit(num, 1);
-	crypto_bignum_deinit(r, 1);
-	crypto_bignum_deinit(qr_or_qnr, 1);
-	return res;
-}
-
-
 static int sae_test_pwd_seed_ecc(struct sae_data *sae, const u8 *pwd_seed,
 				 const u8 *prime, const u8 *qr, const u8 *qnr,
 				 u8 *pwd_value)
@@ -275,7 +209,8 @@ static int sae_test_pwd_seed_ecc(struct sae_data *sae, const u8 *pwd_seed,
 	if (!y_sqr)
 		return -1;
 
-	res = is_quadratic_residue_blind(sae, qr, qnr, y_sqr);
+	res = dragonfly_is_quadratic_residue_blind(sae->tmp->ec, qr, qnr,
+						   y_sqr);
 	crypto_bignum_deinit(y_sqr, 1);
 	return res;
 }

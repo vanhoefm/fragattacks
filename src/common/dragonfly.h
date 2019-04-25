@@ -10,13 +10,17 @@
 #ifndef DRAGONFLY_H
 #define DRAGONFLY_H
 
+#define DRAGONFLY_MAX_ECC_PRIME_LEN 66
+
 struct crypto_bignum;
+struct crypto_ec;
 
 int dragonfly_suitable_group(int group, int ecc_only);
 int dragonfly_get_random_qr_qnr(const struct crypto_bignum *prime,
 				struct crypto_bignum **qr,
 				struct crypto_bignum **qnr);
-struct crypto_bignum *
-dragonfly_get_rand_1_to_p_1(const struct crypto_bignum *prime);
+int dragonfly_is_quadratic_residue_blind(struct crypto_ec *ec,
+					 const u8 *qr, const u8 *qnr,
+					 const struct crypto_bignum *val);
 
 #endif /* DRAGONFLY_H */

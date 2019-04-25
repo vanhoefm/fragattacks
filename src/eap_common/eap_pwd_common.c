@@ -122,22 +122,21 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 			     const u8 *token)
 {
 	struct crypto_bignum *qr = NULL, *qnr = NULL;
-	struct crypto_bignum *qr_or_qnr = NULL;
 	u8 qr_bin[MAX_ECC_PRIME_LEN];
 	u8 qnr_bin[MAX_ECC_PRIME_LEN];
 	u8 qr_or_qnr_bin[MAX_ECC_PRIME_LEN];
 	u8 x_bin[MAX_ECC_PRIME_LEN];
 	u8 prime_bin[MAX_ECC_PRIME_LEN];
-	struct crypto_bignum *tmp1 = NULL, *tmp2 = NULL;
+	struct crypto_bignum *tmp2 = NULL;
 	struct crypto_hash *hash;
 	unsigned char pwe_digest[SHA256_MAC_LEN], *prfbuf = NULL, ctr;
-	int ret = 0, check, res;
+	int ret = 0, res;
 	u8 found = 0; /* 0 (false) or 0xff (true) to be used as const_time_*
 		       * mask */
 	size_t primebytelen = 0, primebitlen;
 	struct crypto_bignum *x_candidate = NULL;
 	const struct crypto_bignum *prime;
-	u8 mask, found_ctr = 0, is_odd = 0;
+	u8 found_ctr = 0, is_odd = 0;
 
 	if (grp->pwe)
 		return -1;
@@ -232,47 +231,15 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 		if (!tmp2)
 			goto fail;
 
-		/*
-		 * mask tmp2 so doing legendre won't leak timing info
-		 *
-		 * tmp1 is a random number between 1 and p-1
-		 */
-		tmp1 = dragonfly_get_rand_1_to_p_1(prime);
-		if (!tmp1 ||
-		    crypto_bignum_mulmod(tmp2, tmp1, prime, tmp2) < 0 ||
-		    crypto_bignum_mulmod(tmp2, tmp1, prime, tmp2) < 0)
+		res = dragonfly_is_quadratic_residue_blind(grp->group, qr_bin,
+							   qnr_bin, tmp2);
+		if (res < 0)
 			goto fail;
-
-		/*
-		 * Now tmp2 (y^2) is masked, all values between 1 and p-1
-		 * are equally probable. Multiplying by r^2 does not change
-		 * whether or not tmp2 is a quadratic residue, just masks it.
-		 *
-		 * Flip a coin, multiply by the random quadratic residue or the
-		 * random quadratic nonresidue and record heads or tails.
-		 */
-		mask = const_time_eq_u8(crypto_bignum_is_odd(tmp1), 1);
-		check = const_time_select_s8(mask, 1, -1);
-		const_time_select_bin(mask, qr_bin, qnr_bin, primebytelen,
-				      qr_or_qnr_bin);
-		crypto_bignum_deinit(qr_or_qnr, 1);
-		qr_or_qnr = crypto_bignum_init_set(qr_or_qnr_bin, primebytelen);
-		if (!qr_or_qnr ||
-		    crypto_bignum_mulmod(tmp2, qr_or_qnr, prime, tmp2) < 0)
-			goto fail;
-
-		/*
-		 * Now it's safe to do legendre, if check is 1 then it's
-		 * a straightforward test (multiplying by qr does not
-		 * change result), if check is -1 then it's the opposite test
-		 * (multiplying a qr by qnr would make a qnr).
-		 */
-		res = crypto_bignum_legendre(tmp2, prime);
-		if (res == -2)
-			goto fail;
-		mask = const_time_eq(res, check);
 		found_ctr = const_time_select_u8(found, found_ctr, ctr);
-		found |= mask;
+		/* found is 0 or 0xff here and res is 0 or 1. Bitwise OR of them
+		 * (with res converted to 0/0xff) handles this in constant time.
+		 */
+		found |= res * 0xff;
 	}
 	if (found == 0) {
 		wpa_printf(MSG_INFO,
@@ -313,11 +280,9 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 	}
 	/* cleanliness and order.... */
 	crypto_bignum_deinit(x_candidate, 1);
-	crypto_bignum_deinit(tmp1, 1);
 	crypto_bignum_deinit(tmp2, 1);
 	crypto_bignum_deinit(qr, 1);
 	crypto_bignum_deinit(qnr, 1);
-	crypto_bignum_deinit(qr_or_qnr, 1);
 	bin_clear_free(prfbuf, primebytelen);
 	os_memset(qr_bin, 0, sizeof(qr_bin));
 	os_memset(qnr_bin, 0, sizeof(qnr_bin));
