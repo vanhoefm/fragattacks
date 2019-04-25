@@ -275,6 +275,7 @@ CFLAGS += -DCONFIG_SAE
 OBJS += ../src/common/sae.o
 NEED_ECC=y
 NEED_DH_GROUPS=y
+NEED_DRAGONFLY=y
 endif
 
 ifdef CONFIG_DPP
@@ -720,6 +721,7 @@ OBJS += ../src/eap_peer/eap_pwd.o ../src/eap_common/eap_pwd_common.o
 CONFIG_IEEE8021X_EAPOL=y
 NEED_SHA256=y
 NEED_ECC=y
+NEED_DRAGONFLY=y
 endif
 
 ifdef CONFIG_EAP_EKE
@@ -1021,6 +1023,10 @@ endif
 
 ifdef CONFIG_SMARTCARD
 CFLAGS += -DCONFIG_SMARTCARD
+endif
+
+ifdef NEED_DRAGONFLY
+OBJS += ../src/common/dragonfly.o
 endif
 
 ifdef MS_FUNCS

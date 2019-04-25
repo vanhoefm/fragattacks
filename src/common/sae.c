@@ -15,35 +15,22 @@
 #include "crypto/random.h"
 #include "crypto/dh_groups.h"
 #include "ieee802_11_defs.h"
+#include "dragonfly.h"
 #include "sae.h"
-
-
-static int sae_suitable_group(int group)
-{
-#ifdef CONFIG_TESTING_OPTIONS
-	/* Allow all groups for testing purposes in non-production builds. */
-	return 1;
-#else /* CONFIG_TESTING_OPTIONS */
-	/* Enforce REVmd rules on which SAE groups are suitable for production
-	 * purposes: FFC groups whose prime is >= 3072 bits and ECC groups
-	 * defined over a prime field whose prime is >= 256 bits. Furthermore,
-	 * ECC groups defined over a characteristic 2 finite field and ECC
-	 * groups with a co-factor greater than 1 are not suitable. */
-	return group == 19 || group == 20 || group == 21 ||
-		group == 28 || group == 29 || group == 30 ||
-		group == 15 || group == 16 || group == 17 || group == 18;
-#endif /* CONFIG_TESTING_OPTIONS */
-}
 
 
 int sae_set_group(struct sae_data *sae, int group)
 {
 	struct sae_temporary_data *tmp;
 
-	if (!sae_suitable_group(group)) {
+#ifdef CONFIG_TESTING_OPTIONS
+	/* Allow all groups for testing purposes in non-production builds. */
+#else /* CONFIG_TESTING_OPTIONS */
+	if (!dragonfly_suitable_group(group, 0)) {
 		wpa_printf(MSG_DEBUG, "SAE: Reject unsuitable group %d", group);
 		return -1;
 	}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 	sae_clear_data(sae);
 	tmp = sae->tmp = os_zalloc(sizeof(*tmp));
