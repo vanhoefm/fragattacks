@@ -144,6 +144,7 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 	u8 qnr_bin[MAX_ECC_PRIME_LEN];
 	u8 qr_or_qnr_bin[MAX_ECC_PRIME_LEN];
 	u8 x_bin[MAX_ECC_PRIME_LEN];
+	u8 prime_bin[MAX_ECC_PRIME_LEN];
 	struct crypto_bignum *tmp1 = NULL, *tmp2 = NULL, *pm1 = NULL;
 	struct crypto_hash *hash;
 	unsigned char pwe_digest[SHA256_MAC_LEN], *prfbuf = NULL, ctr;
@@ -161,6 +162,11 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 	os_memset(x_bin, 0, sizeof(x_bin));
 
 	prime = crypto_ec_get_prime(grp->group);
+	primebitlen = crypto_ec_prime_len_bits(grp->group);
+	primebytelen = crypto_ec_prime_len(grp->group);
+	if (crypto_bignum_to_bin(prime, prime_bin, sizeof(prime_bin),
+				 primebytelen) < 0)
+		return -1;
 	grp->pwe = crypto_ec_point_init(grp->group);
 	tmp1 = crypto_bignum_init();
 	pm1 = crypto_bignum_init();
@@ -170,8 +176,6 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 		goto fail;
 	}
 
-	primebitlen = crypto_ec_prime_len_bits(grp->group);
-	primebytelen = crypto_ec_prime_len(grp->group);
 	if ((prfbuf = os_malloc(primebytelen)) == NULL) {
 		wpa_printf(MSG_INFO, "EAP-pwd: unable to malloc space for prf "
 			   "buffer");
@@ -237,6 +241,8 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 		if (primebitlen % 8)
 			buf_shift_right(prfbuf, primebytelen,
 					8 - primebitlen % 8);
+		if (const_time_memcmp(prfbuf, prime_bin, primebytelen) >= 0)
+			continue;
 
 		crypto_bignum_deinit(x_candidate, 1);
 		x_candidate = crypto_bignum_init_set(prfbuf, primebytelen);
@@ -245,9 +251,6 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 				   "EAP-pwd: unable to create x_candidate");
 			goto fail;
 		}
-
-		if (crypto_bignum_cmp(x_candidate, prime) >= 0)
-			continue;
 
 		wpa_hexdump_key(MSG_DEBUG, "EAP-pwd: x_candidate",
 				prfbuf, primebytelen);
