@@ -1118,8 +1118,7 @@ def test_sae_no_random(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].request("SET sae_groups ")
-    tests = [(1, "os_get_random;sae_get_rand"),
-             (1, "os_get_random;sae_derive_pwe_ecc")]
+    tests = [(1, "os_get_random;sae_derive_pwe_ecc")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
@@ -1218,7 +1217,8 @@ def test_sae_bignum_failure(dev, apdev):
     dev[0].request("SET sae_groups 15")
     tests = [(1, "crypto_bignum_init_set;sae_set_group"),
              (2, "crypto_bignum_init_set;sae_set_group"),
-             (1, "crypto_bignum_init_set;sae_get_rand"),
+             (1, "crypto_bignum_init;sae_derive_commit"),
+             (2, "crypto_bignum_init;sae_derive_commit"),
              (1, "crypto_bignum_init_set;sae_test_pwd_seed_ffc"),
              (1, "crypto_bignum_exptmod;sae_test_pwd_seed_ffc"),
              (1, "crypto_bignum_init;sae_derive_pwe_ffc"),
