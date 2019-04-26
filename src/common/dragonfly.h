@@ -22,5 +22,9 @@ int dragonfly_get_random_qr_qnr(const struct crypto_bignum *prime,
 int dragonfly_is_quadratic_residue_blind(struct crypto_ec *ec,
 					 const u8 *qr, const u8 *qnr,
 					 const struct crypto_bignum *val);
+int dragonfly_generate_scalar(const struct crypto_bignum *order,
+			      struct crypto_bignum *_rand,
+			      struct crypto_bignum *_mask,
+			      struct crypto_bignum *scalar);
 
 #endif /* DRAGONFLY_H */

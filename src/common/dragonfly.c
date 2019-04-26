@@ -154,3 +154,39 @@ fail:
 	crypto_bignum_deinit(qr_or_qnr, 1);
 	return res;
 }
+
+
+static int dragonfly_get_rand_2_to_r_1(struct crypto_bignum *val,
+				       const struct crypto_bignum *order)
+{
+	return crypto_bignum_rand(val, order) == 0 &&
+		!crypto_bignum_is_zero(val) &&
+		!crypto_bignum_is_one(val);
+}
+
+
+int dragonfly_generate_scalar(const struct crypto_bignum *order,
+			      struct crypto_bignum *_rand,
+			      struct crypto_bignum *_mask,
+			      struct crypto_bignum *scalar)
+{
+	int count;
+
+	/* Select two random values rand,mask such that 1 < rand,mask < r and
+	 * rand + mask mod r > 1. */
+	for (count = 0; count < 100; count++) {
+		if (dragonfly_get_rand_2_to_r_1(_rand, order) &&
+		    dragonfly_get_rand_2_to_r_1(_mask, order) &&
+		    crypto_bignum_add(_rand, _mask, scalar) == 0 &&
+		    crypto_bignum_mod(scalar, order, scalar) == 0 &&
+		    !crypto_bignum_is_zero(scalar) &&
+		    !crypto_bignum_is_one(scalar))
+			return 0;
+	}
+
+	/* This should not be reachable in practice if the random number
+	 * generation is working. */
+	wpa_printf(MSG_INFO,
+		   "dragonfly: Unable to get randomness for own scalar");
+	return -1;
+}

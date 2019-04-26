@@ -436,25 +436,6 @@ int eap_pwd_get_rand_mask(EAP_PWD_group *group, struct crypto_bignum *_rand,
 			  struct crypto_bignum *_mask,
 			  struct crypto_bignum *scalar)
 {
-	const struct crypto_bignum *order;
-	int count;
-
-	order = crypto_ec_get_order(group->group);
-
-	/* Select two random values rand,mask such that 1 < rand,mask < r and
-	 * rand + mask mod r > 1. */
-	for (count = 0; count < 100; count++) {
-		if (crypto_bignum_rand(_rand, order) == 0 &&
-		    !crypto_bignum_is_zero(_rand) &&
-		    crypto_bignum_rand(_mask, order) == 0 &&
-		    !crypto_bignum_is_zero(_mask) &&
-		    crypto_bignum_add(_rand, _mask, scalar) == 0 &&
-		    crypto_bignum_mod(scalar, order, scalar) == 0 &&
-		    !crypto_bignum_is_zero(scalar) &&
-		    !crypto_bignum_is_one(scalar))
-			return 0;
-	}
-
-	wpa_printf(MSG_INFO, "EAP-pwd: unable to get randomness");
-	return -1;
+	return dragonfly_generate_scalar(crypto_ec_get_order(group->group),
+					 _rand, _mask, scalar);
 }

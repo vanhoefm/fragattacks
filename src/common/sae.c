@@ -121,49 +121,6 @@ void sae_clear_data(struct sae_data *sae)
 }
 
 
-static struct crypto_bignum * sae_get_rand(struct sae_data *sae)
-{
-	u8 val[SAE_MAX_PRIME_LEN];
-	int iter = 0;
-	struct crypto_bignum *bn = NULL;
-	int order_len_bits = crypto_bignum_bits(sae->tmp->order);
-	size_t order_len = (order_len_bits + 7) / 8;
-
-	if (order_len > sizeof(val))
-		return NULL;
-
-	for (;;) {
-		if (iter++ > 100 || random_get_bytes(val, order_len) < 0)
-			return NULL;
-		if (order_len_bits % 8)
-			buf_shift_right(val, order_len, 8 - order_len_bits % 8);
-		bn = crypto_bignum_init_set(val, order_len);
-		if (bn == NULL)
-			return NULL;
-		if (crypto_bignum_is_zero(bn) ||
-		    crypto_bignum_is_one(bn) ||
-		    crypto_bignum_cmp(bn, sae->tmp->order) >= 0) {
-			crypto_bignum_deinit(bn, 0);
-			continue;
-		}
-		break;
-	}
-
-	os_memset(val, 0, order_len);
-	return bn;
-}
-
-
-static struct crypto_bignum * sae_get_rand_and_mask(struct sae_data *sae)
-{
-	crypto_bignum_deinit(sae->tmp->sae_rand, 1);
-	sae->tmp->sae_rand = sae_get_rand(sae);
-	if (sae->tmp->sae_rand == NULL)
-		return NULL;
-	return sae_get_rand(sae);
-}
-
-
 static void sae_pwd_seed_key(const u8 *addr1, const u8 *addr2, u8 *key)
 {
 	wpa_printf(MSG_DEBUG, "SAE: PWE derivation - addr1=" MACSTR
@@ -611,48 +568,23 @@ static int sae_derive_commit_element_ffc(struct sae_data *sae,
 static int sae_derive_commit(struct sae_data *sae)
 {
 	struct crypto_bignum *mask;
-	int ret = -1;
-	unsigned int counter = 0;
+	int ret;
 
-	do {
-		counter++;
-		if (counter > 100) {
-			/*
-			 * This cannot really happen in practice if the random
-			 * number generator is working. Anyway, to avoid even a
-			 * theoretical infinite loop, break out after 100
-			 * attemps.
-			 */
-			return -1;
-		}
-
-		mask = sae_get_rand_and_mask(sae);
-		if (mask == NULL) {
-			wpa_printf(MSG_DEBUG, "SAE: Could not get rand/mask");
-			return -1;
-		}
-
-		/* commit-scalar = (rand + mask) modulo r */
-		if (!sae->tmp->own_commit_scalar) {
-			sae->tmp->own_commit_scalar = crypto_bignum_init();
-			if (!sae->tmp->own_commit_scalar)
-				goto fail;
-		}
-		crypto_bignum_add(sae->tmp->sae_rand, mask,
-				  sae->tmp->own_commit_scalar);
-		crypto_bignum_mod(sae->tmp->own_commit_scalar, sae->tmp->order,
-				  sae->tmp->own_commit_scalar);
-	} while (crypto_bignum_is_zero(sae->tmp->own_commit_scalar) ||
-		 crypto_bignum_is_one(sae->tmp->own_commit_scalar));
-
-	if ((sae->tmp->ec && sae_derive_commit_element_ecc(sae, mask) < 0) ||
-	    (sae->tmp->dh && sae_derive_commit_element_ffc(sae, mask) < 0))
-		goto fail;
-
-	ret = 0;
-fail:
+	mask = crypto_bignum_init();
+	if (!sae->tmp->sae_rand)
+		sae->tmp->sae_rand = crypto_bignum_init();
+	if (!sae->tmp->own_commit_scalar)
+		sae->tmp->own_commit_scalar = crypto_bignum_init();
+	ret = !mask || !sae->tmp->sae_rand || !sae->tmp->own_commit_scalar ||
+		dragonfly_generate_scalar(sae->tmp->order, sae->tmp->sae_rand,
+					  mask,
+					  sae->tmp->own_commit_scalar) < 0 ||
+		(sae->tmp->ec &&
+		 sae_derive_commit_element_ecc(sae, mask) < 0) ||
+		(sae->tmp->dh &&
+		 sae_derive_commit_element_ffc(sae, mask) < 0);
 	crypto_bignum_deinit(mask, 1);
-	return ret;
+	return ret ? -1 : 0;
 }
 
 
