@@ -2486,8 +2486,12 @@ static void hostapd_deinit_driver(const struct wpa_driver_ops *driver,
 			wpa_printf(MSG_DEBUG, "%s:bss[%d]->drv_priv=%p",
 				   __func__, (int) j,
 				   hapd_iface->bss[j]->drv_priv);
-			if (hapd_iface->bss[j]->drv_priv == drv_priv)
+			if (hapd_iface->bss[j]->drv_priv == drv_priv) {
 				hapd_iface->bss[j]->drv_priv = NULL;
+				hapd_iface->extended_capa = NULL;
+				hapd_iface->extended_capa_mask = NULL;
+				hapd_iface->extended_capa_len = 0;
+			}
 		}
 	}
 }
