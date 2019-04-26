@@ -789,6 +789,13 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 		       freq, ht, hapd->iconf->ch_switch_vht_config, offset,
 		       width, channel_width_to_string(width), cf1, cf2);
 
+	if (!hapd->iface->current_mode) {
+		hostapd_logger(hapd, NULL, HOSTAPD_MODULE_IEEE80211,
+			       HOSTAPD_LEVEL_WARNING,
+			       "ignore channel switch since the interface is not yet ready");
+		return;
+	}
+
 	hapd->iface->freq = freq;
 
 	channel = hostapd_hw_get_channel(hapd, freq);
