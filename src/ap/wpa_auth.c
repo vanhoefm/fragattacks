@@ -4359,6 +4359,15 @@ int wpa_auth_pmksa_add(struct wpa_state_machine *sm, const u8 *pmk,
 	    sm->wpa_auth->conf.disable_pmksa_caching)
 		return -1;
 
+#ifdef CONFIG_IEEE80211R_AP
+	if (pmk_len >= 2 * PMK_LEN && wpa_key_mgmt_ft(sm->wpa_key_mgmt) &&
+	    wpa_key_mgmt_wpa_ieee8021x(sm->wpa_key_mgmt) &&
+	    !wpa_key_mgmt_sha384(sm->wpa_key_mgmt)) {
+		/* Cache MPMK/XXKey instead of initial part from MSK */
+		pmk = pmk + PMK_LEN;
+		pmk_len = PMK_LEN;
+	} else
+#endif /* CONFIG_IEEE80211R_AP */
 	if (wpa_key_mgmt_sha384(sm->wpa_key_mgmt)) {
 		if (pmk_len > PMK_LEN_SUITE_B_192)
 			pmk_len = PMK_LEN_SUITE_B_192;
@@ -4366,6 +4375,7 @@ int wpa_auth_pmksa_add(struct wpa_state_machine *sm, const u8 *pmk,
 		pmk_len = PMK_LEN;
 	}
 
+	wpa_hexdump_key(MSG_DEBUG, "RSN: Cache PMK", pmk, pmk_len);
 	if (pmksa_cache_auth_add(sm->wpa_auth->pmksa, pmk, pmk_len, NULL,
 				 sm->PTK.kck, sm->PTK.kck_len,
 				 sm->wpa_auth->addr, sm->addr, session_timeout,
@@ -4384,6 +4394,7 @@ int wpa_auth_pmksa_add_preauth(struct wpa_authenticator *wpa_auth,
 	if (wpa_auth == NULL)
 		return -1;
 
+	wpa_hexdump_key(MSG_DEBUG, "RSN: Cache PMK from preauth", pmk, len);
 	if (pmksa_cache_auth_add(wpa_auth->pmksa, pmk, len, NULL,
 				 NULL, 0,
 				 wpa_auth->addr,
@@ -4401,6 +4412,7 @@ int wpa_auth_pmksa_add_sae(struct wpa_authenticator *wpa_auth, const u8 *addr,
 	if (wpa_auth->conf.disable_pmksa_caching)
 		return -1;
 
+	wpa_hexdump_key(MSG_DEBUG, "RSN: Cache PMK from SAE", pmk, PMK_LEN);
 	if (pmksa_cache_auth_add(wpa_auth->pmksa, pmk, PMK_LEN, pmkid,
 				 NULL, 0,
 				 wpa_auth->addr, addr, 0, NULL,
@@ -4425,6 +4437,7 @@ int wpa_auth_pmksa_add2(struct wpa_authenticator *wpa_auth, const u8 *addr,
 	if (wpa_auth->conf.disable_pmksa_caching)
 		return -1;
 
+	wpa_hexdump_key(MSG_DEBUG, "RSN: Cache PMK (2)", pmk, PMK_LEN);
 	if (pmksa_cache_auth_add(wpa_auth->pmksa, pmk, pmk_len, pmkid,
 				 NULL, 0, wpa_auth->addr, addr, session_timeout,
 				 NULL, akmp))
