@@ -2088,6 +2088,9 @@ ieee802_11_set_radius_info(struct hostapd_data *hapd, struct sta_info *sta,
 	u32 session_timeout = info->session_timeout;
 	u32 acct_interim_interval = info->acct_interim_interval;
 	struct vlan_description *vlan_id = &info->vlan_id;
+	struct hostapd_sta_wpa_psk_short *psk = info->psk;
+	char *identity = info->identity;
+	char *radius_cui = info->radius_cui;
 
 	if (vlan_id->notempty &&
 	    !hostapd_vlan_valid(hapd->conf->vlan, vlan_id)) {
@@ -2105,20 +2108,22 @@ ieee802_11_set_radius_info(struct hostapd_data *hapd, struct sta_info *sta,
 			       HOSTAPD_LEVEL_INFO, "VLAN ID %d", sta->vlan_id);
 
 	hostapd_free_psk_list(sta->psk);
-	if (hapd->conf->wpa_psk_radius != PSK_RADIUS_IGNORED) {
-		sta->psk = info->psk;
-		info->psk = NULL;
-	} else {
+	if (hapd->conf->wpa_psk_radius != PSK_RADIUS_IGNORED)
+		hostapd_copy_psk_list(&sta->psk, psk);
+	else
 		sta->psk = NULL;
-	}
 
 	os_free(sta->identity);
-	sta->identity = info->identity;
-	info->identity = NULL;
+	if (identity)
+		sta->identity = os_strdup(identity);
+	else
+		sta->identity = NULL;
 
 	os_free(sta->radius_cui);
-	sta->radius_cui = info->radius_cui;
-	info->radius_cui = NULL;
+	if (radius_cui)
+		sta->radius_cui = os_strdup(radius_cui);
+	else
+		sta->radius_cui = NULL;
 
 	if (hapd->conf->acct_interim_interval == 0 && acct_interim_interval)
 		sta->acct_interim_interval = acct_interim_interval;
@@ -2150,8 +2155,6 @@ static void handle_auth(struct hostapd_data *hapd,
 	size_t resp_ies_len = 0;
 	u16 seq_ctrl;
 	struct radius_sta rad_info;
-
-	os_memset(&rad_info, 0, sizeof(rad_info));
 
 	if (len < IEEE80211_HDRLEN + sizeof(mgmt->u.auth)) {
 		wpa_printf(MSG_INFO, "handle_auth - too short payload (len=%lu)",
@@ -2528,10 +2531,6 @@ static void handle_auth(struct hostapd_data *hapd,
 	}
 
  fail:
-	os_free(rad_info.identity);
-	os_free(rad_info.radius_cui);
-	hostapd_free_psk_list(rad_info.psk);
-
 	reply_res = send_auth_reply(hapd, mgmt->sa, mgmt->bssid, auth_alg,
 				    auth_transaction + 1, resp, resp_ies,
 				    resp_ies_len, "handle-auth");
@@ -3983,12 +3982,9 @@ static void handle_assoc(struct hostapd_data *hapd,
 	int left, i;
 	struct sta_info *sta;
 	u8 *tmp = NULL;
-	struct radius_sta info;
 #ifdef CONFIG_FILS
 	int delay_assoc = 0;
 #endif /* CONFIG_FILS */
-
-	os_memset(&info, 0, sizeof(info));
 
 	if (len < IEEE80211_HDRLEN + (reassoc ? sizeof(mgmt->u.reassoc_req) :
 				      sizeof(mgmt->u.assoc_req))) {
@@ -4065,6 +4061,7 @@ static void handle_assoc(struct hostapd_data *hapd,
 		    hapd->iface->current_mode->mode ==
 			HOSTAPD_MODE_IEEE80211AD) {
 			int acl_res;
+			struct radius_sta info;
 
 			acl_res = ieee802_11_allowed_address(hapd, mgmt->sa,
 							     (const u8 *) mgmt,
@@ -4294,9 +4291,6 @@ static void handle_assoc(struct hostapd_data *hapd,
 #endif /* CONFIG_FILS */
 
  fail:
-	os_free(info.identity);
-	os_free(info.radius_cui);
-	hostapd_free_psk_list(info.psk);
 
 	/*
 	 * In case of a successful response, add the station to the driver.

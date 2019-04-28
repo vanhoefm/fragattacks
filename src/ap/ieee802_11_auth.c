@@ -83,24 +83,8 @@ static int hostapd_acl_cache_get(struct hostapd_data *hapd, const u8 *addr,
 		if (os_reltime_expired(&now, &entry->timestamp,
 				       RADIUS_ACL_TIMEOUT))
 			return -1; /* entry has expired */
-		if (out) {
-			if (entry->accepted == HOSTAPD_ACL_ACCEPT_TIMEOUT)
-				out->session_timeout =
-					entry->info.session_timeout;
-			out->acct_interim_interval =
-				entry->info.acct_interim_interval;
-			out->vlan_id = entry->info.vlan_id;
-			copy_psk_list(&out->psk, entry->info.psk);
-			if (entry->info.identity)
-				out->identity = os_strdup(entry->info.identity);
-			else
-				out->identity = NULL;
-			if (entry->info.radius_cui)
-				out->radius_cui =
-					os_strdup(entry->info.radius_cui);
-			else
-				out->radius_cui = NULL;
-		}
+		*out = entry->info;
+
 		return entry->accepted;
 	}
 
@@ -223,8 +207,8 @@ int hostapd_check_acl(struct hostapd_data *hapd, const u8 *addr,
  * @is_probe_req: Whether this query for a Probe Request frame
  * Returns: HOSTAPD_ACL_ACCEPT, HOSTAPD_ACL_REJECT, or HOSTAPD_ACL_PENDING
  *
- * The caller is responsible for freeing the returned out.identity and
- * out.radius_cui values with os_free().
+ * The caller is responsible for properly cloning the returned out->identity and
+ * out->radius_cui and out->psk values.
  */
 int hostapd_allowed_address(struct hostapd_data *hapd, const u8 *addr,
 			    const u8 *msg, size_t len, struct radius_sta *out,
@@ -266,14 +250,6 @@ int hostapd_allowed_address(struct hostapd_data *hapd, const u8 *addr,
 			if (os_memcmp(query->addr, addr, ETH_ALEN) == 0) {
 				/* pending query in RADIUS retransmit queue;
 				 * do not generate a new one */
-				if (out && out->identity) {
-					os_free(out->identity);
-					out->identity = NULL;
-				}
-				if (out && out->radius_cui) {
-					os_free(out->radius_cui);
-					out->radius_cui = NULL;
-				}
 				return HOSTAPD_ACL_PENDING;
 			}
 			query = query->next;
