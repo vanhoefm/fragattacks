@@ -965,9 +965,9 @@ static void sme_send_external_auth_status(struct wpa_supplicant *wpa_s,
 
 	os_memset(&params, 0, sizeof(params));
 	params.status = status;
-	params.ssid = wpa_s->sme.ext_auth.ssid;
-	params.ssid_len = wpa_s->sme.ext_auth.ssid_len;
-	params.bssid = wpa_s->sme.ext_auth.bssid;
+	params.ssid = wpa_s->sme.ext_auth_ssid;
+	params.ssid_len = wpa_s->sme.ext_auth_ssid_len;
+	params.bssid = wpa_s->sme.ext_auth_bssid;
 	wpa_drv_send_external_auth_status(wpa_s, &params);
 }
 
@@ -1032,8 +1032,13 @@ void sme_external_auth_trigger(struct wpa_supplicant *wpa_s,
 		return;
 
 	if (data->external_auth.action == EXT_AUTH_START) {
-		os_memcpy(&wpa_s->sme.ext_auth, data,
-			  sizeof(struct external_auth));
+		if (!data->external_auth.bssid || !data->external_auth.ssid)
+			return;
+		os_memcpy(wpa_s->sme.ext_auth_bssid, data->external_auth.bssid,
+			  ETH_ALEN);
+		os_memcpy(wpa_s->sme.ext_auth_ssid, data->external_auth.ssid,
+			  data->external_auth.ssid_len);
+		wpa_s->sme.ext_auth_ssid_len = data->external_auth.ssid_len;
 		wpa_s->sme.seq_num = 0;
 		wpa_s->sme.sae.state = SAE_NOTHING;
 		wpa_s->sme.sae.send_confirm = 0;
@@ -1091,7 +1096,7 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 						wpa_s->current_ssid, 2);
 		else
 			sme_external_auth_send_sae_commit(
-				wpa_s, wpa_s->sme.ext_auth.bssid,
+				wpa_s, wpa_s->sme.ext_auth_bssid,
 				wpa_s->current_ssid);
 		return 0;
 	}
@@ -1110,7 +1115,7 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 						wpa_s->current_ssid, 1);
 		else
 			sme_external_auth_send_sae_commit(
-				wpa_s, wpa_s->sme.ext_auth.bssid,
+				wpa_s, wpa_s->sme.ext_auth_bssid,
 				wpa_s->current_ssid);
 		return 0;
 	}

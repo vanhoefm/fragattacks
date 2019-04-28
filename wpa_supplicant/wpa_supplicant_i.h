@@ -802,7 +802,9 @@ struct wpa_supplicant {
 		int sae_group_index;
 		unsigned int sae_pmksa_caching:1;
 		u16 seq_num;
-		struct external_auth ext_auth;
+		u8 ext_auth_bssid[ETH_ALEN];
+		u8 ext_auth_ssid[SSID_MAX_LEN];
+		size_t ext_auth_ssid_len;
 #endif /* CONFIG_SAE */
 	} sme;
 #endif /* CONFIG_SME */
