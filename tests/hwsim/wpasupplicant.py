@@ -1084,7 +1084,8 @@ class WpaSupplicant:
                       "dpp_netaccesskey", "dpp_netaccesskey_expiry",
                       "group_mgmt", "owe_group",
                       "roaming_consortium_selection", "ocv",
-                      "multi_ap_backhaul_sta", "rx_stbc", "tx_stbc"]
+                      "multi_ap_backhaul_sta", "rx_stbc", "tx_stbc",
+                      "ft_eap_pmksa_caching"]
         for field in not_quoted:
             if field in kwargs and kwargs[field]:
                 self.set_network(id, field, kwargs[field])
