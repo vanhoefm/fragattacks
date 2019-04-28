@@ -34,5 +34,7 @@ int hostapd_acl_init(struct hostapd_data *hapd);
 void hostapd_acl_deinit(struct hostapd_data *hapd);
 void hostapd_free_psk_list(struct hostapd_sta_wpa_psk_short *psk);
 void hostapd_acl_expire(struct hostapd_data *hapd);
+void hostapd_copy_psk_list(struct hostapd_sta_wpa_psk_short **psk,
+			   struct hostapd_sta_wpa_psk_short *src);
 
 #endif /* IEEE802_11_AUTH_H */

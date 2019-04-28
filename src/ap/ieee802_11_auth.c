@@ -68,19 +68,6 @@ static void hostapd_acl_cache_free(struct hostapd_cached_radius_acl *acl_cache)
 }
 
 
-static void copy_psk_list(struct hostapd_sta_wpa_psk_short **psk,
-			  struct hostapd_sta_wpa_psk_short *src)
-{
-	if (!psk)
-		return;
-
-	if (src)
-		src->ref++;
-
-	*psk = src;
-}
-
-
 static int hostapd_acl_cache_get(struct hostapd_data *hapd, const u8 *addr,
 				 struct radius_sta *out)
 {
@@ -656,6 +643,19 @@ void hostapd_acl_deinit(struct hostapd_data *hapd)
 		query = query->next;
 		hostapd_acl_query_free(prev);
 	}
+}
+
+
+void hostapd_copy_psk_list(struct hostapd_sta_wpa_psk_short **psk,
+			   struct hostapd_sta_wpa_psk_short *src)
+{
+	if (!psk)
+		return;
+
+	if (src)
+		src->ref++;
+
+	*psk = src;
 }
 
 
