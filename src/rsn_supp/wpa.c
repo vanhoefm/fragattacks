@@ -305,6 +305,9 @@ static int wpa_supplicant_get_pmk(struct wpa_sm *sm,
 #endif /* CONFIG_IEEE80211R */
 	} else if (wpa_key_mgmt_wpa_ieee8021x(sm->key_mgmt) && sm->eapol) {
 		int res, pmk_len;
+#ifdef CONFIG_IEEE80211R
+		u8 buf[2 * PMK_LEN];
+#endif /* CONFIG_IEEE80211R */
 
 		if (wpa_key_mgmt_sha384(sm->key_mgmt))
 			pmk_len = PMK_LEN_SUITE_B_192;
@@ -320,24 +323,42 @@ static int wpa_supplicant_get_pmk(struct wpa_sm *sm,
 				res = eapol_sm_get_key(sm->eapol, sm->pmk, 16);
 				pmk_len = 16;
 			}
-		} else {
-#ifdef CONFIG_IEEE80211R
-			u8 buf[2 * PMK_LEN];
-			if (eapol_sm_get_key(sm->eapol, buf, 2 * PMK_LEN) == 0)
-			{
-				if (wpa_key_mgmt_sha384(sm->key_mgmt)) {
-					os_memcpy(sm->xxkey, buf,
-						  SHA384_MAC_LEN);
-					sm->xxkey_len = SHA384_MAC_LEN;
-				} else {
-					os_memcpy(sm->xxkey, buf + PMK_LEN,
-						  PMK_LEN);
-					sm->xxkey_len = PMK_LEN;
-				}
-				os_memset(buf, 0, sizeof(buf));
-			}
-#endif /* CONFIG_IEEE80211R */
 		}
+#ifdef CONFIG_IEEE80211R
+		if (res == 0 &&
+		    eapol_sm_get_key(sm->eapol, buf, 2 * PMK_LEN) == 0) {
+			if (wpa_key_mgmt_sha384(sm->key_mgmt)) {
+				os_memcpy(sm->xxkey, buf, SHA384_MAC_LEN);
+				sm->xxkey_len = SHA384_MAC_LEN;
+			} else {
+				os_memcpy(sm->xxkey, buf + PMK_LEN, PMK_LEN);
+				sm->xxkey_len = PMK_LEN;
+			}
+			os_memset(buf, 0, sizeof(buf));
+			if (sm->proto == WPA_PROTO_RSN &&
+			    wpa_key_mgmt_ft(sm->key_mgmt)) {
+				struct rsn_pmksa_cache_entry *sa = NULL;
+				const u8 *fils_cache_id = NULL;
+
+#ifdef CONFIG_FILS
+				if (sm->fils_cache_id_set)
+					fils_cache_id = sm->fils_cache_id;
+#endif /* CONFIG_FILS */
+				wpa_hexdump_key(MSG_DEBUG,
+						"FT: Cache XXKey/MPMK",
+						sm->xxkey, sm->xxkey_len);
+				sa = pmksa_cache_add(sm->pmksa,
+						     sm->xxkey, sm->xxkey_len,
+						     NULL, NULL, 0,
+						     src_addr, sm->own_addr,
+						     sm->network_ctx,
+						     sm->key_mgmt,
+						     fils_cache_id);
+				if (!sm->cur_pmksa)
+					sm->cur_pmksa = sa;
+			}
+		}
+#endif /* CONFIG_IEEE80211R */
 		if (res == 0) {
 			struct rsn_pmksa_cache_entry *sa = NULL;
 			const u8 *fils_cache_id = NULL;
