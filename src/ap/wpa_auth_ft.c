@@ -25,6 +25,7 @@
 #include "wmm.h"
 #include "wpa_auth.h"
 #include "wpa_auth_i.h"
+#include "pmksa_cache_auth.h"
 
 
 #ifdef CONFIG_IEEE80211R_AP
@@ -2094,8 +2095,16 @@ int wpa_auth_derive_ptk_ft(struct wpa_state_machine *sm, struct wpa_ptk *ptk)
 	const u8 *identity, *radius_cui;
 	size_t identity_len, radius_cui_len;
 	int session_timeout;
+	const u8 *mpmk;
+	size_t mpmk_len;
 
-	if (sm->xxkey_len == 0) {
+	if (sm->xxkey_len > 0) {
+		mpmk = sm->xxkey;
+		mpmk_len = sm->xxkey_len;
+	} else if (sm->pmksa) {
+		mpmk = sm->pmksa->pmk;
+		mpmk_len = sm->pmksa->pmk_len;
+	} else {
 		wpa_printf(MSG_DEBUG, "FT: XXKey not available for key "
 			   "derivation");
 		return -1;
@@ -2112,7 +2121,7 @@ int wpa_auth_derive_ptk_ft(struct wpa_state_machine *sm, struct wpa_ptk *ptk)
 					       &radius_cui);
 	session_timeout = wpa_ft_get_session_timeout(sm->wpa_auth, sm->addr);
 
-	if (wpa_derive_pmk_r0(sm->xxkey, sm->xxkey_len, ssid, ssid_len, mdid,
+	if (wpa_derive_pmk_r0(mpmk, mpmk_len, ssid, ssid_len, mdid,
 			      r0kh, r0kh_len, sm->addr,
 			      pmk_r0, pmk_r0_name,
 			      wpa_key_mgmt_sha384(sm->wpa_key_mgmt)) < 0)
