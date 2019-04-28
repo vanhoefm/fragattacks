@@ -16,8 +16,7 @@ struct hostapd_frame_info;
 struct ieee80211_ht_capabilities;
 struct ieee80211_vht_capabilities;
 struct ieee80211_mgmt;
-struct vlan_description;
-struct hostapd_sta_wpa_psk_short;
+struct radius_sta;
 enum ieee80211_op_mode;
 
 int ieee802_11_mgmt(struct hostapd_data *hapd, const u8 *buf, size_t len,
@@ -181,12 +180,8 @@ void handle_auth_fils(struct hostapd_data *hapd, struct sta_info *sta,
 size_t hostapd_eid_owe_trans_len(struct hostapd_data *hapd);
 u8 * hostapd_eid_owe_trans(struct hostapd_data *hapd, u8 *eid, size_t len);
 int ieee802_11_allowed_address(struct hostapd_data *hapd, const u8 *addr,
-			       const u8 *msg, size_t len, u32 *session_timeout,
-			       u32 *acct_interim_interval,
-			       struct vlan_description *vlan_id,
-			       struct hostapd_sta_wpa_psk_short **psk,
-			       char **identity, char **radius_cui,
-			       int is_probe_req);
+			       const u8 *msg, size_t len,
+			       struct radius_sta *info, int is_probe_req);
 
 int get_tx_parameters(struct sta_info *sta, int ap_max_chanwidth,
 		      int ap_seg1_idx, int *bandwidth, int *seg1_idx);

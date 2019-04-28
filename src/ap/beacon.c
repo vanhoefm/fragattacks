@@ -755,11 +755,7 @@ void handle_probe_req(struct hostapd_data *hapd,
 	int ret;
 	u16 csa_offs[2];
 	size_t csa_offs_len;
-	u32 session_timeout, acct_interim_interval;
-	struct vlan_description vlan_id;
-	struct hostapd_sta_wpa_psk_short *psk = NULL;
-	char *identity = NULL;
-	char *radius_cui = NULL;
+	struct radius_sta rad_info;
 
 	if (len < IEEE80211_HDRLEN)
 		return;
@@ -769,9 +765,7 @@ void handle_probe_req(struct hostapd_data *hapd,
 	ie_len = len - IEEE80211_HDRLEN;
 
 	ret = ieee802_11_allowed_address(hapd, mgmt->sa, (const u8 *) mgmt, len,
-					 &session_timeout,
-					 &acct_interim_interval, &vlan_id,
-					 &psk, &identity, &radius_cui, 1);
+					 &rad_info, 1);
 	if (ret == HOSTAPD_ACL_REJECT) {
 		wpa_msg(hapd->msg_ctx, MSG_DEBUG,
 			"Ignore Probe Request frame from " MACSTR
