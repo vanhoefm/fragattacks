@@ -9332,6 +9332,9 @@ static int dpp_controller_rx_auth_req(struct dpp_connection *conn,
 	u16 r_bootstrap_len, i_bootstrap_len;
 	struct dpp_bootstrap_info *own_bi = NULL, *peer_bi = NULL;
 
+	if (!conn->ctrl)
+		return 0;
+
 	wpa_printf(MSG_DEBUG, "DPP: Authentication Request");
 
 	r_bootstrap = dpp_get_attr(buf, len, DPP_ATTR_R_BOOTSTRAP_KEY_HASH,
@@ -9379,8 +9382,7 @@ static int dpp_controller_rx_auth_req(struct dpp_connection *conn,
 		return -1;
 	}
 
-	if (conn->ctrl &&
-	    dpp_set_configurator(conn->ctrl->global, conn->ctrl->global->msg_ctx,
+	if (dpp_set_configurator(conn->ctrl->global, conn->ctrl->global->msg_ctx,
 				 conn->auth,
 				 conn->ctrl->configurator_params) < 0) {
 		dpp_connection_remove(conn);
