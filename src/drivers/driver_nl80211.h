@@ -83,6 +83,12 @@ struct i802_bss {
 	u8 rand_addr[ETH_ALEN];
 };
 
+struct drv_nl80211_if_info {
+	int ifindex;
+	/* the AP/AP_VLAN iface that is in this bridge */
+	int reason;
+};
+
 struct wpa_driver_nl80211_data {
 	struct nl80211_global *global;
 	struct dl_list list;
@@ -187,11 +193,8 @@ struct wpa_driver_nl80211_data {
 
 	struct nl_handle *rtnl_sk; /* nl_sock for NETLINK_ROUTE */
 
-	int default_if_indices[16];
-	/* the AP/AP_VLAN iface that is in this bridge */
-	int default_if_indices_reason[16];
-	int *if_indices;
-	int *if_indices_reason;
+	struct drv_nl80211_if_info default_if_indices[16];
+	struct drv_nl80211_if_info *if_indices;
 	int num_if_indices;
 
 	/* From failed authentication command */

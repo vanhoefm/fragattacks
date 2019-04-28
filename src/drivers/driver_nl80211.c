@@ -2010,9 +2010,8 @@ static void * wpa_driver_nl80211_drv_init(void *ctx, const char *ifname,
 	 */
 	drv->set_rekey_offload = 1;
 
-	drv->num_if_indices = sizeof(drv->default_if_indices) / sizeof(int);
+	drv->num_if_indices = ARRAY_SIZE(drv->default_if_indices);
 	drv->if_indices = drv->default_if_indices;
-	drv->if_indices_reason = drv->default_if_indices_reason;
 
 	drv->first_bss = os_zalloc(sizeof(*drv->first_bss));
 	if (!drv->first_bss) {
@@ -2788,9 +2787,6 @@ static void wpa_driver_nl80211_deinit(struct i802_bss *bss)
 
 	if (drv->if_indices != drv->default_if_indices)
 		os_free(drv->if_indices);
-
-	if (drv->if_indices_reason != drv->default_if_indices_reason)
-		os_free(drv->if_indices_reason);
 
 	if (drv->disabled_11b_rates)
 		nl80211_disable_11b_rates(drv, drv->ifindex, 0);
@@ -6620,11 +6616,11 @@ static void dump_ifidx(struct wpa_driver_nl80211_data *drv)
 	end = pos + sizeof(buf);
 
 	for (i = 0; i < drv->num_if_indices; i++) {
-		if (!drv->if_indices[i])
+		if (!drv->if_indices[i].ifindex)
 			continue;
 		res = os_snprintf(pos, end - pos, " %d(%d)",
-				  drv->if_indices[i],
-				  drv->if_indices_reason[i]);
+				  drv->if_indices[i].ifindex,
+				  drv->if_indices[i].reason);
 		if (os_snprintf_error(end - pos, res))
 			break;
 		pos += res;
@@ -6640,8 +6636,7 @@ static void add_ifidx(struct wpa_driver_nl80211_data *drv, int ifidx,
 		      int ifidx_reason)
 {
 	int i;
-	int *old, *old_reason;
-	int alloc_failed = 0;
+	struct drv_nl80211_if_info *old;
 
 	wpa_printf(MSG_DEBUG,
 		   "nl80211: Add own interface ifindex %d (ifidx_reason %d)",
@@ -6652,9 +6647,9 @@ static void add_ifidx(struct wpa_driver_nl80211_data *drv, int ifidx,
 		return;
 	}
 	for (i = 0; i < drv->num_if_indices; i++) {
-		if (drv->if_indices[i] == 0) {
-			drv->if_indices[i] = ifidx;
-			drv->if_indices_reason[i] = ifidx_reason;
+		if (drv->if_indices[i].ifindex == 0) {
+			drv->if_indices[i].ifindex = ifidx;
+			drv->if_indices[i].reason = ifidx_reason;
 			dump_ifidx(drv);
 			return;
 		}
@@ -6665,31 +6660,13 @@ static void add_ifidx(struct wpa_driver_nl80211_data *drv, int ifidx,
 	else
 		old = NULL;
 
-	if (drv->if_indices_reason != drv->default_if_indices_reason)
-		old_reason = drv->if_indices_reason;
-	else
-		old_reason = NULL;
-
 	drv->if_indices = os_realloc_array(old, drv->num_if_indices + 1,
-					   sizeof(int));
-	drv->if_indices_reason = os_realloc_array(old_reason,
-						  drv->num_if_indices + 1,
-						  sizeof(int));
+					   sizeof(*old));
 	if (!drv->if_indices) {
 		if (!old)
 			drv->if_indices = drv->default_if_indices;
 		else
 			drv->if_indices = old;
-		alloc_failed = 1;
-	}
-	if (!drv->if_indices_reason) {
-		if (!old_reason)
-			drv->if_indices_reason = drv->default_if_indices_reason;
-		else
-			drv->if_indices_reason = old_reason;
-		alloc_failed = 1;
-	}
-	if (alloc_failed) {
 		wpa_printf(MSG_ERROR, "Failed to reallocate memory for "
 			   "interfaces");
 		wpa_printf(MSG_ERROR, "Ignoring EAPOL on interface %d", ifidx);
@@ -6698,12 +6675,8 @@ static void add_ifidx(struct wpa_driver_nl80211_data *drv, int ifidx,
 	if (!old)
 		os_memcpy(drv->if_indices, drv->default_if_indices,
 			  sizeof(drv->default_if_indices));
-	if (!old_reason)
-		os_memcpy(drv->if_indices_reason,
-			  drv->default_if_indices_reason,
-			  sizeof(drv->default_if_indices_reason));
-	drv->if_indices[drv->num_if_indices] = ifidx;
-	drv->if_indices_reason[drv->num_if_indices] = ifidx_reason;
+	drv->if_indices[drv->num_if_indices].ifindex = ifidx;
+	drv->if_indices[drv->num_if_indices].reason = ifidx_reason;
 	drv->num_if_indices++;
 	dump_ifidx(drv);
 }
@@ -6715,10 +6688,12 @@ static void del_ifidx(struct wpa_driver_nl80211_data *drv, int ifidx,
 	int i;
 
 	for (i = 0; i < drv->num_if_indices; i++) {
-		if ((drv->if_indices[i] == ifidx || ifidx == IFIDX_ANY) &&
-		    (drv->if_indices_reason[i] == ifidx_reason ||
+		if ((drv->if_indices[i].ifindex == ifidx ||
+		     ifidx == IFIDX_ANY) &&
+		    (drv->if_indices[i].reason == ifidx_reason ||
 		     ifidx_reason == IFIDX_ANY)) {
-			drv->if_indices[i] = 0;
+			drv->if_indices[i].ifindex = 0;
+			drv->if_indices[i].reason = 0;
 			break;
 		}
 	}
@@ -6732,8 +6707,8 @@ static int have_ifidx(struct wpa_driver_nl80211_data *drv, int ifidx,
 	int i;
 
 	for (i = 0; i < drv->num_if_indices; i++)
-		if (drv->if_indices[i] == ifidx &&
-		    (drv->if_indices_reason[i] == ifidx_reason ||
+		if (drv->if_indices[i].ifindex == ifidx &&
+		    (drv->if_indices[i].reason == ifidx_reason ||
 		     ifidx_reason == IFIDX_ANY))
 			return 1;
 
