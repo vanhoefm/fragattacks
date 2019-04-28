@@ -1417,9 +1417,10 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		wpa_s->key_mgmt = WPA_KEY_MGMT_FT_IEEE8021X_SHA384;
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"WPA: using KEY_MGMT FT/802.1X-SHA384");
-		if (pmksa_cache_get_current(wpa_s->wpa)) {
-			/* PMKSA caching with FT is not fully functional, so
-			 * disable the case for now. */
+		if (!ssid->ft_eap_pmksa_caching &&
+		    pmksa_cache_get_current(wpa_s->wpa)) {
+			/* PMKSA caching with FT may have interoperability
+			 * issues, so disable that case by default for now. */
 			wpa_dbg(wpa_s, MSG_DEBUG,
 				"WPA: Disable PMKSA caching for FT/802.1X connection");
 			pmksa_cache_clear_current(wpa_s->wpa);
@@ -1458,9 +1459,10 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 	} else if (sel & WPA_KEY_MGMT_FT_IEEE8021X) {
 		wpa_s->key_mgmt = WPA_KEY_MGMT_FT_IEEE8021X;
 		wpa_dbg(wpa_s, MSG_DEBUG, "WPA: using KEY_MGMT FT/802.1X");
-		if (pmksa_cache_get_current(wpa_s->wpa)) {
-			/* PMKSA caching with FT is not fully functional, so
-			 * disable the case for now. */
+		if (!ssid->ft_eap_pmksa_caching &&
+		    pmksa_cache_get_current(wpa_s->wpa)) {
+			/* PMKSA caching with FT may have interoperability
+			 * issues, so disable that case by default for now. */
 			wpa_dbg(wpa_s, MSG_DEBUG,
 				"WPA: Disable PMKSA caching for FT/802.1X connection");
 			pmksa_cache_clear_current(wpa_s->wpa);

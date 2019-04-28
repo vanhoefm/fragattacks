@@ -1005,6 +1005,16 @@ struct wpa_ssid {
 	 * 1 = Multi-AP backhaul station
 	 */
 	int multi_ap_backhaul_sta;
+
+	/**
+	 * ft_eap_pmksa_caching - Whether FT-EAP PMKSA caching is allowed
+	 * 0 = do not try to use PMKSA caching with FT-EAP
+	 * 1 = try to use PMKSA caching with FT-EAP
+	 *
+	 * This controls whether to try to use PMKSA caching with FT-EAP for the
+	 * FT initial mobility domain association.
+	 */
+	int ft_eap_pmksa_caching;
 };
 
 #endif /* CONFIG_SSID_H */
