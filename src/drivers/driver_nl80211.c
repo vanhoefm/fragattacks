@@ -6641,6 +6641,7 @@ static void add_ifidx(struct wpa_driver_nl80211_data *drv, int ifidx,
 {
 	int i;
 	int *old, *old_reason;
+	int alloc_failed = 0;
 
 	wpa_printf(MSG_DEBUG,
 		   "nl80211: Add own interface ifindex %d (ifidx_reason %d)",
@@ -6679,14 +6680,16 @@ static void add_ifidx(struct wpa_driver_nl80211_data *drv, int ifidx,
 			drv->if_indices = drv->default_if_indices;
 		else
 			drv->if_indices = old;
+		alloc_failed = 1;
 	}
 	if (!drv->if_indices_reason) {
 		if (!old_reason)
 			drv->if_indices_reason = drv->default_if_indices_reason;
 		else
 			drv->if_indices_reason = old_reason;
+		alloc_failed = 1;
 	}
-	if (!drv->if_indices || !drv->if_indices_reason) {
+	if (alloc_failed) {
 		wpa_printf(MSG_ERROR, "Failed to reallocate memory for "
 			   "interfaces");
 		wpa_printf(MSG_ERROR, "Ignoring EAPOL on interface %d", ifidx);
