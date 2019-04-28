@@ -1071,11 +1071,8 @@ void * tls_init(const struct tls_config *conf)
 	}
 
 #ifndef OPENSSL_NO_ENGINE
-	wpa_printf(MSG_DEBUG, "ENGINE: Loading dynamic engine");
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	ERR_load_ENGINE_strings();
-	ENGINE_load_dynamic();
-#endif /* OPENSSL_VERSION_NUMBER */
+	wpa_printf(MSG_DEBUG, "ENGINE: Loading builtin engines");
+	ENGINE_load_builtin_engines();
 
 	if (conf &&
 	    (conf->opensc_engine_path || conf->pkcs11_engine_path ||
