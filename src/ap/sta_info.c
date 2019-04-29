@@ -586,7 +586,8 @@ static void ap_handle_session_timer(void *eloop_ctx, void *timeout_ctx)
 
 	wpa_printf(MSG_DEBUG, "%s: Session timer for STA " MACSTR,
 		   hapd->conf->iface, MAC2STR(sta->addr));
-	if (!(sta->flags & WLAN_STA_AUTH)) {
+	if (!(sta->flags & (WLAN_STA_AUTH | WLAN_STA_ASSOC |
+			    WLAN_STA_AUTHORIZED))) {
 		if (sta->flags & WLAN_STA_GAS) {
 			wpa_printf(MSG_DEBUG, "GAS: Remove temporary STA "
 				   "entry " MACSTR, MAC2STR(sta->addr));
