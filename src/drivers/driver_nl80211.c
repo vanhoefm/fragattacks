@@ -9698,6 +9698,36 @@ static int wpa_driver_nl80211_leave_mesh(void *priv)
 	return ret;
 }
 
+
+static int nl80211_probe_mesh_link(void *priv, const u8 *addr, const u8 *eth,
+				   size_t len)
+{
+	struct i802_bss *bss = priv;
+	struct wpa_driver_nl80211_data *drv = bss->drv;
+	struct nl_msg *msg;
+	int ret;
+
+	msg = nl80211_drv_msg(drv, 0, NL80211_CMD_PROBE_MESH_LINK);
+	if (!msg ||
+	    nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN, addr) ||
+	    nla_put(msg, NL80211_ATTR_FRAME, len, eth)) {
+		nlmsg_free(msg);
+		return -ENOBUFS;
+	}
+
+	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
+	if (ret) {
+		wpa_printf(MSG_DEBUG, "nl80211: mesh link probe to " MACSTR
+			   " failed: ret=%d (%s)",
+			   MAC2STR(addr), ret, strerror(-ret));
+	} else {
+		wpa_printf(MSG_DEBUG, "nl80211: Mesh link to " MACSTR
+			   " probed successfully", MAC2STR(addr));
+	}
+
+	return ret;
+}
+
 #endif /* CONFIG_MESH */
 
 
@@ -11044,6 +11074,7 @@ const struct wpa_driver_ops wpa_driver_nl80211_ops = {
 	.init_mesh = wpa_driver_nl80211_init_mesh,
 	.join_mesh = wpa_driver_nl80211_join_mesh,
 	.leave_mesh = wpa_driver_nl80211_leave_mesh,
+	.probe_mesh_link = nl80211_probe_mesh_link,
 #endif /* CONFIG_MESH */
 	.br_add_ip_neigh = wpa_driver_br_add_ip_neigh,
 	.br_delete_ip_neigh = wpa_driver_br_delete_ip_neigh,

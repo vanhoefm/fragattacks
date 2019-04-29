@@ -3992,6 +3992,18 @@ struct wpa_driver_ops {
 	int (*leave_mesh)(void *priv);
 
 	/**
+	 * probe_mesh_link - Inject a frame over direct mesh link to a given
+	 *	peer skipping the next_hop lookup from mpath table.
+	 * @priv: Private driver interface data
+	 * @addr: Peer MAC address
+	 * @eth: Ethernet frame to be sent
+	 * @len: Ethernet frame lengtn in bytes
+	 * Returns 0 on success, -1 on failure
+	 */
+	int (*probe_mesh_link)(void *priv, const u8 *addr, const u8 *eth,
+			       size_t len);
+
+	/**
 	 * do_acs - Automatically select channel
 	 * @priv: Private driver interface data
 	 * @params: Parameters for ACS
