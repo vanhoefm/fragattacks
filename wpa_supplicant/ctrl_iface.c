@@ -8,10 +8,10 @@
 
 #include "utils/includes.h"
 #ifdef CONFIG_TESTING_OPTIONS
-#include <net/ethernet.h>
 #include <netinet/ip.h>
 #endif /* CONFIG_TESTING_OPTIONS */
 
+#include <net/ethernet.h>
 #include "utils/common.h"
 #include "utils/eloop.h"
 #include "utils/uuid.h"
@@ -3127,6 +3127,49 @@ static int wpa_supplicant_ctrl_iface_mesh_peer_add(
 		return -1;
 
 	return wpas_mesh_peer_add(wpa_s, addr, duration);
+}
+
+
+static int wpa_supplicant_ctrl_iface_mesh_link_probe(
+	struct wpa_supplicant *wpa_s, char *cmd)
+{
+	struct ether_header *eth;
+	u8 addr[ETH_ALEN];
+	u8 *buf;
+	char *pos;
+	size_t payload_len = 0, len;
+	int ret = -1;
+
+	if (hwaddr_aton(cmd, addr))
+		return -1;
+
+	pos = os_strstr(cmd, " payload=");
+	if (pos) {
+		pos = pos + 9;
+		payload_len = os_strlen(pos);
+		if (payload_len & 1)
+			return -1;
+
+		payload_len /= 2;
+	}
+
+	len = ETH_HLEN + payload_len;
+	buf = os_malloc(len);
+	if (!buf)
+		return -1;
+
+	eth = (struct ether_header *) buf;
+	os_memcpy(eth->ether_dhost, addr, ETH_ALEN);
+	os_memcpy(eth->ether_shost, wpa_s->own_addr, ETH_ALEN);
+	eth->ether_type = htons(ETH_P_802_3);
+
+	if (payload_len && hexstr2bin(pos, buf + ETH_HLEN, payload_len) < 0)
+		goto fail;
+
+	ret = wpa_drv_mesh_link_probe(wpa_s, addr, buf, len);
+fail:
+	os_free(buf);
+	return -ret;
 }
 
 #endif /* CONFIG_MESH */
@@ -10170,6 +10213,9 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 			reply_len = -1;
 	} else if (os_strncmp(buf, "MESH_PEER_ADD ", 14) == 0) {
 		if (wpa_supplicant_ctrl_iface_mesh_peer_add(wpa_s, buf + 14))
+			reply_len = -1;
+	} else if (os_strncmp(buf, "MESH_LINK_PROBE ", 16) == 0) {
+		if (wpa_supplicant_ctrl_iface_mesh_link_probe(wpa_s, buf + 16))
 			reply_len = -1;
 #endif /* CONFIG_MESH */
 #ifdef CONFIG_P2P

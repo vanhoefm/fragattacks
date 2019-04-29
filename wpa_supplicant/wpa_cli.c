@@ -2064,6 +2064,13 @@ static int wpa_cli_cmd_mesh_peer_add(struct wpa_ctrl *ctrl, int argc,
 	return wpa_cli_cmd(ctrl, "MESH_PEER_ADD", 1, argc, argv);
 }
 
+
+static int wpa_cli_cmd_mesh_link_probe(struct wpa_ctrl *ctrl, int argc,
+				       char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "MESH_LINK_PROBE", 1, argc, argv);
+}
+
 #endif /* CONFIG_MESH */
 
 
@@ -3384,6 +3391,9 @@ static const struct wpa_cli_cmd wpa_cli_commands[] = {
 	{ "mesh_peer_add", wpa_cli_cmd_mesh_peer_add, NULL,
 	  cli_cmd_flag_none,
 	  "<addr> [duration=<seconds>] = Add a mesh peer" },
+	{ "mesh_link_probe", wpa_cli_cmd_mesh_link_probe, NULL,
+	  cli_cmd_flag_none,
+	  "<addr> [payload=<hex dump of payload>] = Probe a mesh link for a given peer by injecting a frame." },
 #endif /* CONFIG_MESH */
 #ifdef CONFIG_P2P
 	{ "p2p_find", wpa_cli_cmd_p2p_find, wpa_cli_complete_p2p_find,
