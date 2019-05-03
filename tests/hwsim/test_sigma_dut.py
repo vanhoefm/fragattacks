@@ -1,10 +1,12 @@
 # Test cases for sigma_dut
 # Copyright (c) 2017, Qualcomm Atheros, Inc.
+# Copyright (c) 2018-2019, The Linux Foundation
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
 
 import binascii
+import hashlib
 import logging
 logger = logging.getLogger()
 import os
@@ -484,6 +486,75 @@ def test_sigma_dut_ap_psk_sha256(dev, apdev, params):
             sigma_dut_cmd_check("ap_reset_default")
         finally:
             stop_sigma_dut(sigma)
+
+def test_sigma_dut_eap_ttls(dev, apdev, params):
+    """sigma_dut controlled STA and EAP-TTLS parameters"""
+    logdir = params['logdir']
+
+    with open("auth_serv/ca.pem", "r") as f:
+        with open(os.path.join(logdir, "sigma_dut_eap_ttls.ca.pem"), "w") as f2:
+            f2.write(f.read())
+
+    src = "auth_serv/server.pem"
+    dst = os.path.join(logdir, "sigma_dut_eap_ttls.server.der")
+    hashdst = os.path.join(logdir, "sigma_dut_eap_ttls.server.pem.sha256")
+    subprocess.check_call(["openssl", "x509", "-in", src, "-out", dst,
+                           "-outform", "DER"],
+                          stderr=open('/dev/null', 'w'))
+    with open(dst, "rb") as f:
+        der = f.read()
+    hash = hashlib.sha256(der).digest()
+    with open(hashdst, "w") as f:
+        f.write(binascii.hexlify(hash).decode())
+
+    dst = os.path.join(logdir, "sigma_dut_eap_ttls.incorrect.pem.sha256")
+    with open(dst, "w") as f:
+        f.write(32*"00")
+
+    ssid = "test-wpa2-eap"
+    params = hostapd.wpa2_eap_params(ssid=ssid)
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, cert_path=logdir)
+
+    cmd = "sta_set_security,type,eapttls,interface,%s,ssid,%s,keymgmttype,wpa2,encType,AES-CCMP,PairwiseCipher,AES-CCMP-128,trustedRootCA,sigma_dut_eap_ttls.ca.pem,username,DOMAIN\mschapv2 user,password,password" % (ifname, ssid)
+
+    tests = ["",
+             ",Domain,server.w1.fi",
+             ",DomainSuffix,w1.fi",
+             ",DomainSuffix,server.w1.fi",
+             ",ServerCert,sigma_dut_eap_ttls.server.pem"]
+    for extra in tests:
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check(cmd + extra)
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid))
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+        dev[0].dump_monitor()
+
+    tests = [",Domain,w1.fi",
+             ",DomainSuffix,example.com",
+             ",ServerCert,sigma_dut_eap_ttls.incorrect.pem"]
+    for extra in tests:
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check(cmd + extra)
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid))
+        ev = dev[0].wait_event(["CTRL-EVENT-EAP-TLS-CERT-ERROR"], timeout=10)
+        if ev is None:
+            raise Exception("Server certificate error not reported")
+        res = sigma_dut_cmd("sta_is_connected,interface," + ifname)
+        if "connected,1" in res:
+            raise Exception("Unexpected connection reported")
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+        dev[0].dump_monitor()
+
+    stop_sigma_dut(sigma)
 
 def test_sigma_dut_suite_b(dev, apdev, params):
     """sigma_dut controlled STA Suite B"""
