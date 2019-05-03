@@ -136,6 +136,9 @@ u8 * hostapd_eid_spatial_reuse(struct hostapd_data *hapd, u8 *eid)
 	u8 *pos = eid, *spr_param;
 	u8 sz = 1;
 
+	if (!hapd->iface->conf->spr.sr_control)
+		return eid;
+
 	if (hapd->iface->conf->spr.sr_control &
 	    SPATIAL_REUSE_NON_SRG_OFFSET_PRESENT)
 		sz++;
