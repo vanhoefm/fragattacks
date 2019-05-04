@@ -157,6 +157,21 @@ static void ieee802_1x_tx_key_one(struct hostapd_data *hapd,
 	key->type = EAPOL_KEY_TYPE_RC4;
 	WPA_PUT_BE16(key->key_length, key_len);
 	wpa_get_ntp_timestamp(key->replay_counter);
+	if (os_memcmp(key->replay_counter,
+		      hapd->last_1x_eapol_key_replay_counter,
+		      IEEE8021X_REPLAY_COUNTER_LEN) <= 0) {
+		/* NTP timestamp did not increment from last EAPOL-Key frame;
+		 * use previously used value + 1 instead. */
+		inc_byte_array(hapd->last_1x_eapol_key_replay_counter,
+			       IEEE8021X_REPLAY_COUNTER_LEN);
+		os_memcpy(key->replay_counter,
+			  hapd->last_1x_eapol_key_replay_counter,
+			  IEEE8021X_REPLAY_COUNTER_LEN);
+	} else {
+		os_memcpy(hapd->last_1x_eapol_key_replay_counter,
+			  key->replay_counter,
+			  IEEE8021X_REPLAY_COUNTER_LEN);
+	}
 
 	if (random_get_bytes(key->key_iv, sizeof(key->key_iv))) {
 		wpa_printf(MSG_ERROR, "Could not get random numbers");
