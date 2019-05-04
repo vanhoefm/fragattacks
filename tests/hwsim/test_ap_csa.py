@@ -13,12 +13,12 @@ import hwsim_utils
 import hostapd
 from utils import HwsimSkip
 
-def connect(dev, apdev, **kwargs):
+def connect(dev, apdev, scan_freq="2412", **kwargs):
     params = {"ssid": "ap-csa",
               "channel": "1"}
     params.update(kwargs)
     ap = hostapd.add_ap(apdev[0], params)
-    dev.connect("ap-csa", key_mgmt="NONE", scan_freq="2412")
+    dev.connect("ap-csa", key_mgmt="NONE", scan_freq=scan_freq)
     return ap
 
 def switch_channel(ap, count, freq):
@@ -187,7 +187,7 @@ def test_ap_csa_invalid(dev, apdev):
 def test_ap_csa_disable(dev, apdev):
     """AP Channel Switch and DISABLE command before completion"""
     csa_supported(dev[0])
-    ap = connect(dev[0], apdev)
+    ap = connect(dev[0], apdev, scan_freq="2412 2462")
     if "OK" not in ap.request("CHAN_SWITCH 10 2462"):
         raise Exception("CHAN_SWITCH failed")
     ap.disable()
