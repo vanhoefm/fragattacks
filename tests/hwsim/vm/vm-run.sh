@@ -40,7 +40,18 @@ if [ -z "$KERNEL" ] && [ -z "$KERNELDIR" ] ; then
 	exit 2
 fi
 if [ -z "$KERNEL" ] ; then
-	KERNEL=$KERNELDIR/arch/x86_64/boot/bzImage
+	if [ -e $KERNELDIR/arch/x86_64/boot/bzImage ]; then
+		KERNEL=$KERNELDIR/arch/x86_64/boot/bzImage
+	elif [ -e $KERNELDIR/linux ]; then
+		KERNEL=$KERNELDIR/linux
+	else
+		echo "No suitable kernel image found from KERNELDIR"
+		exit 2
+	fi
+fi
+if [ ! -e $KERNEL ]; then
+	echo "Kernel image not found: $KERNEL"
+	exit 2
 fi
 
 
@@ -114,13 +125,17 @@ fi
 
 echo "Starting test run in a virtual machine"
 
-KVM=kvm
-for kvmprog in kvm qemu-kvm; do
-    if $kvmprog --version &> /dev/null; then
-	KVM=$kvmprog
-	break
-    fi
-done
+if [ -x $KERNEL ]; then
+	unset KVM
+else
+	KVM=kvm
+	for kvmprog in kvm qemu-kvm; do
+		if $kvmprog --version &> /dev/null; then
+			KVM=$kvmprog
+			break
+		fi
+	done
+fi
 
 argsfile=$(mktemp)
 if [ $? -ne 0 ] ; then
@@ -133,17 +148,49 @@ trap finish EXIT
 
 echo "$RUN_TEST_ARGS" > $argsfile
 
-$KVM \
-	-kernel $KERNEL -smp 4 \
-	$KVMARGS -m $MEMORY -nographic \
-	-fsdev local,security_model=none,id=fsdev-root,path=/$ROTAG \
-	-device virtio-9p-pci,id=fs-root,fsdev=fsdev-root,mount_tag=/dev/root \
-	-fsdev local,security_model=none,id=fsdev-logs,path="$LOGDIR",writeout=immediate \
-	-device virtio-9p-pci,id=fs-logs,fsdev=fsdev-logs,mount_tag=logshare \
-	-monitor null -serial stdio -serial file:$LOGDIR/console \
-	$TELNET_QEMU \
-	-append "mac80211_hwsim.support_p2p_device=0 mac80211_hwsim.channels=$CHANNELS mac80211_hwsim.radios=7 cfg80211.dyndbg=+p mac80211.dyndbg=+p mac80211_hwsim.dyndbg=+p init=$CMD testdir=$TESTDIR timewarp=$TIMEWARP TELNET=$TELNET_ARG console=$KVMOUT root=/dev/root rootflags=trans=virtio,version=9p2000.u ro rootfstype=9p EPATH=$EPATH ARGS=$argsfile" | \
-	sed -u '0,/VM has started up/d'
+A="mac80211_hwsim.support_p2p_device=0 "
+A+="mac80211_hwsim.channels=$CHANNELS "
+A+="mac80211_hwsim.radios=7 "
+A+="cfg80211.dyndbg=+p "
+A+="mac80211.dyndbg=+p "
+A+="mac80211_hwsim.dyndbg=+p "
+A+="init=$CMD "
+A+="testdir=$TESTDIR "
+A+="timewarp=$TIMEWARP "
+A+="TELNET=$TELNET_ARG "
+A+="EPATH=$EPATH "
+A+="ARGS=$argsfile "
+A+="console=$KVMOUT "
+A+="ro"
+
+if [ -z $KVM ]; then
+	$KERNEL \
+	     mem=${MEMORY}M \
+	     LOGDIR=$LOGDIR \
+	     $A \
+	     root=none hostfs=/ rootfstype=hostfs rootflags=/ \
+	     ssl0=fd:0,fd:1 \
+	     ssl1=fd:100 \
+	     100<>$LOGDIR/console 2>&1 | \
+	    sed -u '0,/VM has started up/d'
+else
+	$KVM \
+	    -kernel $KERNEL \
+	    -smp 4 \
+	    $KVMARGS \
+	    -m $MEMORY \
+	    -nographic \
+	    -fsdev local,security_model=none,id=fsdev-root,path=/$ROTAG \
+	    -device virtio-9p-pci,id=fs-root,fsdev=fsdev-root,mount_tag=/dev/root \
+	    -fsdev local,security_model=none,id=fsdev-logs,path="$LOGDIR",writeout=immediate \
+	    -device virtio-9p-pci,id=fs-logs,fsdev=fsdev-logs,mount_tag=logshare \
+	    -monitor null \
+	    -serial stdio \
+	    -serial file:$LOGDIR/console \
+	    $TELNET_QEMU \
+	    -append "$A root=/dev/root rootflags=trans=virtio,version=9p2000.u rootfstype=9p" | \
+	    sed -u '0,/VM has started up/d'
+fi
 
 if [ $CODECOV = "yes" ]; then
     echo "Preparing code coverage reports"

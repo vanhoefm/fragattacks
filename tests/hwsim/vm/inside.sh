@@ -31,6 +31,7 @@ TIMEWARP=$(sed 's/.*timewarp=\([^ ]*\) .*/\1/' /proc/cmdline)
 EPATH=$(sed 's/.*EPATH=\([^ ]*\) .*/\1/' /proc/cmdline)
 TELNET=$(sed 's/.*TELNET=\([^ ]*\) .*/\1/' /proc/cmdline)
 ARGS=$(sed 's/.*ARGS=\([^ ]*\)\( \|$\).*/\1/' /proc/cmdline)
+LOGDIR=$(sed 's/.*LOGDIR=\([^ ]*\)\( \|$\).*/\1/' /proc/cmdline)
 
 # create /dev entries we need
 mknod -m 660 /dev/ttyS0 c 4 64
@@ -90,7 +91,11 @@ ip link set lo up
 
 # create logs mountpoint and mount the logshare
 mkdir /tmp/logs
-mount -t 9p -o trans=virtio,rw logshare /tmp/logs
+if grep -q rootfstype=hostfs /proc/cmdline; then
+    mount -t hostfs none /tmp/logs -o $LOGDIR
+else
+    mount -t 9p -o trans=virtio,rw logshare /tmp/logs
+fi
 
 # allow access to any outside directory (e.g. /tmp) we also have
 mkdir /tmp/host
