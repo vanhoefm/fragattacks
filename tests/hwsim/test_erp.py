@@ -107,9 +107,10 @@ def test_erp_server_no_match(dev, apdev):
         raise Exception("Unexpected use of ERP")
     dev[0].wait_connected(timeout=15, error="Reconnection timed out")
 
-def start_erp_as(apdev, erp_domain="example.com", msk_dump=None, tls13=False,
+def start_erp_as(erp_domain="example.com", msk_dump=None, tls13=False,
                  eap_user_file="auth_serv/eap_user.conf"):
-    params = {"ssid": "as", "beacon_int": "2000",
+    params = {"driver": "none",
+              "interface": "as-erp",
               "radius_server_clients": "auth_serv/radius_clients.conf",
               "radius_server_auth_port": '18128',
               "eap_server": "1",
@@ -128,12 +129,13 @@ def start_erp_as(apdev, erp_domain="example.com", msk_dump=None, tls13=False,
         params["dump_msk_file"] = msk_dump
     if tls13:
         params["tls_flags"] = "[ENABLE-TLSv1.3]"
-    return hostapd.add_ap(apdev, params)
+    apdev = {'ifname': 'as-erp'}
+    return hostapd.add_ap(apdev, params, driver="none")
 
 def test_erp_radius(dev, apdev):
     """ERP enabled on RADIUS server and peer"""
     check_erp_capa(dev[0])
-    start_erp_as(apdev[1])
+    start_erp_as()
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     params['auth_server_port'] = "18128"
     params['erp_send_reauth_start'] = '1'
@@ -164,7 +166,7 @@ def test_erp_radius_no_wildcard_user(dev, apdev, params):
                              'erp_radius_no_wildcard_user.eap_users')
     with open(user_file, 'w') as f:
         f.write('"user@example.com" PSK 0123456789abcdef0123456789abcdef\n')
-    start_erp_as(apdev[1], eap_user_file=user_file)
+    start_erp_as(eap_user_file=user_file)
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     params['auth_server_port'] = "18128"
     params['erp_send_reauth_start'] = '1'
@@ -256,7 +258,7 @@ def test_erp_radius_eap_methods(dev, apdev):
     """ERP enabled on RADIUS server and peer"""
     check_erp_capa(dev[0])
     eap_methods = dev[0].get_capability("eap")
-    start_erp_as(apdev[1])
+    start_erp_as()
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     params['auth_server_port'] = "18128"
     params['erp_send_reauth_start'] = '1'
@@ -309,7 +311,7 @@ def test_erp_radius_eap_tls_v13(dev, apdev):
         raise HwsimSkip("No TLS v1.3 support in TLS library")
 
     eap_methods = dev[0].get_capability("eap")
-    start_erp_as(apdev[1], tls13=True)
+    start_erp_as(tls13=True)
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     params['auth_server_port'] = "18128"
     params['erp_send_reauth_start'] = '1'

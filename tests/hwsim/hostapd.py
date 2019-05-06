@@ -501,7 +501,7 @@ class Hostapd:
         self.request("NOTE " + txt)
 
 def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30,
-           global_ctrl_override=None):
+           global_ctrl_override=None, driver=False):
         if isinstance(apdev, dict):
             ifname = apdev['ifname']
             try:
@@ -520,7 +520,7 @@ def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30,
         hapd_global = HostapdGlobal(apdev,
                                     global_ctrl_override=global_ctrl_override)
         hapd_global.remove(ifname)
-        hapd_global.add(ifname)
+        hapd_global.add(ifname, driver=driver)
         port = hapd_global.get_ctrl_iface_port(ifname)
         hapd = Hostapd(ifname, hostname=hostname, port=port)
         if not hapd.ping():
