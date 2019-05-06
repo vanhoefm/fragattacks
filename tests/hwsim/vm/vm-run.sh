@@ -167,6 +167,7 @@ if [ -z $KVM ]; then
 	$KERNEL \
 	     mem=${MEMORY}M \
 	     LOGDIR=$LOGDIR \
+	     virtual-time \
 	     $A \
 	     root=none hostfs=/ rootfstype=hostfs rootflags=/ \
 	     ssl0=fd:0,fd:1 \
