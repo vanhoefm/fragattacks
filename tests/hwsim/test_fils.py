@@ -2182,3 +2182,59 @@ def run_fils_sk_erp_radius_ext(dev, apdev, params):
     if "EVENT-ASSOC-REJECT" in ev:
         raise Exception("Association failed")
     hwsim_utils.test_connectivity(dev[0], hapd)
+
+def test_fils_sk_erp_roam_diff_akm(dev, apdev, params):
+    """FILS SK using ERP and SHA256/SHA384 change in roam"""
+    check_fils_capa(dev[0])
+    check_erp_capa(dev[0])
+
+    start_erp_as()
+
+    bssid = apdev[0]['bssid']
+    params = hostapd.wpa2_eap_params(ssid="fils")
+    params['wpa_key_mgmt'] = "FILS-SHA256"
+    params['auth_server_port'] = "18128"
+    params['erp_domain'] = 'example.com'
+    params['fils_realm'] = 'example.com'
+    hapd = hostapd.add_ap(apdev[0]['ifname'], params)
+
+    dev[0].scan_for_bss(bssid, freq=2412)
+    dev[0].request("ERP_FLUSH")
+    id = dev[0].connect("fils", key_mgmt="FILS-SHA256 FILS-SHA384",
+                        eap="PSK", identity="psk.user@example.com",
+                        password_hex="0123456789abcdef0123456789abcdef",
+                        erp="1", scan_freq="2412")
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    dev[0].request("RECONNECT")
+    ev = dev[0].wait_event(["CTRL-EVENT-EAP-STARTED",
+                            "CTRL-EVENT-CONNECTED"], timeout=10)
+    if ev is None:
+        raise Exception("Connection using FILS timed out")
+    if "CTRL-EVENT-EAP-STARTED" in ev:
+        raise Exception("Unexpected EAP exchange")
+
+    bssid2 = apdev[1]['bssid']
+    params = hostapd.wpa2_eap_params(ssid="fils")
+    params['wpa_key_mgmt'] = "FILS-SHA256 FILS-SHA384"
+    params['auth_server_port'] = "18128"
+    params['erp_domain'] = 'example.com'
+    params['fils_realm'] = 'example.com'
+    hapd2 = hostapd.add_ap(apdev[1]['ifname'], params)
+
+    dev[0].scan_for_bss(bssid2, freq=2412)
+
+    dev[0].dump_monitor()
+    if "OK" not in dev[0].request("ROAM " + bssid2):
+        raise Exception("ROAM failed")
+
+    ev = dev[0].wait_event(["CTRL-EVENT-EAP-STARTED",
+                            "CTRL-EVENT-CONNECTED"], timeout=10)
+    if ev is None:
+        raise Exception("Roaming using FILS timed out")
+    if "CTRL-EVENT-EAP-STARTED" in ev:
+        raise Exception("Unexpected EAP exchange")
+    if bssid2 not in ev:
+        raise Exception("Failed to connect to the second AP")
+
+    hwsim_utils.test_connectivity(dev[0], hapd2)
