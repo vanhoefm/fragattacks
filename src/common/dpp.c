@@ -3753,6 +3753,7 @@ dpp_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 	}
 	EVP_PKEY_CTX_free(ctx);
 	ctx = NULL;
+	EVP_PKEY_free(auth->peer_protocol_key);
 	auth->peer_protocol_key = pr;
 	pr = NULL;
 
