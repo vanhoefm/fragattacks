@@ -5254,6 +5254,7 @@ static EVP_PKEY * dpp_parse_jwk(struct json_token *jwk,
 
 	pkey = dpp_set_pubkey_point_group(group, wpabuf_head(x), wpabuf_head(y),
 					  wpabuf_len(x));
+	EC_GROUP_free(group);
 	*key_curve = curve;
 
 fail:
@@ -6590,6 +6591,7 @@ static EVP_PKEY * dpp_pkex_get_role_elem(const struct dpp_curve_params *curve,
 	EC_GROUP *group;
 	size_t len = curve->prime_len;
 	const u8 *x, *y;
+	EVP_PKEY *res;
 
 	switch (curve->ike_group) {
 	case 19:
@@ -6623,7 +6625,9 @@ static EVP_PKEY * dpp_pkex_get_role_elem(const struct dpp_curve_params *curve,
 	group = EC_GROUP_new_by_curve_name(OBJ_txt2nid(curve->name));
 	if (!group)
 		return NULL;
-	return dpp_set_pubkey_point_group(group, x, y, len);
+	res = dpp_set_pubkey_point_group(group, x, y, len);
+	EC_GROUP_free(group);
+	return res;
 }
 
 
@@ -6851,6 +6855,7 @@ fail:
 	BN_free(y);
 	EC_POINT_free(point);
 	BN_CTX_free(ctx);
+	EC_GROUP_free(group);
 
 	return ret;
 }
