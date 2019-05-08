@@ -6634,7 +6634,7 @@ static EVP_PKEY * dpp_pkex_get_role_elem(const struct dpp_curve_params *curve,
 static EC_POINT * dpp_pkex_derive_Qi(const struct dpp_curve_params *curve,
 				     const u8 *mac_init, const char *code,
 				     const char *identifier, BN_CTX *bnctx,
-				     const EC_GROUP **ret_group)
+				     EC_GROUP **ret_group)
 {
 	u8 hash[DPP_MAX_HASH_LEN];
 	const u8 *addr[3];
@@ -6703,8 +6703,10 @@ out:
 	EC_KEY_free(Pi_ec);
 	EVP_PKEY_free(Pi);
 	BN_clear_free(hash_bn);
-	if (ret_group)
+	if (ret_group && Qi)
 		*ret_group = group2;
+	else
+		EC_GROUP_free(group2);
 	return Qi;
 fail:
 	EC_POINT_free(Qi);
@@ -6716,7 +6718,7 @@ fail:
 static EC_POINT * dpp_pkex_derive_Qr(const struct dpp_curve_params *curve,
 				     const u8 *mac_resp, const char *code,
 				     const char *identifier, BN_CTX *bnctx,
-				     const EC_GROUP **ret_group)
+				     EC_GROUP **ret_group)
 {
 	u8 hash[DPP_MAX_HASH_LEN];
 	const u8 *addr[3];
@@ -6785,8 +6787,10 @@ out:
 	EC_KEY_free(Pr_ec);
 	EVP_PKEY_free(Pr);
 	BN_clear_free(hash_bn);
-	if (ret_group)
+	if (ret_group && Qr)
 		*ret_group = group2;
+	else
+		EC_GROUP_free(group2);
 	return Qr;
 fail:
 	EC_POINT_free(Qr);
@@ -6867,7 +6871,7 @@ static struct wpabuf * dpp_pkex_build_exchange_req(struct dpp_pkex *pkex)
 	EC_KEY *X_ec = NULL;
 	const EC_POINT *X_point;
 	BN_CTX *bnctx = NULL;
-	const EC_GROUP *group;
+	EC_GROUP *group = NULL;
 	EC_POINT *Qi = NULL, *M = NULL;
 	struct wpabuf *M_buf = NULL;
 	BIGNUM *Mx = NULL, *My = NULL;
@@ -6989,6 +6993,7 @@ out:
 	BN_clear_free(Mx);
 	BN_clear_free(My);
 	BN_CTX_free(bnctx);
+	EC_GROUP_free(group);
 	return msg;
 fail:
 	wpa_printf(MSG_INFO, "DPP: Failed to build PKEX Exchange Request");
@@ -7233,7 +7238,7 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 	struct dpp_pkex *pkex = NULL;
 	EC_POINT *Qi = NULL, *Qr = NULL, *M = NULL, *X = NULL, *N = NULL;
 	BN_CTX *bnctx = NULL;
-	const EC_GROUP *group;
+	EC_GROUP *group = NULL;
 	BIGNUM *Mx = NULL, *My = NULL;
 	EC_KEY *Y_ec = NULL, *X_ec = NULL;;
 	const EC_POINT *Y_point;
@@ -7450,6 +7455,7 @@ out:
 	EC_POINT_free(X);
 	EC_KEY_free(X_ec);
 	EC_KEY_free(Y_ec);
+	EC_GROUP_free(group);
 	return pkex;
 fail:
 	wpa_printf(MSG_DEBUG, "DPP: PKEX Exchange Request processing failed");
@@ -7578,7 +7584,7 @@ struct wpabuf * dpp_pkex_rx_exchange_resp(struct dpp_pkex *pkex,
 {
 	const u8 *attr_status, *attr_id, *attr_key, *attr_group;
 	u16 attr_status_len, attr_id_len, attr_key_len, attr_group_len;
-	const EC_GROUP *group;
+	EC_GROUP *group = NULL;
 	BN_CTX *bnctx = NULL;
 	struct wpabuf *msg = NULL, *A_pub = NULL, *X_pub = NULL, *Y_pub = NULL;
 	const struct dpp_curve_params *curve = pkex->own_bi->curve;
@@ -7775,6 +7781,7 @@ out:
 	EC_KEY_free(Y_ec);
 	EVP_PKEY_CTX_free(ctx);
 	BN_CTX_free(bnctx);
+	EC_GROUP_free(group);
 	return msg;
 fail:
 	wpa_printf(MSG_DEBUG, "DPP: PKEX Exchange Response processing failed");
