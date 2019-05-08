@@ -98,6 +98,7 @@ static DBusMessage * get_all_properties(DBusMessage *message, char *interface,
 	dbus_error_init(&error);
 	if (!fill_dict_with_properties(&dict_iter, obj_dsc->properties,
 				       interface, obj_dsc->user_data, &error)) {
+		wpa_dbus_dict_close_write(&iter, &dict_iter);
 		dbus_message_unref(reply);
 		reply = wpas_dbus_reply_new_from_error(
 			message, &error, DBUS_ERROR_INVALID_ARGS,
@@ -930,6 +931,7 @@ dbus_bool_t wpa_dbus_get_object_properties(struct wpas_dbus_priv *iface,
 			   dbus_error_is_set(&error) ? error.name : "none",
 			   dbus_error_is_set(&error) ? error.message : "none");
 		dbus_error_free(&error);
+		wpa_dbus_dict_close_write(iter, &dict_iter);
 		return FALSE;
 	}
 
