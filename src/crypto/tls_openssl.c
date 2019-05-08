@@ -4666,6 +4666,7 @@ static int ocsp_resp_cb(SSL *s, void *arg)
 	res = OCSP_resp_find_status(basic, id, &status, &reason, &produced_at,
 				    &this_update, &next_update);
 	if (!res) {
+		OCSP_CERTID_free(id);
 		id = OCSP_cert_to_id(NULL, conn->peer_cert, conn->peer_issuer);
 		if (!id) {
 			wpa_printf(MSG_DEBUG,
