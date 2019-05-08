@@ -40,8 +40,10 @@ int dragonfly_get_random_qr_qnr(const struct crypto_bignum *prime,
 		int res;
 
 		tmp = crypto_bignum_init();
-		if (!tmp || crypto_bignum_rand(tmp, prime) < 0)
+		if (!tmp || crypto_bignum_rand(tmp, prime) < 0) {
+			crypto_bignum_deinit(tmp, 0);
 			break;
+		}
 
 		res = crypto_bignum_legendre(tmp, prime);
 		if (res == 1 && !(*qr))
