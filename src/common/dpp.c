@@ -2787,6 +2787,7 @@ static int dpp_auth_build_resp_ok(struct dpp_authentication *auth)
 #endif /* CONFIG_TESTING_OPTIONS */
 	wpa_hexdump(MSG_DEBUG, "DPP: R-nonce", auth->r_nonce, nonce_len);
 
+	EVP_PKEY_free(auth->own_protocol_key);
 #ifdef CONFIG_TESTING_OPTIONS
 	if (dpp_protocol_key_override_len) {
 		const struct dpp_curve_params *tmp_curve;
