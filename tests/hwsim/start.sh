@@ -80,12 +80,12 @@ fi
 
 if [ "$1" = "valgrind" ]; then
     VALGRIND=y
-    VALGRIND_WPAS="valgrind --log-file=$LOGDIR/valgrind-wlan%d"
-    VALGRIND_HAPD="valgrind --log-file=$LOGDIR/valgrind-hostapd"
+    VALGRIND_WPAS="valgrind --log-file=$LOGDIR/valgrind-wlan%d --leak-check=full"
+    VALGRIND_HAPD="valgrind --log-file=$LOGDIR/valgrind-hostapd --leak-check=full"
     chmod -f a+rx $WPAS
     chmod -f a+rx $HAPD
     chmod -f a+rx $HAPD_AS
-    HAPD_AS="valgrind --log-file=$LOGDIR/valgrind-auth-serv $HAPD_AS"
+    HAPD_AS="valgrind --log-file=$LOGDIR/valgrind-auth-serv --leak-check=full $HAPD_AS"
     shift
 else
     unset VALGRIND
