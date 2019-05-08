@@ -1135,7 +1135,7 @@ static void dpp_debug_print_key(const char *title, EVP_PKEY *key)
 static EVP_PKEY * dpp_gen_keypair(const struct dpp_curve_params *curve)
 {
 	EVP_PKEY_CTX *kctx = NULL;
-	EC_KEY *ec_params;
+	EC_KEY *ec_params = NULL;
 	EVP_PKEY *params = NULL, *key = NULL;
 	int nid;
 
@@ -1166,19 +1166,18 @@ static EVP_PKEY * dpp_gen_keypair(const struct dpp_curve_params *curve)
 	    EVP_PKEY_keygen_init(kctx) != 1 ||
 	    EVP_PKEY_keygen(kctx, &key) != 1) {
 		wpa_printf(MSG_ERROR, "DPP: Failed to generate EC key");
+		key = NULL;
 		goto fail;
 	}
 
 	if (wpa_debug_show_keys)
 		dpp_debug_print_key("Own generated key", key);
 
+fail:
+	EC_KEY_free(ec_params);
 	EVP_PKEY_free(params);
 	EVP_PKEY_CTX_free(kctx);
 	return key;
-fail:
-	EVP_PKEY_CTX_free(kctx);
-	EVP_PKEY_free(params);
-	return NULL;
 }
 
 
