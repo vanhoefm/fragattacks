@@ -595,7 +595,8 @@ static void mlme_event_ch_switch(struct wpa_driver_nl80211_data *drv,
 	if (cf2)
 		data.ch_switch.cf2 = nla_get_u32(cf2);
 
-	bss->freq = data.ch_switch.freq;
+	if (finished)
+		bss->freq = data.ch_switch.freq;
 	drv->assoc_freq = data.ch_switch.freq;
 
 	wpa_supplicant_event(bss->ctx, finished ?
