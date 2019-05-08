@@ -570,8 +570,8 @@ int crypto_dh_derive_secret(u8 generator, const u8 *prime, size_t prime_len,
 		failed = !q || !ctx || !tmp ||
 			!BN_mod_exp(tmp, pub, q, p, ctx) ||
 			!BN_is_one(tmp);
-		BN_clear(q);
-		BN_clear(tmp);
+		BN_clear_free(q);
+		BN_clear_free(tmp);
 		BN_CTX_free(ctx);
 		if (failed)
 			goto fail;
@@ -580,8 +580,8 @@ int crypto_dh_derive_secret(u8 generator, const u8 *prime, size_t prime_len,
 	res = crypto_mod_exp(pubkey, pubkey_len, privkey, privkey_len,
 			     prime, prime_len, secret, len);
 fail:
-	BN_clear(pub);
-	BN_clear(p);
+	BN_clear_free(pub);
+	BN_clear_free(p);
 	return res;
 }
 
