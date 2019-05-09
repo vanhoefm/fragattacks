@@ -1556,7 +1556,7 @@ static int wpas_send_action_work(struct wpa_supplicant *wpa_s,
 {
 	struct send_action_work *awork;
 
-	if (wpa_s->p2p_send_action_work) {
+	if (radio_work_pending(wpa_s, "p2p-send-action")) {
 		wpa_printf(MSG_DEBUG, "P2P: Cannot schedule new p2p-send-action work since one is already pending");
 		return -1;
 	}
