@@ -1573,7 +1573,7 @@ static int wpas_send_action_work(struct wpa_supplicant *wpa_s,
 	awork->wait_time = wait_time;
 	os_memcpy(awork->buf, buf, len);
 
-	if (radio_add_work(wpa_s, freq, "p2p-send-action", 0,
+	if (radio_add_work(wpa_s, freq, "p2p-send-action", 1,
 			   wpas_send_action_cb, awork) < 0) {
 		os_free(awork);
 		return -1;
