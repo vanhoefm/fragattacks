@@ -4585,6 +4585,16 @@ enum qca_wlan_vendor_attr_spectral_scan {
 	 * This attribute is included only in failure scenarios.
 	 */
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_ERROR_CODE = 26,
+	/* 8-bit unsigned value to enable/disable debug of the
+	 * Spectral DMA ring.
+	 * 1-enable, 0-disable
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CONFIG_DMA_RING_DEBUG = 27,
+	/* 8-bit unsigned value to enable/disable debug of the
+	 * Spectral DMA buffers.
+	 * 1-enable, 0-disable
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CONFIG_DMA_BUFFER_DEBUG = 28,
 
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CONFIG_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CONFIG_MAX =
