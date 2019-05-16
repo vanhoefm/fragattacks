@@ -709,7 +709,8 @@ static void sae_sme_send_external_auth_status(struct hostapd_data *hapd,
 	os_memset(&params, 0, sizeof(params));
 	params.status = status;
 	params.bssid = sta->addr;
-	if (status == WLAN_STATUS_SUCCESS && sta->sae)
+	if (status == WLAN_STATUS_SUCCESS && sta->sae &&
+	    !hapd->conf->disable_pmksa_caching)
 		params.pmkid = sta->sae->pmkid;
 
 	hostapd_drv_send_external_auth_status(hapd, &params);
