@@ -31,6 +31,7 @@ struct eap_aka_data {
 	u8 emsk[EAP_EMSK_LEN];
 	u8 rand[EAP_AKA_RAND_LEN], autn[EAP_AKA_AUTN_LEN];
 	u8 auts[EAP_AKA_AUTS_LEN];
+	u8 reauth_mac[EAP_SIM_MAC_LEN];
 
 	int num_id_req, num_notification;
 	u8 *pseudonym;
@@ -1226,6 +1227,14 @@ static struct wpabuf * eap_aka_process_reauthentication(
 					    EAP_AKA_UNABLE_TO_PROCESS_PACKET);
 	}
 
+	/* At this stage the received MAC has been verified. Use this MAC for
+	 * reauth Session-Id calculation if all other checks pass.
+	 * The peer does not use the local MAC but the received MAC in deriving
+	 * Session-Id. */
+	os_memcpy(data->reauth_mac, attr->mac, EAP_SIM_MAC_LEN);
+	wpa_hexdump(MSG_DEBUG, "EAP-AKA: Server MAC",
+		    data->reauth_mac, EAP_SIM_MAC_LEN);
+
 	if (attr->encr_data == NULL || attr->iv == NULL) {
 		wpa_printf(MSG_WARNING, "EAP-AKA: Reauthentication "
 			   "message did not include encrypted data");
@@ -1497,14 +1506,24 @@ static u8 * eap_aka_get_session_id(struct eap_sm *sm, void *priv, size_t *len)
 	if (data->state != SUCCESS)
 		return NULL;
 
-	*len = 1 + EAP_AKA_RAND_LEN + EAP_AKA_AUTN_LEN;
+	if (!data->reauth)
+		*len = 1 + EAP_AKA_RAND_LEN + EAP_AKA_AUTN_LEN;
+	else
+		*len = 1 + EAP_SIM_NONCE_S_LEN + EAP_SIM_MAC_LEN;
 	id = os_malloc(*len);
 	if (id == NULL)
 		return NULL;
 
 	id[0] = data->eap_method;
-	os_memcpy(id + 1, data->rand, EAP_AKA_RAND_LEN);
-	os_memcpy(id + 1 + EAP_AKA_RAND_LEN, data->autn, EAP_AKA_AUTN_LEN);
+	if (!data->reauth) {
+		os_memcpy(id + 1, data->rand, EAP_AKA_RAND_LEN);
+		os_memcpy(id + 1 + EAP_AKA_RAND_LEN, data->autn,
+			  EAP_AKA_AUTN_LEN);
+	} else {
+		os_memcpy(id + 1, data->nonce_s, EAP_SIM_NONCE_S_LEN);
+		os_memcpy(id + 1 + EAP_SIM_NONCE_S_LEN, data->reauth_mac,
+			  EAP_SIM_MAC_LEN);
+	}
 	wpa_hexdump(MSG_DEBUG, "EAP-AKA: Derived Session-Id", id, *len);
 
 	return id;
