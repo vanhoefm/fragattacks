@@ -32,6 +32,7 @@ struct eap_sim_data {
 	u8 msk[EAP_SIM_KEYING_DATA_LEN];
 	u8 emsk[EAP_EMSK_LEN];
 	u8 rand[3][GSM_RAND_LEN];
+	u8 reauth_mac[EAP_SIM_MAC_LEN];
 
 	int num_id_req, num_notification;
 	u8 *pseudonym;
@@ -958,6 +959,14 @@ static struct wpabuf * eap_sim_process_reauthentication(
 					    EAP_SIM_UNABLE_TO_PROCESS_PACKET);
 	}
 
+	/* At this stage the received MAC has been verified. Use this MAC for
+	 * reauth Session-Id calculation if all other checks pass.
+	 * The peer does not use the local MAC but the received MAC in deriving
+	 * Session-Id. */
+	os_memcpy(data->reauth_mac, attr->mac, EAP_SIM_MAC_LEN);
+	wpa_hexdump(MSG_DEBUG, "EAP-SIM: Server MAC",
+		    data->reauth_mac, EAP_SIM_MAC_LEN);
+
 	if (attr->encr_data == NULL || attr->iv == NULL) {
 		wpa_printf(MSG_WARNING, "EAP-SIM: Reauthentication "
 			   "message did not include encrypted data");
@@ -1216,15 +1225,24 @@ static u8 * eap_sim_get_session_id(struct eap_sm *sm, void *priv, size_t *len)
 	if (data->state != SUCCESS)
 		return NULL;
 
-	*len = 1 + data->num_chal * GSM_RAND_LEN + EAP_SIM_NONCE_MT_LEN;
+	if (!data->reauth)
+		*len = 1 + data->num_chal * GSM_RAND_LEN + EAP_SIM_NONCE_MT_LEN;
+	else
+		*len = 1 + EAP_SIM_NONCE_S_LEN + EAP_SIM_MAC_LEN;
 	id = os_malloc(*len);
 	if (id == NULL)
 		return NULL;
 
 	id[0] = EAP_TYPE_SIM;
-	os_memcpy(id + 1, data->rand, data->num_chal * GSM_RAND_LEN);
-	os_memcpy(id + 1 + data->num_chal * GSM_RAND_LEN, data->nonce_mt,
-		  EAP_SIM_NONCE_MT_LEN);
+	if (!data->reauth) {
+		os_memcpy(id + 1, data->rand, data->num_chal * GSM_RAND_LEN);
+		os_memcpy(id + 1 + data->num_chal * GSM_RAND_LEN,
+			  data->nonce_mt, EAP_SIM_NONCE_MT_LEN);
+	} else {
+		os_memcpy(id + 1, data->nonce_s, EAP_SIM_NONCE_S_LEN);
+		os_memcpy(id + 1 + EAP_SIM_NONCE_S_LEN, data->reauth_mac,
+			  EAP_SIM_MAC_LEN);
+	}
 	wpa_hexdump(MSG_DEBUG, "EAP-SIM: Derived Session-Id", id, *len);
 
 	return id;
