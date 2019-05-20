@@ -4559,6 +4559,14 @@ static int wpa_driver_nl80211_sta_add(void *priv,
 				goto fail;
 		}
 
+		if (params->he_capab) {
+			wpa_hexdump(MSG_DEBUG, "  * he_capab",
+				    params->he_capab, params->he_capab_len);
+			if (nla_put(msg, NL80211_ATTR_HE_CAPABILITY,
+				    params->he_capab_len, params->he_capab))
+				goto fail;
+		}
+
 		if (params->ext_capab) {
 			wpa_hexdump(MSG_DEBUG, "  * ext_capab",
 				    params->ext_capab, params->ext_capab_len);
