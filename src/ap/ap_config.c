@@ -240,6 +240,8 @@ struct hostapd_config * hostapd_config_defaults(void)
 #ifdef CONFIG_IEEE80211AX
 	conf->he_op.he_rts_threshold = HE_OPERATION_RTS_THRESHOLD_MASK >>
 		HE_OPERATION_RTS_THRESHOLD_OFFSET;
+	/* Set default basic MCS/NSS set to single stream MCS 0-7 */
+	conf->he_op.he_basic_mcs_nss_set = 0xfffc;
 #endif /* CONFIG_IEEE80211AX */
 
 	/* The third octet of the country string uses an ASCII space character

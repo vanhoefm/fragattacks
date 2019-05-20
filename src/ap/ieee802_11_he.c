@@ -157,6 +157,10 @@ u8 * hostapd_eid_he_operation(struct hostapd_data *hapd, u8 *eid)
 		params |= (hapd->iface->conf->he_op.he_bss_color <<
 			   HE_OPERATION_BSS_COLOR_OFFSET);
 
+	/* HE minimum required basic MCS and NSS for STAs */
+	oper->he_mcs_nss_set =
+		host_to_le16(hapd->iface->conf->he_op.he_basic_mcs_nss_set);
+
 	/* TODO: conditional MaxBSSID Indicator subfield */
 
 	oper->he_oper_params = host_to_le32(params);

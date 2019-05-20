@@ -750,6 +750,7 @@ struct he_operation {
 	u8 he_default_pe_duration;
 	u8 he_twt_required;
 	u16 he_rts_threshold;
+	u16 he_basic_mcs_nss_set;
 };
 
 /**

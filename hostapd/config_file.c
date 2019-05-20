@@ -3508,6 +3508,8 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		conf->he_op.he_twt_required = atoi(pos);
 	} else if (os_strcmp(buf, "he_rts_threshold") == 0) {
 		conf->he_op.he_rts_threshold = atoi(pos);
+	} else if (os_strcmp(buf, "he_basic_mcs_nss_set") == 0) {
+		conf->he_op.he_basic_mcs_nss_set = atoi(pos);
 	} else if (os_strcmp(buf, "he_mu_edca_qos_info_param_count") == 0) {
 		conf->he_mu_edca.he_qos_info |=
 			set_he_cap(atoi(pos), HE_QOS_INFO_EDCA_PARAM_SET_COUNT);
