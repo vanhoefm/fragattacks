@@ -158,19 +158,9 @@ struct hostapd_channel_data {
 	unsigned int dfs_cac_ms;
 };
 
-#define HE_MAX_NUM_SS 		8
 #define HE_MAX_MAC_CAPAB_SIZE	6
 #define HE_MAX_PHY_CAPAB_SIZE	11
 #define HE_MAX_MCS_CAPAB_SIZE	12
-
-/**
- * struct he_ppe_threshold - IEEE 802.11ax HE PPE Threshold
- */
-struct he_ppe_threshold {
-	u32 numss_m1;
-	u32 ru_count;
-	u32 ppet16_ppet8_ru3_ru0[HE_MAX_NUM_SS];
-};
 
 /**
  * struct he_capabilities - IEEE 802.11ax HE capabilities
@@ -180,7 +170,7 @@ struct he_capabilities {
 	u8 phy_cap[HE_MAX_PHY_CAPAB_SIZE];
 	u8 mac_cap[HE_MAX_MAC_CAPAB_SIZE];
 	u8 mcs[HE_MAX_MCS_CAPAB_SIZE];
-	struct he_ppe_threshold ppet;
+	u8 ppet[25];
 };
 
 #define HOSTAPD_MODE_FLAG_HT_INFO_KNOWN BIT(0)
