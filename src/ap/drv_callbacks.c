@@ -960,7 +960,7 @@ void hostapd_acs_channel_selected(struct hostapd_data *hapd,
 		goto out;
 	}
 
-	if (hapd->iface->conf->ieee80211ac) {
+	if (hapd->iface->conf->ieee80211ac || hapd->iface->conf->ieee80211ax) {
 		/* set defaults for backwards compatibility */
 		hostapd_set_oper_centr_freq_seg1_idx(hapd->iconf, 0);
 		hostapd_set_oper_centr_freq_seg0_idx(hapd->iconf, 0);

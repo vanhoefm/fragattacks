@@ -594,7 +594,7 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 	    iface->conf->secondary_channel)
 		n_chans = 2;
 
-	if (iface->conf->ieee80211ac) {
+	if (iface->conf->ieee80211ac || iface->conf->ieee80211ax) {
 		switch (hostapd_get_oper_chwidth(iface->conf)) {
 		case CHANWIDTH_80MHZ:
 			n_chans = 4;
@@ -607,7 +607,7 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 
 	bw = num_chan_to_bw(n_chans);
 
-	/* TODO: VHT80+80. Update acs_adjust_center_freq() too. */
+	/* TODO: VHT/HE80+80. Update acs_adjust_center_freq() too. */
 
 	wpa_printf(MSG_DEBUG,
 		   "ACS: Survey analysis for selected bandwidth %d MHz", bw);
@@ -647,7 +647,7 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 		}
 
 		if (iface->current_mode->mode == HOSTAPD_MODE_IEEE80211A &&
-		    iface->conf->ieee80211ac) {
+		    (iface->conf->ieee80211ac || iface->conf->ieee80211ax)) {
 			if (hostapd_get_oper_chwidth(iface->conf) ==
 			    CHANWIDTH_80MHZ &&
 			    !acs_usable_vht80_chan(chan)) {
