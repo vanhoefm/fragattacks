@@ -3600,6 +3600,12 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		conf->spr.srg_obss_pd_min_offset = atoi(pos);
 	} else if (os_strcmp(buf, "he_spr_srg_obss_pd_max_offset") == 0) {
 		conf->spr.srg_obss_pd_max_offset = atoi(pos);
+	} else if (os_strcmp(buf, "he_oper_chwidth") == 0) {
+		conf->he_oper_chwidth = atoi(pos);
+	} else if (os_strcmp(buf, "he_oper_centr_freq_seg0_idx") == 0) {
+		conf->he_oper_centr_freq_seg0_idx = atoi(pos);
+	} else if (os_strcmp(buf, "he_oper_centr_freq_seg1_idx") == 0) {
+		conf->he_oper_centr_freq_seg1_idx = atoi(pos);
 #endif /* CONFIG_IEEE80211AX */
 	} else if (os_strcmp(buf, "max_listen_interval") == 0) {
 		bss->max_listen_interval = atoi(pos);

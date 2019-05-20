@@ -887,6 +887,9 @@ struct hostapd_config {
 	struct he_operation he_op;
 	struct ieee80211_he_mu_edca_parameter_set he_mu_edca;
 	struct spatial_reuse spr;
+	u8 he_oper_chwidth;
+	u8 he_oper_centr_freq_seg0_idx;
+	u8 he_oper_centr_freq_seg1_idx;
 #endif /* CONFIG_IEEE80211AX */
 
 	/* VHT enable/disable config from CHAN_SWITCH */
