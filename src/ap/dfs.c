@@ -744,6 +744,7 @@ int hostapd_handle_dfs(struct hostapd_iface *iface)
 	res = hostapd_start_dfs_cac(
 		iface, iface->conf->hw_mode, iface->freq, iface->conf->channel,
 		iface->conf->ieee80211n, iface->conf->ieee80211ac,
+		iface->conf->ieee80211ax,
 		iface->conf->secondary_channel,
 		hostapd_get_oper_chwidth(iface->conf),
 		hostapd_get_oper_centr_freq_seg0_idx(iface->conf),
@@ -960,11 +961,13 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 				      channel->chan,
 				      iface->conf->ieee80211n,
 				      iface->conf->ieee80211ac,
+				      iface->conf->ieee80211ax,
 				      secondary_channel,
 				      hostapd_get_oper_chwidth(iface->conf),
 				      oper_centr_freq_seg0_idx,
 				      oper_centr_freq_seg1_idx,
-				      iface->current_mode->vht_capab);
+				      iface->current_mode->vht_capab,
+				      &iface->current_mode->he_capab);
 
 	if (err) {
 		wpa_printf(MSG_ERROR, "DFS failed to calculate CSA freq params");

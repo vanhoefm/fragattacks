@@ -361,16 +361,21 @@ int check_40mhz_2g4(struct hostapd_hw_modes *mode,
 int hostapd_set_freq_params(struct hostapd_freq_params *data,
 			    enum hostapd_hw_mode mode,
 			    int freq, int channel, int ht_enabled,
-			    int vht_enabled, int sec_channel_offset,
+			    int vht_enabled, int he_enabled,
+			    int sec_channel_offset,
 			    int oper_chwidth, int center_segment0,
-			    int center_segment1, u32 vht_caps)
+			    int center_segment1, u32 vht_caps,
+			    struct he_capabilities *he_cap)
 {
+	if (!he_cap)
+		he_enabled = 0;
 	os_memset(data, 0, sizeof(*data));
 	data->mode = mode;
 	data->freq = freq;
 	data->channel = channel;
 	data->ht_enabled = ht_enabled;
 	data->vht_enabled = vht_enabled;
+	data->he_enabled = he_enabled;
 	data->sec_channel_offset = sec_channel_offset;
 	data->center_freq1 = freq + sec_channel_offset * 10;
 	data->center_freq2 = 0;

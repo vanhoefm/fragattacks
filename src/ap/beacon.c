@@ -1424,12 +1424,13 @@ int ieee802_11_set_beacon(struct hostapd_data *hapd)
 	if (iface->current_mode &&
 	    hostapd_set_freq_params(&freq, iconf->hw_mode, iface->freq,
 				    iconf->channel, iconf->ieee80211n,
-				    iconf->ieee80211ac,
+				    iconf->ieee80211ac, iconf->ieee80211ax,
 				    iconf->secondary_channel,
 				    hostapd_get_oper_chwidth(iconf),
 				    hostapd_get_oper_centr_freq_seg0_idx(iconf),
 				    hostapd_get_oper_centr_freq_seg1_idx(iconf),
-				    iface->current_mode->vht_capab) == 0)
+				    iface->current_mode->vht_capab,
+				    &iface->current_mode->he_capab) == 0)
 		params.freq = &freq;
 
 	res = hostapd_drv_set_ap(hapd, &params);

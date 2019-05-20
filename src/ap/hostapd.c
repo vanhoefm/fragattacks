@@ -1868,6 +1868,7 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
 				     hapd->iconf->channel,
 				     hapd->iconf->ieee80211n,
 				     hapd->iconf->ieee80211ac,
+				     hapd->iconf->ieee80211ax,
 				     hapd->iconf->secondary_channel,
 				     hostapd_get_oper_chwidth(hapd->iconf),
 				     hostapd_get_oper_centr_freq_seg0_idx(
@@ -3206,6 +3207,7 @@ static int hostapd_change_config_freq(struct hostapd_data *hapd,
 {
 	int channel;
 	u8 seg0, seg1;
+	struct hostapd_hw_modes *mode;
 
 	if (!params->channel) {
 		/* check if the new channel is supported by hw */
@@ -3216,17 +3218,20 @@ static int hostapd_change_config_freq(struct hostapd_data *hapd,
 	if (!channel)
 		return -1;
 
+	mode = hapd->iface->current_mode;
+
 	/* if a pointer to old_params is provided we save previous state */
 	if (old_params &&
 	    hostapd_set_freq_params(old_params, conf->hw_mode,
 				    hostapd_hw_get_freq(hapd, conf->channel),
 				    conf->channel, conf->ieee80211n,
-				    conf->ieee80211ac,
+				    conf->ieee80211ac, conf->ieee80211ax,
 				    conf->secondary_channel,
 				    hostapd_get_oper_chwidth(conf),
 				    hostapd_get_oper_centr_freq_seg0_idx(conf),
 				    hostapd_get_oper_centr_freq_seg1_idx(conf),
-				    conf->vht_capab))
+				    conf->vht_capab,
+				    mode ? &mode->he_capab : NULL))
 		return -1;
 
 	switch (params->bandwidth) {

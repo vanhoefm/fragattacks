@@ -2408,9 +2408,9 @@ skip_ht40:
 
 	if (hostapd_set_freq_params(&vht_freq, mode->mode, freq->freq,
 				    freq->channel, freq->ht_enabled,
-				    vht_freq.vht_enabled,
+				    vht_freq.vht_enabled, 0,
 				    freq->sec_channel_offset,
-				    chwidth, seg0, seg1, vht_caps) != 0)
+				    chwidth, seg0, seg1, vht_caps, NULL) != 0)
 		return;
 
 	*freq = vht_freq;
