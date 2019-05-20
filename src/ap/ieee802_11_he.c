@@ -42,14 +42,23 @@ u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid)
 	if (hapd->iface->conf->he_phy_capab.he_su_beamformer)
 		cap->he_phy_capab_info[HE_PHYCAP_SU_BEAMFORMER_CAPAB_IDX] |=
 			HE_PHYCAP_SU_BEAMFORMER_CAPAB;
+	else
+		cap->he_phy_capab_info[HE_PHYCAP_SU_BEAMFORMER_CAPAB_IDX] &=
+			~HE_PHYCAP_SU_BEAMFORMER_CAPAB;
 
 	if (hapd->iface->conf->he_phy_capab.he_su_beamformee)
 		cap->he_phy_capab_info[HE_PHYCAP_SU_BEAMFORMEE_CAPAB_IDX] |=
 			HE_PHYCAP_SU_BEAMFORMEE_CAPAB;
+	else
+		cap->he_phy_capab_info[HE_PHYCAP_SU_BEAMFORMEE_CAPAB_IDX] &=
+			~HE_PHYCAP_SU_BEAMFORMEE_CAPAB;
 
 	if (hapd->iface->conf->he_phy_capab.he_mu_beamformer)
 		cap->he_phy_capab_info[HE_PHYCAP_MU_BEAMFORMER_CAPAB_IDX] |=
 			HE_PHYCAP_MU_BEAMFORMER_CAPAB;
+	else
+		cap->he_phy_capab_info[HE_PHYCAP_MU_BEAMFORMER_CAPAB_IDX] &=
+			~HE_PHYCAP_MU_BEAMFORMER_CAPAB;
 
 	pos += sizeof(*cap);
 
