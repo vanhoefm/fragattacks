@@ -607,7 +607,7 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 
 	bw = num_chan_to_bw(n_chans);
 
-	/* TODO: VHT80+80. Update acs_adjust_vht_center_freq() too. */
+	/* TODO: VHT80+80. Update acs_adjust_center_freq() too. */
 
 	wpa_printf(MSG_DEBUG,
 		   "ACS: Survey analysis for selected bandwidth %d MHz", bw);
@@ -783,7 +783,7 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 }
 
 
-static void acs_adjust_vht_center_freq(struct hostapd_iface *iface)
+static void acs_adjust_center_freq(struct hostapd_iface *iface)
 {
 	int offset;
 
@@ -863,8 +863,8 @@ static void acs_study(struct hostapd_iface *iface)
 
 	iface->conf->channel = ideal_chan->chan;
 
-	if (iface->conf->ieee80211ac)
-		acs_adjust_vht_center_freq(iface);
+	if (iface->conf->ieee80211ac || iface->conf->ieee80211ax)
+		acs_adjust_center_freq(iface);
 
 	err = 0;
 fail:
