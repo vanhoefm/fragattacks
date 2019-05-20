@@ -5548,17 +5548,17 @@ static int parse_freq(int chwidth, int freq2)
 	if (freq2 < 0)
 		return -1;
 	if (freq2)
-		return VHT_CHANWIDTH_80P80MHZ;
+		return CHANWIDTH_80P80MHZ;
 
 	switch (chwidth) {
 	case 0:
 	case 20:
 	case 40:
-		return VHT_CHANWIDTH_USE_HT;
+		return CHANWIDTH_USE_HT;
 	case 80:
-		return VHT_CHANWIDTH_80MHZ;
+		return CHANWIDTH_80MHZ;
 	case 160:
-		return VHT_CHANWIDTH_160MHZ;
+		return CHANWIDTH_160MHZ;
 	default:
 		wpa_printf(MSG_DEBUG, "Unknown max oper bandwidth: %d",
 			   chwidth);

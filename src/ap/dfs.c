@@ -30,15 +30,15 @@ static int dfs_get_used_n_chans(struct hostapd_iface *iface, int *seg1)
 
 	if (iface->conf->ieee80211ac) {
 		switch (iface->conf->vht_oper_chwidth) {
-		case VHT_CHANWIDTH_USE_HT:
+		case CHANWIDTH_USE_HT:
 			break;
-		case VHT_CHANWIDTH_80MHZ:
+		case CHANWIDTH_80MHZ:
 			n_chans = 4;
 			break;
-		case VHT_CHANWIDTH_160MHZ:
+		case CHANWIDTH_160MHZ:
 			n_chans = 8;
 			break;
-		case VHT_CHANWIDTH_80P80MHZ:
+		case CHANWIDTH_80P80MHZ:
 			n_chans = 4;
 			*seg1 = 4;
 			break;
@@ -247,7 +247,7 @@ static void dfs_adjust_vht_center_freq(struct hostapd_iface *iface,
 	*vht_oper_centr_freq_seg1_idx = 0;
 
 	switch (iface->conf->vht_oper_chwidth) {
-	case VHT_CHANWIDTH_USE_HT:
+	case CHANWIDTH_USE_HT:
 		if (secondary_channel == 1)
 			*vht_oper_centr_freq_seg0_idx = chan->chan + 2;
 		else if (secondary_channel == -1)
@@ -255,10 +255,10 @@ static void dfs_adjust_vht_center_freq(struct hostapd_iface *iface,
 		else
 			*vht_oper_centr_freq_seg0_idx = chan->chan;
 		break;
-	case VHT_CHANWIDTH_80MHZ:
+	case CHANWIDTH_80MHZ:
 		*vht_oper_centr_freq_seg0_idx = chan->chan + 6;
 		break;
-	case VHT_CHANWIDTH_160MHZ:
+	case CHANWIDTH_160MHZ:
 		*vht_oper_centr_freq_seg0_idx = chan->chan + 14;
 		break;
 	default:
@@ -291,17 +291,17 @@ static int dfs_get_start_chan_idx(struct hostapd_iface *iface, int *seg1_start)
 	/* VHT */
 	if (iface->conf->ieee80211ac) {
 		switch (iface->conf->vht_oper_chwidth) {
-		case VHT_CHANWIDTH_USE_HT:
+		case CHANWIDTH_USE_HT:
 			break;
-		case VHT_CHANWIDTH_80MHZ:
+		case CHANWIDTH_80MHZ:
 			channel_no =
 				iface->conf->vht_oper_centr_freq_seg0_idx - 6;
 			break;
-		case VHT_CHANWIDTH_160MHZ:
+		case CHANWIDTH_160MHZ:
 			channel_no =
 				iface->conf->vht_oper_centr_freq_seg0_idx - 14;
 			break;
-		case VHT_CHANWIDTH_80P80MHZ:
+		case CHANWIDTH_80P80MHZ:
 			channel_no =
 				iface->conf->vht_oper_centr_freq_seg0_idx - 6;
 			chan_seg1 =

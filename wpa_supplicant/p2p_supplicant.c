@@ -5476,7 +5476,7 @@ exit_free:
  * @ht40: Start GO with 40 MHz channel width
  * @vht:  Start GO with VHT support
  * @vht_chwidth: Channel width supported by GO operating with VHT support
- *	(VHT_CHANWIDTH_*).
+ *	(CHANWIDTH_*).
  * @group_ssid: Specific Group SSID for join or %NULL if not set
  * @group_ssid_len: Length of @group_ssid in octets
  * Returns: 0 or new PIN (if pin was %NULL) on success, -1 on unspecified
@@ -9193,11 +9193,11 @@ static int wpas_p2p_move_go_csa(struct wpa_supplicant *wpa_s)
 		csa_settings.freq_params.center_freq2 = freq2;
 
 		switch (conf->vht_oper_chwidth) {
-		case VHT_CHANWIDTH_80MHZ:
-		case VHT_CHANWIDTH_80P80MHZ:
+		case CHANWIDTH_80MHZ:
+		case CHANWIDTH_80P80MHZ:
 			csa_settings.freq_params.bandwidth = 80;
 			break;
-		case VHT_CHANWIDTH_160MHZ:
+		case CHANWIDTH_160MHZ:
 			csa_settings.freq_params.bandwidth = 160;
 			break;
 		}

@@ -808,19 +808,19 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 
 	switch (width) {
 	case CHAN_WIDTH_80:
-		chwidth = VHT_CHANWIDTH_80MHZ;
+		chwidth = CHANWIDTH_80MHZ;
 		break;
 	case CHAN_WIDTH_80P80:
-		chwidth = VHT_CHANWIDTH_80P80MHZ;
+		chwidth = CHANWIDTH_80P80MHZ;
 		break;
 	case CHAN_WIDTH_160:
-		chwidth = VHT_CHANWIDTH_160MHZ;
+		chwidth = CHANWIDTH_160MHZ;
 		break;
 	case CHAN_WIDTH_20_NOHT:
 	case CHAN_WIDTH_20:
 	case CHAN_WIDTH_40:
 	default:
-		chwidth = VHT_CHANWIDTH_USE_HT;
+		chwidth = CHANWIDTH_USE_HT;
 		break;
 	}
 
@@ -964,24 +964,24 @@ void hostapd_acs_channel_selected(struct hostapd_data *hapd,
 		/* set defaults for backwards compatibility */
 		hapd->iconf->vht_oper_centr_freq_seg1_idx = 0;
 		hapd->iconf->vht_oper_centr_freq_seg0_idx = 0;
-		hapd->iconf->vht_oper_chwidth = VHT_CHANWIDTH_USE_HT;
+		hapd->iconf->vht_oper_chwidth = CHANWIDTH_USE_HT;
 		if (acs_res->ch_width == 80) {
 			hapd->iconf->vht_oper_centr_freq_seg0_idx =
 				acs_res->vht_seg0_center_ch;
-			hapd->iconf->vht_oper_chwidth = VHT_CHANWIDTH_80MHZ;
+			hapd->iconf->vht_oper_chwidth = CHANWIDTH_80MHZ;
 		} else if (acs_res->ch_width == 160) {
 			if (acs_res->vht_seg1_center_ch == 0) {
 				hapd->iconf->vht_oper_centr_freq_seg0_idx =
 					acs_res->vht_seg0_center_ch;
 				hapd->iconf->vht_oper_chwidth =
-					VHT_CHANWIDTH_160MHZ;
+					CHANWIDTH_160MHZ;
 			} else {
 				hapd->iconf->vht_oper_centr_freq_seg0_idx =
 					acs_res->vht_seg0_center_ch;
 				hapd->iconf->vht_oper_centr_freq_seg1_idx =
 					acs_res->vht_seg1_center_ch;
 				hapd->iconf->vht_oper_chwidth =
-					VHT_CHANWIDTH_80P80MHZ;
+					CHANWIDTH_80P80MHZ;
 			}
 		}
 	}

@@ -145,13 +145,13 @@ static enum nr_chan_width hostapd_get_nr_chan_width(struct hostapd_data *hapd,
 		return NR_CHAN_WIDTH_20;
 	if (!hapd->iconf->secondary_channel)
 		return NR_CHAN_WIDTH_20;
-	if (!vht || hapd->iconf->vht_oper_chwidth == VHT_CHANWIDTH_USE_HT)
+	if (!vht || hapd->iconf->vht_oper_chwidth == CHANWIDTH_USE_HT)
 		return NR_CHAN_WIDTH_40;
-	if (hapd->iconf->vht_oper_chwidth == VHT_CHANWIDTH_80MHZ)
+	if (hapd->iconf->vht_oper_chwidth == CHANWIDTH_80MHZ)
 		return NR_CHAN_WIDTH_80;
-	if (hapd->iconf->vht_oper_chwidth == VHT_CHANWIDTH_160MHZ)
+	if (hapd->iconf->vht_oper_chwidth == CHANWIDTH_160MHZ)
 		return NR_CHAN_WIDTH_160;
-	if (hapd->iconf->vht_oper_chwidth == VHT_CHANWIDTH_80P80MHZ)
+	if (hapd->iconf->vht_oper_chwidth == CHANWIDTH_80P80MHZ)
 		return NR_CHAN_WIDTH_80P80;
 	return NR_CHAN_WIDTH_20;
 }

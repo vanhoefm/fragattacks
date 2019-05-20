@@ -3227,16 +3227,16 @@ static int hostapd_change_config_freq(struct hostapd_data *hapd,
 	case 0:
 	case 20:
 	case 40:
-		conf->vht_oper_chwidth = VHT_CHANWIDTH_USE_HT;
+		conf->vht_oper_chwidth = CHANWIDTH_USE_HT;
 		break;
 	case 80:
 		if (params->center_freq2)
-			conf->vht_oper_chwidth = VHT_CHANWIDTH_80P80MHZ;
+			conf->vht_oper_chwidth = CHANWIDTH_80P80MHZ;
 		else
-			conf->vht_oper_chwidth = VHT_CHANWIDTH_80MHZ;
+			conf->vht_oper_chwidth = CHANWIDTH_80MHZ;
 		break;
 	case 160:
-		conf->vht_oper_chwidth = VHT_CHANWIDTH_160MHZ;
+		conf->vht_oper_chwidth = CHANWIDTH_160MHZ;
 		break;
 	default:
 		return -1;
@@ -3271,15 +3271,15 @@ static int hostapd_fill_csa_settings(struct hostapd_data *hapd,
 	switch (settings->freq_params.bandwidth) {
 	case 80:
 		if (settings->freq_params.center_freq2)
-			vht_bandwidth = VHT_CHANWIDTH_80P80MHZ;
+			vht_bandwidth = CHANWIDTH_80P80MHZ;
 		else
-			vht_bandwidth = VHT_CHANWIDTH_80MHZ;
+			vht_bandwidth = CHANWIDTH_80MHZ;
 		break;
 	case 160:
-		vht_bandwidth = VHT_CHANWIDTH_160MHZ;
+		vht_bandwidth = CHANWIDTH_160MHZ;
 		break;
 	default:
-		vht_bandwidth = VHT_CHANWIDTH_USE_HT;
+		vht_bandwidth = CHANWIDTH_USE_HT;
 		break;
 	}
 
@@ -3393,7 +3393,7 @@ void
 hostapd_switch_channel_fallback(struct hostapd_iface *iface,
 				const struct hostapd_freq_params *freq_params)
 {
-	int vht_seg0_idx = 0, vht_seg1_idx = 0, vht_bw = VHT_CHANWIDTH_USE_HT;
+	int vht_seg0_idx = 0, vht_seg1_idx = 0, vht_bw = CHANWIDTH_USE_HT;
 
 	wpa_printf(MSG_DEBUG, "Restarting all CSA-related BSSes");
 
@@ -3406,16 +3406,16 @@ hostapd_switch_channel_fallback(struct hostapd_iface *iface,
 	case 0:
 	case 20:
 	case 40:
-		vht_bw = VHT_CHANWIDTH_USE_HT;
+		vht_bw = CHANWIDTH_USE_HT;
 		break;
 	case 80:
 		if (freq_params->center_freq2)
-			vht_bw = VHT_CHANWIDTH_80P80MHZ;
+			vht_bw = CHANWIDTH_80P80MHZ;
 		else
-			vht_bw = VHT_CHANWIDTH_80MHZ;
+			vht_bw = CHANWIDTH_80MHZ;
 		break;
 	case 160:
-		vht_bw = VHT_CHANWIDTH_160MHZ;
+		vht_bw = CHANWIDTH_160MHZ;
 		break;
 	default:
 		wpa_printf(MSG_WARNING, "Unknown CSA bandwidth: %d",

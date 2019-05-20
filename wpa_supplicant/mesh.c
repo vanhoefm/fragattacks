@@ -334,14 +334,14 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 		if (ssid->max_oper_chwidth != DEFAULT_MAX_OPER_CHWIDTH)
 			conf->vht_oper_chwidth = ssid->max_oper_chwidth;
 		switch (conf->vht_oper_chwidth) {
-		case VHT_CHANWIDTH_80MHZ:
-		case VHT_CHANWIDTH_80P80MHZ:
+		case CHANWIDTH_80MHZ:
+		case CHANWIDTH_80P80MHZ:
 			ieee80211_freq_to_chan(
 				frequency,
 				&conf->vht_oper_centr_freq_seg0_idx);
 			conf->vht_oper_centr_freq_seg0_idx += ssid->ht40 * 2;
 			break;
-		case VHT_CHANWIDTH_160MHZ:
+		case CHANWIDTH_160MHZ:
 			ieee80211_freq_to_chan(
 				frequency,
 				&conf->vht_oper_centr_freq_seg0_idx);
@@ -465,18 +465,18 @@ int wpa_supplicant_join_mesh(struct wpa_supplicant *wpa_s,
 		switch (params->freq.bandwidth) {
 		case 80:
 			if (params->freq.center_freq2) {
-				ssid->max_oper_chwidth = VHT_CHANWIDTH_80P80MHZ;
+				ssid->max_oper_chwidth = CHANWIDTH_80P80MHZ;
 				ssid->vht_center_freq2 =
 					params->freq.center_freq2;
 			} else {
-				ssid->max_oper_chwidth = VHT_CHANWIDTH_80MHZ;
+				ssid->max_oper_chwidth = CHANWIDTH_80MHZ;
 			}
 			break;
 		case 160:
-			ssid->max_oper_chwidth = VHT_CHANWIDTH_160MHZ;
+			ssid->max_oper_chwidth = CHANWIDTH_160MHZ;
 			break;
 		default:
-			ssid->max_oper_chwidth = VHT_CHANWIDTH_USE_HT;
+			ssid->max_oper_chwidth = CHANWIDTH_USE_HT;
 			break;
 		}
 	}

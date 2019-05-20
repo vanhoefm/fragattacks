@@ -932,12 +932,12 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 	/* Note: VHT20 is defined by combination of ht_capab & vht_oper_chwidth
 	 */
 	if (hapd->iface->conf->ieee80211ac && params.ht40_enabled) {
-		if (hapd->iface->conf->vht_oper_chwidth == VHT_CHANWIDTH_80MHZ)
+		if (hapd->iface->conf->vht_oper_chwidth == CHANWIDTH_80MHZ)
 			params.ch_width = 80;
 		else if (hapd->iface->conf->vht_oper_chwidth ==
-			 VHT_CHANWIDTH_160MHZ ||
+			 CHANWIDTH_160MHZ ||
 			 hapd->iface->conf->vht_oper_chwidth ==
-			 VHT_CHANWIDTH_80P80MHZ)
+			 CHANWIDTH_80P80MHZ)
 			params.ch_width = 160;
 	}
 

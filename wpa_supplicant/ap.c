@@ -67,7 +67,7 @@ static void wpas_conf_ap_vht(struct wpa_supplicant *wpa_s,
 
 	if (!ssid->p2p_group) {
 		if (!ssid->vht_center_freq1 ||
-		    conf->vht_oper_chwidth == VHT_CHANWIDTH_USE_HT)
+		    conf->vht_oper_chwidth == CHANWIDTH_USE_HT)
 			goto no_vht;
 		ieee80211_freq_to_chan(ssid->vht_center_freq1,
 				       &conf->vht_oper_centr_freq_seg0_idx);
@@ -78,14 +78,14 @@ static void wpas_conf_ap_vht(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_P2P
 	switch (conf->vht_oper_chwidth) {
-	case VHT_CHANWIDTH_80MHZ:
-	case VHT_CHANWIDTH_80P80MHZ:
+	case CHANWIDTH_80MHZ:
+	case CHANWIDTH_80P80MHZ:
 		center_chan = wpas_p2p_get_vht80_center(wpa_s, mode, channel);
 		wpa_printf(MSG_DEBUG,
 			   "VHT center channel %u for 80 or 80+80 MHz bandwidth",
 			   center_chan);
 		break;
-	case VHT_CHANWIDTH_160MHZ:
+	case CHANWIDTH_160MHZ:
 		center_chan = wpas_p2p_get_vht160_center(wpa_s, mode, channel);
 		wpa_printf(MSG_DEBUG,
 			   "VHT center channel %u for 160 MHz bandwidth",
@@ -97,14 +97,14 @@ static void wpas_conf_ap_vht(struct wpa_supplicant *wpa_s,
 		 * try oper_cwidth 160 MHz first then VHT 80 MHz, if 160 MHz is
 		 * not supported.
 		 */
-		conf->vht_oper_chwidth = VHT_CHANWIDTH_160MHZ;
+		conf->vht_oper_chwidth = CHANWIDTH_160MHZ;
 		center_chan = wpas_p2p_get_vht160_center(wpa_s, mode, channel);
 		if (center_chan) {
 			wpa_printf(MSG_DEBUG,
 				   "VHT center channel %u for auto-selected 160 MHz bandwidth",
 				   center_chan);
 		} else {
-			conf->vht_oper_chwidth = VHT_CHANWIDTH_80MHZ;
+			conf->vht_oper_chwidth = CHANWIDTH_80MHZ;
 			center_chan = wpas_p2p_get_vht80_center(wpa_s, mode,
 								channel);
 			wpa_printf(MSG_DEBUG,
@@ -128,7 +128,7 @@ no_vht:
 		   conf->channel);
 	conf->vht_oper_centr_freq_seg0_idx =
 		conf->channel + conf->secondary_channel * 2;
-	conf->vht_oper_chwidth = VHT_CHANWIDTH_USE_HT;
+	conf->vht_oper_chwidth = CHANWIDTH_USE_HT;
 }
 #endif /* CONFIG_IEEE80211N */
 

@@ -2355,11 +2355,11 @@ skip_ht40:
 			return;
 	}
 
-	chwidth = VHT_CHANWIDTH_80MHZ;
+	chwidth = CHANWIDTH_80MHZ;
 	seg0 = vht80[j] + 6;
 	seg1 = 0;
 
-	if (ssid->max_oper_chwidth == VHT_CHANWIDTH_80P80MHZ) {
+	if (ssid->max_oper_chwidth == CHANWIDTH_80P80MHZ) {
 		/* setup center_freq2, bandwidth */
 		for (k = 0; k < ARRAY_SIZE(vht80); k++) {
 			/* Only accept 80 MHz segments separated by a gap */
@@ -2378,27 +2378,27 @@ skip_ht40:
 					continue;
 
 				/* Found a suitable second segment for 80+80 */
-				chwidth = VHT_CHANWIDTH_80P80MHZ;
+				chwidth = CHANWIDTH_80P80MHZ;
 				vht_caps |=
 					VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ;
 				seg1 = vht80[k] + 6;
 			}
 
-			if (chwidth == VHT_CHANWIDTH_80P80MHZ)
+			if (chwidth == CHANWIDTH_80P80MHZ)
 				break;
 		}
-	} else if (ssid->max_oper_chwidth == VHT_CHANWIDTH_160MHZ) {
+	} else if (ssid->max_oper_chwidth == CHANWIDTH_160MHZ) {
 		if (freq->freq == 5180) {
-			chwidth = VHT_CHANWIDTH_160MHZ;
+			chwidth = CHANWIDTH_160MHZ;
 			vht_caps |= VHT_CAP_SUPP_CHAN_WIDTH_160MHZ;
 			seg0 = 50;
 		} else if (freq->freq == 5520) {
-			chwidth = VHT_CHANWIDTH_160MHZ;
+			chwidth = CHANWIDTH_160MHZ;
 			vht_caps |= VHT_CAP_SUPP_CHAN_WIDTH_160MHZ;
 			seg0 = 114;
 		}
-	} else if (ssid->max_oper_chwidth == VHT_CHANWIDTH_USE_HT) {
-		chwidth = VHT_CHANWIDTH_USE_HT;
+	} else if (ssid->max_oper_chwidth == CHANWIDTH_USE_HT) {
+		chwidth = CHANWIDTH_USE_HT;
 		seg0 = vht80[j] + 2;
 #ifdef CONFIG_HT_OVERRIDES
 		if (ssid->disable_ht40)

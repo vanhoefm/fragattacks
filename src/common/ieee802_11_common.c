@@ -706,7 +706,7 @@ enum hostapd_hw_mode ieee80211_freq_to_chan(int freq, u8 *channel)
 {
 	u8 op_class;
 
-	return ieee80211_freq_to_channel_ext(freq, 0, VHT_CHANWIDTH_USE_HT,
+	return ieee80211_freq_to_channel_ext(freq, 0, CHANWIDTH_USE_HT,
 					     &op_class, channel);
 }
 
@@ -716,7 +716,7 @@ enum hostapd_hw_mode ieee80211_freq_to_chan(int freq, u8 *channel)
  * for HT40 and VHT. DFS channels are not covered.
  * @freq: Frequency (MHz) to convert
  * @sec_channel: 0 = non-HT40, 1 = sec. channel above, -1 = sec. channel below
- * @vht: VHT channel width (VHT_CHANWIDTH_*)
+ * @vht: VHT channel width (CHANWIDTH_*)
  * @op_class: Buffer for returning operating class
  * @channel: Buffer for returning channel number
  * Returns: hw_mode on success, NUM_HOSTAPD_MODES on failure
@@ -771,13 +771,13 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 	}
 
 	switch (vht) {
-	case VHT_CHANWIDTH_80MHZ:
+	case CHANWIDTH_80MHZ:
 		vht_opclass = 128;
 		break;
-	case VHT_CHANWIDTH_160MHZ:
+	case CHANWIDTH_160MHZ:
 		vht_opclass = 129;
 		break;
-	case VHT_CHANWIDTH_80P80MHZ:
+	case CHANWIDTH_80P80MHZ:
 		vht_opclass = 130;
 		break;
 	default:
@@ -896,16 +896,16 @@ int ieee80211_chaninfo_to_channel(unsigned int freq, enum chan_width chanwidth,
 	case CHAN_WIDTH_20_NOHT:
 	case CHAN_WIDTH_20:
 	case CHAN_WIDTH_40:
-		vht = VHT_CHANWIDTH_USE_HT;
+		vht = CHANWIDTH_USE_HT;
 		break;
 	case CHAN_WIDTH_80:
-		vht = VHT_CHANWIDTH_80MHZ;
+		vht = CHANWIDTH_80MHZ;
 		break;
 	case CHAN_WIDTH_80P80:
-		vht = VHT_CHANWIDTH_80P80MHZ;
+		vht = CHANWIDTH_80P80MHZ;
 		break;
 	case CHAN_WIDTH_160:
-		vht = VHT_CHANWIDTH_160MHZ;
+		vht = CHANWIDTH_160MHZ;
 		break;
 	}
 
