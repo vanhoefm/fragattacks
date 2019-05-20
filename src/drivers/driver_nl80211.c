@@ -8750,6 +8750,35 @@ static int wpa_driver_nl80211_update_ft_ies(void *priv, const u8 *md,
 }
 
 
+static int nl80211_update_dh_ie(void *priv, const u8 *peer_mac,
+				u16 reason_code, const u8 *ie, size_t ie_len)
+{
+	int ret;
+	struct nl_msg *msg;
+	struct i802_bss *bss = priv;
+	struct wpa_driver_nl80211_data *drv = bss->drv;
+
+	wpa_printf(MSG_DEBUG, "nl80211: Updating DH IE peer: " MACSTR
+		   " reason %u", MAC2STR(peer_mac), reason_code);
+	if (!(msg = nl80211_bss_msg(bss, 0, NL80211_CMD_UPDATE_OWE_INFO)) ||
+	    nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN, peer_mac) ||
+	    nla_put_u16(msg, NL80211_ATTR_STATUS_CODE, reason_code) ||
+	    (ie && nla_put(msg, NL80211_ATTR_IE, ie_len, ie))) {
+		nlmsg_free(msg);
+		return -ENOBUFS;
+	}
+
+	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
+	if (ret) {
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: update_dh_ie failed err=%d (%s)",
+			   ret, strerror(-ret));
+	}
+
+	return ret;
+}
+
+
 static const u8 * wpa_driver_nl80211_get_macaddr(void *priv)
 {
 	struct i802_bss *bss = priv;
@@ -11052,6 +11081,7 @@ const struct wpa_driver_ops wpa_driver_nl80211_ops = {
 	.tdls_disable_channel_switch = nl80211_tdls_disable_channel_switch,
 #endif /* CONFIG_TDLS */
 	.update_ft_ies = wpa_driver_nl80211_update_ft_ies,
+	.update_dh_ie = nl80211_update_dh_ie,
 	.get_mac_addr = wpa_driver_nl80211_get_macaddr,
 	.get_survey = wpa_driver_nl80211_get_survey,
 	.status = wpa_driver_nl80211_status,

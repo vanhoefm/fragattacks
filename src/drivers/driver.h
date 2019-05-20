@@ -4220,6 +4220,21 @@ struct wpa_driver_ops {
 	 * Returns: 0 on success, < 0 on failure
 	 */
 	int (*set_4addr_mode)(void *priv, const char *bridge_ifname, int val);
+
+	/**
+	 * update_dh_ie - Update DH IE
+	 * @priv: Private driver interface data
+	 * @peer_mac: Peer MAC address
+	 * @reason_code: Reacon code
+	 * @ie: DH IE
+	 * @ie_len: DH IE length in bytes
+	 * Returns: 0 on success, -1 on failure
+	 *
+	 * This callback is used to let the driver know the DH processing result
+	 * and DH IE for a pending association.
+	 */
+	int (*update_dh_ie)(void *priv, const u8 *peer_mac, u16 reason_code,
+			    const u8 *ie, size_t ie_len);
 };
 
 /**
@@ -4765,6 +4780,11 @@ enum wpa_event_type {
 	 * This event is emitted when an interface is added/removed for WDS STA.
 	 */
 	EVENT_WDS_STA_INTERFACE_STATUS,
+
+	/**
+	  * EVENT_UPDATE_DH - Notification of updated DH information
+	  */
+	EVENT_UPDATE_DH,
 };
 
 
@@ -5598,6 +5618,15 @@ union wpa_event_data {
 			INTERFACE_REMOVED
 		} istatus;
 	} wds_sta_interface;
+
+	/**
+	 * struct update_dh - Data for EVENT_UPDATE_DH
+	 */
+	struct update_dh {
+		const u8 *peer;
+		const u8 *ie;
+		size_t ie_len;
+	} update_dh;
 };
 
 /**
