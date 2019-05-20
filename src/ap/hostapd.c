@@ -3303,10 +3303,11 @@ static int hostapd_fill_csa_settings(struct hostapd_data *hapd,
 		    &hapd->iface->cs_oper_class,
 		    &chan) == NUM_HOSTAPD_MODES) {
 		wpa_printf(MSG_DEBUG,
-			   "invalid frequency for channel switch (freq=%d, sec_channel_offset=%d, vht_enabled=%d)",
+			   "invalid frequency for channel switch (freq=%d, sec_channel_offset=%d, vht_enabled=%d, he_enabled=%d)",
 			   settings->freq_params.freq,
 			   settings->freq_params.sec_channel_offset,
-			   settings->freq_params.vht_enabled);
+			   settings->freq_params.vht_enabled,
+			   settings->freq_params.he_enabled);
 		return -1;
 	}
 
@@ -3444,6 +3445,7 @@ hostapd_switch_channel_fallback(struct hostapd_iface *iface,
 	hostapd_set_oper_chwidth(iface->conf, bw);
 	iface->conf->ieee80211n = freq_params->ht_enabled;
 	iface->conf->ieee80211ac = freq_params->vht_enabled;
+	iface->conf->ieee80211ax = freq_params->he_enabled;
 
 	/*
 	 * cs_params must not be cleared earlier because the freq_params
