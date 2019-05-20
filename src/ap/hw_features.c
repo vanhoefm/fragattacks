@@ -655,6 +655,14 @@ static int ieee80211ac_supported_vht_capab(struct hostapd_iface *iface)
 }
 #endif /* CONFIG_IEEE80211AC */
 
+
+#ifdef CONFIG_IEEE80211AX
+static int ieee80211ax_supported_he_capab(struct hostapd_iface *iface)
+{
+	return 1;
+}
+#endif /* CONFIG_IEEE80211AX */
+
 #endif /* CONFIG_IEEE80211N */
 
 
@@ -675,6 +683,11 @@ int hostapd_check_ht_capab(struct hostapd_iface *iface)
 
 	if (!ieee80211n_supported_ht_capab(iface))
 		return -1;
+#ifdef CONFIG_IEEE80211AX
+	if (iface->conf->ieee80211ax &&
+	    !ieee80211ax_supported_he_capab(iface))
+		return -1;
+#endif /* CONFIG_IEEE80211AX */
 #ifdef CONFIG_IEEE80211AC
 	if (iface->conf->ieee80211ac &&
 	    !ieee80211ac_supported_vht_capab(iface))
