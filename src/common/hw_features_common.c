@@ -362,7 +362,7 @@ int hostapd_set_freq_params(struct hostapd_freq_params *data,
 			    enum hostapd_hw_mode mode,
 			    int freq, int channel, int ht_enabled,
 			    int vht_enabled, int sec_channel_offset,
-			    int vht_oper_chwidth, int center_segment0,
+			    int oper_chwidth, int center_segment0,
 			    int center_segment1, u32 vht_caps)
 {
 	os_memset(data, 0, sizeof(*data));
@@ -376,7 +376,7 @@ int hostapd_set_freq_params(struct hostapd_freq_params *data,
 	data->center_freq2 = 0;
 	data->bandwidth = sec_channel_offset ? 40 : 20;
 
-	if (data->vht_enabled) switch (vht_oper_chwidth) {
+	if (data->vht_enabled) switch (oper_chwidth) {
 	case CHANWIDTH_USE_HT:
 		if (center_segment1 ||
 		    (center_segment0 != 0 &&
@@ -397,9 +397,9 @@ int hostapd_set_freq_params(struct hostapd_freq_params *data,
 		/* fall through */
 	case CHANWIDTH_80MHZ:
 		data->bandwidth = 80;
-		if ((vht_oper_chwidth == CHANWIDTH_80MHZ &&
+		if ((oper_chwidth == CHANWIDTH_80MHZ &&
 		     center_segment1) ||
-		    (vht_oper_chwidth == CHANWIDTH_80P80MHZ &&
+		    (oper_chwidth == CHANWIDTH_80P80MHZ &&
 		     !center_segment1) ||
 		    !sec_channel_offset)
 			return -1;
