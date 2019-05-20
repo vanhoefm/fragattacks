@@ -863,12 +863,14 @@ int hostapd_select_hw_mode(struct hostapd_iface *iface)
 		return -1;
 
 	if ((iface->conf->hw_mode == HOSTAPD_MODE_IEEE80211G ||
-	     iface->conf->ieee80211n || iface->conf->ieee80211ac) &&
+	     iface->conf->ieee80211n || iface->conf->ieee80211ac ||
+	     iface->conf->ieee80211ax) &&
 	    iface->conf->channel == 14) {
-		wpa_printf(MSG_INFO, "Disable OFDM/HT/VHT on channel 14");
+		wpa_printf(MSG_INFO, "Disable OFDM/HT/VHT/HE on channel 14");
 		iface->conf->hw_mode = HOSTAPD_MODE_IEEE80211B;
 		iface->conf->ieee80211n = 0;
 		iface->conf->ieee80211ac = 0;
+		iface->conf->ieee80211ax = 0;
 	}
 
 	iface->current_mode = NULL;
