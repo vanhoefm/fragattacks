@@ -274,6 +274,10 @@ static int ieee802_11_parse_extension(const u8 *pos, size_t elen,
 		elems->he_capabilities = pos;
 		elems->he_capabilities_len = elen;
 		break;
+	case WLAN_EID_EXT_HE_OPERATION:
+		elems->he_operation = pos;
+		elems->he_operation_len = elen;
+		break;
 	case WLAN_EID_EXT_OCV_OCI:
 		elems->oci = pos;
 		elems->oci_len = elen;
