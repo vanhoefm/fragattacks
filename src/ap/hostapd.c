@@ -261,11 +261,14 @@ int hostapd_reload_config(struct hostapd_iface *iface)
 		hapd->iconf->ieee80211ac = oldconf->ieee80211ac;
 		hapd->iconf->ht_capab = oldconf->ht_capab;
 		hapd->iconf->vht_capab = oldconf->vht_capab;
-		hapd->iconf->vht_oper_chwidth = oldconf->vht_oper_chwidth;
-		hapd->iconf->vht_oper_centr_freq_seg0_idx =
-			oldconf->vht_oper_centr_freq_seg0_idx;
-		hapd->iconf->vht_oper_centr_freq_seg1_idx =
-			oldconf->vht_oper_centr_freq_seg1_idx;
+		hostapd_set_oper_chwidth(hapd->iconf,
+					 hostapd_get_oper_chwidth(oldconf));
+		hostapd_set_oper_centr_freq_seg0_idx(
+			hapd->iconf,
+			hostapd_get_oper_centr_freq_seg0_idx(oldconf));
+		hostapd_set_oper_centr_freq_seg1_idx(
+			hapd->iconf,
+			hostapd_get_oper_centr_freq_seg1_idx(oldconf));
 		hapd->conf = newconf->bss[j];
 		hostapd_reload_bss(hapd);
 	}
@@ -1866,9 +1869,11 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
 				     hapd->iconf->ieee80211n,
 				     hapd->iconf->ieee80211ac,
 				     hapd->iconf->secondary_channel,
-				     hapd->iconf->vht_oper_chwidth,
-				     hapd->iconf->vht_oper_centr_freq_seg0_idx,
-				     hapd->iconf->vht_oper_centr_freq_seg1_idx)) {
+				     hostapd_get_oper_chwidth(hapd->iconf),
+				     hostapd_get_oper_centr_freq_seg0_idx(
+					     hapd->iconf),
+				     hostapd_get_oper_centr_freq_seg1_idx(
+					     hapd->iconf))) {
 			wpa_printf(MSG_ERROR, "Could not set channel for "
 				   "kernel driver");
 			goto fail;
@@ -3200,6 +3205,7 @@ static int hostapd_change_config_freq(struct hostapd_data *hapd,
 				      struct hostapd_freq_params *old_params)
 {
 	int channel;
+	u8 seg0, seg1;
 
 	if (!params->channel) {
 		/* check if the new channel is supported by hw */
@@ -3217,9 +3223,9 @@ static int hostapd_change_config_freq(struct hostapd_data *hapd,
 				    conf->channel, conf->ieee80211n,
 				    conf->ieee80211ac,
 				    conf->secondary_channel,
-				    conf->vht_oper_chwidth,
-				    conf->vht_oper_centr_freq_seg0_idx,
-				    conf->vht_oper_centr_freq_seg1_idx,
+				    hostapd_get_oper_chwidth(conf),
+				    hostapd_get_oper_centr_freq_seg0_idx(conf),
+				    hostapd_get_oper_centr_freq_seg1_idx(conf),
 				    conf->vht_capab))
 		return -1;
 
@@ -3227,16 +3233,16 @@ static int hostapd_change_config_freq(struct hostapd_data *hapd,
 	case 0:
 	case 20:
 	case 40:
-		conf->vht_oper_chwidth = CHANWIDTH_USE_HT;
+		hostapd_set_oper_chwidth(conf, CHANWIDTH_USE_HT);
 		break;
 	case 80:
 		if (params->center_freq2)
-			conf->vht_oper_chwidth = CHANWIDTH_80P80MHZ;
+			hostapd_set_oper_chwidth(conf, CHANWIDTH_80P80MHZ);
 		else
-			conf->vht_oper_chwidth = CHANWIDTH_80MHZ;
+			hostapd_set_oper_chwidth(conf, CHANWIDTH_80MHZ);
 		break;
 	case 160:
-		conf->vht_oper_chwidth = CHANWIDTH_160MHZ;
+		hostapd_set_oper_chwidth(conf, CHANWIDTH_160MHZ);
 		break;
 	default:
 		return -1;
@@ -3246,9 +3252,11 @@ static int hostapd_change_config_freq(struct hostapd_data *hapd,
 	conf->ieee80211n = params->ht_enabled;
 	conf->secondary_channel = params->sec_channel_offset;
 	ieee80211_freq_to_chan(params->center_freq1,
-			       &conf->vht_oper_centr_freq_seg0_idx);
+			       &seg0);
 	ieee80211_freq_to_chan(params->center_freq2,
-			       &conf->vht_oper_centr_freq_seg1_idx);
+			       &seg1);
+	hostapd_set_oper_centr_freq_seg0_idx(conf, seg0);
+	hostapd_set_oper_centr_freq_seg1_idx(conf, seg1);
 
 	/* TODO: maybe call here hostapd_config_check here? */
 
@@ -3426,9 +3434,9 @@ hostapd_switch_channel_fallback(struct hostapd_iface *iface,
 	iface->freq = freq_params->freq;
 	iface->conf->channel = freq_params->channel;
 	iface->conf->secondary_channel = freq_params->sec_channel_offset;
-	iface->conf->vht_oper_centr_freq_seg0_idx = seg0_idx;
-	iface->conf->vht_oper_centr_freq_seg1_idx = seg1_idx;
-	iface->conf->vht_oper_chwidth = bw;
+	hostapd_set_oper_centr_freq_seg0_idx(iface->conf, seg0_idx);
+	hostapd_set_oper_centr_freq_seg1_idx(iface->conf, seg1_idx);
+	hostapd_set_oper_chwidth(iface->conf, bw);
 	iface->conf->ieee80211n = freq_params->ht_enabled;
 	iface->conf->ieee80211ac = freq_params->vht_enabled;
 

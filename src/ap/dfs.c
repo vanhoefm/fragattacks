@@ -29,7 +29,7 @@ static int dfs_get_used_n_chans(struct hostapd_iface *iface, int *seg1)
 		n_chans = 2;
 
 	if (iface->conf->ieee80211ac) {
-		switch (iface->conf->vht_oper_chwidth) {
+		switch (hostapd_get_oper_chwidth(iface->conf)) {
 		case CHANWIDTH_USE_HT:
 			break;
 		case CHANWIDTH_80MHZ:
@@ -188,8 +188,8 @@ static int is_in_chanlist(struct hostapd_iface *iface,
  * The function assumes HT40+ operation.
  * Make sure to adjust the following variables after calling this:
  *  - hapd->secondary_channel
- *  - hapd->vht_oper_centr_freq_seg0_idx
- *  - hapd->vht_oper_centr_freq_seg1_idx
+ *  - hapd->vht/he_oper_centr_freq_seg0_idx
+ *  - hapd->vht/he_oper_centr_freq_seg1_idx
  */
 static int dfs_find_channel(struct hostapd_iface *iface,
 			    struct hostapd_channel_data **ret_chan,
@@ -246,7 +246,7 @@ static void dfs_adjust_center_freq(struct hostapd_iface *iface,
 
 	*oper_centr_freq_seg1_idx = 0;
 
-	switch (iface->conf->vht_oper_chwidth) {
+	switch (hostapd_get_oper_chwidth(iface->conf)) {
 	case CHANWIDTH_USE_HT:
 		if (secondary_channel == 1)
 			*oper_centr_freq_seg0_idx = chan->chan + 2;
@@ -290,22 +290,22 @@ static int dfs_get_start_chan_idx(struct hostapd_iface *iface, int *seg1_start)
 
 	/* VHT */
 	if (iface->conf->ieee80211ac) {
-		switch (iface->conf->vht_oper_chwidth) {
+		switch (hostapd_get_oper_chwidth(iface->conf)) {
 		case CHANWIDTH_USE_HT:
 			break;
 		case CHANWIDTH_80MHZ:
-			channel_no =
-				iface->conf->vht_oper_centr_freq_seg0_idx - 6;
+			channel_no = hostapd_get_oper_centr_freq_seg0_idx(
+				iface->conf) - 6;
 			break;
 		case CHANWIDTH_160MHZ:
-			channel_no =
-				iface->conf->vht_oper_centr_freq_seg0_idx - 14;
+			channel_no = hostapd_get_oper_centr_freq_seg0_idx(
+				iface->conf) - 14;
 			break;
 		case CHANWIDTH_80P80MHZ:
-			channel_no =
-				iface->conf->vht_oper_centr_freq_seg0_idx - 6;
-			chan_seg1 =
-				iface->conf->vht_oper_centr_freq_seg1_idx - 6;
+			channel_no = hostapd_get_oper_centr_freq_seg0_idx(
+				iface->conf) - 6;
+			chan_seg1 = hostapd_get_oper_centr_freq_seg1_idx(
+				iface->conf) - 6;
 			break;
 		default:
 			wpa_printf(MSG_INFO,
@@ -348,7 +348,7 @@ static int dfs_get_start_chan_idx(struct hostapd_iface *iface, int *seg1_start)
 			   mode->num_channels, channel_no, iface->conf->channel,
 			   iface->conf->ieee80211n,
 			   iface->conf->secondary_channel,
-			   iface->conf->vht_oper_chwidth);
+			   hostapd_get_oper_chwidth(iface->conf));
 
 		for (i = 0; i < mode->num_channels; i++) {
 			wpa_printf(MSG_DEBUG, "Available channel: %d",
@@ -724,8 +724,8 @@ int hostapd_handle_dfs(struct hostapd_iface *iface)
 			iface->freq = channel->freq;
 			iface->conf->channel = channel->chan;
 			iface->conf->secondary_channel = sec;
-			iface->conf->vht_oper_centr_freq_seg0_idx = cf1;
-			iface->conf->vht_oper_centr_freq_seg1_idx = cf2;
+			hostapd_set_oper_centr_freq_seg0_idx(iface->conf, cf1);
+			hostapd_set_oper_centr_freq_seg1_idx(iface->conf, cf2);
 		}
 	} while (res);
 
@@ -736,20 +736,18 @@ int hostapd_handle_dfs(struct hostapd_iface *iface)
 		"freq=%d chan=%d sec_chan=%d, width=%d, seg0=%d, seg1=%d, cac_time=%ds",
 		iface->freq,
 		iface->conf->channel, iface->conf->secondary_channel,
-		iface->conf->vht_oper_chwidth,
-		iface->conf->vht_oper_centr_freq_seg0_idx,
-		iface->conf->vht_oper_centr_freq_seg1_idx,
+		hostapd_get_oper_chwidth(iface->conf),
+		hostapd_get_oper_centr_freq_seg0_idx(iface->conf),
+		hostapd_get_oper_centr_freq_seg1_idx(iface->conf),
 		iface->dfs_cac_ms / 1000);
 
-	res = hostapd_start_dfs_cac(iface, iface->conf->hw_mode,
-				    iface->freq,
-				    iface->conf->channel,
-				    iface->conf->ieee80211n,
-				    iface->conf->ieee80211ac,
-				    iface->conf->secondary_channel,
-				    iface->conf->vht_oper_chwidth,
-				    iface->conf->vht_oper_centr_freq_seg0_idx,
-				    iface->conf->vht_oper_centr_freq_seg1_idx);
+	res = hostapd_start_dfs_cac(
+		iface, iface->conf->hw_mode, iface->freq, iface->conf->channel,
+		iface->conf->ieee80211n, iface->conf->ieee80211ac,
+		iface->conf->secondary_channel,
+		hostapd_get_oper_chwidth(iface->conf),
+		hostapd_get_oper_centr_freq_seg0_idx(iface->conf),
+		hostapd_get_oper_centr_freq_seg1_idx(iface->conf));
 
 	if (res) {
 		wpa_printf(MSG_ERROR, "DFS start_dfs_cac() failed, %d", res);
@@ -868,8 +866,10 @@ static int hostapd_dfs_start_channel_switch_cac(struct hostapd_iface *iface)
 	iface->freq = channel->freq;
 	iface->conf->channel = channel->chan;
 	iface->conf->secondary_channel = secondary_channel;
-	iface->conf->vht_oper_centr_freq_seg0_idx = oper_centr_freq_seg0_idx;
-	iface->conf->vht_oper_centr_freq_seg1_idx = oper_centr_freq_seg1_idx;
+	hostapd_set_oper_centr_freq_seg0_idx(iface->conf,
+					     oper_centr_freq_seg0_idx);
+	hostapd_set_oper_centr_freq_seg1_idx(iface->conf,
+					     oper_centr_freq_seg1_idx);
 	err = 0;
 
 	hostapd_setup_interface_complete(iface, err);
@@ -934,10 +934,10 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 		iface->freq = channel->freq;
 		iface->conf->channel = channel->chan;
 		iface->conf->secondary_channel = secondary_channel;
-		iface->conf->vht_oper_centr_freq_seg0_idx =
-			oper_centr_freq_seg0_idx;
-		iface->conf->vht_oper_centr_freq_seg1_idx =
-			oper_centr_freq_seg1_idx;
+		hostapd_set_oper_centr_freq_seg0_idx(iface->conf,
+						     oper_centr_freq_seg0_idx);
+		hostapd_set_oper_centr_freq_seg1_idx(iface->conf,
+						     oper_centr_freq_seg1_idx);
 
 		hostapd_disable_iface(iface);
 		hostapd_enable_iface(iface);
@@ -961,7 +961,7 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 				      iface->conf->ieee80211n,
 				      iface->conf->ieee80211ac,
 				      secondary_channel,
-				      iface->conf->vht_oper_chwidth,
+				      hostapd_get_oper_chwidth(iface->conf),
 				      oper_centr_freq_seg0_idx,
 				      oper_centr_freq_seg1_idx,
 				      iface->current_mode->vht_capab);
@@ -984,10 +984,10 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 		iface->freq = channel->freq;
 		iface->conf->channel = channel->chan;
 		iface->conf->secondary_channel = secondary_channel;
-		iface->conf->vht_oper_centr_freq_seg0_idx =
-			oper_centr_freq_seg0_idx;
-		iface->conf->vht_oper_centr_freq_seg1_idx =
-			oper_centr_freq_seg1_idx;
+		hostapd_set_oper_centr_freq_seg0_idx(iface->conf,
+						     oper_centr_freq_seg0_idx);
+		hostapd_set_oper_centr_freq_seg1_idx(iface->conf,
+						     oper_centr_freq_seg1_idx);
 
 		hostapd_disable_iface(iface);
 		hostapd_enable_iface(iface);

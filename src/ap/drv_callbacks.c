@@ -853,9 +853,9 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 	hapd->iconf->ch_switch_vht_config = 0;
 
 	hapd->iconf->secondary_channel = offset;
-	hapd->iconf->vht_oper_chwidth = chwidth;
-	hapd->iconf->vht_oper_centr_freq_seg0_idx = seg0_idx;
-	hapd->iconf->vht_oper_centr_freq_seg1_idx = seg1_idx;
+	hostapd_set_oper_chwidth(hapd->iconf, chwidth);
+	hostapd_set_oper_centr_freq_seg0_idx(hapd->iconf, seg0_idx);
+	hostapd_set_oper_centr_freq_seg1_idx(hapd->iconf, seg1_idx);
 
 	is_dfs = ieee80211_is_dfs(freq, hapd->iface->hw_features,
 				  hapd->iface->num_hw_features);
@@ -962,26 +962,29 @@ void hostapd_acs_channel_selected(struct hostapd_data *hapd,
 
 	if (hapd->iface->conf->ieee80211ac) {
 		/* set defaults for backwards compatibility */
-		hapd->iconf->vht_oper_centr_freq_seg1_idx = 0;
-		hapd->iconf->vht_oper_centr_freq_seg0_idx = 0;
-		hapd->iconf->vht_oper_chwidth = CHANWIDTH_USE_HT;
+		hostapd_set_oper_centr_freq_seg1_idx(hapd->iconf, 0);
+		hostapd_set_oper_centr_freq_seg0_idx(hapd->iconf, 0);
+		hostapd_set_oper_chwidth(hapd->iconf, CHANWIDTH_USE_HT);
 		if (acs_res->ch_width == 80) {
-			hapd->iconf->vht_oper_centr_freq_seg0_idx =
-				acs_res->vht_seg0_center_ch;
-			hapd->iconf->vht_oper_chwidth = CHANWIDTH_80MHZ;
+			hostapd_set_oper_centr_freq_seg0_idx(
+				hapd->iconf, acs_res->vht_seg0_center_ch);
+			hostapd_set_oper_chwidth(hapd->iconf, CHANWIDTH_80MHZ);
 		} else if (acs_res->ch_width == 160) {
 			if (acs_res->vht_seg1_center_ch == 0) {
-				hapd->iconf->vht_oper_centr_freq_seg0_idx =
-					acs_res->vht_seg0_center_ch;
-				hapd->iconf->vht_oper_chwidth =
-					CHANWIDTH_160MHZ;
+				hostapd_set_oper_centr_freq_seg0_idx(
+					hapd->iconf,
+					acs_res->vht_seg0_center_ch);
+				hostapd_set_oper_chwidth(hapd->iconf,
+							 CHANWIDTH_160MHZ);
 			} else {
-				hapd->iconf->vht_oper_centr_freq_seg0_idx =
-					acs_res->vht_seg0_center_ch;
-				hapd->iconf->vht_oper_centr_freq_seg1_idx =
-					acs_res->vht_seg1_center_ch;
-				hapd->iconf->vht_oper_chwidth =
-					CHANWIDTH_80P80MHZ;
+				hostapd_set_oper_centr_freq_seg0_idx(
+					hapd->iconf,
+					acs_res->vht_seg0_center_ch);
+				hostapd_set_oper_centr_freq_seg1_idx(
+					hapd->iconf,
+					acs_res->vht_seg1_center_ch);
+				hostapd_set_oper_chwidth(hapd->iconf,
+							 CHANWIDTH_80P80MHZ);
 			}
 		}
 	}

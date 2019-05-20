@@ -911,6 +911,68 @@ struct hostapd_config {
 };
 
 
+static inline u8 hostapd_get_oper_chwidth(struct hostapd_config *conf)
+{
+#ifdef CONFIG_IEEE80211AX
+	if (conf->ieee80211ax)
+		return conf->he_oper_chwidth;
+#endif /* CONFIG_IEEE80211AX */
+	return conf->vht_oper_chwidth;
+}
+
+static inline void
+hostapd_set_oper_chwidth(struct hostapd_config *conf, u8 oper_chwidth)
+{
+#ifdef CONFIG_IEEE80211AX
+	if (conf->ieee80211ax)
+		conf->he_oper_chwidth = oper_chwidth;
+#endif /* CONFIG_IEEE80211AX */
+	conf->vht_oper_chwidth = oper_chwidth;
+}
+
+static inline u8
+hostapd_get_oper_centr_freq_seg0_idx(struct hostapd_config *conf)
+{
+#ifdef CONFIG_IEEE80211AX
+	if (conf->ieee80211ax)
+		return conf->he_oper_centr_freq_seg0_idx;
+#endif /* CONFIG_IEEE80211AX */
+	return conf->vht_oper_centr_freq_seg0_idx;
+}
+
+static inline void
+hostapd_set_oper_centr_freq_seg0_idx(struct hostapd_config *conf,
+				     u8 oper_centr_freq_seg0_idx)
+{
+#ifdef CONFIG_IEEE80211AX
+	if (conf->ieee80211ax)
+		conf->he_oper_centr_freq_seg0_idx = oper_centr_freq_seg0_idx;
+#endif /* CONFIG_IEEE80211AX */
+	conf->vht_oper_centr_freq_seg0_idx = oper_centr_freq_seg0_idx;
+}
+
+static inline u8
+hostapd_get_oper_centr_freq_seg1_idx(struct hostapd_config *conf)
+{
+#ifdef CONFIG_IEEE80211AX
+	if (conf->ieee80211ax)
+		return conf->he_oper_centr_freq_seg1_idx;
+#endif /* CONFIG_IEEE80211AX */
+	return conf->vht_oper_centr_freq_seg1_idx;
+}
+
+static inline void
+hostapd_set_oper_centr_freq_seg1_idx(struct hostapd_config *conf,
+				     u8 oper_centr_freq_seg1_idx)
+{
+#ifdef CONFIG_IEEE80211AX
+	if (conf->ieee80211ax)
+		conf->he_oper_centr_freq_seg1_idx = oper_centr_freq_seg1_idx;
+#endif /* CONFIG_IEEE80211AX */
+	conf->vht_oper_centr_freq_seg1_idx = oper_centr_freq_seg1_idx;
+}
+
+
 int hostapd_mac_comp(const void *a, const void *b);
 struct hostapd_config * hostapd_config_defaults(void);
 void hostapd_config_defaults_bss(struct hostapd_bss_config *bss);

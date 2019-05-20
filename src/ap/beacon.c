@@ -347,7 +347,7 @@ static u8 * hostapd_eid_supported_op_classes(struct hostapd_data *hapd, u8 *eid)
 
 	if (ieee80211_freq_to_channel_ext(hapd->iface->freq,
 					  hapd->iconf->secondary_channel,
-					  hapd->iconf->vht_oper_chwidth,
+					  hostapd_get_oper_chwidth(hapd->iconf),
 					  &op_class, &channel) ==
 	    NUM_HOSTAPD_MODES)
 		return eid;
@@ -1426,9 +1426,9 @@ int ieee802_11_set_beacon(struct hostapd_data *hapd)
 				    iconf->channel, iconf->ieee80211n,
 				    iconf->ieee80211ac,
 				    iconf->secondary_channel,
-				    iconf->vht_oper_chwidth,
-				    iconf->vht_oper_centr_freq_seg0_idx,
-				    iconf->vht_oper_centr_freq_seg1_idx,
+				    hostapd_get_oper_chwidth(iconf),
+				    hostapd_get_oper_centr_freq_seg0_idx(iconf),
+				    hostapd_get_oper_centr_freq_seg1_idx(iconf),
 				    iface->current_mode->vht_capab) == 0)
 		params.freq = &freq;
 
