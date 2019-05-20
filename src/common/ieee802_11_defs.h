@@ -2105,8 +2105,9 @@ enum nr_chan_width {
 struct ieee80211_he_capabilities {
 	u8 he_mac_capab_info[6];
 	u8 he_phy_capab_info[11];
-	u8 he_txrx_mcs_support[12]; /* TODO: 4, 8, or 12 octets */
-	/* PPE Thresholds (optional) */
+	/* Followed by 4, 8, or 12 octets of Supported HE-MCS And NSS Set field
+	* and optional variable length PPE Thresholds field. */
+	u8 optional[];
 } STRUCT_PACKED;
 
 struct ieee80211_he_operation {
@@ -2135,12 +2136,29 @@ struct ieee80211_spatial_reuse {
 } STRUCT_PACKED;
 
 /* HE Capabilities Information defines */
+
+#define HE_PHYCAP_CHANNEL_WIDTH_SET_IDX		0
+#define HE_PHYCAP_CHANNEL_WIDTH_MASK		((u8) (BIT(1) | BIT(2) | \
+						      BIT(3) | BIT(4)))
+#define HE_PHYCAP_CHANNEL_WIDTH_SET_40MHZ_IN_2G         ((u8) BIT(1))
+#define HE_PHYCAP_CHANNEL_WIDTH_SET_40MHZ_80MHZ_IN_5G	((u8) BIT(2))
+#define HE_PHYCAP_CHANNEL_WIDTH_SET_160MHZ_IN_5G	((u8) BIT(3))
+#define HE_PHYCAP_CHANNEL_WIDTH_SET_80PLUS80MHZ_IN_5G	((u8) BIT(4))
+
 #define HE_PHYCAP_SU_BEAMFORMER_CAPAB_IDX	3
 #define HE_PHYCAP_SU_BEAMFORMER_CAPAB		((u8) BIT(7))
 #define HE_PHYCAP_SU_BEAMFORMEE_CAPAB_IDX	4
 #define HE_PHYCAP_SU_BEAMFORMEE_CAPAB		((u8) BIT(0))
 #define HE_PHYCAP_MU_BEAMFORMER_CAPAB_IDX	4
 #define HE_PHYCAP_MU_BEAMFORMER_CAPAB		((u8) BIT(1))
+
+#define HE_PHYCAP_PPE_THRESHOLD_PRESENT_IDX	6
+#define HE_PHYCAP_PPE_THRESHOLD_PRESENT		((u8) BIT(7))
+
+/* HE PPE Threshold define */
+#define HE_PPE_THRES_RU_INDEX_BITMASK_MASK	0xf
+#define HE_PPE_THRES_RU_INDEX_BITMASK_SHIFT	3
+#define HE_PPE_THRES_NSS_MASK			0x7
 
 /* HE Operation defines */
 /* HE Operation Parameters and BSS Color Information fields */

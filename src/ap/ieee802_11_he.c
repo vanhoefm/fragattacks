@@ -16,17 +16,69 @@
 #include "ieee802_11.h"
 #include "dfs.h"
 
+static u8 ieee80211_he_ppet_size(u8 ppe_thres_hdr, const u8 *phy_cap_info)
+{
+	u8 sz = 0, ru;
+
+	if ((phy_cap_info[HE_PHYCAP_PPE_THRESHOLD_PRESENT_IDX] &
+	     HE_PHYCAP_PPE_THRESHOLD_PRESENT_IDX) == 0)
+		return 0;
+
+	ru = (ppe_thres_hdr >> HE_PPE_THRES_RU_INDEX_BITMASK_SHIFT) &
+		HE_PPE_THRES_RU_INDEX_BITMASK_MASK;
+	while (ru) {
+		if (ru & 0x1)
+			sz++;
+		ru >>= 1;
+	}
+
+	sz *= 1 + (ppe_thres_hdr & HE_PPE_THRES_NSS_MASK);
+	sz = (sz * 6) + 7;
+	if (sz % 8)
+		sz += 8;
+	sz /= 8;
+
+	return sz;
+}
+
+
 u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid)
 {
 	struct ieee80211_he_capabilities *cap;
 	struct hostapd_hw_modes *mode = hapd->iface->current_mode;
+	u8 he_oper_chwidth = ~HE_PHYCAP_CHANNEL_WIDTH_MASK;
 	u8 *pos = eid;
+	u8 ie_size = 0, mcs_nss_size = 0, ppet_size = 0;
 
 	if (!mode)
 		return eid;
 
+	ie_size = sizeof(struct ieee80211_he_capabilities);
+	ppet_size = ieee80211_he_ppet_size(mode->he_capab.ppet[0],
+					   mode->he_capab.phy_cap);
+
+	switch (hapd->iface->conf->he_oper_chwidth) {
+	case CHANWIDTH_80P80MHZ:
+		he_oper_chwidth |=
+			HE_PHYCAP_CHANNEL_WIDTH_SET_80PLUS80MHZ_IN_5G;
+		mcs_nss_size += 4;
+		/* fall through */
+	case CHANWIDTH_160MHZ:
+		he_oper_chwidth |= HE_PHYCAP_CHANNEL_WIDTH_SET_160MHZ_IN_5G;
+		mcs_nss_size += 4;
+		/* fall through */
+	case CHANWIDTH_80MHZ:
+	case CHANWIDTH_USE_HT:
+		he_oper_chwidth |= HE_PHYCAP_CHANNEL_WIDTH_SET_40MHZ_IN_2G |
+			HE_PHYCAP_CHANNEL_WIDTH_SET_40MHZ_80MHZ_IN_5G;
+		mcs_nss_size += 4;
+		break;
+	}
+
+	ie_size += mcs_nss_size + ppet_size;
+
 	*pos++ = WLAN_EID_EXTENSION;
-	*pos++ = 1 + sizeof(struct ieee80211_he_capabilities);
+	*pos++ = 1 + ie_size;
 	*pos++ = WLAN_EID_EXT_HE_CAPABILITIES;
 
 	cap = (struct ieee80211_he_capabilities *) pos;
@@ -36,8 +88,10 @@ u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid)
 		  HE_MAX_MAC_CAPAB_SIZE);
 	os_memcpy(cap->he_phy_capab_info, mode->he_capab.phy_cap,
 		  HE_MAX_PHY_CAPAB_SIZE);
-	os_memcpy(cap->he_txrx_mcs_support, mode->he_capab.mcs,
-		  HE_MAX_MCS_CAPAB_SIZE);
+	os_memcpy(cap->optional, mode->he_capab.mcs, mcs_nss_size);
+	if (ppet_size)
+		os_memcpy(&cap->optional[mcs_nss_size], mode->he_capab.ppet,
+			  ppet_size);
 
 	if (hapd->iface->conf->he_phy_capab.he_su_beamformer)
 		cap->he_phy_capab_info[HE_PHYCAP_SU_BEAMFORMER_CAPAB_IDX] |=
@@ -60,7 +114,10 @@ u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid)
 		cap->he_phy_capab_info[HE_PHYCAP_MU_BEAMFORMER_CAPAB_IDX] &=
 			~HE_PHYCAP_MU_BEAMFORMER_CAPAB;
 
-	pos += sizeof(*cap);
+	cap->he_phy_capab_info[HE_PHYCAP_CHANNEL_WIDTH_SET_IDX] &=
+		he_oper_chwidth;
+
+	pos += ie_size;
 
 	return pos;
 }
