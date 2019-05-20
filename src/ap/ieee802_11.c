@@ -2325,7 +2325,8 @@ static void handle_auth(struct hostapd_data *hapd,
 				WLAN_STA_AUTHORIZED);
 
 		if (hostapd_sta_add(hapd, sta->addr, 0, 0, NULL, 0, 0,
-				    NULL, NULL, sta->flags, 0, 0, 0, 0)) {
+				    NULL, NULL, NULL, 0,
+				    sta->flags, 0, 0, 0, 0)) {
 			hostapd_logger(hapd, sta->addr,
 				       HOSTAPD_MODULE_IEEE80211,
 				       HOSTAPD_LEVEL_NOTICE,
@@ -2866,6 +2867,14 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 			return resp;
 	}
 #endif /* CONFIG_IEEE80211AC */
+#ifdef CONFIG_IEEE80211AX
+	if (hapd->iconf->ieee80211ax) {
+		resp = copy_sta_he_capab(hapd, sta, elems.he_capabilities,
+					 elems.he_capabilities_len);
+		if (resp != WLAN_STATUS_SUCCESS)
+			return resp;
+	}
+#endif /* CONFIG_IEEE80211AX */
 
 #ifdef CONFIG_P2P
 	if (elems.p2p) {
@@ -3228,6 +3237,7 @@ static int add_associated_sta(struct hostapd_data *hapd,
 {
 	struct ieee80211_ht_capabilities ht_cap;
 	struct ieee80211_vht_capabilities vht_cap;
+	struct ieee80211_he_capabilities he_cap;
 	int set = 1;
 
 	/*
@@ -3280,6 +3290,12 @@ static int add_associated_sta(struct hostapd_data *hapd,
 	if (sta->flags & WLAN_STA_VHT)
 		hostapd_get_vht_capab(hapd, sta->vht_capabilities, &vht_cap);
 #endif /* CONFIG_IEEE80211AC */
+#ifdef CONFIG_IEEE80211AX
+	if (sta->flags & WLAN_STA_HE) {
+		hostapd_get_he_capab(hapd, sta->he_capab, &he_cap,
+				     sta->he_capab_len);
+	}
+#endif /* CONFIG_IEEE80211AX */
 
 	/*
 	 * Add the station with forced WLAN_STA_ASSOC flag. The sta->flags
@@ -3291,6 +3307,8 @@ static int add_associated_sta(struct hostapd_data *hapd,
 			    sta->listen_interval,
 			    sta->flags & WLAN_STA_HT ? &ht_cap : NULL,
 			    sta->flags & WLAN_STA_VHT ? &vht_cap : NULL,
+			    sta->flags & WLAN_STA_HE ? &he_cap : NULL,
+			    sta->flags & WLAN_STA_HE ? sta->he_capab_len : 0,
 			    sta->flags | WLAN_STA_ASSOC, sta->qosinfo,
 			    sta->vht_opmode, sta->p2p_ie ? 1 : 0,
 			    set)) {
@@ -3441,6 +3459,15 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 		p = hostapd_eid_vht_operation(hapd, p);
 	}
 #endif /* CONFIG_IEEE80211AC */
+
+#ifdef CONFIG_IEEE80211AX
+	if (hapd->iconf->ieee80211ax) {
+		p = hostapd_eid_he_capab(hapd, p);
+		p = hostapd_eid_he_operation(hapd, p);
+		p = hostapd_eid_spatial_reuse(hapd, p);
+		p = hostapd_eid_he_mu_edca_parameter_set(hapd, p);
+	}
+#endif /* CONFIG_IEEE80211AX */
 
 	p = hostapd_eid_ext_capab(hapd, p);
 	p = hostapd_eid_bss_max_idle_period(hapd, p);

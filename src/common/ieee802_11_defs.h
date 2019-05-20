@@ -1280,6 +1280,8 @@ struct ieee80211_ampe_ie {
 #define CHANWIDTH_160MHZ	2
 #define CHANWIDTH_80P80MHZ	3
 
+#define HE_NSS_MAX_STREAMS			    8
+
 #define OUI_MICROSOFT 0x0050f2 /* Microsoft (also used in Wi-Fi specs)
 				* 00:50:F2 */
 #define WPA_IE_VENDOR_TYPE 0x0050f201

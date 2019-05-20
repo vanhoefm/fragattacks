@@ -71,6 +71,10 @@ void hostapd_get_ht_capab(struct hostapd_data *hapd,
 void hostapd_get_vht_capab(struct hostapd_data *hapd,
 			   struct ieee80211_vht_capabilities *vht_cap,
 			   struct ieee80211_vht_capabilities *neg_vht_cap);
+void hostapd_get_he_capab(struct hostapd_data *hapd,
+			  const struct ieee80211_he_capabilities *he_cap,
+			  struct ieee80211_he_capabilities *neg_he_cap,
+			  size_t he_capab_len);
 int hostapd_get_aid(struct hostapd_data *hapd, struct sta_info *sta);
 u16 copy_sta_ht_capab(struct hostapd_data *hapd, struct sta_info *sta,
 		      const u8 *ht_capab);
@@ -86,6 +90,8 @@ u16 copy_sta_vht_oper(struct hostapd_data *hapd, struct sta_info *sta,
 		      const u8 *vht_oper);
 u16 set_sta_vht_opmode(struct hostapd_data *hapd, struct sta_info *sta,
 		       const u8 *vht_opmode);
+u16 copy_sta_he_capab(struct hostapd_data *hapd, struct sta_info *sta,
+		      const u8 *he_capab, size_t he_capab_len);
 void hostapd_tx_status(struct hostapd_data *hapd, const u8 *addr,
 		       const u8 *buf, size_t len, int ack);
 void hostapd_eapol_tx_status(struct hostapd_data *hapd, const u8 *dst,

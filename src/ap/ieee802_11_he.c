@@ -1,6 +1,7 @@
 /*
  * hostapd / IEEE 802.11ax HE
  * Copyright (c) 2016-2017, Qualcomm Atheros, Inc.
+ * Copyright (c) 2019 John Crispin <john@phrozen.org>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -13,6 +14,7 @@
 #include "hostapd.h"
 #include "ap_config.h"
 #include "beacon.h"
+#include "sta_info.h"
 #include "ieee802_11.h"
 #include "dfs.h"
 
@@ -235,4 +237,105 @@ u8 * hostapd_eid_spatial_reuse(struct hostapd_data *hapd, u8 *eid)
 	}
 
 	return pos;
+}
+
+
+void hostapd_get_he_capab(struct hostapd_data *hapd,
+			  const struct ieee80211_he_capabilities *he_cap,
+			  struct ieee80211_he_capabilities *neg_he_cap,
+			  size_t he_capab_len)
+{
+	if (!he_cap)
+		return;
+
+	if (he_capab_len > sizeof(*neg_he_cap))
+		he_capab_len = sizeof(*neg_he_cap);
+	/* TODO: mask out unsupported features */
+
+	os_memcpy(neg_he_cap, he_cap, he_capab_len);
+}
+
+
+static int check_valid_he_mcs(struct hostapd_data *hapd, const u8 *sta_he_capab)
+{
+	u16 sta_rx_mcs_set, ap_tx_mcs_set;
+	u8 mcs_count = 0;
+	const u16 *ap_mcs_set, *sta_mcs_set;
+	int i;
+
+	if (!hapd->iface->current_mode)
+		return 1;
+	ap_mcs_set = (u16 *) hapd->iface->current_mode->he_capab.mcs;
+	sta_mcs_set = (u16 *) ((const struct ieee80211_he_capabilities *)
+			       sta_he_capab)->optional;
+
+	/*
+	 * Disable HE capabilities for STAs for which there is not even a single
+	 * allowed MCS in any supported number of streams, i.e., STA is
+	 * advertising 3 (not supported) as HE MCS rates for all supported
+	 * band/stream cases.
+	 */
+	switch (hapd->iface->conf->he_oper_chwidth) {
+	case CHANWIDTH_80P80MHZ:
+		mcs_count = 3;
+		break;
+	case CHANWIDTH_160MHZ:
+		mcs_count = 2;
+		break;
+	default:
+		mcs_count = 1;
+		break;
+	}
+
+	for (i = 0; i < mcs_count; i++) {
+		int j;
+
+		/* AP Tx MCS map vs. STA Rx MCS map */
+		sta_rx_mcs_set = WPA_GET_LE16((const u8 *) &sta_mcs_set[i * 2]);
+		ap_tx_mcs_set = WPA_GET_LE16((const u8 *)
+					     &ap_mcs_set[(i * 2) + 1]);
+
+		for (j = 0; j < HE_NSS_MAX_STREAMS; j++) {
+			if (((ap_tx_mcs_set >> (j * 2)) & 0x3) == 3)
+				continue;
+
+			if (((sta_rx_mcs_set >> (j * 2)) & 0x3) == 3)
+				continue;
+
+			return 1;
+		}
+	}
+
+	wpa_printf(MSG_DEBUG,
+		   "No matching HE MCS found between AP TX and STA RX");
+
+	return 0;
+}
+
+
+u16 copy_sta_he_capab(struct hostapd_data *hapd, struct sta_info *sta,
+		      const u8 *he_capab, size_t he_capab_len)
+{
+	if (!he_capab || !hapd->iconf->ieee80211ax ||
+	    !check_valid_he_mcs(hapd, he_capab) ||
+	    he_capab_len > sizeof(struct ieee80211_he_capabilities)) {
+		sta->flags &= ~WLAN_STA_HE;
+		os_free(sta->he_capab);
+		sta->he_capab = NULL;
+		return WLAN_STATUS_SUCCESS;
+	}
+
+	if (!sta->he_capab) {
+		sta->he_capab =
+			os_zalloc(sizeof(struct ieee80211_he_capabilities));
+		if (!sta->he_capab)
+			return WLAN_STATUS_UNSPECIFIED_FAILURE;
+	}
+
+	sta->flags |= WLAN_STA_HE;
+	os_memset(sta->he_capab, 0, sizeof(struct ieee80211_he_capabilities));
+	os_memcpy(sta->he_capab, he_capab, he_capab_len);
+	sta->he_capab_len = he_capab_len;
+
+	return WLAN_STATUS_SUCCESS;
 }
