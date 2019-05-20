@@ -4348,10 +4348,11 @@ static int nl80211_put_freq_params(struct nl_msg *msg,
 	if (nla_put_u32(msg, NL80211_ATTR_WIPHY_FREQ, freq->freq))
 		return -ENOBUFS;
 
+	wpa_printf(MSG_DEBUG, "  * he_enabled=%d", freq->he_enabled);
 	wpa_printf(MSG_DEBUG, "  * vht_enabled=%d", freq->vht_enabled);
 	wpa_printf(MSG_DEBUG, "  * ht_enabled=%d", freq->ht_enabled);
 
-	if (freq->vht_enabled) {
+	if (freq->vht_enabled || freq->he_enabled) {
 		enum nl80211_chan_width cw;
 
 		wpa_printf(MSG_DEBUG, "  * bandwidth=%d", freq->bandwidth);
@@ -4426,8 +4427,8 @@ static int nl80211_set_channel(struct i802_bss *bss,
 	int ret;
 
 	wpa_printf(MSG_DEBUG,
-		   "nl80211: Set freq %d (ht_enabled=%d, vht_enabled=%d, bandwidth=%d MHz, cf1=%d MHz, cf2=%d MHz)",
-		   freq->freq, freq->ht_enabled, freq->vht_enabled,
+		   "nl80211: Set freq %d (ht_enabled=%d, vht_enabled=%d, he_enabled=%d, bandwidth=%d MHz, cf1=%d MHz, cf2=%d MHz)",
+		   freq->freq, freq->ht_enabled, freq->vht_enabled, freq->he_enabled,
 		   freq->bandwidth, freq->center_freq1, freq->center_freq2);
 
 	msg = nl80211_drv_msg(drv, 0, set_chan ? NL80211_CMD_SET_CHANNEL :
@@ -8421,8 +8422,8 @@ static int nl80211_start_radar_detection(void *priv,
 	struct nl_msg *msg;
 	int ret;
 
-	wpa_printf(MSG_DEBUG, "nl80211: Start radar detection (CAC) %d MHz (ht_enabled=%d, vht_enabled=%d, bandwidth=%d MHz, cf1=%d MHz, cf2=%d MHz)",
-		   freq->freq, freq->ht_enabled, freq->vht_enabled,
+	wpa_printf(MSG_DEBUG, "nl80211: Start radar detection (CAC) %d MHz (ht_enabled=%d, vht_enabled=%d, he_enabled=%d, bandwidth=%d MHz, cf1=%d MHz, cf2=%d MHz)",
+		   freq->freq, freq->ht_enabled, freq->vht_enabled, freq->he_enabled,
 		   freq->bandwidth, freq->center_freq1, freq->center_freq2);
 
 	if (!(drv->capa.flags & WPA_DRIVER_FLAGS_RADAR)) {

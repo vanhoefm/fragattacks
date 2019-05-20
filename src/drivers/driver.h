@@ -691,6 +691,11 @@ struct hostapd_freq_params {
 	int vht_enabled;
 
 	/**
+	 * he_enabled - Whether HE is enabled
+	 */
+	int he_enabled;
+
+	/**
 	 * center_freq1 - Segment 0 center frequency in MHz
 	 *
 	 * Valid for both HT and VHT.
