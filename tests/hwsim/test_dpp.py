@@ -55,6 +55,8 @@ def test_dpp_qr_code_parsing(dev, apdev):
 
     tests = ["DPP:C:81/1,115/36;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkq/24e0rsrfMP9K1Tm8gx+ovP0I=;;",
              "DPP:C:81/1,81/2,81/3,81/4,81/5,81/6,81/7,81/8,81/9,81/10,81/11,81/12,81/13,82/14,83/1,83/2,83/3,83/4,83/5,83/6,83/7,83/8,83/9,84/5,84/6,84/7,84/8,84/9,84/10,84/11,84/12,84/13,115/36;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkq/24e0rsrfMP9K1Tm8gx+ovP0I=;;",
+             "DPP:C:81/1,2,3,4,5,6,7,8,9,10,11,12,13,82/14,83/1,2,3,4,5,6,7,8,9,84/5,6,7,8,9,10,11,12,13,115/36;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkq/24e0rsrfMP9K1Tm8gx+ovP0I=;;",
+             "DPP:C:81/1,2,3;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADM2206avxHJaHXgLMkq/24e0rsrfMP9K1Tm8gx+ovP0I=;;",
              "DPP:I:SN=4774LH2b4044;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;",
              "DPP:I:;M:010203040506;K:MDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;"]
     for uri in tests:
@@ -3317,6 +3319,11 @@ def test_dpp_qr_code_chan_list_unicast(dev, apdev):
     """DPP QR Code and 2.4 GHz channels (unicast)"""
     run_dpp_qr_code_chan_list(dev, apdev, True, 2417,
                               "81/1,81/2,81/3,81/4,81/5,81/6,81/7,81/8,81/9,81/10,81/11,81/12,81/13")
+
+def test_dpp_qr_code_chan_list_unicast2(dev, apdev):
+    """DPP QR Code and 2.4 GHz channels (unicast 2)"""
+    run_dpp_qr_code_chan_list(dev, apdev, True, 2417,
+                              "81/1,2,3,4,5,6,7,8,9,10,11,12,13")
 
 def test_dpp_qr_code_chan_list_no_peer_unicast(dev, apdev):
     """DPP QR Code and channel list and no peer (unicast)"""
