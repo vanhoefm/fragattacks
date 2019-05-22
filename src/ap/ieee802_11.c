@@ -3332,6 +3332,8 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 #ifdef CONFIG_FILS
 	if (sta && sta->fils_hlp_resp)
 		buflen += wpabuf_len(sta->fils_hlp_resp);
+	if (sta)
+		buflen += 150;
 #endif /* CONFIG_FILS */
 #ifdef CONFIG_OWE
 	if (sta && (hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_OWE))
@@ -3393,6 +3395,15 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 		}
 	}
 #endif /* CONFIG_IEEE80211R_AP */
+#ifdef CONFIG_FILS
+	if (sta && status_code == WLAN_STATUS_SUCCESS &&
+	    (sta->auth_alg == WLAN_AUTH_FILS_SK ||
+	     sta->auth_alg == WLAN_AUTH_FILS_SK_PFS ||
+	     sta->auth_alg == WLAN_AUTH_FILS_PK))
+		p = wpa_auth_write_assoc_resp_fils(sta->wpa_sm, p,
+						   buf + buflen - p,
+						   ies, ies_len);
+#endif /* CONFIG_FILS */
 
 #ifdef CONFIG_OWE
 	if (sta && status_code == WLAN_STATUS_SUCCESS &&
