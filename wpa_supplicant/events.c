@@ -4059,9 +4059,18 @@ static void wpas_event_assoc_reject(struct wpa_supplicant *wpa_s,
 				    union wpa_event_data *data)
 {
 	const u8 *bssid = data->assoc_reject.bssid;
+#ifdef CONFIG_MBO
+	struct wpa_bss *reject_bss;
+#endif /* CONFIG_MBO */
 
 	if (!bssid || is_zero_ether_addr(bssid))
 		bssid = wpa_s->pending_bssid;
+#ifdef CONFIG_MBO
+	if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME)
+		reject_bss = wpa_s->current_bss;
+	else
+		reject_bss = wpa_bss_get_bssid(wpa_s, bssid);
+#endif /* CONFIG_MBO */
 
 	if (data->assoc_reject.bssid)
 		wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_ASSOC_REJECT
@@ -4112,8 +4121,7 @@ static void wpas_event_assoc_reject(struct wpa_supplicant *wpa_s,
 #ifdef CONFIG_MBO
 	if (data->assoc_reject.status_code ==
 	    WLAN_STATUS_DENIED_POOR_CHANNEL_CONDITIONS &&
-	    wpa_s->current_bss && data->assoc_reject.bssid &&
-	    data->assoc_reject.resp_ies) {
+	    reject_bss && data->assoc_reject.resp_ies) {
 		const u8 *rssi_rej;
 
 		rssi_rej = mbo_get_attr_from_ies(
@@ -4124,13 +4132,12 @@ static void wpas_event_assoc_reject(struct wpa_supplicant *wpa_s,
 			wpa_printf(MSG_DEBUG,
 				   "OCE: RSSI-based association rejection from "
 				   MACSTR " (Delta RSSI: %u, Retry Delay: %u)",
-				   MAC2STR(data->assoc_reject.bssid),
+				   MAC2STR(reject_bss->bssid),
 				   rssi_rej[2], rssi_rej[3]);
 			wpa_bss_tmp_disallow(wpa_s,
-					     data->assoc_reject.bssid,
+					     reject_bss->bssid,
 					     rssi_rej[3],
-					     rssi_rej[2] +
-					     wpa_s->current_bss->level);
+					     rssi_rej[2] + reject_bss->level);
 		}
 	}
 #endif /* CONFIG_MBO */
