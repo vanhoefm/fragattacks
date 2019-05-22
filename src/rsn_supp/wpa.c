@@ -4320,6 +4320,26 @@ int fils_process_assoc_resp(struct wpa_sm *sm, const u8 *resp, size_t len)
 			    sm->fils_session, FILS_SESSION_LEN);
 	}
 
+	if (!elems.rsn_ie) {
+		wpa_printf(MSG_DEBUG,
+			   "FILS: No RSNE in (Re)Association Response");
+		/* As an interop workaround, allow this for now since IEEE Std
+		 * 802.11ai-2016 did not include all the needed changes to make
+		 * a FILS AP include RSNE in the frame. This workaround might
+		 * eventually be removed and replaced with rejection (goto fail)
+		 * to follow a strict interpretation of the standard. */
+	} else if (wpa_compare_rsn_ie(wpa_key_mgmt_ft(sm->key_mgmt),
+				      sm->ap_rsn_ie, sm->ap_rsn_ie_len,
+				      elems.rsn_ie - 2, elems.rsn_ie_len + 2)) {
+		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
+			"FILS: RSNE mismatch between Beacon/Probe Response and (Re)Association Response");
+		wpa_hexdump(MSG_DEBUG, "FILS: RSNE in Beacon/Probe Response",
+			    sm->ap_rsn_ie, sm->ap_rsn_ie_len);
+		wpa_hexdump(MSG_DEBUG, "FILS: RSNE in (Re)Association Response",
+			    elems.rsn_ie, elems.rsn_ie_len);
+		goto fail;
+	}
+
 	/* TODO: FILS Public Key */
 
 	if (!elems.fils_key_confirm) {
