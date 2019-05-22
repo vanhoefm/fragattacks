@@ -745,17 +745,19 @@ static int dpp_clone_uri(struct dpp_bootstrap_info *bi, const char *uri)
 int dpp_parse_uri_chan_list(struct dpp_bootstrap_info *bi,
 			    const char *chan_list)
 {
-	const char *pos = chan_list;
-	int opclass, channel, freq;
+	const char *pos = chan_list, *pos2;
+	int opclass = -1, channel, freq;
 
 	while (pos && *pos && *pos != ';') {
-		opclass = atoi(pos);
+		pos2 = pos;
+		while (*pos2 >= '0' && *pos2 <= '9')
+			pos2++;
+		if (*pos2 == '/') {
+			opclass = atoi(pos);
+			pos = pos2 + 1;
+		}
 		if (opclass <= 0)
 			goto fail;
-		pos = os_strchr(pos, '/');
-		if (!pos)
-			goto fail;
-		pos++;
 		channel = atoi(pos);
 		if (channel <= 0)
 			goto fail;
