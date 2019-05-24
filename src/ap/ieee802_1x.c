@@ -2581,6 +2581,20 @@ const u8 * ieee802_1x_get_key(struct eapol_state_machine *sm, size_t *len)
 }
 
 
+#ifdef CONFIG_MACSEC
+const u8 * ieee802_1x_get_session_id(struct eapol_state_machine *sm,
+				     size_t *len)
+{
+	*len = 0;
+	if (!sm || !sm->eap_if)
+		return NULL;
+
+	*len = sm->eap_if->eapSessionIdLen;
+	return sm->eap_if->eapSessionId;
+}
+#endif /* CONFIG_MACSEC */
+
+
 void ieee802_1x_notify_port_enabled(struct eapol_state_machine *sm,
 				    int enabled)
 {
