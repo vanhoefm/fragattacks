@@ -1407,6 +1407,8 @@ static void ieee802_1x_get_keys(struct hostapd_data *hapd,
 				size_t shared_secret_len)
 {
 	struct radius_ms_mppe_keys *keys;
+	u8 *buf;
+	size_t len;
 	struct eapol_state_machine *sm = sta->eapol_sm;
 	if (sm == NULL)
 		return;
@@ -1442,6 +1444,20 @@ static void ieee802_1x_get_keys(struct hostapd_data *hapd,
 		os_free(keys->send);
 		os_free(keys->recv);
 		os_free(keys);
+	}
+
+	if (radius_msg_get_attr_ptr(msg, RADIUS_ATTR_EAP_KEY_NAME, &buf, &len,
+				    NULL) == 0) {
+		os_free(sm->eap_if->eapSessionId);
+		sm->eap_if->eapSessionId = os_memdup(buf, len);
+		if (sm->eap_if->eapSessionId) {
+			sm->eap_if->eapSessionIdLen = len;
+			wpa_hexdump(MSG_DEBUG, "EAP-Key Name",
+				    sm->eap_if->eapSessionId,
+				    sm->eap_if->eapSessionIdLen);
+		}
+	} else {
+		sm->eap_if->eapSessionIdLen = 0;
 	}
 }
 
