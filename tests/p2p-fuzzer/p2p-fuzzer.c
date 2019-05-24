@@ -52,8 +52,9 @@ static void dev_lost(void *ctx, const u8 *dev_addr)
 
 static int send_action(void *ctx, unsigned int freq, const u8 *dst,
 		       const u8 *src, const u8 *bssid, const u8 *buf,
-		       size_t len, unsigned int wait_time)
+		       size_t len, unsigned int wait_time, int *scheduled)
 {
+	*scheduled = 0;
 	return 0;
 }
 
@@ -63,7 +64,8 @@ static void send_action_done(void *ctx)
 }
 
 
-static void go_neg_req_rx(void *ctx, const u8 *src, u16 dev_passwd_id)
+static void go_neg_req_rx(void *ctx, const u8 *src, u16 dev_passwd_id,
+			  u8 go_intent)
 {
 }
 
