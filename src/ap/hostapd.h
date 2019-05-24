@@ -232,6 +232,10 @@ struct hostapd_data {
 	struct wps_stat wps_stats;
 #endif /* CONFIG_WPS */
 
+#ifdef CONFIG_MACSEC
+	struct ieee802_1x_kay *kay;
+#endif /* CONFIG_MACSEC */
+
 	struct hostapd_probereq_cb *probereq_cb;
 	size_t num_probereq_cb;
 

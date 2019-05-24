@@ -34,6 +34,7 @@
 /* FIX: Not really a good thing to require ieee802_11.h here.. (FILS) */
 #include "ieee802_11.h"
 #include "ieee802_1x.h"
+#include "wpa_auth_kay.h"
 
 
 #ifdef CONFIG_HS20
@@ -2884,6 +2885,10 @@ static void ieee802_1x_finished(struct hostapd_data *hapd,
 				       hapd, sta);
 	}
 #endif /* CONFIG_HS20 */
+
+#ifdef CONFIG_MACSEC
+	ieee802_1x_notify_create_actor_hapd(hapd, sta);
+#endif /* CONFIG_MACSEC */
 
 	key = ieee802_1x_get_key(sta->eapol_sm, &len);
 	if (sta->session_timeout_set) {

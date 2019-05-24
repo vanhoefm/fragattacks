@@ -620,6 +620,15 @@ LIBS += -ldl
 endif
 endif
 
+ifdef CONFIG_MACSEC
+CFLAGS += -DCONFIG_MACSEC
+OBJS += ../src/ap/wpa_auth_kay.o
+OBJS += ../src/pae/ieee802_1x_cp.o
+OBJS += ../src/pae/ieee802_1x_kay.o
+OBJS += ../src/pae/ieee802_1x_key.o
+OBJS += ../src/pae/ieee802_1x_secy_ops.o
+endif
+
 # Basic EAP functionality is needed for EAPOL
 OBJS += eap_register.o
 OBJS += ../src/eap_server/eap_server.o

@@ -860,6 +860,9 @@ OBJS += ../src/pae/ieee802_1x_cp.o
 OBJS += ../src/pae/ieee802_1x_kay.o
 OBJS += ../src/pae/ieee802_1x_key.o
 OBJS += ../src/pae/ieee802_1x_secy_ops.o
+ifdef CONFIG_AP
+OBJS += ../src/ap/wpa_auth_kay.o
+endif
 endif
 
 ifdef CONFIG_IEEE8021X_EAPOL

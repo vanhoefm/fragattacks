@@ -51,6 +51,7 @@
 #include "acs.h"
 #include "hs20.h"
 #include "airtime_policy.h"
+#include "wpa_auth_kay.h"
 
 
 static int hostapd_flush_old_stations(struct hostapd_data *hapd, u16 reason);
@@ -373,6 +374,7 @@ static void hostapd_free_hapd_data(struct hostapd_data *hapd)
 #endif /* CONFIG_NO_RADIUS */
 
 	hostapd_deinit_wps(hapd);
+	ieee802_1x_dealloc_kay_sm_hapd(hapd);
 #ifdef CONFIG_DPP
 	hostapd_dpp_deinit(hapd);
 	gas_query_ap_deinit(hapd->gas);
@@ -3047,6 +3049,14 @@ void hostapd_new_assoc_sta(struct hostapd_data *hapd, struct sta_info *sta,
 		eloop_register_timeout(hapd->conf->ap_max_inactivity, 0,
 				       ap_handle_timer, hapd, sta);
 	}
+
+#ifdef CONFIG_MACSEC
+	if (hapd->conf->wpa_key_mgmt == WPA_KEY_MGMT_NONE &&
+	    hapd->conf->mka_psk_set)
+		ieee802_1x_create_preshared_mka_hapd(hapd, sta);
+	else
+		ieee802_1x_alloc_kay_sm_hapd(hapd, sta);
+#endif /* CONFIG_MACSEC */
 }
 
 
