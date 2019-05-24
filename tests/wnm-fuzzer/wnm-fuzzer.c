@@ -68,6 +68,12 @@ static int init_wpa(struct arg_ctx *ctx)
 }
 
 
+static void deinit_wpa(struct arg_ctx *ctx)
+{
+	wnm_deallocate_memory(&ctx->wpa_s);
+}
+
+
 int main(int argc, char *argv[])
 {
 	struct arg_ctx ctx;
@@ -99,6 +105,7 @@ int main(int argc, char *argv[])
 	wpa_printf(MSG_DEBUG, "Starting eloop");
 	eloop_run();
 	wpa_printf(MSG_DEBUG, "eloop done");
+	deinit_wpa(&ctx);
 
 	ret = 0;
 fail:
