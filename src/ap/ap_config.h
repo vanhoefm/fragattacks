@@ -583,6 +583,7 @@ struct hostapd_bss_config {
 	int osen;
 	int proxy_arp;
 	int na_mcast_to_ucast;
+
 #ifdef CONFIG_HS20
 	int hs20;
 	int hs20_release;
@@ -731,6 +732,94 @@ struct hostapd_bss_config {
 	int airtime_limit;
 	struct airtime_sta_weight *airtime_weight_list;
 #endif /* CONFIG_AIRTIME_POLICY */
+
+#ifdef CONFIG_MACSEC
+	/**
+	 * macsec_policy - Determines the policy for MACsec secure session
+	 *
+	 * 0: MACsec not in use (default)
+	 * 1: MACsec enabled - Should secure, accept key server's advice to
+	 *    determine whether to use a secure session or not.
+	 */
+	int macsec_policy;
+
+	/**
+	 * macsec_integ_only - Determines how MACsec are transmitted
+	 *
+	 * This setting applies only when MACsec is in use, i.e.,
+	 *  - macsec_policy is enabled
+	 *  - the key server has decided to enable MACsec
+	 *
+	 * 0: Encrypt traffic (default)
+	 * 1: Integrity only
+	 */
+	int macsec_integ_only;
+
+	/**
+	 * macsec_replay_protect - Enable MACsec replay protection
+	 *
+	 * This setting applies only when MACsec is in use, i.e.,
+	 *  - macsec_policy is enabled
+	 *  - the key server has decided to enable MACsec
+	 *
+	 * 0: Replay protection disabled (default)
+	 * 1: Replay protection enabled
+	 */
+	int macsec_replay_protect;
+
+	/**
+	 * macsec_replay_window - MACsec replay protection window
+	 *
+	 * A window in which replay is tolerated, to allow receipt of frames
+	 * that have been misordered by the network.
+	 *
+	 * This setting applies only when MACsec replay protection active, i.e.,
+	 *  - macsec_replay_protect is enabled
+	 *  - the key server has decided to enable MACsec
+	 *
+	 * 0: No replay window, strict check (default)
+	 * 1..2^32-1: number of packets that could be misordered
+	 */
+	u32 macsec_replay_window;
+
+	/**
+	 * macsec_port - MACsec port (in SCI)
+	 *
+	 * Port component of the SCI.
+	 *
+	 * Range: 1-65534 (default: 1)
+	 */
+	int macsec_port;
+
+	/**
+	 * mka_priority - Priority of MKA Actor
+	 *
+	 * Range: 0-255 (default: 255)
+	 */
+	int mka_priority;
+
+	/**
+	 * mka_ckn - MKA pre-shared CKN
+	 */
+#define MACSEC_CKN_MAX_LEN 32
+	size_t mka_ckn_len;
+	u8 mka_ckn[MACSEC_CKN_MAX_LEN];
+
+	/**
+	 * mka_cak - MKA pre-shared CAK
+	 */
+#define MACSEC_CAK_MAX_LEN 32
+	size_t mka_cak_len;
+	u8 mka_cak[MACSEC_CAK_MAX_LEN];
+
+#define MKA_PSK_SET_CKN BIT(0)
+#define MKA_PSK_SET_CAK BIT(1)
+#define MKA_PSK_SET (MKA_PSK_SET_CKN | MKA_PSK_SET_CAK)
+	/**
+	 * mka_psk_set - Whether mka_ckn and mka_cak are set
+	 */
+	u8 mka_psk_set;
+#endif /* CONFIG_MACSEC */
 };
 
 /**

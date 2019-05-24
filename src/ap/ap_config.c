@@ -13,6 +13,7 @@
 #include "crypto/tls.h"
 #include "radius/radius_client.h"
 #include "common/ieee802_11_defs.h"
+#include "common/ieee802_1x_defs.h"
 #include "common/eapol_common.h"
 #include "common/dhcp.h"
 #include "eap_common/eap_wsc_common.h"
@@ -138,6 +139,11 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 #ifdef CONFIG_HS20
 	bss->hs20_release = (HS20_VERSION >> 4) + 1;
 #endif /* CONFIG_HS20 */
+
+#ifdef CONFIG_MACSEC
+	bss->mka_priority = DEFAULT_PRIO_NOT_KEY_SERVER;
+	bss->macsec_port = 1;
+#endif /* CONFIG_MACSEC */
 
 	/* Default to strict CRL checking. */
 	bss->check_crl_strict = 1;

@@ -2562,7 +2562,11 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "eapol_version") == 0) {
 		int eapol_version = atoi(pos);
 
+#ifdef CONFIG_MACSEC
+		if (eapol_version < 1 || eapol_version > 3) {
+#else /* CONFIG_MACSEC */
 		if (eapol_version < 1 || eapol_version > 2) {
+#endif /* CONFIG_MACSEC */
 			wpa_printf(MSG_ERROR,
 				   "Line %d: invalid EAPOL version (%d): '%s'.",
 				   line, eapol_version, pos);
@@ -4468,6 +4472,89 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 			return 1;
 		}
 #endif /* CONFIG_AIRTIME_POLICY */
+#ifdef CONFIG_MACSEC
+	} else if (os_strcmp(buf, "macsec_policy") == 0) {
+		int macsec_policy = atoi(pos);
+
+		if (macsec_policy < 0 || macsec_policy > 1) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: invalid macsec_policy (%d): '%s'.",
+				   line, macsec_policy, pos);
+			return 1;
+		}
+		bss->macsec_policy = macsec_policy;
+	} else if (os_strcmp(buf, "macsec_integ_only") == 0) {
+		int macsec_integ_only = atoi(pos);
+
+		if (macsec_integ_only < 0 || macsec_integ_only > 1) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: invalid macsec_integ_only (%d): '%s'.",
+				   line, macsec_integ_only, pos);
+			return 1;
+		}
+		bss->macsec_integ_only = macsec_integ_only;
+	} else if (os_strcmp(buf, "macsec_replay_protect") == 0) {
+		int macsec_replay_protect = atoi(pos);
+
+		if (macsec_replay_protect < 0 || macsec_replay_protect > 1) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: invalid macsec_replay_protect (%d): '%s'.",
+				   line, macsec_replay_protect, pos);
+			return 1;
+		}
+		bss->macsec_replay_protect = macsec_replay_protect;
+	} else if (os_strcmp(buf, "macsec_replay_window") == 0) {
+		bss->macsec_replay_window = atoi(pos);
+	} else if (os_strcmp(buf, "macsec_port") == 0) {
+		int macsec_port = atoi(pos);
+
+		if (macsec_port < 1 || macsec_port > 65534) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: invalid macsec_port (%d): '%s'.",
+				   line, macsec_port, pos);
+			return 1;
+		}
+		bss->macsec_port = macsec_port;
+	} else if (os_strcmp(buf, "mka_priority") == 0) {
+		int mka_priority = atoi(pos);
+
+		if (mka_priority < 0 || mka_priority > 255) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: invalid mka_priority (%d): '%s'.",
+				   line, mka_priority, pos);
+			return 1;
+		}
+		bss->mka_priority = mka_priority;
+	} else if (os_strcmp(buf, "mka_cak") == 0) {
+		size_t len = os_strlen(pos);
+
+		if (len > 2 * MACSEC_CAK_MAX_LEN ||
+		    (len != 2 * 16 && len != 2 * 32) ||
+		    hexstr2bin(pos, bss->mka_cak, len / 2)) {
+			wpa_printf(MSG_ERROR, "Line %d: Invalid MKA-CAK '%s'.",
+				   line, pos);
+			return 1;
+		}
+		bss->mka_cak_len = len / 2;
+		bss->mka_psk_set |= MKA_PSK_SET_CAK;
+	} else if (os_strcmp(buf, "mka_ckn") == 0) {
+		size_t len = os_strlen(pos);
+
+		if (len > 2 * MACSEC_CKN_MAX_LEN || /* too long */
+		    len < 2 || /* too short */
+		    len % 2 != 0 /* not an integral number of bytes */) {
+			wpa_printf(MSG_ERROR, "Line %d: Invalid MKA-CKN '%s'.",
+				   line, pos);
+			return 1;
+		}
+		bss->mka_ckn_len = len / 2;
+		if (hexstr2bin(pos, bss->mka_ckn, bss->mka_ckn_len)) {
+			wpa_printf(MSG_ERROR, "Line %d: Invalid MKA-CKN '%s'.",
+				   line, pos);
+			return -1;
+		}
+		bss->mka_psk_set |= MKA_PSK_SET_CKN;
+#endif /* CONFIG_MACSEC */
 	} else {
 		wpa_printf(MSG_ERROR,
 			   "Line %d: unknown configuration item '%s'",
