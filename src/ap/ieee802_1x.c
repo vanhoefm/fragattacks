@@ -1119,6 +1119,13 @@ void ieee802_1x_receive(struct hostapd_data *hapd, const u8 *sa, const u8 *buf,
 		/* TODO: implement support for this; show data */
 		break;
 
+#ifdef CONFIG_MACSEC
+	case IEEE802_1X_TYPE_EAPOL_MKA:
+		wpa_printf(MSG_EXCESSIVE,
+			   "EAPOL type %d will be handled by MKA", hdr->type);
+		break;
+#endif /* CONFIG_MACSEC */
+
 	default:
 		wpa_printf(MSG_DEBUG, "   unknown IEEE 802.1X packet type");
 		sta->eapol_sm->dot1xAuthInvalidEapolFramesRx++;
