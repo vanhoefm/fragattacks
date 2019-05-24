@@ -10899,7 +10899,7 @@ static int nl80211_send_external_auth_status(void *priv,
 	 * SAE) to hostapd/wpa_supplicant. Do nott send the status to drivers
 	 * which do not support AP SME or use wpa_supplicant/hostapd SME.
 	 */
-	if (!bss->drv->device_ap_sme ||
+	if ((is_ap_interface(drv->nlmode) && !bss->drv->device_ap_sme) ||
 	    (drv->capa.flags & WPA_DRIVER_FLAGS_SME))
 		return -1;
 
