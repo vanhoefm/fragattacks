@@ -595,7 +595,7 @@ static enum ssid_match_result ssid_match(struct hostapd_data *hapd,
 
 	pos = ssid_list;
 	end = ssid_list + ssid_list_len;
-	while (end - pos >= 1) {
+	while (end - pos >= 2) {
 		if (2 + pos[1] > end - pos)
 			break;
 		if (pos[1] == 0)
