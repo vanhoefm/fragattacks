@@ -14,6 +14,7 @@
 #include "ap/hw_features.h"
 #include "ap/ieee802_11.h"
 #include "ap/sta_info.h"
+#include "ap/ap_list.h"
 
 
 const struct wpa_driver_ops *const wpa_drivers[] =
@@ -185,6 +186,7 @@ int main(int argc, char *argv[])
 	ret = 0;
 fail:
 	hostapd_config_free(ctx.hapd.iconf);
+	ap_list_deinit(&ctx.iface);
 	eloop_destroy();
 	os_program_deinit();
 
