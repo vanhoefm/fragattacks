@@ -362,7 +362,7 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 					       data->password_len, pwhash);
 			if (res == 0)
 				res = hash_nt_password_hash(pwhash, pwhashhash);
-			os_memset(pwhash, 0, sizeof(pwhash));
+			forced_memzero(pwhash, sizeof(pwhash));
 		}
 
 		if (res) {
@@ -514,8 +514,8 @@ eap_pwd_perform_commit_exchange(struct eap_sm *sm, struct eap_pwd_data *data,
 				       data->id_server, data->id_server_len,
 				       data->id_peer, data->id_peer_len,
 				       data->token);
-	os_memset(pwhashhash, 0, sizeof(pwhashhash));
-	os_memset(salthashpwd, 0, sizeof(salthashpwd));
+	forced_memzero(pwhashhash, sizeof(pwhashhash));
+	forced_memzero(salthashpwd, sizeof(salthashpwd));
 	if (res) {
 		wpa_printf(MSG_INFO, "EAP-PWD (peer): unable to compute PWE");
 		eap_pwd_state(data, FAILURE);

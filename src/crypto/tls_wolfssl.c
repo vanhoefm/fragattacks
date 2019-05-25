@@ -2044,7 +2044,7 @@ int tls_connection_get_eap_fast_key(void *tls_ctx, struct tls_connection *conn,
 				       _out, skip + out_len);
 	}
 
-	os_memset(master_key, 0, master_key_len);
+	forced_memzero(master_key, master_key_len);
 	if (ret == 0)
 		os_memcpy(out, _out + skip, out_len);
 	bin_clear_free(tmp_out, skip + out_len);

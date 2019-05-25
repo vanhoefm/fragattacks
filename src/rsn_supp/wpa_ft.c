@@ -828,10 +828,10 @@ static int wpa_ft_process_igtk_subelem(struct wpa_sm *sm, const u8 *igtk_elem,
 			   igtk_elem + 2, 6, igtk, igtk_len) < 0) {
 		wpa_printf(MSG_WARNING, "WPA: Failed to set IGTK to the "
 			   "driver.");
-		os_memset(igtk, 0, sizeof(igtk));
+		forced_memzero(igtk, sizeof(igtk));
 		return -1;
 	}
-	os_memset(igtk, 0, sizeof(igtk));
+	forced_memzero(igtk, sizeof(igtk));
 
 	return 0;
 }

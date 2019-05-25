@@ -934,6 +934,7 @@ static int wpa_try_alt_snonce(struct wpa_state_machine *sm, u8 *data,
 
 	os_memcpy(sm->SNonce, sm->alt_SNonce, WPA_NONCE_LEN);
 	os_memcpy(&sm->PTK, &PTK, sizeof(PTK));
+	forced_memzero(&PTK, sizeof(PTK));
 	sm->PTK_valid = TRUE;
 
 	return 0;
@@ -1406,6 +1407,8 @@ static int wpa_gmk_to_gtk(const u8 *gmk, const char *label, const u8 *addr,
 		ret = -1;
 #endif /* CONFIG_SHA256 */
 #endif /* CONFIG_SHA384 */
+
+	forced_memzero(data, sizeof(data));
 
 	return ret;
 }
@@ -2046,7 +2049,7 @@ SM_STATE(WPA_PTK, INITPMK)
 		sm->Disconnect = TRUE;
 		return;
 	}
-	os_memset(msk, 0, sizeof(msk));
+	forced_memzero(msk, sizeof(msk));
 
 	sm->req_replay_counter_used = 0;
 	/* IEEE 802.11i does not set keyRun to FALSE, but not doing this
@@ -2285,12 +2288,12 @@ int fils_auth_pmk_to_ptk(struct wpa_state_machine *sm, const u8 *pmk,
 		wpa_hexdump(MSG_DEBUG, "FILS+FT: PMKR0Name",
 			    pmk_r0_name, WPA_PMK_NAME_LEN);
 		wpa_ft_store_pmk_fils(sm, pmk_r0, pmk_r0_name);
-		os_memset(fils_ft, 0, sizeof(fils_ft));
+		forced_memzero(fils_ft, sizeof(fils_ft));
 
 		res = wpa_derive_pmk_r1_name(pmk_r0_name, conf->r1_key_holder,
 					     sm->addr, sm->pmk_r1_name,
 					     use_sha384);
-		os_memset(pmk_r0, 0, PMK_LEN_MAX);
+		forced_memzero(pmk_r0, PMK_LEN_MAX);
 		if (res < 0)
 			return -1;
 		wpa_hexdump(MSG_DEBUG, "FILS+FT: PMKR1Name", sm->pmk_r1_name,
@@ -2308,7 +2311,7 @@ int fils_auth_pmk_to_ptk(struct wpa_state_machine *sm, const u8 *pmk,
 			       sm->wpa_key_mgmt, sm->fils_key_auth_sta,
 			       sm->fils_key_auth_ap,
 			       &sm->fils_key_auth_len);
-	os_memset(ick, 0, sizeof(ick));
+	forced_memzero(ick, sizeof(ick));
 
 	/* Store nonces for (Re)Association Request/Response frame processing */
 	os_memcpy(sm->SNonce, snonce, FILS_NONCE_LEN);
@@ -3030,6 +3033,7 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 	sm->MICVerified = TRUE;
 
 	os_memcpy(&sm->PTK, &PTK, sizeof(PTK));
+	forced_memzero(&PTK, sizeof(PTK));
 	sm->PTK_valid = TRUE;
 }
 

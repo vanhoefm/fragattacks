@@ -3999,7 +3999,7 @@ int tls_connection_get_eap_fast_key(void *tls_ctx, struct tls_connection *conn,
 				    _out, skip + out_len) == 0) {
 		ret = 0;
 	}
-	os_memset(master_key, 0, sizeof(master_key));
+	forced_memzero(master_key, sizeof(master_key));
 	os_free(rnd);
 	if (ret == 0)
 		os_memcpy(out, _out + skip, out_len);

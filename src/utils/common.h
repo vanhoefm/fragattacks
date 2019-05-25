@@ -570,6 +570,8 @@ int str_starts(const char *str, const char *start);
 u8 rssi_to_rcpi(int rssi);
 char * get_param(const char *cmd, const char *param);
 
+void forced_memzero(void *ptr, size_t len);
+
 /*
  * gcc 4.4 ends up generating strict-aliasing warnings about some very common
  * networking socket uses that do not really result in a real problem and

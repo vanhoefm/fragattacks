@@ -2226,6 +2226,7 @@ static u8 * wpa_ft_gtk_subelem(struct wpa_state_machine *sm, size_t *len)
 		return NULL;
 	}
 
+	forced_memzero(keybuf, sizeof(keybuf));
 	*len = subelem_len;
 	return subelem;
 }
@@ -3567,7 +3568,7 @@ static int wpa_ft_rrb_build_r0(const u8 *key, const size_t key_len,
 			       pmk_r0->vlan, src_addr, type,
 			       packet, packet_len);
 
-	os_memset(pmk_r1, 0, sizeof(pmk_r1));
+	forced_memzero(pmk_r1, sizeof(pmk_r1));
 
 	return ret;
 }
@@ -3893,10 +3894,7 @@ static int wpa_ft_rrb_rx_r1(struct wpa_authenticator *wpa_auth,
 
 	ret = 0;
 out:
-	if (plain) {
-		os_memset(plain, 0, plain_len);
-		os_free(plain);
-	}
+	bin_clear_free(plain, plain_len);
 
 	return ret;
 

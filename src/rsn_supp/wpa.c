@@ -334,7 +334,7 @@ static int wpa_supplicant_get_pmk(struct wpa_sm *sm,
 				os_memcpy(sm->xxkey, buf + PMK_LEN, PMK_LEN);
 				sm->xxkey_len = PMK_LEN;
 			}
-			os_memset(buf, 0, sizeof(buf));
+			forced_memzero(buf, sizeof(buf));
 			if (sm->proto == WPA_PROTO_RSN &&
 			    wpa_key_mgmt_ft(sm->key_mgmt)) {
 				struct rsn_pmksa_cache_entry *sa = NULL;
@@ -649,7 +649,7 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 		os_memcpy(buf, &ptk->tk[16], 8);
 		os_memcpy(&ptk->tk[16], &ptk->tk[24], 8);
 		os_memcpy(&ptk->tk[24], buf, 8);
-		os_memset(buf, 0, sizeof(buf));
+		forced_memzero(buf, sizeof(buf));
 	}
 	sm->tptk_set = 1;
 
@@ -923,7 +923,7 @@ static int wpa_supplicant_install_gtk(struct wpa_sm *sm,
 			wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
 				"WPA: Failed to set GTK to the driver "
 				"(Group only)");
-			os_memset(gtk_buf, 0, sizeof(gtk_buf));
+			forced_memzero(gtk_buf, sizeof(gtk_buf));
 			return -1;
 		}
 	} else if (wpa_sm_set_key(sm, gd->alg, broadcast_ether_addr,
@@ -933,10 +933,10 @@ static int wpa_supplicant_install_gtk(struct wpa_sm *sm,
 			"WPA: Failed to set GTK to "
 			"the driver (alg=%d keylen=%d keyidx=%d)",
 			gd->alg, gd->gtk_len, gd->keyidx);
-		os_memset(gtk_buf, 0, sizeof(gtk_buf));
+		forced_memzero(gtk_buf, sizeof(gtk_buf));
 		return -1;
 	}
-	os_memset(gtk_buf, 0, sizeof(gtk_buf));
+	forced_memzero(gtk_buf, sizeof(gtk_buf));
 
 	if (wnm_sleep) {
 		sm->gtk_wnm_sleep.gtk_len = gd->gtk_len;
@@ -1042,10 +1042,10 @@ static int wpa_supplicant_pairwise_gtk(struct wpa_sm *sm,
 	     wpa_supplicant_install_gtk(sm, &gd, key_rsc, 0))) {
 		wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG,
 			"RSN: Failed to install GTK");
-		os_memset(&gd, 0, sizeof(gd));
+		forced_memzero(&gd, sizeof(gd));
 		return -1;
 	}
-	os_memset(&gd, 0, sizeof(gd));
+	forced_memzero(&gd, sizeof(gd));
 
 	return 0;
 }
@@ -1714,12 +1714,12 @@ static int wpa_supplicant_process_1_of_2_wpa(struct wpa_sm *sm,
 		os_memcpy(ek + 16, sm->ptk.kek, sm->ptk.kek_len);
 		os_memcpy(gd->gtk, key_data, key_data_len);
 		if (rc4_skip(ek, 32, 256, gd->gtk, key_data_len)) {
-			os_memset(ek, 0, sizeof(ek));
+			forced_memzero(ek, sizeof(ek));
 			wpa_msg(sm->ctx->msg_ctx, MSG_ERROR,
 				"WPA: RC4 failed");
 			return -1;
 		}
-		os_memset(ek, 0, sizeof(ek));
+		forced_memzero(ek, sizeof(ek));
 #endif /* CONFIG_NO_RC4 */
 	} else if (ver == WPA_KEY_INFO_TYPE_HMAC_SHA1_AES) {
 		if (maxkeylen % 8) {
@@ -1868,7 +1868,7 @@ static void wpa_supplicant_process_1_of_2(struct wpa_sm *sm,
 	if (wpa_supplicant_install_gtk(sm, &gd, key_rsc, 0) ||
 	    wpa_supplicant_send_2_of_2(sm, key, ver, key_info) < 0)
 		goto failed;
-	os_memset(&gd, 0, sizeof(gd));
+	forced_memzero(&gd, sizeof(gd));
 
 	if (rekey) {
 		wpa_msg(sm->ctx->msg_ctx, MSG_INFO, "WPA: Group rekeying "
@@ -1887,7 +1887,7 @@ static void wpa_supplicant_process_1_of_2(struct wpa_sm *sm,
 	return;
 
 failed:
-	os_memset(&gd, 0, sizeof(gd));
+	forced_memzero(&gd, sizeof(gd));
 	wpa_sm_deauthenticate(sm, WLAN_REASON_UNSPECIFIED);
 }
 
@@ -2001,12 +2001,12 @@ static int wpa_supplicant_decrypt_key_data(struct wpa_sm *sm,
 		os_memcpy(ek, key->key_iv, 16);
 		os_memcpy(ek + 16, sm->ptk.kek, sm->ptk.kek_len);
 		if (rc4_skip(ek, 32, 256, key_data, *key_data_len)) {
-			os_memset(ek, 0, sizeof(ek));
+			forced_memzero(ek, sizeof(ek));
 			wpa_msg(sm->ctx->msg_ctx, MSG_ERROR,
 				"WPA: RC4 failed");
 			return -1;
 		}
-		os_memset(ek, 0, sizeof(ek));
+		forced_memzero(ek, sizeof(ek));
 #endif /* CONFIG_NO_RC4 */
 	} else if (ver == WPA_KEY_INFO_TYPE_HMAC_SHA1_AES ||
 		   ver == WPA_KEY_INFO_TYPE_AES_128_CMAC ||
@@ -3446,12 +3446,12 @@ int wpa_wnmsleep_install_key(struct wpa_sm *sm, u8 subelem_id, u8 *buf)
 		wpa_hexdump_key(MSG_DEBUG, "Install GTK (WNM SLEEP)",
 				gd.gtk, gd.gtk_len);
 		if (wpa_supplicant_install_gtk(sm, &gd, key_rsc, 1)) {
-			os_memset(&gd, 0, sizeof(gd));
+			forced_memzero(&gd, sizeof(gd));
 			wpa_printf(MSG_DEBUG, "Failed to install the GTK in "
 				   "WNM mode");
 			return -1;
 		}
-		os_memset(&gd, 0, sizeof(gd));
+		forced_memzero(&gd, sizeof(gd));
 #ifdef CONFIG_IEEE80211W
 	} else if (subelem_id == WNM_SLEEP_SUBELEM_IGTK) {
 		const struct wpa_igtk_kde *igtk;
@@ -3881,7 +3881,7 @@ int fils_process_auth(struct wpa_sm *sm, const u8 *bssid, const u8 *data,
 				       dh_ss ? wpabuf_head(dh_ss) : NULL,
 				       dh_ss ? wpabuf_len(dh_ss) : 0,
 				       sm->pmk, &sm->pmk_len);
-		os_memset(rmsk, 0, sizeof(rmsk));
+		forced_memzero(rmsk, sizeof(rmsk));
 
 		/* Don't use DHss in PTK derivation if PMKSA caching is not
 		 * used. */
@@ -3956,7 +3956,7 @@ int fils_process_auth(struct wpa_sm *sm, const u8 *bssid, const u8 *data,
 			       sm->fils_key_auth_ap,
 			       &sm->fils_key_auth_len);
 	wpabuf_free(pub);
-	os_memset(ick, 0, sizeof(ick));
+	forced_memzero(ick, sizeof(ick));
 	return res;
 fail:
 	wpabuf_free(pub);
@@ -4480,9 +4480,11 @@ int fils_process_assoc_resp(struct wpa_sm *sm, const u8 *resp, size_t len)
 
 	wpa_printf(MSG_DEBUG, "FILS: Auth+Assoc completed successfully");
 	sm->fils_completed = 1;
+	forced_memzero(&gd, sizeof(gd));
 
 	return 0;
 fail:
+	forced_memzero(&gd, sizeof(gd));
 	return -1;
 }
 
@@ -4694,7 +4696,7 @@ int owe_process_assoc_resp(struct wpa_sm *sm, const u8 *bssid,
 	else if (group == 21)
 		res = hmac_sha512_kdf(prk, hash_len, NULL, (const u8 *) info,
 				      os_strlen(info), sm->pmk, hash_len);
-	os_memset(prk, 0, SHA512_MAC_LEN);
+	forced_memzero(prk, SHA512_MAC_LEN);
 	if (res < 0) {
 		sm->pmk_len = 0;
 		return -1;
