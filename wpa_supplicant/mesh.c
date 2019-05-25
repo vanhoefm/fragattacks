@@ -208,6 +208,7 @@ static int wpas_mesh_complete(struct wpa_supplicant *wpa_s)
 		wpa_printf(MSG_ERROR,
 			   "mesh: RSN initialization failed - deinit mesh");
 		wpa_supplicant_mesh_deinit(wpa_s);
+		wpa_drv_leave_mesh(wpa_s);
 		return -1;
 	}
 
