@@ -1470,6 +1470,7 @@ def test_dpp_and_sae_akm(dev, apdev):
     if val != "DPP":
         raise Exception("Unexpected key_mgmt for DPP: " + val)
 
+    dev[1].request("SET sae_groups ")
     id = dev[1].connect("dpp+sae", key_mgmt="SAE", scan_freq="2412",
                         ieee80211w="2", psk="sae-password")
     val = dev[1].get_status_field("key_mgmt")
@@ -1781,6 +1782,7 @@ def run_dpp_auto_connect_legacy(dev, apdev, conf='sta-psk',
 
     hapd = hostapd.add_ap(apdev[0], params)
 
+    dev[0].request("SET sae_groups ")
     dev[0].set("dpp_config_processing", "2")
     id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
@@ -4347,6 +4349,7 @@ def run_dpp_legacy_and_dpp_akm(dev, apdev):
     except:
         raise HwsimSkip("DPP not supported")
 
+    dev[0].request("SET sae_groups ")
     conf_id = dev[1].dpp_configurator_add(key=csign)
     dev[0].set("dpp_config_processing", "1")
     id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
