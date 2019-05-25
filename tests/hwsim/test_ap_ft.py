@@ -22,6 +22,7 @@ from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger, skip_with
 from wlantest import Wlantest
 from test_ap_psk import check_mib, find_wpas_process, read_process_memory, verify_not_present, get_key_locations
 from test_rrm import check_beacon_req
+from test_suite_b import check_suite_b_192_capa
 
 def ft_base_rsn():
     params = {"wpa": "2",
@@ -2782,6 +2783,7 @@ def test_ap_ft_eap_sha384(dev, apdev):
 
 def test_ap_ft_eap_sha384_reassoc(dev, apdev):
     """WPA2-EAP-FT with SHA384 using REASSOCIATE"""
+    check_suite_b_192_capa(dev)
     ssid = "test-ft"
     passphrase = "12345678"
 
