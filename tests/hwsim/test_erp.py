@@ -229,7 +229,7 @@ def run_erp_radius_ext(dev, apdev):
             raise Exception("Did not use ERP")
         dev[0].wait_connected(timeout=15, error="Reconnection timed out")
 
-def erp_test(dev, hapd, **kwargs):
+def erp_test(dev, hapd, reauth=False, **kwargs):
     res = dev.get_capability("eap")
     if kwargs['eap'] not in res:
         logger.info("Skip ERP test with %s due to missing support" % kwargs['eap'])
@@ -241,7 +241,23 @@ def erp_test(dev, hapd, **kwargs):
                      scan_freq="2412", **kwargs)
     dev.request("DISCONNECT")
     dev.wait_disconnected(timeout=15)
+    dev.dump_monitor()
     hapd.dump_monitor()
+
+    if reauth:
+        dev.request("ERP_FLUSH")
+        dev.request("RECONNECT")
+        ev = dev.wait_event(["CTRL-EVENT-EAP-SUCCESS"], timeout=15)
+        if ev is None:
+            raise Exception("EAP success timed out")
+        if "EAP re-authentication completed successfully" in ev:
+            raise Exception("Used ERP unexpectedly")
+        dev.wait_connected(timeout=15, error="Reconnection timed out")
+        dev.request("DISCONNECT")
+        dev.wait_disconnected(timeout=15)
+        dev.dump_monitor()
+        hapd.dump_monitor()
+
     dev.request("RECONNECT")
     ev = dev.wait_event(["CTRL-EVENT-EAP-SUCCESS"], timeout=15)
     if ev is None:
@@ -268,7 +284,13 @@ def test_erp_radius_eap_methods(dev, apdev):
 
     erp_test(dev[0], hapd, eap="AKA", identity="0232010000000000@example.com",
              password="90dca4eda45b53cf0f12d7c9c3bc6a89:cb9cccc4b9258e6dca4760379fb82581:000000000123")
+    erp_test(dev[0], hapd, reauth=True,
+             eap="AKA", identity="0232010000000000@example.com",
+             password="90dca4eda45b53cf0f12d7c9c3bc6a89:cb9cccc4b9258e6dca4760379fb82581:000000000123")
     erp_test(dev[0], hapd, eap="AKA'", identity="6555444333222111@example.com",
+             password="5122250214c33e723a5dd523fc145fc0:981d464c7c52eb6e5036234984ad0bcf:000000000123")
+    erp_test(dev[0], hapd, reauth=True,
+             eap="AKA'", identity="6555444333222111@example.com",
              password="5122250214c33e723a5dd523fc145fc0:981d464c7c52eb6e5036234984ad0bcf:000000000123")
     erp_test(dev[0], hapd, eap="EKE", identity="erp-eke@example.com",
              password="hello")
@@ -296,6 +318,9 @@ def test_erp_radius_eap_methods(dev, apdev):
     erp_test(dev[0], hapd, eap="SAKE", identity="erp-sake@example.com",
              password_hex="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
     erp_test(dev[0], hapd, eap="SIM", identity="1232010000000000@example.com",
+             password="90dca4eda45b53cf0f12d7c9c3bc6a89:cb9cccc4b9258e6dca4760379fb82581")
+    erp_test(dev[0], hapd, reauth=True,
+             eap="SIM", identity="1232010000000000@example.com",
              password="90dca4eda45b53cf0f12d7c9c3bc6a89:cb9cccc4b9258e6dca4760379fb82581")
     erp_test(dev[0], hapd, eap="TLS", identity="erp-tls@example.com",
              ca_cert="auth_serv/ca.pem", client_cert="auth_serv/user.pem",
