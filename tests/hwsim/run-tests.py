@@ -75,6 +75,7 @@ def reset_devs(dev, apdev):
         hapd.remove('wlan3-2')
         for ap in apdev:
             hapd.remove(ap['ifname'])
+        hapd.remove('as-erp')
     except Exception as e:
         logger.info("Failed to remove hostapd interface")
         print(str(e))
