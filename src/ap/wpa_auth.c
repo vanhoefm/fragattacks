@@ -2613,7 +2613,7 @@ int fils_encrypt_assoc(struct wpa_state_machine *sm, u8 *buf,
 	if (pos + wpabuf_len(plain) + AES_BLOCK_SIZE > end) {
 		wpa_printf(MSG_DEBUG,
 			   "FILS: Not enough room for FILS elements");
-		wpabuf_free(plain);
+		wpabuf_clear_free(plain);
 		return -1;
 	}
 
@@ -2623,7 +2623,7 @@ int fils_encrypt_assoc(struct wpa_state_machine *sm, u8 *buf,
 	if (aes_siv_encrypt(sm->PTK.kek, sm->PTK.kek_len,
 			    wpabuf_head(plain), wpabuf_len(plain),
 			    5, aad, aad_len, pos) < 0) {
-		wpabuf_free(plain);
+		wpabuf_clear_free(plain);
 		return -1;
 	}
 
@@ -2631,7 +2631,7 @@ int fils_encrypt_assoc(struct wpa_state_machine *sm, u8 *buf,
 		    "FILS: Encrypted Association Response elements",
 		    pos, AES_BLOCK_SIZE + wpabuf_len(plain));
 	current_len += wpabuf_len(plain) + AES_BLOCK_SIZE;
-	wpabuf_free(plain);
+	wpabuf_clear_free(plain);
 
 	sm->fils_completed = 1;
 
@@ -2685,7 +2685,7 @@ static struct wpabuf * fils_prepare_plainbuf(struct wpa_state_machine *sm,
 		 * of GTK in the BSS.
 		 */
 		if (random_get_bytes(dummy_gtk, gtk_len) < 0) {
-			wpabuf_free(plain);
+			wpabuf_clear_free(plain);
 			return NULL;
 		}
 		gtk = dummy_gtk;
@@ -2712,13 +2712,13 @@ static struct wpabuf * fils_prepare_plainbuf(struct wpa_state_machine *sm,
 		if (wpa_channel_info(sm->wpa_auth, &ci) != 0) {
 			wpa_printf(MSG_WARNING,
 				   "FILS: Failed to get channel info for OCI element");
-			wpabuf_free(plain);
+			wpabuf_clear_free(plain);
 			return NULL;
 		}
 
 		pos = wpabuf_put(plain, OCV_OCI_EXTENDED_LEN);
 		if (ocv_insert_extended_oci(&ci, pos) < 0) {
-			wpabuf_free(plain);
+			wpabuf_clear_free(plain);
 			return NULL;
 		}
 	}
@@ -2781,7 +2781,7 @@ u8 * hostapd_eid_assoc_fils_session(struct wpa_state_machine *sm, u8 *buf,
 
 	wpa_printf(MSG_DEBUG, "%s: plain buf_len: %u", __func__,
 		   (unsigned int) wpabuf_len(plain));
-	wpabuf_free(plain);
+	wpabuf_clear_free(plain);
 	sm->fils_completed = 1;
 	return pos;
 }
