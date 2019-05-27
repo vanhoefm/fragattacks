@@ -6545,7 +6545,12 @@ def test_ap_wpa2_eap_status(dev, apdev):
     decisions = []
     req_methods = []
     selected_methods = []
+    connected = False
     for i in range(100000):
+        if not connected and i % 10 == 9:
+            ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=0.0001)
+            if ev:
+                connected = True
         s = dev[0].get_status(extra="VERBOSE")
         if 'EAP state' in s:
             state = s['EAP state']
@@ -6579,7 +6584,8 @@ def test_ap_wpa2_eap_status(dev, apdev):
     logger.info("selectedMethods: " + str(selected_methods))
     if not success:
         raise Exception("EAP did not succeed")
-    dev[0].wait_connected()
+    if not connected:
+        dev[0].wait_connected()
     dev[0].request("REMOVE_NETWORK all")
     dev[0].wait_disconnected()
 
