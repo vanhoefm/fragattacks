@@ -1638,6 +1638,7 @@ def run_sae_anti_clogging_during_attack(dev, apdev):
                 connected1 = True
         if connected0 and connected1:
             break
+        time.sleep(0.00000001)
     if not connected0:
         raise Exception("Real station(0) did not get connected")
     if not connected1:
