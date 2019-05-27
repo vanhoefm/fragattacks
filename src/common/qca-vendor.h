@@ -560,7 +560,10 @@ enum qca_radiotap_vendor_ids {
  *	resumed or not by the driver/firmware later will be reported to
  *	userspace using the QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_AUTO_RESUMES
  *	flag. The beacon reporting shall be resumed for all the cases except
- *	disconnection case as indicated by setting
+ *	either when userspace sets
+ *	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_DO_NOT_RESUME flag in the command
+ *	which triggered the current beacon reporting or during any disconnection
+ *	case as indicated by setting
  *	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_PAUSE_REASON to
  *	QCA_WLAN_VENDOR_BEACON_REPORTING_PAUSE_REASON_DISCONNECTED by the
  *	driver.
@@ -7033,6 +7036,23 @@ enum qca_wlan_vendor_attr_beacon_reporting_params {
 	 * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_PAUSE. NLA_FLAG attribute.
 	 */
 	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_AUTO_RESUMES = 12,
+	/* Optionally set by userspace to request the driver not to resume
+	 * beacon reporting after a pause is completed, when the
+	 * QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_OP_TYPE is set to
+	 * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_START. NLA_FLAG attribute.
+	 * If this flag is set, the driver will not resume beacon reporting
+	 * after any pause in beacon reporting is completed. Userspace has to
+	 * send QCA_WLAN_VENDOR_BEACON_REPORTING_OP_START command again in order
+	 * to initiate beacon reporting again. If this flag is set in the recent
+	 * QCA_WLAN_VENDOR_BEACON_REPORTING_OP_START command, then in the
+	 * subsequent QCA_WLAN_VENDOR_BEACON_REPORTING_OP_PAUSE event (if any)
+	 * the QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_AUTO_RESUMES shall not be
+	 * set by the driver. Setting this flag until and unless there is a
+	 * specific need is not recommended as there is a chance of some beacons
+	 * received after pause command and next start command being not
+	 * reported.
+	 */
+	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_DO_NOT_RESUME = 13,
 
 	/* Keep last */
 	QCA_WLAN_VENDOR_ATTR_BEACON_REPORTING_LAST,
