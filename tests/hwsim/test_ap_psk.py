@@ -1195,7 +1195,7 @@ def test_ap_wpa2_psk_ext_delayed_ptk_rekey(dev, apdev):
     # Check if any more EAPOL-Key frames are seen. If the second 4-way handshake
     # was accepted, there would be no more EAPOL-Key frames. If the Replay
     # Counters were rejected, there would be a retransmitted msg 1/4 here.
-    ev = hapd.wait_event(["EAPOL-TX"], timeout=1)
+    ev = hapd.wait_event(["EAPOL-TX"], timeout=1.1)
     if ev is None:
         raise Exception("Did not see EAPOL-TX from hostapd in the end (expected msg 1/4)")
     keyinfo = ev.split(' ')[2][10:14]
