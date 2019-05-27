@@ -2577,9 +2577,23 @@ static int tls_connection_ca_cert(struct tls_data *data,
 				      (const unsigned char **) &ca_cert_blob,
 				      ca_cert_blob_len);
 		if (cert == NULL) {
-			tls_show_errors(MSG_WARNING, __func__,
-					"Failed to parse ca_cert_blob");
-			return -1;
+			BIO *bio = BIO_new_mem_buf(ca_cert_blob,
+						   ca_cert_blob_len);
+
+			if (bio) {
+				cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
+				BIO_free(bio);
+			}
+
+			if (!cert) {
+				tls_show_errors(MSG_WARNING, __func__,
+						"Failed to parse ca_cert_blob");
+				return -1;
+			}
+
+			while (ERR_get_error()) {
+				/* Ignore errors from DER conversion. */
+			}
 		}
 
 		if (!X509_STORE_add_cert(SSL_CTX_get_cert_store(ssl_ctx),
