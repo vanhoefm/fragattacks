@@ -606,14 +606,22 @@ def run_macsec_psk_ns(dev, apdev, params):
     logger.info("wpas1 STATUS:\n" + wpas1.request("STATUS"))
     logger.info("wpas0 STATUS-DRIVER:\n" + wpas0.request("STATUS-DRIVER"))
     logger.info("wpas1 STATUS-DRIVER:\n" + wpas1.request("STATUS-DRIVER"))
-    macsec_ifname0 = wpas0.get_driver_status_field("parent_ifname")
-    macsec_ifname1 = wpas1.get_driver_status_field("parent_ifname")
 
     for i in range(10):
-        key_tx0 = int(wpas0.get_status_field("Number of Keys Distributed"))
-        key_rx0 = int(wpas0.get_status_field("Number of Keys Received"))
-        key_tx1 = int(wpas1.get_status_field("Number of Keys Distributed"))
-        key_rx1 = int(wpas1.get_status_field("Number of Keys Received"))
+        macsec_ifname0 = wpas0.get_driver_status_field("parent_ifname")
+        macsec_ifname1 = wpas1.get_driver_status_field("parent_ifname")
+        if "Number of Keys" in wpas0.request("STATUS"):
+            key_tx0 = int(wpas0.get_status_field("Number of Keys Distributed"))
+            key_rx0 = int(wpas0.get_status_field("Number of Keys Received"))
+        else:
+            key_tx0 = 0
+            key_rx0 = 0
+        if "Number of Keys" in wpas1.request("STATUS"):
+            key_tx1 = int(wpas1.get_status_field("Number of Keys Distributed"))
+            key_rx1 = int(wpas1.get_status_field("Number of Keys Received"))
+        else:
+            key_tx1 = 0
+            key_rx1 = 0
         if key_rx0 > 0 and key_tx1 > 0:
             break
         time.sleep(1)
