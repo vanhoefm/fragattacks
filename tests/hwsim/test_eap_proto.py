@@ -10110,7 +10110,7 @@ def run_eap_fast_phase2(dev, test_payload, test_failure=True):
         ctx['sslctx'] = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_METHOD)
         ctx['sslctx'].set_info_callback(ssl_info_callback)
         ctx['sslctx'].load_tmp_dh("auth_serv/dh.conf")
-        ctx['sslctx'].set_cipher_list("ADH-AES128-SHA")
+        ctx['sslctx'].set_cipher_list("ADH-AES128-SHA:@SECLEVEL=0")
         ctx['conn'] = OpenSSL.SSL.Connection(ctx['sslctx'], None)
         ctx['conn'].set_accept_state()
         log_conn_state(ctx['conn'])
