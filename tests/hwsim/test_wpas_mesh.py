@@ -2485,3 +2485,37 @@ def run_mesh_sae_anti_clogging(dev, apdev):
     check_mesh_group_added(dev[2])
     check_mesh_peer_connected(dev[2])
     check_mesh_peer_connected(dev[0])
+
+def test_mesh_link_probe(dev, apdev, params):
+    """Mesh link probing"""
+    addr0 = dev[0].own_addr()
+    addr1 = dev[1].own_addr()
+    addr2 = dev[2].own_addr()
+
+    check_mesh_support(dev[0])
+    for i in range(3):
+        add_open_mesh_network(dev[i])
+        check_mesh_group_added(dev[i])
+    for i in range(3):
+        check_mesh_peer_connected(dev[i])
+
+    dev[0].request("MESH_LINK_PROBE " + addr1)
+    dev[0].request("MESH_LINK_PROBE " + addr2 + " payload=aabbccdd")
+    dev[1].request("MESH_LINK_PROBE " + addr0 + " payload=bbccddee")
+    dev[1].request("MESH_LINK_PROBE " + addr2 + " payload=ccddeeff")
+    dev[2].request("MESH_LINK_PROBE " + addr0 + " payload=aaaa")
+    dev[2].request("MESH_LINK_PROBE " + addr1 + " payload=000102030405060708090a0b0c0d0e0f")
+
+    capfile = os.path.join(params['logdir'], "hwsim0.pcapng")
+    filt = "wlan.fc == 0x8803"
+    for i in range(10):
+        out = run_tshark(capfile, filt, ["wlan.sa", "wlan.da"])
+        if len(out.splitlines()) >= 6:
+            break
+        time.sleep(0.5)
+    for i in [addr0, addr1, addr2]:
+        for j in [addr0, addr1, addr2]:
+            if i == j:
+                continue
+            if i + "\t" + j not in out:
+                raise Exception("Did not see probe %s --> %s" % (i, j))
