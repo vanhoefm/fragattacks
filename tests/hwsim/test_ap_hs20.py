@@ -4684,7 +4684,7 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
     dev[0].connect("open", key_mgmt="NONE", scan_freq="2412")
     dev[1].connect("open", key_mgmt="NONE", scan_freq="2412")
     dev[2].connect("another", key_mgmt="NONE", scan_freq="2412")
-    time.sleep(0.1)
+    time.sleep(1.1)
 
     brcmd = subprocess.Popen(['brctl', 'show'], stdout=subprocess.PIPE)
     res = brcmd.stdout.read().decode()
@@ -4870,9 +4870,10 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
 
     dev[0].request("DISCONNECT")
     dev[1].request("DISCONNECT")
-    time.sleep(0.5)
+    time.sleep(1.5)
     for i in range(len(cmd)):
         cmd[i].terminate()
+    time.sleep(0.1)
     macs = get_bridge_macs("ap-br0")
     logger.info("After disconnect (showmacs): " + str(macs))
     matches = get_permanent_neighbors("ap-br0")
