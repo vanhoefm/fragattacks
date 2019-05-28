@@ -149,9 +149,10 @@ def eap_connect(dev, hapd, method, identity,
                    expect_cert_error=expect_cert_error)
     if expect_failure:
         return id
-    ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=5)
-    if ev is None:
-        raise Exception("No connection event received from hostapd")
+    if hapd:
+        ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=5)
+        if ev is None:
+            raise Exception("No connection event received from hostapd")
     return id
 
 def eap_check_auth(dev, method, initial, rsn=True, sha256=False,

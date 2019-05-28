@@ -455,7 +455,7 @@ def run_pmksa_cache_preauth_auto(dev, apdev):
     hapd.cmd_execute(['ip', 'link', 'set', 'dev', 'ap-br0', 'up'])
     hapd2 = hostapd.add_ap(apdev[1], params)
 
-    eap_connect(dev[0], hapd, "PAX", "pax.user@example.com",
+    eap_connect(dev[0], None, "PAX", "pax.user@example.com",
                 password_hex="0123456789abcdef0123456789abcdef")
 
     found = False
