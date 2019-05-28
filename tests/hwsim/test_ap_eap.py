@@ -2197,11 +2197,32 @@ def test_ap_wpa2_eap_tls_pkcs12(dev, apdev):
 
 def test_ap_wpa2_eap_tls_pkcs12_blob(dev, apdev):
     """WPA2-Enterprise connection using EAP-TLS and PKCS#12 from configuration blob"""
+    cert = read_pem("auth_serv/ca.pem")
+    cacert = binascii.hexlify(cert).decode()
+    run_ap_wpa2_eap_tls_pkcs12_blob(dev, apdev, cacert)
+
+def test_ap_wpa2_eap_tls_pkcs12_blob_pem(dev, apdev):
+    """WPA2-Enterprise connection using EAP-TLS and PKCS#12 from configuration blob and PEM ca_cert blob"""
+    with open("auth_serv/ca.pem", "r") as f:
+        lines = f.readlines()
+        copy = False
+        cert = ""
+        for l in lines:
+            if "-----BEGIN" in l:
+                copy = True
+            if copy:
+                cert += l
+            if "-----END" in l:
+                copy = False
+                break
+    cacert = binascii.hexlify(cert.encode()).decode()
+    run_ap_wpa2_eap_tls_pkcs12_blob(dev, apdev, cacert)
+
+def run_ap_wpa2_eap_tls_pkcs12_blob(dev, apdev, cacert):
     check_pkcs12_support(dev[0])
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     hapd = hostapd.add_ap(apdev[0], params)
-    cert = read_pem("auth_serv/ca.pem")
-    if "OK" not in dev[0].request("SET blob cacert " + binascii.hexlify(cert).decode()):
+    if "OK" not in dev[0].request("SET blob cacert " + cacert):
         raise Exception("Could not set cacert blob")
     with open("auth_serv/user.pkcs12", "rb") as f:
         if "OK" not in dev[0].request("SET blob pkcs12 " + binascii.hexlify(f.read()).decode()):
