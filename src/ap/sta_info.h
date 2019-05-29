@@ -120,6 +120,7 @@ struct sta_info {
 	unsigned int agreed_to_steer:1;
 	unsigned int hs20_t_c_filtering:1;
 	unsigned int ft_over_ds:1;
+	unsigned int external_dh_updated:1;
 
 	u16 auth_alg;
 

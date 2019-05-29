@@ -1589,6 +1589,73 @@ static void hostapd_event_wds_sta_interface_status(struct hostapd_data *hapd,
 }
 
 
+#ifdef CONFIG_OWE
+static int hostapd_notif_update_dh_ie(struct hostapd_data *hapd,
+				      const u8 *peer, const u8 *ie,
+				      size_t ie_len)
+{
+	u16 status;
+	struct sta_info *sta;
+	struct ieee802_11_elems elems;
+
+	if (!hapd || !hapd->wpa_auth) {
+		wpa_printf(MSG_DEBUG, "OWE: Invalid hapd context");
+		return -1;
+	}
+	if (!peer) {
+		wpa_printf(MSG_DEBUG, "OWE: Peer unknown");
+		return -1;
+	}
+	if (!(hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_OWE)) {
+		wpa_printf(MSG_DEBUG, "OWE: No OWE AKM configured");
+		status = WLAN_STATUS_AKMP_NOT_VALID;
+		goto err;
+	}
+	if (ieee802_11_parse_elems(ie, ie_len, &elems, 1) == ParseFailed) {
+		wpa_printf(MSG_DEBUG, "OWE: Failed to parse OWE IE for "
+			   MACSTR, MAC2STR(peer));
+		status = WLAN_STATUS_UNSPECIFIED_FAILURE;
+		goto err;
+	}
+	status = owe_validate_request(hapd, peer, elems.rsn_ie,
+				      elems.rsn_ie_len,
+				      elems.owe_dh, elems.owe_dh_len);
+	if (status != WLAN_STATUS_SUCCESS)
+		goto err;
+
+	sta = ap_get_sta(hapd, peer);
+	if (sta) {
+		ap_sta_no_session_timeout(hapd, sta);
+		accounting_sta_stop(hapd, sta);
+
+		/*
+		 * Make sure that the previously registered inactivity timer
+		 * will not remove the STA immediately.
+		 */
+		sta->timeout_next = STA_NULLFUNC;
+	} else {
+		sta = ap_sta_add(hapd, peer);
+		if (!sta) {
+			status = WLAN_STATUS_UNSPECIFIED_FAILURE;
+			goto err;
+		}
+	}
+	sta->flags &= ~(WLAN_STA_WPS | WLAN_STA_MAYBE_WPS | WLAN_STA_WPS2);
+
+	status = owe_process_rsn_ie(hapd, sta, elems.rsn_ie,
+				    elems.rsn_ie_len, elems.owe_dh,
+				    elems.owe_dh_len);
+	if (status != WLAN_STATUS_SUCCESS)
+		ap_free_sta(hapd, sta);
+
+	return 0;
+err:
+	hostapd_drv_update_dh_ie(hapd, peer, status, NULL, 0);
+	return 0;
+}
+#endif /* CONFIG_OWE */
+
+
 void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 			  union wpa_event_data *data)
 {
@@ -1694,6 +1761,15 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 				    data->assoc_info.req_ies_len,
 				    data->assoc_info.reassoc);
 		break;
+#ifdef CONFIG_OWE
+	case EVENT_UPDATE_DH:
+		if (!data)
+			return;
+		hostapd_notif_update_dh_ie(hapd, data->update_dh.peer,
+					   data->update_dh.ie,
+					   data->update_dh.ie_len);
+		break;
+#endif /* CONFIG_OWE */
 	case EVENT_DISASSOC:
 		if (data)
 			hostapd_notif_disassoc(hapd, data->disassoc_info.addr);

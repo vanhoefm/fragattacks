@@ -23,6 +23,7 @@
 #include "common/sae.h"
 #include "common/dpp.h"
 #include "common/ocv.h"
+#include "common/wpa_common.h"
 #include "radius/radius.h"
 #include "radius/radius_client.h"
 #include "p2p/p2p.h"
@@ -2795,6 +2796,123 @@ static u16 owe_process_assoc_req(struct hostapd_data *hapd,
 	return WLAN_STATUS_SUCCESS;
 }
 
+
+u16 owe_validate_request(struct hostapd_data *hapd, const u8 *peer,
+			 const u8 *rsn_ie, size_t rsn_ie_len,
+			 const u8 *owe_dh, size_t owe_dh_len)
+{
+	struct wpa_ie_data data;
+	int res;
+
+	if (!rsn_ie || rsn_ie_len < 2) {
+		wpa_printf(MSG_DEBUG, "OWE: Invalid RSNE from " MACSTR,
+			   MAC2STR(peer));
+		return WLAN_STATUS_INVALID_IE;
+	}
+	rsn_ie -= 2;
+	rsn_ie_len += 2;
+
+	res = wpa_parse_wpa_ie_rsn(rsn_ie, rsn_ie_len, &data);
+	if (res) {
+		wpa_printf(MSG_DEBUG, "Failed to parse RSNE from " MACSTR
+			   " (res=%d)", MAC2STR(peer), res);
+		wpa_hexdump(MSG_DEBUG, "RSNE", rsn_ie, rsn_ie_len);
+		return wpa_res_to_status_code(res);
+	}
+	if (!(data.key_mgmt & WPA_KEY_MGMT_OWE)) {
+		wpa_printf(MSG_DEBUG,
+			   "OWE: Unexpected key mgmt 0x%x from " MACSTR,
+			   (unsigned int) data.key_mgmt, MAC2STR(peer));
+		return WLAN_STATUS_AKMP_NOT_VALID;
+	}
+	if (!owe_dh) {
+		wpa_printf(MSG_DEBUG,
+			   "OWE: No Diffie-Hellman Parameter element from "
+			   MACSTR, MAC2STR(peer));
+		return WLAN_STATUS_AKMP_NOT_VALID;
+	}
+
+	return WLAN_STATUS_SUCCESS;
+}
+
+
+u16 owe_process_rsn_ie(struct hostapd_data *hapd,
+		       struct sta_info *sta,
+		       const u8 *rsn_ie, size_t rsn_ie_len,
+		       const u8 *owe_dh, size_t owe_dh_len)
+{
+	u16 status;
+	u8 *owe_buf, ie[256 * 2];
+	size_t ie_len = 0;
+	int res;
+
+	if (!rsn_ie || rsn_ie_len < 2) {
+		wpa_printf(MSG_DEBUG, "OWE: No RSNE in (Re)AssocReq");
+		status = WLAN_STATUS_INVALID_IE;
+		goto end;
+	}
+
+	if (!sta->wpa_sm)
+		sta->wpa_sm = wpa_auth_sta_init(hapd->wpa_auth,	sta->addr,
+						NULL);
+	if (!sta->wpa_sm) {
+		wpa_printf(MSG_WARNING,
+			   "OWE: Failed to initialize WPA state machine");
+		status = WLAN_STATUS_UNSPECIFIED_FAILURE;
+		goto end;
+	}
+	rsn_ie -= 2;
+	rsn_ie_len += 2;
+	res = wpa_validate_wpa_ie(hapd->wpa_auth, sta->wpa_sm,
+				  hapd->iface->freq, rsn_ie, rsn_ie_len,
+				  NULL, 0, owe_dh, owe_dh_len);
+	status = wpa_res_to_status_code(res);
+	if (status != WLAN_STATUS_SUCCESS)
+		goto end;
+	status = owe_process_assoc_req(hapd, sta, owe_dh, owe_dh_len);
+	if (status != WLAN_STATUS_SUCCESS)
+		goto end;
+	owe_buf = wpa_auth_write_assoc_resp_owe(sta->wpa_sm, ie, sizeof(ie),
+						NULL, 0);
+	if (!owe_buf) {
+		status = WLAN_STATUS_UNSPECIFIED_FAILURE;
+		goto end;
+	}
+
+	if (sta->owe_ecdh) {
+		struct wpabuf *pub;
+
+		pub = crypto_ecdh_get_pubkey(sta->owe_ecdh, 0);
+		if (!pub) {
+			status = WLAN_STATUS_UNSPECIFIED_FAILURE;
+			goto end;
+		}
+
+		/* OWE Diffie-Hellman Parameter element */
+		*owe_buf++ = WLAN_EID_EXTENSION; /* Element ID */
+		*owe_buf++ = 1 + 2 + wpabuf_len(pub); /* Length */
+		*owe_buf++ = WLAN_EID_EXT_OWE_DH_PARAM; /* Element ID Extension
+							 */
+		WPA_PUT_LE16(owe_buf, sta->owe_group);
+		owe_buf += 2;
+		os_memcpy(owe_buf, wpabuf_head(pub), wpabuf_len(pub));
+		owe_buf += wpabuf_len(pub);
+		wpabuf_free(pub);
+		sta->external_dh_updated = 1;
+	}
+	ie_len = owe_buf - ie;
+
+end:
+	wpa_printf(MSG_DEBUG, "OWE: Update status %d, ie len %d for peer "
+			      MACSTR, status, (unsigned int) ie_len,
+			      MAC2STR(sta->addr));
+	hostapd_drv_update_dh_ie(hapd, sta->addr, status,
+				 status == WLAN_STATUS_SUCCESS ? ie : NULL,
+				 ie_len);
+
+	return status;
+}
+
 #endif /* CONFIG_OWE */
 
 
@@ -3644,6 +3762,12 @@ u8 * owe_assoc_req_process(struct hostapd_data *hapd, struct sta_info *sta,
 		wpa_printf(MSG_DEBUG, "OWE: Using PMKSA caching");
 		owe_buf = wpa_auth_write_assoc_resp_owe(sta->wpa_sm, owe_buf,
 							owe_buf_len, NULL, 0);
+		*reason = WLAN_STATUS_SUCCESS;
+		return owe_buf;
+	}
+
+	if (sta->owe_pmk && sta->external_dh_updated) {
+		wpa_printf(MSG_DEBUG, "OWE: Using previously derived PMK");
 		*reason = WLAN_STATUS_SUCCESS;
 		return owe_buf;
 	}

@@ -956,3 +956,13 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 
 	return ret;
 }
+
+
+int hostapd_drv_update_dh_ie(struct hostapd_data *hapd, const u8 *peer,
+			     u16 reason_code, const u8 *ie, size_t ielen)
+{
+	if (!hapd->driver || !hapd->driver->update_dh_ie || !hapd->drv_priv)
+		return 0;
+	return hapd->driver->update_dh_ie(hapd->drv_priv, peer, reason_code,
+					  ie, ielen);
+}

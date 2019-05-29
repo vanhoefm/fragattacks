@@ -130,6 +130,8 @@ int hostapd_start_dfs_cac(struct hostapd_iface *iface,
 			  int sec_channel_offset, int oper_chwidth,
 			  int center_segment0, int center_segment1);
 int hostapd_drv_do_acs(struct hostapd_data *hapd);
+int hostapd_drv_update_dh_ie(struct hostapd_data *hapd, const u8 *peer,
+			     u16 reason_code, const u8 *ie, size_t ielen);
 
 
 #include "drivers/driver.h"
