@@ -493,7 +493,9 @@ static struct wpabuf * eap_sim_response_start(struct eap_sm *sm,
 		identity_len = data->reauth_id_len;
 		data->reauth = 1;
 	} else if ((id_req == ANY_ID || id_req == FULLAUTH_ID) &&
-		   data->pseudonym) {
+		   data->pseudonym &&
+		   !eap_sim_anonymous_username(data->pseudonym,
+					       data->pseudonym_len)) {
 		identity = data->pseudonym;
 		identity_len = data->pseudonym_len;
 		eap_sim_clear_identities(sm, data, CLEAR_REAUTH_ID);
@@ -769,7 +771,9 @@ static struct wpabuf * eap_sim_process_challenge(struct eap_sm *sm,
 	if (data->last_eap_identity) {
 		identity = data->last_eap_identity;
 		identity_len = data->last_eap_identity_len;
-	} else if (data->pseudonym) {
+	} else if (data->pseudonym &&
+		   !eap_sim_anonymous_username(data->pseudonym,
+					       data->pseudonym_len)) {
 		identity = data->pseudonym;
 		identity_len = data->pseudonym_len;
 	} else {
