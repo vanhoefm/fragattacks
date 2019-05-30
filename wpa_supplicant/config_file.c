@@ -1545,6 +1545,8 @@ static void wpa_config_write_global(FILE *f, struct wpa_config *config)
 	if (config->p2p_interface_random_mac_addr)
 		fprintf(f, "p2p_interface_random_mac_addr=%d\n",
 			config->p2p_interface_random_mac_addr);
+	if (config->disable_btm)
+		fprintf(f, "disable_btm=1\n");
 }
 
 #endif /* CONFIG_NO_CONFIG_WRITE */

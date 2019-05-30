@@ -1711,7 +1711,8 @@ static void wpas_ext_capab_byte(struct wpa_supplicant *wpa_s, u8 *pos, int idx)
 	case 2: /* Bits 16-23 */
 #ifdef CONFIG_WNM
 		*pos |= 0x02; /* Bit 17 - WNM-Sleep Mode */
-		*pos |= 0x08; /* Bit 19 - BSS Transition */
+		if (!wpa_s->conf->disable_btm)
+			*pos |= 0x08; /* Bit 19 - BSS Transition */
 #endif /* CONFIG_WNM */
 		break;
 	case 3: /* Bits 24-31 */
@@ -6629,6 +6630,9 @@ void wpa_supplicant_update_config(struct wpa_supplicant *wpa_s)
 				   "Failed to update wowlan_triggers to '%s'",
 				   wpa_s->conf->wowlan_triggers);
 	}
+
+	if (wpa_s->conf->changed_parameters & CFG_CHANGED_DISABLE_BTM)
+		wpa_supplicant_set_default_scan_ies(wpa_s);
 
 #ifdef CONFIG_WPS
 	wpas_wps_update_config(wpa_s);
