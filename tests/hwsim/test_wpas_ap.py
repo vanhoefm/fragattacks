@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger()
 
 import hwsim_utils
-from utils import HwsimSkip, alloc_fail
+from utils import HwsimSkip, alloc_fail, clear_regdom_dev
 from wpasupplicant import WpaSupplicant
 from test_p2p_channel import set_country
 
@@ -761,5 +761,4 @@ def test_wpas_ap_async_fail(dev):
             dev[0].select_network(id)
             dev[0].wait_disconnected()
     finally:
-        set_country("00")
-        dev[0].set("country", "00")
+        clear_regdom_dev(dev)

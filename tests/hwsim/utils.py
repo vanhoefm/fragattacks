@@ -151,6 +151,9 @@ def clear_regdom(hapd, dev, count=1):
     if hapd:
         hapd.request("DISABLE")
         time.sleep(0.1)
+    clear_regdom_dev(dev, count)
+
+def clear_regdom_dev(dev, count=1):
     for i in range(count):
         dev[i].request("DISCONNECT")
     for i in range(count):
