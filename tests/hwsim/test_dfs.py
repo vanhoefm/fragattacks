@@ -507,7 +507,4 @@ def test_dfs_cac_restart_on_enable(dev, apdev):
         hapd.disable()
 
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        time.sleep(0.1)
+        clear_regdom(hapd, dev)
