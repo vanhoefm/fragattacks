@@ -13,7 +13,7 @@ logger = logging.getLogger()
 
 import hwsim_utils
 import hostapd
-from utils import alloc_fail, fail_test
+from utils import alloc_fail, fail_test, clear_regdom
 
 def check_wpa2_connection(sta, ap, hapd, ssid, mixed=False):
     status = sta.get_status()
@@ -306,11 +306,7 @@ def test_nfc_wps_handover_5ghz(dev, apdev):
         dev[0].wait_connected(timeout=30)
         check_wpa2_connection(dev[0], apdev[0], hapd, ssid)
     finally:
-        dev[0].request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_nfc_wps_handover_chan14(dev, apdev):
     """Connect to WPS AP with NFC connection handover on channel 14"""
