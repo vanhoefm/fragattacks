@@ -1418,6 +1418,12 @@ size_t wpas_supp_op_class_ie(struct wpa_supplicant *wpa_s,
 			     struct wpa_ssid *ssid,
 			     int freq, u8 *pos, size_t len);
 
+int wpas_enable_mac_addr_randomization(struct wpa_supplicant *wpa_s,
+				       unsigned int type, const u8 *addr,
+				       const u8 *mask);
+int wpas_disable_mac_addr_randomization(struct wpa_supplicant *wpa_s,
+					unsigned int type);
+
 /**
  * wpa_supplicant_ctrl_iface_ctrl_rsp_handle - Handle a control response
  * @wpa_s: Pointer to wpa_supplicant data
