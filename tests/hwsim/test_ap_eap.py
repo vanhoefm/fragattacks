@@ -840,6 +840,47 @@ def _test_ap_wpa2_eap_sim_no_change_set(dev, apdev):
     dev[0].set_network_quoted(id, "ssid", "test-wpa2-eap")
     eap_reauth(dev[0], "SIM")
 
+def test_ap_wpa2_eap_sim_ext_anonymous(dev, apdev):
+    """EAP-SIM with external GSM auth and anonymous identity"""
+    check_hlr_auc_gw_support()
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hostapd.add_ap(apdev[0], params)
+    try:
+        run_ap_wpa2_eap_sim_ext_anonymous(dev, "anonymous@example.org")
+        run_ap_wpa2_eap_sim_ext_anonymous(dev, "@example.org")
+    finally:
+        dev[0].request("SET external_sim 0")
+
+def run_ap_wpa2_eap_sim_ext_anonymous(dev, anon):
+    dev[0].request("SET external_sim 1")
+    id = dev[0].connect("test-wpa2-eap", eap="SIM", key_mgmt="WPA-EAP",
+                        identity="1232010000000000",
+                        anonymous_identity=anon,
+                        wait_connect=False, scan_freq="2412")
+
+    ev = dev[0].wait_event(["CTRL-REQ-SIM"], timeout=15)
+    if ev is None:
+        raise Exception("Wait for external SIM processing request timed out")
+    p = ev.split(':', 2)
+    if p[1] != "GSM-AUTH":
+        raise Exception("Unexpected CTRL-REQ-SIM type")
+    rid = p[0].split('-')[3]
+    rand = p[2].split(' ')[0]
+
+    res = subprocess.check_output(["../../hostapd/hlr_auc_gw",
+                                   "-m",
+                                   "auth_serv/hlr_auc_gw.milenage_db",
+                                   "GSM-AUTH-REQ 232010000000000 " + rand]).decode()
+    if "GSM-AUTH-RESP" not in res:
+        raise Exception("Unexpected hlr_auc_gw response")
+    resp = res.split(' ')[2].rstrip()
+
+    dev[0].request("CTRL-RSP-SIM-" + rid + ":GSM-AUTH:" + resp)
+    dev[0].wait_connected(timeout=5)
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+
 def test_ap_wpa2_eap_sim_oom(dev, apdev):
     """EAP-SIM and OOM"""
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
