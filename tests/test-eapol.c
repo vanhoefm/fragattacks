@@ -396,12 +396,14 @@ static int auth_send_eapol(void *ctx, const u8 *addr, const u8 *data,
 
 static const u8 * auth_get_psk(void *ctx, const u8 *addr,
 			       const u8 *p2p_dev_addr, const u8 *prev_psk,
-			       size_t *psk_len)
+			       size_t *psk_len, int *vlan_id)
 {
 	struct wpa *wpa = ctx;
 
 	wpa_printf(MSG_DEBUG, "AUTH: %s (addr=" MACSTR " prev_psk=%p)",
 		   __func__, MAC2STR(addr), prev_psk);
+	if (vlan_id)
+		*vlan_id = 0;
 	if (psk_len)
 		*psk_len = PMK_LEN;
 	if (prev_psk)
@@ -501,7 +503,7 @@ static int auth_init(struct wpa *wpa)
 		return -1;
 	}
 
-	if (wpa_validate_wpa_ie(wpa->auth_group, wpa->auth, wpa->supp_ie,
+	if (wpa_validate_wpa_ie(wpa->auth_group, wpa->auth, 2412, wpa->supp_ie,
 				wpa->supp_ie_len, NULL, 0, NULL, 0) !=
 	    WPA_IE_OK) {
 		wpa_printf(MSG_DEBUG, "AUTH: wpa_validate_wpa_ie() failed");
