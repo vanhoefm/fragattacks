@@ -27,6 +27,11 @@ cd build
 Fuzz testing
 ------------
 
+Newer fuzz testing tools are under the fuzzing directory. See
+fuzzing/README for more details on them. The following text describes
+the older fuzz testing tools that are subject to removal once the same
+newer tools have the same coverage available.
+
 Number of the test tools here can be used for fuzz testing with tools
 like American fuzzy lop (afl-fuzz) that are designed to modify an
 external file for program input. ap-mgmt-fuzzer, eapol-fuzzer,
