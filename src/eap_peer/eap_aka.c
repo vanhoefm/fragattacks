@@ -927,8 +927,13 @@ static struct wpabuf * eap_aka_process_challenge(struct eap_sm *sm,
 				     attr->checkcode_len)) {
 		wpa_printf(MSG_WARNING, "EAP-AKA: Invalid AT_CHECKCODE in the "
 			   "message");
+#ifdef TEST_FUZZ
+		wpa_printf(MSG_INFO,
+			   "TEST: Ignore AT_CHECKCODE mismatch for fuzz testing");
+#else /* TEST_FUZZ */
 		return eap_aka_client_error(data, id,
 					    EAP_AKA_UNABLE_TO_PROCESS_PACKET);
+#endif /* TEST_FUZZ */
 	}
 
 #ifdef EAP_AKA_PRIME
@@ -1060,8 +1065,13 @@ static struct wpabuf * eap_aka_process_challenge(struct eap_sm *sm,
 	if (eap_aka_verify_mac(data, reqData, attr->mac, (u8 *) "", 0)) {
 		wpa_printf(MSG_WARNING, "EAP-AKA: Challenge message "
 			   "used invalid AT_MAC");
+#ifdef TEST_FUZZ
+		wpa_printf(MSG_INFO,
+			   "TEST: Ignore AT_MAC mismatch for fuzz testing");
+#else /* TEST_FUZZ */
 		return eap_aka_client_error(data, id,
 					    EAP_AKA_UNABLE_TO_PROCESS_PACKET);
+#endif /* TEST_FUZZ */
 	}
 
 	/* Old reauthentication identity must not be used anymore. In
@@ -1210,8 +1220,13 @@ static struct wpabuf * eap_aka_process_reauthentication(
 	if (attr->checkcode &&
 	    eap_aka_verify_checkcode(data, attr->checkcode,
 				     attr->checkcode_len)) {
+#ifdef TEST_FUZZ
+		wpa_printf(MSG_INFO,
+			   "TEST: Ignore AT_CHECKCODE mismatch for fuzz testing");
+#else /* TEST_FUZZ */
 		wpa_printf(MSG_WARNING, "EAP-AKA: Invalid AT_CHECKCODE in the "
 			   "message");
+#endif /* TEST_FUZZ */
 		return eap_aka_client_error(data, id,
 					    EAP_AKA_UNABLE_TO_PROCESS_PACKET);
 	}
