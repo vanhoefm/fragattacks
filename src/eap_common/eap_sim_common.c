@@ -945,10 +945,15 @@ u8 * eap_sim_parse_encr(const u8 *k_encr, const u8 *encr_data,
 	if (decrypted == NULL)
 		return NULL;
 
+#ifdef TEST_FUZZ
+		wpa_printf(MSG_INFO,
+			   "TEST: Skip AES-128-CBC decryption for fuzz testing");
+#else /* TEST_FUZZ */
 	if (aes_128_cbc_decrypt(k_encr, iv, decrypted, encr_data_len)) {
 		os_free(decrypted);
 		return NULL;
 	}
+#endif /* TEST_FUZZ */
 	wpa_hexdump(MSG_MSGDUMP, "EAP-SIM: Decrypted AT_ENCR_DATA",
 		    decrypted, encr_data_len);
 

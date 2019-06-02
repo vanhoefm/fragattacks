@@ -799,8 +799,13 @@ static struct wpabuf * eap_sim_process_challenge(struct eap_sm *sm,
 			       EAP_SIM_NONCE_MT_LEN)) {
 		wpa_printf(MSG_WARNING, "EAP-SIM: Challenge message "
 			   "used invalid AT_MAC");
+#ifdef TEST_FUZZ
+		wpa_printf(MSG_INFO,
+			   "TEST: Ignore AT_MAC mismatch for fuzz testing");
+#else /* TEST_FUZZ */
 		return eap_sim_client_error(data, id,
 					    EAP_SIM_UNABLE_TO_PROCESS_PACKET);
+#endif /* TEST_FUZZ */
 	}
 
 	/* Old reauthentication identity must not be used anymore. In
@@ -959,15 +964,27 @@ static struct wpabuf * eap_sim_process_reauthentication(
 	{
 		wpa_printf(MSG_WARNING, "EAP-SIM: Reauthentication "
 			   "did not have valid AT_MAC");
+#ifdef TEST_FUZZ
+		wpa_printf(MSG_INFO,
+			   "TEST: Ignore AT_MAC mismatch for fuzz testing");
+#else /* TEST_FUZZ */
 		return eap_sim_client_error(data, id,
 					    EAP_SIM_UNABLE_TO_PROCESS_PACKET);
+#endif /* TEST_FUZZ */
 	}
 
 	/* At this stage the received MAC has been verified. Use this MAC for
 	 * reauth Session-Id calculation if all other checks pass.
 	 * The peer does not use the local MAC but the received MAC in deriving
 	 * Session-Id. */
+#ifdef TEST_FUZZ
+	if (attr->mac)
+		os_memcpy(data->reauth_mac, attr->mac, EAP_SIM_MAC_LEN);
+	else
+		os_memset(data->reauth_mac, 0x12, EAP_SIM_MAC_LEN);
+#else /* TEST_FUZZ */
 	os_memcpy(data->reauth_mac, attr->mac, EAP_SIM_MAC_LEN);
+#endif /* TEST_FUZZ */
 	wpa_hexdump(MSG_DEBUG, "EAP-SIM: Server MAC",
 		    data->reauth_mac, EAP_SIM_MAC_LEN);
 
