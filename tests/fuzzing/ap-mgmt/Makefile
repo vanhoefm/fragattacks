@@ -29,6 +29,6 @@ ap-mgmt: ap-mgmt.o $(OBJS) $(LIBS)
 
 clean:
 	$(MAKE) -C $(SRC) clean
-	rm -f ap-mgmt-fuzzer *~ *.o *.d ../*~ ../*.o ../*.d
+	rm -f ap-mgmt *~ *.o *.d ../*~ ../*.o ../*.d
 
 -include $(OBJS:%.o=%.d)
