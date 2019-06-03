@@ -64,6 +64,10 @@ static void ieee802_1x_send(struct hostapd_data *hapd, struct sta_info *sta,
 
 	xhdr = (struct ieee802_1x_hdr *) buf;
 	xhdr->version = hapd->conf->eapol_version;
+#ifdef CONFIG_MACSEC
+	if (xhdr->version > 2 && hapd->conf->macsec_policy == 0)
+		xhdr->version = 2;
+#endif /* CONFIG_MACSEC */
 	xhdr->type = type;
 	xhdr->length = host_to_be16(datalen);
 
@@ -213,6 +217,10 @@ static void ieee802_1x_tx_key_one(struct hostapd_data *hapd,
 	/* This header is needed here for HMAC-MD5, but it will be regenerated
 	 * in ieee802_1x_send() */
 	hdr->version = hapd->conf->eapol_version;
+#ifdef CONFIG_MACSEC
+	if (hdr->version > 2)
+		hdr->version = 2;
+#endif /* CONFIG_MACSEC */
 	hdr->type = IEEE802_1X_TYPE_EAPOL_KEY;
 	hdr->length = host_to_be16(len);
 	hmac_md5(sm->eap_if->eapKeyData + 32, 32, buf, sizeof(*hdr) + len,
