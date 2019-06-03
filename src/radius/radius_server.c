@@ -1136,6 +1136,13 @@ radius_server_encapsulate_eap(struct radius_server_data *data,
 					      len)) {
 			RADIUS_DEBUG("Failed to add MPPE key attributes");
 		}
+
+		if (sess->eap_if->eapSessionId &&
+		    !radius_msg_add_attr(msg, RADIUS_ATTR_EAP_KEY_NAME,
+					 sess->eap_if->eapSessionId,
+					 sess->eap_if->eapSessionIdLen)) {
+			RADIUS_DEBUG("Failed to add EAP-Key-Name attribute");
+		}
 	}
 
 #ifdef CONFIG_HS20
