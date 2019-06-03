@@ -2499,7 +2499,9 @@ def test_mesh_link_probe(dev, apdev, params):
     for i in range(3):
         check_mesh_peer_connected(dev[i])
 
-    dev[0].request("MESH_LINK_PROBE " + addr1)
+    res = dev[0].request("MESH_LINK_PROBE " + addr1)
+    if "FAIL" in res:
+        raise HwsimSkip("MESH_LINK_PROBE kernel side support missing")
     dev[0].request("MESH_LINK_PROBE " + addr2 + " payload=aabbccdd")
     dev[1].request("MESH_LINK_PROBE " + addr0 + " payload=bbccddee")
     dev[1].request("MESH_LINK_PROBE " + addr2 + " payload=ccddeeff")
