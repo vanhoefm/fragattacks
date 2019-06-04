@@ -1855,6 +1855,25 @@ enum qca_wlan_vendor_attr_config {
 	 */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_GTX = 57,
 
+	/* Attribute to configure disconnect IEs to the driver.
+	 * This carries an array of unsigned 8-bit characters.
+	 *
+	 * If this is configured, driver shall fill the IEs in disassoc/deauth
+	 * frame.
+	 * These IEs are expected to be considered only for the next
+	 * immediate disconnection (disassoc/deauth frame) originated by
+	 * the DUT, irrespective of the entity (user space/driver/firmware)
+	 * triggering the disconnection.
+	 * The host drivers are not expected to use the IEs set through
+	 * this interface for further disconnections after the first immediate
+	 * disconnection initiated post the configuration.
+	 * If the IEs are also updated through cfg80211 interface (after the
+	 * enhancement to cfg80211_disconnect), host driver is expected to
+	 * take the union of IEs from both of these interfaces and send in
+	 * further disassoc/deauth frames.
+	 */
+	QCA_WLAN_VENDOR_ATTR_DISCONNECT_IES = 58,
+
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_CONFIG_MAX =
