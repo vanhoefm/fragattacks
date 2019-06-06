@@ -357,8 +357,7 @@ def test_ap_vht_capab_not_supported(dev, apdev):
             if "OK" not in hapd.request("SET vht_capab [MAX-A-MPDU-LEN-EXP%d]" % i):
                 raise Exception("Unexpected SET failure")
     finally:
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        time.sleep(0.1)
+        clear_regdom(hapd, dev)
 
 def test_ap_vht160(dev, apdev):
     """VHT with 160 MHz channel width (1)"""
