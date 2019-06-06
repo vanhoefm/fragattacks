@@ -275,10 +275,7 @@ def test_dfs_radar2(dev, apdev):
 
         wait_dfs_event(hapd, None, 5)
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        time.sleep(0.1)
+        clear_regdom(hapd, dev)
 
 @remote_compatible
 def test_dfs_radar_on_non_dfs_channel(dev, apdev):
