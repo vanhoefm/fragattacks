@@ -28,6 +28,7 @@ struct wpa {
 	u8 *supp_eapol;
 	size_t supp_eapol_len;
 
+	struct wpa_auth_callbacks auth_cb;
 	struct wpa_authenticator *auth_group;
 	struct wpa_state_machine *auth;
 
@@ -193,7 +194,6 @@ static int auth_set_key(void *ctx, int vlan_id, enum wpa_alg alg,
 static int auth_init_group(struct wpa *wpa)
 {
 	struct wpa_auth_config conf;
-	struct wpa_auth_callbacks cb;
 
 	wpa_printf(MSG_DEBUG, "AUTH: Initializing group state machine");
 
@@ -216,13 +216,12 @@ static int auth_init_group(struct wpa *wpa)
 	conf.wpa_group_update_count = 4;
 	conf.wpa_pairwise_update_count = 4;
 
-	os_memset(&cb, 0, sizeof(cb));
-	cb.logger = auth_logger;
-	cb.send_eapol = auth_send_eapol;
-	cb.get_psk = auth_get_psk;
-	cb.set_key = auth_set_key,
+	wpa->auth_cb.logger = auth_logger;
+	wpa->auth_cb.send_eapol = auth_send_eapol;
+	wpa->auth_cb.get_psk = auth_get_psk;
+	wpa->auth_cb.set_key = auth_set_key;
 
-	wpa->auth_group = wpa_init(wpa->auth_addr, &conf, &cb, wpa);
+	wpa->auth_group = wpa_init(wpa->auth_addr, &conf, &wpa->auth_cb, wpa);
 	if (!wpa->auth_group) {
 		wpa_printf(MSG_DEBUG, "AUTH: wpa_init() failed");
 		return -1;
