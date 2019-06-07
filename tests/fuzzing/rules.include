@@ -1,9 +1,21 @@
+FUZZ_CFLAGS =
+
 ifdef LIBFUZZER
-CC=clang
-CFLAGS = -MMD -O2 -Wall -g
-CFLAGS += -fsanitize=fuzzer,address,signed-integer-overflow,unsigned-integer-overflow
+CC ?= clang
+#FUZZ_FLAGS ?= -fsanitize=fuzzer,address,signed-integer-overflow,unsigned-integer-overflow
+FUZZ_FLAGS ?= -fsanitize=fuzzer,address
+ifndef CFLAGS
+FUZZ_CFLAGS += $(FUZZ_FLAGS)
+endif
+endif
+
+FUZZ_CFLAGS += -DCONFIG_NO_RANDOM_POOL -DTEST_FUZZ
+export FUZZ_CFLAGS
+CFLAGS ?= -MMD -O2 -Wall -g
+CFLAGS += $(FUZZ_CFLAGS)
+ifdef LIBFUZZER
 CFLAGS += -DTEST_LIBFUZZER
-LDFLAGS += -fsanitize=fuzzer,address,signed-integer-overflow,unsigned-integer-overflow
+LDFLAGS += $(FUZZ_FLAGS)
 endif
 
 ifndef CC
@@ -13,13 +25,6 @@ endif
 ifndef LDO
 LDO=$(CC)
 endif
-
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
-endif
-
-CFLAGS += -DCONFIG_NO_RANDOM_POOL
-CFLAGS += -DTEST_FUZZ
 
 WPAS_SRC=../../../wpa_supplicant
 SRC=../../../src
@@ -34,7 +39,7 @@ $(SRC)/common/libcommon.a:
 	$(MAKE) -C $(SRC)/common
 
 $(SRC)/crypto/libcrypto.a:
-	$(MAKE) -C $(SRC)/crypto
+	$(MAKE) -C $(SRC)/crypto TEST_FUZZ=y
 
 $(SRC)/eapol_auth/libeapol_auth.a:
 	$(MAKE) -C $(SRC)/eapol_auth
