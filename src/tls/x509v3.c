@@ -538,9 +538,43 @@ done:
 }
 
 
+static int parse_uint2(const char *pos, size_t len)
+{
+	char buf[3];
+	int ret;
+
+	if (len < 2)
+		return -1;
+	buf[0] = pos[0];
+	buf[1] = pos[1];
+	buf[2] = 0x00;
+	if (sscanf(buf, "%2d", &ret) != 1)
+		return -1;
+	return ret;
+}
+
+
+static int parse_uint4(const char *pos, size_t len)
+{
+	char buf[5];
+	int ret;
+
+	if (len < 4)
+		return -1;
+	buf[0] = pos[0];
+	buf[1] = pos[1];
+	buf[2] = pos[2];
+	buf[3] = pos[3];
+	buf[4] = 0x00;
+	if (sscanf(buf, "%4d", &ret) != 1)
+		return -1;
+	return ret;
+}
+
+
 int x509_parse_time(const u8 *buf, size_t len, u8 asn1_tag, os_time_t *val)
 {
-	const char *pos;
+	const char *pos, *end;
 	int year, month, day, hour, min, sec;
 
 	/*
@@ -554,6 +588,7 @@ int x509_parse_time(const u8 *buf, size_t len, u8 asn1_tag, os_time_t *val)
 	 */
 
 	pos = (const char *) buf;
+	end = pos + len;
 
 	switch (asn1_tag) {
 	case ASN1_TAG_UTCTIME:
@@ -562,7 +597,8 @@ int x509_parse_time(const u8 *buf, size_t len, u8 asn1_tag, os_time_t *val)
 					  "UTCTime format", buf, len);
 			return -1;
 		}
-		if (sscanf(pos, "%02d", &year) != 1) {
+		year = parse_uint2(pos, end - pos);
+		if (year < 0) {
 			wpa_hexdump_ascii(MSG_DEBUG, "X509: Failed to parse "
 					  "UTCTime year", buf, len);
 			return -1;
@@ -579,7 +615,8 @@ int x509_parse_time(const u8 *buf, size_t len, u8 asn1_tag, os_time_t *val)
 					  "GeneralizedTime format", buf, len);
 			return -1;
 		}
-		if (sscanf(pos, "%04d", &year) != 1) {
+		year = parse_uint4(pos, end - pos);
+		if (year < 0) {
 			wpa_hexdump_ascii(MSG_DEBUG, "X509: Failed to parse "
 					  "GeneralizedTime year", buf, len);
 			return -1;
@@ -592,35 +629,40 @@ int x509_parse_time(const u8 *buf, size_t len, u8 asn1_tag, os_time_t *val)
 		return -1;
 	}
 
-	if (sscanf(pos, "%02d", &month) != 1) {
+	month = parse_uint2(pos, end - pos);
+	if (month < 0) {
 		wpa_hexdump_ascii(MSG_DEBUG, "X509: Failed to parse Time "
 				  "(month)", buf, len);
 		return -1;
 	}
 	pos += 2;
 
-	if (sscanf(pos, "%02d", &day) != 1) {
+	day = parse_uint2(pos, end - pos);
+	if (day < 0) {
 		wpa_hexdump_ascii(MSG_DEBUG, "X509: Failed to parse Time "
 				  "(day)", buf, len);
 		return -1;
 	}
 	pos += 2;
 
-	if (sscanf(pos, "%02d", &hour) != 1) {
+	hour = parse_uint2(pos, end - pos);
+	if (hour < 0) {
 		wpa_hexdump_ascii(MSG_DEBUG, "X509: Failed to parse Time "
 				  "(hour)", buf, len);
 		return -1;
 	}
 	pos += 2;
 
-	if (sscanf(pos, "%02d", &min) != 1) {
+	min = parse_uint2(pos, end - pos);
+	if (min < 0) {
 		wpa_hexdump_ascii(MSG_DEBUG, "X509: Failed to parse Time "
 				  "(min)", buf, len);
 		return -1;
 	}
 	pos += 2;
 
-	if (sscanf(pos, "%02d", &sec) != 1) {
+	sec = parse_uint2(pos, end - pos);
+	if (sec < 0) {
 		wpa_hexdump_ascii(MSG_DEBUG, "X509: Failed to parse Time "
 				  "(sec)", buf, len);
 		return -1;
