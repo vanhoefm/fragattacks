@@ -792,9 +792,10 @@ void wpas_notify_certification(struct wpa_supplicant *wpa_s,
 			       const char *cert_hash)
 {
 	wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_EAP_PEER_CERT
-		"depth=%d subject='%s'%s%s",
+		"depth=%d subject='%s'%s%s%s",
 		cert->depth, cert->subject, cert_hash ? " hash=" : "",
-		cert_hash ? cert_hash : "");
+		cert_hash ? cert_hash : "",
+		cert->tod ? " tod=1" : "");
 
 	if (cert->cert) {
 		char *cert_hex;

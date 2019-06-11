@@ -2149,6 +2149,34 @@ static void openssl_tls_fail_event(struct tls_connection *conn,
 }
 
 
+static int openssl_cert_tod(X509 *cert)
+{
+	CERTIFICATEPOLICIES *ext;
+	stack_index_t i;
+	char buf[100];
+	int res;
+	int tod = 0;
+
+	ext = X509_get_ext_d2i(cert, NID_certificate_policies, NULL, NULL);
+	if (!ext)
+		return 0;
+
+	for (i = 0; i < sk_POLICYINFO_num(ext); i++) {
+		POLICYINFO *policy;
+
+		policy = sk_POLICYINFO_value(ext, i);
+		res = OBJ_obj2txt(buf, sizeof(buf), policy->policyid, 0);
+		if (res < 0 || (size_t) res >= sizeof(buf))
+			continue;
+		wpa_printf(MSG_DEBUG, "OpenSSL: Certificate Policy %s", buf);
+		if (os_strcmp(buf, "1.3.6.1.4.1.40808.1.3.1") == 0)
+			tod = 1;
+	}
+
+	return tod;
+}
+
+
 static void openssl_tls_cert_event(struct tls_connection *conn,
 				   X509 *err_cert, int depth,
 				   const char *subject)
@@ -2240,6 +2268,8 @@ static void openssl_tls_cert_event(struct tls_connection *conn,
 	for (alt = 0; alt < num_altsubject; alt++)
 		ev.peer_cert.altsubject[alt] = altsubject[alt];
 	ev.peer_cert.num_altsubject = num_altsubject;
+
+	ev.peer_cert.tod = openssl_cert_tod(err_cert);
 
 	context->event_cb(context->cb_ctx, TLS_PEER_CERTIFICATE, &ev);
 	wpabuf_free(cert);

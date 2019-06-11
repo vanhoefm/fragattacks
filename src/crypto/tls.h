@@ -57,6 +57,7 @@ struct tls_cert_data {
 	const char *altsubject[TLS_MAX_ALT_SUBJECT];
 	int num_altsubject;
 	const char *serial_num;
+	int tod;
 };
 
 union tls_event_data {
