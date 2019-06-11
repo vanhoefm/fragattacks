@@ -132,6 +132,7 @@ subjectKeyIdentifier=hash
 authorityKeyIdentifier=keyid,issuer
 authorityInfoAccess = OCSP;URI:http://server.w1.fi:8888/
 #@ALTNAME@
+#@CERTPOL@
 
 extendedKeyUsage = serverAuth
 
