@@ -2097,12 +2097,8 @@ static void eap_peer_sm_tls_event(void *ctx, enum tls_event ev,
 			}
 		}
 
-		sm->eapol_cb->notify_cert(sm->eapol_ctx,
-					  data->peer_cert.depth,
-					  data->peer_cert.subject,
-					  data->peer_cert.altsubject,
-					  data->peer_cert.num_altsubject,
-					  hash_hex, data->peer_cert.cert);
+		sm->eapol_cb->notify_cert(sm->eapol_ctx, &data->peer_cert,
+					  hash_hex);
 		break;
 	case TLS_ALERT:
 		if (data->alert.is_local)

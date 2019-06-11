@@ -48,6 +48,17 @@ enum tls_fail_reason {
 
 #define TLS_MAX_ALT_SUBJECT 10
 
+struct tls_cert_data {
+	int depth;
+	const char *subject;
+	const struct wpabuf *cert;
+	const u8 *hash;
+	size_t hash_len;
+	const char *altsubject[TLS_MAX_ALT_SUBJECT];
+	int num_altsubject;
+	const char *serial_num;
+};
+
 union tls_event_data {
 	struct {
 		int depth;
@@ -57,16 +68,7 @@ union tls_event_data {
 		const struct wpabuf *cert;
 	} cert_fail;
 
-	struct {
-		int depth;
-		const char *subject;
-		const struct wpabuf *cert;
-		const u8 *hash;
-		size_t hash_len;
-		const char *altsubject[TLS_MAX_ALT_SUBJECT];
-		int num_altsubject;
-		const char *serial_num;
-	} peer_cert;
+	struct tls_cert_data peer_cert;
 
 	struct {
 		int is_local;
