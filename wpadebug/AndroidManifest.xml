@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <application android:label="wpadebug">
+    <application android:label="wpadebug" android:usesCleartextTraffic="true">
         <activity android:name="w1.fi.wpadebug.MainActivity"
                   android:label="wpadebug">
             <intent-filter>
