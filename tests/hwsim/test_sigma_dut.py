@@ -22,7 +22,7 @@ from hwsim import HWSimRadio
 import hwsim_utils
 from test_dpp import check_dpp_capab, update_hapd_config
 from test_suite_b import check_suite_b_192_capa, suite_b_as_params, suite_b_192_rsa_ap_params
-from test_ap_eap import check_eap_capa
+from test_ap_eap import check_eap_capa, int_eap_server_params
 from test_ap_hs20 import hs20_ap_params
 
 def check_sigma_dut():
@@ -2782,3 +2782,122 @@ def test_sigma_dut_ap_hs20(dev, apdev, params):
             sigma_dut_cmd_check("ap_reset_default")
         finally:
             stop_sigma_dut(sigma)
+
+def test_sigma_dut_eap_ttls_uosc(dev, apdev, params):
+    """sigma_dut controlled STA and EAP-TTLS with UOSC"""
+    logdir = params['logdir']
+
+    with open("auth_serv/ca.pem", "r") as f:
+        with open(os.path.join(logdir, "sigma_dut_eap_ttls_uosc.ca.pem"),
+                  "w") as f2:
+            f2.write(f.read())
+
+    src = "auth_serv/server.pem"
+    dst = os.path.join(logdir, "sigma_dut_eap_ttls_uosc.server.der")
+    hashdst = os.path.join(logdir, "sigma_dut_eap_ttls_uosc.server.pem.sha256")
+    subprocess.check_call(["openssl", "x509", "-in", src, "-out", dst,
+                           "-outform", "DER"],
+                          stderr=open('/dev/null', 'w'))
+    with open(dst, "rb") as f:
+        der = f.read()
+    hash = hashlib.sha256(der).digest()
+    with open(hashdst, "w") as f:
+        f.write(binascii.hexlify(hash).decode())
+
+    dst = os.path.join(logdir, "sigma_dut_eap_ttls_uosc.incorrect.pem.sha256")
+    with open(dst, "w") as f:
+        f.write(32*"00")
+
+    ssid = "test-wpa2-eap"
+    params = hostapd.wpa2_eap_params(ssid=ssid)
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, cert_path=logdir, debug=True)
+
+    try:
+        cmd = "sta_set_security,type,eapttls,interface,%s,ssid,%s,keymgmttype,wpa2,encType,AES-CCMP,PairwiseCipher,AES-CCMP-128,username,DOMAIN\mschapv2 user,password,password,ServerCert,sigma_dut_eap_ttls_uosc.incorrect.pem" % (ifname, ssid)
+
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check(cmd)
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid))
+        ev = dev[0].wait_event(["CTRL-EVENT-EAP-TLS-CERT-ERROR"], timeout=10)
+        if ev is None:
+            raise Exception("Server certificate error not reported")
+
+        res = sigma_dut_cmd_check("dev_exec_action,program,WPA3,interface,%s,ServerCertTrust,Accept" % ifname)
+        if "ServerCertTrustResult,Accepted" not in res:
+            raise Exception("Server certificate trust was not accepted")
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+        dev[0].dump_monitor()
+    finally:
+        stop_sigma_dut(sigma)
+
+def test_sigma_dut_eap_ttls_uosc_tod(dev, apdev, params):
+    """sigma_dut controlled STA and EAP-TTLS with UOSC/TOD"""
+    logdir = params['logdir']
+
+    with open("auth_serv/ca.pem", "r") as f:
+        with open(os.path.join(logdir, "sigma_dut_eap_ttls_uosc_tod.ca.pem"),
+                  "w") as f2:
+            f2.write(f.read())
+
+    src = "auth_serv/server-certpol.pem"
+    dst = os.path.join(logdir, "sigma_dut_eap_ttls_uosc_tod.server.der")
+    hashdst = os.path.join(logdir,
+                           "sigma_dut_eap_ttls_uosc_tod.server.pem.sha256")
+    subprocess.check_call(["openssl", "x509", "-in", src, "-out", dst,
+                           "-outform", "DER"],
+                          stderr=open('/dev/null', 'w'))
+    with open(dst, "rb") as f:
+        der = f.read()
+    hash = hashlib.sha256(der).digest()
+    with open(hashdst, "w") as f:
+        f.write(binascii.hexlify(hash).decode())
+
+    dst = os.path.join(logdir,
+                       "sigma_dut_eap_ttls_uosc_tod.incorrect.pem.sha256")
+    with open(dst, "w") as f:
+        f.write(32*"00")
+
+    ssid = "test-wpa2-eap"
+    params = int_eap_server_params()
+    params["ssid"] = ssid
+    params["server_cert"] = "auth_serv/server-certpol.pem"
+    params["private_key"] = "auth_serv/server-certpol.key"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, cert_path=logdir, debug=True)
+
+    try:
+        cmd = "sta_set_security,type,eapttls,interface,%s,ssid,%s,keymgmttype,wpa2,encType,AES-CCMP,PairwiseCipher,AES-CCMP-128,trustedRootCA,sigma_dut_eap_ttls_uosc_tod.ca.pem,username,DOMAIN\mschapv2 user,password,password,ServerCert,sigma_dut_eap_ttls_uosc_tod.server.pem" % (ifname, ssid)
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check(cmd)
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid))
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname + ",maintain_profile,1")
+        dev[0].wait_disconnected()
+        dev[0].dump_monitor()
+
+        hapd.disable()
+        params = hostapd.wpa2_eap_params(ssid=ssid)
+        hapd = hostapd.add_ap(apdev[0], params)
+
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid))
+        ev = dev[0].wait_event(["CTRL-EVENT-EAP-TLS-CERT-ERROR"], timeout=10)
+        if ev is None:
+            raise Exception("Server certificate error not reported")
+
+        res = sigma_dut_cmd_check("dev_exec_action,program,WPA3,interface,%s,ServerCertTrust,Accept" % ifname)
+        if "ServerCertTrustResult,Accepted" in res:
+            raise Exception("Server certificate trust override was accepted unexpectedly")
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+        dev[0].dump_monitor()
+    finally:
+        stop_sigma_dut(sigma)
