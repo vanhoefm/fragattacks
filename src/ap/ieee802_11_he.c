@@ -23,7 +23,7 @@ static u8 ieee80211_he_ppet_size(u8 ppe_thres_hdr, const u8 *phy_cap_info)
 	u8 sz = 0, ru;
 
 	if ((phy_cap_info[HE_PHYCAP_PPE_THRESHOLD_PRESENT_IDX] &
-	     HE_PHYCAP_PPE_THRESHOLD_PRESENT_IDX) == 0)
+	     HE_PHYCAP_PPE_THRESHOLD_PRESENT) == 0)
 		return 0;
 
 	ru = (ppe_thres_hdr >> HE_PPE_THRES_RU_INDEX_BITMASK_SHIFT) &
