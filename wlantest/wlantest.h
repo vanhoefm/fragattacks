@@ -93,6 +93,7 @@ struct wlantest_sta {
 
 	le16 seq_ctrl_to_sta[17];
 	le16 seq_ctrl_to_ap[17];
+	int allow_duplicate;
 
 	int pwrmgt;
 	int pspoll;

@@ -161,7 +161,8 @@ static int rx_duplicate(struct wlantest *wt, const struct ieee80211_hdr *hdr,
 	else
 		seq_ctrl = &sta->seq_ctrl_to_sta[tid];
 
-	if ((fc & WLAN_FC_RETRY) && hdr->seq_ctrl == *seq_ctrl) {
+	if ((fc & WLAN_FC_RETRY) && hdr->seq_ctrl == *seq_ctrl &&
+	    !sta->allow_duplicate) {
 		u16 s = le_to_host16(hdr->seq_ctrl);
 		add_note(wt, MSG_MSGDUMP, "Ignore duplicated frame (seq=%u "
 			 "frag=%u A1=" MACSTR " A2=" MACSTR ")",
@@ -171,6 +172,7 @@ static int rx_duplicate(struct wlantest *wt, const struct ieee80211_hdr *hdr,
 	}
 
 	*seq_ctrl = hdr->seq_ctrl;
+	sta->allow_duplicate = 0;
 
 	return 0;
 }

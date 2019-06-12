@@ -485,8 +485,16 @@ skip_replay_det:
 				dlen, 1, peer_addr);
 		write_pcap_decrypted(wt, (const u8 *) hdr, hdrlen,
 				     decrypted, dlen);
-	} else if (!try_ptk_iter)
-		add_note(wt, MSG_DEBUG, "Failed to decrypt frame");
+	} else {
+		if (!try_ptk_iter)
+			add_note(wt, MSG_DEBUG, "Failed to decrypt frame");
+
+		/* Assume the frame was corrupted and there was no FCS to check.
+		 * Allow retry of this particular frame to be processed so that
+		 * it could end up getting decrypted if it was received without
+		 * corruption. */
+		sta->allow_duplicate = 1;
+	}
 	os_free(decrypted);
 }
 

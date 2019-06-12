@@ -1315,6 +1315,12 @@ static u8 * mgmt_ccmp_decrypt(struct wlantest *wt, const u8 *data, size_t len,
 			os_memcpy(frame + 24, decrypted, *dlen);
 			*dlen += 24;
 		}
+	} else {
+		/* Assume the frame was corrupted and there was no FCS to check.
+		 * Allow retry of this particular frame to be processed so that
+		 * it could end up getting decrypted if it was received without
+		 * corruption. */
+		sta->allow_duplicate = 1;
 	}
 
 	os_free(decrypted);
