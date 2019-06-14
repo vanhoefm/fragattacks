@@ -546,14 +546,15 @@ int hostapd_set_freq(struct hostapd_data *hapd, enum hostapd_hw_mode mode,
 		     int center_segment0, int center_segment1)
 {
 	struct hostapd_freq_params data;
+	struct hostapd_hw_modes *cmode = hapd->iface->current_mode;
 
 	if (hostapd_set_freq_params(&data, mode, freq, channel, ht_enabled,
 				    vht_enabled, he_enabled, sec_channel_offset,
 				    oper_chwidth,
 				    center_segment0, center_segment1,
-				    hapd->iface->current_mode ?
-				    hapd->iface->current_mode->vht_capab : 0,
-				    &hapd->iface->current_mode->he_capab))
+				    cmode ? cmode->vht_capab : 0,
+				    cmode ?
+				    &cmode->he_capab[IEEE80211_MODE_AP] : NULL))
 		return -1;
 
 	if (hapd->driver == NULL)
@@ -798,8 +799,9 @@ int hostapd_start_dfs_cac(struct hostapd_iface *iface,
 	struct hostapd_data *hapd = iface->bss[0];
 	struct hostapd_freq_params data;
 	int res;
+	struct hostapd_hw_modes *cmode = iface->current_mode;
 
-	if (!hapd->driver || !hapd->driver->start_dfs_cac)
+	if (!hapd->driver || !hapd->driver->start_dfs_cac || !cmode)
 		return 0;
 
 	if (!iface->conf->ieee80211h) {
@@ -812,8 +814,8 @@ int hostapd_start_dfs_cac(struct hostapd_iface *iface,
 				    vht_enabled, he_enabled, sec_channel_offset,
 				    oper_chwidth, center_segment0,
 				    center_segment1,
-				    iface->current_mode->vht_capab,
-				    &iface->current_mode->he_capab)) {
+				    cmode->vht_capab,
+				    &cmode->he_capab[IEEE80211_MODE_AP])) {
 		wpa_printf(MSG_ERROR, "Can't set freq params");
 		return -1;
 	}

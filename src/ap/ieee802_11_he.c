@@ -44,7 +44,8 @@ static u8 ieee80211_he_ppet_size(u8 ppe_thres_hdr, const u8 *phy_cap_info)
 }
 
 
-u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid)
+u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid,
+			  enum ieee80211_op_mode opmode)
 {
 	struct ieee80211_he_capabilities *cap;
 	struct hostapd_hw_modes *mode = hapd->iface->current_mode;
@@ -56,8 +57,8 @@ u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid)
 		return eid;
 
 	ie_size = sizeof(struct ieee80211_he_capabilities);
-	ppet_size = ieee80211_he_ppet_size(mode->he_capab.ppet[0],
-					   mode->he_capab.phy_cap);
+	ppet_size = ieee80211_he_ppet_size(mode->he_capab[opmode].ppet[0],
+					   mode->he_capab[opmode].phy_cap);
 
 	switch (hapd->iface->conf->he_oper_chwidth) {
 	case CHANWIDTH_80P80MHZ:
@@ -86,14 +87,14 @@ u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid)
 	cap = (struct ieee80211_he_capabilities *) pos;
 	os_memset(cap, 0, sizeof(*cap));
 
-	os_memcpy(cap->he_mac_capab_info, mode->he_capab.mac_cap,
+	os_memcpy(cap->he_mac_capab_info, mode->he_capab[opmode].mac_cap,
 		  HE_MAX_MAC_CAPAB_SIZE);
-	os_memcpy(cap->he_phy_capab_info, mode->he_capab.phy_cap,
+	os_memcpy(cap->he_phy_capab_info, mode->he_capab[opmode].phy_cap,
 		  HE_MAX_PHY_CAPAB_SIZE);
-	os_memcpy(cap->optional, mode->he_capab.mcs, mcs_nss_size);
+	os_memcpy(cap->optional, mode->he_capab[opmode].mcs, mcs_nss_size);
 	if (ppet_size)
-		os_memcpy(&cap->optional[mcs_nss_size], mode->he_capab.ppet,
-			  ppet_size);
+		os_memcpy(&cap->optional[mcs_nss_size],
+			  mode->he_capab[opmode].ppet,  ppet_size);
 
 	if (hapd->iface->conf->he_phy_capab.he_su_beamformer)
 		cap->he_phy_capab_info[HE_PHYCAP_SU_BEAMFORMER_CAPAB_IDX] |=
@@ -260,7 +261,8 @@ void hostapd_get_he_capab(struct hostapd_data *hapd,
 }
 
 
-static int check_valid_he_mcs(struct hostapd_data *hapd, const u8 *sta_he_capab)
+static int check_valid_he_mcs(struct hostapd_data *hapd, const u8 *sta_he_capab,
+			      enum ieee80211_op_mode opmode)
 {
 	u16 sta_rx_mcs_set, ap_tx_mcs_set;
 	u8 mcs_count = 0;
@@ -269,7 +271,7 @@ static int check_valid_he_mcs(struct hostapd_data *hapd, const u8 *sta_he_capab)
 
 	if (!hapd->iface->current_mode)
 		return 1;
-	ap_mcs_set = (u16 *) hapd->iface->current_mode->he_capab.mcs;
+	ap_mcs_set = (u16 *) hapd->iface->current_mode->he_capab[opmode].mcs;
 	sta_mcs_set = (u16 *) ((const struct ieee80211_he_capabilities *)
 			       sta_he_capab)->optional;
 
@@ -318,10 +320,11 @@ static int check_valid_he_mcs(struct hostapd_data *hapd, const u8 *sta_he_capab)
 
 
 u16 copy_sta_he_capab(struct hostapd_data *hapd, struct sta_info *sta,
-		      const u8 *he_capab, size_t he_capab_len)
+		      enum ieee80211_op_mode opmode, const u8 *he_capab,
+		      size_t he_capab_len)
 {
 	if (!he_capab || !hapd->iconf->ieee80211ax ||
-	    !check_valid_he_mcs(hapd, he_capab) ||
+	    !check_valid_he_mcs(hapd, he_capab, opmode) ||
 	    he_capab_len > sizeof(struct ieee80211_he_capabilities)) {
 		sta->flags &= ~WLAN_STA_HE;
 		os_free(sta->he_capab);

@@ -200,6 +200,17 @@ struct he_capabilities {
 #define HOSTAPD_MODE_FLAG_HT_INFO_KNOWN BIT(0)
 #define HOSTAPD_MODE_FLAG_VHT_INFO_KNOWN BIT(1)
 
+
+enum ieee80211_op_mode {
+	IEEE80211_MODE_INFRA = 0,
+	IEEE80211_MODE_IBSS = 1,
+	IEEE80211_MODE_AP = 2,
+	IEEE80211_MODE_MESH = 5,
+
+	/* only add new entries before IEEE80211_MODE_NUM */
+	IEEE80211_MODE_NUM
+};
+
 /**
  * struct hostapd_hw_modes - Supported hardware mode information
  */
@@ -259,14 +270,9 @@ struct hostapd_hw_modes {
 	/**
 	 * he_capab - HE (IEEE 802.11ax) capabilities
 	 */
-	struct he_capabilities he_capab;
+	struct he_capabilities he_capab[IEEE80211_MODE_NUM];
 };
 
-
-#define IEEE80211_MODE_INFRA	0
-#define IEEE80211_MODE_IBSS	1
-#define IEEE80211_MODE_AP	2
-#define IEEE80211_MODE_MESH	5
 
 #define IEEE80211_CAP_ESS	0x0001
 #define IEEE80211_CAP_IBSS	0x0002

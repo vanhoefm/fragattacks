@@ -18,6 +18,7 @@ struct ieee80211_vht_capabilities;
 struct ieee80211_mgmt;
 struct vlan_description;
 struct hostapd_sta_wpa_psk_short;
+enum ieee80211_op_mode;
 
 int ieee802_11_mgmt(struct hostapd_data *hapd, const u8 *buf, size_t len,
 		    struct hostapd_frame_info *fi);
@@ -57,7 +58,8 @@ u8 * hostapd_eid_vht_operation(struct hostapd_data *hapd, u8 *eid);
 u8 * hostapd_eid_vendor_vht(struct hostapd_data *hapd, u8 *eid);
 u8 * hostapd_eid_wb_chsw_wrapper(struct hostapd_data *hapd, u8 *eid);
 u8 * hostapd_eid_txpower_envelope(struct hostapd_data *hapd, u8 *eid);
-u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid);
+u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid,
+			  enum ieee80211_op_mode opmode);
 u8 * hostapd_eid_he_operation(struct hostapd_data *hapd, u8 *eid);
 u8 * hostapd_eid_he_mu_edca_parameter_set(struct hostapd_data *hapd, u8 *eid);
 u8 * hostapd_eid_spatial_reuse(struct hostapd_data *hapd, u8 *eid);
@@ -91,7 +93,8 @@ u16 copy_sta_vht_oper(struct hostapd_data *hapd, struct sta_info *sta,
 u16 set_sta_vht_opmode(struct hostapd_data *hapd, struct sta_info *sta,
 		       const u8 *vht_opmode);
 u16 copy_sta_he_capab(struct hostapd_data *hapd, struct sta_info *sta,
-		      const u8 *he_capab, size_t he_capab_len);
+		      enum ieee80211_op_mode opmode, const u8 *he_capab,
+		      size_t he_capab_len);
 void hostapd_tx_status(struct hostapd_data *hapd, const u8 *addr,
 		       const u8 *buf, size_t len, int ack);
 void hostapd_eapol_tx_status(struct hostapd_data *hapd, const u8 *dst,

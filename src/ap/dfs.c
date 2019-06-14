@@ -888,6 +888,7 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 	struct csa_settings csa_settings;
 	unsigned int i;
 	int err = 1;
+	struct hostapd_hw_modes *cmode = iface->current_mode;
 
 	wpa_printf(MSG_DEBUG, "%s called (CAC active: %s, CSA active: %s)",
 		   __func__, iface->cac_started ? "yes" : "no",
@@ -966,8 +967,8 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 				      hostapd_get_oper_chwidth(iface->conf),
 				      oper_centr_freq_seg0_idx,
 				      oper_centr_freq_seg1_idx,
-				      iface->current_mode->vht_capab,
-				      &iface->current_mode->he_capab);
+				      cmode->vht_capab,
+				      &cmode->he_capab[IEEE80211_MODE_AP]);
 
 	if (err) {
 		wpa_printf(MSG_ERROR, "DFS failed to calculate CSA freq params");

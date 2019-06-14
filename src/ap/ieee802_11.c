@@ -2990,7 +2990,8 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 #endif /* CONFIG_IEEE80211AC */
 #ifdef CONFIG_IEEE80211AX
 	if (hapd->iconf->ieee80211ax) {
-		resp = copy_sta_he_capab(hapd, sta, elems.he_capabilities,
+		resp = copy_sta_he_capab(hapd, sta, IEEE80211_MODE_AP,
+					 elems.he_capabilities,
 					 elems.he_capabilities_len);
 		if (resp != WLAN_STATUS_SUCCESS)
 			return resp;
@@ -3583,7 +3584,7 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 
 #ifdef CONFIG_IEEE80211AX
 	if (hapd->iconf->ieee80211ax) {
-		p = hostapd_eid_he_capab(hapd, p);
+		p = hostapd_eid_he_capab(hapd, p, IEEE80211_MODE_AP);
 		p = hostapd_eid_he_operation(hapd, p);
 		p = hostapd_eid_spatial_reuse(hapd, p);
 		p = hostapd_eid_he_mu_edca_parameter_set(hapd, p);

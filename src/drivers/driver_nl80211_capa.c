@@ -1551,26 +1551,32 @@ static int phy_info_rates(struct hostapd_hw_modes *mode, struct nlattr *tb)
 }
 
 
-static int phy_info_iftype(struct hostapd_hw_modes *mode,
-			   struct nlattr *nl_iftype)
+static void phy_info_iftype_copy(struct he_capabilities *he_capab,
+				 enum ieee80211_op_mode opmode,
+				 struct nlattr **tb, struct nlattr **tb_flags)
 {
-	struct nlattr *tb[NL80211_BAND_IFTYPE_ATTR_MAX + 1];
-	struct he_capabilities *he_capab = &mode->he_capab;
-	struct nlattr *tb_flags[NL80211_IFTYPE_MAX + 1];
+	enum nl80211_iftype iftype;
 	size_t len;
 
-	nla_parse(tb, NL80211_BAND_IFTYPE_ATTR_MAX,
-		  nla_data(nl_iftype), nla_len(nl_iftype), NULL);
+	switch (opmode) {
+	case IEEE80211_MODE_INFRA:
+		iftype = NL80211_IFTYPE_STATION;
+		break;
+	case IEEE80211_MODE_IBSS:
+		iftype = NL80211_IFTYPE_ADHOC;
+		break;
+	case IEEE80211_MODE_AP:
+		iftype = NL80211_IFTYPE_AP;
+		break;
+	case IEEE80211_MODE_MESH:
+		iftype = NL80211_IFTYPE_MESH_POINT;
+		break;
+	default:
+		return;
+	}
 
-	if (!tb[NL80211_BAND_IFTYPE_ATTR_IFTYPES])
-		return NL_STOP;
-
-	if (nla_parse_nested(tb_flags, NL80211_IFTYPE_MAX,
-			     tb[NL80211_BAND_IFTYPE_ATTR_IFTYPES], NULL))
-		return NL_STOP;
-
-	if (!nla_get_flag(tb_flags[NL80211_IFTYPE_AP]))
-		return NL_OK;
+	if (!nla_get_flag(tb_flags[iftype]))
+		return;
 
 	he_capab->he_supported = 1;
 
@@ -1613,6 +1619,28 @@ static int phy_info_iftype(struct hostapd_hw_modes *mode,
 			  nla_data(tb[NL80211_BAND_IFTYPE_ATTR_HE_CAP_PPE]),
 			  len);
 	}
+}
+
+
+static int phy_info_iftype(struct hostapd_hw_modes *mode,
+			   struct nlattr *nl_iftype)
+{
+	struct nlattr *tb[NL80211_BAND_IFTYPE_ATTR_MAX + 1];
+	struct nlattr *tb_flags[NL80211_IFTYPE_MAX + 1];
+	unsigned int i;
+
+	nla_parse(tb, NL80211_BAND_IFTYPE_ATTR_MAX,
+		  nla_data(nl_iftype), nla_len(nl_iftype), NULL);
+
+	if (!tb[NL80211_BAND_IFTYPE_ATTR_IFTYPES])
+		return NL_STOP;
+
+	if (nla_parse_nested(tb_flags, NL80211_IFTYPE_MAX,
+			     tb[NL80211_BAND_IFTYPE_ATTR_IFTYPES], NULL))
+		return NL_STOP;
+
+	for (i = 0; i < IEEE80211_MODE_NUM; i++)
+		phy_info_iftype_copy(&mode->he_capab[i], i, tb, tb_flags);
 
 	return NL_OK;
 }
