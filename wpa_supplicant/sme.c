@@ -2246,7 +2246,7 @@ void sme_sched_obss_scan(struct wpa_supplicant *wpa_s, int enable)
 	 */
 	if (!((wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) ||
 	      (wpa_s->drv_flags & WPA_DRIVER_FLAGS_OBSS_SCAN)) ||
-	    ssid == NULL || ssid->mode != IEEE80211_MODE_INFRA)
+	    ssid == NULL || ssid->mode != WPAS_MODE_INFRA)
 		return;
 
 	if (!wpa_s->hw.modes)

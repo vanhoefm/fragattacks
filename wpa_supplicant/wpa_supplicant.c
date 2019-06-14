@@ -2066,7 +2066,7 @@ void wpa_supplicant_associate(struct wpa_supplicant *wpa_s,
 #endif /* CONFIG_TDLS */
 
 	if ((wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) &&
-	    ssid->mode == IEEE80211_MODE_INFRA) {
+	    ssid->mode == WPAS_MODE_INFRA) {
 		sme_authenticate(wpa_s, bss, ssid);
 		return;
 	}
@@ -4232,7 +4232,7 @@ void wpa_supplicant_rx_eapol(void *ctx, const u8 *src_addr,
 	     !wpa_key_mgmt_wpa_psk(wpa_s->key_mgmt) ||
 	     wpa_s->wpa_state != WPA_COMPLETED) &&
 	    (wpa_s->current_ssid == NULL ||
-	     wpa_s->current_ssid->mode != IEEE80211_MODE_IBSS)) {
+	     wpa_s->current_ssid->mode != WPAS_MODE_IBSS)) {
 		/* Timeout for completing IEEE 802.1X and WPA authentication */
 		int timeout = 10;
 
