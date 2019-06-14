@@ -1929,3 +1929,17 @@ def test_wnm_coloc_intf_reporting_errors(dev, apdev):
                 raise Exception("MGMT_RX_PROCESS failed")
 
     hapd.set("ext_mgmt_frame_handling", "0")
+
+def test_wnm_bss_transition_mgmt_disabled(dev, apdev):
+    """WNM BSS Transition Management disabled"""
+    hapd = start_wnm_ap(apdev[0])
+    try:
+        dev[0].set("disable_btm", "1")
+        dev[0].connect("test-wnm", key_mgmt="NONE", scan_freq="2412")
+        addr = dev[0].own_addr()
+        hapd.request("BSS_TM_REQ " + addr)
+        ev = hapd.wait_event(['BSS-TM-RESP'], timeout=0.5)
+        if ev is not None:
+            raise Exception("Unexpected BSS Transition Management Response")
+    finally:
+        dev[0].set("disable_btm", "0")
