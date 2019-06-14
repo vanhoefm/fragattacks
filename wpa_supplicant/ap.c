@@ -239,6 +239,11 @@ int wpa_supplicant_conf_ap_ht(struct wpa_supplicant *wpa_s,
 				conf->vht_capab |= mode->vht_capab;
 				wpas_conf_ap_vht(wpa_s, ssid, conf, mode);
 			}
+
+			if (mode->he_capab[wpas_mode_to_ieee80211_mode(
+					    ssid->mode)].he_supported &&
+			    ssid->he)
+				conf->ieee80211ax = 1;
 		}
 	}
 

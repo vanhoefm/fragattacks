@@ -2140,6 +2140,7 @@ void ibss_mesh_setup_freq(struct wpa_supplicant *wpa_s,
 			  const struct wpa_ssid *ssid,
 			  struct hostapd_freq_params *freq)
 {
+	int ieee80211_mode = wpas_mode_to_ieee80211_mode(ssid->mode);
 	enum hostapd_hw_mode hw_mode;
 	struct hostapd_hw_modes *mode = NULL;
 	int ht40plus[] = { 36, 44, 52, 60, 100, 108, 116, 124, 132, 149, 157,
@@ -2202,6 +2203,9 @@ void ibss_mesh_setup_freq(struct wpa_supplicant *wpa_s,
 
 	if (!mode)
 		return;
+
+	/* HE can work without HT + VHT */
+	freq->he_enabled = mode->he_capab[ieee80211_mode].he_supported;
 
 #ifdef CONFIG_HT_OVERRIDES
 	if (ssid->disable_ht) {
@@ -2409,9 +2413,10 @@ skip_ht40:
 
 	if (hostapd_set_freq_params(&vht_freq, mode->mode, freq->freq,
 				    freq->channel, freq->ht_enabled,
-				    vht_freq.vht_enabled, 0,
+				    vht_freq.vht_enabled, freq->he_enabled,
 				    freq->sec_channel_offset,
-				    chwidth, seg0, seg1, vht_caps, NULL) != 0)
+				    chwidth, seg0, seg1, vht_caps,
+				    &mode->he_capab[ieee80211_mode]) != 0)
 		return;
 
 	*freq = vht_freq;

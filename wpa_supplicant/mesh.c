@@ -456,6 +456,7 @@ int wpa_supplicant_join_mesh(struct wpa_supplicant *wpa_s,
 	ibss_mesh_setup_freq(wpa_s, ssid, &params->freq);
 	wpa_s->mesh_ht_enabled = !!params->freq.ht_enabled;
 	wpa_s->mesh_vht_enabled = !!params->freq.vht_enabled;
+	wpa_s->mesh_he_enabled = !!params->freq.he_enabled;
 	if (params->freq.ht_enabled && params->freq.sec_channel_offset)
 		ssid->ht40 = params->freq.sec_channel_offset;
 
@@ -480,6 +481,8 @@ int wpa_supplicant_join_mesh(struct wpa_supplicant *wpa_s,
 			break;
 		}
 	}
+	if (wpa_s->mesh_he_enabled)
+		ssid->he = 1;
 	if (ssid->beacon_int > 0)
 		params->beacon_int = ssid->beacon_int;
 	else if (wpa_s->conf->beacon_int > 0)

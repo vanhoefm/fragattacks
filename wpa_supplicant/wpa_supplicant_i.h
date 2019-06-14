@@ -823,6 +823,7 @@ struct wpa_supplicant {
 	unsigned int mesh_if_created:1;
 	unsigned int mesh_ht_enabled:1;
 	unsigned int mesh_vht_enabled:1;
+	unsigned int mesh_he_enabled:1;
 	struct wpa_driver_mesh_join_params *mesh_params;
 #ifdef CONFIG_PMKSA_CACHE_EXTERNAL
 	/* struct external_pmksa_cache::list */
@@ -1463,6 +1464,25 @@ static inline int network_is_persistent_group(struct wpa_ssid *ssid)
 {
 	return ssid->disabled == 2 && ssid->p2p_persistent_group;
 }
+
+
+static inline int wpas_mode_to_ieee80211_mode(enum wpas_mode mode)
+{
+	switch (mode) {
+	default:
+	case WPAS_MODE_INFRA:
+		return IEEE80211_MODE_INFRA;
+	case WPAS_MODE_IBSS:
+		return IEEE80211_MODE_IBSS;
+	case WPAS_MODE_AP:
+	case WPAS_MODE_P2P_GO:
+	case WPAS_MODE_P2P_GROUP_FORMATION:
+		return IEEE80211_MODE_AP;
+	case WPAS_MODE_MESH:
+		return IEEE80211_MODE_MESH;
+	}
+}
+
 
 int wpas_network_disabled(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid);
 int wpas_get_ssid_pmf(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid);

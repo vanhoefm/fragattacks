@@ -185,6 +185,7 @@ struct hostapd_channel_data {
 #define HE_MAX_MAC_CAPAB_SIZE	6
 #define HE_MAX_PHY_CAPAB_SIZE	11
 #define HE_MAX_MCS_CAPAB_SIZE	12
+#define HE_MAX_PPET_CAPAB_SIZE	25
 
 /**
  * struct he_capabilities - IEEE 802.11ax HE capabilities
@@ -194,7 +195,7 @@ struct he_capabilities {
 	u8 phy_cap[HE_MAX_PHY_CAPAB_SIZE];
 	u8 mac_cap[HE_MAX_MAC_CAPAB_SIZE];
 	u8 mcs[HE_MAX_MCS_CAPAB_SIZE];
-	u8 ppet[25];
+	u8 ppet[HE_MAX_PPET_CAPAB_SIZE];
 };
 
 #define HOSTAPD_MODE_FLAG_HT_INFO_KNOWN BIT(0)
