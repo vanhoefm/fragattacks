@@ -5897,6 +5897,7 @@ def test_ap_hs20_set_profile_failures(dev, apdev):
     dev[0].remove_cred(id)
 
     id = dev[0].add_cred_values({'roaming_consortium': "112233",
+                                 'eap': 'TTLS',
                                  'username': "user@example.com",
                                  'password': "password"})
     interworking_select(dev[0], bssid, freq=2412)
