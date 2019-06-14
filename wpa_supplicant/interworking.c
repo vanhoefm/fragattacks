@@ -1388,6 +1388,9 @@ static struct wpa_cred * interworking_credentials_available_roaming_consortium(
 		    cred->num_roaming_consortiums == 0)
 			continue;
 
+		if (!cred->eap_method)
+			continue;
+
 		if ((cred->roaming_consortium_len == 0 ||
 		     !roaming_consortium_match(ie, anqp,
 					       cred->roaming_consortium,
