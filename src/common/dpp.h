@@ -161,10 +161,16 @@ enum dpp_akm {
 	DPP_AKM_PSK_SAE_DPP,
 };
 
+enum dpp_netrole {
+	DPP_NETROLE_STA,
+	DPP_NETROLE_AP,
+};
+
 struct dpp_configuration {
 	u8 ssid[32];
 	size_t ssid_len;
 	enum dpp_akm akm;
+	enum dpp_netrole netrole;
 
 	/* For DPP configuration (connector) */
 	os_time_t netaccesskey_expiry;

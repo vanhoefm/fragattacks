@@ -4372,6 +4372,7 @@ static int dpp_configuration_parse(struct dpp_authentication *auth,
 		conf_sta = dpp_configuration_alloc(pos + 10);
 		if (!conf_sta)
 			goto fail;
+		conf_sta->netrole = DPP_NETROLE_STA;
 		conf = conf_sta;
 	}
 
@@ -4380,6 +4381,7 @@ static int dpp_configuration_parse(struct dpp_authentication *auth,
 		conf_ap = dpp_configuration_alloc(pos + 9);
 		if (!conf_ap)
 			goto fail;
+		conf_ap->netrole = DPP_NETROLE_AP;
 		conf = conf_ap;
 	}
 
@@ -4646,8 +4648,21 @@ static void dpp_build_legacy_cred_params(struct wpabuf *buf,
 }
 
 
+static const char * dpp_netrole_str(enum dpp_netrole netrole)
+{
+	switch (netrole) {
+	case DPP_NETROLE_STA:
+		return "sta";
+	case DPP_NETROLE_AP:
+		return "ap";
+	default:
+		return "??";
+	}
+}
+
+
 static struct wpabuf *
-dpp_build_conf_obj_dpp(struct dpp_authentication *auth, int ap,
+dpp_build_conf_obj_dpp(struct dpp_authentication *auth,
 		       struct dpp_configuration *conf)
 {
 	struct wpabuf *buf = NULL;
@@ -4721,7 +4736,8 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth, int ap,
 #endif /* CONFIG_TESTING_OPTIONS */
 	wpabuf_printf(dppcon, "{\"groups\":[{\"groupId\":\"%s\",",
 		      conf->group_id ? conf->group_id : "*");
-	wpabuf_printf(dppcon, "\"netRole\":\"%s\"}],", ap ? "ap" : "sta");
+	wpabuf_printf(dppcon, "\"netRole\":\"%s\"}],",
+		      dpp_netrole_str(conf->netrole));
 #ifdef CONFIG_TESTING_OPTIONS
 skip_groups:
 #endif /* CONFIG_TESTING_OPTIONS */
@@ -4861,7 +4877,7 @@ fail:
 
 
 static struct wpabuf *
-dpp_build_conf_obj_legacy(struct dpp_authentication *auth, int ap,
+dpp_build_conf_obj_legacy(struct dpp_authentication *auth,
 			  struct dpp_configuration *conf)
 {
 	struct wpabuf *buf;
@@ -4903,8 +4919,8 @@ dpp_build_conf_obj(struct dpp_authentication *auth, int ap)
 	}
 
 	if (dpp_akm_dpp(conf->akm))
-		return dpp_build_conf_obj_dpp(auth, ap, conf);
-	return dpp_build_conf_obj_legacy(auth, ap, conf);
+		return dpp_build_conf_obj_dpp(auth, conf);
+	return dpp_build_conf_obj_legacy(auth, conf);
 }
 
 
