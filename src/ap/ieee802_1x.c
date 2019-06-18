@@ -1426,7 +1426,7 @@ static void ieee802_1x_get_keys(struct hostapd_data *hapd,
 				      shared_secret_len);
 
 	if (keys && keys->send && keys->recv) {
-		size_t len = keys->send_len + keys->recv_len;
+		len = keys->send_len + keys->recv_len;
 		wpa_hexdump_key(MSG_DEBUG, "MS-MPPE-Send-Key",
 				keys->send, keys->send_len);
 		wpa_hexdump_key(MSG_DEBUG, "MS-MPPE-Recv-Key",
