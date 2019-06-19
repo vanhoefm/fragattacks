@@ -13,6 +13,7 @@
 
 #include "utils/common.h"
 #include "utils/eloop.h"
+#include "utils/crc32.h"
 #include "common/ieee802_11_defs.h"
 #include "common/wpa_ctrl.h"
 #include "common/hw_features_common.h"
@@ -1189,6 +1190,12 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
 		conf->ssid.ssid_len = ssid_len;
 		os_memcpy(conf->ssid.ssid, ssid, conf->ssid.ssid_len);
 	}
+
+	/*
+	 * Short SSID calculation is identical to FCS and it is defined in
+	 * IEEE P802.11-REVmd/D3.0, 9.4.2.170.3 (Calculating the Short-SSID).
+	 */
+	conf->ssid.short_ssid = crc32(conf->ssid.ssid, conf->ssid.ssid_len);
 
 	if (!hostapd_drv_none(hapd)) {
 		wpa_printf(MSG_ERROR, "Using interface %s with hwaddr " MACSTR

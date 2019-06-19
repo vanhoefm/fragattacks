@@ -88,6 +88,7 @@ typedef enum hostap_security_policy {
 struct hostapd_ssid {
 	u8 ssid[SSID_MAX_LEN];
 	size_t ssid_len;
+	u32 short_ssid;
 	unsigned int ssid_set:1;
 	unsigned int utf8_ssid:1;
 	unsigned int wpa_passphrase_set:1;

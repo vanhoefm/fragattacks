@@ -145,6 +145,7 @@ OBJS += src/utils/wpa_debug.c
 OBJS += src/utils/wpabuf.c
 OBJS += src/utils/os_$(CONFIG_OS).c
 OBJS += src/utils/ip_addr.c
+OBJS += src/utils/crc32.c
 
 OBJS += src/common/ieee802_11_common.c
 OBJS += src/common/wpa_common.c
