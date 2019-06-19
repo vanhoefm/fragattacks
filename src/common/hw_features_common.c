@@ -385,6 +385,71 @@ int hostapd_set_freq_params(struct hostapd_freq_params *data,
 	hostapd_encode_edmg_chan(enable_edmg, edmg_channel, channel,
 				 &data->edmg);
 
+	if (is_6ghz_freq(freq)) {
+		if (!data->he_enabled) {
+			wpa_printf(MSG_ERROR,
+				   "Can't set 6 GHz mode - HE isn't enabled");
+			return -1;
+		}
+
+		if (center_idx_to_bw_6ghz(channel) != 0) {
+			wpa_printf(MSG_ERROR,
+				   "Invalid control channel for 6 GHz band");
+			return -1;
+		}
+
+		if (!center_segment0) {
+			if (center_segment1) {
+				wpa_printf(MSG_ERROR,
+					   "Segment 0 center frequency isn't set");
+				return -1;
+			}
+
+			data->center_freq1 = data->freq;
+			data->bandwidth = 20;
+		} else {
+			int freq1, freq2 = 0;
+			int bw = center_idx_to_bw_6ghz(center_segment0);
+
+			if (bw < 0) {
+				wpa_printf(MSG_ERROR,
+					   "Invalid center frequency index for 6 GHz");
+				return -1;
+			}
+
+			freq1 = ieee80211_chan_to_freq(NULL, 131,
+						       center_segment0);
+			if (freq1 < 0) {
+				wpa_printf(MSG_ERROR,
+					   "Invalid segment 0 center frequency for 6 GHz");
+				return -1;
+			}
+
+			if (center_segment1) {
+				if (center_idx_to_bw_6ghz(center_segment1) != 2 ||
+				    bw != 2) {
+					wpa_printf(MSG_ERROR,
+						   "6 GHz 80+80 MHz configuration doesn't use valid 80 MHz channels");
+					return -1;
+				}
+
+				freq2 = ieee80211_chan_to_freq(NULL, 131,
+							       center_segment1);
+				if (freq2 < 0) {
+					wpa_printf(MSG_ERROR,
+						   "Invalid segment 1 center frequency for UHB");
+					return -1;
+				}
+			}
+
+			data->bandwidth = (1 << (u8) bw) * 20;
+			data->center_freq1 = freq1;
+			data->center_freq2 = freq2;
+		}
+
+		return 0;
+	}
+
 	if (data->vht_enabled) switch (oper_chwidth) {
 	case CHANWIDTH_USE_HT:
 		if (center_segment1 ||

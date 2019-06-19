@@ -882,6 +882,19 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 		return HOSTAPD_MODE_IEEE80211AD;
 	}
 
+	if (freq > 5940 && freq <= 7105) {
+		int bw;
+		u8 idx = (freq - 5940) / 5;
+
+		bw = center_idx_to_bw_6ghz(idx);
+		if (bw < 0)
+			return NUM_HOSTAPD_MODES;
+
+		*channel = idx;
+		*op_class = 131 + bw;
+		return HOSTAPD_MODE_IEEE80211A;
+	}
+
 	return NUM_HOSTAPD_MODES;
 }
 
@@ -1161,6 +1174,14 @@ static int ieee80211_chan_to_freq_global(u8 op_class, u8 chan)
 		if (chan < 36 || chan > 128)
 			return -1;
 		return 5000 + 5 * chan;
+	case 131: /* UHB channels, 20 MHz: 1, 5, 9.. */
+	case 132: /* UHB channels, 40 MHz: 3, 11, 19.. */
+	case 133: /* UHB channels, 80 MHz: 7, 23, 39.. */
+	case 134: /* UHB channels, 160 MHz: 15, 47, 79.. */
+	case 135: /* UHB channels, 80+80 MHz: 7, 23, 39.. */
+		if (chan < 1 || chan > 233)
+			return -1;
+		return 5940 + chan * 5;
 	case 180: /* 60 GHz band, channels 1..6 */
 		if (chan < 1 || chan > 6)
 			return -1;
@@ -1591,6 +1612,7 @@ const struct oper_class_map global_op_class[] = {
 	{ HOSTAPD_MODE_IEEE80211A, 128, 36, 161, 4, BW80, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211A, 129, 50, 114, 16, BW160, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211A, 130, 36, 161, 4, BW80P80, P2P_SUPP },
+	{ HOSTAPD_MODE_IEEE80211A, 131, 1, 233, 4, BW20, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211AD, 180, 1, 4, 1, BW2160, P2P_SUPP },
 	{ -1, 0, 0, 0, 0, BW20, NO_P2P_SUPP }
 };
@@ -1902,6 +1924,37 @@ int oper_class_bw_to_int(const struct oper_class_map *map)
 	default:
 		return 0;
 	}
+}
+
+
+int center_idx_to_bw_6ghz(u8 idx)
+{
+	/* channels: 1, 5, 9, 13... */
+	if ((idx & 0x3) == 0x1)
+		return 0; /* 20 MHz */
+	/* channels 3, 11, 19... */
+	if ((idx & 0x7) == 0x3)
+		return 1; /* 40 MHz */
+	/* channels 7, 23, 39.. */
+	if ((idx & 0xf) == 0x7)
+		return 2; /* 80 MHz */
+	/* channels 15, 47, 79...*/
+	if ((idx & 0x1f) == 0xf)
+		return 3; /* 160 MHz */
+
+	return -1;
+}
+
+
+int is_6ghz_freq(int freq)
+{
+	if (freq < 5940 || freq > 7105)
+		return 0;
+
+	if (center_idx_to_bw_6ghz((freq - 5940) / 5) < 0)
+		return 0;
+
+	return 1;
 }
 
 
