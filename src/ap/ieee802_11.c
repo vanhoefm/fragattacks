@@ -3657,7 +3657,8 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 #endif /* CONFIG_IEEE80211N */
 
 #ifdef CONFIG_IEEE80211AC
-	if (hapd->iconf->ieee80211ac && !hapd->conf->disable_11ac) {
+	if (hapd->iconf->ieee80211ac && !hapd->conf->disable_11ac &&
+	    !is_6ghz_op_class(hapd->iconf->op_class)) {
 		u32 nsts = 0, sta_nsts;
 
 		if (sta && hapd->conf->use_sta_nsts && sta->vht_capabilities) {

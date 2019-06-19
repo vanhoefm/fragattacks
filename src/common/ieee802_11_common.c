@@ -1958,6 +1958,12 @@ int is_6ghz_freq(int freq)
 }
 
 
+int is_6ghz_op_class(u8 op_class)
+{
+	return op_class >= 131 && op_class <= 135;
+}
+
+
 int ieee802_11_parse_candidate_list(const char *pos, u8 *nei_rep,
 				    size_t nei_rep_len)
 {

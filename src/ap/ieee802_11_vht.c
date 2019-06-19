@@ -26,7 +26,7 @@ u8 * hostapd_eid_vht_capabilities(struct hostapd_data *hapd, u8 *eid, u32 nsts)
 	struct hostapd_hw_modes *mode = hapd->iface->current_mode;
 	u8 *pos = eid;
 
-	if (!mode)
+	if (!mode || is_6ghz_op_class(hapd->iconf->op_class))
 		return eid;
 
 	if (mode->mode == HOSTAPD_MODE_IEEE80211G && hapd->conf->vendor_vht &&
@@ -75,6 +75,9 @@ u8 * hostapd_eid_vht_operation(struct hostapd_data *hapd, u8 *eid)
 {
 	struct ieee80211_vht_operation *oper;
 	u8 *pos = eid;
+
+	if (is_6ghz_op_class(hapd->iconf->op_class))
+		return eid;
 
 	*pos++ = WLAN_EID_VHT_OPERATION;
 	*pos++ = sizeof(*oper);

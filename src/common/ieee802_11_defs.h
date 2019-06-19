@@ -2185,6 +2185,10 @@ struct ieee80211_spatial_reuse {
 						BIT(10) | BIT(11) | \
 						BIT(12) | BIT(13)))
 #define HE_OPERATION_RTS_THRESHOLD_OFFSET	4
+#define HE_OPERATION_VHT_OPER_INFO		((u32) BIT(14))
+#define HE_OPERATION_COHOSTED_BSS		((u32) BIT(15))
+#define HE_OPERATION_ER_SU_DISABLE		((u32) BIT(16))
+#define HE_OPERATION_6GHZ_OPER_INFO		((u32) BIT(17))
 #define HE_OPERATION_BSS_COLOR_MASK		((u32) (BIT(24) | BIT(25) | \
 							BIT(26) | BIT(27) | \
 							BIT(28) | BIT(29)))

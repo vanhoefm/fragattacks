@@ -11,6 +11,7 @@
 
 #include "utils/common.h"
 #include "common/ieee802_11_defs.h"
+#include "common/ieee802_11_common.h"
 #include "hostapd.h"
 #include "ap_config.h"
 #include "beacon.h"
@@ -170,6 +171,9 @@ u8 * hostapd_eid_he_operation(struct hostapd_data *hapd, u8 *eid)
 	if (!hapd->iface->current_mode)
 		return eid;
 
+	if (is_6ghz_op_class(hapd->iconf->op_class))
+		oper_size += 5;
+
 	*pos++ = WLAN_EID_EXTENSION;
 	*pos++ = 1 + oper_size;
 	*pos++ = WLAN_EID_EXT_HE_OPERATION;
@@ -198,9 +202,26 @@ u8 * hostapd_eid_he_operation(struct hostapd_data *hapd, u8 *eid)
 
 	/* TODO: conditional MaxBSSID Indicator subfield */
 
-	oper->he_oper_params = host_to_le32(params);
+	pos += 6; /* skip the fixed part */
 
-	pos += oper_size;
+	if (is_6ghz_op_class(hapd->iconf->op_class)) {
+		u8 seg0 = hostapd_get_oper_centr_freq_seg0_idx(hapd->iconf);
+
+		if (!seg0)
+			seg0 = hapd->iconf->channel;
+
+		params |= HE_OPERATION_6GHZ_OPER_INFO;
+		*pos++ = hapd->iconf->channel; /* Primary Channel */
+		*pos++ = center_idx_to_bw_6ghz(seg0); /* Control: Channel Width
+						       */
+		/* Channel Center Freq Seg0/Seg0 */
+		*pos++ = seg0;
+		*pos++ = hostapd_get_oper_centr_freq_seg1_idx(hapd->iconf);
+		/* Minimum Rate */
+		*pos++ = 6; /* TODO: what should be set here? */
+	}
+
+	oper->he_oper_params = host_to_le32(params);
 
 	return pos;
 }
