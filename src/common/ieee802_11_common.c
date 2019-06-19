@@ -282,6 +282,10 @@ static int ieee802_11_parse_extension(const u8 *pos, size_t elen,
 		elems->oci = pos;
 		elems->oci_len = elen;
 		break;
+	case WLAN_EID_EXT_SHORT_SSID_LIST:
+		elems->short_ssid_list = pos;
+		elems->short_ssid_list_len = elen;
+		break;
 	default:
 		if (show_errors) {
 			wpa_printf(MSG_MSGDUMP,

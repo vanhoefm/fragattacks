@@ -96,6 +96,7 @@ struct ieee802_11_elems {
 	const u8 *multi_ap;
 	const u8 *he_capabilities;
 	const u8 *he_operation;
+	const u8 *short_ssid_list;
 
 	u8 ssid_len;
 	u8 supp_rates_len;
@@ -147,6 +148,7 @@ struct ieee802_11_elems {
 	u8 multi_ap_len;
 	u8 he_capabilities_len;
 	u8 he_operation_len;
+	u8 short_ssid_list_len;
 
 	struct mb_ies_info mb_ies;
 };

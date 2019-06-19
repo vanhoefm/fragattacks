@@ -581,7 +581,9 @@ enum ssid_match_result {
 static enum ssid_match_result ssid_match(struct hostapd_data *hapd,
 					 const u8 *ssid, size_t ssid_len,
 					 const u8 *ssid_list,
-					 size_t ssid_list_len)
+					 size_t ssid_list_len,
+					 const u8 *short_ssid_list,
+					 size_t short_ssid_list_len)
 {
 	const u8 *pos, *end;
 	int wildcard = 0;
@@ -592,20 +594,30 @@ static enum ssid_match_result ssid_match(struct hostapd_data *hapd,
 	    os_memcmp(ssid, hapd->conf->ssid.ssid, ssid_len) == 0)
 		return EXACT_SSID_MATCH;
 
-	if (ssid_list == NULL)
-		return wildcard ? WILDCARD_SSID_MATCH : NO_SSID_MATCH;
+	if (ssid_list) {
+		pos = ssid_list;
+		end = ssid_list + ssid_list_len;
+		while (end - pos >= 2) {
+			if (2 + pos[1] > end - pos)
+				break;
+			if (pos[1] == 0)
+				wildcard = 1;
+			if (pos[1] == hapd->conf->ssid.ssid_len &&
+			    os_memcmp(pos + 2, hapd->conf->ssid.ssid,
+				      pos[1]) == 0)
+				return EXACT_SSID_MATCH;
+			pos += 2 + pos[1];
+		}
+	}
 
-	pos = ssid_list;
-	end = ssid_list + ssid_list_len;
-	while (end - pos >= 2) {
-		if (2 + pos[1] > end - pos)
-			break;
-		if (pos[1] == 0)
-			wildcard = 1;
-		if (pos[1] == hapd->conf->ssid.ssid_len &&
-		    os_memcmp(pos + 2, hapd->conf->ssid.ssid, pos[1]) == 0)
-			return EXACT_SSID_MATCH;
-		pos += 2 + pos[1];
+	if (short_ssid_list) {
+		pos = short_ssid_list;
+		end = short_ssid_list + short_ssid_list_len;
+		while (end - pos >= 4) {
+			if (hapd->conf->ssid.short_ssid == WPA_GET_LE32(pos))
+				return EXACT_SSID_MATCH;
+			pos += 4;
+		}
 	}
 
 	return wildcard ? WILDCARD_SSID_MATCH : NO_SSID_MATCH;
@@ -838,7 +850,7 @@ void handle_probe_req(struct hostapd_data *hapd,
 #endif /* CONFIG_P2P */
 
 	if (hapd->conf->ignore_broadcast_ssid && elems.ssid_len == 0 &&
-	    elems.ssid_list_len == 0) {
+	    elems.ssid_list_len == 0 && elems.short_ssid_list_len == 0) {
 		wpa_printf(MSG_MSGDUMP, "Probe Request from " MACSTR " for "
 			   "broadcast SSID ignored", MAC2STR(mgmt->sa));
 		return;
@@ -870,7 +882,8 @@ void handle_probe_req(struct hostapd_data *hapd,
 #endif /* CONFIG_TAXONOMY */
 
 	res = ssid_match(hapd, elems.ssid, elems.ssid_len,
-			 elems.ssid_list, elems.ssid_list_len);
+			 elems.ssid_list, elems.ssid_list_len,
+			 elems.short_ssid_list, elems.short_ssid_list_len);
 	if (res == NO_SSID_MATCH) {
 		if (!(mgmt->da[0] & 0x01)) {
 			wpa_printf(MSG_MSGDUMP, "Probe Request from " MACSTR
