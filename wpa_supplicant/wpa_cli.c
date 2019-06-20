@@ -4021,6 +4021,22 @@ static void wpa_cli_action_process(const char *msg)
 		wpa_cli_exec(action_file, ifname, pos);
 	} else if (str_starts(pos, HS20_T_C_ACCEPTANCE)) {
 		wpa_cli_exec(action_file, ifname, pos);
+	} else if (str_starts(pos, DPP_EVENT_CONF_RECEIVED)) {
+		wpa_cli_exec(action_file, ifname, pos);
+	} else if (str_starts(pos, DPP_EVENT_CONFOBJ_AKM)) {
+		wpa_cli_exec(action_file, ifname, pos);
+	} else if (str_starts(pos, DPP_EVENT_CONFOBJ_SSID)) {
+		wpa_cli_exec(action_file, ifname, pos);
+	} else if (str_starts(pos, DPP_EVENT_CONNECTOR)) {
+		wpa_cli_exec(action_file, ifname, pos);
+	} else if (str_starts(pos, DPP_EVENT_CONFOBJ_PASS)) {
+		wpa_cli_exec(action_file, ifname, pos);
+	} else if (str_starts(pos, DPP_EVENT_CONFOBJ_PSK)) {
+		wpa_cli_exec(action_file, ifname, pos);
+	} else if (str_starts(pos, DPP_EVENT_C_SIGN_KEY)) {
+		wpa_cli_exec(action_file, ifname, pos);
+	} else if (str_starts(pos, DPP_EVENT_NET_ACCESS_KEY)) {
+		wpa_cli_exec(action_file, ifname, pos);
 	} else if (str_starts(pos, WPA_EVENT_TERMINATING)) {
 		printf("wpa_supplicant is terminating - stop monitoring\n");
 		wpa_cli_quit = 1;
