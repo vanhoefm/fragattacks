@@ -2378,6 +2378,27 @@ static int tls_verify_cb(int preverify_ok, X509_STORE_CTX *x509_ctx)
 	openssl_tls_cert_event(conn, err_cert, depth, buf);
 
 	if (!preverify_ok) {
+		if (depth > 0) {
+			/* Send cert event for the peer certificate so that
+			 * the upper layers get information about it even if
+			 * validation of a CA certificate fails. */
+			STACK_OF(X509) *chain;
+
+			chain = X509_STORE_CTX_get1_chain(x509_ctx);
+			if (chain && sk_X509_num(chain) > 0) {
+				char buf2[256];
+				X509 *cert;
+
+				cert = sk_X509_value(chain, 0);
+				X509_NAME_oneline(X509_get_subject_name(cert),
+						  buf2, sizeof(buf2));
+
+				openssl_tls_cert_event(conn, cert, 0, buf2);
+			}
+			if (chain)
+				sk_X509_pop_free(chain, X509_free);
+		}
+
 		wpa_printf(MSG_WARNING, "TLS: Certificate verification failed,"
 			   " error %d (%s) depth %d for '%s'", err, err_str,
 			   depth, buf);
