@@ -2901,3 +2901,44 @@ def test_sigma_dut_eap_ttls_uosc_tod(dev, apdev, params):
         dev[0].dump_monitor()
     finally:
         stop_sigma_dut(sigma)
+
+def test_sigma_dut_eap_ttls_uosc_ca_mistrust(dev, apdev, params):
+    """sigma_dut controlled STA and EAP-TTLS with UOSC when CA is not trusted"""
+    logdir = params['logdir']
+
+    with open("auth_serv/ca.pem", "r") as f:
+        with open(os.path.join(logdir,
+                               "sigma_dut_eap_ttls_uosc_ca_mistrust.ca.pem"),
+                  "w") as f2:
+            f2.write(f.read())
+
+    ssid = "test-wpa2-eap"
+    params = int_eap_server_params()
+    params["ssid"] = ssid
+    params["ca_cert"] = "auth_serv/rsa3072-ca.pem"
+    params["server_cert"] = "auth_serv/rsa3072-server.pem"
+    params["private_key"] = "auth_serv/rsa3072-server.key"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, cert_path=logdir, debug=True)
+
+    try:
+        cmd = "sta_set_security,type,eapttls,interface,%s,ssid,%s,keymgmttype,wpa2,encType,AES-CCMP,PairwiseCipher,AES-CCMP-128,trustedRootCA,sigma_dut_eap_ttls_uosc_ca_mistrust.ca.pem,username,DOMAIN\mschapv2 user,password,password,domainSuffix,w1.fi" % (ifname, ssid)
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check(cmd)
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid))
+        ev = dev[0].wait_event(["CTRL-EVENT-EAP-TLS-CERT-ERROR"], timeout=10)
+        if ev is None:
+            raise Exception("Server certificate error not reported")
+
+        res = sigma_dut_cmd_check("dev_exec_action,program,WPA3,interface,%s,ServerCertTrust,Accept" % ifname)
+        if "ServerCertTrustResult,Accepted" not in res:
+            raise Exception("Server certificate trust was not accepted")
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+        dev[0].dump_monitor()
+    finally:
+        stop_sigma_dut(sigma)
