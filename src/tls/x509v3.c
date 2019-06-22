@@ -846,18 +846,6 @@ static int x509_parse_ext_basic_constraints(struct x509_certificate *cert,
 	}
 
 	if (hdr.tag == ASN1_TAG_BOOLEAN) {
-		if (hdr.length != 1) {
-			wpa_printf(MSG_DEBUG, "X509: Unexpected "
-				   "Boolean length (%u) in BasicConstraints",
-				   hdr.length);
-			return -1;
-		}
-		if (hdr.payload[0] != 0 && hdr.payload[0] != 0xff) {
-			wpa_printf(MSG_DEBUG,
-				   "X509: Invalid cA BOOLEAN value 0x%x in BasicConstraints (DER requires 0 or 0xff)",
-				   hdr.payload[0]);
-			return -1;
-		}
 		cert->ca = hdr.payload[0];
 
 		pos = hdr.payload + hdr.length;
@@ -1313,17 +1301,6 @@ static int x509_parse_extension(struct x509_certificate *cert,
 	}
 
 	if (hdr.tag == ASN1_TAG_BOOLEAN) {
-		if (hdr.length != 1) {
-			wpa_printf(MSG_DEBUG, "X509: Unexpected "
-				   "Boolean length (%u)", hdr.length);
-			return -1;
-		}
-		if (hdr.payload[0] != 0 && hdr.payload[0] != 0xff) {
-			wpa_printf(MSG_DEBUG,
-				   "X509: Invalid critical BOOLEAN value 0x%x in Extension (DER requires 0 or 0xff)",
-				   hdr.payload[0]);
-			return -1;
-		}
 		critical_ext = hdr.payload[0];
 		pos = hdr.payload;
 		if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
