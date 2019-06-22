@@ -815,6 +815,7 @@ static int x509_parse_ext_basic_constraints(struct x509_certificate *cert,
 	struct asn1_hdr hdr;
 	unsigned long value;
 	size_t left;
+	const u8 *end_seq;
 
 	/*
 	 * BasicConstraints ::= SEQUENCE {
@@ -836,6 +837,7 @@ static int x509_parse_ext_basic_constraints(struct x509_certificate *cert,
 	if (hdr.length == 0)
 		return 0;
 
+	end_seq = hdr.payload + hdr.length;
 	if (asn1_get_next(hdr.payload, hdr.length, &hdr) < 0 ||
 	    hdr.class != ASN1_CLASS_UNIVERSAL) {
 		wpa_printf(MSG_DEBUG, "X509: Failed to parse "
@@ -852,14 +854,14 @@ static int x509_parse_ext_basic_constraints(struct x509_certificate *cert,
 		}
 		cert->ca = hdr.payload[0];
 
-		if (hdr.length == pos + len - hdr.payload) {
+		pos = hdr.payload + hdr.length;
+		if (pos >= end_seq) {
+			/* No optional pathLenConstraint */
 			wpa_printf(MSG_DEBUG, "X509: BasicConstraints - cA=%d",
 				   cert->ca);
 			return 0;
 		}
-
-		if (asn1_get_next(hdr.payload + hdr.length, len - hdr.length,
-				  &hdr) < 0 ||
+		if (asn1_get_next(pos, end_seq - pos, &hdr) < 0 ||
 		    hdr.class != ASN1_CLASS_UNIVERSAL) {
 			wpa_printf(MSG_DEBUG, "X509: Failed to parse "
 				   "BasicConstraints");
