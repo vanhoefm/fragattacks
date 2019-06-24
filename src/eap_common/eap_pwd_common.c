@@ -137,6 +137,8 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 	struct crypto_bignum *x_candidate = NULL;
 	const struct crypto_bignum *prime;
 	u8 found_ctr = 0, is_odd = 0;
+	int cmp_prime;
+	unsigned int in_range;
 
 	if (grp->pwe)
 		return -1;
@@ -205,8 +207,13 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 		if (primebitlen % 8)
 			buf_shift_right(prfbuf, primebytelen,
 					8 - primebitlen % 8);
-		if (const_time_memcmp(prfbuf, prime_bin, primebytelen) >= 0)
-			continue;
+		cmp_prime = const_time_memcmp(prfbuf, prime_bin, primebytelen);
+		/* Create a const_time mask for selection based on prf result
+		 * being smaller than prime. */
+		in_range = const_time_fill_msb((unsigned int) cmp_prime);
+		/* The algorithm description would skip the next steps if
+		 * cmp_prime >= 0, but go through them regardless to minimize
+		 * externally observable differences in behavior. */
 
 		crypto_bignum_deinit(x_candidate, 1);
 		x_candidate = crypto_bignum_init_set(prfbuf, primebytelen);
@@ -237,9 +244,10 @@ int compute_password_element(EAP_PWD_group *grp, u16 num,
 			goto fail;
 		found_ctr = const_time_select_u8(found, found_ctr, ctr);
 		/* found is 0 or 0xff here and res is 0 or 1. Bitwise OR of them
-		 * (with res converted to 0/0xff) handles this in constant time.
+		 * (with res converted to 0/0xff and masked with prf being below
+		 * prime) handles this in constant time.
 		 */
-		found |= res * 0xff;
+		found |= (res & in_range) * 0xff;
 	}
 	if (found == 0) {
 		wpa_printf(MSG_INFO,
