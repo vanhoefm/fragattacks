@@ -142,6 +142,8 @@ static int sae_test_pwd_seed_ecc(struct sae_data *sae, const u8 *pwd_seed,
 	struct crypto_bignum *y_sqr, *x_cand;
 	int res;
 	size_t bits;
+	int cmp_prime;
+	unsigned int in_range;
 
 	wpa_hexdump_key(MSG_DEBUG, "SAE: pwd-seed", pwd_seed, SHA256_MAC_LEN);
 
@@ -155,8 +157,13 @@ static int sae_test_pwd_seed_ecc(struct sae_data *sae, const u8 *pwd_seed,
 	wpa_hexdump_key(MSG_DEBUG, "SAE: pwd-value",
 			pwd_value, sae->tmp->prime_len);
 
-	if (const_time_memcmp(pwd_value, prime, sae->tmp->prime_len) >= 0)
-		return 0;
+	cmp_prime = const_time_memcmp(pwd_value, prime, sae->tmp->prime_len);
+	/* Create a const_time mask for selection based on prf result
+	 * being smaller than prime. */
+	in_range = const_time_fill_msb((unsigned int) cmp_prime);
+	/* The algorithm description would skip the next steps if
+	 * cmp_prime >= 0 (reutnr 0 here), but go through them regardless to
+	 * minimize externally observable differences in behavior. */
 
 	x_cand = crypto_bignum_init_set(pwd_value, sae->tmp->prime_len);
 	if (!x_cand)
@@ -169,7 +176,9 @@ static int sae_test_pwd_seed_ecc(struct sae_data *sae, const u8 *pwd_seed,
 	res = dragonfly_is_quadratic_residue_blind(sae->tmp->ec, qr, qnr,
 						   y_sqr);
 	crypto_bignum_deinit(y_sqr, 1);
-	return res;
+	if (res < 0)
+		return res;
+	return const_time_select_int(in_range, res, 0);
 }
 
 
