@@ -962,10 +962,9 @@ def test_prefer_vht40(dev, apdev):
             raise Exception("Unexpected BSS1 est_throughput: " + est)
     finally:
         dev[0].request("DISCONNECT")
-        if hapd2:
-            hapd2.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        disable_hapd(hapd)
+        disable_hapd(hapd2)
+        clear_regdom_dev(dev)
 
 def test_ap_vht80_pwr_constraint(dev, apdev):
     """VHT with 80 MHz channel width and local power constraint"""
