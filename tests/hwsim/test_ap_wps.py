@@ -41,7 +41,7 @@ import hwsim_utils
 import hostapd
 from wpasupplicant import WpaSupplicant
 from utils import HwsimSkip, alloc_fail, fail_test, skip_with_fips
-from utils import wait_fail_trigger
+from utils import wait_fail_trigger, clear_regdom
 from test_ap_eap import int_eap_server_params
 
 def wps_start_ap(apdev, ssid="test-wps-conf"):
@@ -293,10 +293,7 @@ def test_ap_wps_conf_chan14(dev, apdev):
             raise Exception("Device name not available in STA command")
     finally:
         dev[0].request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 @remote_compatible
 def test_ap_wps_twice(dev, apdev):
