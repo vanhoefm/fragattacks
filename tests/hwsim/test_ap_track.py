@@ -265,29 +265,28 @@ def _test_ap_track_sta_force_5ghz(dev, bssid, bssid2):
 def test_ap_track_sta_force_2ghz(dev, apdev):
     """Dualband AP forcing dualband STA to connect on 2.4 GHz"""
     try:
-        _test_ap_track_sta_force_2ghz(dev, apdev)
+        params = {"ssid": "track",
+                  "country_code": "US",
+                  "hw_mode": "g",
+                  "channel": "6",
+                  "track_sta_max_num": "100"}
+        hapd = hostapd.add_ap(apdev[0], params)
+
+        params = {"ssid": "track",
+                  "country_code": "US",
+                  "hw_mode": "a",
+                  "channel": "40",
+                  "no_probe_resp_if_seen_on": apdev[0]['ifname'],
+                  "no_auth_if_seen_on": apdev[0]['ifname']}
+        hapd2 = hostapd.add_ap(apdev[1], params)
+
+        _test_ap_track_sta_force_2ghz(dev, apdev[0]['bssid'], apdev[1]['bssid'])
     finally:
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        time.sleep(0.1)
+        disable_hapd(hapd)
+        disable_hapd(hapd2)
+        clear_regdom_dev(dev)
 
-def _test_ap_track_sta_force_2ghz(dev, apdev):
-    params = {"ssid": "track",
-              "country_code": "US",
-              "hw_mode": "g",
-              "channel": "6",
-              "track_sta_max_num": "100"}
-    hapd = hostapd.add_ap(apdev[0], params)
-    bssid = apdev[0]['bssid']
-
-    params = {"ssid": "track",
-              "country_code": "US",
-              "hw_mode": "a",
-              "channel": "40",
-              "no_probe_resp_if_seen_on": apdev[0]['ifname'],
-              "no_auth_if_seen_on": apdev[0]['ifname']}
-    hapd2 = hostapd.add_ap(apdev[1], params)
-    bssid2 = apdev[1]['bssid']
-
+def _test_ap_track_sta_force_2ghz(dev, bssid, bssid2):
     dev[0].scan_for_bss(bssid2, freq=5200, force_scan=True)
     dev[0].scan_for_bss(bssid, freq=2437, force_scan=True)
 
