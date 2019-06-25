@@ -1067,10 +1067,7 @@ def test_ap_vht_tkip(dev, apdev):
         raise
     finally:
         dev[0].request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_ap_vht_40_fallback_to_20(devs, apdevs):
     """VHT and 40 MHz channel configuration falling back to 20 MHz"""
