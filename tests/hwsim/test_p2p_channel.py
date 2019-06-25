@@ -746,7 +746,7 @@ def test_p2p_channel_5ghz_165_169_us(dev):
         if "FAIL" not in res:
             raise Exception("GO on channel 169 allowed unexpectedly")
     finally:
-        set_country("00")
+        clear_regdom_dev(dev)
 
 def wait_go_down_up(dev):
     ev = dev.wait_group_event(["AP-DISABLED"], timeout=5)
