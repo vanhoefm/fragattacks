@@ -12,7 +12,7 @@ import struct
 
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import HwsimSkip, alloc_fail, parse_ie
+from utils import HwsimSkip, alloc_fail, parse_ie, clear_regdom
 import hwsim_utils
 from test_ap_csa import csa_supported
 
@@ -1267,7 +1267,7 @@ def test_ap_ht40_5ghz_invalid_pair(dev, apdev):
             if sec != "0":
                 raise Exception("Invalid 40 MHz channel accepted")
     finally:
-        set_world_reg(apdev[0], None, None)
+        clear_regdom(hapd, dev)
 
 @remote_compatible
 def test_ap_ht40_5ghz_disabled_sec(dev, apdev):
