@@ -16,6 +16,7 @@ import subprocess
 import hostapd
 from wpasupplicant import WpaSupplicant
 from utils import HwsimSkip, fail_test, alloc_fail, wait_fail_trigger, parse_ie
+from utils import clear_regdom_dev
 from tshark import run_tshark
 from test_ap_csa import switch_channel, wait_channel_switch, csa_supported
 
@@ -974,8 +975,7 @@ def test_scan_dfs(dev, apdev, params):
     try:
         _test_scan_dfs(dev, apdev, params)
     finally:
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        time.sleep(0.1)
+        clear_regdom_dev(dev)
 
 def _test_scan_dfs(dev, apdev, params):
     subprocess.call(['iw', 'reg', 'set', 'US'])
