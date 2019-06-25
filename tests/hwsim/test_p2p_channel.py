@@ -17,6 +17,7 @@ from tshark import run_tshark
 from wpasupplicant import WpaSupplicant
 from hwsim import HWSimRadio
 from p2p_utils import *
+from utils import clear_regdom_dev
 
 def set_country(country, dev=None):
     subprocess.call(['iw', 'reg', 'set', country])
@@ -609,7 +610,7 @@ def test_p2p_autogo_pref_chan_not_in_regulatory(dev, apdev):
         dev[0].remove_group(res['ifname'])
     finally:
         dev[0].global_request("SET p2p_pref_chan ")
-        set_country("00")
+        clear_regdom_dev(dev)
 
 def run_autogo(dev, param):
     if "OK" not in dev.global_request("P2P_GROUP_ADD " + param):
