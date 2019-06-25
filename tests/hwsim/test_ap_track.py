@@ -11,34 +11,35 @@ import time
 
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import parse_ie
+from utils import parse_ie, disable_hapd, clear_regdom_dev
 
 def test_ap_track_sta(dev, apdev):
     """Dualband AP tracking unconnected stations"""
+
     try:
-        _test_ap_track_sta(dev, apdev)
+        params = {"ssid": "track",
+                  "country_code": "US",
+                  "hw_mode": "g",
+                  "channel": "6",
+                  "track_sta_max_num": "2"}
+        hapd = hostapd.add_ap(apdev[0], params)
+
+        params = {"ssid": "track",
+                  "country_code": "US",
+                  "hw_mode": "a",
+                  "channel": "40",
+                  "track_sta_max_num": "100",
+                  "track_sta_max_age": "1"}
+        hapd2 = hostapd.add_ap(apdev[1], params)
+
+        _test_ap_track_sta(dev, hapd, apdev[0]['bssid'], hapd2,
+                           apdev[1]['bssid'])
     finally:
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        time.sleep(0.1)
+        disable_hapd(hapd)
+        disable_hapd(hapd2)
+        clear_regdom_dev(dev, 3)
 
-def _test_ap_track_sta(dev, apdev):
-    params = {"ssid": "track",
-              "country_code": "US",
-              "hw_mode": "g",
-              "channel": "6",
-              "track_sta_max_num": "2"}
-    hapd = hostapd.add_ap(apdev[0], params)
-    bssid = apdev[0]['bssid']
-
-    params = {"ssid": "track",
-              "country_code": "US",
-              "hw_mode": "a",
-              "channel": "40",
-              "track_sta_max_num": "100",
-              "track_sta_max_age": "1"}
-    hapd2 = hostapd.add_ap(apdev[1], params)
-    bssid2 = apdev[1]['bssid']
-
+def _test_ap_track_sta(dev, hapd, bssid, hapd2, bssid2):
     for i in range(2):
         dev[0].scan_for_bss(bssid, freq=2437, force_scan=True)
         dev[0].scan_for_bss(bssid2, freq=5200, force_scan=True)
