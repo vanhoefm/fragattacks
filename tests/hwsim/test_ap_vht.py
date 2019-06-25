@@ -1093,12 +1093,7 @@ def test_ap_vht_40_fallback_to_20(devs, apdevs):
         dev.wait_regdom(country_ie=True)
         hwsim_utils.test_connectivity(dev, hapd)
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev.disconnect_and_stop_scan()
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev.wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev.flush_scan_cache()
+        clear_regdom(hapd, devs)
 
 def test_ap_vht80_to_24g_ht(dev, apdev):
     """VHT with 80 MHz channel width reconfigured to 2.4 GHz HT"""
