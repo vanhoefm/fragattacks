@@ -17,6 +17,7 @@ import time
 import hostapd
 from wpasupplicant import WpaSupplicant
 from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger
+from utils import disable_hapd, clear_regdom_dev
 from test_ap_ht import clear_scan_cache
 from remotehost import remote_compatible
 from test_ap_vht import vht_supported
@@ -1254,10 +1255,9 @@ def test_rrm_beacon_req_table_vht(dev, apdev):
         raise
     finally:
         dev[0].request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        disable_hapd(hapd)
+        disable_hapd(hapd2)
+        clear_regdom_dev(dev)
 
 @remote_compatible
 def test_rrm_beacon_req_active(dev, apdev):
