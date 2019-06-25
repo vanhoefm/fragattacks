@@ -315,10 +315,7 @@ def test_ap_vht_40(devs, apdevs):
         hwsim_utils.test_connectivity(dev, hapd)
     finally:
         dev.request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev.flush_scan_cache()
+        clear_regdom(hapd, devs)
 
 def test_ap_vht_capab_not_supported(dev, apdev):
     """VHT configuration with driver not supporting all vht_capab entries"""
