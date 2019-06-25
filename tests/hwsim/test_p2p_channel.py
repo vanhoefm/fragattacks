@@ -730,8 +730,8 @@ def test_p2p_channel_5ghz_only(dev):
             raise Exception("Unexpected channel %d MHz" % freq)
         dev[0].remove_group()
     finally:
-        set_country("00")
         dev[0].global_request("P2P_SET disallow_freq ")
+        clear_regdom_dev(dev)
 
 def test_p2p_channel_5ghz_165_169_us(dev):
     """P2P GO and 5 GHz channels 165 (allowed) and 169 (disallowed) in US"""
