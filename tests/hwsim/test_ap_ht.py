@@ -1288,7 +1288,7 @@ def test_ap_ht40_5ghz_disabled_sec(dev, apdev):
             if sec != "0":
                 raise Exception("Invalid 40 MHz channel accepted")
     finally:
-        set_world_reg(apdev[0], None, None)
+        clear_regdom(hapd, dev)
 
 def test_ap_ht40_scan_broken_ap(dev, apdev):
     """HT40 co-ex scan and broken legacy/HT AP"""
