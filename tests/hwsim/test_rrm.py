@@ -17,7 +17,7 @@ import time
 import hostapd
 from wpasupplicant import WpaSupplicant
 from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger
-from utils import disable_hapd, clear_regdom_dev
+from utils import disable_hapd, clear_regdom_dev, clear_regdom
 from test_ap_ht import clear_scan_cache
 from remotehost import remote_compatible
 from test_ap_vht import vht_supported
@@ -1715,12 +1715,7 @@ def test_rrm_beacon_req_passive_scan_vht160(dev, apdev):
             raise HwsimSkip("ZA regulatory rule likely did not have DFS requirement removed")
         raise
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].disconnect_and_stop_scan()
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_rrm_beacon_req_ap_errors(dev, apdev):
     """Beacon request - AP error cases"""
