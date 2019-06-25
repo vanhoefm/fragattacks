@@ -292,10 +292,7 @@ def test_ap_vht_20(devs, apdevs):
         hwsim_utils.test_connectivity(dev, hapd)
     finally:
         dev.request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev.flush_scan_cache()
+        clear_regdom(hapd, devs)
 
 def test_ap_vht_40(devs, apdevs):
     """VHT and 40 MHz channel"""
