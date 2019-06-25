@@ -126,10 +126,7 @@ def test_ap_vht_wifi_generation(dev, apdev):
         raise
     finally:
         dev[0].request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def vht80_test(apdev, dev, channel, ht_capab):
     clear_scan_cache(apdev)
