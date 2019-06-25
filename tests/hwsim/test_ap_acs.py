@@ -9,7 +9,7 @@ logger = logging.getLogger()
 import time
 
 import hostapd
-from utils import skip_with_fips, alloc_fail, fail_test, HwsimSkip
+from utils import skip_with_fips, alloc_fail, fail_test, HwsimSkip, clear_regdom
 from test_ap_ht import clear_scan_cache
 from test_dfs import wait_dfs_event
 
@@ -314,9 +314,7 @@ def test_ap_acs_vht160_scan_disable(dev, apdev):
     params['ieee80211h'] = '1'
     hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
     time.sleep(3)
-    hapd.request("DISABLE")
-    hostapd.cmd_execute(apdev[0], ['iw', 'reg', 'set', '00'])
-    time.sleep(0.1)
+    clear_regdom(hapd, dev)
 
 def test_ap_acs_bias(dev, apdev):
     """Automatic channel selection with bias values"""
