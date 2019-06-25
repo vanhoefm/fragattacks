@@ -649,7 +649,7 @@ def test_autogo_ht_vht(dev):
         set_country("US", dev[0])
         _test_autogo_ht_vht(dev)
     finally:
-        set_country("00")
+        clear_regdom_dev(dev)
 
 def test_p2p_listen_chan_optimize(dev, apdev):
     """P2P listen channel optimization"""
