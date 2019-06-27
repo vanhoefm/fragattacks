@@ -268,10 +268,7 @@ def test_ap_wps_conf_5ghz(dev, apdev):
             raise Exception("Device name not available in STA command")
     finally:
         dev[0].request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_ap_wps_conf_chan14(dev, apdev):
     """WPS PBC provisioning with configured AP on channel 14"""
