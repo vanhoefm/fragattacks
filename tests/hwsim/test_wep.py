@@ -11,6 +11,7 @@ import subprocess
 from remotehost import remote_compatible
 import hostapd
 import hwsim_utils
+from utils import clear_regdom
 
 @remote_compatible
 def test_wep_open_auth(dev, apdev):
@@ -119,10 +120,7 @@ def test_wep_ht_vht(dev, apdev):
             raise Exception("Unexpected STATUS secondary_channel value")
     finally:
         dev[0].request("DISCONNECT")
-        if hapd:
-            hapd.request("DISABLE")
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_wep_ifdown(dev, apdev):
     """AP with WEP and external ifconfig down"""
