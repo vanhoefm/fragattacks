@@ -1668,12 +1668,7 @@ def test_rrm_beacon_req_passive_scan_vht(dev, apdev):
                 raise HwsimSkip("80 MHz channel not supported in regulatory information")
         raise
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].disconnect_and_stop_scan()
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_rrm_beacon_req_passive_scan_vht160(dev, apdev):
     """Beacon request - passive scan mode - VHT160"""
