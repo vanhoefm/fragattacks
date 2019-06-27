@@ -212,12 +212,7 @@ def test_ap_acs_vht(dev, apdev):
         dev[0].connect("test-acs", psk="12345678", scan_freq=freq)
         dev[0].wait_regdom(country_ie=True)
     finally:
-        if hapd:
-            hapd.request("DISABLE")
-        dev[0].disconnect_and_stop_scan()
-        hostapd.cmd_execute(apdev[0], ['iw', 'reg', 'set', '00'])
-        dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
-        dev[0].flush_scan_cache()
+        clear_regdom(hapd, dev)
 
 def test_ap_acs_vht40(dev, apdev):
     """Automatic channel selection for VHT40"""
