@@ -1074,6 +1074,14 @@ struct wpa_driver_associate_params {
 	int req_key_mgmt_offload;
 
 	/**
+	 * req_handshake_offload - Request EAPOL handshake offload
+	 *
+	 * Request EAPOL handshake offload for this connection if the device
+	 * supports it.
+	 */
+	int req_handshake_offload;
+
+	/**
 	 * Flag for indicating whether this association includes support for
 	 * RRM (Radio Resource Measurements)
 	 */
