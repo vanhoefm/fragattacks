@@ -51,7 +51,7 @@ u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid,
 	struct hostapd_hw_modes *mode = hapd->iface->current_mode;
 	u8 he_oper_chwidth = ~HE_PHYCAP_CHANNEL_WIDTH_MASK;
 	u8 *pos = eid;
-	u8 ie_size = 0, mcs_nss_size = 0, ppet_size = 0;
+	u8 ie_size = 0, mcs_nss_size = 4, ppet_size = 0;
 
 	if (!mode)
 		return eid;
@@ -74,7 +74,6 @@ u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid,
 	case CHANWIDTH_USE_HT:
 		he_oper_chwidth |= HE_PHYCAP_CHANNEL_WIDTH_SET_40MHZ_IN_2G |
 			HE_PHYCAP_CHANNEL_WIDTH_SET_40MHZ_80MHZ_IN_5G;
-		mcs_nss_size += 4;
 		break;
 	}
 
