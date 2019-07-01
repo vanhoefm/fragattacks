@@ -4344,6 +4344,10 @@ fail:
 static int nl80211_put_freq_params(struct nl_msg *msg,
 				   const struct hostapd_freq_params *freq)
 {
+	enum hostapd_hw_mode hw_mode;
+	int is_24ghz;
+	u8 channel;
+
 	wpa_printf(MSG_DEBUG, "  * freq=%d", freq->freq);
 	if (nla_put_u32(msg, NL80211_ATTR_WIPHY_FREQ, freq->freq))
 		return -ENOBUFS;
@@ -4352,7 +4356,11 @@ static int nl80211_put_freq_params(struct nl_msg *msg,
 	wpa_printf(MSG_DEBUG, "  * vht_enabled=%d", freq->vht_enabled);
 	wpa_printf(MSG_DEBUG, "  * ht_enabled=%d", freq->ht_enabled);
 
-	if (freq->vht_enabled || freq->he_enabled) {
+	hw_mode = ieee80211_freq_to_chan(freq->freq, &channel);
+	is_24ghz = hw_mode == HOSTAPD_MODE_IEEE80211G ||
+		hw_mode == HOSTAPD_MODE_IEEE80211B;
+
+	if (freq->vht_enabled || (freq->he_enabled && !is_24ghz)) {
 		enum nl80211_chan_width cw;
 
 		wpa_printf(MSG_DEBUG, "  * bandwidth=%d", freq->bandwidth);
