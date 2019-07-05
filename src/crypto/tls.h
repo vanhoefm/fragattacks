@@ -659,4 +659,11 @@ void tls_connection_remove_session(struct tls_connection *conn);
  */
 int tls_get_tls_unique(struct tls_connection *conn, u8 *buf, size_t max_len);
 
+/**
+ * tls_connection_get_cipher_suite - Get current TLS cipher suite
+ * @conn: Connection context data from tls_connection_init()
+ * Returns: TLS cipher suite of the current connection or 0 on error
+ */
+u16 tls_connection_get_cipher_suite(struct tls_connection *conn);
+
 #endif /* TLS_H */

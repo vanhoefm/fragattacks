@@ -5354,3 +5354,14 @@ int tls_get_tls_unique(struct tls_connection *conn, u8 *buf, size_t max_len)
 
 	return len;
 }
+
+
+u16 tls_connection_get_cipher_suite(struct tls_connection *conn)
+{
+	const SSL_CIPHER *cipher;
+
+	cipher = SSL_get_current_cipher(conn->ssl);
+	if (!cipher)
+		return 0;
+	return SSL_CIPHER_get_protocol_id(cipher);
+}
