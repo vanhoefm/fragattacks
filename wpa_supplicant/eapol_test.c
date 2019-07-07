@@ -502,6 +502,7 @@ static void eapol_test_cert_cb(void *ctx, struct tls_cert_data *cert,
 			       const char *cert_hash)
 {
 	struct eapol_test_data *e = ctx;
+	int i;
 
 	wpa_msg(e->wpa_s, MSG_INFO, WPA_EVENT_EAP_PEER_CERT
 		"depth=%d subject='%s'%s%s",
@@ -528,14 +529,9 @@ static void eapol_test_cert_cb(void *ctx, struct tls_cert_data *cert,
 					      cert->subject, cert->cert);
 	}
 
-	if (cert->altsubject) {
-		int i;
-
-		for (i = 0; i < cert->num_altsubject; i++)
-			wpa_msg(e->wpa_s, MSG_INFO, WPA_EVENT_EAP_PEER_ALT
-				"depth=%d %s", cert->depth,
-				cert->altsubject[i]);
-	}
+	for (i = 0; i < cert->num_altsubject; i++)
+		wpa_msg(e->wpa_s, MSG_INFO, WPA_EVENT_EAP_PEER_ALT
+			"depth=%d %s", cert->depth, cert->altsubject[i]);
 }
 
 

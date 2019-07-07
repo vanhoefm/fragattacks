@@ -791,6 +791,8 @@ void wpas_notify_certification(struct wpa_supplicant *wpa_s,
 			       struct tls_cert_data *cert,
 			       const char *cert_hash)
 {
+	int i;
+
 	wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_EAP_PEER_CERT
 		"depth=%d subject='%s'%s%s%s",
 		cert->depth, cert->subject, cert_hash ? " hash=" : "",
@@ -812,14 +814,9 @@ void wpas_notify_certification(struct wpa_supplicant *wpa_s,
 		}
 	}
 
-	if (cert->altsubject) {
-		int i;
-
-		for (i = 0; i < cert->num_altsubject; i++)
-			wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_EAP_PEER_ALT
-				"depth=%d %s", cert->depth,
-				cert->altsubject[i]);
-	}
+	for (i = 0; i < cert->num_altsubject; i++)
+		wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_EAP_PEER_ALT
+			"depth=%d %s", cert->depth, cert->altsubject[i]);
 
 	/* notify the new DBus API */
 	wpas_dbus_signal_certification(wpa_s, cert->depth, cert->subject,
