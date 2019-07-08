@@ -5762,7 +5762,8 @@ static int nl80211_connect_common(struct wpa_driver_nl80211_data *drv,
 	    nl80211_put_fils_connect_params(drv, params, msg) != 0)
 		return -1;
 
-	if ((params->auth_alg & WPA_AUTH_ALG_SAE) &&
+	if ((params->key_mgmt_suite == WPA_KEY_MGMT_SAE ||
+	     params->key_mgmt_suite == WPA_KEY_MGMT_FT_SAE) &&
 	    (!(drv->capa.flags & WPA_DRIVER_FLAGS_SME)) &&
 	    nla_put_flag(msg, NL80211_ATTR_EXTERNAL_AUTH_SUPPORT))
 		return -1;
@@ -5917,7 +5918,8 @@ static int wpa_driver_nl80211_associate(
 
 		if (wpa_driver_nl80211_set_mode(priv, nlmode) < 0)
 			return -1;
-		if (params->auth_alg & WPA_AUTH_ALG_SAE) {
+		if (params->key_mgmt_suite == WPA_KEY_MGMT_SAE ||
+		    params->key_mgmt_suite == WPA_KEY_MGMT_FT_SAE) {
 			nl_connect = bss->nl_connect;
 			bss->use_nl_connect = 1;
 		} else {
