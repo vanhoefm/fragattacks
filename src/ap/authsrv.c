@@ -120,6 +120,8 @@ static int hostapd_setup_radius_srv(struct hostapd_data *hapd)
 	srv.eap_fast_prov = conf->eap_fast_prov;
 	srv.pac_key_lifetime = conf->pac_key_lifetime;
 	srv.pac_key_refresh_time = conf->pac_key_refresh_time;
+	srv.eap_teap_auth = conf->eap_teap_auth;
+	srv.eap_teap_pac_no_inner = conf->eap_teap_pac_no_inner;
 	srv.eap_sim_aka_result_ind = conf->eap_sim_aka_result_ind;
 	srv.tnc = conf->tnc;
 	srv.wps = hapd->wps;

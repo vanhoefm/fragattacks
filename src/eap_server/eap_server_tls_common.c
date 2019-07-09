@@ -373,6 +373,8 @@ static int eap_server_tls_reassemble(struct eap_ssl_data *data, u8 flags,
 	unsigned int tls_msg_len = 0;
 	const u8 *end = *pos + *left;
 
+	wpa_hexdump(MSG_MSGDUMP, "SSL: Received data", *pos, *left);
+
 	if (flags & EAP_TLS_FLAGS_LENGTH_INCLUDED) {
 		if (*left < 4) {
 			wpa_printf(MSG_INFO, "SSL: Short frame with TLS "

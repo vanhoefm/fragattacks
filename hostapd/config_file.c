@@ -2675,6 +2675,20 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "pac_key_refresh_time") == 0) {
 		bss->pac_key_refresh_time = atoi(pos);
 #endif /* EAP_SERVER_FAST */
+#ifdef EAP_SERVER_TEAP
+	} else if (os_strcmp(buf, "eap_teap_auth") == 0) {
+		int val = atoi(pos);
+
+		if (val < 0 || val > 1) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: Invalid eap_teap_auth value",
+				   line);
+			return 1;
+		}
+		bss->eap_teap_auth = val;
+	} else if (os_strcmp(buf, "eap_teap_pac_no_inner") == 0) {
+		bss->eap_teap_pac_no_inner = atoi(pos);
+#endif /* EAP_SERVER_TEAP */
 #ifdef EAP_SERVER_SIM
 	} else if (os_strcmp(buf, "eap_sim_db") == 0) {
 		os_free(bss->eap_sim_db);

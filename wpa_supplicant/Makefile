@@ -671,6 +671,23 @@ CONFIG_IEEE8021X_EAPOL=y
 NEED_T_PRF=y
 endif
 
+ifdef CONFIG_EAP_TEAP
+# EAP-TEAP
+ifeq ($(CONFIG_EAP_TEAP), dyn)
+CFLAGS += -DEAP_TEAP_DYNAMIC
+EAPDYN += ../src/eap_peer/eap_teap.so
+EAPDYN += ../src/eap_common/eap_teap_common.o
+else
+CFLAGS += -DEAP_TEAP
+OBJS += ../src/eap_peer/eap_teap.o ../src/eap_peer/eap_teap_pac.o
+OBJS += ../src/eap_common/eap_teap_common.o
+endif
+TLS_FUNCS=y
+CONFIG_IEEE8021X_EAPOL=y
+NEED_T_PRF=y
+NEED_SHA384=y
+endif
+
 ifdef CONFIG_EAP_PAX
 # EAP-PAX
 ifeq ($(CONFIG_EAP_PAX), dyn)
@@ -1044,7 +1061,8 @@ endif
 
 ifdef TLS_FUNCS
 NEED_DES=y
-# Shared TLS functions (needed for EAP_TLS, EAP_PEAP, EAP_TTLS, and EAP_FAST)
+# Shared TLS functions (needed for EAP_TLS, EAP_PEAP, EAP_TTLS, EAP_FAST, and
+# EAP_TEAP)
 OBJS += ../src/eap_peer/eap_tls_common.o
 ifndef CONFIG_FIPS
 NEED_TLS_PRF=y

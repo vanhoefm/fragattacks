@@ -159,7 +159,8 @@ static int eap_tls_params_from_conf(struct eap_sm *sm,
 				    struct eap_peer_config *config, int phase2)
 {
 	os_memset(params, 0, sizeof(*params));
-	if (sm->workaround && data->eap_type != EAP_TYPE_FAST) {
+	if (sm->workaround && data->eap_type != EAP_TYPE_FAST &&
+	    data->eap_type != EAP_TYPE_TEAP) {
 		/*
 		 * Some deployed authentication servers seem to be unable to
 		 * handle the TLS Session Ticket extension (they are supposed
@@ -171,7 +172,15 @@ static int eap_tls_params_from_conf(struct eap_sm *sm,
 		 */
 		params->flags |= TLS_CONN_DISABLE_SESSION_TICKET;
 	}
+	if (data->eap_type == EAP_TYPE_TEAP) {
+		/* RFC 7170 requires TLS v1.2 or newer to be used with TEAP */
+		params->flags |= TLS_CONN_DISABLE_TLSv1_0 |
+			TLS_CONN_DISABLE_TLSv1_1;
+		if (config->teap_anon_dh)
+			params->flags |= TLS_CONN_TEAP_ANON_DH;
+	}
 	if (data->eap_type == EAP_TYPE_FAST ||
+	    data->eap_type == EAP_TYPE_TEAP ||
 	    data->eap_type == EAP_TYPE_TTLS ||
 	    data->eap_type == EAP_TYPE_PEAP) {
 		/* The current EAP peer implementation is not yet ready for the

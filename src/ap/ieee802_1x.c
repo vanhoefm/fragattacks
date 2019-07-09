@@ -2371,6 +2371,8 @@ int ieee802_1x_init(struct hostapd_data *hapd)
 	conf.eap_fast_prov = hapd->conf->eap_fast_prov;
 	conf.pac_key_lifetime = hapd->conf->pac_key_lifetime;
 	conf.pac_key_refresh_time = hapd->conf->pac_key_refresh_time;
+	conf.eap_teap_auth = hapd->conf->eap_teap_auth;
+	conf.eap_teap_pac_no_inner = hapd->conf->eap_teap_pac_no_inner;
 	conf.eap_sim_aka_result_ind = hapd->conf->eap_sim_aka_result_ind;
 	conf.tnc = hapd->conf->tnc;
 	conf.wps = hapd->wps;

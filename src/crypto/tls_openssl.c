@@ -44,6 +44,13 @@
 #define OPENSSL_NEED_EAP_FAST_PRF
 #endif
 
+#if defined(EAP_FAST) || defined(EAP_FAST_DYNAMIC) || \
+	defined(EAP_SERVER_FAST) || defined(EAP_TEAP) || \
+	defined(EAP_SERVER_TEAP)
+#define EAP_FAST_OR_TEAP
+#endif
+
+
 #if defined(OPENSSL_IS_BORINGSSL)
 /* stack_index_t is the return type of OpenSSL's sk_XXX_num() functions. */
 typedef size_t stack_index_t;
@@ -4476,7 +4483,7 @@ int tls_connection_set_cipher_list(void *tls_ctx, struct tls_connection *conn,
 	wpa_printf(MSG_DEBUG, "OpenSSL: cipher suites: %s", buf + 1);
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
-#if defined(EAP_FAST) || defined(EAP_FAST_DYNAMIC) || defined(EAP_SERVER_FAST)
+#ifdef EAP_FAST_OR_TEAP
 	if (os_strstr(buf, ":ADH-")) {
 		/*
 		 * Need to drop to security level 0 to allow anonymous
@@ -4487,7 +4494,7 @@ int tls_connection_set_cipher_list(void *tls_ctx, struct tls_connection *conn,
 		/* Force at least security level 1 */
 		SSL_set_security_level(conn->ssl, 1);
 	}
-#endif /* EAP_FAST || EAP_FAST_DYNAMIC || EAP_SERVER_FAST */
+#endif /* EAP_FAST_OR_TEAP */
 #endif
 
 	if (SSL_set_cipher_list(conn->ssl, buf + 1) != 1) {
@@ -4541,7 +4548,7 @@ int tls_connection_enable_workaround(void *ssl_ctx,
 }
 
 
-#if defined(EAP_FAST) || defined(EAP_FAST_DYNAMIC) || defined(EAP_SERVER_FAST)
+#ifdef EAP_FAST_OR_TEAP
 /* ClientHello TLS extensions require a patch to openssl, so this function is
  * commented out unless explicitly needed for EAP-FAST in order to be able to
  * build this file with unmodified openssl. */
@@ -4558,7 +4565,7 @@ int tls_connection_client_hello_ext(void *ssl_ctx, struct tls_connection *conn,
 
 	return 0;
 }
-#endif /* EAP_FAST || EAP_FAST_DYNAMIC || EAP_SERVER_FAST */
+#endif /* EAP_FAST_OR_TEAP */
 
 
 int tls_connection_get_failed(void *ssl_ctx, struct tls_connection *conn)
@@ -5176,7 +5183,7 @@ int tls_global_set_params(void *tls_ctx,
 }
 
 
-#if defined(EAP_FAST) || defined(EAP_FAST_DYNAMIC) || defined(EAP_SERVER_FAST)
+#ifdef EAP_FAST_OR_TEAP
 /* Pre-shared secred requires a patch to openssl, so this function is
  * commented out unless explicitly needed for EAP-FAST in order to be able to
  * build this file with unmodified openssl. */
@@ -5257,7 +5264,7 @@ static int tls_session_ticket_ext_cb(SSL *s, const unsigned char *data,
 
 	return 1;
 }
-#endif /* EAP_FAST || EAP_FAST_DYNAMIC || EAP_SERVER_FAST */
+#endif /* EAP_FAST_OR_TEAP */
 
 
 int tls_connection_set_session_ticket_cb(void *tls_ctx,
@@ -5265,7 +5272,7 @@ int tls_connection_set_session_ticket_cb(void *tls_ctx,
 					 tls_session_ticket_cb cb,
 					 void *ctx)
 {
-#if defined(EAP_FAST) || defined(EAP_FAST_DYNAMIC) || defined(EAP_SERVER_FAST)
+#ifdef EAP_FAST_OR_TEAP
 	conn->session_ticket_cb = cb;
 	conn->session_ticket_cb_ctx = ctx;
 
@@ -5282,9 +5289,9 @@ int tls_connection_set_session_ticket_cb(void *tls_ctx,
 	}
 
 	return 0;
-#else /* EAP_FAST || EAP_FAST_DYNAMIC || EAP_SERVER_FAST */
+#else /* EAP_FAST_OR_TEAP */
 	return -1;
-#endif /* EAP_FAST || EAP_FAST_DYNAMIC || EAP_SERVER_FAST */
+#endif /* EAP_FAST_OR_TEAP */
 }
 
 

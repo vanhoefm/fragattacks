@@ -526,6 +526,16 @@ NEED_T_PRF=y
 NEED_AES_UNWRAP=y
 endif
 
+ifdef CONFIG_EAP_TEAP
+CFLAGS += -DEAP_SERVER_TEAP
+OBJS += ../src/eap_server/eap_server_teap.o
+OBJS += ../src/eap_common/eap_teap_common.o
+TLS_FUNCS=y
+NEED_T_PRF=y
+NEED_SHA384=y
+NEED_AES_UNWRAP=y
+endif
+
 ifdef CONFIG_WPS
 CFLAGS += -DCONFIG_WPS -DEAP_SERVER_WSC
 OBJS += ../src/utils/uuid.o

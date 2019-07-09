@@ -2603,7 +2603,7 @@ static int eap_allowed_phase2_type(int vendor, int type)
 	if (vendor != EAP_VENDOR_IETF)
 		return 0;
 	return type != EAP_TYPE_PEAP && type != EAP_TYPE_TTLS &&
-		type != EAP_TYPE_FAST;
+		type != EAP_TYPE_FAST && type != EAP_TYPE_TEAP;
 }
 
 
