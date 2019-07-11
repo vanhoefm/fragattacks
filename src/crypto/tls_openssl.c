@@ -4293,6 +4293,22 @@ openssl_connection_handshake(struct tls_connection *conn,
 		wpa_printf(MSG_DEBUG,
 			   "OpenSSL: Handshake finished - resumed=%d",
 			   tls_connection_resumed(conn->ssl_ctx, conn));
+		if (conn->server) {
+			char *buf;
+			size_t buflen = 2000;
+
+			buf = os_malloc(buflen);
+			if (buf) {
+				if (SSL_get_shared_ciphers(conn->ssl, buf,
+							   buflen)) {
+					buf[buflen - 1] = '\0';
+					wpa_printf(MSG_DEBUG,
+						   "OpenSSL: Shared ciphers: %s",
+						   buf);
+				}
+				os_free(buf);
+			}
+		}
 		if (appl_data && in_data)
 			*appl_data = openssl_get_appl_data(conn,
 							   wpabuf_len(in_data));
@@ -5085,6 +5101,108 @@ int tls_connection_set_params(void *tls_ctx, struct tls_connection *conn,
 }
 
 
+static void openssl_debug_dump_cipher_list(SSL_CTX *ssl_ctx)
+{
+	SSL *ssl;
+	int i;
+
+	ssl = SSL_new(ssl_ctx);
+	if (!ssl)
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "OpenSSL: Enabled cipher suites in priority order");
+	for (i = 0; ; i++) {
+		const char *cipher;
+
+		cipher = SSL_get_cipher_list(ssl, i);
+		if (!cipher)
+			break;
+		wpa_printf(MSG_DEBUG, "Cipher %d: %s", i, cipher);
+	}
+
+	SSL_free(ssl);
+}
+
+
+static const char * openssl_pkey_type_str(const EVP_PKEY *pkey)
+{
+	if (!pkey)
+		return "NULL";
+	switch (EVP_PKEY_type(EVP_PKEY_id(pkey))) {
+	case EVP_PKEY_RSA:
+		return "RSA";
+	case EVP_PKEY_DSA:
+		return "DSA";
+	case EVP_PKEY_DH:
+		return "DH";
+	case EVP_PKEY_EC:
+		return "EC";
+	}
+	return "?";
+}
+
+
+static void openssl_debug_dump_certificate(int i, X509 *cert)
+{
+	char buf[256];
+	EVP_PKEY *pkey;
+	ASN1_INTEGER *ser;
+	char serial_num[128];
+
+	X509_NAME_oneline(X509_get_subject_name(cert), buf, sizeof(buf));
+
+	ser = X509_get_serialNumber(cert);
+	if (ser)
+		wpa_snprintf_hex_uppercase(serial_num, sizeof(serial_num),
+					   ASN1_STRING_get0_data(ser),
+					   ASN1_STRING_length(ser));
+	else
+		serial_num[0] = '\0';
+
+	pkey = X509_get_pubkey(cert);
+	wpa_printf(MSG_DEBUG, "%d: %s (%s) %s", i, buf,
+		   openssl_pkey_type_str(pkey), serial_num);
+	EVP_PKEY_free(pkey);
+}
+
+
+static void openssl_debug_dump_certificates(SSL_CTX *ssl_ctx)
+{
+	STACK_OF(X509) *certs;
+
+	wpa_printf(MSG_DEBUG, "OpenSSL: Configured certificate chain");
+	if (SSL_CTX_get0_chain_certs(ssl_ctx, &certs) == 1) {
+		int i;
+
+		for (i = sk_X509_num(certs); i > 0; i--)
+			openssl_debug_dump_certificate(i, sk_X509_value(certs,
+									i - 1));
+	}
+	openssl_debug_dump_certificate(0, SSL_CTX_get0_certificate(ssl_ctx));
+}
+
+
+static void openssl_debug_dump_certificate_chains(SSL_CTX *ssl_ctx)
+{
+	int res;
+
+	for (res = SSL_CTX_set_current_cert(ssl_ctx, SSL_CERT_SET_FIRST);
+	     res == 1;
+	     res = SSL_CTX_set_current_cert(ssl_ctx, SSL_CERT_SET_NEXT))
+		openssl_debug_dump_certificates(ssl_ctx);
+
+	SSL_CTX_set_current_cert(ssl_ctx, SSL_CERT_SET_FIRST);
+}
+
+
+static void openssl_debug_dump_ctx(SSL_CTX *ssl_ctx)
+{
+	openssl_debug_dump_cipher_list(ssl_ctx);
+	openssl_debug_dump_certificate_chains(ssl_ctx);
+}
+
+
 int tls_global_set_params(void *tls_ctx,
 			  const struct tls_connection_params *params)
 {
@@ -5178,6 +5296,8 @@ int tls_global_set_params(void *tls_ctx,
 	else
 		tls_global->ocsp_stapling_response = NULL;
 #endif /* HAVE_OCSP */
+
+	openssl_debug_dump_ctx(ssl_ctx);
 
 	return 0;
 }
