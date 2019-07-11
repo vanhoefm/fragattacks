@@ -5633,6 +5633,36 @@ def test_ap_wpa2_eap_tls_13(dev, apdev):
     dev[0].request("RECONNECT")
     dev[0].wait_connected()
 
+def test_ap_wpa2_eap_tls_13_ec(dev, apdev):
+    """EAP-TLS and TLS 1.3 (EC certificates)"""
+    params = {"ssid": "test-wpa2-eap",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP",
+              "rsn_pairwise": "CCMP",
+              "ieee8021x": "1",
+              "eap_server": "1",
+              "eap_user_file": "auth_serv/eap_user.conf",
+              "ca_cert": "auth_serv/ec-ca.pem",
+              "server_cert": "auth_serv/ec-server.pem",
+              "private_key": "auth_serv/ec-server.key",
+              "tls_flags": "[ENABLE-TLSv1.3]"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    tls = hapd.request("GET tls_library")
+    if "run=OpenSSL 1.1.1" not in tls:
+        raise HwsimSkip("TLS v1.3 not supported")
+
+    tls = dev[0].request("GET tls_library")
+    if "run=OpenSSL 1.1.1" not in tls:
+        raise HwsimSkip("TLS v1.3 not supported")
+    id = eap_connect(dev[0], hapd, "TLS", "tls user",
+                     ca_cert="auth_serv/ec-ca.pem",
+                     client_cert="auth_serv/ec-user.pem",
+                     private_key="auth_serv/ec-user.key",
+                     phase1="tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1 tls_disable_tlsv1_3=0")
+    ver = dev[0].get_status_field("eap_tls_version")
+    if ver != "TLSv1.3":
+        raise Exception("Unexpected TLS version")
+
 def test_rsn_ie_proto_eap_sta(dev, apdev):
     """RSN element protocol testing for EAP cases on STA side"""
     bssid = apdev[0]['bssid']
