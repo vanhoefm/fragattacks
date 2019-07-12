@@ -629,8 +629,11 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 	os_free(conf->ctrl_interface);
 	os_free(conf->ca_cert);
 	os_free(conf->server_cert);
+	os_free(conf->server_cert2);
 	os_free(conf->private_key);
+	os_free(conf->private_key2);
 	os_free(conf->private_key_passwd);
+	os_free(conf->private_key_passwd2);
 	os_free(conf->check_cert_subject);
 	os_free(conf->ocsp_stapling_response);
 	os_free(conf->ocsp_stapling_response_multi);

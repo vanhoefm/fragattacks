@@ -403,8 +403,11 @@ struct hostapd_bss_config {
 
 	char *ca_cert;
 	char *server_cert;
+	char *server_cert2;
 	char *private_key;
+	char *private_key2;
 	char *private_key_passwd;
+	char *private_key_passwd2;
 	char *check_cert_subject;
 	int check_crl;
 	int check_crl_strict;

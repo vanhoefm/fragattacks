@@ -2589,12 +2589,21 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "server_cert") == 0) {
 		os_free(bss->server_cert);
 		bss->server_cert = os_strdup(pos);
+	} else if (os_strcmp(buf, "server_cert2") == 0) {
+		os_free(bss->server_cert2);
+		bss->server_cert2 = os_strdup(pos);
 	} else if (os_strcmp(buf, "private_key") == 0) {
 		os_free(bss->private_key);
 		bss->private_key = os_strdup(pos);
+	} else if (os_strcmp(buf, "private_key2") == 0) {
+		os_free(bss->private_key2);
+		bss->private_key2 = os_strdup(pos);
 	} else if (os_strcmp(buf, "private_key_passwd") == 0) {
 		os_free(bss->private_key_passwd);
 		bss->private_key_passwd = os_strdup(pos);
+	} else if (os_strcmp(buf, "private_key_passwd2") == 0) {
+		os_free(bss->private_key_passwd2);
+		bss->private_key_passwd2 = os_strdup(pos);
 	} else if (os_strcmp(buf, "check_cert_subject") == 0) {
 		if (!pos[0]) {
 			wpa_printf(MSG_ERROR, "Line %d: unknown check_cert_subject '%s'",

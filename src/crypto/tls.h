@@ -188,12 +188,15 @@ struct tls_connection_params {
 	const char *suffix_match;
 	const char *domain_match;
 	const char *client_cert;
+	const char *client_cert2;
 	const u8 *client_cert_blob;
 	size_t client_cert_blob_len;
 	const char *private_key;
+	const char *private_key2;
 	const u8 *private_key_blob;
 	size_t private_key_blob_len;
 	const char *private_key_passwd;
+	const char *private_key_passwd2;
 	const char *dh_file;
 	const u8 *dh_blob;
 	size_t dh_blob_len;

@@ -5228,6 +5228,9 @@ int tls_global_set_params(void *tls_ctx,
 	    tls_global_client_cert(data, params->client_cert) ||
 	    tls_global_private_key(data, params->private_key,
 				   params->private_key_passwd) ||
+	    tls_global_client_cert(data, params->client_cert2) ||
+	    tls_global_private_key(data, params->private_key2,
+				   params->private_key_passwd2) ||
 	    tls_global_dh(data, params->dh_file)) {
 		wpa_printf(MSG_INFO, "TLS: Failed to set global parameters");
 		return -1;
