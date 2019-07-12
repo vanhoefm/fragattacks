@@ -1574,6 +1574,11 @@ struct tls_connection * tls_connection_init(void *ssl_ctx)
 	options |= SSL_OP_NO_COMPRESSION;
 #endif /* SSL_OP_NO_COMPRESSION */
 	SSL_set_options(conn->ssl, options);
+#ifdef SSL_OP_ENABLE_MIDDLEBOX_COMPAT
+	/* Hopefully there is no need for middlebox compatibility mechanisms
+	 * when going through EAP authentication. */
+	SSL_clear_options(conn->ssl, SSL_OP_ENABLE_MIDDLEBOX_COMPAT);
+#endif
 
 	conn->ssl_in = BIO_new(BIO_s_mem());
 	if (!conn->ssl_in) {
