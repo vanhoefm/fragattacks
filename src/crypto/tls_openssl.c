@@ -1335,6 +1335,8 @@ static const char * openssl_content_type(int content_type)
 		return "heartbeat";
 	case 256:
 		return "TLS header info"; /* pseudo content type */
+	case 257:
+		return "inner content type"; /* pseudo content type */
 	default:
 		return "?";
 	}
@@ -1344,6 +1346,8 @@ static const char * openssl_content_type(int content_type)
 static const char * openssl_handshake_type(int content_type, const u8 *buf,
 					   size_t len)
 {
+	if (content_type == 257 && buf && len == 1)
+		return openssl_content_type(buf[0]);
 	if (content_type != 22 || !buf || len == 0)
 		return "";
 	switch (buf[0]) {
