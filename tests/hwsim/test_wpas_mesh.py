@@ -877,8 +877,21 @@ def test_wpas_mesh_max_peering(dev, apdev, params):
             out = run_tshark_json(capfile, filt + " && wlan.sa == " + addr)
             pkts = json.loads(out)
             for pkt in pkts:
+                wlan = pkt["_source"]["layers"]["wlan"]
+                if "wlan.tagged.all" not in wlan:
+                    continue
+
+                tagged = wlan["wlan.tagged.all"]
+                if "wlan.tag" not in tagged:
+                    continue
+
+                wlan_tag = tagged["wlan.tag"]
+                if "wlan.mesh.config.ps_protocol_raw" not in wlan_tag:
+                    continue
+
                 frame = pkt["_source"]["layers"]["frame_raw"][0]
-                cap = int(frame[-2:], 16)
+                cap_offset = wlan_tag["wlan.mesh.config.ps_protocol_raw"][1] + 6
+                cap = int(frame[(cap_offset * 2):(cap_offset * 2 + 2)], 16)
                 if cap & 0x01:
                     one[idx] += 1
                 else:
