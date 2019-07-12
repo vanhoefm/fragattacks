@@ -5663,6 +5663,49 @@ def test_ap_wpa2_eap_tls_13_ec(dev, apdev):
     if ver != "TLSv1.3":
         raise Exception("Unexpected TLS version")
 
+def test_ap_wpa2_eap_tls_rsa_and_ec(dev, apdev, params):
+    """EAP-TLS and both RSA and EC sertificates certificates"""
+    ca = os.path.join(params['logdir'], "ap_wpa2_eap_tls_rsa_and_ec.ca.pem")
+    with open(ca, "w") as f:
+        with open("auth_serv/ca.pem", "r") as f2:
+            f.write(f2.read())
+        with open("auth_serv/ec-ca.pem", "r") as f2:
+            f.write(f2.read())
+    params = {"ssid": "test-wpa2-eap",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP",
+              "rsn_pairwise": "CCMP",
+              "ieee8021x": "1",
+              "eap_server": "1",
+              "eap_user_file": "auth_serv/eap_user.conf",
+              "ca_cert": ca,
+              "server_cert": "auth_serv/server.pem",
+              "private_key": "auth_serv/server.key",
+              "server_cert2": "auth_serv/ec-server.pem",
+              "private_key2": "auth_serv/ec-server.key"}
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    eap_connect(dev[0], hapd, "TLS", "tls user",
+                ca_cert="auth_serv/ec-ca.pem",
+                client_cert="auth_serv/ec-user.pem",
+                private_key="auth_serv/ec-user.key")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+
+    # TODO: Make wpa_supplicant automatically filter out cipher suites that
+    # would require ECDH/ECDSA keys when those are not configured in the
+    # selected client certificate. And for no-client-cert case, deprioritize
+    # those cipher suites based on configured ca_cert value so that the most
+    # likely to work cipher suites are selected by the server. Only do these
+    # when an explicit openssl_ciphers parameter is not set.
+    eap_connect(dev[1], hapd, "TLS", "tls user",
+                openssl_ciphers="DEFAULT:-aECDH:-aECDSA",
+                ca_cert="auth_serv/ca.pem",
+                client_cert="auth_serv/user.pem",
+                private_key="auth_serv/user.key")
+    dev[1].request("REMOVE_NETWORK all")
+    dev[1].wait_disconnected()
+
 def test_rsn_ie_proto_eap_sta(dev, apdev):
     """RSN element protocol testing for EAP cases on STA side"""
     bssid = apdev[0]['bssid']
