@@ -5533,5 +5533,9 @@ u16 tls_connection_get_cipher_suite(struct tls_connection *conn)
 	cipher = SSL_get_current_cipher(conn->ssl);
 	if (!cipher)
 		return 0;
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L && !defined(LIBRESSL_VERSION_NUMBER)
 	return SSL_CIPHER_get_protocol_id(cipher);
+#else
+	return SSL_CIPHER_get_id(cipher) & 0xFFFF;
+#endif
 }
