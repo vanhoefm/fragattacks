@@ -3096,7 +3096,6 @@ static int tls_set_conn_flags(struct tls_connection *conn, unsigned int flags,
 #endif /* CONFIG_SUITEB */
 
 	if (flags & TLS_CONN_TEAP_ANON_DH) {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
 #ifndef TEAP_DH_ANON_CS
 #define TEAP_DH_ANON_CS \
 	"ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:" \
@@ -3109,6 +3108,10 @@ static int tls_set_conn_flags(struct tls_connection *conn, unsigned int flags,
 	"ADH-AES256-SHA256:ADH-AES128-SHA256:ADH-AES256-SHA:ADH-AES128-SHA"
 #endif
 		static const char *cs = TEAP_DH_ANON_CS;
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L && \
+	!defined(LIBRESSL_VERSION_NUMBER) && \
+	!defined(OPENSSL_IS_BORINGSSL)
 		/*
 		 * Need to drop to security level 0 to allow anonymous
 		 * cipher suites for EAP-TEAP.
