@@ -5137,6 +5137,8 @@ static void openssl_debug_dump_cipher_list(SSL_CTX *ssl_ctx)
 }
 
 
+#if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
+
 static const char * openssl_pkey_type_str(const EVP_PKEY *pkey)
 {
 	if (!pkey)
@@ -5194,9 +5196,12 @@ static void openssl_debug_dump_certificates(SSL_CTX *ssl_ctx)
 	openssl_debug_dump_certificate(0, SSL_CTX_get0_certificate(ssl_ctx));
 }
 
+#endif
+
 
 static void openssl_debug_dump_certificate_chains(SSL_CTX *ssl_ctx)
 {
+#if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
 	int res;
 
 	for (res = SSL_CTX_set_current_cert(ssl_ctx, SSL_CERT_SET_FIRST);
@@ -5205,6 +5210,7 @@ static void openssl_debug_dump_certificate_chains(SSL_CTX *ssl_ctx)
 		openssl_debug_dump_certificates(ssl_ctx);
 
 	SSL_CTX_set_current_cert(ssl_ctx, SSL_CERT_SET_FIRST);
+#endif
 }
 
 
