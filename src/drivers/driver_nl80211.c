@@ -10746,22 +10746,37 @@ static int nl80211_write_to_file(const char *name, unsigned int val)
 {
 	int fd, len;
 	char tmp[128];
+	int ret = 0;
 
 	fd = open(name, O_RDWR);
 	if (fd < 0) {
-		wpa_printf(MSG_ERROR, "nl80211: Failed to open %s: %s",
+		int level;
+		/*
+		 * Flags may not exist on older kernels, or while we're tearing
+		 * down a disappearing device.
+		 */
+		if (errno == ENOENT) {
+			ret = 0;
+			level = MSG_DEBUG;
+		} else {
+			ret = -1;
+			level = MSG_ERROR;
+		}
+		wpa_printf(level, "nl80211: Failed to open %s: %s",
 			   name, strerror(errno));
-		return fd;
+		return ret;
 	}
 
 	len = os_snprintf(tmp, sizeof(tmp), "%u\n", val);
 	len = write(fd, tmp, len);
-	if (len < 0)
+	if (len < 0) {
+		ret = -1;
 		wpa_printf(MSG_ERROR, "nl80211: Failed to write to %s: %s",
 			   name, strerror(errno));
+	}
 	close(fd);
 
-	return 0;
+	return ret;
 }
 
 
