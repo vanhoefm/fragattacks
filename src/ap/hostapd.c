@@ -7,6 +7,9 @@
  */
 
 #include "utils/includes.h"
+#ifdef CONFIG_SQLITE
+#include <sqlite3.h>
+#endif /* CONFIG_SQLITE */
 
 #include "utils/common.h"
 #include "utils/eloop.h"
@@ -1025,6 +1028,43 @@ hostapd_das_coa(void *ctx, struct radius_das_attrs *attr)
 #define hostapd_das_coa NULL
 #endif /* CONFIG_HS20 */
 
+
+#ifdef CONFIG_SQLITE
+
+static int db_table_exists(sqlite3 *db, const char *name)
+{
+	char cmd[128];
+
+	os_snprintf(cmd, sizeof(cmd), "SELECT 1 FROM %s;", name);
+	return sqlite3_exec(db, cmd, NULL, NULL, NULL) == SQLITE_OK;
+}
+
+
+static int db_table_create_radius_attributes(sqlite3 *db)
+{
+	char *err = NULL;
+	const char *sql =
+		"CREATE TABLE radius_attributes("
+		" id INTEGER PRIMARY KEY,"
+		" sta TEXT,"
+		" reqtype TEXT,"
+		" attr TEXT"
+		");"
+		"CREATE INDEX idx_sta_reqtype ON radius_attributes(sta,reqtype);";
+
+	wpa_printf(MSG_DEBUG,
+		   "Adding database table for RADIUS attribute information");
+	if (sqlite3_exec(db, sql, NULL, NULL, &err) != SQLITE_OK) {
+		wpa_printf(MSG_ERROR, "SQLite error: %s", err);
+		sqlite3_free(err);
+		return -1;
+	}
+
+	return 0;
+}
+
+#endif /* CONFIG_SQLITE */
+
 #endif /* CONFIG_NO_RADIUS */
 
 
@@ -1178,6 +1218,24 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
 	if (wpa_debug_level <= MSG_MSGDUMP)
 		conf->radius->msg_dumps = 1;
 #ifndef CONFIG_NO_RADIUS
+
+#ifdef CONFIG_SQLITE
+	if (conf->radius_req_attr_sqlite) {
+		if (sqlite3_open(conf->radius_req_attr_sqlite,
+				 &hapd->rad_attr_db)) {
+			wpa_printf(MSG_ERROR, "Could not open SQLite file '%s'",
+				   conf->radius_req_attr_sqlite);
+			return -1;
+		}
+
+		wpa_printf(MSG_DEBUG, "Opening RADIUS attribute database: %s",
+			   conf->radius_req_attr_sqlite);
+		if (!db_table_exists(hapd->rad_attr_db, "radius_attributes") &&
+		    db_table_create_radius_attributes(hapd->rad_attr_db) < 0)
+			return -1;
+	}
+#endif /* CONFIG_SQLITE */
+
 	hapd->radius = radius_client_init(hapd, conf->radius);
 	if (hapd->radius == NULL) {
 		wpa_printf(MSG_ERROR, "RADIUS client initialization failed.");
@@ -2194,6 +2252,12 @@ static void hostapd_bss_deinit(struct hostapd_data *hapd)
 		   hapd->conf ? hapd->conf->iface : "N/A");
 	hostapd_bss_deinit_no_free(hapd);
 	wpa_msg(hapd->msg_ctx, MSG_INFO, AP_EVENT_DISABLED);
+#ifdef CONFIG_SQLITE
+	if (hapd->rad_attr_db) {
+		sqlite3_close(hapd->rad_attr_db);
+		hapd->rad_attr_db = NULL;
+	}
+#endif /* CONFIG_SQLITE */
 	hostapd_cleanup(hapd);
 }
 

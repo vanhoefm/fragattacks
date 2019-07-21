@@ -9,6 +9,10 @@
 #ifndef HOSTAPD_H
 #define HOSTAPD_H
 
+#ifdef CONFIG_SQLITE
+#include <sqlite3.h>
+#endif /* CONFIG_SQLITE */
+
 #include "common/defs.h"
 #include "utils/list.h"
 #include "ap_config.h"
@@ -390,6 +394,10 @@ struct hostapd_data {
 #endif /* CONFIG_AIRTIME_POLICY */
 
 	u8 last_1x_eapol_key_replay_counter[8];
+
+#ifdef CONFIG_SQLITE
+	sqlite3 *rad_attr_db;
+#endif /* CONFIG_SQLITE */
 };
 
 

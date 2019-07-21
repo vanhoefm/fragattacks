@@ -545,7 +545,7 @@ struct hostapd_radius_attr * hostapd_parse_radius_attr(const char *value)
 }
 
 
-static void hostapd_config_free_radius_attr(struct hostapd_radius_attr *attr)
+void hostapd_config_free_radius_attr(struct hostapd_radius_attr *attr)
 {
 	struct hostapd_radius_attr *prev;
 
@@ -694,6 +694,7 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 	}
 	hostapd_config_free_radius_attr(conf->radius_auth_req_attr);
 	hostapd_config_free_radius_attr(conf->radius_acct_req_attr);
+	os_free(conf->radius_req_attr_sqlite);
 	os_free(conf->rsn_preauth_interfaces);
 	os_free(conf->ctrl_interface);
 	os_free(conf->ca_cert);

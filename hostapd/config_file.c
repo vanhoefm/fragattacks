@@ -2832,6 +2832,9 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 				a = a->next;
 			a->next = attr;
 		}
+	} else if (os_strcmp(buf, "radius_req_attr_sqlite") == 0) {
+		os_free(bss->radius_req_attr_sqlite);
+		bss->radius_req_attr_sqlite = os_strdup(pos);
 	} else if (os_strcmp(buf, "radius_das_port") == 0) {
 		bss->radius_das_port = atoi(pos);
 	} else if (os_strcmp(buf, "radius_das_client") == 0) {

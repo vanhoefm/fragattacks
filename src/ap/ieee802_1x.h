@@ -59,6 +59,8 @@ int add_common_radius_attr(struct hostapd_data *hapd,
 			   struct hostapd_radius_attr *req_attr,
 			   struct sta_info *sta,
 			   struct radius_msg *msg);
+int add_sqlite_radius_attr(struct hostapd_data *hapd, struct sta_info *sta,
+			   struct radius_msg *msg, int acct);
 void ieee802_1x_encapsulate_radius(struct hostapd_data *hapd,
 				   struct sta_info *sta,
 				   const u8 *eap, size_t len);
