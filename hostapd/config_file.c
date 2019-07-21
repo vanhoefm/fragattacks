@@ -24,14 +24,6 @@
 #include "config_file.h"
 
 
-#ifndef CONFIG_NO_RADIUS
-#ifdef EAP_SERVER
-static struct hostapd_radius_attr *
-hostapd_parse_radius_attr(const char *value);
-#endif /* EAP_SERVER */
-#endif /* CONFIG_NO_RADIUS */
-
-
 #ifndef CONFIG_NO_VLAN
 static int hostapd_config_read_vlan_file(struct hostapd_bss_config *bss,
 					 const char *fname)
@@ -659,75 +651,6 @@ hostapd_config_read_radius_addr(struct hostapd_radius_server **server,
 	return ret;
 }
 
-
-static struct hostapd_radius_attr *
-hostapd_parse_radius_attr(const char *value)
-{
-	const char *pos;
-	char syntax;
-	struct hostapd_radius_attr *attr;
-	size_t len;
-
-	attr = os_zalloc(sizeof(*attr));
-	if (attr == NULL)
-		return NULL;
-
-	attr->type = atoi(value);
-
-	pos = os_strchr(value, ':');
-	if (pos == NULL) {
-		attr->val = wpabuf_alloc(1);
-		if (attr->val == NULL) {
-			os_free(attr);
-			return NULL;
-		}
-		wpabuf_put_u8(attr->val, 0);
-		return attr;
-	}
-
-	pos++;
-	if (pos[0] == '\0' || pos[1] != ':') {
-		os_free(attr);
-		return NULL;
-	}
-	syntax = *pos++;
-	pos++;
-
-	switch (syntax) {
-	case 's':
-		attr->val = wpabuf_alloc_copy(pos, os_strlen(pos));
-		break;
-	case 'x':
-		len = os_strlen(pos);
-		if (len & 1)
-			break;
-		len /= 2;
-		attr->val = wpabuf_alloc(len);
-		if (attr->val == NULL)
-			break;
-		if (hexstr2bin(pos, wpabuf_put(attr->val, len), len) < 0) {
-			wpabuf_free(attr->val);
-			os_free(attr);
-			return NULL;
-		}
-		break;
-	case 'd':
-		attr->val = wpabuf_alloc(4);
-		if (attr->val)
-			wpabuf_put_be32(attr->val, atoi(pos));
-		break;
-	default:
-		os_free(attr);
-		return NULL;
-	}
-
-	if (attr->val == NULL) {
-		os_free(attr);
-		return NULL;
-	}
-
-	return attr;
-}
 
 
 static int hostapd_parse_das_client(struct hostapd_bss_config *bss, char *val)
