@@ -4700,8 +4700,9 @@ static int wpa_driver_nl80211_sta_add(void *priv,
 		goto fail;
 #endif /* CONFIG_MESH */
 
-	if ((!params->set || FULL_AP_CLIENT_STATE_SUPP(drv->capa.flags)) &&
-	    (params->flags & WPA_STA_WMM)) {
+	if ((!params->set || (params->flags & WPA_STA_TDLS_PEER) ||
+	     FULL_AP_CLIENT_STATE_SUPP(drv->capa.flags)) &&
+	     (params->flags & WPA_STA_WMM)) {
 		struct nlattr *wme = nla_nest_start(msg, NL80211_ATTR_STA_WME);
 
 		wpa_printf(MSG_DEBUG, "  * qosinfo=0x%x", params->qosinfo);
