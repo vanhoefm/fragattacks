@@ -2811,7 +2811,8 @@ def test_ap_wpa2_eap_pwd_groups(dev, apdev):
         params['pwd_group'] = str(i)
         hapd = hostapd.add_ap(apdev[0], params)
         eap_connect(dev[0], hapd, "PWD", "pwd user",
-                    password="secret password")
+                    password="secret password",
+                    phase1="eap_pwd_groups=0-65535")
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
         dev[0].dump_monitor()
@@ -2829,6 +2830,7 @@ def test_ap_wpa2_eap_pwd_invalid_group(dev, apdev):
         hapd = hostapd.add_ap(apdev[0], params)
         dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="PWD",
                        identity="pwd user", password="secret password",
+                       phase1="eap_pwd_groups=0-65535",
                        scan_freq="2412", wait_connect=False)
         ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE"])
         if ev is None:
