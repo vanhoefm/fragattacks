@@ -16,6 +16,7 @@ struct crypto_bignum;
 struct crypto_ec;
 
 int dragonfly_suitable_group(int group, int ecc_only);
+unsigned int dragonfly_min_pwe_loop_iter(int group);
 int dragonfly_get_random_qr_qnr(const struct crypto_bignum *prime,
 				struct crypto_bignum **qr,
 				struct crypto_bignum **qnr);

@@ -275,7 +275,7 @@ static int sae_derive_pwe_ecc(struct sae_data *sae, const u8 *addr1,
 			      const u8 *addr2, const u8 *password,
 			      size_t password_len, const char *identifier)
 {
-	u8 counter, k = 40;
+	u8 counter, k;
 	u8 addrs[2 * ETH_ALEN];
 	const u8 *addr[3];
 	size_t len[3];
@@ -346,6 +346,8 @@ static int sae_derive_pwe_ecc(struct sae_data *sae, const u8 *addr1,
 	 * attacks that attempt to determine the number of iterations required
 	 * in the loop.
 	 */
+	k = dragonfly_min_pwe_loop_iter(sae->group);
+
 	for (counter = 1; counter <= k || !found; counter++) {
 		u8 pwd_seed[SHA256_MAC_LEN];
 
@@ -427,13 +429,6 @@ fail:
 }
 
 
-static int sae_modp_group_require_masking(int group)
-{
-	/* Groups for which pwd-value is likely to be >= p frequently */
-	return group == 22 || group == 23 || group == 24;
-}
-
-
 static int sae_derive_pwe_ffc(struct sae_data *sae, const u8 *addr1,
 			      const u8 *addr2, const u8 *password,
 			      size_t password_len, const char *identifier)
@@ -482,7 +477,7 @@ static int sae_derive_pwe_ffc(struct sae_data *sae, const u8 *addr1,
 	len[num_elem] = sizeof(counter);
 	num_elem++;
 
-	k = sae_modp_group_require_masking(sae->group) ? 40 : 1;
+	k = dragonfly_min_pwe_loop_iter(sae->group);
 
 	for (counter = 1; counter <= k || !found; counter++) {
 		u8 pwd_seed[SHA256_MAC_LEN];
