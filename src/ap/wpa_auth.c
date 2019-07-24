@@ -4250,8 +4250,12 @@ int wpa_get_mib_sta(struct wpa_state_machine *sm, char *buf, size_t buflen)
 
 	/* Private MIB */
 	ret = os_snprintf(buf + len, buflen - len,
+			  "wpa=%d\n"
+			  "AKMSuiteSelector=" RSN_SUITE "\n"
 			  "hostapdWPAPTKState=%d\n"
 			  "hostapdWPAPTKGroupState=%d\n",
+			  sm->wpa,
+			  RSN_SUITE_ARG(wpa_akm_to_suite(sm->wpa_key_mgmt)),
 			  sm->wpa_ptk_state,
 			  sm->wpa_ptk_group_state);
 	if (os_snprintf_error(buflen - len, ret))
