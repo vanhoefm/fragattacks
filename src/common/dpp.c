@@ -9030,7 +9030,7 @@ static void dpp_controller_start_gas_client(struct dpp_connection *conn)
 		return;
 	}
 	wpabuf_put_be32(conn->msg_out, wpabuf_len(buf) - 1);
-	wpabuf_put_data(conn->msg_out, wpabuf_head(buf) + 1,
+	wpabuf_put_data(conn->msg_out, wpabuf_head_u8(buf) + 1,
 			wpabuf_len(buf) - 1);
 	wpabuf_free(buf);
 
@@ -9410,7 +9410,7 @@ static int dpp_controller_rx_auth_req(struct dpp_connection *conn,
 	if (!conn->msg_out)
 		return -1;
 	wpabuf_put_be32(conn->msg_out, wpabuf_len(conn->auth->resp_msg) - 1);
-	wpabuf_put_data(conn->msg_out, wpabuf_head(conn->auth->resp_msg) + 1,
+	wpabuf_put_data(conn->msg_out, wpabuf_head_u8(conn->auth->resp_msg) + 1,
 			wpabuf_len(conn->auth->resp_msg) - 1);
 
 	if (dpp_tcp_send(conn) == 1) {
@@ -9458,7 +9458,7 @@ static int dpp_controller_rx_auth_resp(struct dpp_connection *conn,
 		return -1;
 	}
 	wpabuf_put_be32(conn->msg_out, wpabuf_len(msg) - 1);
-	wpabuf_put_data(conn->msg_out, wpabuf_head(msg) + 1,
+	wpabuf_put_data(conn->msg_out, wpabuf_head_u8(msg) + 1,
 			wpabuf_len(msg) - 1);
 	wpabuf_free(msg);
 
@@ -9704,7 +9704,7 @@ static int dpp_tcp_rx_gas_resp(struct dpp_connection *conn, struct wpabuf *resp)
 		return -1;
 	}
 	wpabuf_put_be32(encaps, wpabuf_len(msg) - 1);
-	wpabuf_put_data(encaps, wpabuf_head(msg) + 1, wpabuf_len(msg) - 1);
+	wpabuf_put_data(encaps, wpabuf_head_u8(msg) + 1, wpabuf_len(msg) - 1);
 	wpabuf_free(msg);
 	wpa_hexdump_buf(MSG_MSGDUMP, "DPP: Outgoing TCP message", encaps);
 
