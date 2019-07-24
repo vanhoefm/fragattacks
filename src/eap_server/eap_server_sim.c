@@ -286,7 +286,7 @@ static struct wpabuf * eap_sim_build_reauth(struct eap_sm *sm,
 	 * Session-Id calculation after receiving response from the peer and
 	 * after all other checks pass. */
 	os_memcpy(data->reauth_mac,
-		  wpabuf_head(buf) + wpabuf_len(buf) - EAP_SIM_MAC_LEN,
+		  wpabuf_head_u8(buf) + wpabuf_len(buf) - EAP_SIM_MAC_LEN,
 		  EAP_SIM_MAC_LEN);
 
 	return buf;
