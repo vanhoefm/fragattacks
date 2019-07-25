@@ -593,6 +593,13 @@ enum qca_radiotap_vendor_ids {
  *	binary blobs from application/service to firmware. The attributes
  *	defined in enum qca_wlan_vendor_attr_oem_data_params are used to deliver
  *	the parameters.
+ * @QCA_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY_EXT: This command/event is used
+ *	to send/receive avoid frequency data using
+ *	enum qca_wlan_vendor_attr_avoid_frequency_ext.
+ *	This new command is alternative to existing command
+ *	QCA_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY since existing command/event
+ *	is using stream of bytes instead of structured data using vendor
+ *	attributes.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -765,6 +772,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_BEACON_REPORTING = 180,
 	QCA_NL80211_VENDOR_SUBCMD_INTEROP_ISSUES_AP = 181,
 	QCA_NL80211_VENDOR_SUBCMD_OEM_DATA = 182,
+	QCA_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY_EXT = 183,
 };
 
 enum qca_wlan_vendor_attr {
@@ -7870,4 +7878,31 @@ enum qca_wlan_vendor_attr_oem_data_params {
 	QCA_WLAN_VENDOR_ATTR_OEM_DATA_PARAMS_MAX =
 		QCA_WLAN_VENDOR_ATTR_OEM_DATA_PARAMS_AFTER_LAST - 1
 };
+
+/**
+ * enum qca_wlan_vendor_attr_avoid_frequency_ext - Defines attributes to be
+ * used with vendor command/event QCA_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY_EXT.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_AVOID_FREQUENCY_RANGE: Required
+ * Nested attribute containing multiple ranges with following attributes:
+ *	QCA_WLAN_VENDOR_ATTR_AVOID_FREQUENCY_START and
+ *	QCA_WLAN_VENDOR_ATTR_AVOID_FREQUENCY_END.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_AVOID_FREQUENCY_START: Required (u32)
+ * Starting center frequency in MHz.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_AVOID_FREQUENCY_END: Required (u32)
+ * Ending center frequency in MHz.
+ */
+enum qca_wlan_vendor_attr_avoid_frequency_ext {
+	QCA_WLAN_VENDOR_ATTR_AVOID_FREQUENCY_INVALID = 0,
+	QCA_WLAN_VENDOR_ATTR_AVOID_FREQUENCY_RANGE = 1,
+	QCA_WLAN_VENDOR_ATTR_AVOID_FREQUENCY_START = 2,
+	QCA_WLAN_VENDOR_ATTR_AVOID_FREQUENCY_END = 3,
+
+	QCA_WLAN_VENDOR_ATTR_AVOID_FREQUENCY_AFTER_LAST,
+	QCA_WLAN_VENDOR_ATTR_AVOID_FREQUENCY_MAX =
+		QCA_WLAN_VENDOR_ATTR_AVOID_FREQUENCY_AFTER_LAST - 1
+};
+
 #endif /* QCA_VENDOR_H */
