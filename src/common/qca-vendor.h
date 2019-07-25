@@ -170,6 +170,11 @@ enum qca_radiotap_vendor_ids {
  *	to notify the connected station's status. The attributes for this
  *	command are defined in enum qca_wlan_vendor_attr_link_properties.
  *
+ * @QCA_NL80211_VENDOR_SUBCMD_ACS_POLICY: This command is used to configure
+ *	DFS policy and channel hint for ACS operation. This command uses the
+ *	attributes defined in enum qca_wlan_vendor_attr_acs_config and
+ *	enum qca_acs_dfs_mode.
+ *
  * @QCA_NL80211_VENDOR_SUBCMD_P2P_LISTEN_OFFLOAD_START: Command used to
  *	start the P2P Listen offload function in device and pass the listen
  *	channel, period, interval, count, device types, and vendor specific
@@ -687,7 +692,8 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_SET_TXPOWER_SCALE = 109,
 	/* 110..114 - reserved for QCA */
 	QCA_NL80211_VENDOR_SUBCMD_SET_TXPOWER_DECR_DB = 115,
-	/* 116..117 - reserved for QCA */
+	QCA_NL80211_VENDOR_SUBCMD_ACS_POLICY = 116,
+	/* 117 - reserved for QCA */
 	QCA_NL80211_VENDOR_SUBCMD_SET_SAP_CONFIG = 118,
 	QCA_NL80211_VENDOR_SUBCMD_TSF = 119,
 	QCA_NL80211_VENDOR_SUBCMD_WISA = 120,
@@ -1974,6 +1980,43 @@ enum qca_wlan_set_qdepth_thresh_attr {
 	QCA_WLAN_VENDOR_ATTR_QDEPTH_THRESH_LAST,
 	QCA_WLAN_VENDOR_ATTR_QDEPTH_THRESH_MAX =
 		QCA_WLAN_VENDOR_ATTR_QDEPTH_THRESH_LAST - 1,
+};
+
+/**
+ * enum qca_acs_dfs_mode - Defines different types of DFS channel
+ * configurations for ACS operation.
+ *
+ * @QCA_ACS_DFS_MODE_NONE: Refer to invalid DFS mode
+ * @QCA_ACS_DFS_MODE_ENABLE: Consider DFS channels in ACS operation
+ * @QCA_ACS_DFS_MODE_DISABLE: Do not consider DFS channels in ACS operation
+ * @QCA_ACS_DFS_MODE_DEPRIORITIZE: Deprioritize DFS channels in ACS operation
+ */
+enum qca_acs_dfs_mode {
+	QCA_ACS_DFS_MODE_NONE = 0,
+	QCA_ACS_DFS_MODE_ENABLE = 1,
+	QCA_ACS_DFS_MODE_DISABLE = 2,
+	QCA_ACS_DFS_MODE_DEPRIORITIZE = 3,
+};
+
+/**
+ * enum qca_wlan_vendor_attr_acs_config - Defines Configuration attributes
+ * used by the vendor command QCA_NL80211_VENDOR_SUBCMD_ACS_POLICY.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_ACS_DFS_MODE: Required (u8)
+ * DFS mode for ACS operation from enum qca_acs_dfs_mode.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_ACS_CHANNEL_HINT: Required (u8)
+ * channel number hint for ACS operation, if valid channel is specified then
+ * ACS operation gives priority to this channel.
+ */
+enum qca_wlan_vendor_attr_acs_config {
+	QCA_WLAN_VENDOR_ATTR_ACS_MODE_INVALID = 0,
+	QCA_WLAN_VENDOR_ATTR_ACS_DFS_MODE = 1,
+	QCA_WLAN_VENDOR_ATTR_ACS_CHANNEL_HINT = 2,
+
+	QCA_WLAN_VENDOR_ATTR_ACS_DFS_AFTER_LAST,
+	QCA_WLAN_VENDOR_ATTR_ACS_DFS_MAX =
+		QCA_WLAN_VENDOR_ATTR_ACS_DFS_AFTER_LAST - 1,
 };
 
 /**
