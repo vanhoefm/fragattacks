@@ -1893,10 +1893,14 @@ enum qca_wlan_vendor_attr_config {
 
 /**
  * enum qca_wlan_vendor_attr_sap_config - Parameters for AP configuration
+ *
+ * @QCA_WLAN_VENDOR_ATTR_SAP_CONFIG_CHANNEL: Optional (u8)
+ * Channel number on which Access Point should restart.
  */
 enum qca_wlan_vendor_attr_sap_config {
 	QCA_WLAN_VENDOR_ATTR_SAP_CONFIG_INVALID = 0,
-	/* 1 - reserved for QCA */
+	QCA_WLAN_VENDOR_ATTR_SAP_CONFIG_CHANNEL = 1,
+
 	/* List of frequencies on which AP is expected to operate.
 	 * This is irrespective of ACS configuration. This list is a priority
 	 * based one and is looked for before the AP is created to ensure the
