@@ -1395,7 +1395,11 @@ static struct wpa_cred * interworking_credentials_available_roaming_consortium(
 		     !roaming_consortium_match(ie, anqp,
 					       cred->roaming_consortium,
 					       cred->roaming_consortium_len)) &&
-		    !cred_roaming_consortiums_match(ie, anqp, cred))
+		    !cred_roaming_consortiums_match(ie, anqp, cred) &&
+		    (cred->required_roaming_consortium_len == 0 ||
+		     !roaming_consortium_match(
+			     ie, anqp, cred->required_roaming_consortium,
+			     cred->required_roaming_consortium_len)))
 			continue;
 
 		if (cred_no_required_oi_match(cred, bss))
