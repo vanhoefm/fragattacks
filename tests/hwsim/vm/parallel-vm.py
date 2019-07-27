@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Parallel VM test case executor
-# Copyright (c) 2014-2018, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2014-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -85,9 +85,10 @@ def get_failed(vm):
         failed += vm[i]['failed']
     return failed
 
-def vm_read_stdout(vm, i):
+def vm_read_stdout(vm, i, test_queue):
     global total_started, total_passed, total_failed, total_skipped
     global rerun_failures
+    global first_run_failures
 
     ready = False
     try:
@@ -125,6 +126,15 @@ def vm_read_stdout(vm, i):
                 name = vals[1]
             logger.debug("VM[%d] test case failed: %s" % (i, name))
             vm['failed'].append(name)
+            if name != vm['current_name']:
+                logger.info("VM[%d] test result mismatch: %s (expected %s)" % (i, name, vm['current_name']))
+            else:
+                count = vm['current_count']
+                if count == 0:
+                    first_run_failures.append(name)
+                if rerun_failures and count < 1:
+                    logger.debug("Requeue test case %s" % name)
+                    test_queue.append((name, vm['current_count'] + 1))
         elif line.startswith("NOT-FOUND"):
             ready = True
             total_failed += 1
@@ -151,9 +161,11 @@ def show_progress(scr):
     global tests
     global first_run_failures
     global total_started, total_passed, total_failed, total_skipped
+    global rerun_failures
 
     total_tests = len(tests)
     logger.info("Total tests: %d" % total_tests)
+    test_queue = [(t, 0) for t in tests]
 
     scr.leaveok(1)
     scr.addstr(0, 0, "Parallel test execution status", curses.A_BOLD)
@@ -164,19 +176,11 @@ def show_progress(scr):
     scr.addstr(num_servers + 1, 20, "TOTAL={} STARTED=0 PASS=0 FAIL=0 SKIP=0".format(total_tests))
     scr.refresh()
 
-    completed_first_pass = False
-    rerun_tests = []
-
     while True:
         running = False
-        first_running = False
         updated = False
 
-        for i in range(0, num_servers):
-            if completed_first_pass:
-                continue
-            if vm[i]['first_run_done']:
-                continue
+        for i in range(num_servers):
             if not vm[i]['proc']:
                 continue
             if vm[i]['proc'].poll() is not None:
@@ -188,72 +192,43 @@ def show_progress(scr):
                     if "Kernel panic" in f.read():
                         scr.addstr("kernel panic")
                         logger.info("VM[%d] kernel panic" % i)
-                    else:
+                        updated = True
+                    if test_queue:
                         scr.addstr("unexpected exit")
                         logger.info("VM[%d] unexpected exit" % i)
-                updated = True
+                        updated = True
                 continue
 
             running = True
-            first_running = True
             try:
                 err = vm[i]['proc'].stderr.read()
                 if err != None:
                     err = err.decode()
                     vm[i]['err'] += err
-                    logger.debug("VM[%d] stderr.read[%s]" % (i, err))
+                    logger.info("VM[%d] stderr.read[%s]" % (i, err))
             except IOError as e:
                 if e.errno != errno.EAGAIN:
                     raise
 
-            if vm_read_stdout(vm[i], i):
+            if vm_read_stdout(vm[i], i, test_queue):
                 scr.move(i + 1, 10)
                 scr.clrtoeol()
                 updated = True
-                if not tests:
-                    vm[i]['first_run_done'] = True
-                    scr.addstr("completed first round")
-                    logger.info("VM[%d] completed first round" % i)
+                if not test_queue:
+                    vm[i]['proc'].stdin.write(b'\n')
+                    vm[i]['proc'].stdin.flush()
+                    scr.addstr("shutting down")
+                    logger.info("VM[%d] shutting down" % i)
                     continue
                 else:
-                    name = tests.pop(0)
+                    (name, count) = test_queue.pop(0)
+                    vm[i]['current_name'] = name
+                    vm[i]['current_count'] = count
                     vm[i]['proc'].stdin.write(name.encode() + b'\n')
                     vm[i]['proc'].stdin.flush()
                     scr.addstr(name)
                     logger.debug("VM[%d] start test %s" % (i, name))
 
-        if not first_running and not completed_first_pass:
-            logger.info("First round of testing completed")
-            if tests:
-                logger.info("Unexpected test cases remaining from first round: " + str(tests))
-                raise Exception("Unexpected test cases remaining from first round")
-            completed_first_pass = True
-            for name in get_failed(vm):
-                if rerun_failures:
-                    rerun_tests.append(name)
-                first_run_failures.append(name)
-
-        for i in range(num_servers):
-            if not completed_first_pass:
-                continue
-            if not vm[i]['proc']:
-                continue
-            if vm[i]['proc'].poll() is not None:
-                vm[i]['proc'] = None
-                scr.move(i + 1, 10)
-                scr.clrtoeol()
-                log = '{}/{}.srv.{}/console'.format(dir, timestamp, i + 1)
-                with open(log, 'r') as f:
-                    if "Kernel panic" in f.read():
-                        scr.addstr("kernel panic")
-                        logger.info("VM[%d] kernel panic" % i)
-                    else:
-                        scr.addstr("completed run")
-                        logger.info("VM[%d] completed run" % i)
-                updated = True
-                continue
-
-            running = True
             try:
                 err = vm[i]['proc'].stderr.read()
                 if err != None:
@@ -263,28 +238,6 @@ def show_progress(scr):
             except IOError as e:
                 if e.errno != errno.EAGAIN:
                     raise
-
-            ready = False
-            if vm[i]['first_run_done']:
-                vm[i]['first_run_done'] = False
-                ready = True
-            else:
-                ready = vm_read_stdout(vm[i], i)
-            if ready:
-                scr.move(i + 1, 10)
-                scr.clrtoeol()
-                updated = True
-                if not rerun_tests:
-                    vm[i]['proc'].stdin.write(b'\n')
-                    vm[i]['proc'].stdin.flush()
-                    scr.addstr("shutting down")
-                    logger.info("VM[%d] shutting down" % i)
-                else:
-                    name = rerun_tests.pop(0)
-                    vm[i]['proc'].stdin.write(name.encode() + b'\n')
-                    vm[i]['proc'].stdin.flush()
-                    scr.addstr(name + "(*)")
-                    logger.debug("VM[%d] start test %s (*)" % (i, name))
 
         if not running:
             break
@@ -309,18 +262,18 @@ def show_progress(scr):
                     scr.addstr(f)
                     scr.addstr(' ')
 
-            scr.move(0, 35)
-            scr.clrtoeol()
-            if rerun_tests:
-                scr.addstr("(RETRY FAILED %d)" % len(rerun_tests))
-            elif rerun_failures:
-                pass
-            elif first_run_failures:
-                scr.addstr("(RETRY FAILED)")
-
             scr.refresh()
 
         time.sleep(0.25)
+
+    for i in range(num_servers):
+        if not vm[i]['proc']:
+            continue
+        vm[i]['proc'] = None
+        scr.move(i + 1, 10)
+        scr.clrtoeol()
+        scr.addstr("still running")
+        logger.info("VM[%d] still running" % i)
 
     scr.refresh()
     time.sleep(0.3)
@@ -455,7 +408,6 @@ def main():
         if args.telnet:
             cmd += ['--telnet', str(args.telnet + i)]
         vm[i] = {}
-        vm[i]['first_run_done'] = False
         vm[i]['proc'] = subprocess.Popen(cmd,
                                          stdin=subprocess.PIPE,
                                          stdout=subprocess.PIPE,
@@ -537,7 +489,7 @@ def main():
     print("Logs: " + dir + '/' + str(timestamp))
     logger.info("Logs: " + dir + '/' + str(timestamp))
 
-    for i in range(0, num_servers):
+    for i in range(num_servers):
         if len(vm[i]['pending']) > 0:
             logger.info("Unprocessed stdout from VM[%d]: '%s'" %
                         (i, vm[i]['pending']))
