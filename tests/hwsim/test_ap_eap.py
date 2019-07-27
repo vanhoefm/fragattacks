@@ -2800,12 +2800,6 @@ def test_ap_wpa2_eap_pwd_groups(dev, apdev):
               "rsn_pairwise": "CCMP", "ieee8021x": "1",
               "eap_server": "1", "eap_user_file": "auth_serv/eap_user.conf"}
     groups = [19, 20, 21]
-    if tls.startswith("OpenSSL") and "build=OpenSSL 1.0.2" in tls and "run=OpenSSL 1.0.2" in tls:
-        logger.info("Add Brainpool EC groups since OpenSSL is new enough")
-        groups += [28, 29, 30]
-    if tls.startswith("OpenSSL") and "build=OpenSSL 1.1" in tls and "run=OpenSSL 1.1" in tls:
-        logger.info("Add Brainpool EC groups since OpenSSL is new enough")
-        groups += [28, 29, 30]
     for i in groups:
         logger.info("Group %d" % i)
         params['pwd_group'] = str(i)
