@@ -562,6 +562,20 @@ def test_ap_pmf_inject_auth(dev, apdev):
     hapd.request("SET ext_mgmt_frame_handling 0")
     if "OK" not in res:
         raise Exception("MGMT_RX_PROCESS failed")
+    time.sleep(0.1)
+
+    # Verify that original association is still functional.
+    hwsim_utils.test_connectivity(dev[0], hapd)
+
+    # Inject an unprotected Association Request frame claiming to be from the
+    # associated STA.
+    auth = "00003a01" + bssid + addr + bssid + '2000' + '31040500' + '0008746573742d706d66' + '010802040b160c121824' + '301a0100000fac040100000fac040100000fac06c0000000000fac06'
+    hapd.request("SET ext_mgmt_frame_handling 1")
+    res = hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=%s" % auth)
+    hapd.request("SET ext_mgmt_frame_handling 0")
+    if "OK" not in res:
+        raise Exception("MGMT_RX_PROCESS failed")
+    time.sleep(5)
 
     # Verify that original association is still functional.
     hwsim_utils.test_connectivity(dev[0], hapd)
