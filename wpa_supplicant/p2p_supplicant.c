@@ -2268,6 +2268,8 @@ static void wpas_go_neg_completed(void *ctx, struct p2p_go_neg_results *res)
 		res->ht40 = 1;
 	if (wpa_s->p2p_go_vht)
 		res->vht = 1;
+	if (wpa_s->p2p_go_he)
+		res->he = 1;
 	res->max_oper_chwidth = wpa_s->p2p_go_max_oper_chwidth;
 	res->vht_center_freq2 = wpa_s->p2p_go_vht_center_freq2;
 
