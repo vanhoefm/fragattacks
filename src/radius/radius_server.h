@@ -139,6 +139,8 @@ struct radius_server_conf {
 	 */
 	int eap_sim_aka_result_ind;
 
+	int eap_sim_id;
+
 	/**
 	 * tnc - Trusted Network Connect (TNC)
 	 *

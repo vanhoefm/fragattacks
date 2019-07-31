@@ -150,7 +150,10 @@ static int eap_sim_build_encr(struct eap_sm *sm, struct eap_sim_data *data,
 			      const u8 *nonce_s)
 {
 	os_free(data->next_pseudonym);
-	if (nonce_s == NULL) {
+	if (!(sm->eap_sim_id & 0x01)) {
+		/* Use of pseudonyms disabled in configuration */
+		data->next_pseudonym = NULL;
+	} else if (!nonce_s) {
 		data->next_pseudonym =
 			eap_sim_db_get_next_pseudonym(sm->eap_sim_db_priv,
 						      EAP_SIM_DB_SIM);
@@ -159,7 +162,10 @@ static int eap_sim_build_encr(struct eap_sm *sm, struct eap_sim_data *data,
 		data->next_pseudonym = NULL;
 	}
 	os_free(data->next_reauth_id);
-	if (data->counter <= EAP_SIM_MAX_FAST_REAUTHS) {
+	if (!(sm->eap_sim_id & 0x02)) {
+		/* Use of fast reauth disabled in configuration */
+		data->next_reauth_id = NULL;
+	} else if (data->counter <= EAP_SIM_MAX_FAST_REAUTHS) {
 		data->next_reauth_id =
 			eap_sim_db_get_next_reauth_id(sm->eap_sim_db_priv,
 						      EAP_SIM_DB_SIM);

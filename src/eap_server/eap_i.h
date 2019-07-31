@@ -193,6 +193,7 @@ struct eap_sm {
 	int eap_teap_auth;
 	int eap_teap_pac_no_inner;
 	int eap_sim_aka_result_ind;
+	int eap_sim_id;
 	int tnc;
 	u16 pwd_group;
 	struct wps_context *wps;

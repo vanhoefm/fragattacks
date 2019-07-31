@@ -2629,6 +2629,8 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		bss->eap_sim_db_timeout = atoi(pos);
 	} else if (os_strcmp(buf, "eap_sim_aka_result_ind") == 0) {
 		bss->eap_sim_aka_result_ind = atoi(pos);
+	} else if (os_strcmp(buf, "eap_sim_id") == 0) {
+		bss->eap_sim_id = atoi(pos);
 #endif /* EAP_SERVER_SIM */
 #ifdef EAP_SERVER_TNC
 	} else if (os_strcmp(buf, "tnc") == 0) {

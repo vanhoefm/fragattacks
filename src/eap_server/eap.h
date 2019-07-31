@@ -124,6 +124,7 @@ struct eap_config {
 	int eap_teap_auth;
 	int eap_teap_pac_no_inner;
 	int eap_sim_aka_result_ind;
+	int eap_sim_id;
 	int tnc;
 	struct wps_context *wps;
 	const struct wpabuf *assoc_wps_ie;

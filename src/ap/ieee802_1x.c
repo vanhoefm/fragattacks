@@ -2437,6 +2437,7 @@ int ieee802_1x_init(struct hostapd_data *hapd)
 	conf.eap_teap_auth = hapd->conf->eap_teap_auth;
 	conf.eap_teap_pac_no_inner = hapd->conf->eap_teap_pac_no_inner;
 	conf.eap_sim_aka_result_ind = hapd->conf->eap_sim_aka_result_ind;
+	conf.eap_sim_id = hapd->conf->eap_sim_id;
 	conf.tnc = hapd->conf->tnc;
 	conf.wps = hapd->wps;
 	conf.fragment_size = hapd->conf->fragment_size;

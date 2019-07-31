@@ -838,6 +838,7 @@ eapol_auth_alloc(struct eapol_authenticator *eapol, const u8 *addr,
 	eap_conf.eap_teap_auth = eapol->conf.eap_teap_auth;
 	eap_conf.eap_teap_pac_no_inner = eapol->conf.eap_teap_pac_no_inner;
 	eap_conf.eap_sim_aka_result_ind = eapol->conf.eap_sim_aka_result_ind;
+	eap_conf.eap_sim_id = eapol->conf.eap_sim_id;
 	eap_conf.tnc = eapol->conf.tnc;
 	eap_conf.wps = eapol->conf.wps;
 	eap_conf.assoc_wps_ie = assoc_wps_ie;
@@ -1236,6 +1237,7 @@ static int eapol_auth_conf_clone(struct eapol_auth_config *dst,
 	dst->eap_teap_auth = src->eap_teap_auth;
 	dst->eap_teap_pac_no_inner = src->eap_teap_pac_no_inner;
 	dst->eap_sim_aka_result_ind = src->eap_sim_aka_result_ind;
+	dst->eap_sim_id = src->eap_sim_id;
 	dst->tnc = src->tnc;
 	dst->wps = src->wps;
 	dst->fragment_size = src->fragment_size;
