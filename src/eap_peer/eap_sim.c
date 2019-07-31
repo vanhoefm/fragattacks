@@ -502,8 +502,13 @@ static struct wpabuf * eap_sim_response_start(struct eap_sm *sm,
 	} else if (id_req != NO_ID_REQ) {
 		identity = eap_get_config_identity(sm, &identity_len);
 		if (identity) {
-			eap_sim_clear_identities(sm, data, CLEAR_PSEUDONYM |
-						 CLEAR_REAUTH_ID);
+			int ids = CLEAR_PSEUDONYM | CLEAR_REAUTH_ID;
+
+			if (data->pseudonym &&
+			    eap_sim_anonymous_username(data->pseudonym,
+						       data->pseudonym_len))
+				ids &= ~CLEAR_PSEUDONYM;
+			eap_sim_clear_identities(sm, data, ids);
 		}
 	}
 	if (id_req != NO_ID_REQ)
