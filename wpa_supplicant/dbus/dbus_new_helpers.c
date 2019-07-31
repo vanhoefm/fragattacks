@@ -742,7 +742,7 @@ static void flush_object_timeout_handler(void *eloop_ctx, void *timeout_ctx)
 	DBusConnection *con = eloop_ctx;
 	struct wpa_dbus_object_desc *obj_desc = timeout_ctx;
 
-	wpa_printf(MSG_DEBUG,
+	wpa_printf(MSG_MSGDUMP,
 		   "dbus: %s: Timeout - sending changed properties of object %s",
 		   __func__, obj_desc->path);
 	wpa_dbus_flush_object_changed_properties(con, obj_desc->path);
