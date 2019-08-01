@@ -376,6 +376,32 @@ def test_ap_wpa2_eap_sim_config(dev, apdev):
                 password="90dca4eda45b53cf0f12d7c9c3bc6a89:cb9cccc4b9258e6dca4760379fb82581",
                 anonymous_identity="345678")
 
+def test_ap_wpa2_eap_sim_id_0(dev, apdev):
+    """WPA2-Enterprise connection using EAP-SIM (no pseudonym or reauth)"""
+    run_ap_wpa2_eap_sim_id(dev, apdev, 0)
+
+def test_ap_wpa2_eap_sim_id_1(dev, apdev):
+    """WPA2-Enterprise connection using EAP-SIM (pseudonym, no reauth)"""
+    run_ap_wpa2_eap_sim_id(dev, apdev, 1)
+
+def test_ap_wpa2_eap_sim_id_2(dev, apdev):
+    """WPA2-Enterprise connection using EAP-SIM (no pseudonym, reauth)"""
+    run_ap_wpa2_eap_sim_id(dev, apdev, 2)
+
+def test_ap_wpa2_eap_sim_id_3(dev, apdev):
+    """WPA2-Enterprise connection using EAP-SIM (pseudonym and reauth)"""
+    run_ap_wpa2_eap_sim_id(dev, apdev, 3)
+
+def run_ap_wpa2_eap_sim_id(dev, apdev, eap_sim_id):
+    check_hlr_auc_gw_support()
+    params = int_eap_server_params()
+    params['eap_sim_id'] = str(eap_sim_id)
+    params['eap_sim_db'] = 'unix:/tmp/hlr_auc_gw.sock'
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "SIM", "1232010000000000",
+                password="90dca4eda45b53cf0f12d7c9c3bc6a89:cb9cccc4b9258e6dca4760379fb82581")
+    eap_reauth(dev[0], "SIM")
+
 def test_ap_wpa2_eap_sim_ext(dev, apdev):
     """WPA2-Enterprise connection using EAP-SIM and external GSM auth"""
     try:
@@ -851,7 +877,22 @@ def test_ap_wpa2_eap_sim_ext_anonymous(dev, apdev):
     finally:
         dev[0].request("SET external_sim 0")
 
-def run_ap_wpa2_eap_sim_ext_anonymous(dev, anon):
+def test_ap_wpa2_eap_sim_ext_anonymous_no_pseudonym(dev, apdev):
+    """EAP-SIM with external GSM auth and anonymous identity without pseudonym update"""
+    check_hlr_auc_gw_support()
+    params = int_eap_server_params()
+    params['eap_sim_id'] = '0'
+    params['eap_sim_db'] = 'unix:/tmp/hlr_auc_gw.sock'
+    hostapd.add_ap(apdev[0], params)
+    try:
+        run_ap_wpa2_eap_sim_ext_anonymous(dev, "anonymous@example.org",
+                                          anon_id_change=False)
+        run_ap_wpa2_eap_sim_ext_anonymous(dev, "@example.org",
+                                          anon_id_change=False)
+    finally:
+        dev[0].request("SET external_sim 0")
+
+def run_ap_wpa2_eap_sim_ext_anonymous(dev, anon, anon_id_change=True):
     dev[0].request("SET external_sim 1")
     id = dev[0].connect("test-wpa2-eap", eap="SIM", key_mgmt="WPA-EAP",
                         identity="1232010000000000",
@@ -877,6 +918,11 @@ def run_ap_wpa2_eap_sim_ext_anonymous(dev, anon):
 
     dev[0].request("CTRL-RSP-SIM-" + rid + ":GSM-AUTH:" + resp)
     dev[0].wait_connected(timeout=5)
+    anon_id = dev[0].get_network(id, "anonymous_identity").strip('"')
+    if anon_id_change and anon == anon_id:
+        raise Exception("anonymous_identity did not change")
+    if not anon_id_change and anon != anon_id:
+        raise Exception("anonymous_identity changed")
     dev[0].request("REMOVE_NETWORK all")
     dev[0].wait_disconnected()
     dev[0].dump_monitor()
