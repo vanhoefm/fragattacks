@@ -162,6 +162,11 @@ def test_scan_bss_expiration_count(dev, apdev):
     if bssid not in dev[0].request("SCAN_RESULTS"):
         raise Exception("BSS not found in initial scan")
     hapd.request("DISABLE")
+    # Try to give enough time for hostapd to have stopped mac80211 from
+    # beaconing before checking a new scan. This is needed with UML time travel
+    # testing.
+    hapd.ping()
+    time.sleep(0.2)
     dev[0].scan(freq="2412", only_new=True)
     if bssid not in dev[0].request("SCAN_RESULTS"):
         raise Exception("BSS not found in first scan without match")
