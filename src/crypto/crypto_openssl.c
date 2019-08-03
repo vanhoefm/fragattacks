@@ -1295,13 +1295,7 @@ void crypto_bignum_deinit(struct crypto_bignum *n, int clear)
 int crypto_bignum_to_bin(const struct crypto_bignum *a,
 			 u8 *buf, size_t buflen, size_t padlen)
 {
-#ifdef OPENSSL_IS_BORINGSSL
-#else /* OPENSSL_IS_BORINGSSL */
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
-#else
 	int num_bytes, offset;
-#endif
-#endif /* OPENSSL_IS_BORINGSSL */
 
 	if (TEST_FAIL())
 		return -1;
@@ -1309,14 +1303,18 @@ int crypto_bignum_to_bin(const struct crypto_bignum *a,
 	if (padlen > buflen)
 		return -1;
 
+	if (padlen) {
 #ifdef OPENSSL_IS_BORINGSSL
-	if (BN_bn2bin_padded(buf, padlen, (const BIGNUM *) a) == 0)
-		return -1;
-	return padlen;
+		if (BN_bn2bin_padded(buf, padlen, (const BIGNUM *) a) == 0)
+			return -1;
+		return padlen;
 #else /* OPENSSL_IS_BORINGSSL */
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
-	return BN_bn2binpad((const BIGNUM *) a, buf, padlen);
-#else
+		return BN_bn2binpad((const BIGNUM *) a, buf, padlen);
+#endif
+#endif
+	}
+
 	num_bytes = BN_num_bytes((const BIGNUM *) a);
 	if ((size_t) num_bytes > buflen)
 		return -1;
@@ -1329,8 +1327,6 @@ int crypto_bignum_to_bin(const struct crypto_bignum *a,
 	BN_bn2bin((const BIGNUM *) a, buf + offset);
 
 	return num_bytes + offset;
-#endif
-#endif /* OPENSSL_IS_BORINGSSL */
 }
 
 
