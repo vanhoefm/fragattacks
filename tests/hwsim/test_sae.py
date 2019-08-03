@@ -156,7 +156,7 @@ def test_sae_groups(dev, apdev):
         logger.info("Add Brainpool EC groups since OpenSSL is new enough")
         sae_groups += [27, 28, 29, 30]
     heavy_groups = [14, 15, 16]
-    suitable_groups = [15, 16, 17, 18, 19, 20, 21, 28, 29, 30]
+    suitable_groups = [15, 16, 17, 18, 19, 20, 21]
     groups = [str(g) for g in sae_groups]
     params = hostapd.wpa2_params(ssid="test-sae-groups",
                                  passphrase="12345678")
