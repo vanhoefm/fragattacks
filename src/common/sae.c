@@ -45,6 +45,7 @@ int sae_set_group(struct sae_data *sae, int group)
 		sae->group = group;
 		tmp->prime_len = crypto_ec_prime_len(tmp->ec);
 		tmp->prime = crypto_ec_get_prime(tmp->ec);
+		tmp->order_len = crypto_ec_order_len(tmp->ec);
 		tmp->order = crypto_ec_get_order(tmp->ec);
 		return 0;
 	}
@@ -709,10 +710,16 @@ static int sae_derive_keys(struct sae_data *sae, const u8 *k)
 	crypto_bignum_add(sae->tmp->own_commit_scalar, sae->peer_commit_scalar,
 			  tmp);
 	crypto_bignum_mod(tmp, sae->tmp->order, tmp);
-	crypto_bignum_to_bin(tmp, val, sizeof(val), sae->tmp->prime_len);
+	/* IEEE Std 802.11-2016 is not exactly clear on the encoding of the bit
+	 * string that is needed for KCK, PMK, and PMKID derivation, but it
+	 * seems to make most sense to encode the
+	 * (commit-scalar + peer-commit-scalar) mod r part as a bit string by
+	 * zero padding it from left to the length of the order (in full
+	 * octets). */
+	crypto_bignum_to_bin(tmp, val, sizeof(val), sae->tmp->order_len);
 	wpa_hexdump(MSG_DEBUG, "SAE: PMKID", val, SAE_PMKID_LEN);
 	if (sha256_prf(keyseed, sizeof(keyseed), "SAE KCK and PMK",
-		       val, sae->tmp->prime_len, keys, sizeof(keys)) < 0)
+		       val, sae->tmp->order_len, keys, sizeof(keys)) < 0)
 		goto fail;
 	os_memset(keyseed, 0, sizeof(keyseed));
 	os_memcpy(sae->tmp->kck, keys, SAE_KCK_LEN);
