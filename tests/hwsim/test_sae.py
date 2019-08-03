@@ -162,7 +162,7 @@ def test_sae_groups(dev, apdev):
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_groups'] = ' '.join(groups)
-    hostapd.add_ap(apdev[0], params)
+    hapd = hostapd.add_ap(apdev[0], params)
 
     for g in groups:
         logger.info("Testing SAE group " + g)
@@ -194,6 +194,11 @@ def test_sae_groups(dev, apdev):
                 raise Exception("Connection timed out with group " + g)
         if dev[0].get_status_field('sae_group') != g:
             raise Exception("Expected SAE group not used")
+        pmksa = dev[0].get_pmksa(hapd.own_addr())
+        if not pmksa:
+            raise Exception("No PMKSA cache entry added")
+        if pmksa['pmkid'] == '00000000000000000000000000000000':
+            raise Exception("All zeros PMKID derived for group %s" % g)
         dev[0].remove_network(id)
         dev[0].wait_disconnected()
         dev[0].dump_monitor()
