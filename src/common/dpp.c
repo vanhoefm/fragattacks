@@ -610,6 +610,91 @@ static EVP_PKEY * dpp_set_pubkey_point(EVP_PKEY *group_key,
 }
 
 
+static int dpp_ecdh(EVP_PKEY *own, EVP_PKEY *peer,
+		    u8 *secret, size_t *secret_len)
+{
+	EVP_PKEY_CTX *ctx;
+	int ret = -1;
+
+	ERR_clear_error();
+	*secret_len = 0;
+
+	ctx = EVP_PKEY_CTX_new(own, NULL);
+	if (!ctx) {
+		wpa_printf(MSG_ERROR, "DPP: EVP_PKEY_CTX_new failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		return -1;
+	}
+
+	if (EVP_PKEY_derive_init(ctx) != 1) {
+		wpa_printf(MSG_ERROR, "DPP: EVP_PKEY_derive_init failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+
+	if (EVP_PKEY_derive_set_peer(ctx, peer) != 1) {
+		wpa_printf(MSG_ERROR,
+			   "DPP: EVP_PKEY_derive_set_peet failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+
+	if (EVP_PKEY_derive(ctx, NULL, secret_len) != 1) {
+		wpa_printf(MSG_ERROR, "DPP: EVP_PKEY_derive(NULL) failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+
+	if (*secret_len > DPP_MAX_SHARED_SECRET_LEN) {
+		u8 buf[200];
+		int level = *secret_len > 200 ? MSG_ERROR : MSG_DEBUG;
+
+		/* It looks like OpenSSL can return unexpectedly large buffer
+		 * need for shared secret from EVP_PKEY_derive(NULL) in some
+		 * cases. For example, group 19 has shown cases where secret_len
+		 * is set to 72 even though the actual length ends up being
+		 * updated to 32 when EVP_PKEY_derive() is called with a buffer
+		 * for the value. Work around this by trying to fetch the value
+		 * and continue if it is within supported range even when the
+		 * initial buffer need is claimed to be larger. */
+		wpa_printf(level,
+			   "DPP: Unexpected secret_len=%d from EVP_PKEY_derive()",
+			   (int) *secret_len);
+		if (*secret_len > 200)
+			goto fail;
+		if (EVP_PKEY_derive(ctx, buf, secret_len) != 1) {
+			wpa_printf(MSG_ERROR, "DPP: EVP_PKEY_derive failed: %s",
+				   ERR_error_string(ERR_get_error(), NULL));
+			goto fail;
+		}
+		if (*secret_len > DPP_MAX_SHARED_SECRET_LEN) {
+			wpa_printf(MSG_ERROR,
+				   "DPP: Unexpected secret_len=%d from EVP_PKEY_derive()",
+				   (int) *secret_len);
+			goto fail;
+		}
+		wpa_hexdump_key(MSG_DEBUG, "DPP: Unexpected secret_len change",
+				buf, *secret_len);
+		os_memcpy(secret, buf, *secret_len);
+		forced_memzero(buf, sizeof(buf));
+		goto done;
+	}
+
+	if (EVP_PKEY_derive(ctx, secret, secret_len) != 1) {
+		wpa_printf(MSG_ERROR, "DPP: EVP_PKEY_derive failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+
+done:
+	ret = 0;
+
+fail:
+	EVP_PKEY_CTX_free(ctx);
+	return ret;
+}
+
+
 static void dpp_auth_fail(struct dpp_authentication *auth, const char *txt)
 {
 	wpa_msg(auth->msg_ctx, MSG_INFO, DPP_EVENT_FAIL "%s", txt);
@@ -2142,7 +2227,6 @@ struct dpp_authentication * dpp_auth_init(void *msg_ctx,
 {
 	struct dpp_authentication *auth;
 	size_t nonce_len;
-	EVP_PKEY_CTX *ctx = NULL;
 	size_t secret_len;
 	struct wpabuf *pi = NULL;
 	const u8 *r_pubkey_hash, *i_pubkey_hash;
@@ -2211,21 +2295,10 @@ struct dpp_authentication * dpp_auth_init(void *msg_ctx,
 		goto fail;
 
 	/* ECDH: M = pI * BR */
-	ctx = EVP_PKEY_CTX_new(auth->own_protocol_key, NULL);
-	if (!ctx ||
-	    EVP_PKEY_derive_init(ctx) != 1 ||
-	    EVP_PKEY_derive_set_peer(ctx, auth->peer_bi->pubkey) != 1 ||
-	    EVP_PKEY_derive(ctx, NULL, &secret_len) != 1 ||
-	    secret_len > DPP_MAX_SHARED_SECRET_LEN ||
-	    EVP_PKEY_derive(ctx, auth->Mx, &secret_len) != 1) {
-		wpa_printf(MSG_ERROR,
-			   "DPP: Failed to derive ECDH shared secret: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
+	if (dpp_ecdh(auth->own_protocol_key, auth->peer_bi->pubkey,
+		     auth->Mx, &secret_len) < 0)
 		goto fail;
-	}
 	auth->secret_len = secret_len;
-	EVP_PKEY_CTX_free(ctx);
-	ctx = NULL;
 
 	wpa_hexdump_key(MSG_DEBUG, "DPP: ECDH shared secret (M.x)",
 			auth->Mx, auth->secret_len);
@@ -2277,7 +2350,6 @@ struct dpp_authentication * dpp_auth_init(void *msg_ctx,
 
 out:
 	wpabuf_free(pi);
-	EVP_PKEY_CTX_free(ctx);
 	return auth;
 fail:
 	dpp_auth_deinit(auth);
@@ -2750,7 +2822,6 @@ fail:
 static int dpp_auth_build_resp_ok(struct dpp_authentication *auth)
 {
 	size_t nonce_len;
-	EVP_PKEY_CTX *ctx = NULL;
 	size_t secret_len;
 	struct wpabuf *msg, *pr = NULL;
 	u8 r_auth[4 + DPP_MAX_HASH_LEN];
@@ -2813,20 +2884,9 @@ static int dpp_auth_build_resp_ok(struct dpp_authentication *auth)
 		goto fail;
 
 	/* ECDH: N = pR * PI */
-	ctx = EVP_PKEY_CTX_new(auth->own_protocol_key, NULL);
-	if (!ctx ||
-	    EVP_PKEY_derive_init(ctx) != 1 ||
-	    EVP_PKEY_derive_set_peer(ctx, auth->peer_protocol_key) != 1 ||
-	    EVP_PKEY_derive(ctx, NULL, &secret_len) != 1 ||
-	    secret_len > DPP_MAX_SHARED_SECRET_LEN ||
-	    EVP_PKEY_derive(ctx, auth->Nx, &secret_len) != 1) {
-		wpa_printf(MSG_ERROR,
-			   "DPP: Failed to derive ECDH shared secret: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
+	if (dpp_ecdh(auth->own_protocol_key, auth->peer_protocol_key,
+		     auth->Nx, &secret_len) < 0)
 		goto fail;
-	}
-	EVP_PKEY_CTX_free(ctx);
-	ctx = NULL;
 
 	wpa_hexdump_key(MSG_DEBUG, "DPP: ECDH shared secret (N.x)",
 			auth->Nx, auth->secret_len);
@@ -3122,22 +3182,9 @@ dpp_auth_req_rx(void *msg_ctx, u8 dpp_allowed_roles, int qr_mutual,
 	}
 	dpp_debug_print_key("Peer (Initiator) Protocol Key", pi);
 
-	ctx = EVP_PKEY_CTX_new(own_bi->pubkey, NULL);
-	if (!ctx ||
-	    EVP_PKEY_derive_init(ctx) != 1 ||
-	    EVP_PKEY_derive_set_peer(ctx, pi) != 1 ||
-	    EVP_PKEY_derive(ctx, NULL, &secret_len) != 1 ||
-	    secret_len > DPP_MAX_SHARED_SECRET_LEN ||
-	    EVP_PKEY_derive(ctx, auth->Mx, &secret_len) != 1) {
-		wpa_printf(MSG_ERROR,
-			   "DPP: Failed to derive ECDH shared secret: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
-		dpp_auth_fail(auth, "Failed to derive ECDH shared secret");
+	if (dpp_ecdh(own_bi->pubkey, pi, auth->Mx, &secret_len) < 0)
 		goto fail;
-	}
 	auth->secret_len = secret_len;
-	EVP_PKEY_CTX_free(ctx);
-	ctx = NULL;
 
 	wpa_hexdump_key(MSG_DEBUG, "DPP: ECDH shared secret (M.x)",
 			auth->Mx, auth->secret_len);
@@ -3591,7 +3638,6 @@ dpp_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 		 const u8 *attr_start, size_t attr_len)
 {
 	EVP_PKEY *pr;
-	EVP_PKEY_CTX *ctx = NULL;
 	size_t secret_len;
 	const u8 *addr[2];
 	size_t len[2];
@@ -3741,21 +3787,10 @@ dpp_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 	}
 	dpp_debug_print_key("Peer (Responder) Protocol Key", pr);
 
-	ctx = EVP_PKEY_CTX_new(auth->own_protocol_key, NULL);
-	if (!ctx ||
-	    EVP_PKEY_derive_init(ctx) != 1 ||
-	    EVP_PKEY_derive_set_peer(ctx, pr) != 1 ||
-	    EVP_PKEY_derive(ctx, NULL, &secret_len) != 1 ||
-	    secret_len > DPP_MAX_SHARED_SECRET_LEN ||
-	    EVP_PKEY_derive(ctx, auth->Nx, &secret_len) != 1) {
-		wpa_printf(MSG_ERROR,
-			   "DPP: Failed to derive ECDH shared secret: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
+	if (dpp_ecdh(auth->own_protocol_key, pr, auth->Nx, &secret_len) < 0) {
 		dpp_auth_fail(auth, "Failed to derive ECDH shared secret");
 		goto fail;
 	}
-	EVP_PKEY_CTX_free(ctx);
-	ctx = NULL;
 	EVP_PKEY_free(auth->peer_protocol_key);
 	auth->peer_protocol_key = pr;
 	pr = NULL;
@@ -3927,7 +3962,6 @@ fail:
 	bin_clear_free(unwrapped, unwrapped_len);
 	bin_clear_free(unwrapped2, unwrapped2_len);
 	EVP_PKEY_free(pr);
-	EVP_PKEY_CTX_free(ctx);
 	return NULL;
 }
 
@@ -6427,7 +6461,6 @@ dpp_peer_intro(struct dpp_introduction *intro, const char *own_connector,
 	const char *pos, *end;
 	unsigned char *own_conn = NULL;
 	size_t own_conn_len;
-	EVP_PKEY_CTX *ctx = NULL;
 	size_t Nx_len;
 	u8 Nx[DPP_MAX_SHARED_SECRET_LEN];
 
@@ -6541,18 +6574,8 @@ dpp_peer_intro(struct dpp_introduction *intro, const char *own_connector,
 	}
 
 	/* ECDH: N = nk * PK */
-	ctx = EVP_PKEY_CTX_new(own_key, NULL);
-	if (!ctx ||
-	    EVP_PKEY_derive_init(ctx) != 1 ||
-	    EVP_PKEY_derive_set_peer(ctx, peer_key) != 1 ||
-	    EVP_PKEY_derive(ctx, NULL, &Nx_len) != 1 ||
-	    Nx_len > DPP_MAX_SHARED_SECRET_LEN ||
-	    EVP_PKEY_derive(ctx, Nx, &Nx_len) != 1) {
-		wpa_printf(MSG_ERROR,
-			   "DPP: Failed to derive ECDH shared secret: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
+	if (dpp_ecdh(own_key, peer_key, Nx, &Nx_len) < 0)
 		goto fail;
-	}
 
 	wpa_hexdump_key(MSG_DEBUG, "DPP: ECDH shared secret (N.x)",
 			Nx, Nx_len);
@@ -6575,7 +6598,6 @@ fail:
 	if (ret != DPP_STATUS_OK)
 		os_memset(intro, 0, sizeof(*intro));
 	os_memset(Nx, 0, sizeof(Nx));
-	EVP_PKEY_CTX_free(ctx);
 	os_free(own_conn);
 	os_free(signed_connector);
 	os_free(info.payload);
@@ -7250,7 +7272,6 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 	u8 Kx[DPP_MAX_SHARED_SECRET_LEN];
 	size_t Kx_len;
 	int res;
-	EVP_PKEY_CTX *ctx = NULL;
 
 	if (bi->pkex_t >= PKEX_COUNTER_T_LIMIT) {
 		wpa_msg(msg_ctx, MSG_INFO, DPP_EVENT_FAIL
@@ -7417,18 +7438,8 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 		goto fail;
 
 	/* K = y * X' */
-	ctx = EVP_PKEY_CTX_new(pkex->y, NULL);
-	if (!ctx ||
-	    EVP_PKEY_derive_init(ctx) != 1 ||
-	    EVP_PKEY_derive_set_peer(ctx, pkex->x) != 1 ||
-	    EVP_PKEY_derive(ctx, NULL, &Kx_len) != 1 ||
-	    Kx_len > DPP_MAX_SHARED_SECRET_LEN ||
-	    EVP_PKEY_derive(ctx, Kx, &Kx_len) != 1) {
-		wpa_printf(MSG_ERROR,
-			   "DPP: Failed to derive ECDH shared secret: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
+	if (dpp_ecdh(pkex->y, pkex->x, Kx, &Kx_len) < 0)
 		goto fail;
-	}
 
 	wpa_hexdump_key(MSG_DEBUG, "DPP: ECDH shared secret (K.x)",
 			Kx, Kx_len);
@@ -7446,7 +7457,6 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 	pkex->exchange_done = 1;
 
 out:
-	EVP_PKEY_CTX_free(ctx);
 	BN_CTX_free(bnctx);
 	EC_POINT_free(Qi);
 	EC_POINT_free(Qr);
@@ -7594,7 +7604,6 @@ struct wpabuf * dpp_pkex_rx_exchange_resp(struct dpp_pkex *pkex,
 	const struct dpp_curve_params *curve = pkex->own_bi->curve;
 	EC_POINT *Qr = NULL, *Y = NULL, *N = NULL;
 	BIGNUM *Nx = NULL, *Ny = NULL;
-	EVP_PKEY_CTX *ctx = NULL;
 	EC_KEY *Y_ec = NULL;
 	size_t Jx_len, Kx_len;
 	u8 Jx[DPP_MAX_SHARED_SECRET_LEN], Kx[DPP_MAX_SHARED_SECRET_LEN];
@@ -7706,18 +7715,8 @@ struct wpabuf * dpp_pkex_rx_exchange_resp(struct dpp_pkex *pkex,
 	if (!pkex->y ||
 	    EVP_PKEY_set1_EC_KEY(pkex->y, Y_ec) != 1)
 		goto fail;
-	ctx = EVP_PKEY_CTX_new(pkex->own_bi->pubkey, NULL);
-	if (!ctx ||
-	    EVP_PKEY_derive_init(ctx) != 1 ||
-	    EVP_PKEY_derive_set_peer(ctx, pkex->y) != 1 ||
-	    EVP_PKEY_derive(ctx, NULL, &Jx_len) != 1 ||
-	    Jx_len > DPP_MAX_SHARED_SECRET_LEN ||
-	    EVP_PKEY_derive(ctx, Jx, &Jx_len) != 1) {
-		wpa_printf(MSG_ERROR,
-			   "DPP: Failed to derive ECDH shared secret: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
+	if (dpp_ecdh(pkex->own_bi->pubkey, pkex->y, Jx, &Jx_len) < 0)
 		goto fail;
-	}
 
 	wpa_hexdump_key(MSG_DEBUG, "DPP: ECDH shared secret (J.x)",
 			Jx, Jx_len);
@@ -7741,19 +7740,8 @@ struct wpabuf * dpp_pkex_rx_exchange_resp(struct dpp_pkex *pkex,
 	wpa_hexdump(MSG_DEBUG, "DPP: u", u, curve->hash_len);
 
 	/* K = x * Y’ */
-	EVP_PKEY_CTX_free(ctx);
-	ctx = EVP_PKEY_CTX_new(pkex->x, NULL);
-	if (!ctx ||
-	    EVP_PKEY_derive_init(ctx) != 1 ||
-	    EVP_PKEY_derive_set_peer(ctx, pkex->y) != 1 ||
-	    EVP_PKEY_derive(ctx, NULL, &Kx_len) != 1 ||
-	    Kx_len > DPP_MAX_SHARED_SECRET_LEN ||
-	    EVP_PKEY_derive(ctx, Kx, &Kx_len) != 1) {
-		wpa_printf(MSG_ERROR,
-			   "DPP: Failed to derive ECDH shared secret: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
+	if (dpp_ecdh(pkex->x, pkex->y, Kx, &Kx_len) < 0)
 		goto fail;
-	}
 
 	wpa_hexdump_key(MSG_DEBUG, "DPP: ECDH shared secret (K.x)",
 			Kx, Kx_len);
@@ -7783,7 +7771,6 @@ out:
 	BN_free(Nx);
 	BN_free(Ny);
 	EC_KEY_free(Y_ec);
-	EVP_PKEY_CTX_free(ctx);
 	BN_CTX_free(bnctx);
 	EC_GROUP_free(group);
 	return msg;
@@ -7911,7 +7898,6 @@ struct wpabuf * dpp_pkex_rx_commit_reveal_req(struct dpp_pkex *pkex,
 					      const u8 *buf, size_t buflen)
 {
 	const struct dpp_curve_params *curve = pkex->own_bi->curve;
-	EVP_PKEY_CTX *ctx = NULL;
 	size_t Jx_len, Lx_len;
 	u8 Jx[DPP_MAX_SHARED_SECRET_LEN];
 	u8 Lx[DPP_MAX_SHARED_SECRET_LEN];
@@ -7995,18 +7981,8 @@ struct wpabuf * dpp_pkex_rx_commit_reveal_req(struct dpp_pkex *pkex,
 			    pkex->peer_bootstrap_key);
 
 	/* ECDH: J' = y * A' */
-	ctx = EVP_PKEY_CTX_new(pkex->y, NULL);
-	if (!ctx ||
-	    EVP_PKEY_derive_init(ctx) != 1 ||
-	    EVP_PKEY_derive_set_peer(ctx, pkex->peer_bootstrap_key) != 1 ||
-	    EVP_PKEY_derive(ctx, NULL, &Jx_len) != 1 ||
-	    Jx_len > DPP_MAX_SHARED_SECRET_LEN ||
-	    EVP_PKEY_derive(ctx, Jx, &Jx_len) != 1) {
-		wpa_printf(MSG_ERROR,
-			   "DPP: Failed to derive ECDH shared secret: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
+	if (dpp_ecdh(pkex->y, pkex->peer_bootstrap_key, Jx, &Jx_len) < 0)
 		goto fail;
-	}
 
 	wpa_hexdump_key(MSG_DEBUG, "DPP: ECDH shared secret (J.x)",
 			Jx, Jx_len);
@@ -8042,19 +8018,8 @@ struct wpabuf * dpp_pkex_rx_commit_reveal_req(struct dpp_pkex *pkex,
 	wpa_printf(MSG_DEBUG, "DPP: Valid u (I-Auth tag) received");
 
 	/* ECDH: L = b * X' */
-	EVP_PKEY_CTX_free(ctx);
-	ctx = EVP_PKEY_CTX_new(pkex->own_bi->pubkey, NULL);
-	if (!ctx ||
-	    EVP_PKEY_derive_init(ctx) != 1 ||
-	    EVP_PKEY_derive_set_peer(ctx, pkex->x) != 1 ||
-	    EVP_PKEY_derive(ctx, NULL, &Lx_len) != 1 ||
-	    Lx_len > DPP_MAX_SHARED_SECRET_LEN ||
-	    EVP_PKEY_derive(ctx, Lx, &Lx_len) != 1) {
-		wpa_printf(MSG_ERROR,
-			   "DPP: Failed to derive ECDH shared secret: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
+	if (dpp_ecdh(pkex->own_bi->pubkey, pkex->x, Lx, &Lx_len) < 0)
 		goto fail;
-	}
 
 	wpa_hexdump_key(MSG_DEBUG, "DPP: ECDH shared secret (L.x)",
 			Lx, Lx_len);
@@ -8080,7 +8045,6 @@ struct wpabuf * dpp_pkex_rx_commit_reveal_req(struct dpp_pkex *pkex,
 		goto fail;
 
 out:
-	EVP_PKEY_CTX_free(ctx);
 	os_free(unwrapped);
 	wpabuf_free(A_pub);
 	wpabuf_free(B_pub);
@@ -8109,7 +8073,6 @@ int dpp_pkex_rx_commit_reveal_resp(struct dpp_pkex *pkex, const u8 *hdr,
 	u8 v[DPP_MAX_HASH_LEN];
 	size_t Lx_len;
 	u8 Lx[DPP_MAX_SHARED_SECRET_LEN];
-	EVP_PKEY_CTX *ctx = NULL;
 	struct wpabuf *B_pub = NULL, *X_pub = NULL, *Y_pub = NULL;
 
 #ifdef CONFIG_TESTING_OPTIONS
@@ -8180,18 +8143,8 @@ int dpp_pkex_rx_commit_reveal_resp(struct dpp_pkex *pkex, const u8 *hdr,
 			    pkex->peer_bootstrap_key);
 
 	/* ECDH: L' = x * B' */
-	ctx = EVP_PKEY_CTX_new(pkex->x, NULL);
-	if (!ctx ||
-	    EVP_PKEY_derive_init(ctx) != 1 ||
-	    EVP_PKEY_derive_set_peer(ctx, pkex->peer_bootstrap_key) != 1 ||
-	    EVP_PKEY_derive(ctx, NULL, &Lx_len) != 1 ||
-	    Lx_len > DPP_MAX_SHARED_SECRET_LEN ||
-	    EVP_PKEY_derive(ctx, Lx, &Lx_len) != 1) {
-		wpa_printf(MSG_ERROR,
-			   "DPP: Failed to derive ECDH shared secret: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
+	if (dpp_ecdh(pkex->x, pkex->peer_bootstrap_key, Lx, &Lx_len) < 0)
 		goto fail;
-	}
 
 	wpa_hexdump_key(MSG_DEBUG, "DPP: ECDH shared secret (L.x)",
 			Lx, Lx_len);
@@ -8231,7 +8184,6 @@ out:
 	wpabuf_free(B_pub);
 	wpabuf_free(X_pub);
 	wpabuf_free(Y_pub);
-	EVP_PKEY_CTX_free(ctx);
 	os_free(unwrapped);
 	return ret;
 fail:
