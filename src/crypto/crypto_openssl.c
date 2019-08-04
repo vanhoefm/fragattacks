@@ -2059,13 +2059,17 @@ struct wpabuf * crypto_ecdh_set_peerkey(struct crypto_ecdh *ecdh, int inc_y,
 	secret = wpabuf_alloc(secret_len);
 	if (!secret)
 		goto fail;
-	if (EVP_PKEY_derive(ctx, wpabuf_put(secret, secret_len),
-			    &secret_len) != 1) {
+	if (EVP_PKEY_derive(ctx, wpabuf_put(secret, 0), &secret_len) != 1) {
 		wpa_printf(MSG_ERROR,
 			   "OpenSSL: EVP_PKEY_derive(2) failed: %s",
 			   ERR_error_string(ERR_get_error(), NULL));
 		goto fail;
 	}
+	if (secret->size != secret_len)
+		wpa_printf(MSG_DEBUG,
+			   "OpenSSL: EVP_PKEY_derive(2) changed secret_len %d -> %d",
+			   (int) secret->size, (int) secret_len);
+	wpabuf_put(secret, secret_len);
 
 done:
 	BN_free(x);
