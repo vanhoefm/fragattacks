@@ -1079,6 +1079,9 @@ def test_radius_protocol(dev, apdev):
                     else:
                         logger.error("Unexpected event in pyrad server main loop")
 
+            for fd in self.authfds + self.acctfds:
+                fd.close()
+
     srv = TestServer(dict=pyrad.dictionary.Dictionary("dictionary.radius"),
                      authport=18138, acctport=18139)
     srv.hosts["127.0.0.1"] = pyrad.server.RemoteHost("127.0.0.1",
@@ -1192,6 +1195,9 @@ def start_radius_psk_server(psk, invalid_code=False, acct_interim_interval=0,
                             logger.info("pyrad server received invalid packet: " + str(err))
                     else:
                         logger.error("Unexpected event in pyrad server main loop")
+
+            for fd in self.authfds + self.acctfds:
+                fd.close()
 
     srv = TestServer(dict=pyrad.dictionary.Dictionary("dictionary.radius"),
                      authport=18138, acctport=18139)
@@ -1470,6 +1476,9 @@ def test_ap_vlan_wpa2_psk_radius_required(dev, apdev):
                             logger.info("pyrad server received invalid packet: " + str(err))
                     else:
                         logger.error("Unexpected event in pyrad server main loop")
+
+            for fd in self.authfds + self.acctfds:
+                fd.close()
 
     srv = TestServer(dict=pyrad.dictionary.Dictionary("dictionary.radius"),
                      authport=18138, acctport=18139)

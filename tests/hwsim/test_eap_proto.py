@@ -145,6 +145,9 @@ def start_radius_server(eap_handler):
                     else:
                         logger.error("Unexpected event in pyrad server main loop")
 
+            for fd in self.authfds + self.acctfds:
+                fd.close()
+
     srv = TestServer(dict=pyrad.dictionary.Dictionary("dictionary.radius"),
                      authport=18138, acctport=18139)
     srv.hosts["127.0.0.1"] = pyrad.server.RemoteHost("127.0.0.1",
