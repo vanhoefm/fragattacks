@@ -34,6 +34,7 @@ def check_cipher(dev, ap, cipher, group_cipher=None):
     hapd = hostapd.add_ap(ap, params)
     dev.connect("test-wpa2-psk", psk="12345678",
                 pairwise=cipher, group=group_cipher, scan_freq="2412")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev, hapd)
 
 def check_group_mgmt_cipher(dev, ap, cipher, sta_req_cipher=None):
@@ -56,6 +57,7 @@ def check_group_mgmt_cipher(dev, ap, cipher, sta_req_cipher=None):
     dev.connect("test-wpa2-psk-pmf", psk="12345678", ieee80211w="2",
                 key_mgmt="WPA-PSK-SHA256", group_mgmt=sta_req_cipher,
                 pairwise="CCMP", group="CCMP", scan_freq="2412")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev, hapd)
     hapd.request("DEAUTHENTICATE ff:ff:ff:ff:ff:ff")
     dev.wait_disconnected()
@@ -388,6 +390,7 @@ def test_ap_cipher_mixed_wpa_wpa2(dev, apdev):
         raise Exception("Missing BSS flag WPA-PSK-TKIP")
     if "[WPA2-PSK-CCMP]" not in bss['flags']:
         raise Exception("Missing BSS flag WPA2-PSK-CCMP")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev[0], hapd)
 
     dev[1].connect(ssid, psk=passphrase, proto="WPA",
@@ -399,6 +402,7 @@ def test_ap_cipher_mixed_wpa_wpa2(dev, apdev):
         raise Exception("Incorrect pairwise_cipher reported")
     if status['group_cipher'] != 'TKIP':
         raise Exception("Incorrect group_cipher reported")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev[1], hapd)
     hwsim_utils.test_connectivity(dev[0], dev[1])
 
@@ -535,6 +539,7 @@ def run_ap_cipher_replay_protection_ap(dev, apdev, cipher):
 
     dev[0].connect("test-wpa2-psk", psk="12345678",
                    pairwise=cipher, group=cipher, scan_freq="2412")
+    hapd.wait_sta()
 
     if cipher != "TKIP":
         replays = get_tk_replay_counter(phy)
@@ -604,6 +609,7 @@ def run_ap_cipher_replay_protection_sta(dev, apdev, cipher, gtk=False):
     phy = dev[0].get_driver_status_field("phyname")
     dev[0].connect("test-wpa2-psk", psk="12345678",
                    pairwise=cipher, group=cipher, scan_freq="2412")
+    hapd.wait_sta()
 
     if cipher != "TKIP":
         replays = get_tk_replay_counter(phy, gtk)
@@ -658,6 +664,7 @@ def run_ap_wpa2_delayed_m3_retransmission(dev, apdev):
 
     phy = dev[0].get_driver_status_field("phyname")
     dev[0].connect("test-wpa2-psk", psk="12345678", scan_freq="2412")
+    hapd.wait_sta()
 
     for i in range(5):
         hwsim_utils.test_connectivity(dev[0], hapd)
@@ -738,6 +745,7 @@ def run_ap_wpa2_delayed_m1_m3_retransmission(dev, apdev,
 
     phy = dev[0].get_driver_status_field("phyname")
     dev[0].connect("test-wpa2-psk", psk="12345678", scan_freq="2412")
+    hapd.wait_sta()
 
     for i in range(5):
         hwsim_utils.test_connectivity(dev[0], hapd)
@@ -805,6 +813,7 @@ def run_ap_wpa2_delayed_group_m1_retransmission(dev, apdev):
 
     phy = dev[0].get_driver_status_field("phyname")
     dev[0].connect("test-wpa2-psk", psk="12345678", scan_freq="2412")
+    hapd.wait_sta()
 
     for i in range(5):
         hwsim_utils.test_connectivity(dev[0], hapd)
@@ -842,6 +851,7 @@ def test_ap_wpa2_delayed_m1_m3_zero_tk(dev, apdev):
     wt.add_passphrase("12345678")
 
     dev[0].connect("test-wpa2-psk", psk="12345678", scan_freq="2412")
+    hapd.wait_sta()
 
     hwsim_utils.test_connectivity(dev[0], hapd)
     addr = dev[0].own_addr()

@@ -119,6 +119,7 @@ def test_sta_dynamic_down_up(dev, apdev):
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     wpas.interface_add("wlan5")
     wpas.connect("sta-dynamic", psk="12345678", scan_freq="2412")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(wpas, hapd)
     subprocess.call(['ifconfig', wpas.ifname, 'down'])
     wpas.wait_disconnected(timeout=10)
@@ -126,6 +127,7 @@ def test_sta_dynamic_down_up(dev, apdev):
         raise Exception("Unexpected wpa_state")
     subprocess.call(['ifconfig', wpas.ifname, 'up'])
     wpas.wait_connected(timeout=15, error="Reconnection not reported")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(wpas, hapd)
 
 def test_sta_dynamic_ext_mac_addr_change(dev, apdev):
@@ -137,6 +139,7 @@ def test_sta_dynamic_ext_mac_addr_change(dev, apdev):
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     wpas.interface_add("wlan5")
     wpas.connect("sta-dynamic", psk="12345678", scan_freq="2412")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(wpas, hapd)
     subprocess.call(['ifconfig', wpas.ifname, 'down'])
     wpas.wait_disconnected(timeout=10)
@@ -151,6 +154,7 @@ def test_sta_dynamic_ext_mac_addr_change(dev, apdev):
         wpas.wait_connected(timeout=15, error="Reconnection not reported")
         if wpas.get_driver_status_field('addr') != new_addr:
             raise Exception("Address change not reported")
+        hapd.wait_sta()
         hwsim_utils.test_connectivity(wpas, hapd)
         sta = hapd.get_sta(new_addr)
         if sta['addr'] != new_addr:

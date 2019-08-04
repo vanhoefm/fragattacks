@@ -339,6 +339,7 @@ def test_pmksa_cache_expiration(dev, apdev):
                    eap="GPSK", identity="gpsk user",
                    password="abcdefghijklmnop0123456789abcdef",
                    scan_freq="2412")
+    hapd.wait_sta()
     pmksa = dev[0].get_pmksa(bssid)
     if pmksa is None:
         raise Exception("No PMKSA cache entry created")
@@ -494,7 +495,7 @@ def generic_pmksa_cache_preauth(dev, apdev, extraparams, identity, databridge,
         params['rsn_preauth_interfaces'] = databridge
         for key, value in extraparams[1].items():
             params[key] = value
-        hostapd.add_ap(apdev[1], params)
+        hapd1 = hostapd.add_ap(apdev[1], params)
         bssid1 = apdev[1]['bssid']
         dev[0].scan(freq="2412")
         success = False
@@ -530,6 +531,7 @@ def generic_pmksa_cache_preauth(dev, apdev, extraparams, identity, databridge,
         if pmksa['pmkid'] != pmksa2['pmkid']:
             raise Exception("Unexpected PMKID change")
 
+        hapd1.wait_sta()
         # Verify connectivity in the correct VLAN
         hwsim_utils.test_connectivity_iface(dev[0], hapd, databridge)
 

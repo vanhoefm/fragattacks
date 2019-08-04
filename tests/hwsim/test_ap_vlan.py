@@ -117,6 +117,9 @@ def test_ap_vlan_wpa2(dev, apdev):
     dev[0].connect("test-vlan", psk="12345678", scan_freq="2412")
     dev[1].connect("test-vlan", psk="12345678", scan_freq="2412")
     dev[2].connect("test-vlan", psk="12345678", scan_freq="2412")
+    hapd.wait_sta()
+    hapd.wait_sta()
+    hapd.wait_sta()
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "brvlan2")
     hwsim_utils.test_connectivity(dev[2], hapd)
@@ -139,6 +142,9 @@ def test_ap_vlan_wpa2_radius(dev, apdev):
                    identity="pax.user@example.com",
                    password_hex="0123456789abcdef0123456789abcdef",
                    scan_freq="2412")
+    hapd.wait_sta()
+    hapd.wait_sta()
+    hapd.wait_sta()
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "brvlan2")
     hwsim_utils.test_connectivity(dev[2], hapd)
@@ -154,6 +160,7 @@ def test_ap_vlan_wpa2_radius_2(dev, apdev):
                    password_hex="0123456789abcdef0123456789abcdef",
                    scan_freq="2412")
 
+    hapd.wait_sta()
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
 
 def test_ap_vlan_wpa2_radius_local(dev, apdev):
@@ -177,6 +184,9 @@ def test_ap_vlan_wpa2_radius_local(dev, apdev):
                    identity="pax.user@example.com",
                    password_hex="0123456789abcdef0123456789abcdef",
                    scan_freq="2412")
+    hapd.wait_sta()
+    hapd.wait_sta()
+    hapd.wait_sta()
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "test_br_vlan1")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "test_br_vlan2")
     hwsim_utils.test_connectivity(dev[2], hapd)
@@ -229,6 +239,7 @@ def generic_ap_vlan_wpa2_radius_id_change(dev, apdev, tagged):
                    identity=identity,
                    password_hex="0123456789abcdef0123456789abcdef",
                    scan_freq="2412")
+    hapd.wait_sta()
     if tagged:
         hwsim_utils.run_connectivity_test(dev[0], hapd, 0, ifname1="wlan0.1",
                                           ifname2="brvlan1")
@@ -421,6 +432,7 @@ def ap_vlan_iface_cleanup_multibss(dev, apdev, cfgfile):
                        identity="vlan1",
                        password_hex="0123456789abcdef0123456789abcdef",
                        scan_freq="2412")
+        hapd.wait_sta()
 
         ifaces = netifaces.interfaces()
         if "brvlan1" not in ifaces:
@@ -435,6 +447,7 @@ def ap_vlan_iface_cleanup_multibss(dev, apdev, cfgfile):
                        password_hex="0123456789abcdef0123456789abcdef",
                        scan_freq="2412")
 
+        hapd1.wait_sta()
         hwsim_utils.test_connectivity_iface(dev[1], hapd1, "brvlan1")
         if not iface_is_in_bridge("brvlan1", "dummy0.1"):
             raise Exception("dummy0.1 not in brvlan1")
@@ -701,6 +714,7 @@ def test_ap_vlan_reconnect(dev, apdev):
 
     logger.info("connect sta")
     dev[0].connect("test-vlan", psk="12345678", scan_freq="2412")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
     logger.info("disconnect sta")
     dev[0].request("REMOVE_NETWORK all")
@@ -708,6 +722,7 @@ def test_ap_vlan_reconnect(dev, apdev):
     time.sleep(1)
     logger.info("reconnect sta")
     dev[0].connect("test-vlan", psk="12345678", scan_freq="2412")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
 
 def test_ap_vlan_psk(dev, apdev, params):
@@ -727,6 +742,9 @@ def test_ap_vlan_psk(dev, apdev, params):
     dev[0].connect(ssid, psk="passphrase-for-vlan-1", scan_freq="2412")
     dev[1].connect(ssid, psk="passphrase-for-vlan-2", scan_freq="2412")
     dev[2].connect(ssid, psk="passphrase-for-vlan-3", scan_freq="2412")
+    hapd.wait_sta()
+    hapd.wait_sta()
+    hapd.wait_sta()
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "brvlan2")
     hwsim_utils.test_connectivity_iface(dev[2], hapd, "brvlan3")
@@ -749,6 +767,7 @@ def test_ap_vlan_sae(dev, apdev, params):
         dev[i].connect("test-sae-vlan", sae_password="pw%d" % (i + 1),
                        sae_password_id="id%d" % (i + 1),
                        key_mgmt="SAE", scan_freq="2412")
+        hapd.wait_sta()
 
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "brvlan2")

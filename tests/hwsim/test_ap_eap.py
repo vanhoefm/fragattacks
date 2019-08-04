@@ -790,7 +790,7 @@ def test_ap_wpa2_eap_sim_change_bssid(dev, apdev):
 def _test_ap_wpa2_eap_sim_change_bssid(dev, apdev):
     check_hlr_auc_gw_support()
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
-    hostapd.add_ap(apdev[0], params)
+    hapd = hostapd.add_ap(apdev[0], params)
     dev[0].request("SET external_sim 1")
     id = dev[0].connect("test-wpa2-eap", eap="SIM", key_mgmt="WPA-EAP",
                         identity="1232010000000000",
@@ -815,6 +815,7 @@ def _test_ap_wpa2_eap_sim_change_bssid(dev, apdev):
 
     dev[0].request("CTRL-RSP-SIM-" + rid + ":GSM-AUTH:" + resp)
     dev[0].wait_connected(timeout=15)
+    hapd.wait_sta()
 
     # Verify that EAP-SIM Reauthentication can be used after a profile change
     # that does not affect EAP parameters.
@@ -831,7 +832,7 @@ def test_ap_wpa2_eap_sim_no_change_set(dev, apdev):
 def _test_ap_wpa2_eap_sim_no_change_set(dev, apdev):
     check_hlr_auc_gw_support()
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
-    hostapd.add_ap(apdev[0], params)
+    hapd = hostapd.add_ap(apdev[0], params)
     dev[0].request("SET external_sim 1")
     id = dev[0].connect("test-wpa2-eap", eap="SIM", key_mgmt="WPA-EAP",
                         identity="1232010000000000",
@@ -856,6 +857,7 @@ def _test_ap_wpa2_eap_sim_no_change_set(dev, apdev):
 
     dev[0].request("CTRL-RSP-SIM-" + rid + ":GSM-AUTH:" + resp)
     dev[0].wait_connected(timeout=15)
+    hapd.wait_sta()
 
     # Verify that EAP-SIM Reauthentication can be used after network profile
     # SET_NETWORK commands that do not actually change previously set
@@ -1844,7 +1846,7 @@ def test_ap_wpa2_eap_ttls_eap_sim(dev, apdev):
                 ca_cert="auth_serv/ca.pem", phase2="autheap=SIM")
     eap_reauth(dev[0], "TTLS")
 
-def run_ext_sim_auth(dev):
+def run_ext_sim_auth(hapd, dev):
     ev = dev.wait_event(["CTRL-REQ-SIM"], timeout=15)
     if ev is None:
         raise Exception("Wait for external SIM processing request timed out")
@@ -1864,6 +1866,7 @@ def run_ext_sim_auth(dev):
 
     dev.request("CTRL-RSP-SIM-" + rid + ":GSM-AUTH:" + resp)
     dev.wait_connected(timeout=15)
+    hapd.wait_sta()
 
     dev.dump_monitor()
     dev.request("REAUTHENTICATE")
@@ -1893,7 +1896,7 @@ def run_ap_wpa2_eap_ttls_eap_sim_ext(dev, apdev):
                    password="90dca4eda45b53cf0f12d7c9c3bc6a89:cb9cccc4b9258e6dca4760379fb82581",
                    ca_cert="auth_serv/ca.pem", phase2="autheap=SIM",
                    wait_connect=False, scan_freq="2412")
-    run_ext_sim_auth(dev[0])
+    run_ext_sim_auth(hapd, dev[0])
 
 def test_ap_wpa2_eap_peap_eap_sim(dev, apdev):
     """WPA2-Enterprise connection using EAP-PEAP/EAP-SIM"""
@@ -1923,7 +1926,7 @@ def run_ap_wpa2_eap_peap_eap_sim_ext(dev, apdev):
                    password="90dca4eda45b53cf0f12d7c9c3bc6a89:cb9cccc4b9258e6dca4760379fb82581",
                    ca_cert="auth_serv/ca.pem", phase2="auth=SIM",
                    wait_connect=False, scan_freq="2412")
-    run_ext_sim_auth(dev[0])
+    run_ext_sim_auth(hapd, dev[0])
 
 def test_ap_wpa2_eap_fast_eap_sim(dev, apdev):
     """WPA2-Enterprise connection using EAP-FAST/EAP-SIM"""
@@ -1958,7 +1961,7 @@ def run_ap_wpa2_eap_fast_eap_sim_ext(dev, apdev):
                    pac_file="blob://fast_pac_auth_sim",
                    ca_cert="auth_serv/ca.pem", phase2="auth=SIM",
                    wait_connect=False, scan_freq="2412")
-    run_ext_sim_auth(dev[0])
+    run_ext_sim_auth(hapd, dev[0])
 
 def test_ap_wpa2_eap_ttls_eap_aka(dev, apdev):
     """WPA2-Enterprise connection using EAP-TTLS/EAP-AKA"""
@@ -3289,6 +3292,7 @@ def test_ap_wpa_eap_peap_eap_mschapv2(dev, apdev):
                    ca_cert="auth_serv/ca.pem", wait_connect=False,
                    scan_freq="2412")
     eap_check_auth(dev[0], "PEAP", True, rsn=False)
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev[0], hapd)
     eap_reauth(dev[0], "PEAP", rsn=False)
     check_mib(dev[0], [("dot11RSNAAuthenticationSuiteRequested", "00-50-f2-1"),
@@ -6806,6 +6810,7 @@ def test_ap_wpa2_eap_gpsk_ptk_rekey_ap(dev, apdev):
     ev = dev[0].wait_event(["WPA: Key negotiation completed"])
     if ev is None:
         raise Exception("PTK rekey timed out")
+    time.sleep(0.1)
     hwsim_utils.test_connectivity(dev[0], hapd)
 
 def test_ap_wpa2_eap_wildcard_ssid(dev, apdev):

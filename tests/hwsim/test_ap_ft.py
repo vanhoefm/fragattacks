@@ -199,6 +199,7 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
         hapd1ap = hapd1
         hapd2ap = hapd0
     if test_connectivity:
+        hapd1ap.wait_sta()
         if conndev:
             hwsim_utils.test_connectivity_iface(dev, hapd1ap, conndev)
         else:
@@ -224,6 +225,7 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
         if dev.get_status_field('bssid') != ap2['bssid']:
             raise Exception("Did not connect to correct AP")
         if (i == 0 or i == roams - 1) and test_connectivity:
+            hapd2ap.wait_sta()
             if conndev:
                 hwsim_utils.test_connectivity_iface(dev, hapd2ap, conndev)
             else:
@@ -246,6 +248,7 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
         if dev.get_status_field('bssid') != ap1['bssid']:
             raise Exception("Did not connect to correct AP")
         if (i == 0 or i == roams - 1) and test_connectivity:
+            hapd1ap.wait_sta()
             if conndev:
                 hwsim_utils.test_connectivity_iface(dev, hapd1ap, conndev)
             else:

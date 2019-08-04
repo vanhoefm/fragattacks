@@ -64,6 +64,7 @@ def test_rfkill_wpa2_psk(dev, apdev):
     params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, psk=passphrase, scan_freq="2412")
+    hapd.wait_sta()
     try:
         logger.info("rfkill block")
         rfk.block()
@@ -74,6 +75,7 @@ def test_rfkill_wpa2_psk(dev, apdev):
         rfk.unblock()
         dev[0].wait_connected(timeout=10,
                               error="Missing connection event on rfkill unblock")
+        hapd.wait_sta()
         hwsim_utils.test_connectivity(dev[0], hapd)
     finally:
         rfk.unblock()

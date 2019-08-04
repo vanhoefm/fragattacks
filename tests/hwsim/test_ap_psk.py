@@ -322,6 +322,7 @@ def test_ap_wpa_ccmp(dev, apdev):
     params['wpa_pairwise'] = "CCMP"
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, psk=passphrase, scan_freq="2412")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev[0], hapd)
     check_mib(dev[0], [("dot11RSNAConfigGroupCipherSize", "128"),
                        ("dot11RSNAGroupCipherRequested", "00-50-f2-4"),
@@ -505,6 +506,8 @@ def test_ap_wpa2_bridge_fdb(dev, apdev):
                        bssid=apdev[0]['bssid'])
         dev[1].connect(ssid, psk=passphrase, scan_freq="2412",
                        bssid=apdev[0]['bssid'])
+        hapd.wait_sta()
+        hapd.wait_sta()
         addr0 = dev[0].p2p_interface_addr()
         hwsim_utils.test_connectivity_sta(dev[0], dev[1])
         err, macs1 = hapd.cmd_execute(['brctl', 'showmacs', 'ap-br0'])
@@ -575,6 +578,7 @@ def test_ap_wpa2_in_different_bridge(dev, apdev):
         if brname != 'ap-br0':
             raise Exception("Incorrect bridge: " + brname)
         dev[0].connect(ssid, psk=passphrase, scan_freq="2412")
+        hapd.wait_sta()
         hwsim_utils.test_connectivity_iface(dev[0], hapd, "ap-br0")
         if hapd.get_driver_status_field("added_bridge") != "1":
             raise Exception("Unexpected added_bridge value")
@@ -2644,6 +2648,7 @@ def test_ap_wpa2_psk_ifdown(dev, apdev):
     if ev is None:
         raise Exception("No INTERFACE-ENABLED event")
     dev[0].wait_connected()
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev[0], hapd)
 
 def test_ap_wpa2_psk_drop_first_msg_4(dev, apdev):
@@ -2729,6 +2734,7 @@ def test_ap_wpa2_psk_disable_enable(dev, apdev):
         dev[0].wait_disconnected()
         hapd.request("ENABLE")
         dev[0].wait_connected()
+        hapd.wait_sta()
         hwsim_utils.test_connectivity(dev[0], hapd)
 
 @remote_compatible
