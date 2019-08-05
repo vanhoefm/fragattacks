@@ -68,6 +68,7 @@ def test_suite_b(dev, apdev):
                    client_cert="auth_serv/ec-user.pem",
                    private_key="auth_serv/ec-user.key",
                    pairwise="GCMP", group="GCMP", scan_freq="2412")
+    hapd.wait_sta()
     tls_cipher = dev[0].get_status_field("EAP TLS cipher")
     if tls_cipher != "ECDHE-ECDSA-AES128-GCM-SHA256" and \
        tls_cipher != "ECDHE-ECDSA-AES-128-GCM-AEAD":
@@ -94,6 +95,7 @@ def test_suite_b(dev, apdev):
     if conf['key_mgmt'] != 'WPA-EAP-SUITE-B':
         raise Exception("Unexpected config key_mgmt: " + conf['key_mgmt'])
 
+    hapd.wait_sta()
     dev[0].request("DISCONNECT")
     dev[0].wait_disconnected(timeout=20)
     dev[0].dump_monitor()
@@ -201,6 +203,7 @@ def test_suite_b_192(dev, apdev):
     if "[WPA2-EAP-SUITE-B-192-GCMP-256]" not in bss['flags']:
         raise Exception("Unexpected BSS flags: " + bss['flags'])
 
+    hapd.wait_sta()
     dev[0].request("DISCONNECT")
     dev[0].wait_disconnected(timeout=20)
     dev[0].dump_monitor()
@@ -216,6 +219,7 @@ def test_suite_b_192(dev, apdev):
     if conf['key_mgmt'] != 'WPA-EAP-SUITE-B-192':
         raise Exception("Unexpected config key_mgmt: " + conf['key_mgmt'])
 
+    hapd.wait_sta()
     dev[0].request("DISCONNECT")
     dev[0].wait_disconnected(timeout=20)
     dev[0].dump_monitor()
@@ -437,6 +441,7 @@ def run_suite_b_192_rsa(dev, apdev, no_ecdh=False, no_dhe=False):
     if "[WPA2-EAP-SUITE-B-192-GCMP-256]" not in bss['flags']:
         raise Exception("Unexpected BSS flags: " + bss['flags'])
 
+    hapd.wait_sta()
     dev[0].request("DISCONNECT")
     dev[0].wait_disconnected(timeout=20)
     dev[0].dump_monitor()
