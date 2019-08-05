@@ -70,6 +70,7 @@ int sae_set_group(struct sae_data *sae, int group)
 		}
 		tmp->prime = tmp->prime_buf;
 
+		tmp->order_len = tmp->dh->order_len;
 		tmp->order_buf = crypto_bignum_init_set(tmp->dh->order,
 							tmp->dh->order_len);
 		if (tmp->order_buf == NULL) {
