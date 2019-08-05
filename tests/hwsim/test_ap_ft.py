@@ -2382,6 +2382,7 @@ def check_ptk_rekey(dev, hapd0=None, hapd1=None):
         hapd = hapd0
     else:
         hapd = hapd1
+    time.sleep(0.1)
     hwsim_utils.test_connectivity(dev, hapd)
 
 def test_ap_ft_ptk_rekey(dev, apdev):
