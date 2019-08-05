@@ -1883,6 +1883,18 @@ wpas_dpp_gas_req_handler(void *ctx, const u8 *sa, const u8 *query,
 		wpa_printf(MSG_DEBUG, "DPP: No matching exchange in progress");
 		return NULL;
 	}
+
+	if (wpa_s->dpp_auth_ok_on_ack && auth->configurator) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Have not received ACK for Auth Confirm yet - assume it was received based on this GAS request");
+		/* wpas_dpp_auth_success() would normally have been called from
+		 * TX status handler, but since there was no such handler call
+		 * yet, simply send out the event message and proceed with
+		 * exchange. */
+		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_AUTH_SUCCESS "init=1");
+		wpa_s->dpp_auth_ok_on_ack = 0;
+	}
+
 	wpa_hexdump(MSG_DEBUG,
 		    "DPP: Received Configuration Request (GAS Query Request)",
 		    query, query_len);
