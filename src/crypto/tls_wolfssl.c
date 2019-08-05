@@ -141,7 +141,7 @@ static int wolfssl_receive_cb(WOLFSSL *ssl, char *buf, int sz, void *ctx)
 	if (get > (wpabuf_len(data->in_data) - data->consumed))
 		get = wpabuf_len(data->in_data) - data->consumed;
 
-	os_memcpy(buf, wpabuf_head(data->in_data) + data->consumed, get);
+	os_memcpy(buf, wpabuf_head_u8(data->in_data) + data->consumed, get);
 	data->consumed += get;
 
 	if (get == 0)
