@@ -4514,3 +4514,65 @@ def run_dpp_tcp(dev, apdev, cap_lo, port=None):
                       allow_configurator_failure=True)
     time.sleep(0.5)
     cmd.terminate()
+
+def test_dpp_tcp_controller_start_failure(dev, apdev, params):
+    """DPP Controller startup failure"""
+    check_dpp_capab(dev[0])
+
+    try:
+        if "OK" not in dev[0].request("DPP_CONTROLLER_START"):
+            raise Exception("Could not start Controller")
+        if "OK" in dev[0].request("DPP_CONTROLLER_START"):
+            raise Exception("Second Controller start not rejected")
+    finally:
+        dev[0].request("DPP_CONTROLLER_STOP")
+
+    tests = ["dpp_controller_start",
+             "eloop_sock_table_add_sock;?eloop_register_sock;dpp_controller_start"]
+    for func in tests:
+        with alloc_fail(dev[0], 1, func):
+            if "FAIL" not in dev[0].request("DPP_CONTROLLER_START"):
+                raise Exception("Failure not reported during OOM")
+
+def test_dpp_tcp_init_failure(dev, apdev, params):
+    """DPP TCP init failure"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    id_c = dev[1].dpp_bootstrap_gen()
+    uri_c = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id_c)
+    peer = dev[0].dpp_qr_code(uri_c)
+    tests = ["dpp_tcp_init",
+             "eloop_sock_table_add_sock;?eloop_register_sock;dpp_tcp_init",
+             "dpp_tcp_encaps"]
+    cmd = "DPP_AUTH_INIT peer=%d tcp_addr=127.0.0.1" % peer
+    for func in tests:
+        with alloc_fail(dev[0], 1, func):
+            if "FAIL" not in dev[0].request(cmd):
+                raise Exception("DPP_AUTH_INIT accepted during OOM")
+
+def test_dpp_controller_rx_failure(dev, apdev, params):
+    """DPP Controller RX failure"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    try:
+        run_dpp_controller_rx_failure(dev, apdev)
+    finally:
+        dev[0].request("DPP_CONTROLLER_STOP")
+
+def run_dpp_controller_rx_failure(dev, apdev):
+    if "OK" not in dev[0].request("DPP_CONTROLLER_START"):
+        raise Exception("Could not start Controller")
+    id_c = dev[0].dpp_bootstrap_gen()
+    uri_c = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id_c)
+    peer = dev[1].dpp_qr_code(uri_c)
+    tests = ["dpp_controller_tcp_cb",
+             "eloop_sock_table_add_sock;?eloop_register_sock;dpp_controller_tcp_cb",
+             "dpp_controller_rx",
+             "dpp_controller_rx_auth_req",
+             "wpabuf_alloc;=dpp_controller_rx_auth_req"]
+    cmd = "DPP_AUTH_INIT peer=%d tcp_addr=127.0.0.1" % peer
+    for func in tests:
+        with alloc_fail(dev[0], 1, func):
+            if "OK" not in dev[1].request(cmd):
+                raise Exception("Failed to initiate TCP connection")
+            wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
