@@ -3359,6 +3359,250 @@ enum qca_wlan_vendor_attr_logger_results {
 	QCA_WLAN_VENDOR_ATTR_LOGGER_RESULTS_AFTER_LAST - 1,
 };
 
+/**
+ * enum qca_scan_freq_list_type: Frequency list types
+ *
+ * @QCA_PREFERRED_SCAN_FREQ_LIST: The driver shall use the scan frequency list
+ *	specified with attribute QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST as
+ *	a preferred frequency list for roaming.
+ *
+ * @QCA_SPECIFIC_SCAN_FREQ_LIST: The driver shall use the frequency list
+ *	specified with attribute QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST as
+ *	a specific frequency list for roaming.
+ */
+enum qca_scan_freq_list_type {
+	QCA_PREFERRED_SCAN_FREQ_LIST = 1,
+	QCA_SPECIFIC_SCAN_FREQ_LIST = 2,
+};
+
+/**
+ * enum qca_vendor_attr_scan_freq_list_scheme: Frequency list scheme
+ *
+ * @QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST: An array of unsigned 32-bit values.
+ *	List of frequencies in MHz to be considered for a roam scan.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST_TYPE: Unsigned 32-bit value.
+ *	Type of frequency list scheme being configured/gotten as defined by the
+ *	enum qca_scan_freq_list_type.
+ */
+enum qca_vendor_attr_scan_freq_list_scheme {
+	QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST = 1,
+	QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST_TYPE = 2,
+
+	/* keep last */
+	QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST_SCHEME_AFTER_LAST,
+	QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST_SCHEME_MAX =
+	QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST_SCHEME_AFTER_LAST - 1,
+};
+
+/*
+ * enum qca_vendor_roam_triggers: Bitmap of roaming triggers
+ *
+ * @QCA_ROAM_TRIGGER_REASON_PER: Set if the roam has to be triggered based on
+ *	a bad packet error rates (PER).
+ * @QCA_ROAM_TRIGGER_REASON_BEACON_MISS: Set if the roam has to be triggered
+ *	based on beacon misses from the connected AP.
+ * @QCA_ROAM_TRIGGER_REASON_POOR_RSSI: Set if the roam has to be triggered
+ *	due to poor RSSI of the connected AP.
+ * @QCA_ROAM_TRIGGER_REASON_BETTER_RSSI: Set if the roam has to be triggered
+ *	upon finding a BSSID with a better RSSI than the connected BSSID.
+ *	Here the RSSI of the current BSSID need not be poor.
+ * @QCA_ROAM_TRIGGER_REASON_PERIODIC: Set if the roam has to be triggered
+ *	by triggering a periodic scan to find a better AP to roam.
+ * @QCA_ROAM_TRIGGER_REASON_DENSE: Set if the roam has to be triggered
+ *	when the connected channel environment is too noisy/congested.
+ * @QCA_ROAM_TRIGGER_REASON_BTM: Set if the roam has to be triggered
+ *	when BTM Request frame is received from the connected AP.
+ * @QCA_ROAM_TRIGGER_REASON_BSS_LOAD: Set if the roam has to be triggered
+ *	when the channel utilization is goes above the configured threshold.
+ *
+ * Set the corresponding roam trigger reason bit to consider it for roam
+ * trigger.
+ * Userspace can set multiple bits and send to the driver. The driver shall
+ * consider all of them to trigger/initiate a roam scan.
+ */
+enum qca_vendor_roam_triggers {
+	QCA_ROAM_TRIGGER_REASON_PER		= 1 << 0,
+	QCA_ROAM_TRIGGER_REASON_BEACON_MISS	= 1 << 1,
+	QCA_ROAM_TRIGGER_REASON_POOR_RSSI	= 1 << 2,
+	QCA_ROAM_TRIGGER_REASON_BETTER_RSSI	= 1 << 3,
+	QCA_ROAM_TRIGGER_REASON_PERIODIC	= 1 << 4,
+	QCA_ROAM_TRIGGER_REASON_DENSE		= 1 << 5,
+	QCA_ROAM_TRIGGER_REASON_BTM		= 1 << 6,
+	QCA_ROAM_TRIGGER_REASON_BSS_LOAD	= 1 << 7,
+};
+
+/**
+ * enum qca_vendor_attr_roam_candidate_selection_criteria:
+ *
+ * Each attribute carries a weightage in percentage (%).
+ *
+ * @QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_RSSI: Unsigned 8-bit value.
+ *	Represents the weightage to be given for the RSSI selection
+ *	criteria among other parameters.
+ *
+ * @QCA_ATTR_ROAM_CAND_SEL_CRITERIA_RATE: Unsigned 8-bit value.
+ *	Represents the weightage to be given for the rate selection
+ *	criteria among other parameters.
+ *
+ * @QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_BW: Unsigned 8-bit value.
+ *	Represents the weightage to be given for the band width selection
+ *	criteria among other parameters.
+ *
+ * @QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_BAND: Unsigned 8-bit value.
+ *	Represents the weightage to be given for the band selection
+ *	criteria among other parameters.
+ *
+ * @QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_NSS: Unsigned 8-bit value.
+ *	Represents the weightage to be given for the NSS selection
+ *	criteria among other parameters.
+ *
+ * @QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_CHAN_CONGESTION: Unsigned 8-bit value.
+ *	Represents the weightage to be given for the channel congestion
+ *	selection criteria among other parameters.
+ *
+ * @QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_BEAMFORMING: Unsigned 8-bit value.
+ *	Represents the weightage to be given for the beamforming selection
+ *	criteria among other parameters.
+ *
+ * @QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_OCE_WAN: Unsigned 8-bit value.
+ *	Represents the weightage to be given for the OCE selection
+ *	criteria among other parameters.
+ */
+enum qca_vendor_attr_roam_candidate_selection_criteria {
+	QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_RSSI = 1,
+	QCA_ATTR_ROAM_CAND_SEL_CRITERIA_RATE = 2,
+	QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_BW = 3,
+	QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_BAND = 4,
+	QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_NSS = 5,
+	QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_CHAN_CONGESTION = 6,
+	QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_BEAMFORMING = 7,
+	QCA_ATTR_ROAM_CAND_SEL_CRITERIA_SCORE_OCE_WAN = 8,
+
+	/* keep last */
+	QCA_ATTR_ROAM_CAND_SEL_CRITERIA_RATE_AFTER_LAST,
+	QCA_ATTR_ROAM_CAND_SEL_CRITERIA_RATE_MAX =
+	QCA_ATTR_ROAM_CAND_SEL_CRITERIA_RATE_AFTER_LAST - 1,
+};
+
+/**
+ * enum qca_vendor_attr_roam_control - Attributes to carry roam configuration
+ * 	The following attributes are used to set/get/clear the respective
+ *	configurations to/from the driver.
+ *	For the get, the attribute for the configuration to be queried shall
+ *	carry any of its acceptable values to the driver. In return, the driver
+ *	shall send the configured values within the same attribute to the user
+ *	space.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_ENABLE: Unsigned 8-bit value.
+ *	Signifies to enable/disable roam control in driver.
+ *	1-enable, 0-disable
+ *	Enable: Mandates the driver to do the further roams using the
+ *	configuration parameters set through
+ *	QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_SET.
+ *	Disable: Disables the driver/firmware roaming triggered through
+ *	QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_SET. Further roaming is
+ *	expected to continue with the default configurations.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_STATUS: Unsigned 8-bit value.
+ *	This is used along with QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_GET.
+ *	Roam control status is obtained through this attribute.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_CLEAR_ALL: Flag attribute to indicate the
+ *	complete config set through QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_SET
+ *	is to be cleared in the driver.
+ *	This is used along with QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_CLEAR
+ *	and shall be ignored if used with other sub commands.
+ *	If this attribute is specified along with subcmd
+ *	QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_CLEAR, the driver shall ignore
+ *	all other attributes, if there are any.
+ *	If this attribute is not specified when the subcmd
+ *	QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_CLEAR is sent, the driver shall
+ *	clear the data corresponding to the attributes specified.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_FREQ_LIST_SCHEME: Nested attribute to carry the
+ *	list of frequencies and its type, represented by
+ *	enum qca_vendor_attr_scan_freq_list_scheme.
+ *	Frequency list and its type are mandatory for this attribute to set
+ *	the frequencies.
+ *	Frequency type is mandatory for this attribute to get the frequencies
+ *	and the frequency list is obtained through
+ *	QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST.
+ *	Frequency list type is mandatory for this attribute to clear the
+ *	frequencies.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_SCAN_PERIOD: Unsigned 32-bit value.
+ *	Carries the value of scan period in seconds to set.
+ *	The value of scan period is obtained with the same attribute for get.
+ *	Clears the scan period in the driver when specified with clear command.
+ *	Scan period is the idle time in seconds between each subsequent
+ *	channel scans.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_FULL_SCAN_PERIOD: Unsigned 32-bit value.
+ *	Carries the value of full scan period in seconds to set.
+ *	The value of full scan period is obtained with the same attribute for
+ *	get.
+ *	Clears the full scan period in the driver when specified with clear
+ *	command. Full scan period is the idle period in seconds between two
+ *	successive full channel roam scans.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_TRIGGERS: Unsigned 32-bit value.
+ *	Carries a bitmap of the roam triggers specified in
+ *	enum qca_vendor_roam_triggers.
+ *	The driver shall enable roaming by enabling corresponding roam triggers
+ *	based on the trigger bits sent with this attribute.
+ *	If this attribute is not configured, the driver shall proceed with
+ *	default behavior.
+ *	The bitmap configured is obtained with the same attribute for get.
+ *	Clears the bitmap configured in driver when specified with clear
+ *	command.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_SELECTION_CRITERIA: Nested attribute signifying the
+ *	weightage in percentage (%) to be given for each selection criteria.
+ *	Different roam candidate selection criteria are represented by
+ *	enum qca_vendor_attr_roam_candidate_selection_criteria.
+ *	The driver shall select the roam candidate based on corresponding
+ *	candidate selection scores sent.
+ *
+ *	An empty nested attribute is used to indicate that no specific
+ *	preference score/criteria is configured (i.e., to disable this mechanism
+ *	in the set case and to show that the mechanism is disabled in the get
+ *	case).
+ *
+ *	Userspace can send multiple attributes out of this enum to the driver.
+ *	Since this attribute represents the weight/percentage of preference for
+ *	the respective selection criteria, it is preferred to configure 100%
+ *	total weightage. The value in each attribute or cumulative weight of the
+ *	values in all the nested attributes should not exceed 100%. The driver
+ *	shall reject such configuration.
+ *
+ *	If the weights configured through this attribute are less than 100%,
+ *	the driver shall honor the weights (x%) passed for the corresponding
+ *	selection criteria and choose/distribute rest of the weight (100-x)%
+ *	for the other selection criteria, based on its internal logic.
+ *
+ *	The selection criteria configured is obtained with the same
+ *	attribute for get.
+ *
+ *	Clears the selection criteria configured in the driver when specified
+ *	with clear command.
+ */
+enum qca_vendor_attr_roam_control {
+	QCA_ATTR_ROAM_CONTROL_ENABLE = 1,
+	QCA_ATTR_ROAM_CONTROL_STATUS = 2,
+	QCA_ATTR_ROAM_CONTROL_CLEAR_ALL = 3,
+	QCA_ATTR_ROAM_CONTROL_FREQ_LIST_SCHEME= 4,
+	QCA_ATTR_ROAM_CONTROL_SCAN_PERIOD = 5,
+	QCA_ATTR_ROAM_CONTROL_FULL_SCAN_PERIOD = 6,
+	QCA_ATTR_ROAM_CONTROL_TRIGGERS = 7,
+	QCA_ATTR_ROAM_CONTROL_SELECTION_CRITERIA = 8,
+
+	/* keep last */
+	QCA_ATTR_ROAM_CONTROL_AFTER_LAST,
+	QCA_ATTR_ROAM_CONTROL_MAX =
+	QCA_ATTR_ROAM_CONTROL_AFTER_LAST - 1,
+};
+
 /*
  * enum qca_wlan_vendor_attr_roaming_config_params: Attributes for data used by
  * QCA_NL80211_VENDOR_SUBCMD_ROAM sub command.
@@ -3449,6 +3693,10 @@ enum qca_wlan_vendor_attr_logger_results {
  * @QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS_HINT: Flag attribute,
  *	indicates this BSSID blacklist as a hint to the driver. The driver can
  *	select this BSSID in the worst case (when no other BSSIDs are better).
+ *
+ * @QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_CONTROL: Nested attribute to
+ *	set/get/clear the roam control config as
+ *	defined @enum qca_vendor_attr_roam_control.
  */
 enum qca_wlan_vendor_attr_roaming_config_params {
 	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_INVALID = 0,
@@ -3486,6 +3734,8 @@ enum qca_wlan_vendor_attr_roaming_config_params {
 	/* Flag attribute indicates this BSSID blacklist as a hint */
 	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS_HINT = 21,
 
+	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_CONTROL = 22,
+
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_MAX =
@@ -3520,6 +3770,24 @@ enum qca_wlan_vendor_attr_roaming_config_params {
  * @QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BLACKLIST_BSSID: Sets the Blacklist
  *	BSSIDs. Refers QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS to
  *	set the same.
+ *
+ * @QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_SET: Command to set the
+ *	roam control config to the driver with the attribute
+ *	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_CONTROL.
+ *
+ * @QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_GET: Command to obtain the
+ *	roam control config from driver with the attribute
+ *	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_CONTROL.
+ *	For the get, the attribute for the configuration to be queried shall
+ *	carry any of its acceptable value to the driver. In return, the driver
+ *	shall send the configured values within the same attribute to the user
+ *	space.
+ *
+ * @QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_CLEAR: Command to clear the
+ *	roam control config in the driver with the attribute
+ *	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_CONTROL.
+ *	The driver shall continue with its default roaming behavior when data
+ *	corresponding to an attribute is cleared.
  */
 enum qca_wlan_vendor_roaming_subcmd {
 	QCA_WLAN_VENDOR_ROAMING_SUBCMD_INVALID = 0,
@@ -3529,6 +3797,9 @@ enum qca_wlan_vendor_roaming_subcmd {
 	QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BSSID_PREFS = 4,
 	QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BSSID_PARAMS = 5,
 	QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BLACKLIST_BSSID = 6,
+	QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_SET = 7,
+	QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_GET = 8,
+	QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_CLEAR = 9,
 };
 
 enum qca_wlan_vendor_attr_gscan_config_params {
