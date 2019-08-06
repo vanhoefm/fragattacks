@@ -6277,6 +6277,7 @@ def test_eap_gpsk_errors(dev, apdev):
               "cipher=2"),
              (1, "eap_gpsk_derive_keys_helper", None),
              (2, "eap_gpsk_derive_keys_helper", None),
+             (3, "eap_gpsk_derive_keys_helper", None),
              (1, "eap_gpsk_compute_mic_aes;eap_gpsk_compute_mic;eap_gpsk_send_gpsk_2",
               "cipher=1"),
              (1, "hmac_sha256;eap_gpsk_compute_mic;eap_gpsk_send_gpsk_2",
