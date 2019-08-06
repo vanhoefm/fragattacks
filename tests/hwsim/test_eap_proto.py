@@ -2884,6 +2884,8 @@ def test_eap_proto_eke_errors(dev, apdev):
              (1, "eap_eke_auth;eap_eke_process_confirm", None),
              (2, "eap_eke_auth;eap_eke_process_confirm", None),
              (1, "eap_eke_prot;eap_eke_process_confirm", None),
+             (1, "aes_128_cbc_encrypt;eap_eke_prot;eap_eke_process_confirm", None),
+             (1, "hmac_sha256;eap_eke_prot;eap_eke_process_confirm", None),
              (1, "eap_eke_derive_msk;eap_eke_process_confirm", None)]
     for count, func, phase1 in tests:
         with fail_test(dev[0], count, func):
