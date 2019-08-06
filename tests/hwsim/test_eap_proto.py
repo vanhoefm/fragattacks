@@ -824,7 +824,12 @@ def test_eap_proto_sake_errors(dev, apdev):
             dev[0].dump_monitor()
 
     tests = [(1, "os_get_random;eap_sake_process_challenge"),
-             (1, "eap_sake_derive_keys;eap_sake_process_challenge")]
+             (1, "eap_sake_derive_keys;eap_sake_process_challenge"),
+             (2, "eap_sake_derive_keys;eap_sake_process_challenge"),
+             (3, "eap_sake_derive_keys;eap_sake_process_challenge"),
+             (4, "eap_sake_derive_keys;eap_sake_process_challenge"),
+             (5, "eap_sake_derive_keys;eap_sake_process_challenge"),
+             (6, "eap_sake_derive_keys;eap_sake_process_challenge")]
     for count, func in tests:
         with fail_test(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
