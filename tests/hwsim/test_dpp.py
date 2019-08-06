@@ -11,6 +11,7 @@ import hashlib
 import logging
 logger = logging.getLogger()
 import os
+import socket
 import struct
 import subprocess
 import time
@@ -4576,3 +4577,54 @@ def run_dpp_controller_rx_failure(dev, apdev):
             if "OK" not in dev[1].request(cmd):
                 raise Exception("Failed to initiate TCP connection")
             wait_fail_trigger(dev[0], "GET_ALLOC_FAIL")
+
+def test_dpp_controller_rx_errors(dev, apdev, params):
+    """DPP Controller RX error cases"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    try:
+        run_dpp_controller_rx_errors(dev, apdev)
+    finally:
+        dev[0].request("DPP_CONTROLLER_STOP")
+
+def run_dpp_controller_rx_errors(dev, apdev):
+    if "OK" not in dev[0].request("DPP_CONTROLLER_START"):
+        raise Exception("Could not start Controller")
+
+    addr = ("127.0.0.1", 7871)
+
+    tests = [b"abc",
+             b"abcd",
+             b"\x00\x00\x00\x00",
+             b"\x00\x00\x00\x01",
+             b"\x00\x00\x00\x01\x09",
+             b"\x00\x00\x00\x07\x09\x50\x6f\x9a\x1a\xff\xff",
+             b"\x00\x00\x00\x07\x09\x50\x6f\x9a\x1a\x01\xff",
+             b"\x00\x00\x00\x07\x09\x50\x6f\x9a\x1a\x01\x00",
+             b"\x00\x00\x00\x08\x09\x50\x6f\x9a\x1a\x01\x00\xff",
+             b"\x00\x00\x00\x01\x0a",
+             b"\x00\x00\x00\x04\x0a\xff\xff\xff",
+             b"\x00\x00\x00\x01\x0b",
+             b"\x00\x00\x00\x08\x0b\xff\xff\xff\xff\xff\xff\xff",
+             b"\x00\x00\x00\x08\x0b\xff\x00\x00\xff\xff\xff\xff",
+             b"\x00\x00\x00\x08\x0b\xff\x00\x00\xff\xff\x6c\x00",
+             b"\x00\x00\x00\x0a\x0b\xff\x00\x00\xff\xff\x6c\x02\xff\xff",
+             b"\x00\x00\x00\x10\x0b\xff\x00\x00\xff\xff\x6c\x08\xff\xdd\x05\x50\x6f\x9a\x1a\x01",
+             b"\x00\x00\x00\x12\x0b\xff\x00\x00\xff\xff\x6c\x08\xff\xdd\x05\x50\x6f\x9a\x1a\x01\x00\x00",
+             b"\x00\x00\x00\x01\xff",
+             b"\x00\x00\x00\x01\xff\xee"]
+    #define WLAN_PA_GAS_INITIAL_REQ 10
+    #define WLAN_PA_GAS_INITIAL_RESP 11
+
+    for t in tests:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM,
+                             socket.IPPROTO_TCP)
+        sock.settimeout(0.1)
+        sock.connect(addr)
+        sock.send(t)
+        sock.shutdown(1)
+        try:
+            sock.recv(10)
+        except socket.timeout:
+            pass
+        sock.close()
