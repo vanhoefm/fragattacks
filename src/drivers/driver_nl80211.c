@@ -9454,7 +9454,7 @@ static int nl80211_set_bssid_blacklist(void *priv, unsigned int num_bssid,
 			QCA_NL80211_VENDOR_SUBCMD_ROAM) ||
 	    !(params = nla_nest_start(msg, NL80211_ATTR_VENDOR_DATA)) ||
 	    nla_put_u32(msg, QCA_WLAN_VENDOR_ATTR_ROAMING_SUBCMD,
-			QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SET_BLACKLIST_BSSID) ||
+			QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BLACKLIST_BSSID) ||
 	    nla_put_u32(msg, QCA_WLAN_VENDOR_ATTR_ROAMING_REQ_ID,
 			WPA_SUPPLICANT_CLIENT_ID) ||
 	    nla_put_u32(msg,

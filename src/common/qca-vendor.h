@@ -3365,7 +3365,7 @@ enum qca_wlan_vendor_attr_logger_results {
  *
  * @QCA_WLAN_VENDOR_ATTR_ROAMING_SUBCMD: Unsigned 32-bit value.
  *	Represents the different roam sub commands referred by
- *	enum qca_wlan_vendor_attr_roam_subcmd.
+ *	enum qca_wlan_vendor_roaming_subcmd.
  *
  * @QCA_WLAN_VENDOR_ATTR_ROAMING_REQ_ID: Unsigned 32-bit value.
  *	Represents the Request ID for the specific set of commands.
@@ -3388,7 +3388,7 @@ enum qca_wlan_vendor_attr_logger_results {
  * The following PARAM_A_BAND_XX attributes are applied to 5GHz BSSIDs when
  * comparing with a 2.4GHz BSSID. They are not applied when comparing two
  * 5GHz BSSIDs.The following attributes are set through the Roaming SUBCMD -
- * QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SET_GSCAN_ROAM_PARAMS.
+ * QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_GSCAN_ROAM_PARAMS.
  *
  * @QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_A_BAND_BOOST_THRESHOLD: Signed 32-bit
  *	value, RSSI threshold above which 5GHz RSSI is favored.
@@ -3493,47 +3493,42 @@ enum qca_wlan_vendor_attr_roaming_config_params {
 };
 
 /*
- * enum qca_wlan_vendor_attr_roam_subcmd: Referred by
+ * enum qca_wlan_vendor_roaming_subcmd: Referred by
  * QCA_WLAN_VENDOR_ATTR_ROAMING_SUBCMD.
  *
- * @QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SSID_WHITE_LIST: Sub command to
+ * @QCA_WLAN_VENDOR_ROAMING_SUBCMD_SSID_WHITE_LIST: Sub command to
  *	configure the white list SSIDs. These are configured through
  *	the following attributes.
  *	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_WHITE_LIST_SSID_NUM_NETWORKS,
  *	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_WHITE_LIST_SSID_LIST,
  *	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_WHITE_LIST_SSID
  *
- * @QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SET_GSCAN_ROAM_PARAMS: Sub command to
+ * @QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_GSCAN_ROAM_PARAMS: Sub command to
  *	configure the Roam params. These parameters are evaluated on the GScan
  *	results. Refers the attributes PARAM_A_BAND_XX above to configure the
  *	params.
  *
- * @QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SET_LAZY_ROAM: Sets the Lazy roam. Uses
+ * @QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_LAZY_ROAM: Sets the Lazy roam. Uses
  *	the attribute QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_LAZY_ROAM_ENABLE
  *	to enable/disable Lazy roam.
  *
- * @QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SET_BSSID_PREFS: Sets the BSSID
+ * @QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BSSID_PREFS: Sets the BSSID
  *	preference. Contains the attribute
  *	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PREFS to set the BSSID
  *	preference.
  *
- * @QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SET_BLACKLIST_BSSID: Sets the Blacklist
+ * @QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BLACKLIST_BSSID: Sets the Blacklist
  *	BSSIDs. Refers QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS to
  *	set the same.
  */
-enum qca_wlan_vendor_attr_roam_subcmd {
-	QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_INVALID = 0,
-	QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SSID_WHITE_LIST = 1,
-	QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SET_GSCAN_ROAM_PARAMS = 2,
-	QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SET_LAZY_ROAM = 3,
-	QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SET_BSSID_PREFS = 4,
-	QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SET_BSSID_PARAMS = 5,
-	QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SET_BLACKLIST_BSSID = 6,
-
-	/* keep last */
-	QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_AFTER_LAST,
-	QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_MAX =
-	QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_AFTER_LAST - 1,
+enum qca_wlan_vendor_roaming_subcmd {
+	QCA_WLAN_VENDOR_ROAMING_SUBCMD_INVALID = 0,
+	QCA_WLAN_VENDOR_ROAMING_SUBCMD_SSID_WHITE_LIST = 1,
+	QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_GSCAN_ROAM_PARAMS = 2,
+	QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_LAZY_ROAM = 3,
+	QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BSSID_PREFS = 4,
+	QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BSSID_PARAMS = 5,
+	QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BLACKLIST_BSSID = 6,
 };
 
 enum qca_wlan_vendor_attr_gscan_config_params {
@@ -3901,8 +3896,8 @@ enum qca_wlan_vendor_attr_gscan_results {
 
 	/* Unsigned 32-bit value; a GSCAN Capabilities attribute.
 	 * This is used to limit the maximum number of BSSIDs while sending
-	 * the vendor command QCA_NL80211_VENDOR_SUBCMD_ROAM with attributes
-	 * QCA_WLAN_VENDOR_ATTR_ROAM_SUBCMD_SET_BLACKLIST_BSSID and
+	 * the vendor command QCA_NL80211_VENDOR_SUBCMD_ROAM with subcmd
+	 * QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BLACKLIST_BSSID and attribute
 	 * QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS_NUM_BSSID.
 	 */
 	QCA_WLAN_VENDOR_ATTR_GSCAN_MAX_NUM_BLACKLISTED_BSSID = 46,
