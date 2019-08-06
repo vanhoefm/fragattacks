@@ -36,6 +36,7 @@ struct eap_teap_data {
 	int phase2_success;
 	int inner_method_done;
 	int result_success_done;
+	int on_tx_completion;
 
 	struct eap_method_type phase2_type;
 	struct eap_method_type *phase2_types;
@@ -1349,7 +1350,8 @@ done:
 		/* Successfully completed Phase 2 */
 		wpa_printf(MSG_DEBUG,
 			   "EAP-TEAP: Authentication completed successfully");
-		ret->methodState = data->provisioning ?
+		ret->methodState = METHOD_MAY_CONT;
+		data->on_tx_completion = data->provisioning ?
 			METHOD_MAY_CONT : METHOD_DONE;
 		ret->decision = DECISION_UNCOND_SUCC;
 	}
@@ -1402,9 +1404,18 @@ static int eap_teap_decrypt(struct eap_sm *sm, struct eap_teap_data *data,
 
 	if (wpabuf_len(in_data) == 0) {
 		/* Received TLS ACK - requesting more fragments */
-		return eap_peer_tls_encrypt(sm, &data->ssl, EAP_TYPE_TEAP,
-					    data->teap_version,
-					    identifier, NULL, out_data);
+		res = eap_peer_tls_encrypt(sm, &data->ssl, EAP_TYPE_TEAP,
+					   data->teap_version,
+					   identifier, NULL, out_data);
+		if (res == 0 && !data->ssl.tls_out &&
+		    data->on_tx_completion) {
+			wpa_printf(MSG_DEBUG,
+				   "EAP-TEAP: Mark authentication completed at full TX of fragments");
+			ret->methodState = data->on_tx_completion;
+			data->on_tx_completion = 0;
+			ret->decision = DECISION_UNCOND_SUCC;
+		}
+		return res;
 	}
 
 	res = eap_peer_tls_decrypt(sm, &data->ssl, in_data, &in_decrypted);
@@ -1904,6 +1915,7 @@ static void * eap_teap_init_for_reauth(struct eap_sm *sm, void *priv)
 	data->phase2_success = 0;
 	data->inner_method_done = 0;
 	data->result_success_done = 0;
+	data->done_on_tx_completion = 0;
 	data->resuming = 1;
 	data->provisioning = 0;
 	data->anon_provisioning = 0;
