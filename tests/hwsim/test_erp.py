@@ -310,6 +310,9 @@ def test_erp_radius_eap_methods(dev, apdev):
         erp_test(dev[0], hapd, eap="PEAP", identity="erp-peap@example.com",
                  password="password", ca_cert="auth_serv/ca.pem",
                  phase2="auth=MSCHAPV2")
+        erp_test(dev[0], hapd, eap="TEAP", identity="erp-teap@example.com",
+                 password="password", ca_cert="auth_serv/ca.pem",
+                 phase2="auth=MSCHAPV2", pac_file="blob://teap_pac")
     erp_test(dev[0], hapd, eap="PSK", identity="erp-psk@example.com",
              password_hex="0123456789abcdef0123456789abcdef")
     if "PWD" in eap_methods:

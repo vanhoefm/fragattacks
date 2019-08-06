@@ -6,6 +6,7 @@
 
 import hostapd
 
+from utils import alloc_fail, fail_test, wait_fail_trigger, HwsimSkip
 from test_ap_eap import check_eap_capa, int_eap_server_params, eap_connect, \
     eap_reauth
 
@@ -154,6 +155,20 @@ def test_eap_teap_basic_password_auth_pac(dev, apdev):
     if res['tls_session_reused'] != '1':
         raise Exception("EAP-TEAP could not use PAC session ticket")
 
+def test_eap_teap_basic_password_auth_pac_binary(dev, apdev):
+    """EAP-TEAP with Basic-Password-Auth and PAC (binary)"""
+    check_eap_capa(dev[0], "TEAP")
+    params = int_teap_server_params(eap_teap_auth="1")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user",
+                anonymous_identity="TEAP", password="password",
+                phase1="teap_provisioning=2 teap_max_pac_list_len=2 teap_pac_format=binary",
+                ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                pac_file="blob://teap_pac_bin")
+    res = eap_reauth(dev[0], "TEAP")
+    if res['tls_session_reused'] != '1':
+        raise Exception("EAP-TEAP could not use PAC session ticket")
+
 def test_eap_teap_basic_password_auth_pac_no_inner_eap(dev, apdev):
     """EAP-TEAP with Basic-Password-Auth and PAC without inner auth"""
     check_eap_capa(dev[0], "TEAP")
@@ -182,3 +197,153 @@ def test_eap_teap_eap_eke_unauth_server_prov(dev, apdev):
     res = eap_reauth(dev[0], "TEAP")
     if res['tls_session_reused'] != '1':
         raise Exception("EAP-TEAP could not use PAC session ticket")
+
+def test_eap_teap_fragmentation(dev, apdev):
+    """EAP-TEAP with fragmentation"""
+    check_eap_capa(dev[0], "TEAP")
+    check_eap_capa(dev[0], "MSCHAPV2")
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user",
+                anonymous_identity="TEAP", password="password",
+                ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                pac_file="blob://teap_pac", fragment_size="100")
+
+def test_eap_teap_tls_cs_sha1(dev, apdev):
+    """EAP-TEAP with TLS cipher suite that uses SHA-1"""
+    run_eap_teap_tls_cs(dev, apdev, "AES128-SHA")
+
+def test_eap_teap_tls_cs_sha256(dev, apdev):
+    """EAP-TEAP with TLS cipher suite that uses SHA-256"""
+    run_eap_teap_tls_cs(dev, apdev, "AES128-SHA256")
+
+def test_eap_teap_tls_cs_sha384(dev, apdev):
+    """EAP-TEAP with TLS cipher suite that uses SHA-384"""
+    run_eap_teap_tls_cs(dev, apdev, "AES256-GCM-SHA384")
+
+def run_eap_teap_tls_cs(dev, apdev, cipher):
+    check_eap_capa(dev[0], "TEAP")
+    tls = dev[0].request("GET tls_library")
+    if not tls.startswith("OpenSSL"):
+        raise HwsimSkip("TLS library not supported for TLS CS configuration: " + tls)
+    params = int_teap_server_params(eap_teap_auth="1")
+    params['openssl_ciphers'] = cipher
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user",
+                anonymous_identity="TEAP", password="password",
+                ca_cert="auth_serv/ca.pem",
+                pac_file="blob://teap_pac")
+
+def wait_eap_proposed(dev, wait_trigger=None):
+    ev = dev.wait_event(["CTRL-EVENT-EAP-PROPOSED-METHOD"], timeout=10)
+    if ev is None:
+        raise Exception("Timeout on EAP start")
+    if wait_trigger:
+        wait_fail_trigger(dev, wait_trigger)
+    dev.request("REMOVE_NETWORK all")
+    dev.wait_disconnected()
+    dev.dump_monitor()
+
+def test_eap_teap_errors(dev, apdev):
+    """EAP-TEAP local errors"""
+    check_eap_capa(dev[0], "TEAP")
+    check_eap_capa(dev[0], "MSCHAPV2")
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                   scan_freq="2412",
+                   eap="TEAP", identity="user", password="password",
+                   anonymous_identity="TEAP",
+                   ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                   wait_connect=False)
+    wait_eap_proposed(dev[0])
+
+    dev[0].set("blob", "teap_broken_pac 11")
+    dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                   scan_freq="2412",
+                   eap="TEAP", identity="user", password="password",
+                   anonymous_identity="TEAP",
+                   ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                   pac_file="blob://teap_broken_pac", wait_connect=False)
+    wait_eap_proposed(dev[0])
+    dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                   scan_freq="2412",
+                   eap="TEAP", identity="user", password="password",
+                   anonymous_identity="TEAP",
+                   ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                   phase1="teap_pac_format=binary",
+                   pac_file="blob://teap_broken_pac", wait_connect=False)
+    wait_eap_proposed(dev[0])
+
+    tests = [(1, "eap_teap_tlv_eap_payload"),
+             (1, "eap_teap_process_eap_payload_tlv"),
+             (1, "eap_teap_compound_mac"),
+             (1, "eap_teap_tlv_result"),
+             (1, "eap_peer_select_phase2_methods"),
+             (1, "eap_peer_tls_ssl_init"),
+             (1, "eap_teap_session_id"),
+             (1, "wpabuf_alloc;=eap_teap_process_crypto_binding"),
+             (1, "eap_peer_tls_encrypt"),
+             (1, "eap_peer_tls_decrypt"),
+             (1, "eap_teap_getKey"),
+             (1, "eap_teap_session_id"),
+             (1, "eap_teap_init")]
+    for count, func in tests:
+        with alloc_fail(dev[0], count, func):
+            dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                           scan_freq="2412",
+                           eap="TEAP", identity="user", password="password",
+                           anonymous_identity="TEAP",
+                           ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                           pac_file="blob://teap_pac", wait_connect=False)
+            wait_eap_proposed(dev[0], wait_trigger="GET_ALLOC_FAIL")
+
+    tests = [(1, "eap_teap_derive_eap_msk"),
+             (1, "eap_teap_derive_eap_emsk"),
+             (1, "eap_teap_write_crypto_binding"),
+             (1, "eap_teap_process_crypto_binding"),
+             (1, "eap_teap_derive_msk;eap_teap_process_crypto_binding"),
+             (1, "eap_teap_compound_mac;eap_teap_process_crypto_binding"),
+             (1, "eap_teap_derive_imck")]
+    for count, func in tests:
+        with fail_test(dev[0], count, func):
+            dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                           scan_freq="2412",
+                           eap="TEAP", identity="user", password="password",
+                           anonymous_identity="TEAP",
+                           ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                           pac_file="blob://teap_pac", wait_connect=False)
+            wait_eap_proposed(dev[0], wait_trigger="GET_FAIL")
+
+def test_eap_teap_errors2(dev, apdev):
+    """EAP-TEAP local errors 2 (Basic-Password-Auth specific)"""
+    check_eap_capa(dev[0], "TEAP")
+    check_eap_capa(dev[0], "MSCHAPV2")
+    params = int_teap_server_params(eap_teap_auth="1")
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    tests = [(1, "eap_teap_tlv_pac_ack"),
+             (1, "eap_teap_process_basic_auth_req")]
+    for count, func in tests:
+        with alloc_fail(dev[0], count, func):
+            dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                           scan_freq="2412",
+                           eap="TEAP", identity="user", password="password",
+                           anonymous_identity="TEAP",
+                           phase1="teap_provisioning=2",
+                           ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                           pac_file="blob://teap_pac", wait_connect=False)
+            wait_eap_proposed(dev[0], wait_trigger="GET_ALLOC_FAIL")
+
+    tests = [(1, "eap_teap_derive_cmk_basic_pw_auth")]
+    for count, func in tests:
+        with fail_test(dev[0], count, func):
+            dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                           scan_freq="2412",
+                           eap="TEAP", identity="user", password="password",
+                           anonymous_identity="TEAP",
+                           phase1="teap_provisioning=2",
+                           ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                           pac_file="blob://teap_pac", wait_connect=False)
+            wait_eap_proposed(dev[0], wait_trigger="GET_FAIL")
