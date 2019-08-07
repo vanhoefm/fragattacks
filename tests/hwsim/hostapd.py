@@ -246,6 +246,8 @@ class Hostapd:
             logger.debug(self.dbg + ": " + ev)
 
     def wait_event(self, events, timeout):
+        if not isinstance(events, list):
+            raise Exception("Hostapd.wait_event() called with incorrect events argument type")
         start = os.times()[4]
         while True:
             while self.mon.pending():

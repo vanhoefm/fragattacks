@@ -838,6 +838,8 @@ class WpaSupplicant:
         raise Exception("P2P_CONNECT failed")
 
     def _wait_event(self, mon, pfx, events, timeout):
+        if not isinstance(events, list):
+            raise Exception("WpaSupplicant._wait_event() called with incorrect events argument type")
         start = os.times()[4]
         while True:
             while mon.pending():
@@ -864,6 +866,8 @@ class WpaSupplicant:
                                 events, timeout)
 
     def wait_group_event(self, events, timeout=10):
+        if not isinstance(events, list):
+            raise Exception("WpaSupplicant.wait_group_event() called with incorrect events argument type")
         if self.group_ifname and self.group_ifname != self.ifname:
             if self.gctrl_mon is None:
                 return None
