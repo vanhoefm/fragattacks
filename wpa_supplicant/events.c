@@ -316,8 +316,9 @@ void wpa_supplicant_mark_disassoc(struct wpa_supplicant *wpa_s)
 	eapol_sm_notify_portValid(wpa_s->eapol, FALSE);
 	if (wpa_key_mgmt_wpa_psk(wpa_s->key_mgmt) ||
 	    wpa_s->key_mgmt == WPA_KEY_MGMT_OWE ||
-	    wpa_s->key_mgmt == WPA_KEY_MGMT_DPP)
+	    wpa_s->key_mgmt == WPA_KEY_MGMT_DPP || wpa_s->drv_authorized_port)
 		eapol_sm_notify_eap_success(wpa_s->eapol, FALSE);
+	wpa_s->drv_authorized_port = 0;
 	wpa_s->ap_ies_from_associnfo = 0;
 	wpa_s->current_ssid = NULL;
 	eapol_sm_notify_config(wpa_s->eapol, NULL, NULL);
@@ -2831,7 +2832,7 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 	if (wpa_key_mgmt_wpa_psk(wpa_s->key_mgmt) ||
 	    wpa_s->key_mgmt == WPA_KEY_MGMT_DPP ||
 	    wpa_s->key_mgmt == WPA_KEY_MGMT_OWE || ft_completed ||
-	    already_authorized)
+	    already_authorized || wpa_s->drv_authorized_port)
 		eapol_sm_notify_eap_success(wpa_s->eapol, FALSE);
 	/* 802.1X::portControl = Auto */
 	eapol_sm_notify_portEnabled(wpa_s->eapol, TRUE);
@@ -3935,6 +3936,7 @@ static void wpa_supplicant_event_port_authorized(struct wpa_supplicant *wpa_s)
 		wpa_supplicant_set_state(wpa_s, WPA_COMPLETED);
 		eapol_sm_notify_portValid(wpa_s->eapol, TRUE);
 		eapol_sm_notify_eap_success(wpa_s->eapol, TRUE);
+		wpa_s->drv_authorized_port = 1;
 	}
 }
 
