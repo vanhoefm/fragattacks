@@ -1735,7 +1735,7 @@ def test_eap_proto_otp(dev, apdev):
             raise Exception("Request for password timed out")
         id = ev.split(':')[0].split('-')[-1]
         dev[0].request("CTRL-RSP-OTP-" + id + ":password")
-        ev = dev[0].wait_event("CTRL-EVENT-EAP-SUCCESS")
+        ev = dev[0].wait_event(["CTRL-EVENT-EAP-SUCCESS"])
         if ev is None:
             raise Exception("Success not reported")
     finally:
