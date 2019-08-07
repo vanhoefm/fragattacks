@@ -263,7 +263,7 @@ class Hostapd:
         return None
 
     def wait_sta(self, addr=None, timeout=2):
-        ev = self.wait_event("AP-STA-CONNECT", timeout=timeout)
+        ev = self.wait_event(["AP-STA-CONNECT"], timeout=timeout)
         if ev is None:
             raise Exception("AP did not report STA connection")
         if addr and addr not in ev:
