@@ -865,7 +865,7 @@ def test_ap_vht_csa_vht40_disable(dev, apdev):
             raise Exception("CSA finished event timed out")
         if "freq=5200" not in ev:
             raise Exception("Unexpected channel in CSA finished event")
-        ev = dev[0].wait_event("CTRL-EVENT-CHANNEL-SWITCH", timeout=5)
+        ev = dev[0].wait_event(["CTRL-EVENT-CHANNEL-SWITCH"], timeout=5)
         if ev is None:
             raise Exception("Channel switch event not seen")
         if "freq=5200" not in ev:
