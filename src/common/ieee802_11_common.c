@@ -871,8 +871,8 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 		return HOSTAPD_MODE_IEEE80211A;
 	}
 
-	/* 56.16 GHz, channel 1..4 */
-	if (freq >= 56160 + 2160 * 1 && freq <= 56160 + 2160 * 4) {
+	/* 56.16 GHz, channel 1..6 */
+	if (freq >= 56160 + 2160 * 1 && freq <= 56160 + 2160 * 6) {
 		if (sec_channel || vht)
 			return NUM_HOSTAPD_MODES;
 
@@ -991,8 +991,8 @@ static int ieee80211_chan_to_freq_us(u8 op_class, u8 chan)
 		if (chan < 149 || chan > 165)
 			return -1;
 		return 5000 + 5 * chan;
-	case 34: /* 60 GHz band, channels 1..3 */
-		if (chan < 1 || chan > 3)
+	case 34: /* 60 GHz band, channels 1..6 */
+		if (chan < 1 || chan > 6)
 			return -1;
 		return 56160 + 2160 * chan;
 	}
@@ -1029,8 +1029,8 @@ static int ieee80211_chan_to_freq_eu(u8 op_class, u8 chan)
 		if (chan < 149 || chan > 169)
 			return -1;
 		return 5000 + 5 * chan;
-	case 18: /* 60 GHz band, channels 1..4 */
-		if (chan < 1 || chan > 4)
+	case 18: /* 60 GHz band, channels 1..6 */
+		if (chan < 1 || chan > 6)
 			return -1;
 		return 56160 + 2160 * chan;
 	}
@@ -1073,8 +1073,8 @@ static int ieee80211_chan_to_freq_jp(u8 op_class, u8 chan)
 		if (chan < 100 || chan > 140)
 			return -1;
 		return 5000 + 5 * chan;
-	case 59: /* 60 GHz band, channels 1..4 */
-		if (chan < 1 || chan > 3)
+	case 59: /* 60 GHz band, channels 1..6 */
+		if (chan < 1 || chan > 6)
 			return -1;
 		return 56160 + 2160 * chan;
 	}
@@ -1161,8 +1161,8 @@ static int ieee80211_chan_to_freq_global(u8 op_class, u8 chan)
 		if (chan < 36 || chan > 128)
 			return -1;
 		return 5000 + 5 * chan;
-	case 180: /* 60 GHz band, channels 1..4 */
-		if (chan < 1 || chan > 4)
+	case 180: /* 60 GHz band, channels 1..6 */
+		if (chan < 1 || chan > 6)
 			return -1;
 		return 56160 + 2160 * chan;
 	}

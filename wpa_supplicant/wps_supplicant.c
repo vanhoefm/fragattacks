@@ -2689,7 +2689,7 @@ static int wpas_wps_nfc_rx_handover_sel(struct wpa_supplicant *wpa_s,
 			 (attr.rf_bands == NULL ||
 			  *attr.rf_bands & WPS_RF_50GHZ))
 			freq = 5000 + 5 * chan;
-		else if (chan >= 1 && chan <= 4 &&
+		else if (chan >= 1 && chan <= 6 &&
 			 (attr.rf_bands == NULL ||
 			  *attr.rf_bands & WPS_RF_60GHZ))
 			freq = 56160 + 2160 * chan;
