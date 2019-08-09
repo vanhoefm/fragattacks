@@ -875,6 +875,7 @@ struct hostapd_config {
 	u16 beacon_int;
 	int rts_threshold;
 	int fragm_threshold;
+	u8 op_class;
 	u8 channel;
 	int enable_edmg;
 	u8 edmg_channel;

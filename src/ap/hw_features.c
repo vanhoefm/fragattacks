@@ -961,6 +961,7 @@ out:
 int hostapd_select_hw_mode(struct hostapd_iface *iface)
 {
 	int i;
+	int freq = -1;
 
 	if (iface->num_hw_features < 1)
 		return -1;
@@ -977,9 +978,14 @@ int hostapd_select_hw_mode(struct hostapd_iface *iface)
 	}
 
 	iface->current_mode = NULL;
+	if (iface->conf->channel && iface->conf->op_class)
+		freq = ieee80211_chan_to_freq(NULL, iface->conf->op_class,
+					      iface->conf->channel);
 	for (i = 0; i < iface->num_hw_features; i++) {
 		struct hostapd_hw_modes *mode = &iface->hw_features[i];
 		if (mode->mode == iface->conf->hw_mode) {
+			if (freq > 0 && !hw_get_chan(mode, freq))
+				continue;
 			iface->current_mode = mode;
 			break;
 		}
