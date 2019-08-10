@@ -75,6 +75,7 @@ def test_ap_vlan_file_parsing(dev, apdev, params):
     hapd = hostapd.add_ap(apdev[0], params)
 
     tests = ["#\n\n0\t11\n",
+             "1  netdev  br\n1",
              "* ",
              "1 netdev12345678901234567890"]
     for t in tests:
