@@ -323,6 +323,8 @@ def test_ap_config_invalid_value(dev, apdev, params):
              ("anqp_elem", "265:1q"),
              ("fst_priority", ""),
              ("fils_cache_id", "q"),
+             ("venue_url", "foo"),
+             ("venue_url", "1:" + 255*"a"),
              ("unknown-item", "foo")]
     for field, val in tests:
         if "FAIL" not in hapd.request("SET %s %s" % (field, val)):
@@ -415,6 +417,7 @@ def test_ap_config_set_oom(dev, apdev):
              (2, "parse_nai_realm", "SET nai_realm 0,example.com;example.net"),
              (1, "parse_anqp_elem", "SET anqp_elem 265:0000"),
              (2, "parse_anqp_elem", "SET anqp_elem 266:000000"),
+             (1, "parse_venue_url", "SET venue_url 1:http://example.com/"),
              (1, "hs20_parse_conn_capab", "SET hs20_conn_capab 1:0:2"),
              (1, "hs20_parse_wan_metrics",
               "SET hs20_wan_metrics 01:8000:1000:80:240:3000"),
