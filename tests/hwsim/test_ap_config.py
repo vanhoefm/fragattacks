@@ -332,7 +332,7 @@ def test_ap_config_invalid_value(dev, apdev, params):
 
 def test_ap_config_eap_user_file_parsing(dev, apdev, params):
     """hostapd eap_user_file parsing"""
-    tmp = os.path.join(params['logdir'], 'ap_vlan_file_parsing.tmp')
+    tmp = os.path.join(params['logdir'], 'ap_config_eap_user_file_parsing.tmp')
     hapd = hostapd.add_ap(apdev[0], {"ssid": "foobar"})
 
     for i in range(2):
@@ -349,7 +349,13 @@ def test_ap_config_eap_user_file_parsing(dev, apdev, params):
              "\"foo\" PEAP hash:foo\n",
              "\"foo\" PEAP hash:8846f7eaee8fb117ad06bdd830b7586q\n",
              "\"foo\" PEAP 01020\n",
-             "\"foo\" PEAP 010q\n",
+             "\"foo\" PEAP 010q\n"
+             '"pwd" PWD ssha1:\n',
+             '"pwd" PWD ssha1:' + 20*'00' + '\n',
+             '"pwd" PWD ssha256:\n',
+             '"pwd" PWD ssha512:\n',
+             '"pwd" PWD ssha1:' + 20*'00' + 'qq\n',
+             '"pwd" PWD ssha1:' + 19*'00' + 'qq00\n',
              "\"foo\" TLS\nradius_accept_attr=123:x:012\n",
              "\"foo\" TLS\nradius_accept_attr=123:x:012q\n",
              "\"foo\" TLS\nradius_accept_attr=123:Q:01\n",
@@ -375,6 +381,8 @@ def test_ap_config_eap_user_file_parsing(dev, apdev, params):
               "hostapd_parse_radius_attr"),
              ("\"foo\" TLS\nradius_accept_attr=123:d:1\n", 2,
               "hostapd_parse_radius_attr"),
+             ('"pwd" PWD ssha1:046239e0660a59015231082a071c803e9f5848ae42eaccb4c08c97ae397bc879c4b071b9088ee715\n', 1, "hostapd_config_eap_user_salted"),
+             ('"pwd" PWD ssha1:046239e0660a59015231082a071c803e9f5848ae42eaccb4c08c97ae397bc879c4b071b9088ee715\n', 2, "hostapd_config_eap_user_salted"),
              ("* TLS\n", 1, "hostapd_config_read_eap_user")]
     for t, count, func in tests:
         with alloc_fail(hapd, count, func):
