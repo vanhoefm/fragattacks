@@ -325,6 +325,7 @@ def test_ap_config_invalid_value(dev, apdev, params):
              ("fils_cache_id", "q"),
              ("venue_url", "foo"),
              ("venue_url", "1:" + 255*"a"),
+             ("sae_password", "secret|mac=qq"),
              ("unknown-item", "foo")]
     for field, val in tests:
         if "FAIL" not in hapd.request("SET %s %s" % (field, val)):
@@ -433,6 +434,10 @@ def test_ap_config_set_oom(dev, apdev):
               "SET acs_chan_bias 1:0.8 6:0.8 11:0.8"),
              (1, "parse_wpabuf_hex", "SET vendor_elements 01020304"),
              (1, "parse_fils_realm", "SET fils_realm example.com"),
+             (1, "parse_sae_password", "SET sae_password secret"),
+             (2, "parse_sae_password", "SET sae_password secret"),
+             (2, "parse_sae_password", "SET sae_password secret|id=pw"),
+             (3, "parse_sae_password", "SET sae_password secret|id=pw"),
              (1, "hostapd_config_fill",
               "SET pac_opaque_encr_key 000102030405060708090a0b0c0d0e0f"),
              (1, "hostapd_config_fill", "SET eap_message hello"),
