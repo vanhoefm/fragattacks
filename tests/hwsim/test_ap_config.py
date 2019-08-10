@@ -326,6 +326,10 @@ def test_ap_config_invalid_value(dev, apdev, params):
              ("venue_url", "foo"),
              ("venue_url", "1:" + 255*"a"),
              ("sae_password", "secret|mac=qq"),
+             ("dpp_controller", "ipaddr=1"),
+             ("dpp_controller", "ipaddr=127.0.0.1 pkhash=q"),
+             ("dpp_controller", "ipaddr=127.0.0.1 pkhash=" + 32*"qq"),
+             ("dpp_controller", "pkhash=" + 32*"aa"),
              ("unknown-item", "foo")]
     for field, val in tests:
         if "FAIL" not in hapd.request("SET %s %s" % (field, val)):
@@ -438,6 +442,7 @@ def test_ap_config_set_oom(dev, apdev):
              (2, "parse_sae_password", "SET sae_password secret"),
              (2, "parse_sae_password", "SET sae_password secret|id=pw"),
              (3, "parse_sae_password", "SET sae_password secret|id=pw"),
+             (1, "hostapd_dpp_controller_parse", "SET dpp_controller ipaddr=127.0.0.1 pkhash=" + 32*"11"),
              (1, "hostapd_config_fill",
               "SET pac_opaque_encr_key 000102030405060708090a0b0c0d0e0f"),
              (1, "hostapd_config_fill", "SET eap_message hello"),
