@@ -527,6 +527,7 @@ def test_ap_config_set_errors(dev, apdev):
     # Various extra coverage (not really errors)
     hapd.set("logger_syslog_level", '1')
     hapd.set("logger_syslog", '0')
+    hapd.set("tls_flags", "[ALLOW-SIGN-RSA-MD5][DISABLE-TIME-CHECKS][DISABLE-TLSv1.0]")
 
     for i in range(50000):
         if "OK" not in hapd.request("SET hs20_conn_capab 17:5060:0"):

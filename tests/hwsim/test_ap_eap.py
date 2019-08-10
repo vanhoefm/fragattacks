@@ -5655,6 +5655,9 @@ def check_tls_ver(dev, hapd, phase1, expected):
     ver = dev.get_status_field("eap_tls_version")
     if ver != expected:
         raise Exception("Unexpected TLS version (expected %s): %s" % (expected, ver))
+    dev.request("REMOVE_NETWORK all")
+    dev.wait_disconnected()
+    dev.dump_monitor()
 
 def test_ap_wpa2_eap_tls_versions(dev, apdev):
     """EAP-TLS and TLS version configuration"""
@@ -5683,6 +5686,29 @@ def test_ap_wpa2_eap_tls_versions(dev, apdev):
     if "run=OpenSSL 1.1.1" in tls:
         check_tls_ver(dev[0], hapd,
                       "tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1 tls_disable_tlsv1_3=0", "TLSv1.3")
+
+def test_ap_wpa2_eap_tls_versions_server(dev, apdev):
+    """EAP-TLS and TLS version configuration on server side"""
+    params = {"ssid": "test-wpa2-eap",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP",
+              "rsn_pairwise": "CCMP",
+              "ieee8021x": "1",
+              "eap_server": "1",
+              "eap_user_file": "auth_serv/eap_user.conf",
+              "ca_cert": "auth_serv/ca.pem",
+              "server_cert": "auth_serv/server.pem",
+              "private_key": "auth_serv/server.key"}
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    tests = [("TLSv1", "[ENABLE-TLSv1.0][DISABLE-TLSv1.1][DISABLE-TLSv1.2][DISABLE-TLSv1.3]"),
+             ("TLSv1.1", "[ENABLE-TLSv1.0][ENABLE-TLSv1.1][DISABLE-TLSv1.2][DISABLE-TLSv1.3]"),
+             ("TLSv1.2", "[ENABLE-TLSv1.0][ENABLE-TLSv1.1][ENABLE-TLSv1.2][DISABLE-TLSv1.3]")]
+    for exp, flags in tests:
+        hapd.disable()
+        hapd.set("tls_flags", flags)
+        hapd.enable()
+        check_tls_ver(dev[0], hapd, "", exp)
 
 def test_ap_wpa2_eap_tls_13(dev, apdev):
     """EAP-TLS and TLS 1.3"""
