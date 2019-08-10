@@ -472,6 +472,7 @@ def test_ap_config_set_oom(dev, apdev):
              (1, "hs20_parse_osu_server_uri",
               "SET osu_server_uri https://example.com/osu/"),
              (1, "hs20_parse_osu_nai", "SET osu_nai anonymous@example.com"),
+             (1, "hs20_parse_osu_nai2", "SET osu_nai2 anonymous@example.com"),
              (1, "hostapd_parse_intlist", "SET osu_method_list 1 0"),
              (1, "hs20_parse_osu_icon", "SET osu_icon icon32"),
              (2, "hs20_parse_osu_icon", "SET osu_icon icon32"),
