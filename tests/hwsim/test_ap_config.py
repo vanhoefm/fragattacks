@@ -330,6 +330,31 @@ def test_ap_config_invalid_value(dev, apdev, params):
              ("dpp_controller", "ipaddr=127.0.0.1 pkhash=q"),
              ("dpp_controller", "ipaddr=127.0.0.1 pkhash=" + 32*"qq"),
              ("dpp_controller", "pkhash=" + 32*"aa"),
+             ("check_cert_subject", ""),
+             ("eap_teap_auth", "-1"),
+             ("eap_teap_auth", "100"),
+             ("group_cipher", "foo"),
+             ("group_cipher", "NONE"),
+             ("chan_util_avg_period", "-1"),
+             ("multi_ap_backhaul_ssid", ""),
+             ("multi_ap_backhaul_ssid", '""'),
+             ("multi_ap_backhaul_ssid", "1"),
+             ("multi_ap_backhaul_ssid", '"' + 33*"A" + '"'),
+             ("multi_ap_backhaul_wpa_passphrase", ""),
+             ("multi_ap_backhaul_wpa_passphrase", 64*"q"),
+             ("multi_ap_backhaul_wpa_psk", "q"),
+             ("multi_ap_backhaul_wpa_psk", 63*"aa"),
+             ("hs20_release", "0"),
+             ("hs20_release", "255"),
+             ("dhcp_server", "::::::"),
+             ("dpp_netaccesskey", "q"),
+             ("dpp_csign", "q"),
+             ("owe_transition_bssid", "q"),
+             ("owe_transition_ssid", ""),
+             ("owe_transition_ssid", '""'),
+             ("owe_transition_ssid", '"' + 33*"a" + '"'),
+             ("multi_ap", "-1"),
+             ("multi_ap", "255"),
              ("unknown-item", "foo")]
     for field, val in tests:
         if "FAIL" not in hapd.request("SET %s %s" % (field, val)):
@@ -443,6 +468,10 @@ def test_ap_config_set_oom(dev, apdev):
              (2, "parse_sae_password", "SET sae_password secret|id=pw"),
              (3, "parse_sae_password", "SET sae_password secret|id=pw"),
              (1, "hostapd_dpp_controller_parse", "SET dpp_controller ipaddr=127.0.0.1 pkhash=" + 32*"11"),
+             (1, "hostapd_config_fill", "SET check_cert_subject foo"),
+             (1, "hostapd_config_fill", "SET multi_ap_backhaul_wpa_psk " + 64*"00"),
+             (1, "hostapd_parse_intlist;hostapd_config_fill",
+              "SET owe_groups 19"),
              (1, "hostapd_config_fill",
               "SET pac_opaque_encr_key 000102030405060708090a0b0c0d0e0f"),
              (1, "hostapd_config_fill", "SET eap_message hello"),
@@ -516,6 +545,10 @@ def test_ap_config_set_errors(dev, apdev):
     hapd.set("auth_server_addr", "127.0.0.1")
     hapd.set("acct_server_addr", "127.0.0.1")
 
+    hapd.set("fst_group_id", "hello")
+    if "FAIL" not in hapd.request("SET fst_group_id hello2"):
+        raise Exception("Duplicate fst_group_id accepted")
+
     tests = ["SET eap_reauth_period -1",
              "SET fst_llt ",
              "SET auth_server_addr_replace foo",
@@ -533,10 +566,12 @@ def test_ap_config_set_errors(dev, apdev):
     hapd.set("eap_authenticator", '0')
     hapd.set("radio_measurements", '0')
     hapd.set("radio_measurements", '1')
+    hapd.set("peerkey", "0")
 
     # Various extra coverage (not really errors)
     hapd.set("logger_syslog_level", '1')
     hapd.set("logger_syslog", '0')
+    hapd.set("ctrl_interface_group", '4')
     hapd.set("tls_flags", "[ALLOW-SIGN-RSA-MD5][DISABLE-TIME-CHECKS][DISABLE-TLSv1.0]")
 
     for i in range(50000):
