@@ -418,6 +418,8 @@ def test_ap_config_set_oom(dev, apdev):
              (1, "parse_anqp_elem", "SET anqp_elem 265:0000"),
              (2, "parse_anqp_elem", "SET anqp_elem 266:000000"),
              (1, "parse_venue_url", "SET venue_url 1:http://example.com/"),
+             (1, "hs20_parse_operator_icon", "SET operator_icon icon"),
+             (2, "hs20_parse_operator_icon", "SET operator_icon icon"),
              (1, "hs20_parse_conn_capab", "SET hs20_conn_capab 1:0:2"),
              (1, "hs20_parse_wan_metrics",
               "SET hs20_wan_metrics 01:8000:1000:80:240:3000"),
