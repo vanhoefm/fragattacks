@@ -892,3 +892,14 @@ def test_wpa2_ocv_sta_group_hs(dev, apdev):
     conn.msg = recv_eapol(dev[0])
     if conn.msg["rsn_key_info"] != 0x0302:
         raise Exception("Didn't receive 2/2 of group key handshake")
+
+def test_wpa2_ocv_auto_enable_pmf(dev, apdev):
+    """OCV on 2.4 GHz with PMF getting enabled automatically"""
+    params = {"channel": "1",
+              "ocv": "1"}
+    hapd, ssid, passphrase = ocv_setup_ap(apdev[0], params)
+    for ocv in range(2):
+        dev[0].connect(ssid, psk=passphrase, scan_freq="2412", ocv=str(ocv),
+                       ieee80211w="2")
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].wait_disconnected()
