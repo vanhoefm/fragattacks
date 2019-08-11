@@ -1441,6 +1441,47 @@ def test_dpp_network_introduction(dev, apdev):
     if val != "DPP":
         raise Exception("Unexpected key_mgmt: " + val)
 
+def test_dpp_network_introduction_expired(dev, apdev):
+    """DPP network introduction with expired netaccesskey"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    params = {"ssid": "dpp",
+              "wpa": "2",
+              "wpa_key_mgmt": "DPP",
+              "ieee80211w": "2",
+              "rsn_pairwise": "CCMP",
+              "dpp_connector": params1_ap_connector,
+              "dpp_csign": params1_csign,
+              "dpp_netaccesskey": params1_ap_netaccesskey,
+              "dpp_netaccesskey_expiry": "1565530889"}
+    try:
+        hapd = hostapd.add_ap(apdev[0], params)
+    except:
+        raise HwsimSkip("DPP not supported")
+
+    dev[0].connect("dpp", key_mgmt="DPP", scan_freq="2412",
+                   ieee80211w="2",
+                   dpp_csign=params1_csign,
+                   dpp_connector=params1_sta_connector,
+                   dpp_netaccesskey=params1_sta_netaccesskey,
+                   wait_connect=False)
+    ev = hapd.wait_event(["DPP-RX"], timeout=10)
+    if ev is None:
+        raise Exception("No DPP Peer Discovery Request seen")
+    if "type=5" not in ev:
+        raise Exception("Unexpected DPP message received: " + ev)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
+    dev[0].request("DISCONNECT")
+    if ev:
+        raise Exception("Connection reported")
+
+    hapd.disable()
+    hapd.set("dpp_netaccesskey_expiry", "2565530889")
+    hapd.enable()
+    dev[0].request("RECONNECT")
+    dev[0].wait_connected()
+
 def test_dpp_and_sae_akm(dev, apdev):
     """DPP and SAE AKMs"""
     check_dpp_capab(dev[0])
