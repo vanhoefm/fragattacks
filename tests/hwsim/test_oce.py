@@ -151,3 +151,14 @@ def test_rssi_based_assoc_rssi_change(dev, apdev):
         reset_rx_rssi(dev[0])
         reset_rx_rssi(hapd)
         dev[0].request("SCAN_INTERVAL 5")
+
+def test_oce_ap(dev, apdev):
+    """OCE AP"""
+    ssid = "test-oce"
+    passphrase = 'qwertyuiop'
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
+    params['ieee80211w'] = "1"
+    params['mbo'] = "1"
+    params['oce'] = "4"
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].connect(ssid, psk=passphrase, ieee80211w="1", scan_freq="2412")
