@@ -1662,3 +1662,26 @@ def run_sae_anti_clogging_during_attack(dev, apdev):
         raise Exception("Real station(1) did not get connected")
     if count < 1:
         raise Exception("Too few token responses in third round: %d" % count)
+
+def test_sae_sync(dev, apdev):
+    """SAE dot11RSNASAESync"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_sync'] = '1'
+    hostapd.add_ap(apdev[0], params)
+
+    # TODO: More complete dot11RSNASAESync testing. For now, this is really only
+    # checking that sae_sync config parameter is accepted.
+    dev[0].request("SET sae_groups ")
+    dev[1].request("SET sae_groups ")
+    id = {}
+    for i in range(0, 2):
+        dev[i].scan(freq="2412")
+        id[i] = dev[i].connect("test-sae", psk="12345678", key_mgmt="SAE",
+                               scan_freq="2412", only_add_network=True)
+    for i in range(0, 2):
+        dev[i].select_network(id[i])
+    for i in range(0, 2):
+        dev[i].wait_connected(timeout=10)
