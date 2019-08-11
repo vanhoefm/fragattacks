@@ -135,7 +135,8 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
               force_initial_conn_to_first_ap=False, sha384=False,
               group_mgmt=None, ocv=None, sae_password=None,
               sae_password_id=None, sae_and_psk=False, pmksa_caching=False,
-              roam_with_reassoc=False, also_non_ft=False, only_one_way=False):
+              roam_with_reassoc=False, also_non_ft=False, only_one_way=False,
+              wait_before_roam=0, return_after_initial=False):
     logger.info("Connect to first AP")
 
     copts = {}
@@ -205,6 +206,11 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
         else:
             hwsim_utils.test_connectivity(dev, hapd1ap)
 
+    if return_after_initial:
+        return ap2['bssid']
+
+    if wait_before_roam:
+        time.sleep(wait_before_roam)
     dev.scan_for_bss(ap2['bssid'], freq="2412")
 
     for i in range(0, roams):
@@ -2903,3 +2909,51 @@ def test_ap_ft_pmksa_caching_sha384(dev, apdev):
 
     run_roams(dev[0], apdev, hapd, hapd1, ssid, None, eap=True,
               eap_identity=identity, pmksa_caching=True, sha384=True)
+
+def test_ap_ft_r1_key_expiration(dev, apdev):
+    """WPA2-PSK-FT and PMK-R1 expiration"""
+    ssid = "test-ft"
+    passphrase = "12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params['r1_max_key_lifetime'] = "2"
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params['r1_max_key_lifetime'] = "2"
+    hapd1 = hostapd.add_ap(apdev[1], params)
+
+    # This succeeds, but results in having to run another PMK-R1 pull before the
+    # second AP can complete FT protocol.
+    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, wait_before_roam=4)
+
+def test_ap_ft_r0_key_expiration(dev, apdev):
+    """WPA2-PSK-FT and PMK-R0 expiration"""
+    ssid = "test-ft"
+    passphrase = "12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params['ft_r0_key_lifetime'] = "2"
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params['ft_r0_key_lifetime'] = "2"
+    hapd1 = hostapd.add_ap(apdev[1], params)
+
+    bssid2 = run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase,
+                       return_after_initial=True)
+    time.sleep(4)
+    dev[0].scan_for_bss(bssid2, freq="2412")
+    if "OK" not in dev[0].request("ROAM " + bssid2):
+        raise Exception("ROAM failed")
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-AUTH-REJECT",
+                            "CTRL-EVENT-ASSOC-REJECT"], timeout=5)
+    dev[0].request("DISCONNECT")
+    if ev is None or "CTRL-EVENT-AUTH-REJECT" not in ev:
+        raise Exception("FT protocol failure not reported")
+    if "status_code=53" not in ev:
+        raise Exception("Unexpected status in FT protocol failure: " + ev)
+
+    # Generate a new PMK-R0
+    dev[0].dump_monitor()
+    dev[0].request("RECONNECT")
+    dev[0].wait_connected()
