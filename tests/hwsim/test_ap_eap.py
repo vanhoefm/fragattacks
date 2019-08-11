@@ -5535,6 +5535,29 @@ def test_ap_wpa2_eap_tls_check_crl(dev, apdev):
                 private_key="auth_serv/user.key")
     dev[0].request("REMOVE_NETWORK all")
 
+def test_ap_wpa2_eap_tls_check_crl_not_strict(dev, apdev):
+    """EAP-TLS and server checking CRL with check_crl_strict=0"""
+    params = int_eap_server_params()
+    params['check_crl'] = '1'
+    params['ca_cert'] = "auth_serv/ca-and-crl-expired.pem"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    # check_crl_strict=1 and expired CRL --> reject connection
+    eap_connect(dev[0], hapd, "TLS", "tls user", ca_cert="auth_serv/ca.pem",
+                client_cert="auth_serv/user.pem",
+                private_key="auth_serv/user.key", expect_failure=True)
+    dev[0].request("REMOVE_NETWORK all")
+
+    hapd.disable()
+    hapd.set("check_crl_strict", "0")
+    hapd.enable()
+
+    # check_crl_strict=0 --> accept
+    eap_connect(dev[0], hapd, "TLS", "tls user", ca_cert="auth_serv/ca.pem",
+                client_cert="auth_serv/user.pem",
+                private_key="auth_serv/user.key")
+    dev[0].request("REMOVE_NETWORK all")
+
 def test_ap_wpa2_eap_tls_crl_reload(dev, apdev, params):
     """EAP-TLS and server reloading CRL from ca_cert"""
     ca_cert = os.path.join(params['logdir'],
