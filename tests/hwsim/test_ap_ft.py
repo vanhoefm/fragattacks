@@ -1214,6 +1214,10 @@ def test_ap_ft_eap_pull_wildcard(dev, apdev):
     params["r1kh"] = "00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
     params["ft_psk_generate_local"] = "1"
     params["eap_server"] = "0"
+    params["rkh_pos_timeout"] = "100"
+    params["rkh_neg_timeout"] = "50"
+    params["rkh_pull_timeout"] = "1234"
+    params["rkh_pull_retries"] = "10"
     params = dict(list(radius.items()) + list(params.items()))
     hapd = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase, discovery=True)
