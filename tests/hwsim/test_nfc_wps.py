@@ -147,7 +147,7 @@ def test_nfc_wps_password_token_ap(dev, apdev):
     if "FAIL" in pw:
         raise Exception("Failed to generate password token")
     res = hapd.request("WPS_NFC_TOKEN enable")
-    if "FAIL" in pw:
+    if "FAIL" in res:
         raise Exception("Failed to enable AP password token")
     res = dev[0].request("WPS_NFC_TAG_READ " + pw)
     if "FAIL" in res:
@@ -177,6 +177,36 @@ def test_nfc_wps_password_token_ap(dev, apdev):
 
     if "FAIL" not in hapd.request("WPS_NFC_TOKEN foo"):
         raise Exception("Invalid WPS_NFC_TOKEN accepted")
+
+def test_nfc_wps_password_token_ap_preconf(dev, apdev):
+    """WPS registrar configuring an AP using preconfigured AP password token"""
+    ssid = "test-wps-nfc-pw-token-init"
+    params = {"ssid": ssid, "eap_server": "1",
+              "wps_state": "1",
+              "wps_nfc_dev_pw_id": "49067",
+              "wps_nfc_dh_pubkey": "991B7F54406226505D56C6C701ED2C725E4F4866611357CA1C4D92219B2E91CFC9E4172EB0899421657534DB396A6A11361663ACDC48417541DB8610428773BC18AAA00387775F14EEE49335B574165EF915D055F818B82F99CEF4C5F176E0C5D9055CBAF055A5B20B73B26D74816BA42C1A911FF0B8EDF77C7CEA76F9F6EABBFBF12742AA3E67BE7597FB7321C3B258C57B9EA045B0A7472558F9AA8E810E2E0462FFD9001A7E21C38006529B9FEDAAF47612D3817922F2335A5D541BAA9B7F",
+              "wps_nfc_dh_privkey": "06F35FDA777F6EFF1F7F008AD68C49572C5F2913B1DC96E0AC3AB67D75329D40EEE850C79D83EEA82CE35FADCCB1F2AF08560268B9E9B67BE66C9B7B3E6F462CF91647830CB0A40184CCF8AA74261E0308AB8973FB799C9EA46011C70215AEA83293E0C89AA4EB6CA753A9E689FA3A0A3FB40D0A8D9AD258F3E4DA1625F63C4B347660D17504B25856DE9D18EB76C239EDFF090A0A1779BE848C0F23C20CF83022C91EA56B0375DED0A62DF0B8B91348F667F5A7EAD23F0F033E071DCE11B786",
+              "wps_nfc_dev_pw": "CB7FE7A25053F8F5BF822660C21E66D8A58D3393BB78494E239031D6AABCB90C"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    logger.info("WPS configuration step")
+    res = hapd.request("WPS_NFC_TOKEN enable")
+    if "FAIL" in res:
+        raise Exception("Failed to enable AP password token")
+    pw = "D217446170706C69636174696F6E2F766E642E7766612E777363102C0036691F6C35AC5FF23180FFBF899BF3E563D047AA68BFABCB7FE7A25053F8F5BF822660C21E66D8A58D3393BB78494E239031D6AABCB90C1049000600372A000120"
+    res = dev[0].request("WPS_NFC_TAG_READ " + pw)
+    if "FAIL" in res:
+        raise Exception("Failed to provide NFC tag contents to wpa_supplicant")
+    dev[0].dump_monitor()
+    new_ssid = "test-wps-nfc-pw-token-new-ssid"
+    new_passphrase = "1234567890"
+    res = dev[0].request("WPS_REG " + apdev[0]['bssid'] + " nfc-pw " +
+                         binascii.hexlify(new_ssid.encode()).decode() +
+                         " WPA2PSK CCMP " +
+                         binascii.hexlify(new_passphrase.encode()).decode())
+    if "FAIL" in res:
+        raise Exception("Failed to start Registrar using NFC password token")
+    dev[0].wait_connected(timeout=30)
+    check_wpa2_connection(dev[0], apdev[0], hapd, new_ssid, mixed=True)
 
 def test_nfc_wps_handover_init(dev, apdev):
     """Connect to WPS AP with NFC connection handover and move to configured state"""
