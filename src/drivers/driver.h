@@ -1442,6 +1442,21 @@ struct wpa_driver_ap_params {
 	 * type 11 as defined in IEEE Std 802.11-2016, 9.4.2.22.13
 	 */
 	const struct wpabuf *civic;
+
+	/**
+	 * he_spr - Whether Spatial Reuse is enabled
+	 */
+	 int he_spr;
+
+	/**
+	 * he_spr_srg_obss_pd_min_offset - Minimum TX power offset
+	 */
+	 int he_spr_srg_obss_pd_min_offset;
+
+	/**
+	 * he_spr_srg_obss_pd_max_offset - Maximum TX power offset
+	 */
+	 int he_spr_srg_obss_pd_max_offset;
 };
 
 struct wpa_driver_mesh_bss_params {

@@ -1423,6 +1423,13 @@ int ieee802_11_set_beacon(struct hostapd_data *hapd)
 	params.proberesp_ies = proberesp;
 	params.assocresp_ies = assocresp;
 	params.reenable = hapd->reenable_beacon;
+#ifdef CONFIG_IEEE80211AX
+	params.he_spr = !!hapd->iface->conf->spr.sr_control;
+	params.he_spr_srg_obss_pd_min_offset =
+		hapd->iface->conf->spr.srg_obss_pd_min_offset;
+	params.he_spr_srg_obss_pd_max_offset =
+		hapd->iface->conf->spr.srg_obss_pd_max_offset;
+#endif /* CONFIG_IEEE80211AX */
 	hapd->reenable_beacon = 0;
 
 	if (cmode &&
