@@ -44,6 +44,41 @@ static u8 ieee80211_he_ppet_size(u8 ppe_thres_hdr, const u8 *phy_cap_info)
 }
 
 
+static u8 ieee80211_he_mcs_set_size(const u8 *phy_cap_info)
+{
+	u8 sz = 4;
+
+	if (phy_cap_info[HE_PHYCAP_CHANNEL_WIDTH_SET_IDX] &
+	    HE_PHYCAP_CHANNEL_WIDTH_SET_80PLUS80MHZ_IN_5G)
+		sz += 4;
+	if (phy_cap_info[HE_PHYCAP_CHANNEL_WIDTH_SET_IDX] &
+	    HE_PHYCAP_CHANNEL_WIDTH_SET_160MHZ_IN_5G)
+		sz += 4;
+
+	return sz;
+}
+
+
+static int ieee80211_invalid_he_cap_size(const u8 *buf, size_t len)
+{
+	struct ieee80211_he_capabilities *cap;
+	size_t cap_len;
+
+	cap = (struct ieee80211_he_capabilities *) buf;
+	cap_len = sizeof(*cap) - sizeof(cap->optional);
+	if (len < cap_len)
+		return 1;
+
+	cap_len += ieee80211_he_mcs_set_size(cap->he_phy_capab_info);
+	if (len < cap_len)
+		return 1;
+
+	cap_len += ieee80211_he_ppet_size(buf[cap_len], cap->he_phy_capab_info);
+
+	return len != cap_len;
+}
+
+
 u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid,
 			  enum ieee80211_op_mode opmode)
 {
@@ -56,7 +91,7 @@ u8 * hostapd_eid_he_capab(struct hostapd_data *hapd, u8 *eid,
 	if (!mode)
 		return eid;
 
-	ie_size = sizeof(struct ieee80211_he_capabilities);
+	ie_size = sizeof(*cap) - sizeof(cap->optional);
 	ppet_size = ieee80211_he_ppet_size(mode->he_capab[opmode].ppet[0],
 					   mode->he_capab[opmode].phy_cap);
 
@@ -324,6 +359,7 @@ u16 copy_sta_he_capab(struct hostapd_data *hapd, struct sta_info *sta,
 {
 	if (!he_capab || !hapd->iconf->ieee80211ax ||
 	    !check_valid_he_mcs(hapd, he_capab, opmode) ||
+	    ieee80211_invalid_he_cap_size(he_capab, he_capab_len) ||
 	    he_capab_len > sizeof(struct ieee80211_he_capabilities)) {
 		sta->flags &= ~WLAN_STA_HE;
 		os_free(sta->he_capab);

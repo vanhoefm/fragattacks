@@ -2109,7 +2109,7 @@ struct ieee80211_he_capabilities {
 	u8 he_phy_capab_info[11];
 	/* Followed by 4, 8, or 12 octets of Supported HE-MCS And NSS Set field
 	* and optional variable length PPE Thresholds field. */
-	u8 optional[];
+	u8 optional[37];
 } STRUCT_PACKED;
 
 struct ieee80211_he_operation {
