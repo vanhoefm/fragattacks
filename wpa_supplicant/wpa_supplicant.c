@@ -2169,6 +2169,7 @@ void ibss_mesh_setup_freq(struct wpa_supplicant *wpa_s,
 	struct hostapd_freq_params vht_freq;
 	int chwidth, seg0, seg1;
 	u32 vht_caps = 0;
+	int is_24ghz;
 
 	freq->freq = ssid->frequency;
 
@@ -2220,8 +2221,8 @@ void ibss_mesh_setup_freq(struct wpa_supplicant *wpa_s,
 	if (!mode)
 		return;
 
-	/* HE can work without HT + VHT */
-	freq->he_enabled = mode->he_capab[ieee80211_mode].he_supported;
+	is_24ghz = hw_mode == HOSTAPD_MODE_IEEE80211G ||
+		hw_mode == HOSTAPD_MODE_IEEE80211B;
 
 #ifdef CONFIG_HT_OVERRIDES
 	if (ssid->disable_ht) {
@@ -2233,6 +2234,10 @@ void ibss_mesh_setup_freq(struct wpa_supplicant *wpa_s,
 	freq->ht_enabled = ht_supported(mode);
 	if (!freq->ht_enabled)
 		return;
+
+	/* Allow HE on 2.4 GHz without VHT: see nl80211_put_freq_params() */
+	if (is_24ghz)
+		freq->he_enabled = mode->he_capab[ieee80211_mode].he_supported;
 
 	/* Setup higher BW only for 5 GHz */
 	if (mode->mode != HOSTAPD_MODE_IEEE80211A)
@@ -2353,6 +2358,9 @@ skip_ht40:
 	vht_freq.vht_enabled = vht_supported(mode);
 	if (!vht_freq.vht_enabled)
 		return;
+
+	/* Enable HE for VHT */
+	vht_freq.he_enabled = mode->he_capab[ieee80211_mode].he_supported;
 
 	/* setup center_freq1, bandwidth */
 	for (j = 0; j < ARRAY_SIZE(vht80); j++) {
