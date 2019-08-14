@@ -1165,6 +1165,11 @@ struct wpa_config {
 	int *sae_groups;
 
 	/**
+	 * sae_pmkid_in_assoc - Whether to include PMKID in SAE Assoc Req
+	 */
+	int sae_pmkid_in_assoc;
+
+	/**
 	 * dtim_period - Default DTIM period in Beacon intervals
 	 *
 	 * This parameter can be used to set the default value for network

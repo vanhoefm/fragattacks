@@ -1390,6 +1390,10 @@ static void wpa_config_write_global(FILE *f, struct wpa_config *config)
 		fprintf(f, "\n");
 	}
 
+	if (config->sae_pmkid_in_assoc)
+		fprintf(f, "sae_pmkid_in_assoc=%d\n",
+			config->sae_pmkid_in_assoc);
+
 	if (config->ap_vendor_elements) {
 		int i, len = wpabuf_len(config->ap_vendor_elements);
 		const u8 *p = wpabuf_head_u8(config->ap_vendor_elements);

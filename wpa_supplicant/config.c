@@ -4828,6 +4828,7 @@ static const struct global_parse_data global_fields[] = {
 	{ INT(okc), 0 },
 	{ INT(pmf), 0 },
 	{ FUNC(sae_groups), 0 },
+	{ INT_RANGE(sae_pmkid_in_assoc, 0, 1), 0 },
 	{ INT(dtim_period), 0 },
 	{ INT(beacon_int), 0 },
 	{ FUNC(ap_vendor_elements), 0 },
