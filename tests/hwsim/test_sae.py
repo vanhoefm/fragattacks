@@ -92,6 +92,18 @@ def test_sae_password_ffc(dev, apdev):
 @remote_compatible
 def test_sae_pmksa_caching(dev, apdev):
     """SAE and PMKSA caching"""
+    run_sae_pmksa_caching(dev, apdev)
+
+@remote_compatible
+def test_sae_pmksa_caching_pmkid(dev, apdev):
+    """SAE and PMKSA caching (PMKID in AssocReq after SAE)"""
+    try:
+        dev[0].set("sae_pmkid_in_assoc", "1")
+        run_sae_pmksa_caching(dev, apdev)
+    finally:
+        dev[0].set("sae_pmkid_in_assoc", "0")
+
+def run_sae_pmksa_caching(dev, apdev):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     params = hostapd.wpa2_params(ssid="test-sae",
