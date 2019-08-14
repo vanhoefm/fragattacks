@@ -2126,7 +2126,6 @@ int wpa_compare_rsn_ie(int ft_initial_assoc,
 }
 
 
-#if defined(CONFIG_IEEE80211R) || defined(CONFIG_FILS)
 int wpa_insert_pmkid(u8 *ies, size_t *ies_len, const u8 *pmkid)
 {
 	u8 *start, *end, *rpos, *rend;
@@ -2141,11 +2140,10 @@ int wpa_insert_pmkid(u8 *ies, size_t *ies_len, const u8 *pmkid)
 		start += 2 + start[1];
 	}
 	if (start >= end) {
-		wpa_printf(MSG_ERROR, "FT: Could not find RSN IE in "
-			   "IEs data");
+		wpa_printf(MSG_ERROR, "RSN: Could not find RSNE in IEs data");
 		return -1;
 	}
-	wpa_hexdump(MSG_DEBUG, "FT: RSN IE before modification",
+	wpa_hexdump(MSG_DEBUG, "RSN: RSNE before modification",
 		    start, 2 + start[1]);
 
 	/* Find start of PMKID-Count */
@@ -2171,8 +2169,8 @@ int wpa_insert_pmkid(u8 *ies, size_t *ies_len, const u8 *pmkid)
 		/* Skip RSN Capabilities */
 		rpos += 2;
 		if (rpos > rend) {
-			wpa_printf(MSG_ERROR, "FT: Could not parse RSN IE in "
-				   "IEs data");
+			wpa_printf(MSG_ERROR,
+				   "RSN: Could not parse RSNE in IEs data");
 			return -1;
 		}
 	}
@@ -2203,7 +2201,7 @@ int wpa_insert_pmkid(u8 *ies, size_t *ies_len, const u8 *pmkid)
 			 * PMKID(s) first before adding the new one.
 			 */
 			wpa_printf(MSG_DEBUG,
-				   "FT: Remove %u old PMKID(s) from RSN IE",
+				   "RSN: Remove %u old PMKID(s) from RSNE",
 				   num_pmkid);
 			after = rpos + 2 + num_pmkid * PMKID_LEN;
 			os_memmove(rpos + 2, after, rend - after);
@@ -2218,14 +2216,13 @@ int wpa_insert_pmkid(u8 *ies, size_t *ies_len, const u8 *pmkid)
 		start[1] += PMKID_LEN;
 	}
 
-	wpa_hexdump(MSG_DEBUG, "FT: RSN IE after modification "
-		    "(PMKID inserted)", start, 2 + start[1]);
+	wpa_hexdump(MSG_DEBUG, "RSN: RSNE after modification (PMKID inserted)",
+		    start, 2 + start[1]);
 
 	*ies_len += added;
 
 	return 0;
 }
-#endif /* CONFIG_IEEE80211R || CONFIG_FILS */
 
 
 int wpa_cipher_key_len(int cipher)
