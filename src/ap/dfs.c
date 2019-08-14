@@ -1093,11 +1093,18 @@ int hostapd_dfs_start_cac(struct hostapd_iface *iface, int freq,
 			  int ht_enabled, int chan_offset, int chan_width,
 			  int cf1, int cf2)
 {
+	/* This is called when the driver indicates that an offloaded DFS has
+	 * started CAC. */
+	hostapd_set_state(iface, HAPD_IFACE_DFS);
+	/* TODO: How to check CAC time for ETSI weather channels? */
+	iface->dfs_cac_ms = 60000;
 	wpa_msg(iface->bss[0]->msg_ctx, MSG_INFO, DFS_EVENT_CAC_START
 		"freq=%d chan=%d chan_offset=%d width=%d seg0=%d "
 		"seg1=%d cac_time=%ds",
-		freq, (freq - 5000) / 5, chan_offset, chan_width, cf1, cf2, 60);
+		freq, (freq - 5000) / 5, chan_offset, chan_width, cf1, cf2,
+		iface->dfs_cac_ms / 1000);
 	iface->cac_started = 1;
+	os_get_reltime(&iface->dfs_cac_start);
 	return 0;
 }
 
