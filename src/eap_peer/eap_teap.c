@@ -277,8 +277,10 @@ static int eap_teap_derive_msk(struct eap_teap_data *data)
 {
 	/* FIX: RFC 7170 does not describe whether MSK or EMSK based S-IMCK[j]
 	 * is used in this derivation */
-	if (eap_teap_derive_eap_msk(data->simck_msk, data->key_data) < 0 ||
-	    eap_teap_derive_eap_emsk(data->simck_msk, data->emsk) < 0)
+	if (eap_teap_derive_eap_msk(data->tls_cs, data->simck_msk,
+				    data->key_data) < 0 ||
+	    eap_teap_derive_eap_emsk(data->tls_cs, data->simck_msk,
+				     data->emsk) < 0)
 		return -1;
 	data->success = 1;
 	return 0;
@@ -680,7 +682,8 @@ static int eap_teap_get_cmk(struct eap_sm *sm, struct eap_teap_data *data,
 		   data->simck_idx + 1);
 
 	if (!data->phase2_method)
-		return eap_teap_derive_cmk_basic_pw_auth(data->simck_msk,
+		return eap_teap_derive_cmk_basic_pw_auth(data->tls_cs,
+							 data->simck_msk,
 							 cmk_msk);
 
 	if (!data->phase2_method || !data->phase2_priv) {
@@ -712,7 +715,8 @@ static int eap_teap_get_cmk(struct eap_sm *sm, struct eap_teap_data *data,
 						     &emsk_len);
 	}
 
-	res = eap_teap_derive_imck(data->simck_msk, data->simck_emsk,
+	res = eap_teap_derive_imck(data->tls_cs,
+				   data->simck_msk, data->simck_emsk,
 				   msk, msk_len, emsk, emsk_len,
 				   data->simck_msk, cmk_msk,
 				   data->simck_emsk, cmk_emsk);

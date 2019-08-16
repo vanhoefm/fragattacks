@@ -309,7 +309,8 @@ static int eap_teap_update_icmk(struct eap_sm *sm, struct eap_teap_data *data)
 		   data->simck_idx + 1);
 
 	if (sm->eap_teap_auth == 1)
-		return eap_teap_derive_cmk_basic_pw_auth(data->simck_msk,
+		return eap_teap_derive_cmk_basic_pw_auth(data->tls_cs,
+							 data->simck_msk,
 							 data->cmk_msk);
 
 	if (!data->phase2_method || !data->phase2_priv) {
@@ -332,7 +333,8 @@ static int eap_teap_update_icmk(struct eap_sm *sm, struct eap_teap_data *data)
 						     &emsk_len);
 	}
 
-	res = eap_teap_derive_imck(data->simck_msk, data->simck_emsk,
+	res = eap_teap_derive_imck(data->tls_cs,
+				   data->simck_msk, data->simck_emsk,
 				   msk, msk_len, emsk, emsk_len,
 				   data->simck_msk, data->cmk_msk,
 				   data->simck_emsk, data->cmk_emsk);
@@ -1643,7 +1645,8 @@ static int eap_teap_process_phase2_start(struct eap_sm *sm,
 			/* FIX: Need to derive CMK here. However, how is that
 			 * supposed to be done? RFC 7170 does not tell that for
 			 * the no-inner-auth case. */
-			eap_teap_derive_cmk_basic_pw_auth(data->simck_msk,
+			eap_teap_derive_cmk_basic_pw_auth(data->tls_cs,
+							  data->simck_msk,
 							  data->cmk_msk);
 			eap_teap_state(data, CRYPTO_BINDING);
 			return 1;
@@ -1853,7 +1856,8 @@ static u8 * eap_teap_getKey(struct eap_sm *sm, void *priv, size_t *len)
 
 	/* FIX: RFC 7170 does not describe whether MSK or EMSK based S-IMCK[j]
 	 * is used in this derivation */
-	if (eap_teap_derive_eap_msk(data->simck_msk, eapKeyData) < 0) {
+	if (eap_teap_derive_eap_msk(data->tls_cs, data->simck_msk,
+				    eapKeyData) < 0) {
 		os_free(eapKeyData);
 		return NULL;
 	}
@@ -1877,7 +1881,8 @@ static u8 * eap_teap_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 
 	/* FIX: RFC 7170 does not describe whether MSK or EMSK based S-IMCK[j]
 	 * is used in this derivation */
-	if (eap_teap_derive_eap_emsk(data->simck_msk, eapKeyData) < 0) {
+	if (eap_teap_derive_eap_emsk(data->tls_cs, data->simck_msk,
+				     eapKeyData) < 0) {
 		os_free(eapKeyData);
 		return NULL;
 	}
