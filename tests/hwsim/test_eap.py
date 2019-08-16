@@ -10,7 +10,8 @@ from utils import alloc_fail, fail_test, wait_fail_trigger, HwsimSkip
 from test_ap_eap import check_eap_capa, int_eap_server_params, eap_connect, \
     eap_reauth
 
-def int_teap_server_params(eap_teap_auth=None, eap_teap_pac_no_inner=None):
+def int_teap_server_params(eap_teap_auth=None, eap_teap_pac_no_inner=None,
+                           eap_teap_separate_result=None):
     params = int_eap_server_params()
     params['pac_opaque_encr_key'] = "000102030405060708090a0b0c0dff00"
     params['eap_fast_a_id'] = "101112131415161718191a1b1c1dff00"
@@ -19,6 +20,8 @@ def int_teap_server_params(eap_teap_auth=None, eap_teap_pac_no_inner=None):
         params['eap_teap_auth'] = eap_teap_auth
     if eap_teap_pac_no_inner:
         params['eap_teap_pac_no_inner'] = eap_teap_pac_no_inner
+    if eap_teap_separate_result:
+        params['eap_teap_separate_result'] = eap_teap_separate_result
     return params
 
 def test_eap_teap_eap_mschapv2(dev, apdev):
@@ -125,6 +128,17 @@ def test_eap_teap_eap_mschapv2_pac_no_inner_eap(dev, apdev):
     res = eap_reauth(dev[0], "TEAP")
     if res['tls_session_reused'] != '1':
         raise Exception("EAP-TEAP could not use PAC session ticket")
+
+def test_eap_teap_eap_mschapv2_separate_result(dev, apdev):
+    """EAP-TEAP with inner EAP-MSCHAPv2 and separate message for Result TLV"""
+    check_eap_capa(dev[0], "TEAP")
+    check_eap_capa(dev[0], "MSCHAPV2")
+    params = int_teap_server_params(eap_teap_separate_result="1")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user",
+                anonymous_identity="TEAP", password="password",
+                ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                pac_file="blob://teap_pac")
 
 def test_eap_teap_eap_mschapv2_pac_no_ca_cert(dev, apdev):
     """EAP-TEAP with inner EAP-MSCHAPv2 and PAC provisioning attempt without ca_cert"""
