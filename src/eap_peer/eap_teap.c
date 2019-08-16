@@ -35,6 +35,7 @@ struct eap_teap_data {
 	void *phase2_priv;
 	int phase2_success;
 	int inner_method_done;
+	int iresult_verified;
 	int result_success_done;
 	int on_tx_completion;
 
@@ -311,6 +312,7 @@ static int eap_teap_init_phase2_method(struct eap_sm *sm,
 				       struct eap_teap_data *data)
 {
 	data->inner_method_done = 0;
+	data->iresult_verified = 0;
 	data->phase2_method =
 		eap_peer_get_eap_method(data->phase2_type.vendor,
 					data->phase2_type.method);
@@ -1217,14 +1219,21 @@ static int eap_teap_process_decrypted(struct eap_sm *sm,
 		goto send_resp;
 	}
 
-	if ((tlv.iresult == TEAP_STATUS_SUCCESS ||
-	     (!data->result_success_done &&
-	      tlv.result == TEAP_STATUS_SUCCESS)) &&
-	    !tlv.crypto_binding) {
-		/* Result TLV or Intermediate-Result TLV indicating success,
-		 * but no Crypto-Binding TLV */
+	if (tlv.iresult == TEAP_STATUS_SUCCESS && !tlv.crypto_binding) {
+		/* Intermediate-Result TLV indicating success, but no
+		 * Crypto-Binding TLV */
 		wpa_printf(MSG_DEBUG,
-			   "EAP-TEAP: Result TLV or Intermediate-Result TLV indicating success, but no Crypto-Binding TLV");
+			   "EAP-TEAP: Intermediate-Result TLV indicating success, but no Crypto-Binding TLV");
+		failed = 1;
+		error = TEAP_ERROR_TUNNEL_COMPROMISE_ERROR;
+		goto done;
+	}
+
+	if (!data->iresult_verified && !data->result_success_done &&
+	    tlv.result == TEAP_STATUS_SUCCESS && !tlv.crypto_binding) {
+		/* Result TLV indicating success, but no Crypto-Binding TLV */
+		wpa_printf(MSG_DEBUG,
+			   "EAP-TEAP: Result TLV indicating success, but no Crypto-Binding TLV");
 		failed = 1;
 		error = TEAP_ERROR_TUNNEL_COMPROMISE_ERROR;
 		goto done;
@@ -1287,8 +1296,10 @@ static int eap_teap_process_decrypted(struct eap_sm *sm,
 			resp = wpabuf_concat(resp, tmp);
 			if (tlv.result == TEAP_STATUS_SUCCESS && !failed)
 				data->result_success_done = 1;
-			if (tlv.iresult == TEAP_STATUS_SUCCESS && !failed)
+			if (tlv.iresult == TEAP_STATUS_SUCCESS && !failed) {
 				data->inner_method_done = 0;
+				data->iresult_verified = 1;
+			}
 		}
 	}
 
@@ -1359,7 +1370,8 @@ done:
 	}
 
 	if (resp && tlv.result == TEAP_STATUS_SUCCESS && !failed &&
-	    tlv.crypto_binding && data->phase2_success) {
+	    (tlv.crypto_binding || data->iresult_verified) &&
+	    data->phase2_success) {
 		/* Successfully completed Phase 2 */
 		wpa_printf(MSG_DEBUG,
 			   "EAP-TEAP: Authentication completed successfully");
@@ -1928,6 +1940,7 @@ static void * eap_teap_init_for_reauth(struct eap_sm *sm, void *priv)
 	data->phase2_success = 0;
 	data->inner_method_done = 0;
 	data->result_success_done = 0;
+	data->iresult_verified = 0;
 	data->done_on_tx_completion = 0;
 	data->resuming = 1;
 	data->provisioning = 0;
