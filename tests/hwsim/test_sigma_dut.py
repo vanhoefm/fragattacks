@@ -2837,18 +2837,29 @@ def test_sigma_dut_eap_ttls_uosc(dev, apdev, params):
         stop_sigma_dut(sigma)
 
 def test_sigma_dut_eap_ttls_uosc_tod(dev, apdev, params):
-    """sigma_dut controlled STA and EAP-TTLS with UOSC/TOD"""
+    """sigma_dut controlled STA and EAP-TTLS with UOSC/TOD-STRICT"""
+    run_sigma_dut_eap_ttls_uosc_tod(dev, apdev, params, False)
+
+def test_sigma_dut_eap_ttls_uosc_tod_tofu(dev, apdev, params):
+    """sigma_dut controlled STA and EAP-TTLS with UOSC/TOD-TOFU"""
+    run_sigma_dut_eap_ttls_uosc_tod(dev, apdev, params, True)
+
+def run_sigma_dut_eap_ttls_uosc_tod(dev, apdev, params, tofu):
     logdir = params['logdir']
 
+    name = "sigma_dut_eap_ttls_uosc_tod"
+    if tofu:
+        name += "_tofu"
     with open("auth_serv/ca.pem", "r") as f:
-        with open(os.path.join(logdir, "sigma_dut_eap_ttls_uosc_tod.ca.pem"),
-                  "w") as f2:
+        with open(os.path.join(logdir, name + ".ca.pem"), "w") as f2:
             f2.write(f.read())
 
-    src = "auth_serv/server-certpol.pem"
-    dst = os.path.join(logdir, "sigma_dut_eap_ttls_uosc_tod.server.der")
-    hashdst = os.path.join(logdir,
-                           "sigma_dut_eap_ttls_uosc_tod.server.pem.sha256")
+    if tofu:
+        src = "auth_serv/server-certpol2.pem"
+    else:
+        src = "auth_serv/server-certpol.pem"
+    dst = os.path.join(logdir, name + ".server.der")
+    hashdst = os.path.join(logdir, name + ".server.pem.sha256")
     subprocess.check_call(["openssl", "x509", "-in", src, "-out", dst,
                            "-outform", "DER"],
                           stderr=open('/dev/null', 'w'))
@@ -2858,23 +2869,26 @@ def test_sigma_dut_eap_ttls_uosc_tod(dev, apdev, params):
     with open(hashdst, "w") as f:
         f.write(binascii.hexlify(hash).decode())
 
-    dst = os.path.join(logdir,
-                       "sigma_dut_eap_ttls_uosc_tod.incorrect.pem.sha256")
+    dst = os.path.join(logdir, name + ".incorrect.pem.sha256")
     with open(dst, "w") as f:
         f.write(32*"00")
 
     ssid = "test-wpa2-eap"
     params = int_eap_server_params()
     params["ssid"] = ssid
-    params["server_cert"] = "auth_serv/server-certpol.pem"
-    params["private_key"] = "auth_serv/server-certpol.key"
+    if tofu:
+        params["server_cert"] = "auth_serv/server-certpol2.pem"
+        params["private_key"] = "auth_serv/server-certpol2.key"
+    else:
+        params["server_cert"] = "auth_serv/server-certpol.pem"
+        params["private_key"] = "auth_serv/server-certpol.key"
     hapd = hostapd.add_ap(apdev[0], params)
 
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname, cert_path=logdir, debug=True)
 
     try:
-        cmd = "sta_set_security,type,eapttls,interface,%s,ssid,%s,keymgmttype,wpa2,encType,AES-CCMP,PairwiseCipher,AES-CCMP-128,trustedRootCA,sigma_dut_eap_ttls_uosc_tod.ca.pem,username,DOMAIN\mschapv2 user,password,password,ServerCert,sigma_dut_eap_ttls_uosc_tod.server.pem" % (ifname, ssid)
+        cmd = ("sta_set_security,type,eapttls,interface,%s,ssid,%s,keymgmttype,wpa2,encType,AES-CCMP,PairwiseCipher,AES-CCMP-128,trustedRootCA," + name + ".ca.pem,username,DOMAIN\mschapv2 user,password,password,ServerCert," + name + ".server.pem") % (ifname, ssid)
         sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
         sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
         sigma_dut_cmd_check(cmd)
