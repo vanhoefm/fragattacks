@@ -1871,6 +1871,7 @@ struct eap_sm * eap_server_sm_init(void *eapol_ctx,
 	sm->pac_key_refresh_time = conf->pac_key_refresh_time;
 	sm->eap_teap_auth = conf->eap_teap_auth;
 	sm->eap_teap_pac_no_inner = conf->eap_teap_pac_no_inner;
+	sm->eap_teap_separate_result = conf->eap_teap_separate_result;
 	sm->eap_sim_aka_result_ind = conf->eap_sim_aka_result_ind;
 	sm->eap_sim_id = conf->eap_sim_id;
 	sm->tnc = conf->tnc;

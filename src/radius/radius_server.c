@@ -240,6 +240,7 @@ struct radius_server_data {
 
 	int eap_teap_auth;
 	int eap_teap_pac_no_inner;
+	int eap_teap_separate_result;
 
 	/**
 	 * eap_sim_aka_result_ind - EAP-SIM/AKA protected success indication
@@ -799,6 +800,7 @@ radius_server_get_new_session(struct radius_server_data *data,
 	eap_conf.pac_key_refresh_time = data->pac_key_refresh_time;
 	eap_conf.eap_teap_auth = data->eap_teap_auth;
 	eap_conf.eap_teap_pac_no_inner = data->eap_teap_pac_no_inner;
+	eap_conf.eap_teap_separate_result = data->eap_teap_separate_result;
 	eap_conf.eap_sim_aka_result_ind = data->eap_sim_aka_result_ind;
 	eap_conf.eap_sim_id = data->eap_sim_id;
 	eap_conf.tnc = data->tnc;
@@ -2394,6 +2396,7 @@ radius_server_init(struct radius_server_conf *conf)
 	data->pac_key_refresh_time = conf->pac_key_refresh_time;
 	data->eap_teap_auth = conf->eap_teap_auth;
 	data->eap_teap_pac_no_inner = conf->eap_teap_pac_no_inner;
+	data->eap_teap_separate_result = conf->eap_teap_separate_result;
 	data->get_eap_user = conf->get_eap_user;
 	data->eap_sim_aka_result_ind = conf->eap_sim_aka_result_ind;
 	data->eap_sim_id = conf->eap_sim_id;

@@ -130,6 +130,7 @@ struct radius_server_conf {
 
 	int eap_teap_auth;
 	int eap_teap_pac_no_inner;
+	int eap_teap_separate_result;
 
 	/**
 	 * eap_sim_aka_result_ind - EAP-SIM/AKA protected success indication

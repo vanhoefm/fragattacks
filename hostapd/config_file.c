@@ -2620,6 +2620,8 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		bss->eap_teap_auth = val;
 	} else if (os_strcmp(buf, "eap_teap_pac_no_inner") == 0) {
 		bss->eap_teap_pac_no_inner = atoi(pos);
+	} else if (os_strcmp(buf, "eap_teap_separate_result") == 0) {
+		bss->eap_teap_separate_result = atoi(pos);
 #endif /* EAP_SERVER_TEAP */
 #ifdef EAP_SERVER_SIM
 	} else if (os_strcmp(buf, "eap_sim_db") == 0) {

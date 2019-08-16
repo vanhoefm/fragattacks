@@ -31,7 +31,7 @@ struct eap_teap_data {
 	enum {
 		START, PHASE1, PHASE1B, PHASE2_START, PHASE2_ID,
 		PHASE2_BASIC_AUTH, PHASE2_METHOD, CRYPTO_BINDING, REQUEST_PAC,
-		FAILURE_SEND_RESULT, SUCCESS, FAILURE
+		FAILURE_SEND_RESULT, SUCCESS_SEND_RESULT, SUCCESS, FAILURE
 	} state;
 
 	u8 teap_version;
@@ -100,6 +100,8 @@ static const char * eap_teap_state_txt(int state)
 		return "REQUEST_PAC";
 	case FAILURE_SEND_RESULT:
 		return "FAILURE_SEND_RESULT";
+	case SUCCESS_SEND_RESULT:
+		return "SUCCESS_SEND_RESULT";
 	case SUCCESS:
 		return "SUCCESS";
 	case FAILURE:
@@ -565,7 +567,7 @@ static struct wpabuf * eap_teap_build_crypto_binding(
 		return NULL;
 
 	if (data->send_new_pac || data->anon_provisioning ||
-	    data->phase2_method)
+	    data->phase2_method || sm->eap_teap_separate_result)
 		data->final_result = 0;
 	else
 		data->final_result = 1;
@@ -900,6 +902,10 @@ static struct wpabuf * eap_teap_buildReq(struct eap_sm *sm, void *priv, u8 id)
 		if (data->error_code)
 			req = wpabuf_concat(
 				req, eap_teap_tlv_error(data->error_code));
+		break;
+	case SUCCESS_SEND_RESULT:
+		req = eap_teap_tlv_result(TEAP_STATUS_SUCCESS, 0);
+		data->final_result = 1;
 		break;
 	default:
 		wpa_printf(MSG_DEBUG, "EAP-TEAP: %s - unexpected state %d",
@@ -1498,8 +1504,11 @@ static void eap_teap_process_phase2_tlvs(struct eap_sm *sm,
 			wpa_printf(MSG_DEBUG,
 				   "EAP-TEAP: Server triggered re-keying of Tunnel PAC");
 			eap_teap_state(data, REQUEST_PAC);
-		} else if (data->final_result)
+		} else if (data->final_result) {
 			eap_teap_state(data, SUCCESS);
+		} else if (sm->eap_teap_separate_result) {
+			eap_teap_state(data, SUCCESS_SEND_RESULT);
+		}
 	}
 
 	if (tlv.basic_auth_resp) {
@@ -1522,6 +1531,13 @@ static void eap_teap_process_phase2_tlvs(struct eap_sm *sm,
 		}
 		eap_teap_process_phase2_eap(sm, data, tlv.eap_payload_tlv,
 					    tlv.eap_payload_tlv_len);
+	}
+
+	if (data->state == SUCCESS_SEND_RESULT &&
+	    tlv.result == TEAP_STATUS_SUCCESS) {
+		wpa_printf(MSG_DEBUG,
+			   "EAP-TEAP: Peer agreed with final success - authentication completed");
+		eap_teap_state(data, SUCCESS);
 	}
 }
 
@@ -1693,6 +1709,7 @@ static void eap_teap_process_msg(struct eap_sm *sm, void *priv,
 	case PHASE2_METHOD:
 	case CRYPTO_BINDING:
 	case REQUEST_PAC:
+	case SUCCESS_SEND_RESULT:
 		eap_teap_process_phase2(sm, data, data->ssl.tls_in);
 		break;
 	case FAILURE_SEND_RESULT:

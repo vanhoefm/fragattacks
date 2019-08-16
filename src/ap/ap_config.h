@@ -429,6 +429,7 @@ struct hostapd_bss_config {
 	int pac_key_refresh_time;
 	int eap_teap_auth;
 	int eap_teap_pac_no_inner;
+	int eap_teap_separate_result;
 	int eap_sim_aka_result_ind;
 	int eap_sim_id;
 	int tnc;
