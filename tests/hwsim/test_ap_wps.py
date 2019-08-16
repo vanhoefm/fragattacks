@@ -5,6 +5,7 @@
 # See README for more details.
 
 from remotehost import remote_compatible
+from tshark import run_tshark
 import base64
 import binascii
 from Crypto.Cipher import AES
@@ -9980,6 +9981,59 @@ def test_ap_wps_pbc_in_m1(dev, apdev):
     hapd.disable()
     dev[0].dump_monitor()
     dev[0].flush_scan_cache()
+
+def test_ap_wps_pbc_mac_addr_change(dev, apdev, params):
+    """WPS M1 with MAC address change"""
+    ssid = "test-wps-mac-addr-change"
+    hapd = hostapd.add_ap(apdev[0],
+                          {"ssid": ssid, "eap_server": "1", "wps_state": "1"})
+    hapd.request("WPS_PBC")
+    if "PBC Status: Active" not in hapd.request("WPS_GET_STATUS"):
+        raise Exception("PBC status not shown correctly")
+    dev[0].flush_scan_cache()
+
+    test_addr = '02:11:22:33:44:55'
+    addr = dev[0].get_status_field("address")
+    if addr == test_addr:
+        raise Exception("Unexpected initial MAC address")
+
+    try:
+        subprocess.call(['ip', 'link', 'set', 'dev', dev[0].ifname, 'down'])
+        subprocess.call(['ip', 'link', 'set', 'dev', dev[0].ifname, 'address',
+                         test_addr])
+        subprocess.call(['ip', 'link', 'set', 'dev', dev[0].ifname, 'up'])
+        addr1 = dev[0].get_status_field("address")
+        if addr1 != test_addr:
+            raise Exception("Failed to change MAC address")
+
+        dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412", force_scan=True)
+        dev[0].request("WPS_PBC " + apdev[0]['bssid'])
+        dev[0].wait_connected(timeout=30)
+        status = dev[0].get_status()
+        if status['wpa_state'] != 'COMPLETED' or \
+           status['bssid'] != apdev[0]['bssid']:
+            raise Exception("Not fully connected")
+
+        out = run_tshark(os.path.join(params['logdir'], "hwsim0.pcapng"),
+                         "wps.message_type == 0x04",
+                         display=["wps.mac_address"])
+        res = out.splitlines()
+
+        if len(res) < 1:
+            raise Exception("No M1 message with MAC address found")
+        if res[0] != addr1:
+            raise Exception("Wrong M1 MAC address")
+        dev[0].request("DISCONNECT")
+        dev[0].wait_disconnected()
+        hapd.disable()
+        dev[0].dump_monitor()
+        dev[0].flush_scan_cache()
+    finally:
+        # Restore MAC address
+        subprocess.call(['ip', 'link', 'set', 'dev', dev[0].ifname, 'down'])
+        subprocess.call(['ip', 'link', 'set', 'dev', dev[0].ifname, 'address',
+                         addr])
+        subprocess.call(['ip', 'link', 'set', 'dev', dev[0].ifname, 'up'])
 
 def test_ap_wps_pin_start_failure(dev, apdev):
     """WPS_PIN start failure"""
