@@ -7084,7 +7084,7 @@ def run_openssl_systemwide_policy(iface, apdev, test_params):
     wpas.request("TERMINATE")
 
 def test_ap_wpa2_eap_tls_tod(dev, apdev):
-    """EAP-TLS server certificate validation and TOD"""
+    """EAP-TLS server certificate validation and TOD-STRICT"""
     params = int_eap_server_params()
     params["server_cert"] = "auth_serv/server-certpol.pem"
     params["private_key"] = "auth_serv/server-certpol.key"
@@ -7108,6 +7108,35 @@ def test_ap_wpa2_eap_tls_tod(dev, apdev):
             tod0 = " tod=1" in ev
     dev[0].wait_connected()
     if not tod0:
-        raise Exception("TOD policy not reported for server certificate")
+        raise Exception("TOD-STRICT policy not reported for server certificate")
     if tod1:
-        raise Exception("TOD policy unexpectedly reported for CA certificate")
+        raise Exception("TOD-STRICT policy unexpectedly reported for CA certificate")
+
+def test_ap_wpa2_eap_tls_tod_tofu(dev, apdev):
+    """EAP-TLS server certificate validation and TOD-TOFU"""
+    params = int_eap_server_params()
+    params["server_cert"] = "auth_serv/server-certpol2.pem"
+    params["private_key"] = "auth_serv/server-certpol2.key"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP",
+                   eap="TLS", identity="tls user",
+                   wait_connect=False, scan_freq="2412",
+                   ca_cert="auth_serv/ca.pem",
+                   client_cert="auth_serv/user.pem",
+                   private_key="auth_serv/user.key")
+    tod0 = None
+    tod1 = None
+    while tod0 is None or tod1 is None:
+        ev = dev[0].wait_event(["CTRL-EVENT-EAP-PEER-CERT"], timeout=10)
+        if ev is None:
+            raise Exception("Peer certificate not reported")
+        if "depth=1 " in ev and "hash=" in ev:
+            tod1 = " tod=2" in ev
+        if "depth=0 " in ev and "hash=" in ev:
+            tod0 = " tod=2" in ev
+    dev[0].wait_connected()
+    if not tod0:
+        raise Exception("TOD-TOFU policy not reported for server certificate")
+    if tod1:
+        raise Exception("TOD-TOFU policy unexpectedly reported for CA certificate")
