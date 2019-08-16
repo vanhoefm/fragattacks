@@ -659,6 +659,8 @@ TLS_FUNCS=y
 CONFIG_IEEE8021X_EAPOL=y
 NEED_T_PRF=y
 NEED_SHA384=y
+NEED_TLS_PRF_SHA256=y
+NEED_TLS_PRF_SHA384=y
 endif
 
 ifdef CONFIG_EAP_PAX
@@ -1365,6 +1367,9 @@ SHA256OBJS += src/crypto/sha512-internal.c
 endif
 ifdef NEED_TLS_PRF_SHA256
 SHA256OBJS += src/crypto/sha256-tlsprf.c
+endif
+ifdef NEED_TLS_PRF_SHA384
+SHA256OBJS += src/crypto/sha384-tlsprf.c
 endif
 ifdef NEED_HMAC_SHA256_KDF
 L_CFLAGS += -DCONFIG_HMAC_SHA256_KDF

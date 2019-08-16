@@ -533,6 +533,8 @@ OBJS += ../src/eap_common/eap_teap_common.o
 TLS_FUNCS=y
 NEED_T_PRF=y
 NEED_SHA384=y
+NEED_TLS_PRF_SHA256=y
+NEED_TLS_PRF_SHA384=y
 NEED_AES_UNWRAP=y
 endif
 
@@ -1067,6 +1069,9 @@ OBJS += ../src/crypto/sha256-internal.o
 endif
 ifdef NEED_TLS_PRF_SHA256
 OBJS += ../src/crypto/sha256-tlsprf.o
+endif
+ifdef NEED_TLS_PRF_SHA384
+OBJS += ../src/crypto/sha384-tlsprf.o
 endif
 ifdef NEED_HMAC_SHA256_KDF
 OBJS += ../src/crypto/sha256-kdf.o
