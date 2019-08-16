@@ -453,6 +453,7 @@ struct wpa_ft_ies {
 	size_t r0kh_id_len;
 	const u8 *rsn;
 	size_t rsn_len;
+	u16 rsn_capab;
 	const u8 *rsn_pmkid;
 	const u8 *tie;
 	size_t tie_len;

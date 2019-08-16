@@ -597,6 +597,14 @@ int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 		return -1;
 	}
 
+#ifdef CONFIG_IEEE80211W
+	if (sm->mfp == 2 && !(parse.rsn_capab & WPA_CAPABILITY_MFPC)) {
+		wpa_printf(MSG_INFO,
+			   "FT: Target AP does not support PMF, but local configuration requires that");
+		return -1;
+	}
+#endif /* CONFIG_IEEE80211W */
+
 	os_memcpy(sm->r1kh_id, parse.r1kh_id, FT_R1KH_ID_LEN);
 	wpa_hexdump(MSG_DEBUG, "FT: R1KH-ID", sm->r1kh_id, FT_R1KH_ID_LEN);
 	wpa_hexdump(MSG_DEBUG, "FT: SNonce", sm->snonce, WPA_NONCE_LEN);

@@ -958,6 +958,7 @@ int wpa_ft_parse_ies(const u8 *ies, size_t ies_len,
 					   "RSN IE: %d", ret);
 				return -1;
 			}
+			parse->rsn_capab = data.capabilities;
 			if (data.num_pmkid == 1 && data.pmkid)
 				parse->rsn_pmkid = data.pmkid;
 			parse->key_mgmt = data.key_mgmt;
