@@ -40,6 +40,14 @@ cat openssl2.cnf |
 #$OPENSSL req -config openssl.cnf.tmp -batch -new -newkey rsa:3072 -nodes -keyout server-certpol.key -out server-certpol.csr -outform PEM -sha256
 $OPENSSL ca -config $PWD/openssl.cnf.tmp -batch -in server-certpol.csr -out server-certpol.pem -extensions ext_server
 
+cat openssl2.cnf |
+	sed "s/#@CN@/commonName_default = server-policies2.w1.fi/" |
+	sed "s/#@ALTNAME@/subjectAltName=DNS:server-policies2.w1.fi/" |
+	sed "s/#@CERTPOL@/certificatePolicies = 1.3.6.1.4.1.40808.1.3.2/" \
+	> openssl.cnf.tmp
+#$OPENSSL req -config openssl.cnf.tmp -batch -new -newkey rsa:3072 -nodes -keyout server-certpol2.key -out server-certpol2.csr -outform PEM -sha256
+$OPENSSL ca -config $PWD/openssl.cnf.tmp -batch -in server-certpol2.csr -out server-certpol2.pem -extensions ext_server
+
 echo
 echo "---[ Update user certificates ]-----------------------------------------"
 echo
