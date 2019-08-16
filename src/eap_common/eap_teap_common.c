@@ -461,6 +461,15 @@ int eap_teap_parse_tlv(struct eap_teap_tlv_parse *tlv,
 		tlv->nak = pos;
 		tlv->nak_len = len;
 		break;
+	case TEAP_TLV_ERROR:
+		if (len < 4) {
+			wpa_printf(MSG_INFO, "EAP-TEAP: Too short Error TLV");
+			tlv->result = TEAP_STATUS_FAILURE;
+			break;
+		}
+		tlv->error_code = WPA_GET_BE32(pos);
+		wpa_printf(MSG_DEBUG, "EAP-TEAP: Error: %u", tlv->error_code);
+		break;
 	case TEAP_TLV_REQUEST_ACTION:
 		wpa_hexdump(MSG_MSGDUMP, "EAP-TEAP: Request-Action TLV",
 			    pos, len);

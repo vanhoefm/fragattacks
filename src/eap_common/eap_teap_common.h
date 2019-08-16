@@ -188,6 +188,7 @@ struct eap_teap_tlv_parse {
 	size_t basic_auth_req_len;
 	u8 *basic_auth_resp;
 	size_t basic_auth_resp_len;
+	u32 error_code;
 };
 
 void eap_teap_put_tlv_hdr(struct wpabuf *buf, u16 type, u16 len);
