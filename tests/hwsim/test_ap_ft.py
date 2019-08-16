@@ -136,12 +136,12 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
               group_mgmt=None, ocv=None, sae_password=None,
               sae_password_id=None, sae_and_psk=False, pmksa_caching=False,
               roam_with_reassoc=False, also_non_ft=False, only_one_way=False,
-              wait_before_roam=0, return_after_initial=False):
+              wait_before_roam=0, return_after_initial=False, ieee80211w="1"):
     logger.info("Connect to first AP")
 
     copts = {}
     copts["proto"] = "WPA2"
-    copts["ieee80211w"] = "1"
+    copts["ieee80211w"] = ieee80211w
     copts["scan_freq"] = "2412"
     copts["pairwise"] = pairwise_cipher
     copts["group"] = group_cipher
@@ -435,6 +435,21 @@ def test_ap_ft_mixed(dev, apdev):
 
 def test_ap_ft_pmf(dev, apdev):
     """WPA2-PSK-FT AP with PMF"""
+    run_ap_ft_pmf(dev, apdev, "1")
+
+def test_ap_ft_pmf_over_ds(dev, apdev):
+    """WPA2-PSK-FT AP with PMF (over DS)"""
+    run_ap_ft_pmf(dev, apdev, "1", over_ds=True)
+
+def test_ap_ft_pmf_required(dev, apdev):
+    """WPA2-PSK-FT AP with PMF required on STA"""
+    run_ap_ft_pmf(dev, apdev, "2")
+
+def test_ap_ft_pmf_required_over_ds(dev, apdev):
+    """WPA2-PSK-FT AP with PMF required on STA (over DS)"""
+    run_ap_ft_pmf(dev, apdev, "2", over_ds=True)
+
+def run_ap_ft_pmf(dev, apdev, ieee80211w, over_ds=False):
     ssid = "test-ft"
     passphrase = "12345678"
 
@@ -445,7 +460,31 @@ def test_ap_ft_pmf(dev, apdev):
     params["ieee80211w"] = "2"
     hapd1 = hostapd.add_ap(apdev[1], params)
 
-    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase)
+    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase,
+              ieee80211w=ieee80211w, over_ds=over_ds)
+
+def test_ap_ft_pmf_required_mismatch(dev, apdev):
+    """WPA2-PSK-FT AP with PMF required on STA but AP2 not enabling PMF"""
+    run_ap_ft_pmf_required_mismatch(dev, apdev)
+
+def test_ap_ft_pmf_required_mismatch_over_ds(dev, apdev):
+    """WPA2-PSK-FT AP with PMF required on STA but AP2 not enabling PMF (over DS)"""
+    run_ap_ft_pmf_required_mismatch(dev, apdev, over_ds=True)
+
+def run_ap_ft_pmf_required_mismatch(dev, apdev, over_ds=False):
+    ssid = "test-ft"
+    passphrase = "12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "2"
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params["ieee80211w"] = "0"
+    hapd1 = hostapd.add_ap(apdev[1], params)
+
+    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, ieee80211w="2",
+              force_initial_conn_to_first_ap=True, fail_test=True,
+              over_ds=over_ds)
 
 def test_ap_ft_pmf_bip_cmac_128(dev, apdev):
     """WPA2-PSK-FT AP with PMF/BIP-CMAC-128"""
