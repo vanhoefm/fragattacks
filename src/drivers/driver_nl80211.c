@@ -10899,6 +10899,14 @@ static int nl80211_update_connection_params(
 	int ret = -1;
 	enum nl80211_auth_type type;
 
+	/* Update Connection Params is intended for drivers that implement
+	 * internal SME and expect these updated connection params from
+	 * wpa_supplicant. Do not send this request for the drivers using
+	 * SME from wpa_supplicant.
+	 */
+	if (drv->capa.flags & WPA_DRIVER_FLAGS_SME)
+		return 0;
+
 	msg = nl80211_drv_msg(drv, 0, NL80211_CMD_UPDATE_CONNECT_PARAMS);
 	if (!msg)
 		goto fail;
