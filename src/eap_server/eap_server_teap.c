@@ -1446,7 +1446,7 @@ static void eap_teap_process_phase2_tlvs(struct eap_sm *sm,
 			return;
 		}
 
-		if (!data->final_result &&
+		if (sm->eap_teap_auth != 1 &&
 		    tlv.iresult != TEAP_STATUS_SUCCESS) {
 			wpa_printf(MSG_DEBUG,
 				   "EAP-TEAP: Crypto-Binding TLV without intermediate Success Result");
