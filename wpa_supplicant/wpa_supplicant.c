@@ -4371,6 +4371,7 @@ int wpa_supplicant_update_mac_addr(struct wpa_supplicant *wpa_s)
 	}
 
 	wpa_sm_set_own_addr(wpa_s->wpa, wpa_s->own_addr);
+	wpas_wps_update_mac_addr(wpa_s);
 
 	return 0;
 }

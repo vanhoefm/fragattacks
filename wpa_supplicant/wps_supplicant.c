@@ -2233,6 +2233,16 @@ void wpas_wps_update_config(struct wpa_supplicant *wpa_s)
 }
 
 
+void wpas_wps_update_mac_addr(struct wpa_supplicant *wpa_s)
+{
+	struct wps_context *wps;
+
+	wps = wpa_s->wps;
+	if (wps)
+		os_memcpy(wps->dev.mac_addr, wpa_s->own_addr, ETH_ALEN);
+}
+
+
 #ifdef CONFIG_WPS_NFC
 
 #ifdef CONFIG_WPS_ER
