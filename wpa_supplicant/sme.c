@@ -1197,12 +1197,12 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 }
 
 
-static int sme_sae_set_pmk(struct wpa_supplicant *wpa_s)
+static int sme_sae_set_pmk(struct wpa_supplicant *wpa_s, const u8 *bssid)
 {
 	wpa_printf(MSG_DEBUG,
 		   "SME: SAE completed - setting PMK for 4-way handshake");
 	wpa_sm_set_pmk(wpa_s->wpa, wpa_s->sme.sae.pmk, PMK_LEN,
-		       wpa_s->sme.sae.pmkid, wpa_s->pending_bssid);
+		       wpa_s->sme.sae.pmkid, bssid);
 	if (wpa_s->conf->sae_pmkid_in_assoc) {
 		/* Update the own RSNE contents now that we have set the PMK
 		 * and added a PMKSA cache entry based on the successfully
@@ -1261,7 +1261,7 @@ void sme_external_auth_mgmt_rx(struct wpa_supplicant *wpa_s,
 		if (res != 1)
 			return;
 
-		if (sme_sae_set_pmk(wpa_s) < 0)
+		if (sme_sae_set_pmk(wpa_s, wpa_s->sme.ext_auth_bssid) < 0)
 			return;
 	}
 }
@@ -1315,7 +1315,7 @@ void sme_event_auth(struct wpa_supplicant *wpa_s, union wpa_event_data *data)
 		if (res != 1)
 			return;
 
-		if (sme_sae_set_pmk(wpa_s) < 0)
+		if (sme_sae_set_pmk(wpa_s, wpa_s->pending_bssid) < 0)
 			return;
 	}
 #endif /* CONFIG_SAE */
