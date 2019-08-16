@@ -247,11 +247,10 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	/* RSN Capabilities */
 	capab = 0;
 #ifdef CONFIG_IEEE80211W
-	if (sm->mgmt_group_cipher == WPA_CIPHER_AES_128_CMAC ||
-	    sm->mgmt_group_cipher == WPA_CIPHER_BIP_GMAC_128 ||
-	    sm->mgmt_group_cipher == WPA_CIPHER_BIP_GMAC_256 ||
-	    sm->mgmt_group_cipher == WPA_CIPHER_BIP_CMAC_256)
+	if (sm->mfp)
 		capab |= WPA_CAPABILITY_MFPC;
+	if (sm->mfp == 2)
+		capab |= WPA_CAPABILITY_MFPR;
 #endif /* CONFIG_IEEE80211W */
 	if (sm->ocv)
 		capab |= WPA_CAPABILITY_OCVC;
