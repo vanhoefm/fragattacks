@@ -1193,6 +1193,7 @@ static int eap_teap_process_decrypted(struct eap_sm *sm,
 	struct eap_teap_tlv_parse tlv;
 	int failed = 0;
 	enum teap_error_codes error = 0;
+	int iresult_added = 0;
 
 	if (eap_teap_parse_decrypted(decrypted, &tlv, &resp) < 0) {
 		/* Parsing failed - no response available */
@@ -1262,6 +1263,7 @@ static int eap_teap_process_decrypted(struct eap_sm *sm,
 			resp = wpabuf_concat(resp, tmp);
 			if (tlv.iresult == TEAP_STATUS_FAILURE)
 				failed = 1;
+			iresult_added = 1;
 		}
 	}
 
@@ -1346,6 +1348,13 @@ done:
 		ret->decision = DECISION_FAIL;
 	} else if (tlv.result == TEAP_STATUS_SUCCESS) {
 		tmp = eap_teap_tlv_result(TEAP_STATUS_SUCCESS, 0);
+		resp = wpabuf_concat(tmp, resp);
+	}
+	if ((tlv.iresult == TEAP_STATUS_SUCCESS ||
+	     tlv.iresult == TEAP_STATUS_FAILURE) && !iresult_added) {
+		tmp = eap_teap_tlv_result((!failed && data->phase2_success) ?
+					  TEAP_STATUS_SUCCESS :
+					  TEAP_STATUS_FAILURE, 1);
 		resp = wpabuf_concat(tmp, resp);
 	}
 
