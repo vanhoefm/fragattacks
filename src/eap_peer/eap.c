@@ -2601,6 +2601,8 @@ void eap_sm_notify_ctrl_attached(struct eap_sm *sm)
 
 static int eap_allowed_phase2_type(int vendor, int type)
 {
+	if (vendor == EAP_VENDOR_HOSTAP)
+		return 1;
 	if (vendor != EAP_VENDOR_IETF)
 		return 0;
 	return type != EAP_TYPE_PEAP && type != EAP_TYPE_TTLS &&
