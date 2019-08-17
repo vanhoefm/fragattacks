@@ -827,15 +827,14 @@ static void eap_ttls_process_phase2_mschapv2(struct eap_sm *sm,
 
 static int eap_ttls_phase2_eap_init(struct eap_sm *sm,
 				    struct eap_ttls_data *data,
-				    enum eap_type eap_type)
+				    int vendor, enum eap_type eap_type)
 {
 	if (data->phase2_priv && data->phase2_method) {
 		data->phase2_method->reset(sm, data->phase2_priv);
 		data->phase2_method = NULL;
 		data->phase2_priv = NULL;
 	}
-	data->phase2_method = eap_server_get_eap_method(EAP_VENDOR_IETF,
-							eap_type);
+	data->phase2_method = eap_server_get_eap_method(vendor, eap_type);
 	if (!data->phase2_method)
 		return -1;
 
@@ -850,7 +849,8 @@ static void eap_ttls_process_phase2_eap_response(struct eap_sm *sm,
 						 struct eap_ttls_data *data,
 						 u8 *in_data, size_t in_len)
 {
-	u8 next_type = EAP_TYPE_NONE;
+	int next_vendor = EAP_VENDOR_IETF;
+	enum eap_type next_type = EAP_TYPE_NONE;
 	struct eap_hdr *hdr;
 	u8 *pos;
 	size_t left;
@@ -875,14 +875,17 @@ static void eap_ttls_process_phase2_eap_response(struct eap_sm *sm,
 		if (sm->user && sm->user_eap_method_index < EAP_MAX_METHODS &&
 		    sm->user->methods[sm->user_eap_method_index].method !=
 		    EAP_TYPE_NONE) {
+			next_vendor = sm->user->methods[
+				sm->user_eap_method_index].vendor;
 			next_type = sm->user->methods[
 				sm->user_eap_method_index++].method;
-			wpa_printf(MSG_DEBUG, "EAP-TTLS: try EAP type %d",
-				   next_type);
-			if (eap_ttls_phase2_eap_init(sm, data, next_type)) {
-				wpa_printf(MSG_DEBUG, "EAP-TTLS: Failed to "
-					   "initialize EAP type %d",
-					   next_type);
+			wpa_printf(MSG_DEBUG, "EAP-TTLS: try EAP type %u:%u",
+				   next_vendor, next_type);
+			if (eap_ttls_phase2_eap_init(sm, data, next_vendor,
+						     next_type)) {
+				wpa_printf(MSG_DEBUG,
+					   "EAP-TTLS: Failed to initialize EAP type %u:%u",
+					   next_vendor, next_type);
 				eap_ttls_state(data, FAILURE);
 				return;
 			}
@@ -930,12 +933,16 @@ static void eap_ttls_process_phase2_eap_response(struct eap_sm *sm,
 		}
 
 		eap_ttls_state(data, PHASE2_METHOD);
+		next_vendor = sm->user->methods[0].vendor;
 		next_type = sm->user->methods[0].method;
 		sm->user_eap_method_index = 1;
-		wpa_printf(MSG_DEBUG, "EAP-TTLS: try EAP type %d", next_type);
-		if (eap_ttls_phase2_eap_init(sm, data, next_type)) {
-			wpa_printf(MSG_DEBUG, "EAP-TTLS: Failed to initialize "
-				   "EAP type %d", next_type);
+		wpa_printf(MSG_DEBUG, "EAP-TTLS: try EAP type %u:%u",
+			   next_vendor, next_type);
+		if (eap_ttls_phase2_eap_init(sm, data, next_vendor,
+					     next_type)) {
+			wpa_printf(MSG_DEBUG,
+				   "EAP-TTLS: Failed to initialize EAP type %u:%u",
+				   next_vendor, next_type);
 			eap_ttls_state(data, FAILURE);
 		}
 		break;
@@ -962,8 +969,8 @@ static void eap_ttls_process_phase2_eap(struct eap_sm *sm,
 
 	if (data->state == PHASE2_START) {
 		wpa_printf(MSG_DEBUG, "EAP-TTLS/EAP: initializing Phase 2");
-		if (eap_ttls_phase2_eap_init(sm, data, EAP_TYPE_IDENTITY) < 0)
-		{
+		if (eap_ttls_phase2_eap_init(sm, data, EAP_VENDOR_IETF,
+					     EAP_TYPE_IDENTITY) < 0) {
 			wpa_printf(MSG_DEBUG, "EAP-TTLS/EAP: failed to "
 				   "initialize EAP-Identity");
 			return;
@@ -1116,7 +1123,7 @@ static void eap_ttls_start_tnc(struct eap_sm *sm, struct eap_ttls_data *data)
 		return;
 
 	wpa_printf(MSG_DEBUG, "EAP-TTLS: Initialize TNC");
-	if (eap_ttls_phase2_eap_init(sm, data, EAP_TYPE_TNC)) {
+	if (eap_ttls_phase2_eap_init(sm, data, EAP_VENDOR_IETF, EAP_TYPE_TNC)) {
 		wpa_printf(MSG_DEBUG, "EAP-TTLS: Failed to initialize TNC");
 		eap_ttls_state(data, FAILURE);
 		return;
