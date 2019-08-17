@@ -215,7 +215,8 @@ int eap_teap_parse_tlv(struct eap_teap_tlv_parse *tlv,
 const char * eap_teap_tlv_type_str(enum teap_tlv_types type);
 struct wpabuf * eap_teap_tlv_result(int status, int intermediate);
 struct wpabuf * eap_teap_tlv_error(enum teap_error_codes error);
-int eap_teap_allowed_anon_prov_phase2_method(u8 type);
+enum eap_type;
+int eap_teap_allowed_anon_prov_phase2_method(int vendor, enum eap_type type);
 int eap_teap_allowed_anon_prov_cipher_suite(u16 cs);
 
 #endif /* EAP_TEAP_H */

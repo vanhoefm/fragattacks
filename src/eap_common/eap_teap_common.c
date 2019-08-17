@@ -679,12 +679,13 @@ struct wpabuf * eap_teap_tlv_error(enum teap_error_codes error)
 }
 
 
-int eap_teap_allowed_anon_prov_phase2_method(u8 type)
+int eap_teap_allowed_anon_prov_phase2_method(int vendor, enum eap_type type)
 {
 	/* RFC 7170, Section 3.8.3: MUST provide mutual authentication,
 	 * provide key generation, and be resistant to dictionary attack.
 	 * Section 3.8 also mentions requirement for using EMSK Compound MAC. */
-	return type == EAP_TYPE_PWD || type == EAP_TYPE_EKE;
+	return vendor == EAP_VENDOR_IETF &&
+		(type == EAP_TYPE_PWD || type == EAP_TYPE_EKE);
 }
 
 
