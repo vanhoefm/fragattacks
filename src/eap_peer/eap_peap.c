@@ -603,6 +603,8 @@ static int eap_peap_phase2_request(struct eap_sm *sm,
 	u8 *pos;
 	struct eap_method_ret iret;
 	struct eap_peer_config *config = eap_get_config(sm);
+	int vendor;
+	enum eap_type method;
 
 	if (len <= sizeof(struct eap_hdr)) {
 		wpa_printf(MSG_INFO, "EAP-PEAP: too short "
@@ -666,13 +668,26 @@ static int eap_peap_phase2_request(struct eap_sm *sm,
 #endif /* EAP_TNC */
 		/* fall through */
 	default:
+		vendor = EAP_VENDOR_IETF;
+		method = *pos;
+
+		if (method == EAP_TYPE_EXPANDED) {
+			if (len < sizeof(struct eap_hdr) + 8) {
+				wpa_printf(MSG_INFO,
+					   "EAP-PEAP: Too short Phase 2 request (expanded header) (len=%lu)",
+					   (unsigned long) len);
+				return -1;
+			}
+			vendor = WPA_GET_BE24(pos + 1);
+			method = WPA_GET_BE32(pos + 4);
+		}
+
 		if (data->phase2_type.vendor == EAP_VENDOR_IETF &&
 		    data->phase2_type.method == EAP_TYPE_NONE) {
 			size_t i;
 			for (i = 0; i < data->num_phase2_types; i++) {
-				if (data->phase2_types[i].vendor !=
-				    EAP_VENDOR_IETF ||
-				    data->phase2_types[i].method != *pos)
+				if (data->phase2_types[i].vendor != vendor ||
+				    data->phase2_types[i].method != method)
 					continue;
 
 				data->phase2_type.vendor =
@@ -686,8 +701,9 @@ static int eap_peap_phase2_request(struct eap_sm *sm,
 				break;
 			}
 		}
-		if (*pos != data->phase2_type.method ||
-		    *pos == EAP_TYPE_NONE) {
+		if (vendor != data->phase2_type.vendor ||
+		    method != data->phase2_type.method ||
+		    (vendor == EAP_VENDOR_IETF && method == EAP_TYPE_NONE)) {
 			if (eap_peer_tls_phase2_nak(data->phase2_types,
 						    data->num_phase2_types,
 						    hdr, resp))
