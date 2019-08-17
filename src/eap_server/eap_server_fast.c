@@ -943,15 +943,14 @@ static Boolean eap_fast_check(struct eap_sm *sm, void *priv,
 
 
 static int eap_fast_phase2_init(struct eap_sm *sm, struct eap_fast_data *data,
-				enum eap_type eap_type)
+				int vendor, enum eap_type eap_type)
 {
 	if (data->phase2_priv && data->phase2_method) {
 		data->phase2_method->reset(sm, data->phase2_priv);
 		data->phase2_method = NULL;
 		data->phase2_priv = NULL;
 	}
-	data->phase2_method = eap_server_get_eap_method(EAP_VENDOR_IETF,
-							eap_type);
+	data->phase2_method = eap_server_get_eap_method(vendor, eap_type);
 	if (!data->phase2_method)
 		return -1;
 
@@ -973,7 +972,8 @@ static void eap_fast_process_phase2_response(struct eap_sm *sm,
 					     struct eap_fast_data *data,
 					     u8 *in_data, size_t in_len)
 {
-	u8 next_type = EAP_TYPE_NONE;
+	int next_vendor = EAP_VENDOR_IETF;
+	enum eap_type next_type = EAP_TYPE_NONE;
 	struct eap_hdr *hdr;
 	u8 *pos;
 	size_t left;
@@ -999,8 +999,9 @@ static void eap_fast_process_phase2_response(struct eap_sm *sm,
 		    m->method == EAP_TYPE_TNC) {
 			wpa_printf(MSG_DEBUG, "EAP-FAST: Peer Nak'ed required "
 				   "TNC negotiation");
+			next_vendor = EAP_VENDOR_IETF;
 			next_type = eap_fast_req_failure(sm, data);
-			eap_fast_phase2_init(sm, data, next_type);
+			eap_fast_phase2_init(sm, data, next_vendor, next_type);
 			return;
 		}
 #endif /* EAP_SERVER_TNC */
@@ -1008,14 +1009,17 @@ static void eap_fast_process_phase2_response(struct eap_sm *sm,
 		if (sm->user && sm->user_eap_method_index < EAP_MAX_METHODS &&
 		    sm->user->methods[sm->user_eap_method_index].method !=
 		    EAP_TYPE_NONE) {
+			next_vendor = sm->user->methods[
+				sm->user_eap_method_index].vendor;
 			next_type = sm->user->methods[
 				sm->user_eap_method_index++].method;
-			wpa_printf(MSG_DEBUG, "EAP-FAST: try EAP type %d",
-				   next_type);
+			wpa_printf(MSG_DEBUG, "EAP-FAST: try EAP type %u:%u",
+				   next_vendor, next_type);
 		} else {
+			next_vendor = EAP_VENDOR_IETF;
 			next_type = eap_fast_req_failure(sm, data);
 		}
-		eap_fast_phase2_init(sm, data, next_type);
+		eap_fast_phase2_init(sm, data, next_vendor, next_type);
 		return;
 	}
 
@@ -1035,8 +1039,9 @@ static void eap_fast_process_phase2_response(struct eap_sm *sm,
 
 	if (!m->isSuccess(sm, priv)) {
 		wpa_printf(MSG_DEBUG, "EAP-FAST: Phase2 method failed");
+		next_vendor = EAP_VENDOR_IETF;
 		next_type = eap_fast_req_failure(sm, data);
-		eap_fast_phase2_init(sm, data, next_type);
+		eap_fast_phase2_init(sm, data, next_vendor, next_type);
 		return;
 	}
 
@@ -1047,6 +1052,7 @@ static void eap_fast_process_phase2_response(struct eap_sm *sm,
 					  "Identity not found in the user "
 					  "database",
 					  sm->identity, sm->identity_len);
+			next_vendor = EAP_VENDOR_IETF;
 			next_type = eap_fast_req_failure(sm, data);
 			break;
 		}
@@ -1057,23 +1063,28 @@ static void eap_fast_process_phase2_response(struct eap_sm *sm,
 			 * Only EAP-MSCHAPv2 is allowed for anonymous
 			 * provisioning.
 			 */
+			next_vendor = EAP_VENDOR_IETF;
 			next_type = EAP_TYPE_MSCHAPV2;
 			sm->user_eap_method_index = 0;
 		} else {
+			next_vendor = sm->user->methods[0].vendor;
 			next_type = sm->user->methods[0].method;
 			sm->user_eap_method_index = 1;
 		}
-		wpa_printf(MSG_DEBUG, "EAP-FAST: try EAP type %d", next_type);
+		wpa_printf(MSG_DEBUG, "EAP-FAST: try EAP type %u:%u",
+			   next_vendor, next_type);
 		break;
 	case PHASE2_METHOD:
 	case CRYPTO_BINDING:
 		eap_fast_update_icmk(sm, data);
 		eap_fast_state(data, CRYPTO_BINDING);
 		data->eap_seq++;
+		next_vendor = EAP_VENDOR_IETF;
 		next_type = EAP_TYPE_NONE;
 #ifdef EAP_SERVER_TNC
 		if (sm->tnc && !data->tnc_started) {
 			wpa_printf(MSG_DEBUG, "EAP-FAST: Initialize TNC");
+			next_vendor = EAP_VENDOR_IETF;
 			next_type = EAP_TYPE_TNC;
 			data->tnc_started = 1;
 		}
@@ -1087,7 +1098,7 @@ static void eap_fast_process_phase2_response(struct eap_sm *sm,
 		break;
 	}
 
-	eap_fast_phase2_init(sm, data, next_type);
+	eap_fast_phase2_init(sm, data, next_vendor, next_type);
 }
 
 
@@ -1474,7 +1485,8 @@ static int eap_fast_process_phase1(struct eap_sm *sm,
 static int eap_fast_process_phase2_start(struct eap_sm *sm,
 					 struct eap_fast_data *data)
 {
-	u8 next_type;
+	int next_vendor;
+	enum eap_type next_type;
 
 	if (data->identity) {
 		os_free(sm->identity);
@@ -1488,10 +1500,12 @@ static int eap_fast_process_phase2_start(struct eap_sm *sm,
 					  "Phase2 Identity not found "
 					  "in the user database",
 					  sm->identity, sm->identity_len);
+			next_vendor = EAP_VENDOR_IETF;
 			next_type = eap_fast_req_failure(sm, data);
 		} else {
 			wpa_printf(MSG_DEBUG, "EAP-FAST: Identity already "
 				   "known - skip Phase 2 Identity Request");
+			next_vendor = sm->user->methods[0].vendor;
 			next_type = sm->user->methods[0].method;
 			sm->user_eap_method_index = 1;
 		}
@@ -1499,10 +1513,11 @@ static int eap_fast_process_phase2_start(struct eap_sm *sm,
 		eap_fast_state(data, PHASE2_METHOD);
 	} else {
 		eap_fast_state(data, PHASE2_ID);
+		next_vendor = EAP_VENDOR_IETF;
 		next_type = EAP_TYPE_IDENTITY;
 	}
 
-	return eap_fast_phase2_init(sm, data, next_type);
+	return eap_fast_phase2_init(sm, data, next_vendor, next_type);
 }
 
 
