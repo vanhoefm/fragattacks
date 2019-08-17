@@ -361,3 +361,14 @@ def test_eap_teap_errors2(dev, apdev):
                            ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
                            pac_file="blob://teap_pac", wait_connect=False)
             wait_eap_proposed(dev[0], wait_trigger="GET_FAIL")
+
+def test_eap_teap_eap_vendor(dev, apdev):
+    """EAP-TEAP with inner EAP-vendor"""
+    check_eap_capa(dev[0], "TEAP")
+    check_eap_capa(dev[0], "VENDOR-TEST")
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "vendor-test-2",
+                anonymous_identity="TEAP",
+                ca_cert="auth_serv/ca.pem", phase2="auth=VENDOR-TEST",
+                pac_file="blob://teap_pac")

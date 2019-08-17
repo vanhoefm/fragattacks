@@ -1898,6 +1898,14 @@ def run_ap_wpa2_eap_ttls_eap_sim_ext(dev, apdev):
                    wait_connect=False, scan_freq="2412")
     run_ext_sim_auth(hapd, dev[0])
 
+def test_ap_wpa2_eap_ttls_eap_vendor(dev, apdev):
+    """WPA2-Enterprise connection using EAP-TTLS/EAP-vendor"""
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TTLS", "vendor-test-2",
+                anonymous_identity="ttls",
+                ca_cert="auth_serv/ca.pem", phase2="autheap=VENDOR-TEST")
+
 def test_ap_wpa2_eap_peap_eap_sim(dev, apdev):
     """WPA2-Enterprise connection using EAP-PEAP/EAP-SIM"""
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
@@ -2177,6 +2185,13 @@ def test_ap_wpa2_eap_peap_eap_tls(dev, apdev):
                 client_cert2="auth_serv/user.pem",
                 private_key2="auth_serv/user.key")
     eap_reauth(dev[0], "PEAP")
+
+def test_ap_wpa2_eap_peap_eap_vendor(dev, apdev):
+    """WPA2-Enterprise connection using EAP-PEAP/EAP-vendor"""
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "PEAP", "vendor-test-2",
+                ca_cert="auth_serv/ca.pem", phase2="auth=VENDOR-TEST")
 
 def test_ap_wpa2_eap_tls(dev, apdev):
     """WPA2-Enterprise connection using EAP-TLS"""
@@ -4062,6 +4077,15 @@ def test_ap_wpa2_eap_fast_prov(dev, apdev):
     dev[0].request("DISCONNECT")
     dev[0].wait_disconnected()
     dev[0].dump_monitor()
+
+def test_ap_wpa2_eap_fast_eap_vendor(dev, apdev):
+    """WPA2-Enterprise connection using EAP-FAST/EAP-vendor"""
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "FAST", "vendor-test-2",
+                anonymous_identity="FAST",
+                phase1="fast_provisioning=2", pac_file="blob://fast_pac",
+                ca_cert="auth_serv/ca.pem", phase2="auth=VENDOR-TEST")
 
 def test_ap_wpa2_eap_tls_ocsp(dev, apdev):
     """WPA2-Enterprise connection using EAP-TLS and verifying OCSP"""
