@@ -16,7 +16,7 @@
 #include "eap_config.h"
 
 
-static struct wpabuf * eap_tls_msg_alloc(EapType type, size_t payload_len,
+static struct wpabuf * eap_tls_msg_alloc(enum eap_type type, size_t payload_len,
 					 u8 code, u8 identifier)
 {
 	if (type == EAP_UNAUTH_TLS_TYPE)
@@ -619,7 +619,8 @@ static int eap_tls_process_input(struct eap_sm *sm, struct eap_ssl_data *data,
  * @out_data: Buffer for returning the allocated output buffer
  * Returns: ret (0 or 1) on success, -1 on failure
  */
-static int eap_tls_process_output(struct eap_ssl_data *data, EapType eap_type,
+static int eap_tls_process_output(struct eap_ssl_data *data,
+				  enum eap_type eap_type,
 				  int peap_version, u8 id, int ret,
 				  struct wpabuf **out_data)
 {
@@ -717,7 +718,7 @@ static int eap_tls_process_output(struct eap_ssl_data *data, EapType eap_type,
  * the tunneled data is used.
  */
 int eap_peer_tls_process_helper(struct eap_sm *sm, struct eap_ssl_data *data,
-				EapType eap_type, int peap_version,
+				enum eap_type eap_type, int peap_version,
 				u8 id, const struct wpabuf *in_data,
 				struct wpabuf **out_data)
 {
@@ -809,7 +810,7 @@ int eap_peer_tls_process_helper(struct eap_sm *sm, struct eap_ssl_data *data,
  * @peap_version: Version number for EAP-PEAP/TTLS
  * Returns: Pointer to the allocated ACK frame or %NULL on failure
  */
-struct wpabuf * eap_peer_tls_build_ack(u8 id, EapType eap_type,
+struct wpabuf * eap_peer_tls_build_ack(u8 id, enum eap_type eap_type,
 				       int peap_version)
 {
 	struct wpabuf *resp;
@@ -899,7 +900,7 @@ int eap_peer_tls_status(struct eap_sm *sm, struct eap_ssl_data *data,
  */
 const u8 * eap_peer_tls_process_init(struct eap_sm *sm,
 				     struct eap_ssl_data *data,
-				     EapType eap_type,
+				     enum eap_type eap_type,
 				     struct eap_method_ret *ret,
 				     const struct wpabuf *reqData,
 				     size_t *len, u8 *flags)
@@ -1056,7 +1057,7 @@ int eap_peer_tls_decrypt(struct eap_sm *sm, struct eap_ssl_data *data,
  * Returns: 0 on success, -1 on failure
  */
 int eap_peer_tls_encrypt(struct eap_sm *sm, struct eap_ssl_data *data,
-			 EapType eap_type, int peap_version, u8 id,
+			 enum eap_type eap_type, int peap_version, u8 id,
 			 const struct wpabuf *in_data,
 			 struct wpabuf **out_data)
 {

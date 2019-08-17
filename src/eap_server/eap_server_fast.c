@@ -108,8 +108,8 @@ static void eap_fast_state(struct eap_fast_data *data, int state)
 }
 
 
-static EapType eap_fast_req_failure(struct eap_sm *sm,
-				    struct eap_fast_data *data)
+static enum eap_type eap_fast_req_failure(struct eap_sm *sm,
+					  struct eap_fast_data *data)
 {
 	/* TODO: send Result TLV(FAILURE) */
 	eap_fast_state(data, FAILURE);
@@ -943,7 +943,7 @@ static Boolean eap_fast_check(struct eap_sm *sm, void *priv,
 
 
 static int eap_fast_phase2_init(struct eap_sm *sm, struct eap_fast_data *data,
-				EapType eap_type)
+				enum eap_type eap_type)
 {
 	if (data->phase2_priv && data->phase2_method) {
 		data->phase2_method->reset(sm, data->phase2_priv);

@@ -37,9 +37,10 @@ static struct wpabuf * eap_sm_buildFailure(struct eap_sm *sm, u8 id);
 static int eap_sm_nextId(struct eap_sm *sm, int id);
 static void eap_sm_Policy_update(struct eap_sm *sm, const u8 *nak_list,
 				 size_t len);
-static EapType eap_sm_Policy_getNextMethod(struct eap_sm *sm, int *vendor);
+static enum eap_type eap_sm_Policy_getNextMethod(struct eap_sm *sm,
+						 int *vendor);
 static int eap_sm_Policy_getDecision(struct eap_sm *sm);
-static Boolean eap_sm_Policy_doPickUp(struct eap_sm *sm, EapType method);
+static Boolean eap_sm_Policy_doPickUp(struct eap_sm *sm, enum eap_type method);
 
 
 static int eap_get_erp_send_reauth_start(struct eap_sm *sm)
@@ -94,7 +95,7 @@ static struct wpabuf * eap_sm_buildInitiateReauthStart(struct eap_sm *sm,
 	}
 
 	msg = eap_msg_alloc(EAP_VENDOR_IETF,
-			    (EapType) EAP_ERP_TYPE_REAUTH_START, plen,
+			    (enum eap_type) EAP_ERP_TYPE_REAUTH_START, plen,
 			    EAP_CODE_INITIATE, id);
 	if (msg == NULL)
 		return NULL;
@@ -541,7 +542,7 @@ SM_STATE(EAP, METHOD_RESPONSE)
 SM_STATE(EAP, PROPOSE_METHOD)
 {
 	int vendor;
-	EapType type;
+	enum eap_type type;
 
 	SM_ENTRY(EAP, PROPOSE_METHOD);
 
@@ -720,7 +721,8 @@ static void erp_send_finish_reauth(struct eap_sm *sm,
 	plen = 1 + 2 + 2 + os_strlen(nai);
 	if (hash_len)
 		plen += 1 + hash_len;
-	msg = eap_msg_alloc(EAP_VENDOR_IETF, (EapType) EAP_ERP_TYPE_REAUTH,
+	msg = eap_msg_alloc(EAP_VENDOR_IETF,
+			    (enum eap_type) EAP_ERP_TYPE_REAUTH,
 			    plen, EAP_CODE_FINISH, id);
 	if (msg == NULL)
 		return;
@@ -805,7 +807,8 @@ SM_STATE(EAP, INITIATE_RECEIVED)
 
 	sm->rxInitiate = FALSE;
 
-	pos = eap_hdr_validate(EAP_VENDOR_IETF, (EapType) EAP_ERP_TYPE_REAUTH,
+	pos = eap_hdr_validate(EAP_VENDOR_IETF,
+			       (enum eap_type) EAP_ERP_TYPE_REAUTH,
 			       sm->eap_if.eapRespData, &len);
 	if (pos == NULL) {
 		wpa_printf(MSG_INFO, "EAP-Initiate: Invalid frame");
@@ -1669,9 +1672,9 @@ static void eap_sm_Policy_update(struct eap_sm *sm, const u8 *nak_list,
 }
 
 
-static EapType eap_sm_Policy_getNextMethod(struct eap_sm *sm, int *vendor)
+static enum eap_type eap_sm_Policy_getNextMethod(struct eap_sm *sm, int *vendor)
 {
-	EapType next;
+	enum eap_type next;
 	int idx = sm->user_eap_method_index;
 
 	/* In theory, there should be no problems with starting
@@ -1783,7 +1786,7 @@ static int eap_sm_Policy_getDecision(struct eap_sm *sm)
 }
 
 
-static Boolean eap_sm_Policy_doPickUp(struct eap_sm *sm, EapType method)
+static Boolean eap_sm_Policy_doPickUp(struct eap_sm *sm, enum eap_type method)
 {
 	return method == EAP_TYPE_IDENTITY ? TRUE : FALSE;
 }

@@ -827,7 +827,7 @@ static void eap_ttls_process_phase2_mschapv2(struct eap_sm *sm,
 
 static int eap_ttls_phase2_eap_init(struct eap_sm *sm,
 				    struct eap_ttls_data *data,
-				    EapType eap_type)
+				    enum eap_type eap_type)
 {
 	if (data->phase2_priv && data->phase2_method) {
 		data->phase2_method->reset(sm, data->phase2_priv);

@@ -18,7 +18,7 @@
 static void eap_server_tls_free_in_buf(struct eap_ssl_data *data);
 
 
-struct wpabuf * eap_tls_msg_alloc(EapType type, size_t payload_len,
+struct wpabuf * eap_tls_msg_alloc(enum eap_type type, size_t payload_len,
 				  u8 code, u8 identifier)
 {
 	if (type == EAP_UNAUTH_TLS_TYPE)

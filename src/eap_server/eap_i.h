@@ -23,7 +23,7 @@
  */
 struct eap_method {
 	int vendor;
-	EapType method;
+	enum eap_type method;
 	const char *name;
 
 	void * (*init)(struct eap_sm *sm);
@@ -128,7 +128,7 @@ struct eap_sm {
 	/* Full authenticator state machine local variables */
 
 	/* Long-term (maintained between packets) */
-	EapType currentMethod;
+	enum eap_type currentMethod;
 	int currentId;
 	enum {
 		METHOD_PROPOSED, METHOD_CONTINUE, METHOD_END
@@ -141,7 +141,7 @@ struct eap_sm {
 	Boolean rxResp;
 	Boolean rxInitiate;
 	int respId;
-	EapType respMethod;
+	enum eap_type respMethod;
 	int respVendor;
 	u32 respVendorMethod;
 	Boolean ignore;

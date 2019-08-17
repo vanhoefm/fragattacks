@@ -20,7 +20,8 @@ struct eap_method * registered_eap_method = NULL;
 
 
 struct eap_method * eap_peer_method_alloc(int version, int vendor,
-					  EapType method, const char *name)
+					  enum eap_type method,
+					  const char *name)
 {
 	struct eap_method *eap;
 	eap = os_zalloc(sizeof(*eap));

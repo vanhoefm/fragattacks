@@ -585,7 +585,7 @@ static Boolean eap_peap_check(struct eap_sm *sm, void *priv,
 
 
 static int eap_peap_phase2_init(struct eap_sm *sm, struct eap_peap_data *data,
-				int vendor, EapType eap_type)
+				int vendor, enum eap_type eap_type)
 {
 	if (data->phase2_priv && data->phase2_method) {
 		data->phase2_method->reset(sm, data->phase2_priv);

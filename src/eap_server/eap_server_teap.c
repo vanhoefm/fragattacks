@@ -121,8 +121,8 @@ static void eap_teap_state(struct eap_teap_data *data, int state)
 }
 
 
-static EapType eap_teap_req_failure(struct eap_teap_data *data,
-				    enum teap_error_codes error)
+static enum eap_type eap_teap_req_failure(struct eap_teap_data *data,
+					  enum teap_error_codes error)
 {
 	eap_teap_state(data, FAILURE_SEND_RESULT);
 	return EAP_TYPE_NONE;
@@ -938,7 +938,7 @@ static Boolean eap_teap_check(struct eap_sm *sm, void *priv,
 
 
 static int eap_teap_phase2_init(struct eap_sm *sm, struct eap_teap_data *data,
-				EapType eap_type)
+				enum eap_type eap_type)
 {
 	if (data->phase2_priv && data->phase2_method) {
 		data->phase2_method->reset(sm, data->phase2_priv);

@@ -37,7 +37,7 @@
 
 
 static Boolean eap_sm_allowMethod(struct eap_sm *sm, int vendor,
-				  EapType method);
+				  enum eap_type method);
 static struct wpabuf * eap_sm_buildNak(struct eap_sm *sm, int id);
 static void eap_sm_processIdentity(struct eap_sm *sm,
 				   const struct wpabuf *req);
@@ -319,7 +319,7 @@ SM_STATE(EAP, RECEIVED)
 SM_STATE(EAP, GET_METHOD)
 {
 	int reinit;
-	EapType method;
+	enum eap_type method;
 	const struct eap_method *eap_method;
 
 	SM_ENTRY(EAP, GET_METHOD);
@@ -815,7 +815,8 @@ struct wpabuf * eap_peer_build_erp_reauth_start(struct eap_sm *sm, u8 eap_id)
 	wpa_printf(MSG_DEBUG, "EAP: Valid ERP key found %s (SEQ=%u)",
 		   erp->keyname_nai, erp->next_seq);
 
-	msg = eap_msg_alloc(EAP_VENDOR_IETF, (EapType) EAP_ERP_TYPE_REAUTH,
+	msg = eap_msg_alloc(EAP_VENDOR_IETF,
+			    (enum eap_type) EAP_ERP_TYPE_REAUTH,
 			    1 + 2 + 2 + os_strlen(erp->keyname_nai) + 1 + 16,
 			    EAP_CODE_INITIATE, eap_id);
 	if (msg == NULL)
@@ -1349,7 +1350,7 @@ SM_STEP(EAP)
 
 
 static Boolean eap_sm_allowMethod(struct eap_sm *sm, int vendor,
-				  EapType method)
+				  enum eap_type method)
 {
 	if (!eap_allowed_method(sm, vendor, method)) {
 		wpa_printf(MSG_DEBUG, "EAP: configuration does not allow: "
