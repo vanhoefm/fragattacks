@@ -366,6 +366,7 @@ struct eap_sm {
 	u8 *peer_challenge, *auth_challenge;
 
 	int num_rounds;
+	int num_rounds_short;
 	int force_disabled;
 
 	struct wps_context *wps;

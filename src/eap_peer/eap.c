@@ -32,7 +32,8 @@
 #define STATE_MACHINE_DATA struct eap_sm
 #define STATE_MACHINE_DEBUG_PREFIX "EAP"
 
-#define EAP_MAX_AUTH_ROUNDS 50
+#define EAP_MAX_AUTH_ROUNDS 100
+#define EAP_MAX_AUTH_ROUNDS_SHORT 50
 #define EAP_CLIENT_TIMEOUT_DEFAULT 60
 
 
@@ -260,6 +261,7 @@ SM_STATE(EAP, INITIALIZE)
 	 */
 	sm->ignore = 0;
 	sm->num_rounds = 0;
+	sm->num_rounds_short = 0;
 	sm->prev_failure = 0;
 	sm->expected_failure = 0;
 	sm->reauthInit = FALSE;
@@ -276,6 +278,7 @@ SM_STATE(EAP, DISABLED)
 {
 	SM_ENTRY(EAP, DISABLED);
 	sm->num_rounds = 0;
+	sm->num_rounds_short = 0;
 	/*
 	 * RFC 4137 does not describe clearing of idleWhile here, but doing so
 	 * allows the timer tick to be stopped more quickly when EAP is not in
@@ -309,6 +312,10 @@ SM_STATE(EAP, RECEIVED)
 	/* parse rxReq, rxSuccess, rxFailure, reqId, reqMethod */
 	eap_sm_parseEapReq(sm, eapReqData);
 	sm->num_rounds++;
+	if (!eapReqData || wpabuf_len(eapReqData) < 20)
+		sm->num_rounds_short++;
+	else
+		sm->num_rounds_short = 0;
 }
 
 
@@ -950,6 +957,8 @@ SM_STATE(EAP, SEND_RESPONSE)
 	SM_ENTRY(EAP, SEND_RESPONSE);
 	wpabuf_free(sm->lastRespData);
 	if (sm->eapRespData) {
+		if (wpabuf_len(sm->eapRespData) >= 20)
+			sm->num_rounds_short = 0;
 		if (sm->workaround)
 			os_memcpy(sm->last_sha1, sm->req_sha1, 20);
 		sm->lastId = sm->reqId;
@@ -1340,6 +1349,14 @@ SM_STEP(EAP)
 				"authentication rounds - abort",
 				EAP_MAX_AUTH_ROUNDS);
 			sm->num_rounds++;
+			SM_ENTER_GLOBAL(EAP, FAILURE);
+		}
+	} else if (sm->num_rounds_short > EAP_MAX_AUTH_ROUNDS_SHORT) {
+		if (sm->num_rounds_short == EAP_MAX_AUTH_ROUNDS_SHORT + 1) {
+			wpa_msg(sm->msg_ctx, MSG_INFO,
+				"EAP: more than %d authentication rounds (short) - abort",
+				EAP_MAX_AUTH_ROUNDS_SHORT);
+			sm->num_rounds_short++;
 			SM_ENTER_GLOBAL(EAP, FAILURE);
 		}
 	} else {

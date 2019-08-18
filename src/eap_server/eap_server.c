@@ -23,7 +23,8 @@
 #define STATE_MACHINE_DATA struct eap_sm
 #define STATE_MACHINE_DEBUG_PREFIX "EAP"
 
-#define EAP_MAX_AUTH_ROUNDS 50
+#define EAP_MAX_AUTH_ROUNDS 100
+#define EAP_MAX_AUTH_ROUNDS_SHORT 50
 
 /* EAP state machines are described in RFC 4137 */
 
@@ -216,6 +217,7 @@ SM_STATE(EAP, DISABLED)
 {
 	SM_ENTRY(EAP, DISABLED);
 	sm->num_rounds = 0;
+	sm->num_rounds_short = 0;
 }
 
 
@@ -266,6 +268,7 @@ SM_STATE(EAP, INITIALIZE)
 		}
 	}
 	sm->num_rounds = 0;
+	sm->num_rounds_short = 0;
 	sm->method_pending = METHOD_PENDING_NONE;
 
 	wpa_msg(sm->cfg->msg_ctx, MSG_INFO, WPA_EVENT_EAP_STARTED
@@ -337,6 +340,10 @@ SM_STATE(EAP, RECEIVED)
 	/* parse rxResp, respId, respMethod */
 	eap_sm_parseEapResp(sm, sm->eap_if.eapRespData);
 	sm->num_rounds++;
+	if (!sm->eap_if.eapRespData || wpabuf_len(sm->eap_if.eapRespData) < 20)
+		sm->num_rounds_short++;
+	else
+		sm->num_rounds_short = 0;
 }
 
 
@@ -354,6 +361,8 @@ SM_STATE(EAP, SEND_REQUEST)
 
 	sm->retransCount = 0;
 	if (sm->eap_if.eapReqData) {
+		if (wpabuf_len(sm->eap_if.eapReqData) >= 20)
+			sm->num_rounds_short = 0;
 		if (eap_copy_buf(&sm->lastReqData, sm->eap_if.eapReqData) == 0)
 		{
 			sm->eap_if.eapResp = FALSE;
@@ -1169,6 +1178,14 @@ SM_STEP(EAP)
 				   "authentication rounds - abort",
 				   EAP_MAX_AUTH_ROUNDS);
 			sm->num_rounds++;
+			SM_ENTER_GLOBAL(EAP, FAILURE);
+		}
+	} else if (sm->num_rounds_short > EAP_MAX_AUTH_ROUNDS_SHORT) {
+		if (sm->num_rounds_short == EAP_MAX_AUTH_ROUNDS_SHORT + 1) {
+			wpa_printf(MSG_DEBUG,
+				   "EAP: more than %d authentication rounds (short) - abort",
+				   EAP_MAX_AUTH_ROUNDS_SHORT);
+			sm->num_rounds_short++;
 			SM_ENTER_GLOBAL(EAP, FAILURE);
 		}
 	} else switch (sm->EAP_state) {

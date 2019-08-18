@@ -172,6 +172,7 @@ struct eap_sm {
 	Boolean update_user;
 
 	int num_rounds;
+	int num_rounds_short;
 	enum {
 		METHOD_PENDING_NONE, METHOD_PENDING_WAIT, METHOD_PENDING_CONT
 	} method_pending;
