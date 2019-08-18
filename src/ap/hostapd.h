@@ -186,6 +186,7 @@ struct hostapd_data {
 
 	struct wpa_authenticator *wpa_auth;
 	struct eapol_authenticator *eapol_auth;
+	struct eap_config *eap_cfg;
 
 	struct rsn_preauth_interface *preauth_iface;
 	struct os_reltime michael_mic_failure;

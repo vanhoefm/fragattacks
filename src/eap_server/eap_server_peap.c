@@ -105,8 +105,8 @@ static void eap_peap_valid_session(struct eap_sm *sm,
 {
 	struct wpabuf *buf;
 
-	if (!sm->tls_session_lifetime ||
-	    tls_connection_resumed(sm->ssl_ctx, data->ssl.conn))
+	if (!sm->cfg->tls_session_lifetime ||
+	    tls_connection_resumed(sm->cfg->ssl_ctx, data->ssl.conn))
 		return;
 
 	buf = wpabuf_alloc(1 + 1 + sm->identity_len);
@@ -336,7 +336,7 @@ static int eap_peap_derive_cmk(struct eap_sm *sm, struct eap_peap_data *data)
 		return -1;
 	wpa_hexdump_key(MSG_DEBUG, "EAP-PEAP: TK", tk, 60);
 
-	if (tls_connection_resumed(sm->ssl_ctx, data->ssl.conn)) {
+	if (tls_connection_resumed(sm->cfg->ssl_ctx, data->ssl.conn)) {
 		/* Fast-connect: IPMK|CMK = TK */
 		os_memcpy(data->ipmk, tk, 40);
 		wpa_hexdump_key(MSG_DEBUG, "EAP-PEAP: IPMK from TK",
@@ -521,7 +521,8 @@ static struct wpabuf * eap_peap_buildReq(struct eap_sm *sm, void *priv, u8 id)
 		return eap_peap_build_start(sm, data, id);
 	case PHASE1:
 	case PHASE1_ID2:
-		if (tls_connection_established(sm->ssl_ctx, data->ssl.conn)) {
+		if (tls_connection_established(sm->cfg->ssl_ctx,
+					       data->ssl.conn)) {
 			wpa_printf(MSG_DEBUG, "EAP-PEAP: Phase1 done, "
 				   "starting Phase2");
 			eap_peap_state(data, PHASE2_START);
@@ -1020,7 +1021,7 @@ static void eap_peap_process_phase2_response(struct eap_sm *sm,
 		}
 
 #ifdef EAP_SERVER_TNC
-		if (data->state != PHASE2_SOH && sm->tnc &&
+		if (data->state != PHASE2_SOH && sm->cfg->tnc &&
 		    data->peap_version == 0) {
 			eap_peap_state(data, PHASE2_SOH);
 			wpa_printf(MSG_DEBUG, "EAP-PEAP: Try to initialize "
@@ -1077,7 +1078,7 @@ static void eap_peap_process_phase2(struct eap_sm *sm,
 		return;
 	}
 
-	in_decrypted = tls_connection_decrypt(sm->ssl_ctx, data->ssl.conn,
+	in_decrypted = tls_connection_decrypt(sm->cfg->ssl_ctx, data->ssl.conn,
 					      in_buf);
 	if (in_decrypted == NULL) {
 		wpa_printf(MSG_INFO, "EAP-PEAP: Failed to decrypt Phase 2 "
@@ -1237,8 +1238,8 @@ static void eap_peap_process(struct eap_sm *sm, void *priv,
 	}
 
 	if (data->state == SUCCESS ||
-	    !tls_connection_established(sm->ssl_ctx, data->ssl.conn) ||
-	    !tls_connection_resumed(sm->ssl_ctx, data->ssl.conn))
+	    !tls_connection_established(sm->cfg->ssl_ctx, data->ssl.conn) ||
+	    !tls_connection_resumed(sm->cfg->ssl_ctx, data->ssl.conn))
 		return;
 
 	buf = tls_connection_get_success_data(data->ssl.conn);

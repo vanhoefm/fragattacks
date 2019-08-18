@@ -58,7 +58,7 @@ static void eap_tls_valid_session(struct eap_sm *sm, struct eap_tls_data *data)
 {
 	struct wpabuf *buf;
 
-	if (!sm->tls_session_lifetime)
+	if (!sm->cfg->tls_session_lifetime)
 		return;
 
 	buf = wpabuf_alloc(1);
@@ -187,7 +187,8 @@ static struct wpabuf * eap_tls_buildReq(struct eap_sm *sm, void *priv, u8 id)
 	case START:
 		return eap_tls_build_start(sm, data, id);
 	case CONTINUE:
-		if (tls_connection_established(sm->ssl_ctx, data->ssl.conn))
+		if (tls_connection_established(sm->cfg->ssl_ctx,
+					       data->ssl.conn))
 			data->established = 1;
 		break;
 	default:
@@ -267,7 +268,7 @@ static void eap_tls_process_msg(struct eap_sm *sm, void *priv,
 	}
 
 	if (data->ssl.tls_v13 &&
-	    tls_connection_established(sm->ssl_ctx, data->ssl.conn)) {
+	    tls_connection_established(sm->cfg->ssl_ctx, data->ssl.conn)) {
 		struct wpabuf *plain, *encr;
 
 		wpa_printf(MSG_DEBUG,
@@ -315,8 +316,8 @@ static void eap_tls_process(struct eap_sm *sm, void *priv,
 		return;
 	}
 
-	if (!tls_connection_established(sm->ssl_ctx, data->ssl.conn) ||
-	    !tls_connection_resumed(sm->ssl_ctx, data->ssl.conn))
+	if (!tls_connection_established(sm->cfg->ssl_ctx, data->ssl.conn) ||
+	    !tls_connection_resumed(sm->cfg->ssl_ctx, data->ssl.conn))
 		return;
 
 	buf = tls_connection_get_success_data(data->ssl.conn);

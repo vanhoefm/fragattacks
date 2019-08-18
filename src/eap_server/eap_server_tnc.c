@@ -84,8 +84,8 @@ static void * eap_tnc_init(struct eap_sm *sm)
 		return NULL;
 	}
 
-	data->fragment_size = sm->fragment_size > 100 ?
-		sm->fragment_size - 98 : 1300;
+	data->fragment_size = sm->cfg->fragment_size > 100 ?
+		sm->cfg->fragment_size - 98 : 1300;
 
 	return data;
 }
@@ -508,7 +508,7 @@ static void eap_tnc_process(struct eap_sm *sm, void *priv,
 		eap_tnc_set_state(data, FAIL);
 		return;
 	}
-		
+
 	if (flags & EAP_TNC_FLAGS_MORE_FRAGMENTS) {
 		if (eap_tnc_process_fragment(data, flags, message_length,
 					     pos, end - pos) < 0)

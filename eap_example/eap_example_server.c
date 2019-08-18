@@ -207,6 +207,8 @@ static int eap_server_register_methods(void)
 
 int eap_example_server_init(void)
 {
+	struct eap_session_data eap_sess;
+
 	if (eap_server_register_methods() < 0)
 		return -1;
 
@@ -223,7 +225,9 @@ int eap_example_server_init(void)
 	eap_conf.eap_server = 1;
 	eap_conf.ssl_ctx = eap_ctx.tls_ctx;
 
-	eap_ctx.eap = eap_server_sm_init(&eap_ctx, &eap_cb, &eap_conf);
+	os_memset(&eap_sess, 0, sizeof(eap_sess));
+	eap_ctx.eap = eap_server_sm_init(&eap_ctx, &eap_cb, &eap_conf,
+					 &eap_sess);
 	if (eap_ctx.eap == NULL)
 		return -1;
 

@@ -81,7 +81,7 @@ static void eap_ttls_valid_session(struct eap_sm *sm,
 {
 	struct wpabuf *buf;
 
-	if (!sm->tls_session_lifetime)
+	if (!sm->cfg->tls_session_lifetime)
 		return;
 
 	buf = wpabuf_alloc(1 + 1 + sm->identity_len);
@@ -480,7 +480,8 @@ static struct wpabuf * eap_ttls_buildReq(struct eap_sm *sm, void *priv, u8 id)
 	case START:
 		return eap_ttls_build_start(sm, data, id);
 	case PHASE1:
-		if (tls_connection_established(sm->ssl_ctx, data->ssl.conn)) {
+		if (tls_connection_established(sm->cfg->ssl_ctx,
+					       data->ssl.conn)) {
 			wpa_printf(MSG_DEBUG, "EAP-TTLS: Phase1 done, "
 				   "starting Phase2");
 			eap_ttls_state(data, PHASE2_START);
@@ -1029,7 +1030,7 @@ static void eap_ttls_process_phase2(struct eap_sm *sm,
 		return;
 	}
 
-	in_decrypted = tls_connection_decrypt(sm->ssl_ctx, data->ssl.conn,
+	in_decrypted = tls_connection_decrypt(sm->cfg->ssl_ctx, data->ssl.conn,
 					      in_buf);
 	if (in_decrypted == NULL) {
 		wpa_printf(MSG_INFO, "EAP-TTLS: Failed to decrypt Phase 2 "
@@ -1119,7 +1120,7 @@ done:
 static void eap_ttls_start_tnc(struct eap_sm *sm, struct eap_ttls_data *data)
 {
 #ifdef EAP_SERVER_TNC
-	if (!sm->tnc || data->state != SUCCESS || data->tnc_started)
+	if (!sm->cfg->tnc || data->state != SUCCESS || data->tnc_started)
 		return;
 
 	wpa_printf(MSG_DEBUG, "EAP-TTLS: Initialize TNC");
@@ -1209,8 +1210,8 @@ static void eap_ttls_process(struct eap_sm *sm, void *priv,
 		return;
 	}
 
-	if (!tls_connection_established(sm->ssl_ctx, data->ssl.conn) ||
-	    !tls_connection_resumed(sm->ssl_ctx, data->ssl.conn))
+	if (!tls_connection_established(sm->cfg->ssl_ctx, data->ssl.conn) ||
+	    !tls_connection_resumed(sm->cfg->ssl_ctx, data->ssl.conn))
 		return;
 
 	buf = tls_connection_get_success_data(data->ssl.conn);

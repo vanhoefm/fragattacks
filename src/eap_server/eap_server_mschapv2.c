@@ -109,7 +109,7 @@ static struct wpabuf * eap_mschapv2_build_challenge(
 		return NULL;
 	}
 
-	ms_len = sizeof(*ms) + 1 + CHALLENGE_LEN + sm->server_id_len;
+	ms_len = sizeof(*ms) + 1 + CHALLENGE_LEN + sm->cfg->server_id_len;
 	req = eap_msg_alloc(EAP_VENDOR_IETF, EAP_TYPE_MSCHAPV2, ms_len,
 			    EAP_CODE_REQUEST, id);
 	if (req == NULL) {
@@ -131,7 +131,7 @@ static struct wpabuf * eap_mschapv2_build_challenge(
 		wpabuf_put(req, CHALLENGE_LEN);
 	wpa_hexdump(MSG_MSGDUMP, "EAP-MSCHAPV2: Challenge",
 		    data->auth_challenge, CHALLENGE_LEN);
-	wpabuf_put_data(req, sm->server_id, sm->server_id_len);
+	wpabuf_put_data(req, sm->cfg->server_id, sm->cfg->server_id_len);
 
 	return req;
 }

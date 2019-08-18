@@ -287,7 +287,7 @@ static int eap_teap_derive_key_auth(struct eap_sm *sm,
 	int res;
 
 	/* RFC 7170, Section 5.1 */
-	res = tls_connection_export_key(sm->ssl_ctx, data->ssl.conn,
+	res = tls_connection_export_key(sm->cfg->ssl_ctx, data->ssl.conn,
 					TEAP_TLS_EXPORTER_LABEL_SKS, NULL, 0,
 					data->simck_msk, EAP_TEAP_SIMCK_LEN);
 	if (res)
@@ -310,7 +310,7 @@ static int eap_teap_update_icmk(struct eap_sm *sm, struct eap_teap_data *data)
 	wpa_printf(MSG_DEBUG, "EAP-TEAP: Deriving ICMK[%d] (S-IMCK and CMK)",
 		   data->simck_idx + 1);
 
-	if (sm->eap_teap_auth == 1)
+	if (sm->cfg->eap_teap_auth == 1)
 		return eap_teap_derive_cmk_basic_pw_auth(data->tls_cs,
 							 data->simck_msk,
 							 data->cmk_msk);
@@ -370,7 +370,8 @@ static void * eap_teap_init(struct eap_sm *sm)
 	/* TODO: Add anon-DH TLS cipher suites (and if one is negotiated,
 	 * enforce inner EAP with mutual authentication to be used) */
 
-	if (tls_connection_set_session_ticket_cb(sm->ssl_ctx, data->ssl.conn,
+	if (tls_connection_set_session_ticket_cb(sm->cfg->ssl_ctx,
+						 data->ssl.conn,
 						 eap_teap_session_ticket_cb,
 						 data) < 0) {
 		wpa_printf(MSG_INFO,
@@ -379,48 +380,49 @@ static void * eap_teap_init(struct eap_sm *sm)
 		return NULL;
 	}
 
-	if (!sm->pac_opaque_encr_key) {
+	if (!sm->cfg->pac_opaque_encr_key) {
 		wpa_printf(MSG_INFO,
 			   "EAP-TEAP: No PAC-Opaque encryption key configured");
 		eap_teap_reset(sm, data);
 		return NULL;
 	}
-	os_memcpy(data->pac_opaque_encr, sm->pac_opaque_encr_key,
+	os_memcpy(data->pac_opaque_encr, sm->cfg->pac_opaque_encr_key,
 		  sizeof(data->pac_opaque_encr));
 
-	if (!sm->eap_fast_a_id) {
+	if (!sm->cfg->eap_fast_a_id) {
 		wpa_printf(MSG_INFO, "EAP-TEAP: No A-ID configured");
 		eap_teap_reset(sm, data);
 		return NULL;
 	}
-	data->srv_id = os_malloc(sm->eap_fast_a_id_len);
+	data->srv_id = os_malloc(sm->cfg->eap_fast_a_id_len);
 	if (!data->srv_id) {
 		eap_teap_reset(sm, data);
 		return NULL;
 	}
-	os_memcpy(data->srv_id, sm->eap_fast_a_id, sm->eap_fast_a_id_len);
-	data->srv_id_len = sm->eap_fast_a_id_len;
+	os_memcpy(data->srv_id, sm->cfg->eap_fast_a_id,
+		  sm->cfg->eap_fast_a_id_len);
+	data->srv_id_len = sm->cfg->eap_fast_a_id_len;
 
-	if (!sm->eap_fast_a_id_info) {
+	if (!sm->cfg->eap_fast_a_id_info) {
 		wpa_printf(MSG_INFO, "EAP-TEAP: No A-ID-Info configured");
 		eap_teap_reset(sm, data);
 		return NULL;
 	}
-	data->srv_id_info = os_strdup(sm->eap_fast_a_id_info);
+	data->srv_id_info = os_strdup(sm->cfg->eap_fast_a_id_info);
 	if (!data->srv_id_info) {
 		eap_teap_reset(sm, data);
 		return NULL;
 	}
 
 	/* PAC-Key lifetime in seconds (hard limit) */
-	data->pac_key_lifetime = sm->pac_key_lifetime;
+	data->pac_key_lifetime = sm->cfg->pac_key_lifetime;
 
 	/*
 	 * PAC-Key refresh time in seconds (soft limit on remaining hard
 	 * limit). The server will generate a new PAC-Key when this number of
 	 * seconds (or fewer) of the lifetime remains.
 	 */
-	data->pac_key_refresh_time = sm->pac_key_refresh_time;
+	data->pac_key_refresh_time = sm->cfg->pac_key_refresh_time;
 
 	return data;
 }
@@ -500,8 +502,8 @@ static int eap_teap_phase1_done(struct eap_sm *sm, struct eap_teap_data *data)
 	wpa_printf(MSG_DEBUG, "EAP-TEAP: TLS cipher suite 0x%04x",
 		   data->tls_cs);
 
-	if (tls_get_cipher(sm->ssl_ctx, data->ssl.conn, cipher, sizeof(cipher))
-	    < 0) {
+	if (tls_get_cipher(sm->cfg->ssl_ctx, data->ssl.conn,
+			   cipher, sizeof(cipher)) < 0) {
 		wpa_printf(MSG_DEBUG,
 			   "EAP-TEAP: Failed to get cipher information");
 		eap_teap_state(data, FAILURE);
@@ -529,7 +531,7 @@ static struct wpabuf * eap_teap_build_phase2_req(struct eap_sm *sm,
 {
 	struct wpabuf *req;
 
-	if (sm->eap_teap_auth == 1) {
+	if (sm->cfg->eap_teap_auth == 1) {
 		wpa_printf(MSG_DEBUG, "EAP-TEAP: Initiate Basic-Password-Auth");
 		req = wpabuf_alloc(sizeof(struct teap_tlv_hdr));
 		if (!req)
@@ -567,7 +569,7 @@ static struct wpabuf * eap_teap_build_crypto_binding(
 		return NULL;
 
 	if (data->send_new_pac || data->anon_provisioning ||
-	    data->phase2_method || sm->eap_teap_separate_result)
+	    data->phase2_method || sm->cfg->eap_teap_separate_result)
 		data->final_result = 0;
 	else
 		data->final_result = 1;
@@ -846,7 +848,8 @@ static struct wpabuf * eap_teap_buildReq(struct eap_sm *sm, void *priv, u8 id)
 	case START:
 		return eap_teap_build_start(sm, data, id);
 	case PHASE1B:
-		if (tls_connection_established(sm->ssl_ctx, data->ssl.conn)) {
+		if (tls_connection_established(sm->cfg->ssl_ctx,
+					       data->ssl.conn)) {
 			if (eap_teap_phase1_done(sm, data) < 0)
 				return NULL;
 			if (data->state == PHASE2_START) {
@@ -1072,7 +1075,7 @@ static void eap_teap_process_phase2_response(struct eap_sm *sm,
 		next_vendor = EAP_VENDOR_IETF;
 		next_type = EAP_TYPE_NONE;
 #ifdef EAP_SERVER_TNC
-		if (sm->tnc && !data->tnc_started) {
+		if (sm->cfg->tnc && !data->tnc_started) {
 			wpa_printf(MSG_DEBUG, "EAP-TEAP: Initialize TNC");
 			next_vendor = EAP_VENDOR_IETF;
 			next_type = EAP_TYPE_TNC;
@@ -1463,7 +1466,7 @@ static void eap_teap_process_phase2_tlvs(struct eap_sm *sm,
 			return;
 		}
 
-		if (sm->eap_teap_auth != 1 &&
+		if (sm->cfg->eap_teap_auth != 1 &&
 		    tlv.iresult != TEAP_STATUS_SUCCESS) {
 			wpa_printf(MSG_DEBUG,
 				   "EAP-TEAP: Crypto-Binding TLV without intermediate Success Result");
@@ -1485,16 +1488,16 @@ static void eap_teap_process_phase2_tlvs(struct eap_sm *sm,
 		}
 
 		if (data->anon_provisioning &&
-		    sm->eap_fast_prov != ANON_PROV &&
-		    sm->eap_fast_prov != BOTH_PROV) {
+		    sm->cfg->eap_fast_prov != ANON_PROV &&
+		    sm->cfg->eap_fast_prov != BOTH_PROV) {
 			wpa_printf(MSG_DEBUG,
 				   "EAP-TEAP: Client is trying to use unauthenticated provisioning which is disabled");
 			eap_teap_state(data, FAILURE);
 			return;
 		}
 
-		if (sm->eap_fast_prov != AUTH_PROV &&
-		    sm->eap_fast_prov != BOTH_PROV &&
+		if (sm->cfg->eap_fast_prov != AUTH_PROV &&
+		    sm->cfg->eap_fast_prov != BOTH_PROV &&
 		    tlv.request_action == TEAP_REQUEST_ACTION_PROCESS_TLV &&
 		    eap_teap_pac_type(tlv.pac, tlv.pac_len,
 				      PAC_TYPE_TUNNEL_PAC)) {
@@ -1517,13 +1520,13 @@ static void eap_teap_process_phase2_tlvs(struct eap_sm *sm,
 			eap_teap_state(data, REQUEST_PAC);
 		} else if (data->final_result) {
 			eap_teap_state(data, SUCCESS);
-		} else if (sm->eap_teap_separate_result) {
+		} else if (sm->cfg->eap_teap_separate_result) {
 			eap_teap_state(data, SUCCESS_SEND_RESULT);
 		}
 	}
 
 	if (tlv.basic_auth_resp) {
-		if (sm->eap_teap_auth != 1) {
+		if (sm->cfg->eap_teap_auth != 1) {
 			wpa_printf(MSG_DEBUG,
 				   "EAP-TEAP: Unexpected Basic-Password-Auth-Resp when trying to use inner EAP");
 			eap_teap_state(data, FAILURE);
@@ -1534,7 +1537,7 @@ static void eap_teap_process_phase2_tlvs(struct eap_sm *sm,
 	}
 
 	if (tlv.eap_payload_tlv) {
-		if (sm->eap_teap_auth == 1) {
+		if (sm->cfg->eap_teap_auth == 1) {
 			wpa_printf(MSG_DEBUG,
 				   "EAP-TEAP: Unexpected EAP Payload TLV when trying to use Basic-Password-Auth");
 			eap_teap_state(data, FAILURE);
@@ -1573,7 +1576,7 @@ static void eap_teap_process_phase2(struct eap_sm *sm,
 		return;
 	}
 
-	in_decrypted = tls_connection_decrypt(sm->ssl_ctx, data->ssl.conn,
+	in_decrypted = tls_connection_decrypt(sm->cfg->ssl_ctx, data->ssl.conn,
 					      in_buf);
 	if (!in_decrypted) {
 		wpa_printf(MSG_INFO,
@@ -1634,7 +1637,7 @@ static int eap_teap_process_phase1(struct eap_sm *sm,
 		return -1;
 	}
 
-	if (!tls_connection_established(sm->ssl_ctx, data->ssl.conn) ||
+	if (!tls_connection_established(sm->cfg->ssl_ctx, data->ssl.conn) ||
 	    wpabuf_len(data->ssl.tls_out) > 0)
 		return 1;
 
@@ -1668,7 +1671,7 @@ static int eap_teap_process_phase2_start(struct eap_sm *sm,
 			next_vendor = EAP_VENDOR_IETF;
 			next_type = EAP_TYPE_NONE;
 			eap_teap_state(data, PHASE2_METHOD);
-		} else if (sm->eap_teap_pac_no_inner) {
+		} else if (sm->cfg->eap_teap_pac_no_inner) {
 			wpa_printf(MSG_DEBUG,
 				   "EAP-TEAP: Used PAC and identity already known - skip inner auth");
 			/* FIX: Need to derive CMK here. However, how is that
@@ -1679,7 +1682,7 @@ static int eap_teap_process_phase2_start(struct eap_sm *sm,
 							  data->cmk_msk);
 			eap_teap_state(data, CRYPTO_BINDING);
 			return 1;
-		} else if (sm->eap_teap_auth == 1) {
+		} else if (sm->cfg->eap_teap_auth == 1) {
 			eap_teap_state(data, PHASE2_BASIC_AUTH);
 			return 1;
 		} else {
@@ -1691,7 +1694,7 @@ static int eap_teap_process_phase2_start(struct eap_sm *sm,
 			eap_teap_state(data, PHASE2_METHOD);
 		}
 
-	} else if (sm->eap_teap_auth == 1) {
+	} else if (sm->cfg->eap_teap_auth == 1) {
 		eap_teap_state(data, PHASE2_BASIC_AUTH);
 		return 0;
 	} else {

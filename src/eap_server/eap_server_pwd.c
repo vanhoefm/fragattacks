@@ -97,7 +97,7 @@ static void * eap_pwd_init(struct eap_sm *sm)
 	if (data == NULL)
 		return NULL;
 
-	data->group_num = sm->pwd_group;
+	data->group_num = sm->cfg->pwd_group;
 	wpa_printf(MSG_DEBUG, "EAP-pwd: Selected group number %d",
 		   data->group_num);
 	data->state = PWD_ID_Req;
@@ -134,7 +134,7 @@ static void * eap_pwd_init(struct eap_sm *sm)
 	data->in_frag_pos = data->out_frag_pos = 0;
 	data->inbuf = data->outbuf = NULL;
 	/* use default MTU from RFC 5931 if not configured otherwise */
-	data->mtu = sm->fragment_size > 0 ? sm->fragment_size : 1020;
+	data->mtu = sm->cfg->fragment_size > 0 ? sm->cfg->fragment_size : 1020;
 
 	return data;
 }
