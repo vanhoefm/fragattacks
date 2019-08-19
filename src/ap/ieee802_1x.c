@@ -2403,58 +2403,6 @@ static int ieee802_1x_erp_add_key(void *ctx, struct eap_server_erp_key *erp)
 #endif /* CONFIG_ERP */
 
 
-static struct eap_config * ieee802_1x_eap_config(struct hostapd_data *hapd)
-{
-	struct eap_config *cfg;
-
-	cfg = os_zalloc(sizeof(*cfg));
-	if (!cfg)
-		return NULL;
-
-	cfg->eap_server = hapd->conf->eap_server;
-	cfg->ssl_ctx = hapd->ssl_ctx;
-	cfg->msg_ctx = hapd->msg_ctx;
-	cfg->eap_sim_db_priv = hapd->eap_sim_db_priv;
-	cfg->tls_session_lifetime = hapd->conf->tls_session_lifetime;
-	cfg->tls_flags = hapd->conf->tls_flags;
-	if (hapd->conf->pac_opaque_encr_key)
-		cfg->pac_opaque_encr_key =
-			os_memdup(hapd->conf->pac_opaque_encr_key, 16);
-	if (hapd->conf->eap_fast_a_id) {
-		cfg->eap_fast_a_id = os_memdup(hapd->conf->eap_fast_a_id,
-					       hapd->conf->eap_fast_a_id_len);
-		cfg->eap_fast_a_id_len = hapd->conf->eap_fast_a_id_len;
-	}
-	if (hapd->conf->eap_fast_a_id_info)
-		cfg->eap_fast_a_id_info =
-			os_strdup(hapd->conf->eap_fast_a_id_info);
-	cfg->eap_fast_prov = hapd->conf->eap_fast_prov;
-	cfg->pac_key_lifetime = hapd->conf->pac_key_lifetime;
-	cfg->pac_key_refresh_time = hapd->conf->pac_key_refresh_time;
-	cfg->eap_teap_auth = hapd->conf->eap_teap_auth;
-	cfg->eap_teap_pac_no_inner = hapd->conf->eap_teap_pac_no_inner;
-	cfg->eap_teap_separate_result = hapd->conf->eap_teap_separate_result;
-	cfg->eap_teap_id = hapd->conf->eap_teap_id;
-	cfg->eap_sim_aka_result_ind = hapd->conf->eap_sim_aka_result_ind;
-	cfg->eap_sim_id = hapd->conf->eap_sim_id;
-	cfg->tnc = hapd->conf->tnc;
-	cfg->wps = hapd->wps;
-	cfg->fragment_size = hapd->conf->fragment_size;
-	cfg->pwd_group = hapd->conf->pwd_group;
-	cfg->pbc_in_m1 = hapd->conf->pbc_in_m1;
-	if (hapd->conf->server_id) {
-		cfg->server_id = (u8 *) os_strdup(hapd->conf->server_id);
-		cfg->server_id_len = os_strlen(hapd->conf->server_id);
-	} else {
-		cfg->server_id = (u8 *) os_strdup("hostapd");
-		cfg->server_id_len = 7;
-	}
-	cfg->erp = hapd->conf->eap_server_erp;
-
-	return cfg;
-}
-
-
 int ieee802_1x_init(struct hostapd_data *hapd)
 {
 	int i;
@@ -2463,9 +2411,6 @@ int ieee802_1x_init(struct hostapd_data *hapd)
 
 	dl_list_init(&hapd->erp_keys);
 
-	hapd->eap_cfg = ieee802_1x_eap_config(hapd);
-	if (!hapd->eap_cfg)
-		return -1;
 	os_memset(&conf, 0, sizeof(conf));
 	conf.eap_cfg = hapd->eap_cfg;
 	conf.ctx = hapd;
@@ -2545,9 +2490,6 @@ void ieee802_1x_deinit(struct hostapd_data *hapd)
 
 	eapol_auth_deinit(hapd->eapol_auth);
 	hapd->eapol_auth = NULL;
-
-	eap_server_config_free(hapd->eap_cfg);
-	hapd->eap_cfg = NULL;
 
 	ieee802_1x_erp_flush(hapd);
 }
