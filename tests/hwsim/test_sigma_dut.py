@@ -2618,6 +2618,31 @@ def test_sigma_dut_ap_ft_psk(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
 
+def test_sigma_dut_ap_ft_over_ds_psk(dev, apdev, params):
+    """sigma_dut controlled AP FT-PSK (over-DS)"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_ft_over_ds_psk.sigma-hostapd")
+    conffile = os.path.join(params['logdir'],
+                            "sigma_dut_ap_ft_over_ds_psk.sigma-conf")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-ft-psk,MODE,11ng,DOMAIN,0101,FT_DS,Enable")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,FT-PSK,PSK,12345678")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            with open("/tmp/sigma_dut-ap.conf", "rb") as f:
+                with open(conffile, "wb") as f2:
+                    f2.write(f.read())
+
+            dev[0].connect("test-ft-psk", key_mgmt="FT-PSK", psk="12345678",
+                           scan_freq="2412")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
 def test_sigma_dut_ap_ent_ft_eap(dev, apdev, params):
     """sigma_dut controlled AP WPA-EAP and FT-EAP"""
     logdir = os.path.join(params['logdir'],
