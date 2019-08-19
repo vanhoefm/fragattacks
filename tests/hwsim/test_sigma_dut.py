@@ -352,6 +352,13 @@ def test_sigma_dut_sae_pw_id(dev, apdev):
 
 def test_sigma_dut_sae_pw_id_ft(dev, apdev):
     """sigma_dut controlled SAE association with Password Identifier and FT"""
+    run_sigma_dut_sae_pw_id_ft(dev, apdev)
+
+def test_sigma_dut_sae_pw_id_ft_over_ds(dev, apdev):
+    """sigma_dut controlled SAE association with Password Identifier and FT-over-DS"""
+    run_sigma_dut_sae_pw_id_ft(dev, apdev, over_ds=True)
+
+def run_sigma_dut_sae_pw_id_ft(dev, apdev, over_ds=False):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
 
@@ -364,7 +371,7 @@ def test_sigma_dut_sae_pw_id_ft(dev, apdev):
     params["ieee80211w"] = "2"
     params['sae_password'] = ['pw1|id=id1', 'pw2|id=id2', 'pw3', 'pw4|id=id4']
     params['mobility_domain'] = 'aabb'
-    params['ft_over_ds'] = '0'
+    params['ft_over_ds'] = '1' if over_ds else '0'
     bssid = apdev[0]['bssid'].replace(':', '')
     params['nas_identifier'] = bssid + '.nas.example.com'
     params['r1_key_holder'] = bssid
@@ -374,6 +381,8 @@ def test_sigma_dut_sae_pw_id_ft(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
 
     sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+    if over_ds:
+        sigma_dut_cmd_check("sta_preset_testparameters,interface,%s,FT_DS,Enable" % ifname)
     sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
     sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,AKMSuiteType,8;9,PasswordID,id2" % (ifname, "test-sae", "pw2"))
     sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
@@ -384,7 +393,7 @@ def test_sigma_dut_sae_pw_id_ft(dev, apdev):
     params['r1_key_holder'] = bssid
     hapd2 = hostapd.add_ap(apdev[1], params)
     bssid = hapd2.own_addr()
-    sigma_dut_cmd("sta_reassoc,interface,%s,Channel,1,bssid,%s" % (ifname, bssid))
+    sigma_dut_cmd_check("sta_reassoc,interface,%s,Channel,1,bssid,%s" % (ifname, bssid))
     dev[0].wait_connected()
 
     sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
