@@ -11,7 +11,7 @@ from test_ap_eap import check_eap_capa, int_eap_server_params, eap_connect, \
     eap_reauth
 
 def int_teap_server_params(eap_teap_auth=None, eap_teap_pac_no_inner=None,
-                           eap_teap_separate_result=None):
+                           eap_teap_separate_result=None, eap_teap_id=None):
     params = int_eap_server_params()
     params['pac_opaque_encr_key'] = "000102030405060708090a0b0c0dff00"
     params['eap_fast_a_id'] = "101112131415161718191a1b1c1dff00"
@@ -22,6 +22,8 @@ def int_teap_server_params(eap_teap_auth=None, eap_teap_pac_no_inner=None,
         params['eap_teap_pac_no_inner'] = eap_teap_pac_no_inner
     if eap_teap_separate_result:
         params['eap_teap_separate_result'] = eap_teap_separate_result
+    if eap_teap_id:
+        params['eap_teap_id'] = eap_teap_id
     return params
 
 def test_eap_teap_eap_mschapv2(dev, apdev):
@@ -87,6 +89,37 @@ def test_eap_teap_basic_password_auth_no_password(dev, apdev):
                 anonymous_identity="TEAP",
                 ca_cert="auth_serv/ca.pem",
                 pac_file="blob://teap_pac", expect_failure=True)
+
+def test_eap_teap_basic_password_auth_id0(dev, apdev):
+    """EAP-TEAP with Basic-Password-Auth (eap_teap_id=0)"""
+    run_eap_teap_basic_password_auth_id(dev, apdev, 0)
+
+def test_eap_teap_basic_password_auth_id1(dev, apdev):
+    """EAP-TEAP with Basic-Password-Auth (eap_teap_id=1)"""
+    run_eap_teap_basic_password_auth_id(dev, apdev, 1)
+
+def test_eap_teap_basic_password_auth_id2(dev, apdev):
+    """EAP-TEAP with Basic-Password-Auth (eap_teap_id=2)"""
+    run_eap_teap_basic_password_auth_id(dev, apdev, 2, failure=True)
+
+def test_eap_teap_basic_password_auth_id3(dev, apdev):
+    """EAP-TEAP with Basic-Password-Auth (eap_teap_id=3)"""
+    run_eap_teap_basic_password_auth_id(dev, apdev, 3)
+
+def test_eap_teap_basic_password_auth_id4(dev, apdev):
+    """EAP-TEAP with Basic-Password-Auth (eap_teap_id=4)"""
+    run_eap_teap_basic_password_auth_id(dev, apdev, 4)
+
+def run_eap_teap_basic_password_auth_id(dev, apdev, eap_teap_id, failure=False):
+    check_eap_capa(dev[0], "TEAP")
+    params = int_teap_server_params(eap_teap_auth="1",
+                                    eap_teap_id=str(eap_teap_id))
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user",
+                anonymous_identity="TEAP", password="password",
+                ca_cert="auth_serv/ca.pem",
+                pac_file="blob://teap_pac",
+                expect_failure=failure)
 
 def test_eap_teap_peer_outer_tlvs(dev, apdev):
     """EAP-TEAP with peer Outer TLVs"""
@@ -154,6 +187,37 @@ def test_eap_teap_eap_mschapv2_pac_no_ca_cert(dev, apdev):
     res = eap_reauth(dev[0], "TEAP")
     if res['tls_session_reused'] == '1':
         raise Exception("Unexpected use of PAC session ticket")
+
+def test_eap_teap_eap_mschapv2_id0(dev, apdev):
+    """EAP-TEAP with inner EAP-MSCHAPv2 (eap_teap_id=0)"""
+    run_eap_teap_eap_mschapv2_id(dev, apdev, 0)
+
+def test_eap_teap_eap_mschapv2_id1(dev, apdev):
+    """EAP-TEAP with inner EAP-MSCHAPv2 (eap_teap_id=1)"""
+    run_eap_teap_eap_mschapv2_id(dev, apdev, 1)
+
+def test_eap_teap_eap_mschapv2_id2(dev, apdev):
+    """EAP-TEAP with inner EAP-MSCHAPv2 (eap_teap_id=2)"""
+    run_eap_teap_eap_mschapv2_id(dev, apdev, 2, failure=True)
+
+def test_eap_teap_eap_mschapv2_id3(dev, apdev):
+    """EAP-TEAP with inner EAP-MSCHAPv2 (eap_teap_id=3)"""
+    run_eap_teap_eap_mschapv2_id(dev, apdev, 3)
+
+def test_eap_teap_eap_mschapv2_id4(dev, apdev):
+    """EAP-TEAP with inner EAP-MSCHAPv2 (eap_teap_id=4)"""
+    run_eap_teap_eap_mschapv2_id(dev, apdev, 4)
+
+def run_eap_teap_eap_mschapv2_id(dev, apdev, eap_teap_id, failure=False):
+    check_eap_capa(dev[0], "TEAP")
+    check_eap_capa(dev[0], "MSCHAPV2")
+    params = int_teap_server_params(eap_teap_id=str(eap_teap_id))
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user",
+                anonymous_identity="TEAP", password="password",
+                ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                pac_file="blob://teap_pac",
+                expect_failure=failure)
 
 def test_eap_teap_basic_password_auth_pac(dev, apdev):
     """EAP-TEAP with Basic-Password-Auth and PAC"""
