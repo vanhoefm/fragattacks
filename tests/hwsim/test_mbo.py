@@ -321,6 +321,7 @@ def test_mbo_cell_capa_update_pmf(dev, apdev):
 
     dev[0].connect(ssid, psk=passphrase, key_mgmt="WPA-PSK-SHA256",
                    proto="WPA2", ieee80211w="2", scan_freq="2412")
+    hapd.wait_sta()
 
     addr = dev[0].own_addr()
     sta = hapd.get_sta(addr)
