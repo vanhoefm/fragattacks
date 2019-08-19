@@ -151,6 +151,12 @@ enum teap_tlv_result_status {
 	TEAP_STATUS_FAILURE = 2
 };
 
+/* Identity-Type values within Identity-Type TLV */
+enum teap_identity_types {
+	TEAP_IDENTITY_TYPE_USER = 1,
+	TEAP_IDENTITY_TYPE_MACHINE = 2,
+};
+
 #define TEAP_TLV_MANDATORY 0x8000
 #define TEAP_TLV_TYPE_MASK 0x3fff
 
@@ -189,6 +195,7 @@ struct eap_teap_tlv_parse {
 	u8 *basic_auth_resp;
 	size_t basic_auth_resp_len;
 	u32 error_code;
+	u16 identity_type;
 };
 
 void eap_teap_put_tlv_hdr(struct wpabuf *buf, u16 type, u16 len);
@@ -215,6 +222,7 @@ int eap_teap_parse_tlv(struct eap_teap_tlv_parse *tlv,
 const char * eap_teap_tlv_type_str(enum teap_tlv_types type);
 struct wpabuf * eap_teap_tlv_result(int status, int intermediate);
 struct wpabuf * eap_teap_tlv_error(enum teap_error_codes error);
+struct wpabuf * eap_teap_tlv_identity_type(enum teap_identity_types id);
 enum eap_type;
 int eap_teap_allowed_anon_prov_phase2_method(int vendor, enum eap_type type);
 int eap_teap_allowed_anon_prov_cipher_suite(u16 cs);

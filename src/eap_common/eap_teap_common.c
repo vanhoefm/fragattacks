@@ -427,6 +427,17 @@ int eap_teap_parse_tlv(struct eap_teap_tlv_parse *tlv,
 		       int tlv_type, u8 *pos, size_t len)
 {
 	switch (tlv_type) {
+	case TEAP_TLV_IDENTITY_TYPE:
+		if (len < 2) {
+			wpa_printf(MSG_INFO,
+				   "EAP-TEAP: Too short Identity-Type TLV");
+			tlv->result = TEAP_STATUS_FAILURE;
+			break;
+		}
+		tlv->identity_type = WPA_GET_BE16(pos);
+		wpa_printf(MSG_DEBUG, "EAP-TEAP: Identity-Type: %u",
+			   tlv->identity_type);
+		break;
 	case TEAP_TLV_RESULT:
 		wpa_hexdump(MSG_MSGDUMP, "EAP-TEAP: Result TLV", pos, len);
 		if (tlv->result) {
@@ -675,6 +686,22 @@ struct wpabuf * eap_teap_tlv_error(enum teap_error_codes error)
 	wpabuf_put_be16(buf, TEAP_TLV_MANDATORY | TEAP_TLV_ERROR);
 	wpabuf_put_be16(buf, 4);
 	wpabuf_put_be32(buf, error);
+	return buf;
+}
+
+
+struct wpabuf * eap_teap_tlv_identity_type(enum teap_identity_types id)
+{
+	struct wpabuf *buf;
+
+	buf = wpabuf_alloc(4 + 2);
+	if (!buf)
+		return NULL;
+	wpa_printf(MSG_DEBUG,
+		   "EAP-TEAP: Add Identity-Type TLV(Identity-Type=%d)", id);
+	wpabuf_put_be16(buf, TEAP_TLV_IDENTITY_TYPE);
+	wpabuf_put_be16(buf, 2);
+	wpabuf_put_be16(buf, id);
 	return buf;
 }
 
