@@ -525,7 +525,8 @@ static struct wpabuf * eap_teap_tlv_pac_ack(void)
 static struct wpabuf * eap_teap_process_eap_payload_tlv(
 	struct eap_sm *sm, struct eap_teap_data *data,
 	struct eap_method_ret *ret,
-	u8 *eap_payload_tlv, size_t eap_payload_tlv_len)
+	u8 *eap_payload_tlv, size_t eap_payload_tlv_len,
+	enum teap_identity_types req_id_type)
 {
 	struct eap_hdr *hdr;
 	struct wpabuf *resp = NULL;
@@ -557,13 +558,19 @@ static struct wpabuf * eap_teap_process_eap_payload_tlv(
 		return NULL;
 	}
 
-	return eap_teap_tlv_eap_payload(resp);
+	resp = eap_teap_tlv_eap_payload(resp);
+	if (req_id_type)
+		resp = wpabuf_concat(
+			resp,
+			eap_teap_tlv_identity_type(TEAP_IDENTITY_TYPE_USER));
+	return resp;
 }
 
 
 static struct wpabuf * eap_teap_process_basic_auth_req(
 	struct eap_sm *sm, struct eap_teap_data *data,
-	u8 *basic_auth_req, size_t basic_auth_req_len)
+	u8 *basic_auth_req, size_t basic_auth_req_len,
+	enum teap_identity_types req_id_type)
 {
 	const u8 *identity, *password;
 	size_t identity_len, password_len, plen;
@@ -593,6 +600,10 @@ static struct wpabuf * eap_teap_process_basic_auth_req(
 	wpabuf_put_data(resp, password, password_len);
 	wpa_hexdump_buf_key(MSG_DEBUG, "EAP-TEAP: Basic-Password-Auth-Resp",
 			    resp);
+	if (req_id_type)
+		resp = wpabuf_concat(
+			resp,
+			eap_teap_tlv_identity_type(TEAP_IDENTITY_TYPE_USER));
 
 	/* Assume this succeeds so that Result TLV(Success) from the server can
 	 * be used to terminate TEAP. */
@@ -1270,14 +1281,16 @@ static int eap_teap_process_decrypted(struct eap_sm *sm,
 	if (tlv.basic_auth_req) {
 		tmp = eap_teap_process_basic_auth_req(sm, data,
 						      tlv.basic_auth_req,
-						      tlv.basic_auth_req_len);
+						      tlv.basic_auth_req_len,
+						      tlv.identity_type);
 		if (!tmp)
 			failed = 1;
 		resp = wpabuf_concat(resp, tmp);
 	} else if (tlv.eap_payload_tlv) {
 		tmp = eap_teap_process_eap_payload_tlv(sm, data, ret,
 						       tlv.eap_payload_tlv,
-						       tlv.eap_payload_tlv_len);
+						       tlv.eap_payload_tlv_len,
+						       tlv.identity_type);
 		if (!tmp)
 			failed = 1;
 		resp = wpabuf_concat(resp, tmp);
