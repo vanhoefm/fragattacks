@@ -198,6 +198,13 @@ struct eap_config {
 	int eap_teap_auth;
 	int eap_teap_pac_no_inner;
 	int eap_teap_separate_result;
+	enum eap_teap_id {
+		EAP_TEAP_ID_ALLOW_ANY = 0,
+		EAP_TEAP_ID_REQUIRE_USER = 1,
+		EAP_TEAP_ID_REQUIRE_MACHINE = 2,
+		EAP_TEAP_ID_REQUEST_USER_ACCEPT_MACHINE = 3,
+		EAP_TEAP_ID_REQUEST_MACHINE_ACCEPT_USER = 4,
+	} eap_teap_id;
 
 	/**
 	 * eap_sim_aka_result_ind - EAP-SIM/AKA protected success indication

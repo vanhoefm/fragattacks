@@ -529,30 +529,56 @@ static struct wpabuf * eap_teap_build_phase2_req(struct eap_sm *sm,
 						 struct eap_teap_data *data,
 						 u8 id)
 {
-	struct wpabuf *req;
+	struct wpabuf *req, *id_tlv = NULL;
+
+	if (sm->cfg->eap_teap_auth == 1 ||
+	    (data->phase2_priv && data->phase2_method &&
+	     data->phase2_method->vendor == EAP_VENDOR_IETF &&
+	     data->phase2_method->method == EAP_TYPE_IDENTITY)) {
+		switch (sm->cfg->eap_teap_id) {
+		case EAP_TEAP_ID_ALLOW_ANY:
+			break;
+		case EAP_TEAP_ID_REQUIRE_USER:
+		case EAP_TEAP_ID_REQUEST_USER_ACCEPT_MACHINE:
+			id_tlv = eap_teap_tlv_identity_type(
+				TEAP_IDENTITY_TYPE_USER);
+			break;
+		case EAP_TEAP_ID_REQUIRE_MACHINE:
+		case EAP_TEAP_ID_REQUEST_MACHINE_ACCEPT_USER:
+			id_tlv = eap_teap_tlv_identity_type(
+				TEAP_IDENTITY_TYPE_MACHINE);
+			break;
+		}
+	}
 
 	if (sm->cfg->eap_teap_auth == 1) {
 		wpa_printf(MSG_DEBUG, "EAP-TEAP: Initiate Basic-Password-Auth");
 		req = wpabuf_alloc(sizeof(struct teap_tlv_hdr));
-		if (!req)
+		if (!req) {
+			wpabuf_free(id_tlv);
 			return NULL;
+		}
 		eap_teap_put_tlv_hdr(req, TEAP_TLV_BASIC_PASSWORD_AUTH_REQ, 0);
-		return req;
+		return wpabuf_concat(req, id_tlv);
 	}
 
 	wpa_printf(MSG_DEBUG, "EAP-TEAP: Initiate inner EAP method");
 	if (!data->phase2_priv) {
 		wpa_printf(MSG_DEBUG,
 			   "EAP-TEAP: Phase 2 method not initialized");
+		wpabuf_free(id_tlv);
 		return NULL;
 	}
 
 	req = data->phase2_method->buildReq(sm, data->phase2_priv, id);
-	if (!req)
+	if (!req) {
+		wpabuf_free(id_tlv);
 		return NULL;
+	}
 
 	wpa_hexdump_buf_key(MSG_MSGDUMP, "EAP-TEAP: Phase 2 EAP-Request", req);
-	return eap_teap_tlv_eap_payload(req);
+
+	return wpabuf_concat(eap_teap_tlv_eap_payload(req), id_tlv);
 }
 
 
@@ -960,9 +986,27 @@ static int eap_teap_phase2_init(struct eap_sm *sm, struct eap_teap_data *data,
 }
 
 
+static int eap_teap_valid_id_type(struct eap_sm *sm,
+				  enum teap_identity_types id_type)
+{
+	if (sm->cfg->eap_teap_id == EAP_TEAP_ID_REQUIRE_USER &&
+	    id_type != TEAP_IDENTITY_TYPE_USER)
+		return 0;
+	if (sm->cfg->eap_teap_id == EAP_TEAP_ID_REQUIRE_MACHINE &&
+	    id_type != TEAP_IDENTITY_TYPE_MACHINE)
+		return 0;
+	if (sm->cfg->eap_teap_id != EAP_TEAP_ID_ALLOW_ANY &&
+	    id_type != TEAP_IDENTITY_TYPE_USER &&
+	    id_type != TEAP_IDENTITY_TYPE_MACHINE)
+		return 0;
+	return 1;
+}
+
+
 static void eap_teap_process_phase2_response(struct eap_sm *sm,
 					     struct eap_teap_data *data,
-					     u8 *in_data, size_t in_len)
+					     u8 *in_data, size_t in_len,
+					     enum teap_identity_types id_type)
 {
 	int next_vendor = EAP_VENDOR_IETF;
 	enum eap_type next_type = EAP_TYPE_NONE;
@@ -1041,6 +1085,13 @@ static void eap_teap_process_phase2_response(struct eap_sm *sm,
 
 	switch (data->state) {
 	case PHASE2_ID:
+		if (!eap_teap_valid_id_type(sm, id_type)) {
+			wpa_printf(MSG_DEBUG,
+				   "EAP-TEAP: Provided Identity-Type %u not allowed",
+				   id_type);
+			eap_teap_req_failure(data, TEAP_ERROR_INNER_METHOD);
+			break;
+		}
 		if (eap_user_get(sm, sm->identity, sm->identity_len, 1) != 0) {
 			wpa_hexdump_ascii(MSG_DEBUG,
 					  "EAP-TEAP: Phase 2 Identity not found in the user database",
@@ -1097,7 +1148,8 @@ static void eap_teap_process_phase2_response(struct eap_sm *sm,
 
 static void eap_teap_process_phase2_eap(struct eap_sm *sm,
 					struct eap_teap_data *data,
-					u8 *in_data, size_t in_len)
+					u8 *in_data, size_t in_len,
+					enum teap_identity_types id_type)
 {
 	struct eap_hdr *hdr;
 	size_t len;
@@ -1124,7 +1176,8 @@ static void eap_teap_process_phase2_eap(struct eap_sm *sm,
 		   (unsigned long) len);
 	switch (hdr->code) {
 	case EAP_CODE_RESPONSE:
-		eap_teap_process_phase2_response(sm, data, (u8 *) hdr, len);
+		eap_teap_process_phase2_response(sm, data, (u8 *) hdr, len,
+						 id_type);
 		break;
 	default:
 		wpa_printf(MSG_INFO,
@@ -1137,10 +1190,19 @@ static void eap_teap_process_phase2_eap(struct eap_sm *sm,
 
 static void eap_teap_process_basic_auth_resp(struct eap_sm *sm,
 					     struct eap_teap_data *data,
-					     u8 *in_data, size_t in_len)
-{
+					     u8 *in_data, size_t in_len,
+					     enum teap_identity_types id_type)
+				  {
 	u8 *pos, *end, *username, *password, *new_id;
 	u8 userlen, passlen;
+
+	if (!eap_teap_valid_id_type(sm, id_type)) {
+		wpa_printf(MSG_DEBUG,
+			   "EAP-TEAP: Provided Identity-Type %u not allowed",
+			   id_type);
+		eap_teap_req_failure(data, 0);
+		return;
+	}
 
 	pos = in_data;
 	end = pos + in_len;
@@ -1533,7 +1595,8 @@ static void eap_teap_process_phase2_tlvs(struct eap_sm *sm,
 			return;
 		}
 		eap_teap_process_basic_auth_resp(sm, data, tlv.basic_auth_resp,
-						 tlv.basic_auth_resp_len);
+						 tlv.basic_auth_resp_len,
+						 tlv.identity_type);
 	}
 
 	if (tlv.eap_payload_tlv) {
@@ -1544,7 +1607,8 @@ static void eap_teap_process_phase2_tlvs(struct eap_sm *sm,
 			return;
 		}
 		eap_teap_process_phase2_eap(sm, data, tlv.eap_payload_tlv,
-					    tlv.eap_payload_tlv_len);
+					    tlv.eap_payload_tlv_len,
+					    tlv.identity_type);
 	}
 
 	if (data->state == SUCCESS_SEND_RESULT &&

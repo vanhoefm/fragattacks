@@ -2242,6 +2242,7 @@ radius_server_init(struct radius_server_conf *conf)
 	eap_cfg->eap_teap_auth = conf->eap_teap_auth;
 	eap_cfg->eap_teap_pac_no_inner = conf->eap_teap_pac_no_inner;
 	eap_cfg->eap_teap_separate_result = conf->eap_teap_separate_result;
+	eap_cfg->eap_teap_id = conf->eap_teap_id;
 	data->get_eap_user = conf->get_eap_user;
 	eap_cfg->eap_sim_aka_result_ind = conf->eap_sim_aka_result_ind;
 	eap_cfg->eap_sim_id = conf->eap_sim_id;
