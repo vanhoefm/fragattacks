@@ -57,6 +57,7 @@ struct eap_teap_data {
 	char *srv_id_info;
 
 	int anon_provisioning;
+	int skipped_inner_auth;
 	int send_new_pac; /* server triggered re-keying of Tunnel PAC */
 	struct wpabuf *pending_phase2_resp;
 	struct wpabuf *server_outer_tlvs;
@@ -1529,6 +1530,7 @@ static void eap_teap_process_phase2_tlvs(struct eap_sm *sm,
 		}
 
 		if (sm->cfg->eap_teap_auth != 1 &&
+		    !data->skipped_inner_auth &&
 		    tlv.iresult != TEAP_STATUS_SUCCESS) {
 			wpa_printf(MSG_DEBUG,
 				   "EAP-TEAP: Crypto-Binding TLV without intermediate Success Result");
@@ -1738,6 +1740,7 @@ static int eap_teap_process_phase2_start(struct eap_sm *sm,
 		} else if (sm->cfg->eap_teap_pac_no_inner) {
 			wpa_printf(MSG_DEBUG,
 				   "EAP-TEAP: Used PAC and identity already known - skip inner auth");
+			data->skipped_inner_auth = 1;
 			/* FIX: Need to derive CMK here. However, how is that
 			 * supposed to be done? RFC 7170 does not tell that for
 			 * the no-inner-auth case. */
