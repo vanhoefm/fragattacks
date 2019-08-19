@@ -145,11 +145,6 @@ def test_authsrv_oom(dev, apdev):
     with alloc_fail(authsrv, 2, "radius_server_init;hostapd_setup_radius_srv"):
         if "FAIL" not in authsrv.request("ENABLE"):
             raise Exception("ENABLE succeeded during OOM")
-    with alloc_fail(authsrv, 3, "radius_server_init;hostapd_setup_radius_srv"):
-        authsrv.request("ENABLE")
-        # This is actually allowed to continue even though memory allocation
-        # fails.
-    authsrv.disable()
 
     for count in range(1, 4):
         with alloc_fail(authsrv, count,
