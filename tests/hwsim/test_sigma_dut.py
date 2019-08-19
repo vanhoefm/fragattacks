@@ -2869,10 +2869,6 @@ def run_sigma_dut_eap_ttls_uosc_tod(dev, apdev, params, tofu):
     with open(hashdst, "w") as f:
         f.write(binascii.hexlify(hash).decode())
 
-    dst = os.path.join(logdir, name + ".incorrect.pem.sha256")
-    with open(dst, "w") as f:
-        f.write(32*"00")
-
     ssid = "test-wpa2-eap"
     params = int_eap_server_params()
     params["ssid"] = ssid
@@ -2911,6 +2907,73 @@ def run_sigma_dut_eap_ttls_uosc_tod(dev, apdev, params, tofu):
         res = sigma_dut_cmd_check("dev_exec_action,program,WPA3,interface,%s,ServerCertTrust,Accept" % ifname)
         if "ServerCertTrustResult,Accepted" in res:
             raise Exception("Server certificate trust override was accepted unexpectedly")
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+        dev[0].dump_monitor()
+    finally:
+        stop_sigma_dut(sigma)
+
+def test_sigma_dut_eap_ttls_uosc_initial_tod_strict(dev, apdev, params):
+    """sigma_dut controlled STA and EAP-TTLS with initial UOSC/TOD-STRICT"""
+    run_sigma_dut_eap_ttls_uosc_initial_tod(dev, apdev, params, False)
+
+def test_sigma_dut_eap_ttls_uosc_initial_tod_tofu(dev, apdev, params):
+    """sigma_dut controlled STA and EAP-TTLS with initial UOSC/TOD-TOFU"""
+    run_sigma_dut_eap_ttls_uosc_initial_tod(dev, apdev, params, True)
+
+def run_sigma_dut_eap_ttls_uosc_initial_tod(dev, apdev, params, tofu):
+    logdir = params['logdir']
+
+    name = "sigma_dut_eap_ttls_uosc_initial_tod"
+    if tofu:
+        name += "_tofu"
+    with open("auth_serv/rsa3072-ca.pem", "r") as f:
+        with open(os.path.join(logdir, name + ".ca.pem"), "w") as f2:
+            f2.write(f.read())
+
+    if tofu:
+        src = "auth_serv/server-certpol2.pem"
+    else:
+        src = "auth_serv/server-certpol.pem"
+    dst = os.path.join(logdir, name + ".server.der")
+    hashdst = os.path.join(logdir, name + ".server.pem.sha256")
+    subprocess.check_call(["openssl", "x509", "-in", src, "-out", dst,
+                           "-outform", "DER"],
+                          stderr=open('/dev/null', 'w'))
+    with open(dst, "rb") as f:
+        der = f.read()
+    hash = hashlib.sha256(der).digest()
+    with open(hashdst, "w") as f:
+        f.write(binascii.hexlify(hash).decode())
+
+    ssid = "test-wpa2-eap"
+    params = int_eap_server_params()
+    params["ssid"] = ssid
+    if tofu:
+        params["server_cert"] = "auth_serv/server-certpol2.pem"
+        params["private_key"] = "auth_serv/server-certpol2.key"
+    else:
+        params["server_cert"] = "auth_serv/server-certpol.pem"
+        params["private_key"] = "auth_serv/server-certpol.key"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, cert_path=logdir, debug=True)
+
+    try:
+        cmd = ("sta_set_security,type,eapttls,interface,%s,ssid,%s,keymgmttype,wpa2,encType,AES-CCMP,PairwiseCipher,AES-CCMP-128,trustedRootCA," + name + ".ca.pem,username,DOMAIN\mschapv2 user,password,password") % (ifname, ssid)
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check(cmd)
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid))
+        ev = dev[0].wait_event(["CTRL-EVENT-EAP-TLS-CERT-ERROR"], timeout=15)
+        if ev is None:
+            raise Exception("Server certificate validation failure not reported")
+
+        res = sigma_dut_cmd_check("dev_exec_action,program,WPA3,interface,%s,ServerCertTrust,Accept" % ifname)
+        if not tofu and "ServerCertTrustResult,Accepted" in res:
+            raise Exception("Server certificate trust override was accepted unexpectedly")
+        if tofu and "ServerCertTrustResult,Accepted" not in res:
+            raise Exception("Server certificate trust override was not accepted")
         sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
         dev[0].dump_monitor()
     finally:
