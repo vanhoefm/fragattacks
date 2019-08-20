@@ -522,6 +522,18 @@ static struct wpabuf * eap_teap_tlv_pac_ack(void)
 }
 
 
+static struct wpabuf * eap_teap_add_identity_type(struct eap_sm *sm,
+						  struct wpabuf *msg)
+{
+	struct wpabuf *tlv;
+
+	tlv = eap_teap_tlv_identity_type(sm->use_machine_cred ?
+					 TEAP_IDENTITY_TYPE_MACHINE :
+					 TEAP_IDENTITY_TYPE_USER);
+	return wpabuf_concat(msg, tlv);
+}
+
+
 static struct wpabuf * eap_teap_process_eap_payload_tlv(
 	struct eap_sm *sm, struct eap_teap_data *data,
 	struct eap_method_ret *ret,
@@ -560,9 +572,8 @@ static struct wpabuf * eap_teap_process_eap_payload_tlv(
 
 	resp = eap_teap_tlv_eap_payload(resp);
 	if (req_id_type)
-		resp = wpabuf_concat(
-			resp,
-			eap_teap_tlv_identity_type(TEAP_IDENTITY_TYPE_USER));
+		resp = eap_teap_add_identity_type(sm, resp);
+
 	return resp;
 }
 
@@ -601,9 +612,7 @@ static struct wpabuf * eap_teap_process_basic_auth_req(
 	wpa_hexdump_buf_key(MSG_DEBUG, "EAP-TEAP: Basic-Password-Auth-Resp",
 			    resp);
 	if (req_id_type)
-		resp = wpabuf_concat(
-			resp,
-			eap_teap_tlv_identity_type(TEAP_IDENTITY_TYPE_USER));
+		resp = eap_teap_add_identity_type(sm, resp);
 
 	/* Assume this succeeds so that Result TLV(Success) from the server can
 	 * be used to terminate TEAP. */
@@ -1276,6 +1285,15 @@ static int eap_teap_process_decrypted(struct eap_sm *sm,
 		failed = 1;
 		error = TEAP_ERROR_TUNNEL_COMPROMISE_ERROR;
 		goto done;
+	}
+
+	if (tlv.identity_type == TEAP_IDENTITY_TYPE_MACHINE) {
+		struct eap_peer_config *config = eap_get_config(sm);
+
+		sm->use_machine_cred = config && config->machine_identity &&
+			config->machine_identity_len;
+	} else if (tlv.identity_type) {
+		sm->use_machine_cred = 0;
 	}
 
 	if (tlv.basic_auth_req) {
