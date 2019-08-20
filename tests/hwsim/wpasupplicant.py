@@ -1062,6 +1062,7 @@ class WpaSupplicant:
             self.set_network(id, "ssid", ssid2)
 
         quoted = ["psk", "identity", "anonymous_identity", "password",
+                  "machine_identity", "machine_password",
                   "ca_cert", "client_cert", "private_key",
                   "private_key_passwd", "ca_cert2", "client_cert2",
                   "private_key2", "phase1", "phase2", "domain_suffix_match",
