@@ -266,6 +266,7 @@ SM_STATE(EAP, INITIALIZE)
 	sm->expected_failure = 0;
 	sm->reauthInit = FALSE;
 	sm->erp_seq = (u32) -1;
+	sm->use_machine_cred = 0;
 }
 
 
@@ -1675,6 +1676,11 @@ struct wpabuf * eap_sm_buildIdentity(struct eap_sm *sm, int id, int encrypted)
 		identity_len = config->anonymous_identity_len;
 		wpa_hexdump_ascii(MSG_DEBUG, "EAP: using anonymous identity",
 				  identity, identity_len);
+	} else if (sm->use_machine_cred) {
+		identity = config->machine_identity;
+		identity_len = config->machine_identity_len;
+		wpa_hexdump_ascii(MSG_DEBUG, "EAP: using machine identity",
+				  identity, identity_len);
 	} else {
 		identity = config->identity;
 		identity_len = config->identity_len;
@@ -2741,8 +2747,15 @@ struct eap_peer_config * eap_get_config(struct eap_sm *sm)
 const u8 * eap_get_config_identity(struct eap_sm *sm, size_t *len)
 {
 	struct eap_peer_config *config = eap_get_config(sm);
-	if (config == NULL)
+
+	if (!config)
 		return NULL;
+
+	if (sm->use_machine_cred) {
+		*len = config->machine_identity_len;
+		return config->machine_identity;
+	}
+
 	*len = config->identity_len;
 	return config->identity;
 }
@@ -2752,14 +2765,24 @@ static int eap_get_ext_password(struct eap_sm *sm,
 				struct eap_peer_config *config)
 {
 	char *name;
+	const u8 *password;
+	size_t password_len;
 
-	if (config->password == NULL)
+	if (sm->use_machine_cred) {
+		password = config->machine_password;
+		password_len = config->machine_password_len;
+	} else {
+		password = config->password;
+		password_len = config->password_len;
+	}
+
+	if (!password)
 		return -1;
 
-	name = os_zalloc(config->password_len + 1);
-	if (name == NULL)
+	name = os_zalloc(password_len + 1);
+	if (!name)
 		return -1;
-	os_memcpy(name, config->password, config->password_len);
+	os_memcpy(name, password, password_len);
 
 	ext_password_free(sm->ext_pw_buf);
 	sm->ext_pw_buf = ext_password_get(sm->ext_pw, name);
@@ -2778,14 +2801,23 @@ static int eap_get_ext_password(struct eap_sm *sm,
 const u8 * eap_get_config_password(struct eap_sm *sm, size_t *len)
 {
 	struct eap_peer_config *config = eap_get_config(sm);
-	if (config == NULL)
+
+	if (!config)
 		return NULL;
 
-	if (config->flags & EAP_CONFIG_FLAGS_EXT_PASSWORD) {
+	if ((sm->use_machine_cred &&
+	     (config->flags & EAP_CONFIG_FLAGS_EXT_MACHINE_PASSWORD)) ||
+	    (!sm->use_machine_cred &&
+	     (config->flags & EAP_CONFIG_FLAGS_EXT_PASSWORD))) {
 		if (eap_get_ext_password(sm, config) < 0)
 			return NULL;
 		*len = wpabuf_len(sm->ext_pw_buf);
 		return wpabuf_head(sm->ext_pw_buf);
+	}
+
+	if (sm->use_machine_cred) {
+		*len = config->machine_password_len;
+		return config->machine_password;
 	}
 
 	*len = config->password_len;
@@ -2805,16 +2837,28 @@ const u8 * eap_get_config_password(struct eap_sm *sm, size_t *len)
 const u8 * eap_get_config_password2(struct eap_sm *sm, size_t *len, int *hash)
 {
 	struct eap_peer_config *config = eap_get_config(sm);
-	if (config == NULL)
+
+	if (!config)
 		return NULL;
 
-	if (config->flags & EAP_CONFIG_FLAGS_EXT_PASSWORD) {
+	if ((sm->use_machine_cred &&
+	     (config->flags & EAP_CONFIG_FLAGS_EXT_MACHINE_PASSWORD)) ||
+	    (!sm->use_machine_cred &&
+	     (config->flags & EAP_CONFIG_FLAGS_EXT_PASSWORD))) {
 		if (eap_get_ext_password(sm, config) < 0)
 			return NULL;
 		if (hash)
 			*hash = 0;
 		*len = wpabuf_len(sm->ext_pw_buf);
 		return wpabuf_head(sm->ext_pw_buf);
+	}
+
+	if (sm->use_machine_cred) {
+		*len = config->machine_password_len;
+		if (hash)
+			*hash = !!(config->flags &
+				   EAP_CONFIG_FLAGS_MACHINE_PASSWORD_NTHASH);
+		return config->machine_password;
 	}
 
 	*len = config->password_len;

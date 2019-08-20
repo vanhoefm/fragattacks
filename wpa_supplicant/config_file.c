@@ -774,7 +774,9 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	STR(identity);
 	STR(anonymous_identity);
 	STR(imsi_identity);
+	STR(machine_identity);
 	STR(password);
+	STR(machine_password);
 	STR(ca_cert);
 	STR(ca_path);
 	STR(client_cert);

@@ -50,6 +50,20 @@ struct eap_peer_config {
 	size_t imsi_identity_len;
 
 	/**
+	 * machine_identity - EAP Identity for machine credential
+	 *
+	 * This field is used to set the machine identity or NAI for cases where
+	 * and explicit machine credential (instead of or in addition to a user
+	 * credential (from %identity) is needed.
+	 */
+	u8 *machine_identity;
+
+	/**
+	 * machine_identity_len - EAP Identity length for machine credential
+	 */
+	size_t machine_identity_len;
+
+	/**
 	 * password - Password string for EAP
 	 *
 	 * This field can include either the plaintext password (default
@@ -71,6 +85,20 @@ struct eap_peer_config {
 	 * password_len - Length of password field
 	 */
 	size_t password_len;
+
+	/**
+	 * machine_password - Password string for EAP machine credential
+	 *
+	 * This field is used when machine credential based on username/password
+	 * is needed instead of a user credential (from %password). See
+	 * %password for more details on the format.
+	 */
+	u8 *machine_password;
+
+	/**
+	 * machine_password_len - Length of machine credential password field
+	 */
+	size_t machine_password_len;
 
 	/**
 	 * ca_cert - File path to CA certificate file (PEM/DER)
@@ -751,6 +779,8 @@ struct eap_peer_config {
 
 #define EAP_CONFIG_FLAGS_PASSWORD_NTHASH BIT(0)
 #define EAP_CONFIG_FLAGS_EXT_PASSWORD BIT(1)
+#define EAP_CONFIG_FLAGS_MACHINE_PASSWORD_NTHASH BIT(2)
+#define EAP_CONFIG_FLAGS_EXT_MACHINE_PASSWORD BIT(3)
 	/**
 	 * flags - Network configuration flags (bitfield)
 	 *
@@ -760,6 +790,10 @@ struct eap_peer_config {
 	 *         instead of plaintext password
 	 * bit 1 = password is stored in external storage; the value in the
 	 *         password field is the name of that external entry
+	 * bit 2 = machine password is represented as a 16-byte NtPasswordHash
+	 *         value instead of plaintext password
+	 * bit 3 = machine password is stored in external storage; the value in
+	 *         the password field is the name of that external entry
 	 */
 	u32 flags;
 

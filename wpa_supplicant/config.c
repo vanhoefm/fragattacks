@@ -1614,7 +1614,7 @@ static int wpa_config_parse_password(const struct parse_data *data,
 #ifdef CONFIG_EXT_PASSWORD
 	if (os_strncmp(value, "ext:", 4) == 0) {
 		char *name = os_strdup(value + 4);
-		if (name == NULL)
+		if (!name)
 			return -1;
 		bin_clear_free(ssid->eap.password, ssid->eap.password_len);
 		ssid->eap.password = (u8 *) name;
@@ -1630,9 +1630,9 @@ static int wpa_config_parse_password(const struct parse_data *data,
 		size_t res_len;
 
 		tmp = wpa_config_parse_string(value, &res_len);
-		if (tmp == NULL) {
-			wpa_printf(MSG_ERROR, "Line %d: failed to parse "
-				   "password.", line);
+		if (!tmp) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: failed to parse password.", line);
 			return -1;
 		}
 		wpa_hexdump_ascii_key(MSG_MSGDUMP, data->name,
@@ -1650,13 +1650,14 @@ static int wpa_config_parse_password(const struct parse_data *data,
 
 	/* NtPasswordHash: hash:<32 hex digits> */
 	if (os_strlen(value + 5) != 2 * 16) {
-		wpa_printf(MSG_ERROR, "Line %d: Invalid password hash length "
-			   "(expected 32 hex digits)", line);
+		wpa_printf(MSG_ERROR,
+			   "Line %d: Invalid password hash length (expected 32 hex digits)",
+			   line);
 		return -1;
 	}
 
 	hash = os_malloc(16);
-	if (hash == NULL)
+	if (!hash)
 		return -1;
 
 	if (hexstr2bin(value + 5, hash, 16)) {
@@ -1683,19 +1684,118 @@ static int wpa_config_parse_password(const struct parse_data *data,
 }
 
 
+static int wpa_config_parse_machine_password(const struct parse_data *data,
+					     struct wpa_ssid *ssid, int line,
+					     const char *value)
+{
+	u8 *hash;
+
+	if (os_strcmp(value, "NULL") == 0) {
+		if (!ssid->eap.machine_password)
+			return 1; /* Already unset */
+		wpa_printf(MSG_DEBUG,
+			   "Unset configuration string 'machine_password'");
+		bin_clear_free(ssid->eap.machine_password,
+			       ssid->eap.machine_password_len);
+		ssid->eap.machine_password = NULL;
+		ssid->eap.machine_password_len = 0;
+		return 0;
+	}
+
+#ifdef CONFIG_EXT_PASSWORD
+	if (os_strncmp(value, "ext:", 4) == 0) {
+		char *name = os_strdup(value + 4);
+
+		if (!name)
+			return -1;
+		bin_clear_free(ssid->eap.machine_password,
+			       ssid->eap.machine_password_len);
+		ssid->eap.machine_password = (u8 *) name;
+		ssid->eap.machine_password_len = os_strlen(name);
+		ssid->eap.flags &= ~EAP_CONFIG_FLAGS_MACHINE_PASSWORD_NTHASH;
+		ssid->eap.flags |= EAP_CONFIG_FLAGS_EXT_MACHINE_PASSWORD;
+		return 0;
+	}
+#endif /* CONFIG_EXT_PASSWORD */
+
+	if (os_strncmp(value, "hash:", 5) != 0) {
+		char *tmp;
+		size_t res_len;
+
+		tmp = wpa_config_parse_string(value, &res_len);
+		if (!tmp) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: failed to parse machine_password.",
+				   line);
+			return -1;
+		}
+		wpa_hexdump_ascii_key(MSG_MSGDUMP, data->name,
+				      (u8 *) tmp, res_len);
+
+		bin_clear_free(ssid->eap.machine_password,
+			       ssid->eap.machine_password_len);
+		ssid->eap.machine_password = (u8 *) tmp;
+		ssid->eap.machine_password_len = res_len;
+		ssid->eap.flags &= ~EAP_CONFIG_FLAGS_MACHINE_PASSWORD_NTHASH;
+		ssid->eap.flags &= ~EAP_CONFIG_FLAGS_EXT_MACHINE_PASSWORD;
+
+		return 0;
+	}
+
+
+	/* NtPasswordHash: hash:<32 hex digits> */
+	if (os_strlen(value + 5) != 2 * 16) {
+		wpa_printf(MSG_ERROR,
+			   "Line %d: Invalid machine_password hash length (expected 32 hex digits)",
+			   line);
+		return -1;
+	}
+
+	hash = os_malloc(16);
+	if (!hash)
+		return -1;
+
+	if (hexstr2bin(value + 5, hash, 16)) {
+		os_free(hash);
+		wpa_printf(MSG_ERROR, "Line %d: Invalid machine_password hash",
+			   line);
+		return -1;
+	}
+
+	wpa_hexdump_key(MSG_MSGDUMP, data->name, hash, 16);
+
+	if (ssid->eap.machine_password &&
+	    ssid->eap.machine_password_len == 16 &&
+	    os_memcmp(ssid->eap.machine_password, hash, 16) == 0 &&
+	    (ssid->eap.flags & EAP_CONFIG_FLAGS_MACHINE_PASSWORD_NTHASH)) {
+		bin_clear_free(hash, 16);
+		return 1;
+	}
+	bin_clear_free(ssid->eap.machine_password,
+		       ssid->eap.machine_password_len);
+	ssid->eap.machine_password = hash;
+	ssid->eap.machine_password_len = 16;
+	ssid->eap.flags |= EAP_CONFIG_FLAGS_MACHINE_PASSWORD_NTHASH;
+	ssid->eap.flags &= ~EAP_CONFIG_FLAGS_EXT_MACHINE_PASSWORD;
+
+	return 0;
+}
+
+
 #ifndef NO_CONFIG_WRITE
+
 static char * wpa_config_write_password(const struct parse_data *data,
 					struct wpa_ssid *ssid)
 {
 	char *buf;
 
-	if (ssid->eap.password == NULL)
+	if (!ssid->eap.password)
 		return NULL;
 
 #ifdef CONFIG_EXT_PASSWORD
 	if (ssid->eap.flags & EAP_CONFIG_FLAGS_EXT_PASSWORD) {
 		buf = os_zalloc(4 + ssid->eap.password_len + 1);
-		if (buf == NULL)
+		if (!buf)
 			return NULL;
 		os_memcpy(buf, "ext:", 4);
 		os_memcpy(buf + 4, ssid->eap.password, ssid->eap.password_len);
@@ -1709,7 +1809,7 @@ static char * wpa_config_write_password(const struct parse_data *data,
 	}
 
 	buf = os_malloc(5 + 32 + 1);
-	if (buf == NULL)
+	if (!buf)
 		return NULL;
 
 	os_memcpy(buf, "hash:", 5);
@@ -1717,6 +1817,44 @@ static char * wpa_config_write_password(const struct parse_data *data,
 
 	return buf;
 }
+
+
+static char * wpa_config_write_machine_password(const struct parse_data *data,
+						struct wpa_ssid *ssid)
+{
+	char *buf;
+
+	if (!ssid->eap.machine_password)
+		return NULL;
+
+#ifdef CONFIG_EXT_PASSWORD
+	if (ssid->eap.flags & EAP_CONFIG_FLAGS_EXT_MACHINE_PASSWORD) {
+		buf = os_zalloc(4 + ssid->eap.machine_password_len + 1);
+		if (!buf)
+			return NULL;
+		os_memcpy(buf, "ext:", 4);
+		os_memcpy(buf + 4, ssid->eap.machine_password,
+			  ssid->eap.machine_password_len);
+		return buf;
+	}
+#endif /* CONFIG_EXT_PASSWORD */
+
+	if (!(ssid->eap.flags & EAP_CONFIG_FLAGS_MACHINE_PASSWORD_NTHASH)) {
+		return wpa_config_write_string(
+			ssid->eap.machine_password,
+			ssid->eap.machine_password_len);
+	}
+
+	buf = os_malloc(5 + 32 + 1);
+	if (!buf)
+		return NULL;
+
+	os_memcpy(buf, "hash:", 5);
+	wpa_snprintf_hex(buf + 5, 32 + 1, ssid->eap.machine_password, 16);
+
+	return buf;
+}
+
 #endif /* NO_CONFIG_WRITE */
 #endif /* IEEE8021X_EAPOL */
 
@@ -2249,7 +2387,9 @@ static const struct parse_data ssid_fields[] = {
 	{ STR_LENe(identity) },
 	{ STR_LENe(anonymous_identity) },
 	{ STR_LENe(imsi_identity) },
+	{ STR_LENe(machine_identity) },
 	{ FUNC_KEY(password) },
+	{ FUNC_KEY(machine_password) },
 	{ STRe(ca_cert) },
 	{ STRe(ca_path) },
 	{ STRe(client_cert) },
@@ -2520,7 +2660,9 @@ static void eap_peer_config_free(struct eap_peer_config *eap)
 	bin_clear_free(eap->identity, eap->identity_len);
 	os_free(eap->anonymous_identity);
 	os_free(eap->imsi_identity);
+	os_free(eap->machine_identity);
 	bin_clear_free(eap->password, eap->password_len);
+	bin_clear_free(eap->machine_password, eap->machine_password_len);
 	os_free(eap->ca_cert);
 	os_free(eap->ca_path);
 	os_free(eap->client_cert);
