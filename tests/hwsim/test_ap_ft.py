@@ -460,6 +460,11 @@ def run_ap_ft_pmf(dev, apdev, ieee80211w, over_ds=False):
     params["ieee80211w"] = "2"
     hapd1 = hostapd.add_ap(apdev[1], params)
 
+    Wlantest.setup(hapd0)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase(passphrase)
+
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase,
               ieee80211w=ieee80211w, over_ds=over_ds)
 
