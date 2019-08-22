@@ -100,21 +100,23 @@ static int try_pmk(struct wlantest *wt, struct wlantest_bss *bss,
 	struct wpa_ptk ptk;
 
 	if (wpa_key_mgmt_ft(sta->key_mgmt)) {
-		u8 pmk_r0[PMK_LEN];
-		u8 pmk_r0_name[WPA_PMK_NAME_LEN];
 		u8 pmk_r1[PMK_LEN];
 		u8 pmk_r1_name[WPA_PMK_NAME_LEN];
 		u8 ptk_name[WPA_PMK_NAME_LEN];
 
-		wpa_derive_pmk_r0(pmk->pmk, PMK_LEN,
-				  bss->ssid, bss->ssid_len, bss->mdid,
-				  bss->r0kh_id, bss->r0kh_id_len,
-				  sta->addr, pmk_r0, pmk_r0_name, 0);
-		wpa_hexdump(MSG_DEBUG, "FT: PMK-R0", pmk_r0, PMK_LEN);
-		wpa_hexdump(MSG_DEBUG, "FT: PMKR0Name", pmk_r0_name,
+		if (wpa_derive_pmk_r0(pmk->pmk, PMK_LEN,
+				      bss->ssid, bss->ssid_len, bss->mdid,
+				      bss->r0kh_id, bss->r0kh_id_len,
+				      sta->addr, sta->pmk_r0, sta->pmk_r0_name,
+				      0) < 0)
+			return -1;
+		wpa_hexdump(MSG_DEBUG, "FT: PMK-R0", sta->pmk_r0, PMK_LEN);
+		wpa_hexdump(MSG_DEBUG, "FT: PMKR0Name", sta->pmk_r0_name,
 			    WPA_PMK_NAME_LEN);
-		wpa_derive_pmk_r1(pmk_r0, PMK_LEN, pmk_r0_name, bss->r1kh_id,
-				  sta->addr, pmk_r1, pmk_r1_name);
+		if (wpa_derive_pmk_r1(sta->pmk_r0, PMK_LEN, sta->pmk_r0_name,
+				      bss->r1kh_id, sta->addr,
+				      pmk_r1, pmk_r1_name) < 0)
+			return -1;
 		wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R1", pmk_r1, PMK_LEN);
 		wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", pmk_r1_name,
 			    WPA_PMK_NAME_LEN);

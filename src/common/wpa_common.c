@@ -990,9 +990,11 @@ int wpa_ft_parse_ies(const u8 *ies, size_t ies_len,
 				wpa_hexdump(MSG_DEBUG, "FT: FTE-MIC",
 					    ftie_sha384->mic,
 					    sizeof(ftie_sha384->mic));
+				parse->fte_anonce = ftie_sha384->anonce;
 				wpa_hexdump(MSG_DEBUG, "FT: FTE-ANonce",
 					    ftie_sha384->anonce,
 					    WPA_NONCE_LEN);
+				parse->fte_snonce = ftie_sha384->snonce;
 				wpa_hexdump(MSG_DEBUG, "FT: FTE-SNonce",
 					    ftie_sha384->snonce,
 					    WPA_NONCE_LEN);
@@ -1009,8 +1011,10 @@ int wpa_ft_parse_ies(const u8 *ies, size_t ies_len,
 				    ftie->mic_control, 2);
 			wpa_hexdump(MSG_DEBUG, "FT: FTE-MIC",
 				    ftie->mic, sizeof(ftie->mic));
+			parse->fte_anonce = ftie->anonce;
 			wpa_hexdump(MSG_DEBUG, "FT: FTE-ANonce",
 				    ftie->anonce, WPA_NONCE_LEN);
+			parse->fte_snonce = ftie->snonce;
 			wpa_hexdump(MSG_DEBUG, "FT: FTE-SNonce",
 				    ftie->snonce, WPA_NONCE_LEN);
 			prot_ie_count = ftie->mic_control[1];

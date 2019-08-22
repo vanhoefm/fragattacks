@@ -71,6 +71,8 @@ struct wlantest_sta {
 	int rsn_capab;
 	u8 anonce[32]; /* ANonce from the previous EAPOL-Key msg 1/4 or 3/4 */
 	u8 snonce[32]; /* SNonce from the previous EAPOL-Key msg 2/4 */
+	u8 pmk_r0[PMK_LEN];
+	u8 pmk_r0_name[WPA_PMK_NAME_LEN];
 	struct wpa_ptk ptk; /* Derived PTK */
 	int ptk_set;
 	struct wpa_ptk tptk; /* Derived PTK during rekeying */

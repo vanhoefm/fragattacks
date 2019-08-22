@@ -162,6 +162,81 @@ static void process_fils_auth(struct wlantest *wt, struct wlantest_bss *bss,
 }
 
 
+static void process_ft_auth(struct wlantest *wt, struct wlantest_bss *bss,
+			    struct wlantest_sta *sta,
+			    const struct ieee80211_mgmt *mgmt, size_t len)
+{
+	u16 trans;
+	struct wpa_ft_ies parse;
+	u8 pmk_r1[PMK_LEN];
+	u8 pmk_r1_name[WPA_PMK_NAME_LEN];
+	struct wpa_ptk ptk;
+	u8 ptk_name[WPA_PMK_NAME_LEN];
+	struct wlantest_bss *old_bss;
+	struct wlantest_sta *old_sta = NULL;
+
+	if (sta->auth_alg != WLAN_AUTH_FT ||
+	    len < IEEE80211_HDRLEN + sizeof(mgmt->u.auth))
+		return;
+
+	trans = le_to_host16(mgmt->u.auth.auth_transaction);
+
+	if (wpa_ft_parse_ies(mgmt->u.auth.variable,
+			     len - IEEE80211_HDRLEN - sizeof(mgmt->u.auth),
+			     &parse, -1)) {
+		add_note(wt, MSG_INFO,
+			 "Could not parse FT Authentication Response frame");
+		return;
+	}
+
+	if (trans == 1) {
+		sta->key_mgmt = parse.key_mgmt;
+		sta->pairwise_cipher = parse.pairwise_cipher;
+		return;
+	}
+
+	if (trans != 2)
+		return;
+
+	/* TODO: Should find the latest updated PMK-R0 value here instead
+	 * copying the one from the first found matching old STA entry. */
+	dl_list_for_each(old_bss, &wt->bss, struct wlantest_bss, list) {
+		if (old_bss == bss)
+			continue;
+		old_sta = sta_find(old_bss, sta->addr);
+		if (old_sta)
+			break;
+	}
+	if (!old_sta)
+		return;
+
+	os_memcpy(sta->pmk_r0, old_sta->pmk_r0, sizeof(sta->pmk_r0));
+	os_memcpy(sta->pmk_r0_name, old_sta->pmk_r0_name,
+		  sizeof(sta->pmk_r0_name));
+
+	if (parse.r1kh_id)
+		os_memcpy(bss->r1kh_id, parse.r1kh_id, FT_R1KH_ID_LEN);
+
+	if (wpa_derive_pmk_r1(sta->pmk_r0, PMK_LEN, sta->pmk_r0_name,
+			      bss->r1kh_id, sta->addr, pmk_r1, pmk_r1_name) < 0)
+		return;
+	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", pmk_r1_name, WPA_PMK_NAME_LEN);
+
+	if (!parse.fte_anonce || !parse.fte_snonce ||
+	    wpa_pmk_r1_to_ptk(pmk_r1, PMK_LEN, parse.fte_snonce,
+			      parse.fte_anonce, sta->addr, bss->bssid,
+			      pmk_r1_name, &ptk, ptk_name, sta->key_mgmt,
+			      sta->pairwise_cipher) < 0)
+		return;
+
+	add_note(wt, MSG_DEBUG, "Derived new PTK");
+	os_memcpy(&sta->ptk, &ptk, sizeof(ptk));
+	sta->ptk_set = 1;
+	os_memset(sta->rsc_tods, 0, sizeof(sta->rsc_tods));
+	os_memset(sta->rsc_fromds, 0, sizeof(sta->rsc_fromds));
+}
+
+
 static void rx_mgmt_auth(struct wlantest *wt, const u8 *data, size_t len)
 {
 	const struct ieee80211_mgmt *mgmt;
@@ -210,6 +285,7 @@ static void rx_mgmt_auth(struct wlantest *wt, const u8 *data, size_t len)
 		sta->counters[WLANTEST_STA_COUNTER_AUTH_TX]++;
 
 	process_fils_auth(wt, bss, sta, mgmt, len);
+	process_ft_auth(wt, bss, sta, mgmt, len);
 }
 
 
@@ -736,6 +812,8 @@ static void rx_mgmt_reassoc_req(struct wlantest *wt, const u8 *data,
 			  sta->assocreq_ies_len);
 
 	sta_update_assoc(sta, &elems);
+
+	/* TODO: FT protocol: verify FTE MIC and update GTK/IGTK for the BSS */
 }
 
 
@@ -928,6 +1006,145 @@ static void rx_mgmt_disassoc(struct wlantest *wt, const u8 *data, size_t len,
 }
 
 
+static void rx_mgmt_action_ft_request(struct wlantest *wt,
+				      const struct ieee80211_mgmt *mgmt,
+				      size_t len)
+{
+	const u8 *ies;
+	size_t ies_len;
+	struct wpa_ft_ies parse;
+	struct wlantest_bss *bss;
+	struct wlantest_sta *sta;
+
+	if (len < 24 + 2 + 2 * ETH_ALEN) {
+		add_note(wt, MSG_INFO, "Too short FT Request frame");
+		return;
+	}
+
+	wpa_printf(MSG_DEBUG, "FT Request: STA Address: " MACSTR
+		   " Target AP Address: " MACSTR,
+		   MAC2STR(mgmt->u.action.u.ft_action_req.sta_addr),
+		   MAC2STR(mgmt->u.action.u.ft_action_req.target_ap_addr));
+	ies = mgmt->u.action.u.ft_action_req.variable;
+	ies_len = len - (24 + 2 + 2 * ETH_ALEN);
+	wpa_hexdump(MSG_DEBUG, "FT Request frame body", ies, ies_len);
+
+	if (wpa_ft_parse_ies(ies, ies_len, &parse, -1)) {
+		add_note(wt, MSG_INFO, "Could not parse FT Request frame body");
+		return;
+	}
+
+	bss = bss_get(wt, mgmt->u.action.u.ft_action_resp.target_ap_addr);
+	if (!bss) {
+		add_note(wt, MSG_INFO, "No BSS entry for Target AP");
+		return;
+	}
+
+	sta = sta_get(bss, mgmt->sa);
+	if (!sta)
+		return;
+
+	sta->key_mgmt = parse.key_mgmt;
+	sta->pairwise_cipher = parse.pairwise_cipher;
+}
+
+
+static void rx_mgmt_action_ft_response(struct wlantest *wt,
+				       struct wlantest_sta *sta,
+				       const struct ieee80211_mgmt *mgmt,
+				       size_t len)
+{
+	struct wlantest_bss *bss;
+	struct wlantest_sta *new_sta;
+	const u8 *ies;
+	size_t ies_len;
+	struct wpa_ft_ies parse;
+	u8 pmk_r1[PMK_LEN];
+	u8 pmk_r1_name[WPA_PMK_NAME_LEN];
+	struct wpa_ptk ptk;
+	u8 ptk_name[WPA_PMK_NAME_LEN];
+
+	if (len < 24 + 2 + 2 * ETH_ALEN + 2) {
+		add_note(wt, MSG_INFO, "Too short FT Response frame from "
+			 MACSTR, MAC2STR(mgmt->sa));
+		return;
+	}
+
+	wpa_printf(MSG_DEBUG, "FT Response: STA Address: " MACSTR
+		   " Target AP Address: " MACSTR " Status Code: %u",
+		   MAC2STR(mgmt->u.action.u.ft_action_resp.sta_addr),
+		   MAC2STR(mgmt->u.action.u.ft_action_resp.target_ap_addr),
+		   le_to_host16(mgmt->u.action.u.ft_action_resp.status_code));
+	ies = mgmt->u.action.u.ft_action_req.variable;
+	ies_len = len - (24 + 2 + 2 * ETH_ALEN);
+	wpa_hexdump(MSG_DEBUG, "FT Response frame body", ies, ies_len);
+
+	if (wpa_ft_parse_ies(ies, ies_len, &parse, -1)) {
+		add_note(wt, MSG_INFO,
+			 "Could not parse FT Response frame body");
+		return;
+	}
+
+	bss = bss_get(wt, mgmt->u.action.u.ft_action_resp.target_ap_addr);
+	if (!bss) {
+		add_note(wt, MSG_INFO, "No BSS entry for Target AP");
+		return;
+	}
+
+	if (parse.r1kh_id)
+		os_memcpy(bss->r1kh_id, parse.r1kh_id, FT_R1KH_ID_LEN);
+
+	if (wpa_derive_pmk_r1(sta->pmk_r0, PMK_LEN, sta->pmk_r0_name,
+			      bss->r1kh_id, sta->addr, pmk_r1, pmk_r1_name) < 0)
+		return;
+	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", pmk_r1_name, WPA_PMK_NAME_LEN);
+
+	new_sta = sta_get(bss, sta->addr);
+	if (!new_sta)
+		return;
+	os_memcpy(new_sta->pmk_r0, sta->pmk_r0, sizeof(sta->pmk_r0));
+	os_memcpy(new_sta->pmk_r0_name, sta->pmk_r0_name,
+		  sizeof(sta->pmk_r0_name));
+	if (!parse.fte_anonce || !parse.fte_snonce ||
+	    wpa_pmk_r1_to_ptk(pmk_r1, PMK_LEN, parse.fte_snonce,
+			      parse.fte_anonce, new_sta->addr, bss->bssid,
+			      pmk_r1_name, &ptk, ptk_name, new_sta->key_mgmt,
+			      new_sta->pairwise_cipher) < 0)
+		return;
+
+	add_note(wt, MSG_DEBUG, "Derived new PTK");
+	os_memcpy(&new_sta->ptk, &ptk, sizeof(ptk));
+	new_sta->ptk_set = 1;
+	os_memset(new_sta->rsc_tods, 0, sizeof(new_sta->rsc_tods));
+	os_memset(new_sta->rsc_fromds, 0, sizeof(new_sta->rsc_fromds));
+}
+
+
+static void rx_mgmt_action_ft(struct wlantest *wt, struct wlantest_sta *sta,
+			      const struct ieee80211_mgmt *mgmt,
+			      size_t len, int valid)
+{
+	if (len < 24 + 2) {
+		add_note(wt, MSG_INFO, "Too short FT Action frame from " MACSTR,
+			 MAC2STR(mgmt->sa));
+		return;
+	}
+
+	switch (mgmt->u.action.u.ft_action_req.action) {
+	case 1:
+		rx_mgmt_action_ft_request(wt, mgmt, len);
+		break;
+	case 2:
+		rx_mgmt_action_ft_response(wt, sta, mgmt, len);
+		break;
+	default:
+		add_note(wt, MSG_INFO, "Unsupported FT action value %u from "
+			 MACSTR, mgmt->u.action.u.ft_action_req.action,
+			 MAC2STR(mgmt->sa));
+	}
+}
+
+
 static void rx_mgmt_action_sa_query_req(struct wlantest *wt,
 					struct wlantest_sta *sta,
 					const struct ieee80211_mgmt *mgmt,
@@ -1070,6 +1287,9 @@ static void rx_mgmt_action(struct wlantest *wt, const u8 *data, size_t len,
 	}
 
 	switch (mgmt->u.action.category) {
+	case WLAN_ACTION_FT:
+		rx_mgmt_action_ft(wt, sta, mgmt, len, valid);
+		break;
 	case WLAN_ACTION_SA_QUERY:
 		rx_mgmt_action_sa_query(wt, sta, mgmt, len, valid);
 		break;
