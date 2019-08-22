@@ -3589,7 +3589,7 @@ enum qca_scan_freq_list_type {
 /**
  * enum qca_vendor_attr_scan_freq_list_scheme: Frequency list scheme
  *
- * @QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST: An array of unsigned 32-bit values.
+ * @QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST: Nested attribute of u32 values
  *	List of frequencies in MHz to be considered for a roam scan.
  *
  * @QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST_TYPE: Unsigned 32-bit value.
