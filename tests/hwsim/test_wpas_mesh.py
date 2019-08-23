@@ -16,11 +16,11 @@ import binascii
 import hwsim_utils
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger
+from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger, \
+    radiotap_build, start_monitor, stop_monitor
 from tshark import run_tshark, run_tshark_json
 from test_ap_ht import set_world_reg
-from test_sae import radiotap_build, start_monitor, stop_monitor, \
-    build_sae_commit, sae_rx_commit_token_req
+from test_sae import build_sae_commit, sae_rx_commit_token_req
 from hwsim_utils import set_group_map
 
 def check_mesh_support(dev, secure=False):
