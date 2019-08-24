@@ -2738,7 +2738,8 @@ def test_ap_ft_reassoc_replay(dev, apdev, params):
     sta = dev[0].own_addr()
     filt = "wlan.fc.type == 2 && " + \
            "wlan.da == " + sta + " && " + \
-           "wlan.sa == " + ap
+           "wlan.sa == " + ap + " && " + \
+           "wlan.fc.protected == 1"
     fields = ["wlan.ccmp.extiv"]
     res = run_tshark(capfile, filt, fields)
     vals = res.splitlines()
