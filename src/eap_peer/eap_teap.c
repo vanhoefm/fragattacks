@@ -458,7 +458,8 @@ static int eap_teap_phase2_request(struct eap_sm *sm,
 	if (!(*resp) ||
 	    (iret.methodState == METHOD_DONE &&
 	     iret.decision == DECISION_FAIL)) {
-		ret->methodState = METHOD_DONE;
+		/* Wait for protected indication of failure */
+		ret->methodState = METHOD_MAY_CONT;
 		ret->decision = DECISION_FAIL;
 	} else if ((iret.methodState == METHOD_DONE ||
 		    iret.methodState == METHOD_MAY_CONT) &&
