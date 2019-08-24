@@ -914,6 +914,29 @@ static void handle_eap_initiate(struct hostapd_data *hapd,
 }
 
 
+#ifndef CONFIG_NO_STDOUT_DEBUG
+static const char * eap_code_str(u8 code)
+{
+	switch (code) {
+	case EAP_CODE_REQUEST:
+		return "request";
+	case EAP_CODE_RESPONSE:
+		return "response";
+	case EAP_CODE_SUCCESS:
+		return "success";
+	case EAP_CODE_FAILURE:
+		return "failure";
+	case EAP_CODE_INITIATE:
+		return "initiate";
+	case EAP_CODE_FINISH:
+		return "finish";
+	default:
+		return "unknown";
+	}
+}
+#endif /* CONFIG_NO_STDOUT_DEBUG */
+
+
 /* Process incoming EAP packet from Supplicant */
 static void handle_eap(struct hostapd_data *hapd, struct sta_info *sta,
 		       u8 *buf, size_t len)
@@ -929,8 +952,9 @@ static void handle_eap(struct hostapd_data *hapd, struct sta_info *sta,
 	eap = (struct eap_hdr *) buf;
 
 	eap_len = be_to_host16(eap->length);
-	wpa_printf(MSG_DEBUG, "EAP: code=%d identifier=%d length=%d",
-		   eap->code, eap->identifier, eap_len);
+	wpa_printf(MSG_DEBUG, "EAP: code=%d (%s) identifier=%d length=%d",
+		   eap->code, eap_code_str(eap->code), eap->identifier,
+		   eap_len);
 	if (eap_len < sizeof(*eap)) {
 		wpa_printf(MSG_DEBUG, "   Invalid EAP length");
 		return;
@@ -944,29 +968,12 @@ static void handle_eap(struct hostapd_data *hapd, struct sta_info *sta,
 	}
 
 	switch (eap->code) {
-	case EAP_CODE_REQUEST:
-		wpa_printf(MSG_DEBUG, " (request)");
-		return;
 	case EAP_CODE_RESPONSE:
-		wpa_printf(MSG_DEBUG, " (response)");
 		handle_eap_response(hapd, sta, eap, eap_len);
 		break;
-	case EAP_CODE_SUCCESS:
-		wpa_printf(MSG_DEBUG, " (success)");
-		return;
-	case EAP_CODE_FAILURE:
-		wpa_printf(MSG_DEBUG, " (failure)");
-		return;
 	case EAP_CODE_INITIATE:
-		wpa_printf(MSG_DEBUG, " (initiate)");
 		handle_eap_initiate(hapd, sta, eap, eap_len);
 		break;
-	case EAP_CODE_FINISH:
-		wpa_printf(MSG_DEBUG, " (finish)");
-		break;
-	default:
-		wpa_printf(MSG_DEBUG, " (unknown code)");
-		return;
 	}
 }
 
