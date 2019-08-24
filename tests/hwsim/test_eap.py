@@ -132,6 +132,53 @@ def test_eap_teap_basic_password_auth_machine(dev, apdev):
                 ca_cert="auth_serv/ca.pem",
                 pac_file="blob://teap_pac")
 
+def test_eap_teap_basic_password_auth_user_and_machine(dev, apdev):
+    """EAP-TEAP with Basic-Password-Auth using user and machine credentials"""
+    check_eap_capa(dev[0], "TEAP")
+    params = int_teap_server_params(eap_teap_auth="1", eap_teap_id="5")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user", password="password",
+                anonymous_identity="TEAP",
+                machine_identity="machine", machine_password="machine-password",
+                ca_cert="auth_serv/ca.pem",
+                pac_file="blob://teap_pac")
+
+def test_eap_teap_basic_password_auth_user_and_machine_fail_user(dev, apdev):
+    """EAP-TEAP with Basic-Password-Auth using user and machine credentials (fail user)"""
+    check_eap_capa(dev[0], "TEAP")
+    params = int_teap_server_params(eap_teap_auth="1", eap_teap_id="5")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user", password="wrong-password",
+                anonymous_identity="TEAP",
+                machine_identity="machine", machine_password="machine-password",
+                ca_cert="auth_serv/ca.pem",
+                pac_file="blob://teap_pac",
+                expect_failure=True)
+
+def test_eap_teap_basic_password_auth_user_and_machine_fail_machine(dev, apdev):
+    """EAP-TEAP with Basic-Password-Auth using user and machine credentials (fail machine)"""
+    check_eap_capa(dev[0], "TEAP")
+    params = int_teap_server_params(eap_teap_auth="1", eap_teap_id="5")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user", password="password",
+                anonymous_identity="TEAP",
+                machine_identity="machine",
+                machine_password="wrong-machine-password",
+                ca_cert="auth_serv/ca.pem",
+                pac_file="blob://teap_pac",
+                expect_failure=True)
+
+def test_eap_teap_basic_password_auth_user_and_machine_no_machine(dev, apdev):
+    """EAP-TEAP with Basic-Password-Auth using user and machine credentials (no machine)"""
+    check_eap_capa(dev[0], "TEAP")
+    params = int_teap_server_params(eap_teap_auth="1", eap_teap_id="5")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user", password="password",
+                anonymous_identity="TEAP",
+                ca_cert="auth_serv/ca.pem",
+                pac_file="blob://teap_pac",
+                expect_failure=True)
+
 def test_eap_teap_peer_outer_tlvs(dev, apdev):
     """EAP-TEAP with peer Outer TLVs"""
     check_eap_capa(dev[0], "TEAP")
@@ -241,6 +288,57 @@ def test_eap_teap_eap_mschapv2_machine(dev, apdev):
                 machine_identity="machine", machine_password="machine-password",
                 ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
                 pac_file="blob://teap_pac")
+
+def test_eap_teap_eap_mschapv2_user_and_machine(dev, apdev):
+    """EAP-TEAP with inner EAP-MSCHAPv2 using user and machine credentials"""
+    check_eap_capa(dev[0], "TEAP")
+    check_eap_capa(dev[0], "MSCHAPV2")
+    params = int_teap_server_params(eap_teap_id="5")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user", password="password",
+                anonymous_identity="TEAP",
+                machine_identity="machine", machine_password="machine-password",
+                ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                pac_file="blob://teap_pac")
+
+def test_eap_teap_eap_mschapv2_user_and_machine_fail_user(dev, apdev):
+    """EAP-TEAP with inner EAP-MSCHAPv2 using user and machine credentials (fail user)"""
+    check_eap_capa(dev[0], "TEAP")
+    check_eap_capa(dev[0], "MSCHAPV2")
+    params = int_teap_server_params(eap_teap_id="5")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user", password="wrong-password",
+                anonymous_identity="TEAP",
+                machine_identity="machine", machine_password="machine-password",
+                ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                pac_file="blob://teap_pac",
+                expect_failure=True)
+
+def test_eap_teap_eap_mschapv2_user_and_machine_fail_machine(dev, apdev):
+    """EAP-TEAP with inner EAP-MSCHAPv2 using user and machine credentials (fail machine)"""
+    check_eap_capa(dev[0], "TEAP")
+    check_eap_capa(dev[0], "MSCHAPV2")
+    params = int_teap_server_params(eap_teap_id="5")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user", password="password",
+                anonymous_identity="TEAP",
+                machine_identity="machine",
+                machine_password="wrong-machine-password",
+                ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                pac_file="blob://teap_pac",
+                expect_failure=True)
+
+def test_eap_teap_eap_mschapv2_user_and_machine_no_machine(dev, apdev):
+    """EAP-TEAP with inner EAP-MSCHAPv2 using user and machine credentials (no machine)"""
+    check_eap_capa(dev[0], "TEAP")
+    check_eap_capa(dev[0], "MSCHAPV2")
+    params = int_teap_server_params(eap_teap_id="5")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user", password="password",
+                anonymous_identity="TEAP",
+                ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                pac_file="blob://teap_pac",
+                expect_failure=True)
 
 def test_eap_teap_basic_password_auth_pac(dev, apdev):
     """EAP-TEAP with Basic-Password-Auth and PAC"""
