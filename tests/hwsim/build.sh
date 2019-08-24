@@ -45,8 +45,6 @@ echo "Building hostapd"
 cd ../../hostapd
 if [ ! -e .config -o $force_config -eq 1 ]; then
     cp ../tests/hwsim/example-hostapd.config .config
-else
-    echo "hostapd config file exists"
 fi
 
 if [ $use_lcov -eq 1 ]; then
@@ -64,8 +62,6 @@ echo "Building wpa_supplicant"
 cd ../wpa_supplicant
 if [ ! -e .config -o $force_config -eq 1 ]; then
     cp ../tests/hwsim/example-wpa_supplicant.config .config
-else
-    echo "wpa_supplicant config file exists"
 fi
 
 if [ $use_lcov -eq 1 ]; then
