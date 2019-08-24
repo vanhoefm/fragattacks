@@ -57,6 +57,7 @@ def test_nfc_wps_password_token_sta(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to start Enrollee using NFC password token")
     dev[0].wait_connected(timeout=30)
+    hapd.wait_sta()
     check_wpa2_connection(dev[0], apdev[0], hapd, ssid)
 
     if "FAIL" not in hapd.request("WPS_NFC_TAG_READ 0"):
@@ -83,6 +84,7 @@ def test_nfc_wps_config_token(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to provide NFC tag contents to wpa_supplicant")
     dev[0].wait_connected(timeout=15)
+    hapd.wait_sta()
     check_wpa2_connection(dev[0], apdev[0], hapd, ssid)
 
     with alloc_fail(hapd, 1, "wps_get_oob_cred"):
@@ -114,6 +116,7 @@ def test_nfc_wps_config_token_init(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to provide NFC tag contents to wpa_supplicant")
     dev[0].wait_connected(timeout=15)
+    hapd.wait_sta()
     check_wpa2_connection(dev[0], apdev[0], hapd, ssid, mixed=True)
 
 @remote_compatible
@@ -134,6 +137,7 @@ def test_nfc_wps_password_token_sta_init(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to start Enrollee using NFC password token")
     dev[0].wait_connected(timeout=30)
+    hapd.wait_sta()
     check_wpa2_connection(dev[0], apdev[0], hapd, ssid, mixed=True)
 
 @remote_compatible
@@ -162,6 +166,7 @@ def test_nfc_wps_password_token_ap(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to start Registrar using NFC password token")
     dev[0].wait_connected(timeout=30)
+    hapd.wait_sta()
     check_wpa2_connection(dev[0], apdev[0], hapd, new_ssid, mixed=True)
     if "FAIL" in hapd.request("WPS_NFC_TOKEN disable"):
         raise Exception("Failed to disable AP password token")
@@ -206,6 +211,7 @@ def test_nfc_wps_password_token_ap_preconf(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to start Registrar using NFC password token")
     dev[0].wait_connected(timeout=30)
+    hapd.wait_sta()
     check_wpa2_connection(dev[0], apdev[0], hapd, new_ssid, mixed=True)
 
 def test_nfc_wps_handover_init(dev, apdev):
@@ -235,6 +241,7 @@ def _test_nfc_wps_handover_init(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to report NFC connection handover to to wpa_supplicant")
     dev[0].wait_connected(timeout=15)
+    hapd.wait_sta()
     check_wpa2_connection(dev[0], apdev[0], hapd, ssid, mixed=True)
 
     with alloc_fail(hapd, 1, "wps_build_nfc_handover_sel"):
@@ -307,6 +314,7 @@ def test_nfc_wps_handover(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to report NFC connection handover to to wpa_supplicant")
     dev[0].wait_connected(timeout=30)
+    hapd.wait_sta()
     check_wpa2_connection(dev[0], apdev[0], hapd, ssid)
 
 def test_nfc_wps_handover_5ghz(dev, apdev):
@@ -334,6 +342,7 @@ def test_nfc_wps_handover_5ghz(dev, apdev):
         if "FAIL" in res:
             raise Exception("Failed to report NFC connection handover to to wpa_supplicant")
         dev[0].wait_connected(timeout=30)
+        hapd.wait_sta()
         check_wpa2_connection(dev[0], apdev[0], hapd, ssid)
     finally:
         clear_regdom(hapd, dev)
@@ -363,6 +372,7 @@ def test_nfc_wps_handover_chan14(dev, apdev):
         if "FAIL" in res:
             raise Exception("Failed to report NFC connection handover to to wpa_supplicant")
         dev[0].wait_connected(timeout=30)
+        hapd.wait_sta()
         check_wpa2_connection(dev[0], apdev[0], hapd, ssid)
     finally:
         dev[0].request("DISCONNECT")
@@ -395,6 +405,7 @@ def test_nfc_wps_handover_with_pw_token_set(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to report NFC connection handover to to wpa_supplicant")
     dev[0].wait_connected(timeout=15)
+    hapd.wait_sta()
     check_wpa2_connection(dev[0], apdev[0], hapd, ssid)
 
 def test_nfc_wps_handover_pk_hash_mismatch_sta(dev, apdev):
@@ -514,6 +525,7 @@ def _test_nfc_wps_er_pw_token(dev, apdev):
     if ev is None:
         raise Exception("WPS ER did not report success")
     dev[1].wait_connected(timeout=15)
+    hapd.wait_sta()
     check_wpa2_connection(dev[1], apdev[0], hapd, ssid)
 
 @remote_compatible
@@ -540,6 +552,7 @@ def _test_nfc_wps_er_config_token(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to provide NFC tag contents to wpa_supplicant")
     dev[1].wait_connected(timeout=15)
+    hapd.wait_sta()
     check_wpa2_connection(dev[1], apdev[0], hapd, ssid)
 
 def test_nfc_wps_er_handover(dev, apdev):
@@ -567,6 +580,7 @@ def _test_nfc_wps_er_handover(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to report NFC connection handover to to wpa_supplicant")
     dev[1].wait_connected(timeout=15)
+    hapd.wait_sta()
     check_wpa2_connection(dev[1], apdev[0], hapd, ssid)
 
 def test_nfc_wps_er_handover_pk_hash_mismatch_sta(dev, apdev):
