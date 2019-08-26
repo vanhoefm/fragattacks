@@ -5140,6 +5140,7 @@ int wpa_config_process_global(struct wpa_config *config, char *pos, int line)
 					   "AC item", line);
 				return -1;
 			}
+			return ret;
 		}
 #endif /* CONFIG_AP */
 		if (line < 0)
