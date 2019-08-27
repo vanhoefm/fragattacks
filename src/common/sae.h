@@ -43,7 +43,20 @@ struct sae_temporary_data {
 	char *pw_id;
 	int vlan_id;
 	u8 bssid[ETH_ALEN];
+	struct wpabuf *own_rejected_groups;
 	struct wpabuf *peer_rejected_groups;
+	unsigned int h2e:1;
+	unsigned int own_addr_higher:1;
+};
+
+struct sae_pt {
+	struct sae_pt *next;
+	int group;
+	struct crypto_ec *ec;
+	struct crypto_ec_point *ecc_pt;
+
+	const struct dh_group *dh;
+	struct crypto_bignum *ffc_pt;
 };
 
 enum sae_state {
@@ -69,6 +82,9 @@ void sae_clear_data(struct sae_data *sae);
 int sae_prepare_commit(const u8 *addr1, const u8 *addr2,
 		       const u8 *password, size_t password_len,
 		       const char *identifier, struct sae_data *sae);
+int sae_prepare_commit_pt(struct sae_data *sae, const struct sae_pt *pt,
+			  const u8 *addr1, const u8 *addr2,
+			  int *rejected_groups);
 int sae_process_commit(struct sae_data *sae);
 void sae_write_commit(struct sae_data *sae, struct wpabuf *buf,
 		      const struct wpabuf *token, const char *identifier);
@@ -79,5 +95,15 @@ void sae_write_confirm(struct sae_data *sae, struct wpabuf *buf);
 int sae_check_confirm(struct sae_data *sae, const u8 *data, size_t len);
 u16 sae_group_allowed(struct sae_data *sae, int *allowed_groups, u16 group);
 const char * sae_state_txt(enum sae_state state);
+struct sae_pt * sae_derive_pt(int *groups, const u8 *ssid, size_t ssid_len,
+			      const u8 *password, size_t password_len,
+			      const char *identifier);
+struct crypto_ec_point *
+sae_derive_pwe_from_pt_ecc(const struct sae_pt *pt,
+			   const u8 *addr1, const u8 *addr2);
+struct crypto_bignum *
+sae_derive_pwe_from_pt_ffc(const struct sae_pt *pt,
+			   const u8 *addr1, const u8 *addr2);
+void sae_deinit_pt(struct sae_pt *pt);
 
 #endif /* SAE_H */
