@@ -1381,15 +1381,12 @@ ieee802_1x_mka_decode_sak_use_body(
 	struct ieee802_1x_mka_hdr *hdr;
 	struct ieee802_1x_mka_sak_use_body *body;
 	struct ieee802_1x_kay_peer *peer;
-	struct receive_sc *rxsc;
-	struct receive_sa *rxsa;
 	struct data_key *sa_key = NULL;
 	size_t body_len;
 	struct ieee802_1x_mka_ki ki;
 	u32 lpn;
-	Boolean all_receiving;
-	Boolean found;
 	struct ieee802_1x_kay *kay = participant->kay;
+	u32 olpn, llpn;
 
 	if (!participant->principal) {
 		wpa_printf(MSG_WARNING, "KaY: Participant is not principal");
@@ -1430,46 +1427,6 @@ ieee802_1x_mka_decode_sak_use_body(
 
 	if (body->ptx)
 		wpa_printf(MSG_WARNING, "KaY: peer's plain tx are TRUE");
-
-	/* check latest key is valid */
-	if (body->ltx || body->lrx) {
-		found = FALSE;
-		os_memcpy(ki.mi, body->lsrv_mi, sizeof(ki.mi));
-		ki.kn = be_to_host32(body->lkn);
-		dl_list_for_each(sa_key, &participant->sak_list,
-				 struct data_key, list) {
-			if (is_ki_equal(&sa_key->key_identifier, &ki)) {
-				found = TRUE;
-				break;
-			}
-		}
-		if (!found) {
-			wpa_printf(MSG_INFO, "KaY: Latest key is invalid");
-			return -1;
-		}
-		if (os_memcmp(participant->lki.mi, body->lsrv_mi,
-			      sizeof(participant->lki.mi)) == 0 &&
-		    be_to_host32(body->lkn) == participant->lki.kn &&
-		    body->lan == participant->lan) {
-			peer->sak_used = TRUE;
-		}
-		if (body->ltx && peer->is_key_server) {
-			ieee802_1x_cp_set_servertransmitting(kay->cp, TRUE);
-			ieee802_1x_cp_sm_step(kay->cp);
-		}
-	}
-
-	/* check old key is valid (but only if we remember our old key) */
-	if (participant->oki.kn != 0 && (body->otx || body->orx)) {
-		if (os_memcmp(participant->oki.mi, body->osrv_mi,
-			      sizeof(participant->oki.mi)) != 0 ||
-		    be_to_host32(body->okn) != participant->oki.kn ||
-		    body->oan != participant->oan) {
-			wpa_printf(MSG_WARNING, "KaY: Old key is invalid");
-			return -1;
-		}
-	}
-
 	/* TODO: how to set the MACsec hardware when delay_protect is true */
 	if (body->delay_protect &&
 	    (!be_to_host32(body->llpn) || !be_to_host32(body->olpn))) {
@@ -1478,65 +1435,132 @@ ieee802_1x_mka_decode_sak_use_body(
 		return -1;
 	}
 
-	/* check all live peer have used the sak for receiving sa */
-	all_receiving = TRUE;
-	dl_list_for_each(peer, &participant->live_peers,
-			 struct ieee802_1x_kay_peer, list) {
-		if (!peer->sak_used) {
-			all_receiving = FALSE;
-			break;
-		}
-	}
-	if (all_receiving) {
-		participant->to_dist_sak = FALSE;
-		ieee802_1x_cp_set_allreceiving(kay->cp, TRUE);
-		ieee802_1x_cp_sm_step(kay->cp);
+	olpn = be_to_host32(body->olpn);
+	llpn = be_to_host32(body->llpn);
+
+	/* Our most recent distributed key should be the first in the list.
+	 * If it doesn't exist then we can't really do anything.
+	 * Be lenient and don't return error here as there are legitimate cases
+	 * where this can happen such as when a new participant joins the CA and
+	 * the first frame it receives can have a SAKuse but not distSAK.
+	 */
+	sa_key = dl_list_first(&participant->sak_list, struct data_key, list);
+	if (!sa_key) {
+		wpa_printf(MSG_INFO,
+			   "KaY: We don't have a latest distributed key - ignore SAK use");
+		return 0;
 	}
 
-	/* if I'm key server, and detects peer member pn exhaustion, rekey. */
-	lpn = be_to_host32(body->llpn);
-	if (lpn > kay->pn_exhaustion) {
-		if (participant->is_key_server) {
-			participant->new_sak = TRUE;
-			wpa_printf(MSG_WARNING, "KaY: Peer LPN exhaustion");
-		}
+	/* The peer's most recent key will be the "latest key" if it is present
+	 * otherwise it will be the "old key" if in the RETIRE state.
+	 */
+	if (body->lrx) {
+		os_memcpy(ki.mi, body->lsrv_mi, sizeof(ki.mi));
+		ki.kn = be_to_host32(body->lkn);
+		lpn = llpn;
+	} else {
+		os_memcpy(ki.mi, body->osrv_mi, sizeof(ki.mi));
+		ki.kn = be_to_host32(body->okn);
+		lpn = olpn;
 	}
 
-	if (sa_key)
-		sa_key->next_pn = lpn;
-	found = FALSE;
-	dl_list_for_each(rxsc, &participant->rxsc_list, struct receive_sc,
-			 list) {
-		dl_list_for_each(rxsa, &rxsc->sa_list, struct receive_sa,
-				 list) {
-			if (sa_key && rxsa->pkey == sa_key) {
-				found = TRUE;
+	/* If the most recent distributed keys don't agree then someone is out
+	 * of sync. Perhaps non key server hasn't processed the most recent
+	 * distSAK yet and the key server is processing an old packet after it
+	 * has done distSAK. Be lenient and don't return error in this
+	 * particular case; otherwise, the key server will reset its MI and
+	 * cause a traffic disruption which is really undesired for a simple
+	 * timing issue.
+	 */
+	if (!is_ki_equal(&sa_key->key_identifier, &ki)) {
+		wpa_printf(MSG_INFO,
+			   "KaY: Distributed keys don't match - ignore SAK use");
+		return 0;
+	}
+	sa_key->next_pn = lpn;
+
+	/* The key server must check that all peers are using the most recent
+	 * distributed key. Non key servers must check if the key server is
+	 * transmitting.
+	 */
+	if (participant->is_key_server) {
+		struct ieee802_1x_kay_peer *peer_iter;
+		Boolean all_receiving = TRUE;
+
+		/* Distributed keys are equal from above comparison. */
+		peer->sak_used = TRUE;
+
+		dl_list_for_each(peer_iter, &participant->live_peers,
+				 struct ieee802_1x_kay_peer, list) {
+			if (!peer_iter->sak_used) {
+				all_receiving = FALSE;
 				break;
 			}
 		}
-		if (found)
-			break;
-	}
-	if (!found) {
-		wpa_printf(MSG_WARNING, "KaY: Can't find rxsa");
-		return -1;
+		if (all_receiving) {
+			participant->to_dist_sak = FALSE;
+			ieee802_1x_cp_set_allreceiving(kay->cp, TRUE);
+			ieee802_1x_cp_sm_step(kay->cp);
+		}
+	} else if (peer->is_key_server) {
+		if (body->ltx) {
+			ieee802_1x_cp_set_servertransmitting(kay->cp, TRUE);
+			ieee802_1x_cp_sm_step(kay->cp);
+		}
 	}
 
+	/* If I'm key server, and detects peer member PN exhaustion, rekey.
+	 * We only need to check the PN of the most recent distributed key. This
+	 * could be the peer's "latest" or "old" key depending on its current
+	 * state. If both "old" and "latest" keys are present then the "old" key
+	 * has already been exhausted.
+	 */
+	if (participant->is_key_server && lpn > kay->pn_exhaustion) {
+		participant->new_sak = TRUE;
+		wpa_printf(MSG_WARNING, "KaY: Peer LPN exhaustion");
+	}
+
+	/* Get the associated RX SAs of the keys for delay protection since both
+	 * can be in use. Delay protect window (communicated via MKA) is tighter
+	 * than SecY's current replay protect window, so tell SecY the new (and
+	 * higher) lpn.
+	 */
 	if (body->delay_protect) {
-		secy_get_receive_lowest_pn(participant->kay, rxsa);
-		if (lpn > rxsa->lowest_pn) {
-			/* Delay protect window (communicated via MKA) is
-			 * tighter than SecY's current replay protect window,
-			 * so tell SecY the new (and higher) lpn. */
-			rxsa->lowest_pn = lpn;
-			secy_set_receive_lowest_pn(participant->kay, rxsa);
-			wpa_printf(MSG_DEBUG, "KaY: update lpn =0x%x", lpn);
+		struct receive_sc *rxsc;
+		struct receive_sa *rxsa;
+		Boolean found = FALSE;
+
+		dl_list_for_each(rxsc, &participant->rxsc_list,
+				 struct receive_sc, list) {
+			dl_list_for_each(rxsa, &rxsc->sa_list,
+					 struct receive_sa, list) {
+				if (sa_key && rxsa->pkey == sa_key) {
+					found = TRUE;
+					break;
+				}
+			}
+			if (found)
+				break;
 		}
-		/* FIX: Delay protection for olpn not implemented.
-		 * Note that Old Key is only active for MKA_SAK_RETIRE_TIME
-		 * (3 seconds) and delay protection does allow PN's within
-		 * a 2 seconds window, so olpn would be a lot of work for
-		 * just 1 second's worth of protection. */
+		if (found) {
+			secy_get_receive_lowest_pn(participant->kay, rxsa);
+			if (lpn > rxsa->lowest_pn) {
+				rxsa->lowest_pn = lpn;
+				secy_set_receive_lowest_pn(participant->kay,
+							   rxsa);
+				wpa_printf(MSG_DEBUG,
+					   "KaY: update dist LPN=0x%x", lpn);
+			}
+		}
+
+		/* FIX: Delay protection for the SA being replaced is not
+		 * implemented. Note that this key will be active for at least
+		 * MKA_SAK_RETIRE_TIME (3 seconds) but could be longer depending
+		 * on how long it takes to get from RECEIVE to TRANSMITTING or
+		 * if going via ABANDON. Delay protection does allow PNs within
+		 * a 2 second window, so getting PN would be a lot of work for
+		 * just 1 second's worth of protection.
+		 */
 	}
 
 	return 0;
