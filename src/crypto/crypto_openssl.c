@@ -1283,6 +1283,24 @@ struct crypto_bignum * crypto_bignum_init_set(const u8 *buf, size_t len)
 }
 
 
+struct crypto_bignum * crypto_bignum_init_uint(unsigned int val)
+{
+	BIGNUM *bn;
+
+	if (TEST_FAIL())
+		return NULL;
+
+	bn = BN_new();
+	if (!bn)
+		return NULL;
+	if (BN_set_word(bn, val) != 1) {
+		BN_free(bn);
+		return NULL;
+	}
+	return (struct crypto_bignum *) bn;
+}
+
+
 void crypto_bignum_deinit(struct crypto_bignum *n, int clear)
 {
 	if (clear)
@@ -1449,6 +1467,28 @@ int crypto_bignum_div(const struct crypto_bignum *a,
 }
 
 
+int crypto_bignum_addmod(const struct crypto_bignum *a,
+			 const struct crypto_bignum *b,
+			 const struct crypto_bignum *c,
+			 struct crypto_bignum *d)
+{
+	int res;
+	BN_CTX *bnctx;
+
+	if (TEST_FAIL())
+		return -1;
+
+	bnctx = BN_CTX_new();
+	if (!bnctx)
+		return -1;
+	res = BN_mod_add((BIGNUM *) d, (const BIGNUM *) a, (const BIGNUM *) b,
+			 (const BIGNUM *) c, bnctx);
+	BN_CTX_free(bnctx);
+
+	return res ? 0 : -1;
+}
+
+
 int crypto_bignum_mulmod(const struct crypto_bignum *a,
 			 const struct crypto_bignum *b,
 			 const struct crypto_bignum *c,
@@ -1466,6 +1506,48 @@ int crypto_bignum_mulmod(const struct crypto_bignum *a,
 		return -1;
 	res = BN_mod_mul((BIGNUM *) d, (const BIGNUM *) a, (const BIGNUM *) b,
 			 (const BIGNUM *) c, bnctx);
+	BN_CTX_free(bnctx);
+
+	return res ? 0 : -1;
+}
+
+
+int crypto_bignum_sqrmod(const struct crypto_bignum *a,
+			 const struct crypto_bignum *b,
+			 struct crypto_bignum *c)
+{
+	int res;
+	BN_CTX *bnctx;
+
+	if (TEST_FAIL())
+		return -1;
+
+	bnctx = BN_CTX_new();
+	if (!bnctx)
+		return -1;
+	res = BN_mod_sqr((BIGNUM *) c, (const BIGNUM *) a, (const BIGNUM *) b,
+			 bnctx);
+	BN_CTX_free(bnctx);
+
+	return res ? 0 : -1;
+}
+
+
+int crypto_bignum_sqrtmod(const struct crypto_bignum *a,
+			  const struct crypto_bignum *b,
+			  struct crypto_bignum *c)
+{
+	BN_CTX *bnctx;
+	BIGNUM *res;
+
+	if (TEST_FAIL())
+		return -1;
+
+	bnctx = BN_CTX_new();
+	if (!bnctx)
+		return -1;
+	res = BN_mod_sqrt((BIGNUM *) c, (const BIGNUM *) a, (const BIGNUM *) b,
+			  bnctx);
 	BN_CTX_free(bnctx);
 
 	return res ? 0 : -1;
@@ -1679,6 +1761,18 @@ const struct crypto_bignum * crypto_ec_get_prime(struct crypto_ec *e)
 const struct crypto_bignum * crypto_ec_get_order(struct crypto_ec *e)
 {
 	return (const struct crypto_bignum *) e->order;
+}
+
+
+const struct crypto_bignum * crypto_ec_get_a(struct crypto_ec *e)
+{
+	return (const struct crypto_bignum *) e->a;
+}
+
+
+const struct crypto_bignum * crypto_ec_get_b(struct crypto_ec *e)
+{
+	return (const struct crypto_bignum *) e->b;
 }
 
 
