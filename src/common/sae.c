@@ -1664,6 +1664,16 @@ void sae_write_commit(struct sae_data *sae, struct wpabuf *buf,
 		wpa_printf(MSG_DEBUG, "SAE: own Password Identifier: %s",
 			   identifier);
 	}
+
+	if (sae->tmp->h2e && sae->tmp->own_rejected_groups) {
+		wpa_hexdump_buf(MSG_DEBUG, "SAE: own Rejected Groups",
+				sae->tmp->own_rejected_groups);
+		wpabuf_put_u8(buf, WLAN_EID_EXTENSION);
+		wpabuf_put_u8(buf,
+			      1 + wpabuf_len(sae->tmp->own_rejected_groups));
+		wpabuf_put_u8(buf, WLAN_EID_EXT_REJECTED_GROUPS);
+		wpabuf_put_buf(buf, sae->tmp->own_rejected_groups);
+	}
 }
 
 

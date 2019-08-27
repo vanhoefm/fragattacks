@@ -15,7 +15,7 @@
 #define SAE_MAX_PRIME_LEN 512
 #define SAE_MAX_ECC_PRIME_LEN 66
 #define SAE_MAX_HASH_LEN 64
-#define SAE_COMMIT_MAX_LEN (2 + 3 * SAE_MAX_PRIME_LEN)
+#define SAE_COMMIT_MAX_LEN (2 + 3 * SAE_MAX_PRIME_LEN + 255)
 #define SAE_CONFIRM_MAX_LEN (2 + SAE_MAX_HASH_LEN)
 
 /* Special value returned by sae_parse_commit() */
