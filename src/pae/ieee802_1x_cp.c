@@ -141,6 +141,24 @@ SM_STATE(CP, CHANGE)
 		ieee802_1x_kay_delete_sas(sm->kay, sm->lki);
 	if (sm->oki)
 		ieee802_1x_kay_delete_sas(sm->kay, sm->oki);
+	/* The standard doesn't say it but we should clear out the latest
+	 * and old key values. Why would we keep advertising them if
+	 * they've been deleted and the key server has been changed?
+	 */
+	os_free(sm->oki);
+	sm->oki = NULL;
+	sm->otx = FALSE;
+	sm->orx = FALSE;
+	sm->oan = 0;
+	ieee802_1x_kay_set_old_sa_attr(sm->kay, sm->oki, sm->oan,
+				       sm->otx, sm->orx);
+	os_free(sm->lki);
+	sm->lki = NULL;
+	sm->lrx = FALSE;
+	sm->ltx = FALSE;
+	sm->lan = 0;
+	ieee802_1x_kay_set_latest_sa_attr(sm->kay, sm->lki, sm->lan,
+					  sm->ltx, sm->lrx);
 }
 
 
