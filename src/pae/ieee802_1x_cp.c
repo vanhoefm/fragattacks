@@ -301,7 +301,6 @@ SM_STATE(CP, ABANDON)
 	sm->lki = NULL;
 	ieee802_1x_kay_set_latest_sa_attr(sm->kay, sm->lki, sm->lan,
 					  sm->ltx, sm->lrx);
-	sm->new_sak = FALSE;
 }
 
 
