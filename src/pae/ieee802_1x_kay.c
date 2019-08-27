@@ -1287,7 +1287,7 @@ ieee802_1x_mka_encode_sak_use_body(
 	struct ieee802_1x_mka_sak_use_body *body;
 	struct ieee802_1x_kay *kay = participant->kay;
 	unsigned int length;
-	u32 pn = 1;
+	u32 olpn, llpn;
 
 	length = ieee802_1x_mka_get_sak_use_length(participant);
 	body = wpabuf_put(buf, length);
@@ -1307,17 +1307,30 @@ ieee802_1x_mka_encode_sak_use_body(
 
 	/* data delay protect */
 	body->delay_protect = kay->mka_hello_time <= MKA_BOUNDED_HELLO_TIME;
-	/* lowest accept packet number */
-	pn = ieee802_1x_mka_get_lpn(participant, &participant->lki);
-	if (pn > kay->pn_exhaustion) {
-		wpa_printf(MSG_WARNING, "KaY: My LPN exhaustion");
-		if (participant->is_key_server)
-			participant->new_sak = TRUE;
+	/* lowest accept packet numbers */
+	olpn = ieee802_1x_mka_get_lpn(participant, &participant->oki);
+	body->olpn = host_to_be32(olpn);
+	llpn = ieee802_1x_mka_get_lpn(participant, &participant->lki);
+	body->llpn = host_to_be32(llpn);
+	if (participant->is_key_server) {
+		/* The CP will spend most of it's time in RETIRE where only
+		 * the old key is populated. Therefore we should be checking
+		 * the OLPN most of the time.
+		 */
+		if (participant->lrx) {
+			if (llpn > kay->pn_exhaustion) {
+				wpa_printf(MSG_WARNING,
+					   "KaY: My LLPN exhaustion");
+				participant->new_sak = TRUE;
+			}
+		} else {
+			if (olpn > kay->pn_exhaustion) {
+				wpa_printf(MSG_WARNING,
+					   "KaY: My OLPN exhaustion");
+				participant->new_sak = TRUE;
+			}
+		}
 	}
-
-	body->llpn = host_to_be32(pn);
-	pn = ieee802_1x_mka_get_lpn(participant, &participant->oki);
-	body->olpn = host_to_be32(pn);
 
 	/* plain tx, plain rx */
 	body->ptx = !kay->macsec_protect;
