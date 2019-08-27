@@ -1484,32 +1484,99 @@ fail:
 }
 
 
+static int sae_kdf_hash(size_t hash_len, const u8 *k, const char *label,
+			const u8 *context, size_t context_len,
+			u8 *out, size_t out_len)
+{
+	if (hash_len == 32)
+		return sha256_prf(k, hash_len, label,
+				  context, context_len, out, out_len);
+#ifdef CONFIG_SHA384
+	if (hash_len == 48)
+		return sha384_prf(k, hash_len, label,
+				  context, context_len, out, out_len);
+#endif /* CONFIG_SHA384 */
+#ifdef CONFIG_SHA512
+	if (hash_len == 64)
+		return sha512_prf(k, hash_len, label,
+				  context, context_len, out, out_len);
+#endif /* CONFIG_SHA512 */
+	return -1;
+}
+
+
 static int sae_derive_keys(struct sae_data *sae, const u8 *k)
 {
-	u8 null_key[SAE_KEYSEED_KEY_LEN], val[SAE_MAX_PRIME_LEN];
-	u8 keyseed[SHA256_MAC_LEN];
-	u8 keys[SAE_KCK_LEN + SAE_PMK_LEN];
+	u8 zero[SAE_MAX_HASH_LEN], val[SAE_MAX_PRIME_LEN];
+	const u8 *salt;
+	struct wpabuf *rejected_groups = NULL;
+	u8 keyseed[SAE_MAX_HASH_LEN];
+	u8 keys[SAE_MAX_HASH_LEN + SAE_PMK_LEN];
 	struct crypto_bignum *tmp;
 	int ret = -1;
+	size_t hash_len, salt_len, prime_len = sae->tmp->prime_len;
+	const u8 *addr[1];
+	size_t len[1];
 
 	tmp = crypto_bignum_init();
 	if (tmp == NULL)
 		goto fail;
 
-	/* keyseed = H(<0>32, k)
-	 * KCK || PMK = KDF-512(keyseed, "SAE KCK and PMK",
+	/* keyseed = H(salt, k)
+	 * KCK || PMK = KDF-Hash-Length(keyseed, "SAE KCK and PMK",
 	 *                      (commit-scalar + peer-commit-scalar) modulo r)
 	 * PMKID = L((commit-scalar + peer-commit-scalar) modulo r, 0, 128)
 	 */
+	if (!sae->tmp->h2e)
+		hash_len = SHA256_MAC_LEN;
+	else if (sae->tmp->dh)
+		hash_len = sae_ffc_prime_len_2_hash_len(prime_len);
+	else
+		hash_len = sae_ecc_prime_len_2_hash_len(prime_len);
+	if (sae->tmp->h2e && (sae->tmp->own_rejected_groups ||
+			      sae->tmp->peer_rejected_groups)) {
+		struct wpabuf *own, *peer;
 
-	os_memset(null_key, 0, sizeof(null_key));
-	hmac_sha256(null_key, sizeof(null_key), k, sae->tmp->prime_len,
-		    keyseed);
-	wpa_hexdump_key(MSG_DEBUG, "SAE: keyseed", keyseed, sizeof(keyseed));
+		own = sae->tmp->own_rejected_groups;
+		peer = sae->tmp->peer_rejected_groups;
+		salt_len = 0;
+		if (own)
+			salt_len += wpabuf_len(own);
+		if (peer)
+			salt_len += wpabuf_len(peer);
+		rejected_groups = wpabuf_alloc(salt_len);
+		if (!rejected_groups)
+			goto fail;
+		if (sae->tmp->own_addr_higher) {
+			if (own)
+				wpabuf_put_buf(rejected_groups, own);
+			if (peer)
+				wpabuf_put_buf(rejected_groups, peer);
+		} else {
+			if (peer)
+				wpabuf_put_buf(rejected_groups, peer);
+			if (own)
+				wpabuf_put_buf(rejected_groups, own);
+		}
+		salt = wpabuf_head(rejected_groups);
+		salt_len = wpabuf_len(rejected_groups);
+	} else {
+		os_memset(zero, 0, hash_len);
+		salt = zero;
+		salt_len = hash_len;
+	}
+	wpa_hexdump(MSG_DEBUG, "SAE: salt for keyseed derivation",
+		    salt, salt_len);
+	addr[0] = k;
+	len[0] = prime_len;
+	if (hkdf_extract(hash_len, salt, salt_len, 1, addr, len, keyseed) < 0)
+		goto fail;
+	wpa_hexdump_key(MSG_DEBUG, "SAE: keyseed", keyseed, hash_len);
 
-	crypto_bignum_add(sae->tmp->own_commit_scalar, sae->peer_commit_scalar,
-			  tmp);
-	crypto_bignum_mod(tmp, sae->tmp->order, tmp);
+	if (crypto_bignum_add(sae->tmp->own_commit_scalar,
+			      sae->peer_commit_scalar, tmp) < 0 ||
+	    crypto_bignum_mod(tmp, sae->tmp->order, tmp) < 0)
+		goto fail;
 	/* IEEE Std 802.11-2016 is not exactly clear on the encoding of the bit
 	 * string that is needed for KCK, PMK, and PMKID derivation, but it
 	 * seems to make most sense to encode the
@@ -1518,19 +1585,23 @@ static int sae_derive_keys(struct sae_data *sae, const u8 *k)
 	 * octets). */
 	crypto_bignum_to_bin(tmp, val, sizeof(val), sae->tmp->order_len);
 	wpa_hexdump(MSG_DEBUG, "SAE: PMKID", val, SAE_PMKID_LEN);
-	if (sha256_prf(keyseed, sizeof(keyseed), "SAE KCK and PMK",
-		       val, sae->tmp->order_len, keys, sizeof(keys)) < 0)
+	if (sae_kdf_hash(hash_len, keyseed, "SAE KCK and PMK",
+			 val, sae->tmp->order_len,
+			 keys, hash_len + SAE_PMK_LEN) < 0)
 		goto fail;
-	os_memset(keyseed, 0, sizeof(keyseed));
-	os_memcpy(sae->tmp->kck, keys, SAE_KCK_LEN);
-	os_memcpy(sae->pmk, keys + SAE_KCK_LEN, SAE_PMK_LEN);
+	forced_memzero(keyseed, sizeof(keyseed));
+	os_memcpy(sae->tmp->kck, keys, hash_len);
+	sae->tmp->kck_len = hash_len;
+	os_memcpy(sae->pmk, keys + hash_len, SAE_PMK_LEN);
 	os_memcpy(sae->pmkid, val, SAE_PMKID_LEN);
-	os_memset(keys, 0, sizeof(keys));
-	wpa_hexdump_key(MSG_DEBUG, "SAE: KCK", sae->tmp->kck, SAE_KCK_LEN);
+	forced_memzero(keys, sizeof(keys));
+	wpa_hexdump_key(MSG_DEBUG, "SAE: KCK",
+			sae->tmp->kck, sae->tmp->kck_len);
 	wpa_hexdump_key(MSG_DEBUG, "SAE: PMK", sae->pmk, SAE_PMK_LEN);
 
 	ret = 0;
 fail:
+	wpabuf_free(rejected_groups);
 	crypto_bignum_deinit(tmp, 0);
 	return ret;
 }
@@ -2044,8 +2115,8 @@ static int sae_cn_confirm(struct sae_data *sae, const u8 *sc,
 	len[3] = sae->tmp->prime_len;
 	addr[4] = element2;
 	len[4] = element2_len;
-	return hmac_sha256_vector(sae->tmp->kck, sizeof(sae->tmp->kck),
-				  5, addr, len, confirm);
+	return hkdf_extract(sae->tmp->kck_len, sae->tmp->kck, sae->tmp->kck_len,
+			    5, addr, len, confirm);
 }
 
 
@@ -2097,9 +2168,12 @@ static int sae_cn_confirm_ffc(struct sae_data *sae, const u8 *sc,
 void sae_write_confirm(struct sae_data *sae, struct wpabuf *buf)
 {
 	const u8 *sc;
+	size_t hash_len;
 
 	if (sae->tmp == NULL)
 		return;
+
+	hash_len = sae->tmp->kck_len;
 
 	/* Send-Confirm */
 	sc = wpabuf_put(buf, 0);
@@ -2112,29 +2186,33 @@ void sae_write_confirm(struct sae_data *sae, struct wpabuf *buf)
 				   sae->tmp->own_commit_element_ecc,
 				   sae->peer_commit_scalar,
 				   sae->tmp->peer_commit_element_ecc,
-				   wpabuf_put(buf, SHA256_MAC_LEN));
+				   wpabuf_put(buf, hash_len));
 	else
 		sae_cn_confirm_ffc(sae, sc, sae->tmp->own_commit_scalar,
 				   sae->tmp->own_commit_element_ffc,
 				   sae->peer_commit_scalar,
 				   sae->tmp->peer_commit_element_ffc,
-				   wpabuf_put(buf, SHA256_MAC_LEN));
+				   wpabuf_put(buf, hash_len));
 }
 
 
 int sae_check_confirm(struct sae_data *sae, const u8 *data, size_t len)
 {
-	u8 verifier[SHA256_MAC_LEN];
+	u8 verifier[SAE_MAX_HASH_LEN];
+	size_t hash_len;
 
-	if (len < 2 + SHA256_MAC_LEN) {
+	if (!sae->tmp)
+		return -1;
+
+	hash_len = sae->tmp->kck_len;
+	if (len < 2 + hash_len) {
 		wpa_printf(MSG_DEBUG, "SAE: Too short confirm message");
 		return -1;
 	}
 
 	wpa_printf(MSG_DEBUG, "SAE: peer-send-confirm %u", WPA_GET_LE16(data));
 
-	if (!sae->tmp || !sae->peer_commit_scalar ||
-	    !sae->tmp->own_commit_scalar) {
+	if (!sae->peer_commit_scalar || !sae->tmp->own_commit_scalar) {
 		wpa_printf(MSG_DEBUG, "SAE: Temporary data not yet available");
 		return -1;
 	}
@@ -2159,12 +2237,12 @@ int sae_check_confirm(struct sae_data *sae, const u8 *data, size_t len)
 			return -1;
 	}
 
-	if (os_memcmp_const(verifier, data + 2, SHA256_MAC_LEN) != 0) {
+	if (os_memcmp_const(verifier, data + 2, hash_len) != 0) {
 		wpa_printf(MSG_DEBUG, "SAE: Confirm mismatch");
 		wpa_hexdump(MSG_DEBUG, "SAE: Received confirm",
-			    data + 2, SHA256_MAC_LEN);
+			    data + 2, hash_len);
 		wpa_hexdump(MSG_DEBUG, "SAE: Calculated verifier",
-			    verifier, SHA256_MAC_LEN);
+			    verifier, hash_len);
 		return -1;
 	}
 

@@ -12,17 +12,18 @@
 #define SAE_KCK_LEN 32
 #define SAE_PMK_LEN 32
 #define SAE_PMKID_LEN 16
-#define SAE_KEYSEED_KEY_LEN 32
 #define SAE_MAX_PRIME_LEN 512
 #define SAE_MAX_ECC_PRIME_LEN 66
+#define SAE_MAX_HASH_LEN 64
 #define SAE_COMMIT_MAX_LEN (2 + 3 * SAE_MAX_PRIME_LEN)
-#define SAE_CONFIRM_MAX_LEN (2 + SAE_MAX_PRIME_LEN)
+#define SAE_CONFIRM_MAX_LEN (2 + SAE_MAX_HASH_LEN)
 
 /* Special value returned by sae_parse_commit() */
 #define SAE_SILENTLY_DISCARD 65535
 
 struct sae_temporary_data {
-	u8 kck[SAE_KCK_LEN];
+	u8 kck[SAE_MAX_HASH_LEN];
+	size_t kck_len;
 	struct crypto_bignum *own_commit_scalar;
 	struct crypto_bignum *own_commit_element_ffc;
 	struct crypto_ec_point *own_commit_element_ecc;
