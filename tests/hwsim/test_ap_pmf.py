@@ -5,13 +5,15 @@
 # See README for more details.
 
 from remotehost import remote_compatible
+import binascii
 import time
 import logging
 logger = logging.getLogger()
 
 import hwsim_utils
 import hostapd
-from utils import alloc_fail, fail_test, wait_fail_trigger, HwsimSkip
+from utils import alloc_fail, fail_test, wait_fail_trigger, HwsimSkip, \
+    radiotap_build, start_monitor, stop_monitor
 from wlantest import Wlantest
 from wpasupplicant import WpaSupplicant
 
@@ -606,6 +608,44 @@ def test_ap_pmf_inject_auth(dev, apdev):
         raise Exception("Unexpected disconnection reported on the STA")
 
     # Verify that original association is still functional.
+    hwsim_utils.test_connectivity(dev[0], hapd)
+
+def test_ap_pmf_inject_data(dev, apdev):
+    """WPA2-PSK AP with PMF and Data frame injection"""
+    try:
+        run_ap_pmf_inject_data(dev, apdev)
+    finally:
+        stop_monitor(apdev[1]["ifname"])
+
+def run_ap_pmf_inject_data(dev, apdev):
+    ssid = "test-pmf"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].connect(ssid, psk="12345678", ieee80211w="2",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2",
+                   scan_freq="2412")
+    hapd.wait_sta()
+    hwsim_utils.test_connectivity(dev[0], hapd)
+
+    sock = start_monitor(apdev[1]["ifname"])
+    radiotap = radiotap_build()
+
+    bssid = hapd.own_addr().replace(':', '')
+    addr = dev[0].own_addr().replace(':', '')
+
+    # Inject Data frame with A2=broadcast, A2=multicast, A2=BSSID, A2=STA, and
+    # A2=unknown unicast
+    addresses = [ 6*"ff", 6*"01", bssid, addr, "020102030405" ]
+    for a in addresses:
+        frame = binascii.unhexlify("48010000" + bssid + a + bssid + "0000")
+        sock.send(radiotap + frame)
+
+    time.sleep(0.1)
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.1)
+    if ev:
+        raise Exception("Unexpected disconnection reported on the STA")
     hwsim_utils.test_connectivity(dev[0], hapd)
 
 def test_ap_pmf_tkip_reject(dev, apdev):
