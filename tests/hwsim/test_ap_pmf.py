@@ -549,33 +549,61 @@ def test_ap_pmf_inject_auth(dev, apdev):
     dev[0].connect(ssid, psk="12345678", ieee80211w="2",
                    key_mgmt="WPA-PSK-SHA256", proto="WPA2",
                    scan_freq="2412")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev[0], hapd)
 
     bssid = hapd.own_addr().replace(':', '')
     addr = dev[0].own_addr().replace(':', '')
 
     # Inject an unprotected Authentication frame claiming to be from the
-    # associated STA.
-    auth = "b0003a01" + bssid + addr + bssid + '1000000001000000'
+    # associated STA, from another STA, from the AP's own address, from all
+    # zeros and all ones addresses, and from a multicast address.
     hapd.request("SET ext_mgmt_frame_handling 1")
-    res = hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=%s" % auth)
+    failed = False
+    addresses = [ addr, "021122334455", bssid, 6*"00", 6*"ff", 6*"01" ]
+    for a in addresses:
+        auth = "b0003a01" + bssid + a + bssid + '1000000001000000'
+        res = hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=%s" % auth)
+        if "OK" not in res:
+            failed = True
     hapd.request("SET ext_mgmt_frame_handling 0")
-    if "OK" not in res:
+    if failed:
         raise Exception("MGMT_RX_PROCESS failed")
     time.sleep(0.1)
+
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.1)
+    if ev:
+        raise Exception("Unexpected disconnection reported on the STA")
 
     # Verify that original association is still functional.
     hwsim_utils.test_connectivity(dev[0], hapd)
 
-    # Inject an unprotected Association Request frame claiming to be from the
-    # associated STA.
-    auth = "00003a01" + bssid + addr + bssid + '2000' + '31040500' + '0008746573742d706d66' + '010802040b160c121824' + '301a0100000fac040100000fac040100000fac06c0000000000fac06'
+    # Inject an unprotected Association Request frame (with and without RSNE)
+    # claiming to be from the set of test addresses.
     hapd.request("SET ext_mgmt_frame_handling 1")
-    res = hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=%s" % auth)
+    for a in addresses:
+        assoc = "00003a01" + bssid + a + bssid + '2000' + '31040500' + '0008746573742d706d66' + '010802040b160c121824' + '301a0100000fac040100000fac040100000fac06c0000000000fac06'
+        res = hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=%s" % assoc)
+        if "OK" not in res:
+            failed = True
+
+        assoc = "00003a01" + bssid + a + bssid + '2000' + '31040500' + '0008746573742d706d66' + '010802040b160c121824' + '3000'
+        res = hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=%s" % assoc)
+        if "OK" not in res:
+            failed = True
+
+        assoc = "00003a01" + bssid + a + bssid + '2000' + '31040500' + '0008746573742d706d66' + '010802040b160c121824'
+        res = hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=%s" % assoc)
+        if "OK" not in res:
+            failed = True
     hapd.request("SET ext_mgmt_frame_handling 0")
-    if "OK" not in res:
+    if failed:
         raise Exception("MGMT_RX_PROCESS failed")
     time.sleep(5)
+
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.1)
+    if ev:
+        raise Exception("Unexpected disconnection reported on the STA")
 
     # Verify that original association is still functional.
     hwsim_utils.test_connectivity(dev[0], hapd)
