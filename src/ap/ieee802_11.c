@@ -3243,7 +3243,8 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 		sta->hs20_ie = wpabuf_alloc_copy(elems.hs20 + 4,
 						 elems.hs20_len - 4);
 		release = ((elems.hs20[4] >> 4) & 0x0f) + 1;
-		if (release >= 2 && !wpa_auth_uses_mfp(sta->wpa_sm)) {
+		if (release >= 2 && !wpa_auth_uses_mfp(sta->wpa_sm) &&
+		    hapd->conf->ieee80211w != NO_MGMT_FRAME_PROTECTION) {
 			wpa_printf(MSG_DEBUG,
 				   "HS 2.0: PMF not negotiated by release %d station "
 				   MACSTR, release, MAC2STR(sta->addr));
