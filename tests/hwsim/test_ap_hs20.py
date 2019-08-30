@@ -6374,3 +6374,21 @@ def test_ap_hs20_missing_pmf(dev, apdev):
         raise Exception("Association rejection not reported")
     if "status_code=31" not in ev:
         raise Exception("Unexpected rejection reason: " + ev)
+
+def test_ap_hs20_open_osu_association(dev, apdev):
+    """Hotspot 2.0 open OSU association"""
+    try:
+        run_ap_hs20_open_osu_association(dev, apdev)
+    finally:
+        dev[0].request("VENDOR_ELEM_REMOVE 13 *")
+
+def run_ap_hs20_open_osu_association(dev, apdev):
+    params = {"ssid": "HS 2.0 OSU open"}
+    hostapd.add_ap(apdev[0], params)
+    dev[0].connect("HS 2.0 OSU open", key_mgmt="NONE", scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+    # Test with unexpected Hotspot 2.0 Indication element in Assoc Req
+    dev[0].request("VENDOR_ELEM_ADD 13 dd07506f9a10220000")
+    dev[0].connect("HS 2.0 OSU open", key_mgmt="NONE", scan_freq="2412")
