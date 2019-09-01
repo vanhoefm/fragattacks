@@ -340,6 +340,23 @@ def test_eap_teap_eap_mschapv2_user_and_machine_no_machine(dev, apdev):
                 pac_file="blob://teap_pac",
                 expect_failure=True)
 
+def test_eap_teap_eap_mschapv2_user_and_eap_tls_machine(dev, apdev):
+    """EAP-TEAP with inner EAP-MSCHAPv2 user and EAP-TLS machine credentials"""
+    check_eap_capa(dev[0], "TEAP")
+    check_eap_capa(dev[0], "MSCHAPV2")
+    check_eap_capa(dev[0], "TLS")
+    params = int_teap_server_params(eap_teap_id="5")
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "TEAP", "user", password="password",
+                anonymous_identity="TEAP",
+                machine_identity="cert user",
+                ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                machine_phase2="auth=TLS",
+                machine_ca_cert="auth_serv/ca.pem",
+                machine_client_cert="auth_serv/user.pem",
+                machine_private_key="auth_serv/user.key",
+                pac_file="blob://teap_pac")
+
 def test_eap_teap_basic_password_auth_pac(dev, apdev):
     """EAP-TEAP with Basic-Password-Auth and PAC"""
     check_eap_capa(dev[0], "TEAP")
