@@ -11,7 +11,9 @@
 #include <netinet/ip.h>
 #endif /* CONFIG_TESTING_OPTIONS */
 
+#if !defined(__CYGWIN__) && !defined(CONFIG_NATIVE_WINDOWS)
 #include <net/ethernet.h>
+#endif
 #include "utils/common.h"
 #include "utils/eloop.h"
 #include "utils/uuid.h"
