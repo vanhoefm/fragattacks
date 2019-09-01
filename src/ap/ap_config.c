@@ -135,6 +135,9 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 	 * completed and tested with other implementations. */
 	bss->tls_flags = TLS_CONN_DISABLE_TLSv1_3;
 
+	bss->max_auth_rounds = 100;
+	bss->max_auth_rounds_short = 50;
+
 	bss->send_probe_response = 1;
 
 #ifdef CONFIG_HS20

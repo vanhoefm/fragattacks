@@ -23,9 +23,6 @@
 #define STATE_MACHINE_DATA struct eap_sm
 #define STATE_MACHINE_DEBUG_PREFIX "EAP"
 
-#define EAP_MAX_AUTH_ROUNDS 100
-#define EAP_MAX_AUTH_ROUNDS_SHORT 50
-
 /* EAP state machines are described in RFC 4137 */
 
 static int eap_sm_calculateTimeout(struct eap_sm *sm, int retransCount,
@@ -1172,19 +1169,20 @@ SM_STEP(EAP)
 		SM_ENTER_GLOBAL(EAP, INITIALIZE);
 	else if (!sm->eap_if.portEnabled)
 		SM_ENTER_GLOBAL(EAP, DISABLED);
-	else if (sm->num_rounds > EAP_MAX_AUTH_ROUNDS) {
-		if (sm->num_rounds == EAP_MAX_AUTH_ROUNDS + 1) {
+	else if (sm->num_rounds > sm->cfg->max_auth_rounds) {
+		if (sm->num_rounds == sm->cfg->max_auth_rounds + 1) {
 			wpa_printf(MSG_DEBUG, "EAP: more than %d "
 				   "authentication rounds - abort",
-				   EAP_MAX_AUTH_ROUNDS);
+				   sm->cfg->max_auth_rounds);
 			sm->num_rounds++;
 			SM_ENTER_GLOBAL(EAP, FAILURE);
 		}
-	} else if (sm->num_rounds_short > EAP_MAX_AUTH_ROUNDS_SHORT) {
-		if (sm->num_rounds_short == EAP_MAX_AUTH_ROUNDS_SHORT + 1) {
+	} else if (sm->num_rounds_short > sm->cfg->max_auth_rounds_short) {
+		if (sm->num_rounds_short ==
+		    sm->cfg->max_auth_rounds_short + 1) {
 			wpa_printf(MSG_DEBUG,
 				   "EAP: more than %d authentication rounds (short) - abort",
-				   EAP_MAX_AUTH_ROUNDS_SHORT);
+				   sm->cfg->max_auth_rounds_short);
 			sm->num_rounds_short++;
 			SM_ENTER_GLOBAL(EAP, FAILURE);
 		}

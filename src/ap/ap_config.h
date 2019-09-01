@@ -415,6 +415,8 @@ struct hostapd_bss_config {
 	unsigned int crl_reload_interval;
 	unsigned int tls_session_lifetime;
 	unsigned int tls_flags;
+	unsigned int max_auth_rounds;
+	unsigned int max_auth_rounds_short;
 	char *ocsp_stapling_response;
 	char *ocsp_stapling_response_multi;
 	char *dh_file;

@@ -171,8 +171,8 @@ struct eap_sm {
 	struct eap_config cfg_buf;
 	Boolean update_user;
 
-	int num_rounds;
-	int num_rounds_short;
+	unsigned int num_rounds;
+	unsigned int num_rounds_short;
 	enum {
 		METHOD_PENDING_NONE, METHOD_PENDING_WAIT, METHOD_PENDING_CONT
 	} method_pending;
