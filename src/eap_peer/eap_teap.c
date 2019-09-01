@@ -378,6 +378,22 @@ static int eap_teap_select_phase2_method(struct eap_teap_data *data,
 }
 
 
+static void eap_teap_deinit_inner_eap(struct eap_sm *sm,
+				      struct eap_teap_data *data)
+{
+	if (!data->phase2_priv || !data->phase2_method)
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "EAP-TEAP: Phase 2 EAP sequence - deinitialize previous method");
+	data->phase2_method->deinit(sm, data->phase2_priv);
+	data->phase2_method = NULL;
+	data->phase2_priv = NULL;
+	data->phase2_type.vendor = EAP_VENDOR_IETF;
+	data->phase2_type.method = EAP_TYPE_NONE;
+}
+
+
 static int eap_teap_phase2_request(struct eap_sm *sm,
 				   struct eap_teap_data *data,
 				   struct eap_method_ret *ret,
@@ -413,21 +429,15 @@ static int eap_teap_phase2_request(struct eap_sm *sm,
 	wpa_printf(MSG_DEBUG, "EAP-TEAP: Phase 2 Request: type=%u:%u",
 		   vendor, method);
 	if (vendor == EAP_VENDOR_IETF && method == EAP_TYPE_IDENTITY) {
+		eap_teap_deinit_inner_eap(sm, data);
 		*resp = eap_sm_buildIdentity(sm, hdr->identifier, 1);
 		return 0;
 	}
 
 	if (data->phase2_priv && data->phase2_method &&
 	    (vendor != data->phase2_type.vendor ||
-	     method != data->phase2_type.method)) {
-		wpa_printf(MSG_DEBUG,
-			   "EAP-TEAP: Phase 2 EAP sequence - deinitialize previous method");
-		data->phase2_method->deinit(sm, data->phase2_priv);
-		data->phase2_method = NULL;
-		data->phase2_priv = NULL;
-		data->phase2_type.vendor = EAP_VENDOR_IETF;
-		data->phase2_type.method = EAP_TYPE_NONE;
-	}
+	     method != data->phase2_type.method))
+		eap_teap_deinit_inner_eap(sm, data);
 
 	if (data->phase2_type.vendor == EAP_VENDOR_IETF &&
 	    data->phase2_type.method == EAP_TYPE_NONE &&
