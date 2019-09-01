@@ -125,6 +125,12 @@ static void eap_tls_cert_params_from_conf(struct tls_connection_params *params,
 	params->key_id = config->key_id;
 	params->cert_id = config->cert_id;
 	params->ca_cert_id = config->ca_cert_id;
+	if (config->ocsp)
+		params->flags |= TLS_CONN_REQUEST_OCSP;
+	if (config->ocsp >= 2)
+		params->flags |= TLS_CONN_REQUIRE_OCSP;
+	if (config->ocsp == 3)
+		params->flags |= TLS_CONN_REQUIRE_OCSP_ALL;
 }
 
 
@@ -233,12 +239,6 @@ static int eap_tls_init_connection(struct eap_sm *sm,
 {
 	int res;
 
-	if (config->ocsp)
-		params->flags |= TLS_CONN_REQUEST_OCSP;
-	if (config->ocsp >= 2)
-		params->flags |= TLS_CONN_REQUIRE_OCSP;
-	if (config->ocsp == 3)
-		params->flags |= TLS_CONN_REQUIRE_OCSP_ALL;
 	data->conn = tls_connection_init(data->ssl_ctx);
 	if (data->conn == NULL) {
 		wpa_printf(MSG_INFO, "SSL: Failed to initialize new TLS "

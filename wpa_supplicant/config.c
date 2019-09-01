@@ -2443,7 +2443,8 @@ static const struct parse_data ssid_fields[] = {
 	{ INT(eap_workaround) },
 	{ STRe(pac_file, pac_file) },
 	{ INTe(fragment_size, fragment_size) },
-	{ INTe(ocsp, ocsp) },
+	{ INTe(ocsp, cert.ocsp) },
+	{ INTe(ocsp2, phase2_cert.ocsp) },
 #endif /* IEEE8021X_EAPOL */
 #ifdef CONFIG_MESH
 	{ INT_RANGE(mode, 0, 5) },

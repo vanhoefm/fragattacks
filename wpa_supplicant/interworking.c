@@ -1554,7 +1554,7 @@ static int interworking_set_eap_params(struct wpa_ssid *ssid,
 				  cred->domain_suffix_match) < 0)
 		return -1;
 
-	ssid->eap.ocsp = cred->ocsp;
+	ssid->eap.cert.ocsp = cred->ocsp;
 
 	return 0;
 }

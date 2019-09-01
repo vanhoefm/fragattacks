@@ -284,6 +284,15 @@ struct eap_peer_cert_config {
 	 * This is used if the CA certificate for EAP-TLS is on a smartcard.
 	 */
 	char *ca_cert_id;
+
+	/**
+	 * ocsp - Whether to use/require OCSP to check server certificate
+	 *
+	 * 0 = do not use OCSP stapling (TLS certificate status extension)
+	 * 1 = try to use OCSP stapling, but not require response
+	 * 2 = require valid OCSP stapling response
+	 */
+	int ocsp;
 };
 
 /**
@@ -632,15 +641,6 @@ struct eap_peer_config {
 	 *         the password field is the name of that external entry
 	 */
 	u32 flags;
-
-	/**
-	 * ocsp - Whether to use/require OCSP to check server certificate
-	 *
-	 * 0 = do not use OCSP stapling (TLS certificate status extension)
-	 * 1 = try to use OCSP stapling, but not require response
-	 * 2 = require valid OCSP stapling response
-	 */
-	int ocsp;
 
 	/**
 	 * external_sim_resp - Response from external SIM processing

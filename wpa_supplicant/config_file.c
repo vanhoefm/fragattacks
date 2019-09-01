@@ -826,7 +826,8 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	INT_DEF(eap_workaround, DEFAULT_EAP_WORKAROUND);
 	STR(pac_file);
 	INT_DEFe(fragment_size, fragment_size, DEFAULT_FRAGMENT_SIZE);
-	INTe(ocsp, ocsp);
+	INTe(ocsp, cert.ocsp);
+	INTe(ocsp2, phase2_cert.ocsp);
 	INT_DEFe(sim_num, sim_num, DEFAULT_USER_SELECTED_SIM);
 #endif /* IEEE8021X_EAPOL */
 	INT(mode);
