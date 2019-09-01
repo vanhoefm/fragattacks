@@ -101,9 +101,15 @@ void wpas_rrm_process_neighbor_rep(struct wpa_supplicant *wpa_s,
 
 #if defined(__CYGWIN__) || defined(CONFIG_NATIVE_WINDOWS)
 /* Workaround different, undefined for Windows, error codes used here */
+#ifndef ENOTCONN
 #define ENOTCONN -1
+#endif
+#ifndef EOPNOTSUPP
 #define EOPNOTSUPP -1
+#endif
+#ifndef ECANCELED
 #define ECANCELED -1
+#endif
 #endif
 
 /* Measurement Request element + Location Subject + Maximum Age subelement */
