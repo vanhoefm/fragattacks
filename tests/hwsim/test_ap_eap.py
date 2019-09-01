@@ -5153,6 +5153,33 @@ def test_ap_wpa2_eap_too_many_roundtrips(dev, apdev):
     if ev is None or "EAP: more than" not in ev:
         raise Exception("EAP roundtrip limit not reached")
 
+def test_ap_wpa2_eap_too_many_roundtrips_server(dev, apdev):
+    """WPA2-Enterprise connection resulting in too many EAP roundtrips (server)"""
+    run_ap_wpa2_eap_too_many_roundtrips_server(dev, apdev, 10, 10)
+
+def test_ap_wpa2_eap_too_many_roundtrips_server2(dev, apdev):
+    """WPA2-Enterprise connection resulting in too many EAP roundtrips (server)"""
+    run_ap_wpa2_eap_too_many_roundtrips_server(dev, apdev, 10, 1)
+
+def run_ap_wpa2_eap_too_many_roundtrips_server(dev, apdev, max_rounds,
+                                               max_rounds_short):
+    skip_with_fips(dev[0])
+    params = int_eap_server_params()
+    params["max_auth_rounds"] = str(max_rounds)
+    params["max_auth_rounds_short"] = str(max_rounds_short)
+    hostapd.add_ap(apdev[0], params)
+    dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP WPA-EAP-SHA256",
+                   eap="TTLS", identity="mschap user",
+                   wait_connect=False, scan_freq="2412", ieee80211w="1",
+                   anonymous_identity="ttls", password="password",
+                   ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAP",
+                   fragment_size="4")
+    ev = dev[0].wait_event(["CTRL-EVENT-EAP-FAILURE",
+                            "CTRL-EVENT-EAP-SUCCESS"], timeout=10)
+    dev[0].request("DISCONNECT")
+    if ev is None or "SUCCESS" in ev:
+        raise Exception("EAP roundtrip limit not reported")
+
 def test_ap_wpa2_eap_expanded_nak(dev, apdev):
     """WPA2-Enterprise connection with EAP resulting in expanded NAK"""
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
