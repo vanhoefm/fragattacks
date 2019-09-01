@@ -169,7 +169,7 @@ static void * eap_teap_init(struct eap_sm *sm)
 		eap_teap_parse_phase1(data, config->phase1);
 
 	if ((data->provisioning_allowed & EAP_TEAP_PROV_AUTH) &&
-	    !config->ca_cert && !config->ca_path) {
+	    !config->cert.ca_cert && !config->cert.ca_path) {
 		/* Prevent PAC provisioning without mutual authentication
 		 * (either by validating server certificate or by suitable
 		 * inner EAP method). */

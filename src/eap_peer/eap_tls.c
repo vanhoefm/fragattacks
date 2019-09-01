@@ -1,6 +1,6 @@
 /*
  * EAP peer method: EAP-TLS (RFC 2716)
- * Copyright (c) 2004-2008, 2012-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2008, 2012-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -34,9 +34,10 @@ static void * eap_tls_init(struct eap_sm *sm)
 	struct eap_tls_data *data;
 	struct eap_peer_config *config = eap_get_config(sm);
 	if (config == NULL ||
-	    ((sm->init_phase2 ? config->private_key2 : config->private_key)
-	     == NULL &&
-	     (sm->init_phase2 ? config->engine2 : config->engine) == 0)) {
+	    ((sm->init_phase2 ? config->phase2_cert.private_key :
+	      config->cert.private_key) == NULL &&
+	     (sm->init_phase2 ? config->phase2_cert.engine :
+	      config->cert.engine) == 0)) {
 		wpa_printf(MSG_INFO, "EAP-TLS: Private key not configured");
 		return NULL;
 	}
@@ -51,13 +52,13 @@ static void * eap_tls_init(struct eap_sm *sm)
 	if (eap_peer_tls_ssl_init(sm, &data->ssl, config, EAP_TYPE_TLS)) {
 		wpa_printf(MSG_INFO, "EAP-TLS: Failed to initialize SSL.");
 		eap_tls_deinit(sm, data);
-		if (config->engine) {
+		if (config->cert.engine) {
 			wpa_printf(MSG_DEBUG, "EAP-TLS: Requesting Smartcard "
 				   "PIN");
 			eap_sm_request_pin(sm);
 			sm->ignore = TRUE;
-		} else if (config->private_key && !config->private_key_passwd)
-		{
+		} else if (config->cert.private_key &&
+			   !config->cert.private_key_passwd) {
 			wpa_printf(MSG_DEBUG, "EAP-TLS: Requesting private "
 				   "key passphrase");
 			eap_sm_request_passphrase(sm);

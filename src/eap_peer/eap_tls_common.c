@@ -105,8 +105,8 @@ static void eap_tls_params_flags(struct tls_connection_params *params,
 }
 
 
-static void eap_tls_params_from_conf1(struct tls_connection_params *params,
-				      struct eap_peer_config *config)
+static void eap_tls_cert_params_from_conf(struct tls_connection_params *params,
+					  struct eap_peer_cert_config *config)
 {
 	params->ca_cert = config->ca_cert;
 	params->ca_path = config->ca_path;
@@ -125,6 +125,13 @@ static void eap_tls_params_from_conf1(struct tls_connection_params *params,
 	params->key_id = config->key_id;
 	params->cert_id = config->cert_id;
 	params->ca_cert_id = config->ca_cert_id;
+}
+
+
+static void eap_tls_params_from_conf1(struct tls_connection_params *params,
+				      struct eap_peer_config *config)
+{
+	eap_tls_cert_params_from_conf(params, &config->cert);
 	eap_tls_params_flags(params, config->phase1);
 }
 
@@ -132,23 +139,7 @@ static void eap_tls_params_from_conf1(struct tls_connection_params *params,
 static void eap_tls_params_from_conf2(struct tls_connection_params *params,
 				      struct eap_peer_config *config)
 {
-	params->ca_cert = config->ca_cert2;
-	params->ca_path = config->ca_path2;
-	params->client_cert = config->client_cert2;
-	params->private_key = config->private_key2;
-	params->private_key_passwd = config->private_key2_passwd;
-	params->dh_file = config->dh_file2;
-	params->subject_match = config->subject_match2;
-	params->altsubject_match = config->altsubject_match2;
-	params->check_cert_subject = config->check_cert_subject2;
-	params->suffix_match = config->domain_suffix_match2;
-	params->domain_match = config->domain_match2;
-	params->engine = config->engine2;
-	params->engine_id = config->engine2_id;
-	params->pin = config->pin2;
-	params->key_id = config->key2_id;
-	params->cert_id = config->cert2_id;
-	params->ca_cert_id = config->ca_cert2_id;
+	eap_tls_cert_params_from_conf(params, &config->phase2_cert);
 	eap_tls_params_flags(params, config->phase2);
 }
 
@@ -264,8 +255,8 @@ static int eap_tls_init_connection(struct eap_sm *sm,
 		 */
 		wpa_printf(MSG_INFO,
 			   "TLS: Bad PIN provided, requesting a new one");
-		os_free(config->pin);
-		config->pin = NULL;
+		os_free(config->cert.pin);
+		config->cert.pin = NULL;
 		eap_sm_request_pin(sm);
 		sm->ignore = TRUE;
 	} else if (res == TLS_SET_PARAMS_ENGINE_PRV_INIT_FAILED) {

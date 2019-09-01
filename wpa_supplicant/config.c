@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant / Configuration parser and common functions
- * Copyright (c) 2003-2018, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2003-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -2279,23 +2279,24 @@ static char * wpa_config_write_peerkey(const struct parse_data *data,
 /* STR: Define a string variable for an ASCII string; f = field name */
 #ifdef NO_CONFIG_WRITE
 #define _STR(f) #f, wpa_config_parse_str, OFFSET(f)
-#define _STRe(f) #f, wpa_config_parse_str, OFFSET(eap.f)
+#define _STRe(f, m) #f, wpa_config_parse_str, OFFSET(eap.m)
 #else /* NO_CONFIG_WRITE */
 #define _STR(f) #f, wpa_config_parse_str, wpa_config_write_str, OFFSET(f)
-#define _STRe(f) #f, wpa_config_parse_str, wpa_config_write_str, OFFSET(eap.f)
+#define _STRe(f, m) #f, wpa_config_parse_str, wpa_config_write_str, \
+		OFFSET(eap.m)
 #endif /* NO_CONFIG_WRITE */
 #define STR(f) _STR(f), NULL, NULL, NULL, 0
-#define STRe(f) _STRe(f), NULL, NULL, NULL, 0
+#define STRe(f, m) _STRe(f, m), NULL, NULL, NULL, 0
 #define STR_KEY(f) _STR(f), NULL, NULL, NULL, 1
-#define STR_KEYe(f) _STRe(f), NULL, NULL, NULL, 1
+#define STR_KEYe(f, m) _STRe(f, m), NULL, NULL, NULL, 1
 
 /* STR_LEN: Define a string variable with a separate variable for storing the
  * data length. Unlike STR(), this can be used to store arbitrary binary data
  * (i.e., even nul termination character). */
 #define _STR_LEN(f) _STR(f), OFFSET(f ## _len)
-#define _STR_LENe(f) _STRe(f), OFFSET(eap.f ## _len)
+#define _STR_LENe(f, m) _STRe(f, m), OFFSET(eap.m ## _len)
 #define STR_LEN(f) _STR_LEN(f), NULL, NULL, 0
-#define STR_LENe(f) _STR_LENe(f), NULL, NULL, 0
+#define STR_LENe(f, m) _STR_LENe(f, m), NULL, NULL, 0
 #define STR_LEN_KEY(f) _STR_LEN(f), NULL, NULL, 1
 
 /* STR_RANGE: Like STR_LEN(), but with minimum and maximum allowed length
@@ -2306,17 +2307,17 @@ static char * wpa_config_write_peerkey(const struct parse_data *data,
 
 #ifdef NO_CONFIG_WRITE
 #define _INT(f) #f, wpa_config_parse_int, OFFSET(f), (void *) 0
-#define _INTe(f) #f, wpa_config_parse_int, OFFSET(eap.f), (void *) 0
+#define _INTe(f, m) #f, wpa_config_parse_int, OFFSET(eap.m), (void *) 0
 #else /* NO_CONFIG_WRITE */
 #define _INT(f) #f, wpa_config_parse_int, wpa_config_write_int, \
 	OFFSET(f), (void *) 0
-#define _INTe(f) #f, wpa_config_parse_int, wpa_config_write_int, \
-	OFFSET(eap.f), (void *) 0
+#define _INTe(f, m) #f, wpa_config_parse_int, wpa_config_write_int,	\
+	OFFSET(eap.m), (void *) 0
 #endif /* NO_CONFIG_WRITE */
 
 /* INT: Define an integer variable */
 #define INT(f) _INT(f), NULL, NULL, 0
-#define INTe(f) _INTe(f), NULL, NULL, 0
+#define INTe(f, m) _INTe(f, m), NULL, NULL, 0
 
 /* INT_RANGE: Define an integer variable with allowed value range */
 #define INT_RANGE(f, min, max) _INT(f), (void *) (min), (void *) (max), 0
@@ -2384,53 +2385,53 @@ static const struct parse_data ssid_fields[] = {
 	{ INT(vht_center_freq2) },
 #ifdef IEEE8021X_EAPOL
 	{ FUNC(eap) },
-	{ STR_LENe(identity) },
-	{ STR_LENe(anonymous_identity) },
-	{ STR_LENe(imsi_identity) },
-	{ STR_LENe(machine_identity) },
+	{ STR_LENe(identity, identity) },
+	{ STR_LENe(anonymous_identity, anonymous_identity) },
+	{ STR_LENe(imsi_identity, imsi_identity) },
+	{ STR_LENe(machine_identity, machine_identity) },
 	{ FUNC_KEY(password) },
 	{ FUNC_KEY(machine_password) },
-	{ STRe(ca_cert) },
-	{ STRe(ca_path) },
-	{ STRe(client_cert) },
-	{ STRe(private_key) },
-	{ STR_KEYe(private_key_passwd) },
-	{ STRe(dh_file) },
-	{ STRe(subject_match) },
-	{ STRe(check_cert_subject) },
-	{ STRe(altsubject_match) },
-	{ STRe(domain_suffix_match) },
-	{ STRe(domain_match) },
-	{ STRe(ca_cert2) },
-	{ STRe(ca_path2) },
-	{ STRe(client_cert2) },
-	{ STRe(private_key2) },
-	{ STR_KEYe(private_key2_passwd) },
-	{ STRe(dh_file2) },
-	{ STRe(subject_match2) },
-	{ STRe(check_cert_subject2) },
-	{ STRe(altsubject_match2) },
-	{ STRe(domain_suffix_match2) },
-	{ STRe(domain_match2) },
-	{ STRe(phase1) },
-	{ STRe(phase2) },
-	{ STRe(pcsc) },
-	{ STR_KEYe(pin) },
-	{ STRe(engine_id) },
-	{ STRe(key_id) },
-	{ STRe(cert_id) },
-	{ STRe(ca_cert_id) },
-	{ STR_KEYe(pin2) },
-	{ STRe(engine2_id) },
-	{ STRe(key2_id) },
-	{ STRe(cert2_id) },
-	{ STRe(ca_cert2_id) },
-	{ INTe(engine) },
-	{ INTe(engine2) },
+	{ STRe(ca_cert, cert.ca_cert) },
+	{ STRe(ca_path, cert.ca_path) },
+	{ STRe(client_cert, cert.client_cert) },
+	{ STRe(private_key, cert.private_key) },
+	{ STR_KEYe(private_key_passwd, cert.private_key_passwd) },
+	{ STRe(dh_file, cert.dh_file) },
+	{ STRe(subject_match, cert.subject_match) },
+	{ STRe(check_cert_subject, cert.check_cert_subject) },
+	{ STRe(altsubject_match, cert.altsubject_match) },
+	{ STRe(domain_suffix_match, cert.domain_suffix_match) },
+	{ STRe(domain_match, cert.domain_match) },
+	{ STRe(ca_cert2, phase2_cert.ca_cert) },
+	{ STRe(ca_path2, phase2_cert.ca_path) },
+	{ STRe(client_cert2, phase2_cert.client_cert) },
+	{ STRe(private_key2, phase2_cert.private_key) },
+	{ STR_KEYe(private_key2_passwd, phase2_cert.private_key_passwd) },
+	{ STRe(dh_file2, phase2_cert.dh_file) },
+	{ STRe(subject_match2, phase2_cert.subject_match) },
+	{ STRe(check_cert_subject2, phase2_cert.check_cert_subject) },
+	{ STRe(altsubject_match2, phase2_cert.altsubject_match) },
+	{ STRe(domain_suffix_match2, phase2_cert.domain_suffix_match) },
+	{ STRe(domain_match2, phase2_cert.domain_match) },
+	{ STRe(phase1, phase1) },
+	{ STRe(phase2, phase2) },
+	{ STRe(pcsc, pcsc) },
+	{ STR_KEYe(pin, cert.pin) },
+	{ STRe(engine_id, cert.engine_id) },
+	{ STRe(key_id, cert.key_id) },
+	{ STRe(cert_id, cert.cert_id) },
+	{ STRe(ca_cert_id, cert.ca_cert_id) },
+	{ STR_KEYe(pin2, phase2_cert.pin) },
+	{ STRe(engine_id2, phase2_cert.engine_id) },
+	{ STRe(key_id2, phase2_cert.key_id) },
+	{ STRe(cert_id2, phase2_cert.cert_id) },
+	{ STRe(ca_cert_id2, phase2_cert.ca_cert_id) },
+	{ INTe(engine, cert.engine) },
+	{ INTe(engine2, phase2_cert.engine) },
 	{ INT(eapol_flags) },
-	{ INTe(sim_num) },
-	{ STRe(openssl_ciphers) },
-	{ INTe(erp) },
+	{ INTe(sim_num, sim_num) },
+	{ STRe(openssl_ciphers, openssl_ciphers) },
+	{ INTe(erp, erp) },
 #endif /* IEEE8021X_EAPOL */
 	{ FUNC_KEY(wep_key0) },
 	{ FUNC_KEY(wep_key1) },
@@ -2440,9 +2441,9 @@ static const struct parse_data ssid_fields[] = {
 	{ INT(priority) },
 #ifdef IEEE8021X_EAPOL
 	{ INT(eap_workaround) },
-	{ STRe(pac_file) },
-	{ INTe(fragment_size) },
-	{ INTe(ocsp) },
+	{ STRe(pac_file, pac_file) },
+	{ INTe(fragment_size, fragment_size) },
+	{ INTe(ocsp, ocsp) },
 #endif /* IEEE8021X_EAPOL */
 #ifdef CONFIG_MESH
 	{ INT_RANGE(mode, 0, 5) },
@@ -2654,6 +2655,28 @@ int wpa_config_update_prio_list(struct wpa_config *config)
 
 
 #ifdef IEEE8021X_EAPOL
+
+static void eap_peer_config_free_cert(struct eap_peer_cert_config *cert)
+{
+	os_free(cert->ca_cert);
+	os_free(cert->ca_path);
+	os_free(cert->client_cert);
+	os_free(cert->private_key);
+	str_clear_free(cert->private_key_passwd);
+	os_free(cert->dh_file);
+	os_free(cert->subject_match);
+	os_free(cert->check_cert_subject);
+	os_free(cert->altsubject_match);
+	os_free(cert->domain_suffix_match);
+	os_free(cert->domain_match);
+	str_clear_free(cert->pin);
+	os_free(cert->engine_id);
+	os_free(cert->key_id);
+	os_free(cert->cert_id);
+	os_free(cert->ca_cert_id);
+}
+
+
 static void eap_peer_config_free(struct eap_peer_config *eap)
 {
 	os_free(eap->eap_methods);
@@ -2663,41 +2686,11 @@ static void eap_peer_config_free(struct eap_peer_config *eap)
 	os_free(eap->machine_identity);
 	bin_clear_free(eap->password, eap->password_len);
 	bin_clear_free(eap->machine_password, eap->machine_password_len);
-	os_free(eap->ca_cert);
-	os_free(eap->ca_path);
-	os_free(eap->client_cert);
-	os_free(eap->private_key);
-	str_clear_free(eap->private_key_passwd);
-	os_free(eap->dh_file);
-	os_free(eap->subject_match);
-	os_free(eap->check_cert_subject);
-	os_free(eap->altsubject_match);
-	os_free(eap->domain_suffix_match);
-	os_free(eap->domain_match);
-	os_free(eap->ca_cert2);
-	os_free(eap->ca_path2);
-	os_free(eap->client_cert2);
-	os_free(eap->private_key2);
-	str_clear_free(eap->private_key2_passwd);
-	os_free(eap->dh_file2);
-	os_free(eap->subject_match2);
-	os_free(eap->check_cert_subject2);
-	os_free(eap->altsubject_match2);
-	os_free(eap->domain_suffix_match2);
-	os_free(eap->domain_match2);
+	eap_peer_config_free_cert(&eap->cert);
+	eap_peer_config_free_cert(&eap->phase2_cert);
 	os_free(eap->phase1);
 	os_free(eap->phase2);
 	os_free(eap->pcsc);
-	str_clear_free(eap->pin);
-	os_free(eap->engine_id);
-	os_free(eap->key_id);
-	os_free(eap->cert_id);
-	os_free(eap->ca_cert_id);
-	os_free(eap->key2_id);
-	os_free(eap->cert2_id);
-	os_free(eap->ca_cert2_id);
-	str_clear_free(eap->pin2);
-	os_free(eap->engine2_id);
 	os_free(eap->otp);
 	os_free(eap->pending_req_otp);
 	os_free(eap->pac_file);
@@ -2705,6 +2698,7 @@ static void eap_peer_config_free(struct eap_peer_config *eap)
 	str_clear_free(eap->external_sim_resp);
 	os_free(eap->openssl_ciphers);
 }
+
 #endif /* IEEE8021X_EAPOL */
 
 

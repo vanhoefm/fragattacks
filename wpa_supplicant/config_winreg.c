@@ -1,6 +1,6 @@
 /*
  * WPA Supplicant / Configuration backend: Windows registry
- * Copyright (c) 2003-2008, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2003-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -868,9 +868,9 @@ static int wpa_config_write_network(HKEY hk, struct wpa_ssid *ssid, int id)
 
 #define STR(t) write_str(netw, #t, ssid)
 #define INT(t) write_int(netw, #t, ssid->t, 0)
-#define INTe(t) write_int(netw, #t, ssid->eap.t, 0)
+#define INTe(t, m) write_int(netw, #t, ssid->eap.m, 0)
 #define INT_DEF(t, def) write_int(netw, #t, ssid->t, def)
-#define INT_DEFe(t, def) write_int(netw, #t, ssid->eap.t, def)
+#define INT_DEFe(t, m, def) write_int(netw, #t, ssid->eap.m, def)
 
 	STR(ssid);
 	INT(scan_ssid);
@@ -920,8 +920,8 @@ static int wpa_config_write_network(HKEY hk, struct wpa_ssid *ssid, int id)
 	STR(engine2_id);
 	STR(cert2_id);
 	STR(ca_cert2_id);
-	INTe(engine);
-	INTe(engine2);
+	INTe(engine, cert.engine);
+	INTe(engine2, phase2_cert.engine);
 	INT_DEF(eapol_flags, DEFAULT_EAPOL_FLAGS);
 #endif /* IEEE8021X_EAPOL */
 	for (i = 0; i < 4; i++)
@@ -931,7 +931,7 @@ static int wpa_config_write_network(HKEY hk, struct wpa_ssid *ssid, int id)
 #ifdef IEEE8021X_EAPOL
 	INT_DEF(eap_workaround, DEFAULT_EAP_WORKAROUND);
 	STR(pac_file);
-	INT_DEFe(fragment_size, DEFAULT_FRAGMENT_SIZE);
+	INT_DEFe(fragment_size, fragment_size, DEFAULT_FRAGMENT_SIZE);
 #endif /* IEEE8021X_EAPOL */
 	INT(mode);
 	write_int(netw, "proactive_key_caching", ssid->proactive_key_caching,

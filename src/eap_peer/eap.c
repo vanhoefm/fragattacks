@@ -1,6 +1,6 @@
 /*
  * EAP peer state machines (RFC 4137)
- * Copyright (c) 2004-2014, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2004-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -2688,7 +2688,7 @@ struct eap_method_type * eap_get_phase2_types(struct eap_peer_config *config,
 		if (eap_allowed_phase2_type(vendor, method)) {
 			if (vendor == EAP_VENDOR_IETF &&
 			    method == EAP_TYPE_TLS && config &&
-			    config->private_key2 == NULL)
+			    !config->phase2_cert.private_key)
 				continue;
 			buf[*count].vendor = vendor;
 			buf[*count].method = method;

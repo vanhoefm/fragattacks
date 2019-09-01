@@ -299,7 +299,7 @@ int eap_example_peer_init(void)
 	eap_ctx.eap_config.identity_len = 4;
 	eap_ctx.eap_config.password = (u8 *) os_strdup("password");
 	eap_ctx.eap_config.password_len = 8;
-	eap_ctx.eap_config.ca_cert = os_strdup("ca.pem");
+	eap_ctx.eap_config.cert.ca_cert = os_strdup("ca.pem");
 	eap_ctx.eap_config.fragment_size = 1398;
 
 	os_memset(&eap_cb, 0, sizeof(eap_cb));
@@ -332,7 +332,7 @@ void eap_example_peer_deinit(void)
 	wpabuf_free(eap_ctx.eapReqData);
 	os_free(eap_ctx.eap_config.identity);
 	os_free(eap_ctx.eap_config.password);
-	os_free(eap_ctx.eap_config.ca_cert);
+	os_free(eap_ctx.eap_config.cert.ca_cert);
 }
 
 

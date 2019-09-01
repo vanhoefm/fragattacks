@@ -6918,8 +6918,8 @@ int wpa_supplicant_ctrl_iface_ctrl_rsp_handle(struct wpa_supplicant *wpa_s,
 			wpa_s->reassociate = 1;
 		break;
 	case WPA_CTRL_REQ_EAP_PIN:
-		str_clear_free(eap->pin);
-		eap->pin = os_strdup(value);
+		str_clear_free(eap->cert.pin);
+		eap->cert.pin = os_strdup(value);
 		eap->pending_req_pin = 0;
 		if (ssid == wpa_s->current_ssid)
 			wpa_s->reassociate = 1;
@@ -6933,8 +6933,8 @@ int wpa_supplicant_ctrl_iface_ctrl_rsp_handle(struct wpa_supplicant *wpa_s,
 		eap->pending_req_otp_len = 0;
 		break;
 	case WPA_CTRL_REQ_EAP_PASSPHRASE:
-		str_clear_free(eap->private_key_passwd);
-		eap->private_key_passwd = os_strdup(value);
+		str_clear_free(eap->cert.private_key_passwd);
+		eap->cert.private_key_passwd = os_strdup(value);
 		eap->pending_req_passphrase = 0;
 		if (ssid == wpa_s->current_ssid)
 			wpa_s->reassociate = 1;
