@@ -162,7 +162,7 @@ static void * eap_fast_init(struct eap_sm *sm)
 
 	if (eap_peer_select_phase2_methods(config, "auth=",
 					   &data->phase2_types,
-					   &data->num_phase2_types) < 0) {
+					   &data->num_phase2_types, 0) < 0) {
 		eap_fast_deinit(sm, data);
 		return NULL;
 	}

@@ -33,11 +33,17 @@ static void * eap_tls_init(struct eap_sm *sm)
 {
 	struct eap_tls_data *data;
 	struct eap_peer_config *config = eap_get_config(sm);
-	if (config == NULL ||
-	    ((sm->init_phase2 ? config->phase2_cert.private_key :
-	      config->cert.private_key) == NULL &&
-	     (sm->init_phase2 ? config->phase2_cert.engine :
-	      config->cert.engine) == 0)) {
+	struct eap_peer_cert_config *cert;
+
+	if (!config)
+		return NULL;
+	if (!sm->init_phase2)
+		cert = &config->cert;
+	else if (sm->use_machine_cred)
+		cert = &config->machine_cert;
+	else
+		cert = &config->phase2_cert;
+	if (!cert->private_key && cert->engine == 0) {
 		wpa_printf(MSG_INFO, "EAP-TLS: Private key not configured");
 		return NULL;
 	}
@@ -52,13 +58,12 @@ static void * eap_tls_init(struct eap_sm *sm)
 	if (eap_peer_tls_ssl_init(sm, &data->ssl, config, EAP_TYPE_TLS)) {
 		wpa_printf(MSG_INFO, "EAP-TLS: Failed to initialize SSL.");
 		eap_tls_deinit(sm, data);
-		if (config->cert.engine) {
+		if (cert->engine) {
 			wpa_printf(MSG_DEBUG, "EAP-TLS: Requesting Smartcard "
 				   "PIN");
 			eap_sm_request_pin(sm);
 			sm->ignore = TRUE;
-		} else if (config->cert.private_key &&
-			   !config->cert.private_key_passwd) {
+		} else if (cert->private_key && !cert->private_key_passwd) {
 			wpa_printf(MSG_DEBUG, "EAP-TLS: Requesting private "
 				   "key passphrase");
 			eap_sm_request_passphrase(sm);

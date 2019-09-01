@@ -2415,6 +2415,7 @@ static const struct parse_data ssid_fields[] = {
 	{ STRe(domain_match2, phase2_cert.domain_match) },
 	{ STRe(phase1, phase1) },
 	{ STRe(phase2, phase2) },
+	{ STRe(machine_phase2, machine_phase2) },
 	{ STRe(pcsc, pcsc) },
 	{ STR_KEYe(pin, cert.pin) },
 	{ STRe(engine_id, cert.engine_id) },
@@ -2428,6 +2429,26 @@ static const struct parse_data ssid_fields[] = {
 	{ STRe(ca_cert_id2, phase2_cert.ca_cert_id) },
 	{ INTe(engine, cert.engine) },
 	{ INTe(engine2, phase2_cert.engine) },
+	{ STRe(machine_ca_cert, machine_cert.ca_cert) },
+	{ STRe(machine_ca_path, machine_cert.ca_path) },
+	{ STRe(machine_client_cert, machine_cert.client_cert) },
+	{ STRe(machine_private_key, machine_cert.private_key) },
+	{ STR_KEYe(machine_private_key_passwd,
+		   machine_cert.private_key_passwd) },
+	{ STRe(machine_dh_file, machine_cert.dh_file) },
+	{ STRe(machine_subject_match, machine_cert.subject_match) },
+	{ STRe(machine_check_cert_subject, machine_cert.check_cert_subject) },
+	{ STRe(machine_altsubject_match, machine_cert.altsubject_match) },
+	{ STRe(machine_domain_suffix_match,
+	       machine_cert.domain_suffix_match) },
+	{ STRe(machine_domain_match, machine_cert.domain_match) },
+	{ STR_KEYe(machine_pin, machine_cert.pin) },
+	{ STRe(machine_engine_id, machine_cert.engine_id) },
+	{ STRe(machine_key_id, machine_cert.key_id) },
+	{ STRe(machine_cert_id, machine_cert.cert_id) },
+	{ STRe(machine_ca_cert_id, machine_cert.ca_cert_id) },
+	{ INTe(machine_engine, machine_cert.engine) },
+	{ INTe(machine_ocsp, machine_cert.ocsp) },
 	{ INT(eapol_flags) },
 	{ INTe(sim_num, sim_num) },
 	{ STRe(openssl_ciphers, openssl_ciphers) },
@@ -2689,8 +2710,10 @@ static void eap_peer_config_free(struct eap_peer_config *eap)
 	bin_clear_free(eap->machine_password, eap->machine_password_len);
 	eap_peer_config_free_cert(&eap->cert);
 	eap_peer_config_free_cert(&eap->phase2_cert);
+	eap_peer_config_free_cert(&eap->machine_cert);
 	os_free(eap->phase1);
 	os_free(eap->phase2);
+	os_free(eap->machine_phase2);
 	os_free(eap->pcsc);
 	os_free(eap->otp);
 	os_free(eap->pending_req_otp);

@@ -146,8 +146,8 @@ static void * eap_ttls_init(struct eap_sm *sm)
 	if (data->phase2_type == EAP_TTLS_PHASE2_EAP) {
 		if (eap_peer_select_phase2_methods(config, "autheap=",
 						   &data->phase2_eap_types,
-						   &data->num_phase2_eap_types)
-		    < 0) {
+						   &data->num_phase2_eap_types,
+						   0) < 0) {
 			eap_ttls_deinit(sm, data);
 			return NULL;
 		}

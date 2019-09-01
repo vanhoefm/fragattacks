@@ -150,6 +150,14 @@ static void eap_tls_params_from_conf2(struct tls_connection_params *params,
 }
 
 
+static void eap_tls_params_from_conf2m(struct tls_connection_params *params,
+				       struct eap_peer_config *config)
+{
+	eap_tls_cert_params_from_conf(params, &config->machine_cert);
+	eap_tls_params_flags(params, config->machine_phase2);
+}
+
+
 static int eap_tls_params_from_conf(struct eap_sm *sm,
 				    struct eap_ssl_data *data,
 				    struct tls_connection_params *params,
@@ -196,7 +204,10 @@ static int eap_tls_params_from_conf(struct eap_sm *sm,
 		 */
 		params->flags |= TLS_CONN_DISABLE_TLSv1_3;
 	}
-	if (phase2) {
+	if (phase2 && sm->use_machine_cred) {
+		wpa_printf(MSG_DEBUG, "TLS: using machine config options");
+		eap_tls_params_from_conf2m(params, config);
+	} else if (phase2) {
 		wpa_printf(MSG_DEBUG, "TLS: using phase2 config options");
 		eap_tls_params_from_conf2(params, config);
 	} else {
@@ -1084,17 +1095,21 @@ int eap_peer_tls_encrypt(struct eap_sm *sm, struct eap_ssl_data *data,
 int eap_peer_select_phase2_methods(struct eap_peer_config *config,
 				   const char *prefix,
 				   struct eap_method_type **types,
-				   size_t *num_types)
+				   size_t *num_types, int use_machine_cred)
 {
 	char *start, *pos, *buf;
 	struct eap_method_type *methods = NULL, *_methods;
 	u32 method;
 	size_t num_methods = 0, prefix_len;
+	const char *phase2;
 
-	if (config == NULL || config->phase2 == NULL)
+	if (!config)
+		goto get_defaults;
+	phase2 = use_machine_cred ? config->machine_phase2 : config->phase2;
+	if (!phase2)
 		goto get_defaults;
 
-	start = buf = os_strdup(config->phase2);
+	start = buf = os_strdup(phase2);
 	if (buf == NULL)
 		return -1;
 

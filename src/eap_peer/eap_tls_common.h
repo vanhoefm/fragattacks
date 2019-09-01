@@ -133,7 +133,7 @@ int eap_peer_tls_encrypt(struct eap_sm *sm, struct eap_ssl_data *data,
 int eap_peer_select_phase2_methods(struct eap_peer_config *config,
 				   const char *prefix,
 				   struct eap_method_type **types,
-				   size_t *num_types);
+				   size_t *num_types, int use_machine_cred);
 int eap_peer_tls_phase2_nak(struct eap_method_type *types, size_t num_types,
 			    struct eap_hdr *hdr, struct wpabuf **resp);
 

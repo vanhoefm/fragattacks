@@ -180,7 +180,7 @@ static void * eap_teap_init(struct eap_sm *sm)
 
 	if (eap_peer_select_phase2_methods(config, "auth=",
 					   &data->phase2_types,
-					   &data->num_phase2_types) < 0) {
+					   &data->num_phase2_types, 0) < 0) {
 		eap_teap_deinit(sm, data);
 		return NULL;
 	}
@@ -1295,6 +1295,23 @@ static int eap_teap_process_decrypted(struct eap_sm *sm,
 			config->machine_identity_len;
 	} else if (tlv.identity_type) {
 		sm->use_machine_cred = 0;
+	}
+	if (tlv.identity_type) {
+		struct eap_peer_config *config = eap_get_config(sm);
+
+		os_free(data->phase2_types);
+		data->phase2_types = NULL;
+		data->num_phase2_types = 0;
+		if (config &&
+		    eap_peer_select_phase2_methods(config, "auth=",
+						   &data->phase2_types,
+						   &data->num_phase2_types,
+						   sm->use_machine_cred) < 0) {
+			wpa_printf(MSG_INFO,
+				   "EAP-TEAP: Failed to update Phase 2 EAP types");
+			failed = 1;
+			goto done;
+		}
 	}
 
 	if (tlv.basic_auth_req) {

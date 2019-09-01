@@ -799,8 +799,20 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	STR(altsubject_match2);
 	STR(domain_suffix_match2);
 	STR(domain_match2);
+	STR(machine_ca_cert);
+	STR(machine_ca_path);
+	STR(machine_client_cert);
+	STR(machine_private_key);
+	STR(machine_private_key_passwd);
+	STR(machine_dh_file);
+	STR(machine_subject_match);
+	STR(machine_check_cert_subject);
+	STR(machine_altsubject_match);
+	STR(machine_domain_suffix_match);
+	STR(machine_domain_match);
 	STR(phase1);
 	STR(phase2);
+	STR(machine_phase2);
 	STR(pcsc);
 	STR(pin);
 	STR(engine_id);
@@ -814,6 +826,7 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	STR(ca_cert2_id);
 	INTe(engine, cert.engine);
 	INTe(engine2, phase2_cert.engine);
+	INTe(machine_engine, machine_cert.engine);
 	INT_DEF(eapol_flags, DEFAULT_EAPOL_FLAGS);
 	STR(openssl_ciphers);
 	INTe(erp, erp);
@@ -828,6 +841,7 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	INT_DEFe(fragment_size, fragment_size, DEFAULT_FRAGMENT_SIZE);
 	INTe(ocsp, cert.ocsp);
 	INTe(ocsp2, phase2_cert.ocsp);
+	INTe(machine_ocsp, machine_cert.ocsp);
 	INT_DEFe(sim_num, sim_num, DEFAULT_USER_SELECTED_SIM);
 #endif /* IEEE8021X_EAPOL */
 	INT(mode);

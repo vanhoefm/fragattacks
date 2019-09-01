@@ -400,6 +400,15 @@ struct eap_peer_config {
 	struct eap_peer_cert_config phase2_cert;
 
 	/**
+	 * machine_cert - Certificate parameters for Phase 2 machine credential
+	 *
+	 * This is like cert, but used for Phase 2 (inside EAP-TEAP tunnel)
+	 * authentication with machine credentials (while phase2_cert is used
+	 * for user credentials).
+	 */
+	struct eap_peer_cert_config machine_cert;
+
+	/**
 	 * eap_methods - Allowed EAP methods
 	 *
 	 * (vendor=EAP_VENDOR_IETF,method=EAP_TYPE_NONE) terminated list of
@@ -484,6 +493,13 @@ struct eap_peer_config {
 	 * cases.
 	 */
 	char *phase2;
+
+	/**
+	 * machine_phase2 - Phase2 parameters for machine credentials
+	 *
+	 * See phase2 for more details.
+	 */
+	char *machine_phase2;
 
 	/**
 	 * pcsc - Parameters for PC/SC smartcard interface for USIM and GSM SIM
