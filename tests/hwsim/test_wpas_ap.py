@@ -771,7 +771,17 @@ def test_wpas_ap_sae_password(dev):
     """wpa_supplicant AP mode - SAE using sae_password"""
     run_wpas_ap_sae(dev, True)
 
-def run_wpas_ap_sae(dev, sae_password):
+def test_wpas_ap_sae_pwe_1(dev):
+    """wpa_supplicant AP mode - SAE using sae_password and sae_pwe=1"""
+    try:
+        dev[0].set("sae_pwe", "1")
+        dev[1].set("sae_pwe", "1")
+        run_wpas_ap_sae(dev, True, sae_password_id=True)
+    finally:
+        dev[0].set("sae_pwe", "0")
+        dev[1].set("sae_pwe", "0")
+
+def run_wpas_ap_sae(dev, sae_password, sae_password_id=False):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     if "SAE" not in dev[1].get_capability("auth_alg"):
@@ -788,6 +798,11 @@ def run_wpas_ap_sae(dev, sae_password):
         dev[0].set_network_quoted(id, "sae_password", "12345678")
     else:
         dev[0].set_network_quoted(id, "psk", "12345678")
+    if sae_password_id:
+        pw_id = "pw id"
+        dev[0].set_network_quoted(id, "sae_password_id", pw_id)
+    else:
+        pw_id = None
     dev[0].set_network(id, "frequency", "2412")
     dev[0].set_network(id, "scan_freq", "2412")
     dev[0].set_network(id, "wps_disabled", "1")
@@ -795,5 +810,5 @@ def run_wpas_ap_sae(dev, sae_password):
     wait_ap_ready(dev[0])
 
     dev[1].request("SET sae_groups ")
-    dev[1].connect("wpas-ap-sae", key_mgmt="SAE", psk="12345678",
-                   scan_freq="2412")
+    dev[1].connect("wpas-ap-sae", key_mgmt="SAE", sae_password="12345678",
+                   sae_password_id=pw_id, scan_freq="2412")

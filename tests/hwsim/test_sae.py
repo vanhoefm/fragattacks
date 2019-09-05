@@ -1709,3 +1709,172 @@ def test_sae_confirm_immediate(dev, apdev):
 
     dev[0].request("SET sae_groups ")
     dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE", scan_freq="2412")
+
+def test_sae_pwe_group_19(dev, apdev):
+    """SAE PWE derivation options with group 19"""
+    run_sae_pwe_group(dev, apdev, 19)
+
+def test_sae_pwe_group_20(dev, apdev):
+    """SAE PWE derivation options with group 20"""
+    run_sae_pwe_group(dev, apdev, 20)
+
+def test_sae_pwe_group_21(dev, apdev):
+    """SAE PWE derivation options with group 21"""
+    run_sae_pwe_group(dev, apdev, 21)
+
+def test_sae_pwe_group_25(dev, apdev):
+    """SAE PWE derivation options with group 21"""
+    run_sae_pwe_group(dev, apdev, 21)
+
+def test_sae_pwe_group_26(dev, apdev):
+    """SAE PWE derivation options with group 21"""
+    run_sae_pwe_group(dev, apdev, 21)
+
+def test_sae_pwe_group_28(dev, apdev):
+    """SAE PWE derivation options with group 21"""
+    run_sae_pwe_group(dev, apdev, 21)
+
+def test_sae_pwe_group_29(dev, apdev):
+    """SAE PWE derivation options with group 21"""
+    run_sae_pwe_group(dev, apdev, 21)
+
+def test_sae_pwe_group_30(dev, apdev):
+    """SAE PWE derivation options with group 21"""
+    run_sae_pwe_group(dev, apdev, 21)
+
+def test_sae_pwe_group_1(dev, apdev):
+    """SAE PWE derivation options with group 1"""
+    run_sae_pwe_group(dev, apdev, 1)
+
+def test_sae_pwe_group_2(dev, apdev):
+    """SAE PWE derivation options with group 2"""
+    run_sae_pwe_group(dev, apdev, 2)
+
+def test_sae_pwe_group_5(dev, apdev):
+    """SAE PWE derivation options with group 5"""
+    run_sae_pwe_group(dev, apdev, 5)
+
+def test_sae_pwe_group_14(dev, apdev):
+    """SAE PWE derivation options with group 14"""
+    run_sae_pwe_group(dev, apdev, 14)
+
+def test_sae_pwe_group_15(dev, apdev):
+    """SAE PWE derivation options with group 15"""
+    run_sae_pwe_group(dev, apdev, 15)
+
+def test_sae_pwe_group_16(dev, apdev):
+    """SAE PWE derivation options with group 16"""
+    run_sae_pwe_group(dev, apdev, 16)
+
+def test_sae_pwe_group_22(dev, apdev):
+    """SAE PWE derivation options with group 22"""
+    run_sae_pwe_group(dev, apdev, 22)
+
+def test_sae_pwe_group_23(dev, apdev):
+    """SAE PWE derivation options with group 23"""
+    run_sae_pwe_group(dev, apdev, 23)
+
+def test_sae_pwe_group_24(dev, apdev):
+    """SAE PWE derivation options with group 24"""
+    run_sae_pwe_group(dev, apdev, 24)
+
+def start_sae_pwe_ap(apdev, group, sae_pwe):
+    params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_groups'] = str(group)
+    params['sae_pwe'] = str(sae_pwe)
+    return hostapd.add_ap(apdev, params)
+
+def run_sae_pwe_group(dev, apdev, group):
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    tls = dev[0].request("GET tls_library")
+    if group in [27, 28, 29, 30]:
+        if tls.startswith("OpenSSL") and "run=OpenSSL 1." in tls:
+            logger.info("Add Brainpool EC groups since OpenSSL is new enough")
+        else:
+            raise HwsimSkip("Brainpool curve not supported")
+    start_sae_pwe_ap(apdev[0], group, 2)
+    try:
+        check_sae_pwe_group(dev[0], group, 0)
+        check_sae_pwe_group(dev[0], group, 1)
+        check_sae_pwe_group(dev[0], group, 2)
+    finally:
+        dev[0].set("sae_groups", "")
+        dev[0].set("sae_pwe", "0")
+
+def check_sae_pwe_group(dev, group, sae_pwe):
+    dev.set("sae_groups", str(group))
+    dev.set("sae_pwe", str(sae_pwe))
+    dev.connect("sae-pwe", psk="12345678", key_mgmt="SAE", scan_freq="2412")
+    dev.request("REMOVE_NETWORK all")
+    dev.wait_disconnected()
+    dev.dump_monitor()
+
+def test_sae_pwe_h2e_only_ap(dev, apdev):
+    """SAE PWE derivation with H2E-only AP"""
+    start_sae_pwe_ap(apdev[0], 19, 1)
+    try:
+        check_sae_pwe_group(dev[0], 19, 1)
+        check_sae_pwe_group(dev[0], 19, 2)
+    finally:
+        dev[0].set("sae_groups", "")
+        dev[0].set("sae_pwe", "0")
+
+    dev[0].connect("sae-pwe", psk="12345678", key_mgmt="SAE", scan_freq="2412",
+                   wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-NETWORK-NOT-FOUND"], timeout=10)
+    if ev is None:
+        raise Exception("No indication of mismatching network seen")
+
+def test_sae_pwe_loop_only_ap(dev, apdev):
+    """SAE PWE derivation with loop-only AP"""
+    start_sae_pwe_ap(apdev[0], 19, 0)
+    try:
+        check_sae_pwe_group(dev[0], 19, 0)
+        check_sae_pwe_group(dev[0], 19, 2)
+        dev[0].set("sae_pwe", "1")
+        dev[0].connect("sae-pwe", psk="12345678", key_mgmt="SAE",
+                       scan_freq="2412", wait_connect=False)
+        ev = dev[0].wait_event(["CTRL-EVENT-NETWORK-NOT-FOUND"], timeout=10)
+        if ev is None:
+            raise Exception("No indication of mismatching network seen")
+    finally:
+        dev[0].set("sae_groups", "")
+        dev[0].set("sae_pwe", "0")
+
+def test_sae_h2e_rejected_groups(dev, apdev):
+    """SAE H2E and rejected groups indication"""
+    params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_groups'] = "19"
+    params['sae_pwe'] = "1"
+    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        dev[0].set("sae_groups", "21 20 19")
+        dev[0].set("sae_pwe", "1")
+        dev[0].connect("sae-pwe", psk="12345678", key_mgmt="SAE",
+                       scan_freq="2412")
+    finally:
+        dev[0].set("sae_groups", "")
+        dev[0].set("sae_pwe", "0")
+
+def test_sae_h2e_password_id(dev, apdev):
+    """SAE H2E and password identifier"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_pwe'] = '1'
+    params['sae_password'] = 'secret|id=pw id'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    try:
+        dev[0].request("SET sae_groups ")
+        dev[0].set("sae_pwe", "1")
+        dev[0].connect("test-sae", sae_password="secret",
+                       sae_password_id="pw id",
+                       key_mgmt="SAE", scan_freq="2412")
+    finally:
+        dev[0].set("sae_groups", "")
+        dev[0].set("sae_pwe", "0")
