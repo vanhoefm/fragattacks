@@ -267,6 +267,7 @@ struct ft_remote_seq {
 
 int wpa_write_rsn_ie(struct wpa_auth_config *conf, u8 *buf, size_t len,
 		     const u8 *pmkid);
+int wpa_write_rsnxe(struct wpa_auth_config *conf, u8 *buf, size_t len);
 void wpa_auth_logger(struct wpa_authenticator *wpa_auth, const u8 *addr,
 		     logger_level level, const char *txt);
 void wpa_auth_vlogger(struct wpa_authenticator *wpa_auth, const u8 *addr,

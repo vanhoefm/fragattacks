@@ -372,6 +372,26 @@ int wpa_write_rsn_ie(struct wpa_auth_config *conf, u8 *buf, size_t len,
 }
 
 
+int wpa_write_rsnxe(struct wpa_auth_config *conf, u8 *buf, size_t len)
+{
+	u8 *pos = buf;
+
+	if (conf->sae_pwe != 1 && conf->sae_pwe != 2)
+		return 0; /* no supported extended RSN capabilities */
+
+	if (len < 3)
+		return -1;
+
+	*pos++ = WLAN_EID_RSNX;
+	*pos++ = 1;
+	/* bits 0-3 = 0 since only one octet of Extended RSN Capabilities is
+	 * used for now */
+	*pos++ = BIT(WLAN_RSNX_CAPAB_SAE_H2E);
+
+	return pos - buf;
+}
+
+
 static u8 * wpa_write_osen(struct wpa_auth_config *conf, u8 *eid)
 {
 	u8 *len;
@@ -453,6 +473,11 @@ int wpa_auth_gen_wpa_ie(struct wpa_authenticator *wpa_auth)
 	if (wpa_auth->conf.wpa & WPA_PROTO_RSN) {
 		res = wpa_write_rsn_ie(&wpa_auth->conf,
 				       pos, buf + sizeof(buf) - pos, NULL);
+		if (res < 0)
+			return res;
+		pos += res;
+		res = wpa_write_rsnxe(&wpa_auth->conf, pos,
+				      buf + sizeof(buf) - pos);
 		if (res < 0)
 			return res;
 		pos += res;
