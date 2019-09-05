@@ -1407,6 +1407,9 @@ static void wpa_config_write_global(FILE *f, struct wpa_config *config)
 		fprintf(f, "\n");
 	}
 
+	if (config->sae_pwe)
+		fprintf(f, "sae_pwe=%d\n", config->sae_pwe);
+
 	if (config->sae_pmkid_in_assoc)
 		fprintf(f, "sae_pmkid_in_assoc=%d\n",
 			config->sae_pmkid_in_assoc);

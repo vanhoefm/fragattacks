@@ -1165,6 +1165,14 @@ struct wpa_config {
 	int *sae_groups;
 
 	/**
+	 * sae_pwe - SAE mechanism for PWE derivation
+	 * 0 = hunting-and-pecking loop only
+	 * 1 = hash-to-element only
+	 * 2 = both hunting-and-pecking loop and hash-to-element enabled
+	 */
+	int sae_pwe;
+
+	/**
 	 * sae_pmkid_in_assoc - Whether to include PMKID in SAE Assoc Req
 	 */
 	int sae_pmkid_in_assoc;
