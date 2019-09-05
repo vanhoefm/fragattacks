@@ -1417,6 +1417,7 @@ static int wps_cancel(struct hostapd_data *hapd, void *ctx)
 		data->count++;
 		wps_registrar_wps_cancel(hapd->wps->registrar);
 		ap_for_each_sta(hapd, ap_sta_wps_cancel, NULL);
+		wpa_msg(hapd->msg_ctx, MSG_INFO, WPS_EVENT_CANCEL);
 	}
 
 	return 0;
