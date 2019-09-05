@@ -98,6 +98,8 @@ u8 * hostapd_eid_supp_rates(struct hostapd_data *hapd, u8 *eid)
 		num++;
 	if (hapd->iconf->ieee80211ac && hapd->iconf->require_vht)
 		num++;
+	if (hapd->conf->sae_pwe == 1)
+		num++;
 	if (num > 8) {
 		/* rest of the rates are encoded in Extended supported
 		 * rates element */
@@ -124,6 +126,11 @@ u8 * hostapd_eid_supp_rates(struct hostapd_data *hapd, u8 *eid)
 		*pos++ = 0x80 | BSS_MEMBERSHIP_SELECTOR_VHT_PHY;
 	}
 
+	if (hapd->conf->sae_pwe == 1 && count < 8) {
+		count++;
+		*pos++ = 0x80 | BSS_MEMBERSHIP_SELECTOR_SAE_H2E_ONLY;
+	}
+
 	return pos;
 }
 
@@ -140,6 +147,8 @@ u8 * hostapd_eid_ext_supp_rates(struct hostapd_data *hapd, u8 *eid)
 	if (hapd->iconf->ieee80211n && hapd->iconf->require_ht)
 		num++;
 	if (hapd->iconf->ieee80211ac && hapd->iconf->require_vht)
+		num++;
+	if (hapd->conf->sae_pwe == 1)
 		num++;
 	if (num <= 8)
 		return eid;
@@ -168,6 +177,12 @@ u8 * hostapd_eid_ext_supp_rates(struct hostapd_data *hapd, u8 *eid)
 		count++;
 		if (count > 8)
 			*pos++ = 0x80 | BSS_MEMBERSHIP_SELECTOR_VHT_PHY;
+	}
+
+	if (hapd->conf->sae_pwe == 1) {
+		count++;
+		if (count > 8)
+			*pos++ = 0x80 | BSS_MEMBERSHIP_SELECTOR_SAE_H2E_ONLY;
 	}
 
 	return pos;
