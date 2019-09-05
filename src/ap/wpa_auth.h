@@ -230,6 +230,7 @@ struct wpa_auth_config {
 	unsigned int fils_cache_id_set:1;
 	u8 fils_cache_id[FILS_CACHE_ID_LEN];
 #endif /* CONFIG_FILS */
+	int sae_pwe;
 };
 
 typedef enum {

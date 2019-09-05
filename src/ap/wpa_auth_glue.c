@@ -130,6 +130,7 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 	os_memcpy(wconf->fils_cache_id, conf->fils_cache_id,
 		  FILS_CACHE_ID_LEN);
 #endif /* CONFIG_FILS */
+	wconf->sae_pwe = conf->sae_pwe;
 }
 
 

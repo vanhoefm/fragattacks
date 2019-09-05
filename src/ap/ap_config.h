@@ -650,6 +650,7 @@ struct hostapd_bss_config {
 	unsigned int sae_sync;
 	int sae_require_mfp;
 	int sae_confirm_immediate;
+	int sae_pwe;
 	int *sae_groups;
 	struct sae_password_entry *sae_passwords;
 
