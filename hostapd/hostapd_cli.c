@@ -54,7 +54,7 @@ static void usage(void)
 	fprintf(stderr, "%s\n", hostapd_cli_version);
 	fprintf(stderr,
 		"\n"
-		"usage: hostapd_cli [-p<path>] [-i<ifname>] [-hvB] "
+		"usage: hostapd_cli [-p<path>] [-i<ifname>] [-hvBr] "
 		"[-a<path>] \\\n"
 		"                   [-P<pid file>] [-G<ping interval>] [command..]\n"
 		"\n"
@@ -68,6 +68,9 @@ static void usage(void)
 		"   -a<file>     run in daemon mode executing the action file "
 		"based on events\n"
 		"                from hostapd\n"
+		"   -r           try to reconnect when client socket is "
+		"disconnected.\n"
+		"                This is useful only when used with -a.\n"
 		"   -B           run a daemon in the background\n"
 		"   -i<ifname>   Interface to listen on (default: first "
 		"interface found in the\n"
@@ -2007,12 +2010,13 @@ int main(int argc, char *argv[])
 	int warning_displayed = 0;
 	int c;
 	int daemonize = 0;
+	int reconnect = 0;
 
 	if (os_program_init())
 		return -1;
 
 	for (;;) {
-		c = getopt(argc, argv, "a:BhG:i:p:P:s:v");
+		c = getopt(argc, argv, "a:BhG:i:p:P:rs:v");
 		if (c < 0)
 			break;
 		switch (c) {
@@ -2040,6 +2044,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'P':
 			pid_file = optarg;
+			break;
+		case 'r':
+			reconnect = 1;
 			break;
 		case 's':
 			client_socket_dir = optarg;
@@ -2083,8 +2090,7 @@ int main(int argc, char *argv[])
 				printf("Connection established.\n");
 			break;
 		}
-
-		if (!interactive) {
+		if (!interactive && !reconnect) {
 			perror("Failed to connect to hostapd - "
 			       "wpa_ctrl_open");
 			return -1;
@@ -2102,8 +2108,14 @@ int main(int argc, char *argv[])
 		return -1;
 	if (daemonize && os_daemonize(pid_file) && eloop_sock_requeue())
 		return -1;
-
-	if (interactive)
+	if (reconnect && action_file && ctrl_ifname) {
+		while (!hostapd_cli_quit) {
+			if (ctrl_conn)
+				hostapd_cli_action(ctrl_conn);
+			os_sleep(1, 0);
+			hostapd_cli_reconnect(ctrl_ifname);
+		}
+	} else if (interactive)
 		hostapd_cli_interactive();
 	else if (action_file)
 		hostapd_cli_action(ctrl_conn);
