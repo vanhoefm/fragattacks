@@ -213,6 +213,8 @@ struct wpa_ssid {
 	 */
 	char *sae_password_id;
 
+	struct sae_pt *pt;
+
 	/**
 	 * ext_psk - PSK/passphrase name in external storage
 	 *

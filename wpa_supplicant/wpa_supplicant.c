@@ -1932,6 +1932,36 @@ int wpas_update_random_addr_disassoc(struct wpa_supplicant *wpa_s)
 }
 
 
+static void wpa_s_setup_sae_pt(struct wpa_config *conf, struct wpa_ssid *ssid)
+{
+#ifdef CONFIG_SAE
+	int *groups = conf->sae_groups;
+	int default_groups[] = { 19, 20, 21, 0 };
+	const char *password;
+
+	if (!groups || groups[0] <= 0)
+		groups = default_groups;
+
+	password = ssid->sae_password;
+	if (!password)
+		password = ssid->passphrase;
+
+	if (conf->sae_pwe == 0 || !password) {
+		/* PT derivation not needed */
+		sae_deinit_pt(ssid->pt);
+		ssid->pt = NULL;
+		return;
+	}
+
+	if (ssid->pt)
+		return; /* PT already derived */
+	ssid->pt = sae_derive_pt(groups, ssid->ssid, ssid->ssid_len,
+				 (const u8 *) password, os_strlen(password),
+				 ssid->sae_password_id);
+#endif /* CONFIG_SAE */
+}
+
+
 static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit);
 
 /**
@@ -1978,6 +2008,10 @@ void wpa_supplicant_associate(struct wpa_supplicant *wpa_s,
 		} else if (wpa_s->current_bss && wpa_s->current_bss != bss) {
 			os_get_reltime(&wpa_s->roam_start);
 		}
+	} else {
+#ifdef CONFIG_SAE
+		wpa_s_setup_sae_pt(wpa_s->conf, ssid);
+#endif /* CONFIG_SAE */
 	}
 
 	if (rand_style > 0 && !wpa_s->reassoc_same_ess) {
@@ -3984,8 +4018,10 @@ void wpa_supplicant_select_network(struct wpa_supplicant *wpa_s,
 	wpa_s->disconnected = 0;
 	wpa_s->reassociate = 1;
 	wpa_s->last_owe_group = 0;
-	if (ssid)
+	if (ssid) {
 		ssid->owe_transition_bss_select_count = 0;
+		wpa_s_setup_sae_pt(wpa_s->conf, ssid);
+	}
 
 	if (wpa_s->connect_without_scan ||
 	    wpa_supplicant_fast_associate(wpa_s) != 1) {
