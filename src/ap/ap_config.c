@@ -16,6 +16,7 @@
 #include "common/ieee802_1x_defs.h"
 #include "common/eapol_common.h"
 #include "common/dhcp.h"
+#include "common/sae.h"
 #include "eap_common/eap_wsc_common.h"
 #include "eap_server/eap.h"
 #include "wpa_auth.h"
@@ -434,9 +435,49 @@ static int hostapd_derive_psk(struct hostapd_ssid *ssid)
 }
 
 
+int hostapd_setup_sae_pt(struct hostapd_bss_config *conf)
+{
+#ifdef CONFIG_SAE
+	struct hostapd_ssid *ssid = &conf->ssid;
+	struct sae_password_entry *pw;
+
+	if (conf->sae_pwe == 0)
+		return 0; /* PT not needed */
+
+	sae_deinit_pt(ssid->pt);
+	ssid->pt = NULL;
+	if (ssid->wpa_passphrase) {
+		ssid->pt = sae_derive_pt(conf->sae_groups, ssid->ssid,
+					 ssid->ssid_len,
+					 (const u8 *) ssid->wpa_passphrase,
+					 os_strlen(ssid->wpa_passphrase),
+					 NULL);
+		if (!ssid->pt)
+			return -1;
+	}
+
+	for (pw = conf->sae_passwords; pw; pw = pw->next) {
+		sae_deinit_pt(pw->pt);
+		pw->pt = sae_derive_pt(conf->sae_groups, ssid->ssid,
+				       ssid->ssid_len,
+				       (const u8 *) pw->password,
+				       os_strlen(pw->password),
+				       pw->identifier);
+		if (!pw->pt)
+			return -1;
+	}
+#endif /* CONFIG_SAE */
+
+	return 0;
+}
+
+
 int hostapd_setup_wpa_psk(struct hostapd_bss_config *conf)
 {
 	struct hostapd_ssid *ssid = &conf->ssid;
+
+	if (hostapd_setup_sae_pt(conf) < 0)
+		return -1;
 
 	if (ssid->wpa_passphrase != NULL) {
 		if (ssid->wpa_psk != NULL) {
@@ -643,6 +684,9 @@ static void hostapd_config_free_sae_passwords(struct hostapd_bss_config *conf)
 		pw = pw->next;
 		str_clear_free(tmp->password);
 		os_free(tmp->identifier);
+#ifdef CONFIG_SAE
+		sae_deinit_pt(tmp->pt);
+#endif /* CONFIG_SAE */
 		os_free(tmp);
 	}
 }
@@ -679,6 +723,9 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 #ifdef CONFIG_FULL_DYNAMIC_VLAN
 	os_free(conf->ssid.vlan_tagged_interface);
 #endif /* CONFIG_FULL_DYNAMIC_VLAN */
+#ifdef CONFIG_SAE
+	sae_deinit_pt(conf->ssid.pt);
+#endif /* CONFIG_SAE */
 
 	hostapd_config_free_eap_users(conf->eap_user);
 	os_free(conf->eap_user_sqlite);

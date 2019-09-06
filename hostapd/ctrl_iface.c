@@ -1424,6 +1424,11 @@ static int hostapd_ctrl_iface_set(struct hostapd_data *hapd, char *cmd)
 			if (ieee802_11_update_beacons(hapd->iface))
 				wpa_printf(MSG_DEBUG,
 					   "Failed to update beacons with WMM parameters");
+		} else if (os_strcmp(cmd, "wpa_passphrase") == 0 ||
+			   os_strcmp(cmd, "sae_password") == 0 ||
+			   os_strcmp(cmd, "sae_pwe") == 0) {
+			if (hapd->started)
+				hostapd_setup_sae_pt(hapd->conf);
 		}
 	}
 
