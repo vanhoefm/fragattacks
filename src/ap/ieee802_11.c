@@ -409,9 +409,13 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 	const char *password = NULL;
 	struct sae_password_entry *pw;
 	const char *rx_id = NULL;
+	int use_pt = 0;
+	struct sae_pt *pt = NULL;
 
-	if (sta->sae->tmp)
+	if (sta->sae->tmp) {
 		rx_id = sta->sae->tmp->pw_id;
+		use_pt = sta->sae->tmp->h2e;
+	}
 
 	for (pw = hapd->conf->sae_passwords; pw; pw = pw->next) {
 		if (!is_broadcast_ether_addr(pw->peer_addr) &&
@@ -423,16 +427,24 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 		    os_strcmp(rx_id, pw->identifier) != 0)
 			continue;
 		password = pw->password;
+		pt = pw->pt;
 		break;
 	}
-	if (!password)
-		password = hapd->conf->ssid.wpa_passphrase;
 	if (!password) {
+		password = hapd->conf->ssid.wpa_passphrase;
+		pt = hapd->conf->ssid.pt;
+	}
+	if (!password || (use_pt && !pt)) {
 		wpa_printf(MSG_DEBUG, "SAE: No password available");
 		return NULL;
 	}
 
-	if (update &&
+	if (update && use_pt &&
+	    sae_prepare_commit_pt(sta->sae, pt, hapd->own_addr, sta->addr,
+				  NULL) < 0)
+		return NULL;
+
+	if (update && !use_pt &&
 	    sae_prepare_commit(hapd->own_addr, sta->addr,
 			       (u8 *) password, os_strlen(password), rx_id,
 			       sta->sae) < 0) {
@@ -481,6 +493,7 @@ static int auth_sae_send_commit(struct hostapd_data *hapd,
 {
 	struct wpabuf *data;
 	int reply_res;
+	u16 status;
 
 	data = auth_build_sae_commit(hapd, sta, update);
 	if (!data && sta->sae->tmp && sta->sae->tmp->pw_id)
@@ -488,8 +501,10 @@ static int auth_sae_send_commit(struct hostapd_data *hapd,
 	if (data == NULL)
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
+	status = (sta->sae->tmp && sta->sae->tmp->h2e) ?
+		WLAN_STATUS_SAE_HASH_TO_ELEMENT : WLAN_STATUS_SUCCESS;
 	reply_res = send_auth_reply(hapd, sta->addr, bssid, WLAN_AUTH_SAE, 1,
-				    WLAN_STATUS_SUCCESS, wpabuf_head(data),
+				    status, wpabuf_head(data),
 				    wpabuf_len(data), "sae-send-commit");
 
 	wpabuf_free(data);
@@ -776,8 +791,8 @@ void sae_accept_sta(struct hostapd_data *hapd, struct sta_info *sta)
 
 
 static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
-		       const u8 *bssid, u8 auth_transaction, int allow_reuse,
-		       int *sta_removed)
+		       const u8 *bssid, u16 auth_transaction, u16 status_code,
+		       int allow_reuse, int *sta_removed)
 {
 	int ret;
 
@@ -792,6 +807,9 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 	switch (sta->sae->state) {
 	case SAE_NOTHING:
 		if (auth_transaction == 1) {
+			if (sta->sae->tmp)
+				sta->sae->tmp->h2e = status_code ==
+					WLAN_STATUS_SAE_HASH_TO_ELEMENT;
 			ret = auth_sae_send_commit(hapd, sta, bssid,
 						   !allow_reuse);
 			if (ret)
@@ -886,7 +904,7 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 			 * additional events.
 			 */
 			return sae_sm_step(hapd, sta, bssid, auth_transaction,
-					   0, sta_removed);
+					   WLAN_STATUS_SUCCESS, 0, sta_removed);
 		}
 		break;
 	case SAE_CONFIRMED:
@@ -994,6 +1012,18 @@ static void sae_pick_next_group(struct hostapd_data *hapd, struct sta_info *sta)
 }
 
 
+static int sae_status_success(struct hostapd_data *hapd, u16 status_code)
+{
+	return (hapd->conf->sae_pwe == 0 &&
+		status_code == WLAN_STATUS_SUCCESS) ||
+		(hapd->conf->sae_pwe == 1 &&
+		 status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT) ||
+		(hapd->conf->sae_pwe == 2 &&
+		 (status_code == WLAN_STATUS_SUCCESS ||
+		  status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT));
+}
+
+
 static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 			    const struct ieee80211_mgmt *mgmt, size_t len,
 			    u16 auth_transaction, u16 status_code)
@@ -1031,7 +1061,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 #endif /* CONFIG_TESTING_OPTIONS */
 	if (!sta->sae) {
 		if (auth_transaction != 1 ||
-		    status_code != WLAN_STATUS_SUCCESS) {
+		    !sae_status_success(hapd, status_code)) {
 			resp = -1;
 			goto remove_sta;
 		}
@@ -1121,7 +1151,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 			goto remove_sta;
 		}
 
-		if (status_code != WLAN_STATUS_SUCCESS)
+		if (!sae_status_success(hapd, status_code))
 			goto remove_sta;
 
 		if (!(hapd->conf->mesh & MESH_ENABLED) &&
@@ -1199,7 +1229,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 		}
 
 		resp = sae_sm_step(hapd, sta, mgmt->bssid, auth_transaction,
-				   allow_reuse, &sta_removed);
+				   status_code, allow_reuse, &sta_removed);
 	} else if (auth_transaction == 2) {
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_DEBUG,
@@ -1240,8 +1270,8 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 			}
 			sta->sae->rc = peer_send_confirm;
 		}
-		resp = sae_sm_step(hapd, sta, mgmt->bssid, auth_transaction, 0,
-			&sta_removed);
+		resp = sae_sm_step(hapd, sta, mgmt->bssid, auth_transaction,
+				   status_code, 0, &sta_removed);
 	} else {
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_DEBUG,
