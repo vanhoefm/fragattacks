@@ -1109,6 +1109,8 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 	    wpa_s->sme.sae.state == SAE_COMMITTED &&
 	    (external || wpa_s->current_bss) && wpa_s->current_ssid) {
 		wpa_dbg(wpa_s, MSG_DEBUG, "SME: SAE group not supported");
+		int_array_add_unique(&wpa_s->sme.sae_rejected_groups,
+				     wpa_s->sme.sae.group);
 		wpa_s->sme.sae_group_index++;
 		if (sme_set_sae_group(wpa_s) < 0)
 			return -1; /* no other groups enabled */
@@ -2028,6 +2030,10 @@ void sme_clear_on_disassoc(struct wpa_supplicant *wpa_s)
 void sme_deinit(struct wpa_supplicant *wpa_s)
 {
 	sme_clear_on_disassoc(wpa_s);
+#ifdef CONFIG_SAE
+	os_free(wpa_s->sme.sae_rejected_groups);
+	wpa_s->sme.sae_rejected_groups = NULL;
+#endif /* CONFIG_SAE */
 
 	eloop_cancel_timeout(sme_assoc_timer, wpa_s, NULL);
 	eloop_cancel_timeout(sme_auth_timer, wpa_s, NULL);

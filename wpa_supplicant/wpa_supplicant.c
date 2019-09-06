@@ -2010,6 +2010,10 @@ void wpa_supplicant_associate(struct wpa_supplicant *wpa_s,
 		}
 	} else {
 #ifdef CONFIG_SAE
+#ifdef CONFIG_SME
+		os_free(wpa_s->sme.sae_rejected_groups);
+		wpa_s->sme.sae_rejected_groups = NULL;
+#endif /* CONFIG_SME */
 		wpa_s_setup_sae_pt(wpa_s->conf, ssid);
 #endif /* CONFIG_SAE */
 	}
@@ -4017,6 +4021,10 @@ void wpa_supplicant_select_network(struct wpa_supplicant *wpa_s,
 
 	wpa_s->disconnected = 0;
 	wpa_s->reassociate = 1;
+#if defined(CONFIG_SAE) && defined(CONFIG_SME)
+	os_free(wpa_s->sme.sae_rejected_groups);
+	wpa_s->sme.sae_rejected_groups = NULL;
+#endif /* CONFIG_SAE && CONFIG_SME */
 	wpa_s->last_owe_group = 0;
 	if (ssid) {
 		ssid->owe_transition_bss_select_count = 0;
