@@ -1093,6 +1093,52 @@ void sme_external_auth_trigger(struct wpa_supplicant *wpa_s,
 }
 
 
+static int sme_sae_is_group_enabled(struct wpa_supplicant *wpa_s, int group)
+{
+	int *groups = wpa_s->conf->sae_groups;
+	int default_groups[] = { 19, 20, 21, 0 };
+	int i;
+
+	if (!groups)
+		groups = default_groups;
+
+	for (i = 0; groups[i] > 0; i++) {
+		if (groups[i] == group)
+			return 1;
+	}
+
+	return 0;
+}
+
+
+static int sme_check_sae_rejected_groups(struct wpa_supplicant *wpa_s,
+					 const struct wpabuf *groups)
+{
+	size_t i, count;
+	const u8 *pos;
+
+	if (!groups)
+		return 0;
+
+	pos = wpabuf_head(groups);
+	count = wpabuf_len(groups) / 2;
+	for (i = 0; i < count; i++) {
+		int enabled;
+		u16 group;
+
+		group = WPA_GET_LE16(pos);
+		pos += 2;
+		enabled = sme_sae_is_group_enabled(wpa_s, group);
+		wpa_printf(MSG_DEBUG, "SAE: Rejected group %u is %s",
+			   group, enabled ? "enabled" : "disabled");
+		if (enabled)
+			return 1;
+	}
+
+	return 0;
+}
+
+
 static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 			u16 status_code, const u8 *data, size_t len,
 			int external, const u8 *sa)
@@ -1199,6 +1245,12 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 			return 0;
 		}
 		if (res != WLAN_STATUS_SUCCESS)
+			return -1;
+
+		if (wpa_s->sme.sae.tmp &&
+		    sme_check_sae_rejected_groups(
+			    wpa_s,
+			    wpa_s->sme.sae.tmp->peer_rejected_groups) < 0)
 			return -1;
 
 		if (sae_process_commit(&wpa_s->sme.sae) < 0) {
