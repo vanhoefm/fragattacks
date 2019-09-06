@@ -1024,6 +1024,52 @@ static int sae_status_success(struct hostapd_data *hapd, u16 status_code)
 }
 
 
+static int sae_is_group_enabled(struct hostapd_data *hapd, int group)
+{
+	int *groups = hapd->conf->sae_groups;
+	int default_groups[] = { 19, 0 };
+	int i;
+
+	if (!groups)
+		groups = default_groups;
+
+	for (i = 0; groups[i] > 0; i++) {
+		if (groups[i] == group)
+			return 1;
+	}
+
+	return 0;
+}
+
+
+static int check_sae_rejected_groups(struct hostapd_data *hapd,
+				     const struct wpabuf *groups)
+{
+	size_t i, count;
+	const u8 *pos;
+
+	if (!groups)
+		return 0;
+
+	pos = wpabuf_head(groups);
+	count = wpabuf_len(groups) / 2;
+	for (i = 0; i < count; i++) {
+		int enabled;
+		u16 group;
+
+		group = WPA_GET_LE16(pos);
+		pos += 2;
+		enabled = sae_is_group_enabled(hapd, group);
+		wpa_printf(MSG_DEBUG, "SAE: Rejected group %u is %s",
+			   group, enabled ? "enabled" : "disabled");
+		if (enabled)
+			return 1;
+	}
+
+	return 0;
+}
+
+
 static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 			    const struct ieee80211_mgmt *mgmt, size_t len,
 			    u16 auth_transaction, u16 status_code)
@@ -1214,6 +1260,13 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 
 		if (resp != WLAN_STATUS_SUCCESS)
 			goto reply;
+
+		if (sta->sae->tmp &&
+		    check_sae_rejected_groups(
+			    hapd, sta->sae->tmp->peer_rejected_groups) < 0) {
+			resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
+			goto remove_sta;
+		}
 
 		if (!token && use_sae_anti_clogging(hapd) && !allow_reuse) {
 			wpa_printf(MSG_DEBUG,
