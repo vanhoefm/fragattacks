@@ -1262,6 +1262,19 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 			continue;
 		}
 
+#ifdef CONFIG_SAE
+		if (wpa_s->conf->sae_pwe == 1 &&
+		    wpa_key_mgmt_sae(ssid->key_mgmt) &&
+		    (!(ie = wpa_bss_get_ie(bss, WLAN_EID_RSNX)) ||
+		     ie[1] < 1 ||
+		     !(ie[2] & BIT(WLAN_RSNX_CAPAB_SAE_H2E)))) {
+			if (debug_print)
+				wpa_dbg(wpa_s, MSG_DEBUG,
+					"   skip - SAE H2E required, but not supported by the AP");
+			continue;
+		}
+#endif /* CONFIG_SAE */
+
 #ifndef CONFIG_IBSS_RSN
 		if (ssid->mode == WPAS_MODE_IBSS &&
 		    !(ssid->key_mgmt & (WPA_KEY_MGMT_NONE |
