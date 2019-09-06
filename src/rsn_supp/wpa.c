@@ -1365,6 +1365,16 @@ static int wpa_supplicant_validate_ie(struct wpa_sm *sm,
 		return -1;
 	}
 
+	if ((sm->ap_rsnxe && !ie->rsnxe) ||
+	    (!sm->ap_rsnxe && ie->rsnxe) ||
+	    (sm->ap_rsnxe && ie->rsnxe &&
+	     (sm->ap_rsnxe_len != ie->rsnxe_len ||
+	      os_memcmp(sm->ap_rsnxe, ie->rsnxe, sm->ap_rsnxe_len) != 0))) {
+		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
+			"WPA: RSNXE mismatch between Beacon/ProbeResp and EAPOL-Key msg 3/4");
+		return -1;
+	}
+
 #ifdef CONFIG_IEEE80211R
 	if (wpa_key_mgmt_ft(sm->key_mgmt) &&
 	    wpa_supplicant_validate_ie_ft(sm, src_addr, ie) < 0)
@@ -2664,6 +2674,7 @@ void wpa_sm_deinit(struct wpa_sm *sm)
 	os_free(sm->assoc_wpa_ie);
 	os_free(sm->ap_wpa_ie);
 	os_free(sm->ap_rsn_ie);
+	os_free(sm->ap_rsnxe);
 	wpa_sm_drop_sa(sm);
 	os_free(sm->ctx);
 #ifdef CONFIG_IEEE80211R
@@ -3277,6 +3288,39 @@ int wpa_sm_set_ap_rsn_ie(struct wpa_sm *sm, const u8 *ie, size_t len)
 			return -1;
 
 		sm->ap_rsn_ie_len = len;
+	}
+
+	return 0;
+}
+
+
+/**
+ * wpa_sm_set_ap_rsnxe - Set AP RSNXE from Beacon/ProbeResp
+ * @sm: Pointer to WPA state machine data from wpa_sm_init()
+ * @ie: Pointer to IE data (starting from id)
+ * @len: IE length
+ * Returns: 0 on success, -1 on failure
+ *
+ * Inform WPA state machine about the RSNXE used in Beacon / Probe Response
+ * frame.
+ */
+int wpa_sm_set_ap_rsnxe(struct wpa_sm *sm, const u8 *ie, size_t len)
+{
+	if (!sm)
+		return -1;
+
+	os_free(sm->ap_rsnxe);
+	if (!ie || len == 0) {
+		wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG, "WPA: clearing AP RSNXE");
+		sm->ap_rsnxe = NULL;
+		sm->ap_rsnxe_len = 0;
+	} else {
+		wpa_hexdump(MSG_DEBUG, "WPA: set AP RSNXE", ie, len);
+		sm->ap_rsnxe = os_memdup(ie, len);
+		if (!sm->ap_rsnxe)
+			return -1;
+
+		sm->ap_rsnxe_len = len;
 	}
 
 	return 0;

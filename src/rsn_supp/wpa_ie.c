@@ -506,6 +506,11 @@ int wpa_supplicant_parse_ies(const u8 *buf, size_t len,
 			ie->rsn_ie_len = pos[1] + 2;
 			wpa_hexdump(MSG_DEBUG, "WPA: RSN IE in EAPOL-Key",
 				    ie->rsn_ie, ie->rsn_ie_len);
+		} else if (*pos == WLAN_EID_RSNX) {
+			ie->rsnxe = pos;
+			ie->rsnxe_len = pos[1] + 2;
+			wpa_hexdump(MSG_DEBUG, "WPA: RSNXE in EAPOL-Key",
+				    ie->rsnxe, ie->rsnxe_len);
 		} else if (*pos == WLAN_EID_MOBILITY_DOMAIN &&
 			   pos[1] >= sizeof(struct rsn_mdie)) {
 			ie->mdie = pos;

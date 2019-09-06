@@ -23,6 +23,8 @@ struct wpa_eapol_ie_parse {
 	size_t mac_addr_len;
 	const u8 *igtk;
 	size_t igtk_len;
+	const u8 *rsnxe;
+	size_t rsnxe_len;
 	const u8 *mdie;
 	size_t mdie_len;
 	const u8 *ftie;

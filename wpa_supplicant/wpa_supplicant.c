@@ -402,6 +402,7 @@ void wpa_supplicant_set_non_wpa_policy(struct wpa_supplicant *wpa_s,
 		wpa_s->key_mgmt = WPA_KEY_MGMT_NONE;
 	wpa_sm_set_ap_wpa_ie(wpa_s->wpa, NULL, 0);
 	wpa_sm_set_ap_rsn_ie(wpa_s->wpa, NULL, 0);
+	wpa_sm_set_ap_rsnxe(wpa_s->wpa, NULL, 0);
 	wpa_sm_set_assoc_wpa_ie(wpa_s->wpa, NULL, 0);
 	wpa_s->pairwise_cipher = WPA_CIPHER_NONE;
 	wpa_s->group_cipher = WPA_CIPHER_NONE;
@@ -1233,14 +1234,16 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 {
 	struct wpa_ie_data ie;
 	int sel, proto;
-	const u8 *bss_wpa, *bss_rsn, *bss_osen;
+	const u8 *bss_wpa, *bss_rsn, *bss_rsnx, *bss_osen;
 
 	if (bss) {
 		bss_wpa = wpa_bss_get_vendor_ie(bss, WPA_IE_VENDOR_TYPE);
 		bss_rsn = wpa_bss_get_ie(bss, WLAN_EID_RSN);
+		bss_rsnx = wpa_bss_get_ie(bss, WLAN_EID_RSNX);
 		bss_osen = wpa_bss_get_vendor_ie(bss, OSEN_IE_VENDOR_TYPE);
-	} else
-		bss_wpa = bss_rsn = bss_osen = NULL;
+	} else {
+		bss_wpa = bss_rsn = bss_rsnx = bss_osen = NULL;
+	}
 
 	if (bss_rsn && (ssid->proto & WPA_PROTO_RSN) &&
 	    wpa_parse_wpa_ie(bss_rsn, 2 + bss_rsn[1], &ie) == 0 &&
@@ -1371,7 +1374,9 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 		if (wpa_sm_set_ap_wpa_ie(wpa_s->wpa, bss_wpa,
 					 bss_wpa ? 2 + bss_wpa[1] : 0) ||
 		    wpa_sm_set_ap_rsn_ie(wpa_s->wpa, bss_rsn,
-					 bss_rsn ? 2 + bss_rsn[1] : 0))
+					 bss_rsn ? 2 + bss_rsn[1] : 0) ||
+		    wpa_sm_set_ap_rsnxe(wpa_s->wpa, bss_rsnx,
+					bss_rsnx ? 2 + bss_rsnx[1] : 0))
 			return -1;
 	}
 
