@@ -1157,12 +1157,12 @@ u16 sae_parse_commit(struct sae_data *sae, const u8 *data, size_t len,
 }
 
 
-static void sae_cn_confirm(struct sae_data *sae, const u8 *sc,
-			   const struct crypto_bignum *scalar1,
-			   const u8 *element1, size_t element1_len,
-			   const struct crypto_bignum *scalar2,
-			   const u8 *element2, size_t element2_len,
-			   u8 *confirm)
+static int sae_cn_confirm(struct sae_data *sae, const u8 *sc,
+			  const struct crypto_bignum *scalar1,
+			  const u8 *element1, size_t element1_len,
+			  const struct crypto_bignum *scalar2,
+			  const u8 *element2, size_t element2_len,
+			  u8 *confirm)
 {
 	const u8 *addr[5];
 	size_t len[5];
@@ -1176,62 +1176,68 @@ static void sae_cn_confirm(struct sae_data *sae, const u8 *sc,
 	 * verifier = CN(KCK, peer-send-confirm, peer-commit-scalar,
 	 *               PEER-COMMIT-ELEMENT, commit-scalar, COMMIT-ELEMENT)
 	 */
+	if (crypto_bignum_to_bin(scalar1, scalar_b1, sizeof(scalar_b1),
+				 sae->tmp->prime_len) < 0 ||
+	    crypto_bignum_to_bin(scalar2, scalar_b2, sizeof(scalar_b2),
+				 sae->tmp->prime_len) < 0)
+		return -1;
 	addr[0] = sc;
 	len[0] = 2;
-	crypto_bignum_to_bin(scalar1, scalar_b1, sizeof(scalar_b1),
-			     sae->tmp->prime_len);
 	addr[1] = scalar_b1;
 	len[1] = sae->tmp->prime_len;
 	addr[2] = element1;
 	len[2] = element1_len;
-	crypto_bignum_to_bin(scalar2, scalar_b2, sizeof(scalar_b2),
-			     sae->tmp->prime_len);
 	addr[3] = scalar_b2;
 	len[3] = sae->tmp->prime_len;
 	addr[4] = element2;
 	len[4] = element2_len;
-	hmac_sha256_vector(sae->tmp->kck, sizeof(sae->tmp->kck), 5, addr, len,
-			   confirm);
+	return hmac_sha256_vector(sae->tmp->kck, sizeof(sae->tmp->kck),
+				  5, addr, len, confirm);
 }
 
 
-static void sae_cn_confirm_ecc(struct sae_data *sae, const u8 *sc,
-			       const struct crypto_bignum *scalar1,
-			       const struct crypto_ec_point *element1,
-			       const struct crypto_bignum *scalar2,
-			       const struct crypto_ec_point *element2,
-			       u8 *confirm)
+static int sae_cn_confirm_ecc(struct sae_data *sae, const u8 *sc,
+			      const struct crypto_bignum *scalar1,
+			      const struct crypto_ec_point *element1,
+			      const struct crypto_bignum *scalar2,
+			      const struct crypto_ec_point *element2,
+			      u8 *confirm)
 {
 	u8 element_b1[2 * SAE_MAX_ECC_PRIME_LEN];
 	u8 element_b2[2 * SAE_MAX_ECC_PRIME_LEN];
 
-	crypto_ec_point_to_bin(sae->tmp->ec, element1, element_b1,
-			       element_b1 + sae->tmp->prime_len);
-	crypto_ec_point_to_bin(sae->tmp->ec, element2, element_b2,
-			       element_b2 + sae->tmp->prime_len);
-
-	sae_cn_confirm(sae, sc, scalar1, element_b1, 2 * sae->tmp->prime_len,
-		       scalar2, element_b2, 2 * sae->tmp->prime_len, confirm);
+	if (crypto_ec_point_to_bin(sae->tmp->ec, element1, element_b1,
+				   element_b1 + sae->tmp->prime_len) < 0 ||
+	    crypto_ec_point_to_bin(sae->tmp->ec, element2, element_b2,
+				   element_b2 + sae->tmp->prime_len) < 0 ||
+	    sae_cn_confirm(sae, sc, scalar1, element_b1,
+			   2 * sae->tmp->prime_len,
+			   scalar2, element_b2, 2 * sae->tmp->prime_len,
+			   confirm) < 0)
+		return -1;
+	return 0;
 }
 
 
-static void sae_cn_confirm_ffc(struct sae_data *sae, const u8 *sc,
-			       const struct crypto_bignum *scalar1,
-			       const struct crypto_bignum *element1,
-			       const struct crypto_bignum *scalar2,
-			       const struct crypto_bignum *element2,
-			       u8 *confirm)
+static int sae_cn_confirm_ffc(struct sae_data *sae, const u8 *sc,
+			      const struct crypto_bignum *scalar1,
+			      const struct crypto_bignum *element1,
+			      const struct crypto_bignum *scalar2,
+			      const struct crypto_bignum *element2,
+			      u8 *confirm)
 {
 	u8 element_b1[SAE_MAX_PRIME_LEN];
 	u8 element_b2[SAE_MAX_PRIME_LEN];
 
-	crypto_bignum_to_bin(element1, element_b1, sizeof(element_b1),
-			     sae->tmp->prime_len);
-	crypto_bignum_to_bin(element2, element_b2, sizeof(element_b2),
-			     sae->tmp->prime_len);
-
-	sae_cn_confirm(sae, sc, scalar1, element_b1, sae->tmp->prime_len,
-		       scalar2, element_b2, sae->tmp->prime_len, confirm);
+	if (crypto_bignum_to_bin(element1, element_b1, sizeof(element_b1),
+				 sae->tmp->prime_len) < 0 ||
+	    crypto_bignum_to_bin(element2, element_b2, sizeof(element_b2),
+				 sae->tmp->prime_len) < 0 ||
+	    sae_cn_confirm(sae, sc, scalar1, element_b1, sae->tmp->prime_len,
+			   scalar2, element_b2, sae->tmp->prime_len,
+			   confirm) < 0)
+		return -1;
+	return 0;
 }
 
 
@@ -1282,22 +1288,22 @@ int sae_check_confirm(struct sae_data *sae, const u8 *data, size_t len)
 
 	if (sae->tmp->ec) {
 		if (!sae->tmp->peer_commit_element_ecc ||
-		    !sae->tmp->own_commit_element_ecc)
+		    !sae->tmp->own_commit_element_ecc ||
+		    sae_cn_confirm_ecc(sae, data, sae->peer_commit_scalar,
+				       sae->tmp->peer_commit_element_ecc,
+				       sae->tmp->own_commit_scalar,
+				       sae->tmp->own_commit_element_ecc,
+				       verifier) < 0)
 			return -1;
-		sae_cn_confirm_ecc(sae, data, sae->peer_commit_scalar,
-				   sae->tmp->peer_commit_element_ecc,
-				   sae->tmp->own_commit_scalar,
-				   sae->tmp->own_commit_element_ecc,
-				   verifier);
 	} else {
 		if (!sae->tmp->peer_commit_element_ffc ||
-		    !sae->tmp->own_commit_element_ffc)
+		    !sae->tmp->own_commit_element_ffc ||
+		    sae_cn_confirm_ffc(sae, data, sae->peer_commit_scalar,
+				       sae->tmp->peer_commit_element_ffc,
+				       sae->tmp->own_commit_scalar,
+				       sae->tmp->own_commit_element_ffc,
+				       verifier) < 0)
 			return -1;
-		sae_cn_confirm_ffc(sae, data, sae->peer_commit_scalar,
-				   sae->tmp->peer_commit_element_ffc,
-				   sae->tmp->own_commit_scalar,
-				   sae->tmp->own_commit_element_ffc,
-				   verifier);
 	}
 
 	if (os_memcmp_const(verifier, data + 2, SHA256_MAC_LEN) != 0) {
