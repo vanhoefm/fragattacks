@@ -1099,7 +1099,8 @@ static int sae_parse_password_identifier(struct sae_data *sae,
 
 
 u16 sae_parse_commit(struct sae_data *sae, const u8 *data, size_t len,
-		     const u8 **token, size_t *token_len, int *allowed_groups)
+		     const u8 **token, size_t *token_len, int *allowed_groups,
+		     int h2e)
 {
 	const u8 *pos = data, *end = data + len;
 	u16 res;
