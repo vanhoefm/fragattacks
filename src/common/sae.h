@@ -43,6 +43,7 @@ struct sae_temporary_data {
 	char *pw_id;
 	int vlan_id;
 	u8 bssid[ETH_ALEN];
+	struct wpabuf *peer_rejected_groups;
 };
 
 enum sae_state {

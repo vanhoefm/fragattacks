@@ -107,6 +107,7 @@ void sae_clear_temp_data(struct sae_data *sae)
 	crypto_ec_point_deinit(tmp->own_commit_element_ecc, 0);
 	crypto_ec_point_deinit(tmp->peer_commit_element_ecc, 0);
 	wpabuf_free(tmp->anti_clogging_token);
+	wpabuf_free(tmp->peer_rejected_groups);
 	os_free(tmp->pw_id);
 	bin_clear_free(tmp, sizeof(*tmp));
 	sae->tmp = NULL;
@@ -849,9 +850,19 @@ static int sae_is_password_id_elem(const u8 *pos, const u8 *end)
 }
 
 
+static int sae_is_rejected_groups_elem(const u8 *pos, const u8 *end)
+{
+	return end - pos >= 3 &&
+		pos[0] == WLAN_EID_EXTENSION &&
+		pos[1] >= 2 &&
+		end - pos - 2 >= pos[1] &&
+		pos[2] == WLAN_EID_EXT_REJECTED_GROUPS;
+}
+
+
 static void sae_parse_commit_token(struct sae_data *sae, const u8 **pos,
 				   const u8 *end, const u8 **token,
-				   size_t *token_len)
+				   size_t *token_len, int h2e)
 {
 	size_t scalar_elem_len, tlen;
 	const u8 *elem;
@@ -872,6 +883,8 @@ static void sae_parse_commit_token(struct sae_data *sae, const u8 **pos,
 	 * fields, so use that length as a requirement for the received
 	 * token and check for the presence of possible Password
 	 * Identifier element based on the element header information.
+	 * When parsing H2E case, also consider the Rejected Groupd element
+	 * similarly.
 	 */
 	tlen = end - (*pos + scalar_elem_len);
 
@@ -889,10 +902,25 @@ static void sae_parse_commit_token(struct sae_data *sae, const u8 **pos,
 		  * this frame. */
 		return;
 	}
+	if (h2e && sae_is_rejected_groups_elem(elem, end)) {
+		 /* Rejected Groups takes out all available extra octets, so
+		  * there can be no Anti-Clogging token in this frame. */
+		return;
+	}
 
 	elem += SHA256_MAC_LEN;
 	if (sae_is_password_id_elem(elem, end)) {
 		 /* Password Identifier element is included in the end, so
+		  * remove its length from the Anti-Clogging token field. */
+		tlen -= 2 + elem[1];
+		elem += 2 + elem[1];
+		if (h2e && sae_is_rejected_groups_elem(elem, end)) {
+			/* Also remove Rejected Groups element from the
+			 * Anti-Clogging token field length */
+			tlen -= 2 + elem[1];
+		}
+	} else if (h2e && sae_is_rejected_groups_elem(elem, end)) {
+		 /* Rejected Groups element is included in the end, so
 		  * remove its length from the Anti-Clogging token field. */
 		tlen -= 2 + elem[1];
 	}
@@ -1061,11 +1089,11 @@ static u16 sae_parse_commit_element(struct sae_data *sae, const u8 **pos,
 
 
 static int sae_parse_password_identifier(struct sae_data *sae,
-					 const u8 *pos, const u8 *end)
+					 const u8 **pos, const u8 *end)
 {
 	wpa_hexdump(MSG_DEBUG, "SAE: Possible elements at the end of the frame",
-		    pos, end - pos);
-	if (!sae_is_password_id_elem(pos, end)) {
+		    *pos, end - *pos);
+	if (!sae_is_password_id_elem(*pos, end)) {
 		if (sae->tmp->pw_id) {
 			wpa_printf(MSG_DEBUG,
 				   "SAE: No Password Identifier included, but expected one (%s)",
@@ -1078,8 +1106,8 @@ static int sae_parse_password_identifier(struct sae_data *sae,
 	}
 
 	if (sae->tmp->pw_id &&
-	    (pos[1] - 1 != (int) os_strlen(sae->tmp->pw_id) ||
-	     os_memcmp(sae->tmp->pw_id, pos + 3, pos[1] - 1) != 0)) {
+	    ((*pos)[1] - 1 != (int) os_strlen(sae->tmp->pw_id) ||
+	     os_memcmp(sae->tmp->pw_id, (*pos) + 3, (*pos)[1] - 1) != 0)) {
 		wpa_printf(MSG_DEBUG,
 			   "SAE: The included Password Identifier does not match the expected one (%s)",
 			   sae->tmp->pw_id);
@@ -1087,13 +1115,32 @@ static int sae_parse_password_identifier(struct sae_data *sae,
 	}
 
 	os_free(sae->tmp->pw_id);
-	sae->tmp->pw_id = os_malloc(pos[1]);
+	sae->tmp->pw_id = os_malloc((*pos)[1]);
 	if (!sae->tmp->pw_id)
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
-	os_memcpy(sae->tmp->pw_id, pos + 3, pos[1] - 1);
-	sae->tmp->pw_id[pos[1] - 1] = '\0';
+	os_memcpy(sae->tmp->pw_id, (*pos) + 3, (*pos)[1] - 1);
+	sae->tmp->pw_id[(*pos)[1] - 1] = '\0';
 	wpa_hexdump_ascii(MSG_DEBUG, "SAE: Received Password Identifier",
-			  sae->tmp->pw_id, pos[1] -  1);
+			  sae->tmp->pw_id, (*pos)[1] -  1);
+	*pos = *pos + 2 + (*pos)[1];
+	return WLAN_STATUS_SUCCESS;
+}
+
+
+static int sae_parse_rejected_groups(struct sae_data *sae,
+				     const u8 *pos, const u8 *end)
+{
+	wpa_hexdump(MSG_DEBUG, "SAE: Possible elements at the end of the frame",
+		    pos, end - pos);
+	if (!sae_is_rejected_groups_elem(pos, end))
+		return WLAN_STATUS_SUCCESS;
+	wpabuf_free(sae->tmp->peer_rejected_groups);
+	sae->tmp->peer_rejected_groups = wpabuf_alloc(pos[1] - 1);
+	if (!sae->tmp->peer_rejected_groups)
+		return WLAN_STATUS_UNSPECIFIED_FAILURE;
+	wpabuf_put_data(sae->tmp->peer_rejected_groups, pos + 3, pos[1] - 1);
+	wpa_hexdump_buf(MSG_DEBUG, "SAE: Received Rejected Groups list",
+			sae->tmp->peer_rejected_groups);
 	return WLAN_STATUS_SUCCESS;
 }
 
@@ -1114,7 +1161,7 @@ u16 sae_parse_commit(struct sae_data *sae, const u8 *data, size_t len,
 	pos += 2;
 
 	/* Optional Anti-Clogging Token */
-	sae_parse_commit_token(sae, &pos, end, token, token_len);
+	sae_parse_commit_token(sae, &pos, end, token, token_len, h2e);
 
 	/* commit-scalar */
 	res = sae_parse_commit_scalar(sae, &pos, end);
@@ -1127,9 +1174,16 @@ u16 sae_parse_commit(struct sae_data *sae, const u8 *data, size_t len,
 		return res;
 
 	/* Optional Password Identifier element */
-	res = sae_parse_password_identifier(sae, pos, end);
+	res = sae_parse_password_identifier(sae, &pos, end);
 	if (res != WLAN_STATUS_SUCCESS)
 		return res;
+
+	/* Conditional Rejected Groups element */
+	if (h2e) {
+		res = sae_parse_rejected_groups(sae, pos, end);
+		if (res != WLAN_STATUS_SUCCESS)
+			return res;
+	}
 
 	/*
 	 * Check whether peer-commit-scalar and PEER-COMMIT-ELEMENT are same as
