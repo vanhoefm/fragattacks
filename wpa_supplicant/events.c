@@ -850,6 +850,19 @@ static int rate_match(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 				continue;
 			}
 
+#ifdef CONFIG_SAE
+			if (flagged && ((rate_ie[j] & 0x7f) ==
+					BSS_MEMBERSHIP_SELECTOR_SAE_H2E_ONLY)) {
+				if (wpa_s->conf->sae_pwe == 0) {
+					if (debug_print)
+						wpa_dbg(wpa_s, MSG_DEBUG,
+							"   SAE H2E disabled");
+					return 0;
+				}
+				continue;
+			}
+#endif /* CONFIG_SAE */
+
 			if (!flagged)
 				continue;
 
