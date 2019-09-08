@@ -953,8 +953,12 @@ endif
 ifdef CONFIG_DPP
 OBJS += ../src/ap/dpp_hostapd.o
 OBJS += ../src/ap/gas_query_ap.o
+NEED_AP_GAS_SERV=y
 endif
 ifdef CONFIG_INTERWORKING
+NEED_AP_GAS_SERV=y
+endif
+ifdef NEED_AP_GAS_SERV
 OBJS += ../src/ap/gas_serv.o
 endif
 ifdef CONFIG_HS20
