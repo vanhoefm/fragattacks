@@ -93,6 +93,7 @@ OBJS += src/utils/common.c
 OBJS += src/utils/wpa_debug.c
 OBJS += src/utils/wpabuf.c
 OBJS += src/utils/bitfield.c
+OBJS += src/utils/ip_addr.c
 OBJS += wmm_ac.c
 OBJS += op_classes.c
 OBJS += rrm.c
@@ -244,6 +245,7 @@ NEED_HMAC_SHA384_KDF=y
 NEED_HMAC_SHA512_KDF=y
 NEED_SHA384=y
 NEED_SHA512=y
+NEED_ECC=y
 NEED_JSON=y
 NEED_GAS_SERVER=y
 NEED_BASE64=y
@@ -837,7 +839,6 @@ OBJS += src/ap/wpa_auth_glue.c
 OBJS += src/ap/utils.c
 OBJS += src/ap/authsrv.c
 OBJS += src/ap/ap_config.c
-OBJS += src/utils/ip_addr.c
 OBJS += src/ap/sta_info.c
 OBJS += src/ap/tkip_countermeasures.c
 OBJS += src/ap/ap_mlme.c
@@ -1602,9 +1603,6 @@ OBJS += wpa_supplicant.c events.c blacklist.c wpas_glue.c scan.c
 OBJS_t := $(OBJS) $(OBJS_l2) eapol_test.c
 OBJS_t += src/radius/radius_client.c
 OBJS_t += src/radius/radius.c
-ifndef CONFIG_AP
-OBJS_t += src/utils/ip_addr.c
-endif
 OBJS_t2 := $(OBJS) $(OBJS_l2) preauth_test.c
 OBJS += $(CONFIG_MAIN).c
 
