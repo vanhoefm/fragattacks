@@ -1406,12 +1406,10 @@ static u16 wpa_res_to_status_code(int res)
 		return WLAN_STATUS_AKMP_NOT_VALID;
 	if (res == WPA_ALLOC_FAIL)
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
-#ifdef CONFIG_IEEE80211W
 	if (res == WPA_MGMT_FRAME_PROTECTION_VIOLATION)
 		return WLAN_STATUS_ROBUST_MGMT_FRAME_POLICY_VIOLATION;
 	if (res == WPA_INVALID_MGMT_GROUP_CIPHER)
 		return WLAN_STATUS_CIPHER_REJECTED_PER_POLICY;
-#endif /* CONFIG_IEEE80211W */
 	if (res == WPA_INVALID_MDIE)
 		return WLAN_STATUS_INVALID_MDIE;
 	if (res == WPA_INVALID_PMKID)
@@ -3078,7 +3076,6 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 		resp = wpa_res_to_status_code(res);
 		if (resp != WLAN_STATUS_SUCCESS)
 			return resp;
-#ifdef CONFIG_IEEE80211W
 		if ((sta->flags & (WLAN_STA_ASSOC | WLAN_STA_MFP)) ==
 		    (WLAN_STA_ASSOC | WLAN_STA_MFP) &&
 		    !sta->sa_query_timed_out &&
@@ -3105,7 +3102,6 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 			sta->flags |= WLAN_STA_MFP;
 		else
 			sta->flags &= ~WLAN_STA_MFP;
-#endif /* CONFIG_IEEE80211W */
 
 #ifdef CONFIG_IEEE80211R_AP
 		if (sta->auth_alg == WLAN_AUTH_FT) {
@@ -3550,10 +3546,8 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 						  ies, ies_len);
 #endif /* CONFIG_OWE */
 
-#ifdef CONFIG_IEEE80211W
 	if (sta && status_code == WLAN_STATUS_ASSOC_REJECTED_TEMPORARILY)
 		p = hostapd_eid_assoc_comeback_time(hapd, sta, p);
-#endif /* CONFIG_IEEE80211W */
 
 #ifdef CONFIG_IEEE80211N
 	p = hostapd_eid_ht_capabilities(hapd, p);
@@ -4151,7 +4145,6 @@ static void handle_assoc(struct hostapd_data *hapd,
 	 */
 	sta->flags |= WLAN_STA_ASSOC_REQ_OK;
 
-#ifdef CONFIG_IEEE80211W
 	if ((sta->flags & WLAN_STA_MFP) && sta->sa_query_timed_out) {
 		wpa_printf(MSG_DEBUG, "Allowing %sassociation after timed out "
 			   "SA Query procedure", reassoc ? "re" : "");
@@ -4162,7 +4155,6 @@ static void handle_assoc(struct hostapd_data *hapd,
 		 * trying to associate.
 		 */
 	}
-#endif /* CONFIG_IEEE80211W */
 
 	/* Make sure that the previously registered inactivity timer will not
 	 * remove the STA immediately. */
@@ -4387,13 +4379,11 @@ static void handle_beacon(struct hostapd_data *hapd,
 }
 
 
-#ifdef CONFIG_IEEE80211W
 static int robust_action_frame(u8 category)
 {
 	return category != WLAN_ACTION_PUBLIC &&
 		category != WLAN_ACTION_HT;
 }
-#endif /* CONFIG_IEEE80211W */
 
 
 static int handle_action(struct hostapd_data *hapd,
@@ -4427,7 +4417,6 @@ static int handle_action(struct hostapd_data *hapd,
 		return 0;
 	}
 
-#ifdef CONFIG_IEEE80211W
 	if (sta && (sta->flags & WLAN_STA_MFP) &&
 	    !(mgmt->frame_control & host_to_le16(WLAN_FC_ISWEP)) &&
 	    robust_action_frame(mgmt->u.action.category)) {
@@ -4437,7 +4426,6 @@ static int handle_action(struct hostapd_data *hapd,
 			       "an MFP STA");
 		return 0;
 	}
-#endif /* CONFIG_IEEE80211W */
 
 	if (sta) {
 		u16 fc = le_to_host16(mgmt->frame_control);
@@ -4471,11 +4459,9 @@ static int handle_action(struct hostapd_data *hapd,
 	case WLAN_ACTION_WMM:
 		hostapd_wmm_action(hapd, mgmt, len);
 		return 1;
-#ifdef CONFIG_IEEE80211W
 	case WLAN_ACTION_SA_QUERY:
 		ieee802_11_sa_query_action(hapd, mgmt, len);
 		return 1;
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_WNM_AP
 	case WLAN_ACTION_WNM:
 		ieee802_11_rx_wnm_action_ap(hapd, mgmt, len);
@@ -4857,9 +4843,7 @@ static void handle_assoc_cb(struct hostapd_data *hapd,
 	else
 		mlme_associate_indication(hapd, sta);
 
-#ifdef CONFIG_IEEE80211W
 	sta->sa_query_timed_out = 0;
-#endif /* CONFIG_IEEE80211W */
 
 	if (sta->eapol_sm == NULL) {
 		/*

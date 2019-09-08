@@ -1433,9 +1433,7 @@ static const char *network_fields[] = {
 	"mode",
 #endif /* CONFIG_MESH */
 	"proactive_key_caching", "disabled", "id_str",
-#ifdef CONFIG_IEEE80211W
 	"ieee80211w",
-#endif /* CONFIG_IEEE80211W */
 	"mixed_cell", "frequency", "fixed_freq",
 #ifdef CONFIG_MESH
 	"mesh_basic_rates", "dot11MeshMaxRetries",

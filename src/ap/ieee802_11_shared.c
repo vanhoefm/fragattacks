@@ -19,8 +19,6 @@
 #include "ieee802_11.h"
 
 
-#ifdef CONFIG_IEEE80211W
-
 u8 * hostapd_eid_assoc_comeback_time(struct hostapd_data *hapd,
 				     struct sta_info *sta, u8 *eid)
 {
@@ -303,8 +301,6 @@ void ieee802_11_sa_query_action(struct hostapd_data *hapd,
 		       "Reply to pending SA Query received");
 	ap_sta_stop_sa_query(hapd, sta);
 }
-
-#endif /* CONFIG_IEEE80211W */
 
 
 static void hostapd_ext_capab_byte(struct hostapd_data *hapd, u8 *pos, int idx)

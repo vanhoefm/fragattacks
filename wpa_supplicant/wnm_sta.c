@@ -271,7 +271,6 @@ static void wnm_sleep_mode_exit_success(struct wpa_supplicant *wpa_s,
 				WNM_SLEEP_SUBELEM_GTK,
 				ptr);
 			ptr += 13 + gtk_len;
-#ifdef CONFIG_IEEE80211W
 		} else if (*ptr == WNM_SLEEP_SUBELEM_IGTK) {
 			if (ptr[1] < 2 + 6 + WPA_IGTK_LEN) {
 				wpa_printf(MSG_DEBUG, "WNM: Too short IGTK "
@@ -281,7 +280,6 @@ static void wnm_sleep_mode_exit_success(struct wpa_supplicant *wpa_s,
 			wpa_wnmsleep_install_key(wpa_s->wpa,
 						 WNM_SLEEP_SUBELEM_IGTK, ptr);
 			ptr += 10 + WPA_IGTK_LEN;
-#endif /* CONFIG_IEEE80211W */
 		} else
 			break; /* skip the loop */
 	}

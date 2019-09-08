@@ -104,9 +104,7 @@ WPA_CIPHER_BIP_CMAC_256)
 #endif
 #define RSN_KEY_DATA_MAC_ADDR RSN_SELECTOR(0x00, 0x0f, 0xac, 3)
 #define RSN_KEY_DATA_PMKID RSN_SELECTOR(0x00, 0x0f, 0xac, 4)
-#ifdef CONFIG_IEEE80211W
 #define RSN_KEY_DATA_IGTK RSN_SELECTOR(0x00, 0x0f, 0xac, 9)
-#endif /* CONFIG_IEEE80211W */
 #define RSN_KEY_DATA_KEYID RSN_SELECTOR(0x00, 0x0f, 0xac, 10)
 #define RSN_KEY_DATA_MULTIBAND_GTK RSN_SELECTOR(0x00, 0x0f, 0xac, 11)
 #define RSN_KEY_DATA_MULTIBAND_KEYID RSN_SELECTOR(0x00, 0x0f, 0xac, 12)
@@ -130,10 +128,8 @@ WPA_CIPHER_BIP_CMAC_256)
 #pragma pack(push, 1)
 #endif /* _MSC_VER */
 
-#ifdef CONFIG_IEEE80211W
 #define WPA_IGTK_LEN 16
 #define WPA_IGTK_MAX_LEN 32
-#endif /* CONFIG_IEEE80211W */
 
 
 /* IEEE 802.11, 7.3.2.25.3 RSN Capabilities */
@@ -226,12 +222,10 @@ struct wpa_gtk {
 	size_t gtk_len;
 };
 
-#ifdef CONFIG_IEEE80211W
 struct wpa_igtk {
 	u8 igtk[WPA_IGTK_MAX_LEN];
 	size_t igtk_len;
 };
-#endif /* CONFIG_IEEE80211W */
 
 /* WPA IE version 1
  * 00-50-f2:1 (OUI:OUI type)
@@ -291,14 +285,12 @@ struct rsn_error_kde {
 	be16 error_type;
 } STRUCT_PACKED;
 
-#ifdef CONFIG_IEEE80211W
 #define WPA_IGTK_KDE_PREFIX_LEN (2 + 6)
 struct wpa_igtk_kde {
 	u8 keyid[2];
 	u8 pn[6];
 	u8 igtk[WPA_IGTK_MAX_LEN];
 } STRUCT_PACKED;
-#endif /* CONFIG_IEEE80211W */
 
 struct rsn_mdie {
 	u8 mobility_domain[MOBILITY_DOMAIN_ID_LEN];

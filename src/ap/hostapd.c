@@ -299,7 +299,6 @@ static void hostapd_broadcast_key_clear_iface(struct hostapd_data *hapd,
 				   ifname, i);
 		}
 	}
-#ifdef CONFIG_IEEE80211W
 	if (hapd->conf->ieee80211w) {
 		for (i = NUM_WEP_KEYS; i < NUM_WEP_KEYS + 2; i++) {
 			if (hostapd_drv_set_key(ifname, hapd, WPA_ALG_NONE,
@@ -311,7 +310,6 @@ static void hostapd_broadcast_key_clear_iface(struct hostapd_data *hapd,
 			}
 		}
 	}
-#endif /* CONFIG_IEEE80211W */
 }
 
 

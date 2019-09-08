@@ -150,7 +150,6 @@ static int ieee802_11_send_wnmsleep_resp(struct hostapd_data *hapd,
 		pos += gtk_elem_len;
 		wpa_printf(MSG_DEBUG, "Pass 4, gtk_len = %d",
 			   (int) gtk_elem_len);
-#ifdef CONFIG_IEEE80211W
 		res = wpa_wnmsleep_igtk_subelem(sta->wpa_sm, pos);
 		if (res < 0)
 			goto fail;
@@ -158,7 +157,6 @@ static int ieee802_11_send_wnmsleep_resp(struct hostapd_data *hapd,
 		pos += igtk_elem_len;
 		wpa_printf(MSG_DEBUG, "Pass 4 igtk_len = %d",
 			   (int) igtk_elem_len);
-#endif /* CONFIG_IEEE80211W */
 
 		WPA_PUT_LE16((u8 *)
 			     &mgmt->u.action.u.wnm_sleep_resp.keydata_len,

@@ -37,9 +37,7 @@
 static void sme_auth_timer(void *eloop_ctx, void *timeout_ctx);
 static void sme_assoc_timer(void *eloop_ctx, void *timeout_ctx);
 static void sme_obss_scan_timeout(void *eloop_ctx, void *timeout_ctx);
-#ifdef CONFIG_IEEE80211W
 static void sme_stop_sa_query(struct wpa_supplicant *wpa_s);
-#endif /* CONFIG_IEEE80211W */
 
 
 #ifdef CONFIG_SAE
@@ -492,7 +490,6 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 	}
 #endif /* CONFIG_IEEE80211R */
 
-#ifdef CONFIG_IEEE80211W
 	wpa_s->sme.mfp = wpas_get_ssid_pmf(wpa_s, ssid);
 	if (wpa_s->sme.mfp != NO_MGMT_FRAME_PROTECTION) {
 		const u8 *rsn = wpa_bss_get_ie(bss, WLAN_EID_RSN);
@@ -505,7 +502,6 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 			wpa_s->sme.mfp = MGMT_FRAME_PROTECTION_REQUIRED;
 		}
 	}
-#endif /* CONFIG_IEEE80211W */
 
 #ifdef CONFIG_P2P
 	if (wpa_s->global->p2p) {
@@ -2024,9 +2020,7 @@ void sme_clear_on_disassoc(struct wpa_supplicant *wpa_s)
 	if (wpa_s->sme.ft_ies || wpa_s->sme.ft_used)
 		sme_update_ft_ies(wpa_s, NULL, NULL, 0);
 #endif /* CONFIG_IEEE80211R */
-#ifdef CONFIG_IEEE80211W
 	sme_stop_sa_query(wpa_s);
-#endif /* CONFIG_IEEE80211W */
 }
 
 
@@ -2321,8 +2315,6 @@ void sme_sched_obss_scan(struct wpa_supplicant *wpa_s, int enable)
 }
 
 
-#ifdef CONFIG_IEEE80211W
-
 static const unsigned int sa_query_max_timeout = 1000;
 static const unsigned int sa_query_retry_timeout = 201;
 static const unsigned int sa_query_ch_switch_max_delay = 5000; /* in usec */
@@ -2611,5 +2603,3 @@ void sme_sa_query_rx(struct wpa_supplicant *wpa_s, const u8 *sa,
 	else if (data[0] == WLAN_SA_QUERY_RESPONSE)
 		sme_process_sa_query_response(wpa_s, sa, data, len);
 }
-
-#endif /* CONFIG_IEEE80211W */

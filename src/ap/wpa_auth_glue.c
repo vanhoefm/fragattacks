@@ -64,11 +64,9 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 	wconf->ocv = conf->ocv;
 #endif /* CONFIG_OCV */
 	wconf->okc = conf->okc;
-#ifdef CONFIG_IEEE80211W
 	wconf->ieee80211w = conf->ieee80211w;
 	wconf->group_mgmt_cipher = conf->group_mgmt_cipher;
 	wconf->sae_require_mfp = conf->sae_require_mfp;
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_IEEE80211R_AP
 	wconf->ssid_len = conf->ssid.ssid_len;
 	if (wconf->ssid_len > SSID_MAX_LEN)
@@ -107,9 +105,7 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 		wconf->rsn_pairwise = WPA_CIPHER_CCMP;
 		wconf->rsn_preauth = 0;
 		wconf->disable_pmksa_caching = 1;
-#ifdef CONFIG_IEEE80211W
 		wconf->ieee80211w = 1;
-#endif /* CONFIG_IEEE80211W */
 	}
 #endif /* CONFIG_HS20 */
 #ifdef CONFIG_TESTING_OPTIONS
@@ -380,7 +376,6 @@ static int hostapd_wpa_auth_set_key(void *ctx, int vlan_id, enum wpa_alg alg,
 				os_memcpy(sta->last_tk, key, key_len);
 			sta->last_tk_len = key_len;
 		}
-#ifdef CONFIG_IEEE80211W
 	} else if (alg == WPA_ALG_IGTK ||
 		   alg == WPA_ALG_BIP_GMAC_128 ||
 		   alg == WPA_ALG_BIP_GMAC_256 ||
@@ -390,7 +385,6 @@ static int hostapd_wpa_auth_set_key(void *ctx, int vlan_id, enum wpa_alg alg,
 		if (key)
 			os_memcpy(hapd->last_igtk, key, key_len);
 		hapd->last_igtk_len = key_len;
-#endif /* CONFIG_IEEE80211W */
 	} else {
 		hapd->last_gtk_alg = alg;
 		hapd->last_gtk_key_idx = idx;

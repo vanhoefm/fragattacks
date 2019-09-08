@@ -45,7 +45,6 @@ endif
 OBJS_lib += ../src/utils/libutils.a
 OBJS_lib += ../src/crypto/libcrypto.a
 
-CFLAGS += -DCONFIG_IEEE80211W
 CFLAGS += -DCONFIG_OCV
 CFLAGS += -DCONFIG_IEEE80211R
 CFLAGS += -DCONFIG_HS20

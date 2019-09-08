@@ -863,10 +863,8 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	INT(pbss);
 	INT(wps_disabled);
 	INT(fils_dh_group);
-#ifdef CONFIG_IEEE80211W
 	write_int(f, "ieee80211w", ssid->ieee80211w,
 		  MGMT_FRAME_PROTECTION_DEFAULT);
-#endif /* CONFIG_IEEE80211W */
 	STR(id_str);
 #ifdef CONFIG_P2P
 	write_go_p2p_dev_addr(f, ssid);

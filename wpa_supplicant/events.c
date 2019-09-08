@@ -615,7 +615,6 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 			break;
 		}
 
-#ifdef CONFIG_IEEE80211W
 		if (!(ie.capabilities & WPA_CAPABILITY_MFPC) &&
 		    wpas_get_ssid_pmf(wpa_s, ssid) ==
 		    MGMT_FRAME_PROTECTION_REQUIRED) {
@@ -624,7 +623,6 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 					"   skip RSN IE - no mgmt frame protection");
 			break;
 		}
-#endif /* CONFIG_IEEE80211W */
 		if ((ie.capabilities & WPA_CAPABILITY_MFPR) &&
 		    wpas_get_ssid_pmf(wpa_s, ssid) ==
 		    NO_MGMT_FRAME_PROTECTION) {
@@ -655,7 +653,6 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 		return 1;
 	}
 
-#ifdef CONFIG_IEEE80211W
 	if (wpas_get_ssid_pmf(wpa_s, ssid) == MGMT_FRAME_PROTECTION_REQUIRED &&
 	    (!(ssid->key_mgmt & WPA_KEY_MGMT_OWE) || ssid->owe_only)) {
 		if (debug_print)
@@ -663,7 +660,6 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 				"   skip - MFP Required but network not MFP Capable");
 		return 0;
 	}
-#endif /* CONFIG_IEEE80211W */
 
 	wpa_ie = wpa_bss_get_vendor_ie(bss, WPA_IE_VENDOR_TYPE);
 	while ((ssid->proto & WPA_PROTO_WPA) && wpa_ie) {
@@ -3518,26 +3514,22 @@ static void ft_rx_action(struct wpa_supplicant *wpa_s, const u8 *data,
 static void wpa_supplicant_event_unprot_deauth(struct wpa_supplicant *wpa_s,
 					       struct unprot_deauth *e)
 {
-#ifdef CONFIG_IEEE80211W
 	wpa_printf(MSG_DEBUG, "Unprotected Deauthentication frame "
 		   "dropped: " MACSTR " -> " MACSTR
 		   " (reason code %u)",
 		   MAC2STR(e->sa), MAC2STR(e->da), e->reason_code);
 	sme_event_unprot_disconnect(wpa_s, e->sa, e->da, e->reason_code);
-#endif /* CONFIG_IEEE80211W */
 }
 
 
 static void wpa_supplicant_event_unprot_disassoc(struct wpa_supplicant *wpa_s,
 						 struct unprot_disassoc *e)
 {
-#ifdef CONFIG_IEEE80211W
 	wpa_printf(MSG_DEBUG, "Unprotected Disassociation frame "
 		   "dropped: " MACSTR " -> " MACSTR
 		   " (reason code %u)",
 		   MAC2STR(e->sa), MAC2STR(e->da), e->reason_code);
 	sme_event_unprot_disconnect(wpa_s, e->sa, e->da, e->reason_code);
-#endif /* CONFIG_IEEE80211W */
 }
 
 
@@ -3795,14 +3787,12 @@ static void wpas_event_rx_mgmt_action(struct wpa_supplicant *wpa_s,
 	}
 #endif /* CONFIG_IEEE80211R */
 
-#ifdef CONFIG_IEEE80211W
 #ifdef CONFIG_SME
 	if (category == WLAN_ACTION_SA_QUERY) {
 		sme_sa_query_rx(wpa_s, mgmt->sa, payload, plen);
 		return;
 	}
 #endif /* CONFIG_SME */
-#endif /* CONFIG_IEEE80211W */
 
 #ifdef CONFIG_WNM
 	if (mgmt->u.action.category == WLAN_ACTION_WNM) {
@@ -4516,9 +4506,7 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		}
 #endif /* CONFIG_AP */
 
-#ifdef CONFIG_IEEE80211W
 		sme_event_ch_switch(wpa_s);
-#endif /* CONFIG_IEEE80211W */
 		wpas_p2p_update_channel_list(wpa_s, WPAS_P2P_CHANNEL_UPDATE_CS);
 		wnm_clear_coloc_intf_reporting(wpa_s);
 		break;

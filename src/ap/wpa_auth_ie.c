@@ -183,7 +183,6 @@ int wpa_write_rsn_ie(struct wpa_auth_config *conf, u8 *buf, size_t len,
 		num_suites++;
 	}
 #endif /* CONFIG_IEEE80211R_AP */
-#ifdef CONFIG_IEEE80211W
 	if (conf->wpa_key_mgmt & WPA_KEY_MGMT_IEEE8021X_SHA256) {
 		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_802_1X_SHA256);
 		pos += RSN_SELECTOR_LEN;
@@ -194,7 +193,6 @@ int wpa_write_rsn_ie(struct wpa_auth_config *conf, u8 *buf, size_t len,
 		pos += RSN_SELECTOR_LEN;
 		num_suites++;
 	}
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_SAE
 	if (conf->wpa_key_mgmt & WPA_KEY_MGMT_SAE) {
 		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_SAE);
@@ -286,13 +284,11 @@ int wpa_write_rsn_ie(struct wpa_auth_config *conf, u8 *buf, size_t len,
 		/* 4 PTKSA replay counters when using WMM */
 		capab |= (RSN_NUM_REPLAY_COUNTERS_16 << 2);
 	}
-#ifdef CONFIG_IEEE80211W
 	if (conf->ieee80211w != NO_MGMT_FRAME_PROTECTION) {
 		capab |= WPA_CAPABILITY_MFPC;
 		if (conf->ieee80211w == MGMT_FRAME_PROTECTION_REQUIRED)
 			capab |= WPA_CAPABILITY_MFPR;
 	}
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_OCV
 	if (conf->ocv)
 		capab |= WPA_CAPABILITY_OCVC;
@@ -314,7 +310,6 @@ int wpa_write_rsn_ie(struct wpa_auth_config *conf, u8 *buf, size_t len,
 		pos += PMKID_LEN;
 	}
 
-#ifdef CONFIG_IEEE80211W
 	if (conf->ieee80211w != NO_MGMT_FRAME_PROTECTION &&
 	    conf->group_mgmt_cipher != WPA_CIPHER_AES_128_CMAC) {
 		if (2 + 4 > buf + len - pos)
@@ -347,7 +342,6 @@ int wpa_write_rsn_ie(struct wpa_auth_config *conf, u8 *buf, size_t len,
 		}
 		pos += RSN_SELECTOR_LEN;
 	}
-#endif /* CONFIG_IEEE80211W */
 
 #ifdef CONFIG_RSN_TESTING
 	if (rsn_testing) {
@@ -411,13 +405,11 @@ static u8 * wpa_write_osen(struct wpa_auth_config *conf, u8 *eid)
 		/* 4 PTKSA replay counters when using WMM */
 		capab |= (RSN_NUM_REPLAY_COUNTERS_16 << 2);
 	}
-#ifdef CONFIG_IEEE80211W
 	if (conf->ieee80211w != NO_MGMT_FRAME_PROTECTION) {
 		capab |= WPA_CAPABILITY_MFPC;
 		if (conf->ieee80211w == MGMT_FRAME_PROTECTION_REQUIRED)
 			capab |= WPA_CAPABILITY_MFPR;
 	}
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_OCV
 	if (conf->ocv)
 		capab |= WPA_CAPABILITY_OCVC;
@@ -607,12 +599,10 @@ int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 		else if (data.key_mgmt & WPA_KEY_MGMT_FT_PSK)
 			selector = RSN_AUTH_KEY_MGMT_FT_PSK;
 #endif /* CONFIG_IEEE80211R_AP */
-#ifdef CONFIG_IEEE80211W
 		else if (data.key_mgmt & WPA_KEY_MGMT_IEEE8021X_SHA256)
 			selector = RSN_AUTH_KEY_MGMT_802_1X_SHA256;
 		else if (data.key_mgmt & WPA_KEY_MGMT_PSK_SHA256)
 			selector = RSN_AUTH_KEY_MGMT_PSK_SHA256;
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_SAE
 		else if (data.key_mgmt & WPA_KEY_MGMT_SAE)
 			selector = RSN_AUTH_KEY_MGMT_SAE;
@@ -717,12 +707,10 @@ int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 	else if (key_mgmt & WPA_KEY_MGMT_FT_PSK)
 		sm->wpa_key_mgmt = WPA_KEY_MGMT_FT_PSK;
 #endif /* CONFIG_IEEE80211R_AP */
-#ifdef CONFIG_IEEE80211W
 	else if (key_mgmt & WPA_KEY_MGMT_IEEE8021X_SHA256)
 		sm->wpa_key_mgmt = WPA_KEY_MGMT_IEEE8021X_SHA256;
 	else if (key_mgmt & WPA_KEY_MGMT_PSK_SHA256)
 		sm->wpa_key_mgmt = WPA_KEY_MGMT_PSK_SHA256;
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_SAE
 	else if (key_mgmt & WPA_KEY_MGMT_SAE)
 		sm->wpa_key_mgmt = WPA_KEY_MGMT_SAE;
@@ -758,7 +746,6 @@ int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 		return WPA_INVALID_PAIRWISE;
 	}
 
-#ifdef CONFIG_IEEE80211W
 	if (wpa_auth->conf.ieee80211w == MGMT_FRAME_PROTECTION_REQUIRED) {
 		if (!(data.capabilities & WPA_CAPABILITY_MFPC)) {
 			wpa_printf(MSG_DEBUG, "Management frame protection "
@@ -807,7 +794,6 @@ int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 			       "Management frame protection cannot use TKIP");
 		    return WPA_MGMT_FRAME_PROTECTION_VIOLATION;
 	}
-#endif /* CONFIG_IEEE80211W */
 
 #ifdef CONFIG_IEEE80211R_AP
 	if (wpa_key_mgmt_ft(sm->wpa_key_mgmt)) {
@@ -1024,14 +1010,12 @@ static int wpa_parse_generic(const u8 *pos, const u8 *end,
 		return 0;
 	}
 
-#ifdef CONFIG_IEEE80211W
 	if (pos[1] > RSN_SELECTOR_LEN + 2 &&
 	    RSN_SELECTOR_GET(pos + 2) == RSN_KEY_DATA_IGTK) {
 		ie->igtk = pos + 2 + RSN_SELECTOR_LEN;
 		ie->igtk_len = pos[1] - RSN_SELECTOR_LEN;
 		return 0;
 	}
-#endif /* CONFIG_IEEE80211W */
 
 #ifdef CONFIG_P2P
 	if (pos[1] >= RSN_SELECTOR_LEN + 1 &&

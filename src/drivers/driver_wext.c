@@ -1767,11 +1767,9 @@ static int wpa_driver_wext_set_key_ext(void *priv, enum wpa_alg alg,
 	case WPA_ALG_PMK:
 		ext->alg = IW_ENCODE_ALG_PMK;
 		break;
-#ifdef CONFIG_IEEE80211W
 	case WPA_ALG_IGTK:
 		ext->alg = IW_ENCODE_ALG_AES_CMAC;
 		break;
-#endif /* CONFIG_IEEE80211W */
 	default:
 		wpa_printf(MSG_DEBUG, "%s: Unknown algorithm %d",
 			   __FUNCTION__, alg);
@@ -2201,7 +2199,6 @@ int wpa_driver_wext_associate(void *priv,
 					   IW_AUTH_RX_UNENCRYPTED_EAPOL,
 					   allow_unencrypted_eapol) < 0)
 		ret = -1;
-#ifdef CONFIG_IEEE80211W
 	switch (params->mgmt_frame_protection) {
 	case NO_MGMT_FRAME_PROTECTION:
 		value = IW_AUTH_MFP_DISABLED;
@@ -2215,7 +2212,6 @@ int wpa_driver_wext_associate(void *priv,
 	};
 	if (wpa_driver_wext_set_auth_param(drv, IW_AUTH_MFP, value) < 0)
 		ret = -1;
-#endif /* CONFIG_IEEE80211W */
 	if (params->freq.freq &&
 	    wpa_driver_wext_set_freq(drv, params->freq.freq) < 0)
 		ret = -1;

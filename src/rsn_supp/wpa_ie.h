@@ -21,10 +21,8 @@ struct wpa_eapol_ie_parse {
 	size_t gtk_len;
 	const u8 *mac_addr;
 	size_t mac_addr_len;
-#ifdef CONFIG_IEEE80211W
 	const u8 *igtk;
 	size_t igtk_len;
-#endif /* CONFIG_IEEE80211W */
 	const u8 *mdie;
 	size_t mdie_len;
 	const u8 *ftie;

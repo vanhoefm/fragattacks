@@ -446,7 +446,6 @@ struct wpa_ssid {
 	 */
 	char *id_str;
 
-#ifdef CONFIG_IEEE80211W
 	/**
 	 * ieee80211w - Whether management frame protection is enabled
 	 *
@@ -460,7 +459,6 @@ struct wpa_ssid {
 	 * followed).
 	 */
 	enum mfp_options ieee80211w;
-#endif /* CONFIG_IEEE80211W */
 
 #ifdef CONFIG_OCV
 	/**

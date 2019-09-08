@@ -1012,9 +1012,7 @@ dbus_bool_t wpas_dbus_getter_global_capabilities(
 #ifdef CONFIG_INTERWORKING
 	capabilities[num_items++] = "interworking";
 #endif /* CONFIG_INTERWORKING */
-#ifdef CONFIG_IEEE80211W
 	capabilities[num_items++] = "pmf";
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_MESH
 	capabilities[num_items++] = "mesh";
 #endif /* CONFIG_MESH */
@@ -2753,11 +2751,9 @@ dbus_bool_t wpas_dbus_getter_capabilities(
 				goto nomem;
 
 /* TODO: Ensure that driver actually supports sha256 encryption. */
-#ifdef CONFIG_IEEE80211W
 			if (!wpa_dbus_dict_string_array_add_element(
 				    &iter_array, "wpa-eap-sha256"))
 				goto nomem;
-#endif /* CONFIG_IEEE80211W */
 		}
 
 		if (capa.key_mgmt & (WPA_DRIVER_CAPA_KEY_MGMT_WPA_PSK |
@@ -2771,11 +2767,9 @@ dbus_bool_t wpas_dbus_getter_capabilities(
 				goto nomem;
 
 /* TODO: Ensure that driver actually supports sha256 encryption. */
-#ifdef CONFIG_IEEE80211W
 			if (!wpa_dbus_dict_string_array_add_element(
 				    &iter_array, "wpa-psk-sha256"))
 				goto nomem;
-#endif /* CONFIG_IEEE80211W */
 		}
 
 		if ((capa.key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_WPA_NONE) &&
@@ -4608,11 +4602,9 @@ static dbus_bool_t wpas_dbus_get_bss_security_prop(
 	/* Management group (RSN only) */
 	if (ie_data->proto == WPA_PROTO_RSN) {
 		switch (ie_data->mgmt_group_cipher) {
-#ifdef CONFIG_IEEE80211W
 		case WPA_CIPHER_AES_128_CMAC:
 			group = "aes128cmac";
 			break;
-#endif /* CONFIG_IEEE80211W */
 		default:
 			group = "";
 			break;

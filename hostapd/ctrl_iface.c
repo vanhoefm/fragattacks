@@ -130,7 +130,6 @@ static int hostapd_ctrl_iface_new_sta(struct hostapd_data *hapd,
 }
 
 
-#ifdef CONFIG_IEEE80211W
 #ifdef NEED_AP_MLME
 static int hostapd_ctrl_iface_sa_query(struct hostapd_data *hapd,
 				       const char *txtaddr)
@@ -149,7 +148,6 @@ static int hostapd_ctrl_iface_sa_query(struct hostapd_data *hapd,
 	return 0;
 }
 #endif /* NEED_AP_MLME */
-#endif /* CONFIG_IEEE80211W */
 
 
 #ifdef CONFIG_WPS
@@ -1098,7 +1096,6 @@ static int hostapd_ctrl_iface_get_key_mgmt(struct hostapd_data *hapd,
 	}
 #endif /* CONFIG_FILS */
 #endif /* CONFIG_IEEE80211R_AP */
-#ifdef CONFIG_IEEE80211W
 	if (hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_PSK_SHA256) {
 		ret = os_snprintf(pos, end - pos, "WPA-PSK-SHA256 ");
 		if (os_snprintf_error(end - pos, ret))
@@ -1111,7 +1108,6 @@ static int hostapd_ctrl_iface_get_key_mgmt(struct hostapd_data *hapd,
 			return pos - buf;
 		pos += ret;
 	}
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_SAE
 	if (hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_SAE) {
 		ret = os_snprintf(pos, end - pos, "SAE ");
@@ -2109,7 +2105,6 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 	if (hwaddr_aton(cmd, addr))
 		return -1;
 
-#ifdef CONFIG_IEEE80211W
 	if (is_broadcast_ether_addr(addr) && os_strstr(cmd, "IGTK")) {
 		if (hapd->last_igtk_alg == WPA_ALG_NONE)
 			return -1;
@@ -2133,7 +2128,6 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 					   hapd->last_igtk,
 					   hapd->last_igtk_len);
 	}
-#endif /* CONFIG_IEEE80211W */
 
 	if (is_broadcast_ether_addr(addr)) {
 		if (hapd->last_gtk_alg == WPA_ALG_NONE)
@@ -3032,13 +3026,11 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 	} else if (os_strcmp(buf, "STOP_AP") == 0) {
 		if (hostapd_ctrl_iface_stop_ap(hapd))
 			reply_len = -1;
-#ifdef CONFIG_IEEE80211W
 #ifdef NEED_AP_MLME
 	} else if (os_strncmp(buf, "SA_QUERY ", 9) == 0) {
 		if (hostapd_ctrl_iface_sa_query(hapd, buf + 9))
 			reply_len = -1;
 #endif /* NEED_AP_MLME */
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_WPS
 	} else if (os_strncmp(buf, "WPS_PIN ", 8) == 0) {
 		if (hostapd_ctrl_iface_wps_pin(hapd, buf + 8))

@@ -230,8 +230,6 @@ endif
 
 ifdef CONFIG_SUITEB
 CFLAGS += -DCONFIG_SUITEB
-NEED_SHA256=y
-NEED_AES_OMAC1=y
 endif
 
 ifdef CONFIG_SUITEB192
@@ -242,25 +240,15 @@ endif
 ifdef CONFIG_OCV
 CFLAGS += -DCONFIG_OCV
 OBJS += ../src/common/ocv.o
-CONFIG_IEEE80211W=y
-endif
-
-ifdef CONFIG_IEEE80211W
-CFLAGS += -DCONFIG_IEEE80211W
-NEED_SHA256=y
-NEED_AES_OMAC1=y
 endif
 
 ifdef CONFIG_IEEE80211R
 CFLAGS += -DCONFIG_IEEE80211R
 OBJS += ../src/rsn_supp/wpa_ft.o
-NEED_SHA256=y
-NEED_AES_OMAC1=y
 endif
 
 ifdef CONFIG_MESH
 NEED_80211_COMMON=y
-NEED_SHA256=y
 NEED_AES_SIV=y
 CONFIG_SAE=y
 CONFIG_AP=y
@@ -286,7 +274,6 @@ NEED_AES_SIV=y
 NEED_HMAC_SHA256_KDF=y
 NEED_HMAC_SHA384_KDF=y
 NEED_HMAC_SHA512_KDF=y
-NEED_SHA256=y
 NEED_SHA384=y
 NEED_SHA512=y
 NEED_JSON=y
@@ -303,7 +290,6 @@ NEED_ECC=y
 NEED_HMAC_SHA256_KDF=y
 NEED_HMAC_SHA384_KDF=y
 NEED_HMAC_SHA512_KDF=y
-NEED_SHA256=y
 NEED_SHA384=y
 NEED_SHA512=y
 endif
@@ -330,8 +316,6 @@ endif
 ifdef CONFIG_TDLS
 CFLAGS += -DCONFIG_TDLS
 OBJS += ../src/rsn_supp/tdls.o
-NEED_SHA256=y
-NEED_AES_OMAC1=y
 endif
 
 ifdef CONFIG_TDLS_TESTING
@@ -404,7 +388,6 @@ ifdef CONFIG_HS20
 OBJS += hs20_supplicant.o
 CFLAGS += -DCONFIG_HS20
 CONFIG_INTERWORKING=y
-NEED_AES_OMAC1=y
 endif
 
 ifdef CONFIG_INTERWORKING
@@ -458,7 +441,6 @@ endif
 
 ifdef CONFIG_ERP
 CFLAGS += -DCONFIG_ERP
-NEED_SHA256=y
 NEED_HMAC_SHA256_KDF=y
 endif
 
@@ -613,7 +595,6 @@ OBJS += ../src/eap_peer/eap_psk.o ../src/eap_common/eap_psk_common.o
 endif
 CONFIG_IEEE8021X_EAPOL=y
 NEED_AES=y
-NEED_AES_OMAC1=y
 NEED_AES_ENCBLOCK=y
 NEED_AES_EAX=y
 endif
@@ -646,7 +627,6 @@ CFLAGS += -DEAP_AKA_PRIME_DYNAMIC
 else
 CFLAGS += -DEAP_AKA_PRIME
 endif
-NEED_SHA256=y
 endif
 
 ifdef CONFIG_EAP_SIM_COMMON
@@ -727,8 +707,6 @@ CONFIG_IEEE8021X_EAPOL=y
 ifdef CONFIG_EAP_GPSK_SHA256
 CFLAGS += -DEAP_GPSK_SHA256
 endif
-NEED_SHA256=y
-NEED_AES_OMAC1=y
 endif
 
 ifdef CONFIG_EAP_PWD
@@ -738,7 +716,6 @@ CFLAGS += -DCONFIG_ECC
 endif
 OBJS += ../src/eap_peer/eap_pwd.o ../src/eap_common/eap_pwd_common.o
 CONFIG_IEEE8021X_EAPOL=y
-NEED_SHA256=y
 NEED_ECC=y
 NEED_DRAGONFLY=y
 endif
@@ -755,7 +732,6 @@ endif
 CONFIG_IEEE8021X_EAPOL=y
 NEED_DH_GROUPS=y
 NEED_DH_GROUPS_ALL=y
-NEED_SHA256=y
 NEED_AES_CBC=y
 endif
 
@@ -775,7 +751,6 @@ OBJS += ../src/wps/wps_enrollee.o
 OBJS += ../src/wps/wps_registrar.o
 CONFIG_IEEE8021X_EAPOL=y
 NEED_DH_GROUPS=y
-NEED_SHA256=y
 NEED_BASE64=y
 NEED_AES_CBC=y
 NEED_MODEXP=y
@@ -873,7 +848,6 @@ CONFIG_IEEE8021X_EAPOL=y
 NEED_AES_ENCBLOCK=y
 NEED_AES_UNWRAP=y
 NEED_AES_WRAP=y
-NEED_AES_OMAC1=y
 OBJS += wpas_kay.o
 OBJS += ../src/pae/ieee802_1x_cp.o
 OBJS += ../src/pae/ieee802_1x_kay.o
@@ -1083,7 +1057,6 @@ endif
 
 ifdef CONFIG_TLSV12
 CFLAGS += -DCONFIG_TLSV12
-NEED_SHA256=y
 endif
 
 ifeq ($(CONFIG_TLS), wolfssl)
@@ -1114,7 +1087,6 @@ OBJS_priv += ../src/crypto/crypto_openssl.o
 ifdef NEED_FIPS186_2_PRF
 OBJS += ../src/crypto/fips_prf_openssl.o
 endif
-NEED_SHA256=y
 NEED_TLS_PRF_SHA256=y
 LIBS += -lcrypto
 LIBS_p += -lcrypto
@@ -1178,7 +1150,6 @@ OBJS += ../src/tls/x509v3.o
 OBJS += ../src/tls/pkcs1.o
 OBJS += ../src/tls/pkcs5.o
 OBJS += ../src/tls/pkcs8.o
-NEED_SHA256=y
 NEED_BASE64=y
 NEED_TLS_PRF=y
 ifdef CONFIG_TLSV12
@@ -1258,7 +1229,6 @@ OBJS += ../src/tls/x509v3.o
 OBJS += ../src/tls/pkcs1.o
 OBJS += ../src/tls/pkcs5.o
 OBJS += ../src/tls/pkcs8.o
-NEED_SHA256=y
 NEED_BASE64=y
 NEED_TLS_PRF=y
 ifdef CONFIG_TLSV12
@@ -1344,12 +1314,10 @@ endif
 ifdef NEED_AES_EAX
 AESOBJS += ../src/crypto/aes-eax.o
 NEED_AES_CTR=y
-NEED_AES_OMAC1=y
 endif
 ifdef NEED_AES_SIV
 AESOBJS += ../src/crypto/aes-siv.o
 NEED_AES_CTR=y
-NEED_AES_OMAC1=y
 endif
 ifdef NEED_AES_CTR
 AESOBJS += ../src/crypto/aes-ctr.o
@@ -1357,7 +1325,6 @@ endif
 ifdef NEED_AES_ENCBLOCK
 AESOBJS += ../src/crypto/aes-encblock.o
 endif
-ifdef NEED_AES_OMAC1
 NEED_AES_ENC=y
 ifdef CONFIG_OPENSSL_CMAC
 CFLAGS += -DCONFIG_OPENSSL_CMAC
@@ -1365,7 +1332,6 @@ else
 ifneq ($(CONFIG_TLS), linux)
 ifneq ($(CONFIG_TLS), wolfssl)
 AESOBJS += ../src/crypto/aes-omac1.o
-endif
 endif
 endif
 endif
@@ -1477,7 +1443,6 @@ endif
 endif
 
 SHA256OBJS = # none by default
-ifdef NEED_SHA256
 CFLAGS += -DCONFIG_SHA256
 ifneq ($(CONFIG_TLS), openssl)
 ifneq ($(CONFIG_TLS), linux)
@@ -1519,7 +1484,6 @@ CFLAGS += -DCONFIG_HMAC_SHA512_KDF
 OBJS += ../src/crypto/sha512-kdf.o
 endif
 OBJS += $(SHA256OBJS)
-endif
 ifdef NEED_SHA384
 ifneq ($(CONFIG_TLS), openssl)
 ifneq ($(CONFIG_TLS), linux)

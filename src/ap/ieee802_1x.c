@@ -408,7 +408,6 @@ static int add_common_radius_sta_attr_rsn(struct hostapd_data *hapd,
 		return -1;
 	}
 
-#ifdef CONFIG_IEEE80211W
 	if (hapd->conf->ieee80211w != NO_MGMT_FRAME_PROTECTION) {
 		suite = wpa_cipher_to_suite(WPA_PROTO_RSN,
 					    hapd->conf->group_mgmt_cipher);
@@ -421,7 +420,6 @@ static int add_common_radius_sta_attr_rsn(struct hostapd_data *hapd,
 			return -1;
 		}
 	}
-#endif /* CONFIG_IEEE80211W */
 
 	return 0;
 }

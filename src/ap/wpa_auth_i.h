@@ -190,10 +190,8 @@ struct wpa_group {
 	Boolean changed;
 	Boolean first_sta_seen;
 	Boolean reject_4way_hs_for_entropy;
-#ifdef CONFIG_IEEE80211W
 	u8 IGTK[2][WPA_IGTK_MAX_LEN];
 	int GN_igtk, GM_igtk;
-#endif /* CONFIG_IEEE80211W */
 	/* Number of references except those in struct wpa_group->next */
 	unsigned int references;
 	unsigned int num_setup_iface;

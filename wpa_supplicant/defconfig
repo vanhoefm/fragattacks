@@ -310,10 +310,6 @@ CONFIG_BACKEND=file
 # bridge interfaces (commit 'bridge: respect RFC2863 operational state')').
 #CONFIG_NO_LINUX_PACKET_SOCKET_WAR=y
 
-# IEEE 802.11w (management frame protection), also known as PMF
-# Driver support is also needed for IEEE 802.11w.
-CONFIG_IEEE80211W=y
-
 # Support Operating Channel Validation
 #CONFIG_OCV=y
 
@@ -610,6 +606,4 @@ CONFIG_BGSCAN_SIMPLE=y
 #CONFIG_OWE=y
 
 # Device Provisioning Protocol (DPP)
-# This requires CONFIG_IEEE80211W=y to be enabled, too. (see
-# wpa_supplicant/README-DPP for details)
 CONFIG_DPP=y

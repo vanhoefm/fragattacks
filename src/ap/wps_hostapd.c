@@ -358,12 +358,10 @@ static int hapd_wps_reconfig_in_memory(struct hostapd_data *hapd,
 		    (cred->auth_type & WPS_AUTH_WPA2PSK) &&
 		    cred->key_len != 2 * PMK_LEN) {
 			bss->wpa_key_mgmt |= WPA_KEY_MGMT_SAE;
-#ifdef CONFIG_IEEE80211W
 			if (bss->ieee80211w == NO_MGMT_FRAME_PROTECTION)
 				bss->ieee80211w =
 					MGMT_FRAME_PROTECTION_OPTIONAL;
 			bss->sae_require_mfp = 1;
-#endif /* CONFIG_IEEE80211W */
 		}
 
 		if (cred->key_len >= 8 && cred->key_len < 64) {
@@ -533,9 +531,7 @@ static int hapd_wps_cred_cb(struct hostapd_data *hapd, void *ctx)
 
 	if (wpa) {
 		char *prefix;
-#ifdef CONFIG_IEEE80211W
 		int sae = 0;
-#endif /* CONFIG_IEEE80211W */
 
 		fprintf(nconf, "wpa=%d\n", wpa);
 
@@ -553,13 +549,10 @@ static int hapd_wps_cred_cb(struct hostapd_data *hapd, void *ctx)
 		    (cred->auth_type & WPS_AUTH_WPA2PSK) &&
 		    cred->key_len != 2 * PMK_LEN) {
 			fprintf(nconf, "%sSAE", prefix);
-#ifdef CONFIG_IEEE80211W
 			sae = 1;
-#endif /* CONFIG_IEEE80211W */
 		}
 		fprintf(nconf, "\n");
 
-#ifdef CONFIG_IEEE80211W
 		if (sae && hapd->conf->ieee80211w == NO_MGMT_FRAME_PROTECTION) {
 			fprintf(nconf, "ieee80211w=%d\n",
 				MGMT_FRAME_PROTECTION_OPTIONAL);
@@ -567,7 +560,6 @@ static int hapd_wps_cred_cb(struct hostapd_data *hapd, void *ctx)
 		}
 		if (sae)
 			fprintf(nconf, "sae_require_mfp=1\n");
-#endif /* CONFIG_IEEE80211W */
 
 		fprintf(nconf, "wpa_pairwise=");
 		prefix = "";

@@ -2240,7 +2240,6 @@ static int nl80211_mgmt_subscribe_non_ap(struct i802_bss *bss)
 					  6) < 0)
 		ret = -1;
 #endif /* CONFIG_DPP */
-#ifdef CONFIG_IEEE80211W
 #ifdef CONFIG_OCV
 	/* SA Query Request */
 	if (nl80211_register_action_frame(bss, (u8 *) "\x08\x00", 2) < 0)
@@ -2249,7 +2248,6 @@ static int nl80211_mgmt_subscribe_non_ap(struct i802_bss *bss)
 	/* SA Query Response */
 	if (nl80211_register_action_frame(bss, (u8 *) "\x08\x01", 2) < 0)
 		ret = -1;
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_TDLS
 	if ((drv->capa.flags & WPA_DRIVER_FLAGS_TDLS_SUPPORT)) {
 		/* TDLS Discovery Response */
@@ -2385,11 +2383,9 @@ static int nl80211_action_subscribe_ap(struct i802_bss *bss)
 	/* FT Action frames */
 	if (nl80211_register_action_frame(bss, (u8 *) "\x06", 1) < 0)
 		ret = -1;
-#ifdef CONFIG_IEEE80211W
 	/* SA Query */
 	if (nl80211_register_action_frame(bss, (u8 *) "\x08", 1) < 0)
 		ret = -1;
-#endif /* CONFIG_IEEE80211W */
 	/* Protected Dual of Public Action */
 	if (nl80211_register_action_frame(bss, (u8 *) "\x09", 1) < 0)
 		ret = -1;

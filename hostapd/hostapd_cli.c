@@ -401,7 +401,6 @@ static int hostapd_cli_cmd_signature(struct wpa_ctrl *ctrl, int argc,
 #endif /* CONFIG_TAXONOMY */
 
 
-#ifdef CONFIG_IEEE80211W
 static int hostapd_cli_cmd_sa_query(struct wpa_ctrl *ctrl, int argc,
 				    char *argv[])
 {
@@ -414,7 +413,6 @@ static int hostapd_cli_cmd_sa_query(struct wpa_ctrl *ctrl, int argc,
 	snprintf(buf, sizeof(buf), "SA_QUERY %s", argv[0]);
 	return wpa_ctrl_command(ctrl, buf);
 }
-#endif /* CONFIG_IEEE80211W */
 
 
 #ifdef CONFIG_WPS
@@ -1542,10 +1540,8 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
 	{ "signature", hostapd_cli_cmd_signature, hostapd_complete_stations,
 	  "<addr> = get taxonomy signature for a station" },
 #endif /* CONFIG_TAXONOMY */
-#ifdef CONFIG_IEEE80211W
 	{ "sa_query", hostapd_cli_cmd_sa_query, hostapd_complete_stations,
 	  "<addr> = send SA Query to a station" },
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_WPS
 	{ "wps_pin", hostapd_cli_cmd_wps_pin, NULL,
 	  "<uuid> <pin> [timeout] [addr] = add WPS Enrollee PIN" },

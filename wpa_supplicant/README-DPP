@@ -28,7 +28,6 @@ wpa_supplicant build config
 Enable DPP and protected management frame in wpa_supplicant build config
 file
 
-CONFIG_IEEE80211W=y
 CONFIG_DPP=y
 
 hostapd build config
@@ -36,7 +35,6 @@ hostapd build config
 
 Enable DPP and protected management frame in hostapd build config file
 
-CONFIG_IEEE80211W=y
 CONFIG_DPP=y
 
 Configurator build config

@@ -59,10 +59,6 @@
 #include "netlink.h"
 #include "linux_ioctl.h"
 
-#if defined(CONFIG_IEEE80211W) || defined(CONFIG_IEEE80211R) || defined(CONFIG_HS20) || defined(CONFIG_WNM) || defined(CONFIG_WPS) || defined(CONFIG_FILS)
-#define ATHEROS_USE_RAW_RECEIVE
-#endif
-
 
 struct atheros_driver_data {
 	struct hostapd_data *hapd;		/* back pointer */
@@ -366,13 +362,11 @@ atheros_configure_wpa(struct atheros_driver_data *drv,
 	v = 0;
 	if (params->rsn_preauth)
 		v |= BIT(0);
-#ifdef CONFIG_IEEE80211W
 	if (params->ieee80211w != NO_MGMT_FRAME_PROTECTION) {
 		v |= BIT(7);
 		if (params->ieee80211w == MGMT_FRAME_PROTECTION_REQUIRED)
 			v |= BIT(6);
 	}
-#endif /* CONFIG_IEEE80211W */
 
 	wpa_printf(MSG_DEBUG, "%s: rsn capabilities=0x%x", __func__, v);
 	if (set80211param(drv, IEEE80211_PARAM_RSNCAPS, v)) {
@@ -534,7 +528,6 @@ atheros_set_key(const char *ifname, void *priv, enum wpa_alg alg,
 		cipher = IEEE80211_CIPHER_AES_GCM_256;
 		break;
 #endif /* ATH_GCM_SUPPORT */
-#ifdef CONFIG_IEEE80211W
 	case WPA_ALG_IGTK:
 		cipher = IEEE80211_CIPHER_AES_CMAC;
 		break;
@@ -549,7 +542,6 @@ atheros_set_key(const char *ifname, void *priv, enum wpa_alg alg,
 		cipher = IEEE80211_CIPHER_AES_GMAC_256;
 		break;
 #endif /* ATH_GCM_SUPPORT */
-#endif /* CONFIG_IEEE80211W */
 	default:
 		wpa_printf(MSG_INFO, "%s: unknown/unsupported algorithm %d",
 			   __func__, alg);
@@ -856,7 +848,7 @@ static int atheros_set_qos_map(void *ctx, const u8 *qos_map_set,
 	return 0;
 }
 
-#ifdef ATHEROS_USE_RAW_RECEIVE
+
 static void atheros_raw_receive(void *ctx, const u8 *src_addr, const u8 *buf,
 				size_t len)
 {
@@ -953,7 +945,7 @@ static void atheros_raw_receive(void *ctx, const u8 *src_addr, const u8 *buf,
 		break;
 	}
 }
-#endif /* ATHEROS_USE_RAW_RECEIVE */
+
 
 static int atheros_receive_pkt(struct atheros_driver_data *drv)
 {
@@ -965,11 +957,9 @@ static int atheros_receive_pkt(struct atheros_driver_data *drv)
 #ifdef CONFIG_WPS
 	filt.app_filterype |= IEEE80211_FILTER_TYPE_PROBE_REQ;
 #endif /* CONFIG_WPS */
-#if defined(CONFIG_IEEE80211W) || defined(CONFIG_IEEE80211R) || defined(CONFIG_FILS)
 	filt.app_filterype |= (IEEE80211_FILTER_TYPE_ASSOC_REQ |
 			       IEEE80211_FILTER_TYPE_AUTH |
 			       IEEE80211_FILTER_TYPE_ACTION);
-#endif /* CONFIG_IEEE80211R || CONFIG_IEEE80211W || CONFIG_FILS */
 #ifdef CONFIG_WNM
 	filt.app_filterype |= IEEE80211_FILTER_TYPE_ACTION;
 #endif /* CONFIG_WNM */
@@ -1069,7 +1059,6 @@ atheros_set_ap_wps_ie(void *priv, const struct wpabuf *beacon,
 #define atheros_set_ap_wps_ie NULL
 #endif /* CONFIG_WPS */
 
-#if defined(CONFIG_IEEE80211R) || defined(CONFIG_IEEE80211W) || defined(CONFIG_FILS)
 static int
 atheros_sta_auth(void *priv, struct wpa_driver_sta_auth_params *params)
 {
@@ -1169,7 +1158,7 @@ atheros_sta_assoc(void *priv, const u8 *own_addr, const u8 *addr,
 	}
 	return ret;
 }
-#endif /* CONFIG_IEEE80211R || CONFIG_IEEE80211W || CONFIG_FILS */
+
 
 static void
 atheros_new_sta(struct atheros_driver_data *drv, u8 addr[IEEE80211_ADDR_LEN])
@@ -1315,7 +1304,6 @@ atheros_wireless_event_wireless_custom(struct atheros_driver_data *drv,
 		atheros_raw_receive(drv, NULL,
 				    (u8 *) custom + MGMT_FRAM_TAG_SIZE, len);
 #endif /* CONFIG_WPS */
-#if defined(CONFIG_IEEE80211R) || defined(CONFIG_IEEE80211W) || defined(CONFIG_FILS)
 	} else if (os_strncmp(custom, "Manage.assoc_req ", 17) == 0) {
 		/* Format: "Manage.assoc_req <frame len>" | zero padding |
 		 * frame */
@@ -1339,8 +1327,6 @@ atheros_wireless_event_wireless_custom(struct atheros_driver_data *drv,
 		}
 		atheros_raw_receive(drv, NULL,
 				    (u8 *) custom + MGMT_FRAM_TAG_SIZE, len);
-#endif /* CONFIG_IEEE80211W || CONFIG_IEEE80211R || CONFIG_FILS */
-#ifdef ATHEROS_USE_RAW_RECEIVE
 	} else if (os_strncmp(custom, "Manage.action ", 14) == 0) {
 		/* Format: "Manage.assoc_req <frame len>" | zero padding | frame
 		 */
@@ -1353,7 +1339,6 @@ atheros_wireless_event_wireless_custom(struct atheros_driver_data *drv,
 		}
 		atheros_raw_receive(drv, NULL,
 				    (u8 *) custom + MGMT_FRAM_TAG_SIZE, len);
-#endif /* ATHEROS_USE_RAW_RECEIVE */
 	}
 }
 
@@ -1973,8 +1958,6 @@ static int atheros_set_ap(void *priv, struct wpa_driver_ap_params *params)
 }
 
 
-#if defined(CONFIG_IEEE80211R) || defined(CONFIG_IEEE80211W) || defined(CONFIG_FILS)
-
 static int atheros_send_mgmt(void *priv, const u8 *frm, size_t data_len,
 			     int noack, unsigned int freq,
 			     const u16 *csa_offs, size_t csa_offs_len)
@@ -1999,7 +1982,6 @@ static int atheros_send_mgmt(void *priv, const u8 *frm, size_t data_len,
 	return set80211priv(drv, IEEE80211_IOCTL_SEND_MGMT, mgmt_frm,
 			    sizeof(struct ieee80211req_mgmtbuf) + data_len);
 }
-#endif /* CONFIG_IEEE80211R || CONFIG_IEEE80211W || CONFIG_FILS */
 
 
 #ifdef CONFIG_IEEE80211R
@@ -2283,11 +2265,9 @@ const struct wpa_driver_ops wpa_driver_atheros_ops = {
 	.set_ap_wps_ie		= atheros_set_ap_wps_ie,
 	.set_authmode		= atheros_set_authmode,
 	.set_ap			= atheros_set_ap,
-#if defined(CONFIG_IEEE80211R) || defined(CONFIG_IEEE80211W) || defined(CONFIG_FILS)
 	.sta_assoc              = atheros_sta_assoc,
 	.sta_auth               = atheros_sta_auth,
 	.send_mlme       	= atheros_send_mgmt,
-#endif /* CONFIG_IEEE80211R || CONFIG_IEEE80211W || CONFIG_FILS */
 #ifdef CONFIG_IEEE80211R
 	.add_tspec      	= atheros_add_tspec,
 	.add_sta_node    	= atheros_add_sta_node,

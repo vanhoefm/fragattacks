@@ -246,12 +246,10 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 
 	/* RSN Capabilities */
 	capab = 0;
-#ifdef CONFIG_IEEE80211W
 	if (sm->mfp)
 		capab |= WPA_CAPABILITY_MFPC;
 	if (sm->mfp == 2)
 		capab |= WPA_CAPABILITY_MFPR;
-#endif /* CONFIG_IEEE80211W */
 	if (sm->ocv)
 		capab |= WPA_CAPABILITY_OCVC;
 	WPA_PUT_LE16(pos, capab);
@@ -265,7 +263,6 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	os_memcpy(pos, pmk_name, WPA_PMK_NAME_LEN);
 	pos += WPA_PMK_NAME_LEN;
 
-#ifdef CONFIG_IEEE80211W
 	/* Management Group Cipher Suite */
 	switch (sm->mgmt_group_cipher) {
 	case WPA_CIPHER_AES_128_CMAC:
@@ -285,7 +282,6 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 		pos += RSN_SELECTOR_LEN;
 		break;
 	}
-#endif /* CONFIG_IEEE80211W */
 
 	rsnie->len = (pos - (u8 *) rsnie) - 2;
 
@@ -597,13 +593,11 @@ int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 		return -1;
 	}
 
-#ifdef CONFIG_IEEE80211W
 	if (sm->mfp == 2 && !(parse.rsn_capab & WPA_CAPABILITY_MFPC)) {
 		wpa_printf(MSG_INFO,
 			   "FT: Target AP does not support PMF, but local configuration requires that");
 		return -1;
 	}
-#endif /* CONFIG_IEEE80211W */
 
 	os_memcpy(sm->r1kh_id, parse.r1kh_id, FT_R1KH_ID_LEN);
 	wpa_hexdump(MSG_DEBUG, "FT: R1KH-ID", sm->r1kh_id, FT_R1KH_ID_LEN);
@@ -774,7 +768,6 @@ static int wpa_ft_process_gtk_subelem(struct wpa_sm *sm, const u8 *gtk_elem,
 }
 
 
-#ifdef CONFIG_IEEE80211W
 static int wpa_ft_process_igtk_subelem(struct wpa_sm *sm, const u8 *igtk_elem,
 				       size_t igtk_elem_len)
 {
@@ -842,7 +835,6 @@ static int wpa_ft_process_igtk_subelem(struct wpa_sm *sm, const u8 *igtk_elem,
 
 	return 0;
 }
-#endif /* CONFIG_IEEE80211W */
 
 
 int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
@@ -1025,10 +1017,8 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 	if (wpa_ft_process_gtk_subelem(sm, parse.gtk, parse.gtk_len) < 0)
 		return -1;
 
-#ifdef CONFIG_IEEE80211W
 	if (wpa_ft_process_igtk_subelem(sm, parse.igtk, parse.igtk_len) < 0)
 		return -1;
-#endif /* CONFIG_IEEE80211W */
 
 	if (sm->set_ptk_after_assoc) {
 		wpa_printf(MSG_DEBUG, "FT: Try to set PTK again now that we "

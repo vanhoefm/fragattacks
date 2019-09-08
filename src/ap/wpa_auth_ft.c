@@ -2232,7 +2232,6 @@ static u8 * wpa_ft_gtk_subelem(struct wpa_state_machine *sm, size_t *len)
 }
 
 
-#ifdef CONFIG_IEEE80211W
 static u8 * wpa_ft_igtk_subelem(struct wpa_state_machine *sm, size_t *len)
 {
 	u8 *subelem, *pos;
@@ -2279,7 +2278,6 @@ static u8 * wpa_ft_igtk_subelem(struct wpa_state_machine *sm, size_t *len)
 	*len = subelem_len;
 	return subelem;
 }
-#endif /* CONFIG_IEEE80211W */
 
 
 static u8 * wpa_ft_process_rdie(struct wpa_state_machine *sm,
@@ -2487,7 +2485,6 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 		r0kh_id_len = sm->r0kh_id_len;
 		anonce = sm->ANonce;
 		snonce = sm->SNonce;
-#ifdef CONFIG_IEEE80211W
 		if (sm->mgmt_frame_prot) {
 			u8 *igtk;
 			size_t igtk_len;
@@ -2510,7 +2507,6 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 			subelem_len += igtk_len;
 			os_free(igtk);
 		}
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_OCV
 		if (wpa_auth_uses_ocv(sm)) {
 			struct wpa_channel_info ci;

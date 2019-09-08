@@ -168,12 +168,10 @@ static int wpa_gen_wpa_ie_rsn(u8 *rsn_ie, size_t rsn_ie_len,
 	} else if (key_mgmt == WPA_KEY_MGMT_FT_PSK) {
 		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_FT_PSK);
 #endif /* CONFIG_IEEE80211R */
-#ifdef CONFIG_IEEE80211W
 	} else if (key_mgmt == WPA_KEY_MGMT_IEEE8021X_SHA256) {
 		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_802_1X_SHA256);
 	} else if (key_mgmt == WPA_KEY_MGMT_PSK_SHA256) {
 		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_PSK_SHA256);
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_SAE
 	} else if (key_mgmt == WPA_KEY_MGMT_SAE) {
 		RSN_SELECTOR_PUT(pos, RSN_AUTH_KEY_MGMT_SAE);
@@ -217,12 +215,10 @@ static int wpa_gen_wpa_ie_rsn(u8 *rsn_ie, size_t rsn_ie_len,
 
 	/* RSN Capabilities */
 	capab = 0;
-#ifdef CONFIG_IEEE80211W
 	if (sm->mfp)
 		capab |= WPA_CAPABILITY_MFPC;
 	if (sm->mfp == 2)
 		capab |= WPA_CAPABILITY_MFPR;
-#endif /* CONFIG_IEEE80211W */
 	if (sm->ocv)
 		capab |= WPA_CAPABILITY_OCVC;
 	WPA_PUT_LE16(pos, capab);
@@ -237,7 +233,6 @@ static int wpa_gen_wpa_ie_rsn(u8 *rsn_ie, size_t rsn_ie_len,
 		pos += PMKID_LEN;
 	}
 
-#ifdef CONFIG_IEEE80211W
 	if (wpa_cipher_valid_mgmt_group(mgmt_group_cipher)) {
 		if (!sm->cur_pmksa) {
 			/* PMKID Count */
@@ -250,7 +245,6 @@ static int wpa_gen_wpa_ie_rsn(u8 *rsn_ie, size_t rsn_ie_len,
 							  mgmt_group_cipher));
 		pos += RSN_SELECTOR_LEN;
 	}
-#endif /* CONFIG_IEEE80211W */
 
 	hdr->len = (pos - rsn_ie) - 2;
 
@@ -435,7 +429,6 @@ static int wpa_parse_generic(const u8 *pos, const u8 *end,
 		return 0;
 	}
 
-#ifdef CONFIG_IEEE80211W
 	if (pos[1] > RSN_SELECTOR_LEN + 2 &&
 	    RSN_SELECTOR_GET(pos + 2) == RSN_KEY_DATA_IGTK) {
 		ie->igtk = pos + 2 + RSN_SELECTOR_LEN;
@@ -444,7 +437,6 @@ static int wpa_parse_generic(const u8 *pos, const u8 *end,
 				pos, pos[1] + 2);
 		return 0;
 	}
-#endif /* CONFIG_IEEE80211W */
 
 #ifdef CONFIG_P2P
 	if (pos[1] >= RSN_SELECTOR_LEN + 1 &&

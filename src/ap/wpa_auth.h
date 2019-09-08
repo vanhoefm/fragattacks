@@ -187,11 +187,9 @@ struct wpa_auth_config {
 	int disable_pmksa_caching;
 	int okc;
 	int tx_status;
-#ifdef CONFIG_IEEE80211W
 	enum mfp_options ieee80211w;
 	int group_mgmt_cipher;
 	int sae_require_mfp;
-#endif /* CONFIG_IEEE80211W */
 #ifdef CONFIG_OCV
 	int ocv; /* Operating Channel Validation */
 #endif /* CONFIG_OCV */

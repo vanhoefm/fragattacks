@@ -171,7 +171,6 @@ struct sta_info {
 	struct ieee80211_he_capabilities *he_capab;
 	size_t he_capab_len;
 
-#ifdef CONFIG_IEEE80211W
 	int sa_query_count; /* number of pending SA Query requests;
 			     * 0 = no SA Query in progress */
 	int sa_query_timed_out;
@@ -179,7 +178,6 @@ struct sta_info {
 				* sa_query_count octets of pending SA Query
 				* transaction identifiers */
 	struct os_reltime sa_query_start;
-#endif /* CONFIG_IEEE80211W */
 
 #if defined(CONFIG_INTERWORKING) || defined(CONFIG_DPP)
 #define GAS_DIALOG_MAX 8 /* Max concurrent dialog number */
