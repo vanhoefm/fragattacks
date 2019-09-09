@@ -4606,8 +4606,11 @@ static char * wpa_cli_get_default_ifname(void)
 		if (dent->d_type != DT_SOCK && dent->d_type != DT_UNKNOWN)
 			continue;
 #endif /* _DIRENT_HAVE_D_TYPE */
+		/* Skip current/previous directory and special P2P Device
+		 * interfaces. */
 		if (os_strcmp(dent->d_name, ".") == 0 ||
-		    os_strcmp(dent->d_name, "..") == 0)
+		    os_strcmp(dent->d_name, "..") == 0 ||
+		    os_strncmp(dent->d_name, "p2p-dev-", 8) == 0)
 			continue;
 		printf("Selected interface '%s'\n", dent->d_name);
 		ifname = os_strdup(dent->d_name);
