@@ -213,6 +213,24 @@ enum ieee80211_op_mode {
 };
 
 /**
+ * struct ieee80211_edmg_config - EDMG configuration
+ *
+ * This structure describes most essential parameters needed
+ * for IEEE 802.11ay EDMG configuration
+ *
+ * @channels: Bitmap that indicates the 2.16 GHz channel(s)
+ *	that are allowed to be used for transmissions.
+ *	Bit 0 indicates channel 1, bit 1 indicates channel 2, etc.
+ *	Set to 0 to indicate EDMG not supported.
+ * @bw_config: Channel BW Configuration subfield encodes
+ *	the allowed channel bandwidth configurations
+ */
+struct ieee80211_edmg_config {
+	u8 channels;
+	enum edmg_bw_config bw_config;
+};
+
+/**
  * struct hostapd_hw_modes - Supported hardware mode information
  */
 struct hostapd_hw_modes {
@@ -272,6 +290,12 @@ struct hostapd_hw_modes {
 	 * he_capab - HE (IEEE 802.11ax) capabilities
 	 */
 	struct he_capabilities he_capab[IEEE80211_MODE_NUM];
+
+	/**
+	 * This structure describes the most essential parameters needed
+	 * for IEEE 802.11ay EDMG configuration.
+	 */
+	struct ieee80211_edmg_config edmg;
 };
 
 
@@ -744,6 +768,12 @@ struct hostapd_freq_params {
 	 * bandwidth - Channel bandwidth in MHz (20, 40, 80, 160)
 	 */
 	int bandwidth;
+
+	/**
+	 * This structure describes the most essential parameters needed
+	 * for IEEE 802.11ay EDMG configuration.
+	 */
+	struct ieee80211_edmg_config edmg;
 };
 
 /**
