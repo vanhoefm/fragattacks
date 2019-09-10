@@ -470,6 +470,8 @@
 #define WLAN_EID_EXT_HE_MU_EDCA_PARAMS 38
 #define WLAN_EID_EXT_SPATIAL_REUSE 39
 #define WLAN_EID_EXT_OCV_OCI 54
+#define WLAN_EID_EXT_EDMG_CAPABILITIES 61
+#define WLAN_EID_EXT_EDMG_OPERATION 62
 
 /* Extended Capabilities field */
 #define WLAN_EXT_CAPAB_20_40_COEX 0
@@ -2220,6 +2222,39 @@ struct ieee80211_he_mu_edca_parameter_set {
 #define HE_QOS_INFO_TXOP_REQUEST ((u8) (BIT(6)))
 /* B7: Reserved if sent by an AP; More Data Ack if sent by a non-AP STA */
 #define HE_QOS_INFO_MORE_DATA_ACK ((u8) (BIT(7)))
+
+/* IEEE P802.11ay/D4.0, 9.4.2.251 - EDMG Operation element */
+#define EDMG_BSS_OPERATING_CHANNELS_OFFSET	6
+#define EDMG_OPERATING_CHANNEL_WIDTH_OFFSET	7
+
+/* IEEE P802.11ay/D4.0, 29.3.4 - Channelization */
+enum edmg_channel {
+	EDMG_CHANNEL_9	= 9,
+	EDMG_CHANNEL_10	= 10,
+	EDMG_CHANNEL_11	= 11,
+	EDMG_CHANNEL_12	= 12,
+	EDMG_CHANNEL_13	= 13,
+};
+
+/* Represent CB2 contiguous channels */
+#define EDMG_CHANNEL_9_SUBCHANNELS	(BIT(0) | BIT(1)) /* channels 1 and 2 */
+#define EDMG_CHANNEL_10_SUBCHANNELS	(BIT(1) | BIT(2)) /* channels 2 and 3 */
+#define EDMG_CHANNEL_11_SUBCHANNELS	(BIT(2) | BIT(3)) /* channels 3 and 4 */
+#define EDMG_CHANNEL_12_SUBCHANNELS	(BIT(3) | BIT(4)) /* channels 4 and 5 */
+#define EDMG_CHANNEL_13_SUBCHANNELS	(BIT(4) | BIT(5)) /* channels 5 and 6 */
+
+/**
+ * enum edmg_bw_config - Allowed channel bandwidth configurations
+ * @EDMG_BW_CONFIG_4: 2.16 GHz
+ * @EDMG_BW_CONFIG_5: 2.16 GHz and 4.32 GHz
+ *
+ * IEEE P802.11ay/D4.0, 9.4.2.251 (EDMG Operation element),
+ * Table 13 (Channel BW Configuration subfield definition)
+ */
+enum edmg_bw_config {
+	EDMG_BW_CONFIG_4	= 4,
+	EDMG_BW_CONFIG_5	= 5,
+};
 
 /* DPP Public Action frame identifiers - OUI_WFA */
 #define DPP_OUI_TYPE 0x1A
