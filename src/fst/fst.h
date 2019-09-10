@@ -279,6 +279,13 @@ void fst_notify_peer_disconnected(struct fst_iface *iface, const u8 *addr);
 Boolean fst_are_ifaces_aggregated(struct fst_iface *iface1,
 				  struct fst_iface *iface2);
 
+/**
+ * fst_update_mac_addr - Notify FST about MAC address change
+ * @iface: FST interface object
+ * @addr: New MAC address
+ */
+void fst_update_mac_addr(struct fst_iface *iface, const u8 *addr);
+
 #else /* CONFIG_FST */
 
 static inline int fst_global_init(void)

@@ -214,6 +214,15 @@ Boolean fst_are_ifaces_aggregated(struct fst_iface *iface1,
 }
 
 
+void fst_update_mac_addr(struct fst_iface *iface, const u8 *addr)
+{
+	fst_printf_iface(iface, MSG_DEBUG, "new MAC address " MACSTR,
+			 MAC2STR(addr));
+	os_memcpy(iface->own_addr, addr, sizeof(iface->own_addr));
+	fst_group_update_ie(fst_iface_get_group(iface));
+}
+
+
 enum mb_band_id fst_hw_mode_to_band(enum hostapd_hw_mode mode)
 {
 	switch (mode) {
