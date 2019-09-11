@@ -1369,7 +1369,7 @@ static void ieee802_11_rx_bss_trans_mgmt_req(struct wpa_supplicant *wpa_s,
 	const u8 *vendor;
 #endif /* CONFIG_MBO */
 
-	if (wpa_s->conf->disable_btm)
+	if (wpa_s->disable_mbo_oce || wpa_s->conf->disable_btm)
 		return;
 
 	if (end - pos < 5)

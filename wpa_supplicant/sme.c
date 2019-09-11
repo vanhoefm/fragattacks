@@ -619,7 +619,7 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_MBO
 	mbo_ie = wpa_bss_get_vendor_ie(bss, MBO_IE_VENDOR_TYPE);
-	if (mbo_ie) {
+	if (!wpa_s->disable_mbo_oce && mbo_ie) {
 		int len;
 
 		len = wpas_mbo_ie(wpa_s, wpa_s->sme.assoc_req_ie +
