@@ -273,4 +273,13 @@ static inline int for_each_element_completed(const struct element *element,
 	return (const u8 *) element == (const u8 *) data + datalen;
 }
 
+struct ieee80211_edmg_config;
+
+void hostapd_encode_edmg_chan(int edmg_enable, u8 edmg_channel,
+			      int primary_channel,
+			      struct ieee80211_edmg_config *edmg);
+
+int ieee802_edmg_is_allowed(struct ieee80211_edmg_config allowed,
+			    struct ieee80211_edmg_config requested);
+
 #endif /* IEEE802_11_COMMON_H */

@@ -2012,3 +2012,75 @@ int ieee802_11_ext_capab(const u8 *ie, unsigned int capab)
 		return 0;
 	return !!(ie[2 + capab / 8] & BIT(capab % 8));
 }
+
+
+void hostapd_encode_edmg_chan(int edmg_enable, u8 edmg_channel,
+			      int primary_channel,
+			      struct ieee80211_edmg_config *edmg)
+{
+	if (!edmg_enable) {
+		edmg->channels = 0;
+		edmg->bw_config = 0;
+		return;
+	}
+
+	/* Only EDMG CB1 and EDMG CB2 contiguous channels supported for now */
+	switch (edmg_channel) {
+	case EDMG_CHANNEL_9:
+		edmg->channels = EDMG_CHANNEL_9_SUBCHANNELS;
+		edmg->bw_config = EDMG_BW_CONFIG_5;
+		return;
+	case EDMG_CHANNEL_10:
+		edmg->channels = EDMG_CHANNEL_10_SUBCHANNELS;
+		edmg->bw_config = EDMG_BW_CONFIG_5;
+		return;
+	case EDMG_CHANNEL_11:
+		edmg->channels = EDMG_CHANNEL_11_SUBCHANNELS;
+		edmg->bw_config = EDMG_BW_CONFIG_5;
+		return;
+	case EDMG_CHANNEL_12:
+		edmg->channels = EDMG_CHANNEL_12_SUBCHANNELS;
+		edmg->bw_config = EDMG_BW_CONFIG_5;
+		return;
+	case EDMG_CHANNEL_13:
+		edmg->channels = EDMG_CHANNEL_13_SUBCHANNELS;
+		edmg->bw_config = EDMG_BW_CONFIG_5;
+		return;
+	default:
+		if (primary_channel > 0 && primary_channel < 7) {
+			edmg->channels = BIT(primary_channel - 1);
+			edmg->bw_config = EDMG_BW_CONFIG_4;
+		} else {
+			edmg->channels = 0;
+			edmg->bw_config = 0;
+		}
+		break;
+	}
+}
+
+
+/* Check if the requested EDMG configuration is a subset of the allowed
+ * EDMG configuration. */
+int ieee802_edmg_is_allowed(struct ieee80211_edmg_config allowed,
+			    struct ieee80211_edmg_config requested)
+{
+	/*
+	 * The validation check if the requested EDMG configuration
+	 * is a subset of the allowed EDMG configuration:
+	 * 1. Check that the requested channels are part (set) of the allowed
+	 * channels.
+	 * 2. P802.11ay defines the values of bw_config between 4 and 15.
+	 * (bw config % 4) will give us 4 groups inside bw_config definition,
+	 * inside each group we can check the subset just by comparing the
+	 * bw_config value.
+	 * Between this 4 groups, there is no subset relation - as a result of
+	 * the P802.11ay definition.
+	 * bw_config defined by IEEE P802.11ay/D4.0, 9.4.2.251, Table 13.
+	 */
+	if (((requested.channels & allowed.channels) != requested.channels) ||
+	    ((requested.bw_config % 4) > (allowed.bw_config % 4)) ||
+	    requested.bw_config > allowed.bw_config)
+		return 0;
+
+	return 1;
+}
