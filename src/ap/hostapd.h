@@ -179,8 +179,6 @@ struct hostapd_data {
 	u64 acct_session_id;
 	struct radius_das_data *radius_das;
 
-	struct iapp_data *iapp;
-
 	struct hostapd_cached_radius_acl *acl_cache;
 	struct hostapd_acl_query_data *acl_queries;
 

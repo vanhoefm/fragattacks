@@ -2712,8 +2712,7 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		bss->eapol_key_index_workaround = atoi(pos);
 #ifdef CONFIG_IAPP
 	} else if (os_strcmp(buf, "iapp_interface") == 0) {
-		bss->ieee802_11f = 1;
-		os_strlcpy(bss->iapp_iface, pos, sizeof(bss->iapp_iface));
+		wpa_printf(MSG_INFO, "DEPRECATED: iapp_interface not used");
 #endif /* CONFIG_IAPP */
 	} else if (os_strcmp(buf, "own_ip_addr") == 0) {
 		if (hostapd_parse_ip_addr(pos, &bss->own_ip_addr)) {

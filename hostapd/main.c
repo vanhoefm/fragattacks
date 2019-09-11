@@ -81,9 +81,6 @@ static void hostapd_logger_cb(void *ctx, const u8 *addr, unsigned int module,
 	case HOSTAPD_MODULE_DRIVER:
 		module_str = "DRIVER";
 		break;
-	case HOSTAPD_MODULE_IAPP:
-		module_str = "IAPP";
-		break;
 	case HOSTAPD_MODULE_MLME:
 		module_str = "MLME";
 		break;

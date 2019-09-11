@@ -305,7 +305,6 @@ void hostapd_logger_register_cb(hostapd_logger_cb_func func);
 #define HOSTAPD_MODULE_RADIUS		0x00000004
 #define HOSTAPD_MODULE_WPA		0x00000008
 #define HOSTAPD_MODULE_DRIVER		0x00000010
-#define HOSTAPD_MODULE_IAPP		0x00000020
 #define HOSTAPD_MODULE_MLME		0x00000040
 
 enum hostapd_logger_level {

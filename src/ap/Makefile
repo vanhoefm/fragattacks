@@ -18,7 +18,6 @@ CFLAGS += -DCONFIG_IEEE80211R_AP
 CFLAGS += -DCONFIG_WPS
 CFLAGS += -DCONFIG_PROXYARP
 CFLAGS += -DCONFIG_IPV6
-CFLAGS += -DCONFIG_IAPP
 CFLAGS += -DCONFIG_AIRTIME_POLICY
 
 LIB_OBJS= \
@@ -41,7 +40,6 @@ LIB_OBJS= \
 	hostapd.o \
 	hs20.o \
 	hw_features.o \
-	iapp.o \
 	ieee802_11_auth.o \
 	ieee802_11.o \
 	ieee802_11_ht.o \

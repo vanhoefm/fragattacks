@@ -28,7 +28,6 @@
 #include "accounting.h"
 #include "ap_list.h"
 #include "beacon.h"
-#include "iapp.h"
 #include "ieee802_1x.h"
 #include "ieee802_11_auth.h"
 #include "vlan_init.h"
@@ -361,8 +360,6 @@ static void hostapd_free_hapd_data(struct hostapd_data *hapd)
 	hapd->beacon_set_done = 0;
 
 	wpa_printf(MSG_DEBUG, "%s(%s)", __func__, hapd->conf->iface);
-	iapp_deinit(hapd->iapp);
-	hapd->iapp = NULL;
 	accounting_deinit(hapd);
 	hostapd_deinit_wpa(hapd);
 	vlan_deinit(hapd);
@@ -1293,13 +1290,6 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
 
 	if (accounting_init(hapd)) {
 		wpa_printf(MSG_ERROR, "Accounting initialization failed.");
-		return -1;
-	}
-
-	if (conf->ieee802_11f &&
-	    (hapd->iapp = iapp_init(hapd, conf->iapp_iface)) == NULL) {
-		wpa_printf(MSG_ERROR, "IEEE 802.11F (IAPP) initialization "
-			   "failed.");
 		return -1;
 	}
 
@@ -3055,10 +3045,6 @@ void hostapd_new_assoc_sta(struct hostapd_data *hapd, struct sta_info *sta,
 
 	hostapd_prune_associations(hapd, sta->addr);
 	ap_sta_clear_disconnect_timeouts(hapd, sta);
-
-	/* IEEE 802.11F (IAPP) */
-	if (hapd->conf->ieee802_11f)
-		iapp_new_station(hapd->iapp, sta);
 
 #ifdef CONFIG_P2P
 	if (sta->p2p_ie == NULL && !sta->no_p2p_set) {

@@ -325,10 +325,6 @@ struct hostapd_bss_config {
 	int erp_send_reauth_start;
 	char *erp_domain;
 
-	int ieee802_11f; /* use IEEE 802.11f (IAPP) */
-	char iapp_iface[IFNAMSIZ + 1]; /* interface used with IAPP broadcast
-					* frames */
-
 	enum macaddr_acl {
 		ACCEPT_UNLESS_DENIED = 0,
 		DENY_UNLESS_ACCEPTED = 1,

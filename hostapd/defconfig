@@ -44,9 +44,6 @@ CONFIG_LIBNL32=y
 # Driver interface for no driver (e.g., RADIUS server only)
 #CONFIG_DRIVER_NONE=y
 
-# IEEE 802.11F/IAPP
-CONFIG_IAPP=y
-
 # WPA2/IEEE 802.11i RSN pre-authentication
 CONFIG_RSN_PREAUTH=y
 
