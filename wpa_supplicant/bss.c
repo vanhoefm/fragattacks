@@ -1038,23 +1038,30 @@ struct wpa_bss * wpa_bss_get_bssid_latest(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_P2P
 /**
- * wpa_bss_get_p2p_dev_addr - Fetch a BSS table entry based on P2P Device Addr
+ * wpa_bss_get_p2p_dev_addr - Fetch the latest BSS table entry based on P2P Device Addr
  * @wpa_s: Pointer to wpa_supplicant data
  * @dev_addr: P2P Device Address of the GO
  * Returns: Pointer to the BSS entry or %NULL if not found
+ *
+ * This function tries to find the entry that has the most recent update. This
+ * can help in finding the correct entry in cases where the SSID of the P2P
+ * Device may have changed recently.
  */
 struct wpa_bss * wpa_bss_get_p2p_dev_addr(struct wpa_supplicant *wpa_s,
 					  const u8 *dev_addr)
 {
-	struct wpa_bss *bss;
+	struct wpa_bss *bss, *found = NULL;
 	dl_list_for_each_reverse(bss, &wpa_s->bss, struct wpa_bss, list) {
 		u8 addr[ETH_ALEN];
 		if (p2p_parse_dev_addr((const u8 *) (bss + 1), bss->ie_len,
-				       addr) == 0 &&
-		    os_memcmp(addr, dev_addr, ETH_ALEN) == 0)
-			return bss;
+				       addr) != 0 ||
+		    os_memcmp(addr, dev_addr, ETH_ALEN) != 0)
+			continue;
+		if (!found ||
+		    os_reltime_before(&found->last_update, &bss->last_update))
+			found = bss;
 	}
-	return NULL;
+	return found;
 }
 #endif /* CONFIG_P2P */
 
