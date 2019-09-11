@@ -872,6 +872,8 @@ struct hostapd_config {
 	int rts_threshold;
 	int fragm_threshold;
 	u8 channel;
+	int enable_edmg;
+	u8 edmg_channel;
 	u8 acs;
 	struct wpa_freq_range_list acs_ch_list;
 	int acs_exclude_dfs;
