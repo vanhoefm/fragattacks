@@ -847,6 +847,8 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	INT(mode);
 	INT(no_auto_peer);
 	INT(frequency);
+	INT(enable_edmg);
+	INT(edmg_channel);
 	INT(fixed_freq);
 #ifdef CONFIG_ACS
 	INT(acs);
