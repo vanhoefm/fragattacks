@@ -960,6 +960,8 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 				      iface->conf->hw_mode,
 				      channel->freq,
 				      channel->chan,
+				      iface->conf->enable_edmg,
+				      iface->conf->edmg_channel,
 				      iface->conf->ieee80211n,
 				      iface->conf->ieee80211ac,
 				      iface->conf->ieee80211ax,

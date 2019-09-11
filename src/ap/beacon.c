@@ -1434,7 +1434,8 @@ int ieee802_11_set_beacon(struct hostapd_data *hapd)
 
 	if (cmode &&
 	    hostapd_set_freq_params(&freq, iconf->hw_mode, iface->freq,
-				    iconf->channel, iconf->ieee80211n,
+				    iconf->channel, iconf->enable_edmg,
+				    iconf->edmg_channel, iconf->ieee80211n,
 				    iconf->ieee80211ac, iconf->ieee80211ax,
 				    iconf->secondary_channel,
 				    hostapd_get_oper_chwidth(iconf),
