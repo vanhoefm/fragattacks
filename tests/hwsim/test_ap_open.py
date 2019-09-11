@@ -903,3 +903,45 @@ def test_ap_no_auth_ack(dev, apdev):
         raise Exception("TX status for Deauthentication frame not reported")
     if "ok=0 buf=c0" not in ev:
         raise Exception("Unexpected TX status contents (disconnect): " + ev)
+
+def test_ap_open_layer_2_update(dev, apdev, params):
+    """AP with open mode (no security) and Layer 2 Update frame"""
+    prefix = "ap_open_layer_2_update"
+    ifname = apdev[0]["ifname"]
+    cap = os.path.join(params['logdir'], prefix + "." + ifname + ".pcap")
+
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
+    capture = subprocess.Popen(['tcpdump', '-p', '-U', '-i', ifname,
+                                '-w', cap, '-s', '2000'],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    time.sleep(1)
+
+    dev[0].connect("open", key_mgmt="NONE", scan_freq="2412")
+    hapd.wait_sta()
+    hwsim_utils.test_connectivity(dev[0], hapd)
+    time.sleep(1)
+    hwsim_utils.test_connectivity(dev[0], hapd)
+    time.sleep(0.5)
+    capture.terminate()
+    res = capture.communicate()
+    logger.info("tcpdump stdout: " + res[0].decode())
+    logger.info("tcpdump stderr: " + res[1].decode())
+    time.sleep(0.5)
+
+    # Check for Layer 2 Update frame and unexpected frames from the station
+    # that did not fully complete authentication.
+    res = run_tshark(cap, "basicxid.llc.xid.format == 0x81",
+                     ["eth.src"], wait=False)
+    real_sta_seen = False
+    unexpected_sta_seen = False
+    real_addr = dev[0].own_addr()
+    for l in res.splitlines():
+        if l == real_addr:
+            real_sta_seen = True
+        else:
+            unexpected_sta_seen = True
+    if unexpected_sta_seen:
+        raise Exception("Layer 2 Update frame from unexpected STA seen")
+    if not real_sta_seen:
+        raise Exception("Layer 2 Update frame from real STA not seen")

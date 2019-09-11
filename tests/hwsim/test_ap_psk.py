@@ -22,6 +22,7 @@ import hostapd
 from utils import HwsimSkip, fail_test, skip_with_fips, start_monitor, stop_monitor, radiotap_build
 import hwsim_utils
 from wpasupplicant import WpaSupplicant
+from tshark import run_tshark
 
 def check_mib(dev, vals):
     mib = dev.get_mib()
@@ -3208,3 +3209,82 @@ def test_ap_wpa2_psk_local_error(dev, apdev):
             raise Exception("Disconnection event not reported")
         dev[0].request("REMOVE_NETWORK all")
         dev[0].dump_monitor()
+
+def test_ap_wpa2_psk_inject_assoc(dev, apdev, params):
+    """WPA2-PSK AP and Authentication and Association Request frame injection"""
+    prefix = "ap_wpa2_psk_inject_assoc"
+    ifname = apdev[0]["ifname"]
+    cap = os.path.join(params['logdir'], prefix + "." + ifname + ".pcap")
+
+    ssid = "test"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK"
+    hapd = hostapd.add_ap(apdev[0], params)
+    capture = subprocess.Popen(['tcpdump', '-p', '-U', '-i', ifname,
+                                '-w', cap, '-s', '2000'],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    time.sleep(1)
+
+    bssid = hapd.own_addr().replace(':', '')
+
+    hapd.request("SET ext_mgmt_frame_handling 1")
+    addr = "021122334455"
+    auth = "b0003a01" + bssid + addr + bssid + '1000000001000000'
+    res = hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=%s" % auth)
+    if "OK" not in res:
+        raise Exception("MGMT_RX_PROCESS failed")
+    ev = hapd.wait_event(["MGMT-TX-STATUS"], timeout=5)
+    if ev is None:
+        raise Exception("No TX status seen")
+    ev = ev.replace("ok=0", "ok=1")
+    cmd = "MGMT_TX_STATUS_PROCESS %s" % (" ".join(ev.split(' ')[1:4]))
+    if "OK" not in hapd.request(cmd):
+        raise Exception("MGMT_TX_STATUS_PROCESS failed")
+
+    assoc = "00003a01" + bssid + addr + bssid + '2000' + '31040500' + '000474657374' + '010802040b160c121824' + '30140100000fac040100000fac040100000fac020000'
+    res = hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=%s" % assoc)
+    if "OK" not in res:
+        raise Exception("MGMT_RX_PROCESS failed")
+    ev = hapd.wait_event(["MGMT-TX-STATUS"], timeout=5)
+    if ev is None:
+        raise Exception("No TX status seen")
+    ev = ev.replace("ok=0", "ok=1")
+    cmd = "MGMT_TX_STATUS_PROCESS %s" % (" ".join(ev.split(' ')[1:4]))
+    if "OK" not in hapd.request(cmd):
+        raise Exception("MGMT_TX_STATUS_PROCESS failed")
+    hapd.request("SET ext_mgmt_frame_handling 0")
+
+    dev[0].connect(ssid, psk="12345678", scan_freq="2412")
+    hapd.wait_sta()
+    hwsim_utils.test_connectivity(dev[0], hapd)
+    time.sleep(1)
+    hwsim_utils.test_connectivity(dev[0], hapd)
+    time.sleep(0.5)
+    capture.terminate()
+    res = capture.communicate()
+    logger.info("tcpdump stdout: " + res[0].decode())
+    logger.info("tcpdump stderr: " + res[1].decode())
+    time.sleep(0.5)
+
+    # Check for Layer 2 Update frame and unexpected frames from the station
+    # that did not fully complete authentication.
+    res = run_tshark(cap, "basicxid.llc.xid.format == 0x81",
+                     ["eth.src"], wait=False)
+    real_sta_seen = False
+    unexpected_sta_seen = False
+    real_addr = dev[0].own_addr()
+    for l in res.splitlines():
+        if l == real_addr:
+            real_sta_seen = True
+        else:
+            unexpected_sta_seen = True
+    if unexpected_sta_seen:
+        raise Exception("Layer 2 Update frame from unexpected STA seen")
+    if not real_sta_seen:
+        raise Exception("Layer 2 Update frame from real STA not seen")
+
+    res = run_tshark(cap, "eth.src == 02:11:22:33:44:55", ["eth.src"],
+                     wait=False)
+    if len(res) > 0:
+        raise Exception("Unexpected frame from unauthorized STA seen")
