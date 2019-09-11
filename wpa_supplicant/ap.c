@@ -773,6 +773,20 @@ int wpa_supplicant_create_ap(struct wpa_supplicant *wpa_s,
 		ssid->frequency = 2462; /* default channel 11 */
 	params.freq.freq = ssid->frequency;
 
+	if (ssid->mode == WPAS_MODE_AP && ssid->enable_edmg) {
+		u8 primary_channel;
+
+		if (ieee80211_freq_to_chan(ssid->frequency, &primary_channel) ==
+		    NUM_HOSTAPD_MODES) {
+			wpa_printf(MSG_WARNING,
+				   "EDMG: Failed to get the primary channel");
+			return -1;
+		}
+
+		hostapd_encode_edmg_chan(ssid->enable_edmg, ssid->edmg_channel,
+					 primary_channel, &params.freq.edmg);
+	}
+
 	params.wpa_proto = ssid->proto;
 	if (ssid->key_mgmt & WPA_KEY_MGMT_PSK)
 		wpa_s->key_mgmt = WPA_KEY_MGMT_PSK;
@@ -911,6 +925,8 @@ int wpa_supplicant_create_ap(struct wpa_supplicant *wpa_s,
 	eapol_sm_notify_config(wpa_s->eapol, NULL, NULL);
 	os_memcpy(wpa_s->bssid, wpa_s->own_addr, ETH_ALEN);
 	wpa_s->assoc_freq = ssid->frequency;
+	wpa_s->ap_iface->conf->enable_edmg = ssid->enable_edmg;
+	wpa_s->ap_iface->conf->edmg_channel = ssid->edmg_channel;
 
 #if defined(CONFIG_P2P) && defined(CONFIG_ACS)
 	if (wpa_s->p2p_go_do_acs) {
