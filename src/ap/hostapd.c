@@ -1590,6 +1590,9 @@ static int setup_interface2(struct hostapd_iface *iface)
 			wpa_printf(MSG_DEBUG, "Interface initialization will be completed in a callback (ACS)");
 			return 0;
 		}
+		ret = hostapd_check_edmg_capab(iface);
+		if (ret < 0)
+			goto fail;
 		ret = hostapd_check_ht_capab(iface);
 		if (ret < 0)
 			goto fail;

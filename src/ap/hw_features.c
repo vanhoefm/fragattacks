@@ -704,6 +704,32 @@ int hostapd_check_ht_capab(struct hostapd_iface *iface)
 }
 
 
+int hostapd_check_edmg_capab(struct hostapd_iface *iface)
+{
+	struct hostapd_hw_modes *mode = iface->hw_features;
+	struct ieee80211_edmg_config edmg;
+
+	if (!iface->conf->enable_edmg)
+		return 0;
+
+	hostapd_encode_edmg_chan(iface->conf->enable_edmg,
+				 iface->conf->edmg_channel,
+				 iface->conf->channel,
+				 &edmg);
+
+	if (mode->edmg.channels && ieee802_edmg_is_allowed(mode->edmg, edmg))
+		return 0;
+
+	wpa_printf(MSG_WARNING, "Requested EDMG configuration is not valid");
+	wpa_printf(MSG_INFO, "EDMG capab: channels 0x%x, bw_config %d",
+		   mode->edmg.channels, mode->edmg.bw_config);
+	wpa_printf(MSG_INFO,
+		   "Requested EDMG configuration: channels 0x%x, bw_config %d",
+		   edmg.channels, edmg.bw_config);
+	return -1;
+}
+
+
 static int hostapd_is_usable_chan(struct hostapd_iface *iface,
 				  int channel, int primary)
 {
