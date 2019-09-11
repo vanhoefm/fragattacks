@@ -709,6 +709,8 @@ int hostapd_ctrl_iface_status(struct hostapd_data *hapd, char *buf,
 
 	ret = os_snprintf(buf + len, buflen - len,
 			  "channel=%u\n"
+			  "edmg_enable=%d\n"
+			  "edmg_channel=%d\n"
 			  "secondary_channel=%d\n"
 			  "ieee80211n=%d\n"
 			  "ieee80211ac=%d\n"
@@ -716,6 +718,8 @@ int hostapd_ctrl_iface_status(struct hostapd_data *hapd, char *buf,
 			  "beacon_int=%u\n"
 			  "dtim_period=%d\n",
 			  iface->conf->channel,
+			  iface->conf->enable_edmg,
+			  iface->conf->edmg_channel,
 			  iface->conf->ieee80211n && !hapd->conf->disable_11n ?
 			  iface->conf->secondary_channel : 0,
 			  iface->conf->ieee80211n && !hapd->conf->disable_11n,
