@@ -730,6 +730,67 @@ static int hostapd_is_usable_chan(struct hostapd_iface *iface,
 }
 
 
+static int hostapd_is_usable_edmg(struct hostapd_iface *iface)
+{
+	int i, contiguous = 0;
+	int num_of_enabled = 0;
+	int max_contiguous = 0;
+	struct ieee80211_edmg_config edmg;
+
+	if (!iface->conf->enable_edmg)
+		return 1;
+
+	hostapd_encode_edmg_chan(iface->conf->enable_edmg,
+				 iface->conf->edmg_channel,
+				 iface->conf->channel,
+				 &edmg);
+	if (!(edmg.channels & BIT(iface->conf->channel - 1)))
+		return 0;
+
+	/* 60 GHz channels 1..6 */
+	for (i = 0; i < 6; i++) {
+		if (edmg.channels & BIT(i)) {
+			contiguous++;
+			num_of_enabled++;
+		} else {
+			contiguous = 0;
+			continue;
+		}
+
+		/* P802.11ay defines that the total number of subfields
+		 * set to one does not exceed 4.
+		 */
+		if (num_of_enabled > 4)
+			return 0;
+
+		if (!hostapd_is_usable_chan(iface, i + 1, 1))
+			return 0;
+
+		if (contiguous > max_contiguous)
+			max_contiguous = contiguous;
+	}
+
+	/* Check if the EDMG configuration is valid under the limitations
+	 * of P802.11ay.
+	 */
+	/* check bw_config against contiguous EDMG channels */
+	switch (edmg.bw_config) {
+	case EDMG_BW_CONFIG_4:
+		if (!max_contiguous)
+			return 0;
+		break;
+	case EDMG_BW_CONFIG_5:
+		if (max_contiguous < 2)
+			return 0;
+		break;
+	default:
+		return 0;
+	}
+
+	return 1;
+}
+
+
 static int hostapd_is_usable_chans(struct hostapd_iface *iface)
 {
 	int secondary_chan;
@@ -741,6 +802,9 @@ static int hostapd_is_usable_chans(struct hostapd_iface *iface)
 		return 0;
 
 	if (!hostapd_is_usable_chan(iface, iface->conf->channel, 1))
+		return 0;
+
+	if (!hostapd_is_usable_edmg(iface))
 		return 0;
 
 	if (!iface->conf->secondary_channel)
