@@ -3023,6 +3023,117 @@ static void wpas_update_fils_connect_params(struct wpa_supplicant *wpa_s)
 #endif /* CONFIG_FILS && IEEE8021X_EAPOL */
 
 
+static u8 wpa_ie_get_edmg_oper_chans(const u8 *edmg_ie)
+{
+	if (!edmg_ie || edmg_ie[1] < 6)
+		return 0;
+	return edmg_ie[EDMG_BSS_OPERATING_CHANNELS_OFFSET];
+}
+
+
+static u8 wpa_ie_get_edmg_oper_chan_width(const u8 *edmg_ie)
+{
+	if (!edmg_ie || edmg_ie[1] < 6)
+		return 0;
+	return edmg_ie[EDMG_OPERATING_CHANNEL_WIDTH_OFFSET];
+}
+
+
+/* Returns the intersection of two EDMG configurations.
+ * Note: The current implementation is limited to CB2 only (CB1 included),
+ * i.e., the implementation supports up to 2 contiguous channels.
+ * For supporting non-contiguous (aggregated) channels and for supporting
+ * CB3 and above, this function will need to be extended.
+ */
+static struct ieee80211_edmg_config
+get_edmg_intersection(struct ieee80211_edmg_config a,
+		      struct ieee80211_edmg_config b,
+		      u8 primary_channel)
+{
+	struct ieee80211_edmg_config result;
+	int i, contiguous = 0;
+	int max_contiguous = 0;
+
+	result.channels = b.channels & a.channels;
+	if (!result.channels) {
+		wpa_printf(MSG_DEBUG,
+			   "EDMG not possible: cannot intersect channels 0x%x and 0x%x",
+			   a.channels, b.channels);
+		goto fail;
+	}
+
+	if (!(result.channels & BIT(primary_channel - 1))) {
+		wpa_printf(MSG_DEBUG,
+			   "EDMG not possible: the primary channel %d is not one of the intersected channels 0x%x",
+			   primary_channel, result.channels);
+		goto fail;
+	}
+
+	/* Find max contiguous channels */
+	for (i = 0; i < 6; i++) {
+		if (result.channels & BIT(i))
+			contiguous++;
+		else
+			contiguous = 0;
+
+		if (contiguous > max_contiguous)
+			max_contiguous = contiguous;
+	}
+
+	/* Assuming AP and STA supports ONLY contiguous channels,
+	 * bw configuration can have value between 4-7.
+	 */
+	if ((b.bw_config < a.bw_config))
+		result.bw_config = b.bw_config;
+	else
+		result.bw_config = a.bw_config;
+
+	if ((max_contiguous >= 2 && result.bw_config < EDMG_BW_CONFIG_5) ||
+	    (max_contiguous >= 1 && result.bw_config < EDMG_BW_CONFIG_4)) {
+		wpa_printf(MSG_DEBUG,
+			   "EDMG not possible: not enough contiguous channels %d for supporting CB1 or CB2",
+			   max_contiguous);
+		goto fail;
+	}
+
+	return result;
+
+fail:
+	result.channels = 0;
+	result.bw_config = 0;
+	return result;
+}
+
+
+static struct ieee80211_edmg_config
+get_supported_edmg(struct wpa_supplicant *wpa_s,
+		   struct hostapd_freq_params *freq,
+		   struct ieee80211_edmg_config request_edmg)
+{
+	enum hostapd_hw_mode hw_mode;
+	struct hostapd_hw_modes *mode = NULL;
+	u8 primary_channel;
+
+	if (!wpa_s->hw.modes)
+		goto fail;
+
+	hw_mode = ieee80211_freq_to_chan(freq->freq, &primary_channel);
+	if (hw_mode == NUM_HOSTAPD_MODES)
+		goto fail;
+
+	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, hw_mode);
+	if (!mode)
+		goto fail;
+
+	return get_edmg_intersection(mode->edmg, request_edmg, primary_channel);
+
+fail:
+	request_edmg.channels = 0;
+	request_edmg.bw_config = 0;
+	return request_edmg;
+}
+
+
 #ifdef CONFIG_MBO
 void wpas_update_mbo_connect_params(struct wpa_supplicant *wpa_s)
 {
@@ -3058,6 +3169,7 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 	struct wpa_ssid *ssid = cwork->ssid;
 	struct wpa_supplicant *wpa_s = work->wpa_s;
 	u8 *wpa_ie;
+	const u8 *edmg_ie_oper;
 	int use_crypt, ret, i, bssid_changed;
 	unsigned int cipher_pairwise, cipher_group, cipher_group_mgmt;
 	struct wpa_driver_associate_params params;
@@ -3239,6 +3351,71 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 			params.beacon_int = ssid->beacon_int;
 		else
 			params.beacon_int = wpa_s->conf->beacon_int;
+	}
+
+	if (bss && ssid->enable_edmg)
+		edmg_ie_oper = get_ie_ext((const u8 *) (bss + 1), bss->ie_len,
+					  WLAN_EID_EXT_EDMG_OPERATION);
+	else
+		edmg_ie_oper = NULL;
+
+	if (edmg_ie_oper) {
+		params.freq.edmg.channels =
+			wpa_ie_get_edmg_oper_chans(edmg_ie_oper);
+		params.freq.edmg.bw_config =
+			wpa_ie_get_edmg_oper_chan_width(edmg_ie_oper);
+		wpa_printf(MSG_DEBUG,
+			   "AP supports EDMG channels 0x%x, bw_config %d",
+			   params.freq.edmg.channels,
+			   params.freq.edmg.bw_config);
+
+		/* User may ask for specific EDMG channel for EDMG connection
+		 * (must be supported by AP)
+		 */
+		if (ssid->edmg_channel) {
+			struct ieee80211_edmg_config configured_edmg;
+			enum hostapd_hw_mode hw_mode;
+			u8 primary_channel;
+
+			hw_mode = ieee80211_freq_to_chan(bss->freq,
+							 &primary_channel);
+			if (hw_mode == NUM_HOSTAPD_MODES)
+				goto edmg_fail;
+
+			hostapd_encode_edmg_chan(ssid->enable_edmg,
+						 ssid->edmg_channel,
+						 primary_channel,
+						 &configured_edmg);
+
+			if (ieee802_edmg_is_allowed(params.freq.edmg,
+						    configured_edmg)) {
+				params.freq.edmg = configured_edmg;
+				wpa_printf(MSG_DEBUG,
+					   "Use EDMG channel %d for connection",
+					   ssid->edmg_channel);
+			} else {
+			edmg_fail:
+				params.freq.edmg.channels = 0;
+				params.freq.edmg.bw_config = 0;
+				wpa_printf(MSG_WARNING,
+					   "EDMG channel %d not supported by AP, fallback to DMG",
+					   ssid->edmg_channel);
+			}
+		}
+
+		if (params.freq.edmg.channels) {
+			wpa_printf(MSG_DEBUG,
+				   "EDMG before: channels 0x%x, bw_config %d",
+				   params.freq.edmg.channels,
+				   params.freq.edmg.bw_config);
+			params.freq.edmg = get_supported_edmg(wpa_s,
+							      &params.freq,
+							      params.freq.edmg);
+			wpa_printf(MSG_DEBUG,
+				   "EDMG after: channels 0x%x, bw_config %d",
+				   params.freq.edmg.channels,
+				   params.freq.edmg.bw_config);
+		}
 	}
 
 	params.pairwise_suite = cipher_pairwise;
