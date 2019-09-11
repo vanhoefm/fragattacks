@@ -5248,8 +5248,10 @@ void ieee802_11_rx_from_unknown(struct hostapd_data *hapd, const u8 *src,
 
 	wpa_printf(MSG_DEBUG, "Data/PS-poll frame from not associated STA "
 		   MACSTR, MAC2STR(src));
-	if (is_multicast_ether_addr(src)) {
-		/* Broadcast bit set in SA?! Ignore the frame silently. */
+	if (is_multicast_ether_addr(src) || is_zero_ether_addr(src) ||
+	    os_memcmp(src, hapd->own_addr, ETH_ALEN) == 0) {
+		/* Broadcast bit set in SA or unexpected SA?! Ignore the frame
+		 * silently. */
 		return;
 	}
 
