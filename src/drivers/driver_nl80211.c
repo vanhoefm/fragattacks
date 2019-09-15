@@ -3011,7 +3011,8 @@ static int wpa_driver_nl80211_set_key(const char *ifname, struct i802_bss *bss,
 {
 	struct wpa_driver_nl80211_data *drv = bss->drv;
 	int ifindex;
-	struct nl_msg *msg = NULL;
+	struct nl_msg *msg;
+	struct nl_msg *key_msg;
 	int ret;
 	int tdls = 0;
 
@@ -3045,26 +3046,31 @@ static int wpa_driver_nl80211_set_key(const char *ifname, struct i802_bss *bss,
 	    (drv->capa.flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_8021X))
 		return nl80211_set_pmk(drv, key, key_len, addr);
 
+	key_msg = nlmsg_alloc();
+	if (!key_msg)
+		return -ENOBUFS;
+
 	if (alg == WPA_ALG_NONE) {
 		msg = nl80211_ifindex_msg(drv, ifindex, 0, NL80211_CMD_DEL_KEY);
 		if (!msg)
-			return -ENOBUFS;
+			goto fail2;
 	} else {
 		u32 suite;
 
 		suite = wpa_alg_to_cipher_suite(alg, key_len);
 		if (!suite)
-			goto fail;
+			goto fail2;
 		msg = nl80211_ifindex_msg(drv, ifindex, 0, NL80211_CMD_NEW_KEY);
-		if (!msg ||
-		    nla_put(msg, NL80211_ATTR_KEY_DATA, key_len, key) ||
-		    nla_put_u32(msg, NL80211_ATTR_KEY_CIPHER, suite))
+		if (!msg)
+			goto fail2;
+		if (nla_put(key_msg, NL80211_KEY_DATA, key_len, key) ||
+		    nla_put_u32(key_msg, NL80211_KEY_CIPHER, suite))
 			goto fail;
 		wpa_hexdump_key(MSG_DEBUG, "nl80211: KEY_DATA", key, key_len);
 	}
 
 	if (seq && seq_len) {
-		if (nla_put(msg, NL80211_ATTR_KEY_SEQ, seq_len, seq))
+		if (nla_put(key_msg, NL80211_KEY_SEQ, seq_len, seq))
 			goto fail;
 		wpa_hexdump(MSG_DEBUG, "nl80211: KEY_SEQ", seq, seq_len);
 	}
@@ -3076,7 +3082,7 @@ static int wpa_driver_nl80211_set_key(const char *ifname, struct i802_bss *bss,
 
 		if (alg != WPA_ALG_WEP && key_idx && !set_tx) {
 			wpa_printf(MSG_DEBUG, "   RSN IBSS RX GTK");
-			if (nla_put_u32(msg, NL80211_ATTR_KEY_TYPE,
+			if (nla_put_u32(key_msg, NL80211_KEY_TYPE,
 					NL80211_KEYTYPE_GROUP))
 				goto fail;
 		}
@@ -3085,14 +3091,18 @@ static int wpa_driver_nl80211_set_key(const char *ifname, struct i802_bss *bss,
 
 		wpa_printf(MSG_DEBUG, "   broadcast key");
 
-		types = nla_nest_start(msg, NL80211_ATTR_KEY_DEFAULT_TYPES);
+		types = nla_nest_start(key_msg, NL80211_KEY_DEFAULT_TYPES);
 		if (!types ||
-		    nla_put_flag(msg, NL80211_KEY_DEFAULT_TYPE_MULTICAST))
+		    nla_put_flag(key_msg, NL80211_KEY_DEFAULT_TYPE_MULTICAST))
 			goto fail;
-		nla_nest_end(msg, types);
+		nla_nest_end(key_msg, types);
 	}
-	if (nla_put_u8(msg, NL80211_ATTR_KEY_IDX, key_idx))
+	if (nla_put_u8(key_msg, NL80211_KEY_IDX, key_idx) ||
+	    nla_put_nested(msg, NL80211_ATTR_KEY, key_msg))
 		goto fail;
+	nl80211_nlmsg_clear(key_msg);
+	nlmsg_free(key_msg);
+	key_msg = NULL;
 
 	ret = send_and_recv_msgs(drv, msg, NULL, key ? (void *) -1 : NULL);
 	if ((ret == -ENOENT || ret == -ENOLINK) && alg == WPA_ALG_NONE)
@@ -3111,33 +3121,45 @@ static int wpa_driver_nl80211_set_key(const char *ifname, struct i802_bss *bss,
 	    !is_broadcast_ether_addr(addr))
 		return ret;
 
+	key_msg = nlmsg_alloc();
+	if (!key_msg)
+		return -ENOBUFS;
+
 	msg = nl80211_ifindex_msg(drv, ifindex, 0, NL80211_CMD_SET_KEY);
-	if (!msg ||
-	    nla_put_u8(msg, NL80211_ATTR_KEY_IDX, key_idx) ||
-	    nla_put_flag(msg, (alg == WPA_ALG_IGTK ||
-			       alg == WPA_ALG_BIP_GMAC_128 ||
-			       alg == WPA_ALG_BIP_GMAC_256 ||
-			       alg == WPA_ALG_BIP_CMAC_256) ?
-			 NL80211_ATTR_KEY_DEFAULT_MGMT :
-			 NL80211_ATTR_KEY_DEFAULT))
+	if (!msg)
+		goto fail2;
+	if (!key_msg ||
+	    nla_put_u8(key_msg, NL80211_KEY_IDX, key_idx) ||
+	    nla_put_flag(key_msg, (alg == WPA_ALG_IGTK ||
+				   alg == WPA_ALG_BIP_GMAC_128 ||
+				   alg == WPA_ALG_BIP_GMAC_256 ||
+				   alg == WPA_ALG_BIP_CMAC_256) ?
+				   NL80211_KEY_DEFAULT_MGMT :
+				   NL80211_KEY_DEFAULT))
 		goto fail;
 	if (addr && is_broadcast_ether_addr(addr)) {
 		struct nlattr *types;
 
-		types = nla_nest_start(msg, NL80211_ATTR_KEY_DEFAULT_TYPES);
+		types = nla_nest_start(key_msg, NL80211_KEY_DEFAULT_TYPES);
 		if (!types ||
-		    nla_put_flag(msg, NL80211_KEY_DEFAULT_TYPE_MULTICAST))
+		    nla_put_flag(key_msg, NL80211_KEY_DEFAULT_TYPE_MULTICAST))
 			goto fail;
-		nla_nest_end(msg, types);
+		nla_nest_end(key_msg, types);
 	} else if (addr) {
 		struct nlattr *types;
 
-		types = nla_nest_start(msg, NL80211_ATTR_KEY_DEFAULT_TYPES);
+		types = nla_nest_start(key_msg, NL80211_KEY_DEFAULT_TYPES);
 		if (!types ||
-		    nla_put_flag(msg, NL80211_KEY_DEFAULT_TYPE_UNICAST))
+		    nla_put_flag(key_msg, NL80211_KEY_DEFAULT_TYPE_UNICAST))
 			goto fail;
-		nla_nest_end(msg, types);
+		nla_nest_end(key_msg, types);
 	}
+
+	if (nla_put_nested(msg, NL80211_ATTR_KEY, key_msg))
+		goto fail;
+	nl80211_nlmsg_clear(key_msg);
+	nlmsg_free(key_msg);
+	key_msg = NULL;
 
 	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
 	if (ret == -ENOENT)
@@ -3150,6 +3172,9 @@ static int wpa_driver_nl80211_set_key(const char *ifname, struct i802_bss *bss,
 fail:
 	nl80211_nlmsg_clear(msg);
 	nlmsg_free(msg);
+fail2:
+	nl80211_nlmsg_clear(key_msg);
+	nlmsg_free(key_msg);
 	return -ENOBUFS;
 }
 
