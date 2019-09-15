@@ -3666,6 +3666,7 @@ def wait_auth_success(responder, initiator, configurator=None, enrollee=None,
                       allow_configurator_failure=False,
                       require_configurator_failure=False,
                       timeout=5, stop_responder=False, stop_initiator=False):
+    res = {}
     ev = responder.wait_event(["DPP-AUTH-SUCCESS", "DPP-FAIL"], timeout=timeout)
     if ev is None or "DPP-AUTH-SUCCESS" not in ev:
         raise Exception("DPP authentication did not succeed (Responder)")
@@ -3681,6 +3682,8 @@ def wait_auth_success(responder, initiator, configurator=None, enrollee=None,
             raise Exception("DPP configuration did not succeed (Configurator")
         if "DPP-CONF-SENT" in ev and require_configurator_failure:
             raise Exception("DPP configuration succeeded (Configurator)")
+        if "DPP-CONF-SENT" in ev and "wait_conn_status=1" in ev:
+            res['wait_conn_status'] = True
     if enrollee:
         ev = enrollee.wait_event(["DPP-CONF-RECEIVED",
                                   "DPP-CONF-FAILED"], timeout=5)
@@ -3692,6 +3695,7 @@ def wait_auth_success(responder, initiator, configurator=None, enrollee=None,
         responder.request("DPP_STOP_LISTEN")
     if stop_initiator:
         initiator.request("DPP_STOP_LISTEN")
+    return res
 
 def wait_conf_completion(configurator, enrollee):
     ev = configurator.wait_event(["DPP-CONF-SENT"], timeout=5)
@@ -4675,3 +4679,94 @@ def run_dpp_controller_rx_errors(dev, apdev):
         except socket.timeout:
             pass
         sock.close()
+
+def test_dpp_conn_status_success(dev, apdev):
+    """DPP connection status - success"""
+    try:
+        run_dpp_conn_status(dev, apdev)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+
+def test_dpp_conn_status_wrong_passphrase(dev, apdev):
+    """DPP connection status - wrong passphrase"""
+    try:
+        run_dpp_conn_status(dev, apdev, result=2)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+
+def test_dpp_conn_status_no_ap(dev, apdev):
+    """DPP connection status - no AP"""
+    try:
+        run_dpp_conn_status(dev, apdev, result=10)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+
+def test_dpp_conn_status_connector_mismatch(dev, apdev):
+    """DPP connection status - invalid Connector"""
+    try:
+        run_dpp_conn_status(dev, apdev, result=8)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+
+def run_dpp_conn_status(dev, apdev, result=0):
+    check_dpp_capab(dev[0], min_ver=2)
+    check_dpp_capab(dev[1], min_ver=2)
+
+    if result != 10:
+        if result == 7 or result == 8:
+            params = {"ssid": "dpp-status",
+                      "wpa": "2",
+                      "wpa_key_mgmt": "DPP",
+                      "ieee80211w": "2",
+                      "rsn_pairwise": "CCMP",
+                      "dpp_connector": params1_ap_connector,
+                      "dpp_csign": params1_csign,
+                      "dpp_netaccesskey": params1_ap_netaccesskey}
+        else:
+            if result == 2:
+                passphrase = "wrong passphrase"
+            else:
+                passphrase = "secret passphrase"
+            params = hostapd.wpa2_params(ssid="dpp-status",
+                                         passphrase=passphrase)
+        try:
+            hapd = hostapd.add_ap(apdev[0], params)
+        except:
+            raise HwsimSkip("DPP not supported")
+
+    dev[0].request("SET sae_groups ")
+    dev[0].set("dpp_config_processing", "2")
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+
+    dev[0].dpp_listen(2412)
+    if result == 7 or result == 8:
+        conf = 'sta-dpp'
+        passphrase = None
+        configurator = dev[1].dpp_configurator_add()
+    else:
+        conf = 'sta-psk'
+        passphrase = "secret passphrase"
+        configurator = None
+    dev[1].dpp_auth_init(uri=uri0, conf=conf, ssid="dpp-status",
+                         passphrase=passphrase, configurator=configurator,
+                         conn_status=True)
+    res = wait_auth_success(dev[0], dev[1], configurator=dev[1],
+                            enrollee=dev[0])
+    if 'wait_conn_status' not in res:
+        raise Exception("Configurator did not request connection status")
+
+    ev = dev[1].wait_event(["DPP-CONN-STATUS-RESULT"], timeout=20)
+    if ev is None:
+        raise Exception("No connection status reported")
+    if "timeout" in ev:
+        raise Exception("Connection status result timeout")
+    if "result=%d" % result not in ev:
+        raise Exception("Unexpected connection status result: " + ev)
+    if "ssid=dpp-status" not in ev:
+        raise Exception("SSID not reported")
+
+    if result == 0:
+        dev[0].wait_connected()
+    if result == 10 and "channel_list=" not in ev:
+        raise Exception("Channel list not reported for no-AP")

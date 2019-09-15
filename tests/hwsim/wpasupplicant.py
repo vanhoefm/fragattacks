@@ -1458,7 +1458,7 @@ class WpaSupplicant:
     def dpp_auth_init(self, peer=None, uri=None, conf=None, configurator=None,
                       extra=None, own=None, role=None, neg_freq=None,
                       ssid=None, passphrase=None, expect_fail=False,
-                      tcp_addr=None, tcp_port=None):
+                      tcp_addr=None, tcp_port=None, conn_status=False):
         cmd = "DPP_AUTH_INIT"
         if peer is None:
             peer = self.dpp_qr_code(uri)
@@ -1483,6 +1483,8 @@ class WpaSupplicant:
             cmd += " tcp_addr=" + tcp_addr
         if tcp_port:
             cmd += " tcp_port=" + tcp_port
+        if conn_status:
+            cmd += " conn_status=1"
         res = self.request(cmd)
         if expect_fail:
             if "FAIL" not in res:
