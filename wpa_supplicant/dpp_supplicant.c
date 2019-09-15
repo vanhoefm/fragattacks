@@ -1270,6 +1270,24 @@ static void wpas_dpp_config_result_wait_timeout(void *eloop_ctx,
 }
 
 
+static void wpas_dpp_conn_status_result_wait_timeout(void *eloop_ctx,
+						     void *timeout_ctx)
+{
+	struct wpa_supplicant *wpa_s = eloop_ctx;
+	struct dpp_authentication *auth = wpa_s->dpp_auth;
+
+	if (!auth || !auth->waiting_conn_status_result)
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Timeout while waiting for Connection Status Result");
+	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONN_STATUS_RESULT "timeout");
+	wpas_dpp_listen_stop(wpa_s);
+	dpp_auth_deinit(auth);
+	wpa_s->dpp_auth = NULL;
+}
+
+
 static void wpas_dpp_rx_conf_result(struct wpa_supplicant *wpa_s, const u8 *src,
 				    const u8 *hdr, const u8 *buf, size_t len)
 {
@@ -1293,6 +1311,23 @@ static void wpas_dpp_rx_conf_result(struct wpa_supplicant *wpa_s, const u8 *src,
 
 	status = dpp_conf_result_rx(auth, hdr, buf, len);
 
+	if (status == DPP_STATUS_OK && auth->send_conn_status) {
+		wpa_msg(wpa_s, MSG_INFO,
+			DPP_EVENT_CONF_SENT "wait_conn_status=1");
+		wpa_printf(MSG_DEBUG, "DPP: Wait for Connection Status Result");
+		eloop_cancel_timeout(wpas_dpp_config_result_wait_timeout,
+				     wpa_s, NULL);
+		auth->waiting_conn_status_result = 1;
+		eloop_cancel_timeout(wpas_dpp_conn_status_result_wait_timeout,
+				     wpa_s, NULL);
+		eloop_register_timeout(16, 0,
+				       wpas_dpp_conn_status_result_wait_timeout,
+				       wpa_s, NULL);
+		offchannel_send_action_done(wpa_s);
+		wpas_dpp_listen_start(wpa_s, auth->neg_freq ? auth->neg_freq :
+				      auth->curr_freq);
+		return;
+	}
 	offchannel_send_action_done(wpa_s);
 	wpas_dpp_listen_stop(wpa_s);
 	if (status == DPP_STATUS_OK)
@@ -1302,6 +1337,40 @@ static void wpas_dpp_rx_conf_result(struct wpa_supplicant *wpa_s, const u8 *src,
 	dpp_auth_deinit(auth);
 	wpa_s->dpp_auth = NULL;
 	eloop_cancel_timeout(wpas_dpp_config_result_wait_timeout, wpa_s, NULL);
+}
+
+
+static void wpas_dpp_rx_conn_status_result(struct wpa_supplicant *wpa_s,
+					   const u8 *src, const u8 *hdr,
+					   const u8 *buf, size_t len)
+{
+	struct dpp_authentication *auth = wpa_s->dpp_auth;
+	enum dpp_status_error status;
+	u8 ssid[SSID_MAX_LEN];
+	size_t ssid_len = 0;
+	char *channel_list = NULL;
+
+	wpa_printf(MSG_DEBUG, "DPP: Connection Status Result");
+
+	if (!auth || !auth->waiting_conn_status_result) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No DPP Configuration waiting for connection status result - drop");
+		return;
+	}
+
+	status = dpp_conn_status_result_rx(auth, hdr, buf, len,
+					   ssid, &ssid_len, &channel_list);
+	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONN_STATUS_RESULT
+		"result=%d ssid=%s channel_list=%s",
+		status, wpa_ssid_txt(ssid, ssid_len),
+		channel_list ? channel_list : "N/A");
+	os_free(channel_list);
+	offchannel_send_action_done(wpa_s);
+	wpas_dpp_listen_stop(wpa_s);
+	dpp_auth_deinit(auth);
+	wpa_s->dpp_auth = NULL;
+	eloop_cancel_timeout(wpas_dpp_conn_status_result_wait_timeout,
+			     wpa_s, NULL);
 }
 
 
@@ -1848,6 +1917,9 @@ void wpas_dpp_rx_action(struct wpa_supplicant *wpa_s, const u8 *src,
 	case DPP_PA_CONFIGURATION_RESULT:
 		wpas_dpp_rx_conf_result(wpa_s, src, hdr, buf, len);
 		break;
+	case DPP_PA_CONNECTION_STATUS_RESULT:
+		wpas_dpp_rx_conn_status_result(wpa_s, src, hdr, buf, len);
+		break;
 #endif /* CONFIG_DPP2 */
 	default:
 		wpa_printf(MSG_DEBUG,
@@ -2294,6 +2366,8 @@ void wpas_dpp_deinit(struct wpa_supplicant *wpa_s)
 	eloop_cancel_timeout(wpas_dpp_auth_resp_retry_timeout, wpa_s, NULL);
 #ifdef CONFIG_DPP2
 	eloop_cancel_timeout(wpas_dpp_config_result_wait_timeout, wpa_s, NULL);
+	eloop_cancel_timeout(wpas_dpp_conn_status_result_wait_timeout,
+			     wpa_s, NULL);
 	dpp_pfs_free(wpa_s->dpp_pfs);
 	wpa_s->dpp_pfs = NULL;
 #endif /* CONFIG_DPP2 */

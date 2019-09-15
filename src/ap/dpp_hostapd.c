@@ -922,6 +922,24 @@ static void hostapd_dpp_config_result_wait_timeout(void *eloop_ctx,
 }
 
 
+static void hostapd_dpp_conn_status_result_wait_timeout(void *eloop_ctx,
+							void *timeout_ctx)
+{
+	struct hostapd_data *hapd = eloop_ctx;
+	struct dpp_authentication *auth = hapd->dpp_auth;
+
+	if (!auth || !auth->waiting_conf_result)
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Timeout while waiting for Connection Status Result");
+	wpa_msg(hapd->msg_ctx, MSG_INFO,
+		DPP_EVENT_CONN_STATUS_RESULT "timeout");
+	dpp_auth_deinit(auth);
+	hapd->dpp_auth = NULL;
+}
+
+
 static void hostapd_dpp_rx_conf_result(struct hostapd_data *hapd, const u8 *src,
 				       const u8 *hdr, const u8 *buf, size_t len)
 {
@@ -945,6 +963,20 @@ static void hostapd_dpp_rx_conf_result(struct hostapd_data *hapd, const u8 *src,
 
 	status = dpp_conf_result_rx(auth, hdr, buf, len);
 
+	if (status == DPP_STATUS_OK && auth->send_conn_status) {
+		wpa_msg(hapd->msg_ctx, MSG_INFO,
+			DPP_EVENT_CONF_SENT "wait_conn_status=1");
+		wpa_printf(MSG_DEBUG, "DPP: Wait for Connection Status Result");
+		eloop_cancel_timeout(hostapd_dpp_config_result_wait_timeout,
+				     hapd, NULL);
+		eloop_cancel_timeout(
+			hostapd_dpp_conn_status_result_wait_timeout,
+			hapd, NULL);
+		eloop_register_timeout(
+			16, 0, hostapd_dpp_conn_status_result_wait_timeout,
+			hapd, NULL);
+		return;
+	}
 	hostapd_drv_send_action_cancel_wait(hapd);
 	hostapd_dpp_listen_stop(hapd);
 	if (status == DPP_STATUS_OK)
@@ -956,6 +988,41 @@ static void hostapd_dpp_rx_conf_result(struct hostapd_data *hapd, const u8 *src,
 	eloop_cancel_timeout(hostapd_dpp_config_result_wait_timeout, hapd,
 			     NULL);
 }
+
+
+static void hostapd_dpp_rx_conn_status_result(struct hostapd_data *hapd,
+					      const u8 *src, const u8 *hdr,
+					      const u8 *buf, size_t len)
+{
+	struct dpp_authentication *auth = hapd->dpp_auth;
+	enum dpp_status_error status;
+	u8 ssid[SSID_MAX_LEN];
+	size_t ssid_len = 0;
+	char *channel_list = NULL;
+
+	wpa_printf(MSG_DEBUG, "DPP: Connection Status Result");
+
+	if (!auth || !auth->waiting_conn_status_result) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No DPP Configuration waiting for connection status result - drop");
+		return;
+	}
+
+	status = dpp_conn_status_result_rx(auth, hdr, buf, len,
+					   ssid, &ssid_len, &channel_list);
+	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONN_STATUS_RESULT
+		"result=%d ssid=%s channel_list=%s",
+		status, wpa_ssid_txt(ssid, ssid_len),
+		channel_list ? channel_list : "N/A");
+	os_free(channel_list);
+	hostapd_drv_send_action_cancel_wait(hapd);
+	hostapd_dpp_listen_stop(hapd);
+	dpp_auth_deinit(auth);
+	hapd->dpp_auth = NULL;
+	eloop_cancel_timeout(hostapd_dpp_conn_status_result_wait_timeout,
+			     hapd, NULL);
+}
+
 
 #endif /* CONFIG_DPP2 */
 
@@ -1403,6 +1470,9 @@ void hostapd_dpp_rx_action(struct hostapd_data *hapd, const u8 *src,
 	case DPP_PA_CONFIGURATION_RESULT:
 		hostapd_dpp_rx_conf_result(hapd, src, hdr, buf, len);
 		break;
+	case DPP_PA_CONNECTION_STATUS_RESULT:
+		hostapd_dpp_rx_conn_status_result(hapd, src, hdr, buf, len);
+		break;
 #endif /* CONFIG_DPP2 */
 	default:
 		wpa_printf(MSG_DEBUG,
@@ -1714,6 +1784,8 @@ void hostapd_dpp_deinit(struct hostapd_data *hapd)
 	eloop_cancel_timeout(hostapd_dpp_auth_resp_retry_timeout, hapd, NULL);
 #ifdef CONFIG_DPP2
 	eloop_cancel_timeout(hostapd_dpp_config_result_wait_timeout, hapd,
+			     NULL);
+	eloop_cancel_timeout(hostapd_dpp_conn_status_result_wait_timeout, hapd,
 			     NULL);
 #endif /* CONFIG_DPP2 */
 	dpp_auth_deinit(hapd->dpp_auth);

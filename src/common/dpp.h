@@ -226,6 +226,7 @@ struct dpp_authentication {
 	int remove_on_tx_status;
 	int connect_on_tx_status;
 	int waiting_conf_result;
+	int waiting_conn_status_result;
 	int auth_success;
 	struct wpabuf *conf_req;
 	const struct wpabuf *conf_resp; /* owned by GAS server */
@@ -242,6 +243,7 @@ struct dpp_authentication {
 	struct wpabuf *net_access_key;
 	os_time_t net_access_key_expiry;
 	struct wpabuf *c_sign_key;
+	int send_conn_status;
 #ifdef CONFIG_TESTING_OPTIONS
 	char *config_obj_override;
 	char *discovery_override;
@@ -443,6 +445,12 @@ enum dpp_status_error dpp_conf_result_rx(struct dpp_authentication *auth,
 					 const u8 *attr_start, size_t attr_len);
 struct wpabuf * dpp_build_conf_result(struct dpp_authentication *auth,
 				      enum dpp_status_error status);
+enum dpp_status_error dpp_conn_status_result_rx(struct dpp_authentication *auth,
+						const u8 *hdr,
+						const u8 *attr_start,
+						size_t attr_len,
+						u8 *ssid, size_t *ssid_len,
+						char **channel_list);
 struct wpabuf * dpp_alloc_msg(enum dpp_public_action_frame_type type,
 			      size_t len);
 const u8 * dpp_get_attr(const u8 *buf, size_t len, u16 req_id, u16 *ret_len);

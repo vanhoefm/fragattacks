@@ -4446,6 +4446,12 @@ int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
 		}
 	}
 
+	pos = os_strstr(cmd, " conn_status=");
+	if (pos) {
+		pos += 13;
+		auth->send_conn_status = atoi(pos);
+	}
+
 	if (dpp_configuration_parse(auth, cmd) < 0) {
 		wpa_msg(msg_ctx, MSG_INFO,
 			"DPP: Failed to set configurator parameters");
@@ -4861,10 +4867,12 @@ dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 	status = conf ? DPP_STATUS_OK : DPP_STATUS_CONFIGURE_FAILURE;
 	auth->conf_resp_status = status;
 
-	/* { E-nonce, configurationObject}ke */
+	/* { E-nonce, configurationObject[, sendConnStatus]}ke */
 	clear_len = 4 + e_nonce_len;
 	if (conf)
 		clear_len += 4 + wpabuf_len(conf);
+	if (auth->peer_version >= 2 && auth->send_conn_status && !ap)
+		clear_len += 4;
 	clear = wpabuf_alloc(clear_len);
 	attr_len = 4 + 1 + 4 + clear_len + AES_BLOCK_SIZE;
 #ifdef CONFIG_TESTING_OPTIONS
@@ -4911,6 +4919,12 @@ skip_e_nonce:
 		wpabuf_put_le16(clear, DPP_ATTR_CONFIG_OBJ);
 		wpabuf_put_le16(clear, wpabuf_len(conf));
 		wpabuf_put_buf(clear, conf);
+	}
+
+	if (auth->peer_version >= 2 && auth->send_conn_status && !ap) {
+		wpa_printf(MSG_DEBUG, "DPP: sendConnStatus");
+		wpabuf_put_le16(clear, DPP_ATTR_SEND_CONN_STATUS);
+		wpabuf_put_le16(clear, 0);
 	}
 
 #ifdef CONFIG_TESTING_OPTIONS
@@ -6146,6 +6160,135 @@ fail:
 	wpabuf_free(clear);
 	wpabuf_free(msg);
 	return NULL;
+}
+
+
+static int valid_channel_list(const char *val)
+{
+	while (*val) {
+		if (!((*val >= '0' && *val <= '9') ||
+		      *val == '/' || *val == ','))
+			return 0;
+		val++;
+	}
+
+	return 1;
+}
+
+
+enum dpp_status_error dpp_conn_status_result_rx(struct dpp_authentication *auth,
+						const u8 *hdr,
+						const u8 *attr_start,
+						size_t attr_len,
+						u8 *ssid, size_t *ssid_len,
+						char **channel_list)
+{
+	const u8 *wrapped_data, *status, *e_nonce;
+	u16 wrapped_data_len, status_len, e_nonce_len;
+	const u8 *addr[2];
+	size_t len[2];
+	u8 *unwrapped = NULL;
+	size_t unwrapped_len = 0;
+	enum dpp_status_error ret = 256;
+	struct json_token *root = NULL, *token;
+
+	*ssid_len = 0;
+	*channel_list = NULL;
+
+	wrapped_data = dpp_get_attr(attr_start, attr_len, DPP_ATTR_WRAPPED_DATA,
+				    &wrapped_data_len);
+	if (!wrapped_data || wrapped_data_len < AES_BLOCK_SIZE) {
+		dpp_auth_fail(auth,
+			      "Missing or invalid required Wrapped Data attribute");
+		goto fail;
+	}
+	wpa_hexdump(MSG_DEBUG, "DPP: Wrapped data",
+		    wrapped_data, wrapped_data_len);
+
+	attr_len = wrapped_data - 4 - attr_start;
+
+	addr[0] = hdr;
+	len[0] = DPP_HDR_LEN;
+	addr[1] = attr_start;
+	len[1] = attr_len;
+	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[0]", addr[0], len[0]);
+	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[1]", addr[1], len[1]);
+	wpa_hexdump(MSG_DEBUG, "DPP: AES-SIV ciphertext",
+		    wrapped_data, wrapped_data_len);
+	unwrapped_len = wrapped_data_len - AES_BLOCK_SIZE;
+	unwrapped = os_malloc(unwrapped_len);
+	if (!unwrapped)
+		goto fail;
+	if (aes_siv_decrypt(auth->ke, auth->curve->hash_len,
+			    wrapped_data, wrapped_data_len,
+			    2, addr, len, unwrapped) < 0) {
+		dpp_auth_fail(auth, "AES-SIV decryption failed");
+		goto fail;
+	}
+	wpa_hexdump(MSG_DEBUG, "DPP: AES-SIV cleartext",
+		    unwrapped, unwrapped_len);
+
+	if (dpp_check_attrs(unwrapped, unwrapped_len) < 0) {
+		dpp_auth_fail(auth, "Invalid attribute in unwrapped data");
+		goto fail;
+	}
+
+	e_nonce = dpp_get_attr(unwrapped, unwrapped_len,
+			       DPP_ATTR_ENROLLEE_NONCE,
+			       &e_nonce_len);
+	if (!e_nonce || e_nonce_len != auth->curve->nonce_len) {
+		dpp_auth_fail(auth,
+			      "Missing or invalid Enrollee Nonce attribute");
+		goto fail;
+	}
+	wpa_hexdump(MSG_DEBUG, "DPP: Enrollee Nonce", e_nonce, e_nonce_len);
+	if (os_memcmp(e_nonce, auth->e_nonce, e_nonce_len) != 0) {
+		dpp_auth_fail(auth, "Enrollee Nonce mismatch");
+		wpa_hexdump(MSG_DEBUG, "DPP: Expected Enrollee Nonce",
+			    auth->e_nonce, e_nonce_len);
+		goto fail;
+	}
+
+	status = dpp_get_attr(unwrapped, unwrapped_len, DPP_ATTR_CONN_STATUS,
+			      &status_len);
+	if (!status) {
+		dpp_auth_fail(auth,
+			      "Missing required DPP Connection Status attribute");
+		goto fail;
+	}
+	wpa_hexdump_ascii(MSG_DEBUG, "DPP: connStatus JSON",
+			  status, status_len);
+
+	root = json_parse((const char *) status, status_len);
+	if (!root) {
+		dpp_auth_fail(auth, "Could not parse connStatus");
+		goto fail;
+	}
+
+	token = json_get_member(root, "ssid");
+	if (token && token->type == JSON_STRING &&
+	    os_strlen(token->string) <= SSID_MAX_LEN) {
+		*ssid_len = os_strlen(token->string);
+		os_memcpy(ssid, token->string, *ssid_len);
+	}
+
+	token = json_get_member(root, "channelList");
+	if (token && token->type == JSON_STRING &&
+	    valid_channel_list(token->string))
+		*channel_list = os_strdup(token->string);
+
+	token = json_get_member(root, "result");
+	if (!token || token->type != JSON_NUMBER) {
+		dpp_auth_fail(auth, "No connStatus - result");
+		goto fail;
+	}
+	wpa_printf(MSG_DEBUG, "DPP: result %d", token->number);
+	ret = token->number;
+
+fail:
+	json_free(root);
+	bin_clear_free(unwrapped, unwrapped_len);
+	return ret;
 }
 
 #endif /* CONFIG_DPP2 */
@@ -8721,6 +8864,10 @@ int dpp_configurator_get_key_id(struct dpp_global *dpp, unsigned int id,
 
 #ifdef CONFIG_DPP2
 
+static void dpp_controller_conn_status_result_wait_timeout(void *eloop_ctx,
+							   void *timeout_ctx);
+
+
 static void dpp_connection_free(struct dpp_connection *conn)
 {
 	if (conn->sock >= 0) {
@@ -8730,6 +8877,8 @@ static void dpp_connection_free(struct dpp_connection *conn)
 		eloop_unregister_sock(conn->sock, EVENT_TYPE_WRITE);
 		close(conn->sock);
 	}
+	eloop_cancel_timeout(dpp_controller_conn_status_result_wait_timeout,
+			     conn, NULL);
 	wpabuf_free(conn->msg);
 	wpabuf_free(conn->msg_out);
 	dpp_auth_deinit(conn->auth);
@@ -9454,6 +9603,22 @@ static int dpp_controller_rx_auth_conf(struct dpp_connection *conn,
 }
 
 
+static void dpp_controller_conn_status_result_wait_timeout(void *eloop_ctx,
+							   void *timeout_ctx)
+{
+	struct dpp_connection *conn = eloop_ctx;
+
+	if (!conn->auth->waiting_conf_result)
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Timeout while waiting for Connection Status Result");
+	wpa_msg(conn->ctrl->global->msg_ctx, MSG_INFO,
+		DPP_EVENT_CONN_STATUS_RESULT "timeout");
+	dpp_connection_remove(conn);
+}
+
+
 static int dpp_controller_rx_conf_result(struct dpp_connection *conn,
 					 const u8 *hdr, const u8 *buf,
 					 size_t len)
@@ -9473,12 +9638,57 @@ static int dpp_controller_rx_conf_result(struct dpp_connection *conn,
 	}
 
 	status = dpp_conf_result_rx(auth, hdr, buf, len);
+	if (status == DPP_STATUS_OK && auth->send_conn_status) {
+		wpa_msg(conn->ctrl->global->msg_ctx, MSG_INFO,
+			DPP_EVENT_CONF_SENT "wait_conn_status=1");
+		wpa_printf(MSG_DEBUG, "DPP: Wait for Connection Status Result");
+		eloop_cancel_timeout(
+			dpp_controller_conn_status_result_wait_timeout,
+			conn, NULL);
+		eloop_register_timeout(
+			16, 0, dpp_controller_conn_status_result_wait_timeout,
+			conn, NULL);
+		return 0;
+	}
 	if (status == DPP_STATUS_OK)
 		wpa_msg(conn->ctrl->global->msg_ctx, MSG_INFO,
 			DPP_EVENT_CONF_SENT);
 	else
 		wpa_msg(conn->ctrl->global->msg_ctx, MSG_INFO,
 			DPP_EVENT_CONF_FAILED);
+	return -1; /* to remove the completed connection */
+}
+
+
+static int dpp_controller_rx_conn_status_result(struct dpp_connection *conn,
+						const u8 *hdr, const u8 *buf,
+						size_t len)
+{
+	struct dpp_authentication *auth = conn->auth;
+	enum dpp_status_error status;
+	u8 ssid[SSID_MAX_LEN];
+	size_t ssid_len = 0;
+	char *channel_list = NULL;
+
+	if (!conn->ctrl)
+		return 0;
+
+	wpa_printf(MSG_DEBUG, "DPP: Connection Status Result");
+
+	if (!auth || !auth->waiting_conn_status_result) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No DPP Configuration waiting for connection status result - drop");
+		return -1;
+	}
+
+	status = dpp_conn_status_result_rx(auth, hdr, buf, len,
+					   ssid, &ssid_len, &channel_list);
+	wpa_msg(conn->ctrl->global->msg_ctx, MSG_INFO,
+		DPP_EVENT_CONN_STATUS_RESULT
+		"result=%d ssid=%s channel_list=%s",
+		status, wpa_ssid_txt(ssid, ssid_len),
+		channel_list ? channel_list : "N/A");
+	os_free(channel_list);
 	return -1; /* to remove the completed connection */
 }
 
@@ -9530,6 +9740,9 @@ static int dpp_controller_rx_action(struct dpp_connection *conn, const u8 *msg,
 		return dpp_controller_rx_auth_conf(conn, msg, pos, end - pos);
 	case DPP_PA_CONFIGURATION_RESULT:
 		return dpp_controller_rx_conf_result(conn, msg, pos, end - pos);
+	case DPP_PA_CONNECTION_STATUS_RESULT:
+		return dpp_controller_rx_conn_status_result(conn, msg, pos,
+							    end - pos);
 	default:
 		/* TODO: missing messages types */
 		wpa_printf(MSG_DEBUG,
