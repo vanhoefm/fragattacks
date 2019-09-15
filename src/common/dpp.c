@@ -6010,6 +6010,7 @@ fail:
 
 
 #ifdef CONFIG_DPP2
+
 enum dpp_status_error dpp_conf_result_rx(struct dpp_authentication *auth,
 					 const u8 *hdr,
 					 const u8 *attr_start, size_t attr_len)
@@ -6090,7 +6091,6 @@ fail:
 	bin_clear_free(unwrapped, unwrapped_len);
 	return ret;
 }
-#endif /* CONFIG_DPP2 */
 
 
 struct wpabuf * dpp_build_conf_result(struct dpp_authentication *auth,
@@ -6147,6 +6147,8 @@ fail:
 	wpabuf_free(msg);
 	return NULL;
 }
+
+#endif /* CONFIG_DPP2 */
 
 
 void dpp_configurator_free(struct dpp_configurator *conf)
@@ -9644,6 +9646,7 @@ static int dpp_tcp_rx_gas_resp(struct dpp_connection *conn, struct wpabuf *resp)
 	if (auth->peer_version < 2 || auth->conf_resp_status != DPP_STATUS_OK)
 		return -1;
 
+#ifdef CONFIG_DPP2
 	wpa_printf(MSG_DEBUG, "DPP: Send DPP Configuration Result");
 	status = res < 0 ? DPP_STATUS_CONFIG_REJECTED : DPP_STATUS_OK;
 	msg = dpp_build_conf_result(auth, status);
@@ -9669,6 +9672,9 @@ static int dpp_tcp_rx_gas_resp(struct dpp_connection *conn, struct wpabuf *resp)
 	/* This exchange will be terminated in the TX status handler */
 
 	return 0;
+#else /* CONFIG_DPP2 */
+	return -1;
+#endif /* CONFIG_DPP2 */
 }
 
 
