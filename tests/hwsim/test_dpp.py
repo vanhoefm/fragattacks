@@ -941,14 +941,16 @@ def build_conf_obj(kty="EC", crv="P-256",
     return conf
 
 def run_dpp_config_error(dev, apdev, conf,
-                         skip_net_access_key_mismatch=True):
+                         skip_net_access_key_mismatch=True,
+                         conf_failure=True):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     if skip_net_access_key_mismatch:
         dev[0].set("dpp_ignore_netaccesskey_mismatch", "1")
     dev[1].set("dpp_config_obj_override", conf)
     run_dpp_qr_code_auth_unicast(dev, apdev, "prime256v1",
-                                 require_conf_failure=True)
+                                 require_conf_success=not conf_failure,
+                                 require_conf_failure=conf_failure)
 
 def test_dpp_config_jwk_error_no_kty(dev, apdev):
     """DPP Config Object JWK error - no kty"""
@@ -990,7 +992,9 @@ def test_dpp_config_jwk_error_invalid_xy(dev, apdev):
 
 def test_dpp_config_jwk_error_no_kid(dev, apdev):
     """DPP Config Object JWK error - no kid"""
-    run_dpp_config_error(dev, apdev, build_conf_obj(kid=None))
+    # csign kid is optional field, so this results in success
+    run_dpp_config_error(dev, apdev, build_conf_obj(kid=None),
+                         conf_failure=False)
 
 def test_dpp_config_jws_error_prot_hdr_not_an_object(dev, apdev):
     """DPP Config Object JWS error - protected header not an object"""
@@ -1186,7 +1190,8 @@ p256_pub_key_x = binascii.unhexlify("002f5ddbf262acabbbd85daa2eebf98c414c0f50aab
 p256_pub_key_y = binascii.unhexlify("c9e75a76984a169f4dcde9746f4c2f86ed63e897d360f7b340336b0ae7bf85fd")
 
 def run_dpp_config_connector(dev, apdev, expiry=None, payload=None,
-                             skip_net_access_key_mismatch=True):
+                             skip_net_access_key_mismatch=True,
+                             conf_failure=True):
     if not openssl_imported:
         raise HwsimSkip("OpenSSL python method not available")
     pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM,
@@ -1210,11 +1215,12 @@ def run_dpp_config_connector(dev, apdev, expiry=None, payload=None,
     conn += '.' + sign
     run_dpp_config_error(dev, apdev,
                          build_conf_obj(x=x, y=y, signed_connector=conn),
-                         skip_net_access_key_mismatch=skip_net_access_key_mismatch)
+                         skip_net_access_key_mismatch=skip_net_access_key_mismatch,
+                         conf_failure=conf_failure)
 
 def test_dpp_config_connector_error_ext_sign(dev, apdev):
     """DPP Config Object connector error - external signature calculation"""
-    run_dpp_config_connector(dev, apdev)
+    run_dpp_config_connector(dev, apdev, conf_failure=False)
 
 def test_dpp_config_connector_error_too_short_timestamp(dev, apdev):
     """DPP Config Object connector error - too short timestamp"""
@@ -3673,8 +3679,8 @@ def wait_auth_success(responder, initiator, configurator=None, enrollee=None,
             raise Exception("DPP configuration not completed (Configurator)")
         if "DPP-CONF-FAILED" in ev and not allow_configurator_failure:
             raise Exception("DPP configuration did not succeed (Configurator")
-        if "DPP-CONF-SUCCESS" in ev and not require_configurator_failure:
-            raise Exception("DPP configuration succeeded (Configurator")
+        if "DPP-CONF-SENT" in ev and require_configurator_failure:
+            raise Exception("DPP configuration succeeded (Configurator)")
     if enrollee:
         ev = enrollee.wait_event(["DPP-CONF-RECEIVED",
                                   "DPP-CONF-FAILED"], timeout=5)
