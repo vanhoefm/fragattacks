@@ -6108,7 +6108,7 @@ struct wpabuf * dpp_build_conf_result(struct dpp_authentication *auth,
 	clear = wpabuf_alloc(clear_len);
 	msg = dpp_alloc_msg(DPP_PA_CONFIGURATION_RESULT, attr_len);
 	if (!clear || !msg)
-		return NULL;
+		goto fail;
 
 	/* DPP Status */
 	dpp_build_attr_status(clear, status);
