@@ -1941,6 +1941,21 @@ static int _wpa_supplicant_event_scan_results(struct wpa_supplicant *wpa_s,
 		radio_work_done(work);
 	}
 
+	os_free(wpa_s->last_scan_freqs);
+	wpa_s->last_scan_freqs = NULL;
+	wpa_s->num_last_scan_freqs = 0;
+	if (own_request && data &&
+	    data->scan_info.freqs && data->scan_info.num_freqs) {
+		wpa_s->last_scan_freqs = os_malloc(sizeof(int) *
+						   data->scan_info.num_freqs);
+		if (wpa_s->last_scan_freqs) {
+			os_memcpy(wpa_s->last_scan_freqs,
+				  data->scan_info.freqs,
+				  sizeof(int) * data->scan_info.num_freqs);
+			wpa_s->num_last_scan_freqs = data->scan_info.num_freqs;
+		}
+	}
+
 	return wpas_select_network_from_last_scan(wpa_s, 1, own_request);
 
 scan_work_done:
@@ -1994,6 +2009,8 @@ static int wpas_select_network_from_last_scan(struct wpa_supplicant *wpa_s,
 			return 0;
 		}
 
+		wpa_s->suitable_network++;
+
 		if (ssid != wpa_s->current_ssid &&
 		    wpa_s->wpa_state >= WPA_AUTHENTICATING) {
 			wpa_s->own_disconnect_req = 1;
@@ -2014,6 +2031,7 @@ static int wpas_select_network_from_last_scan(struct wpa_supplicant *wpa_s,
 		 */
 		return 1;
 	} else {
+		wpa_s->no_suitable_network++;
 		wpa_dbg(wpa_s, MSG_DEBUG, "No suitable network found");
 		ssid = wpa_supplicant_pick_new_network(wpa_s);
 		if (ssid) {
@@ -3066,6 +3084,10 @@ static void wpa_supplicant_event_disassoc_finish(struct wpa_supplicant *wpa_s,
 		if (wpas_p2p_4way_hs_failed(wpa_s) > 0)
 			return; /* P2P group removed */
 		wpas_auth_failed(wpa_s, "WRONG_KEY");
+#ifdef CONFIG_DPP2
+		wpas_dpp_send_conn_status_result(wpa_s,
+						 DPP_STATUS_AUTH_FAILURE);
+#endif /* CONFIG_DPP2 */
 	}
 	if (!wpa_s->disconnected &&
 	    (!wpa_s->auto_reconnect_disabled ||

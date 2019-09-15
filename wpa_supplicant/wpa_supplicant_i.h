@@ -700,6 +700,10 @@ struct wpa_supplicant {
 
 	struct wpa_ssid_value *ssids_from_scan_req;
 	unsigned int num_ssids_from_scan_req;
+	int *last_scan_freqs;
+	unsigned int num_last_scan_freqs;
+	unsigned int suitable_network;
+	unsigned int no_suitable_network;
 
 	u64 drv_flags;
 	unsigned int drv_enc;
@@ -1237,6 +1241,8 @@ struct wpa_supplicant {
 	unsigned int dpp_resp_wait_time;
 	unsigned int dpp_resp_max_tries;
 	unsigned int dpp_resp_retry_time;
+	u8 dpp_last_ssid[SSID_MAX_LEN];
+	size_t dpp_last_ssid_len;
 #ifdef CONFIG_DPP2
 	struct dpp_pfs *dpp_pfs;
 #endif /* CONFIG_DPP2 */

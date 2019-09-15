@@ -985,6 +985,10 @@ void wpa_supplicant_set_state(struct wpa_supplicant *wpa_s,
 		if (wpa_s->wpa_state == WPA_COMPLETED ||
 		    old_state == WPA_COMPLETED)
 			wpas_notify_auth_changed(wpa_s);
+#ifdef CONFIG_DPP2
+		if (wpa_s->wpa_state == WPA_COMPLETED)
+			wpas_dpp_connected(wpa_s);
+#endif /* CONFIG_DPP2 */
 	}
 #if defined(CONFIG_FILS) && defined(IEEE8021X_EAPOL)
 	if (update_fils_connect_params)
@@ -6079,6 +6083,7 @@ static void wpa_supplicant_deinit_iface(struct wpa_supplicant *wpa_s,
 	}
 
 	os_free(wpa_s->ssids_from_scan_req);
+	os_free(wpa_s->last_scan_freqs);
 
 	os_free(wpa_s);
 }

@@ -6015,6 +6015,16 @@ int dpp_conf_resp_rx(struct dpp_authentication *auth,
 	if (dpp_parse_conf_obj(auth, conf_obj, conf_obj_len) < 0)
 		goto fail;
 
+#ifdef CONFIG_DPP2
+	status = dpp_get_attr(unwrapped, unwrapped_len,
+			      DPP_ATTR_SEND_CONN_STATUS, &status_len);
+	if (status) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Configurator requested connection status result");
+		auth->conn_status_requested = 1;
+	}
+#endif /* CONFIG_DPP2 */
+
 	ret = 0;
 
 fail:
@@ -6289,6 +6299,88 @@ fail:
 	json_free(root);
 	bin_clear_free(unwrapped, unwrapped_len);
 	return ret;
+}
+
+
+struct wpabuf * dpp_build_conn_status_result(struct dpp_authentication *auth,
+					     enum dpp_status_error result,
+					     const u8 *ssid, size_t ssid_len,
+					     const char *channel_list)
+{
+	struct wpabuf *msg, *clear, *json;
+	size_t nonce_len, clear_len, attr_len;
+	const u8 *addr[2];
+	size_t len[2];
+	u8 *wrapped;
+
+	json = wpabuf_alloc(1000);
+	if (!json)
+		return NULL;
+	wpabuf_printf(json, "{\"result\":%d", result);
+	if (ssid) {
+		char ssid_str[6 * SSID_MAX_LEN + 1];
+
+		wpabuf_put_str(json, ",\"ssid\":\"");
+		json_escape_string(ssid_str, sizeof(ssid_str),
+				   (const char *) ssid, ssid_len);
+		wpabuf_put_str(json, ssid_str);
+		wpabuf_put_str(json, "\"");
+	}
+	if (channel_list)
+		wpabuf_printf(json, ",\"channelList\":\"%s\"", channel_list);
+	wpabuf_put_str(json, "}");
+	wpa_hexdump_ascii(MSG_DEBUG, "DPP: connStatus JSON",
+			  wpabuf_head(json), wpabuf_len(json));
+
+	nonce_len = auth->curve->nonce_len;
+	clear_len = 5 + 4 + nonce_len + 4 + wpabuf_len(json);
+	attr_len = 4 + clear_len + AES_BLOCK_SIZE;
+	clear = wpabuf_alloc(clear_len);
+	msg = dpp_alloc_msg(DPP_PA_CONNECTION_STATUS_RESULT, attr_len);
+	if (!clear || !msg)
+		goto fail;
+
+	/* E-nonce */
+	wpabuf_put_le16(clear, DPP_ATTR_ENROLLEE_NONCE);
+	wpabuf_put_le16(clear, nonce_len);
+	wpabuf_put_data(clear, auth->e_nonce, nonce_len);
+
+	/* DPP Connection Status */
+	wpabuf_put_le16(clear, DPP_ATTR_CONN_STATUS);
+	wpabuf_put_le16(clear, wpabuf_len(json));
+	wpabuf_put_buf(clear, json);
+
+	/* OUI, OUI type, Crypto Suite, DPP frame type */
+	addr[0] = wpabuf_head_u8(msg) + 2;
+	len[0] = 3 + 1 + 1 + 1;
+	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[0]", addr[0], len[0]);
+
+	/* Attributes before Wrapped Data (none) */
+	addr[1] = wpabuf_put(msg, 0);
+	len[1] = 0;
+	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[1]", addr[1], len[1]);
+
+	/* Wrapped Data */
+	wpabuf_put_le16(msg, DPP_ATTR_WRAPPED_DATA);
+	wpabuf_put_le16(msg, wpabuf_len(clear) + AES_BLOCK_SIZE);
+	wrapped = wpabuf_put(msg, wpabuf_len(clear) + AES_BLOCK_SIZE);
+
+	wpa_hexdump_buf(MSG_DEBUG, "DPP: AES-SIV cleartext", clear);
+	if (aes_siv_encrypt(auth->ke, auth->curve->hash_len,
+			    wpabuf_head(clear), wpabuf_len(clear),
+			    2, addr, len, wrapped) < 0)
+		goto fail;
+
+	wpa_hexdump_buf(MSG_DEBUG, "DPP: Connection Status Result attributes",
+			msg);
+	wpabuf_free(json);
+	wpabuf_free(clear);
+	return msg;
+fail:
+	wpabuf_free(json);
+	wpabuf_free(clear);
+	wpabuf_free(msg);
+	return NULL;
 }
 
 #endif /* CONFIG_DPP2 */

@@ -244,6 +244,7 @@ struct dpp_authentication {
 	os_time_t net_access_key_expiry;
 	struct wpabuf *c_sign_key;
 	int send_conn_status;
+	int conn_status_requested;
 #ifdef CONFIG_TESTING_OPTIONS
 	char *config_obj_override;
 	char *discovery_override;
@@ -451,6 +452,10 @@ enum dpp_status_error dpp_conn_status_result_rx(struct dpp_authentication *auth,
 						size_t attr_len,
 						u8 *ssid, size_t *ssid_len,
 						char **channel_list);
+struct wpabuf * dpp_build_conn_status_result(struct dpp_authentication *auth,
+					     enum dpp_status_error result,
+					     const u8 *ssid, size_t ssid_len,
+					     const char *channel_list);
 struct wpabuf * dpp_alloc_msg(enum dpp_public_action_frame_type type,
 			      size_t len);
 const u8 * dpp_get_attr(const u8 *buf, size_t len, u16 req_id, u16 *ret_len);

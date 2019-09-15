@@ -148,6 +148,8 @@ static void wpas_dpp_auth_resp_retry(struct wpa_supplicant *wpa_s)
 static void wpas_dpp_try_to_connect(struct wpa_supplicant *wpa_s)
 {
 	wpa_printf(MSG_DEBUG, "DPP: Trying to connect to the new network");
+	wpa_s->suitable_network = 0;
+	wpa_s->no_suitable_network = 0;
 	wpa_s->disconnected = 0;
 	wpa_s->reassociate = 1;
 	wpa_s->scan_runs = 0;
@@ -155,6 +157,141 @@ static void wpas_dpp_try_to_connect(struct wpa_supplicant *wpa_s)
 	wpa_supplicant_cancel_sched_scan(wpa_s);
 	wpa_supplicant_req_scan(wpa_s, 0, 0);
 }
+
+
+#ifdef CONFIG_DPP2
+
+static void wpas_dpp_conn_status_result_timeout(void *eloop_ctx,
+						void *timeout_ctx)
+{
+	struct wpa_supplicant *wpa_s = eloop_ctx;
+	struct dpp_authentication *auth = wpa_s->dpp_auth;
+	enum dpp_status_error result;
+
+	if (!auth || !auth->conn_status_requested)
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Connection timeout - report Connection Status Result");
+	if (wpa_s->suitable_network)
+		result = DPP_STATUS_AUTH_FAILURE;
+	else if (wpa_s->no_suitable_network)
+		result = DPP_STATUS_NO_AP;
+	else
+		result = 255; /* What to report here for unexpected state? */
+	wpas_dpp_send_conn_status_result(wpa_s, result);
+}
+
+
+static char * wpas_dpp_scan_channel_list(struct wpa_supplicant *wpa_s)
+{
+	char *str, *end, *pos;
+	size_t len;
+	unsigned int i;
+	u8 last_op_class = 0;
+	int res;
+
+	if (!wpa_s->last_scan_freqs || !wpa_s->num_last_scan_freqs)
+		return NULL;
+
+	len = wpa_s->num_last_scan_freqs * 8;
+	str = os_zalloc(len);
+	if (!str)
+		return NULL;
+	end = str + len;
+	pos = str;
+
+	for (i = 0; i < wpa_s->num_last_scan_freqs; i++) {
+		enum hostapd_hw_mode mode;
+		u8 op_class, channel;
+
+		mode = ieee80211_freq_to_channel_ext(wpa_s->last_scan_freqs[i],
+						     0, 0, &op_class, &channel);
+		if (mode == NUM_HOSTAPD_MODES)
+			continue;
+		if (op_class == last_op_class)
+			res = os_snprintf(pos, end - pos, ",%d", channel);
+		else
+			res = os_snprintf(pos, end - pos, "%s%d/%d",
+					  pos == str ? "" : ",",
+					  op_class, channel);
+		if (os_snprintf_error(end - pos, res)) {
+			*pos = '\0';
+			break;
+		}
+		pos += res;
+		last_op_class = op_class;
+	}
+
+	if (pos == str) {
+		os_free(str);
+		str = NULL;
+	}
+	return str;
+}
+
+
+void wpas_dpp_send_conn_status_result(struct wpa_supplicant *wpa_s,
+				      enum dpp_status_error result)
+{
+	struct wpabuf *msg;
+	const char *channel_list = NULL;
+	char *channel_list_buf = NULL;
+	struct wpa_ssid *ssid = wpa_s->current_ssid;
+	struct dpp_authentication *auth = wpa_s->dpp_auth;
+
+	eloop_cancel_timeout(wpas_dpp_conn_status_result_timeout, wpa_s, NULL);
+
+	if (!auth || !auth->conn_status_requested)
+		return;
+	auth->conn_status_requested = 0;
+	wpa_printf(MSG_DEBUG, "DPP: Report connection status result %d",
+		   result);
+
+	if (result == DPP_STATUS_NO_AP) {
+		channel_list_buf = wpas_dpp_scan_channel_list(wpa_s);
+		channel_list = channel_list_buf;
+	}
+
+	msg = dpp_build_conn_status_result(auth, result,
+					   ssid ? ssid->ssid :
+					   wpa_s->dpp_last_ssid,
+					   ssid ? ssid->ssid_len :
+					   wpa_s->dpp_last_ssid_len,
+					   channel_list);
+	os_free(channel_list_buf);
+	if (!msg) {
+		dpp_auth_deinit(wpa_s->dpp_auth);
+		wpa_s->dpp_auth = NULL;
+		return;
+	}
+
+	wpa_msg(wpa_s, MSG_INFO,
+		DPP_EVENT_TX "dst=" MACSTR " freq=%u type=%d",
+		MAC2STR(auth->peer_mac_addr), auth->curr_freq,
+		DPP_PA_CONNECTION_STATUS_RESULT);
+	offchannel_send_action(wpa_s, auth->curr_freq,
+			       auth->peer_mac_addr, wpa_s->own_addr, broadcast,
+			       wpabuf_head(msg), wpabuf_len(msg),
+			       500, wpas_dpp_tx_status, 0);
+	wpabuf_free(msg);
+
+	/* This exchange will be terminated in the TX status handler */
+	auth->remove_on_tx_status = 1;
+
+	return;
+}
+
+
+void wpas_dpp_connected(struct wpa_supplicant *wpa_s)
+{
+	struct dpp_authentication *auth = wpa_s->dpp_auth;
+
+	if (auth && auth->conn_status_requested)
+		wpas_dpp_send_conn_status_result(wpa_s, DPP_STATUS_OK);
+}
+
+#endif /* CONFIG_DPP2 */
 
 
 static void wpas_dpp_tx_status(struct wpa_supplicant *wpa_s,
@@ -182,18 +319,30 @@ static void wpas_dpp_tx_status(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_DPP2
 	if (auth->connect_on_tx_status) {
+		auth->connect_on_tx_status = 0;
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Try to connect after completed configuration result");
 		wpas_dpp_try_to_connect(wpa_s);
-		dpp_auth_deinit(wpa_s->dpp_auth);
-		wpa_s->dpp_auth = NULL;
+		if (auth->conn_status_requested) {
+			wpa_printf(MSG_DEBUG,
+				   "DPP: Start 15 second timeout for reporting connection status result");
+			eloop_cancel_timeout(
+				wpas_dpp_conn_status_result_timeout,
+				wpa_s, NULL);
+			eloop_register_timeout(
+				15, 0, wpas_dpp_conn_status_result_timeout,
+				wpa_s, NULL);
+		} else {
+			dpp_auth_deinit(wpa_s->dpp_auth);
+			wpa_s->dpp_auth = NULL;
+		}
 		return;
 	}
 #endif /* CONFIG_DPP2 */
 
 	if (wpa_s->dpp_auth->remove_on_tx_status) {
 		wpa_printf(MSG_DEBUG,
-			   "DPP: Terminate authentication exchange due to an earlier error");
+			   "DPP: Terminate authentication exchange due to a request to do so on TX status");
 		eloop_cancel_timeout(wpas_dpp_init_timeout, wpa_s, NULL);
 		eloop_cancel_timeout(wpas_dpp_reply_wait_timeout, wpa_s, NULL);
 		eloop_cancel_timeout(wpas_dpp_auth_resp_retry_timeout, wpa_s,
@@ -899,6 +1048,9 @@ static struct wpa_ssid * wpas_dpp_add_network(struct wpa_supplicant *wpa_s,
 		}
 	}
 
+	os_memcpy(wpa_s->dpp_last_ssid, auth->ssid, auth->ssid_len);
+	wpa_s->dpp_last_ssid_len = auth->ssid_len;
+
 	return ssid;
 fail:
 	wpas_notify_network_removed(wpa_s, ssid);
@@ -1452,6 +1604,9 @@ static void wpas_dpp_rx_peer_disc_resp(struct wpa_supplicant *wpa_s,
 			   status[0]);
 		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_INTRO "peer=" MACSTR
 			" status=%u", MAC2STR(src), status[0]);
+#ifdef CONFIG_DPP2
+		wpas_dpp_send_conn_status_result(wpa_s, status[0]);
+#endif /* CONFIG_DPP2 */
 		goto fail;
 	}
 
@@ -1475,6 +1630,9 @@ static void wpas_dpp_rx_peer_disc_resp(struct wpa_supplicant *wpa_s,
 			   "DPP: Network Introduction protocol resulted in failure");
 		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_INTRO "peer=" MACSTR
 			" fail=peer_connector_validation_failed", MAC2STR(src));
+#ifdef CONFIG_DPP2
+		wpas_dpp_send_conn_status_result(wpa_s, res);
+#endif /* CONFIG_DPP2 */
 		goto fail;
 	}
 
@@ -2368,6 +2526,7 @@ void wpas_dpp_deinit(struct wpa_supplicant *wpa_s)
 	eloop_cancel_timeout(wpas_dpp_config_result_wait_timeout, wpa_s, NULL);
 	eloop_cancel_timeout(wpas_dpp_conn_status_result_wait_timeout,
 			     wpa_s, NULL);
+	eloop_cancel_timeout(wpas_dpp_conn_status_result_timeout, wpa_s, NULL);
 	dpp_pfs_free(wpa_s->dpp_pfs);
 	wpa_s->dpp_pfs = NULL;
 #endif /* CONFIG_DPP2 */
