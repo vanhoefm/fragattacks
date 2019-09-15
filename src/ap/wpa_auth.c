@@ -3126,7 +3126,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 	size_t gtk_len, kde_len;
 	struct wpa_group *gsm = sm->group;
 	u8 *wpa_ie;
-	int wpa_ie_len, secure, keyidx, encr = 0;
+	int wpa_ie_len, secure, gtkidx, encr = 0;
 
 	SM_ENTRY_MA(WPA_PTK, PTKINITNEGOTIATING, wpa_ptk);
 	sm->TimeoutEvt = FALSE;
@@ -3177,7 +3177,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 				return;
 			gtk = dummy_gtk;
 		}
-		keyidx = gsm->GN;
+		gtkidx = gsm->GN;
 		_rsc = rsc;
 		encr = 1;
 	} else {
@@ -3185,7 +3185,6 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 		secure = 0;
 		gtk = NULL;
 		gtk_len = 0;
-		keyidx = 0;
 		_rsc = NULL;
 		if (sm->rx_eapol_key_secure) {
 			/*
@@ -3242,7 +3241,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 #endif /* CONFIG_IEEE80211R_AP */
 	if (gtk) {
 		u8 hdr[2];
-		hdr[0] = keyidx & 0x03;
+		hdr[0] = gtkidx & 0x03;
 		hdr[1] = 0;
 		pos = wpa_add_kde(pos, RSN_KEY_DATA_GROUPKEY, hdr, 2,
 				  gtk, gtk_len);
@@ -3314,7 +3313,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 			WPA_KEY_INFO_MIC : 0) |
 		       WPA_KEY_INFO_ACK | WPA_KEY_INFO_INSTALL |
 		       WPA_KEY_INFO_KEY_TYPE,
-		       _rsc, sm->ANonce, kde, pos - kde, keyidx, encr);
+		       _rsc, sm->ANonce, kde, pos - kde, 0, encr);
 	os_free(kde);
 }
 
@@ -4953,7 +4952,7 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 	size_t gtk_len, kde_len;
 	struct wpa_group *gsm = sm->group;
 	u8 *wpa_ie;
-	int wpa_ie_len, secure, keyidx, encr = 0;
+	int wpa_ie_len, secure, gtkidx, encr = 0;
 
 	/* Send EAPOL(1, 1, 1, Pair, P, RSC, ANonce, MIC(PTK), RSNIE, [MDIE],
 	   GTK[GN], IGTK, [FTIE], [TIE * 2])
@@ -4980,7 +4979,7 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 		secure = 1;
 		gtk = gsm->GTK[gsm->GN - 1];
 		gtk_len = gsm->GTK_len;
-		keyidx = gsm->GN;
+		gtkidx = gsm->GN;
 		_rsc = rsc;
 		encr = 1;
 	} else {
@@ -4988,7 +4987,6 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 		secure = 0;
 		gtk = NULL;
 		gtk_len = 0;
-		keyidx = 0;
 		_rsc = NULL;
 		if (sm->rx_eapol_key_secure) {
 			/*
@@ -5041,7 +5039,7 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 #endif /* CONFIG_IEEE80211R_AP */
 	if (gtk) {
 		u8 hdr[2];
-		hdr[0] = keyidx & 0x03;
+		hdr[0] = gtkidx & 0x03;
 		hdr[1] = 0;
 		pos = wpa_add_kde(pos, RSN_KEY_DATA_GROUPKEY, hdr, 2,
 				  gtk, gtk_len);
@@ -5109,7 +5107,7 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 			WPA_KEY_INFO_MIC : 0) |
 		       WPA_KEY_INFO_ACK | WPA_KEY_INFO_INSTALL |
 		       WPA_KEY_INFO_KEY_TYPE,
-		       _rsc, sm->ANonce, kde, pos - kde, keyidx, encr);
+		       _rsc, sm->ANonce, kde, pos - kde, 0, encr);
 	os_free(kde);
 	return 0;
 }
