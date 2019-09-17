@@ -765,18 +765,10 @@ static void hostapd_dpp_start_gas_client(struct hostapd_data *hapd)
 {
 	struct dpp_authentication *auth = hapd->dpp_auth;
 	struct wpabuf *buf;
-	char json[100];
 	int res;
-	int netrole_ap = 1;
 
-	os_snprintf(json, sizeof(json),
-		    "{\"name\":\"Test\","
-		    "\"wi-fi_tech\":\"infra\","
-		    "\"netRole\":\"%s\"}",
-		    netrole_ap ? "ap" : "sta");
-	wpa_printf(MSG_DEBUG, "DPP: GAS Config Attributes: %s", json);
-
-	buf = dpp_build_conf_req(auth, json);
+	buf = dpp_build_conf_req_helper(auth, hapd->conf->dpp_name, 1,
+					hapd->conf->dpp_mud_url);
 	if (!buf) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No configuration request data available");

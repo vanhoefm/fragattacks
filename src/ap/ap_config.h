@@ -707,6 +707,8 @@ struct hostapd_bss_config {
 	int broadcast_deauth;
 
 #ifdef CONFIG_DPP
+	char *dpp_name;
+	char *dpp_mud_url;
 	char *dpp_connector;
 	struct wpabuf *dpp_netaccesskey;
 	unsigned int dpp_netaccesskey_expiry;

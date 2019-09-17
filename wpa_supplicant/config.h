@@ -1497,6 +1497,16 @@ struct wpa_config {
 	int dpp_config_processing;
 
 	/**
+	 * dpp_name - Name for Enrollee's DPP Configuration Request
+	 */
+	char *dpp_name;
+
+	/**
+	 * dpp_mud_url - MUD URL for Enrollee's DPP Configuration Request
+	 */
+	char *dpp_mud_url;
+
+	/**
 	 * coloc_intf_reporting - Colocated interference reporting
 	 *
 	 * dot11CoLocIntfReportingActivated

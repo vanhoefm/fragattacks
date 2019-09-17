@@ -2376,7 +2376,7 @@ static struct wpabuf * dpp_build_conf_req_attr(struct dpp_authentication *auth,
 	}
 	wpa_hexdump(MSG_DEBUG, "DPP: E-nonce", auth->e_nonce, nonce_len);
 	json_len = os_strlen(json);
-	wpa_hexdump_ascii(MSG_DEBUG, "DPP: configAttr JSON", json, json_len);
+	wpa_hexdump_ascii(MSG_DEBUG, "DPP: configRequest JSON", json, json_len);
 
 	/* { E-nonce, configAttrib }ke */
 	clear_len = 4 + nonce_len + 4 + json_len;
@@ -2507,6 +2507,59 @@ struct wpabuf * dpp_build_conf_req(struct dpp_authentication *auth,
 	dpp_write_gas_query(buf, conf_req);
 	wpabuf_free(conf_req);
 	wpa_hexdump_buf(MSG_MSGDUMP, "DPP: GAS Config Request", buf);
+
+	return buf;
+}
+
+
+struct wpabuf * dpp_build_conf_req_helper(struct dpp_authentication *auth,
+					  const char *name, int netrole_ap,
+					  const char *mud_url)
+{
+	size_t len, nlen;
+	const char *tech = "infra";
+	const char *dpp_name;
+	char *nbuf;
+	struct wpabuf *buf, *json;
+
+#ifdef CONFIG_TESTING_OPTIONS
+	if (dpp_test == DPP_TEST_INVALID_CONFIG_ATTR_OBJ_CONF_REQ) {
+		static const char *bogus_tech = "knfra";
+
+		wpa_printf(MSG_INFO, "DPP: TESTING - invalid Config Attr");
+		tech = bogus_tech;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
+
+	dpp_name = name ? name : "Test";
+	len = os_strlen(dpp_name);
+	nlen = len * 6 + 1;
+	nbuf = os_malloc(nlen);
+	if (!nbuf)
+		return NULL;
+	json_escape_string(nbuf, nlen, dpp_name, len);
+
+	len = 100 + os_strlen(nbuf);
+	if (mud_url && mud_url[0])
+		len += 10 + os_strlen(mud_url);
+	json = wpabuf_alloc(len);
+	if (!json) {
+		os_free(nbuf);
+		return NULL;
+	}
+
+	wpabuf_printf(json,
+		      "{\"name\":\"%s\","
+		      "\"wi-fi_tech\":\"%s\","
+		      "\"netRole\":\"%s\"",
+		      nbuf, tech, netrole_ap ? "ap" : "sta");
+	if (mud_url && mud_url[0])
+		wpabuf_printf(json, ",\"mudurl\":\"%s\"", mud_url);
+	wpabuf_put_str(json, "}");
+	os_free(nbuf);
+
+	buf = dpp_build_conf_req(auth, wpabuf_head(json));
+	wpabuf_free(json);
 
 	return buf;
 }
@@ -5101,6 +5154,10 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 		dpp_auth_fail(auth, "Unsupported netRole");
 		goto fail;
 	}
+
+	token = json_get_member(root, "mudurl");
+	if (token && token->type == JSON_STRING)
+		wpa_printf(MSG_DEBUG, "DPP: mudurl = '%s'", token->string);
 
 	resp = dpp_build_conf_resp(auth, e_nonce, e_nonce_len, ap);
 
@@ -9194,23 +9251,9 @@ static void dpp_controller_start_gas_client(struct dpp_connection *conn)
 {
 	struct dpp_authentication *auth = conn->auth;
 	struct wpabuf *buf;
-	char json[100];
 	int netrole_ap = 0; /* TODO: make this configurable */
 
-	os_snprintf(json, sizeof(json),
-		    "{\"name\":\"Test\","
-		    "\"wi-fi_tech\":\"infra\","
-		    "\"netRole\":\"%s\"}",
-		    netrole_ap ? "ap" : "sta");
-#ifdef CONFIG_TESTING_OPTIONS
-	if (dpp_test == DPP_TEST_INVALID_CONFIG_ATTR_OBJ_CONF_REQ) {
-		wpa_printf(MSG_INFO, "DPP: TESTING - invalid Config Attr");
-		json[29] = 'k'; /* replace "infra" with "knfra" */
-	}
-#endif /* CONFIG_TESTING_OPTIONS */
-	wpa_printf(MSG_DEBUG, "DPP: GAS Config Attributes: %s", json);
-
-	buf = dpp_build_conf_req(auth, json);
+	buf = dpp_build_conf_req_helper(auth, "Test", netrole_ap, NULL);
 	if (!buf) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No configuration request data available");
