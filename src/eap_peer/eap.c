@@ -1614,13 +1614,13 @@ static int eap_sm_imsi_identity(struct eap_sm *sm,
 static int eap_sm_set_scard_pin(struct eap_sm *sm,
 				struct eap_peer_config *conf)
 {
-	if (scard_set_pin(sm->scard_ctx, conf->pin)) {
+	if (scard_set_pin(sm->scard_ctx, conf->cert.pin)) {
 		/*
 		 * Make sure the same PIN is not tried again in order to avoid
 		 * blocking SIM.
 		 */
-		os_free(conf->pin);
-		conf->pin = NULL;
+		os_free(conf->cert.pin);
+		conf->cert.pin = NULL;
 
 		wpa_printf(MSG_WARNING, "PIN validation failed");
 		eap_sm_request_pin(sm);
