@@ -4770,3 +4770,32 @@ def run_dpp_conn_status(dev, apdev, result=0):
         dev[0].wait_connected()
     if result == 10 and "channel_list=" not in ev:
         raise Exception("Channel list not reported for no-AP")
+
+def test_dpp_mud_url(dev, apdev):
+    """DPP MUD URL"""
+    check_dpp_capab(dev[0])
+    try:
+        dev[0].set("dpp_name", "Test Enrollee")
+        dev[0].set("dpp_mud_url", "https://example.com/mud")
+        run_dpp_qr_code_auth_unicast(dev, apdev, None)
+    finally:
+        dev[0].set("dpp_mud_url", "")
+        dev[0].set("dpp_name", "Test")
+
+def test_dpp_mud_url_hostapd(dev, apdev):
+    """DPP MUD URL from hostapd"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    params = {"ssid": "unconfigured",
+              "dpp_name": "AP Enrollee",
+              "dpp_mud_url": "https://example.com/mud"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    check_dpp_capab(hapd)
+
+    id_h = hapd.dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri = hapd.request("DPP_BOOTSTRAP_GET_URI %d" % id_h)
+
+    conf_id = dev[0].dpp_configurator_add()
+    dev[0].dpp_auth_init(uri=uri, conf="ap-dpp", configurator=conf_id)
+    wait_auth_success(hapd, dev[0], configurator=dev[0], enrollee=hapd)
+    update_hapd_config(hapd)
