@@ -1302,7 +1302,7 @@ static int wpa_cli_cmd_log_level(struct wpa_ctrl *ctrl, int argc, char *argv[])
 static int wpa_cli_cmd_list_networks(struct wpa_ctrl *ctrl, int argc,
 				     char *argv[])
 {
-	return wpa_ctrl_command(ctrl, "LIST_NETWORKS");
+	return wpa_cli_cmd(ctrl, "LIST_NETWORKS", 0, argc, argv);
 }
 
 
