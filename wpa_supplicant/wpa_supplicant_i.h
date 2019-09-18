@@ -1424,6 +1424,7 @@ enum chan_allowed verify_channel(struct hostapd_hw_modes *mode, u8 channel,
 size_t wpas_supp_op_class_ie(struct wpa_supplicant *wpa_s,
 			     struct wpa_ssid *ssid,
 			     int freq, u8 *pos, size_t len);
+int * wpas_supp_op_classes(struct wpa_supplicant *wpa_s);
 
 int wpas_enable_mac_addr_randomization(struct wpa_supplicant *wpa_s,
 				       unsigned int type, const u8 *addr,

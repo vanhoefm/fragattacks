@@ -768,7 +768,7 @@ static void hostapd_dpp_start_gas_client(struct hostapd_data *hapd)
 	int res;
 
 	buf = dpp_build_conf_req_helper(auth, hapd->conf->dpp_name, 1,
-					hapd->conf->dpp_mud_url);
+					hapd->conf->dpp_mud_url, NULL);
 	if (!buf) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No configuration request data available");

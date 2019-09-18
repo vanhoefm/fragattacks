@@ -2514,7 +2514,7 @@ struct wpabuf * dpp_build_conf_req(struct dpp_authentication *auth,
 
 struct wpabuf * dpp_build_conf_req_helper(struct dpp_authentication *auth,
 					  const char *name, int netrole_ap,
-					  const char *mud_url)
+					  const char *mud_url, int *opclasses)
 {
 	size_t len, nlen;
 	const char *tech = "infra";
@@ -2539,7 +2539,7 @@ struct wpabuf * dpp_build_conf_req_helper(struct dpp_authentication *auth,
 		return NULL;
 	json_escape_string(nbuf, nlen, dpp_name, len);
 
-	len = 100 + os_strlen(nbuf);
+	len = 100 + os_strlen(nbuf) + int_array_len(opclasses) * 4;
 	if (mud_url && mud_url[0])
 		len += 10 + os_strlen(mud_url);
 	json = wpabuf_alloc(len);
@@ -2555,6 +2555,14 @@ struct wpabuf * dpp_build_conf_req_helper(struct dpp_authentication *auth,
 		      nbuf, tech, netrole_ap ? "ap" : "sta");
 	if (mud_url && mud_url[0])
 		wpabuf_printf(json, ",\"mudurl\":\"%s\"", mud_url);
+	if (opclasses) {
+		int i;
+
+		wpabuf_put_str(json, ",\"bandSupport\":[");
+		for (i = 0; opclasses[i]; i++)
+			wpabuf_printf(json, "%s%u", i ? "," : "", opclasses[i]);
+		wpabuf_put_str(json, "]");
+	}
 	wpabuf_put_str(json, "}");
 	os_free(nbuf);
 
@@ -9253,7 +9261,7 @@ static void dpp_controller_start_gas_client(struct dpp_connection *conn)
 	struct wpabuf *buf;
 	int netrole_ap = 0; /* TODO: make this configurable */
 
-	buf = dpp_build_conf_req_helper(auth, "Test", netrole_ap, NULL);
+	buf = dpp_build_conf_req_helper(auth, "Test", netrole_ap, NULL, NULL);
 	if (!buf) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No configuration request data available");

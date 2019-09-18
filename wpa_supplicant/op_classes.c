@@ -225,7 +225,7 @@ static int wpas_op_class_supported(struct wpa_supplicant *wpa_s,
 
 	/* If we are configured to disable certain things, take that into
 	 * account here. */
-	if (ssid->freq_list && ssid->freq_list[0]) {
+	if (ssid && ssid->freq_list && ssid->freq_list[0]) {
 		for (z = 0; ; z++) {
 			int f = ssid->freq_list[z];
 
@@ -248,7 +248,7 @@ static int wpas_op_class_supported(struct wpa_supplicant *wpa_s,
 		return 0;
 
 #ifdef CONFIG_HT_OVERRIDES
-	if (ssid->disable_ht) {
+	if (ssid && ssid->disable_ht) {
 		switch (op_class->op_class) {
 		case 83:
 		case 84:
@@ -272,7 +272,7 @@ static int wpas_op_class_supported(struct wpa_supplicant *wpa_s,
 #endif /* CONFIG_HT_OVERRIDES */
 
 #ifdef CONFIG_VHT_OVERRIDES
-	if (ssid->disable_vht) {
+	if (ssid && ssid->disable_vht) {
 		if (op_class->op_class >= 128 && op_class->op_class <= 130) {
 			/* Disable >= 80 MHz channels if VHT is disabled */
 			return 0;
@@ -384,4 +384,25 @@ size_t wpas_supp_op_class_ie(struct wpa_supplicant *wpa_s,
 
 	wpabuf_free(buf);
 	return res;
+}
+
+
+int * wpas_supp_op_classes(struct wpa_supplicant *wpa_s)
+{
+	int op;
+	unsigned int pos, max_num = 0;
+	int *classes;
+
+	for (op = 0; global_op_class[op].op_class; op++)
+		max_num++;
+	classes = os_zalloc((max_num + 1) * sizeof(int));
+	if (!classes)
+		return NULL;
+
+	for (op = 0, pos = 0; global_op_class[op].op_class; op++) {
+		if (wpas_op_class_supported(wpa_s, NULL, &global_op_class[op]))
+			classes[pos++] = global_op_class[op].op_class;
+	}
+
+	return classes;
 }

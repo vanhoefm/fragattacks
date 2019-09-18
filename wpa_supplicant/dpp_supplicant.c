@@ -1252,14 +1252,18 @@ static void wpas_dpp_start_gas_client(struct wpa_supplicant *wpa_s)
 	struct dpp_authentication *auth = wpa_s->dpp_auth;
 	struct wpabuf *buf;
 	int res;
+	int *supp_op_classes;
 
 	wpa_s->dpp_gas_client = 1;
 	offchannel_send_action_done(wpa_s);
 	wpas_dpp_listen_stop(wpa_s);
 
+	supp_op_classes = wpas_supp_op_classes(wpa_s);
 	buf = dpp_build_conf_req_helper(auth, wpa_s->conf->dpp_name,
 					wpa_s->dpp_netrole_ap,
-					wpa_s->conf->dpp_mud_url);
+					wpa_s->conf->dpp_mud_url,
+					supp_op_classes);
+	os_free(supp_op_classes);
 	if (!buf) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No configuration request data available");
