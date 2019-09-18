@@ -5167,6 +5167,22 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 	if (token && token->type == JSON_STRING)
 		wpa_printf(MSG_DEBUG, "DPP: mudurl = '%s'", token->string);
 
+	token = json_get_member(root, "bandSupport");
+	if (token && token->type == JSON_ARRAY) {
+		wpa_printf(MSG_DEBUG, "DPP: bandSupport");
+		token = token->child;
+		while (token) {
+			if (token->type != JSON_NUMBER)
+				wpa_printf(MSG_DEBUG,
+					   "DPP: Invalid bandSupport array member type");
+			else
+				wpa_printf(MSG_DEBUG,
+					   "DPP: Supported global operating class: %d",
+					   token->number);
+			token = token->sibling;
+		}
+	}
+
 	resp = dpp_build_conf_resp(auth, e_nonce, e_nonce_len, ap);
 
 fail:
