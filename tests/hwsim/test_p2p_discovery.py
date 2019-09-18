@@ -81,8 +81,8 @@ def test_discovery(dev):
     if addr1 not in ev0:
         raise Exception("Dev1 not in provision discovery event")
 
-    dev[0].p2p_stop_find
-    dev[1].p2p_stop_find
+    dev[0].p2p_stop_find()
+    dev[1].p2p_stop_find()
 
     if "FAIL" not in dev[0].p2p_find(dev_id="foo"):
         raise Exception("P2P_FIND with invalid dev_id accepted")
