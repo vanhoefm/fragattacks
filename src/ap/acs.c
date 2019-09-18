@@ -942,6 +942,12 @@ static int acs_request_scan(struct hostapd_iface *iface)
 	}
 	*freq = 0;
 
+	if (params.freqs == freq) {
+		wpa_printf(MSG_ERROR, "ACS: No available channels found");
+		os_free(params.freqs);
+		return -1;
+	}
+
 	iface->scan_cb = acs_scan_complete;
 
 	wpa_printf(MSG_DEBUG, "ACS: Scanning %d / %d",
