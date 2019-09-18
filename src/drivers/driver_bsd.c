@@ -1661,6 +1661,17 @@ static void *
 bsd_global_init(void *ctx)
 {
 	struct bsd_driver_global *global;
+#if defined(RO_MSGFILTER) || defined(ROUTE_MSGFILTER)
+	unsigned char msgfilter[] = {
+		RTM_IEEE80211,
+#ifndef HOSTAPD
+		RTM_IFINFO, RTM_IFANNOUNCE,
+#endif
+	};
+#endif
+#ifdef ROUTE_MSGFILTER
+	unsigned int i, msgfilter_mask;
+#endif
 
 	global = os_zalloc(sizeof(*global));
 	if (global == NULL)
@@ -1682,6 +1693,21 @@ bsd_global_init(void *ctx)
 			   strerror(errno));
 		goto fail;
 	}
+
+#if defined(RO_MSGFILTER)
+	if (setsockopt(global->route, PF_ROUTE, RO_MSGFILTER,
+	    &msgfilter, sizeof(msgfilter)) < 0)
+		wpa_printf(MSG_ERROR, "socket[PF_ROUTE,RO_MSGFILTER]: %s",
+			   strerror(errno));
+#elif defined(ROUTE_MSGFILTER)
+	msgfilter_mask = 0;
+	for (i = 0; i < (sizeof(msgfilter) / sizeof(msgfilter[0])); i++)
+		msgfilter_mask |= ROUTE_FILTER(msgfilter[i]);
+	if (setsockopt(global->route, PF_ROUTE, ROUTE_MSGFILTER,
+	    &msgfilter_mask, sizeof(msgfilter_mask)) < 0)
+		wpa_printf(MSG_ERROR, "socket[PF_ROUTE,ROUTE_MSGFILTER]: %s",
+			   strerror(errno));
+#endif
 
 	global->event_buf_len = rtbuf_len();
 	global->event_buf = os_malloc(global->event_buf_len);
