@@ -11,9 +11,6 @@
 #include <netinet/ip.h>
 #endif /* CONFIG_TESTING_OPTIONS */
 
-#if !defined(__CYGWIN__) && !defined(CONFIG_NATIVE_WINDOWS)
-#include <net/ethernet.h>
-#endif
 #include "utils/common.h"
 #include "utils/eloop.h"
 #include "utils/uuid.h"
@@ -59,6 +56,12 @@
 #include "mesh.h"
 #include "dpp_supplicant.h"
 #include "sme.h"
+
+#ifdef __NetBSD__
+#include <net/if_ether.h>
+#elif !defined(__CYGWIN__) && !defined(CONFIG_NATIVE_WINDOWS)
+#include <net/ethernet.h>
+#endif
 
 static int wpa_supplicant_global_iface_list(struct wpa_global *global,
 					    char *buf, int len);
