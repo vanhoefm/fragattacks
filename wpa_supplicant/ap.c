@@ -381,7 +381,9 @@ static int wpa_supplicant_conf_ap(struct wpa_supplicant *wpa_s,
 	else
 		bss->wpa_key_mgmt = ssid->key_mgmt;
 	bss->wpa_pairwise = ssid->pairwise_cipher;
-	if (ssid->psk_set) {
+	if (wpa_key_mgmt_sae(bss->wpa_key_mgmt) && ssid->passphrase) {
+		bss->ssid.wpa_passphrase = os_strdup(ssid->passphrase);
+	} else if (ssid->psk_set) {
 		bin_clear_free(bss->ssid.wpa_psk, sizeof(*bss->ssid.wpa_psk));
 		bss->ssid.wpa_psk = os_zalloc(sizeof(struct hostapd_wpa_psk));
 		if (bss->ssid.wpa_psk == NULL)
@@ -407,6 +409,32 @@ static int wpa_supplicant_conf_ap(struct wpa_supplicant *wpa_s,
 		wep->idx = ssid->wep_tx_keyidx;
 		wep->keys_set = 1;
 	}
+#ifdef CONFIG_SAE
+	if (ssid->sae_password) {
+		struct sae_password_entry *pw;
+
+		pw = os_zalloc(sizeof(*pw));
+		if (!pw)
+			return -1;
+		os_memset(pw->peer_addr, 0xff, ETH_ALEN);
+		pw->password = os_strdup(ssid->sae_password);
+		if (!pw->password) {
+			os_free(pw);
+			return -1;
+		}
+		if (ssid->sae_password_id) {
+			pw->identifier = os_strdup(ssid->sae_password_id);
+			if (!pw->identifier) {
+				str_clear_free(pw->password);
+				os_free(pw);
+				return -1;
+			}
+		}
+
+		pw->next = bss->sae_passwords;
+		bss->sae_passwords = pw;
+	}
+#endif /* CONFIG_SAE */
 
 	if (wpa_s->conf->go_interworking) {
 		wpa_printf(MSG_DEBUG,
