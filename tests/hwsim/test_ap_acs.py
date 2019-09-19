@@ -89,6 +89,17 @@ def test_ap_acs_chanlist(dev, apdev):
 
     dev[0].connect("test-acs", psk="12345678", scan_freq=freq)
 
+def test_ap_acs_invalid_chanlist(dev, apdev):
+    """Automatic channel selection with invalid chanlist"""
+    force_prev_ap_on_24g(apdev[0])
+    params = hostapd.wpa2_params(ssid="test-acs", passphrase="12345678")
+    params['channel'] = '0'
+    params['chanlist'] = '15-18'
+    hapd = hostapd.add_ap(apdev[0], params, no_enable=True)
+    res = hapd.request("ENABLE")
+    if "OK" in res:
+        raise Exception("ENABLE command succeeded unexpectedly")
+
 def test_ap_multi_bss_acs(dev, apdev):
     """hostapd start with a multi-BSS configuration file using ACS"""
     skip_with_fips(dev[0])
