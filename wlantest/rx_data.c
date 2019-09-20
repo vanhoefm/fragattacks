@@ -55,6 +55,29 @@ static const char * data_stype(u16 stype)
 static void rx_data_eth(struct wlantest *wt, const u8 *bssid,
 			const u8 *sta_addr, const u8 *dst, const u8 *src,
 			u16 ethertype, const u8 *data, size_t len, int prot,
+			const u8 *peer_addr);
+
+static void rx_data_vlan(struct wlantest *wt, const u8 *bssid,
+			 const u8 *sta_addr, const u8 *dst, const u8 *src,
+			 const u8 *data, size_t len, int prot,
+			 const u8 *peer_addr)
+{
+	u16 tag;
+
+	if (len < 4)
+		return;
+	tag = WPA_GET_BE16(data);
+	wpa_printf(MSG_MSGDUMP, "VLAN tag: Priority=%u ID=%u",
+		   tag >> 12, tag & 0x0ffff);
+	/* ignore VLAN information and process the original frame */
+	rx_data_eth(wt, bssid, sta_addr, dst, src, WPA_GET_BE16(data + 2),
+		    data + 4, len - 4, prot, peer_addr);
+}
+
+
+static void rx_data_eth(struct wlantest *wt, const u8 *bssid,
+			const u8 *sta_addr, const u8 *dst, const u8 *src,
+			u16 ethertype, const u8 *data, size_t len, int prot,
 			const u8 *peer_addr)
 {
 	switch (ethertype) {
@@ -67,6 +90,10 @@ static void rx_data_eth(struct wlantest *wt, const u8 *bssid,
 		break;
 	case 0x890d:
 		rx_data_80211_encap(wt, bssid, sta_addr, dst, src, data, len);
+		break;
+	case ETH_P_8021Q:
+		rx_data_vlan(wt, bssid, sta_addr, dst, src, data, len, prot,
+			     peer_addr);
 		break;
 	}
 }
