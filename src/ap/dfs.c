@@ -515,6 +515,7 @@ static int set_dfs_state(struct hostapd_iface *iface, int freq, int ht_enabled,
 	int n_chans = 1, i;
 	struct hostapd_hw_modes *mode;
 	int frequency = freq;
+	int frequency2 = 0;
 	int ret = 0;
 
 	mode = iface->current_mode;
@@ -542,6 +543,11 @@ static int set_dfs_state(struct hostapd_iface *iface, int freq, int ht_enabled,
 		n_chans = 4;
 		frequency = cf1 - 30;
 		break;
+	case CHAN_WIDTH_80P80:
+		n_chans = 4;
+		frequency = cf1 - 30;
+		frequency2 = cf2 - 30;
+		break;
 	case CHAN_WIDTH_160:
 		n_chans = 8;
 		frequency = cf1 - 70;
@@ -557,6 +563,11 @@ static int set_dfs_state(struct hostapd_iface *iface, int freq, int ht_enabled,
 	for (i = 0; i < n_chans; i++) {
 		ret += set_dfs_state_freq(iface, frequency, state);
 		frequency = frequency + 20;
+
+		if (chan_width == CHAN_WIDTH_80P80) {
+			ret += set_dfs_state_freq(iface, frequency2, state);
+			frequency2 = frequency2 + 20;
+		}
 	}
 
 	return ret;
