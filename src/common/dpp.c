@@ -4360,8 +4360,8 @@ void dpp_configuration_free(struct dpp_configuration *conf)
 }
 
 
-static int dpp_configuration_parse(struct dpp_authentication *auth,
-				   const char *cmd)
+static int dpp_configuration_parse_helper(struct dpp_authentication *auth,
+					  const char *cmd, int idx)
 {
 	const char *pos, *end;
 	struct dpp_configuration *conf_sta = NULL, *conf_ap = NULL;
@@ -4459,13 +4459,55 @@ static int dpp_configuration_parse(struct dpp_authentication *auth,
 	if (!dpp_configuration_valid(conf))
 		goto fail;
 
-	auth->conf_sta = conf_sta;
-	auth->conf_ap = conf_ap;
+	if (idx == 0) {
+		auth->conf_sta = conf_sta;
+		auth->conf_ap = conf_ap;
+	} else if (idx == 1) {
+		auth->conf2_sta = conf_sta;
+		auth->conf2_ap = conf_ap;
+	} else {
+		goto fail;
+	}
 	return 0;
 
 fail:
 	dpp_configuration_free(conf_sta);
 	dpp_configuration_free(conf_ap);
+	return -1;
+}
+
+
+static int dpp_configuration_parse(struct dpp_authentication *auth,
+				   const char *cmd)
+{
+	const char *pos;
+	char *tmp;
+	size_t len;
+	int res;
+
+	pos = os_strstr(cmd, " @CONF-OBJ-SEP@ ");
+	if (!pos)
+		return dpp_configuration_parse_helper(auth, cmd, 0);
+
+	len = pos - cmd;
+	tmp = os_malloc(len + 1);
+	if (!tmp)
+		goto fail;
+	os_memcpy(tmp, cmd, len);
+	tmp[len] = '\0';
+	res = dpp_configuration_parse_helper(auth, cmd, 0);
+	str_clear_free(tmp);
+	if (res)
+		goto fail;
+	res = dpp_configuration_parse_helper(auth, cmd + len, 1);
+	if (res)
+		goto fail;
+	return 0;
+fail:
+	dpp_configuration_free(auth->conf_sta);
+	dpp_configuration_free(auth->conf2_sta);
+	dpp_configuration_free(auth->conf_ap);
+	dpp_configuration_free(auth->conf2_ap);
 	return -1;
 }
 
@@ -4529,7 +4571,9 @@ void dpp_auth_deinit(struct dpp_authentication *auth)
 	if (!auth)
 		return;
 	dpp_configuration_free(auth->conf_ap);
+	dpp_configuration_free(auth->conf2_ap);
 	dpp_configuration_free(auth->conf_sta);
+	dpp_configuration_free(auth->conf2_sta);
 	EVP_PKEY_free(auth->own_protocol_key);
 	EVP_PKEY_free(auth->peer_protocol_key);
 	wpabuf_free(auth->req_msg);
@@ -4898,23 +4942,31 @@ dpp_build_conf_obj_legacy(struct dpp_authentication *auth,
 
 
 static struct wpabuf *
-dpp_build_conf_obj(struct dpp_authentication *auth, int ap)
+dpp_build_conf_obj(struct dpp_authentication *auth, int ap, int idx)
 {
 	struct dpp_configuration *conf;
 
 #ifdef CONFIG_TESTING_OPTIONS
 	if (auth->config_obj_override) {
+		if (idx != 0)
+			return NULL;
 		wpa_printf(MSG_DEBUG, "DPP: Testing - Config Object override");
 		return wpabuf_alloc_copy(auth->config_obj_override,
 					 os_strlen(auth->config_obj_override));
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
 
-	conf = ap ? auth->conf_ap : auth->conf_sta;
+	if (idx == 0)
+		conf = ap ? auth->conf_ap : auth->conf_sta;
+	else if (idx == 1)
+		conf = ap ? auth->conf2_ap : auth->conf2_sta;
+	else
+		conf = NULL;
 	if (!conf) {
-		wpa_printf(MSG_DEBUG,
-			   "DPP: No configuration available for Enrollee(%s) - reject configuration request",
-			   ap ? "ap" : "sta");
+		if (idx != 0)
+			wpa_printf(MSG_DEBUG,
+				   "DPP: No configuration available for Enrollee(%s) - reject configuration request",
+				   ap ? "ap" : "sta");
 		return NULL;
 	}
 
@@ -4928,7 +4980,7 @@ static struct wpabuf *
 dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 		    u16 e_nonce_len, int ap)
 {
-	struct wpabuf *conf;
+	struct wpabuf *conf, *conf2 = NULL;
 	size_t clear_len, attr_len;
 	struct wpabuf *clear = NULL, *msg = NULL;
 	u8 *wrapped;
@@ -4936,10 +4988,11 @@ dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 	size_t len[1];
 	enum dpp_status_error status;
 
-	conf = dpp_build_conf_obj(auth, ap);
+	conf = dpp_build_conf_obj(auth, ap, 0);
 	if (conf) {
 		wpa_hexdump_ascii(MSG_DEBUG, "DPP: configurationObject JSON",
 				  wpabuf_head(conf), wpabuf_len(conf));
+		conf2 = dpp_build_conf_obj(auth, ap, 1);
 	}
 	status = conf ? DPP_STATUS_OK : DPP_STATUS_CONFIGURE_FAILURE;
 	auth->conf_resp_status = status;
@@ -4948,6 +5001,8 @@ dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 	clear_len = 4 + e_nonce_len;
 	if (conf)
 		clear_len += 4 + wpabuf_len(conf);
+	if (conf2)
+		clear_len += 4 + wpabuf_len(conf2);
 	if (auth->peer_version >= 2 && auth->send_conn_status && !ap)
 		clear_len += 4;
 	clear = wpabuf_alloc(clear_len);
@@ -4996,6 +5051,14 @@ skip_e_nonce:
 		wpabuf_put_le16(clear, DPP_ATTR_CONFIG_OBJ);
 		wpabuf_put_le16(clear, wpabuf_len(conf));
 		wpabuf_put_buf(clear, conf);
+	}
+	if (auth->peer_version >= 2 && conf2) {
+		wpabuf_put_le16(clear, DPP_ATTR_CONFIG_OBJ);
+		wpabuf_put_le16(clear, wpabuf_len(conf2));
+		wpabuf_put_buf(clear, conf2);
+	} else if (conf2) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Second Config Object available, but peer does not support more than one");
 	}
 
 	if (auth->peer_version >= 2 && auth->send_conn_status && !ap) {
@@ -5051,6 +5114,7 @@ skip_wrapped_data:
 			"DPP: Configuration Response attributes", msg);
 out:
 	wpabuf_free(conf);
+	wpabuf_free(conf2);
 	wpabuf_free(clear);
 
 	return msg;
@@ -6612,7 +6676,7 @@ int dpp_configurator_own_config(struct dpp_authentication *auth,
 	auth->peer_protocol_key = auth->own_protocol_key;
 	dpp_copy_csign(auth, auth->conf->csign);
 
-	conf_obj = dpp_build_conf_obj(auth, ap);
+	conf_obj = dpp_build_conf_obj(auth, ap, 0);
 	if (!conf_obj)
 		goto fail;
 	ret = dpp_parse_conf_obj(auth, wpabuf_head(conf_obj),

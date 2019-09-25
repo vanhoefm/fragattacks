@@ -237,7 +237,9 @@ struct dpp_authentication {
 	struct wpabuf *conf_req;
 	const struct wpabuf *conf_resp; /* owned by GAS server */
 	struct dpp_configuration *conf_ap;
+	struct dpp_configuration *conf2_ap;
 	struct dpp_configuration *conf_sta;
+	struct dpp_configuration *conf2_sta;
 	struct dpp_configurator *conf;
 	char *connector; /* received signedConnector */
 	u8 ssid[SSID_MAX_LEN];
