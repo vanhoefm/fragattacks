@@ -1212,6 +1212,14 @@ def test_sigma_dut_dpp_qr_resp_8(dev, apdev):
     """sigma_dut DPP/QR responder (conf index 8)"""
     run_sigma_dut_dpp_qr_resp(dev, apdev, 8)
 
+def test_sigma_dut_dpp_qr_resp_9(dev, apdev):
+    """sigma_dut DPP/QR responder (conf index 9)"""
+    run_sigma_dut_dpp_qr_resp(dev, apdev, 9)
+
+def test_sigma_dut_dpp_qr_resp_10(dev, apdev):
+    """sigma_dut DPP/QR responder (conf index 10)"""
+    run_sigma_dut_dpp_qr_resp(dev, apdev, 10)
+
 def test_sigma_dut_dpp_qr_resp_chan_list(dev, apdev):
     """sigma_dut DPP/QR responder (channel list override)"""
     run_sigma_dut_dpp_qr_resp(dev, apdev, 1, chan_list='81/2 81/6 81/1',
