@@ -4585,6 +4585,12 @@ int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
 		auth->send_conn_status = atoi(pos);
 	}
 
+	pos = os_strstr(cmd, " akm_use_selector=");
+	if (pos) {
+		pos += 18;
+		auth->akm_use_selector = atoi(pos);
+	}
+
 	if (dpp_configuration_parse(auth, cmd) < 0) {
 		wpa_msg(msg_ctx, MSG_INFO,
 			"DPP: Failed to set configurator parameters");
@@ -4761,6 +4767,7 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth,
 	size_t extra_len = 1000;
 	int incl_legacy;
 	enum dpp_akm akm;
+	const char *akm_str;
 
 	if (!auth->conf) {
 		wpa_printf(MSG_INFO,
@@ -4914,7 +4921,11 @@ skip_groups:
 	if (!buf)
 		goto fail;
 
-	wpabuf_printf(buf, "\"cred\":{\"akm\":\"%s\",", dpp_akm_str(akm));
+	if (auth->akm_use_selector && dpp_akm_ver2(akm))
+		akm_str = dpp_akm_selector_str(akm);
+	else
+		akm_str = dpp_akm_str(akm);
+	wpabuf_printf(buf, "\"cred\":{\"akm\":\"%s\",", akm_str);
 	if (incl_legacy) {
 		dpp_build_legacy_cred_params(buf, conf);
 		wpabuf_put_str(buf, ",");
@@ -4959,12 +4970,17 @@ dpp_build_conf_obj_legacy(struct dpp_authentication *auth,
 			  struct dpp_configuration *conf)
 {
 	struct wpabuf *buf;
+	const char *akm_str;
 
 	buf = dpp_build_conf_start(auth, conf, 1000);
 	if (!buf)
 		return NULL;
 
-	wpabuf_printf(buf, "\"cred\":{\"akm\":\"%s\",", dpp_akm_str(conf->akm));
+	if (auth->akm_use_selector && dpp_akm_ver2(conf->akm))
+		akm_str = dpp_akm_selector_str(conf->akm);
+	else
+		akm_str = dpp_akm_str(conf->akm);
+	wpabuf_printf(buf, "\"cred\":{\"akm\":\"%s\",", akm_str);
 	dpp_build_legacy_cred_params(buf, conf);
 	wpabuf_put_str(buf, "}}");
 
@@ -6018,6 +6034,27 @@ const char * dpp_akm_str(enum dpp_akm akm)
 		return "dpp+sae";
 	case DPP_AKM_PSK_SAE_DPP:
 		return "dpp+psk+sae";
+	default:
+		return "??";
+	}
+}
+
+
+const char * dpp_akm_selector_str(enum dpp_akm akm)
+{
+	switch (akm) {
+	case DPP_AKM_DPP:
+		return "506F9A02";
+	case DPP_AKM_PSK:
+		return "000FAC02+000FAC06";
+	case DPP_AKM_SAE:
+		return "000FAC08";
+	case DPP_AKM_PSK_SAE:
+		return "000FAC02+000FAC06+000FAC08";
+	case DPP_AKM_SAE_DPP:
+		return "506F9A02+000FAC08";
+	case DPP_AKM_PSK_SAE_DPP:
+		return "506F9A02+000FAC08+000FAC02+000FAC06";
 	default:
 		return "??";
 	}

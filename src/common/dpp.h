@@ -258,6 +258,7 @@ struct dpp_authentication {
 	os_time_t net_access_key_expiry;
 	int send_conn_status;
 	int conn_status_requested;
+	int akm_use_selector;
 #ifdef CONFIG_TESTING_OPTIONS
 	char *config_obj_override;
 	char *discovery_override;
@@ -478,6 +479,7 @@ const u8 * dpp_get_attr(const u8 *buf, size_t len, u16 req_id, u16 *ret_len);
 int dpp_check_attrs(const u8 *buf, size_t len);
 int dpp_key_expired(const char *timestamp, os_time_t *expiry);
 const char * dpp_akm_str(enum dpp_akm akm);
+const char * dpp_akm_selector_str(enum dpp_akm akm);
 int dpp_configurator_get_key(const struct dpp_configurator *conf, char *buf,
 			     size_t buflen);
 void dpp_configurator_free(struct dpp_configurator *conf);
