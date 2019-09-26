@@ -607,47 +607,48 @@ static void hostapd_dpp_rx_auth_req(struct hostapd_data *hapd, const u8 *src,
 
 
 static void hostapd_dpp_handle_config_obj(struct hostapd_data *hapd,
-					  struct dpp_authentication *auth)
+					  struct dpp_authentication *auth,
+					  struct dpp_config_obj *conf)
 {
 	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONF_RECEIVED);
 	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONFOBJ_AKM "%s",
-		dpp_akm_str(auth->akm));
-	if (auth->ssid_len)
+		dpp_akm_str(conf->akm));
+	if (conf->ssid_len)
 		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONFOBJ_SSID "%s",
-			wpa_ssid_txt(auth->ssid, auth->ssid_len));
-	if (auth->connector) {
+			wpa_ssid_txt(conf->ssid, conf->ssid_len));
+	if (conf->connector) {
 		/* TODO: Save the Connector and consider using a command
 		 * to fetch the value instead of sending an event with
 		 * it. The Connector could end up being larger than what
 		 * most clients are ready to receive as an event
 		 * message. */
 		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONNECTOR "%s",
-			auth->connector);
-	} else if (auth->passphrase[0]) {
+			conf->connector);
+	} else if (conf->passphrase[0]) {
 		char hex[64 * 2 + 1];
 
 		wpa_snprintf_hex(hex, sizeof(hex),
-				 (const u8 *) auth->passphrase,
-				 os_strlen(auth->passphrase));
+				 (const u8 *) conf->passphrase,
+				 os_strlen(conf->passphrase));
 		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONFOBJ_PASS "%s",
 			hex);
-	} else if (auth->psk_set) {
+	} else if (conf->psk_set) {
 		char hex[PMK_LEN * 2 + 1];
 
-		wpa_snprintf_hex(hex, sizeof(hex), auth->psk, PMK_LEN);
+		wpa_snprintf_hex(hex, sizeof(hex), conf->psk, PMK_LEN);
 		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONFOBJ_PSK "%s",
 			hex);
 	}
-	if (auth->c_sign_key) {
+	if (conf->c_sign_key) {
 		char *hex;
 		size_t hexlen;
 
-		hexlen = 2 * wpabuf_len(auth->c_sign_key) + 1;
+		hexlen = 2 * wpabuf_len(conf->c_sign_key) + 1;
 		hex = os_malloc(hexlen);
 		if (hex) {
 			wpa_snprintf_hex(hex, hexlen,
-					 wpabuf_head(auth->c_sign_key),
-					 wpabuf_len(auth->c_sign_key));
+					 wpabuf_head(conf->c_sign_key),
+					 wpabuf_len(conf->c_sign_key));
 			wpa_msg(hapd->msg_ctx, MSG_INFO,
 				DPP_EVENT_C_SIGN_KEY "%s", hex);
 			os_free(hex);
@@ -720,7 +721,7 @@ static void hostapd_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 		goto fail;
 	}
 
-	hostapd_dpp_handle_config_obj(hapd, auth);
+	hostapd_dpp_handle_config_obj(hapd, auth, &auth->conf_obj[0]);
 	status = DPP_STATUS_OK;
 #ifdef CONFIG_TESTING_OPTIONS
 	if (dpp_test == DPP_TEST_REJECT_CONFIG) {
@@ -1568,7 +1569,7 @@ int hostapd_dpp_configurator_sign(struct hostapd_data *hapd, const char *cmd)
 	if (dpp_set_configurator(hapd->iface->interfaces->dpp, hapd->msg_ctx,
 				 auth, cmd) == 0 &&
 	    dpp_configurator_own_config(auth, curve, 1) == 0) {
-		hostapd_dpp_handle_config_obj(hapd, auth);
+		hostapd_dpp_handle_config_obj(hapd, auth, &auth->conf_obj[0]);
 		ret = 0;
 	}
 

@@ -184,6 +184,8 @@ struct dpp_configuration {
 	int psk_set;
 };
 
+#define DPP_MAX_CONF_OBJ 10
+
 struct dpp_authentication {
 	void *msg_ctx;
 	u8 peer_version;
@@ -241,16 +243,19 @@ struct dpp_authentication {
 	struct dpp_configuration *conf_sta;
 	struct dpp_configuration *conf2_sta;
 	struct dpp_configurator *conf;
-	char *connector; /* received signedConnector */
-	u8 ssid[SSID_MAX_LEN];
-	u8 ssid_len;
-	char passphrase[64];
-	u8 psk[PMK_LEN];
-	int psk_set;
-	enum dpp_akm akm;
+	struct dpp_config_obj {
+		char *connector; /* received signedConnector */
+		u8 ssid[SSID_MAX_LEN];
+		u8 ssid_len;
+		char passphrase[64];
+		u8 psk[PMK_LEN];
+		int psk_set;
+		enum dpp_akm akm;
+		struct wpabuf *c_sign_key;
+	} conf_obj[DPP_MAX_CONF_OBJ];
+	unsigned int num_conf_obj;
 	struct wpabuf *net_access_key;
 	os_time_t net_access_key_expiry;
-	struct wpabuf *c_sign_key;
 	int send_conn_status;
 	int conn_status_requested;
 #ifdef CONFIG_TESTING_OPTIONS

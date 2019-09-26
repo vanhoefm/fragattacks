@@ -742,6 +742,34 @@ const u8 * dpp_get_attr(const u8 *buf, size_t len, u16 req_id, u16 *ret_len)
 }
 
 
+static const u8 * dpp_get_attr_next(const u8 *prev, const u8 *buf, size_t len,
+				    u16 req_id, u16 *ret_len)
+{
+	u16 id, alen;
+	const u8 *pos, *end = buf + len;
+
+	if (!prev)
+		pos = buf;
+	else
+		pos = prev + WPA_GET_LE16(prev - 2);
+	while (end - pos >= 4) {
+		id = WPA_GET_LE16(pos);
+		pos += 2;
+		alen = WPA_GET_LE16(pos);
+		pos += 2;
+		if (alen > end - pos)
+			return NULL;
+		if (id == req_id) {
+			*ret_len = alen;
+			return pos;
+		}
+		pos += alen;
+	}
+
+	return NULL;
+}
+
+
 int dpp_check_attrs(const u8 *buf, size_t len)
 {
 	const u8 *pos, *end;
@@ -4568,6 +4596,8 @@ int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
 
 void dpp_auth_deinit(struct dpp_authentication *auth)
 {
+	unsigned int i;
+
 	if (!auth)
 		return;
 	dpp_configuration_free(auth->conf_ap);
@@ -4579,9 +4609,13 @@ void dpp_auth_deinit(struct dpp_authentication *auth)
 	wpabuf_free(auth->req_msg);
 	wpabuf_free(auth->resp_msg);
 	wpabuf_free(auth->conf_req);
-	os_free(auth->connector);
+	for (i = 0; i < auth->num_conf_obj; i++) {
+		struct dpp_config_obj *conf = &auth->conf_obj[i];
+
+		os_free(conf->connector);
+		wpabuf_free(conf->c_sign_key);
+	}
 	wpabuf_free(auth->net_access_key);
-	wpabuf_free(auth->c_sign_key);
 	dpp_bootstrap_info_free(auth->tmp_own_bi);
 #ifdef CONFIG_TESTING_OPTIONS
 	os_free(auth->config_obj_override);
@@ -5352,7 +5386,7 @@ fail:
 }
 
 
-static int dpp_parse_cred_legacy(struct dpp_authentication *auth,
+static int dpp_parse_cred_legacy(struct dpp_config_obj *conf,
 				 struct json_token *cred)
 {
 	struct json_token *pass, *psk_hex;
@@ -5369,28 +5403,28 @@ static int dpp_parse_cred_legacy(struct dpp_authentication *auth,
 				      pass->string, len);
 		if (len < 8 || len > 63)
 			return -1;
-		os_strlcpy(auth->passphrase, pass->string,
-			   sizeof(auth->passphrase));
+		os_strlcpy(conf->passphrase, pass->string,
+			   sizeof(conf->passphrase));
 	} else if (psk_hex && psk_hex->type == JSON_STRING) {
-		if (dpp_akm_sae(auth->akm) && !dpp_akm_psk(auth->akm)) {
+		if (dpp_akm_sae(conf->akm) && !dpp_akm_psk(conf->akm)) {
 			wpa_printf(MSG_DEBUG,
 				   "DPP: Unexpected psk_hex with akm=sae");
 			return -1;
 		}
 		if (os_strlen(psk_hex->string) != PMK_LEN * 2 ||
-		    hexstr2bin(psk_hex->string, auth->psk, PMK_LEN) < 0) {
+		    hexstr2bin(psk_hex->string, conf->psk, PMK_LEN) < 0) {
 			wpa_printf(MSG_DEBUG, "DPP: Invalid psk_hex encoding");
 			return -1;
 		}
 		wpa_hexdump_key(MSG_DEBUG, "DPP: Legacy PSK",
-				auth->psk, PMK_LEN);
-		auth->psk_set = 1;
+				conf->psk, PMK_LEN);
+		conf->psk_set = 1;
 	} else {
 		wpa_printf(MSG_DEBUG, "DPP: No pass or psk_hex strings found");
 		return -1;
 	}
 
-	if (dpp_akm_sae(auth->akm) && !auth->passphrase[0]) {
+	if (dpp_akm_sae(conf->akm) && !conf->passphrase[0]) {
 		wpa_printf(MSG_DEBUG, "DPP: No pass for sae found");
 		return -1;
 	}
@@ -5558,6 +5592,7 @@ int dpp_key_expired(const char *timestamp, os_time_t *expiry)
 
 
 static int dpp_parse_connector(struct dpp_authentication *auth,
+			       struct dpp_config_obj *conf,
 			       const unsigned char *payload,
 			       u16 payload_len)
 {
@@ -5685,7 +5720,7 @@ static int dpp_check_pubkey_match(EVP_PKEY *pub, struct wpabuf *r_hash)
 }
 
 
-static void dpp_copy_csign(struct dpp_authentication *auth, EVP_PKEY *csign)
+static void dpp_copy_csign(struct dpp_config_obj *conf, EVP_PKEY *csign)
 {
 	unsigned char *der = NULL;
 	int der_len;
@@ -5693,13 +5728,14 @@ static void dpp_copy_csign(struct dpp_authentication *auth, EVP_PKEY *csign)
 	der_len = i2d_PUBKEY(csign, &der);
 	if (der_len <= 0)
 		return;
-	wpabuf_free(auth->c_sign_key);
-	auth->c_sign_key = wpabuf_alloc_copy(der, der_len);
+	wpabuf_free(conf->c_sign_key);
+	conf->c_sign_key = wpabuf_alloc_copy(der, der_len);
 	OPENSSL_free(der);
 }
 
 
-static void dpp_copy_netaccesskey(struct dpp_authentication *auth)
+static void dpp_copy_netaccesskey(struct dpp_authentication *auth,
+				  struct dpp_config_obj *conf)
 {
 	unsigned char *der = NULL;
 	int der_len;
@@ -5893,6 +5929,7 @@ fail:
 
 
 static int dpp_parse_cred_dpp(struct dpp_authentication *auth,
+			      struct dpp_config_obj *conf,
 			      struct json_token *cred)
 {
 	struct dpp_signed_connector_info info;
@@ -5904,10 +5941,10 @@ static int dpp_parse_cred_dpp(struct dpp_authentication *auth,
 
 	os_memset(&info, 0, sizeof(info));
 
-	if (dpp_akm_psk(auth->akm) || dpp_akm_sae(auth->akm)) {
+	if (dpp_akm_psk(conf->akm) || dpp_akm_sae(conf->akm)) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Legacy credential included in Connector credential");
-		if (dpp_parse_cred_legacy(auth, cred) < 0)
+		if (dpp_parse_cred_legacy(conf, cred) < 0)
 			return -1;
 	}
 
@@ -5946,16 +5983,17 @@ static int dpp_parse_cred_dpp(struct dpp_authentication *auth,
 					 signed_connector) != DPP_STATUS_OK)
 		goto fail;
 
-	if (dpp_parse_connector(auth, info.payload, info.payload_len) < 0) {
+	if (dpp_parse_connector(auth, conf,
+				info.payload, info.payload_len) < 0) {
 		wpa_printf(MSG_DEBUG, "DPP: Failed to parse connector");
 		goto fail;
 	}
 
-	os_free(auth->connector);
-	auth->connector = os_strdup(signed_connector);
+	os_free(conf->connector);
+	conf->connector = os_strdup(signed_connector);
 
-	dpp_copy_csign(auth, csign_pub);
-	dpp_copy_netaccesskey(auth);
+	dpp_copy_csign(conf, csign_pub);
+	dpp_copy_netaccesskey(auth, conf);
 
 	ret = 0;
 fail:
@@ -6009,6 +6047,7 @@ static int dpp_parse_conf_obj(struct dpp_authentication *auth,
 {
 	int ret = -1;
 	struct json_token *root, *token, *discovery, *cred;
+	struct dpp_config_obj *conf;
 
 	root = json_parse((const char *) conf_obj, conf_obj_len);
 	if (!root)
@@ -6047,8 +6086,17 @@ static int dpp_parse_conf_obj(struct dpp_authentication *auth,
 		dpp_auth_fail(auth, "Too long discovery::ssid string value");
 		goto fail;
 	}
-	auth->ssid_len = os_strlen(token->string);
-	os_memcpy(auth->ssid, token->string, auth->ssid_len);
+
+	if (auth->num_conf_obj == DPP_MAX_CONF_OBJ) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No room for this many Config Objects - ignore this one");
+		json_free(root);
+		return 0;
+	}
+	conf = &auth->conf_obj[auth->num_conf_obj++];
+
+	conf->ssid_len = os_strlen(token->string);
+	os_memcpy(conf->ssid, token->string, conf->ssid_len);
 
 	cred = json_get_member(root, "cred");
 	if (!cred || cred->type != JSON_OBJECT) {
@@ -6061,13 +6109,13 @@ static int dpp_parse_conf_obj(struct dpp_authentication *auth,
 		dpp_auth_fail(auth, "No cred::akm string value found");
 		goto fail;
 	}
-	auth->akm = dpp_akm_from_str(token->string);
+	conf->akm = dpp_akm_from_str(token->string);
 
-	if (dpp_akm_legacy(auth->akm)) {
-		if (dpp_parse_cred_legacy(auth, cred) < 0)
+	if (dpp_akm_legacy(conf->akm)) {
+		if (dpp_parse_cred_legacy(conf, cred) < 0)
 			goto fail;
-	} else if (dpp_akm_dpp(auth->akm)) {
-		if (dpp_parse_cred_dpp(auth, cred) < 0)
+	} else if (dpp_akm_dpp(conf->akm)) {
+		if (dpp_parse_cred_dpp(auth, conf, cred) < 0)
 			goto fail;
 	} else {
 		wpa_printf(MSG_DEBUG, "DPP: Unsupported akm: %s",
@@ -6164,17 +6212,22 @@ int dpp_conf_resp_rx(struct dpp_authentication *auth,
 		goto fail;
 	}
 
-	conf_obj = dpp_get_attr(unwrapped, unwrapped_len,
-				DPP_ATTR_CONFIG_OBJ, &conf_obj_len);
+	conf_obj = dpp_get_attr(unwrapped, unwrapped_len, DPP_ATTR_CONFIG_OBJ,
+				&conf_obj_len);
 	if (!conf_obj) {
 		dpp_auth_fail(auth,
 			      "Missing required Configuration Object attribute");
 		goto fail;
 	}
-	wpa_hexdump_ascii(MSG_DEBUG, "DPP: configurationObject JSON",
-			  conf_obj, conf_obj_len);
-	if (dpp_parse_conf_obj(auth, conf_obj, conf_obj_len) < 0)
-		goto fail;
+	while (conf_obj) {
+		wpa_hexdump_ascii(MSG_DEBUG, "DPP: configurationObject JSON",
+				  conf_obj, conf_obj_len);
+		if (dpp_parse_conf_obj(auth, conf_obj, conf_obj_len) < 0)
+			goto fail;
+		conf_obj = dpp_get_attr_next(conf_obj, unwrapped, unwrapped_len,
+					     DPP_ATTR_CONFIG_OBJ,
+					     &conf_obj_len);
+	}
 
 #ifdef CONFIG_DPP2
 	status = dpp_get_attr(unwrapped, unwrapped_len,
@@ -6672,9 +6725,9 @@ int dpp_configurator_own_config(struct dpp_authentication *auth,
 	auth->own_protocol_key = dpp_gen_keypair(auth->curve);
 	if (!auth->own_protocol_key)
 		return -1;
-	dpp_copy_netaccesskey(auth);
+	dpp_copy_netaccesskey(auth, &auth->conf_obj[0]);
 	auth->peer_protocol_key = auth->own_protocol_key;
-	dpp_copy_csign(auth, auth->conf->csign);
+	dpp_copy_csign(&auth->conf_obj[0], auth->conf->csign);
 
 	conf_obj = dpp_build_conf_obj(auth, ap, 0);
 	if (!conf_obj)
