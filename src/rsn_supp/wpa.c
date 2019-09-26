@@ -3996,8 +3996,10 @@ static int fils_ft_build_assoc_req_rsne(struct wpa_sm *sm, struct wpabuf *buf)
 
 	/* RSN Capabilities */
 	capab = 0;
-	if (sm->mgmt_group_cipher == WPA_CIPHER_AES_128_CMAC)
+	if (sm->mfp)
 		capab |= WPA_CAPABILITY_MFPC;
+	if (sm->mfp == 2)
+		capab |= WPA_CAPABILITY_MFPR;
 	if (sm->ocv)
 		capab |= WPA_CAPABILITY_OCVC;
 	wpabuf_put_le16(buf, capab);
