@@ -2728,6 +2728,9 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 	u8 bssid[ETH_ALEN];
 	int ft_completed, already_authorized;
 	int new_bss = 0;
+#if defined(CONFIG_FILS) || defined(CONFIG_MBO)
+	struct wpa_bss *bss;
+#endif /* CONFIG_FILS || CONFIG_MBO */
 
 #ifdef CONFIG_AP
 	if (wpa_s->ap_iface) {
@@ -2951,15 +2954,21 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 			wmm_ac_restore_tspecs(wpa_s);
 	}
 
+#if defined(CONFIG_FILS) || defined(CONFIG_MBO)
+	bss = wpa_bss_get_bssid(wpa_s, bssid);
+#endif /* CONFIG_FILS || CONFIG_MBO */
 #ifdef CONFIG_FILS
 	if (wpa_key_mgmt_fils(wpa_s->key_mgmt)) {
-		struct wpa_bss *bss = wpa_bss_get_bssid(wpa_s, bssid);
 		const u8 *fils_cache_id = wpa_bss_get_fils_cache_id(bss);
 
 		if (fils_cache_id)
 			wpa_sm_set_fils_cache_id(wpa_s->wpa, fils_cache_id);
 	}
 #endif /* CONFIG_FILS */
+
+#ifdef CONFIG_MBO
+	wpas_mbo_check_pmf(wpa_s, bss, wpa_s->current_ssid);
+#endif /* CONFIG_MBO */
 }
 
 
