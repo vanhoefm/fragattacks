@@ -1225,8 +1225,20 @@ def test_sigma_dut_dpp_qr_resp_chan_list(dev, apdev):
     run_sigma_dut_dpp_qr_resp(dev, apdev, 1, chan_list='81/2 81/6 81/1',
                               listen_chan=2)
 
+def test_sigma_dut_dpp_qr_resp_status_query(dev, apdev):
+    """sigma_dut DPP/QR responder status query"""
+    params = hostapd.wpa2_params(ssid="DPPNET01",
+                                 passphrase="ThisIsDppPassphrase")
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    try:
+        dev[1].set("dpp_config_processing", "2")
+        run_sigma_dut_dpp_qr_resp(dev, apdev, 3, status_query=True)
+    finally:
+        dev[1].set("dpp_config_processing", "0")
+
 def run_sigma_dut_dpp_qr_resp(dev, apdev, conf_idx, chan_list=None,
-                              listen_chan=None):
+                              listen_chan=None, status_query=False):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     sigma = start_sigma_dut(dev[0].ifname)
@@ -1248,10 +1260,14 @@ def run_sigma_dut_dpp_qr_resp(dev, apdev, conf_idx, chan_list=None,
         cmd = "dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Responder,DPPConfIndex,%d,DPPAuthDirection,Single,DPPProvisioningRole,Configurator,DPPConfEnrolleeRole,STA,DPPSigningKeyECC,P-256,DPPBS,QR,DPPTimeout,6" % conf_idx
         if listen_chan:
             cmd += ",DPPListenChannel," + str(listen_chan)
+        if status_query:
+            cmd += ",DPPStatusQuery,Yes"
         res = sigma_dut_cmd(cmd, timeout=10)
         t.join()
         if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK" not in res:
             raise Exception("Unexpected result: " + res)
+        if status_query and "StatusResult,0" not in res:
+            raise Exception("Status query did not succeed: " + res)
     finally:
         stop_sigma_dut(sigma)
 
