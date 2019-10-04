@@ -20,7 +20,7 @@ import hostapd
 from utils import HwsimSkip
 from hwsim import HWSimRadio
 import hwsim_utils
-from test_dpp import check_dpp_capab, update_hapd_config
+from test_dpp import check_dpp_capab, update_hapd_config, wait_auth_success
 from test_suite_b import check_suite_b_192_capa, suite_b_as_params, suite_b_192_rsa_ap_params
 from test_ap_eap import check_eap_capa, int_eap_server_params
 from test_ap_hs20 import hs20_ap_params
@@ -2409,6 +2409,50 @@ def run_sigma_dut_ap_dpp_self_config(dev, apdev):
     dev[0].wait_connected()
     dev[0].request("DISCONNECT")
     dev[0].wait_disconnected()
+    sigma_dut_cmd_check("ap_reset_default")
+
+
+def test_sigma_dut_ap_dpp_relay(dev, apdev, params):
+    """sigma_dut DPP AP as Relay to Controller"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_dpp_relay.sigma-hostapd")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            run_sigma_dut_ap_dpp_relay(dev, apdev)
+        finally:
+            stop_sigma_dut(sigma)
+            dev[1].request("DPP_CONTROLLER_STOP")
+
+def run_sigma_dut_ap_dpp_relay(dev, apdev):
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    # Controller
+    conf_id = dev[1].dpp_configurator_add()
+    dev[1].set("dpp_configurator_params",
+               " conf=sta-dpp configurator=%d" % conf_id)
+    id_c = dev[1].dpp_bootstrap_gen()
+    uri_c = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id_c)
+    res = dev[1].request("DPP_BOOTSTRAP_INFO %d" % id_c)
+    pkhash = None
+    for line in res.splitlines():
+        name, value = line.split('=')
+        if name == "pkhash":
+            pkhash = value
+            break
+    if not pkhash:
+        raise Exception("Could not fetch public key hash from Controller")
+    if "OK" not in dev[1].request("DPP_CONTROLLER_START"):
+        raise Exception("Failed to start Controller")
+
+    sigma_dut_cmd_check("ap_reset_default,program,DPP")
+    sigma_dut_cmd_check("ap_preset_testparameters,program,DPP,DPPConfiguratorAddress,127.0.0.1,DPPConfiguratorPKHash," + pkhash)
+    res = sigma_dut_cmd_check("dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPCryptoIdentifier,P-256,DPPBS,QR")
+
+    dev[0].dpp_auth_init(uri=uri_c, role="enrollee")
+    wait_auth_success(dev[1], dev[0], configurator=dev[1], enrollee=dev[0])
+
     sigma_dut_cmd_check("ap_reset_default")
 
 def test_sigma_dut_preconfigured_profile(dev, apdev):
