@@ -181,7 +181,7 @@ for i in unknown revoked; do
 done
 
 openssl ocsp -reqout $LOGDIR/ocsp-req.der -issuer $DIR/auth_serv/ca.pem \
-    -sha256 -serial 0xD8D3E3A6CBE3CD17 -no_nonce >> $LOGDIR/ocsp.log 2>&1
+    -sha256 -serial 0xD8D3E3A6CBE3CD1F -no_nonce >> $LOGDIR/ocsp.log 2>&1
 for i in "" "-unknown" "-revoked"; do
     openssl ocsp -index $DIR/auth_serv/index$i.txt \
 	-rsigner $DIR/auth_serv/ca.pem \
