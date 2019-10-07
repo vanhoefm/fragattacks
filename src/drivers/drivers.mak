@@ -140,10 +140,6 @@ ifdef NEED_NETLINK
 DRV_OBJS += ../src/drivers/netlink.o
 endif
 
-ifdef NEED_LINUX_IOCTL
-DRV_OBJS += ../src/drivers/linux_ioctl.o
-endif
-
 ifdef NEED_RFKILL
 DRV_OBJS += ../src/drivers/rfkill.o
 endif
@@ -152,11 +148,16 @@ ifdef NEED_RADIOTAP
 DRV_OBJS += ../src/utils/radiotap.o
 endif
 
-ifdef CONFIG_VLAN_NETLINK
 ifdef CONFIG_FULL_DYNAMIC_VLAN
+NEED_LINUX_IOCTL=y
+ifdef CONFIG_VLAN_NETLINK
 NEED_LIBNL=y
 CONFIG_LIBNL3_ROUTE=y
 endif
+endif
+
+ifdef NEED_LINUX_IOCTL
+DRV_OBJS += ../src/drivers/linux_ioctl.o
 endif
 
 ifdef NEED_LIBNL
