@@ -1427,15 +1427,12 @@ static const char *network_fields[] = {
 #ifdef IEEE8021X_EAPOL
 	"eap_workaround", "pac_file", "fragment_size", "ocsp",
 #endif /* IEEE8021X_EAPOL */
-#ifdef CONFIG_MESH
-	"mode", "no_auto_peer", "mesh_rssi_threshold",
-#else /* CONFIG_MESH */
 	"mode",
-#endif /* CONFIG_MESH */
 	"proactive_key_caching", "disabled", "id_str",
 	"ieee80211w",
 	"mixed_cell", "frequency", "fixed_freq",
 #ifdef CONFIG_MESH
+	"no_auto_peer", "mesh_rssi_threshold",
 	"mesh_basic_rates", "dot11MeshMaxRetries",
 	"dot11MeshRetryTimeout", "dot11MeshConfirmTimeout",
 	"dot11MeshHoldingTimeout",
