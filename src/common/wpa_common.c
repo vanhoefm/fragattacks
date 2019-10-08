@@ -686,7 +686,7 @@ int fils_key_auth_sk(const u8 *ick, size_t ick_len, const u8 *snonce,
 	len[2] = ETH_ALEN;
 	addr[3] = bssid;
 	len[3] = ETH_ALEN;
-	if (g_sta && g_ap_len && g_ap && g_ap_len) {
+	if (g_sta && g_sta_len && g_ap && g_ap_len) {
 		addr[4] = g_sta;
 		len[4] = g_sta_len;
 		addr[5] = g_ap;
@@ -717,7 +717,7 @@ int fils_key_auth_sk(const u8 *ick, size_t ick_len, const u8 *snonce,
 	addr[1] = snonce;
 	addr[2] = bssid;
 	addr[3] = sta_addr;
-	if (g_sta && g_ap_len && g_ap && g_ap_len) {
+	if (g_sta && g_sta_len && g_ap && g_ap_len) {
 		addr[4] = g_ap;
 		len[4] = g_ap_len;
 		addr[5] = g_sta;
