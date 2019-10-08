@@ -9,6 +9,7 @@ from utils import HwsimSkip
 from wpasupplicant import WpaSupplicant
 from tshark import run_tshark
 from test_ap_open import _test_ap_open
+from test_scan import test_scan_only_one as _test_scan_only_one
 from test_wpas_mesh import check_mesh_support, check_mesh_group_added
 from test_wpas_mesh import check_mesh_peer_connected, add_open_mesh_network
 from test_wpas_mesh import check_mesh_group_removed
@@ -462,3 +463,21 @@ def _test_wmediumd_path_rann(dev, apdev):
         dev[i].mesh_group_remove()
         check_mesh_group_removed(dev[i])
         dev[i].dump_monitor()
+
+def test_wmediumd_scan_only_one(dev, apdev, params):
+    """
+    Test that scanning with a single active AP only returns that one
+    (with wmediumd enabled)
+    """
+    fd, fn = tempfile.mkstemp()
+    try:
+        f = os.fdopen(fd, 'w')
+        f.write(CFG % (apdev[0]['bssid'], dev[0].own_addr()))
+        f.close()
+        p = start_wmediumd(fn, params)
+        try:
+            _test_scan_only_one(dev, apdev)
+        finally:
+            stop_wmediumd(p, params)
+    finally:
+        os.unlink(fn)
