@@ -598,7 +598,7 @@ static void wpa_priv_cmd_l2_send(struct wpa_priv_interface *iface,
 	}
 
 	dst_addr = buf;
-	os_memcpy(&proto, buf + ETH_ALEN, 2);
+	os_memcpy(&proto, (char *) buf + ETH_ALEN, 2);
 
 	if (!wpa_priv_allowed_l2_proto(proto)) {
 		wpa_printf(MSG_DEBUG, "Refused l2_packet send for ethertype "
@@ -607,7 +607,8 @@ static void wpa_priv_cmd_l2_send(struct wpa_priv_interface *iface,
 	}
 
 	res = l2_packet_send(iface->l2[idx], dst_addr, proto,
-			     buf + ETH_ALEN + 2, len - ETH_ALEN - 2);
+			     (unsigned char *) buf + ETH_ALEN + 2,
+			     len - ETH_ALEN - 2);
 	wpa_printf(MSG_DEBUG, "L2 send[idx=%d]: res=%d", idx, res);
 }
 
