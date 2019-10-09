@@ -528,7 +528,8 @@ static int * wpas_add_channels(const struct oper_class_map *op,
 	next_freq = freqs;
 	for  (i = 0; i < num_chans; i++) {
 		u8 chan = channels ? channels[i] : op->min_chan + i * op->inc;
-		enum chan_allowed res = verify_channel(mode, chan, op->bw);
+		enum chan_allowed res = verify_channel(mode, op->op_class, chan,
+						       op->bw);
 
 		if (res == NOT_ALLOWED || (res == NO_IR && active))
 			continue;
