@@ -787,14 +787,17 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 				return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
 			/*
-			 * In mesh case, both Commit and Confirm can be sent
-			 * immediately. In infrastructure BSS, only a single
-			 * Authentication frame (Commit) is expected from the AP
-			 * here and the second one (Confirm) will be sent once
-			 * the STA has sent its second Authentication frame
-			 * (Confirm).
+			 * In mesh case, both Commit and Confirm are sent
+			 * immediately. In infrastructure BSS, by default, only
+			 * a single Authentication frame (Commit) is expected
+			 * from the AP here and the second one (Confirm) will
+			 * be sent once the STA has sent its second
+			 * Authentication frame (Confirm). This behavior can be
+			 * overridden with explicit configuration so that the
+			 * infrastructure BSS case sends both frames together.
 			 */
-			if (hapd->conf->mesh & MESH_ENABLED) {
+			if ((hapd->conf->mesh & MESH_ENABLED) ||
+			    hapd->conf->sae_confirm_immediate) {
 				/*
 				 * Send both Commit and Confirm immediately
 				 * based on SAE finite state machine
