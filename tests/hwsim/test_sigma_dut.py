@@ -803,6 +803,30 @@ def test_sigma_dut_ap_sae(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
 
+def test_sigma_dut_ap_sae_confirm_immediate(dev, apdev, params):
+    """sigma_dut controlled AP with SAE Confirm immediate"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_sae_confirm_immediate.sigma-hostapd")
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-SAE,PSK,12345678,SAE_Confirm_Immediate,enable")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].request("SET sae_groups ")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", scan_freq="2412")
+            if dev[0].get_status_field('sae_group') != '19':
+                raise Exception("Expected default SAE group not used")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
 def test_sigma_dut_ap_sae_password(dev, apdev, params):
     """sigma_dut controlled AP with SAE and long password"""
     logdir = os.path.join(params['logdir'],
