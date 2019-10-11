@@ -247,6 +247,38 @@ def test_ap_pmf_assoc_comeback2(dev, apdev):
                           dev[0].p2p_interface_addr()) < 1:
         raise Exception("AP did not use reassociation comeback request")
 
+def test_ap_pmf_ap_dropping_sa(dev, apdev):
+    """WPA2-PSK PMF AP dropping SA"""
+    ssid = "pmf"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+    dev[0].connect(ssid, psk="12345678", ieee80211w="2",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
+    addr0 = dev[0].own_addr()
+    dev[0].dump_monitor()
+    hapd.wait_sta()
+    # Drop SA and association at the AP locally without notifying the STA. This
+    # results in the STA getting unprotected Deauthentication frames when trying
+    # to transmit the next Class 3 frame.
+    if "OK" not in hapd.request("DEAUTHENTICATE " + addr0 + " tx=0"):
+        raise Exception("DEAUTHENTICATE command failed")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=1)
+    if ev is not None:
+        raise Exception("Unexpected disconnection event after DEAUTHENTICATE tx=0: " + ev)
+    dev[0].request("DATA_TEST_CONFIG 1")
+    dev[0].request("DATA_TEST_TX " + bssid + " " + addr0)
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=5)
+    dev[0].request("DATA_TEST_CONFIG 0")
+    if ev is None or "locally_generated=1" not in ev:
+        raise Exception("Locally generated disconnection not reported")
+
 def start_wpas_ap(ssid):
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     wpas.interface_add("wlan5", drv_params="use_monitor=1")
