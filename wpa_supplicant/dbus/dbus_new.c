@@ -2855,30 +2855,6 @@ static const struct wpa_dbus_property_desc wpas_dbus_bss_properties[] = {
 	  NULL,
 	  NULL
 	},
-	{
-	  "RoamTime", WPAS_DBUS_NEW_IFACE_INTERFACE, "u",
-	  wpas_dbus_getter_roam_time,
-	  NULL,
-	  NULL
-	},
-	{
-	  "RoamComplete", WPAS_DBUS_NEW_IFACE_INTERFACE, "b",
-	  wpas_dbus_getter_roam_complete,
-	  NULL,
-	  NULL
-	},
-	{
-	  "SessionLength", WPAS_DBUS_NEW_IFACE_INTERFACE, "u",
-	  wpas_dbus_getter_session_length,
-	  NULL,
-	  NULL
-	},
-	{
-	  "BSSTMStatus", WPAS_DBUS_NEW_IFACE_INTERFACE, "u",
-	  wpas_dbus_getter_bss_tm_status,
-	  NULL,
-	  NULL
-	},
 	{ NULL, NULL, NULL, NULL, NULL, NULL }
 };
 
@@ -3783,6 +3759,30 @@ static const struct wpa_dbus_property_desc wpas_dbus_interface_properties[] = {
 	},
 	{ "AssocStatusCode", WPAS_DBUS_NEW_IFACE_INTERFACE, "i",
 	  wpas_dbus_getter_assoc_status_code,
+	  NULL,
+	  NULL
+	},
+	{
+	  "RoamTime", WPAS_DBUS_NEW_IFACE_INTERFACE, "u",
+	  wpas_dbus_getter_roam_time,
+	  NULL,
+	  NULL
+	},
+	{
+	  "RoamComplete", WPAS_DBUS_NEW_IFACE_INTERFACE, "b",
+	  wpas_dbus_getter_roam_complete,
+	  NULL,
+	  NULL
+	},
+	{
+	  "SessionLength", WPAS_DBUS_NEW_IFACE_INTERFACE, "u",
+	  wpas_dbus_getter_session_length,
+	  NULL,
+	  NULL
+	},
+	{
+	  "BSSTMStatus", WPAS_DBUS_NEW_IFACE_INTERFACE, "u",
+	  wpas_dbus_getter_bss_tm_status,
 	  NULL,
 	  NULL
 	},
