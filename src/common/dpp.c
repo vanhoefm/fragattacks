@@ -5013,7 +5013,7 @@ dpp_build_conf_obj(struct dpp_authentication *auth, int ap, int idx)
 	else
 		conf = NULL;
 	if (!conf) {
-		if (idx != 0)
+		if (idx == 0)
 			wpa_printf(MSG_DEBUG,
 				   "DPP: No configuration available for Enrollee(%s) - reject configuration request",
 				   ap ? "ap" : "sta");
