@@ -2518,6 +2518,50 @@ def run_sigma_dut_ap_dpp_relay(dev, apdev):
 
     sigma_dut_cmd_check("ap_reset_default")
 
+def dpp_init_tcp_enrollee(dev, id1):
+    logger.info("Starting DPP initiator/enrollee (TCP) in a thread")
+    time.sleep(1)
+    cmd = "DPP_AUTH_INIT peer=%d role=enrollee tcp_addr=127.0.0.1" % id1
+    if "OK" not in dev.request(cmd):
+        raise Exception("Failed to initiate DPP Authentication")
+    ev = dev.wait_event(["DPP-CONF-RECEIVED"], timeout=5)
+    if ev is None:
+        raise Exception("DPP configuration not completed (Enrollee)")
+    logger.info("DPP initiator/enrollee done")
+
+def test_sigma_dut_dpp_tcp_conf_resp(dev, apdev):
+    """sigma_dut DPP TCP Configurator (Controller) as responder"""
+    run_sigma_dut_dpp_tcp_conf_resp(dev)
+
+def run_sigma_dut_dpp_tcp_conf_resp(dev, status_query=False):
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    sigma = start_sigma_dut(dev[0].ifname)
+    try:
+        cmd = "dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPCryptoIdentifier,P-256,DPPBS,QR"
+        res = sigma_dut_cmd(cmd)
+        if "status,COMPLETE" not in res:
+            raise Exception("dev_exec_action did not succeed: " + res)
+        hex = res.split(',')[3]
+        uri = from_hex(hex)
+        logger.info("URI from sigma_dut: " + uri)
+
+        id1 = dev[1].dpp_qr_code(uri)
+
+        t = threading.Thread(target=dpp_init_tcp_enrollee, args=(dev[1], id1))
+        t.start()
+        cmd = "dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Responder,DPPConfIndex,1,DPPAuthDirection,Single,DPPProvisioningRole,Configurator,DPPConfEnrolleeRole,STA,DPPSigningKeyECC,P-256,DPPBS,QR,DPPOverTCP,yes,DPPTimeout,6"
+        if status_query:
+            cmd += ",DPPStatusQuery,Yes"
+        res = sigma_dut_cmd(cmd, timeout=10)
+        t.join()
+        if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK" not in res:
+            raise Exception("Unexpected result: " + res)
+        if status_query and "StatusResult,0" not in res:
+            raise Exception("Status query did not succeed: " + res)
+    finally:
+        stop_sigma_dut(sigma)
+
 def test_sigma_dut_preconfigured_profile(dev, apdev):
     """sigma_dut controlled connection using preconfigured profile"""
     try:
