@@ -279,6 +279,55 @@ def test_ap_pmf_ap_dropping_sa(dev, apdev):
     if ev is None or "locally_generated=1" not in ev:
         raise Exception("Locally generated disconnection not reported")
 
+def test_ap_pmf_valid_broadcast_deauth(dev, apdev):
+    """WPA2-PSK PMF AP sending valid broadcast deauth without dropping SA"""
+    run_ap_pmf_valid(dev, apdev, False, True)
+
+def test_ap_pmf_valid_broadcast_disassoc(dev, apdev):
+    """WPA2-PSK PMF AP sending valid broadcast disassoc without dropping SA"""
+    run_ap_pmf_valid(dev, apdev, True, True)
+
+def test_ap_pmf_valid_unicast_deauth(dev, apdev):
+    """WPA2-PSK PMF AP sending valid unicast deauth without dropping SA"""
+    run_ap_pmf_valid(dev, apdev, False, False)
+
+def test_ap_pmf_valid_unicast_disassoc(dev, apdev):
+    """WPA2-PSK PMF AP sending valid unicast disassoc without dropping SA"""
+    run_ap_pmf_valid(dev, apdev, True, False)
+
+def run_ap_pmf_valid(dev, apdev, disassociate, broadcast):
+    ssid = "pmf"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+    dev[0].connect(ssid, psk="12345678", ieee80211w="2",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
+    addr0 = dev[0].own_addr()
+    dev[0].dump_monitor()
+    hapd.wait_sta()
+    cmd = "DISASSOCIATE " if disassociate else "DEAUTHENTICATE "
+    cmd += "ff:ff:ff:ff:ff:ff" if broadcast else addr0
+    cmd += " test=1"
+    if "OK" not in hapd.request(cmd):
+        raise Exception("hostapd command failed")
+    sta = hapd.get_sta(addr0)
+    if not sta:
+        raise Exception("STA entry lost")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=5)
+    if ev is None:
+        raise Exception("Disconnection not reported")
+    if "locally_generated=1" in ev:
+        raise Exception("Unexpected locally generated disconnection")
+
+    # Wait for SA Query procedure to fail and association comeback to succeed
+    dev[0].wait_connected()
+
 def start_wpas_ap(ssid):
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     wpas.interface_add("wlan5", drv_params="use_monitor=1")
