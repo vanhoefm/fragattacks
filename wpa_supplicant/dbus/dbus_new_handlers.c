@@ -984,8 +984,7 @@ dbus_bool_t wpas_dbus_getter_global_capabilities(
 	const struct wpa_dbus_property_desc *property_desc,
 	DBusMessageIter *iter, DBusError *error, void *user_data)
 {
-	const char *capabilities[10] = { NULL, NULL, NULL, NULL, NULL, NULL,
-					NULL, NULL, NULL, NULL };
+	const char *capabilities[11];
 	size_t num_items = 0;
 #ifdef CONFIG_FILS
 	struct wpa_global *global = user_data;
@@ -1028,6 +1027,9 @@ dbus_bool_t wpas_dbus_getter_global_capabilities(
 #ifdef CONFIG_SHA384
 	capabilities[num_items++] = "sha384";
 #endif /* CONFIG_SHA384 */
+#ifdef CONFIG_OWE
+	capabilities[num_items++] = "owe";
+#endif /* CONFIG_OWE */
 
 	return wpas_dbus_simple_array_property_getter(iter,
 						      DBUS_TYPE_STRING,
@@ -4491,7 +4493,7 @@ static dbus_bool_t wpas_dbus_get_bss_security_prop(
 	DBusMessageIter iter_dict, variant_iter;
 	const char *group;
 	const char *pairwise[5]; /* max 5 pairwise ciphers is supported */
-	const char *key_mgmt[15]; /* max 15 key managements may be supported */
+	const char *key_mgmt[16]; /* max 16 key managements may be supported */
 	int n;
 
 	if (!dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
@@ -4544,6 +4546,10 @@ static dbus_bool_t wpas_dbus_get_bss_security_prop(
 	if (ie_data->key_mgmt & WPA_KEY_MGMT_FT_SAE)
 		key_mgmt[n++] = "ft-sae";
 #endif /* CONFIG_SAE */
+#ifdef CONFIG_OWE
+	if (ie_data->key_mgmt & WPA_KEY_MGMT_OWE)
+		key_mgmt[n++] = "owe";
+#endif /* CONFIG_OWE */
 	if (ie_data->key_mgmt & WPA_KEY_MGMT_NONE)
 		key_mgmt[n++] = "wpa-none";
 
