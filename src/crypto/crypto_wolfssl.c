@@ -1171,7 +1171,7 @@ int crypto_bignum_sub(const struct crypto_bignum *a,
 	if (TEST_FAIL())
 		return -1;
 
-	return mp_add((mp_int *) a, (mp_int *) b,
+	return mp_sub((mp_int *) a, (mp_int *) b,
 		      (mp_int *) r) == MP_OKAY ? 0 : -1;
 }
 
