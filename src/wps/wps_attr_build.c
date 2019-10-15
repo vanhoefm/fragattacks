@@ -175,7 +175,9 @@ int wps_build_authenticator(struct wps_data *wps, struct wpabuf *msg)
 	len[0] = wpabuf_len(wps->last_msg);
 	addr[1] = wpabuf_head(msg);
 	len[1] = wpabuf_len(msg);
-	hmac_sha256_vector(wps->authkey, WPS_AUTHKEY_LEN, 2, addr, len, hash);
+	if (hmac_sha256_vector(wps->authkey, WPS_AUTHKEY_LEN, 2, addr, len,
+			       hash) < 0)
+		return -1;
 
 	wpa_printf(MSG_DEBUG, "WPS:  * Authenticator");
 	wpabuf_put_be16(msg, ATTR_AUTHENTICATOR);
@@ -371,8 +373,9 @@ int wps_build_key_wrap_auth(struct wps_data *wps, struct wpabuf *msg)
 	u8 hash[SHA256_MAC_LEN];
 
 	wpa_printf(MSG_DEBUG, "WPS:  * Key Wrap Authenticator");
-	hmac_sha256(wps->authkey, WPS_AUTHKEY_LEN, wpabuf_head(msg),
-		    wpabuf_len(msg), hash);
+	if (hmac_sha256(wps->authkey, WPS_AUTHKEY_LEN, wpabuf_head(msg),
+			wpabuf_len(msg), hash) < 0)
+		return -1;
 
 	wpabuf_put_be16(msg, ATTR_KEY_WRAP_AUTH);
 	wpabuf_put_be16(msg, WPS_KWA_LEN);
