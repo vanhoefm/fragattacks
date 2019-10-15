@@ -605,6 +605,10 @@ enum qca_radiotap_vendor_ids {
  * @QCA_NL80211_VENDOR_SUBCMD_ADD_STA_NODE: This vendor subcommand is used to
  *	add the STA node details in driver/firmware. Attributes for this event
  *	are specified in enum qca_wlan_vendor_attr_add_sta_node_params.
+ * @QCA_NL80211_VENDOR_SUBCMD_BTC_CHAIN_MODE: This command is used to set BT
+ *	coex chain mode from application/service.
+ *	The attributes defined in enum qca_vendor_attr_btc_chain_mode are used
+ *	to deliver the parameters.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -779,6 +783,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_OEM_DATA = 182,
 	QCA_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY_EXT = 183,
 	QCA_NL80211_VENDOR_SUBCMD_ADD_STA_NODE = 184,
+	QCA_NL80211_VENDOR_SUBCMD_BTC_CHAIN_MODE = 185,
 };
 
 enum qca_wlan_vendor_attr {
@@ -8001,6 +8006,44 @@ enum qca_wlan_vendor_attr_add_sta_node_params {
 	QCA_WLAN_VENDOR_ATTR_ADD_STA_NODE_PARAM_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_ADD_STA_NODE_PARAM_MAX =
 		QCA_WLAN_VENDOR_ATTR_ADD_STA_NODE_PARAM_AFTER_LAST - 1
+};
+
+/**
+ * enum qca_btc_chain_mode - Specifies BT coex chain mode.
+ * This enum defines the valid set of values of BT coex chain mode.
+ * These values are used by attribute %QCA_VENDOR_ATTR_BTC_CHAIN_MODE of
+ * %QCA_NL80211_VENDOR_SUBCMD_BTC_CHAIN_MODE.
+ *
+ * @QCA_BTC_CHAIN_SHARED: chains of BT and WLAN 2.4G are shared.
+ * @QCA_BTC_CHAIN_SEPARATED: chains of BT and WLAN 2.4G are separated.
+ */
+enum qca_btc_chain_mode {
+	QCA_BTC_CHAIN_SHARED = 0,
+	QCA_BTC_CHAIN_SEPARATED = 1,
+};
+
+/**
+ * enum qca_vendor_attr_btc_chain_mode - Specifies attributes for BT coex
+ * chain mode.
+ * Attributes for data used by QCA_NL80211_VENDOR_SUBCMD_BTC_CHAIN_MODE.
+ *
+ * @QCA_VENDOR_ATTR_COEX_BTC_CHAIN_MODE: u32 attribute.
+ * Indicates the BT coex chain mode, are 32-bit values from
+ * enum qca_btc_chain_mode. This attribute is mandatory.
+ *
+ * @QCA_VENDOR_ATTR_COEX_BTC_CHAIN_MODE_RESTART: flag attribute.
+ * If set, vdev should be restarted when BT coex chain mode is updated.
+ * This attribute is optional.
+ */
+enum qca_vendor_attr_btc_chain_mode {
+	QCA_VENDOR_ATTR_BTC_CHAIN_MODE_INVALID = 0,
+	QCA_VENDOR_ATTR_BTC_CHAIN_MODE = 1,
+	QCA_VENDOR_ATTR_BTC_CHAIN_MODE_RESTART = 2,
+
+	/* Keep last */
+	QCA_VENDOR_ATTR_BTC_CHAIN_MODE_LAST,
+	QCA_VENDOR_ATTR_BTC_CHAIN_MODE_MAX =
+	QCA_VENDOR_ATTR_BTC_CHAIN_MODE_LAST - 1,
 };
 
 #endif /* QCA_VENDOR_H */
