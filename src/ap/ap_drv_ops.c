@@ -350,7 +350,7 @@ int hostapd_add_sta_node(struct hostapd_data *hapd, const u8 *addr,
 			 u16 auth_alg)
 {
 	if (hapd->driver == NULL || hapd->driver->add_sta_node == NULL)
-		return 0;
+		return -EOPNOTSUPP;
 	return hapd->driver->add_sta_node(hapd->drv_priv, addr, auth_alg);
 }
 
