@@ -171,13 +171,16 @@ static void l2_packet_receive(int sock, void *eloop_ctx, void *sock_ctx)
 		u8 hash[SHA1_MAC_LEN];
 		const u8 *addr[1];
 		size_t len[1];
+		const struct l2_ethhdr *eth = (const struct l2_ethhdr *) buf;
 
 		/*
 		 * Close the workaround socket if the kernel version seems to be
 		 * able to deliver packets through the packet socket before
 		 * authorization has been completed (in dormant state).
 		 */
-		if (l2->num_rx_br <= 1) {
+		if (l2->num_rx_br <= 1 &&
+		    (os_memcmp(eth->h_dest, l2->own_addr, ETH_ALEN) == 0 ||
+		     is_multicast_ether_addr(eth->h_dest))) {
 			wpa_printf(MSG_DEBUG,
 				   "l2_packet_receive: Main packet socket for %s seems to have working RX - close workaround bridge socket",
 				   l2->ifname);
