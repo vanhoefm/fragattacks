@@ -517,7 +517,7 @@ struct wpa_driver_scan_params {
 	 * mac_addr - MAC address used with randomization. The address cannot be
 	 * a multicast one, i.e., bit 0 of byte 0 should not be set.
 	 */
-	const u8 *mac_addr;
+	u8 *mac_addr;
 
 	/**
 	 * mac_addr_mask - MAC address mask used with randomization.
