@@ -121,6 +121,7 @@ CFLAGS += -DPACKAGE="hostapd" -DWPA_TRACE_BFD
 LIBS += -lbfd -ldl -liberty -lz
 LIBS_c += -lbfd -ldl -liberty -lz
 LIBS_h += -lbfd -ldl -liberty -lz
+LIBS_n += -lbfd -ldl -liberty -lz
 endif
 endif
 
@@ -1313,7 +1314,6 @@ NOBJS += ../src/utils/wpa_debug.o
 NOBJS += ../src/utils/wpabuf.o
 ifdef CONFIG_WPA_TRACE
 NOBJS += ../src/utils/trace.o
-LIBS_n += -lbfd
 endif
 
 HOBJS += hlr_auc_gw.o ../src/utils/common.o ../src/utils/wpa_debug.o ../src/utils/os_$(CONFIG_OS).o ../src/utils/wpabuf.o ../src/crypto/milenage.o
