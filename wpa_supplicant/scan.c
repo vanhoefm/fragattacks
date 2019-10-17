@@ -2844,6 +2844,32 @@ int wpas_mac_addr_rand_scan_set(struct wpa_supplicant *wpa_s,
 }
 
 
+int wpas_mac_addr_rand_scan_get_mask(struct wpa_supplicant *wpa_s,
+				     unsigned int type, u8 *mask)
+{
+	const u8 *to_copy;
+
+	if ((wpa_s->mac_addr_rand_enable & type) != type)
+		return -1;
+
+	if (type == MAC_ADDR_RAND_SCAN) {
+		to_copy = wpa_s->mac_addr_scan;
+	} else if (type == MAC_ADDR_RAND_SCHED_SCAN) {
+		to_copy = wpa_s->mac_addr_sched_scan;
+	} else if (type == MAC_ADDR_RAND_PNO) {
+		to_copy = wpa_s->mac_addr_pno;
+	} else {
+		wpa_printf(MSG_DEBUG,
+			   "scan: Invalid MAC randomization type=0x%x",
+			   type);
+		return -1;
+	}
+
+	os_memcpy(mask, to_copy + ETH_ALEN, ETH_ALEN);
+	return 0;
+}
+
+
 int wpas_abort_ongoing_scan(struct wpa_supplicant *wpa_s)
 {
 	struct wpa_radio_work *work;

@@ -3803,6 +3803,12 @@ static const struct wpa_dbus_property_desc wpas_dbus_interface_properties[] = {
 	  NULL,
 	  NULL
 	},
+	{ "MACAddressRandomizationMask", WPAS_DBUS_NEW_IFACE_INTERFACE,
+	  "a{say}",
+	  wpas_dbus_getter_mac_address_randomization_mask,
+	  wpas_dbus_setter_mac_address_randomization_mask,
+	  NULL
+	},
 	{ NULL, NULL, NULL, NULL, NULL, NULL }
 };
 

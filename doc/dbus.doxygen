@@ -1043,6 +1043,12 @@ fi.w1.wpa_supplicant1.CreateInterface.
 	<h3>WpsPriority - s - (read/write)</h3>
 	<p>Priority for the networks added through WPS</p>
       </li>
+
+      <li>
+	<h3>MACAddressRandomizationMask - a{say} - (read/write)</h3>
+	<p>Masks to show which bits not to randomize with MAC address randomization. Possible keys are "scan", "sched_scan", and "pno". Values must be an array of 6 bytes.</p>
+	<p>When this property is set, the new dictionary replaces the old value, rather than merging them together. Leaving a key out of the dictionary will turn off MAC address randomization for that scan type.</p>
+      </li>
     </ul>
 
 \subsection dbus_interface_signals Signals
