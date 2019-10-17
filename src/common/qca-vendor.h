@@ -609,6 +609,14 @@ enum qca_radiotap_vendor_ids {
  *	coex chain mode from application/service.
  *	The attributes defined in enum qca_vendor_attr_btc_chain_mode are used
  *	to deliver the parameters.
+ *
+ * @QCA_NL80211_VENDOR_SUBCMD_GET_STA_INFO: This vendor subcommand is used to
+ *	get information of a station from driver to userspace. This command can
+ *	be used in both STA and AP modes. For STA mode, it provides information
+ *	of the current association when in connected state or the last
+ *	association when in disconnected state. For AP mode, only information
+ *	of the currently connected stations is available. This command uses
+ *	attributes defined in enum qca_wlan_vendor_attr_get_sta_info.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -784,6 +792,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY_EXT = 183,
 	QCA_NL80211_VENDOR_SUBCMD_ADD_STA_NODE = 184,
 	QCA_NL80211_VENDOR_SUBCMD_BTC_CHAIN_MODE = 185,
+	QCA_NL80211_VENDOR_SUBCMD_GET_STA_INFO = 186,
 };
 
 enum qca_wlan_vendor_attr {
@@ -8044,6 +8053,112 @@ enum qca_vendor_attr_btc_chain_mode {
 	QCA_VENDOR_ATTR_BTC_CHAIN_MODE_LAST,
 	QCA_VENDOR_ATTR_BTC_CHAIN_MODE_MAX =
 	QCA_VENDOR_ATTR_BTC_CHAIN_MODE_LAST - 1,
+};
+
+/**
+ * enum qca_vendor_wlan_sta_flags - Station feature flags
+ * Bits will be set to 1 if the corresponding features are enabled.
+ * @QCA_VENDOR_WLAN_STA_FLAG_AMPDU: AMPDU is enabled for the station
+ * @QCA_VENDOR_WLAN_STA_FLAG_TX_STBC: TX Space-time block coding is enabled
+    for the station
+ * @QCA_VENDOR_WLAN_STA_FLAG_RX_STBC: RX Space-time block coding is enabled
+    for the station
+ */
+enum qca_vendor_wlan_sta_flags {
+	QCA_VENDOR_WLAN_STA_FLAG_AMPDU = BIT(0),
+	QCA_VENDOR_WLAN_STA_FLAG_TX_STBC = BIT(1),
+	QCA_VENDOR_WLAN_STA_FLAG_RX_STBC = BIT(2),
+};
+
+/**
+ * enum qca_vendor_wlan_sta_guard_interval - Station guard interval
+ * @QCA_VENDOR_WLAN_STA_GI_800_NS: Legacy normal guard interval
+ * @QCA_VENDOR_WLAN_STA_GI_400_NS: Legacy short guard interval
+ * @QCA_VENDOR_WLAN_STA_GI_1600_NS: Guard interval used by HE
+ * @QCA_VENDOR_WLAN_STA_GI_3200_NS: Guard interval used by HE
+ */
+enum qca_vendor_wlan_sta_guard_interval {
+	QCA_VENDOR_WLAN_STA_GI_800_NS = 0,
+	QCA_VENDOR_WLAN_STA_GI_400_NS = 1,
+	QCA_VENDOR_WLAN_STA_GI_1600_NS = 2,
+	QCA_VENDOR_WLAN_STA_GI_3200_NS = 3,
+};
+
+/**
+ * enum qca_wlan_vendor_attr_get_sta_info - Defines attributes
+ * used by QCA_NL80211_VENDOR_SUBCMD_GET_STA_INFO vendor command.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_MAC:
+ * Required attribute in request, 6-byte MAC address,
+ * used in both STA and AP modes.
+ * MAC address of the station for which information is requested (BSSID of the
+ * AP in STA mode).
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_FLAGS:
+ * Optionally used in response, u32 attribute, contains a bitmap of different
+ * fields defined in enum qca_vendor_wlan_sta_flags, used in AP mode only.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_GUARD_INTERVAL:
+ * Optionally used in response, u32 attribute, possible values are defined in
+ * enum qca_vendor_wlan_sta_guard_interval, used in AP mode only.
+ * Guard interval used by the station.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_RETRY_COUNT:
+ * Optionally used in response, u32 attribute, used in AP mode only.
+ * Value indicates the number of data frames received from station with retry
+ * bit set to 1 in FC.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_BC_MC_COUNT:
+ * Optionally used in response, u32 attribute, used in AP mode only.
+ * Counter for number of data frames with broadcast or multicast address in
+ * the destination address received from the station.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_RETRY_SUCCEED:
+ * Optionally used in response, u32 attribute, used in both STA and AP modes.
+ * Value indicates the number of data frames successfully transmitted only
+ * after retrying the packets and for which the TX status has been updated
+ * back to host from target.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_RETRY_EXHAUSTED:
+ * Optionally used in response, u32 attribute, used in AP mode only.
+ * Value indicates the number of data frames not transmitted successfully even
+ * after retrying the packets for the number of times equal to the total number
+ * of retries allowed for that packet and for which the TX status has been
+ * updated back to host from target.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_TX_TOTAL:
+ * Optionally used in response, u32 attribute, used in AP mode only.
+ * Counter in the target for the number of data frames successfully transmitted
+ * to the station.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_TX_RETRY:
+ * Optionally used in response, u32 attribute, used in AP mode only.
+ * Value indicates the number of data frames successfully transmitted only
+ * after retrying the packets.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_TX_RETRY_EXHAUSTED:
+ * Optionally used in response, u32 attribute, used in AP mode only.
+ * Value indicates the number of data frames not transmitted successfully even
+ * after retrying the packets for the number of times equal to the total number
+ * of retries allowed for that packet.
+ */
+enum qca_wlan_vendor_attr_get_sta_info {
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_INVALID = 0,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_MAC = 1,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_FLAGS = 2,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_GUARD_INTERVAL = 3,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_RETRY_COUNT = 4,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_BC_MC_COUNT = 5,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_RETRY_SUCCEED = 6,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_RETRY_EXHAUSTED = 7,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_TX_TOTAL = 8,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_TX_RETRY = 9,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_TX_RETRY_EXHAUSTED = 10,
+
+	/* keep last */
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_AFTER_LAST,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_MAX =
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_AFTER_LAST - 1,
 };
 
 #endif /* QCA_VENDOR_H */
