@@ -3451,12 +3451,18 @@ static void p2p_prov_disc_resp_cb(struct p2p_data *p2p, int success)
 
 	p2p->pending_action_state = P2P_NO_PENDING_ACTION;
 
-	if (!success)
+	if (!success) {
+		if (p2p->state == P2P_SEARCH)
+			p2p_continue_find(p2p);
 		return;
+	}
 
 	if (!p2p->cfg->prov_disc_resp_cb ||
-	    p2p->cfg->prov_disc_resp_cb(p2p->cfg->cb_ctx) < 1)
+	    p2p->cfg->prov_disc_resp_cb(p2p->cfg->cb_ctx) < 1) {
+		if (p2p->state == P2P_SEARCH)
+			p2p_continue_find(p2p);
 		return;
+	}
 
 	p2p_dbg(p2p,
 		"Post-Provision Discovery operations started - do not try to continue other P2P operations");
