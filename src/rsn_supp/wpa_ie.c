@@ -342,6 +342,28 @@ int wpa_gen_wpa_ie(struct wpa_sm *sm, u8 *wpa_ie, size_t wpa_ie_len)
 }
 
 
+int wpa_gen_rsnxe(struct wpa_sm *sm, u8 *rsnxe, size_t rsnxe_len)
+{
+	u8 *pos = rsnxe;
+
+	if (!wpa_key_mgmt_sae(sm->key_mgmt))
+		return 0; /* SAE not in use */
+	if (sm->sae_pwe != 1 && sm->sae_pwe != 2)
+		return 0; /* no supported extended RSN capabilities */
+
+	if (rsnxe_len < 3)
+		return -1;
+
+	*pos++ = WLAN_EID_RSNX;
+	*pos++ = 1;
+	/* bits 0-3 = 0 since only one octet of Extended RSN Capabilities is
+	 * used for now */
+	*pos++ = BIT(WLAN_RSNX_CAPAB_SAE_H2E);
+
+	return pos - rsnxe;
+}
+
+
 /**
  * wpa_parse_vendor_specific - Parse Vendor Specific IEs
  * @pos: Pointer to the IE header

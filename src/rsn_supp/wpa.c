@@ -655,51 +655,51 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 
 	kde = sm->assoc_wpa_ie;
 	kde_len = sm->assoc_wpa_ie_len;
+	kde_buf = os_malloc(kde_len +
+			    2 + RSN_SELECTOR_LEN + 3 +
+			    sm->assoc_rsnxe_len +
+			    2 + RSN_SELECTOR_LEN + 1);
+	if (!kde_buf)
+		goto failed;
+	os_memcpy(kde_buf, kde, kde_len);
+	kde = kde_buf;
 
 #ifdef CONFIG_OCV
 	if (wpa_sm_ocv_enabled(sm)) {
 		struct wpa_channel_info ci;
 		u8 *pos;
 
+		pos = kde + kde_len;
 		if (wpa_sm_channel_info(sm, &ci) != 0) {
 			wpa_printf(MSG_WARNING,
 				   "Failed to get channel info for OCI element in EAPOL-Key 2/4");
 			goto failed;
 		}
 
-		kde_buf = os_malloc(kde_len + 2 + RSN_SELECTOR_LEN + 3);
-		if (!kde_buf) {
-			wpa_printf(MSG_WARNING,
-				   "Failed to allocate memory for KDE with OCI in EAPOL-Key 2/4");
-			goto failed;
-		}
-
-		os_memcpy(kde_buf, kde, kde_len);
-		kde = kde_buf;
-		pos = kde + kde_len;
 		if (ocv_insert_oci_kde(&ci, &pos) < 0)
 			goto failed;
 		kde_len = pos - kde;
 	}
 #endif /* CONFIG_OCV */
 
+	if (sm->assoc_rsnxe && sm->assoc_rsnxe_len) {
+		os_memcpy(kde + kde_len, sm->assoc_rsnxe, sm->assoc_rsnxe_len);
+		kde_len += sm->assoc_rsnxe_len;
+	}
+
 #ifdef CONFIG_P2P
 	if (sm->p2p) {
-		kde_buf = os_malloc(kde_len + 2 + RSN_SELECTOR_LEN + 1);
-		if (kde_buf) {
-			u8 *pos;
-			wpa_printf(MSG_DEBUG, "P2P: Add IP Address Request KDE "
-				   "into EAPOL-Key 2/4");
-			os_memcpy(kde_buf, kde, kde_len);
-			kde = kde_buf;
-			pos = kde + kde_len;
-			*pos++ = WLAN_EID_VENDOR_SPECIFIC;
-			*pos++ = RSN_SELECTOR_LEN + 1;
-			RSN_SELECTOR_PUT(pos, WFA_KEY_DATA_IP_ADDR_REQ);
-			pos += RSN_SELECTOR_LEN;
-			*pos++ = 0x01;
-			kde_len = pos - kde;
-		}
+		u8 *pos;
+
+		wpa_printf(MSG_DEBUG,
+			   "P2P: Add IP Address Request KDE into EAPOL-Key 2/4");
+		pos = kde + kde_len;
+		*pos++ = WLAN_EID_VENDOR_SPECIFIC;
+		*pos++ = RSN_SELECTOR_LEN + 1;
+		RSN_SELECTOR_PUT(pos, WFA_KEY_DATA_IP_ADDR_REQ);
+		pos += RSN_SELECTOR_LEN;
+		*pos++ = 0x01;
+		kde_len = pos - kde;
 	}
 #endif /* CONFIG_P2P */
 
@@ -2672,6 +2672,7 @@ void wpa_sm_deinit(struct wpa_sm *sm)
 	eloop_cancel_timeout(wpa_sm_start_preauth, sm, NULL);
 	eloop_cancel_timeout(wpa_sm_rekey_ptk, sm, NULL);
 	os_free(sm->assoc_wpa_ie);
+	os_free(sm->assoc_rsnxe);
 	os_free(sm->ap_wpa_ie);
 	os_free(sm->ap_rsn_ie);
 	os_free(sm->ap_rsnxe);
@@ -3049,6 +3050,9 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 	case WPA_PARAM_OCV:
 		sm->ocv = value;
 		break;
+	case WPA_PARAM_SAE_PWE:
+		sm->sae_pwe = value;
+		break;
 	default:
 		break;
 	}
@@ -3220,6 +3224,83 @@ int wpa_sm_set_assoc_wpa_ie(struct wpa_sm *sm, const u8 *ie, size_t len)
 			return -1;
 
 		sm->assoc_wpa_ie_len = len;
+	}
+
+	return 0;
+}
+
+
+/**
+ * wpa_sm_set_assoc_rsnxe_default - Generate own RSNXE from configuration
+ * @sm: Pointer to WPA state machine data from wpa_sm_init()
+ * @rsnxe: Pointer to buffer for RSNXE
+ * @rsnxe_len: Pointer to the length of the rsne buffer
+ * Returns: 0 on success, -1 on failure
+ */
+int wpa_sm_set_assoc_rsnxe_default(struct wpa_sm *sm, u8 *rsnxe,
+				   size_t *rsnxe_len)
+{
+	int res;
+
+	if (!sm)
+		return -1;
+
+	res = wpa_gen_rsnxe(sm, rsnxe, *rsnxe_len);
+	if (res < 0)
+		return -1;
+	*rsnxe_len = res;
+
+	wpa_hexdump(MSG_DEBUG, "RSN: Set own RSNXE default", rsnxe, *rsnxe_len);
+
+	if (sm->assoc_rsnxe) {
+		wpa_hexdump(MSG_DEBUG,
+			    "RSN: Leave previously set RSNXE default",
+			    sm->assoc_rsnxe, sm->assoc_rsnxe_len);
+	} else if (*rsnxe_len > 0) {
+		/*
+		 * Make a copy of the RSNXE so that 4-Way Handshake gets the
+		 * correct version of the IE even if it gets changed.
+		 */
+		sm->assoc_rsnxe = os_memdup(rsnxe, *rsnxe_len);
+		if (!sm->assoc_rsnxe)
+			return -1;
+
+		sm->assoc_rsnxe_len = *rsnxe_len;
+	}
+
+	return 0;
+}
+
+
+/**
+ * wpa_sm_set_assoc_rsnxe - Set own RSNXE from (Re)AssocReq
+ * @sm: Pointer to WPA state machine data from wpa_sm_init()
+ * @ie: Pointer to IE data (starting from id)
+ * @len: IE length
+ * Returns: 0 on success, -1 on failure
+ *
+ * Inform WPA state machine about the RSNXE used in (Re)Association Request
+ * frame. The IE will be used to override the default value generated
+ * with wpa_sm_set_assoc_rsnxe_default().
+ */
+int wpa_sm_set_assoc_rsnxe(struct wpa_sm *sm, const u8 *ie, size_t len)
+{
+	if (!sm)
+		return -1;
+
+	os_free(sm->assoc_rsnxe);
+	if (!ie || len == 0) {
+		wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG,
+			"RSN: clearing own RSNXE");
+		sm->assoc_rsnxe = NULL;
+		sm->assoc_rsnxe_len = 0;
+	} else {
+		wpa_hexdump(MSG_DEBUG, "RSN: set own RSNXE", ie, len);
+		sm->assoc_rsnxe = os_memdup(ie, len);
+		if (!sm->assoc_rsnxe)
+			return -1;
+
+		sm->assoc_rsnxe_len = len;
 	}
 
 	return 0;

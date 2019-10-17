@@ -591,6 +591,14 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 		os_memcpy(pos, ext_capab, ext_capab_len);
 	}
 
+	if (wpa_s->rsnxe_len > 0 &&
+	    wpa_s->rsnxe_len <=
+	    sizeof(wpa_s->sme.assoc_req_ie) - wpa_s->sme.assoc_req_ie_len) {
+		os_memcpy(wpa_s->sme.assoc_req_ie + wpa_s->sme.assoc_req_ie_len,
+			  wpa_s->rsnxe, wpa_s->rsnxe_len);
+		wpa_s->sme.assoc_req_ie_len += wpa_s->rsnxe_len;
+	}
+
 #ifdef CONFIG_HS20
 	if (is_hs20_network(wpa_s, ssid, bss)) {
 		struct wpabuf *hs20;
@@ -884,6 +892,8 @@ static void sme_auth_start_cb(struct wpa_radio_work *work, int deinit)
 	/* Starting new connection, so clear the possibly used WPA IE from the
 	 * previous association. */
 	wpa_sm_set_assoc_wpa_ie(wpa_s->wpa, NULL, 0);
+	wpa_sm_set_assoc_rsnxe(wpa_s->wpa, NULL, 0);
+	wpa_s->rsnxe_len = 0;
 
 	sme_send_authentication(wpa_s, cwork->bss, cwork->ssid, 1);
 }
@@ -1899,6 +1909,11 @@ pfs_fail:
 					elems.osen_len + 2);
 	} else
 		wpa_sm_set_assoc_wpa_ie(wpa_s->wpa, NULL, 0);
+	if (elems.rsnxe)
+		wpa_sm_set_assoc_rsnxe(wpa_s->wpa, elems.rsnxe - 2,
+				       elems.rsnxe_len + 2);
+	else
+		wpa_sm_set_assoc_rsnxe(wpa_s->wpa, NULL, 0);
 	if (wpa_s->current_ssid && wpa_s->current_ssid->p2p_group)
 		params.p2p = 1;
 

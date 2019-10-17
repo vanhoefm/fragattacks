@@ -62,5 +62,6 @@ struct wpa_eapol_ie_parse {
 int wpa_supplicant_parse_ies(const u8 *buf, size_t len,
 			     struct wpa_eapol_ie_parse *ie);
 int wpa_gen_wpa_ie(struct wpa_sm *sm, u8 *wpa_ie, size_t wpa_ie_len);
+int wpa_gen_rsnxe(struct wpa_sm *sm, u8 *rsnxe, size_t rsnxe_len);
 
 #endif /* WPA_IE_H */

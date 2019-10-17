@@ -404,6 +404,8 @@ void wpa_supplicant_set_non_wpa_policy(struct wpa_supplicant *wpa_s,
 	wpa_sm_set_ap_rsn_ie(wpa_s->wpa, NULL, 0);
 	wpa_sm_set_ap_rsnxe(wpa_s->wpa, NULL, 0);
 	wpa_sm_set_assoc_wpa_ie(wpa_s->wpa, NULL, 0);
+	wpa_sm_set_assoc_rsnxe(wpa_s->wpa, NULL, 0);
+	wpa_s->rsnxe_len = 0;
 	wpa_s->pairwise_cipher = WPA_CIPHER_NONE;
 	wpa_s->group_cipher = WPA_CIPHER_NONE;
 	wpa_s->mgmt_group_cipher = 0;
@@ -1578,9 +1580,17 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 #ifdef CONFIG_OCV
 	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_OCV, ssid->ocv);
 #endif /* CONFIG_OCV */
+	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_SAE_PWE, wpa_s->conf->sae_pwe);
 
 	if (wpa_sm_set_assoc_wpa_ie_default(wpa_s->wpa, wpa_ie, wpa_ie_len)) {
 		wpa_msg(wpa_s, MSG_WARNING, "WPA: Failed to generate WPA IE");
+		return -1;
+	}
+
+	wpa_s->rsnxe_len = sizeof(wpa_s->rsnxe);
+	if (wpa_sm_set_assoc_rsnxe_default(wpa_s->wpa, wpa_s->rsnxe,
+					   &wpa_s->rsnxe_len)) {
+		wpa_msg(wpa_s, MSG_WARNING, "RSN: Failed to generate RSNXE");
 		return -1;
 	}
 
@@ -2995,6 +3005,12 @@ pfs_fail:
 	}
 #endif /* CONFIG_IEEE80211R */
 
+	if (wpa_s->rsnxe_len > 0 &&
+	    wpa_s->rsnxe_len <= max_wpa_ie_len - wpa_ie_len) {
+		os_memcpy(wpa_ie + wpa_ie_len, wpa_s->rsnxe, wpa_s->rsnxe_len);
+		wpa_ie_len += wpa_s->rsnxe_len;
+	}
+
 	if (ssid->multi_ap_backhaul_sta) {
 		size_t multi_ap_ie_len;
 
@@ -3305,6 +3321,8 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 	/* Starting new association, so clear the possibly used WPA IE from the
 	 * previous association. */
 	wpa_sm_set_assoc_wpa_ie(wpa_s->wpa, NULL, 0);
+	wpa_sm_set_assoc_rsnxe(wpa_s->wpa, NULL, 0);
+	wpa_s->rsnxe_len = 0;
 
 	wpa_ie = wpas_populate_assoc_ies(wpa_s, bss, ssid, &params, NULL);
 	if (!wpa_ie) {

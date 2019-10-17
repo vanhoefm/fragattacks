@@ -85,9 +85,12 @@ struct wpa_sm {
 	int rsn_enabled; /* Whether RSN is enabled in configuration */
 	int mfp; /* 0 = disabled, 1 = optional, 2 = mandatory */
 	int ocv; /* Operating Channel Validation */
+	int sae_pwe; /* SAE PWE generation options */
 
 	u8 *assoc_wpa_ie; /* Own WPA/RSN IE from (Re)AssocReq */
 	size_t assoc_wpa_ie_len;
+	u8 *assoc_rsnxe; /* Own RSNXE from (Re)AssocReq */
+	size_t assoc_rsnxe_len;
 	u8 *ap_wpa_ie, *ap_rsn_ie, *ap_rsnxe;
 	size_t ap_wpa_ie_len, ap_rsn_ie_len, ap_rsnxe_len;
 
