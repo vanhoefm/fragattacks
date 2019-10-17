@@ -775,7 +775,8 @@ int wpa_supplicant_create_ap(struct wpa_supplicant *wpa_s,
 		ssid->frequency = 2462; /* default channel 11 */
 	params.freq.freq = ssid->frequency;
 
-	if (ssid->mode == WPAS_MODE_AP && ssid->enable_edmg) {
+	if ((ssid->mode == WPAS_MODE_AP || ssid->mode == WPAS_MODE_P2P_GO) &&
+	    ssid->enable_edmg) {
 		u8 primary_channel;
 
 		if (ieee80211_freq_to_chan(ssid->frequency, &primary_channel) ==

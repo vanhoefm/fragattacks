@@ -474,7 +474,7 @@ static char ** wpa_cli_complete_set(const char *str, int pos)
 		"p2p_optimize_listen_chan", "p2p_go_ht40", "p2p_go_vht",
 		"p2p_disabled", "p2p_go_ctwindow", "p2p_no_group_iface",
 		"p2p_ignore_shared_freq", "ip_addr_go", "ip_addr_mask",
-		"ip_addr_start", "ip_addr_end",
+		"ip_addr_start", "ip_addr_end", "p2p_go_edmg",
 #endif /* CONFIG_P2P */
 		"country", "bss_max_count", "bss_expiration_age",
 		"bss_expiration_scan_count", "filter_ssids", "filter_rssi",
@@ -1406,7 +1406,7 @@ static const char *network_fields[] = {
 	"bssid_whitelist", "psk", "proto", "key_mgmt",
 	"bg_scan_period", "pairwise", "group", "auth_alg", "scan_freq",
 	"freq_list", "max_oper_chwidth", "ht40", "vht", "vht_center_freq1",
-	"vht_center_freq2", "ht",
+	"vht_center_freq2", "ht", "edmg",
 #ifdef IEEE8021X_EAPOL
 	"eap", "identity", "anonymous_identity", "password", "ca_cert",
 	"ca_path", "client_cert", "private_key", "private_key_passwd",

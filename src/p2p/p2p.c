@@ -1404,6 +1404,7 @@ static void p2p_prepare_channel_best(struct p2p_data *p2p)
 	const int op_classes_5ghz[] = { 124, 125, 115, 0 };
 	const int op_classes_ht40[] = { 126, 127, 116, 117, 0 };
 	const int op_classes_vht[] = { 128, 0 };
+	const int op_classes_edmg[] = { 181, 182, 183, 0 };
 
 	p2p_dbg(p2p, "Prepare channel best");
 
@@ -1435,6 +1436,11 @@ static void p2p_prepare_channel_best(struct p2p_data *p2p)
 		p2p_dbg(p2p, "Select first pref_chan entry as operating channel preference");
 		p2p->op_reg_class = p2p->cfg->pref_chan[0].op_class;
 		p2p->op_channel = p2p->cfg->pref_chan[0].chan;
+	} else if (p2p_channel_select(&p2p->cfg->channels, op_classes_edmg,
+				      &p2p->op_reg_class, &p2p->op_channel) ==
+		   0) {
+		p2p_dbg(p2p, "Select possible EDMG channel (op_class %u channel %u) as operating channel preference",
+			p2p->op_reg_class, p2p->op_channel);
 	} else if (p2p_channel_select(&p2p->cfg->channels, op_classes_vht,
 				      &p2p->op_reg_class, &p2p->op_channel) ==
 		   0) {

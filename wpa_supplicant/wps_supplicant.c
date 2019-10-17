@@ -1178,6 +1178,11 @@ int wpas_wps_start_pbc(struct wpa_supplicant *wpa_s, const u8 *bssid,
 				/* P2P in 60 GHz uses PBSS */
 				ssid->pbss = 1;
 			}
+			if (wpa_s->go_params->edmg &&
+			    wpas_p2p_try_edmg_channel(wpa_s,
+						      wpa_s->go_params) == 0)
+				ssid->enable_edmg = 1;
+
 			wpa_hexdump_ascii(MSG_DEBUG, "WPS: Use specific AP "
 					  "SSID", ssid->ssid, ssid->ssid_len);
 		}
@@ -1261,6 +1266,11 @@ static int wpas_wps_start_dev_pw(struct wpa_supplicant *wpa_s,
 				/* P2P in 60 GHz uses PBSS */
 				ssid->pbss = 1;
 			}
+			if (wpa_s->go_params->edmg &&
+			    wpas_p2p_try_edmg_channel(wpa_s,
+						      wpa_s->go_params) == 0)
+				ssid->enable_edmg = 1;
+
 			wpa_hexdump_ascii(MSG_DEBUG, "WPS: Use specific AP "
 					  "SSID", ssid->ssid, ssid->ssid_len);
 		}
