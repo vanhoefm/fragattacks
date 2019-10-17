@@ -1121,6 +1121,9 @@ int wpa_parse_kde_ies(const u8 *buf, size_t len, struct wpa_eapol_ie_parse *ie)
 		if (*pos == WLAN_EID_RSN) {
 			ie->rsn_ie = pos;
 			ie->rsn_ie_len = pos[1] + 2;
+		} else if (*pos == WLAN_EID_RSNX) {
+			ie->rsnxe = pos;
+			ie->rsnxe_len = pos[1] + 2;
 #ifdef CONFIG_IEEE80211R_AP
 		} else if (*pos == WLAN_EID_MOBILITY_DOMAIN) {
 			ie->mdie = pos;

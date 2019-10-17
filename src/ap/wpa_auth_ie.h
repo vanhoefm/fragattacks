@@ -38,6 +38,8 @@ struct wpa_eapol_ie_parse {
 
 	const u8 *osen;
 	size_t osen_len;
+	const u8 *rsnxe;
+	size_t rsnxe_len;
 };
 
 int wpa_parse_kde_ies(const u8 *buf, size_t len,
