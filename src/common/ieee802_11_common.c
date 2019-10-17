@@ -365,6 +365,10 @@ ParseRes ieee802_11_parse_elems(const u8 *start, size_t len,
 			elems->rsn_ie = pos;
 			elems->rsn_ie_len = elen;
 			break;
+		case WLAN_EID_RSNX:
+			elems->rsnxe = pos;
+			elems->rsnxe_len = elen;
+			break;
 		case WLAN_EID_PWR_CAPABILITY:
 			if (elen < 2)
 				break;
