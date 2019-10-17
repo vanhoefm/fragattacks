@@ -2937,6 +2937,22 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 				   WLAN_REASON_PREV_AUTH_NOT_VALID);
 		return;
 	}
+	if ((!sm->rsnxe && kde.rsnxe) ||
+	    (sm->rsnxe && !kde.rsnxe) ||
+	    (sm->rsnxe && kde.rsnxe &&
+	     (sm->rsnxe_len != kde.rsnxe_len ||
+	      os_memcmp(sm->rsnxe, kde.rsnxe, sm->rsnxe_len) != 0))) {
+		wpa_auth_logger(wpa_auth, sm->addr, LOGGER_INFO,
+				"RSNXE from (Re)AssocReq did not match the one in EAPOL-Key msg 2/4");
+		wpa_hexdump(MSG_DEBUG, "RSNXE in AssocReq",
+			    sm->rsnxe, sm->rsnxe_len);
+		wpa_hexdump(MSG_DEBUG, "RSNXE in EAPOL-Key msg 2/4",
+			    kde.rsnxe, kde.rsnxe_len);
+		/* MLME-DEAUTHENTICATE.request */
+		wpa_sta_disconnect(wpa_auth, sm->addr,
+				   WLAN_REASON_PREV_AUTH_NOT_VALID);
+		return;
+	}
 #ifdef CONFIG_OCV
 	if (wpa_auth_uses_ocv(sm)) {
 		struct wpa_channel_info ci;
