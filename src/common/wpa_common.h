@@ -466,6 +466,60 @@ struct wpa_ft_ies {
 int wpa_ft_parse_ies(const u8 *ies, size_t ies_len, struct wpa_ft_ies *parse,
 		     int use_sha384);
 
+struct wpa_eapol_ie_parse {
+	const u8 *wpa_ie;
+	size_t wpa_ie_len;
+	const u8 *rsn_ie;
+	size_t rsn_ie_len;
+	const u8 *pmkid;
+	const u8 *gtk;
+	size_t gtk_len;
+	const u8 *mac_addr;
+	size_t mac_addr_len;
+	const u8 *igtk;
+	size_t igtk_len;
+	const u8 *mdie;
+	size_t mdie_len;
+	const u8 *ftie;
+	size_t ftie_len;
+	const u8 *ip_addr_req;
+	const u8 *ip_addr_alloc;
+	const u8 *oci;
+	size_t oci_len;
+	const u8 *osen;
+	size_t osen_len;
+	const u8 *rsnxe;
+	size_t rsnxe_len;
+	const u8 *reassoc_deadline;
+	const u8 *key_lifetime;
+	const u8 *lnkid;
+	size_t lnkid_len;
+	const u8 *ext_capab;
+	size_t ext_capab_len;
+	const u8 *supp_rates;
+	size_t supp_rates_len;
+	const u8 *ext_supp_rates;
+	size_t ext_supp_rates_len;
+	const u8 *ht_capabilities;
+	const u8 *vht_capabilities;
+	const u8 *supp_channels;
+	size_t supp_channels_len;
+	const u8 *supp_oper_classes;
+	size_t supp_oper_classes_len;
+	u8 qosinfo;
+	u16 aid;
+	const u8 *wmm;
+	size_t wmm_len;
+};
+
+int wpa_parse_kde_ies(const u8 *buf, size_t len, struct wpa_eapol_ie_parse *ie);
+static inline int wpa_supplicant_parse_ies(const u8 *buf, size_t len,
+					   struct wpa_eapol_ie_parse *ie)
+{
+	return wpa_parse_kde_ies(buf, len, ie);
+}
+
+
 int wpa_cipher_key_len(int cipher);
 int wpa_cipher_rsc_len(int cipher);
 enum wpa_alg wpa_cipher_to_alg(int cipher);
