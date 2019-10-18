@@ -3252,6 +3252,17 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 				   MAC2STR(sta->addr), sta->auth_alg);
 			return WLAN_STATUS_NOT_SUPPORTED_AUTH_ALG;
 		}
+
+		if (hapd->conf->sae_pwe == 2 &&
+		    sta->auth_alg == WLAN_AUTH_SAE &&
+		    sta->sae && sta->sae->tmp && !sta->sae->tmp->h2e &&
+		    elems.rsnxe && elems.rsnxe_len >= 1 &&
+		    (elems.rsnxe[0] & BIT(WLAN_RSNX_CAPAB_SAE_H2E))) {
+			wpa_printf(MSG_INFO, "SAE: " MACSTR
+				   " indicates support for SAE H2E, but did not use it",
+				   MAC2STR(sta->addr));
+			return WLAN_STATUS_UNSPECIFIED_FAILURE;
+		}
 #endif /* CONFIG_SAE */
 
 #ifdef CONFIG_OWE
