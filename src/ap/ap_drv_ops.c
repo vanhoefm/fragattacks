@@ -107,6 +107,10 @@ int hostapd_build_ap_extra_ies(struct hostapd_data *hapd,
 		goto fail;
 #endif /* CONFIG_FILS */
 
+	pos = hostapd_eid_rsnxe(hapd, buf, sizeof(buf));
+	if (add_buf_data(&assocresp, buf, pos - buf) < 0)
+		goto fail;
+
 	if (add_buf(&beacon, hapd->wps_beacon_ie) < 0 ||
 	    add_buf(&proberesp, hapd->wps_probe_resp_ie) < 0)
 		goto fail;

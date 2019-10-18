@@ -192,5 +192,6 @@ int get_tx_parameters(struct sta_info *sta, int ap_max_chanwidth,
 		      int ap_seg1_idx, int *bandwidth, int *seg1_idx);
 
 void auth_sae_process_commit(void *eloop_ctx, void *user_ctx);
+u8 * hostapd_eid_rsnxe(struct hostapd_data *hapd, u8 *eid, size_t len);
 
 #endif /* IEEE802_11_H */
