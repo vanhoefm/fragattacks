@@ -589,10 +589,11 @@ enum qca_radiotap_vendor_ids {
  *	by the firmware to user space for persistent storage. The attributes
  *	defined in enum qca_vendor_attr_interop_issues_ap are used to deliver
  *	the parameters.
- * @QCA_NL80211_VENDOR_SUBCMD_OEM_DATA: This command is used to send OEM data
- *	binary blobs from application/service to firmware. The attributes
- *	defined in enum qca_wlan_vendor_attr_oem_data_params are used to deliver
- *	the parameters.
+ * @QCA_NL80211_VENDOR_SUBCMD_OEM_DATA: This command/event is used to
+ *	send/receive OEM data binary blobs to/from application/service to/from
+ *	firmware. The attributes defined in enum
+ *	qca_wlan_vendor_attr_oem_data_params are used to deliver the
+ *	parameters.
  * @QCA_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY_EXT: This command/event is used
  *	to send/receive avoid frequency data using
  *	enum qca_wlan_vendor_attr_avoid_frequency_ext.
@@ -7930,17 +7931,19 @@ enum qca_vendor_oem_device_type {
 };
 
 /**
- * enum qca_wlan_vendor_attr_oem_data_params - Used by the vendor command
+ * enum qca_wlan_vendor_attr_oem_data_params - Used by the vendor command/event
  * QCA_NL80211_VENDOR_SUBCMD_OEM_DATA.
  *
  * @QCA_WLAN_VENDOR_ATTR_OEM_DATA_CMD_DATA: The binary blob for the vendor
- * command QCA_NL80211_VENDOR_SUBCMD_OEM_DATA are carried through this attribute.
+ * command/event QCA_NL80211_VENDOR_SUBCMD_OEM_DATA are carried through this
+ * attribute.
  * NLA_BINARY attribute, the max size is 1024 bytes.
  *
  * @QCA_WLAN_VENDOR_ATTR_OEM_DEVICE_INFO: The binary blob will be routed
  * based on this field. This optional attribute is included to specify whether
- * the device type is a virtual device or a physical device for the command.
- * This attribute can be omitted for a virtual device (default) command.
+ * the device type is a virtual device or a physical device for the
+ * command/event. This attribute can be omitted for a virtual device (default)
+ * command/event.
  * This u8 attribute is used to carry information for the device type using
  * values defined by enum qca_vendor_oem_device_type.
  */
