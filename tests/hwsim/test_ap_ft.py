@@ -1871,7 +1871,7 @@ def test_ap_ft_ap_oom4(dev, apdev):
         if dev[0].get_status_field('bssid') != bssid1:
             raise Exception("Did not roam to AP1")
 
-    with fail_test(hapd0, 1, "wpa_auth_get_seqnum;wpa_ft_gtk_subelem"):
+    with fail_test(hapd0, 1, "i802_get_seqnum;wpa_ft_gtk_subelem"):
         dev[0].roam(bssid0)
         if dev[0].get_status_field('bssid') != bssid0:
             raise Exception("Did not roam to AP0")
