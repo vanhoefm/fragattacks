@@ -18,6 +18,7 @@
 #include "drivers/driver.h"
 #include "wpa.h"
 #include "wpa_i.h"
+#include "wpa_ie.h"
 #include "pmksa_cache.h"
 
 #ifdef CONFIG_IEEE80211R
@@ -171,6 +172,9 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	struct rsn_ie_hdr *rsnie;
 	u16 capab;
 	int mdie_len;
+	u8 rsnxe[10];
+	size_t rsnxe_len;
+	int res;
 
 	sm->ft_completed = 0;
 	sm->ft_reassoc_completed = 0;
@@ -359,6 +363,13 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 		pos += ric_ies_len;
 	}
 
+	res = wpa_gen_rsnxe(sm, rsnxe, sizeof(rsnxe));
+	if (res < 0) {
+		os_free(buf);
+		return NULL;
+	}
+	rsnxe_len = res;
+
 	if (kck) {
 		/*
 		 * IEEE Std 802.11r-2008, 11A.8.4
@@ -370,14 +381,18 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 		 * MDIE
 		 * FTIE (with MIC field set to 0)
 		 * RIC-Request (if present)
+		 * RSNXE (if present)
 		 */
 		/* Information element count */
 		*elem_count = 3 + ieee802_11_ie_count(ric_ies, ric_ies_len);
+		if (rsnxe_len)
+			*elem_count += 1;
 		if (wpa_ft_mic(kck, kck_len, sm->own_addr, target_ap, 5,
 			       ((u8 *) mdie) - 2, 2 + sizeof(*mdie),
 			       ftie_pos, 2 + *ftie_len,
 			       (u8 *) rsnie, 2 + rsnie->len, ric_ies,
-			       ric_ies_len, fte_mic) < 0) {
+			       ric_ies_len, rsnxe_len ? rsnxe : NULL, rsnxe_len,
+			       fte_mic) < 0) {
 			wpa_printf(MSG_INFO, "FT: Failed to calculate MIC");
 			os_free(buf);
 			return NULL;
@@ -961,6 +976,8 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 	count = 3;
 	if (parse.ric)
 		count += ieee802_11_ie_count(parse.ric, parse.ric_len);
+	if (parse.rsnxe)
+		count++;
 	if (fte_elem_count != count) {
 		wpa_printf(MSG_DEBUG, "FT: Unexpected IE count in MIC "
 			   "Control: received %u expected %u",
@@ -981,6 +998,8 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 		       parse.ftie - 2, parse.ftie_len + 2,
 		       parse.rsn - 2, parse.rsn_len + 2,
 		       parse.ric, parse.ric_len,
+		       parse.rsnxe ? parse.rsnxe - 2 : NULL,
+		       parse.rsnxe ? parse.rsnxe_len + 2 : 0,
 		       mic) < 0) {
 		wpa_printf(MSG_DEBUG, "FT: Failed to calculate MIC");
 		return -1;

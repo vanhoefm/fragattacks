@@ -750,10 +750,12 @@ int wpa_ft_mic(const u8 *kck, size_t kck_len, const u8 *sta_addr,
 	       const u8 *mdie, size_t mdie_len,
 	       const u8 *ftie, size_t ftie_len,
 	       const u8 *rsnie, size_t rsnie_len,
-	       const u8 *ric, size_t ric_len, u8 *mic)
+	       const u8 *ric, size_t ric_len,
+	       const u8 *rsnxe, size_t rsnxe_len,
+	       u8 *mic)
 {
-	const u8 *addr[9];
-	size_t len[9];
+	const u8 *addr[10];
+	size_t len[10];
 	size_t i, num_elem = 0;
 	u8 zero_mic[24];
 	size_t mic_len, fte_fixed_len;
@@ -817,6 +819,12 @@ int wpa_ft_mic(const u8 *kck, size_t kck_len, const u8 *sta_addr,
 	if (ric) {
 		addr[num_elem] = ric;
 		len[num_elem] = ric_len;
+		num_elem++;
+	}
+
+	if (rsnxe) {
+		addr[num_elem] = rsnxe;
+		len[num_elem] = rsnxe_len;
 		num_elem++;
 	}
 
@@ -961,6 +969,13 @@ int wpa_ft_parse_ies(const u8 *ies, size_t ies_len,
 				update_use_sha384 = 0;
 			}
 			break;
+		case WLAN_EID_RSNX:
+			wpa_hexdump(MSG_DEBUG, "FT: RSNXE", pos, len);
+			if (len < 1)
+				break;
+			parse->rsnxe = pos;
+			parse->rsnxe_len = len;
+			break;
 		case WLAN_EID_MOBILITY_DOMAIN:
 			wpa_hexdump(MSG_DEBUG, "FT: MDE", pos, len);
 			if (len < sizeof(struct rsn_mdie))
@@ -1042,6 +1057,8 @@ int wpa_ft_parse_ies(const u8 *ies, size_t ies_len,
 	if (parse->mdie)
 		prot_ie_count--;
 	if (parse->ftie)
+		prot_ie_count--;
+	if (parse->rsnxe)
 		prot_ie_count--;
 	if (prot_ie_count < 0) {
 		wpa_printf(MSG_DEBUG, "FT: Some required IEs not included in "

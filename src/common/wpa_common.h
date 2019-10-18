@@ -364,7 +364,9 @@ int wpa_ft_mic(const u8 *kck, size_t kck_len, const u8 *sta_addr,
 	       const u8 *mdie, size_t mdie_len,
 	       const u8 *ftie, size_t ftie_len,
 	       const u8 *rsnie, size_t rsnie_len,
-	       const u8 *ric, size_t ric_len, u8 *mic);
+	       const u8 *ric, size_t ric_len,
+	       const u8 *rsnxe, size_t rsnxe_len,
+	       u8 *mic);
 int wpa_derive_pmk_r0(const u8 *xxkey, size_t xxkey_len,
 		      const u8 *ssid, size_t ssid_len,
 		      const u8 *mdid, const u8 *r0kh_id, size_t r0kh_id_len,
@@ -461,6 +463,8 @@ struct wpa_ft_ies {
 	size_t ric_len;
 	int key_mgmt;
 	int pairwise_cipher;
+	const u8 *rsnxe;
+	size_t rsnxe_len;
 };
 
 int wpa_ft_parse_ies(const u8 *ies, size_t ies_len, struct wpa_ft_ies *parse,
