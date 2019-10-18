@@ -955,7 +955,7 @@ def test_ap_ft_over_ds_pull_vlan(dev, apdev):
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
               conndev="brvlan1")
 
-def start_ft_sae(dev, apdev, wpa_ptk_rekey=None):
+def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None):
     if "SAE" not in dev.get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     ssid = "test-ft"
@@ -965,11 +965,15 @@ def start_ft_sae(dev, apdev, wpa_ptk_rekey=None):
     params['wpa_key_mgmt'] = "FT-SAE"
     if wpa_ptk_rekey:
         params['wpa_ptk_rekey'] = str(wpa_ptk_rekey)
+    if sae_pwe is not None:
+        params['sae_pwe'] = sae_pwe
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params['wpa_key_mgmt'] = "FT-SAE"
     if wpa_ptk_rekey:
         params['wpa_ptk_rekey'] = str(wpa_ptk_rekey)
+    if sae_pwe is not None:
+        params['sae_pwe'] = sae_pwe
     hapd1 = hostapd.add_ap(apdev[1], params)
     key_mgmt = hapd1.get_config()['key_mgmt']
     if key_mgmt.split(' ')[0] != "FT-SAE":
@@ -982,6 +986,15 @@ def test_ap_ft_sae(dev, apdev):
     """WPA2-PSK-FT-SAE AP"""
     hapd0, hapd1 = start_ft_sae(dev[0], apdev)
     run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True)
+
+def test_ap_ft_sae_h2e(dev, apdev):
+    """WPA2-PSK-FT-SAE AP (H2E)"""
+    try:
+        dev[0].set("sae_pwe", "2")
+        hapd0, hapd1 = start_ft_sae(dev[0], apdev, sae_pwe="2")
+        run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True)
+    finally:
+        dev[0].set("sae_pwe", "0")
 
 def test_ap_ft_sae_ptk_rekey0(dev, apdev):
     """WPA2-PSK-FT-SAE AP and PTK rekey triggered by station"""
