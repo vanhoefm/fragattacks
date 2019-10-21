@@ -400,14 +400,22 @@ u8 * hostapd_eid_ext_capab(struct hostapd_data *hapd, u8 *eid)
 	u8 *pos = eid;
 	u8 len = 0, i;
 
-	if (hapd->conf->tdls & (TDLS_PROHIBIT | TDLS_PROHIBIT_CHAN_SWITCH))
+	if (hapd->conf->qos_map_set_len ||
+	    (hapd->conf->tdls & (TDLS_PROHIBIT | TDLS_PROHIBIT_CHAN_SWITCH)))
 		len = 5;
-	if (len < 4 && hapd->conf->interworking)
+	if (len < 4 &&
+	    (hapd->conf->time_advertisement == 2 || hapd->conf->interworking))
 		len = 4;
-	if (len < 3 && hapd->conf->wnm_sleep_mode)
+	if (len < 3 &&
+	    (hapd->conf->wnm_sleep_mode || hapd->conf->bss_transition))
 		len = 3;
-	if (len < 1 && hapd->iconf->obss_interval)
+	if (len < 1 &&
+	    (hapd->iconf->obss_interval ||
+	     (hapd->iface->drv_flags & WPA_DRIVER_FLAGS_AP_CSA)))
 		len = 1;
+	if (len < 2 &&
+	    (hapd->conf->proxy_arp || hapd->conf->coloc_intf_reporting))
+		len = 2;
 	if (len < 7 && hapd->conf->ssid.utf8_ssid)
 		len = 7;
 	if (len < 9 &&
