@@ -1326,6 +1326,33 @@ static void hostapd_disassoc_deny_mac(struct hostapd_data *hapd)
 	}
 }
 
+
+static int hostapd_ctrl_iface_set_band(struct hostapd_data *hapd,
+				       const char *band)
+{
+	union wpa_event_data event;
+	enum set_band setband;
+
+	if (os_strcmp(band, "AUTO") == 0)
+		setband = WPA_SETBAND_AUTO;
+	else if (os_strcmp(band, "5G") == 0)
+		setband = WPA_SETBAND_5G;
+	else if (os_strcmp(band, "2G") == 0)
+		setband = WPA_SETBAND_2G;
+	else
+		return -1;
+
+	if (hostapd_drv_set_band(hapd, setband) == 0) {
+		os_memset(&event, 0, sizeof(event));
+		event.channel_list_changed.initiator = REGDOM_SET_BY_USER;
+		event.channel_list_changed.type = REGDOM_TYPE_UNKNOWN;
+		wpa_supplicant_event(hapd, EVENT_CHANNEL_LIST_CHANGED, &event);
+	}
+
+	return 0;
+}
+
+
 static int hostapd_ctrl_iface_set(struct hostapd_data *hapd, char *cmd)
 {
 	char *value;
@@ -1409,6 +1436,8 @@ static int hostapd_ctrl_iface_set(struct hostapd_data *hapd, char *cmd)
 		os_free(hapd->dpp_configurator_params);
 		hapd->dpp_configurator_params = os_strdup(value);
 #endif /* CONFIG_DPP */
+	} else if (os_strcasecmp(cmd, "setband") == 0) {
+		ret = hostapd_ctrl_iface_set_band(hapd, value);
 	} else {
 		ret = hostapd_set_iface(hapd->iconf, hapd->conf, cmd, value);
 		if (ret)

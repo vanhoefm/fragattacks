@@ -382,4 +382,12 @@ hostapd_drv_send_external_auth_status(struct hostapd_data *hapd,
 	return hapd->driver->send_external_auth_status(hapd->drv_priv, params);
 }
 
+static inline int
+hostapd_drv_set_band(struct hostapd_data *hapd, enum set_band band)
+{
+	if (!hapd->driver || !hapd->drv_priv || !hapd->driver->set_band)
+		return -1;
+	return hapd->driver->set_band(hapd->drv_priv, band);
+}
+
 #endif /* AP_DRV_OPS */
