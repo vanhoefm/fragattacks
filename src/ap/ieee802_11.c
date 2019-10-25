@@ -403,7 +403,8 @@ static void sae_set_state(struct sta_info *sta, enum sae_state state,
 
 
 static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
-					     struct sta_info *sta, int update)
+					     struct sta_info *sta, int update,
+					     int status_code)
 {
 	struct wpabuf *buf;
 	const char *password = NULL;
@@ -416,6 +417,11 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 		rx_id = sta->sae->tmp->pw_id;
 		use_pt = sta->sae->tmp->h2e;
 	}
+
+	if (status_code == WLAN_STATUS_SUCCESS)
+		use_pt = 0;
+	else if (status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT)
+		use_pt = 1;
 
 	for (pw = hapd->conf->sae_passwords; pw; pw = pw->next) {
 		if (!is_broadcast_ether_addr(pw->peer_addr) &&
@@ -489,13 +495,13 @@ static struct wpabuf * auth_build_sae_confirm(struct hostapd_data *hapd,
 
 static int auth_sae_send_commit(struct hostapd_data *hapd,
 				struct sta_info *sta,
-				const u8 *bssid, int update)
+				const u8 *bssid, int update, int status_code)
 {
 	struct wpabuf *data;
 	int reply_res;
 	u16 status;
 
-	data = auth_build_sae_commit(hapd, sta, update);
+	data = auth_build_sae_commit(hapd, sta, update, status_code);
 	if (!data && sta->sae->tmp && sta->sae->tmp->pw_id)
 		return WLAN_STATUS_UNKNOWN_PASSWORD_IDENTIFIER;
 	if (data == NULL)
@@ -693,7 +699,7 @@ static void auth_sae_retransmit_timer(void *eloop_ctx, void *eloop_data)
 
 	switch (sta->sae->state) {
 	case SAE_COMMITTED:
-		ret = auth_sae_send_commit(hapd, sta, hapd->own_addr, 0);
+		ret = auth_sae_send_commit(hapd, sta, hapd->own_addr, 0, -1);
 		eloop_register_timeout(0,
 				       hapd->dot11RSNASAERetransPeriod * 1000,
 				       auth_sae_retransmit_timer, hapd, sta);
@@ -811,7 +817,7 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 				sta->sae->tmp->h2e = status_code ==
 					WLAN_STATUS_SAE_HASH_TO_ELEMENT;
 			ret = auth_sae_send_commit(hapd, sta, bssid,
-						   !allow_reuse);
+						   !allow_reuse, status_code);
 			if (ret)
 				return ret;
 			sae_set_state(sta, SAE_COMMITTED, "Sent Commit");
@@ -881,7 +887,8 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 				return WLAN_STATUS_SUCCESS;
 			sta->sae->sync++;
 
-			ret = auth_sae_send_commit(hapd, sta, bssid, 0);
+			ret = auth_sae_send_commit(hapd, sta, bssid, 0,
+						   status_code);
 			if (ret)
 				return ret;
 
@@ -914,7 +921,8 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 				return WLAN_STATUS_SUCCESS;
 			sta->sae->sync++;
 
-			ret = auth_sae_send_commit(hapd, sta, bssid, 1);
+			ret = auth_sae_send_commit(hapd, sta, bssid, 1,
+						   status_code);
 			if (ret)
 				return ret;
 
@@ -942,7 +950,8 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 			*sta_removed = 1;
 		} else if (auth_transaction == 1) {
 			wpa_printf(MSG_DEBUG, "SAE: Start reauthentication");
-			ret = auth_sae_send_commit(hapd, sta, bssid, 1);
+			ret = auth_sae_send_commit(hapd, sta, bssid, 1,
+						   status_code);
 			if (ret)
 				return ret;
 			sae_set_state(sta, SAE_COMMITTED, "Sent Commit");
@@ -1174,7 +1183,8 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 			 * Authentication frame, and the commit-scalar and
 			 * COMMIT-ELEMENT previously sent.
 			 */
-			resp = auth_sae_send_commit(hapd, sta, mgmt->bssid, 0);
+			resp = auth_sae_send_commit(hapd, sta, mgmt->bssid, 0,
+						    status_code);
 			if (resp != WLAN_STATUS_SUCCESS) {
 				wpa_printf(MSG_ERROR,
 					   "SAE: Failed to send commit message");
@@ -1385,7 +1395,7 @@ int auth_sae_init_committed(struct hostapd_data *hapd, struct sta_info *sta)
 	if (sta->sae->state != SAE_NOTHING)
 		return -1;
 
-	ret = auth_sae_send_commit(hapd, sta, hapd->own_addr, 0);
+	ret = auth_sae_send_commit(hapd, sta, hapd->own_addr, 0, -1);
 	if (ret)
 		return -1;
 
