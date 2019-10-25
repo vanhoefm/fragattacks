@@ -1226,15 +1226,6 @@ int crypto_bignum_sqrmod(const struct crypto_bignum *a,
 }
 
 
-int crypto_bignum_sqrtmod(const struct crypto_bignum *a,
-			  const struct crypto_bignum *b,
-			  struct crypto_bignum *c)
-{
-	/* TODO */
-	return -1;
-}
-
-
 int crypto_bignum_rshift(const struct crypto_bignum *a, int n,
 			 struct crypto_bignum *r)
 {

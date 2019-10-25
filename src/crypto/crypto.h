@@ -657,17 +657,6 @@ int crypto_bignum_sqrmod(const struct crypto_bignum *a,
 			 struct crypto_bignum *c);
 
 /**
- * crypto_bignum_sqrtmod - returns sqrt(a) (mod b)
- * @a: Bignum
- * @b: Bignum
- * @c: Bignum; used to store the result
- * Returns: 0 on success, -1 on failure
- */
-int crypto_bignum_sqrtmod(const struct crypto_bignum *a,
-			  const struct crypto_bignum *b,
-			  struct crypto_bignum *c);
-
-/**
  * crypto_bignum_rshift - r = a >> n
  * @a: Bignum
  * @n: Number of bits

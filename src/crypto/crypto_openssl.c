@@ -1533,27 +1533,6 @@ int crypto_bignum_sqrmod(const struct crypto_bignum *a,
 }
 
 
-int crypto_bignum_sqrtmod(const struct crypto_bignum *a,
-			  const struct crypto_bignum *b,
-			  struct crypto_bignum *c)
-{
-	BN_CTX *bnctx;
-	BIGNUM *res;
-
-	if (TEST_FAIL())
-		return -1;
-
-	bnctx = BN_CTX_new();
-	if (!bnctx)
-		return -1;
-	res = BN_mod_sqrt((BIGNUM *) c, (const BIGNUM *) a, (const BIGNUM *) b,
-			  bnctx);
-	BN_CTX_free(bnctx);
-
-	return res ? 0 : -1;
-}
-
-
 int crypto_bignum_rshift(const struct crypto_bignum *a, int n,
 			 struct crypto_bignum *r)
 {
