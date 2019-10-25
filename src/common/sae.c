@@ -755,23 +755,20 @@ static struct crypto_ec_point * sswu(struct crypto_ec *ec, int group,
 	const_time_select_bin(is_qr, bin1, bin2, prime_len, x_y);
 	wpa_hexdump_key(MSG_DEBUG, "SSWU: x = CSEL(l, x1, x2)", x_y, prime_len);
 
-	/* y = sqrt(v) */
-	y = crypto_bignum_init();
-	/* TODO: Remove p = 3 mod 4 check and disable group 26 instead(?) */
+	/* y = sqrt(v)
+	 * For prime p such that p = 3 mod 4 --> v^((p+1)/4) */
 	if (crypto_bignum_to_bin(prime, bin1, sizeof(bin1), prime_len) < 0)
 		goto fail;
-	if ((bin1[prime_len - 1] & 0x03) == 3) {
-		/* For prime p such that p = 3 mod 4 --> v^((p+1)/4) */
-		if (!y ||
-		    crypto_bignum_add(prime, one, t1) < 0 ||
-		    crypto_bignum_rshift(t1, 2, t1) < 0 ||
-		    crypto_bignum_exptmod(v, t1, prime, y) < 0)
-			goto fail;
-	} else {
+	if ((bin1[prime_len - 1] & 0x03) != 3) {
 		wpa_printf(MSG_DEBUG, "SSWU: prime does not have p = 3 mod 4");
-		if (!y || crypto_bignum_sqrtmod(v, prime, y) < 0)
-			goto fail;
+		goto fail;
 	}
+	y = crypto_bignum_init();
+	if (!y ||
+	    crypto_bignum_add(prime, one, t1) < 0 ||
+	    crypto_bignum_rshift(t1, 2, t1) < 0 ||
+	    crypto_bignum_exptmod(v, t1, prime, y) < 0)
+		goto fail;
 	debug_print_bignum("SSWU: y = sqrt(v)", y, prime_len);
 
 	/* l = CEQ(LSB(u), LSB(y)) */
