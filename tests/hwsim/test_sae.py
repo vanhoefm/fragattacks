@@ -1874,3 +1874,33 @@ def test_sae_h2e_password_id(dev, apdev):
     finally:
         dev[0].set("sae_groups", "")
         dev[0].set("sae_pwe", "0")
+
+def test_sae_auth_restart(dev, apdev):
+    """SAE and authentication restarts with H2E/looping"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_pwe'] = '2'
+    params['sae_password'] = 'secret|id=pw id'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    try:
+        dev[0].request("SET sae_groups ")
+        for pwe in [1, 0, 1]:
+            dev[0].set("sae_pwe", str(pwe))
+            dev[0].connect("test-sae", sae_password="secret",
+                           sae_password_id="pw id",
+                           key_mgmt="SAE", scan_freq="2412")
+            # Disconnect without hostapd removing the STA entry so that the
+            # following SAE authentication instance starts with an existing
+            # STA entry that has maintained some SAE state.
+            hapd.set("ext_mgmt_frame_handling", "1")
+            dev[0].request("REMOVE_NETWORK all")
+            req = hapd.mgmt_rx()
+            dev[0].wait_disconnected()
+            dev[0].dump_monitor()
+            hapd.set("ext_mgmt_frame_handling", "0")
+    finally:
+        dev[0].set("sae_groups", "")
+        dev[0].set("sae_pwe", "0")
