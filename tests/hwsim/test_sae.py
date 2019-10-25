@@ -1726,10 +1726,6 @@ def test_sae_pwe_group_25(dev, apdev):
     """SAE PWE derivation options with group 25"""
     run_sae_pwe_group(dev, apdev, 25)
 
-def test_sae_pwe_group_26(dev, apdev):
-    """SAE PWE derivation options with group 26"""
-    run_sae_pwe_group(dev, apdev, 26)
-
 def test_sae_pwe_group_28(dev, apdev):
     """SAE PWE derivation options with group 28"""
     run_sae_pwe_group(dev, apdev, 28)
