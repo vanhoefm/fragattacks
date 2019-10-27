@@ -1153,6 +1153,85 @@ def test_dbus_scan(dev, apdev):
         raise Exception("FlushBSS() did not remove scan results from BSSs property")
     iface.FlushBSS(1)
 
+def test_dbus_scan_rand(dev, apdev):
+    """D-Bus MACAddressRandomizationMask property Get/Set"""
+    try:
+        run_dbus_scan_rand(dev, apdev)
+    finally:
+        dev[0].request("MAC_RAND_SCAN all enable=0")
+
+def run_dbus_scan_rand(dev, apdev):
+    (bus, wpas_obj, path, if_obj) = prepare_dbus(dev[0])
+    iface = dbus.Interface(if_obj, WPAS_DBUS_IFACE)
+
+    res = if_obj.Get(WPAS_DBUS_IFACE, "MACAddressRandomizationMask",
+                     dbus_interface=dbus.PROPERTIES_IFACE)
+    if len(res) != 0:
+        logger.info(str(res))
+        raise Exception("Unexpected initial MACAddressRandomizationMask value")
+
+    try:
+        if_obj.Set(WPAS_DBUS_IFACE, "MACAddressRandomizationMask", "foo",
+                   dbus_interface=dbus.PROPERTIES_IFACE)
+        raise Exception("Invalid Set accepted")
+    except dbus.exceptions.DBusException as e:
+        if "InvalidArgs: invalid message format" not in str(e):
+            raise Exception("Unexpected error message: " + str(e))
+
+    try:
+        if_obj.Set(WPAS_DBUS_IFACE, "MACAddressRandomizationMask",
+                   {"foo": "bar"},
+                   dbus_interface=dbus.PROPERTIES_IFACE)
+        raise Exception("Invalid Set accepted")
+    except dbus.exceptions.DBusException as e:
+        if "wpas_dbus_setter_mac_address_randomization_mask: mask was not a byte array" not in str(e):
+            raise Exception("Unexpected error message: " + str(e))
+
+    try:
+        if_obj.Set(WPAS_DBUS_IFACE, "MACAddressRandomizationMask",
+                   {"foo": dbus.ByteArray(b'123456')},
+                   dbus_interface=dbus.PROPERTIES_IFACE)
+        raise Exception("Invalid Set accepted")
+    except dbus.exceptions.DBusException as e:
+        if 'wpas_dbus_setter_mac_address_randomization_mask: bad scan type "foo"' not in str(e):
+            raise Exception("Unexpected error message: " + str(e))
+
+    try:
+        if_obj.Set(WPAS_DBUS_IFACE, "MACAddressRandomizationMask",
+                   {"scan": dbus.ByteArray(b'12345')},
+                   dbus_interface=dbus.PROPERTIES_IFACE)
+        raise Exception("Invalid Set accepted")
+    except dbus.exceptions.DBusException as e:
+        if 'wpas_dbus_setter_mac_address_randomization_mask: malformed MAC mask given' not in str(e):
+            raise Exception("Unexpected error message: " + str(e))
+
+    if_obj.Set(WPAS_DBUS_IFACE, "MACAddressRandomizationMask",
+               {"scan": dbus.ByteArray(b'123456')},
+               dbus_interface=dbus.PROPERTIES_IFACE)
+    res = if_obj.Get(WPAS_DBUS_IFACE, "MACAddressRandomizationMask",
+                     dbus_interface=dbus.PROPERTIES_IFACE)
+    if len(res) != 1:
+        logger.info(str(res))
+        raise Exception("Unexpected MACAddressRandomizationMask value")
+
+    try:
+        if_obj.Set(WPAS_DBUS_IFACE, "MACAddressRandomizationMask",
+                   {"scan": dbus.ByteArray(b'123456'),
+                    "sched_scan": dbus.ByteArray(b'987654')},
+                   dbus_interface=dbus.PROPERTIES_IFACE)
+    except dbus.exceptions.DBusException as e:
+        # sched_scan is unlikely to be supported
+        pass
+
+    if_obj.Set(WPAS_DBUS_IFACE, "MACAddressRandomizationMask",
+               dbus.Dictionary({}, signature='sv'),
+               dbus_interface=dbus.PROPERTIES_IFACE)
+    res = if_obj.Get(WPAS_DBUS_IFACE, "MACAddressRandomizationMask",
+                     dbus_interface=dbus.PROPERTIES_IFACE)
+    if len(res) != 0:
+        logger.info(str(res))
+        raise Exception("Unexpected MACAddressRandomizationMask value")
+
 def test_dbus_scan_busy(dev, apdev):
     """D-Bus scan trigger rejection when busy with previous scan"""
     (bus, wpas_obj, path, if_obj) = prepare_dbus(dev[0])
