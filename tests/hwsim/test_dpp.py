@@ -4799,3 +4799,40 @@ def test_dpp_mud_url_hostapd(dev, apdev):
     dev[0].dpp_auth_init(uri=uri, conf="ap-dpp", configurator=conf_id)
     wait_auth_success(hapd, dev[0], configurator=dev[0], enrollee=hapd)
     update_hapd_config(hapd)
+
+def test_dpp_config_save(dev, apdev, params):
+    """DPP configuration saving"""
+    config = os.path.join(params['logdir'], 'dpp_config_save.conf')
+    run_dpp_config_save(dev, apdev, config, "test", '"test"')
+
+def test_dpp_config_save2(dev, apdev, params):
+    """DPP configuration saving (2)"""
+    config = os.path.join(params['logdir'], 'dpp_config_save2.conf')
+    run_dpp_config_save(dev, apdev, config, "\\u0001*", '012a')
+
+def test_dpp_config_save3(dev, apdev, params):
+    """DPP configuration saving (3)"""
+    config = os.path.join(params['logdir'], 'dpp_config_save3.conf')
+    run_dpp_config_save(dev, apdev, config, "\\u0001*\\u00c2\\u00bc\\u00c3\\u009e\\u00c3\\u00bf", '012ac2bcc39ec3bf')
+
+def run_dpp_config_save(dev, apdev, config, conf_ssid, exp_ssid):
+    with open(config, "w") as f:
+        f.write("update_config=1\n" +
+                "dpp_config_processing=1\n")
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5", config=config)
+    check_dpp_capab(wpas)
+    conf = '{"wi-fi_tech":"infra", "discovery":{"ssid":"' + conf_ssid + '"},"cred":{"akm":"psk","pass":"secret passphrase"}}'
+    dev[1].set("dpp_config_obj_override", conf)
+    dpp_dev = [wpas, dev[1]]
+    run_dpp_qr_code_auth_unicast(dpp_dev, apdev, "prime256v1",
+                                 require_conf_success=True)
+    if "OK" not in wpas.request("SAVE_CONFIG"):
+        raise Exception("Failed to save configuration file")
+    with open(config, "r") as f:
+        data = f.read()
+        logger.info("Saved configuration:\n" + data)
+        if 'ssid=' + exp_ssid + '\n' not in data:
+            raise Exception("SSID not saved")
+        if 'psk="secret passphrase"' not in data:
+            raise Exception("Passphtase not saved")
