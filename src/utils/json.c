@@ -51,7 +51,7 @@ void json_escape_string(char *txt, size_t maxlen, const char *data, size_t len)
 				*txt++ = data[i];
 			} else {
 				txt += os_snprintf(txt, end - txt, "\\u%04x",
-						   data[i]);
+						   (unsigned char) data[i]);
 			}
 			break;
 		}
