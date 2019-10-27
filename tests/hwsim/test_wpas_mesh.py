@@ -1668,17 +1668,21 @@ def test_wpas_mesh_pmksa_caching_ext(dev, apdev):
 
     dev[1].mesh_group_remove()
     check_mesh_group_removed(dev[1])
+    check_mesh_peer_disconnected(dev[0])
     dev[0].dump_monitor()
     dev[1].dump_monitor()
     res = dev[1].get_pmksa(addr0)
     if res is not None:
         raise Exception("Unexpected PMKSA cache entry remaining")
 
+    time.sleep(0.1)
     if "OK" not in dev[1].request("MESH_PMKSA_ADD " + res2):
         raise Exception("MESH_PMKSA_ADD failed")
     dev[1].mesh_group_add(id)
     check_mesh_group_added(dev[1])
     check_mesh_peer_connected(dev[1])
+    check_mesh_peer_connected(dev[0])
+    time.sleep(0.1)
     dev[0].dump_monitor()
     dev[1].dump_monitor()
     pmksa1b = dev[1].get_pmksa(addr0)
