@@ -1242,8 +1242,11 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 		if ((!external && wpa_s->current_bss == NULL) ||
 		    wpa_s->current_ssid == NULL)
 			return -1;
-		if (wpa_s->sme.sae.state != SAE_COMMITTED)
-			return -1;
+		if (wpa_s->sme.sae.state != SAE_COMMITTED) {
+			wpa_printf(MSG_DEBUG,
+				   "SAE: Ignore commit message while waiting for confirm");
+			return 0;
+		}
 		if (groups && groups[0] <= 0)
 			groups = NULL;
 		res = sae_parse_commit(&wpa_s->sme.sae, data, len, NULL, NULL,
