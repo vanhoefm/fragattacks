@@ -118,7 +118,9 @@ On successfully adding QR Code, a bootstrapping info id is returned.
 
 Send provisioning request to enrollee. (conf is ap-dpp if enrollee is an
 AP. conf is sta-dpp if enrollee is a client)
-> dpp_auth_init peer=<qr-code-id> conf=<ap-dpp|sta-dpp> configurator=<configurator-id>
+> dpp_auth_init peer=<qr-code-id> conf=<ap-dpp|sta-dpp> ssid=<SSID hexdump> configurator=<configurator-id>
+or for legacy (PSK/SAE) provisioning for a station Enrollee:
+> dpp_auth_init peer=<qr-code-id> conf=sta-psk ssid=<SSID hexdump> pass=<passphrase hexdump>
 
 The DPP values will be printed in the console. Save this values into the
 config file. If the enrollee is an AP, we need to manually write these
