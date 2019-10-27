@@ -3054,7 +3054,8 @@ static int could_be_psk_mismatch(struct wpa_supplicant *wpa_s, u16 reason_code,
 				 int locally_generated)
 {
 	if (wpa_s->wpa_state != WPA_4WAY_HANDSHAKE ||
-	    !wpa_key_mgmt_wpa_psk(wpa_s->key_mgmt))
+	    !wpa_key_mgmt_wpa_psk(wpa_s->key_mgmt) ||
+	    wpa_key_mgmt_sae(wpa_s->key_mgmt))
 		return 0; /* Not in 4-way handshake with PSK */
 
 	/*
