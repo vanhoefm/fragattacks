@@ -6993,10 +6993,14 @@ static int i802_check_bridge(struct wpa_driver_nl80211_data *drv,
 	wpa_printf(MSG_DEBUG, "nl80211: Adding interface %s into bridge %s",
 		   ifname, brname);
 	if (linux_br_add_if(drv->global->ioctl_sock, brname, ifname) < 0) {
-		wpa_printf(MSG_ERROR, "nl80211: Failed to add interface %s "
-			   "into bridge %s: %s",
+		wpa_printf(MSG_WARNING,
+			   "nl80211: Failed to add interface %s into bridge %s: %s",
 			   ifname, brname, strerror(errno));
-		return -1;
+		/* Try to continue without the interface being in a bridge. This
+		 * may be needed for some cases, e.g., with Open vSwitch, where
+		 * an external component will need to handle bridge
+		 * configuration. */
+		return 0;
 	}
 	bss->added_if_into_bridge = 1;
 
