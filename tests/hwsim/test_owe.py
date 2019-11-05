@@ -414,7 +414,8 @@ def test_owe_limited_group_set_pmf(dev, apdev, params):
     logger.info("Association Response frame status codes: " + str(status))
     if len(status) != 3:
         raise Exception("Unexpected number of Association Response frames")
-    if int(status[0]) != 77 or int(status[1]) != 77 or int(status[2]) != 0:
+    if (int(status[0], base=0) != 77 or int(status[1], base=0) != 77 or
+        int(status[2], base=0) != 0):
         raise Exception("Unexpected Association Response frame status code")
 
 def test_owe_group_negotiation(dev, apdev):
