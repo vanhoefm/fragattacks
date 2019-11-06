@@ -519,6 +519,40 @@ def test_sigma_dut_ap_psk_sha256(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
 
+def test_sigma_dut_ap_psk_deauth(dev, apdev, params):
+    """sigma_dut controlled AP and deauth commands"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_psk_deauth.sigma-hostapd")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-psk,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-PSK,PSK,12345678,PMF,Required")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].connect("test-psk", key_mgmt="WPA-PSK-SHA256",
+                           psk="12345678", ieee80211w="2", scan_freq="2412")
+            addr = dev[0].own_addr()
+            dev[0].dump_monitor()
+
+            sigma_dut_cmd_check("ap_deauth_sta,NAME,AP,sta_mac_address," + addr)
+            ev = dev[0].wait_disconnected()
+            dev[0].dump_monitor()
+            if "locally_generated=1" in ev:
+                raise Exception("Unexpected disconnection reason")
+            dev[0].wait_connected()
+            dev[0].dump_monitor()
+
+            sigma_dut_cmd_check("ap_deauth_sta,NAME,AP,sta_mac_address," + addr + ",disconnect,silent")
+            ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=5)
+            if ev and "locally_generated=1" not in ev:
+                raise Exception("Unexpected disconnection")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
 def test_sigma_dut_eap_ttls(dev, apdev, params):
     """sigma_dut controlled STA and EAP-TTLS parameters"""
     logdir = params['logdir']
