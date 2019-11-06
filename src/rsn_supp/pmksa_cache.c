@@ -277,7 +277,7 @@ pmksa_cache_add_entry(struct rsn_pmksa_cache *pmksa,
  * pmksa_cache_flush - Flush PMKSA cache entries for a specific network
  * @pmksa: Pointer to PMKSA cache data from pmksa_cache_init()
  * @network_ctx: Network configuration context or %NULL to flush all entries
- * @pmk: PMK to match for or %NYLL to match all PMKs
+ * @pmk: PMK to match for or %NULL to match all PMKs
  * @pmk_len: PMK length
  */
 void pmksa_cache_flush(struct rsn_pmksa_cache *pmksa, void *network_ctx,
