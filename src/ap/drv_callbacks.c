@@ -344,6 +344,9 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			} else if (res == WPA_INVALID_MGMT_GROUP_CIPHER) {
 				reason = WLAN_REASON_CIPHER_SUITE_REJECTED;
 				status = WLAN_STATUS_CIPHER_REJECTED_PER_POLICY;
+			} else if (res == WPA_INVALID_PMKID) {
+				reason = WLAN_REASON_INVALID_PMKID;
+				status = WLAN_STATUS_INVALID_PMKID;
 			} else {
 				reason = WLAN_REASON_INVALID_IE;
 				status = WLAN_STATUS_INVALID_IE;
