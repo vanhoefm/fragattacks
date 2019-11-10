@@ -720,13 +720,14 @@ enum hostapd_hw_mode ieee80211_freq_to_chan(int freq, u8 *channel)
  * for HT40 and VHT. DFS channels are not covered.
  * @freq: Frequency (MHz) to convert
  * @sec_channel: 0 = non-HT40, 1 = sec. channel above, -1 = sec. channel below
- * @vht: VHT channel width (CHANWIDTH_*)
+ * @chanwidth: VHT/EDMG channel width (CHANWIDTH_*)
  * @op_class: Buffer for returning operating class
  * @channel: Buffer for returning channel number
  * Returns: hw_mode on success, NUM_HOSTAPD_MODES on failure
  */
 enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
-						   int sec_channel, int vht,
+						   int sec_channel,
+						   int chanwidth,
 						   u8 *op_class, u8 *channel)
 {
 	u8 vht_opclass;
@@ -740,7 +741,7 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 		if ((freq - 2407) % 5)
 			return NUM_HOSTAPD_MODES;
 
-		if (vht)
+		if (chanwidth)
 			return NUM_HOSTAPD_MODES;
 
 		/* 2.407 GHz, channels 1..13 */
@@ -757,7 +758,7 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 	}
 
 	if (freq == 2484) {
-		if (sec_channel || vht)
+		if (sec_channel || chanwidth)
 			return NUM_HOSTAPD_MODES;
 
 		*op_class = 82; /* channel 14 */
@@ -774,7 +775,7 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 		return HOSTAPD_MODE_IEEE80211A;
 	}
 
-	switch (vht) {
+	switch (chanwidth) {
 	case CHANWIDTH_80MHZ:
 		vht_opclass = 128;
 		break;
@@ -875,17 +876,6 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 		return HOSTAPD_MODE_IEEE80211A;
 	}
 
-	/* 56.16 GHz, channel 1..6 */
-	if (freq >= 56160 + 2160 * 1 && freq <= 56160 + 2160 * 6) {
-		if (sec_channel || vht)
-			return NUM_HOSTAPD_MODES;
-
-		*channel = (freq - 56160) / 2160;
-		*op_class = 180;
-
-		return HOSTAPD_MODE_IEEE80211AD;
-	}
-
 	if (freq > 5940 && freq <= 7105) {
 		int bw;
 		u8 idx = (freq - 5940) / 5;
@@ -899,6 +889,48 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 		return HOSTAPD_MODE_IEEE80211A;
 	}
 
+	/* 56.16 GHz, channel 1..6 */
+	if (freq >= 56160 + 2160 * 1 && freq <= 56160 + 2160 * 6) {
+		if (sec_channel)
+			return NUM_HOSTAPD_MODES;
+
+		switch (chanwidth) {
+		case CHANWIDTH_USE_HT:
+		case CHANWIDTH_2160MHZ:
+			*channel = (freq - 56160) / 2160;
+			*op_class = 180;
+			break;
+		case CHANWIDTH_4320MHZ:
+			/* EDMG channels 9 - 13 */
+			if (freq > 56160 + 2160 * 5)
+				return NUM_HOSTAPD_MODES;
+
+			*channel = (freq - 56160) / 2160 + 8;
+			*op_class = 181;
+			break;
+		case CHANWIDTH_6480MHZ:
+			/* EDMG channels 17 - 20 */
+			if (freq > 56160 + 2160 * 4)
+				return NUM_HOSTAPD_MODES;
+
+			*channel = (freq - 56160) / 2160 + 16;
+			*op_class = 182;
+			break;
+		case CHANWIDTH_8640MHZ:
+			/* EDMG channels 25 - 27 */
+			if (freq > 56160 + 2160 * 3)
+				return NUM_HOSTAPD_MODES;
+
+			*channel = (freq - 56160) / 2160 + 24;
+			*op_class = 183;
+			break;
+		default:
+			return NUM_HOSTAPD_MODES;
+		}
+
+		return HOSTAPD_MODE_IEEE80211AD;
+	}
+
 	return NUM_HOSTAPD_MODES;
 }
 
@@ -906,27 +938,39 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 int ieee80211_chaninfo_to_channel(unsigned int freq, enum chan_width chanwidth,
 				  int sec_channel, u8 *op_class, u8 *channel)
 {
-	int vht = CHAN_WIDTH_UNKNOWN;
+	int cw = CHAN_WIDTH_UNKNOWN;
 
 	switch (chanwidth) {
 	case CHAN_WIDTH_UNKNOWN:
 	case CHAN_WIDTH_20_NOHT:
 	case CHAN_WIDTH_20:
 	case CHAN_WIDTH_40:
-		vht = CHANWIDTH_USE_HT;
+		cw = CHANWIDTH_USE_HT;
 		break;
 	case CHAN_WIDTH_80:
-		vht = CHANWIDTH_80MHZ;
+		cw = CHANWIDTH_80MHZ;
 		break;
 	case CHAN_WIDTH_80P80:
-		vht = CHANWIDTH_80P80MHZ;
+		cw = CHANWIDTH_80P80MHZ;
 		break;
 	case CHAN_WIDTH_160:
-		vht = CHANWIDTH_160MHZ;
+		cw = CHANWIDTH_160MHZ;
+		break;
+	case CHAN_WIDTH_2160:
+		cw = CHANWIDTH_2160MHZ;
+		break;
+	case CHAN_WIDTH_4320:
+		cw = CHANWIDTH_4320MHZ;
+		break;
+	case CHAN_WIDTH_6480:
+		cw = CHANWIDTH_6480MHZ;
+		break;
+	case CHAN_WIDTH_8640:
+		cw = CHANWIDTH_8640MHZ;
 		break;
 	}
 
-	if (ieee80211_freq_to_channel_ext(freq, sec_channel, vht, op_class,
+	if (ieee80211_freq_to_channel_ext(freq, sec_channel, cw, op_class,
 					  channel) == NUM_HOSTAPD_MODES) {
 		wpa_printf(MSG_WARNING,
 			   "Cannot determine operating class and channel (freq=%u chanwidth=%d sec_channel=%d)",

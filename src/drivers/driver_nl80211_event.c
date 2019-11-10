@@ -524,6 +524,10 @@ static int calculate_chan_offset(int width, int freq, int cf1, int cf2)
 		break;
 	case CHAN_WIDTH_UNKNOWN:
 	case CHAN_WIDTH_80P80:
+	case CHAN_WIDTH_2160:
+	case CHAN_WIDTH_4320:
+	case CHAN_WIDTH_6480:
+	case CHAN_WIDTH_8640:
 		/* FIXME: implement this */
 		return 0;
 	}
