@@ -579,20 +579,26 @@ static int sswu_curve_param(int group, int *z)
 {
 	switch (group) {
 	case 19:
+		*z = -10;
+		return 0;
 	case 20:
+		*z = -12;
+		return 0;
 	case 21:
-	case 28:
-		*z = -2;
+		*z = -4;
 		return 0;
 	case 25:
 	case 29:
 		*z = -5;
 		return 0;
 	case 26:
-		*z = -11;
+		*z = 31;
+		return 0;
+	case 28:
+		*z = -2;
 		return 0;
 	case 30:
-		*z = 2;
+		*z = 7;
 		return 0;
 	}
 
