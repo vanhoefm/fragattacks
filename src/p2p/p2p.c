@@ -4921,6 +4921,7 @@ int p2p_send_action(struct p2p_data *p2p, unsigned int freq, const u8 *dst,
 	res = p2p->cfg->send_action(p2p->cfg->cb_ctx, freq, dst, src, bssid,
 				    buf, len, wait_time, &scheduled);
 	if (res == 0 && scheduled && p2p->in_listen && freq > 0 &&
+	    p2p->drv_in_listen > 0 &&
 	    (unsigned int) p2p->drv_in_listen != freq) {
 		p2p_dbg(p2p,
 			"Stop listen on %d MHz to allow a frame to be sent immediately on %d MHz",
