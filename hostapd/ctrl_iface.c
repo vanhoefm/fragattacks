@@ -4535,37 +4535,48 @@ static int hostapd_ctrl_check_event_enabled(struct wpa_ctrl_dst *dst,
 }
 
 
-static void hostapd_ctrl_iface_send(struct hostapd_data *hapd, int level,
-				    enum wpa_msg_type type,
-				    const char *buf, size_t len)
+static void hostapd_ctrl_iface_send_internal(int sock, struct dl_list *ctrl_dst,
+					     const char *ifname, int level,
+					     const char *buf, size_t len)
 {
 	struct wpa_ctrl_dst *dst, *next;
-	struct dl_list *ctrl_dst;
 	struct msghdr msg;
-	int idx;
-	struct iovec io[2];
+	int idx, res;
+	struct iovec io[5];
 	char levelstr[10];
-	int s;
 
-	if (type != WPA_MSG_ONLY_GLOBAL) {
-		s = hapd->ctrl_sock;
-		ctrl_dst = &hapd->ctrl_dst;
-	} else {
-		s = hapd->iface->interfaces->global_ctrl_sock;
-		ctrl_dst = &hapd->iface->interfaces->global_ctrl_dst;
-	}
-
-	if (s < 0 || dl_list_empty(ctrl_dst))
+	if (sock < 0 || dl_list_empty(ctrl_dst))
 		return;
 
-	os_snprintf(levelstr, sizeof(levelstr), "<%d>", level);
-	io[0].iov_base = levelstr;
-	io[0].iov_len = os_strlen(levelstr);
-	io[1].iov_base = (char *) buf;
-	io[1].iov_len = len;
+	res = os_snprintf(levelstr, sizeof(levelstr), "<%d>", level);
+	if (os_snprintf_error(sizeof(levelstr), res))
+		return;
+	idx = 0;
+	if (ifname) {
+#ifdef CONFIG_CTRL_IFACE_UDP
+		io[idx].iov_base = "IFACE=";
+		io[idx].iov_len = 6;
+#else /* CONFIG_CTRL_IFACE_UDP */
+		io[idx].iov_base = "IFNAME=";
+		io[idx].iov_len = 7;
+#endif /* CONFIG_CTRL_IFACE_UDP */
+		idx++;
+		io[idx].iov_base = (char *) ifname;
+		io[idx].iov_len = os_strlen(ifname);
+		idx++;
+		io[idx].iov_base = " ";
+		io[idx].iov_len = 1;
+		idx++;
+	}
+	io[idx].iov_base = levelstr;
+	io[idx].iov_len = os_strlen(levelstr);
+	idx++;
+	io[idx].iov_base = (char *) buf;
+	io[idx].iov_len = len;
+	idx++;
 	os_memset(&msg, 0, sizeof(msg));
 	msg.msg_iov = io;
-	msg.msg_iovlen = 2;
+	msg.msg_iovlen = idx;
 
 	idx = 0;
 	dl_list_for_each_safe(dst, next, ctrl_dst, struct wpa_ctrl_dst, list) {
@@ -4575,27 +4586,42 @@ static void hostapd_ctrl_iface_send(struct hostapd_data *hapd, int level,
 				       &dst->addr, dst->addrlen);
 			msg.msg_name = &dst->addr;
 			msg.msg_namelen = dst->addrlen;
-			if (sendmsg(s, &msg, 0) < 0) {
+			if (sendmsg(sock, &msg, 0) < 0) {
 				int _errno = errno;
 				wpa_printf(MSG_INFO, "CTRL_IFACE monitor[%d]: "
 					   "%d - %s",
 					   idx, errno, strerror(errno));
 				dst->errors++;
 				if (dst->errors > 10 || _errno == ENOENT) {
-					if (type != WPA_MSG_ONLY_GLOBAL)
-						hostapd_ctrl_iface_detach(
-							hapd, &dst->addr,
-							dst->addrlen);
-					else
-						hostapd_global_ctrl_iface_detach(
-							hapd->iface->interfaces,
-							&dst->addr,
-							dst->addrlen);
+					ctrl_iface_detach(ctrl_dst,
+							  &dst->addr,
+							  dst->addrlen);
 				}
 			} else
 				dst->errors = 0;
 		}
 		idx++;
+	}
+}
+
+
+static void hostapd_ctrl_iface_send(struct hostapd_data *hapd, int level,
+				    enum wpa_msg_type type,
+				    const char *buf, size_t len)
+{
+	if (type != WPA_MSG_NO_GLOBAL) {
+		hostapd_ctrl_iface_send_internal(
+			hapd->iface->interfaces->global_ctrl_sock,
+			&hapd->iface->interfaces->global_ctrl_dst,
+			type != WPA_MSG_PER_INTERFACE ?
+			NULL : hapd->conf->iface,
+			level, buf, len);
+	}
+
+	if (type != WPA_MSG_ONLY_GLOBAL) {
+		hostapd_ctrl_iface_send_internal(
+			hapd->ctrl_sock, &hapd->ctrl_dst,
+			NULL, level, buf, len);
 	}
 }
 
