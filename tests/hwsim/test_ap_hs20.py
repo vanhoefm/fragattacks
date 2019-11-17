@@ -5437,7 +5437,7 @@ def test_ap_hs20_cred_and_no_roaming_consortium(dev, apdev):
                                  'domain': "example.com",
                                  'roaming_consortium': "112234",
                                  'eap': 'TTLS'})
-    interworking_select(dev[0], bssid, "home", freq=2412, no_match=True)
+    interworking_select(dev[0], bssid, "home", freq=2412)
 
 def test_ap_hs20_interworking_oom(dev, apdev):
     """Hotspot 2.0 network selection and OOM"""
