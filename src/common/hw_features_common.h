@@ -14,11 +14,13 @@
 
 struct hostapd_channel_data * hw_get_channel_chan(struct hostapd_hw_modes *mode,
 						  int chan, int *freq);
-struct hostapd_channel_data * hw_get_channel_freq(struct hostapd_hw_modes *mode,
-						  int freq, int *chan);
+struct hostapd_channel_data *
+hw_get_channel_freq(enum hostapd_hw_mode mode, int freq, int *chan,
+		    struct hostapd_hw_modes *hw_features, int num_hw_features);
 
 int hw_get_freq(struct hostapd_hw_modes *mode, int chan);
-int hw_get_chan(struct hostapd_hw_modes *mode, int freq);
+int hw_get_chan(enum hostapd_hw_mode mode, int freq,
+		struct hostapd_hw_modes *hw_features, int num_hw_features);
 
 int allowed_ht40_channel_pair(struct hostapd_hw_modes *mode, int pri_chan,
 			      int sec_chan);
