@@ -922,9 +922,7 @@ int hostapd_acs_completed(struct hostapd_iface *iface, int err)
 	case HOSTAPD_CHAN_VALID:
 		wpa_msg(iface->bss[0]->msg_ctx, MSG_INFO,
 			ACS_EVENT_COMPLETED "freq=%d channel=%d",
-			hostapd_hw_get_freq(iface->bss[0],
-					    iface->conf->channel),
-			iface->conf->channel);
+			iface->freq, iface->conf->channel);
 		break;
 	case HOSTAPD_CHAN_ACS:
 		wpa_printf(MSG_ERROR, "ACS error - reported complete, but no result available");
@@ -964,7 +962,6 @@ out:
 int hostapd_select_hw_mode(struct hostapd_iface *iface)
 {
 	int i;
-	int freq = -1;
 
 	if (iface->num_hw_features < 1)
 		return -1;
@@ -981,15 +978,13 @@ int hostapd_select_hw_mode(struct hostapd_iface *iface)
 	}
 
 	iface->current_mode = NULL;
-	if (iface->conf->channel && iface->conf->op_class)
-		freq = ieee80211_chan_to_freq(NULL, iface->conf->op_class,
-					      iface->conf->channel);
 	for (i = 0; i < iface->num_hw_features; i++) {
 		struct hostapd_hw_modes *mode = &iface->hw_features[i];
 		if (mode->mode == iface->conf->hw_mode) {
-			if (freq > 0 && !hw_get_chan(mode->mode, freq,
-						     iface->hw_features,
-						     iface->num_hw_features))
+			if (iface->freq > 0 &&
+			    !hw_get_chan(mode->mode, iface->freq,
+					 iface->hw_features,
+					 iface->num_hw_features))
 				continue;
 			iface->current_mode = mode;
 			break;

@@ -862,6 +862,7 @@ static void acs_study(struct hostapd_iface *iface)
 	}
 
 	iface->conf->channel = ideal_chan->chan;
+	iface->freq = ideal_chan->freq;
 
 	if (iface->conf->ieee80211ac || iface->conf->ieee80211ax)
 		acs_adjust_center_freq(iface);
