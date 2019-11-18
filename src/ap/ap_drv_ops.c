@@ -886,6 +886,7 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 	int ret, i, acs_ch_list_all = 0;
 	struct hostapd_hw_modes *mode;
 	int *freq_list = NULL;
+	enum hostapd_hw_mode selected_mode;
 
 	if (hapd->driver == NULL || hapd->driver->do_acs == NULL)
 		return 0;
@@ -900,29 +901,18 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 	if (!hapd->iface->conf->acs_ch_list.num)
 		acs_ch_list_all = 1;
 
-	mode = hapd->iface->current_mode;
-	if (mode) {
-		for (i = 0; i < mode->num_channels; i++) {
-			struct hostapd_channel_data *chan = &mode->channels[i];
-			if (!acs_ch_list_all &&
-			    !freq_range_list_includes(
-				    &hapd->iface->conf->acs_ch_list,
-				    chan->chan))
-				continue;
-			if (hapd->iface->conf->acs_exclude_dfs &&
-			    (chan->flag & HOSTAPD_CHAN_RADAR))
-				continue;
-			if (!(chan->flag & HOSTAPD_CHAN_DISABLED)) {
-				int_array_add_unique(&freq_list, chan->freq);
-			}
-		}
-	} else {
-		for (i = 0; i < hapd->iface->num_hw_features; i++) {
-			mode = &hapd->iface->hw_features[i];
-			hostapd_get_hw_mode_any_channels(hapd, mode,
-							 acs_ch_list_all,
-							 &freq_list);
-		}
+	if (hapd->iface->current_mode)
+		selected_mode = hapd->iface->current_mode->mode;
+	else
+		selected_mode = HOSTAPD_MODE_IEEE80211ANY;
+
+	for (i = 0; i < hapd->iface->num_hw_features; i++) {
+		mode = &hapd->iface->hw_features[i];
+		if (selected_mode != HOSTAPD_MODE_IEEE80211ANY &&
+		    selected_mode != mode->mode)
+			continue;
+		hostapd_get_hw_mode_any_channels(hapd, mode, acs_ch_list_all,
+						 &freq_list);
 	}
 
 	params.freq_list = freq_list;
