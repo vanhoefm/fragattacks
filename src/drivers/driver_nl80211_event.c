@@ -1740,26 +1740,57 @@ static enum hostapd_hw_mode get_qca_hw_mode(u8 hw_mode)
 }
 
 
+static unsigned int chan_2ghz_or_5ghz_to_freq(u8 chan)
+{
+	if (chan >= 1 && chan <= 13)
+		return 2407 + 5 * chan;
+	if (chan == 14)
+		return 2484;
+	if (chan >= 36 && chan <= 169)
+		return 5000 + 5 * chan;
+
+	return 0;
+}
+
+
 static void qca_nl80211_acs_select_ch(struct wpa_driver_nl80211_data *drv,
 				   const u8 *data, size_t len)
 {
 	struct nlattr *tb[QCA_WLAN_VENDOR_ATTR_ACS_MAX + 1];
 	union wpa_event_data event;
+	u8 chan;
 
 	wpa_printf(MSG_DEBUG,
 		   "nl80211: ACS channel selection vendor event received");
 
 	if (nla_parse(tb, QCA_WLAN_VENDOR_ATTR_ACS_MAX,
 		      (struct nlattr *) data, len, NULL) ||
-	    !tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_CHANNEL] ||
-	    !tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_CHANNEL])
+	    (!tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_FREQUENCY] &&
+	     !tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_CHANNEL]) ||
+	    (!tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_FREQUENCY] &&
+	     !tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_CHANNEL]))
 		return;
 
 	os_memset(&event, 0, sizeof(event));
-	event.acs_selected_channels.pri_channel =
-		nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_CHANNEL]);
-	event.acs_selected_channels.sec_channel =
-		nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_CHANNEL]);
+	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_FREQUENCY]) {
+		event.acs_selected_channels.pri_freq = nla_get_u32(
+			tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_FREQUENCY]);
+	} else {
+		chan = nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_CHANNEL]);
+		event.acs_selected_channels.pri_freq =
+			chan_2ghz_or_5ghz_to_freq(chan);
+	}
+
+	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_FREQUENCY]) {
+		event.acs_selected_channels.sec_freq = nla_get_u32(
+			tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_FREQUENCY]);
+	} else {
+		chan = nla_get_u8(
+			tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_CHANNEL]);
+		event.acs_selected_channels.sec_freq =
+			chan_2ghz_or_5ghz_to_freq(chan);
+	}
+
 	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG0_CENTER_CHANNEL])
 		event.acs_selected_channels.vht_seg0_center_ch =
 			nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG0_CENTER_CHANNEL]);
@@ -1784,9 +1815,9 @@ static void qca_nl80211_acs_select_ch(struct wpa_driver_nl80211_data *drv,
 	}
 
 	wpa_printf(MSG_INFO,
-		   "nl80211: ACS Results: PCH: %d SCH: %d BW: %d VHT0: %d VHT1: %d HW_MODE: %d",
-		   event.acs_selected_channels.pri_channel,
-		   event.acs_selected_channels.sec_channel,
+		   "nl80211: ACS Results: PFreq: %d SFreq: %d BW: %d VHT0: %d VHT1: %d HW_MODE: %d",
+		   event.acs_selected_channels.pri_freq,
+		   event.acs_selected_channels.sec_freq,
 		   event.acs_selected_channels.ch_width,
 		   event.acs_selected_channels.vht_seg0_center_ch,
 		   event.acs_selected_channels.vht_seg1_center_ch,

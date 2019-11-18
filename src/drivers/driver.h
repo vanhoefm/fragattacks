@@ -5607,8 +5607,8 @@ union wpa_event_data {
 
 	/**
 	 * struct acs_selected_channels - Data for EVENT_ACS_CHANNEL_SELECTED
-	 * @pri_channel: Selected primary channel
-	 * @sec_channel: Selected secondary channel
+	 * @pri_freq: Selected primary frequency
+	 * @sec_freq: Selected secondary frequency
 	 * @vht_seg0_center_ch: VHT mode Segment0 center channel
 	 * @vht_seg1_center_ch: VHT mode Segment1 center channel
 	 * @ch_width: Selected Channel width by driver. Driver may choose to
@@ -5617,8 +5617,8 @@ union wpa_event_data {
 	 * hw_mode: Selected band (used with hw_mode=any)
 	 */
 	struct acs_selected_channels {
-		u8 pri_channel;
-		u8 sec_channel;
+		unsigned int pri_freq;
+		unsigned int sec_freq;
 		u8 vht_seg0_center_ch;
 		u8 vht_seg1_center_ch;
 		u16 ch_width;

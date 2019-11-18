@@ -17,6 +17,7 @@
 #include "common/wpa_ctrl.h"
 #include "common/dpp.h"
 #include "common/sae.h"
+#include "common/hw_features_common.h"
 #include "crypto/random.h"
 #include "p2p/p2p.h"
 #include "wps/wps.h"
@@ -935,6 +936,7 @@ void hostapd_acs_channel_selected(struct hostapd_data *hapd,
 {
 	int ret, i;
 	int err = 0;
+	struct hostapd_channel_data *pri_chan;
 
 	if (hapd->iconf->channel) {
 		wpa_printf(MSG_INFO, "ACS: Channel was already set to %d",
@@ -961,24 +963,35 @@ void hostapd_acs_channel_selected(struct hostapd_data *hapd,
 		}
 	}
 
-	hapd->iface->freq = hostapd_hw_get_freq(hapd, acs_res->pri_channel);
+	hapd->iface->freq = acs_res->pri_freq;
 
-	if (!acs_res->pri_channel) {
+	if (!acs_res->pri_freq) {
 		hostapd_logger(hapd, NULL, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_WARNING,
 			       "driver switched to bad channel");
 		err = 1;
 		goto out;
 	}
+	pri_chan = hw_get_channel_freq(hapd->iface->current_mode->mode,
+				       acs_res->pri_freq, NULL,
+				       hapd->iface->hw_features,
+				       hapd->iface->num_hw_features);
+	if (!pri_chan) {
+		wpa_printf(MSG_ERROR,
+			   "ACS: Could not determine primary channel number from pri_freq %u",
+			   acs_res->pri_freq);
+		err = 1;
+		goto out;
+	}
 
-	hapd->iconf->channel = acs_res->pri_channel;
+	hapd->iconf->channel = pri_chan->chan;
 	hapd->iconf->acs = 1;
 
-	if (acs_res->sec_channel == 0)
+	if (acs_res->sec_freq == 0)
 		hapd->iconf->secondary_channel = 0;
-	else if (acs_res->sec_channel < acs_res->pri_channel)
+	else if (acs_res->sec_freq < acs_res->pri_freq)
 		hapd->iconf->secondary_channel = -1;
-	else if (acs_res->sec_channel > acs_res->pri_channel)
+	else if (acs_res->sec_freq > acs_res->pri_freq)
 		hapd->iconf->secondary_channel = 1;
 	else {
 		wpa_printf(MSG_ERROR, "Invalid secondary channel!");
