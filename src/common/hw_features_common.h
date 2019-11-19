@@ -22,12 +22,13 @@ int hw_get_freq(struct hostapd_hw_modes *mode, int chan);
 int hw_get_chan(enum hostapd_hw_mode mode, int freq,
 		struct hostapd_hw_modes *hw_features, int num_hw_features);
 
-int allowed_ht40_channel_pair(struct hostapd_hw_modes *mode, int pri_chan,
-			      int sec_chan);
+int allowed_ht40_channel_pair(enum hostapd_hw_mode mode,
+			      struct hostapd_channel_data *p_chan,
+			      struct hostapd_channel_data *s_chan);
 void get_pri_sec_chan(struct wpa_scan_res *bss, int *pri_chan, int *sec_chan);
-int check_40mhz_5g(struct hostapd_hw_modes *mode,
-		   struct wpa_scan_results *scan_res, int pri_chan,
-		   int sec_chan);
+int check_40mhz_5g(struct wpa_scan_results *scan_res,
+		   struct hostapd_channel_data *pri_chan,
+		   struct hostapd_channel_data *sec_chan);
 int check_40mhz_2g4(struct hostapd_hw_modes *mode,
 		    struct wpa_scan_results *scan_res, int pri_chan,
 		    int sec_chan);

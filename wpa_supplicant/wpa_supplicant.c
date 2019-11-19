@@ -2382,8 +2382,7 @@ void ibss_mesh_setup_freq(struct wpa_supplicant *wpa_s,
 			return;
 		}
 
-		res = check_40mhz_5g(mode, scan_res, pri_chan->chan,
-				     sec_chan->chan);
+		res = check_40mhz_5g(scan_res, pri_chan, sec_chan);
 		switch (res) {
 		case 0:
 			/* Back to HT20 */

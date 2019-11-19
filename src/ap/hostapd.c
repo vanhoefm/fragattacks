@@ -1915,7 +1915,7 @@ static int hostapd_setup_interface_complete_sync(struct hostapd_iface *iface,
 		goto fail;
 
 	wpa_printf(MSG_DEBUG, "Completing interface initialization");
-	if (iface->conf->channel) {
+	if (iface->freq) {
 #ifdef NEED_AP_MLME
 		int res;
 #endif /* NEED_AP_MLME */

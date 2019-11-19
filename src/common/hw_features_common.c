@@ -94,19 +94,22 @@ int hw_get_chan(enum hostapd_hw_mode mode, int freq,
 }
 
 
-int allowed_ht40_channel_pair(struct hostapd_hw_modes *mode, int pri_chan,
-			      int sec_chan)
+int allowed_ht40_channel_pair(enum hostapd_hw_mode mode,
+			      struct hostapd_channel_data *p_chan,
+			      struct hostapd_channel_data *s_chan)
 {
 	int ok, first;
 	int allowed[] = { 36, 44, 52, 60, 100, 108, 116, 124, 132, 140,
 			  149, 157, 165, 184, 192 };
 	size_t k;
-	struct hostapd_channel_data *p_chan, *s_chan;
-	const int ht40_plus = pri_chan < sec_chan;
+	int ht40_plus, pri_chan, sec_chan;
 
-	p_chan = hw_get_channel_chan(mode, pri_chan, NULL);
-	if (!p_chan)
+	if (!p_chan || !s_chan)
 		return 0;
+	pri_chan = p_chan->chan;
+	sec_chan = s_chan->chan;
+
+	ht40_plus = pri_chan < sec_chan;
 
 	if (pri_chan == sec_chan || !sec_chan) {
 		if (chan_pri_allowed(p_chan))
@@ -117,13 +120,9 @@ int allowed_ht40_channel_pair(struct hostapd_hw_modes *mode, int pri_chan,
 		return 0;
 	}
 
-	s_chan = hw_get_channel_chan(mode, sec_chan, NULL);
-	if (!s_chan)
-		return 0;
-
 	wpa_printf(MSG_DEBUG,
-		   "HT40: control channel: %d  secondary channel: %d",
-		   pri_chan, sec_chan);
+		   "HT40: control channel: %d (%d MHz), secondary channel: %d (%d MHz)",
+		   pri_chan, p_chan->freq, sec_chan, s_chan->freq);
 
 	/* Verify that HT40 secondary channel is an allowed 20 MHz
 	 * channel */
@@ -141,7 +140,7 @@ int allowed_ht40_channel_pair(struct hostapd_hw_modes *mode, int pri_chan,
 	 * 2.4 GHz rules allow all cases where the secondary channel fits into
 	 * the list of allowed channels (already checked above).
 	 */
-	if (mode->mode != HOSTAPD_MODE_IEEE80211A)
+	if (mode != HOSTAPD_MODE_IEEE80211A)
 		return 1;
 
 	first = pri_chan < sec_chan ? pri_chan : sec_chan;
@@ -186,21 +185,18 @@ void get_pri_sec_chan(struct wpa_scan_res *bss, int *pri_chan, int *sec_chan)
 }
 
 
-int check_40mhz_5g(struct hostapd_hw_modes *mode,
-		   struct wpa_scan_results *scan_res, int pri_chan,
-		   int sec_chan)
+int check_40mhz_5g(struct wpa_scan_results *scan_res,
+		   struct hostapd_channel_data *pri_chan,
+		   struct hostapd_channel_data *sec_chan)
 {
-	int pri_freq, sec_freq, pri_bss, sec_bss;
+	int pri_bss, sec_bss;
 	int bss_pri_chan, bss_sec_chan;
 	size_t i;
 	int match;
 
-	if (!mode || !scan_res || !pri_chan || !sec_chan ||
-	    pri_chan == sec_chan)
+	if (!scan_res || !pri_chan || !sec_chan ||
+	    pri_chan->freq == sec_chan->freq)
 		return 0;
-
-	pri_freq = hw_get_freq(mode, pri_chan);
-	sec_freq = hw_get_freq(mode, sec_chan);
 
 	/*
 	 * Switch PRI/SEC channels if Beacons were detected on selected SEC
@@ -209,9 +205,9 @@ int check_40mhz_5g(struct hostapd_hw_modes *mode,
 	pri_bss = sec_bss = 0;
 	for (i = 0; i < scan_res->num; i++) {
 		struct wpa_scan_res *bss = scan_res->res[i];
-		if (bss->freq == pri_freq)
+		if (bss->freq == pri_chan->freq)
 			pri_bss++;
-		else if (bss->freq == sec_freq)
+		else if (bss->freq == sec_chan->freq)
 			sec_bss++;
 	}
 	if (sec_bss && !pri_bss) {
@@ -229,8 +225,8 @@ int check_40mhz_5g(struct hostapd_hw_modes *mode,
 	for (i = 0; i < scan_res->num; i++) {
 		struct wpa_scan_res *bss = scan_res->res[i];
 		get_pri_sec_chan(bss, &bss_pri_chan, &bss_sec_chan);
-		if (pri_chan == bss_pri_chan &&
-		    sec_chan == bss_sec_chan) {
+		if (pri_chan->chan == bss_pri_chan &&
+		    sec_chan->chan == bss_sec_chan) {
 			match = 1;
 			break;
 		}
@@ -239,8 +235,8 @@ int check_40mhz_5g(struct hostapd_hw_modes *mode,
 		for (i = 0; i < scan_res->num; i++) {
 			struct wpa_scan_res *bss = scan_res->res[i];
 			get_pri_sec_chan(bss, &bss_pri_chan, &bss_sec_chan);
-			if (pri_chan == bss_sec_chan &&
-			    sec_chan == bss_pri_chan) {
+			if (pri_chan->chan == bss_sec_chan &&
+			    sec_chan->chan == bss_pri_chan) {
 				wpa_printf(MSG_INFO, "Switch own primary and "
 					   "secondary channel due to BSS "
 					   "overlap with " MACSTR,
