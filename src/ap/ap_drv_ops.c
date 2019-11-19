@@ -950,6 +950,7 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 	}
 
 	ret = hapd->driver->do_acs(hapd->drv_priv, &params);
+	os_free(freq_list);
 
 	return ret;
 }
