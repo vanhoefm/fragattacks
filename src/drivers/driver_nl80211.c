@@ -10157,6 +10157,48 @@ static int hw_mode_to_qca_acs(enum hostapd_hw_mode hw_mode)
 }
 
 
+static int add_acs_ch_list(struct nl_msg *msg, const int *freq_list)
+{
+	int num_channels = 0, num_freqs;
+	u8 *ch_list;
+	enum hostapd_hw_mode hw_mode;
+	int ret = 0;
+	int i;
+
+	if (!freq_list)
+		return 0;
+
+	num_freqs = int_array_len(freq_list);
+	ch_list = os_malloc(sizeof(u8) * num_freqs);
+	if (!ch_list)
+		return -1;
+
+	for (i = 0; i < num_freqs; i++) {
+		const int freq = freq_list[i];
+
+		if (freq == 0)
+			break;
+		/* Send 2.4 GHz and 5 GHz channels with
+		 * QCA_WLAN_VENDOR_ATTR_ACS_CH_LIST to maintain backwards
+		 * compatibility.
+		 */
+		if (!(freq >= 2412 && freq <= 2484) &&
+		    !(freq >= 5180 && freq <= 5900))
+			continue;
+		hw_mode = ieee80211_freq_to_chan(freq, &ch_list[num_channels]);
+		if (hw_mode != NUM_HOSTAPD_MODES)
+			num_channels++;
+	}
+
+	if (num_channels)
+		ret = nla_put(msg, QCA_WLAN_VENDOR_ATTR_ACS_CH_LIST,
+			      num_channels, ch_list);
+
+	os_free(ch_list);
+	return ret;
+}
+
+
 static int add_acs_freq_list(struct nl_msg *msg, const int *freq_list)
 {
 	int i, len, ret;
@@ -10204,9 +10246,7 @@ static int wpa_driver_do_acs(void *priv, struct drv_acs_params *params)
 	     nla_put_flag(msg, QCA_WLAN_VENDOR_ATTR_ACS_VHT_ENABLED)) ||
 	    nla_put_u16(msg, QCA_WLAN_VENDOR_ATTR_ACS_CHWIDTH,
 			params->ch_width) ||
-	    (params->ch_list_len &&
-	     nla_put(msg, QCA_WLAN_VENDOR_ATTR_ACS_CH_LIST, params->ch_list_len,
-		     params->ch_list)) ||
+	    add_acs_ch_list(msg, params->freq_list) ||
 	    add_acs_freq_list(msg, params->freq_list)) {
 		nlmsg_free(msg);
 		return -ENOBUFS;
@@ -10214,9 +10254,9 @@ static int wpa_driver_do_acs(void *priv, struct drv_acs_params *params)
 	nla_nest_end(msg, data);
 
 	wpa_printf(MSG_DEBUG,
-		   "nl80211: ACS Params: HW_MODE: %d HT: %d HT40: %d VHT: %d BW: %d CH_LIST_LEN: %u",
+		   "nl80211: ACS Params: HW_MODE: %d HT: %d HT40: %d VHT: %d BW: %d",
 		   params->hw_mode, params->ht_enabled, params->ht40_enabled,
-		   params->vht_enabled, params->ch_width, params->ch_list_len);
+		   params->vht_enabled, params->ch_width);
 
 	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
 	if (ret) {

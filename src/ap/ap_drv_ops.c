@@ -884,8 +884,6 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 {
 	struct drv_acs_params params;
 	int ret, i, acs_ch_list_all = 0;
-	u8 *channels = NULL;
-	unsigned int num_channels = 0;
 	struct hostapd_hw_modes *mode;
 	int *freq_list = NULL;
 
@@ -904,10 +902,6 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 
 	mode = hapd->iface->current_mode;
 	if (mode) {
-		channels = os_malloc(mode->num_channels);
-		if (channels == NULL)
-			return -1;
-
 		for (i = 0; i < mode->num_channels; i++) {
 			struct hostapd_channel_data *chan = &mode->channels[i];
 			if (!acs_ch_list_all &&
@@ -919,7 +913,6 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 			    (chan->flag & HOSTAPD_CHAN_RADAR))
 				continue;
 			if (!(chan->flag & HOSTAPD_CHAN_DISABLED)) {
-				channels[num_channels++] = chan->chan;
 				int_array_add_unique(&freq_list, chan->freq);
 			}
 		}
@@ -932,8 +925,6 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 		}
 	}
 
-	params.ch_list = channels;
-	params.ch_list_len = num_channels;
 	params.freq_list = freq_list;
 
 	params.ht_enabled = !!(hapd->iface->conf->ieee80211n);
@@ -959,7 +950,6 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 	}
 
 	ret = hapd->driver->do_acs(hapd->drv_priv, &params);
-	os_free(channels);
 
 	return ret;
 }
