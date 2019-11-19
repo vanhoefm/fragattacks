@@ -2169,7 +2169,6 @@ SM_STATE(WPA_PTK, PTKSTART)
 			wpa_printf(MSG_DEBUG,
 				   "FT: No PMKID in message 1/4 when using FT protocol");
 			pmkid = NULL;
-			pmkid_len = 0;
 #endif /* CONFIG_IEEE80211R_AP */
 #ifdef CONFIG_SAE
 		} else if (wpa_key_mgmt_sae(sm->wpa_key_mgmt)) {
@@ -2199,6 +2198,8 @@ SM_STATE(WPA_PTK, PTKSTART)
 				    &pmkid[2 + RSN_SELECTOR_LEN], PMKID_LEN);
 		}
 	}
+	if (!pmkid)
+		pmkid_len = 0;
 	wpa_send_eapol(sm->wpa_auth, sm,
 		       WPA_KEY_INFO_ACK | WPA_KEY_INFO_KEY_TYPE, NULL,
 		       sm->ANonce, pmkid, pmkid_len, 0, 0);
