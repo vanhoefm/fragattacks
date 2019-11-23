@@ -196,9 +196,14 @@ def show_progress(scr):
                         logger.info("VM[%d] kernel panic" % i)
                         updated = True
                     if test_queue:
-                        scr.addstr("unexpected exit")
-                        logger.info("VM[%d] unexpected exit" % i)
-                        updated = True
+                        num_vm = 0
+                        for i in range(num_servers):
+                            if vm[i]['proc']:
+                                num_vm += 1
+                        if len(test_queue) > num_vm:
+                            scr.addstr("unexpected exit")
+                            logger.info("VM[%d] unexpected exit" % i)
+                            updated = True
                 continue
 
             running = True
