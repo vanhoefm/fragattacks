@@ -291,10 +291,11 @@ int wmm_process_tspec(struct wmm_tspec_element *tspec)
 
 static void wmm_addts_req(struct hostapd_data *hapd,
 			  const struct ieee80211_mgmt *mgmt,
-			  struct wmm_tspec_element *tspec, size_t len)
+			  const struct wmm_tspec_element *tspec, size_t len)
 {
 	const u8 *end = ((const u8 *) mgmt) + len;
 	int res;
+	struct wmm_tspec_element tspec_resp;
 
 	if ((const u8 *) (tspec + 1) > end) {
 		wpa_printf(MSG_DEBUG, "WMM: TSPEC overflow in ADDTS Request");
@@ -306,10 +307,11 @@ static void wmm_addts_req(struct hostapd_data *hapd,
 		   mgmt->u.action.u.wmm_action.dialog_token,
 		   MAC2STR(mgmt->sa));
 
-	res = wmm_process_tspec(tspec);
+	os_memcpy(&tspec_resp, tspec, sizeof(struct wmm_tspec_element));
+	res = wmm_process_tspec(&tspec_resp);
 	wpa_printf(MSG_DEBUG, "WMM: ADDTS processing result: %d", res);
 
-	wmm_send_action(hapd, mgmt->sa, tspec, WMM_ACTION_CODE_ADDTS_RESP,
+	wmm_send_action(hapd, mgmt->sa, &tspec_resp, WMM_ACTION_CODE_ADDTS_RESP,
 			mgmt->u.action.u.wmm_action.dialog_token, res);
 }
 
