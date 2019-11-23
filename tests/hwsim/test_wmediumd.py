@@ -465,10 +465,7 @@ def _test_wmediumd_path_rann(dev, apdev):
         dev[i].dump_monitor()
 
 def test_wmediumd_scan_only_one(dev, apdev, params):
-    """
-    Test that scanning with a single active AP only returns that one
-    (with wmediumd enabled)
-    """
+    """Test that scanning with a single active AP only returns that one (wmediund)"""
     fd, fn = tempfile.mkstemp()
     try:
         f = os.fdopen(fd, 'w')
