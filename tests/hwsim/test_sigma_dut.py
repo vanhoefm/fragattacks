@@ -73,7 +73,7 @@ def sigma_dut_cmd_check(cmd, port=9000, timeout=2):
     return res
 
 def start_sigma_dut(ifname, debug=False, hostapd_logdir=None, cert_path=None,
-                    bridge=None):
+                    bridge=None, sae_h2e=False):
     check_sigma_dut()
     cmd = ['./sigma_dut',
            '-M', ifname,
@@ -90,6 +90,8 @@ def start_sigma_dut(ifname, debug=False, hostapd_logdir=None, cert_path=None,
         cmd += ['-C', cert_path]
     if bridge:
         cmd += ['-b', bridge]
+    if sae_h2e:
+        cmd += ['-2']
     sigma = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
     for i in range(20):
@@ -3273,3 +3275,197 @@ def test_sigma_dut_eap_ttls_uosc_ca_mistrust(dev, apdev, params):
         dev[0].dump_monitor()
     finally:
         stop_sigma_dut(sigma)
+
+def start_sae_pwe_ap(apdev, sae_pwe):
+    ssid = "test-sae"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params["ieee80211w"] = "2"
+    params['sae_groups'] = '19'
+    params['sae_pwe'] = str(sae_pwe)
+    return hostapd.add_ap(apdev, params)
+
+def connect_sae_pwe_sta(dev, ifname, extra=None):
+    dev.dump_monitor()
+    sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+    cmd = "sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2" % (ifname, "test-sae", "12345678")
+    if extra:
+        cmd += "," + extra
+    sigma_dut_cmd_check(cmd)
+    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
+    sigma_dut_wait_connected(ifname)
+    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+    dev.wait_disconnected()
+    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    dev.dump_monitor()
+
+def no_connect_sae_pwe_sta(dev, ifname, extra=None):
+    dev.dump_monitor()
+    sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+    cmd = "sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2" % (ifname, "test-sae", "12345678")
+    if extra:
+        cmd += "," + extra
+    sigma_dut_cmd_check(cmd)
+    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
+    ev = dev.wait_event(["CTRL-EVENT-CONNECTED",
+                         "CTRL-EVENT-NETWORK-NOT-FOUND"], timeout=10)
+    if ev is None or "CTRL-EVENT-CONNECTED" in ev:
+        raise Exception("Unexpected connection result")
+    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    dev.dump_monitor()
+
+def test_sigma_dut_sae_h2e(dev, apdev):
+    """sigma_dut controlled SAE H2E association (AP using loop+H2E)"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    start_sae_pwe_ap(apdev[0], 2)
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, sae_h2e=True, debug=True)
+    try:
+        connect_sae_pwe_sta(dev[0], ifname)
+        connect_sae_pwe_sta(dev[0], ifname, extra="sae_pwe,h2e")
+        connect_sae_pwe_sta(dev[0], ifname, extra="sae_pwe,loop")
+        res = sigma_dut_cmd("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,sae_pwe,unknown" % (ifname, "test-sae", "12345678"))
+        if res != "status,ERROR,errorCode,Unsupported sae_pwe value":
+            raise Exception("Unexpected error result: " + res)
+    finally:
+        stop_sigma_dut(sigma)
+
+def test_sigma_dut_sae_h2e_ap_loop(dev, apdev):
+    """sigma_dut controlled SAE H2E association (AP using loop-only)"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    start_sae_pwe_ap(apdev[0], 0)
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, sae_h2e=True, debug=True)
+    try:
+        connect_sae_pwe_sta(dev[0], ifname)
+        connect_sae_pwe_sta(dev[0], ifname, extra="sae_pwe,loop")
+        no_connect_sae_pwe_sta(dev[0], ifname, extra="sae_pwe,h2e")
+    finally:
+        stop_sigma_dut(sigma)
+
+def test_sigma_dut_sae_h2e_ap_h2e(dev, apdev):
+    """sigma_dut controlled SAE H2E association (AP using H2E-only)"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    start_sae_pwe_ap(apdev[0], 1)
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, sae_h2e=True, debug=True)
+    try:
+        connect_sae_pwe_sta(dev[0], ifname)
+        no_connect_sae_pwe_sta(dev[0], ifname, extra="sae_pwe,loop")
+        connect_sae_pwe_sta(dev[0], ifname, extra="sae_pwe,h2e")
+    finally:
+        stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_sae_h2e(dev, apdev, params):
+    """sigma_dut controlled AP with SAE H2E"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_sae_h2e.sigma-hostapd")
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir,
+                                debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-SAE,PSK,12345678")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            for sae_pwe in [0, 1, 2]:
+                dev[0].request("SET sae_groups ")
+                dev[0].set("sae_pwe", str(sae_pwe))
+                dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                               ieee80211w="2", scan_freq="2412")
+                dev[0].request("REMOVE_NETWORK all")
+                dev[0].wait_disconnected()
+                dev[0].dump_monitor()
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+            dev[0].set("sae_pwe", "0")
+
+def test_sigma_dut_ap_sae_h2e_only(dev, apdev, params):
+    """sigma_dut controlled AP with SAE H2E-only"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_sae_h2e.sigma-hostapd")
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir,
+                                debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-SAE,PSK,12345678,sae_pwe,h2e")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].request("SET sae_groups ")
+            dev[0].set("sae_pwe", "1")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", scan_freq="2412")
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].wait_disconnected()
+            dev[0].dump_monitor()
+
+            dev[0].set("sae_pwe", "0")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", scan_freq="2412", wait_connect=False)
+            ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                    "CTRL-EVENT-NETWORK-NOT-FOUND"], timeout=10)
+            dev[0].request("DISCONNECT")
+            if ev is None or "CTRL-EVENT-CONNECTED" in ev:
+                raise Exception("Unexpected connection result")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+            dev[0].set("sae_pwe", "0")
+
+def test_sigma_dut_ap_sae_loop_only(dev, apdev, params):
+    """sigma_dut controlled AP with SAE looping-only"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_sae_h2e.sigma-hostapd")
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir,
+                                debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-SAE,PSK,12345678,sae_pwe,loop")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].request("SET sae_groups ")
+            dev[0].set("sae_pwe", "0")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", scan_freq="2412")
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].wait_disconnected()
+            dev[0].dump_monitor()
+
+            dev[0].set("sae_pwe", "1")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", scan_freq="2412", wait_connect=False)
+            ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                    "CTRL-EVENT-NETWORK-NOT-FOUND"], timeout=10)
+            dev[0].request("DISCONNECT")
+            if ev is None or "CTRL-EVENT-CONNECTED" in ev:
+                raise Exception("Unexpected connection result")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+            dev[0].set("sae_pwe", "0")
