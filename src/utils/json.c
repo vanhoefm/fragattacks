@@ -300,8 +300,10 @@ struct json_token * json_parse(const char *data, size_t data_len)
 				goto fail;
 			if (!curr_token) {
 				token = json_alloc_token(&tokens);
-				if (!token)
+				if (!token) {
+					os_free(str);
 					goto fail;
+				}
 				token->type = JSON_STRING;
 				token->string = str;
 				token->state = JSON_COMPLETED;
