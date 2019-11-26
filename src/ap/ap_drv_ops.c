@@ -10,6 +10,7 @@
 
 #include "utils/common.h"
 #include "common/ieee802_11_defs.h"
+#include "common/ieee802_11_common.h"
 #include "common/hw_features_common.h"
 #include "wps/wps.h"
 #include "p2p/p2p.h"
@@ -855,10 +856,20 @@ static void hostapd_get_hw_mode_any_channels(struct hostapd_data *hapd,
 	for (i = 0; i < mode->num_channels; i++) {
 		struct hostapd_channel_data *chan = &mode->channels[i];
 
-		if ((acs_ch_list_all ||
-		     freq_range_list_includes(&hapd->iface->conf->acs_ch_list,
-					      chan->chan)) &&
-		    !(chan->flag & HOSTAPD_CHAN_DISABLED) &&
+		if (!acs_ch_list_all &&
+		    (hapd->iface->conf->acs_freq_list.num &&
+		     !freq_range_list_includes(
+			     &hapd->iface->conf->acs_freq_list,
+			     chan->freq)))
+			continue;
+		if (!acs_ch_list_all &&
+		    (!hapd->iface->conf->acs_freq_list_present &&
+		     hapd->iface->conf->acs_ch_list.num &&
+		     !freq_range_list_includes(
+			     &hapd->iface->conf->acs_ch_list,
+			     chan->chan)))
+			continue;
+		if (!(chan->flag & HOSTAPD_CHAN_DISABLED) &&
 		    !(hapd->iface->conf->acs_exclude_dfs &&
 		      (chan->flag & HOSTAPD_CHAN_RADAR)))
 			int_array_add_unique(freq_list, chan->freq);
@@ -898,8 +909,10 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 	 * If no chanlist config parameter is provided, include all enabled
 	 * channels of the selected hw_mode.
 	 */
-	if (!hapd->iface->conf->acs_ch_list.num)
-		acs_ch_list_all = 1;
+	if (hapd->iface->conf->acs_freq_list_present)
+		acs_ch_list_all = !hapd->iface->conf->acs_freq_list.num;
+	else
+		acs_ch_list_all = !hapd->iface->conf->acs_ch_list.num;
 
 	if (hapd->iface->current_mode)
 		selected_mode = hapd->iface->current_mode->mode;
