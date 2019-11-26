@@ -2069,6 +2069,26 @@ int is_6ghz_op_class(u8 op_class)
 }
 
 
+int is_6ghz_psc_frequency(int freq)
+{
+	int i;
+
+	if (!is_6ghz_freq(freq))
+		return 0;
+	if ((((freq - 5940) / 5) & 0x3) != 0x1)
+		return 0;
+
+	i = (freq - 5940 + 55) % 80;
+	if (i == 0)
+		i = (freq - 5940 + 55) / 80;
+
+	if (i >= 1 && i <= 15)
+		return 1;
+
+	return 0;
+}
+
+
 int ieee802_11_parse_candidate_list(const char *pos, u8 *nei_rep,
 				    size_t nei_rep_len)
 {
