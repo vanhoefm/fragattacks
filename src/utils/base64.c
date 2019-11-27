@@ -172,10 +172,10 @@ unsigned char * base64_encode(const unsigned char *src, size_t len,
 }
 
 
-unsigned char * base64_url_encode(const unsigned char *src, size_t len,
-				  size_t *out_len)
+char * base64_url_encode(const void *src, size_t len, size_t *out_len)
 {
-	return base64_gen_encode(src, len, out_len, base64_url_table, 0);
+	return (char *) base64_gen_encode(src, len, out_len, base64_url_table,
+					  0);
 }
 
 
@@ -196,8 +196,8 @@ unsigned char * base64_decode(const unsigned char *src, size_t len,
 }
 
 
-unsigned char * base64_url_decode(const unsigned char *src, size_t len,
-				  size_t *out_len)
+unsigned char * base64_url_decode(const char *src, size_t len, size_t *out_len)
 {
-	return base64_gen_decode(src, len, out_len, base64_url_table);
+	return base64_gen_decode((const unsigned char *) src, len, out_len,
+				 base64_url_table);
 }

@@ -4679,9 +4679,9 @@ static int dpp_build_jwk(struct wpabuf *buf, const char *name, EVP_PKEY *key,
 	if (!pub)
 		goto fail;
 	pos = wpabuf_head(pub);
-	x = (char *) base64_url_encode(pos, curve->prime_len, NULL);
+	x = base64_url_encode(pos, curve->prime_len, NULL);
 	pos += curve->prime_len;
-	y = (char *) base64_url_encode(pos, curve->prime_len, NULL);
+	y = base64_url_encode(pos, curve->prime_len, NULL);
 	if (!x || !y)
 		goto fail;
 
@@ -4851,12 +4851,10 @@ skip_groups:
 	os_snprintf(jws_prot_hdr, sizeof(jws_prot_hdr),
 		    "{\"typ\":\"dppCon\",\"kid\":\"%s\",\"alg\":\"%s\"}",
 		    auth->conf->kid, curve->jws_alg);
-	signed1 = (char *) base64_url_encode((unsigned char *) jws_prot_hdr,
-					     os_strlen(jws_prot_hdr),
-					     &signed1_len);
-	signed2 = (char *) base64_url_encode(wpabuf_head(dppcon),
-					     wpabuf_len(dppcon),
-					     &signed2_len);
+	signed1 = base64_url_encode(jws_prot_hdr, os_strlen(jws_prot_hdr),
+				    &signed1_len);
+	signed2 = base64_url_encode(wpabuf_head(dppcon), wpabuf_len(dppcon),
+				    &signed2_len);
 	if (!signed1 || !signed2)
 		goto fail;
 
@@ -4906,8 +4904,7 @@ skip_groups:
 	signature_len = 2 * curve->prime_len;
 	wpa_hexdump(MSG_DEBUG, "DPP: signedConnector ECDSA signature (raw r,s)",
 		    signature, signature_len);
-	signed3 = (char *) base64_url_encode(signature, signature_len,
-					     &signed3_len);
+	signed3 = base64_url_encode(signature, signature_len, &signed3_len);
 	if (!signed3)
 		goto fail;
 
@@ -5819,8 +5816,7 @@ dpp_process_signed_connector(struct dpp_signed_connector_info *info,
 		ret = DPP_STATUS_INVALID_CONNECTOR;
 		goto fail;
 	}
-	prot_hdr = base64_url_decode((const unsigned char *) pos,
-				     end - pos, &prot_hdr_len);
+	prot_hdr = base64_url_decode(pos, end - pos, &prot_hdr_len);
 	if (!prot_hdr) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Failed to base64url decode signedConnector JWS Protected Header");
@@ -5852,8 +5848,7 @@ dpp_process_signed_connector(struct dpp_signed_connector_info *info,
 		goto fail;
 	}
 	signed_end = end - 1;
-	info->payload = base64_url_decode((const unsigned char *) pos,
-					  end - pos, &info->payload_len);
+	info->payload = base64_url_decode(pos, end - pos, &info->payload_len);
 	if (!info->payload) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Failed to base64url decode signedConnector JWS Payload");
@@ -5864,8 +5859,7 @@ dpp_process_signed_connector(struct dpp_signed_connector_info *info,
 			  "DPP: signedConnector - JWS Payload",
 			  info->payload, info->payload_len);
 	pos = end + 1;
-	signature = base64_url_decode((const unsigned char *) pos,
-				      os_strlen(pos), &signature_len);
+	signature = base64_url_decode(pos, os_strlen(pos), &signature_len);
 	if (!signature) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Failed to base64url decode signedConnector signature");
@@ -6605,13 +6599,13 @@ struct wpabuf * dpp_build_conn_status_result(struct dpp_authentication *auth,
 		return NULL;
 	wpabuf_printf(json, "{\"result\":%d", result);
 	if (ssid) {
-		unsigned char *ssid64;
+		char *ssid64;
 
 		ssid64 = base64_url_encode(ssid, ssid_len, NULL);
 		if (!ssid64)
 			goto fail;
 		wpabuf_put_str(json, ",\"ssid64\":\"");
-		wpabuf_put_str(json, (char *) ssid64);
+		wpabuf_put_str(json, ssid64);
 		os_free(ssid64);
 		wpabuf_put_str(json, "\"");
 	}
@@ -6758,8 +6752,7 @@ dpp_keygen_configurator(const char *curve, const u8 *privkey,
 		goto fail;
 	}
 
-	conf->kid = (char *) base64_url_encode(kid_hash, sizeof(kid_hash),
-					       NULL);
+	conf->kid = base64_url_encode(kid_hash, sizeof(kid_hash), NULL);
 	if (!conf->kid)
 		goto fail;
 out:
@@ -7021,8 +7014,7 @@ dpp_peer_intro(struct dpp_introduction *intro, const char *own_connector,
 		wpa_printf(MSG_DEBUG, "DPP: Own connector is missing the second dot (.)");
 		goto fail;
 	}
-	own_conn = base64_url_decode((const unsigned char *) pos,
-				     end - pos, &own_conn_len);
+	own_conn = base64_url_decode(pos, end - pos, &own_conn_len);
 	if (!own_conn) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Failed to base64url decode own signedConnector JWS Payload");
@@ -8756,8 +8748,7 @@ char * dpp_corrupt_connector_signature(const char *connector)
 
 	wpa_printf(MSG_DEBUG, "DPP: Original base64url encoded signature: %s",
 		   pos);
-	signature = base64_url_decode((const unsigned char *) pos,
-				      os_strlen(pos), &signature_len);
+	signature = base64_url_decode(pos, os_strlen(pos), &signature_len);
 	if (!signature || signature_len == 0)
 		goto fail;
 	wpa_hexdump(MSG_DEBUG, "DPP: Original Connector signature",
@@ -8765,8 +8756,7 @@ char * dpp_corrupt_connector_signature(const char *connector)
 	signature[signature_len - 1] ^= 0x01;
 	wpa_hexdump(MSG_DEBUG, "DPP: Corrupted Connector signature",
 		    signature, signature_len);
-	signed3 = (char *) base64_url_encode(signature, signature_len,
-					     &signed3_len);
+	signed3 = base64_url_encode(signature, signature_len, &signed3_len);
 	if (!signed3)
 		goto fail;
 	os_memcpy(pos, signed3, signed3_len);
