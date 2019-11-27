@@ -2543,10 +2543,9 @@ struct wpabuf * dpp_build_conf_req_helper(struct dpp_authentication *auth,
 					  const char *name, int netrole_ap,
 					  const char *mud_url, int *opclasses)
 {
-	size_t len, nlen;
+	size_t len, name_len;
 	const char *tech = "infra";
 	const char *dpp_name;
-	char *nbuf;
 	struct wpabuf *buf, *json;
 
 #ifdef CONFIG_TESTING_OPTIONS
@@ -2559,39 +2558,38 @@ struct wpabuf * dpp_build_conf_req_helper(struct dpp_authentication *auth,
 #endif /* CONFIG_TESTING_OPTIONS */
 
 	dpp_name = name ? name : "Test";
-	len = os_strlen(dpp_name);
-	nlen = len * 6 + 1;
-	nbuf = os_malloc(nlen);
-	if (!nbuf)
-		return NULL;
-	json_escape_string(nbuf, nlen, dpp_name, len);
+	name_len = os_strlen(dpp_name);
 
-	len = 100 + os_strlen(nbuf) + int_array_len(opclasses) * 4;
+	len = 100 + name_len * 6 + 1 + int_array_len(opclasses) * 4;
 	if (mud_url && mud_url[0])
 		len += 10 + os_strlen(mud_url);
 	json = wpabuf_alloc(len);
-	if (!json) {
-		os_free(nbuf);
+	if (!json)
+		return NULL;
+
+	json_start_object(json, NULL);
+	if (json_add_string_escape(json, "name", dpp_name, name_len) < 0) {
+		wpabuf_free(json);
 		return NULL;
 	}
-
-	wpabuf_printf(json,
-		      "{\"name\":\"%s\","
-		      "\"wi-fi_tech\":\"%s\","
-		      "\"netRole\":\"%s\"",
-		      nbuf, tech, netrole_ap ? "ap" : "sta");
-	if (mud_url && mud_url[0])
-		wpabuf_printf(json, ",\"mudurl\":\"%s\"", mud_url);
+	json_value_sep(json);
+	json_add_string(json, "wi-fi_tech", tech);
+	json_value_sep(json);
+	json_add_string(json, "netRole", netrole_ap ? "ap" : "sta");
+	if (mud_url && mud_url[0]) {
+		json_value_sep(json);
+		json_add_string(json, "mudurl", mud_url);
+	}
 	if (opclasses) {
 		int i;
 
-		wpabuf_put_str(json, ",\"bandSupport\":[");
+		json_value_sep(json);
+		json_start_array(json, "bandSupport");
 		for (i = 0; opclasses[i]; i++)
 			wpabuf_printf(json, "%s%u", i ? "," : "", opclasses[i]);
-		wpabuf_put_str(json, "]");
+		json_end_array(json);
 	}
-	wpabuf_put_str(json, "}");
-	os_free(nbuf);
+	json_end_object(json);
 
 	buf = dpp_build_conf_req(auth, wpabuf_head(json));
 	wpabuf_free(json);
@@ -4636,7 +4634,6 @@ dpp_build_conf_start(struct dpp_authentication *auth,
 		     struct dpp_configuration *conf, size_t tailroom)
 {
 	struct wpabuf *buf;
-	char ssid[6 * sizeof(conf->ssid) + 1];
 
 #ifdef CONFIG_TESTING_OPTIONS
 	if (auth->discovery_override)
@@ -4646,21 +4643,27 @@ dpp_build_conf_start(struct dpp_authentication *auth,
 	buf = wpabuf_alloc(200 + tailroom);
 	if (!buf)
 		return NULL;
-	wpabuf_put_str(buf, "{\"wi-fi_tech\":\"infra\",\"discovery\":");
+	json_start_object(buf, NULL);
+	json_add_string(buf, "wi-fi_tech", "infra");
+	json_value_sep(buf);
 #ifdef CONFIG_TESTING_OPTIONS
 	if (auth->discovery_override) {
 		wpa_printf(MSG_DEBUG, "DPP: TESTING - discovery override: '%s'",
 			   auth->discovery_override);
+		wpabuf_put_str(buf, "\"discovery\":");
 		wpabuf_put_str(buf, auth->discovery_override);
-		wpabuf_put_u8(buf, ',');
+		json_value_sep(buf);
 		return buf;
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
-	wpabuf_put_str(buf, "{\"ssid\":\"");
-	json_escape_string(ssid, sizeof(ssid),
-			   (const char *) conf->ssid, conf->ssid_len);
-	wpabuf_put_str(buf, ssid);
-	wpabuf_put_str(buf, "\"},");
+	json_start_object(buf, "discovery");
+	if (json_add_string_escape(buf, "ssid", conf->ssid,
+				   conf->ssid_len) < 0) {
+		wpabuf_free(buf);
+		return NULL;
+	}
+	json_end_object(buf);
+	json_value_sep(buf);
 
 	return buf;
 }
@@ -4671,37 +4674,32 @@ static int dpp_build_jwk(struct wpabuf *buf, const char *name, EVP_PKEY *key,
 {
 	struct wpabuf *pub;
 	const u8 *pos;
-	char *x = NULL, *y = NULL;
 	int ret = -1;
 
 	pub = dpp_get_pubkey_point(key, 0);
 	if (!pub)
 		goto fail;
-	pos = wpabuf_head(pub);
-	x = base64_url_encode(pos, curve->prime_len, NULL);
-	pos += curve->prime_len;
-	y = base64_url_encode(pos, curve->prime_len, NULL);
-	if (!x || !y)
-		goto fail;
 
-	wpabuf_put_str(buf, "\"");
-	wpabuf_put_str(buf, name);
-	wpabuf_put_str(buf, "\":{\"kty\":\"EC\",\"crv\":\"");
-	wpabuf_put_str(buf, curve->jwk_crv);
-	wpabuf_put_str(buf, "\",\"x\":\"");
-	wpabuf_put_str(buf, x);
-	wpabuf_put_str(buf, "\",\"y\":\"");
-	wpabuf_put_str(buf, y);
+	json_start_object(buf, name);
+	json_add_string(buf, "kty", "EC");
+	json_value_sep(buf);
+	json_add_string(buf, "crv", curve->jwk_crv);
+	json_value_sep(buf);
+	pos = wpabuf_head(pub);
+	if (json_add_base64url(buf, "x", pos, curve->prime_len) < 0)
+		goto fail;
+	json_value_sep(buf);
+	pos += curve->prime_len;
+	if (json_add_base64url(buf, "y", pos, curve->prime_len) < 0)
+		goto fail;
 	if (kid) {
-		wpabuf_put_str(buf, "\",\"kid\":\"");
-		wpabuf_put_str(buf, kid);
+		json_value_sep(buf);
+		json_add_string(buf, "kid", kid);
 	}
-	wpabuf_put_str(buf, "\"}");
+	json_end_object(buf);
 	ret = 0;
 fail:
 	wpabuf_free(pub);
-	os_free(x);
-	os_free(y);
 	return ret;
 }
 
@@ -4710,23 +4708,15 @@ static void dpp_build_legacy_cred_params(struct wpabuf *buf,
 					 struct dpp_configuration *conf)
 {
 	if (conf->passphrase && os_strlen(conf->passphrase) < 64) {
-		char pass[63 * 6 + 1];
-
-		json_escape_string(pass, sizeof(pass), conf->passphrase,
-				   os_strlen(conf->passphrase));
-		wpabuf_put_str(buf, "\"pass\":\"");
-		wpabuf_put_str(buf, pass);
-		wpabuf_put_str(buf, "\"");
-		os_memset(pass, 0, sizeof(pass));
+		json_add_string_escape(buf, "pass", conf->passphrase,
+				       os_strlen(conf->passphrase));
 	} else if (conf->psk_set) {
 		char psk[2 * sizeof(conf->psk) + 1];
 
 		wpa_snprintf_hex(psk, sizeof(psk),
 				 conf->psk, sizeof(conf->psk));
-		wpabuf_put_str(buf, "\"psk_hex\":\"");
-		wpabuf_put_str(buf, psk);
-		wpabuf_put_str(buf, "\"");
-		os_memset(psk, 0, sizeof(psk));
+		json_add_string(buf, "psk_hex", psk);
+		forced_memzero(psk, sizeof(psk));
 	}
 }
 
@@ -4752,7 +4742,7 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth,
 	char *signed1 = NULL, *signed2 = NULL, *signed3 = NULL;
 	size_t tailroom;
 	const struct dpp_curve_params *curve;
-	char jws_prot_hdr[100];
+	struct wpabuf *jws_prot_hdr;
 	size_t signed1_len, signed2_len, signed3_len;
 	struct wpabuf *dppcon = NULL;
 	unsigned char *signature = NULL;
@@ -4813,15 +4803,21 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth,
 				   auth->groups_override);
 			wpabuf_put_str(dppcon, "\"groups\":");
 			wpabuf_put_str(dppcon, auth->groups_override);
-			wpabuf_put_u8(dppcon, ',');
+			json_value_sep(dppcon);
 		}
 		goto skip_groups;
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
-	wpabuf_printf(dppcon, "{\"groups\":[{\"groupId\":\"%s\",",
-		      conf->group_id ? conf->group_id : "*");
-	wpabuf_printf(dppcon, "\"netRole\":\"%s\"}],",
-		      dpp_netrole_str(conf->netrole));
+	json_start_object(dppcon, NULL);
+	json_start_array(dppcon, "groups");
+	json_start_object(dppcon, NULL);
+	json_add_string(dppcon, "groupId",
+			conf->group_id ? conf->group_id : "*");
+	json_value_sep(dppcon);
+	json_add_string(dppcon, "netRole", dpp_netrole_str(conf->netrole));
+	json_end_object(dppcon);
+	json_end_array(dppcon);
+	json_value_sep(dppcon);
 #ifdef CONFIG_TESTING_OPTIONS
 skip_groups:
 #endif /* CONFIG_TESTING_OPTIONS */
@@ -4832,26 +4828,38 @@ skip_groups:
 	}
 	if (conf->netaccesskey_expiry) {
 		struct os_tm tm;
+		char expiry[30];
 
 		if (os_gmtime(conf->netaccesskey_expiry, &tm) < 0) {
 			wpa_printf(MSG_DEBUG,
 				   "DPP: Failed to generate expiry string");
 			goto fail;
 		}
-		wpabuf_printf(dppcon,
-			      ",\"expiry\":\"%04u-%02u-%02uT%02u:%02u:%02uZ\"",
-			      tm.year, tm.month, tm.day,
-			      tm.hour, tm.min, tm.sec);
+		os_snprintf(expiry, sizeof(expiry),
+			    "%04u-%02u-%02uT%02u:%02u:%02uZ",
+			    tm.year, tm.month, tm.day,
+			    tm.hour, tm.min, tm.sec);
+		json_value_sep(dppcon);
+		json_add_string(dppcon, "expiry", expiry);
 	}
-	wpabuf_put_u8(dppcon, '}');
+	json_end_object(dppcon);
 	wpa_printf(MSG_DEBUG, "DPP: dppCon: %s",
 		   (const char *) wpabuf_head(dppcon));
 
-	os_snprintf(jws_prot_hdr, sizeof(jws_prot_hdr),
-		    "{\"typ\":\"dppCon\",\"kid\":\"%s\",\"alg\":\"%s\"}",
-		    auth->conf->kid, curve->jws_alg);
-	signed1 = base64_url_encode(jws_prot_hdr, os_strlen(jws_prot_hdr),
+	jws_prot_hdr = wpabuf_alloc(100);
+	if (!jws_prot_hdr)
+		goto fail;
+	json_start_object(jws_prot_hdr, NULL);
+	json_add_string(jws_prot_hdr, "typ", "dppCon");
+	json_value_sep(jws_prot_hdr);
+	json_add_string(jws_prot_hdr, "kid", auth->conf->kid);
+	json_value_sep(jws_prot_hdr);
+	json_add_string(jws_prot_hdr, "alg", curve->jws_alg);
+	json_end_object(jws_prot_hdr);
+	signed1 = base64_url_encode(wpabuf_head(jws_prot_hdr),
+				    wpabuf_len(jws_prot_hdr),
 				    &signed1_len);
+	wpabuf_free(jws_prot_hdr);
 	signed2 = base64_url_encode(wpabuf_head(dppcon), wpabuf_len(dppcon),
 				    &signed2_len);
 	if (!signed1 || !signed2)
@@ -4921,10 +4929,12 @@ skip_groups:
 		akm_str = dpp_akm_selector_str(akm);
 	else
 		akm_str = dpp_akm_str(akm);
-	wpabuf_printf(buf, "\"cred\":{\"akm\":\"%s\",", akm_str);
+	json_start_object(buf, "cred");
+	json_add_string(buf, "akm", akm_str);
+	json_value_sep(buf);
 	if (incl_legacy) {
 		dpp_build_legacy_cred_params(buf, conf);
-		wpabuf_put_str(buf, ",");
+		json_value_sep(buf);
 	}
 	wpabuf_put_str(buf, "\"signedConnector\":\"");
 	wpabuf_put_str(buf, signed1);
@@ -4932,14 +4942,16 @@ skip_groups:
 	wpabuf_put_str(buf, signed2);
 	wpabuf_put_u8(buf, '.');
 	wpabuf_put_str(buf, signed3);
-	wpabuf_put_str(buf, "\",");
+	wpabuf_put_str(buf, "\"");
+	json_value_sep(buf);
 	if (dpp_build_jwk(buf, "csign", auth->conf->csign, auth->conf->kid,
 			  curve) < 0) {
 		wpa_printf(MSG_DEBUG, "DPP: Failed to build csign JWK");
 		goto fail;
 	}
 
-	wpabuf_put_str(buf, "}}");
+	json_end_object(buf);
+	json_end_object(buf);
 
 	wpa_hexdump_ascii_key(MSG_DEBUG, "DPP: Configuration Object",
 			      wpabuf_head(buf), wpabuf_len(buf));
@@ -4976,9 +4988,12 @@ dpp_build_conf_obj_legacy(struct dpp_authentication *auth,
 		akm_str = dpp_akm_selector_str(conf->akm);
 	else
 		akm_str = dpp_akm_str(conf->akm);
-	wpabuf_printf(buf, "\"cred\":{\"akm\":\"%s\",", akm_str);
+	json_start_object(buf, "cred");
+	json_add_string(buf, "akm", akm_str);
+	json_value_sep(buf);
 	dpp_build_legacy_cred_params(buf, conf);
-	wpabuf_put_str(buf, "}}");
+	json_end_object(buf);
+	json_end_object(buf);
 
 	wpa_hexdump_ascii_key(MSG_DEBUG, "DPP: Configuration Object (legacy)",
 			      wpabuf_head(buf), wpabuf_len(buf));
@@ -6596,21 +6611,18 @@ struct wpabuf * dpp_build_conn_status_result(struct dpp_authentication *auth,
 	json = wpabuf_alloc(1000);
 	if (!json)
 		return NULL;
-	wpabuf_printf(json, "{\"result\":%d", result);
+	json_start_object(json, NULL);
+	json_add_int(json, "result", result);
 	if (ssid) {
-		char *ssid64;
-
-		ssid64 = base64_url_encode(ssid, ssid_len, NULL);
-		if (!ssid64)
+		json_value_sep(json);
+		if (json_add_base64url(json, "ssid64", ssid, ssid_len) < 0)
 			goto fail;
-		wpabuf_put_str(json, ",\"ssid64\":\"");
-		wpabuf_put_str(json, ssid64);
-		os_free(ssid64);
-		wpabuf_put_str(json, "\"");
 	}
-	if (channel_list)
-		wpabuf_printf(json, ",\"channelList\":\"%s\"", channel_list);
-	wpabuf_put_str(json, "}");
+	if (channel_list) {
+		json_value_sep(json);
+		json_add_string(json, "channelList", channel_list);
+	}
+	json_end_object(json);
 	wpa_hexdump_ascii(MSG_DEBUG, "DPP: connStatus JSON",
 			  wpabuf_head(json), wpabuf_len(json));
 
