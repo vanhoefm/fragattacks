@@ -944,12 +944,20 @@ void hostapd_acs_channel_selected(struct hostapd_data *hapd,
 		return;
 	}
 
+	hapd->iface->freq = acs_res->pri_freq;
+
 	if (!hapd->iface->current_mode) {
 		for (i = 0; i < hapd->iface->num_hw_features; i++) {
 			struct hostapd_hw_modes *mode =
 				&hapd->iface->hw_features[i];
 
 			if (mode->mode == acs_res->hw_mode) {
+				if (hapd->iface->freq > 0 &&
+				    !hw_get_chan(mode->mode,
+						 hapd->iface->freq,
+						 hapd->iface->hw_features,
+						 hapd->iface->num_hw_features))
+					continue;
 				hapd->iface->current_mode = mode;
 				break;
 			}
@@ -962,8 +970,6 @@ void hostapd_acs_channel_selected(struct hostapd_data *hapd,
 			goto out;
 		}
 	}
-
-	hapd->iface->freq = acs_res->pri_freq;
 
 	if (!acs_res->pri_freq) {
 		hostapd_logger(hapd, NULL, HOSTAPD_MODULE_IEEE80211,
