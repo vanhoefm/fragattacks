@@ -574,3 +574,79 @@ void json_print_tree(struct json_token *root, char *buf, size_t buflen)
 	buf[0] = '\0';
 	json_print_token(root, 1, buf, buflen);
 }
+
+
+void json_add_int(struct wpabuf *json, const char *name, int val)
+{
+	wpabuf_printf(json, "\"%s\":%d", name, val);
+}
+
+
+void json_add_string(struct wpabuf *json, const char *name, const char *val)
+{
+	wpabuf_printf(json, "\"%s\":\"%s\"", name, val);
+}
+
+
+int json_add_string_escape(struct wpabuf *json, const char *name,
+			   const void *val, size_t len)
+{
+	char *tmp;
+	size_t tmp_len = 6 * len + 1;
+
+	tmp = os_malloc(tmp_len);
+	if (!tmp)
+		return -1;
+	json_escape_string(tmp, tmp_len, val, len);
+	json_add_string(json, name, tmp);
+	bin_clear_free(tmp, tmp_len);
+	return 0;
+}
+
+
+int json_add_base64url(struct wpabuf *json, const char *name, const void *val,
+		       size_t len)
+{
+	char *b64;
+
+	b64 = base64_url_encode(val, len, NULL);
+	if (!b64)
+		return -1;
+	json_add_string(json, name, b64);
+	os_free(b64);
+	return 0;
+}
+
+
+void json_start_object(struct wpabuf *json, const char *name)
+{
+	if (name)
+		wpabuf_printf(json, "\"%s\":", name);
+	wpabuf_put_u8(json, '{');
+}
+
+
+void json_end_object(struct wpabuf *json)
+{
+	wpabuf_put_u8(json, '}');
+}
+
+
+void json_start_array(struct wpabuf *json, const char *name)
+{
+	if (name)
+		wpabuf_printf(json, "\"%s\":", name);
+	wpabuf_put_u8(json, '[');
+}
+
+
+void json_end_array(struct wpabuf *json)
+{
+	wpabuf_put_u8(json, ']');
+}
+
+
+void json_value_sep(struct wpabuf *json)
+{
+	wpabuf_put_u8(json, ',');
+}
