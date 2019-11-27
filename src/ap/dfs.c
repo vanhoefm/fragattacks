@@ -673,6 +673,9 @@ int hostapd_handle_dfs(struct hostapd_iface *iface)
 	int res, n_chans, n_chans1, start_chan_idx, start_chan_idx1;
 	int skip_radar = 0;
 
+	if (is_6ghz_freq(iface->freq))
+		return 1;
+
 	if (!iface->current_mode) {
 		/*
 		 * This can happen with drivers that do not provide mode
