@@ -310,7 +310,7 @@ static int download_cert(struct hs20_osu_client *ctx, xml_node_t *params,
 	size_t len;
 	u8 digest1[SHA256_MAC_LEN], digest2[SHA256_MAC_LEN];
 	int res;
-	unsigned char *b64;
+	char *b64;
 	FILE *f;
 
 	url_node = get_node(ctx->xml, params, "CertURL");
@@ -364,7 +364,7 @@ static int download_cert(struct hs20_osu_client *ctx, xml_node_t *params,
 		return -1;
 	}
 
-	b64 = base64_encode((unsigned char *) cert, len, NULL);
+	b64 = base64_encode(cert, len, NULL);
 	os_free(cert);
 	if (b64 == NULL)
 		return -1;

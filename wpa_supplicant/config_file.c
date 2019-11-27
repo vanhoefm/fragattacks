@@ -296,7 +296,7 @@ static struct wpa_config_blob * wpa_config_read_blob(FILE *f, int *line,
 {
 	struct wpa_config_blob *blob;
 	char buf[256], *pos;
-	unsigned char *encoded = NULL, *nencoded;
+	char *encoded = NULL, *nencoded;
 	int end = 0;
 	size_t encoded_len = 0, len;
 
@@ -1098,7 +1098,7 @@ static void wpa_config_write_cred(FILE *f, struct wpa_cred *cred)
 #ifndef CONFIG_NO_CONFIG_BLOBS
 static int wpa_config_write_blob(FILE *f, struct wpa_config_blob *blob)
 {
-	unsigned char *encoded;
+	char *encoded;
 
 	encoded = base64_encode(blob->data, blob->len, NULL);
 	if (encoded == NULL)

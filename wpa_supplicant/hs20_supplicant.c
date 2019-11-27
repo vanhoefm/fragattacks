@@ -340,7 +340,7 @@ int hs20_get_icon(struct wpa_supplicant *wpa_s, const u8 *bssid,
 {
 	struct icon_entry *icon;
 	size_t out_size;
-	unsigned char *b64;
+	char *b64;
 	size_t b64_size;
 	int reply_size;
 

@@ -633,7 +633,7 @@ static xml_node_t * build_username_password(struct hs20_svc *ctx,
 
 	add_text_node(ctx, node, "Username", user);
 
-	b64 = (char *) base64_encode((unsigned char *) pw, strlen(pw), NULL);
+	b64 = base64_encode(pw, strlen(pw), NULL);
 	if (b64 == NULL)
 		return NULL;
 	len = os_strlen(b64);
@@ -1602,8 +1602,7 @@ static xml_node_t * spp_exec_get_certificate(struct hs20_svc *ctx,
 
 	xml_node_create_text(ctx->xml, enroll, ns, "estUserID", user);
 
-	b64 = (char *) base64_encode((unsigned char *) password,
-				     strlen(password), NULL);
+	b64 = base64_encode(password, strlen(password), NULL);
 	if (b64 == NULL) {
 		xml_node_free(ctx->xml, spp_node);
 		return NULL;

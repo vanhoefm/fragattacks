@@ -439,7 +439,7 @@ static void eapol_sm_cb(struct eapol_sm *eapol, enum eapol_supp_result result,
 static void eapol_test_write_cert(FILE *f, const char *subject,
 				  const struct wpabuf *cert)
 {
-	unsigned char *encoded;
+	char *encoded;
 
 	encoded = base64_encode(wpabuf_head(cert), wpabuf_len(cert), NULL);
 	if (encoded == NULL)

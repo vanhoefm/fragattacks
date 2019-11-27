@@ -296,52 +296,53 @@ static int base64_tests(void)
 {
 	int errors = 0;
 	unsigned char *res;
+	char *res2;
 	size_t res_len;
 
 	wpa_printf(MSG_INFO, "base64 tests");
 
-	res = base64_encode((const unsigned char *) "", ~0, &res_len);
+	res2 = base64_encode("", ~0, &res_len);
+	if (res2) {
+		errors++;
+		os_free(res2);
+	}
+
+	res2 = base64_encode("=", 1, &res_len);
+	if (!res2 || res_len != 5 || res2[0] != 'P' || res2[1] != 'Q' ||
+	    res2[2] != '=' || res2[3] != '=' || res2[4] != '\n')
+		errors++;
+	os_free(res2);
+
+	res2 = base64_encode("=", 1, NULL);
+	if (!res2 || res2[0] != 'P' || res2[1] != 'Q' ||
+	    res2[2] != '=' || res2[3] != '=' || res2[4] != '\n')
+		errors++;
+	os_free(res2);
+
+	res = base64_decode("", 0, &res_len);
 	if (res) {
 		errors++;
 		os_free(res);
 	}
 
-	res = base64_encode((const unsigned char *) "=", 1, &res_len);
-	if (!res || res_len != 5 || res[0] != 'P' || res[1] != 'Q' ||
-	    res[2] != '=' || res[3] != '=' || res[4] != '\n')
-		errors++;
-	os_free(res);
-
-	res = base64_encode((const unsigned char *) "=", 1, NULL);
-	if (!res || res[0] != 'P' || res[1] != 'Q' ||
-	    res[2] != '=' || res[3] != '=' || res[4] != '\n')
-		errors++;
-	os_free(res);
-
-	res = base64_decode((const unsigned char *) "", 0, &res_len);
+	res = base64_decode("a", 1, &res_len);
 	if (res) {
 		errors++;
 		os_free(res);
 	}
 
-	res = base64_decode((const unsigned char *) "a", 1, &res_len);
+	res = base64_decode("====", 4, &res_len);
 	if (res) {
 		errors++;
 		os_free(res);
 	}
 
-	res = base64_decode((const unsigned char *) "====", 4, &res_len);
-	if (res) {
-		errors++;
-		os_free(res);
-	}
-
-	res = base64_decode((const unsigned char *) "PQ==", 4, &res_len);
+	res = base64_decode("PQ==", 4, &res_len);
 	if (!res || res_len != 1 || res[0] != '=')
 		errors++;
 	os_free(res);
 
-	res = base64_decode((const unsigned char *) "P.Q-=!=*", 8, &res_len);
+	res = base64_decode("P.Q-=!=*", 8, &res_len);
 	if (!res || res_len != 1 || res[0] != '=')
 		errors++;
 	os_free(res);

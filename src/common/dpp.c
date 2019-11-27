@@ -1007,8 +1007,7 @@ static int dpp_parse_uri_pk(struct dpp_bootstrap_info *bi, const char *info)
 	if (!end)
 		return -1;
 
-	data = base64_decode((const unsigned char *) info, end - info,
-			     &data_len);
+	data = base64_decode(info, end - info, &data_len);
 	if (!data) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Invalid base64 encoding on URI public-key");
@@ -1482,7 +1481,7 @@ int dpp_bootstrap_key_hash(struct dpp_bootstrap_info *bi)
 char * dpp_keygen(struct dpp_bootstrap_info *bi, const char *curve,
 		  const u8 *privkey, size_t privkey_len)
 {
-	unsigned char *base64 = NULL;
+	char *base64 = NULL;
 	char *pos, *end;
 	size_t len;
 	struct wpabuf *der = NULL;
@@ -1528,7 +1527,7 @@ char * dpp_keygen(struct dpp_bootstrap_info *bi, const char *curve,
 	der = NULL;
 	if (!base64)
 		goto fail;
-	pos = (char *) base64;
+	pos = base64;
 	end = pos + len;
 	for (;;) {
 		pos = os_strchr(pos, '\n');
@@ -1536,7 +1535,7 @@ char * dpp_keygen(struct dpp_bootstrap_info *bi, const char *curve,
 			break;
 		os_memmove(pos, pos + 1, end - pos);
 	}
-	return (char *) base64;
+	return base64;
 fail:
 	os_free(base64);
 	wpabuf_free(der);
