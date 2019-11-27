@@ -173,9 +173,9 @@ unsigned char * base64_encode(const unsigned char *src, size_t len,
 
 
 unsigned char * base64_url_encode(const unsigned char *src, size_t len,
-				  size_t *out_len, int add_pad)
+				  size_t *out_len)
 {
-	return base64_gen_encode(src, len, out_len, base64_url_table, add_pad);
+	return base64_gen_encode(src, len, out_len, base64_url_table, 0);
 }
 
 

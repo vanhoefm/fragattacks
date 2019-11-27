@@ -4679,9 +4679,9 @@ static int dpp_build_jwk(struct wpabuf *buf, const char *name, EVP_PKEY *key,
 	if (!pub)
 		goto fail;
 	pos = wpabuf_head(pub);
-	x = (char *) base64_url_encode(pos, curve->prime_len, NULL, 0);
+	x = (char *) base64_url_encode(pos, curve->prime_len, NULL);
 	pos += curve->prime_len;
-	y = (char *) base64_url_encode(pos, curve->prime_len, NULL, 0);
+	y = (char *) base64_url_encode(pos, curve->prime_len, NULL);
 	if (!x || !y)
 		goto fail;
 
@@ -4853,10 +4853,10 @@ skip_groups:
 		    auth->conf->kid, curve->jws_alg);
 	signed1 = (char *) base64_url_encode((unsigned char *) jws_prot_hdr,
 					     os_strlen(jws_prot_hdr),
-					     &signed1_len, 0);
+					     &signed1_len);
 	signed2 = (char *) base64_url_encode(wpabuf_head(dppcon),
 					     wpabuf_len(dppcon),
-					     &signed2_len, 0);
+					     &signed2_len);
 	if (!signed1 || !signed2)
 		goto fail;
 
@@ -4907,7 +4907,7 @@ skip_groups:
 	wpa_hexdump(MSG_DEBUG, "DPP: signedConnector ECDSA signature (raw r,s)",
 		    signature, signature_len);
 	signed3 = (char *) base64_url_encode(signature, signature_len,
-					     &signed3_len, 0);
+					     &signed3_len);
 	if (!signed3)
 		goto fail;
 
@@ -6607,7 +6607,7 @@ struct wpabuf * dpp_build_conn_status_result(struct dpp_authentication *auth,
 	if (ssid) {
 		unsigned char *ssid64;
 
-		ssid64 = base64_url_encode(ssid, ssid_len, NULL, 0);
+		ssid64 = base64_url_encode(ssid, ssid_len, NULL);
 		if (!ssid64)
 			goto fail;
 		wpabuf_put_str(json, ",\"ssid64\":\"");
@@ -6759,7 +6759,7 @@ dpp_keygen_configurator(const char *curve, const u8 *privkey,
 	}
 
 	conf->kid = (char *) base64_url_encode(kid_hash, sizeof(kid_hash),
-					       NULL, 0);
+					       NULL);
 	if (!conf->kid)
 		goto fail;
 out:
@@ -8766,7 +8766,7 @@ char * dpp_corrupt_connector_signature(const char *connector)
 	wpa_hexdump(MSG_DEBUG, "DPP: Corrupted Connector signature",
 		    signature, signature_len);
 	signed3 = (char *) base64_url_encode(signature, signature_len,
-					     &signed3_len, 0);
+					     &signed3_len);
 	if (!signed3)
 		goto fail;
 	os_memcpy(pos, signed3, signed3_len);
