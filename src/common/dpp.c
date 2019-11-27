@@ -6487,6 +6487,7 @@ enum dpp_status_error dpp_conn_status_result_rx(struct dpp_authentication *auth,
 	size_t unwrapped_len = 0;
 	enum dpp_status_error ret = 256;
 	struct json_token *root = NULL, *token;
+	struct wpabuf *ssid64;
 
 	*ssid_len = 0;
 	*channel_list = NULL;
@@ -6561,12 +6562,12 @@ enum dpp_status_error dpp_conn_status_result_rx(struct dpp_authentication *auth,
 		goto fail;
 	}
 
-	token = json_get_member(root, "ssid");
-	if (token && token->type == JSON_STRING &&
-	    os_strlen(token->string) <= SSID_MAX_LEN) {
-		*ssid_len = os_strlen(token->string);
-		os_memcpy(ssid, token->string, *ssid_len);
+	ssid64 = json_get_member_base64url(root, "ssid64");
+	if (ssid64 && wpabuf_len(ssid64) <= SSID_MAX_LEN) {
+		*ssid_len = wpabuf_len(ssid64);
+		os_memcpy(ssid, wpabuf_head(ssid64), *ssid_len);
 	}
+	wpabuf_free(ssid64);
 
 	token = json_get_member(root, "channelList");
 	if (token && token->type == JSON_STRING &&
@@ -6593,7 +6594,7 @@ struct wpabuf * dpp_build_conn_status_result(struct dpp_authentication *auth,
 					     const u8 *ssid, size_t ssid_len,
 					     const char *channel_list)
 {
-	struct wpabuf *msg, *clear, *json;
+	struct wpabuf *msg = NULL, *clear = NULL, *json;
 	size_t nonce_len, clear_len, attr_len;
 	const u8 *addr[2];
 	size_t len[2];
@@ -6604,12 +6605,14 @@ struct wpabuf * dpp_build_conn_status_result(struct dpp_authentication *auth,
 		return NULL;
 	wpabuf_printf(json, "{\"result\":%d", result);
 	if (ssid) {
-		char ssid_str[6 * SSID_MAX_LEN + 1];
+		unsigned char *ssid64;
 
-		wpabuf_put_str(json, ",\"ssid\":\"");
-		json_escape_string(ssid_str, sizeof(ssid_str),
-				   (const char *) ssid, ssid_len);
-		wpabuf_put_str(json, ssid_str);
+		ssid64 = base64_url_encode(ssid, ssid_len, NULL, 0);
+		if (!ssid64)
+			goto fail;
+		wpabuf_put_str(json, ",\"ssid64\":\"");
+		wpabuf_put_str(json, (char *) ssid64);
+		os_free(ssid64);
 		wpabuf_put_str(json, "\"");
 	}
 	if (channel_list)
