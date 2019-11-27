@@ -670,6 +670,9 @@ int hostapd_check_ht_capab(struct hostapd_iface *iface)
 {
 #ifdef CONFIG_IEEE80211N
 	int ret;
+
+	if (is_6ghz_freq(iface->freq))
+		return 0;
 	if (!iface->conf->ieee80211n)
 		return 0;
 
