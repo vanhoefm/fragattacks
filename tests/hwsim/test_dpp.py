@@ -1624,6 +1624,7 @@ def update_hapd_config(hapd):
     logger.info("Update AP configuration to use key_mgmt=DPP")
     hapd.disable()
     hapd.set("ssid", ssid)
+    hapd.set("utf8_ssid", "1")
     hapd.set("wpa", "2")
     hapd.set("wpa_key_mgmt", "DPP")
     hapd.set("ieee80211w", "2")
