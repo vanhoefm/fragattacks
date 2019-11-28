@@ -98,7 +98,8 @@ u8 * hostapd_eid_supp_rates(struct hostapd_data *hapd, u8 *eid)
 		num++;
 	if (hapd->iconf->ieee80211ac && hapd->iconf->require_vht)
 		num++;
-	if (hapd->conf->sae_pwe == 1)
+	if (hapd->conf->sae_pwe == 1 &&
+	    wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt))
 		num++;
 	if (num > 8) {
 		/* rest of the rates are encoded in Extended supported
@@ -126,7 +127,9 @@ u8 * hostapd_eid_supp_rates(struct hostapd_data *hapd, u8 *eid)
 		*pos++ = 0x80 | BSS_MEMBERSHIP_SELECTOR_VHT_PHY;
 	}
 
-	if (hapd->conf->sae_pwe == 1 && count < 8) {
+	if (hapd->conf->sae_pwe == 1 &&
+	    wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt) &&
+	    count < 8) {
 		count++;
 		*pos++ = 0x80 | BSS_MEMBERSHIP_SELECTOR_SAE_H2E_ONLY;
 	}
@@ -148,7 +151,8 @@ u8 * hostapd_eid_ext_supp_rates(struct hostapd_data *hapd, u8 *eid)
 		num++;
 	if (hapd->iconf->ieee80211ac && hapd->iconf->require_vht)
 		num++;
-	if (hapd->conf->sae_pwe == 1)
+	if (hapd->conf->sae_pwe == 1 &&
+	    wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt))
 		num++;
 	if (num <= 8)
 		return eid;
@@ -179,7 +183,8 @@ u8 * hostapd_eid_ext_supp_rates(struct hostapd_data *hapd, u8 *eid)
 			*pos++ = 0x80 | BSS_MEMBERSHIP_SELECTOR_VHT_PHY;
 	}
 
-	if (hapd->conf->sae_pwe == 1) {
+	if (hapd->conf->sae_pwe == 1 &&
+	    wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt)) {
 		count++;
 		if (count > 8)
 			*pos++ = 0x80 | BSS_MEMBERSHIP_SELECTOR_SAE_H2E_ONLY;

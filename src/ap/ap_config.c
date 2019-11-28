@@ -441,7 +441,7 @@ int hostapd_setup_sae_pt(struct hostapd_bss_config *conf)
 	struct hostapd_ssid *ssid = &conf->ssid;
 	struct sae_password_entry *pw;
 
-	if (conf->sae_pwe == 0)
+	if (conf->sae_pwe == 0 || !wpa_key_mgmt_sae(conf->wpa_key_mgmt))
 		return 0; /* PT not needed */
 
 	sae_deinit_pt(ssid->pt);
