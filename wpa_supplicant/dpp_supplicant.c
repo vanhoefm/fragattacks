@@ -1114,6 +1114,9 @@ static int wpas_dpp_handle_config_obj(struct wpa_supplicant *wpa_s,
 	if (conf->ssid_len)
 		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONFOBJ_SSID "%s",
 			wpa_ssid_txt(conf->ssid, conf->ssid_len));
+	if (conf->ssid_charset)
+		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONFOBJ_SSID_CHARSET "%d",
+			conf->ssid_charset);
 	if (conf->connector) {
 		/* TODO: Save the Connector and consider using a command
 		 * to fetch the value instead of sending an event with
