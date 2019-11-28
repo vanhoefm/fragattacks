@@ -4432,6 +4432,16 @@ static int dpp_configuration_parse_helper(struct dpp_authentication *auth,
 #endif /* CONFIG_TESTING_OPTIONS */
 	}
 
+	pos = os_strstr(cmd, " ssid_charset=");
+	if (pos) {
+		if (conf_ap) {
+			wpa_printf(MSG_INFO,
+				   "DPP: ssid64 option (ssid_charset param) not allowed for AP enrollee");
+			goto fail;
+		}
+		conf->ssid_charset = atoi(pos + 14);
+	}
+
 	pos = os_strstr(cmd, " pass=");
 	if (pos) {
 		size_t pass_len;
@@ -4657,10 +4667,18 @@ dpp_build_conf_start(struct dpp_authentication *auth,
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
 	json_start_object(buf, "discovery");
-	if (json_add_string_escape(buf, "ssid", conf->ssid,
-				   conf->ssid_len) < 0) {
+	if (((!conf->ssid_charset || auth->peer_version < 2) &&
+	     json_add_string_escape(buf, "ssid", conf->ssid,
+				    conf->ssid_len) < 0) ||
+	    ((conf->ssid_charset && auth->peer_version >= 2) &&
+	     json_add_base64url(buf, "ssid64", conf->ssid,
+				conf->ssid_len) < 0)) {
 		wpabuf_free(buf);
 		return NULL;
+	}
+	if (conf->ssid_charset > 0) {
+		json_value_sep(buf);
+		json_add_int(buf, "ssid_charset", conf->ssid_charset);
 	}
 	json_end_object(buf);
 	json_value_sep(buf);
