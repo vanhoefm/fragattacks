@@ -2033,6 +2033,14 @@ def test_sae_h2e_password_id(dev, apdev):
         dev[0].set("sae_groups", "")
         dev[0].set("sae_pwe", "0")
 
+def test_sae_pwe_in_psk_ap(dev, apdev):
+    """sae_pwe parameter in PSK-only-AP"""
+    params = hostapd.wpa2_params(ssid="test-psk", passphrase="12345678")
+    params['sae_pwe'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("test-psk", psk="12345678", scan_freq="2412")
+
 def test_sae_auth_restart(dev, apdev):
     """SAE and authentication restarts with H2E/looping"""
     if "SAE" not in dev[0].get_capability("auth_alg"):
