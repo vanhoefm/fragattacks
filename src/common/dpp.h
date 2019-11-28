@@ -247,6 +247,7 @@ struct dpp_authentication {
 		char *connector; /* received signedConnector */
 		u8 ssid[SSID_MAX_LEN];
 		u8 ssid_len;
+		int ssid_charset;
 		char passphrase[64];
 		u8 psk[PMK_LEN];
 		int psk_set;

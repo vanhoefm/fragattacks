@@ -6128,6 +6128,7 @@ static int dpp_parse_conf_obj(struct dpp_authentication *auth,
 	int ret = -1;
 	struct json_token *root, *token, *discovery, *cred;
 	struct dpp_config_obj *conf;
+	struct wpabuf *ssid64 = NULL;
 
 	root = json_parse((const char *) conf_obj, conf_obj_len);
 	if (!root)
@@ -6155,28 +6156,52 @@ static int dpp_parse_conf_obj(struct dpp_authentication *auth,
 		goto fail;
 	}
 
-	token = json_get_member(discovery, "ssid");
-	if (!token || token->type != JSON_STRING) {
-		dpp_auth_fail(auth, "No discovery::ssid string value found");
-		goto fail;
-	}
-	wpa_hexdump_ascii(MSG_DEBUG, "DPP: discovery::ssid",
-			  token->string, os_strlen(token->string));
-	if (os_strlen(token->string) > SSID_MAX_LEN) {
-		dpp_auth_fail(auth, "Too long discovery::ssid string value");
-		goto fail;
+	ssid64 = json_get_member_base64url(discovery, "ssid64");
+	if (ssid64) {
+		wpa_hexdump_ascii(MSG_DEBUG, "DPP: discovery::ssid64",
+				  wpabuf_head(ssid64), wpabuf_len(ssid64));
+		if (wpabuf_len(ssid64) > SSID_MAX_LEN) {
+			dpp_auth_fail(auth, "Too long discovery::ssid64 value");
+			goto fail;
+		}
+	} else {
+		token = json_get_member(discovery, "ssid");
+		if (!token || token->type != JSON_STRING) {
+			dpp_auth_fail(auth,
+				      "No discovery::ssid string value found");
+			goto fail;
+		}
+		wpa_hexdump_ascii(MSG_DEBUG, "DPP: discovery::ssid",
+				  token->string, os_strlen(token->string));
+		if (os_strlen(token->string) > SSID_MAX_LEN) {
+			dpp_auth_fail(auth,
+				      "Too long discovery::ssid string value");
+			goto fail;
+		}
 	}
 
 	if (auth->num_conf_obj == DPP_MAX_CONF_OBJ) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No room for this many Config Objects - ignore this one");
-		json_free(root);
-		return 0;
+		ret = 0;
+		goto fail;
 	}
 	conf = &auth->conf_obj[auth->num_conf_obj++];
 
-	conf->ssid_len = os_strlen(token->string);
-	os_memcpy(conf->ssid, token->string, conf->ssid_len);
+	if (ssid64) {
+		conf->ssid_len = wpabuf_len(ssid64);
+		os_memcpy(conf->ssid, wpabuf_head(ssid64), conf->ssid_len);
+	} else {
+		conf->ssid_len = os_strlen(token->string);
+		os_memcpy(conf->ssid, token->string, conf->ssid_len);
+	}
+
+	token = json_get_member(discovery, "ssid_charset");
+	if (token && token->type == JSON_NUMBER) {
+		conf->ssid_charset = token->number;
+		wpa_printf(MSG_DEBUG, "DPP: ssid_charset=%d",
+			   conf->ssid_charset);
+	}
 
 	cred = json_get_member(root, "cred");
 	if (!cred || cred->type != JSON_OBJECT) {
@@ -6207,6 +6232,7 @@ static int dpp_parse_conf_obj(struct dpp_authentication *auth,
 	wpa_printf(MSG_DEBUG, "DPP: JSON parsing completed successfully");
 	ret = 0;
 fail:
+	wpabuf_free(ssid64);
 	json_free(root);
 	return ret;
 }
