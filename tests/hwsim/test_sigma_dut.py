@@ -3334,6 +3334,7 @@ def test_sigma_dut_sae_h2e(dev, apdev):
             raise Exception("Unexpected error result: " + res)
     finally:
         stop_sigma_dut(sigma)
+        dev[0].set("sae_pwe", "0")
 
 def test_sigma_dut_sae_h2e_ap_loop(dev, apdev):
     """sigma_dut controlled SAE H2E association (AP using loop-only)"""
@@ -3350,6 +3351,7 @@ def test_sigma_dut_sae_h2e_ap_loop(dev, apdev):
         no_connect_sae_pwe_sta(dev[0], ifname, extra="sae_pwe,h2e")
     finally:
         stop_sigma_dut(sigma)
+        dev[0].set("sae_pwe", "0")
 
 def test_sigma_dut_sae_h2e_ap_h2e(dev, apdev):
     """sigma_dut controlled SAE H2E association (AP using H2E-only)"""
@@ -3366,6 +3368,7 @@ def test_sigma_dut_sae_h2e_ap_h2e(dev, apdev):
         connect_sae_pwe_sta(dev[0], ifname, extra="sae_pwe,h2e")
     finally:
         stop_sigma_dut(sigma)
+        dev[0].set("sae_pwe", "0")
 
 def test_sigma_dut_ap_sae_h2e(dev, apdev, params):
     """sigma_dut controlled AP with SAE H2E"""
