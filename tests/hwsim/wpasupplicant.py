@@ -1458,7 +1458,8 @@ class WpaSupplicant:
     def dpp_auth_init(self, peer=None, uri=None, conf=None, configurator=None,
                       extra=None, own=None, role=None, neg_freq=None,
                       ssid=None, passphrase=None, expect_fail=False,
-                      tcp_addr=None, tcp_port=None, conn_status=False):
+                      tcp_addr=None, tcp_port=None, conn_status=False,
+                      ssid_charset=None):
         cmd = "DPP_AUTH_INIT"
         if peer is None:
             peer = self.dpp_qr_code(uri)
@@ -1477,6 +1478,8 @@ class WpaSupplicant:
             cmd += " neg_freq=%d" % neg_freq
         if ssid:
             cmd += " ssid=" + binascii.hexlify(ssid.encode()).decode()
+        if ssid_charset:
+            cmd += " ssid_charset=%d" % ssid_charset
         if passphrase:
             cmd += " pass=" + binascii.hexlify(passphrase.encode()).decode()
         if tcp_addr:
