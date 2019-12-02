@@ -79,9 +79,20 @@ def run_hapd_ctrl_sta(dev, apdev):
     passphrase = "12345678"
     params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
     hapd = hostapd.add_ap(apdev[0], params)
+    hglobal = hostapd.HostapdGlobal(apdev[0])
     dev[0].request("VENDOR_ELEM_ADD 13 2102ff02")
     dev[0].connect(ssid, psk=passphrase, scan_freq="2412")
     addr = dev[0].own_addr()
+    ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=2)
+    if ev is None:
+        raise Exception("No hostapd per-interface event reported")
+    ev2 = hglobal.wait_event(["AP-STA-CONNECTED"], timeout=2)
+    if ev2 is None:
+        raise Exception("No hostapd global event reported")
+    if not ev2.startswith("IFNAME=" + apdev[0]['ifname'] + " <"):
+        raise Exception("Unexpected global event prefix: " + ev2)
+    if ev not in ev2:
+        raise Exception("Event mismatch (%s,%s)" % (ev, ev2))
     if "FAIL" in hapd.request("STA " + addr):
         raise Exception("Unexpected STA failure")
     if "FAIL" not in hapd.request("STA " + addr + " eapol"):
