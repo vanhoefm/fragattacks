@@ -3130,7 +3130,7 @@ def test_ap_wps_upnp_subscribe(dev, apdev):
     sid = resp.getheader("sid")
     logger.debug("Subscription SID " + sid)
 
-    with alloc_fail(hapd, 1, "=event_add"):
+    with alloc_fail(hapd, 1, "=wps_upnp_event_add"):
         for i in range(2):
             dev[1].dump_monitor()
             dev[2].dump_monitor()
@@ -3150,7 +3150,7 @@ def test_ap_wps_upnp_subscribe(dev, apdev):
     if resp.status != 200:
         raise Exception("Unexpected HTTP response: %d" % resp.status)
 
-    with alloc_fail(hapd, 1, "wpabuf_dup;event_add"):
+    with alloc_fail(hapd, 1, "wpabuf_dup;wps_upnp_event_add"):
         dev[1].dump_monitor()
         dev[2].dump_monitor()
         dev[1].request("WPS_PIN " + apdev[0]['bssid'] + " 12345670")
@@ -3198,7 +3198,7 @@ def test_ap_wps_upnp_subscribe(dev, apdev):
         if resp.status != 500:
             raise Exception("Unexpected HTTP response: %d" % resp.status)
 
-    with alloc_fail(hapd, 1, "event_add;subscription_first_event"):
+    with alloc_fail(hapd, 1, "wps_upnp_event_add;subscription_first_event"):
         conn.request("SUBSCRIBE", eventurl.path, "\r\n\r\n", headers)
         resp = conn.getresponse()
         if resp.status != 500:
