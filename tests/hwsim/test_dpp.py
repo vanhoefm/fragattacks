@@ -4853,3 +4853,21 @@ def run_dpp_config_save(dev, apdev, config, conf_ssid, exp_ssid):
             raise Exception("SSID not saved")
         if 'psk="secret passphrase"' not in data:
             raise Exception("Passphtase not saved")
+
+def test_dpp_nfc_uri(dev, apdev):
+    """DPP bootstrapping via NFC URI record"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    id = dev[0].dpp_bootstrap_gen(type="nfc-uri", chan="81/1", mac=True)
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id)
+    logger.info("Generated URI: " + uri)
+    info = dev[0].request("DPP_BOOTSTRAP_INFO %d" % id)
+    logger.info("Bootstrapping info:\n" + info)
+    if "type=NFC-URI" not in info:
+        raise Exception("Unexpected bootstrapping info contents")
+
+    dev[0].dpp_listen(2412)
+    conf_id = dev[1].dpp_configurator_add()
+    dev[1].dpp_auth_init(nfc_uri=uri, configurator=conf_id, conf="sta-dpp")
+    wait_auth_success(dev[0], dev[1], configurator=dev[1], enrollee=dev[0])

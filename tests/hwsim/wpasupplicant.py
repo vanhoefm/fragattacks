@@ -1424,6 +1424,12 @@ class WpaSupplicant:
             raise Exception("Failed to parse QR Code URI")
         return int(res)
 
+    def dpp_nfc_uri(self, uri):
+        res = self.request("DPP_NFC_URI " + uri)
+        if "FAIL" in res:
+            raise Exception("Failed to parse NFC URI")
+        return int(res)
+
     def dpp_bootstrap_gen(self, type="qrcode", chan=None, mac=None, info=None,
                           curve=None, key=None):
         cmd = "DPP_BOOTSTRAP_GEN type=" + type
@@ -1459,10 +1465,13 @@ class WpaSupplicant:
                       extra=None, own=None, role=None, neg_freq=None,
                       ssid=None, passphrase=None, expect_fail=False,
                       tcp_addr=None, tcp_port=None, conn_status=False,
-                      ssid_charset=None):
+                      ssid_charset=None, nfc_uri=None):
         cmd = "DPP_AUTH_INIT"
         if peer is None:
-            peer = self.dpp_qr_code(uri)
+            if nfc_uri:
+                peer = self.dpp_nfc_uri(nfc_uri)
+            else:
+                peer = self.dpp_qr_code(uri)
         cmd += " peer=%d" % peer
         if own is not None:
             cmd += " own=%d" % own
