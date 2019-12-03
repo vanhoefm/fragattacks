@@ -13,6 +13,7 @@
 enum dpp_status_error;
 
 int wpas_dpp_qr_code(struct wpa_supplicant *wpa_s, const char *cmd);
+int wpas_dpp_nfc_uri(struct wpa_supplicant *wpa_s, const char *cmd);
 int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd);
 int wpas_dpp_listen(struct wpa_supplicant *wpa_s, const char *cmd);
 void wpas_dpp_listen_stop(struct wpa_supplicant *wpa_s);

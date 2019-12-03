@@ -830,6 +830,8 @@ const char * dpp_bootstrap_type_txt(enum dpp_bootstrap_type type)
 		return "QRCODE";
 	case DPP_BOOTSTRAP_PKEX:
 		return "PKEX";
+	case DPP_BOOTSTRAP_NFC_URI:
+		return "NFC-URI";
 	}
 	return "??";
 }
@@ -1177,17 +1179,6 @@ static struct dpp_bootstrap_info * dpp_parse_uri(const char *uri)
 		bi = NULL;
 	}
 
-	return bi;
-}
-
-
-struct dpp_bootstrap_info * dpp_parse_qr_code(const char *uri)
-{
-	struct dpp_bootstrap_info *bi;
-
-	bi = dpp_parse_uri(uri);
-	if (bi)
-		bi->type = DPP_BOOTSTRAP_QR_CODE;
 	return bi;
 }
 
@@ -8959,10 +8950,30 @@ struct dpp_bootstrap_info * dpp_add_qr_code(struct dpp_global *dpp,
 	if (!dpp)
 		return NULL;
 
-	bi = dpp_parse_qr_code(uri);
+	bi = dpp_parse_uri(uri);
 	if (!bi)
 		return NULL;
 
+	bi->type = DPP_BOOTSTRAP_QR_CODE;
+	bi->id = dpp_next_id(dpp);
+	dl_list_add(&dpp->bootstrap, &bi->list);
+	return bi;
+}
+
+
+struct dpp_bootstrap_info * dpp_add_nfc_uri(struct dpp_global *dpp,
+					    const char *uri)
+{
+	struct dpp_bootstrap_info *bi;
+
+	if (!dpp)
+		return NULL;
+
+	bi = dpp_parse_uri(uri);
+	if (!bi)
+		return NULL;
+
+	bi->type = DPP_BOOTSTRAP_NFC_URI;
 	bi->id = dpp_next_id(dpp);
 	dl_list_add(&dpp->bootstrap, &bi->list);
 	return bi;
@@ -8990,6 +9001,8 @@ int dpp_bootstrap_gen(struct dpp_global *dpp, const char *cmd)
 		bi->type = DPP_BOOTSTRAP_QR_CODE;
 	else if (os_strstr(cmd, "type=pkex"))
 		bi->type = DPP_BOOTSTRAP_PKEX;
+	else if (os_strstr(cmd, "type=nfc-uri"))
+		bi->type = DPP_BOOTSTRAP_NFC_URI;
 	else
 		goto fail;
 

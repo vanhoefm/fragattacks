@@ -106,6 +106,7 @@ struct dpp_curve_params {
 enum dpp_bootstrap_type {
 	DPP_BOOTSTRAP_QR_CODE,
 	DPP_BOOTSTRAP_PKEX,
+	DPP_BOOTSTRAP_NFC_URI,
 };
 
 struct dpp_bootstrap_info {
@@ -414,7 +415,6 @@ int dpp_parse_uri_chan_list(struct dpp_bootstrap_info *bi,
 			    const char *chan_list);
 int dpp_parse_uri_mac(struct dpp_bootstrap_info *bi, const char *mac);
 int dpp_parse_uri_info(struct dpp_bootstrap_info *bi, const char *info);
-struct dpp_bootstrap_info * dpp_parse_qr_code(const char *uri);
 char * dpp_keygen(struct dpp_bootstrap_info *bi, const char *curve,
 		  const u8 *privkey, size_t privkey_len);
 struct hostapd_hw_modes;
@@ -533,6 +533,8 @@ int dpp_pfs_process(struct dpp_pfs *pfs, const u8 *peer_ie, size_t peer_ie_len);
 void dpp_pfs_free(struct dpp_pfs *pfs);
 
 struct dpp_bootstrap_info * dpp_add_qr_code(struct dpp_global *dpp,
+					    const char *uri);
+struct dpp_bootstrap_info * dpp_add_nfc_uri(struct dpp_global *dpp,
 					    const char *uri);
 int dpp_bootstrap_gen(struct dpp_global *dpp, const char *cmd);
 struct dpp_bootstrap_info *

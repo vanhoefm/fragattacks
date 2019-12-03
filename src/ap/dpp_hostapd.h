@@ -1,6 +1,7 @@
 /*
  * hostapd / DPP integration
  * Copyright (c) 2017, Qualcomm Atheros, Inc.
+ * Copyright (c) 2018-2019, The Linux Foundation
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -10,6 +11,7 @@
 #define DPP_HOSTAPD_H
 
 int hostapd_dpp_qr_code(struct hostapd_data *hapd, const char *cmd);
+int hostapd_dpp_nfc_uri(struct hostapd_data *hapd, const char *cmd);
 int hostapd_dpp_auth_init(struct hostapd_data *hapd, const char *cmd);
 int hostapd_dpp_listen(struct hostapd_data *hapd, const char *cmd);
 void hostapd_dpp_listen_stop(struct hostapd_data *hapd);

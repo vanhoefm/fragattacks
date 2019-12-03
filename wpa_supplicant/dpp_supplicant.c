@@ -88,6 +88,24 @@ int wpas_dpp_qr_code(struct wpa_supplicant *wpa_s, const char *cmd)
 }
 
 
+/**
+ * wpas_dpp_nfc_uri - Parse and add DPP bootstrapping info from NFC Tag (URI)
+ * @wpa_s: Pointer to wpa_supplicant data
+ * @cmd: DPP URI read from a NFC Tag (URI NDEF message)
+ * Returns: Identifier of the stored info or -1 on failure
+ */
+int wpas_dpp_nfc_uri(struct wpa_supplicant *wpa_s, const char *cmd)
+{
+	struct dpp_bootstrap_info *bi;
+
+	bi = dpp_add_nfc_uri(wpa_s->dpp, cmd);
+	if (!bi)
+		return -1;
+
+	return bi->id;
+}
+
+
 static void wpas_dpp_auth_resp_retry_timeout(void *eloop_ctx, void *timeout_ctx)
 {
 	struct wpa_supplicant *wpa_s = eloop_ctx;

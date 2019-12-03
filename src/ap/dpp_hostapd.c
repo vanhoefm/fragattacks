@@ -1,6 +1,7 @@
 /*
  * hostapd / DPP integration
  * Copyright (c) 2017, Qualcomm Atheros, Inc.
+ * Copyright (c) 2018-2019, The Linux Foundation
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -57,6 +58,24 @@ int hostapd_dpp_qr_code(struct hostapd_data *hapd, const char *cmd)
 					wpabuf_head(hapd->dpp_auth->resp_msg),
 					wpabuf_len(hapd->dpp_auth->resp_msg));
 	}
+
+	return bi->id;
+}
+
+
+/**
+ * hostapd_dpp_nfc_uri - Parse and add DPP bootstrapping info from NFC Tag (URI)
+ * @hapd: Pointer to hostapd_data
+ * @cmd: DPP URI read from a NFC Tag (URI NDEF message)
+ * Returns: Identifier of the stored info or -1 on failure
+ */
+int hostapd_dpp_nfc_uri(struct hostapd_data *hapd, const char *cmd)
+{
+	struct dpp_bootstrap_info *bi;
+
+	bi = dpp_add_nfc_uri(hapd->iface->interfaces->dpp, cmd);
+	if (!bi)
+		return -1;
 
 	return bi->id;
 }
