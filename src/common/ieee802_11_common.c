@@ -1052,10 +1052,22 @@ static int ieee80211_chan_to_freq_us(u8 op_class, u8 chan)
 		if (chan < 149 || chan > 165)
 			return -1;
 		return 5000 + 5 * chan;
-	case 34: /* 60 GHz band, channels 1..6 */
-		if (chan < 1 || chan > 6)
+	case 34: /* 60 GHz band, channels 1..8 */
+		if (chan < 1 || chan > 8)
 			return -1;
 		return 56160 + 2160 * chan;
+	case 37: /* 60 GHz band, EDMG CB2, channels 9..15 */
+		if (chan < 9 || chan > 15)
+			return -1;
+		return 56160 + 2160 * (chan - 8);
+	case 38: /* 60 GHz band, EDMG CB3, channels 17..22 */
+		if (chan < 17 || chan > 22)
+			return -1;
+		return 56160 + 2160 * (chan - 16);
+	case 39: /* 60 GHz band, EDMG CB4, channels 25..29 */
+		if (chan < 25 || chan > 29)
+			return -1;
+		return 56160 + 2160 * (chan - 24);
 	}
 	return -1;
 }
@@ -1094,6 +1106,18 @@ static int ieee80211_chan_to_freq_eu(u8 op_class, u8 chan)
 		if (chan < 1 || chan > 6)
 			return -1;
 		return 56160 + 2160 * chan;
+	case 21: /* 60 GHz band, EDMG CB2, channels 9..11 */
+		if (chan < 9 || chan > 11)
+			return -1;
+		return 56160 + 2160 * (chan - 8);
+	case 22: /* 60 GHz band, EDMG CB3, channels 17..18 */
+		if (chan < 17 || chan > 18)
+			return -1;
+		return 56160 + 2160 * (chan - 16);
+	case 23: /* 60 GHz band, EDMG CB4, channels 25 */
+		if (chan != 25)
+			return -1;
+		return 56160 + 2160 * (chan - 24);
 	}
 	return -1;
 }
@@ -1138,6 +1162,18 @@ static int ieee80211_chan_to_freq_jp(u8 op_class, u8 chan)
 		if (chan < 1 || chan > 6)
 			return -1;
 		return 56160 + 2160 * chan;
+	case 62: /* 60 GHz band, EDMG CB2, channels 9..11 */
+		if (chan < 9 || chan > 11)
+			return -1;
+		return 56160 + 2160 * (chan - 8);
+	case 63: /* 60 GHz band, EDMG CB3, channels 17..18 */
+		if (chan < 17 || chan > 18)
+			return -1;
+		return 56160 + 2160 * (chan - 16);
+	case 64: /* 60 GHz band, EDMG CB4, channel 25 */
+		if (chan != 25)
+			return -1;
+		return 56160 + 2160 * (chan - 24);
 	}
 	return -1;
 }
@@ -1230,10 +1266,22 @@ static int ieee80211_chan_to_freq_global(u8 op_class, u8 chan)
 		if (chan < 1 || chan > 233)
 			return -1;
 		return 5940 + chan * 5;
-	case 180: /* 60 GHz band, channels 1..6 */
-		if (chan < 1 || chan > 6)
+	case 180: /* 60 GHz band, channels 1..8 */
+		if (chan < 1 || chan > 8)
 			return -1;
 		return 56160 + 2160 * chan;
+	case 181: /* 60 GHz band, EDMG CB2, channels 9..15 */
+		if (chan < 9 || chan > 15)
+			return -1;
+		return 56160 + 2160 * (chan - 8);
+	case 182: /* 60 GHz band, EDMG CB3, channels 17..22 */
+		if (chan < 17 || chan > 22)
+			return -1;
+		return 56160 + 2160 * (chan - 16);
+	case 183: /* 60 GHz band, EDMG CB4, channel 25..29 */
+		if (chan < 25 || chan > 29)
+			return -1;
+		return 56160 + 2160 * (chan - 24);
 	}
 	return -1;
 }
@@ -1661,7 +1709,16 @@ const struct oper_class_map global_op_class[] = {
 	{ HOSTAPD_MODE_IEEE80211A, 129, 50, 114, 16, BW160, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211A, 130, 36, 161, 4, BW80P80, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211A, 131, 1, 233, 4, BW20, P2P_SUPP },
-	{ HOSTAPD_MODE_IEEE80211AD, 180, 1, 4, 1, BW2160, P2P_SUPP },
+
+	/*
+	 * IEEE Std 802.11ad-2012 and P802.ay/D5.0 60 GHz operating classes.
+	 * Class 180 has the legacy channels 1-6. Classes 181-183 include
+	 * channels which implement channel bonding features.
+	 */
+	{ HOSTAPD_MODE_IEEE80211AD, 180, 1, 6, 1, BW2160, P2P_SUPP },
+	{ HOSTAPD_MODE_IEEE80211AD, 181, 9, 13, 1, BW4320, P2P_SUPP },
+	{ HOSTAPD_MODE_IEEE80211AD, 182, 17, 20, 1, BW6480, P2P_SUPP },
+	{ HOSTAPD_MODE_IEEE80211AD, 183, 25, 27, 1, BW8640, P2P_SUPP },
 	{ -1, 0, 0, 0, 0, BW20, NO_P2P_SUPP }
 };
 
