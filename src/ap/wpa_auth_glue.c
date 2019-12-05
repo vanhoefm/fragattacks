@@ -418,8 +418,8 @@ static int hostapd_wpa_auth_set_key(void *ctx, int vlan_id, enum wpa_alg alg,
 		hapd->last_gtk_len = key_len;
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
-	return hostapd_drv_set_key(ifname, hapd, alg, addr, idx, 1, NULL, 0,
-				   key, key_len);
+	return hostapd_drv_set_key(ifname, hapd, alg, addr, idx, vlan_id, 1,
+				   NULL, 0, key, key_len);
 }
 
 

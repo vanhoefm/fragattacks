@@ -292,7 +292,7 @@ static void hostapd_broadcast_key_clear_iface(struct hostapd_data *hapd,
 	if (!ifname || !hapd->drv_priv)
 		return;
 	for (i = 0; i < NUM_WEP_KEYS; i++) {
-		if (hostapd_drv_set_key(ifname, hapd, WPA_ALG_NONE, NULL, i,
+		if (hostapd_drv_set_key(ifname, hapd, WPA_ALG_NONE, NULL, i, 0,
 					0, NULL, 0, NULL, 0)) {
 			wpa_printf(MSG_DEBUG, "Failed to clear default "
 				   "encryption keys (ifname=%s keyidx=%d)",
@@ -302,7 +302,7 @@ static void hostapd_broadcast_key_clear_iface(struct hostapd_data *hapd,
 	if (hapd->conf->ieee80211w) {
 		for (i = NUM_WEP_KEYS; i < NUM_WEP_KEYS + 2; i++) {
 			if (hostapd_drv_set_key(ifname, hapd, WPA_ALG_NONE,
-						NULL, i, 0, NULL,
+						NULL, i, 0, 0, NULL,
 						0, NULL, 0)) {
 				wpa_printf(MSG_DEBUG, "Failed to clear "
 					   "default mgmt encryption keys "
@@ -328,7 +328,7 @@ static int hostapd_broadcast_wep_set(struct hostapd_data *hapd)
 	idx = ssid->wep.idx;
 	if (ssid->wep.default_len &&
 	    hostapd_drv_set_key(hapd->conf->iface,
-				hapd, WPA_ALG_WEP, broadcast_ether_addr, idx,
+				hapd, WPA_ALG_WEP, broadcast_ether_addr, idx, 0,
 				1, NULL, 0, ssid->wep.key[idx],
 				ssid->wep.len[idx])) {
 		wpa_printf(MSG_WARNING, "Could not set WEP encryption.");
@@ -553,7 +553,7 @@ static int hostapd_setup_encryption(char *iface, struct hostapd_data *hapd)
 
 	for (i = 0; i < 4; i++) {
 		if (hapd->conf->ssid.wep.key[i] &&
-		    hostapd_drv_set_key(iface, hapd, WPA_ALG_WEP, NULL, i,
+		    hostapd_drv_set_key(iface, hapd, WPA_ALG_WEP, NULL, i, 0,
 					i == hapd->conf->ssid.wep.idx, NULL, 0,
 					hapd->conf->ssid.wep.key[i],
 					hapd->conf->ssid.wep.len[i])) {

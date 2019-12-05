@@ -1588,6 +1588,10 @@ struct wpa_driver_set_key_params {
 	 *
 	 * WEP: 5 or 13, TKIP: 32, CCMP/GCMP: 16, IGTK: 16 */
 	size_t key_len;
+
+	/**
+	 * vlan_id - VLAN index (0..4095) for VLAN offload cases */
+	int vlan_id;
 };
 
 /**

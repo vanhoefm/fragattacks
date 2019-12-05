@@ -680,7 +680,7 @@ int hostapd_driver_set_noa(struct hostapd_data *hapd, u8 count, int start,
 
 int hostapd_drv_set_key(const char *ifname, struct hostapd_data *hapd,
 			enum wpa_alg alg, const u8 *addr,
-			int key_idx, int set_tx,
+			int key_idx, int vlan_id, int set_tx,
 			const u8 *seq, size_t seq_len,
 			const u8 *key, size_t key_len)
 {
@@ -699,6 +699,7 @@ int hostapd_drv_set_key(const char *ifname, struct hostapd_data *hapd,
 	params.seq_len = seq_len;
 	params.key = key;
 	params.key_len = key_len;
+	params.vlan_id = vlan_id;
 
 	return hapd->driver->set_key(hapd->drv_priv, &params);
 }

@@ -284,7 +284,7 @@ static void ieee802_1x_tx_key(struct hostapd_data *hapd, struct sta_info *sta)
 		/* TODO: set encryption in TX callback, i.e., only after STA
 		 * has ACKed EAPOL-Key frame */
 		if (hostapd_drv_set_key(hapd->conf->iface, hapd, WPA_ALG_WEP,
-					sta->addr, 0, 1, NULL, 0, ikey,
+					sta->addr, 0, 0, 1, NULL, 0, ikey,
 					hapd->conf->individual_wep_key_len)) {
 			wpa_printf(MSG_ERROR,
 				   "Could not set individual WEP encryption");
@@ -2177,7 +2177,7 @@ static void ieee802_1x_rekey(void *eloop_ctx, void *timeout_ctx)
 	 * after new broadcast key has been sent to all stations. */
 	if (hostapd_drv_set_key(hapd->conf->iface, hapd, WPA_ALG_WEP,
 				broadcast_ether_addr,
-				eapol->default_wep_key_idx, 1, NULL, 0,
+				eapol->default_wep_key_idx, 0, 1, NULL, 0,
 				eapol->default_wep_key,
 				hapd->conf->default_wep_key_len)) {
 		hostapd_logger(hapd, NULL, HOSTAPD_MODULE_IEEE8021X,
@@ -2470,8 +2470,8 @@ int ieee802_1x_init(struct hostapd_data *hapd)
 	if (hapd->conf->default_wep_key_len) {
 		for (i = 0; i < 4; i++)
 			hostapd_drv_set_key(hapd->conf->iface, hapd,
-					    WPA_ALG_NONE, NULL, i, 0, NULL, 0,
-					    NULL, 0);
+					    WPA_ALG_NONE, NULL, i, 0, 0, NULL,
+					    0, NULL, 0);
 
 		ieee802_1x_rekey(hapd, NULL);
 

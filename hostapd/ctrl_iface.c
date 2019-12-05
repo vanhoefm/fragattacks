@@ -2154,7 +2154,7 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 		if (hostapd_drv_set_key(hapd->conf->iface, hapd,
 					hapd->last_igtk_alg,
 					broadcast_ether_addr,
-					hapd->last_igtk_key_idx, 1, NULL, 0,
+					hapd->last_igtk_key_idx, 0, 1, NULL, 0,
 					zero, hapd->last_igtk_len) < 0)
 			return -1;
 
@@ -2162,8 +2162,8 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 		return hostapd_drv_set_key(hapd->conf->iface, hapd,
 					   hapd->last_igtk_alg,
 					   broadcast_ether_addr,
-					   hapd->last_igtk_key_idx, 1, NULL, 0,
-					   hapd->last_igtk,
+					   hapd->last_igtk_key_idx, 0, 1, NULL,
+					   0, hapd->last_igtk,
 					   hapd->last_igtk_len);
 	}
 
@@ -2178,7 +2178,7 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 		if (hostapd_drv_set_key(hapd->conf->iface, hapd,
 					hapd->last_gtk_alg,
 					broadcast_ether_addr,
-					hapd->last_gtk_key_idx, 1, NULL, 0,
+					hapd->last_gtk_key_idx, 0, 1, NULL, 0,
 					zero, hapd->last_gtk_len) < 0)
 			return -1;
 
@@ -2186,8 +2186,9 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 		return hostapd_drv_set_key(hapd->conf->iface, hapd,
 					   hapd->last_gtk_alg,
 					   broadcast_ether_addr,
-					   hapd->last_gtk_key_idx, 1, NULL, 0,
-					   hapd->last_gtk, hapd->last_gtk_len);
+					   hapd->last_gtk_key_idx, 0, 1, NULL,
+					   0, hapd->last_gtk,
+					   hapd->last_gtk_len);
 	}
 
 	sta = ap_get_sta(hapd, addr);
@@ -2203,14 +2204,14 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 	/* First, use a zero key to avoid any possible duplicate key avoidance
 	 * in the driver. */
 	if (hostapd_drv_set_key(hapd->conf->iface, hapd, sta->last_tk_alg,
-				sta->addr, sta->last_tk_key_idx, 1, NULL, 0,
+				sta->addr, sta->last_tk_key_idx, 0, 1, NULL, 0,
 				zero, sta->last_tk_len) < 0)
 		return -1;
 
 	/* Set the previously configured key to reset its TSC/RSC */
 	return hostapd_drv_set_key(hapd->conf->iface, hapd, sta->last_tk_alg,
-				   sta->addr, sta->last_tk_key_idx, 1, NULL, 0,
-				   sta->last_tk, sta->last_tk_len);
+				   sta->addr, sta->last_tk_key_idx, 0, 1, NULL,
+				   0, sta->last_tk, sta->last_tk_len);
 }
 
 
@@ -2257,7 +2258,7 @@ static int hostapd_ctrl_set_key(struct hostapd_data *hapd, const char *cmd)
 		return -1;
 
 	wpa_printf(MSG_INFO, "TESTING: Set key");
-	return hostapd_drv_set_key(hapd->conf->iface, hapd, alg, addr, idx,
+	return hostapd_drv_set_key(hapd->conf->iface, hapd, alg, addr, idx, 0,
 				   set_tx, seq, 6, key, key_len);
 }
 
@@ -2273,7 +2274,7 @@ static void restore_tk(void *ctx1, void *ctx2)
 	 * in replay protection issues for now since there is no clean way of
 	 * preventing encryption of a single EAPOL frame. */
 	hostapd_drv_set_key(hapd->conf->iface, hapd, sta->last_tk_alg,
-			    sta->addr, sta->last_tk_key_idx, 1, NULL, 0,
+			    sta->addr, sta->last_tk_key_idx, 0, 1, NULL, 0,
 			    sta->last_tk, sta->last_tk_len);
 }
 
@@ -2297,8 +2298,8 @@ static int hostapd_ctrl_resend_m1(struct hostapd_data *hapd, const char *cmd)
 		wpa_printf(MSG_INFO, "TESTING: Clear TK for " MACSTR,
 			   MAC2STR(sta->addr));
 		hostapd_drv_set_key(hapd->conf->iface, hapd, WPA_ALG_NONE,
-				    sta->addr, sta->last_tk_key_idx, 0, NULL, 0,
-				    NULL, 0);
+				    sta->addr, sta->last_tk_key_idx, 0, 0, NULL,
+				    0, NULL, 0);
 	}
 
 	wpa_printf(MSG_INFO, "TESTING: Send M1 to " MACSTR, MAC2STR(sta->addr));
@@ -2327,8 +2328,8 @@ static int hostapd_ctrl_resend_m3(struct hostapd_data *hapd, const char *cmd)
 		wpa_printf(MSG_INFO, "TESTING: Clear TK for " MACSTR,
 			   MAC2STR(sta->addr));
 		hostapd_drv_set_key(hapd->conf->iface, hapd, WPA_ALG_NONE,
-				    sta->addr, sta->last_tk_key_idx, 0, NULL, 0,
-				    NULL, 0);
+				    sta->addr, sta->last_tk_key_idx, 0, 0, NULL,
+				    0, NULL, 0);
 	}
 
 	wpa_printf(MSG_INFO, "TESTING: Send M3 to " MACSTR, MAC2STR(sta->addr));
@@ -2357,8 +2358,8 @@ static int hostapd_ctrl_resend_group_m1(struct hostapd_data *hapd,
 		wpa_printf(MSG_INFO, "TESTING: Clear TK for " MACSTR,
 			   MAC2STR(sta->addr));
 		hostapd_drv_set_key(hapd->conf->iface, hapd, WPA_ALG_NONE,
-				    sta->addr, sta->last_tk_key_idx, 0, NULL, 0,
-				    NULL, 0);
+				    sta->addr, sta->last_tk_key_idx, 0, 0, NULL,
+				    0, NULL, 0);
 	}
 
 	wpa_printf(MSG_INFO,

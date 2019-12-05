@@ -4911,7 +4911,7 @@ static void hostapd_set_wds_encryption(struct hostapd_data *hapd,
 	for (i = 0; i < 4; i++) {
 		if (ssid->wep.key[i] &&
 		    hostapd_drv_set_key(ifname_wds, hapd, WPA_ALG_WEP, NULL, i,
-					i == ssid->wep.idx, NULL, 0,
+					0, i == ssid->wep.idx, NULL, 0,
 					ssid->wep.key[i], ssid->wep.len[i])) {
 			wpa_printf(MSG_WARNING,
 				   "Could not set WEP keys for WDS interface; %s",
