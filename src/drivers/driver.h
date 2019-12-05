@@ -1776,6 +1776,8 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_PSK	0x0200000000000000ULL
 /** Driver supports a separate control port for EAPOL frames */
 #define WPA_DRIVER_FLAGS_CONTROL_PORT		0x0400000000000000ULL
+/** Driver supports VLAN offload */
+#define WPA_DRIVER_FLAGS_VLAN_OFFLOAD		0x0800000000000000ULL
 	u64 flags;
 
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \

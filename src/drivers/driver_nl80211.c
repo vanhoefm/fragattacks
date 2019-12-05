@@ -3013,7 +3013,7 @@ static int nl80211_set_pmk(struct wpa_driver_nl80211_data *drv,
 
 static int wpa_driver_nl80211_set_key(const char *ifname, struct i802_bss *bss,
 				      enum wpa_alg alg, const u8 *addr,
-				      int key_idx, int set_tx,
+				      int key_idx, int vlan_id, int set_tx,
 				      const u8 *seq, size_t seq_len,
 				      const u8 *key, size_t key_len)
 {
@@ -3112,6 +3112,12 @@ static int wpa_driver_nl80211_set_key(const char *ifname, struct i802_bss *bss,
 	nlmsg_free(key_msg);
 	key_msg = NULL;
 
+	if (vlan_id && (drv->capa.flags & WPA_DRIVER_FLAGS_VLAN_OFFLOAD)) {
+		wpa_printf(MSG_DEBUG, "nl80211: VLAN ID %d", vlan_id);
+		if (nla_put_u16(msg, NL80211_ATTR_VLAN_ID, vlan_id))
+			goto fail;
+	}
+
 	ret = send_and_recv_msgs(drv, msg, NULL, key ? (void *) -1 : NULL);
 	if ((ret == -ENOENT || ret == -ENOLINK) && alg == WPA_ALG_NONE)
 		ret = 0;
@@ -3168,6 +3174,13 @@ static int wpa_driver_nl80211_set_key(const char *ifname, struct i802_bss *bss,
 	nl80211_nlmsg_clear(key_msg);
 	nlmsg_free(key_msg);
 	key_msg = NULL;
+
+	if (vlan_id && (drv->capa.flags & WPA_DRIVER_FLAGS_VLAN_OFFLOAD)) {
+		wpa_printf(MSG_DEBUG, "nl80211: set_key default - VLAN ID %d",
+			   vlan_id);
+		if (nla_put_u16(msg, NL80211_ATTR_VLAN_ID, vlan_id))
+			goto fail;
+	}
 
 	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
 	if (ret == -ENOENT)
@@ -3490,7 +3503,7 @@ retry:
 		if (!params->wep_key[i])
 			continue;
 		wpa_driver_nl80211_set_key(bss->ifname, bss, WPA_ALG_WEP,
-					   NULL, i,
+					   NULL, i, 0,
 					   i == params->wep_tx_keyidx, NULL, 0,
 					   params->wep_key[i],
 					   params->wep_key_len[i]);
@@ -6674,6 +6687,8 @@ static int i802_set_sta_vlan(struct i802_bss *bss, const u8 *addr,
 		   MAC2STR(addr), ifname, if_nametoindex(ifname), vlan_id);
 	if (!(msg = nl80211_bss_msg(bss, 0, NL80211_CMD_SET_STATION)) ||
 	    nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN, addr) ||
+	    ((drv->capa.flags & WPA_DRIVER_FLAGS_VLAN_OFFLOAD) &&
+	     nla_put_u16(msg, NL80211_ATTR_VLAN_ID, vlan_id)) ||
 	    nla_put_u32(msg, NL80211_ATTR_STA_VLAN, if_nametoindex(ifname))) {
 		nlmsg_free(msg);
 		return -ENOBUFS;
@@ -8716,9 +8731,11 @@ static int driver_nl80211_set_key(void *priv,
 	size_t seq_len = params->seq_len;
 	const u8 *key = params->key;
 	size_t key_len = params->key_len;
+	int vlan_id = params->vlan_id;
 
 	return wpa_driver_nl80211_set_key(ifname, bss, alg, addr, key_idx,
-					  set_tx, seq, seq_len, key, key_len);
+					  vlan_id, set_tx, seq, seq_len, key,
+					  key_len);
 }
 
 
