@@ -2494,8 +2494,8 @@ skip_ht40:
 	if (!vht_freq.vht_enabled)
 		return;
 
-	/* Enable HE for VHT */
-	vht_freq.he_enabled = mode->he_capab[ieee80211_mode].he_supported;
+	/* Enable HE with VHT for 5 GHz */
+	freq->he_enabled = mode->he_capab[ieee80211_mode].he_supported;
 
 	/* setup center_freq1, bandwidth */
 	for (j = 0; j < ARRAY_SIZE(vht80); j++) {
