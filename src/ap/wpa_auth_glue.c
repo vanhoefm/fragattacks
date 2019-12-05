@@ -385,8 +385,12 @@ static int hostapd_wpa_auth_set_key(void *ctx, int vlan_id, enum wpa_alg alg,
 
 	if (vlan_id > 0) {
 		ifname = hostapd_get_vlan_id_ifname(hapd->conf->vlan, vlan_id);
-		if (ifname == NULL)
-			return -1;
+		if (!ifname) {
+			if (!(hapd->iface->drv_flags &
+			      WPA_DRIVER_FLAGS_VLAN_OFFLOAD))
+				return -1;
+			ifname = hapd->conf->iface;
+		}
 	}
 
 #ifdef CONFIG_TESTING_OPTIONS
@@ -849,26 +853,32 @@ static int hostapd_wpa_auth_update_vlan(void *ctx, const u8 *addr, int vlan_id)
 #ifndef CONFIG_NO_VLAN
 	struct hostapd_data *hapd = ctx;
 	struct sta_info *sta;
-	struct vlan_description vlan_desc;
 
 	sta = ap_get_sta(hapd, addr);
 	if (!sta)
 		return -1;
 
-	os_memset(&vlan_desc, 0, sizeof(vlan_desc));
-	vlan_desc.notempty = 1;
-	vlan_desc.untagged = vlan_id;
-	if (!hostapd_vlan_valid(hapd->conf->vlan, &vlan_desc)) {
-		wpa_printf(MSG_INFO, "Invalid VLAN ID %d in wpa_psk_file",
-			   vlan_id);
-		return -1;
-	}
+	if (!(hapd->iface->drv_flags & WPA_DRIVER_FLAGS_VLAN_OFFLOAD)) {
+		struct vlan_description vlan_desc;
 
-	if (ap_sta_set_vlan(hapd, sta, &vlan_desc) < 0) {
-		wpa_printf(MSG_INFO,
-			   "Failed to assign VLAN ID %d from wpa_psk_file to "
-			   MACSTR, vlan_id, MAC2STR(sta->addr));
-		return -1;
+		os_memset(&vlan_desc, 0, sizeof(vlan_desc));
+		vlan_desc.notempty = 1;
+		vlan_desc.untagged = vlan_id;
+		if (!hostapd_vlan_valid(hapd->conf->vlan, &vlan_desc)) {
+			wpa_printf(MSG_INFO,
+				   "Invalid VLAN ID %d in wpa_psk_file",
+				   vlan_id);
+			return -1;
+		}
+
+		if (ap_sta_set_vlan(hapd, sta, &vlan_desc) < 0) {
+			wpa_printf(MSG_INFO,
+				   "Failed to assign VLAN ID %d from wpa_psk_file to "
+				   MACSTR, vlan_id, MAC2STR(sta->addr));
+			return -1;
+		}
+	} else {
+		sta->vlan_id = vlan_id;
 	}
 
 	wpa_printf(MSG_INFO,
