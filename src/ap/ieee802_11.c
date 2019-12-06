@@ -1282,7 +1282,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 		    check_sae_rejected_groups(
 			    hapd, sta->sae->tmp->peer_rejected_groups)) {
 			resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
-			goto remove_sta;
+			goto reply;
 		}
 
 		if (!token && use_sae_anti_clogging(hapd) && !allow_reuse) {
