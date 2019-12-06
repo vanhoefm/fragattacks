@@ -2024,6 +2024,30 @@ def test_sae_h2e_rejected_groups(dev, apdev):
         dev[0].set("sae_groups", "")
         dev[0].set("sae_pwe", "0")
 
+def test_sae_h2e_rejected_groups_unexpected(dev, apdev):
+    """SAE H2E and rejected groups indication (unexpected group)"""
+    params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_groups'] = "19 20"
+    params['sae_pwe'] = "1"
+    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        dev[0].set("sae_groups", "21 19")
+        dev[0].set("extra_sae_rejected_groups", "19")
+        dev[0].set("sae_pwe", "1")
+        dev[0].connect("sae-pwe", psk="12345678", key_mgmt="SAE",
+                       scan_freq="2412", wait_connect=False)
+        ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                "CTRL-EVENT-SSID-TEMP-DISABLED"], timeout=10)
+        dev[0].request("DISCONNECT")
+        if ev is None:
+            raise Exception("No indication of temporary disabled network seen")
+        if "CTRL-EVENT-CONNECTED" in ev:
+            raise Exception("Unexpected connection")
+    finally:
+        dev[0].set("sae_groups", "")
+        dev[0].set("sae_pwe", "0")
+
 def test_sae_h2e_password_id(dev, apdev):
     """SAE H2E and password identifier"""
     if "SAE" not in dev[0].get_capability("auth_alg"):
