@@ -1672,6 +1672,33 @@ static void wpa_supplicant_rsn_preauth_scan_results(
 }
 
 
+static int wpas_get_snr_signal_info(const struct wpa_signal_info *si)
+{
+	int noise = IS_5GHZ(si->frequency) ?
+		DEFAULT_NOISE_FLOOR_5GHZ :
+		DEFAULT_NOISE_FLOOR_2GHZ;
+
+	/*
+	 * Since we take the average beacon signal, we can't use
+	 * the current noise measurement (average vs. snapshot),
+	 * so use the default values instead.
+	 */
+	return si->avg_beacon_signal - noise;
+}
+
+
+static unsigned int
+wpas_get_est_throughput_from_bss_snr(const struct wpa_supplicant *wpa_s,
+				     const struct wpa_bss *bss, int snr)
+{
+	int rate = wpa_bss_get_max_rate(bss);
+	const u8 *ies = (const void *) (bss + 1);
+	size_t ie_len = bss->ie_len ? bss->ie_len : bss->beacon_ie_len;
+
+	return wpas_get_est_tpt(wpa_s, ies, ie_len, rate, snr);
+}
+
+
 static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 				       struct wpa_bss *selected,
 				       struct wpa_ssid *ssid)
@@ -1682,6 +1709,7 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 	int to_5ghz;
 	int cur_level;
 	unsigned int cur_est, sel_est;
+	struct wpa_signal_info si;
 #endif /* CONFIG_NO_ROAMING */
 
 	if (wpa_s->reassociate)
@@ -1734,6 +1762,34 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 
 	cur_level = current_bss->level;
 	cur_est = current_bss->est_throughput;
+
+	/*
+	 * Try to poll the signal from the driver since this will allow to get
+	 * more accurate values. In some cases, there can be big differences
+	 * between the RSSI of the Probe Response frames of the AP we are
+	 * associated with and the Beacon frames we hear from the same AP after
+	 * association. This can happen, e.g., when there are two antennas that
+	 * hear the AP very differently. If the driver chooses to hear the
+	 * Probe Response frames during the scan on the "bad" antenna because
+	 * it wants to save power, but knows to choose the other antenna after
+	 * association, we will hear our AP with a low RSSI as part of the
+	 * scan even when we can hear it decently on the other antenna. To cope
+	 * with this, ask the driver to teach us how it hears the AP. Also, the
+	 * scan results may be a bit old, since we can very quickly get fresh
+	 * information about our currently associated AP.
+	 */
+	if (wpa_drv_signal_poll(wpa_s, &si) == 0 &&
+	    si.avg_beacon_signal) {
+		int snr = wpas_get_snr_signal_info(&si);
+
+		cur_level = si.avg_beacon_signal;
+		cur_est = wpas_get_est_throughput_from_bss_snr(wpa_s,
+							       current_bss,
+							       snr);
+		wpa_dbg(wpa_s, MSG_DEBUG,
+			"Using signal poll values for the current BSS: level=%d snr=%d est_throughput=%u",
+			cur_level, snr, cur_est);
+	}
 
 	if (selected->est_throughput > cur_est + 5000) {
 		wpa_dbg(wpa_s, MSG_DEBUG,
