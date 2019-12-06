@@ -499,6 +499,8 @@ static void wpa_supplicant_cleanup(struct wpa_supplicant *wpa_s)
 	wpa_s->get_pref_freq_list_override = NULL;
 	wpabuf_free(wpa_s->last_assoc_req_wpa_ie);
 	wpa_s->last_assoc_req_wpa_ie = NULL;
+	os_free(wpa_s->extra_sae_rejected_groups);
+	wpa_s->extra_sae_rejected_groups = NULL;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 	if (wpa_s->conf != NULL) {
@@ -1972,6 +1974,28 @@ static void wpa_s_setup_sae_pt(struct wpa_config *conf, struct wpa_ssid *ssid)
 }
 
 
+static void wpa_s_clear_sae_rejected(struct wpa_supplicant *wpa_s)
+{
+#if defined(CONFIG_SAE) && defined(CONFIG_SME)
+	os_free(wpa_s->sme.sae_rejected_groups);
+	wpa_s->sme.sae_rejected_groups = NULL;
+#ifdef CONFIG_TESTING_OPTIONS
+	if (wpa_s->extra_sae_rejected_groups) {
+		int i, *groups = wpa_s->extra_sae_rejected_groups;
+
+		for (i = 0; groups[i]; i++) {
+			wpa_printf(MSG_DEBUG,
+				   "TESTING: Indicate rejection of an extra SAE group %d",
+				   groups[i]);
+			int_array_add_unique(&wpa_s->sme.sae_rejected_groups,
+					     groups[i]);
+		}
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
+#endif /* CONFIG_SAE && CONFIG_SME */
+}
+
+
 static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit);
 
 /**
@@ -2020,10 +2044,7 @@ void wpa_supplicant_associate(struct wpa_supplicant *wpa_s,
 		}
 	} else {
 #ifdef CONFIG_SAE
-#ifdef CONFIG_SME
-		os_free(wpa_s->sme.sae_rejected_groups);
-		wpa_s->sme.sae_rejected_groups = NULL;
-#endif /* CONFIG_SME */
+		wpa_s_clear_sae_rejected(wpa_s);
 		wpa_s_setup_sae_pt(wpa_s->conf, ssid);
 #endif /* CONFIG_SAE */
 	}
@@ -4039,10 +4060,7 @@ void wpa_supplicant_select_network(struct wpa_supplicant *wpa_s,
 
 	wpa_s->disconnected = 0;
 	wpa_s->reassociate = 1;
-#if defined(CONFIG_SAE) && defined(CONFIG_SME)
-	os_free(wpa_s->sme.sae_rejected_groups);
-	wpa_s->sme.sae_rejected_groups = NULL;
-#endif /* CONFIG_SAE && CONFIG_SME */
+	wpa_s_clear_sae_rejected(wpa_s);
 	wpa_s->last_owe_group = 0;
 	if (ssid) {
 		ssid->owe_transition_bss_select_count = 0;
