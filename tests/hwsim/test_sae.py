@@ -1981,6 +1981,17 @@ def test_sae_pwe_h2e_only_ap(dev, apdev):
     if ev is None:
         raise Exception("No indication of mismatching network seen")
 
+def test_sae_pwe_h2e_only_ap_sta_forcing_loop(dev, apdev):
+    """SAE PWE derivation with H2E-only AP and STA forcing loop"""
+    start_sae_pwe_ap(apdev[0], 19, 1)
+    dev[0].set("ignore_sae_h2e_only", "1")
+    dev[0].connect("sae-pwe", psk="12345678", key_mgmt="SAE", scan_freq="2412",
+                   wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-SSID-TEMP-DISABLED"], timeout=10)
+    dev[0].request("DISCONNECT")
+    if ev is None:
+        raise Exception("No indication of temporary disabled network seen")
+
 def test_sae_pwe_loop_only_ap(dev, apdev):
     """SAE PWE derivation with loop-only AP"""
     start_sae_pwe_ap(apdev[0], 19, 0)
