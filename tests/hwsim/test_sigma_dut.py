@@ -3501,3 +3501,33 @@ def test_sigma_dut_sae_h2e_loop_forcing(dev, apdev):
             raise Exception("Unexpected connection reported")
     finally:
         stop_sigma_dut(sigma)
+
+def test_sigma_dut_sae_h2e_enabled_group_rejected(dev, apdev):
+    """sigma_dut controlled SAE H2E misbehavior with rejected groups"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    ssid = "test-sae"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params["ieee80211w"] = "2"
+    params['sae_groups'] = "19 20"
+    params['sae_pwe'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    ifname = dev[0].ifname
+    try:
+        sigma = start_sigma_dut(ifname, sae_h2e=True)
+
+        sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,ECGroupID_RGE,19 123" % (ifname, "test-sae", "12345678"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
+        ev = dev[0].wait_event(["SME: Trying to authenticate with"], timeout=10)
+        if ev is None:
+            raise Exception("No authentication attempt reported")
+        ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=0.5)
+        if ev is not None:
+            raise Exception("Unexpected connection reported")
+    finally:
+        stop_sigma_dut(sigma)
