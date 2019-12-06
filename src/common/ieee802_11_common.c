@@ -2269,3 +2269,121 @@ int ieee802_edmg_is_allowed(struct ieee80211_edmg_config allowed,
 
 	return 1;
 }
+
+
+int op_class_to_bandwidth(u8 op_class)
+{
+	switch (op_class) {
+	case 81:
+	case 82:
+		return 20;
+	case 83: /* channels 1..9; 40 MHz */
+	case 84: /* channels 5..13; 40 MHz */
+		return 40;
+	case 115: /* channels 36,40,44,48; indoor only */
+		return 20;
+	case 116: /* channels 36,44; 40 MHz; indoor only */
+	case 117: /* channels 40,48; 40 MHz; indoor only */
+		return 40;
+	case 118: /* channels 52,56,60,64; dfs */
+		return 20;
+	case 119: /* channels 52,60; 40 MHz; dfs */
+	case 120: /* channels 56,64; 40 MHz; dfs */
+		return 40;
+	case 121: /* channels 100-140 */
+		return 20;
+	case 122: /* channels 100-142; 40 MHz */
+	case 123: /* channels 104-136; 40 MHz */
+		return 40;
+	case 124: /* channels 149,153,157,161 */
+	case 125: /* channels 149,153,157,161,165,169 */
+		return 20;
+	case 126: /* channels 149,157; 40 MHz */
+	case 127: /* channels 153,161; 40 MHz */
+		return 40;
+	case 128: /* center freqs 42, 58, 106, 122, 138, 155; 80 MHz */
+		return 80;
+	case 129: /* center freqs 50, 114; 160 MHz */
+		return 160;
+	case 130: /* center freqs 42, 58, 106, 122, 138, 155; 80+80 MHz */
+		return 80;
+	case 131: /* UHB channels, 20 MHz: 1, 5, 9.. */
+		return 20;
+	case 132: /* UHB channels, 40 MHz: 3, 11, 19.. */
+		return 40;
+	case 133: /* UHB channels, 80 MHz: 7, 23, 39.. */
+		return 80;
+	case 134: /* UHB channels, 160 MHz: 15, 47, 79.. */
+	case 135: /* UHB channels, 80+80 MHz: 7, 23, 39.. */
+		return 160;
+	case 180: /* 60 GHz band, channels 1..8 */
+		return 2160;
+	case 181: /* 60 GHz band, EDMG CB2, channels 9..15 */
+		return 4320;
+	case 182: /* 60 GHz band, EDMG CB3, channels 17..22 */
+		return 6480;
+	case 183: /* 60 GHz band, EDMG CB4, channel 25..29 */
+		return 8640;
+	}
+
+	return 20;
+}
+
+
+int op_class_to_ch_width(u8 op_class)
+{
+	switch (op_class) {
+	case 81:
+	case 82:
+		return CHANWIDTH_USE_HT;
+	case 83: /* channels 1..9; 40 MHz */
+	case 84: /* channels 5..13; 40 MHz */
+		return CHANWIDTH_USE_HT;
+	case 115: /* channels 36,40,44,48; indoor only */
+		return CHANWIDTH_USE_HT;
+	case 116: /* channels 36,44; 40 MHz; indoor only */
+	case 117: /* channels 40,48; 40 MHz; indoor only */
+		return CHANWIDTH_USE_HT;
+	case 118: /* channels 52,56,60,64; dfs */
+		return CHANWIDTH_USE_HT;
+	case 119: /* channels 52,60; 40 MHz; dfs */
+	case 120: /* channels 56,64; 40 MHz; dfs */
+		return CHANWIDTH_USE_HT;
+	case 121: /* channels 100-140 */
+		return CHANWIDTH_USE_HT;
+	case 122: /* channels 100-142; 40 MHz */
+	case 123: /* channels 104-136; 40 MHz */
+		return CHANWIDTH_USE_HT;
+	case 124: /* channels 149,153,157,161 */
+	case 125: /* channels 149,153,157,161,165,169 */
+		return CHANWIDTH_USE_HT;
+	case 126: /* channels 149,157; 40 MHz */
+	case 127: /* channels 153,161; 40 MHz */
+		return CHANWIDTH_USE_HT;
+	case 128: /* center freqs 42, 58, 106, 122, 138, 155; 80 MHz */
+		return CHANWIDTH_80MHZ;
+	case 129: /* center freqs 50, 114; 160 MHz */
+		return CHANWIDTH_160MHZ;
+	case 130: /* center freqs 42, 58, 106, 122, 138, 155; 80+80 MHz */
+		return CHANWIDTH_80P80MHZ;
+	case 131: /* UHB channels, 20 MHz: 1, 5, 9.. */
+		return CHANWIDTH_USE_HT;
+	case 132: /* UHB channels, 40 MHz: 3, 11, 19.. */
+		return CHANWIDTH_USE_HT;
+	case 133: /* UHB channels, 80 MHz: 7, 23, 39.. */
+		return CHANWIDTH_80MHZ;
+	case 134: /* UHB channels, 160 MHz: 15, 47, 79.. */
+		return CHANWIDTH_160MHZ;
+	case 135: /* UHB channels, 80+80 MHz: 7, 23, 39.. */
+		return CHANWIDTH_80P80MHZ;
+	case 180: /* 60 GHz band, channels 1..8 */
+		return CHANWIDTH_2160MHZ;
+	case 181: /* 60 GHz band, EDMG CB2, channels 9..15 */
+		return CHANWIDTH_4320MHZ;
+	case 182: /* 60 GHz band, EDMG CB3, channels 17..22 */
+		return CHANWIDTH_6480MHZ;
+	case 183: /* 60 GHz band, EDMG CB4, channel 25..29 */
+		return CHANWIDTH_8640MHZ;
+	}
+	return CHANWIDTH_USE_HT;
+}

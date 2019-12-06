@@ -956,6 +956,9 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 			params.ch_width = 160;
 	}
 
+	if (hapd->iface->conf->op_class)
+		params.ch_width = op_class_to_bandwidth(
+			hapd->iface->conf->op_class);
 	ret = hapd->driver->do_acs(hapd->drv_priv, &params);
 	os_free(freq_list);
 

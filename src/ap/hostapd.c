@@ -1631,6 +1631,13 @@ static int setup_interface2(struct hostapd_iface *iface)
 		if (ret < 0)
 			goto fail;
 
+		if (iface->conf->op_class) {
+			int ch_width;
+
+			ch_width = op_class_to_ch_width(iface->conf->op_class);
+			hostapd_set_oper_chwidth(iface->conf, ch_width);
+		}
+
 		ret = hostapd_select_hw_mode(iface);
 		if (ret < 0) {
 			wpa_printf(MSG_ERROR, "Could not select hw_mode and "
