@@ -1263,7 +1263,7 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 		if (wpa_s->sme.sae.tmp &&
 		    sme_check_sae_rejected_groups(
 			    wpa_s,
-			    wpa_s->sme.sae.tmp->peer_rejected_groups) < 0)
+			    wpa_s->sme.sae.tmp->peer_rejected_groups))
 			return -1;
 
 		if (sae_process_commit(&wpa_s->sme.sae) < 0) {

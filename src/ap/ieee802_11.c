@@ -1280,7 +1280,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 
 		if (sta->sae->tmp &&
 		    check_sae_rejected_groups(
-			    hapd, sta->sae->tmp->peer_rejected_groups) < 0) {
+			    hapd, sta->sae->tmp->peer_rejected_groups)) {
 			resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
 			goto remove_sta;
 		}
