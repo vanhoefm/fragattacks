@@ -1122,8 +1122,10 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 	if (!sta->sae) {
 		if (auth_transaction != 1 ||
 		    !sae_status_success(hapd, status_code)) {
-			resp = -1;
-			goto remove_sta;
+			wpa_printf(MSG_DEBUG, "SAE: Unexpected Status Code %u",
+				   status_code);
+			resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
+			goto reply;
 		}
 		sta->sae = os_zalloc(sizeof(*sta->sae));
 		if (!sta->sae) {
