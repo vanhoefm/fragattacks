@@ -664,6 +664,7 @@ struct hostapd_bss_config {
 	struct wpabuf *own_ie_override;
 	int sae_reflection_attack;
 	struct wpabuf *sae_commit_override;
+	struct wpabuf *rsnxe_override_eapol;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 #define MESH_ENABLED BIT(0)

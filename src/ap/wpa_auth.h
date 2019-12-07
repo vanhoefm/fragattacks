@@ -219,6 +219,8 @@ struct wpa_auth_config {
 	double corrupt_gtk_rekey_mic_probability;
 	u8 own_ie_override[MAX_OWN_IE_OVERRIDE];
 	size_t own_ie_override_len;
+	u8 rsnxe_override_eapol[MAX_OWN_IE_OVERRIDE];
+	size_t rsnxe_override_eapol_len;
 #endif /* CONFIG_TESTING_OPTIONS */
 #ifdef CONFIG_P2P
 	u8 ip_addr_go[4];
