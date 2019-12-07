@@ -3561,3 +3561,38 @@ def test_sigma_dut_sae_h2e_rsnxe_mismatch(dev, apdev):
             raise Exception("Unexpected connection reported")
     finally:
         stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_sae_h2e_rsnxe_mismatch(dev, apdev, params):
+    """sigma_dut controlled SAE H2E AP misbehavior with RSNXE"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_sae_h2e_rsnxe_mismatch.sigma-hostapd")
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir,
+                                debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-SAE,PSK,12345678,sae_pwe,h2e,RSNXE_Content,EapolM3:F40100")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].request("SET sae_groups ")
+            dev[0].set("sae_pwe", "1")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", scan_freq="2412", wait_connect=False)
+            ev = dev[0].wait_event(["Associated with"], timeout=10)
+            if ev is None:
+                raise Exception("No indication of association seen")
+            ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                    "CTRL-EVENT-DISCONNECTED"], timeout=10)
+            dev[0].request("DISCONNECT")
+            if ev is None:
+                raise Exception("No disconnection seen")
+            if "CTRL-EVENT-DISCONNECTED" not in ev:
+                raise Exception("Unexpected connection")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+            dev[0].set("sae_pwe", "0")
