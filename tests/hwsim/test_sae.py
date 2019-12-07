@@ -2105,3 +2105,60 @@ def test_sae_auth_restart(dev, apdev):
     finally:
         dev[0].set("sae_groups", "")
         dev[0].set("sae_pwe", "0")
+
+def test_sae_h2e_rsnxe_mismatch(dev, apdev):
+    """SAE H2E and RSNXE mismatch in EAPOL-Key msg 2/4"""
+    params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_pwe'] = "1"
+    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        dev[0].set("sae_groups", "19")
+        dev[0].set("sae_pwe", "1")
+        for rsnxe in ["F40100", "F400", ""]:
+            dev[0].set("rsnxe_override_eapol", rsnxe)
+            dev[0].connect("sae-pwe", psk="12345678", key_mgmt="SAE",
+                           scan_freq="2412", wait_connect=False)
+            ev = dev[0].wait_event(["Associated with"], timeout=10)
+            if ev is None:
+                raise Exception("No indication of association seen")
+            ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                    "CTRL-EVENT-DISCONNECTED"], timeout=5)
+            dev[0].request("REMOVE_NETWORK all")
+            if ev is None:
+                raise Exception("No disconnection seen")
+            if "CTRL-EVENT-DISCONNECTED" not in ev:
+                raise Exception("Unexpected connection")
+            dev[0].dump_monitor()
+    finally:
+        dev[0].set("sae_groups", "")
+        dev[0].set("sae_pwe", "0")
+
+def test_sae_h2e_rsnxe_mismatch_assoc(dev, apdev):
+    """SAE H2E and RSNXE mismatch in EAPOL-Key msg 2/4 (assoc)"""
+    params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_pwe'] = "1"
+    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        dev[0].set("sae_groups", "19")
+        dev[0].set("sae_pwe", "1")
+        for rsnxe in ["F40100", "F400", ""]:
+            dev[0].set("rsnxe_override_assoc", rsnxe)
+            dev[0].set("rsnxe_override_eapol", "F40120")
+            dev[0].connect("sae-pwe", psk="12345678", key_mgmt="SAE",
+                           scan_freq="2412", wait_connect=False)
+            ev = dev[0].wait_event(["Associated with"], timeout=10)
+            if ev is None:
+                raise Exception("No indication of association seen")
+            ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                    "CTRL-EVENT-DISCONNECTED"], timeout=5)
+            dev[0].request("REMOVE_NETWORK all")
+            if ev is None:
+                raise Exception("No disconnection seen")
+            if "CTRL-EVENT-DISCONNECTED" not in ev:
+                raise Exception("Unexpected connection")
+            dev[0].dump_monitor()
+    finally:
+        dev[0].set("sae_groups", "")
+        dev[0].set("sae_pwe", "0")
