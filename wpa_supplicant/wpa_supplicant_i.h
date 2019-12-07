@@ -1126,6 +1126,8 @@ struct wpa_supplicant {
 	size_t last_tk_len;
 	struct wpabuf *last_assoc_req_wpa_ie;
 	int *extra_sae_rejected_groups;
+	struct wpabuf *rsnxe_override_assoc;
+	struct wpabuf *rsnxe_override_eapol;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 	struct wmm_ac_assoc_data *wmm_ac_assoc_info;

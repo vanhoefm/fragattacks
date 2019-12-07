@@ -3017,6 +3017,16 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 #ifdef CONFIG_MBO
 	wpas_mbo_check_pmf(wpa_s, bss, wpa_s->current_ssid);
 #endif /* CONFIG_MBO */
+
+#ifdef CONFIG_TESTING_OPTIONS
+	if (wpa_s->rsnxe_override_eapol) {
+		wpa_printf(MSG_DEBUG,
+			   "TESTING: RSNXE EAPOL-Key msg 2/4 override");
+		wpa_sm_set_assoc_rsnxe(wpa_s->wpa,
+				       wpabuf_head(wpa_s->rsnxe_override_eapol),
+				       wpabuf_len(wpa_s->rsnxe_override_eapol));
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 }
 
 
