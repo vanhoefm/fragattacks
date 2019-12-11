@@ -1015,6 +1015,28 @@ static void owe_trans_ssid(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 }
 
 
+static int disabled_freq(struct wpa_supplicant *wpa_s, int freq)
+{
+	int i, j;
+
+	if (!wpa_s->hw.modes || !wpa_s->hw.num_modes)
+		return 0;
+
+	for (j = 0; j < wpa_s->hw.num_modes; j++) {
+		struct hostapd_hw_modes *mode = &wpa_s->hw.modes[j];
+
+		for (i = 0; i < mode->num_channels; i++) {
+			struct hostapd_channel_data *chan = &mode->channels[i];
+
+			if (chan->freq == freq)
+				return !!(chan->flag & HOSTAPD_CHAN_DISABLED);
+		}
+	}
+
+	return 1;
+}
+
+
 struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 				     int i, struct wpa_bss *bss,
 				     struct wpa_ssid *group,
@@ -1103,6 +1125,12 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 	if (disallowed_ssid(wpa_s, match_ssid, match_ssid_len)) {
 		if (debug_print)
 			wpa_dbg(wpa_s, MSG_DEBUG, "   skip - SSID disallowed");
+		return NULL;
+	}
+
+	if (disabled_freq(wpa_s, bss->freq)) {
+		if (debug_print)
+			wpa_dbg(wpa_s, MSG_DEBUG, "   skip - channel disabled");
 		return NULL;
 	}
 
