@@ -299,6 +299,35 @@ def test_sigma_dut_sae(dev, apdev):
 
     stop_sigma_dut(sigma)
 
+def test_sigma_dut_sae_groups(dev, apdev):
+    """sigma_dut controlled SAE association with group negotiation"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname)
+
+    ssid = "test-sae"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params["ieee80211w"] = "2"
+    params['sae_groups'] = '19'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+    sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,ECGroupID,21 20 19" % (ifname, "test-sae", "12345678"))
+    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
+    sigma_dut_wait_connected(ifname)
+    sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+    if dev[0].get_status_field('sae_group') != '19':
+            raise Exception("Expected default SAE group not used")
+    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+
+    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+
+    stop_sigma_dut(sigma)
+
 def test_sigma_dut_sae_pmkid_include(dev, apdev):
     """sigma_dut controlled SAE association with PMKID"""
     if "SAE" not in dev[0].get_capability("auth_alg"):
