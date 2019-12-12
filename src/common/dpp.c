@@ -4740,6 +4740,8 @@ static const char * dpp_netrole_str(enum dpp_netrole netrole)
 		return "sta";
 	case DPP_NETROLE_AP:
 		return "ap";
+	case DPP_NETROLE_CONFIGURATOR:
+		return "configurator";
 	default:
 		return "??";
 	}
@@ -5317,6 +5319,8 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 		netrole = DPP_NETROLE_STA;
 	} else if (os_strcmp(token->string, "ap") == 0) {
 		netrole = DPP_NETROLE_AP;
+	} else if (os_strcmp(token->string, "configurator") == 0) {
+		netrole = DPP_NETROLE_CONFIGURATOR;
 	} else {
 		wpa_printf(MSG_DEBUG, "DPP: Unsupported netRole '%s'",
 			   token->string);

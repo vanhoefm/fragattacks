@@ -165,6 +165,7 @@ enum dpp_akm {
 enum dpp_netrole {
 	DPP_NETROLE_STA,
 	DPP_NETROLE_AP,
+	DPP_NETROLE_CONFIGURATOR,
 };
 
 struct dpp_configuration {

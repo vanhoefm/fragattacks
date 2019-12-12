@@ -680,6 +680,8 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 		pos += 9;
 		if (os_strncmp(pos, "ap", 2) == 0)
 			wpa_s->dpp_netrole = DPP_NETROLE_AP;
+		else if (os_strncmp(pos, "configurator", 12) == 0)
+			wpa_s->dpp_netrole = DPP_NETROLE_CONFIGURATOR;
 		else
 			wpa_s->dpp_netrole = DPP_NETROLE_STA;
 	}
@@ -835,6 +837,8 @@ int wpas_dpp_listen(struct wpa_supplicant *wpa_s, const char *cmd)
 	wpa_s->dpp_qr_mutual = os_strstr(cmd, " qr=mutual") != NULL;
 	if (os_strstr(cmd, " netrole=ap"))
 		wpa_s->dpp_netrole = DPP_NETROLE_AP;
+	else if (os_strstr(cmd, " netrole=configurator"))
+		wpa_s->dpp_netrole = DPP_NETROLE_CONFIGURATOR;
 	else
 		wpa_s->dpp_netrole = DPP_NETROLE_STA;
 	if (wpa_s->dpp_listen_freq == (unsigned int) freq) {
