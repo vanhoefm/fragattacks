@@ -29,6 +29,7 @@
 #include "crypto/aes_siv.h"
 #include "crypto/sha384.h"
 #include "crypto/sha512.h"
+#include "tls/asn1.h"
 #include "drivers/driver.h"
 #include "dpp.h"
 
@@ -451,6 +452,76 @@ static int dpp_hmac(size_t hash_len, const u8 *key, size_t key_len,
 		return hmac_sha512(key, key_len, data, data_len, mac);
 	return -1;
 }
+
+
+#ifdef CONFIG_DPP2
+
+static int dpp_pbkdf2_f(size_t hash_len,
+			const u8 *password, size_t password_len,
+			const u8 *salt, size_t salt_len,
+			unsigned int iterations, unsigned int count, u8 *digest)
+{
+	unsigned char tmp[DPP_MAX_HASH_LEN], tmp2[DPP_MAX_HASH_LEN];
+	unsigned int i;
+	size_t j;
+	u8 count_buf[4];
+	const u8 *addr[2];
+	size_t len[2];
+
+	addr[0] = salt;
+	len[0] = salt_len;
+	addr[1] = count_buf;
+	len[1] = 4;
+
+	/* F(P, S, c, i) = U1 xor U2 xor ... Uc
+	 * U1 = PRF(P, S || i)
+	 * U2 = PRF(P, U1)
+	 * Uc = PRF(P, Uc-1)
+	 */
+
+	WPA_PUT_BE32(count_buf, count);
+	if (dpp_hmac_vector(hash_len, password, password_len, 2, addr, len,
+			    tmp))
+		return -1;
+	os_memcpy(digest, tmp, hash_len);
+
+	for (i = 1; i < iterations; i++) {
+		if (dpp_hmac(hash_len, password, password_len, tmp, hash_len,
+			     tmp2))
+			return -1;
+		os_memcpy(tmp, tmp2, hash_len);
+		for (j = 0; j < hash_len; j++)
+			digest[j] ^= tmp2[j];
+	}
+
+	return 0;
+}
+
+
+static int dpp_pbkdf2(size_t hash_len, const u8 *password, size_t password_len,
+		      const u8 *salt, size_t salt_len, unsigned int iterations,
+		      u8 *buf, size_t buflen)
+{
+	unsigned int count = 0;
+	unsigned char *pos = buf;
+	size_t left = buflen, plen;
+	unsigned char digest[DPP_MAX_HASH_LEN];
+
+	while (left > 0) {
+		count++;
+		if (dpp_pbkdf2_f(hash_len, password, password_len,
+				 salt, salt_len, iterations, count, digest))
+			return -1;
+		plen = left > hash_len ? hash_len : left;
+		os_memcpy(pos, digest, plen);
+		pos += plen;
+		left -= plen;
+	}
+
+	return 0;
+}
+
+#endif /* CONFIG_DPP2 */
 
 
 static int dpp_bn2bin_pad(const BIGNUM *bn, u8 *pos, size_t len)
@@ -4628,6 +4699,20 @@ int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
 }
 
 
+static void dpp_free_asymmetric_key(struct dpp_asymmetric_key *key)
+{
+	while (key) {
+		struct dpp_asymmetric_key *next = key->next;
+
+		EVP_PKEY_free(key->csign);
+		str_clear_free(key->config_template);
+		str_clear_free(key->connector_template);
+		os_free(key);
+		key = next;
+	}
+}
+
+
 void dpp_auth_deinit(struct dpp_authentication *auth)
 {
 	unsigned int i;
@@ -4649,6 +4734,7 @@ void dpp_auth_deinit(struct dpp_authentication *auth)
 		os_free(conf->connector);
 		wpabuf_free(conf->c_sign_key);
 	}
+	dpp_free_asymmetric_key(auth->conf_key_pkg);
 	wpabuf_free(auth->net_access_key);
 	dpp_bootstrap_info_free(auth->tmp_own_bi);
 #ifdef CONFIG_TESTING_OPTIONS
@@ -6289,11 +6375,716 @@ fail:
 }
 
 
+#ifdef CONFIG_DPP2
+
+struct dpp_enveloped_data {
+	const u8 *enc_cont;
+	size_t enc_cont_len;
+	const u8 *enc_key;
+	size_t enc_key_len;
+	const u8 *salt;
+	size_t pbkdf2_key_len;
+	size_t prf_hash_len;
+};
+
+
+static int dpp_parse_recipient_infos(const u8 *pos, size_t len,
+				     struct dpp_enveloped_data *data)
+{
+	struct asn1_hdr hdr;
+	const u8 *end = pos + len;
+	const u8 *next, *e_end;
+	struct asn1_oid oid;
+	int val;
+	const u8 *params;
+	size_t params_len;
+
+	wpa_hexdump(MSG_MSGDUMP, "DPP: RecipientInfos", pos, len);
+
+	/*
+	 * RecipientInfo ::= CHOICE {
+	 *    ktri		KeyTransRecipientInfo,
+	 *    kari	[1]	KeyAgreeRecipientInfo,
+	 *    kekri	[2]	KEKRecipientInfo,
+	 *    pwri	[3]	PasswordRecipientInfo,
+	 *    ori	[4]	OtherRecipientInfo}
+	 *
+	 * Shall always use the pwri CHOICE.
+	 */
+
+	if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_CONTEXT_SPECIFIC || hdr.tag != 3) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Expected CHOICE [3] (pwri) - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		return -1;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: PasswordRecipientInfo",
+		    hdr.payload, hdr.length);
+	pos = hdr.payload;
+	end = pos + hdr.length;
+
+	/*
+	 * PasswordRecipientInfo ::= SEQUENCE {
+	 *    version			CMSVersion,
+	 *    keyDerivationAlgorithm [0] KeyDerivationAlgorithmIdentifier OPTIONAL,
+	 *    keyEncryptionAlgorithm	KeyEncryptionAlgorithmIdentifier,
+	 *    encryptedKey		EncryptedKey}
+	 *
+	 * version is 0, keyDerivationAlgorithm is id-PKBDF2, and the
+	 * parameters contains PBKDF2-params SEQUENCE.
+	 */
+
+	if (asn1_get_sequence(pos, end - pos, &hdr, &end) < 0)
+		return -1;
+	pos = hdr.payload;
+
+	if (asn1_get_integer(pos, end - pos, &val, &pos) < 0)
+		return -1;
+	if (val != 0) {
+		wpa_printf(MSG_DEBUG, "DPP: pwri.version != 0");
+		return -1;
+	}
+
+	wpa_hexdump(MSG_MSGDUMP, "DPP: Remaining PasswordRecipientInfo after version",
+		    pos, end - pos);
+
+	if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_CONTEXT_SPECIFIC || hdr.tag != 0) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Expected keyDerivationAlgorithm [0] - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		return -1;
+	}
+	pos = hdr.payload;
+	e_end = pos + hdr.length;
+
+	/* KeyDerivationAlgorithmIdentifier ::= AlgorithmIdentifier */
+	if (asn1_get_alg_id(pos, e_end - pos, &oid, &params, &params_len,
+			    &next) < 0)
+		return -1;
+	if (!asn1_oid_equal(&oid, &asn1_pbkdf2_oid)) {
+		char buf[80];
+
+		asn1_oid_to_str(&oid, buf, sizeof(buf));
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Unexpected KeyDerivationAlgorithmIdentifier %s",
+			   buf);
+		return -1;
+	}
+
+	/*
+	 * PBKDF2-params ::= SEQUENCE {
+	 *    salt CHOICE {
+	 *       specified OCTET STRING,
+	 *       otherSource AlgorithmIdentifier}
+	 *    iterationCount INTEGER (1..MAX),
+	 *    keyLength INTEGER (1..MAX),
+	 *    prf AlgorithmIdentifier}
+	 *
+	 * salt is an 64 octet value, iterationCount is 1000, keyLength is based
+	 * on Configurator signing key length, prf is
+	 * id-hmacWithSHA{256,384,512} based on Configurator signing key.
+	 */
+	if (!params ||
+	    asn1_get_sequence(params, params_len, &hdr, &e_end) < 0)
+		return -1;
+	pos = hdr.payload;
+
+	if (asn1_get_next(pos, e_end - pos, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_UNIVERSAL ||
+	    hdr.tag != ASN1_TAG_OCTETSTRING) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Expected OCTETSTRING (salt.specified) - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		return -1;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: salt.specified",
+		    hdr.payload, hdr.length);
+	if (hdr.length != 64) {
+		wpa_printf(MSG_DEBUG, "DPP: Unexpected salt length %u",
+			   hdr.length);
+		return -1;
+	}
+	data->salt = hdr.payload;
+	pos = hdr.payload + hdr.length;
+
+	if (asn1_get_integer(pos, e_end - pos, &val, &pos) < 0)
+		return -1;
+	if (val != 1000) {
+		wpa_printf(MSG_DEBUG, "DPP: Unexpected iterationCount %d", val);
+		return -1;
+	}
+
+	if (asn1_get_integer(pos, e_end - pos, &val, &pos) < 0)
+		return -1;
+	if (val != 32 && val != 48 && val != 64) {
+		wpa_printf(MSG_DEBUG, "DPP: Unexpected keyLength %d", val);
+		return -1;
+	}
+	data->pbkdf2_key_len = val;
+
+	if (asn1_get_sequence(pos, e_end - pos, &hdr, NULL) < 0 ||
+	    asn1_get_oid(hdr.payload, hdr.length, &oid, &pos) < 0) {
+		wpa_printf(MSG_DEBUG, "DPP: Could not parse prf");
+		return -1;
+	}
+	if (asn1_oid_equal(&oid, &asn1_pbkdf2_hmac_sha256_oid)) {
+		data->prf_hash_len = 32;
+	} else if (asn1_oid_equal(&oid, &asn1_pbkdf2_hmac_sha384_oid)) {
+		data->prf_hash_len = 48;
+	} else if (asn1_oid_equal(&oid, &asn1_pbkdf2_hmac_sha512_oid)) {
+		data->prf_hash_len = 64;
+	} else {
+		char buf[80];
+
+		asn1_oid_to_str(&oid, buf, sizeof(buf));
+		wpa_printf(MSG_DEBUG, "DPP: Unexpected PBKDF2-params.prf %s",
+			   buf);
+		return -1;
+	}
+
+	pos = next;
+
+	/* keyEncryptionAlgorithm KeyEncryptionAlgorithmIdentifier
+	 *
+	 * KeyEncryptionAlgorithmIdentifier ::= AlgorithmIdentifier
+	 *
+	 * id-alg-AES-SIV-CMAC-aed-256, id-alg-AES-SIV-CMAC-aed-384, or
+	 * id-alg-AES-SIV-CMAC-aed-512. */
+	if (asn1_get_alg_id(pos, end - pos, &oid, NULL, NULL, &pos) < 0)
+		return -1;
+	if (!asn1_oid_equal(&oid, &asn1_aes_siv_cmac_aead_256_oid) &&
+	    !asn1_oid_equal(&oid, &asn1_aes_siv_cmac_aead_384_oid) &&
+	    !asn1_oid_equal(&oid, &asn1_aes_siv_cmac_aead_512_oid)) {
+		char buf[80];
+
+		asn1_oid_to_str(&oid, buf, sizeof(buf));
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Unexpected KeyEncryptionAlgorithmIdentifier %s",
+			   buf);
+		return -1;
+	}
+
+	/*
+	 * encryptedKey EncryptedKey
+	 *
+	 * EncryptedKey ::= OCTET STRING
+	 */
+	if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_UNIVERSAL ||
+	    hdr.tag != ASN1_TAG_OCTETSTRING) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Expected OCTETSTRING (pwri.encryptedKey) - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		return -1;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: pwri.encryptedKey",
+		    hdr.payload, hdr.length);
+	data->enc_key = hdr.payload;
+	data->enc_key_len = hdr.length;
+
+	return 0;
+}
+
+
+static int dpp_parse_encrypted_content_info(const u8 *pos, const u8 *end,
+					    struct dpp_enveloped_data *data)
+{
+	struct asn1_hdr hdr;
+	struct asn1_oid oid;
+
+	/*
+	 * EncryptedContentInfo ::= SEQUENCE {
+	 *    contentType			ContentType,
+	 *    contentEncryptionAlgorithm  ContentEncryptionAlgorithmIdentifier,
+	 *    encryptedContent	[0] IMPLICIT	EncryptedContent OPTIONAL}
+	 */
+	if (asn1_get_sequence(pos, end - pos, &hdr, &pos) < 0)
+		return -1;
+	wpa_hexdump(MSG_MSGDUMP, "DPP: EncryptedContentInfo",
+		    hdr.payload, hdr.length);
+	if (pos < end) {
+		wpa_hexdump(MSG_DEBUG,
+			    "DPP: Unexpected extra data after EncryptedContentInfo",
+			    pos, end - pos);
+		return -1;
+	}
+
+	end = pos;
+	pos = hdr.payload;
+
+	/* ContentType ::= OBJECT IDENTIFIER */
+	if (asn1_get_oid(pos, end - pos, &oid, &pos) < 0) {
+		wpa_printf(MSG_DEBUG, "DPP: Could not parse ContentType");
+		return -1;
+	}
+	if (!asn1_oid_equal(&oid, &asn1_dpp_asymmetric_key_package_oid)) {
+		char buf[80];
+
+		asn1_oid_to_str(&oid, buf, sizeof(buf));
+		wpa_printf(MSG_DEBUG, "DPP: Unexpected ContentType %s", buf);
+		return -1;
+	}
+
+	/* ContentEncryptionAlgorithmIdentifier ::= AlgorithmIdentifier */
+	if (asn1_get_alg_id(pos, end - pos, &oid, NULL, NULL, &pos) < 0)
+		return -1;
+	if (!asn1_oid_equal(&oid, &asn1_aes_siv_cmac_aead_256_oid) &&
+	    !asn1_oid_equal(&oid, &asn1_aes_siv_cmac_aead_384_oid) &&
+	    !asn1_oid_equal(&oid, &asn1_aes_siv_cmac_aead_512_oid)) {
+		char buf[80];
+
+		asn1_oid_to_str(&oid, buf, sizeof(buf));
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Unexpected ContentEncryptionAlgorithmIdentifier %s",
+			   buf);
+		return -1;
+	}
+	/* ignore optional parameters */
+
+	/* encryptedContent [0] IMPLICIT EncryptedContent OPTIONAL
+	 * EncryptedContent ::= OCTET STRING */
+	if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_CONTEXT_SPECIFIC || hdr.tag != 0) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Expected [0] IMPLICIT (EncryptedContent) - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		return -1;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: EncryptedContent",
+		    hdr.payload, hdr.length);
+	data->enc_cont = hdr.payload;
+	data->enc_cont_len = hdr.length;
+	return 0;
+}
+
+
+static int dpp_parse_enveloped_data(const u8 *env_data, size_t env_data_len,
+				    struct dpp_enveloped_data *data)
+{
+	struct asn1_hdr hdr;
+	const u8 *pos, *end;
+	int val;
+
+	os_memset(data, 0, sizeof(*data));
+
+	/*
+	 * DPPEnvelopedData ::= EnvelopedData
+	 *
+	 * EnvelopedData ::= SEQUENCE {
+	 *    version			CMSVersion,
+	 *    originatorInfo	[0]	IMPLICIT OriginatorInfo OPTIONAL,
+	 *    recipientInfos		RecipientInfos,
+	 *    encryptedContentInfo	EncryptedContentInfo,
+	 *    unprotectedAttrs  [1] IMPLICIT	UnprotectedAttributes OPTIONAL}
+	 *
+	 * CMSVersion ::= INTEGER
+	 *
+	 * RecipientInfos ::= SET SIZE (1..MAX) OF RecipientInfo
+	 *
+	 * For DPP, version is 3, both originatorInfo and
+	 * unprotectedAttrs are omitted, and recipientInfos contains a single
+	 * RecipientInfo.
+	 */
+	if (asn1_get_sequence(env_data, env_data_len, &hdr, &end) < 0)
+		return -1;
+	pos = hdr.payload;
+	if (end < env_data + env_data_len) {
+		wpa_hexdump(MSG_DEBUG,
+			    "DPP: Unexpected extra data after DPPEnvelopedData",
+			    end, env_data + env_data_len - end);
+		return -1;
+	}
+
+	if (asn1_get_integer(pos, end - pos, &val, &pos) < 0)
+		return -1;
+	if (val != 3) {
+		wpa_printf(MSG_DEBUG, "DPP: EnvelopedData.version != 3");
+		return -1;
+	}
+
+	if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_UNIVERSAL || hdr.tag != ASN1_TAG_SET) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Expected SET (RecipientInfos) - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		return -1;
+	}
+
+	if (dpp_parse_recipient_infos(hdr.payload, hdr.length, data) < 0)
+		return -1;
+	return dpp_parse_encrypted_content_info(hdr.payload + hdr.length, end,
+						data);
+}
+
+
+static struct dpp_asymmetric_key *
+dpp_parse_one_asymmetric_key(const u8 *buf, size_t len)
+{
+	struct asn1_hdr hdr;
+	const u8 *pos = buf, *end = buf + len, *next;
+	int val;
+	const u8 *params;
+	size_t params_len;
+	struct asn1_oid oid;
+	char txt[80];
+	struct dpp_asymmetric_key *key;
+	EC_KEY *eckey;
+
+	wpa_hexdump_key(MSG_MSGDUMP, "DPP: OneAsymmetricKey", buf, len);
+
+	key = os_zalloc(sizeof(*key));
+	if (!key)
+		return NULL;
+
+	/*
+	 * OneAsymmetricKey ::= SEQUENCE {
+	 *    version			Version,
+	 *    privateKeyAlgorithm	PrivateKeyAlgorithmIdentifier,
+	 *    privateKey		PrivateKey,
+	 *    attributes		[0] Attributes OPTIONAL,
+	 *    ...,
+	 *    [[2: publicKey		[1] BIT STRING OPTIONAL ]],
+	 *    ...
+	 * }
+	 */
+	if (asn1_get_sequence(pos, end - pos, &hdr, &end) < 0)
+		goto fail;
+	pos = hdr.payload;
+
+	/* Version ::= INTEGER { v1(0), v2(1) } (v1, ..., v2) */
+	if (asn1_get_integer(pos, end - pos, &val, &pos) < 0)
+		goto fail;
+	if (val != 1) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Unsupported DPPAsymmetricKeyPackage version %d",
+			   val);
+		goto fail;
+	}
+
+	/* PrivateKeyAlgorithmIdentifier ::= AlgorithmIdentifier */
+	if (asn1_get_alg_id(pos, end - pos, &oid, &params, &params_len,
+			    &pos) < 0)
+		goto fail;
+	if (!asn1_oid_equal(&oid, &asn1_ec_public_key_oid)) {
+		asn1_oid_to_str(&oid, txt, sizeof(txt));
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Unsupported PrivateKeyAlgorithmIdentifier %s",
+			   txt);
+		goto fail;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: PrivateKeyAlgorithmIdentifier params",
+		    params, params_len);
+	/*
+	 * ECParameters ::= CHOICE {
+	 *    namedCurve	OBJECT IDENTIFIER
+	 *    -- implicitCurve	NULL
+	 *    -- specifiedCurve	SpecifiedECDomain}
+	 */
+	if (!params || asn1_get_oid(params, params_len, &oid, &next) < 0) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Could not parse ECParameters.namedCurve");
+		goto fail;
+	}
+	asn1_oid_to_str(&oid, txt, sizeof(txt));
+	wpa_printf(MSG_MSGDUMP, "DPP: namedCurve %s", txt);
+	/* Assume the curve is identified within ECPrivateKey, so that this
+	 * separate indication is not really needed. */
+
+	/*
+	 * PrivateKey ::= OCTET STRING
+	 *    (Contains DER encoding of ECPrivateKey)
+	 */
+	if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_UNIVERSAL ||
+	    hdr.tag != ASN1_TAG_OCTETSTRING) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Expected OCTETSTRING (PrivateKey) - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		goto fail;
+	}
+	wpa_hexdump_key(MSG_MSGDUMP, "DPP: PrivateKey",
+			hdr.payload, hdr.length);
+	pos = hdr.payload + hdr.length;
+	eckey = d2i_ECPrivateKey(NULL, &hdr.payload, hdr.length);
+	if (!eckey) {
+		wpa_printf(MSG_INFO,
+			   "DPP: OpenSSL: d2i_ECPrivateKey() failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+	key->csign = EVP_PKEY_new();
+	if (!key->csign || EVP_PKEY_assign_EC_KEY(key->csign, eckey) != 1) {
+		EC_KEY_free(eckey);
+		goto fail;
+	}
+	if (wpa_debug_show_keys)
+		dpp_debug_print_key("DPP: Received c-sign-key", key->csign);
+
+	/*
+	 * Attributes ::= SET OF Attribute { { OneAsymmetricKeyAttributes } }
+	 *
+	 * Exactly one instance of type Attribute in OneAsymmetricKey.
+	 */
+	if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_CONTEXT_SPECIFIC || hdr.tag != 0) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Expected [0] Attributes - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		goto fail;
+	}
+	wpa_hexdump_key(MSG_MSGDUMP, "DPP: Attributes",
+			hdr.payload, hdr.length);
+	if (hdr.payload + hdr.length < end) {
+		wpa_hexdump_key(MSG_MSGDUMP,
+				"DPP: Ignore additional data at the end of OneAsymmetricKey",
+				hdr.payload + hdr.length,
+				end - (hdr.payload + hdr.length));
+	}
+	pos = hdr.payload;
+	end = hdr.payload + hdr.length;
+
+	if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_UNIVERSAL || hdr.tag != ASN1_TAG_SET) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Expected SET (Attributes) - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		goto fail;
+	}
+	if (hdr.payload + hdr.length < end) {
+		wpa_hexdump_key(MSG_MSGDUMP,
+				"DPP: Ignore additional data at the end of OneAsymmetricKey (after SET)",
+				hdr.payload + hdr.length,
+				end - (hdr.payload + hdr.length));
+	}
+	pos = hdr.payload;
+	end = hdr.payload + hdr.length;
+
+	/*
+	 * OneAsymmetricKeyAttributes ATTRIBUTE ::= {
+	 *    aa-DPPConfigurationParameters,
+	 *    ... -- For local profiles
+	 * }
+	 *
+	 * aa-DPPConfigurationParameters ATTRIBUTE ::=
+	 * { TYPE DPPConfigurationParameters IDENTIFIED BY id-DPPConfigParams }
+	 *
+	 * Attribute ::= SEQUENCE {
+	 *    type OBJECT IDENTIFIER,
+	 *    values SET SIZE(1..MAX) OF Type
+	 *
+	 * Exactly one instance of ATTRIBUTE in attrValues.
+	 */
+	if (asn1_get_sequence(pos, end - pos, &hdr, &pos) < 0)
+		goto fail;
+	if (pos < end) {
+		wpa_hexdump_key(MSG_MSGDUMP,
+				"DPP: Ignore additional data at the end of ATTRIBUTE",
+				pos, end - pos);
+	}
+	end = pos;
+	pos = hdr.payload;
+
+	if (asn1_get_oid(pos, end - pos, &oid, &pos) < 0)
+		goto fail;
+	if (!asn1_oid_equal(&oid, &asn1_dpp_config_params_oid)) {
+		asn1_oid_to_str(&oid, txt, sizeof(txt));
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Unexpected Attribute identifier %s", txt);
+		goto fail;
+	}
+
+	if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_UNIVERSAL || hdr.tag != ASN1_TAG_SET) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Expected SET (Attribute) - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		goto fail;
+	}
+	pos = hdr.payload;
+	end = hdr.payload + hdr.length;
+
+	/*
+	 * DPPConfigurationParameters ::= SEQUENCE {
+	 *    configurationTemplate	UTF8String,
+	 *    connectorTemplate		UTF8String OPTIONAL}
+	 */
+
+	wpa_hexdump_key(MSG_MSGDUMP, "DPP: DPPConfigurationParameters",
+			pos, end - pos);
+	if (asn1_get_sequence(pos, end - pos, &hdr, &pos) < 0)
+		goto fail;
+	if (pos < end) {
+		wpa_hexdump_key(MSG_MSGDUMP,
+				"DPP: Ignore additional data after DPPConfigurationParameters",
+				pos, end - pos);
+	}
+	end = pos;
+	pos = hdr.payload;
+
+	if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_UNIVERSAL ||
+	    hdr.tag != ASN1_TAG_UTF8STRING) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Expected UTF8STRING (configurationTemplate) - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		goto fail;
+	}
+	wpa_hexdump_ascii_key(MSG_MSGDUMP, "DPP: configurationTemplate",
+			      hdr.payload, hdr.length);
+	key->config_template = os_zalloc(hdr.length + 1);
+	if (!key->config_template)
+		goto fail;
+	os_memcpy(key->config_template, hdr.payload, hdr.length);
+
+	pos = hdr.payload + hdr.length;
+
+	if (pos < end) {
+		if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
+		    hdr.class != ASN1_CLASS_UNIVERSAL ||
+		    hdr.tag != ASN1_TAG_UTF8STRING) {
+			wpa_printf(MSG_DEBUG,
+				   "DPP: Expected UTF8STRING (connectorTemplate) - found class %d tag 0x%x",
+				   hdr.class, hdr.tag);
+			goto fail;
+		}
+		wpa_hexdump_ascii_key(MSG_MSGDUMP, "DPP: connectorTemplate",
+				      hdr.payload, hdr.length);
+		key->connector_template = os_zalloc(hdr.length + 1);
+		if (!key->connector_template)
+			goto fail;
+		os_memcpy(key->connector_template, hdr.payload, hdr.length);
+	}
+
+	return key;
+fail:
+	wpa_printf(MSG_DEBUG, "DPP: Failed to parse OneAsymmetricKey");
+	dpp_free_asymmetric_key(key);
+	return NULL;
+}
+
+
+static struct dpp_asymmetric_key *
+dpp_parse_dpp_asymmetric_key_package(const u8 *key_pkg, size_t key_pkg_len)
+{
+	struct asn1_hdr hdr;
+	const u8 *pos = key_pkg, *end = key_pkg + key_pkg_len;
+	struct dpp_asymmetric_key *first = NULL, *last = NULL, *key;
+
+	wpa_hexdump_key(MSG_MSGDUMP, "DPP: DPPAsymmetricKeyPackage",
+			key_pkg, key_pkg_len);
+
+	/*
+	 * DPPAsymmetricKeyPackage ::= AsymmetricKeyPackage
+	 *
+	 * AsymmetricKeyPackage ::= SEQUENCE SIZE (1..MAX) OF OneAsymmetricKey
+	 */
+	while (pos < end) {
+		if (asn1_get_sequence(pos, end - pos, &hdr, &pos) < 0 ||
+		    !(key = dpp_parse_one_asymmetric_key(hdr.payload,
+							 hdr.length))) {
+			dpp_free_asymmetric_key(first);
+			return NULL;
+		}
+		if (!last) {
+			first = last = key;
+		} else {
+			last->next = key;
+			last = key;
+		}
+	}
+
+	return first;
+}
+
+
+static int dpp_conf_resp_env_data(struct dpp_authentication *auth,
+				  const u8 *env_data, size_t env_data_len)
+{
+	const u8 *key;
+	size_t key_len;
+	u8 kek[DPP_MAX_HASH_LEN];
+	u8 cont_encr_key[DPP_MAX_HASH_LEN];
+	size_t cont_encr_key_len;
+	int res;
+	u8 *key_pkg;
+	size_t key_pkg_len;
+	struct dpp_enveloped_data data;
+	struct dpp_asymmetric_key *keys;
+
+	wpa_hexdump(MSG_DEBUG, "DPP: DPPEnvelopedData", env_data, env_data_len);
+
+	if (dpp_parse_enveloped_data(env_data, env_data_len, &data) < 0)
+		return -1;
+
+	/* TODO: For initial testing, use ke as the key. Replace this with a
+	 * new key once that has been defined. */
+	key = auth->ke;
+	key_len = auth->curve->hash_len;
+	wpa_hexdump_key(MSG_DEBUG, "DPP: PBKDF2 key", key, key_len);
+
+	if (dpp_pbkdf2(data.prf_hash_len, key, key_len, data.salt, 64, 1000,
+		       kek, data.pbkdf2_key_len)) {
+		wpa_printf(MSG_DEBUG, "DPP: PBKDF2 failed");
+		return -1;
+	}
+	wpa_hexdump_key(MSG_DEBUG, "DPP: key-encryption key from PBKDF2",
+			kek, data.pbkdf2_key_len);
+
+	if (data.enc_key_len < AES_BLOCK_SIZE ||
+	    data.enc_key_len > sizeof(cont_encr_key) + AES_BLOCK_SIZE) {
+		wpa_printf(MSG_DEBUG, "DPP: Invalid encryptedKey length");
+		return -1;
+	}
+	res = aes_siv_decrypt(kek, data.pbkdf2_key_len,
+			      data.enc_key, data.enc_key_len,
+			      0, NULL, NULL, cont_encr_key);
+	forced_memzero(kek, data.pbkdf2_key_len);
+	if (res < 0) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: AES-SIV decryption of encryptedKey failed");
+		return -1;
+	}
+	cont_encr_key_len = data.enc_key_len - AES_BLOCK_SIZE;
+	wpa_hexdump_key(MSG_DEBUG, "DPP: content-encryption key",
+			cont_encr_key, cont_encr_key_len);
+
+	if (data.enc_cont_len < AES_BLOCK_SIZE)
+		return -1;
+	key_pkg_len = data.enc_cont_len - AES_BLOCK_SIZE;
+	key_pkg = os_malloc(key_pkg_len);
+	if (!key_pkg)
+		return -1;
+	res = aes_siv_decrypt(cont_encr_key, cont_encr_key_len,
+			      data.enc_cont, data.enc_cont_len,
+			      0, NULL, NULL, key_pkg);
+	forced_memzero(cont_encr_key, cont_encr_key_len);
+	if (res < 0) {
+		bin_clear_free(key_pkg, key_pkg_len);
+		wpa_printf(MSG_DEBUG,
+			   "DPP: AES-SIV decryption of encryptedContent failed");
+		return -1;
+	}
+
+	keys = dpp_parse_dpp_asymmetric_key_package(key_pkg, key_pkg_len);
+	bin_clear_free(key_pkg, key_pkg_len);
+	dpp_free_asymmetric_key(auth->conf_key_pkg);
+	auth->conf_key_pkg = keys;
+
+	return keys != NULL;;
+}
+
+#endif /* CONFIG_DPP2 */
+
+
 int dpp_conf_resp_rx(struct dpp_authentication *auth,
 		     const struct wpabuf *resp)
 {
 	const u8 *wrapped_data, *e_nonce, *status, *conf_obj;
 	u16 wrapped_data_len, e_nonce_len, status_len, conf_obj_len;
+	const u8 *env_data;
+	u16 env_data_len;
 	const u8 *addr[1];
 	size_t len[1];
 	u8 *unwrapped = NULL;
@@ -6369,9 +7160,17 @@ int dpp_conf_resp_rx(struct dpp_authentication *auth,
 		goto fail;
 	}
 
+	env_data = dpp_get_attr(unwrapped, unwrapped_len,
+				DPP_ATTR_ENVELOPED_DATA, &env_data_len);
+#ifdef CONFIG_DPP2
+	if (env_data &&
+	    dpp_conf_resp_env_data(auth, env_data, env_data_len) < 0)
+		goto fail;
+#endif /* CONFIG_DPP2 */
+
 	conf_obj = dpp_get_attr(unwrapped, unwrapped_len, DPP_ATTR_CONFIG_OBJ,
 				&conf_obj_len);
-	if (!conf_obj) {
+	if (!conf_obj && !env_data) {
 		dpp_auth_fail(auth,
 			      "Missing required Configuration Object attribute");
 		goto fail;

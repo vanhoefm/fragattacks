@@ -189,6 +189,13 @@ struct dpp_configuration {
 	int psk_set;
 };
 
+struct dpp_asymmetric_key {
+	struct dpp_asymmetric_key *next;
+	EVP_PKEY *csign;
+	char *config_template;
+	char *connector_template;
+};
+
 #define DPP_MAX_CONF_OBJ 10
 
 struct dpp_authentication {
@@ -260,6 +267,7 @@ struct dpp_authentication {
 		struct wpabuf *c_sign_key;
 	} conf_obj[DPP_MAX_CONF_OBJ];
 	unsigned int num_conf_obj;
+	struct dpp_asymmetric_key *conf_key_pkg;
 	struct wpabuf *net_access_key;
 	os_time_t net_access_key_expiry;
 	int send_conn_status;
