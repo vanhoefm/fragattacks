@@ -253,6 +253,7 @@ NEED_ECC=y
 NEED_JSON=y
 NEED_GAS_SERVER=y
 NEED_BASE64=y
+NEED_ASN1=y
 ifdef CONFIG_DPP2
 L_CFLAGS += -DCONFIG_DPP2
 endif
@@ -1089,7 +1090,7 @@ OBJS += src/tls/tlsv1_client.c
 OBJS += src/tls/tlsv1_client_write.c
 OBJS += src/tls/tlsv1_client_read.c
 OBJS += src/tls/tlsv1_client_ocsp.c
-OBJS += src/tls/asn1.c
+NEED_ASN1=y
 OBJS += src/tls/rsa.c
 OBJS += src/tls/x509v3.c
 OBJS += src/tls/pkcs1.c
@@ -1377,6 +1378,10 @@ OBJS += src/crypto/sha512.c
 endif
 endif
 OBJS += src/crypto/sha512-prf.c
+endif
+
+ifdef NEED_ASN1
+OBJS += src/tls/asn1.c
 endif
 
 ifdef NEED_DH_GROUPS

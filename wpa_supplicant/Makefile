@@ -285,6 +285,7 @@ NEED_ECC=y
 NEED_JSON=y
 NEED_GAS_SERVER=y
 NEED_BASE64=y
+NEED_ASN1=y
 ifdef CONFIG_DPP2
 CFLAGS += -DCONFIG_DPP2
 endif
@@ -1153,12 +1154,12 @@ OBJS += ../src/tls/tlsv1_client.o
 OBJS += ../src/tls/tlsv1_client_write.o
 OBJS += ../src/tls/tlsv1_client_read.o
 OBJS += ../src/tls/tlsv1_client_ocsp.o
-OBJS += ../src/tls/asn1.o
 OBJS += ../src/tls/rsa.o
 OBJS += ../src/tls/x509v3.o
 OBJS += ../src/tls/pkcs1.o
 OBJS += ../src/tls/pkcs5.o
 OBJS += ../src/tls/pkcs8.o
+NEED_ASN1=y
 NEED_BASE64=y
 NEED_TLS_PRF=y
 ifdef CONFIG_TLSV12
@@ -1232,12 +1233,12 @@ OBJS += ../src/tls/tlsv1_client.o
 OBJS += ../src/tls/tlsv1_client_write.o
 OBJS += ../src/tls/tlsv1_client_read.o
 OBJS += ../src/tls/tlsv1_client_ocsp.o
-OBJS += ../src/tls/asn1.o
 OBJS += ../src/tls/rsa.o
 OBJS += ../src/tls/x509v3.o
 OBJS += ../src/tls/pkcs1.o
 OBJS += ../src/tls/pkcs5.o
 OBJS += ../src/tls/pkcs8.o
+NEED_ASN1=y
 NEED_BASE64=y
 NEED_TLS_PRF=y
 ifdef CONFIG_TLSV12
@@ -1518,6 +1519,10 @@ endif
 endif
 CFLAGS += -DCONFIG_SHA512
 OBJS += ../src/crypto/sha512-prf.o
+endif
+
+ifdef NEED_ASN1
+OBJS += ../src/tls/asn1.o
 endif
 
 ifdef NEED_DH_GROUPS
