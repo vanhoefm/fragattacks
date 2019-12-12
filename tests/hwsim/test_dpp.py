@@ -240,6 +240,41 @@ def test_dpp_qr_code_auth_unicast_ap_enrollee(dev, apdev):
     """DPP QR Code and authentication exchange (AP enrollee)"""
     run_dpp_qr_code_auth_unicast(dev, apdev, None, netrole="ap")
 
+def run_dpp_configurator_enrollee(dev, apdev, conf_curve=None):
+    run_dpp_qr_code_auth_unicast(dev, apdev, None, netrole="configurator",
+                                 configurator=True, conf_curve=conf_curve)
+    ev = dev[0].wait_event(["DPP-CONFIGURATOR-ID"], timeout=2)
+    if ev is None:
+        raise Exception("No Configurator instance added")
+
+def test_dpp_configurator_enrollee(dev, apdev):
+    """DPP Configurator enrolling"""
+    run_dpp_configurator_enrollee(dev, apdev)
+
+def test_dpp_configurator_enrollee_prime256v1(dev, apdev):
+    """DPP Configurator enrolling (prime256v1)"""
+    run_dpp_configurator_enrollee(dev, apdev, conf_curve="prime256v1")
+
+def test_dpp_configurator_enrollee_secp384r1(dev, apdev):
+    """DPP Configurator enrolling (secp384r1)"""
+    run_dpp_configurator_enrollee(dev, apdev, conf_curve="secp384r1")
+
+def test_dpp_configurator_enrollee_secp521r1(dev, apdev):
+    """DPP Configurator enrolling (secp521r1)"""
+    run_dpp_configurator_enrollee(dev, apdev, conf_curve="secp521r1")
+
+def test_dpp_configurator_enrollee_brainpoolP256r1(dev, apdev):
+    """DPP Configurator enrolling (brainpoolP256r1)"""
+    run_dpp_configurator_enrollee(dev, apdev, conf_curve="brainpoolP256r1")
+
+def test_dpp_configurator_enrollee_brainpoolP384r1(dev, apdev):
+    """DPP Configurator enrolling (brainpoolP384r1)"""
+    run_dpp_configurator_enrollee(dev, apdev, conf_curve="brainpoolP384r1")
+
+def test_dpp_configurator_enrollee_brainpoolP512r1(dev, apdev):
+    """DPP Configurator enrolling (brainpoolP512r1)"""
+    run_dpp_configurator_enrollee(dev, apdev, conf_curve="brainpoolP512r1")
+
 def test_dpp_qr_code_curve_prime256v1(dev, apdev):
     """DPP QR Code and curve prime256v1"""
     run_dpp_qr_code_auth_unicast(dev, apdev, "prime256v1")
