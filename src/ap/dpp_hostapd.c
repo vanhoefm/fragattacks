@@ -787,7 +787,8 @@ static void hostapd_dpp_start_gas_client(struct hostapd_data *hapd)
 	struct wpabuf *buf;
 	int res;
 
-	buf = dpp_build_conf_req_helper(auth, hapd->conf->dpp_name, 1,
+	buf = dpp_build_conf_req_helper(auth, hapd->conf->dpp_name,
+					DPP_NETROLE_AP,
 					hapd->conf->dpp_mud_url, NULL);
 	if (!buf) {
 		wpa_printf(MSG_DEBUG,

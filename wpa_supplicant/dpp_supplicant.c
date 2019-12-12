@@ -678,7 +678,10 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 	pos = os_strstr(cmd, " netrole=");
 	if (pos) {
 		pos += 9;
-		wpa_s->dpp_netrole_ap = os_strncmp(pos, "ap", 2) == 0;
+		if (os_strncmp(pos, "ap", 2) == 0)
+			wpa_s->dpp_netrole = DPP_NETROLE_AP;
+		else
+			wpa_s->dpp_netrole = DPP_NETROLE_STA;
 	}
 
 	pos = os_strstr(cmd, " neg_freq=");
@@ -830,7 +833,10 @@ int wpas_dpp_listen(struct wpa_supplicant *wpa_s, const char *cmd)
 		wpa_s->dpp_allowed_roles = DPP_CAPAB_CONFIGURATOR |
 			DPP_CAPAB_ENROLLEE;
 	wpa_s->dpp_qr_mutual = os_strstr(cmd, " qr=mutual") != NULL;
-	wpa_s->dpp_netrole_ap = os_strstr(cmd, " netrole=ap") != NULL;
+	if (os_strstr(cmd, " netrole=ap"))
+		wpa_s->dpp_netrole = DPP_NETROLE_AP;
+	else
+		wpa_s->dpp_netrole = DPP_NETROLE_STA;
 	if (wpa_s->dpp_listen_freq == (unsigned int) freq) {
 		wpa_printf(MSG_DEBUG, "DPP: Already listening on %u MHz",
 			   freq);
@@ -1296,7 +1302,7 @@ static void wpas_dpp_start_gas_client(struct wpa_supplicant *wpa_s)
 
 	supp_op_classes = wpas_supp_op_classes(wpa_s);
 	buf = dpp_build_conf_req_helper(auth, wpa_s->conf->dpp_name,
-					wpa_s->dpp_netrole_ap,
+					wpa_s->dpp_netrole,
 					wpa_s->conf->dpp_mud_url,
 					supp_op_classes);
 	os_free(supp_op_classes);

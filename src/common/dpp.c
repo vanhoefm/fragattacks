@@ -33,6 +33,8 @@
 #include "dpp.h"
 
 
+static const char * dpp_netrole_str(enum dpp_netrole netrole);
+
 #ifdef CONFIG_TESTING_OPTIONS
 enum dpp_test_behavior dpp_test = DPP_TEST_DISABLED;
 u8 dpp_pkex_own_mac_override[ETH_ALEN] = { 0, 0, 0, 0, 0, 0 };
@@ -2531,7 +2533,8 @@ struct wpabuf * dpp_build_conf_req(struct dpp_authentication *auth,
 
 
 struct wpabuf * dpp_build_conf_req_helper(struct dpp_authentication *auth,
-					  const char *name, int netrole_ap,
+					  const char *name,
+					  enum dpp_netrole netrole,
 					  const char *mud_url, int *opclasses)
 {
 	size_t len, name_len;
@@ -2566,7 +2569,7 @@ struct wpabuf * dpp_build_conf_req_helper(struct dpp_authentication *auth,
 	json_value_sep(json);
 	json_add_string(json, "wi-fi_tech", tech);
 	json_value_sep(json);
-	json_add_string(json, "netRole", netrole_ap ? "ap" : "sta");
+	json_add_string(json, "netRole", dpp_netrole_str(netrole));
 	if (mud_url && mud_url[0]) {
 		json_value_sep(json);
 		json_add_string(json, "mudurl", mud_url);
@@ -5012,9 +5015,10 @@ dpp_build_conf_obj_legacy(struct dpp_authentication *auth,
 
 
 static struct wpabuf *
-dpp_build_conf_obj(struct dpp_authentication *auth, int ap, int idx)
+dpp_build_conf_obj(struct dpp_authentication *auth, enum dpp_netrole netrole,
+		   int idx)
 {
-	struct dpp_configuration *conf;
+	struct dpp_configuration *conf = NULL;
 
 #ifdef CONFIG_TESTING_OPTIONS
 	if (auth->config_obj_override) {
@@ -5026,17 +5030,22 @@ dpp_build_conf_obj(struct dpp_authentication *auth, int ap, int idx)
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
 
-	if (idx == 0)
-		conf = ap ? auth->conf_ap : auth->conf_sta;
-	else if (idx == 1)
-		conf = ap ? auth->conf2_ap : auth->conf2_sta;
-	else
-		conf = NULL;
+	if (idx == 0) {
+		if (netrole == DPP_NETROLE_STA)
+			conf = auth->conf_sta;
+		else if (netrole == DPP_NETROLE_AP)
+			conf = auth->conf_ap;
+	} else if (idx == 1) {
+		if (netrole == DPP_NETROLE_STA)
+			conf = auth->conf2_sta;
+		else if (netrole == DPP_NETROLE_AP)
+			conf = auth->conf2_ap;
+	}
 	if (!conf) {
 		if (idx == 0)
 			wpa_printf(MSG_DEBUG,
 				   "DPP: No configuration available for Enrollee(%s) - reject configuration request",
-				   ap ? "ap" : "sta");
+				   dpp_netrole_str(netrole));
 		return NULL;
 	}
 
@@ -5048,7 +5057,7 @@ dpp_build_conf_obj(struct dpp_authentication *auth, int ap, int idx)
 
 static struct wpabuf *
 dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
-		    u16 e_nonce_len, int ap)
+		    u16 e_nonce_len, enum dpp_netrole netrole)
 {
 	struct wpabuf *conf, *conf2 = NULL;
 	size_t clear_len, attr_len;
@@ -5058,11 +5067,11 @@ dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 	size_t len[1];
 	enum dpp_status_error status;
 
-	conf = dpp_build_conf_obj(auth, ap, 0);
+	conf = dpp_build_conf_obj(auth, netrole, 0);
 	if (conf) {
 		wpa_hexdump_ascii(MSG_DEBUG, "DPP: configurationObject JSON",
 				  wpabuf_head(conf), wpabuf_len(conf));
-		conf2 = dpp_build_conf_obj(auth, ap, 1);
+		conf2 = dpp_build_conf_obj(auth, netrole, 1);
 	}
 	status = conf ? DPP_STATUS_OK : DPP_STATUS_CONFIGURE_FAILURE;
 	auth->conf_resp_status = status;
@@ -5073,7 +5082,8 @@ dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 		clear_len += 4 + wpabuf_len(conf);
 	if (conf2)
 		clear_len += 4 + wpabuf_len(conf2);
-	if (auth->peer_version >= 2 && auth->send_conn_status && !ap)
+	if (auth->peer_version >= 2 && auth->send_conn_status &&
+	    netrole == DPP_NETROLE_STA)
 		clear_len += 4;
 	clear = wpabuf_alloc(clear_len);
 	attr_len = 4 + 1 + 4 + clear_len + AES_BLOCK_SIZE;
@@ -5131,7 +5141,8 @@ skip_e_nonce:
 			   "DPP: Second Config Object available, but peer does not support more than one");
 	}
 
-	if (auth->peer_version >= 2 && auth->send_conn_status && !ap) {
+	if (auth->peer_version >= 2 && auth->send_conn_status &&
+	    netrole == DPP_NETROLE_STA) {
 		wpa_printf(MSG_DEBUG, "DPP: sendConnStatus");
 		wpabuf_put_le16(clear, DPP_ATTR_SEND_CONN_STATUS);
 		wpabuf_put_le16(clear, 0);
@@ -5205,7 +5216,7 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 	size_t unwrapped_len = 0;
 	struct wpabuf *resp = NULL;
 	struct json_token *root = NULL, *token;
-	int ap;
+	enum dpp_netrole netrole;
 
 #ifdef CONFIG_TESTING_OPTIONS
 	if (dpp_test == DPP_TEST_STOP_AT_CONF_REQ) {
@@ -5303,9 +5314,9 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 	}
 	wpa_printf(MSG_DEBUG, "DPP: netRole = '%s'", token->string);
 	if (os_strcmp(token->string, "sta") == 0) {
-		ap = 0;
+		netrole = DPP_NETROLE_STA;
 	} else if (os_strcmp(token->string, "ap") == 0) {
-		ap = 1;
+		netrole = DPP_NETROLE_AP;
 	} else {
 		wpa_printf(MSG_DEBUG, "DPP: Unsupported netRole '%s'",
 			   token->string);
@@ -5333,7 +5344,7 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 		}
 	}
 
-	resp = dpp_build_conf_resp(auth, e_nonce, e_nonce_len, ap);
+	resp = dpp_build_conf_resp(auth, e_nonce, e_nonce_len, netrole);
 
 fail:
 	json_free(root);
