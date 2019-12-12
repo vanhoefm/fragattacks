@@ -270,3 +270,40 @@ int asn1_oid_equal(const struct asn1_oid *a, const struct asn1_oid *b)
 
 	return 1;
 }
+
+
+int asn1_get_integer(const u8 *buf, size_t len, int *integer, const u8 **next)
+{
+	struct asn1_hdr hdr;
+	size_t left;
+	const u8 *pos;
+	int value;
+
+	if (asn1_get_next(buf, len, &hdr) < 0 || hdr.length == 0)
+		return -1;
+
+	if (hdr.class != ASN1_CLASS_UNIVERSAL || hdr.tag != ASN1_TAG_INTEGER) {
+		wpa_printf(MSG_DEBUG,
+			   "ASN.1: Expected INTEGER - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		return -1;
+	}
+
+	*next = hdr.payload + hdr.length;
+	pos = hdr.payload;
+	left = hdr.length;
+	if (left > sizeof(value)) {
+		wpa_printf(MSG_DEBUG, "ASN.1: Too large INTEGER (len %u)",
+			   hdr.length);
+		return -1;
+	}
+	value = 0;
+	while (left) {
+		value <<= 8;
+		value |= *pos++;
+		left--;
+	}
+
+	*integer = value;
+	return 0;
+}
