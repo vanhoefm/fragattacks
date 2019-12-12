@@ -8,6 +8,7 @@ import logging
 logger = logging.getLogger()
 
 import hostapd
+from wpasupplicant import WpaSupplicant
 
 from hwsim_utils import set_rx_rssi, reset_rx_rssi
 import time
@@ -162,3 +163,23 @@ def test_oce_ap(dev, apdev):
     params['oce'] = "4"
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, psk=passphrase, ieee80211w="1", scan_freq="2412")
+
+def test_oce_ap_open(dev, apdev):
+    """OCE AP (open)"""
+    ssid = "test-oce"
+    params = {"ssid": ssid}
+    params['mbo'] = "1"
+    params['oce'] = "4"
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
+
+def test_oce_ap_open_connect_cmd(dev, apdev):
+    """OCE AP (open, connect command)"""
+    ssid = "test-oce"
+    params = {"ssid": ssid}
+    params['mbo'] = "1"
+    params['oce'] = "4"
+    hapd = hostapd.add_ap(apdev[0], params)
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
+    wpas.connect(ssid, key_mgmt="NONE", scan_freq="2412")
