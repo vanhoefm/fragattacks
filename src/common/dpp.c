@@ -5170,11 +5170,488 @@ dpp_build_conf_obj(struct dpp_authentication *auth, enum dpp_netrole netrole,
 }
 
 
+#ifdef CONFIG_DPP2
+
+static struct wpabuf * dpp_build_conf_params(void)
+{
+	struct wpabuf *buf;
+	size_t len;
+	/* TODO: proper template values */
+	const char *conf_template = "{\"wi-fi_tech\":\"infra\",\"discovery\":{\"ssid\":\"test\"},\"cred\":{\"akm\":\"dpp\"}}";
+	const char *connector_template = NULL;
+
+	len = 100 + os_strlen(conf_template);
+	if (connector_template)
+		len += os_strlen(connector_template);
+	buf = wpabuf_alloc(len);
+	if (!buf)
+		return NULL;
+
+	/*
+	 * DPPConfigurationParameters ::= SEQUENCE {
+	 *    configurationTemplate	UTF8String,
+	 *    connectorTemplate		UTF8String OPTIONAL}
+	 */
+
+	asn1_put_utf8string(buf, conf_template);
+	if (connector_template)
+		asn1_put_utf8string(buf, conf_template);
+	return asn1_encaps(buf, ASN1_CLASS_UNIVERSAL, ASN1_TAG_SEQUENCE);
+}
+
+
+static struct wpabuf * dpp_build_attribute(void)
+{
+	struct wpabuf *conf_params, *attr;
+
+	/*
+	 * aa-DPPConfigurationParameters ATTRIBUTE ::=
+	 * { TYPE DPPConfigurationParameters IDENTIFIED BY id-DPPConfigParams }
+	 *
+	 * Attribute ::= SEQUENCE {
+	 *    type OBJECT IDENTIFIER,
+	 *    values SET SIZE(1..MAX) OF Type
+	 */
+	conf_params = dpp_build_conf_params();
+	conf_params = asn1_encaps(conf_params, ASN1_CLASS_UNIVERSAL,
+				  ASN1_TAG_SET);
+	if (!conf_params)
+		return NULL;
+
+	attr = wpabuf_alloc(100 + wpabuf_len(conf_params));
+	if (!attr) {
+		wpabuf_clear_free(conf_params);
+		return NULL;
+	}
+
+	asn1_put_oid(attr, &asn1_dpp_config_params_oid);
+	wpabuf_put_buf(attr, conf_params);
+	wpabuf_clear_free(conf_params);
+
+	return asn1_encaps(attr, ASN1_CLASS_UNIVERSAL, ASN1_TAG_SEQUENCE);
+}
+
+
+static struct wpabuf * dpp_build_key_alg(const struct dpp_curve_params *curve)
+{
+	const struct asn1_oid *oid;
+	struct wpabuf *params, *res;
+
+	switch (curve->ike_group) {
+	case 19:
+		oid = &asn1_prime256v1_oid;
+		break;
+	case 20:
+		oid = &asn1_secp384r1_oid;
+		break;
+	case 21:
+		oid = &asn1_secp521r1_oid;
+		break;
+	case 28:
+		oid = &asn1_brainpoolP256r1_oid;
+		break;
+	case 29:
+		oid = &asn1_brainpoolP384r1_oid;
+		break;
+	case 30:
+		oid = &asn1_brainpoolP512r1_oid;
+		break;
+	default:
+		return NULL;
+	}
+
+	params = wpabuf_alloc(20);
+	if (!params)
+		return NULL;
+	asn1_put_oid(params, oid); /* namedCurve */
+
+	res = asn1_build_alg_id(&asn1_ec_public_key_oid, params);
+	wpabuf_free(params);
+	return res;
+}
+
+
+static struct wpabuf * dpp_build_key_pkg(struct dpp_authentication *auth)
+{
+	struct wpabuf *key = NULL, *attr, *alg, *priv_key = NULL;
+	EC_KEY *eckey;
+	unsigned char *der = NULL;
+	int der_len;
+
+	eckey = EVP_PKEY_get0_EC_KEY(auth->conf->csign);
+	if (!eckey)
+		return NULL;
+
+	EC_KEY_set_enc_flags(eckey, EC_PKEY_NO_PUBKEY);
+	der_len = i2d_ECPrivateKey(eckey, &der);
+	if (der_len > 0)
+		priv_key = wpabuf_alloc_copy(der, der_len);
+	OPENSSL_free(der);
+
+	alg = dpp_build_key_alg(auth->conf->curve);
+
+	/* Attributes ::= SET OF Attribute { { OneAsymmetricKeyAttributes } } */
+	attr = dpp_build_attribute();
+	attr = asn1_encaps(attr, ASN1_CLASS_UNIVERSAL, ASN1_TAG_SET);
+	if (!priv_key || !attr || !alg)
+		goto fail;
+
+	/*
+	 * OneAsymmetricKey ::= SEQUENCE {
+	 *    version			Version,
+	 *    privateKeyAlgorithm	PrivateKeyAlgorithmIdentifier,
+	 *    privateKey		PrivateKey,
+	 *    attributes		[0] Attributes OPTIONAL,
+	 *    ...,
+	 *    [[2: publicKey		[1] BIT STRING OPTIONAL ]],
+	 *    ...
+	 * }
+	 */
+
+	key = wpabuf_alloc(100 + wpabuf_len(alg) + wpabuf_len(priv_key) +
+			   wpabuf_len(attr));
+	if (!key)
+		goto fail;
+
+	asn1_put_integer(key, 1); /* version = v2(1) */
+
+	/* PrivateKeyAlgorithmIdentifier */
+	wpabuf_put_buf(key, alg);
+
+	/* PrivateKey ::= OCTET STRING */
+	asn1_put_octet_string(key, priv_key);
+
+	/* [0] Attributes OPTIONAL */
+	asn1_put_hdr(key, ASN1_CLASS_CONTEXT_SPECIFIC, 1, 0, wpabuf_len(attr));
+	wpabuf_put_buf(key, attr);
+
+fail:
+	wpabuf_clear_free(attr);
+	wpabuf_clear_free(priv_key);
+	wpabuf_free(alg);
+
+	/*
+	 * DPPAsymmetricKeyPackage ::= AsymmetricKeyPackage
+	 *
+	 * AsymmetricKeyPackage ::= SEQUENCE SIZE (1..MAX) OF OneAsymmetricKey
+	 *
+	 * OneAsymmetricKey ::= SEQUENCE
+	 */
+	return asn1_encaps(asn1_encaps(key,
+				       ASN1_CLASS_UNIVERSAL, ASN1_TAG_SEQUENCE),
+			   ASN1_CLASS_UNIVERSAL, ASN1_TAG_SEQUENCE);
+	return key;
+}
+
+
+static struct wpabuf * dpp_build_pbkdf2_alg_id(const struct wpabuf *salt,
+					       size_t hash_len)
+{
+	struct wpabuf *params = NULL, *buf = NULL, *prf = NULL;
+	const struct asn1_oid *oid;
+
+	/*
+	 * PBKDF2-params ::= SEQUENCE {
+	 *    salt CHOICE {
+	 *       specified OCTET STRING,
+	 *       otherSource AlgorithmIdentifier}
+	 *    iterationCount INTEGER (1..MAX),
+	 *    keyLength INTEGER (1..MAX),
+	 *    prf AlgorithmIdentifier}
+	 *
+	 * salt is an 64 octet value, iterationCount is 1000, keyLength is based
+	 * on Configurator signing key length, prf is
+	 * id-hmacWithSHA{256,384,512} based on Configurator signing key.
+	 */
+
+	if (hash_len == 32)
+		oid = &asn1_pbkdf2_hmac_sha256_oid;
+	else if (hash_len == 48)
+		oid = &asn1_pbkdf2_hmac_sha384_oid;
+	else if (hash_len == 64)
+		oid = &asn1_pbkdf2_hmac_sha512_oid;
+	else
+		goto fail;
+	prf = asn1_build_alg_id(oid, NULL);
+	if (!prf)
+		goto fail;
+	params = wpabuf_alloc(100 + wpabuf_len(salt) + wpabuf_len(prf));
+	if (!params)
+		goto fail;
+	asn1_put_octet_string(params, salt); /* salt.specified */
+	asn1_put_integer(params, 1000); /* iterationCount */
+	asn1_put_integer(params, hash_len); /* keyLength */
+	wpabuf_put_buf(params, prf);
+	params = asn1_encaps(params, ASN1_CLASS_UNIVERSAL, ASN1_TAG_SEQUENCE);
+	if (!params)
+		goto fail;
+	buf = asn1_build_alg_id(&asn1_pbkdf2_oid, params);
+fail:
+	wpabuf_free(params);
+	wpabuf_free(prf);
+	return buf;
+}
+
+
+static struct wpabuf *
+dpp_build_pw_recipient_info(struct dpp_authentication *auth, size_t hash_len,
+			    const struct wpabuf *cont_enc_key)
+{
+	struct wpabuf *pwri = NULL, *enc_key = NULL, *key_der_alg = NULL,
+		*key_enc_alg = NULL, *salt;
+	u8 kek[DPP_MAX_HASH_LEN];
+	const u8 *key;
+	size_t key_len;
+
+	salt = wpabuf_alloc(64);
+	if (!salt || os_get_random(wpabuf_put(salt, 64), 64) < 0)
+		goto fail;
+	wpa_hexdump_buf(MSG_DEBUG, "DPP: PBKDF2 salt", salt);
+
+	/* TODO: For initial testing, use ke as the key. Replace this with a
+	 * new key once that has been defined. */
+	key = auth->ke;
+	key_len = auth->curve->hash_len;
+	wpa_hexdump_key(MSG_DEBUG, "DPP: PBKDF2 key", key, key_len);
+
+	if (dpp_pbkdf2(hash_len, key, key_len, wpabuf_head(salt), 64, 1000,
+		       kek, hash_len)) {
+		wpa_printf(MSG_DEBUG, "DPP: PBKDF2 failed");
+		goto fail;
+	}
+	wpa_hexdump_key(MSG_DEBUG, "DPP: key-encryption key from PBKDF2",
+			kek, hash_len);
+
+	enc_key = wpabuf_alloc(hash_len + AES_BLOCK_SIZE);
+	if (!enc_key ||
+	    aes_siv_encrypt(kek, hash_len, wpabuf_head(cont_enc_key),
+			    wpabuf_len(cont_enc_key), 0, NULL, NULL,
+			    wpabuf_put(enc_key, hash_len + AES_BLOCK_SIZE)) < 0)
+		goto fail;
+	wpa_hexdump_buf(MSG_DEBUG, "DPP: encryptedKey", enc_key);
+
+	/*
+	 * PasswordRecipientInfo ::= SEQUENCE {
+	 *    version			CMSVersion,
+	 *    keyDerivationAlgorithm [0] KeyDerivationAlgorithmIdentifier OPTIONAL,
+	 *    keyEncryptionAlgorithm	KeyEncryptionAlgorithmIdentifier,
+	 *    encryptedKey		EncryptedKey}
+	 *
+	 * version is 0, keyDerivationAlgorithm is id-PKBDF2, and the
+	 * parameters contains PBKDF2-params SEQUENCE.
+	 */
+
+	key_der_alg = dpp_build_pbkdf2_alg_id(salt, hash_len);
+	key_enc_alg = asn1_build_alg_id(&asn1_aes_siv_cmac_aead_256_oid, NULL);
+	if (!key_der_alg || !key_enc_alg)
+		goto fail;
+	pwri = wpabuf_alloc(100 + wpabuf_len(key_der_alg) +
+			    wpabuf_len(key_enc_alg) + wpabuf_len(enc_key));
+	if (!pwri)
+		goto fail;
+
+	/* version = 0 */
+	asn1_put_integer(pwri, 0);
+
+	/* [0] KeyDerivationAlgorithmIdentifier */
+	asn1_put_hdr(pwri, ASN1_CLASS_CONTEXT_SPECIFIC, 1, 0,
+		     wpabuf_len(key_der_alg));
+	wpabuf_put_buf(pwri, key_der_alg);
+
+	/* KeyEncryptionAlgorithmIdentifier */
+	wpabuf_put_buf(pwri, key_enc_alg);
+
+	/* EncryptedKey ::= OCTET STRING */
+	asn1_put_octet_string(pwri, enc_key);
+
+fail:
+	wpabuf_clear_free(key_der_alg);
+	wpabuf_free(key_enc_alg);
+	wpabuf_free(enc_key);
+	wpabuf_free(salt);
+	forced_memzero(kek, sizeof(kek));
+	return asn1_encaps(pwri, ASN1_CLASS_UNIVERSAL, ASN1_TAG_SEQUENCE);
+}
+
+
+static struct wpabuf *
+dpp_build_recipient_info(struct dpp_authentication *auth, size_t hash_len,
+			 const struct wpabuf *cont_enc_key)
+{
+	struct wpabuf *pwri;
+
+	/*
+	 * RecipientInfo ::= CHOICE {
+	 *    ktri		KeyTransRecipientInfo,
+	 *    kari	[1]	KeyAgreeRecipientInfo,
+	 *    kekri	[2]	KEKRecipientInfo,
+	 *    pwri	[3]	PasswordRecipientInfo,
+	 *    ori	[4]	OtherRecipientInfo}
+	 *
+	 * Shall always use the pwri CHOICE.
+	 */
+
+	pwri = dpp_build_pw_recipient_info(auth, hash_len, cont_enc_key);
+	return asn1_encaps(pwri, ASN1_CLASS_CONTEXT_SPECIFIC, 3);
+}
+
+
+static struct wpabuf *
+dpp_build_enc_cont_info(struct dpp_authentication *auth, size_t hash_len,
+			const struct wpabuf *cont_enc_key)
+{
+	struct wpabuf *key_pkg, *enc_cont_info = NULL, *enc_cont = NULL,
+		*enc_alg;
+	const struct asn1_oid *oid;
+	size_t enc_cont_len;
+
+	/*
+	 * EncryptedContentInfo ::= SEQUENCE {
+	 *    contentType			ContentType,
+	 *    contentEncryptionAlgorithm  ContentEncryptionAlgorithmIdentifier,
+	 *    encryptedContent	[0] IMPLICIT	EncryptedContent OPTIONAL}
+	 */
+
+	if (hash_len == 32)
+		oid = &asn1_aes_siv_cmac_aead_256_oid;
+	else if (hash_len == 48)
+		oid = &asn1_aes_siv_cmac_aead_384_oid;
+	else if (hash_len == 64)
+		oid = &asn1_aes_siv_cmac_aead_512_oid;
+	else
+		return NULL;
+
+	key_pkg = dpp_build_key_pkg(auth);
+	enc_alg = asn1_build_alg_id(oid, NULL);
+	if (!key_pkg || !enc_alg)
+		goto fail;
+
+	wpa_hexdump_buf_key(MSG_MSGDUMP, "DPP: DPPAsymmetricKeyPackage",
+			    key_pkg);
+
+	enc_cont_len = wpabuf_len(key_pkg) + AES_BLOCK_SIZE;
+	enc_cont = wpabuf_alloc(enc_cont_len);
+	if (!enc_cont ||
+	    aes_siv_encrypt(wpabuf_head(cont_enc_key), wpabuf_len(cont_enc_key),
+			    wpabuf_head(key_pkg), wpabuf_len(key_pkg),
+			    0, NULL, NULL,
+			    wpabuf_put(enc_cont, enc_cont_len)) < 0)
+		goto fail;
+
+	enc_cont_info = wpabuf_alloc(100 + wpabuf_len(enc_alg) +
+				     wpabuf_len(enc_cont));
+	if (!enc_cont_info)
+		goto fail;
+
+	/* ContentType ::= OBJECT IDENTIFIER */
+	asn1_put_oid(enc_cont_info, &asn1_dpp_asymmetric_key_package_oid);
+
+	/* ContentEncryptionAlgorithmIdentifier ::= AlgorithmIdentifier */
+	wpabuf_put_buf(enc_cont_info, enc_alg);
+
+	/* encryptedContent [0] IMPLICIT EncryptedContent OPTIONAL
+	 * EncryptedContent ::= OCTET STRING */
+	asn1_put_hdr(enc_cont_info, ASN1_CLASS_CONTEXT_SPECIFIC, 1, 0,
+		     wpabuf_len(enc_cont));
+	wpabuf_put_buf(enc_cont_info, enc_cont);
+
+fail:
+	wpabuf_clear_free(key_pkg);
+	wpabuf_free(enc_cont);
+	wpabuf_free(enc_alg);
+	return enc_cont_info;
+}
+
+
+static struct wpabuf * dpp_gen_random(size_t len)
+{
+	struct wpabuf *key;
+
+	key = wpabuf_alloc(len);
+	if (!key || os_get_random(wpabuf_put(key, len), len) < 0) {
+		wpabuf_free(key);
+		key = NULL;
+	}
+	wpa_hexdump_buf_key(MSG_DEBUG, "DPP: content-encryption key", key);
+	return key;
+}
+
+
+static struct wpabuf * dpp_build_enveloped_data(struct dpp_authentication *auth)
+{
+	struct wpabuf *env = NULL;
+	struct wpabuf *recipient_info = NULL, *enc_cont_info = NULL;
+	struct wpabuf *cont_enc_key = NULL;
+	size_t hash_len;
+
+	if (!auth->conf) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No Configurator instance selected for the session - cannot build DPPEnvelopedData");
+		return NULL;
+	}
+
+	wpa_printf(MSG_DEBUG, "DPP: Building DPPEnvelopedData");
+
+	hash_len = auth->conf->curve->hash_len;
+	cont_enc_key = dpp_gen_random(hash_len);
+	if (!cont_enc_key)
+		goto fail;
+	recipient_info = dpp_build_recipient_info(auth, hash_len, cont_enc_key);
+	enc_cont_info = dpp_build_enc_cont_info(auth, hash_len, cont_enc_key);
+	if (!recipient_info || !enc_cont_info)
+		goto fail;
+
+	env = wpabuf_alloc(wpabuf_len(recipient_info) +
+			   wpabuf_len(enc_cont_info) +
+			   100);
+	if (!env)
+		goto fail;
+
+	/*
+	 * DPPEnvelopedData ::= EnvelopedData
+	 *
+	 * EnvelopedData ::= SEQUENCE {
+	 *    version			CMSVersion,
+	 *    originatorInfo	[0]	IMPLICIT OriginatorInfo OPTIONAL,
+	 *    recipientInfos		RecipientInfos,
+	 *    encryptedContentInfo	EncryptedContentInfo,
+	 *    unprotectedAttrs  [1] IMPLICIT	UnprotectedAttributes OPTIONAL}
+	 *
+	 * For DPP, version is 3, both originatorInfo and
+	 * unprotectedAttrs are omitted, and recipientInfos contains a single
+	 * RecipientInfo.
+	 */
+
+	/* EnvelopedData.version = 3 */
+	asn1_put_integer(env, 3);
+
+	/* RecipientInfos ::= SET SIZE (1..MAX) OF RecipientInfo */
+	asn1_put_set(env, recipient_info);
+
+	/* EncryptedContentInfo ::= SEQUENCE */
+	asn1_put_sequence(env, enc_cont_info);
+
+	env = asn1_encaps(env, ASN1_CLASS_UNIVERSAL, ASN1_TAG_SEQUENCE);
+	wpa_hexdump_buf(MSG_MSGDUMP, "DPP: DPPEnvelopedData", env);
+out:
+	wpabuf_clear_free(cont_enc_key);
+	wpabuf_clear_free(recipient_info);
+	wpabuf_free(enc_cont_info);
+	return env;
+fail:
+	wpabuf_free(env);
+	env = NULL;
+	goto out;
+}
+
+#endif /* CONFIG_DPP2 */
+
+
 static struct wpabuf *
 dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 		    u16 e_nonce_len, enum dpp_netrole netrole)
 {
-	struct wpabuf *conf, *conf2 = NULL;
+	struct wpabuf *conf = NULL, *conf2 = NULL, *env_data = NULL;
 	size_t clear_len, attr_len;
 	struct wpabuf *clear = NULL, *msg = NULL;
 	u8 *wrapped;
@@ -5182,13 +5659,21 @@ dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 	size_t len[1];
 	enum dpp_status_error status;
 
-	conf = dpp_build_conf_obj(auth, netrole, 0);
-	if (conf) {
-		wpa_hexdump_ascii(MSG_DEBUG, "DPP: configurationObject JSON",
-				  wpabuf_head(conf), wpabuf_len(conf));
-		conf2 = dpp_build_conf_obj(auth, netrole, 1);
+	if (netrole == DPP_NETROLE_CONFIGURATOR) {
+#ifdef CONFIG_DPP2
+		env_data = dpp_build_enveloped_data(auth);
+#endif /* CONFIG_DPP2 */
+	} else {
+		conf = dpp_build_conf_obj(auth, netrole, 0);
+		if (conf) {
+			wpa_hexdump_ascii(MSG_DEBUG,
+					  "DPP: configurationObject JSON",
+					  wpabuf_head(conf), wpabuf_len(conf));
+			conf2 = dpp_build_conf_obj(auth, netrole, 1);
+		}
 	}
-	status = conf ? DPP_STATUS_OK : DPP_STATUS_CONFIGURE_FAILURE;
+	status = (conf || env_data) ? DPP_STATUS_OK :
+		DPP_STATUS_CONFIGURE_FAILURE;
 	auth->conf_resp_status = status;
 
 	/* { E-nonce, configurationObject[, sendConnStatus]}ke */
@@ -5197,6 +5682,8 @@ dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 		clear_len += 4 + wpabuf_len(conf);
 	if (conf2)
 		clear_len += 4 + wpabuf_len(conf2);
+	if (env_data)
+		clear_len += 4 + wpabuf_len(env_data);
 	if (auth->peer_version >= 2 && auth->send_conn_status &&
 	    netrole == DPP_NETROLE_STA)
 		clear_len += 4;
@@ -5255,6 +5742,11 @@ skip_e_nonce:
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Second Config Object available, but peer does not support more than one");
 	}
+	if (env_data) {
+		wpabuf_put_le16(clear, DPP_ATTR_ENVELOPED_DATA);
+		wpabuf_put_le16(clear, wpabuf_len(env_data));
+		wpabuf_put_buf(clear, env_data);
+	}
 
 	if (auth->peer_version >= 2 && auth->send_conn_status &&
 	    netrole == DPP_NETROLE_STA) {
@@ -5309,9 +5801,10 @@ skip_wrapped_data:
 	wpa_hexdump_buf(MSG_DEBUG,
 			"DPP: Configuration Response attributes", msg);
 out:
-	wpabuf_free(conf);
-	wpabuf_free(conf2);
-	wpabuf_free(clear);
+	wpabuf_clear_free(conf);
+	wpabuf_clear_free(conf2);
+	wpabuf_clear_free(env_data);
+	wpabuf_clear_free(clear);
 
 	return msg;
 fail:
