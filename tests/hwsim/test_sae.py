@@ -2020,6 +2020,14 @@ def test_sae_h2e_rejected_groups(dev, apdev):
         dev[0].set("sae_pwe", "1")
         dev[0].connect("sae-pwe", psk="12345678", key_mgmt="SAE",
                        scan_freq="2412")
+        addr = dev[0].own_addr()
+        hapd.wait_sta(addr)
+        sta = hapd.get_sta(addr)
+        if 'sae_rejected_groups' not in sta:
+            raise Exception("No sae_rejected_groups")
+        val = sta['sae_rejected_groups']
+        if val != "21 20":
+            raise Exception("Unexpected sae_rejected_groups value: " + val)
     finally:
         dev[0].set("sae_groups", "")
         dev[0].set("sae_pwe", "0")

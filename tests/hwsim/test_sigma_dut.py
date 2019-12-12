@@ -3625,3 +3625,32 @@ def test_sigma_dut_ap_sae_h2e_rsnxe_mismatch(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
             dev[0].set("sae_pwe", "0")
+
+def test_sigma_dut_ap_sae_h2e_group_rejection(dev, apdev, params):
+    """sigma_dut controlled AP with SAE H2E-only and group rejection"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_sae_h2e_group_rejection.sigma-hostapd")
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir,
+                                debug=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-SAE,PSK,12345678,sae_pwe,h2e")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].request("SET sae_groups 21 20 19")
+            dev[0].set("sae_pwe", "1")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", scan_freq="2412")
+            addr = dev[0].own_addr()
+            res = sigma_dut_cmd_check("dev_exec_action,program,WPA3,Dest_MAC,%s,Rejected_DH_Groups,1" % addr)
+            if "DHGroupVerResult,21 20" not in res:
+                raise Exception("Unexpected dev_exec_action response: " + res)
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+            dev[0].set("sae_pwe", "0")
