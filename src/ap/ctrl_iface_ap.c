@@ -273,6 +273,36 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 		if (!os_snprintf_error(buflen - len, res))
 			len += res;
 	}
+
+	if (sta->sae && sta->sae->tmp) {
+		const u8 *pos;
+		unsigned int i, count;
+		struct wpabuf *groups = sta->sae->tmp->peer_rejected_groups;
+
+		res = os_snprintf(buf + len, buflen - len,
+				  "sae_rejected_groups=");
+		if (!os_snprintf_error(buflen - len, res))
+			len += res;
+
+		if (groups) {
+			pos = wpabuf_head(groups);
+			count = wpabuf_len(groups) / 2;
+		} else {
+			pos = NULL;
+			count = 0;
+		}
+		for (i = 0; pos && i < count; i++) {
+			res = os_snprintf(buf + len, buflen - len, "%s%d",
+					  i == 0 ? "" : " ", WPA_GET_LE16(pos));
+			if (!os_snprintf_error(buflen - len, res))
+				len += res;
+			pos += 2;
+		}
+
+		res = os_snprintf(buf + len, buflen - len, "\n");
+		if (!os_snprintf_error(buflen - len, res))
+			len += res;
+	}
 #endif /* CONFIG_SAE */
 
 	if (sta->vlan_id > 0) {
