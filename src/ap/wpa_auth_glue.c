@@ -748,7 +748,11 @@ static int hostapd_wpa_auth_oui_iter(struct hostapd_iface *iface, void *ctx)
 					       hostapd_oui_deliver_later,
 					       hapd, NULL);
 
-		return 1;
+		/* If dst_addr is a multicast address, do not return any
+		 * non-zero value here. Otherwise, the iteration of
+		 * for_each_interface() will be stopped. */
+		if (!is_multicast_ether_addr(idata->dst_addr))
+			return 1;
 	}
 
 	return 0;
