@@ -3515,9 +3515,8 @@ def test_sigma_dut_sae_h2e_loop_forcing(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
 
     ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname)
     try:
-        sigma = start_sigma_dut(ifname)
-
         sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
         sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
         sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,IgnoreH2E_RSNXE_BSSMemSel,1" % (ifname, "test-sae", "12345678"))
@@ -3545,9 +3544,8 @@ def test_sigma_dut_sae_h2e_enabled_group_rejected(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
 
     ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, sae_h2e=True)
     try:
-        sigma = start_sigma_dut(ifname, sae_h2e=True)
-
         sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
         sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
         sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,ECGroupID_RGE,19 123" % (ifname, "test-sae", "12345678"))
@@ -3575,9 +3573,8 @@ def test_sigma_dut_sae_h2e_rsnxe_mismatch(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
 
     ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, sae_h2e=True)
     try:
-        sigma = start_sigma_dut(ifname, sae_h2e=True)
-
         sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
         sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
         sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,RSNXE_Content,EapolM2:F40100" % (ifname, "test-sae", "12345678"))
