@@ -725,6 +725,10 @@ static int hostapd_wpa_auth_oui_iter(struct hostapd_iface *iface, void *ctx)
 		hapd = iface->bss[j];
 		if (hapd == idata->src_hapd)
 			continue;
+		if (os_memcmp(hapd->conf->mobility_domain,
+			      idata->src_hapd->conf->mobility_domain,
+			      MOBILITY_DOMAIN_ID_LEN) != 0)
+			continue;
 		if (!is_multicast_ether_addr(idata->dst_addr) &&
 		    os_memcmp(hapd->own_addr, idata->dst_addr, ETH_ALEN) != 0)
 			continue;
