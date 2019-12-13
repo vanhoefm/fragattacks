@@ -851,6 +851,41 @@ int hostapd_dfs_pre_cac_expired(struct hostapd_iface *iface, int freq,
 }
 
 
+static struct hostapd_channel_data *
+dfs_downgrade_bandwidth(struct hostapd_iface *iface, int *secondary_channel,
+			u8 *oper_centr_freq_seg0_idx,
+			u8 *oper_centr_freq_seg1_idx, int *skip_radar)
+{
+	struct hostapd_channel_data *channel;
+
+	for (;;) {
+		channel = dfs_get_valid_channel(iface, secondary_channel,
+						oper_centr_freq_seg0_idx,
+						oper_centr_freq_seg1_idx,
+						*skip_radar);
+		if (channel) {
+			wpa_printf(MSG_DEBUG, "DFS: Selected channel: %d",
+				   channel->chan);
+			return channel;
+		}
+
+		if (*skip_radar) {
+			*skip_radar = 0;
+		} else {
+			if (iface->conf->vht_oper_chwidth == CHANWIDTH_USE_HT)
+				break;
+			*skip_radar = 1;
+			iface->conf->vht_oper_chwidth--;
+		}
+	}
+
+	wpa_printf(MSG_INFO,
+		   "%s: no DFS channels left, waiting for NOP to finish",
+		   __func__);
+	return NULL;
+}
+
+
 static int hostapd_dfs_start_channel_switch_cac(struct hostapd_iface *iface)
 {
 	struct hostapd_channel_data *channel;
@@ -868,8 +903,14 @@ static int hostapd_dfs_start_channel_switch_cac(struct hostapd_iface *iface)
 					skip_radar);
 
 	if (!channel) {
-		wpa_printf(MSG_ERROR, "No valid channel available");
-		return err;
+		channel = dfs_downgrade_bandwidth(iface, &secondary_channel,
+						  &oper_centr_freq_seg0_idx,
+						  &oper_centr_freq_seg1_idx,
+						  &skip_radar);
+		if (!channel) {
+			wpa_printf(MSG_ERROR, "No valid channel available");
+			return err;
+		}
 	}
 
 	wpa_printf(MSG_DEBUG, "DFS will switch to a new channel %d",
@@ -898,11 +939,13 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 	int secondary_channel;
 	u8 oper_centr_freq_seg0_idx;
 	u8 oper_centr_freq_seg1_idx;
+	u8 new_vht_oper_chwidth;
 	int skip_radar = 1;
 	struct csa_settings csa_settings;
 	unsigned int i;
 	int err = 1;
 	struct hostapd_hw_modes *cmode = iface->current_mode;
+	u8 current_vht_oper_chwidth = iface->conf->vht_oper_chwidth;
 
 	wpa_printf(MSG_DEBUG, "%s called (CAC active: %s, CSA active: %s)",
 		   __func__, iface->cac_started ? "yes" : "no",
@@ -936,28 +979,25 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 		 * requires to perform a CAC first.
 		 */
 		skip_radar = 0;
-		channel = dfs_get_valid_channel(iface, &secondary_channel,
-						&oper_centr_freq_seg0_idx,
-						&oper_centr_freq_seg1_idx,
-						skip_radar);
-		if (!channel) {
-			wpa_printf(MSG_INFO,
-				   "%s: no DFS channels left, waiting for NOP to finish",
-				   __func__);
+		channel = dfs_downgrade_bandwidth(iface, &secondary_channel,
+						  &oper_centr_freq_seg0_idx,
+						  &oper_centr_freq_seg1_idx,
+						  &skip_radar);
+		if (!channel)
 			return err;
+		if (!skip_radar) {
+			iface->freq = channel->freq;
+			iface->conf->channel = channel->chan;
+			iface->conf->secondary_channel = secondary_channel;
+			hostapd_set_oper_centr_freq_seg0_idx(
+				iface->conf, oper_centr_freq_seg0_idx);
+			hostapd_set_oper_centr_freq_seg1_idx(
+				iface->conf, oper_centr_freq_seg1_idx);
+
+			hostapd_disable_iface(iface);
+			hostapd_enable_iface(iface);
+			return 0;
 		}
-
-		iface->freq = channel->freq;
-		iface->conf->channel = channel->chan;
-		iface->conf->secondary_channel = secondary_channel;
-		hostapd_set_oper_centr_freq_seg0_idx(iface->conf,
-						     oper_centr_freq_seg0_idx);
-		hostapd_set_oper_centr_freq_seg1_idx(iface->conf,
-						     oper_centr_freq_seg1_idx);
-
-		hostapd_disable_iface(iface);
-		hostapd_enable_iface(iface);
-		return 0;
 	}
 
 	wpa_printf(MSG_DEBUG, "DFS will switch to a new channel %d",
@@ -965,6 +1005,9 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 	wpa_msg(iface->bss[0]->msg_ctx, MSG_INFO, DFS_EVENT_NEW_CHANNEL
 		"freq=%d chan=%d sec_chan=%d", channel->freq,
 		channel->chan, secondary_channel);
+
+	new_vht_oper_chwidth = iface->conf->vht_oper_chwidth;
+	iface->conf->vht_oper_chwidth = current_vht_oper_chwidth;
 
 	/* Setup CSA request */
 	os_memset(&csa_settings, 0, sizeof(csa_settings));
@@ -980,7 +1023,7 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 				      iface->conf->ieee80211ac,
 				      iface->conf->ieee80211ax,
 				      secondary_channel,
-				      hostapd_get_oper_chwidth(iface->conf),
+				      new_vht_oper_chwidth,
 				      oper_centr_freq_seg0_idx,
 				      oper_centr_freq_seg1_idx,
 				      cmode->vht_capab,
@@ -1004,6 +1047,7 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 		iface->freq = channel->freq;
 		iface->conf->channel = channel->chan;
 		iface->conf->secondary_channel = secondary_channel;
+		iface->conf->vht_oper_chwidth = new_vht_oper_chwidth;
 		hostapd_set_oper_centr_freq_seg0_idx(iface->conf,
 						     oper_centr_freq_seg0_idx);
 		hostapd_set_oper_centr_freq_seg1_idx(iface->conf,
