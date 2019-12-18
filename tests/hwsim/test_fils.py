@@ -1904,6 +1904,7 @@ def run_fils_and_ft_setup(dev, apdev, params, key_mgmt):
                         eap="PSK", identity="psk.user@example.com",
                         password_hex="0123456789abcdef0123456789abcdef",
                         erp="1", scan_freq="2412")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev[0], hapd)
 
     dev[0].request("DISCONNECT")
@@ -1950,6 +1951,7 @@ def run_fils_and_ft_setup(dev, apdev, params, key_mgmt):
         raise Exception("Authentication failed")
     if "EVENT-ASSOC-REJECT" in ev:
         raise Exception("Association failed")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev[0], hapd)
 
     er.disable()
