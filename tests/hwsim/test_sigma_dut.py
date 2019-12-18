@@ -100,14 +100,18 @@ def start_sigma_dut(ifname, debug=False, hostapd_logdir=None, cert_path=None,
             break
         except:
             time.sleep(0.05)
-    return sigma
+    return {'cmd': sigma, 'ifname': ifname}
 
 def stop_sigma_dut(sigma):
-    sigma.terminate()
-    sigma.wait()
-    out, err = sigma.communicate()
+    cmd = sigma['cmd']
+    cmd.terminate()
+    cmd.wait()
+    out, err = cmd.communicate()
     logger.debug("sigma_dut stdout: " + str(out.decode()))
     logger.debug("sigma_dut stderr: " + str(err.decode()))
+    subprocess.call(["ip", "addr", "del", "dev", sigma['ifname'],
+                     "127.0.0.11/24"],
+                    stderr=open('/dev/null', 'w'))
 
 def sigma_dut_wait_connected(ifname):
     for i in range(50):
