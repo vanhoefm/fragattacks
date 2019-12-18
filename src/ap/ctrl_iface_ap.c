@@ -276,7 +276,7 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 
 	if (sta->sae && sta->sae->tmp) {
 		const u8 *pos;
-		unsigned int i, count;
+		unsigned int j, count;
 		struct wpabuf *groups = sta->sae->tmp->peer_rejected_groups;
 
 		res = os_snprintf(buf + len, buflen - len,
@@ -291,9 +291,9 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 			pos = NULL;
 			count = 0;
 		}
-		for (i = 0; pos && i < count; i++) {
+		for (j = 0; pos && j < count; j++) {
 			res = os_snprintf(buf + len, buflen - len, "%s%d",
-					  i == 0 ? "" : " ", WPA_GET_LE16(pos));
+					  j == 0 ? "" : " ", WPA_GET_LE16(pos));
 			if (!os_snprintf_error(buflen - len, res))
 				len += res;
 			pos += 2;
