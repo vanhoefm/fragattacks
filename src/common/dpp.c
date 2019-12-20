@@ -6859,8 +6859,11 @@ int dpp_configurator_own_config(struct dpp_authentication *auth,
 	dpp_copy_csign(&auth->conf_obj[0], auth->conf->csign);
 
 	conf_obj = dpp_build_conf_obj(auth, ap, 0);
-	if (!conf_obj)
+	if (!conf_obj) {
+		wpabuf_free(auth->conf_obj[0].c_sign_key);
+		auth->conf_obj[0].c_sign_key = NULL;
 		goto fail;
+	}
 	ret = dpp_parse_conf_obj(auth, wpabuf_head(conf_obj),
 				 wpabuf_len(conf_obj));
 fail:
