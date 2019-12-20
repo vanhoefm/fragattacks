@@ -233,6 +233,9 @@ OBJS += src/common/sae.c
 NEED_ECC=y
 NEED_DH_GROUPS=y
 NEED_DRAGONFLY=y
+ifdef CONFIG_TESTING_OPTIONS
+NEED_DH_GROUPS_ALL=y
+endif
 endif
 
 ifdef CONFIG_DPP
