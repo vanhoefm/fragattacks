@@ -197,6 +197,8 @@ static void wpas_dpp_conn_status_result_timeout(void *eloop_ctx,
 		result = DPP_STATUS_NO_AP;
 	else
 		result = 255; /* What to report here for unexpected state? */
+	if (wpa_s->wpa_state == WPA_SCANNING)
+		wpas_abort_ongoing_scan(wpa_s);
 	wpas_dpp_send_conn_status_result(wpa_s, result);
 }
 
