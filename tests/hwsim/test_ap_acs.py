@@ -89,6 +89,21 @@ def test_ap_acs_chanlist(dev, apdev):
 
     dev[0].connect("test-acs", psk="12345678", scan_freq=freq)
 
+def test_ap_acs_freqlist(dev, apdev):
+    """Automatic channel selection with freqlist set"""
+    force_prev_ap_on_24g(apdev[0])
+    params = hostapd.wpa2_params(ssid="test-acs", passphrase="12345678")
+    params['channel'] = '0'
+    params['freqlist'] = '2412 2437 2462'
+    hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
+    wait_acs(hapd)
+
+    freq = int(hapd.get_status_field("freq"))
+    if freq not in [2412, 2437, 2462]:
+        raise Exception("Unexpected frequency: " + freq)
+
+    dev[0].connect("test-acs", psk="12345678", scan_freq=str(freq))
+
 def test_ap_acs_invalid_chanlist(dev, apdev):
     """Automatic channel selection with invalid chanlist"""
     force_prev_ap_on_24g(apdev[0])
