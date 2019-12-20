@@ -4725,7 +4725,15 @@ def test_dpp_conn_status_connector_mismatch(dev, apdev):
     finally:
         dev[0].set("dpp_config_processing", "0")
 
-def run_dpp_conn_status(dev, apdev, result=0):
+def test_dpp_conn_status_assoc_reject(dev, apdev):
+    """DPP connection status - association rejection"""
+    try:
+        dev[0].request("TEST_ASSOC_IE 30020000")
+        run_dpp_conn_status(dev, apdev, assoc_reject=True)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+
+def run_dpp_conn_status(dev, apdev, result=0, assoc_reject=False):
     check_dpp_capab(dev[0], min_ver=2)
     check_dpp_capab(dev[1], min_ver=2)
 
@@ -4773,6 +4781,8 @@ def run_dpp_conn_status(dev, apdev, result=0):
     if 'wait_conn_status' not in res:
         raise Exception("Configurator did not request connection status")
 
+    if assoc_reject and result == 0:
+        result = 2
     ev = dev[1].wait_event(["DPP-CONN-STATUS-RESULT"], timeout=20)
     if ev is None:
         raise Exception("No connection status reported")
