@@ -2187,6 +2187,66 @@ def run_fils_sk_erp_radius_ext(dev, apdev, params):
         raise Exception("Association failed")
     hwsim_utils.test_connectivity(dev[0], hapd)
 
+def test_fils_sk_erp_radius_roam(dev, apdev):
+    """FILS SK/ERP and roaming with different AKM"""
+    as_hapd = hostapd.Hostapd("as")
+    try:
+        as_hapd.disable()
+        as_hapd.set("eap_server_erp", "1")
+        as_hapd.set("erp_domain", "example.com")
+        as_hapd.enable()
+        run_fils_sk_erp_radius_roam(dev, apdev)
+    finally:
+        as_hapd.disable()
+        as_hapd.set("eap_server_erp", "0")
+        as_hapd.set("erp_domain", "")
+        as_hapd.enable()
+
+def run_fils_sk_erp_radius_roam(dev, apdev):
+    check_fils_capa(dev[0])
+    check_erp_capa(dev[0])
+
+    bssid = apdev[0]['bssid']
+    params = hostapd.wpa2_eap_params(ssid="fils")
+    params['wpa_key_mgmt'] = "FILS-SHA256"
+    params['erp_domain'] = 'example.com'
+    params['fils_realm'] = 'example.com'
+    params['disable_pmksa_caching'] = '1'
+    hapd = hostapd.add_ap(apdev[0]['ifname'], params)
+
+    dev[0].scan_for_bss(bssid, freq=2412)
+    dev[0].request("ERP_FLUSH")
+    id = dev[0].connect("fils", key_mgmt="FILS-SHA256 FILS-SHA384",
+                        eap="PWD", identity="erp-pwd@example.com",
+                        password="secret password",
+                        erp="1", scan_freq="2412")
+
+    bssid2 = apdev[1]['bssid']
+    params = hostapd.wpa2_eap_params(ssid="fils")
+    params['wpa_key_mgmt'] = "FILS-SHA384"
+    params['erp_domain'] = 'example.com'
+    params['fils_realm'] = 'example.com'
+    params['disable_pmksa_caching'] = '1'
+    hapd2 = hostapd.add_ap(apdev[1]['ifname'], params)
+
+    dev[0].scan_for_bss(bssid2, freq=2412)
+
+    dev[0].dump_monitor()
+    if "OK" not in dev[0].request("ROAM " + bssid2):
+        raise Exception("ROAM failed")
+
+    ev = dev[0].wait_event(["CTRL-EVENT-EAP-STARTED",
+                            "CTRL-EVENT-CONNECTED"], timeout=10)
+    if ev is None:
+        raise Exception("Connection using PMKSA caching timed out")
+    if "CTRL-EVENT-EAP-STARTED" in ev:
+        raise Exception("Unexpected EAP exchange")
+    if bssid2 not in ev:
+        raise Exception("Failed to connect to the second AP")
+
+    hapd2.wait_sta()
+    hwsim_utils.test_connectivity(dev[0], hapd2)
+
 def test_fils_sk_erp_roam_diff_akm(dev, apdev, params):
     """FILS SK using ERP and SHA256/SHA384 change in roam"""
     check_fils_capa(dev[0])
