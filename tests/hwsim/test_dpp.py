@@ -439,7 +439,7 @@ def test_dpp_auth_resp_retries(dev, apdev):
     logger.info("dev0 scans QR Code")
     id0b = dev[0].dpp_qr_code(uri1b)
 
-    ev = dev[0].wait_event(["DPP-TX"], timeout=5)
+    ev = dev[0].wait_event(["DPP-TX "], timeout=5)
     if ev is None or "type=1" not in ev:
         raise Exception("DPP Authentication Response not sent")
     ev = dev[0].wait_event(["DPP-TX-STATUS"], timeout=5)
@@ -448,7 +448,7 @@ def test_dpp_auth_resp_retries(dev, apdev):
     if "result=no-ACK" not in ev:
         raise Exception("Unexpected TX status for Authentication Response: " + ev)
 
-    ev = dev[0].wait_event(["DPP-TX"], timeout=15)
+    ev = dev[0].wait_event(["DPP-TX "], timeout=15)
     if ev is None or "type=1" not in ev:
         raise Exception("DPP Authentication Response retransmission not sent")
 
@@ -655,7 +655,7 @@ def test_dpp_qr_code_auth_neg_chan(dev, apdev):
     dev[1].dpp_auth_init(uri=uri0, conf="sta-dpp", neg_freq=2462,
                          configurator=conf_id)
 
-    ev = dev[1].wait_event(["DPP-TX"], timeout=5)
+    ev = dev[1].wait_event(["DPP-TX "], timeout=5)
     if ev is None:
         raise Exception("DPP Authentication Request not sent")
     if "freq=2412 type=0" not in ev:
@@ -673,7 +673,7 @@ def test_dpp_qr_code_auth_neg_chan(dev, apdev):
     if "freq=2412 result=SUCCESS" not in ev:
         raise Exception("Unexpected TX status for Authentication Request: " + ev)
 
-    ev = dev[0].wait_event(["DPP-TX"], timeout=5)
+    ev = dev[0].wait_event(["DPP-TX "], timeout=5)
     if ev is None:
         raise Exception("DPP Authentication Response not sent")
     if "freq=2462 type=1" not in ev:
@@ -691,7 +691,7 @@ def test_dpp_qr_code_auth_neg_chan(dev, apdev):
     if "freq=2462 result=SUCCESS" not in ev:
         raise Exception("Unexpected TX status for Authentication Response: " + ev)
 
-    ev = dev[1].wait_event(["DPP-TX"], timeout=5)
+    ev = dev[1].wait_event(["DPP-TX "], timeout=5)
     if ev is None:
         raise Exception("DPP Authentication Confirm not sent")
     if "freq=2462 type=2" not in ev:
@@ -3323,7 +3323,7 @@ def test_dpp_proto_network_introduction(dev, apdev):
                        dpp_netaccesskey=params1_sta_netaccesskey,
                        wait_connect=False)
 
-        ev = dev[0].wait_event(["DPP-TX"], timeout=10)
+        ev = dev[0].wait_event(["DPP-TX "], timeout=10)
         if ev is None or "type=5" not in ev:
             raise Exception("Peer Discovery Request TX not reported")
         ev = dev[0].wait_event(["DPP-TX-STATUS"], timeout=2)
