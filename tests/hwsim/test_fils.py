@@ -1640,6 +1640,7 @@ def test_fils_sk_auth_mismatch(dev, apdev, params):
     dev[0].request("DISCONNECT")
     dev[0].wait_disconnected()
 
+    hapd.dump_monitor()
     dev[0].dump_monitor()
     dev[0].select_network(id, freq=2412)
     ev = dev[0].wait_event(["CTRL-EVENT-EAP-STARTED",
@@ -1650,6 +1651,7 @@ def test_fils_sk_auth_mismatch(dev, apdev, params):
     if "CTRL-EVENT-EAP-STARTED" not in ev:
         raise Exception("No EAP exchange seen")
     dev[0].wait_connected()
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev[0], hapd)
 
 def setup_fils_rekey(dev, apdev, params, wpa_ptk_rekey=0, wpa_group_rekey=0,
