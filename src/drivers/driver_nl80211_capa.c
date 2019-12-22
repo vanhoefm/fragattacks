@@ -1365,12 +1365,18 @@ static void phy_info_freq(struct hostapd_hw_modes *mode,
 			  struct nlattr *tb_freq[])
 {
 	u8 channel;
+
+	os_memset(chan, 0, sizeof(*chan));
 	chan->freq = nla_get_u32(tb_freq[NL80211_FREQUENCY_ATTR_FREQ]);
 	chan->flag = 0;
 	chan->allowed_bw = ~0;
 	chan->dfs_cac_ms = 0;
 	if (ieee80211_freq_to_chan(chan->freq, &channel) != NUM_HOSTAPD_MODES)
 		chan->chan = channel;
+	else
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: No channel number found for frequency %u MHz",
+			   chan->freq);
 
 	if (tb_freq[NL80211_FREQUENCY_ATTR_DISABLED])
 		chan->flag |= HOSTAPD_CHAN_DISABLED;
