@@ -44,7 +44,7 @@ struct eap_sim_data {
 	u8 *last_eap_identity;
 	size_t last_eap_identity_len;
 	enum {
-		CONTINUE, RESULT_SUCCESS, SUCCESS, FAILURE
+		CONTINUE, START_DONE, RESULT_SUCCESS, SUCCESS, FAILURE
 	} state;
 	int result_ind, use_result_ind;
 	int use_pseudonym;
@@ -58,6 +58,8 @@ static const char * eap_sim_state_txt(int state)
 	switch (state) {
 	case CONTINUE:
 		return "CONTINUE";
+	case START_DONE:
+		return "START_DONE";
 	case RESULT_SUCCESS:
 		return "RESULT_SUCCESS";
 	case SUCCESS:
@@ -486,6 +488,7 @@ static struct wpabuf * eap_sim_response_start(struct eap_sm *sm,
 	const u8 *identity = NULL;
 	size_t identity_len = 0;
 	struct eap_sim_msg *msg;
+	struct wpabuf *resp;
 
 	data->reauth = 0;
 	if (id_req == ANY_ID && data->reauth_id) {
@@ -535,7 +538,10 @@ static struct wpabuf * eap_sim_response_start(struct eap_sm *sm,
 				identity, identity_len);
 	}
 
-	return eap_sim_msg_finish(msg, EAP_TYPE_SIM, NULL, NULL, 0);
+	resp = eap_sim_msg_finish(msg, EAP_TYPE_SIM, NULL, NULL, 0);
+	if (resp)
+		eap_sim_state(data, START_DONE);
+	return resp;
 }
 
 
@@ -721,6 +727,13 @@ static struct wpabuf * eap_sim_process_challenge(struct eap_sm *sm,
 	int res;
 
 	wpa_printf(MSG_DEBUG, "EAP-SIM: subtype Challenge");
+	if (data->state != START_DONE) {
+		wpa_printf(MSG_DEBUG,
+			   "EAP-SIM: Unexpected Challenge in state %s",
+			   eap_sim_state_txt(data->state));
+		return eap_sim_client_error(data, id,
+					    EAP_SIM_UNABLE_TO_PROCESS_PACKET);
+	}
 	data->reauth = 0;
 	if (!attr->mac || !attr->rand) {
 		wpa_printf(MSG_WARNING, "EAP-SIM: Challenge message "
