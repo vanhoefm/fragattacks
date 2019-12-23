@@ -11091,8 +11091,8 @@ static int nl80211_send_external_auth_status(void *priv,
 	int ret = -1;
 
 	/* External auth command/status is intended for drivers that implement
-	 * intenral SME but want to offload authentication processing (e.g.,
-	 * SAE) to hostapd/wpa_supplicant. Do nott send the status to drivers
+	 * internal SME but want to offload authentication processing (e.g.,
+	 * SAE) to hostapd/wpa_supplicant. Do not send the status to drivers
 	 * which do not support AP SME or use wpa_supplicant/hostapd SME.
 	 */
 	if ((is_ap_interface(drv->nlmode) && !bss->drv->device_ap_sme) ||
