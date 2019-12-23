@@ -241,6 +241,9 @@ def _test_nfc_wps_handover_init(dev, apdev):
     if "FAIL" in res:
         raise Exception("Failed to report NFC connection handover to to wpa_supplicant")
     dev[0].wait_connected(timeout=15)
+    # WPS provisioning
+    hapd.wait_sta()
+    # data connection
     hapd.wait_sta()
     check_wpa2_connection(dev[0], apdev[0], hapd, ssid, mixed=True)
 
