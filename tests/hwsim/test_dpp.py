@@ -18,6 +18,7 @@ import time
 
 import hostapd
 import hwsim_utils
+from hwsim import HWSimRadio
 from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger
 from wpasupplicant import WpaSupplicant
 
@@ -4881,3 +4882,18 @@ def test_dpp_nfc_uri(dev, apdev):
     conf_id = dev[1].dpp_configurator_add()
     dev[1].dpp_auth_init(nfc_uri=uri, configurator=conf_id, conf="sta-dpp")
     wait_auth_success(dev[0], dev[1], configurator=dev[1], enrollee=dev[0])
+
+def test_dpp_with_p2p_device(dev, apdev):
+    """DPP exchange when driver uses a separate P2P Device interface"""
+    check_dpp_capab(dev[0])
+    with HWSimRadio(use_p2p_device=True) as (radio, iface):
+        wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+        wpas.interface_add(iface)
+        check_dpp_capab(wpas)
+        id1 = wpas.dpp_bootstrap_gen(chan="81/1", mac=True)
+        uri1 = wpas.request("DPP_BOOTSTRAP_GET_URI %d" % id1)
+        wpas.dpp_listen(2412)
+        time.sleep(7)
+        dev[0].dpp_auth_init(uri=uri1)
+        wait_auth_success(wpas, dev[0], configurator=dev[0], enrollee=wpas,
+                          allow_enrollee_failure=True)
