@@ -1107,6 +1107,60 @@ def test_ap_ft_sae_pmksa_caching(dev, apdev):
     run_roams(dev[0], apdev, hapd0, hapd, ssid, passphrase, sae=True,
               pmksa_caching=True)
 
+def test_ap_ft_sae_pmksa_caching_pwe(dev, apdev):
+    """WPA2-FT-SAE AP and PMKSA caching for initial mobility domain association (STA PWE both)"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    ssid = "test-ft"
+    passphrase = "12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params['wpa_key_mgmt'] = "FT-SAE"
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params['wpa_key_mgmt'] = "FT-SAE"
+    hapd = hostapd.add_ap(apdev[1], params)
+    key_mgmt = hapd.get_config()['key_mgmt']
+    if key_mgmt.split(' ')[0] != "FT-SAE":
+        raise Exception("Unexpected GET_CONFIG(key_mgmt): " + key_mgmt)
+
+    try:
+        dev[0].request("SET sae_groups ")
+        dev[0].set("sae_pwe", "2")
+        run_roams(dev[0], apdev, hapd0, hapd, ssid, passphrase, sae=True,
+                  pmksa_caching=True)
+    finally:
+        dev[0].set("sae_groups", "")
+        dev[0].set("sae_pwe", "0")
+
+def test_ap_ft_sae_pmksa_caching_h2e(dev, apdev):
+    """WPA2-FT-SAE AP and PMKSA caching for initial mobility domain association (H2E)"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    ssid = "test-ft"
+    passphrase = "12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    params['wpa_key_mgmt'] = "FT-SAE"
+    params['sae_pwe'] = "1"
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    params['wpa_key_mgmt'] = "FT-SAE"
+    params['sae_pwe'] = "1"
+    hapd = hostapd.add_ap(apdev[1], params)
+    key_mgmt = hapd.get_config()['key_mgmt']
+    if key_mgmt.split(' ')[0] != "FT-SAE":
+        raise Exception("Unexpected GET_CONFIG(key_mgmt): " + key_mgmt)
+
+    try:
+        dev[0].request("SET sae_groups ")
+        dev[0].set("sae_pwe", "1")
+        run_roams(dev[0], apdev, hapd0, hapd, ssid, passphrase, sae=True,
+                  pmksa_caching=True)
+    finally:
+        dev[0].set("sae_groups", "")
+        dev[0].set("sae_pwe", "0")
+
 def generic_ap_ft_eap(dev, apdev, vlan=False, cui=False, over_ds=False,
                       discovery=False, roams=1, wpa_ptk_rekey=0,
                       only_one_way=False):
