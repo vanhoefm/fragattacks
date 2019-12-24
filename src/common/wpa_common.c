@@ -2200,7 +2200,7 @@ int wpa_insert_pmkid(u8 *ies, size_t *ies_len, const u8 *pmkid)
 				   "RSN: Remove %u old PMKID(s) from RSNE",
 				   num_pmkid);
 			after = rpos + 2 + num_pmkid * PMKID_LEN;
-			os_memmove(rpos + 2, after, rend - after);
+			os_memmove(rpos + 2, after, end - after);
 			start[1] -= num_pmkid * PMKID_LEN;
 			added -= num_pmkid * PMKID_LEN;
 		}
