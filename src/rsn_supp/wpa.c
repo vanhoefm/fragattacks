@@ -488,6 +488,8 @@ int wpa_supplicant_send_2_of_4(struct wpa_sm *sm, const unsigned char *dst,
 	if (wpa_key_mgmt_ft(sm->key_mgmt)) {
 		int res;
 
+		wpa_hexdump(MSG_DEBUG, "WPA: WPA IE before FT processing",
+			    wpa_ie, wpa_ie_len);
 		/*
 		 * Add PMKR1Name into RSN IE (PMKID-List) and add MDIE and
 		 * FTIE from (Re)Association Response.
@@ -503,8 +505,14 @@ int wpa_supplicant_send_2_of_4(struct wpa_sm *sm, const unsigned char *dst,
 			os_free(rsn_ie_buf);
 			return -1;
 		}
+		wpa_hexdump(MSG_DEBUG,
+			    "WPA: WPA IE after PMKID[PMKR1Name] addition into RSNE",
+			    rsn_ie_buf, wpa_ie_len);
 
 		if (sm->assoc_resp_ies) {
+			wpa_hexdump(MSG_DEBUG, "WPA: Add assoc_resp_ies",
+				    sm->assoc_resp_ies,
+				    sm->assoc_resp_ies_len);
 			os_memcpy(rsn_ie_buf + wpa_ie_len, sm->assoc_resp_ies,
 				  sm->assoc_resp_ies_len);
 			wpa_ie_len += sm->assoc_resp_ies_len;
