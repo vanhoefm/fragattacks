@@ -206,17 +206,25 @@ u8 * hostapd_eid_he_operation(struct hostapd_data *hapd, u8 *eid)
 
 	if (is_6ghz_op_class(hapd->iconf->op_class)) {
 		u8 seg0 = hostapd_get_oper_centr_freq_seg0_idx(hapd->iconf);
+		u8 seg1 = hostapd_get_oper_centr_freq_seg1_idx(hapd->iconf);
 
 		if (!seg0)
 			seg0 = hapd->iconf->channel;
 
 		params |= HE_OPERATION_6GHZ_OPER_INFO;
+
+		/* 6 GHz Operation Information field */
 		*pos++ = hapd->iconf->channel; /* Primary Channel */
-		*pos++ = center_idx_to_bw_6ghz(seg0); /* Control: Channel Width
-						       */
-		/* Channel Center Freq Seg0/Seg0 */
+
+		/* Control: Channel Width */
+		if (seg1)
+			*pos++ = 3;
+		else
+			*pos++ = center_idx_to_bw_6ghz(seg0);
+
+		/* Channel Center Freq Seg0/Seg1 */
 		*pos++ = seg0;
-		*pos++ = hostapd_get_oper_centr_freq_seg1_idx(hapd->iconf);
+		*pos++ = seg1;
 		/* Minimum Rate */
 		*pos++ = 6; /* TODO: what should be set here? */
 	}
