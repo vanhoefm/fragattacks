@@ -2406,20 +2406,6 @@ def test_rsn_ie_proto_ft_psk_sta(dev, apdev):
         raise Exception("Unexpected connection")
     dev[0].request("DISCONNECT")
 
-    logger.info('Unexpected PMKID causing internal hostapd error')
-    hapd.disable()
-    hapd.set('own_ie_override', '30260100000fac040100000fac040100000fac048c000100ffffffffffffffffffffffffffffffff' + '3603a1b201')
-    hapd.enable()
-    dev[0].request("BSS_FLUSH 0")
-    dev[0].scan_for_bss(bssid, 2412, force_scan=True, only_new=True)
-    dev[0].select_network(id, freq=2412)
-    # hostapd fails to generate EAPOL-Key msg 3/4, so this connection cannot
-    # complete.
-    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
-    if ev is not None:
-        raise Exception("Unexpected connection")
-    dev[0].request("DISCONNECT")
-
 def start_ft(apdev, wpa_ptk_rekey=None):
     ssid = "test-ft"
     passphrase = "12345678"
