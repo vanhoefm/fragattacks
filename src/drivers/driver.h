@@ -5707,7 +5707,15 @@ union wpa_event_data {
 	 * @pri_freq: Selected primary frequency
 	 * @sec_freq: Selected secondary frequency
 	 * @vht_seg0_center_ch: VHT mode Segment0 center channel
+	 *	The value is the index of the channel center frequency for
+	 *	20 MHz, 40 MHz, and 80 MHz channels. The value is the center
+	 *	frequency index of the primary 80 MHz segment for 160 MHz and
+	 *	80+80 MHz channels.
 	 * @vht_seg1_center_ch: VHT mode Segment1 center channel
+	 *	The value is zero for 20 MHz, 40 MHz, and 80 MHz channels. The
+	 *	value is the index of the channel center frequency for 160 MHz
+	 *	channels and the center frequency index of the secondary 80 MHz
+	 *	segment for 80+80 MHz channels.
 	 * @ch_width: Selected Channel width by driver. Driver may choose to
 	 *	change hostapd configured ACS channel width due driver internal
 	 *	channel restrictions.

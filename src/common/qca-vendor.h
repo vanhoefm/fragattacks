@@ -1189,7 +1189,9 @@ enum qca_wlan_vendor_attr_p2p_listen_offload {
  *
  * @QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG0_CENTER_CHANNEL: Required (u8).
  * Used with event to notify the VHT segment 0 center channel number selected in
- * ACS operation.
+ * ACS operation. The value is the index of the channel center frequency for
+ * 20 MHz, 40 MHz, and 80 MHz channels. The value is the center frequency index
+ * of the primary 80 MHz segment for 160 MHz and 80+80 MHz channels.
  * Note: If both the driver and user-space application supports the 6 GHz band,
  * QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG0_CENTER_CHANNEL is deprecated; use
  * QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG0_CENTER_FREQUENCY instead.
@@ -1199,7 +1201,10 @@ enum qca_wlan_vendor_attr_p2p_listen_offload {
  *
  * @QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG1_CENTER_CHANNEL: Required (u8).
  * Used with event to notify the VHT segment 1 center channel number selected in
- * ACS operation.
+ * ACS operation. The value is zero for 20 MHz, 40 MHz, and 80 MHz channels.
+ * The value is the index of the channel center frequency for 160 MHz channels
+ * and the center frequency index of the secondary 80 MHz segment for 80+80 MHz
+ * channels.
  * Note: If both the driver and user-space application supports the 6 GHz band,
  * QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG1_CENTER_CHANNEL is deprecated; use
  * QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG1_CENTER_FREQUENCY instead.
