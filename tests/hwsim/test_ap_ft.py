@@ -175,6 +175,10 @@ def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
         copts["bssid"] = apdev[0]['bssid']
     netw = dev.connect(ssid, **copts)
     if pmksa_caching:
+        if dev.get_status_field('bssid') == apdev[0]['bssid']:
+            hapd0.wait_sta()
+        else:
+            hapd1.wait_sta()
         dev.request("DISCONNECT")
         dev.wait_disconnected()
         dev.request("RECONNECT")
