@@ -231,7 +231,7 @@ static void mesh_mpm_send_plink_action(struct wpa_supplicant *wpa_s,
 		  2 + 32 + /* mesh ID */
 		  2 + 7 +  /* mesh config */
 		  2 + 24 + /* peering management */
-		  2 + 96 + /* AMPE */
+		  2 + 96 + 32 + 32 + /* AMPE (96 + max GTKlen + max IGTKlen) */
 		  2 + 16;  /* MIC */
 #ifdef CONFIG_IEEE80211N
 	if (type != PLINK_CLOSE && wpa_s->mesh_ht_enabled) {
