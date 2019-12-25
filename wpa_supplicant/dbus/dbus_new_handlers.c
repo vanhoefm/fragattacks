@@ -137,7 +137,15 @@ DBusMessage * wpas_dbus_error_no_memory(DBusMessage *message)
 
 static const char * const dont_quote[] = {
 	"key_mgmt", "proto", "pairwise", "auth_alg", "group", "eap",
-	"bssid", "scan_freq", "freq_list", NULL
+	"bssid", "scan_freq", "freq_list", "scan_ssid", "bssid_hint",
+	"bssid_blacklist", "bssid_whitelist", "group_mgmt",
+#ifdef CONFIG_MESH
+	"mesh_basic_rates",
+#endif /* CONFIG_MESH */
+#ifdef CONFIG_P2P
+	"go_p2p_dev_addr", "p2p_client_list", "psk_list",
+#endif /* CONFIG_P2P */
+	NULL
 };
 
 static dbus_bool_t should_quote_opt(const char *key)
