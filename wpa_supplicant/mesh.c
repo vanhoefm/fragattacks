@@ -114,8 +114,14 @@ static struct mesh_conf * mesh_config_create(struct wpa_supplicant *wpa_s,
 	}
 
 	conf->group_cipher = cipher;
-	if (conf->ieee80211w != NO_MGMT_FRAME_PROTECTION)
-		conf->mgmt_group_cipher = WPA_CIPHER_AES_128_CMAC;
+	if (conf->ieee80211w != NO_MGMT_FRAME_PROTECTION) {
+		if (ssid->group_mgmt_cipher == WPA_CIPHER_BIP_GMAC_128 ||
+		    ssid->group_mgmt_cipher == WPA_CIPHER_BIP_GMAC_256 ||
+		    ssid->group_mgmt_cipher == WPA_CIPHER_BIP_CMAC_256)
+			conf->mgmt_group_cipher = ssid->group_mgmt_cipher;
+		else
+			conf->mgmt_group_cipher = WPA_CIPHER_AES_128_CMAC;
+	}
 
 	/* defaults */
 	conf->mesh_pp_id = MESH_PATH_PROTOCOL_HWMP;
