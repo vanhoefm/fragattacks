@@ -137,7 +137,6 @@ DBusMessage * wpas_dbus_error_no_memory(DBusMessage *message)
 
 static const char * const dont_quote[] = {
 	"key_mgmt", "proto", "pairwise", "auth_alg", "group", "eap",
-	"opensc_engine_path", "pkcs11_engine_path", "pkcs11_module_path",
 	"bssid", "scan_freq", "freq_list", NULL
 };
 
