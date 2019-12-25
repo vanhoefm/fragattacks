@@ -285,6 +285,7 @@ def _test_mesh_open_rssi_threshold(dev, apdev, value, expected):
                         ": " + str(mesh_rssi_threshold))
 
 def add_mesh_secure_net(dev, psk=True, pmf=False, pairwise=None, group=None,
+                        group_mgmt=None,
                         sae_password=False, sae_password_id=None, ocv=False):
     id = dev.add_network()
     dev.set_network(id, "mode", "5")
@@ -303,6 +304,8 @@ def add_mesh_secure_net(dev, psk=True, pmf=False, pairwise=None, group=None,
         dev.set_network(id, "pairwise", pairwise)
     if group:
         dev.set_network(id, "group", group)
+    if group_mgmt:
+        dev.set_network(id, "group_mgmt", group_mgmt)
     if ocv:
         try:
             dev.set_network(id, "ocv", "1")
@@ -485,16 +488,18 @@ def run_mesh_secure_ocv_mix_ht(dev, apdev):
 
     check_mesh_joined_connected(dev, connectivity=True)
 
-def run_mesh_secure(dev, cipher):
+def run_mesh_secure(dev, cipher, pmf=False, group_mgmt=None):
     if cipher not in dev[0].get_capability("pairwise"):
         raise HwsimSkip("Cipher %s not supported" % cipher)
     check_mesh_support(dev[0], secure=True)
     dev[0].request("SET sae_groups ")
-    id = add_mesh_secure_net(dev[0], pairwise=cipher, group=cipher)
+    id = add_mesh_secure_net(dev[0], pairwise=cipher, group=cipher, pmf=pmf,
+                             group_mgmt=group_mgmt)
     dev[0].mesh_group_add(id)
 
     dev[1].request("SET sae_groups ")
-    id = add_mesh_secure_net(dev[1], pairwise=cipher, group=cipher)
+    id = add_mesh_secure_net(dev[1], pairwise=cipher, group=cipher, pmf=pmf,
+                             group_mgmt=group_mgmt)
     dev[1].mesh_group_add(id)
 
     check_mesh_joined_connected(dev, connectivity=True)
@@ -514,6 +519,22 @@ def test_mesh_secure_gcmp_256(dev, apdev):
 def test_mesh_secure_ccmp_256(dev, apdev):
     """Secure mesh with CCMP-256"""
     run_mesh_secure(dev, "CCMP-256")
+
+def test_mesh_secure_ccmp_cmac(dev, apdev):
+    """Secure mesh with CCMP-128 and BIP-CMAC-128"""
+    run_mesh_secure(dev, "CCMP", pmf=True, group_mgmt="AES-128-CMAC")
+
+def test_mesh_secure_gcmp_gmac(dev, apdev):
+    """Secure mesh with GCMP-128 and BIP-GMAC-128"""
+    run_mesh_secure(dev, "GCMP", pmf=True, group_mgmt="BIP-GMAC-128")
+
+def test_mesh_secure_ccmp_256_cmac_256(dev, apdev):
+    """Secure mesh with CCMP-256 and BIP-CMAC-256"""
+    run_mesh_secure(dev, "CCMP-256", pmf=True, group_mgmt="BIP-CMAC-256")
+
+def test_mesh_secure_gcmp_256_gmac_256(dev, apdev):
+    """Secure mesh with GCMP-256 and BIP-GMAC-256"""
+    run_mesh_secure(dev, "GCMP-256", pmf=True, group_mgmt="BIP-GMAC-256")
 
 def test_mesh_secure_invalid_pairwise_cipher(dev, apdev):
     """Secure mesh and invalid group cipher"""
