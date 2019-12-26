@@ -1456,12 +1456,13 @@ def test_wpas_mesh_gate_forwarding(dev, apdev, p):
     capfile = os.path.join(p['logdir'], "hwsim0.pcapng")
     filt = "wlan.sa==%s && wlan_mgt.fixed.mesh_addr5==%s" % (addr2,
                                                              external_sta)
-    for i in range(15):
+    time.sleep(4)
+    for i in range(5):
         da = run_tshark(capfile, filt, ["wlan.da"])
         if addr0 in da and addr1 in da:
             logger.debug("Frames seen in tshark iteration %d" % i)
             break
-        time.sleep(0.3)
+        time.sleep(0.5)
 
     if addr0 not in da:
         raise Exception("Frame to gate %s not observed" % addr0)
