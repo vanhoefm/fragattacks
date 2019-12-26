@@ -648,6 +648,7 @@ def test_wpa2_ocv_ap_group_hs(dev, apdev):
     conn.hapd.request("SET ext_eapol_frame_io 0")
     dev[1].connect(conn.ssid, psk=conn.passphrase, scan_freq="2412", ocv="1",
                    ieee80211w="1")
+    conn.hapd.wait_sta()
     conn.hapd.request("SET ext_eapol_frame_io 1")
 
     # Trigger a group key handshake
