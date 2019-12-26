@@ -149,6 +149,10 @@ def test_rrm_neighbor_db(dev, apdev):
     if "OK" not in hapd.request("REMOVE_NEIGHBOR 00:11:22:33:44:55 ssid=\"test3\""):
         raise Exception("Remove neighbor failed")
 
+    # Add an entry for following REMOVE_NEIGHBOR tests
+    if "OK" not in hapd.request("SET_NEIGHBOR 00:11:22:33:44:55 ssid=7465737431 nr=" + nr):
+        raise Exception("Set neighbor failed")
+
     # Invalid remove - bad BSSID
     if "FAIL" not in hapd.request("REMOVE_NEIGHBOR 00:11:22:33:44:5 ssid=\"test1\""):
         raise Exception("Remove neighbor succeeded unexpectedly")
@@ -157,9 +161,9 @@ def test_rrm_neighbor_db(dev, apdev):
     if "FAIL" not in hapd.request("REMOVE_NEIGHBOR 00:11:22:33:44:55 ssid=\"test1"):
         raise Exception("Remove neighbor succeeded unexpectedly")
 
-    # Invalid remove - missing SSID
-    if "FAIL" not in hapd.request("REMOVE_NEIGHBOR 00:11:22:33:44:55"):
-        raise Exception("Remove neighbor succeeded unexpectedly")
+    # Remove without specifying SSID
+    if "OK" not in hapd.request("REMOVE_NEIGHBOR 00:11:22:33:44:55"):
+        raise Exception("Remove neighbor without SSID failed")
 
 def test_rrm_neighbor_rep_req(dev, apdev):
     """wpa_supplicant ctrl_iface NEIGHBOR_REP_REQUEST"""
