@@ -561,6 +561,7 @@ def test_ap_ht40_5ghz_switch2(dev, apdev):
 
 def test_obss_scan(dev, apdev):
     """Overlapping BSS scan request"""
+    clear_scan_cache(apdev[0])
     params = {"ssid": "obss-scan",
               "channel": "6",
               "ht_capab": "[HT40-]",
@@ -575,6 +576,7 @@ def test_obss_scan(dev, apdev):
 
 def test_obss_scan_ht40_plus(dev, apdev):
     """Overlapping BSS scan request (HT40+)"""
+    clear_scan_cache(apdev[0])
     params = {"ssid": "obss-scan",
               "channel": "6",
               "ht_capab": "[HT40+]",
@@ -585,10 +587,21 @@ def test_obss_scan_ht40_plus(dev, apdev):
               "channel": "9",
               "ieee80211n": "0"}
     hostapd.add_ap(apdev[1], params)
-    run_obss_scan(hapd, dev)
+    run_obss_scan(hapd, dev, ht40plus=True)
 
-def run_obss_scan(hapd, dev):
+def run_obss_scan(hapd, dev, ht40plus=False):
     dev[0].connect("obss-scan", key_mgmt="NONE", scan_freq="2437")
+    res = dev[0].request("SIGNAL_POLL")
+    logger.info("SIGNAL_POLL:\n" + res)
+    sig = res.splitlines()
+    if "FREQUENCY=2437" not in sig:
+        raise Exception("Unexpected frequency")
+    if "WIDTH=40 MHz" not in sig:
+        raise Exception("Not a 40 MHz connection")
+    if ht40plus and "CENTER_FRQ1=2447" not in sig:
+        raise Exception("Not HT40+")
+    if not ht40plus and "CENTER_FRQ1=2427" not in sig:
+        raise Exception("Not HT40-")
     hapd.set("ext_mgmt_frame_handling", "1")
     logger.info("Waiting for OBSS scan to occur")
     ev = dev[0].wait_event(["CTRL-EVENT-SCAN-STARTED"], timeout=15)
