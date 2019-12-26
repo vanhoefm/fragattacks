@@ -3079,16 +3079,20 @@ def test_ap_wpa2_disable_eapol_retry_group(dev, apdev):
     bssid = apdev[0]['bssid']
 
     id = dev[1].connect(ssid, psk=passphrase, scan_freq="2412")
+    hapd.wait_sta()
     dev[0].connect(ssid, psk=passphrase, scan_freq="2412")
+    hapd.wait_sta()
     dev[0].dump_monitor()
     addr = dev[0].own_addr()
 
     dev[1].request("DISCONNECT")
+    dev[1].wait_disconnected()
     ev = dev[0].wait_event(["WPA: Group rekeying completed"], timeout=2)
     if ev is None:
         raise Exception("GTK rekey timed out")
     dev[1].request("RECONNECT")
     dev[1].wait_connected()
+    hapd.wait_sta()
     dev[0].dump_monitor()
 
     hapd.request("SET ext_eapol_frame_io 1")
