@@ -88,7 +88,9 @@ def _run_tshark(filename, filter, display=None, wait=True):
 def run_tshark(filename, filter, display=None, wait=True):
     if display is None: display = []
     try:
-        return _run_tshark(filename, filter, display, wait)
+        return _run_tshark(filename, filter.replace('wlan_mgt', 'wlan'),
+                           [x.replace('wlan_mgt', 'wlan') for x in display],
+                           wait)
     except UnknownFieldsException as e:
         all_wlan_mgt = True
         for f in e.fields:
@@ -97,9 +99,7 @@ def run_tshark(filename, filter, display=None, wait=True):
                 break
         if not all_wlan_mgt:
             raise
-        return _run_tshark(filename, filter.replace('wlan_mgt', 'wlan'),
-                           [x.replace('wlan_mgt', 'wlan') for x in display],
-                           wait)
+        return _run_tshark(filename, filter, display, wait)
 
 def run_tshark_json(filename, filter):
     arg = ["tshark", "-r", filename,
