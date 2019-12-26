@@ -30,6 +30,8 @@ def connectivity(dev, hapd):
 def connect_2sta(dev, ssid, hapd):
     dev[0].connect(ssid, psk="12345678", scan_freq="2412")
     dev[1].connect(ssid, psk="12345678", scan_freq="2412")
+    hapd.wait_sta()
+    hapd.wait_sta()
     connectivity(dev, hapd)
 
 def connect_2sta_wpa2_psk(dev, hapd):
@@ -43,6 +45,8 @@ def connect_2sta_wpa_psk_mixed(dev, hapd):
                    scan_freq="2412")
     dev[1].connect("test-wpa-mixed-psk", psk="12345678", proto="WPA2",
                    scan_freq="2412")
+    hapd.wait_sta()
+    hapd.wait_sta()
     connectivity(dev, hapd)
 
 def connect_2sta_wep(dev, hapd):
@@ -50,11 +54,15 @@ def connect_2sta_wep(dev, hapd):
                    scan_freq="2412")
     dev[1].connect("test-wep", key_mgmt="NONE", wep_key0='"hello"',
                    scan_freq="2412")
+    hapd.wait_sta()
+    hapd.wait_sta()
     connectivity(dev, hapd)
 
 def connect_2sta_open(dev, hapd, scan_freq="2412"):
     dev[0].connect("test-open", key_mgmt="NONE", scan_freq=scan_freq)
     dev[1].connect("test-open", key_mgmt="NONE", scan_freq=scan_freq)
+    hapd.wait_sta()
+    hapd.wait_sta()
     connectivity(dev, hapd)
 
 def wlantest_setup(hapd):
