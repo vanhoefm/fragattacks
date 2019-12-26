@@ -68,6 +68,22 @@ def test_rrm_neighbor_db(dev, apdev):
     """hostapd ctrl_iface SET_NEIGHBOR"""
     params = {"ssid": "test", "rrm_neighbor_report": "1"}
     hapd = hostapd.add_ap(apdev[0]['ifname'], params)
+    params = {"ssid": "test2", "rrm_neighbor_report": "1"}
+    hapd2 = hostapd.add_ap(apdev[1]['ifname'], params)
+
+    res = hapd.request("SHOW_NEIGHBOR")
+    if len(res.splitlines()) != 1:
+        raise Exception("Unexpected SHOW_NEIGHBOR output(1): " + res)
+    if apdev[0]['bssid'] not in res:
+        raise Exception("Own BSS not visible in SHOW_NEIGHBOR output")
+
+    if "OK" not in hapd2.request("SET_NEIGHBOR " + res.strip()):
+        raise Exception("Failed to copy neighbor entry to another hostapd")
+    res2 = hapd2.request("SHOW_NEIGHBOR")
+    if len(res2.splitlines()) != 2:
+        raise Exception("Unexpected SHOW_NEIGHBOR output: " + res2)
+    if res not in res2:
+        raise Exception("Copied entry not visible")
 
     # Bad BSSID
     if "FAIL" not in hapd.request("SET_NEIGHBOR 00:11:22:33:44:gg ssid=\"test1\" nr=" + nr):
@@ -105,9 +121,27 @@ def test_rrm_neighbor_db(dev, apdev):
     if "OK" not in hapd.request("SET_NEIGHBOR 00:11:22:33:44:55 ssid=\"test1\" nr=" + nr + " lci=" + lci + " civic=" + civic):
         raise Exception("Set neighbor failed")
 
+    res = hapd.request("SHOW_NEIGHBOR")
+    if len(res.splitlines()) != 2:
+        raise Exception("Unexpected SHOW_NEIGHBOR output(2): " + res)
+    if apdev[0]['bssid'] not in res:
+        raise Exception("Own BSS not visible in SHOW_NEIGHBOR output")
+    if "00:11:22:33:44:55" not in res:
+        raise Exception("Added BSS not visible in SHOW_NEIGHBOR output")
+
     # Another BSSID with the same SSID
     if "OK" not in hapd.request("SET_NEIGHBOR 00:11:22:33:44:56 ssid=\"test1\" nr=" + nr + " lci=" + lci + " civic=" + civic):
         raise Exception("Set neighbor failed")
+
+    res = hapd.request("SHOW_NEIGHBOR")
+    if len(res.splitlines()) != 3:
+        raise Exception("Unexpected SHOW_NEIGHBOR output(3): " + res)
+    if apdev[0]['bssid'] not in res:
+        raise Exception("Own BSS not visible in SHOW_NEIGHBOR output")
+    if "00:11:22:33:44:55" not in res:
+        raise Exception("Added BSS not visible in SHOW_NEIGHBOR output")
+    if "00:11:22:33:44:56" not in res:
+        raise Exception("Second added BSS not visible in SHOW_NEIGHBOR output")
 
     # Fewer parameters
     if "OK" not in hapd.request("SET_NEIGHBOR 00:11:22:33:44:55 ssid=\"test1\" nr=" + nr):
@@ -146,6 +180,12 @@ def test_rrm_neighbor_db(dev, apdev):
     if "OK" not in hapd.request("SET_NEIGHBOR 00:11:22:33:44:55 ssid=\"test3\" nr=" + nr + " lci=" + lci + " civic=" + civic + " stat"):
         raise Exception("Set neighbor failed")
 
+    res = hapd.request("SHOW_NEIGHBOR")
+    if len(res.splitlines()) != 2:
+        raise Exception("Unexpected SHOW_NEIGHBOR output(4): " + res)
+    if "00:11:22:33:44:55" not in res or " stat" not in res:
+        raise Exception("Unexpected SHOW_NEIGHBOR output(4b): " + res)
+
     if "OK" not in hapd.request("REMOVE_NEIGHBOR 00:11:22:33:44:55 ssid=\"test3\""):
         raise Exception("Remove neighbor failed")
 
@@ -164,6 +204,12 @@ def test_rrm_neighbor_db(dev, apdev):
     # Remove without specifying SSID
     if "OK" not in hapd.request("REMOVE_NEIGHBOR 00:11:22:33:44:55"):
         raise Exception("Remove neighbor without SSID failed")
+
+    res = hapd.request("SHOW_NEIGHBOR")
+    if len(res.splitlines()) != 1:
+        raise Exception("Unexpected SHOW_NEIGHBOR output(5): " + res)
+    if apdev[0]['bssid'] not in res:
+        raise Exception("Own BSS not visible in SHOW_NEIGHBOR output")
 
 def test_rrm_neighbor_rep_req(dev, apdev):
     """wpa_supplicant ctrl_iface NEIGHBOR_REP_REQUEST"""
