@@ -15,7 +15,7 @@ import hwsim_utils
 from utils import HwsimSkip
 
 from test_ap_ht import set_world_reg
-from test_ap_psk import parse_eapol, build_eapol, pmk_to_ptk, eapol_key_mic, recv_eapol, send_eapol, reply_eapol, hapd_connected, build_eapol_key_3_4, aes_wrap, pad_key_data
+from test_ap_psk import parse_eapol, build_eapol, pmk_to_ptk, eapol_key_mic, recv_eapol, send_eapol, reply_eapol, build_eapol_key_3_4, aes_wrap, pad_key_data
 
 #TODO: Refuse setting up AP with OCV but without MFP support
 #TODO: Refuse to connect to AP that advertises OCV but not MFP
@@ -424,7 +424,7 @@ class APConnection:
 
         reply_eapol("4/4", self.hapd, self.addr, self.msg, 0x030a, None, None,
                     self.kck)
-        hapd_connected(self.hapd)
+        self.hapd.wait_sta(timeout=15)
 
 @remote_compatible
 def test_wpa2_ocv_ap_mismatch(dev, apdev):

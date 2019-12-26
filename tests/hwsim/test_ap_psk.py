@@ -1330,11 +1330,6 @@ def reply_eapol(info, hapd, addr, msg, key_info, nonce, data, kck):
     eapol_key_mic(kck, msg)
     send_eapol(hapd, addr, build_eapol(msg))
 
-def hapd_connected(hapd):
-    ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=15)
-    if ev is None:
-        raise Exception("Timeout on AP-STA-CONNECTED from hostapd")
-
 def eapol_test(apdev, dev, wpa2=True, ieee80211w=0):
     bssid = apdev['bssid']
     if wpa2:
@@ -1391,7 +1386,7 @@ def test_ap_wpa2_psk_ext_eapol(dev, apdev):
     send_eapol(hapd, addr, build_eapol(msg))
 
     reply_eapol("4/4", hapd, addr, msg, 0x030a, None, None, kck)
-    hapd_connected(hapd)
+    hapd.wait_sta(timeout=15)
 
 @remote_compatible
 def test_ap_wpa2_psk_ext_eapol_retry1(dev, apdev):
@@ -1418,7 +1413,7 @@ def test_ap_wpa2_psk_ext_eapol_retry1(dev, apdev):
         raise Exception("ANonce changed")
 
     reply_eapol("4/4", hapd, addr, msg, 0x030a, None, None, kck)
-    hapd_connected(hapd)
+    hapd.wait_sta(timeout=15)
 
 @remote_compatible
 def test_ap_wpa2_psk_ext_eapol_retry1b(dev, apdev):
@@ -1440,7 +1435,7 @@ def test_ap_wpa2_psk_ext_eapol_retry1b(dev, apdev):
         raise Exception("ANonce changed")
 
     reply_eapol("4/4", hapd, addr, msg, 0x030a, None, None, kck)
-    hapd_connected(hapd)
+    hapd.wait_sta(timeout=15)
 
 @remote_compatible
 def test_ap_wpa2_psk_ext_eapol_retry1c(dev, apdev):
@@ -1464,7 +1459,7 @@ def test_ap_wpa2_psk_ext_eapol_retry1c(dev, apdev):
     if anonce != msg['rsn_key_nonce']:
         raise Exception("ANonce changed")
     reply_eapol("4/4", hapd, addr, msg, 0x030a, None, None, kck)
-    hapd_connected(hapd)
+    hapd.wait_sta(timeout=15)
 
 @remote_compatible
 def test_ap_wpa2_psk_ext_eapol_retry1d(dev, apdev):
@@ -1488,7 +1483,7 @@ def test_ap_wpa2_psk_ext_eapol_retry1d(dev, apdev):
     if anonce != msg['rsn_key_nonce']:
         raise Exception("ANonce changed")
     reply_eapol("4/4", hapd, addr, msg, 0x030a, None, None, kck)
-    hapd_connected(hapd)
+    hapd.wait_sta(timeout=15)
 
 @remote_compatible
 def test_ap_wpa2_psk_ext_eapol_type_diff(dev, apdev):
@@ -1519,7 +1514,7 @@ def test_ap_wpa2_psk_ext_eapol_type_diff(dev, apdev):
     send_eapol(hapd, addr, build_eapol(msg))
 
     reply_eapol("4/4", hapd, addr, msg, 0x030a, None, None, kck)
-    hapd_connected(hapd)
+    hapd.wait_sta(timeout=15)
 
 @remote_compatible
 def test_ap_wpa_psk_ext_eapol(dev, apdev):
@@ -1547,7 +1542,7 @@ def test_ap_wpa_psk_ext_eapol(dev, apdev):
     send_eapol(hapd, addr, build_eapol(msg))
 
     reply_eapol("4/4", hapd, addr, msg, 0x030a, None, None, kck)
-    hapd_connected(hapd)
+    hapd.wait_sta(timeout=15)
 
 @remote_compatible
 def test_ap_wpa2_psk_ext_eapol_key_info(dev, apdev):
@@ -1593,7 +1588,7 @@ def test_ap_wpa2_psk_ext_eapol_key_info(dev, apdev):
     send_eapol(hapd, addr, build_eapol(msg))
 
     reply_eapol("4/4", hapd, addr, msg, 0x030a, None, None, kck)
-    hapd_connected(hapd)
+    hapd.wait_sta(timeout=15)
 
 def build_eapol_key_1_4(anonce, replay_counter=1, key_data=b'', key_len=16):
     msg = {}
