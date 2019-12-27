@@ -980,6 +980,7 @@ def test_ap_hs20_nai_realms(dev, apdev):
     params['nai_realm'] = ["0,no.match.here;example.com;no.match.here.either,21[2:1][5:7]"]
     hostapd.add_ap(apdev[0], params)
 
+    dev[0].flush_scan_cache()
     dev[0].hs20_enable()
     id = dev[0].add_cred_values({'realm': "example.com",
                                  'ca_cert': "auth_serv/ca.pem",
