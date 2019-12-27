@@ -10,6 +10,7 @@ from __future__ import print_function
 import curses
 import fcntl
 import logging
+import multiprocessing
 import os
 import selectors
 import subprocess
@@ -213,21 +214,25 @@ def vm_next_step(_vm, scr, test_queue):
 
 def check_vm_start(scr, sel, test_queue):
     running = False
-    updated = False
     for i in range(num_servers):
-        if not vm[i]['proc']:
-            # Either not yet started or already stopped VM
-            if test_queue and vm[i]['cmd'] and num_vm_starting() < 2:
-                scr.move(i + 1, 10)
-                scr.clrtoeol()
-                scr.addstr(i + 1, 10, "starting VM")
-                updated = True
-                start_vm(vm[i], sel)
-            else:
-                continue
+        if vm[i]['proc']:
+            running = True
+            continue
 
-        running = True
-    return running, updated
+        # Either not yet started or already stopped VM
+        max_start = multiprocessing.cpu_count()
+        if max_start > 4:
+            max_start /= 2
+        num_starting = num_vm_starting()
+        if vm[i]['cmd'] and len(test_queue) > num_starting and \
+           num_starting < max_start:
+            scr.move(i + 1, 10)
+            scr.clrtoeol()
+            scr.addstr(i + 1, 10, "starting VM")
+            start_vm(vm[i], sel)
+            return True, True
+
+    return running, False
 
 def vm_terminated(_vm, scr, sel, test_queue):
     updated = False
