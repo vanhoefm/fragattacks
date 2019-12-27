@@ -146,6 +146,8 @@ def vm_read_stdout(vm, i, test_queue):
         elif line.startswith("SKIP"):
             ready = True
             total_skipped += 1
+        elif line.startswith("REASON"):
+            vm['skip_reason'].append(line[7:])
         elif line.startswith("START"):
             total_started += 1
             if len(vm['failed']) == 0:
@@ -453,6 +455,7 @@ def main():
         vm[i]['err'] = ""
         vm[i]['failed'] = []
         vm[i]['fail_seq'] = []
+        vm[i]['skip_reason'] = []
     print('')
 
     curses.wrapper(show_progress)
@@ -521,9 +524,11 @@ def main():
     print("Logs: " + dir + '/' + str(timestamp))
     logger.info("Logs: " + dir + '/' + str(timestamp))
 
+    skip_reason = []
     for i in range(num_servers):
         if not vm[i]['started']:
             continue
+        skip_reason += vm[i]['skip_reason']
         if len(vm[i]['pending']) > 0:
             logger.info("Unprocessed stdout from VM[%d]: '%s'" %
                         (i, vm[i]['pending']))
@@ -532,6 +537,32 @@ def main():
             if "Kernel panic" in f.read():
                 print("Kernel panic in " + log)
                 logger.info("Kernel panic in " + log)
+    missing = {}
+    missing['OCV not supported'] = 'OCV'
+    missing['sigma_dut not available'] = 'sigma_dut'
+    missing['Skip test case with long duration due to --long not specified'] = 'long'
+    missing['TEST_ALLOC_FAIL not supported' ] = 'TEST_FAIL'
+    missing['TEST_ALLOC_FAIL not supported in the build'] = 'TEST_FAIL'
+    missing['TEST_FAIL not supported' ] = 'TEST_FAIL'
+    missing['veth not supported (kernel CONFIG_VETH)'] = 'KERNEL:CONFIG_VETH'
+    missing['WPA-EAP-SUITE-B-192 not supported'] = 'CONFIG_SUITEB192'
+    missing['WPA-EAP-SUITE-B not supported'] = 'CONFIG_SUITEB'
+    missing['wmediumd not available'] = 'wmediumd'
+    missing['DPP not supported'] = 'CONFIG_DPP'
+    missing['DPP version 2 not supported'] = 'CONFIG_DPP2'
+    missing_items = []
+    other_reasons = []
+    for reason in sorted(set(skip_reason)):
+        if reason in missing:
+            missing_items.append(missing[reason])
+        elif reason.startswith('OCSP-multi not supported with this TLS library'):
+            missing_items.append('OCSP-MULTI')
+        else:
+            other_reasons.append(reason)
+    if missing_items:
+        print("Missing items (SKIP):", missing_items)
+    if other_reasons:
+        print("Other skip reasons:", other_reasons)
 
     if codecov:
         print("Code coverage - preparing report")

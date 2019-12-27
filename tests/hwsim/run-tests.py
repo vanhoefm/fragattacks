@@ -510,6 +510,7 @@ def main():
                     if args.stdin_ctrl:
                         set_term_echo(sys.stdin.fileno(), True)
                     sys.exit(1)
+            skip_reason = None
             try:
                 if t.__code__.co_argcount > 2:
                     params = {}
@@ -547,6 +548,7 @@ def main():
                             break
             except HwsimSkip as e:
                 logger.info("Skip test case: %s" % e)
+                skip_reason = e
                 result = "SKIP"
             except NameError as e:
                 import traceback
@@ -635,6 +637,8 @@ def main():
         logger.info(result)
         if args.loglevel == logging.WARNING:
             print(result)
+            if skip_reason:
+                print("REASON", skip_reason)
             sys.stdout.flush()
 
         if not reset_ok:
