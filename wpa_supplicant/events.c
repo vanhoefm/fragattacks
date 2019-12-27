@@ -4564,6 +4564,20 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		wpa_s->assoc_freq = data->ch_switch.freq;
 		wpa_s->current_ssid->frequency = data->ch_switch.freq;
 
+#ifdef CONFIG_SME
+		switch (data->ch_switch.ch_offset) {
+		case 1:
+			wpa_s->sme.ht_sec_chan = HT_SEC_CHAN_ABOVE;
+			break;
+		case -1:
+			wpa_s->sme.ht_sec_chan = HT_SEC_CHAN_BELOW;
+			break;
+		default:
+			wpa_s->sme.ht_sec_chan = HT_SEC_CHAN_UNKNOWN;
+			break;
+		}
+#endif /* CONFIG_SME */
+
 #ifdef CONFIG_AP
 		if (wpa_s->current_ssid->mode == WPAS_MODE_AP ||
 		    wpa_s->current_ssid->mode == WPAS_MODE_P2P_GO ||
