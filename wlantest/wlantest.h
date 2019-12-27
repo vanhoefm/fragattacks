@@ -1,6 +1,6 @@
 /*
  * wlantest - IEEE 802.11 protocol monitoring and testing tool
- * Copyright (c) 2010-2013, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2010-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -208,6 +208,7 @@ struct wlantest {
 
 	unsigned int assume_fcs:1;
 	unsigned int pcap_no_buffer:1;
+	unsigned int ethernet:1;
 
 	char *notes[MAX_NOTES];
 	size_t num_notes;

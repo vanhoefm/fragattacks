@@ -1,6 +1,6 @@
 /*
  * PCAP capture file writer
- * Copyright (c) 2010, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2010-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -17,7 +17,9 @@
 
 int write_pcap_init(struct wlantest *wt, const char *fname)
 {
-	wt->write_pcap = pcap_open_dead(DLT_IEEE802_11_RADIO, 4000);
+	int linktype = wt->ethernet ? DLT_EN10MB : DLT_IEEE802_11_RADIO;
+
+	wt->write_pcap = pcap_open_dead(linktype, 4000);
 	if (wt->write_pcap == NULL)
 		return -1;
 	wt->write_pcap_dumper = pcap_dump_open(wt->write_pcap, fname);
@@ -182,7 +184,7 @@ int write_pcapng_init(struct wlantest *wt, const char *fname)
 	desc.block_type = PCAPNG_BLOCK_IFACE_DESC;
 	desc.block_total_len = sizeof(desc);
 	desc.block_total_len2 = desc.block_total_len;
-	desc.link_type = LINKTYPE_IEEE802_11_RADIO;
+	desc.link_type = wt->ethernet ? DLT_EN10MB : LINKTYPE_IEEE802_11_RADIO;
 	desc.snap_len = 65535;
 	fwrite(&desc, sizeof(desc), 1, wt->pcapng);
 	if (wt->pcap_no_buffer)
@@ -317,6 +319,7 @@ void write_pcapng_write_read(struct wlantest *wt, int dlt,
 	pos = (u8 *) (pkt + 1);
 
 	switch (dlt) {
+	case DLT_EN10MB:
 	case DLT_IEEE802_11_RADIO:
 		break;
 	case DLT_PRISM_HEADER:
@@ -365,5 +368,6 @@ void write_pcapng_captured(struct wlantest *wt, const u8 *buf, size_t len)
 	gettimeofday(&h.ts, NULL);
 	h.caplen = len;
 	h.len = len;
-	write_pcapng_write_read(wt, DLT_IEEE802_11_RADIO, &h, buf);
+	write_pcapng_write_read(wt, wt->ethernet ? DLT_EN10MB :
+				DLT_IEEE802_11_RADIO, &h, buf);
 }

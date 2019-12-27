@@ -1,6 +1,6 @@
 /*
  * wlantest - IEEE 802.11 protocol monitoring and testing tool
- * Copyright (c) 2010-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2010-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -21,7 +21,7 @@ static void wlantest_terminate(int sig, void *signal_ctx)
 
 static void usage(void)
 {
-	printf("wlantest [-cddhqqFNt] [-i<ifname>] [-r<pcap file>] "
+	printf("wlantest [-cddehqqFNt] [-i<ifname>] [-r<pcap file>] "
 	       "[-p<passphrase>]\n"
 	       "         [-I<wired ifname>] [-R<wired pcap file>] "
 	       "[-P<RADIUS shared secret>]\n"
@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
 	wlantest_init(&wt);
 
 	for (;;) {
-		c = getopt(argc, argv, "cdf:Fhi:I:L:n:Np:P:qr:R:tT:w:W:");
+		c = getopt(argc, argv, "cdef:Fhi:I:L:n:Np:P:qr:R:tT:w:W:");
 		if (c < 0)
 			break;
 		switch (c) {
@@ -377,6 +377,9 @@ int main(int argc, char *argv[])
 		case 'd':
 			if (wpa_debug_level > 0)
 				wpa_debug_level--;
+			break;
+		case 'e':
+			wt.ethernet = 1;
 			break;
 		case 'f':
 			if (add_pmk_file(&wt, optarg) < 0)

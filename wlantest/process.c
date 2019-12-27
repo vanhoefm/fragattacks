@@ -1,6 +1,6 @@
 /*
  * Received frame processing
- * Copyright (c) 2010, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2010-2019, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -277,6 +277,9 @@ void wlantest_process(struct wlantest *wt, const u8 *data, size_t len)
 	int rxflags = 0, txflags = 0, failed = 0, fcs = 0;
 	const u8 *frame, *fcspos;
 	size_t frame_len;
+
+	if (wt->ethernet)
+		return;
 
 	wpa_hexdump(MSG_EXCESSIVE, "Process data", data, len);
 
