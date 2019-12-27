@@ -4455,16 +4455,7 @@ def root_ocsp(cert):
 
     arg = ["openssl", "ocsp", "-reqout", fn2, "-issuer", ca, "-sha256",
            "-cert", cert, "-no_nonce", "-text"]
-    logger.info(' '.join(arg))
-    cmd = subprocess.Popen(arg, stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE)
-    res = cmd.stdout.read().decode() + "\n" + cmd.stderr.read().decode()
-    cmd.stdout.close()
-    cmd.stderr.close()
-    cmd.wait()
-    if cmd.returncode != 0:
-        raise Exception("bad return code from openssl ocsp\n\n" + res)
-    logger.info("OCSP request:\n" + res)
+    run_openssl(arg)
 
     fd, fn = tempfile.mkstemp()
     os.close(fd)
@@ -4473,15 +4464,7 @@ def root_ocsp(cert):
            "-CA", ca, "-issuer", ca, "-verify_other", ca, "-trust_other",
            "-ndays", "7", "-reqin", fn2, "-resp_no_certs", "-respout", fn,
            "-text"]
-    cmd = subprocess.Popen(arg, stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE)
-    res = cmd.stdout.read().decode() + "\n" + cmd.stderr.read().decode()
-    cmd.stdout.close()
-    cmd.stderr.close()
-    cmd.wait()
-    if cmd.returncode != 0:
-        raise Exception("bad return code from openssl ocsp\n\n" + res)
-    logger.info("OCSP response:\n" + res)
+    run_openssl(arg)
     os.unlink(fn2)
     return fn
 
@@ -4495,15 +4478,7 @@ def ica_ocsp(cert, md="-sha256"):
 
     arg = ["openssl", "ocsp", "-reqout", fn2, "-issuer", ca, md,
            "-cert", cert, "-no_nonce", "-text"]
-    cmd = subprocess.Popen(arg, stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE)
-    res = cmd.stdout.read().decode() + "\n" + cmd.stderr.read().decode()
-    cmd.stdout.close()
-    cmd.stderr.close()
-    cmd.wait()
-    if cmd.returncode != 0:
-        raise Exception("bad return code from openssl ocsp\n\n" + res)
-    logger.info("OCSP request:\n" + res)
+    run_openssl(arg)
 
     fd, fn = tempfile.mkstemp()
     os.close(fd)
@@ -4512,15 +4487,7 @@ def ica_ocsp(cert, md="-sha256"):
            "-CA", ca, "-issuer", ca, "-verify_other", ca, "-trust_other",
            "-ndays", "7", "-reqin", fn2, "-resp_no_certs", "-respout", fn,
            "-text"]
-    cmd = subprocess.Popen(arg, stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE)
-    res = cmd.stdout.read().decode() + "\n" + cmd.stderr.read().decode()
-    cmd.stdout.close()
-    cmd.stderr.close()
-    cmd.wait()
-    if cmd.returncode != 0:
-        raise Exception("bad return code from openssl ocsp\n\n" + res)
-    logger.info("OCSP response:\n" + res)
+    run_openssl(arg)
     os.unlink(fn2)
     return fn
 
