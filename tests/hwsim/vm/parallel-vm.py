@@ -113,6 +113,8 @@ def vm_read_stdout(vm, i, test_queue):
         pending = pending[(pos + 1):]
         logger.debug("VM[%d] stdout full line[%s]" % (i, line))
         if line.startswith("READY"):
+            vm['starting'] = False
+            vm['started'] = True
             ready = True
         elif line.startswith("PASS"):
             ready = True
@@ -155,6 +157,25 @@ def vm_read_stdout(vm, i, test_queue):
     vm['pending'] = pending
     return ready
 
+def start_vm(vm):
+    vm['starting'] = True
+    vm['proc'] = subprocess.Popen(vm['cmd'],
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+    vm['cmd'] = None
+    for stream in [vm['proc'].stdout, vm['proc'].stderr]:
+        fd = stream.fileno()
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+def num_vm_starting():
+    count = 0
+    for i in range(num_servers):
+        if vm[i]['starting']:
+            count += 1
+    return count
+
 def show_progress(scr):
     global num_servers
     global vm
@@ -168,12 +189,14 @@ def show_progress(scr):
     total_tests = len(tests)
     logger.info("Total tests: %d" % total_tests)
     test_queue = [(t, 0) for t in tests]
+    start_vm(vm[0])
 
     scr.leaveok(1)
     scr.addstr(0, 0, "Parallel test execution status", curses.A_BOLD)
     for i in range(0, num_servers):
         scr.addstr(i + 1, 0, "VM %d:" % (i + 1), curses.A_BOLD)
-        scr.addstr(i + 1, 10, "starting VM")
+        status = "starting VM" if vm[i]['proc'] else "not yet started"
+        scr.addstr(i + 1, 10, status)
     scr.addstr(num_servers + 1, 0, "Total:", curses.A_BOLD)
     scr.addstr(num_servers + 1, 20, "TOTAL={} STARTED=0 PASS=0 FAIL=0 SKIP=0".format(total_tests))
     scr.refresh()
@@ -184,6 +207,12 @@ def show_progress(scr):
 
         for i in range(num_servers):
             if not vm[i]['proc']:
+                if test_queue and vm[i]['cmd'] and num_vm_starting() < 2:
+                    scr.move(i + 1, 10)
+                    scr.clrtoeol()
+                    scr.addstr(i + 1, 10, "starting VM")
+                    updated = True
+                    start_vm(vm[i])
                 continue
             if vm[i]['proc'].poll() is not None:
                 vm[i]['proc'] = None
@@ -408,26 +437,22 @@ def main():
         print("\rStarting virtual machine {}/{}".format(i + 1, num_servers),
               end='')
         logger.info("Starting virtual machine {}/{}".format(i + 1, num_servers))
-        cmd = [os.path.join(scriptsdir, 'vm-run.sh'), '--delay', str(i),
+        cmd = [os.path.join(scriptsdir, 'vm-run.sh'),
                '--timestamp', str(timestamp),
                '--ext', 'srv.%d' % (i + 1),
                '-i'] + codecov_args + extra_args
         if args.telnet:
             cmd += ['--telnet', str(args.telnet + i)]
         vm[i] = {}
-        vm[i]['proc'] = subprocess.Popen(cmd,
-                                         stdin=subprocess.PIPE,
-                                         stdout=subprocess.PIPE,
-                                         stderr=subprocess.PIPE)
+        vm[i]['starting'] = False
+        vm[i]['started'] = False
+        vm[i]['cmd'] = cmd
+        vm[i]['proc'] = None
         vm[i]['out'] = ""
         vm[i]['pending'] = ""
         vm[i]['err'] = ""
         vm[i]['failed'] = []
         vm[i]['fail_seq'] = []
-        for stream in [vm[i]['proc'].stdout, vm[i]['proc'].stderr]:
-            fd = stream.fileno()
-            fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-            fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
     print('')
 
     curses.wrapper(show_progress)
@@ -497,6 +522,8 @@ def main():
     logger.info("Logs: " + dir + '/' + str(timestamp))
 
     for i in range(num_servers):
+        if not vm[i]['started']:
+            continue
         if len(vm[i]['pending']) > 0:
             logger.info("Unprocessed stdout from VM[%d]: '%s'" %
                         (i, vm[i]['pending']))

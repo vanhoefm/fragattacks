@@ -64,7 +64,6 @@ CODECOV=no
 TIMEWARP=0
 TELNET_QEMU=
 TELNET_ARG=0
-DELAY=0
 CODECOV_DIR=
 while [ "$1" != "" ]; do
 	case $1 in
@@ -91,10 +90,6 @@ while [ "$1" != "" ]; do
 			TELNET_QEMU="-net nic,model=virtio -net user,id=telnet,restrict=on,net=172.16.0.0/24,hostfwd=tcp:127.0.0.1:$1-:23"
 			shift
 			;;
-	        --delay ) shift
-			DELAY=$1
-			shift
-			;;
 		* )
 			RUN_TEST_ARGS="$RUN_TEST_ARGS$1 "
 			shift
@@ -116,11 +111,6 @@ elif [ $CODECOV = "yes" ]; then
     ./build-codecov.sh $LOGDIR || exit 1
 else
     CODECOV=no
-fi
-
-if [ $DELAY -gt 0 ]; then
-    echo "Wait $DELAY seconds before starting VM"
-    sleep $DELAY
 fi
 
 echo "Starting test run in a virtual machine"
