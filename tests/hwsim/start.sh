@@ -155,18 +155,6 @@ if [ ! -r $LOGDIR/ocsp-server-cache.der ]; then
     cp $DIR/auth_serv/ocsp-server-cache.der $LOGDIR/ocsp-server-cache.der
 fi
 
-for i in unknown revoked; do
-    openssl ocsp -index $DIR/auth_serv/index-$i.txt \
-	-rsigner $DIR/auth_serv/ocsp-responder.pem \
-	-rkey $DIR/auth_serv/ocsp-responder.key \
-	-CA $DIR/auth_serv/ca.pem \
-	-issuer $DIR/auth_serv/ca.pem \
-	-verify_other $DIR/auth_serv/ca.pem -trust_other \
-	-ndays 7 \
-	-reqin $DIR/auth_serv/ocsp-req.der \
-	-respout $LOGDIR/ocsp-server-cache-$i.der >> $LOGDIR/ocsp.log 2>&1
-done
-
 openssl ocsp -reqout $LOGDIR/ocsp-req.der -issuer $DIR/auth_serv/ca.pem \
     -sha256 -serial 0xD8D3E3A6CBE3CD1F -no_nonce >> $LOGDIR/ocsp.log 2>&1
 for i in "" "-unknown" "-revoked"; do

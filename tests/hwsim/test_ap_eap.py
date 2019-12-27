@@ -4352,10 +4352,26 @@ def test_ap_wpa2_eap_tls_ocsp_unknown_sign(dev, apdev):
     if ev is None:
         raise Exception("Timeout on EAP failure report")
 
+def ocsp_resp_status(outfile, status):
+    if os.path.exists(outfile):
+        return
+    arg = ["openssl", "ocsp", "-index", "auth_serv/index-%s.txt" % status,
+           '-rsigner', 'auth_serv/ocsp-responder.pem',
+           '-rkey', 'auth_serv/ocsp-responder.key',
+           '-CA', 'auth_serv/ca.pem',
+           '-issuer', 'auth_serv/ca.pem',
+           '-verify_other', 'auth_serv/ca.pem',
+           '-trust_other',
+           '-ndays', '7',
+           '-reqin', 'auth_serv/ocsp-req.der',
+           '-respout', outfile]
+    run_openssl(arg)
+
 def test_ap_wpa2_eap_ttls_ocsp_revoked(dev, apdev, params):
     """WPA2-Enterprise connection using EAP-TTLS and OCSP status revoked"""
     check_ocsp_support(dev[0])
     ocsp = os.path.join(params['logdir'], "ocsp-server-cache-revoked.der")
+    ocsp_resp_status(ocsp, "revoked")
     if not os.path.exists(ocsp):
         raise HwsimSkip("No OCSP response available")
     params = int_eap_server_params()
@@ -4384,9 +4400,10 @@ def test_ap_wpa2_eap_ttls_ocsp_revoked(dev, apdev, params):
         raise Exception("Timeout on EAP failure report")
 
 def test_ap_wpa2_eap_ttls_ocsp_unknown(dev, apdev, params):
-    """WPA2-Enterprise connection using EAP-TTLS and OCSP status revoked"""
+    """WPA2-Enterprise connection using EAP-TTLS and OCSP status unknown"""
     check_ocsp_support(dev[0])
     ocsp = os.path.join(params['logdir'], "ocsp-server-cache-unknown.der")
+    ocsp_resp_status(ocsp, "unknown")
     if not os.path.exists(ocsp):
         raise HwsimSkip("No OCSP response available")
     params = int_eap_server_params()
@@ -4413,9 +4430,10 @@ def test_ap_wpa2_eap_ttls_ocsp_unknown(dev, apdev, params):
         raise Exception("Timeout on EAP failure report")
 
 def test_ap_wpa2_eap_ttls_optional_ocsp_unknown(dev, apdev, params):
-    """WPA2-Enterprise connection using EAP-TTLS and OCSP status revoked"""
+    """WPA2-Enterprise connection using EAP-TTLS and OCSP status unknown"""
     check_ocsp_support(dev[0])
     ocsp = os.path.join(params['logdir'], "ocsp-server-cache-unknown.der")
+    ocsp_resp_status(ocsp, "unknown")
     if not os.path.exists(ocsp):
         raise HwsimSkip("No OCSP response available")
     params = int_eap_server_params()
