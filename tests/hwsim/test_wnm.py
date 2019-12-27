@@ -81,7 +81,12 @@ def start_wnm_ap(apdev, bss_transition=True, time_adv=False, ssid=None,
         params["vht_oper_centr_freq_seg0_idx"] = "0"
     if mbo:
         params["mbo"] = "1"
-    hapd = hostapd.add_ap(apdev, params)
+    try:
+        hapd = hostapd.add_ap(apdev, params)
+    except Exception as e:
+        if "Failed to set hostapd parameter ocv" in str(e):
+            raise HwsimSkip("OCV not supported")
+        raise
     if rsn:
         Wlantest.setup(hapd)
         wt = Wlantest()
@@ -301,13 +306,8 @@ def test_wnm_sleep_mode_rsn_pmf(dev, apdev):
 @remote_compatible
 def test_wnm_sleep_mode_rsn_ocv(dev, apdev):
     """WNM Sleep Mode - RSN with OCV"""
-    try:
-            hapd = start_wnm_ap(apdev[0], rsn=True, wnm_sleep_mode=True,
-                                time_adv=True, ocv=True)
-    except Exception as e:
-        if "Failed to set hostapd parameter ocv" in str(e):
-            raise HwsimSkip("OCV not supported")
-        raise
+    hapd = start_wnm_ap(apdev[0], rsn=True, wnm_sleep_mode=True,
+                        time_adv=True, ocv=True)
 
     dev[0].connect("test-wnm-rsn", psk="12345678", ieee80211w="2", ocv="1",
                    key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
@@ -325,12 +325,7 @@ def test_wnm_sleep_mode_rsn_ocv(dev, apdev):
 def test_wnm_sleep_mode_rsn_badocv(dev, apdev):
     """WNM Sleep Mode - RSN with OCV and bad OCI elements"""
     ssid = "test-wnm-rsn"
-    try:
-        hapd = start_wnm_ap(apdev[0], rsn=True, wnm_sleep_mode=True, ocv=True)
-    except Exception as e:
-        if "Failed to set hostapd parameter ocv" in str(e):
-            raise HwsimSkip("OCV not supported")
-        raise
+    hapd = start_wnm_ap(apdev[0], rsn=True, wnm_sleep_mode=True, ocv=True)
     bssid = apdev[0]['bssid']
     dev[0].connect(ssid, psk="12345678", key_mgmt="WPA-PSK-SHA256", ocv="1",
                    proto="WPA2", ieee80211w="2", scan_freq="2412")
@@ -406,13 +401,8 @@ def test_wnm_sleep_mode_rsn_badocv(dev, apdev):
 
 def test_wnm_sleep_mode_rsn_ocv_failure(dev, apdev):
     """WNM Sleep Mode - RSN with OCV - local failure"""
-    try:
-        hapd = start_wnm_ap(apdev[0], rsn=True, wnm_sleep_mode=True,
-                            time_adv=True, ocv=True)
-    except Exception as e:
-        if "Failed to set hostapd parameter ocv" in str(e):
-            raise HwsimSkip("OCV not supported")
-        raise
+    hapd = start_wnm_ap(apdev[0], rsn=True, wnm_sleep_mode=True,
+                        time_adv=True, ocv=True)
 
     dev[0].connect("test-wnm-rsn", psk="12345678", ieee80211w="2", ocv="1",
                    key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
