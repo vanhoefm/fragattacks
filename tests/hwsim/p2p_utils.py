@@ -248,10 +248,17 @@ def go_neg_pin(i_dev, r_dev, i_intent=None, r_intent=None, i_method='enter', r_m
     logger.debug("Wait for GO Negotiation Request on r_dev")
     ev = r_dev.wait_global_event(["P2P-GO-NEG-REQUEST"], timeout=15)
     if ev is None:
+        t.join()
         raise Exception("GO Negotiation timed out")
     r_dev.dump_monitor()
     logger.debug("Re-initiate GO Negotiation from r_dev")
-    r_res = r_dev.p2p_go_neg_init(i_dev.p2p_dev_addr(), pin, r_method, go_intent=r_intent, timeout=20)
+    try:
+        r_res = r_dev.p2p_go_neg_init(i_dev.p2p_dev_addr(), pin, r_method,
+                                      go_intent=r_intent, timeout=20)
+    except Exception as e:
+        logger.info("go_neg_pin - r_dev.p2p_go_neg_init() exception: " + str(e))
+        t.join()
+        raise
     logger.debug("r_res: " + str(r_res))
     r_dev.dump_monitor()
     t.join()
@@ -328,14 +335,21 @@ def go_neg_pbc(i_dev, r_dev, i_intent=None, r_intent=None, i_freq=None, r_freq=N
     logger.debug("Wait for GO Negotiation Request on r_dev")
     ev = r_dev.wait_global_event(["P2P-GO-NEG-REQUEST"], timeout=15)
     if ev is None:
+        t.join()
         raise Exception("GO Negotiation timed out")
     r_dev.dump_monitor()
     # Allow some time for the GO Neg Resp to go out before initializing new
     # GO Negotiation.
     time.sleep(0.2)
     logger.debug("Re-initiate GO Negotiation from r_dev")
-    r_res = r_dev.p2p_go_neg_init(i_dev.p2p_dev_addr(), None, "pbc",
-                                  go_intent=r_intent, timeout=20, freq=r_freq)
+    try:
+        r_res = r_dev.p2p_go_neg_init(i_dev.p2p_dev_addr(), None, "pbc",
+                                      go_intent=r_intent, timeout=20,
+                                      freq=r_freq)
+    except Exception as e:
+        logger.info("go_neg_pbc - r_dev.p2p_go_neg_init() exception: " + str(e))
+        t.join()
+        raise
     logger.debug("r_res: " + str(r_res))
     r_dev.dump_monitor()
     t.join()
