@@ -2096,6 +2096,7 @@ def test_rrm_reassociation(dev, apdev):
     bssid = hapd.own_addr()
 
     addr = dev[0].own_addr()
+    dev[0].flush_scan_cache()
     dev[0].connect("rrm", key_mgmt="NONE", scan_freq="2412")
     check_beacon_req(hapd, addr, 1)
 
