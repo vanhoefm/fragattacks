@@ -4163,13 +4163,59 @@ def test_ap_wpa2_eap_tls_ocsp_key_id(dev, apdev, params):
                    private_key_passwd="whatever", ocsp=2,
                    scan_freq="2412")
 
+def ocsp_req(outfile):
+    if os.path.exists(outfile):
+        return
+    arg = ["openssl", "ocsp",
+           "-reqout", outfile,
+           '-issuer', 'auth_serv/ca.pem',
+           '-sha256',
+           '-serial', '0xD8D3E3A6CBE3CD1F',
+           '-no_nonce']
+    run_openssl(arg)
+    if not os.path.exists(outfile):
+        raise HwsimSkip("Failed to generate OCSP request")
+
+def ocsp_resp_ca_signed(reqfile, outfile, status):
+    ocsp_req(reqfile)
+    if os.path.exists(outfile):
+        return
+    arg = ["openssl", "ocsp",
+           "-index", "auth_serv/index%s.txt" % status,
+	   "-rsigner", "auth_serv/ca.pem",
+	   "-rkey", "auth_serv/ca-key.pem",
+	   "-CA", "auth_serv/ca.pem",
+	   "-ndays", "7",
+	   "-reqin", reqfile,
+	   "-resp_no_certs",
+	   "-respout", outfile]
+    run_openssl(arg)
+    if not os.path.exists(outfile):
+        raise HwsimSkip("No OCSP response available")
+
+def ocsp_resp_server_signed(reqfile, outfile):
+    ocsp_req(reqfile)
+    if os.path.exists(outfile):
+        return
+    arg = ["openssl", "ocsp",
+           "-index", "auth_serv/index.txt",
+	   "-rsigner", "auth_serv/server.pem",
+	   "-rkey", "auth_serv/server.key",
+	   "-CA", "auth_serv/ca.pem",
+	   "-ndays", "7",
+	   "-reqin", reqfile,
+	   "-respout", outfile]
+    run_openssl(arg)
+    if not os.path.exists(outfile):
+        raise HwsimSkip("No OCSP response available")
+
 def test_ap_wpa2_eap_tls_ocsp_ca_signed_good(dev, apdev, params):
     """EAP-TLS and CA signed OCSP response (good)"""
     check_ocsp_support(dev[0])
     check_pkcs12_support(dev[0])
+    req = os.path.join(params['logdir'], "ocsp-req.der")
     ocsp = os.path.join(params['logdir'], "ocsp-resp-ca-signed.der")
-    if not os.path.exists(ocsp):
-        raise HwsimSkip("No OCSP response available")
+    ocsp_resp_ca_signed(req, ocsp, "")
     params = int_eap_server_params()
     params["ocsp_stapling_response"] = ocsp
     hostapd.add_ap(apdev[0], params)
@@ -4183,9 +4229,9 @@ def test_ap_wpa2_eap_tls_ocsp_ca_signed_revoked(dev, apdev, params):
     """EAP-TLS and CA signed OCSP response (revoked)"""
     check_ocsp_support(dev[0])
     check_pkcs12_support(dev[0])
+    req = os.path.join(params['logdir'], "ocsp-req.der")
     ocsp = os.path.join(params['logdir'], "ocsp-resp-ca-signed-revoked.der")
-    if not os.path.exists(ocsp):
-        raise HwsimSkip("No OCSP response available")
+    ocsp_resp_ca_signed(req, ocsp, "-revoked")
     params = int_eap_server_params()
     params["ocsp_stapling_response"] = ocsp
     hostapd.add_ap(apdev[0], params)
@@ -4215,9 +4261,9 @@ def test_ap_wpa2_eap_tls_ocsp_ca_signed_unknown(dev, apdev, params):
     """EAP-TLS and CA signed OCSP response (unknown)"""
     check_ocsp_support(dev[0])
     check_pkcs12_support(dev[0])
+    req = os.path.join(params['logdir'], "ocsp-req.der")
     ocsp = os.path.join(params['logdir'], "ocsp-resp-ca-signed-unknown.der")
-    if not os.path.exists(ocsp):
-        raise HwsimSkip("No OCSP response available")
+    ocsp_resp_ca_signed(req, ocsp, "-unknown")
     params = int_eap_server_params()
     params["ocsp_stapling_response"] = ocsp
     hostapd.add_ap(apdev[0], params)
@@ -4245,9 +4291,9 @@ def test_ap_wpa2_eap_tls_ocsp_server_signed(dev, apdev, params):
     """EAP-TLS and server signed OCSP response"""
     check_ocsp_support(dev[0])
     check_pkcs12_support(dev[0])
+    req = os.path.join(params['logdir'], "ocsp-req.der")
     ocsp = os.path.join(params['logdir'], "ocsp-resp-server-signed.der")
-    if not os.path.exists(ocsp):
-        raise HwsimSkip("No OCSP response available")
+    ocsp_resp_server_signed(req, ocsp)
     params = int_eap_server_params()
     params["ocsp_stapling_response"] = ocsp
     hostapd.add_ap(apdev[0], params)
@@ -4705,14 +4751,13 @@ def test_ap_wpa2_eap_tls_ocsp_multi_revoked(dev, apdev, params):
     check_ocsp_multi_support(dev[0])
     check_pkcs12_support(dev[0])
 
+    req = os.path.join(params['logdir'], "ocsp-req.der")
     ocsp_revoked = os.path.join(params['logdir'],
                                 "ocsp-resp-ca-signed-revoked.der")
-    if not os.path.exists(ocsp_revoked):
-        raise HwsimSkip("No OCSP response (revoked) available")
     ocsp_unknown = os.path.join(params['logdir'],
                                 "ocsp-resp-ca-signed-unknown.der")
-    if not os.path.exists(ocsp_unknown):
-        raise HwsimSkip("No OCSP response(unknown) available")
+    ocsp_resp_ca_signed(req, ocsp_revoked, "-revoked")
+    ocsp_resp_ca_signed(req, ocsp_unknown, "-unknown")
 
     with open(ocsp_revoked, "rb") as f:
         resp_revoked = f.read()
