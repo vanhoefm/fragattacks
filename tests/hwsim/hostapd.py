@@ -271,6 +271,18 @@ class Hostapd:
         if addr and addr not in ev:
             raise Exception("Unexpected STA address in connection event: " + ev)
 
+    def wait_ptkinitdone(self, addr, timeout=2):
+        while timeout > 0:
+            sta = self.get_sta(addr)
+            if 'hostapdWPAPTKState' not in sta:
+                raise Exception("GET_STA did not return hostapdWPAPTKState")
+            state = sta['hostapdWPAPTKState']
+            if state == "11":
+                return
+            os.sleep(0.1)
+            timeout -= 0.1
+        raise Exception("Timeout while waiting for PTKINITDONE")
+
     def get_status(self):
         res = self.request("STATUS")
         lines = res.splitlines()

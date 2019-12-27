@@ -353,6 +353,7 @@ def test_pmksa_cache_expiration(dev, apdev):
     pmksa2 = dev[0].get_pmksa(bssid)
     if pmksa['pmkid'] == pmksa2['pmkid']:
         raise Exception("PMKID did not change")
+    hapd.wait_ptkinitdone(dev[0].own_addr())
     hwsim_utils.test_connectivity(dev[0], hapd)
 
 def test_pmksa_cache_expiration_disconnect(dev, apdev):
