@@ -4118,11 +4118,40 @@ def int_eap_server_params():
               "dh_file": "auth_serv/dh.conf"}
     return params
 
+def run_openssl(arg):
+    logger.info(' '.join(arg))
+    cmd = subprocess.Popen(arg, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+    res = cmd.stdout.read().decode() + "\n" + cmd.stderr.read().decode()
+    cmd.stdout.close()
+    cmd.stderr.close()
+    cmd.wait()
+    if cmd.returncode != 0:
+        raise Exception("bad return code from openssl\n\n" + res)
+    logger.info("openssl result:\n" + res)
+
+def ocsp_cache_key_id(outfile):
+    if os.path.exists(outfile):
+        return
+    arg = ["openssl", "ocsp", "-index", "auth_serv/index.txt",
+           '-rsigner', 'auth_serv/ocsp-responder.pem',
+           '-rkey', 'auth_serv/ocsp-responder.key',
+           '-resp_key_id',
+           '-CA', 'auth_serv/ca.pem',
+           '-issuer', 'auth_serv/ca.pem',
+           '-verify_other', 'auth_serv/ca.pem',
+           '-trust_other',
+           '-ndays', '7',
+           '-reqin', 'auth_serv/ocsp-req.der',
+           '-respout', outfile]
+    run_openssl(arg)
+
 def test_ap_wpa2_eap_tls_ocsp_key_id(dev, apdev, params):
     """EAP-TLS and OCSP certificate signed OCSP response using key ID"""
     check_ocsp_support(dev[0])
     check_pkcs12_support(dev[0])
     ocsp = os.path.join(params['logdir'], "ocsp-server-cache-key-id.der")
+    ocsp_cache_key_id(ocsp)
     if not os.path.exists(ocsp):
         raise HwsimSkip("No OCSP response available")
     params = int_eap_server_params()
