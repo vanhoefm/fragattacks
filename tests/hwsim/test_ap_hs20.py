@@ -22,6 +22,7 @@ import hwsim_utils
 from tshark import run_tshark
 from wlantest import Wlantest
 from wpasupplicant import WpaSupplicant
+from wlantest import WlantestCapture
 from test_ap_eap import check_eap_capa, check_domain_match_full
 from test_gas import gas_rx, parse_gas, action_response, anqp_initial_resp, send_gas_resp, ACTION_CATEG_PUBLIC, GAS_INITIAL_RESPONSE
 
@@ -4671,18 +4672,10 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
 
     time.sleep(0.5)
     cmd = {}
-    cmd[0] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', 'ap-br0',
-                               '-w', cap_br, '-s', '2000'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[1] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', dev[0].ifname,
-                               '-w', cap_dev0, '-s', '2000'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[2] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', dev[1].ifname,
-                               '-w', cap_dev1, '-s', '2000'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[3] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', dev[2].ifname,
-                               '-w', cap_dev2, '-s', '2000'],
-                              stderr=open('/dev/null', 'w'))
+    cmd[0] = WlantestCapture('ap-br0', cap_br)
+    cmd[1] = WlantestCapture(dev[0].ifname, cap_dev0)
+    cmd[2] = WlantestCapture(dev[1].ifname, cap_dev1)
+    cmd[3] = WlantestCapture(dev[2].ifname, cap_dev2)
 
     dev[0].connect("open", key_mgmt="NONE", scan_freq="2412")
     dev[1].connect("open", key_mgmt="NONE", scan_freq="2412")
@@ -4875,7 +4868,7 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
     dev[1].request("DISCONNECT")
     time.sleep(1.5)
     for i in range(len(cmd)):
-        cmd[i].terminate()
+        cmd[i].close()
     time.sleep(0.1)
     macs = get_bridge_macs("ap-br0")
     logger.info("After disconnect (showmacs): " + str(macs))
@@ -5019,18 +5012,10 @@ def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
 
     time.sleep(0.5)
     cmd = {}
-    cmd[0] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', 'ap-br0',
-                               '-w', cap_br, '-s', '2000'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[1] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', dev[0].ifname,
-                               '-w', cap_dev0, '-s', '2000'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[2] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', dev[1].ifname,
-                               '-w', cap_dev1, '-s', '2000'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[3] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', dev[2].ifname,
-                               '-w', cap_dev2, '-s', '2000'],
-                              stderr=open('/dev/null', 'w'))
+    cmd[0] = WlantestCapture('ap-br0', cap_br)
+    cmd[1] = WlantestCapture(dev[0].ifname, cap_dev0)
+    cmd[2] = WlantestCapture(dev[1].ifname, cap_dev1)
+    cmd[3] = WlantestCapture(dev[2].ifname, cap_dev2)
 
     dev[0].connect("open", key_mgmt="NONE", scan_freq="2412")
     dev[1].connect("open", key_mgmt="NONE", scan_freq="2412")
@@ -5134,7 +5119,7 @@ def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
     dev[1].request("DISCONNECT")
     time.sleep(0.5)
     for i in range(len(cmd)):
-        cmd[i].terminate()
+        cmd[i].close()
     macs = get_bridge_macs("ap-br0")
     logger.info("After disconnect (showmacs): " + str(macs))
     matches = get_permanent_neighbors("ap-br0")

@@ -23,6 +23,7 @@ from utils import HwsimSkip, fail_test, skip_with_fips, start_monitor, stop_moni
 import hwsim_utils
 from wpasupplicant import WpaSupplicant
 from tshark import run_tshark
+from wlantest import WlantestCapture
 
 def check_mib(dev, vals):
     mib = dev.get_mib()
@@ -3219,10 +3220,7 @@ def test_ap_wpa2_psk_inject_assoc(dev, apdev, params):
     params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
     params["wpa_key_mgmt"] = "WPA-PSK"
     hapd = hostapd.add_ap(apdev[0], params)
-    capture = subprocess.Popen(['tcpdump', '-p', '-U', '-i', ifname,
-                                '-w', cap, '-s', '2000'],
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+    wt = WlantestCapture(ifname, cap)
     time.sleep(1)
 
     bssid = hapd.own_addr().replace(':', '')
@@ -3260,10 +3258,7 @@ def test_ap_wpa2_psk_inject_assoc(dev, apdev, params):
     time.sleep(1)
     hwsim_utils.test_connectivity(dev[0], hapd)
     time.sleep(0.5)
-    capture.terminate()
-    res = capture.communicate()
-    logger.info("tcpdump stdout: " + res[0].decode())
-    logger.info("tcpdump stderr: " + res[1].decode())
+    wt.close()
     time.sleep(0.5)
 
     # Check for Layer 2 Update frame and unexpected frames from the station

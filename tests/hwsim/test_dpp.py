@@ -21,6 +21,7 @@ import hwsim_utils
 from hwsim import HWSimRadio
 from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger
 from wpasupplicant import WpaSupplicant
+from wlantest import WlantestCapture
 
 try:
     import OpenSSL
@@ -4480,9 +4481,7 @@ def run_dpp_controller_relay(dev, apdev, params):
     prefix = "dpp_controller_relay"
     cap_lo = os.path.join(params['logdir'], prefix + ".lo.pcap")
 
-    cmd = subprocess.Popen(['tcpdump', '-p', '-U', '-i', 'lo',
-                            '-w', cap_lo, '-s', '2000'],
-                           stderr=open('/dev/null', 'w'))
+    wt = WlantestCapture('lo', cap_lo)
 
     # Controller
     conf_id = dev[1].dpp_configurator_add()
@@ -4526,7 +4525,7 @@ def run_dpp_controller_relay(dev, apdev, params):
     dev[0].wait_connected()
 
     time.sleep(0.5)
-    cmd.terminate()
+    wt.close()
 
 def test_dpp_tcp(dev, apdev, params):
     """DPP over TCP"""
@@ -4550,9 +4549,7 @@ def run_dpp_tcp(dev, apdev, cap_lo, port=None):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
-    cmd = subprocess.Popen(['tcpdump', '-p', '-U', '-i', 'lo',
-                            '-w', cap_lo, '-s', '2000'],
-                           stderr=open('/dev/null', 'w'))
+    wt = WlantestCapture('lo', cap_lo)
     time.sleep(1)
 
     # Controller
@@ -4583,7 +4580,7 @@ def run_dpp_tcp(dev, apdev, cap_lo, port=None):
                       allow_enrollee_failure=True,
                       allow_configurator_failure=True)
     time.sleep(0.5)
-    cmd.terminate()
+    wt.close()
 
 def test_dpp_tcp_controller_start_failure(dev, apdev, params):
     """DPP Controller startup failure"""

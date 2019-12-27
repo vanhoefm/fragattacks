@@ -1,5 +1,5 @@
 # Python class for controlling wlantest
-# Copyright (c) 2013-2014, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -242,3 +242,35 @@ class Wlantest:
             tx[tid] = self.get_tx_tid(bssid, addr, tid)
             rx[tid] = self.get_rx_tid(bssid, addr, tid)
         return [tx, rx]
+
+class WlantestCapture:
+    def __init__(self, ifname, output, netns=None):
+        self.cmd = None
+        self.ifname = ifname
+        if os.path.isfile('../../wlantest/wlantest'):
+            bin = '../../wlantest/wlantest'
+        else:
+            bin = 'wlantest'
+        logger.debug("wlantest[%s] starting" % ifname)
+        args = [bin, '-e', '-i', ifname, '-w', output]
+        if netns:
+            args = ['ip', 'netns', 'exec', netns] + args
+        self.cmd = subprocess.Popen(args,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+
+    def __del__(self):
+        if self.cmd:
+            self.close()
+
+    def close(self):
+        logger.debug("wlantest[%s] stopping" % self.ifname)
+        self.cmd.terminate()
+        res = self.cmd.communicate()
+        if len(res[0]) > 0:
+            logger.debug("wlantest[%s] stdout: %s" % (self.ifname,
+                                                      res[0].decode().strip()))
+        if len(res[1]) > 0:
+            logger.debug("wlantest[%s] stderr: %s" % (self.ifname,
+                                                      res[1].decode().strip()))
+        self.cmd = None

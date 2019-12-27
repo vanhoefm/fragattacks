@@ -17,6 +17,7 @@ import hwsim_utils
 from tshark import run_tshark
 from utils import *
 from wpasupplicant import WpaSupplicant
+from wlantest import WlantestCapture
 from test_ap_ht import set_world_reg
 
 @remote_compatible
@@ -911,10 +912,7 @@ def test_ap_open_layer_2_update(dev, apdev, params):
     cap = os.path.join(params['logdir'], prefix + "." + ifname + ".pcap")
 
     hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
-    capture = subprocess.Popen(['tcpdump', '-p', '-U', '-i', ifname,
-                                '-w', cap, '-s', '2000'],
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+    wt = WlantestCapture(ifname, cap)
     time.sleep(1)
 
     dev[0].connect("open", key_mgmt="NONE", scan_freq="2412")
@@ -923,11 +921,7 @@ def test_ap_open_layer_2_update(dev, apdev, params):
     time.sleep(1)
     hwsim_utils.test_connectivity(dev[0], hapd)
     time.sleep(0.5)
-    capture.terminate()
-    res = capture.communicate()
-    logger.info("tcpdump stdout: " + res[0].decode())
-    logger.info("tcpdump stderr: " + res[1].decode())
-    time.sleep(0.5)
+    wt.close()
 
     # Check for Layer 2 Update frame and unexpected frames from the station
     # that did not fully complete authentication.

@@ -16,6 +16,7 @@ import hostapd
 from wpasupplicant import WpaSupplicant
 import hwsim_utils
 from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger
+from wlantest import WlantestCapture
 
 def cleanup_macsec():
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5', monitor=False)
@@ -275,14 +276,8 @@ def run_macsec_psk(dev, apdev, params, prefix, integ_only=False, port0=None,
         subprocess.check_call(["ip", "link", "set", "dev", "veth%d" % i, "up"])
 
     cmd = {}
-    cmd[0] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', 'veth0',
-                               '-w', cap_veth0, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[1] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', 'veth1',
-                               '-w', cap_veth1, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
+    cmd[0] = WlantestCapture('veth0', cap_veth0)
+    cmd[1] = WlantestCapture('veth1', cap_veth1)
 
     wpa = add_wpas_interfaces()
     wpas0 = wpa[0]
@@ -307,17 +302,11 @@ def run_macsec_psk(dev, apdev, params, prefix, integ_only=False, port0=None,
 
     if expect_failure:
         for i in range(len(cmd)):
-            cmd[i].terminate()
+            cmd[i].close()
         return
 
-    cmd[2] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', macsec_ifname0,
-                               '-w', cap_macsec0, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[3] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', macsec_ifname1,
-                               '-w', cap_macsec1, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
+    cmd[2] = WlantestCapture(macsec_ifname0, cap_macsec0)
+    cmd[3] = WlantestCapture(macsec_ifname1, cap_macsec1)
     time.sleep(0.5)
 
     mi0 = wpas0.get_status_field("mi")
@@ -353,7 +342,7 @@ def run_macsec_psk(dev, apdev, params, prefix, integ_only=False, port0=None,
 
     time.sleep(1)
     for i in range(len(cmd)):
-        cmd[i].terminate()
+        cmd[i].close()
 
 def cleanup_macsec_br(count):
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5', monitor=False)
@@ -591,16 +580,8 @@ def run_macsec_psk_ns(dev, apdev, params):
                                "up"])
 
     cmd = {}
-    cmd[0] = subprocess.Popen(['ip', 'netns', 'exec', 'ns0',
-                               'tcpdump', '-p', '-U', '-i', 'veth0',
-                               '-w', cap_veth0, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[1] = subprocess.Popen(['ip', 'netns', 'exec', 'ns1',
-                               'tcpdump', '-p', '-U', '-i', 'veth1',
-                               '-w', cap_veth1, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
+    cmd[0] = WlantestCapture('veth0', cap_veth0, netns='ns0')
+    cmd[1] = WlantestCapture('veth1', cap_veth1, netns='ns1')
 
     write_conf(conffile + '0')
     write_conf(conffile + '1', mka_priority=100)
@@ -661,16 +642,8 @@ def run_macsec_psk_ns(dev, apdev, params):
             break
         time.sleep(1)
 
-    cmd[2] = subprocess.Popen(['ip', 'netns', 'exec', 'ns0',
-                               'tcpdump', '-p', '-U', '-i', macsec_ifname0,
-                               '-w', cap_macsec0, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[3] = subprocess.Popen(['ip', 'netns', 'exec', 'ns0',
-                               'tcpdump', '-p', '-U', '-i', macsec_ifname1,
-                               '-w', cap_macsec1, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
+    cmd[2] = WlantestCapture(macsec_ifname0, cap_macsec0, netns='ns0')
+    cmd[3] = WlantestCapture(macsec_ifname1, cap_macsec1, netns='ns0')
     time.sleep(0.5)
 
     logger.info("wpas0 STATUS:\n" + wpas0.request("STATUS"))
@@ -708,7 +681,7 @@ def run_macsec_psk_ns(dev, apdev, params):
 
     time.sleep(1)
     for i in range(len(cmd)):
-        cmd[i].terminate()
+        cmd[i].close()
 
 def test_macsec_psk_fail_cp(dev, apdev):
     """MACsec PSK local failures in CP state machine"""
@@ -769,14 +742,8 @@ def run_macsec_hostapd_psk(dev, apdev, params, prefix, integ_only=False,
         subprocess.check_call(["ip", "link", "set", "dev", "veth%d" % i, "up"])
 
     cmd = {}
-    cmd[0] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', 'veth0',
-                               '-w', cap_veth0, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[1] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', 'veth1',
-                               '-w', cap_veth1, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
+    cmd[0] = WlantestCapture('veth0', cap_veth0)
+    cmd[1] = WlantestCapture('veth1', cap_veth1)
 
     wpa = add_wpas_interfaces(count=1)
     wpas0 = wpa[0]
@@ -816,20 +783,14 @@ def run_macsec_hostapd_psk(dev, apdev, params, prefix, integ_only=False,
 
     if expect_failure:
         for i in range(len(cmd)):
-            cmd[i].terminate()
+            cmd[i].close()
         return
 
     macsec_ifname0 = wpas0.get_driver_status_field("parent_ifname")
     macsec_ifname1 = hapd.get_driver_status_field("parent_ifname")
 
-    cmd[2] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', macsec_ifname0,
-                               '-w', cap_macsec0, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[3] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', macsec_ifname1,
-                               '-w', cap_macsec1, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
+    cmd[2] = WlantestCapture(macsec_ifname0, cap_macsec0)
+    cmd[3] = WlantestCapture(macsec_ifname1, cap_macsec1)
     time.sleep(0.5)
 
     logger.info("wpas0 MIB:\n" +  wpas0.request("MIB"))
@@ -843,7 +804,7 @@ def run_macsec_hostapd_psk(dev, apdev, params, prefix, integ_only=False,
 
     time.sleep(1)
     for i in range(len(cmd)):
-        cmd[i].terminate()
+        cmd[i].close()
 
 def test_macsec_hostapd_eap(dev, apdev, params):
     """MACsec EAP with hostapd"""
@@ -865,14 +826,8 @@ def run_macsec_hostapd_eap(dev, apdev, params, prefix, integ_only=False,
         subprocess.check_call(["ip", "link", "set", "dev", "veth%d" % i, "up"])
 
     cmd = {}
-    cmd[0] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', 'veth0',
-                               '-w', cap_veth0, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[1] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', 'veth1',
-                               '-w', cap_veth1, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
+    cmd[0] = WlantestCapture('veth0', cap_veth0)
+    cmd[1] = WlantestCapture('veth1', cap_veth1)
 
     wpa = add_wpas_interfaces(count=1)
     wpas0 = wpa[0]
@@ -911,20 +866,14 @@ def run_macsec_hostapd_eap(dev, apdev, params, prefix, integ_only=False,
 
     if expect_failure:
         for i in range(len(cmd)):
-            cmd[i].terminate()
+            cmd[i].close()
         return
 
     macsec_ifname0 = wpas0.get_driver_status_field("parent_ifname")
     macsec_ifname1 = hapd.get_driver_status_field("parent_ifname")
 
-    cmd[2] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', macsec_ifname0,
-                               '-w', cap_macsec0, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
-    cmd[3] = subprocess.Popen(['tcpdump', '-p', '-U', '-i', macsec_ifname1,
-                               '-w', cap_macsec1, '-s', '2000',
-                               '--immediate-mode'],
-                              stderr=open('/dev/null', 'w'))
+    cmd[2] = WlantestCapture(macsec_ifname0, cap_macsec0)
+    cmd[3] = WlantestCapture(macsec_ifname1, cap_macsec1)
     time.sleep(0.5)
 
     logger.info("wpas0 MIB:\n" +  wpas0.request("MIB"))
@@ -938,4 +887,4 @@ def run_macsec_hostapd_eap(dev, apdev, params, prefix, integ_only=False,
 
     time.sleep(1)
     for i in range(len(cmd)):
-        cmd[i].terminate()
+        cmd[i].close()
