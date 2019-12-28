@@ -1444,6 +1444,7 @@ def _test_ap_hs20_gas_while_associated_with_pmf(dev, apdev):
     params['nai_realm'] = ["0,no-match.example.org,13[5:6],21[2:4][5:7]"]
     hostapd.add_ap(apdev[1], params)
 
+    dev[0].flush_scan_cache()
     dev[0].hs20_enable()
     dev[0].request("SET pmf 2")
     id = dev[0].add_cred_values({'realm': "example.com",
