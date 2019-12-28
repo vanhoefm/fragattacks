@@ -998,6 +998,7 @@ def test_ap_hs20_roaming_consortium(dev, apdev):
     params['hessid'] = bssid
     hostapd.add_ap(apdev[0], params)
 
+    dev[0].flush_scan_cache()
     dev[0].hs20_enable()
     for consortium in ["112233", "1020304050", "010203040506", "fedcba"]:
         id = dev[0].add_cred_values({'username': "user",
