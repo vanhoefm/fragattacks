@@ -374,6 +374,7 @@ def test_ap_cipher_mixed_wpa_wpa2(dev, apdev):
               "rsn_pairwise": "CCMP",
               "wpa_pairwise": "TKIP"}
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].flush_scan_cache()
     dev[0].connect(ssid, psk=passphrase, proto="WPA2",
                    pairwise="CCMP", group="TKIP", scan_freq="2412")
     status = dev[0].get_status()
