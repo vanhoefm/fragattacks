@@ -79,7 +79,7 @@ def test_he_params(dev, apdev):
 
 def he_supported():
     cmd = subprocess.Popen(["iw", "reg", "get"], stdout=subprocess.PIPE)
-    reg = cmd.stdout.read()
+    reg = cmd.stdout.read().decode()
     if "@ 80)" in reg or "@ 160)" in reg:
         return True
     return False
