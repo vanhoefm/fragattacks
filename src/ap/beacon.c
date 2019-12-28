@@ -896,6 +896,12 @@ void handle_probe_req(struct hostapd_data *hapd,
 		return;
 	}
 
+	if (hapd->conf->ignore_broadcast_ssid && res == WILDCARD_SSID_MATCH) {
+		wpa_printf(MSG_MSGDUMP, "Probe Request from " MACSTR " for "
+			   "broadcast SSID ignored", MAC2STR(mgmt->sa));
+		return;
+	}
+
 #ifdef CONFIG_INTERWORKING
 	if (hapd->conf->interworking &&
 	    elems.interworking && elems.interworking_len >= 1) {
