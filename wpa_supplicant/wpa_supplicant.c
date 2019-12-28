@@ -6701,7 +6701,7 @@ struct wpa_global * wpa_supplicant_init(struct wpa_params *params)
 
 	if (params->wpa_debug_file_path)
 		wpa_debug_open_file(params->wpa_debug_file_path);
-	else
+	if (!params->wpa_debug_file_path && !params->wpa_debug_syslog)
 		wpa_debug_setup_stdout();
 	if (params->wpa_debug_syslog)
 		wpa_debug_open_syslog();
