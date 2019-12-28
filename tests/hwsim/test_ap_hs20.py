@@ -5148,7 +5148,12 @@ def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
 
     if ebtables:
         for req in ns:
-            if req[1] != addr0:
+            if req[1] == bssid and req[0] == "33:33:ff:" + bssid[9:] and \
+               req[3] == 'ff02::1:ff00:300' and req[4] == 'fe80::ff:fe00:300':
+                # At least for now, ignore this special case until the kernel
+                # can be prevented from sending it out.
+                logger.info("dev0: Ignore NS from AP to own local addr: " + str(req))
+            elif req[1] != addr0:
                 raise Exception("Unexpected foreign NS on dev0: " + str(req))
 
     ns = tshark_get_ns(cap_dev1)
@@ -5162,7 +5167,12 @@ def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
 
     if ebtables:
         for req in ns:
-            if req[1] != addr1:
+            if req[1] == bssid and req[0] == "33:33:ff:" + bssid[9:] and \
+               req[3] == 'ff02::1:ff00:300' and req[4] == 'fe80::ff:fe00:300':
+                # At least for now, ignore this special case until the kernel
+                # can be prevented from sending it out.
+                logger.info("dev1: Ignore NS from AP to own local addr: " + str(req))
+            elif req[1] != addr1:
                 raise Exception("Unexpected foreign NS on dev1: " + str(req))
 
     ns = tshark_get_ns(cap_dev2)
