@@ -688,6 +688,12 @@ static void hostapd_oui_deliver_later(void *eloop_ctx, void *timeout_ctx)
 	dl_list_for_each_safe(data, n, &hapd->l2_oui_queue,
 			      struct oui_deliver_later_data, list) {
 		oui_ctx = hostapd_wpa_get_oui(hapd, data->oui_suffix);
+		wpa_printf(MSG_DEBUG, "RRB(%s): %s src=" MACSTR " dst=" MACSTR
+			   " oui_suffix=%u data_len=%u data=%p",
+			   hapd->conf->iface, __func__,
+			   MAC2STR(data->src_addr), MAC2STR(data->dst_addr),
+			   data->oui_suffix, (unsigned int) data->data_len,
+			   data);
 		if (hapd->wpa_auth && oui_ctx) {
 			eth_p_oui_deliver(oui_ctx, data->src_addr,
 					  data->dst_addr,
@@ -733,6 +739,12 @@ static int hostapd_wpa_auth_oui_iter(struct hostapd_iface *iface, void *ctx)
 		data = os_zalloc(sizeof(*data) + idata->data_len);
 		if (!data)
 			return 1;
+		wpa_printf(MSG_DEBUG,
+			   "RRB(%s): local delivery to %s dst=" MACSTR
+			   " oui_suffix=%u data_len=%u data=%p",
+			   idata->src_hapd->conf->iface, hapd->conf->iface,
+			   MAC2STR(idata->dst_addr), idata->oui_suffix,
+			   (unsigned int) idata->data_len, data);
 
 		os_memcpy(data->src_addr, idata->src_hapd->own_addr, ETH_ALEN);
 		os_memcpy(data->dst_addr, idata->dst_addr, ETH_ALEN);
@@ -768,6 +780,10 @@ static int hostapd_wpa_auth_send_oui(void *ctx, const u8 *dst, u8 oui_suffix,
 	struct hostapd_data *hapd = ctx;
 	struct eth_p_oui_ctx *oui_ctx;
 
+	wpa_printf(MSG_DEBUG, "RRB(%s): send to dst=" MACSTR
+		   " oui_suffix=%u data_len=%u",
+		   hapd->conf->iface, MAC2STR(dst), oui_suffix,
+		   (unsigned int) data_len);
 #ifdef CONFIG_IEEE80211R_AP
 	if (hapd->iface->interfaces &&
 	    hapd->iface->interfaces->for_each_interface) {

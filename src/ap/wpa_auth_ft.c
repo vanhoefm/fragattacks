@@ -951,8 +951,9 @@ wpa_ft_rrb_seq_req(struct wpa_authenticator *wpa_auth,
 		goto err;
 	}
 
-	wpa_printf(MSG_DEBUG, "FT: Send out sequence number request to " MACSTR,
-		   MAC2STR(src_addr));
+	wpa_printf(MSG_DEBUG, "FT: Send sequence number request from " MACSTR
+		   " to " MACSTR,
+		   MAC2STR(wpa_auth->addr), MAC2STR(src_addr));
 	item = os_zalloc(sizeof(*item));
 	if (!item)
 		goto err;
@@ -1997,9 +1998,6 @@ static int wpa_ft_pull_pmk_r1(struct wpa_state_machine *sm,
 	key = r0kh->key;
 	key_len = sizeof(r0kh->key);
 
-	wpa_printf(MSG_DEBUG, "FT: Send PMK-R1 pull request to remote R0KH "
-		   "address " MACSTR, MAC2STR(r0kh->addr));
-
 	if (r0kh->seq->rx.num_last == 0) {
 		/* A sequence request will be sent out anyway when pull
 		 * response is received. Send it out now to avoid one RTT. */
@@ -2007,6 +2005,10 @@ static int wpa_ft_pull_pmk_r1(struct wpa_state_machine *sm,
 				   r0kh->id, r0kh->id_len, f_r1kh_id, key,
 				   key_len, NULL, 0, NULL, 0, NULL);
 	}
+
+	wpa_printf(MSG_DEBUG, "FT: Send PMK-R1 pull request from " MACSTR
+		   " to remote R0KH address " MACSTR,
+		   MAC2STR(sm->wpa_auth->addr), MAC2STR(r0kh->addr));
 
 	if (first &&
 	    random_get_bytes(sm->ft_pending_pull_nonce, FT_RRB_NONCE_LEN) < 0) {
@@ -3687,6 +3689,10 @@ static int wpa_ft_rrb_rx_pull(struct wpa_authenticator *wpa_auth,
 		goto out;
 	}
 
+	wpa_printf(MSG_DEBUG, "FT: Send PMK-R1 pull response from " MACSTR
+		   " to " MACSTR,
+		   MAC2STR(wpa_auth->addr), MAC2STR(src_addr));
+
 	resp[0].type = FT_RRB_S1KH_ID;
 	resp[0].len = f_s1kh_id_len;
 	resp[0].data = f_s1kh_id;
@@ -4193,6 +4199,10 @@ static int wpa_ft_rrb_rx_seq_req(struct wpa_authenticator *wpa_auth,
 		goto out;
 	}
 
+	wpa_printf(MSG_DEBUG, "FT: Send sequence number response from " MACSTR
+		   " to " MACSTR,
+		   MAC2STR(wpa_auth->addr), MAC2STR(src_addr));
+
 	seq_resp_auth[0].type = FT_RRB_NONCE;
 	seq_resp_auth[0].len = f_nonce_len;
 	seq_resp_auth[0].data = f_nonce;
@@ -4452,9 +4462,11 @@ void wpa_ft_rrb_oui_rx(struct wpa_authenticator *wpa_auth, const u8 *src_addr,
 	size_t alen, elen;
 	int no_defer = 0;
 
-	wpa_printf(MSG_DEBUG, "FT: RRB-OUI received frame from remote AP "
-		   MACSTR, MAC2STR(src_addr));
-	wpa_printf(MSG_DEBUG, "FT: RRB-OUI frame - oui_suffix=%d", oui_suffix);
+	wpa_printf(MSG_DEBUG, "FT: RRB-OUI(" MACSTR
+		   ") received frame from remote AP "
+		   MACSTR " oui_suffix=%u dst=" MACSTR,
+		   MAC2STR(wpa_auth->addr), MAC2STR(src_addr), oui_suffix,
+		   MAC2STR(dst_addr));
 	wpa_hexdump(MSG_MSGDUMP, "FT: RRB frame payload", data, data_len);
 
 	if (is_multicast_ether_addr(src_addr)) {
@@ -4464,13 +4476,8 @@ void wpa_ft_rrb_oui_rx(struct wpa_authenticator *wpa_auth, const u8 *src_addr,
 		return;
 	}
 
-	if (is_multicast_ether_addr(dst_addr)) {
-		wpa_printf(MSG_DEBUG,
-			   "FT: RRB-OUI received frame from remote AP " MACSTR
-			   " to multicast address " MACSTR,
-			   MAC2STR(src_addr), MAC2STR(dst_addr));
+	if (is_multicast_ether_addr(dst_addr))
 		no_defer = 1;
-	}
 
 	if (data_len < sizeof(u16)) {
 		wpa_printf(MSG_DEBUG, "FT: RRB-OUI frame too short");
@@ -4544,6 +4551,10 @@ static int wpa_ft_generate_pmk_r1(struct wpa_authenticator *wpa_auth,
 		wpa_printf(MSG_DEBUG, "FT: Failed to get seq num");
 		return -1;
 	}
+
+	wpa_printf(MSG_DEBUG, "FT: Send PMK-R1 push from " MACSTR
+		   " to remote R0KH address " MACSTR,
+		   MAC2STR(wpa_auth->addr), MAC2STR(r1kh->addr));
 
 	if (wpa_ft_rrb_build_r0(r1kh->key, sizeof(r1kh->key), push, pmk_r0,
 				r1kh->id, s1kh_id, push_auth, wpa_auth->addr,
