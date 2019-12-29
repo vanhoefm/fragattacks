@@ -1348,6 +1348,84 @@ def test_ap_ft_eap_pull_wildcard(dev, apdev):
 
     run_roams(dev[0], apdev, hapd, hapd1, ssid, passphrase, eap=True)
 
+def test_ap_ft_eap_pull_wildcard_multi_bss(dev, apdev, params):
+    """WPA2-EAP-FT AP (pull PMK) - wildcard R0KH/R1KH with multiple BSSs"""
+    bssconf = os.path.join(params['logdir'],
+                           'ap_ft_eap_pull_wildcard_multi_bss.bss.conf')
+    ssid = "test-ft"
+    passphrase = "12345678"
+    radius = hostapd.radius_params()
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase, discovery=True)
+    params['wpa_key_mgmt'] = "WPA-EAP FT-EAP"
+    params["ieee8021x"] = "1"
+    params["pmk_r1_push"] = "0"
+    params["r0kh"] = "ff:ff:ff:ff:ff:ff * 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    params["r1kh"] = "00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    params["eap_server"] = "0"
+    params = dict(list(radius.items()) + list(params.items()))
+    hapd = hostapd.add_ap(apdev[0], params)
+    ifname2 = apdev[0]['ifname'] + "-2"
+    bssid2 = "02:00:00:00:03:01"
+    params['nas_identifier'] = "nas1b.w1.fi"
+    params['r1_key_holder'] = "000102030415"
+    with open(bssconf, 'w') as f:
+        f.write("driver=nl80211\n")
+        f.write("hw_mode=g\n")
+        f.write("channel=1\n")
+        f.write("ieee80211n=1\n")
+        f.write("interface=%s\n" % ifname2)
+        f.write("bssid=%s\n" % bssid2)
+        f.write("ctrl_interface=/var/run/hostapd\n")
+        for name, val in params.items():
+            f.write("%s=%s\n" % (name, val))
+    hapd2 = hostapd.add_bss(apdev[0], ifname2, bssconf)
+
+    params = ft_params2(ssid=ssid, passphrase=passphrase, discovery=True)
+    params['wpa_key_mgmt'] = "WPA-EAP FT-EAP"
+    params["ieee8021x"] = "1"
+    params["pmk_r1_push"] = "0"
+    params["r0kh"] = "ff:ff:ff:ff:ff:ff * 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    params["r1kh"] = "00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+    params["eap_server"] = "0"
+    params = dict(list(radius.items()) + list(params.items()))
+    hapd1 = hostapd.add_ap(apdev[1], params)
+
+    # The first iteration of the roaming test will use wildcard R0KH discovery
+    # and RRB sequence number synchronization while the second iteration shows
+    # the clean RRB exchange where those extra steps are not needed.
+    for i in range(2):
+        hapd.note("Test iteration %d" % i)
+        dev[0].note("Test iteration %d" % i)
+
+        id = dev[0].connect(ssid, key_mgmt="FT-EAP", eap="GPSK",
+                            identity="gpsk user",
+                            password="abcdefghijklmnop0123456789abcdef",
+                            bssid=bssid2,
+                            scan_freq="2412")
+        res = dev[0].get_status_field("bssid")
+        if res != bssid2:
+            raise Exception("Unexpected BSSID after initial connection: " + res)
+
+        dev[0].scan_for_bss(apdev[1]['bssid'], freq="2412")
+        dev[0].set_network(id, "bssid", "00:00:00:00:00:00")
+        dev[0].roam(apdev[1]['bssid'])
+        res = dev[0].get_status_field("bssid")
+        if res != apdev[1]['bssid']:
+            raise Exception("Unexpected BSSID after first roam: " + res)
+
+        dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412")
+        dev[0].roam(apdev[0]['bssid'])
+        res = dev[0].get_status_field("bssid")
+        if res != apdev[0]['bssid']:
+            raise Exception("Unexpected BSSID after second roam: " + res)
+
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].wait_disconnected()
+        dev[0].dump_monitor()
+        hapd.dump_monitor()
+        hapd2.dump_monitor()
+
 @remote_compatible
 def test_ap_ft_mismatching_rrb_key_push(dev, apdev):
     """WPA2-PSK-FT AP over DS with mismatching RRB key (push)"""
