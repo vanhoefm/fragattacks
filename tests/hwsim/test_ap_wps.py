@@ -548,6 +548,7 @@ def test_ap_wps_reg_connect(dev, apdev):
                     "ap_pin": appin})
     logger.info("WPS provisioning step")
     dev[0].dump_monitor()
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], appin)
     status = dev[0].get_status()
@@ -571,6 +572,7 @@ def test_ap_wps_reg_connect_zero_len_ap_pin(dev, apdev):
                     "ap_pin": appin})
     logger.info("WPS provisioning step")
     dev[0].dump_monitor()
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], appin, no_wait=True)
     ev = dev[0].wait_event(["WPS-FAIL"], timeout=15)
@@ -588,6 +590,7 @@ def test_ap_wps_reg_connect_mixed_mode(dev, apdev):
                     "wpa_passphrase": "12345678", "wpa": "3",
                     "wpa_key_mgmt": "WPA-PSK", "rsn_pairwise": "CCMP",
                     "wpa_pairwise": "TKIP", "ap_pin": appin})
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], appin)
     status = dev[0].get_status()
@@ -624,6 +627,7 @@ def test_ap_wps_reg_override_ap_settings(dev, apdev):
                     "wpa_key_mgmt": "WPA-PSK", "rsn_pairwise": "CCMP",
                     "ap_pin": appin, "ap_settings": ap_settings})
     hapd2 = hostapd.add_ap(apdev[1], {"ssid": "test"})
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].scan_for_bss(apdev[1]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], appin)
@@ -662,6 +666,7 @@ def test_ap_wps_random_ap_pin(dev, apdev):
     if appin not in hapd.request("WPS_AP_PIN get"):
         raise Exception("Could not fetch current AP PIN")
     logger.info("WPS provisioning step")
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], appin)
 
@@ -717,6 +722,7 @@ def test_ap_wps_reg_config(dev, apdev):
                    {"ssid": ssid, "eap_server": "1", "wps_state": "2",
                     "ap_pin": appin})
     logger.info("WPS configuration step")
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].dump_monitor()
     new_ssid = "wps-new-ssid"
@@ -753,6 +759,7 @@ def test_ap_wps_reg_config_ext_processing(dev, apdev):
     params = {"ssid": ssid, "eap_server": "1", "wps_state": "2",
               "wps_cred_processing": "1", "ap_pin": appin}
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     new_ssid = "wps-new-ssid"
     new_passphrase = "1234567890"
@@ -780,6 +787,7 @@ def test_ap_wps_reg_config_tkip(dev, apdev):
                    {"ssid": ssid, "eap_server": "1", "wps_state": "1",
                     "ap_pin": appin})
     logger.info("WPS configuration step")
+    dev[0].flush_scan_cache()
     dev[0].request("SET wps_version_number 0x10")
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].dump_monitor()
@@ -815,6 +823,7 @@ def test_ap_wps_setup_locked(dev, apdev):
     new_ssid = "wps-new-ssid-test"
     new_passphrase = "1234567890"
 
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     ap_setup_locked = False
     for pin in ["55554444", "1234", "12345678", "00000000", "11111111"]:
@@ -880,6 +889,7 @@ def test_ap_wps_setup_locked_timeout(dev, apdev):
     new_ssid = "wps-new-ssid-test"
     new_passphrase = "1234567890"
 
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     ap_setup_locked = False
     for pin in ["55554444", "1234", "12345678", "00000000", "11111111"]:
@@ -918,6 +928,7 @@ def test_ap_wps_setup_locked_2(dev, apdev):
     new_ssid = "wps-new-ssid-test"
     new_passphrase = "1234567890"
 
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], appin)
     dev[0].request("REMOVE_NETWORK all")
@@ -1071,6 +1082,7 @@ def _test_ap_wps_er_add_enrollee(dev, apdev):
     logger.info("WPS configuration step")
     new_passphrase = "1234567890"
     dev[0].dump_monitor()
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], ap_pin, ssid, "WPA2PSK", "CCMP",
                    new_passphrase)
@@ -1203,6 +1215,7 @@ def _test_ap_wps_er_add_enrollee_uuid(dev, apdev):
                     "config_methods": "label push_button",
                     "ap_pin": ap_pin, "uuid": ap_uuid, "upnp_iface": "lo"})
     logger.info("WPS configuration step")
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], ap_pin)
 
@@ -1297,6 +1310,7 @@ def _test_ap_wps_er_multi_add_enrollee(dev, apdev):
                     "ap_pin": ap_pin, "uuid": ap_uuid, "upnp_iface": "lo"})
 
     for i in range(2):
+        dev[i].flush_scan_cache()
         dev[i].scan_for_bss(apdev[0]['bssid'], freq=2412)
         dev[i].wps_reg(apdev[0]['bssid'], ap_pin)
     for i in range(2):
@@ -1355,6 +1369,7 @@ def _test_ap_wps_er_add_enrollee_pbc(dev, apdev):
                     "config_methods": "label push_button",
                     "ap_pin": ap_pin, "uuid": ap_uuid, "upnp_iface": "lo"})
     logger.info("Learn AP configuration")
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].dump_monitor()
     dev[0].wps_reg(apdev[0]['bssid'], ap_pin)
@@ -1425,6 +1440,7 @@ def _test_ap_wps_er_pbc_overlap(dev, apdev):
                     "os_version": "01020300",
                     "config_methods": "label push_button",
                     "ap_pin": ap_pin, "uuid": ap_uuid, "upnp_iface": "lo"})
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].dump_monitor()
     dev[0].wps_reg(apdev[0]['bssid'], ap_pin)
@@ -1502,6 +1518,7 @@ def _test_ap_wps_er_v10_add_enrollee_pin(dev, apdev):
                     "ap_pin": ap_pin, "uuid": ap_uuid, "upnp_iface": "lo"})
     logger.info("Learn AP configuration")
     dev[0].request("SET wps_version_number 0x10")
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].dump_monitor()
     dev[0].wps_reg(apdev[0]['bssid'], ap_pin)
@@ -1610,6 +1627,7 @@ def _test_ap_wps_er_cache_ap_settings(dev, apdev):
               "config_methods": "label push_button",
               "ap_pin": ap_pin, "uuid": ap_uuid, "upnp_iface": "lo"}
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], ap_pin)
     id = int(dev[0].list_networks()[0]['id'])
@@ -1688,6 +1706,7 @@ def _test_ap_wps_er_cache_ap_settings_oom(dev, apdev):
               "config_methods": "label push_button",
               "ap_pin": ap_pin, "uuid": ap_uuid, "upnp_iface": "lo"}
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], ap_pin)
     id = int(dev[0].list_networks()[0]['id'])
@@ -1750,6 +1769,7 @@ def _test_ap_wps_er_cache_ap_settings_oom2(dev, apdev):
               "config_methods": "label push_button",
               "ap_pin": ap_pin, "uuid": ap_uuid, "upnp_iface": "lo"}
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], ap_pin)
     id = int(dev[0].list_networks()[0]['id'])
@@ -1812,6 +1832,7 @@ def _test_ap_wps_er_subscribe_oom(dev, apdev):
               "config_methods": "label push_button",
               "ap_pin": ap_pin, "uuid": ap_uuid, "upnp_iface": "lo"}
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], ap_pin)
     id = int(dev[0].list_networks()[0]['id'])
@@ -1851,6 +1872,7 @@ def _test_ap_wps_er_set_sel_reg_oom(dev, apdev):
               "config_methods": "label push_button",
               "ap_pin": ap_pin, "uuid": ap_uuid, "upnp_iface": "lo"}
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], ap_pin)
 
@@ -1903,6 +1925,7 @@ def _test_ap_wps_er_learn_oom(dev, apdev):
               "config_methods": "label push_button",
               "ap_pin": ap_pin, "uuid": ap_uuid, "upnp_iface": "lo"}
     hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], ap_pin)
 
@@ -2065,6 +2088,7 @@ def test_ap_wps_wep_config(dev, apdev):
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": ssid, "eap_server": "1", "wps_state": "2",
                            "ap_pin": appin})
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
     dev[0].wps_reg(apdev[0]['bssid'], appin, "wps-new-ssid-wep", "OPEN", "WEP",
                    "hello", no_wait=True)
@@ -2166,6 +2190,7 @@ def test_ap_wps_per_station_psk(dev, apdev):
 
         logger.info("First enrollee")
         hapd.request("WPS_PBC")
+        dev[0].flush_scan_cache()
         dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
         dev[0].request("WPS_PBC " + apdev[0]['bssid'])
         dev[0].wait_connected(timeout=30)
@@ -10215,6 +10240,7 @@ def run_ap_wps_reg_config_and_sae(dev, apdev):
                    {"ssid": ssid, "eap_server": "1", "wps_state": "2",
                     "ap_pin": appin, "wps_cred_add_sae": "1"})
     logger.info("WPS configuration step")
+    dev[0].flush_scan_cache()
     dev[0].set("wps_cred_add_sae", "1")
     dev[0].request("SET sae_groups ")
     dev[0].scan_for_bss(apdev[0]['bssid'], freq=2412)
