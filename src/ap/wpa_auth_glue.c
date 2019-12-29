@@ -740,7 +740,7 @@ static int hostapd_wpa_auth_oui_iter(struct hostapd_iface *iface, void *ctx)
 		data->data_len = idata->data_len;
 		data->oui_suffix = idata->oui_suffix;
 
-		dl_list_add(&hapd->l2_oui_queue, &data->list);
+		dl_list_add_tail(&hapd->l2_oui_queue, &data->list);
 
 		if (!eloop_is_timeout_registered(hostapd_oui_deliver_later,
 						 hapd, NULL))
