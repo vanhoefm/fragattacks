@@ -2050,20 +2050,18 @@ void ieee802_11_finish_fils_auth(struct hostapd_data *hapd,
 #endif /* CONFIG_FILS */
 
 
-int ieee802_11_allowed_address(struct hostapd_data *hapd, const u8 *addr,
-			       const u8 *msg, size_t len,
-			       struct radius_sta *info, int is_probe_req)
+static int ieee802_11_allowed_address(struct hostapd_data *hapd, const u8 *addr,
+				      const u8 *msg, size_t len,
+				      struct radius_sta *info)
 {
 	int res;
 
-	res = hostapd_allowed_address(hapd, addr, msg, len, info, is_probe_req);
+	res = hostapd_allowed_address(hapd, addr, msg, len, info, 0);
 
 	if (res == HOSTAPD_ACL_REJECT) {
-		if (!is_probe_req)
-			wpa_printf(MSG_DEBUG,
-				   "Station " MACSTR
-				   " not allowed to authenticate",
-				   MAC2STR(addr));
+		wpa_printf(MSG_DEBUG, "Station " MACSTR
+			   " not allowed to authenticate",
+			   MAC2STR(addr));
 		return HOSTAPD_ACL_REJECT;
 	}
 
@@ -2305,8 +2303,8 @@ static void handle_auth(struct hostapd_data *hapd,
 		}
 	}
 
-	res = ieee802_11_allowed_address(
-		hapd, mgmt->sa, (const u8 *) mgmt, len, &rad_info, 0);
+	res = ieee802_11_allowed_address(hapd, mgmt->sa, (const u8 *) mgmt, len,
+					 &rad_info);
 	if (res == HOSTAPD_ACL_REJECT) {
 		wpa_msg(hapd->msg_ctx, MSG_DEBUG,
 			"Ignore Authentication frame from " MACSTR
@@ -4065,7 +4063,7 @@ static void handle_assoc(struct hostapd_data *hapd,
 
 			acl_res = ieee802_11_allowed_address(hapd, mgmt->sa,
 							     (const u8 *) mgmt,
-							     len, &info, 0);
+							     len, &info);
 			if (acl_res == HOSTAPD_ACL_REJECT) {
 				wpa_msg(hapd->msg_ctx, MSG_DEBUG,
 					"Ignore Association Request frame from "

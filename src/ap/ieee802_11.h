@@ -179,9 +179,6 @@ void handle_auth_fils(struct hostapd_data *hapd, struct sta_info *sta,
 
 size_t hostapd_eid_owe_trans_len(struct hostapd_data *hapd);
 u8 * hostapd_eid_owe_trans(struct hostapd_data *hapd, u8 *eid, size_t len);
-int ieee802_11_allowed_address(struct hostapd_data *hapd, const u8 *addr,
-			       const u8 *msg, size_t len,
-			       struct radius_sta *info, int is_probe_req);
 
 int get_tx_parameters(struct sta_info *sta, int ap_max_chanwidth,
 		      int ap_seg1_idx, int *bandwidth, int *seg1_idx);
