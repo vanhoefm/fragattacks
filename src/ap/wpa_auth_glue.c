@@ -718,20 +718,26 @@ static int hostapd_wpa_auth_oui_iter(struct hostapd_iface *iface, void *ctx)
 {
 	struct wpa_auth_oui_iface_iter_data *idata = ctx;
 	struct oui_deliver_later_data *data;
-	struct hostapd_data *hapd;
+	struct hostapd_data *hapd, *src_hapd = idata->src_hapd;
 	size_t j;
 
 	for (j = 0; j < iface->num_bss; j++) {
 		hapd = iface->bss[j];
-		if (hapd == idata->src_hapd)
-			continue;
-		if (os_memcmp(hapd->conf->mobility_domain,
-			      idata->src_hapd->conf->mobility_domain,
+		if (hapd == src_hapd)
+			continue; /* don't deliver back to same interface */
+		if (!wpa_key_mgmt_ft(hapd->conf->wpa_key_mgmt) ||
+		    hapd->conf->ssid.ssid_len !=
+		    src_hapd->conf->ssid.ssid_len ||
+		    os_memcmp(hapd->conf->ssid.ssid,
+			      src_hapd->conf->ssid.ssid,
+			      hapd->conf->ssid.ssid_len) != 0 ||
+		    os_memcmp(hapd->conf->mobility_domain,
+			      src_hapd->conf->mobility_domain,
 			      MOBILITY_DOMAIN_ID_LEN) != 0)
-			continue;
+			continue; /* no matching FT SSID/mobility domain */
 		if (!is_multicast_ether_addr(idata->dst_addr) &&
 		    os_memcmp(hapd->own_addr, idata->dst_addr, ETH_ALEN) != 0)
-			continue;
+			continue; /* destination address does not match */
 
 		/* defer eth_p_oui_deliver until next eloop step as this is
 		 * when it would be triggerd from reading from sock
@@ -746,11 +752,11 @@ static int hostapd_wpa_auth_oui_iter(struct hostapd_iface *iface, void *ctx)
 		wpa_printf(MSG_DEBUG,
 			   "RRB(%s): local delivery to %s dst=" MACSTR
 			   " oui_suffix=%u data_len=%u data=%p",
-			   idata->src_hapd->conf->iface, hapd->conf->iface,
+			   src_hapd->conf->iface, hapd->conf->iface,
 			   MAC2STR(idata->dst_addr), idata->oui_suffix,
 			   (unsigned int) idata->data_len, data);
 
-		os_memcpy(data->src_addr, idata->src_hapd->own_addr, ETH_ALEN);
+		os_memcpy(data->src_addr, src_hapd->own_addr, ETH_ALEN);
 		os_memcpy(data->dst_addr, idata->dst_addr, ETH_ALEN);
 		os_memcpy(data + 1, idata->data, idata->data_len);
 		data->data_len = idata->data_len;
