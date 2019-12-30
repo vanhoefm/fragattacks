@@ -668,13 +668,14 @@ static int non_p2p_network_enabled(struct wpa_supplicant *wpa_s)
 
 static void wpa_setband_scan_freqs_list(struct wpa_supplicant *wpa_s,
 					enum hostapd_hw_mode band,
-					struct wpa_driver_scan_params *params)
+					struct wpa_driver_scan_params *params,
+					int is_6ghz)
 {
 	/* Include only supported channels for the specified band */
 	struct hostapd_hw_modes *mode;
 	int count, i;
 
-	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, band);
+	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, band, is_6ghz);
 	if (mode == NULL) {
 		/* No channels supported in this band - use empty list */
 		params->freqs = os_zalloc(sizeof(int));
@@ -701,10 +702,10 @@ static void wpa_setband_scan_freqs(struct wpa_supplicant *wpa_s,
 		return; /* already using a limited channel set */
 	if (wpa_s->setband == WPA_SETBAND_5G)
 		wpa_setband_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211A,
-					    params);
+					    params, 0);
 	else if (wpa_s->setband == WPA_SETBAND_2G)
 		wpa_setband_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211G,
-					    params);
+					    params, 0);
 }
 
 

@@ -228,7 +228,8 @@ static int wpas_op_class_supported(struct wpa_supplicant *wpa_s,
 	int freq2 = 0;
 	int freq5 = 0;
 
-	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, op_class->mode);
+	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, op_class->mode,
+			is_6ghz_op_class(op_class->op_class));
 	if (!mode)
 		return 0;
 

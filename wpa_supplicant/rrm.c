@@ -609,7 +609,8 @@ static int * wpas_channel_report_freqs(struct wpa_supplicant *wpa_s, int active,
 		pos++;
 		left--;
 
-		mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, op->mode);
+		mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, op->mode,
+				is_6ghz_op_class(op->op_class));
 		if (!mode)
 			continue;
 
@@ -661,7 +662,8 @@ static int * wpas_beacon_request_freqs(struct wpa_supplicant *wpa_s,
 		return NULL;
 	}
 
-	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, op->mode);
+	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, op->mode,
+			is_6ghz_op_class(op->op_class));
 	if (!mode)
 		return NULL;
 
