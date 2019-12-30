@@ -114,11 +114,16 @@ def test_radius_acct_unreachable2(dev, apdev):
     subprocess.call(['ip', 'ro', 'del', '192.168.213.17', 'dev', 'lo'])
     connect(dev[0], "radius-acct")
     logger.info("Checking for RADIUS retries")
-    time.sleep(4)
-    mib = hapd.get_mib()
-    if "radiusAccClientRetransmissions" not in mib:
-        raise Exception("Missing MIB fields")
-    if int(mib["radiusAccClientRetransmissions"]) < 1 and int(mib["radiusAccClientPendingRequests"]) < 1:
+    found = False
+    for i in range(4):
+        time.sleep(1)
+        mib = hapd.get_mib()
+        if "radiusAccClientRetransmissions" not in mib:
+            raise Exception("Missing MIB fields")
+        if int(mib["radiusAccClientRetransmissions"]) > 0 or \
+           int(mib["radiusAccClientPendingRequests"]) > 0:
+            found = True
+    if not found:
         raise Exception("Missing pending or retransmitted RADIUS Accounting requests")
 
 def test_radius_acct_unreachable3(dev, apdev):
