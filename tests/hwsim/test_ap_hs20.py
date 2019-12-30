@@ -918,6 +918,7 @@ def test_ap_hs20_eap_tls(dev, apdev):
     params['nai_realm'] = ["0,example.com,13[5:6]"]
     hostapd.add_ap(apdev[0], params)
 
+    dev[0].flush_scan_cache()
     dev[0].hs20_enable()
     dev[0].add_cred_values({'realm': "example.com",
                             'username': "certificate-user",
