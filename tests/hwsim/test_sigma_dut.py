@@ -3591,6 +3591,7 @@ def test_sigma_dut_sae_h2e_rsnxe_mismatch(dev, apdev):
             raise Exception("Unexpected connection reported")
     finally:
         stop_sigma_dut(sigma)
+        dev[0].set("sae_pwe", "0")
 
 def test_sigma_dut_ap_sae_h2e_rsnxe_mismatch(dev, apdev, params):
     """sigma_dut controlled SAE H2E AP misbehavior with RSNXE"""
