@@ -1019,6 +1019,7 @@ def test_rrm_beacon_req_table_request(dev, apdev):
     params = {"ssid": "rrm", "rrm_beacon_report": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
 
+    dev[0].flush_scan_cache()
     dev[0].connect("rrm", key_mgmt="NONE", scan_freq="2412")
     addr = dev[0].own_addr()
 
