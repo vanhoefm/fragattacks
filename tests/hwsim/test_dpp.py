@@ -3698,7 +3698,7 @@ def wait_auth_success(responder, initiator, configurator=None, enrollee=None,
         if ev is None:
             raise Exception("DPP configuration not completed (Configurator)")
         if "DPP-CONF-FAILED" in ev and not allow_configurator_failure:
-            raise Exception("DPP configuration did not succeed (Configurator")
+            raise Exception("DPP configuration did not succeed (Configurator)")
         if "DPP-CONF-SENT" in ev and require_configurator_failure:
             raise Exception("DPP configuration succeeded (Configurator)")
         if "DPP-CONF-SENT" in ev and "wait_conn_status=1" in ev:
