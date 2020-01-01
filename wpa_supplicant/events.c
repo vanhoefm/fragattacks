@@ -1446,8 +1446,9 @@ wpa_supplicant_select_bss(struct wpa_supplicant *wpa_s,
 		wpa_s->owe_transition_select = 0;
 		if (!*selected_ssid)
 			continue;
-		wpa_dbg(wpa_s, MSG_DEBUG, "   selected BSS " MACSTR
+		wpa_dbg(wpa_s, MSG_DEBUG, "   selected %sBSS " MACSTR
 			" ssid='%s'",
+			bss == wpa_s->current_bss ? "current ": "",
 			MAC2STR(bss->bssid),
 			wpa_ssid_txt(bss->ssid, bss->ssid_len));
 		return bss;
