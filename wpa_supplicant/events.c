@@ -1796,7 +1796,8 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 
 	to_5ghz = selected->freq > 4000 && current_bss->freq < 4000;
 
-	if (cur_level < 0 && cur_level > selected->level + to_5ghz * 2) {
+	if (cur_level < 0 && cur_level > selected->level + to_5ghz * 2 &&
+	    selected->est_throughput < cur_est * 1.2) {
 		wpa_dbg(wpa_s, MSG_DEBUG, "Skip roam - Current BSS has better "
 			"signal level");
 		return 0;
