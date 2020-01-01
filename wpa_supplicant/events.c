@@ -1672,17 +1672,11 @@ static void wpa_supplicant_rsn_preauth_scan_results(
 }
 
 
-static int wpas_get_snr_signal_info(u32 frequency, int avg_signal)
+static int wpas_get_snr_signal_info(u32 frequency, int avg_signal, int noise)
 {
-	int noise = IS_5GHZ(frequency) ?
-		DEFAULT_NOISE_FLOOR_5GHZ :
-		DEFAULT_NOISE_FLOOR_2GHZ;
-
-	/*
-	 * Since we take the average beacon signal, we can't use
-	 * the current noise measurement (average vs. snapshot),
-	 * so use the default values instead.
-	 */
+	if (noise == WPA_INVALID_NOISE)
+		noise = IS_5GHZ(frequency) ? DEFAULT_NOISE_FLOOR_5GHZ :
+			DEFAULT_NOISE_FLOOR_2GHZ;
 	return avg_signal - noise;
 }
 
@@ -1784,7 +1778,8 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 
 		cur_level = si.avg_beacon_signal ? si.avg_beacon_signal :
 			si.avg_signal;
-		snr = wpas_get_snr_signal_info(si.frequency, cur_level);
+		snr = wpas_get_snr_signal_info(si.frequency, cur_level,
+					       si.current_noise);
 
 		cur_est = wpas_get_est_throughput_from_bss_snr(wpa_s,
 							       current_bss,
