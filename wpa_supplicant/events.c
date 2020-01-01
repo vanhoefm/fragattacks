@@ -1757,6 +1757,7 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 
 	cur_level = current_bss->level;
 	cur_est = current_bss->est_throughput;
+	sel_est = selected->est_throughput;
 
 	/*
 	 * Try to poll the signal from the driver since this will allow to get
@@ -1788,7 +1789,7 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 			cur_level, cur_snr, cur_est);
 	}
 
-	if (selected->est_throughput > cur_est + 5000) {
+	if (sel_est > cur_est + 5000) {
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"Allow reassociation - selected BSS has better estimated throughput");
 		return 1;
@@ -1797,13 +1798,13 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 	to_5ghz = selected->freq > 4000 && current_bss->freq < 4000;
 
 	if (cur_level < 0 && cur_level > selected->level + to_5ghz * 2 &&
-	    selected->est_throughput < cur_est * 1.2) {
+	    sel_est < cur_est * 1.2) {
 		wpa_dbg(wpa_s, MSG_DEBUG, "Skip roam - Current BSS has better "
 			"signal level");
 		return 0;
 	}
 
-	if (cur_est > selected->est_throughput + 5000) {
+	if (cur_est > sel_est + 5000) {
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"Skip roam - Current BSS has better estimated throughput");
 		return 0;
@@ -1816,7 +1817,6 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 		return 0;
 	}
 
-	sel_est = selected->est_throughput;
 	min_diff = 2;
 	if (cur_level < 0) {
 		if (cur_level < -85)
