@@ -10152,6 +10152,7 @@ def run_ap_wps_conf_pin_cipher(dev, apdev, cipher):
     logger.info("WPS provisioning step")
     pin = dev[0].wps_read_pin()
     hapd.request("WPS_PIN any " + pin)
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412")
     dev[0].request("WPS_PIN %s %s" % (apdev[0]['bssid'], pin))
     dev[0].wait_connected(timeout=15)
