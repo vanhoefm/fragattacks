@@ -1817,19 +1817,18 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 		return 0;
 	}
 
-	min_diff = 2;
-	if (cur_level < 0) {
-		if (cur_level < -85)
-			min_diff = 1;
-		else if (cur_level < -80)
-			min_diff = 2;
-		else if (cur_level < -75)
-			min_diff = 3;
-		else if (cur_level < -70)
-			min_diff = 4;
-		else
-			min_diff = 5;
-	}
+	if (cur_level < -85) /* ..-86 dBm */
+		min_diff = 1;
+	else if (cur_level < -80) /* -85..-81 dBm */
+		min_diff = 2;
+	else if (cur_level < -75) /* -80..-76 dBm */
+		min_diff = 3;
+	else if (cur_level < -70) /* -75..-71 dBm */
+		min_diff = 4;
+	else if (cur_level < 0) /* -70..-1 dBm */
+		min_diff = 5;
+	else /* unspecified units (not in dBm) */
+		min_diff = 2;
 
 	if (cur_est > sel_est * 1.5)
 		min_diff += 10;
