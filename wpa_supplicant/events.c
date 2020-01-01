@@ -1704,6 +1704,7 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 	int cur_level;
 	unsigned int cur_est, sel_est;
 	struct wpa_signal_info si;
+	int cur_snr = 0;
 #endif /* CONFIG_NO_ROAMING */
 
 	if (wpa_s->reassociate)
@@ -1774,19 +1775,17 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 	 */
 	if (wpa_drv_signal_poll(wpa_s, &si) == 0 &&
 	    (si.avg_beacon_signal || si.avg_signal)) {
-		int snr;
-
 		cur_level = si.avg_beacon_signal ? si.avg_beacon_signal :
 			si.avg_signal;
-		snr = wpas_get_snr_signal_info(si.frequency, cur_level,
-					       si.current_noise);
+		cur_snr = wpas_get_snr_signal_info(si.frequency, cur_level,
+						   si.current_noise);
 
 		cur_est = wpas_get_est_throughput_from_bss_snr(wpa_s,
 							       current_bss,
-							       snr);
+							       cur_snr);
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"Using signal poll values for the current BSS: level=%d snr=%d est_throughput=%u",
-			cur_level, snr, cur_est);
+			cur_level, cur_snr, cur_est);
 	}
 
 	if (selected->est_throughput > cur_est + 5000) {
@@ -1806,6 +1805,13 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 	if (cur_est > selected->est_throughput + 5000) {
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"Skip roam - Current BSS has better estimated throughput");
+		return 0;
+	}
+
+	if (cur_snr > GREAT_SNR) {
+		wpa_dbg(wpa_s, MSG_DEBUG,
+			"Skip roam - Current BSS has good SNR (%u > %u)",
+			cur_snr, GREAT_SNR);
 		return 0;
 	}
 
