@@ -8038,6 +8038,7 @@ static void wpa_supplicant_ctrl_iface_flush(struct wpa_supplicant *wpa_s)
 
 	eloop_cancel_timeout(wpa_supplicant_stop_countermeasures, wpa_s, NULL);
 	wpa_supplicant_stop_countermeasures(wpa_s, NULL);
+	wpa_s->last_michael_mic_error.sec = 0;
 
 	wpa_s->no_keep_alive = 0;
 	wpa_s->own_disconnect_req = 0;
