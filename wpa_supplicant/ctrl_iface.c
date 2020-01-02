@@ -8964,7 +8964,7 @@ static void wpas_data_test_rx(void *ctx, const u8 *src_addr, const u8 *buf,
 {
 	struct wpa_supplicant *wpa_s = ctx;
 	const struct ether_header *eth;
-	struct iphdr ip;
+	struct ip ip;
 	const u8 *pos;
 	unsigned int i;
 	char extra[30];
@@ -8980,14 +8980,13 @@ static void wpas_data_test_rx(void *ctx, const u8 *src_addr, const u8 *buf,
 	os_memcpy(&ip, eth + 1, sizeof(ip));
 	pos = &buf[sizeof(*eth) + sizeof(ip)];
 
-	if (ip.ihl != 5 || ip.version != 4 ||
-	    ntohs(ip.tot_len) > HWSIM_IP_LEN) {
+	if (ip.ip_hl != 5 || ip.ip_v != 4 || ntohs(ip.ip_len) > HWSIM_IP_LEN) {
 		wpa_printf(MSG_DEBUG,
 			   "test data: RX - ignore unexpect IP header");
 		return;
 	}
 
-	for (i = 0; i < ntohs(ip.tot_len) - sizeof(ip); i++) {
+	for (i = 0; i < ntohs(ip.ip_len) - sizeof(ip); i++) {
 		if (*pos != (u8) i) {
 			wpa_printf(MSG_DEBUG,
 				   "test data: RX - ignore mismatching payload");
@@ -8996,8 +8995,8 @@ static void wpas_data_test_rx(void *ctx, const u8 *src_addr, const u8 *buf,
 		pos++;
 	}
 	extra[0] = '\0';
-	if (ntohs(ip.tot_len) != HWSIM_IP_LEN)
-		os_snprintf(extra, sizeof(extra), " len=%d", ntohs(ip.tot_len));
+	if (ntohs(ip.ip_len) != HWSIM_IP_LEN)
+		os_snprintf(extra, sizeof(extra), " len=%d", ntohs(ip.ip_len));
 	wpa_msg(wpa_s, MSG_INFO, "DATA-TEST-RX " MACSTR " " MACSTR "%s",
 		MAC2STR(eth->ether_dhost), MAC2STR(eth->ether_shost), extra);
 }
@@ -9049,7 +9048,7 @@ static int wpas_ctrl_iface_data_test_tx(struct wpa_supplicant *wpa_s, char *cmd)
 	u8 tos;
 	u8 buf[2 + HWSIM_PACKETLEN];
 	struct ether_header *eth;
-	struct iphdr *ip;
+	struct ip *ip;
 	u8 *dpos;
 	unsigned int i;
 	size_t send_len = HWSIM_IP_LEN;
@@ -9088,17 +9087,17 @@ static int wpas_ctrl_iface_data_test_tx(struct wpa_supplicant *wpa_s, char *cmd)
 	os_memcpy(eth->ether_dhost, dst, ETH_ALEN);
 	os_memcpy(eth->ether_shost, src, ETH_ALEN);
 	eth->ether_type = htons(ETHERTYPE_IP);
-	ip = (struct iphdr *) (eth + 1);
+	ip = (struct ip *) (eth + 1);
 	os_memset(ip, 0, sizeof(*ip));
-	ip->ihl = 5;
-	ip->version = 4;
-	ip->ttl = 64;
-	ip->tos = tos;
-	ip->tot_len = htons(send_len);
-	ip->protocol = 1;
-	ip->saddr = htonl(192U << 24 | 168 << 16 | 1 << 8 | 1);
-	ip->daddr = htonl(192U << 24 | 168 << 16 | 1 << 8 | 2);
-	ip->check = ipv4_hdr_checksum(ip, sizeof(*ip));
+	ip->ip_hl = 5;
+	ip->ip_v = 4;
+	ip->ip_ttl = 64;
+	ip->ip_tos = tos;
+	ip->ip_len = htons(send_len);
+	ip->ip_p = 1;
+	ip->ip_src.s_addr = htonl(192U << 24 | 168 << 16 | 1 << 8 | 1);
+	ip->ip_dst.s_addr = htonl(192U << 24 | 168 << 16 | 1 << 8 | 2);
+	ip->ip_sum = ipv4_hdr_checksum(ip, sizeof(*ip));
 	dpos = (u8 *) (ip + 1);
 	for (i = 0; i < send_len - sizeof(*ip); i++)
 		*dpos++ = i;

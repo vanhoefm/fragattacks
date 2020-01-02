@@ -116,62 +116,62 @@ void rx_data_ip(struct wlantest *wt, const u8 *bssid, const u8 *sta_addr,
 		const u8 *dst, const u8 *src, const u8 *data, size_t len,
 		const u8 *peer_addr)
 {
-	const struct iphdr *ip;
+	const struct ip *ip;
 	const u8 *payload;
 	size_t plen;
-	u16 frag_off, tot_len;
+	uint16_t frag_off, ip_len;
 
-	ip = (const struct iphdr *) data;
+	ip = (const struct ip *) data;
 	if (len < sizeof(*ip))
 		return;
-	if (ip->version != 4) {
+	if (ip->ip_v != 4) {
 		if (hwsim_test_packet(data, len)) {
 			add_note(wt, MSG_INFO, "hwsim_test package");
 			return;
 		}
 		add_note(wt, MSG_DEBUG, "Unexpected IP protocol version %u in "
 			 "IPv4 packet (bssid=" MACSTR " str=" MACSTR
-			 " dst=" MACSTR ")", ip->version, MAC2STR(bssid),
+			 " dst=" MACSTR ")", ip->ip_v, MAC2STR(bssid),
 			 MAC2STR(src), MAC2STR(dst));
 		return;
 	}
-	if (ip->ihl * 4 < sizeof(*ip)) {
+	if (ip->ip_hl * 4 < sizeof(*ip)) {
 		add_note(wt, MSG_DEBUG, "Unexpected IP header length %u in "
 			 "IPv4 packet (bssid=" MACSTR " str=" MACSTR
-			 " dst=" MACSTR ")", ip->ihl, MAC2STR(bssid),
+			 " dst=" MACSTR ")", ip->ip_hl, MAC2STR(bssid),
 			 MAC2STR(src), MAC2STR(dst));
 		return;
 	}
-	if (ip->ihl * 4 > len) {
+	if (ip->ip_hl * 4 > len) {
 		add_note(wt, MSG_DEBUG, "Truncated IP header (ihl=%u len=%u) "
 			 "in IPv4 packet (bssid=" MACSTR " str=" MACSTR
-			 " dst=" MACSTR ")", ip->ihl, (unsigned) len,
+			 " dst=" MACSTR ")", ip->ip_hl, (unsigned) len,
 			 MAC2STR(bssid), MAC2STR(src), MAC2STR(dst));
 		return;
 	}
 
-	/* TODO: check header checksum in ip->check */
+	/* TODO: check header checksum in ip->ip_sum */
 
-	frag_off = be_to_host16(ip->frag_off);
+	frag_off = be_to_host16(ip->ip_off);
 	if (frag_off & 0x1fff) {
 		wpa_printf(MSG_EXCESSIVE, "IP fragment reassembly not yet "
 			   "supported");
 		return;
 	}
 
-	tot_len = be_to_host16(ip->tot_len);
-	if (tot_len > len)
+	ip_len = be_to_host16(ip->ip_len);
+	if (ip_len > len)
 		return;
-	if (tot_len < len)
-		len = tot_len;
+	if (ip_len < len)
+		len = ip_len;
 
-	payload = data + 4 * ip->ihl;
-	plen = len - 4 * ip->ihl;
+	payload = data + 4 * ip->ip_hl;
+	plen = len - 4 * ip->ip_hl;
 
-	switch (ip->protocol) {
+	switch (ip->ip_p) {
 	case IPPROTO_ICMP:
-		rx_data_icmp(wt, bssid, sta_addr, ip->daddr, ip->saddr,
-			     payload, plen, peer_addr);
+		rx_data_icmp(wt, bssid, sta_addr, ip->ip_dst.s_addr,
+			     ip->ip_src.s_addr, payload, plen, peer_addr);
 		break;
 	}
 }
