@@ -123,10 +123,13 @@ static void nl80211_register_eloop_read(struct nl_sock **handle,
 	 * to hostapd and STA entry deletion. Try to increase the buffer to make
 	 * this less likely to occur.
 	 */
-	if (nl_socket_set_buffer_size(*handle, 262144, 0) < 0) {
+	int err;
+
+	err = nl_socket_set_buffer_size(*handle, 262144, 0);
+	if (err < 0) {
 		wpa_printf(MSG_DEBUG,
 			   "nl80211: Could not set nl_socket RX buffer size: %s",
-			   strerror(errno));
+			   nl_geterror(err));
 		/* continue anyway with the default (smaller) buffer */
 	}
 
@@ -372,8 +375,16 @@ static int send_and_recv(struct nl80211_global *global,
 		   NETLINK_CAP_ACK, &opt, sizeof(opt));
 
 	err = nl_send_auto_complete(nl_handle, msg);
-	if (err < 0)
+	if (err < 0) {
+		wpa_printf(MSG_INFO,
+			   "nl80211: nl_send_auto_complete() failed: %s",
+			   nl_geterror(err));
+		/* Need to convert libnl error code to an errno value. For now,
+		 * just hardcode this to EBADF; the real error reason is shown
+		 * in that error print above. */
+		err = -EBADF;
 		goto out;
+	}
 
 	err = 1;
 
@@ -389,8 +400,8 @@ static int send_and_recv(struct nl80211_global *global,
 		int res = nl_recvmsgs(nl_handle, cb);
 		if (res < 0) {
 			wpa_printf(MSG_INFO,
-				   "nl80211: %s->nl_recvmsgs failed: %d",
-				   __func__, res);
+				   "nl80211: %s->nl_recvmsgs failed: %d (%s)",
+				   __func__, res, nl_geterror(res));
 		}
 	}
  out:
@@ -1689,7 +1700,7 @@ static int wpa_driver_nl80211_init_nl_global(struct nl80211_global *global)
 	if (ret < 0) {
 		wpa_printf(MSG_ERROR, "nl80211: Could not add multicast "
 			   "membership for scan events: %d (%s)",
-			   ret, strerror(-ret));
+			   ret, nl_geterror(ret));
 		goto err;
 	}
 
@@ -1699,7 +1710,7 @@ static int wpa_driver_nl80211_init_nl_global(struct nl80211_global *global)
 	if (ret < 0) {
 		wpa_printf(MSG_ERROR, "nl80211: Could not add multicast "
 			   "membership for mlme events: %d (%s)",
-			   ret, strerror(-ret));
+			   ret, nl_geterror(ret));
 		goto err;
 	}
 
@@ -1709,7 +1720,7 @@ static int wpa_driver_nl80211_init_nl_global(struct nl80211_global *global)
 	if (ret < 0) {
 		wpa_printf(MSG_DEBUG, "nl80211: Could not add multicast "
 			   "membership for regulatory events: %d (%s)",
-			   ret, strerror(-ret));
+			   ret, nl_geterror(ret));
 		/* Continue without regulatory events */
 	}
 
@@ -1719,7 +1730,7 @@ static int wpa_driver_nl80211_init_nl_global(struct nl80211_global *global)
 	if (ret < 0) {
 		wpa_printf(MSG_DEBUG, "nl80211: Could not add multicast "
 			   "membership for vendor events: %d (%s)",
-			   ret, strerror(-ret));
+			   ret, nl_geterror(ret));
 		/* Continue without vendor events */
 	}
 
@@ -1764,7 +1775,7 @@ static void nl80211_check_global(struct nl80211_global *global)
 		if (ret < 0) {
 			wpa_printf(MSG_INFO,
 				   "nl80211: Could not re-add multicast membership for %s events: %d (%s)",
-				   groups[i], ret, strerror(-ret));
+				   groups[i], ret, nl_geterror(ret));
 		}
 	}
 }
@@ -5144,7 +5155,7 @@ static int wpa_driver_nl80211_hapd_send_eapol(
 	if (res < 0) {
 		wpa_printf(MSG_ERROR, "i802_send_eapol - packet len: %lu - "
 			   "failed: %d (%s)",
-			   (unsigned long) len, errno, strerror(errno));
+			   (unsigned long) len, res, strerror(res));
 	}
 	os_free(hdr);
 
@@ -7034,15 +7045,18 @@ static void *i802_init(struct hostapd_data *hapd,
 
 #ifdef CONFIG_LIBNL3_ROUTE
 	if (bss->added_if_into_bridge || bss->already_in_bridge) {
+		int err;
+
 		drv->rtnl_sk = nl_socket_alloc();
 		if (drv->rtnl_sk == NULL) {
 			wpa_printf(MSG_ERROR, "nl80211: Failed to allocate nl_sock");
 			goto failed;
 		}
 
-		if (nl_connect(drv->rtnl_sk, NETLINK_ROUTE)) {
+		err = nl_connect(drv->rtnl_sk, NETLINK_ROUTE);
+		if (err) {
 			wpa_printf(MSG_ERROR, "nl80211: Failed to connect nl_sock to NETLINK_ROUTE: %s",
-				   strerror(errno));
+				   nl_geterror(err));
 			goto failed;
 		}
 	}
@@ -9937,7 +9951,7 @@ static int wpa_driver_br_add_ip_neigh(void *priv, u8 version,
 	if (res) {
 		wpa_printf(MSG_DEBUG,
 			   "nl80211: Adding bridge ip neigh failed: %s",
-			   strerror(errno));
+			   nl_geterror(res));
 	}
 errout:
 	if (nl_lladdr)
@@ -10013,7 +10027,7 @@ static int wpa_driver_br_delete_ip_neigh(void *priv, u8 version,
 	if (res) {
 		wpa_printf(MSG_DEBUG,
 			   "nl80211: Deleting bridge ip neigh failed: %s",
-			   strerror(errno));
+			   nl_geterror(res));
 	}
 errout:
 	if (nl_ipaddr)
@@ -10262,7 +10276,7 @@ static int wpa_driver_do_acs(void *priv, struct drv_acs_params *params)
 	if (ret) {
 		wpa_printf(MSG_DEBUG,
 			   "nl80211: Failed to invoke driver ACS function: %s",
-			   strerror(errno));
+			   strerror(-ret));
 	}
 	return ret;
 }
@@ -10309,7 +10323,7 @@ static int nl80211_set_band(void *priv, enum set_band band)
 	if (ret) {
 		wpa_printf(MSG_DEBUG,
 			   "nl80211: Driver setband function failed: %s",
-			   strerror(errno));
+			   strerror(-ret));
 	}
 	return ret;
 }
