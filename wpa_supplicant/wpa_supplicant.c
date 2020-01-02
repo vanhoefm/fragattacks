@@ -487,6 +487,20 @@ void wpas_clear_disabled_interface(void *eloop_ctx, void *timeout_ctx)
 }
 
 
+#ifdef CONFIG_TESTING_OPTIONS
+void wpas_clear_driver_signal_override(struct wpa_supplicant *wpa_s)
+{
+	struct driver_signal_override *dso;
+
+	while ((dso = dl_list_first(&wpa_s->drv_signal_override,
+				    struct driver_signal_override, list))) {
+		dl_list_del(&dso->list);
+		os_free(dso);
+	}
+}
+#endif /* CONFIG_TESTING_OPTIONS */
+
+
 static void wpa_supplicant_cleanup(struct wpa_supplicant *wpa_s)
 {
 	int i;
@@ -516,6 +530,7 @@ static void wpa_supplicant_cleanup(struct wpa_supplicant *wpa_s)
 	wpa_s->rsnxe_override_assoc = NULL;
 	wpabuf_free(wpa_s->rsnxe_override_eapol);
 	wpa_s->rsnxe_override_eapol = NULL;
+	wpas_clear_driver_signal_override(wpa_s);
 #endif /* CONFIG_TESTING_OPTIONS */
 
 	if (wpa_s->conf != NULL) {
@@ -4802,6 +4817,9 @@ wpa_supplicant_alloc(struct wpa_supplicant *parent)
 
 	dl_list_init(&wpa_s->bss_tmp_disallowed);
 	dl_list_init(&wpa_s->fils_hlp_req);
+#ifdef CONFIG_TESTING_OPTIONS
+	dl_list_init(&wpa_s->drv_signal_override);
+#endif /* CONFIG_TESTING_OPTIONS */
 
 	return wpa_s;
 }
@@ -7883,4 +7901,88 @@ int wpas_disable_mac_addr_randomization(struct wpa_supplicant *wpa_s,
 	}
 
 	return 0;
+}
+
+
+int wpa_drv_signal_poll(struct wpa_supplicant *wpa_s,
+			struct wpa_signal_info *si)
+{
+	int res;
+
+	if (!wpa_s->driver->signal_poll)
+		return -1;
+
+	res = wpa_s->driver->signal_poll(wpa_s->drv_priv, si);
+
+#ifdef CONFIG_TESTING_OPTIONS
+	if (res == 0) {
+		struct driver_signal_override *dso;
+
+		dl_list_for_each(dso, &wpa_s->drv_signal_override,
+				 struct driver_signal_override, list) {
+			if (os_memcmp(wpa_s->bssid, dso->bssid,
+				      ETH_ALEN) != 0)
+				continue;
+			wpa_printf(MSG_DEBUG,
+				   "Override driver signal_poll information: current_signal: %d->%d avg_signal: %d->%d avg_beacon_signal: %d->%d current_noise: %d->%d",
+				   si->current_signal,
+				   dso->si_current_signal,
+				   si->avg_signal,
+				   dso->si_avg_signal,
+				   si->avg_beacon_signal,
+				   dso->si_avg_beacon_signal,
+				   si->current_noise,
+				   dso->si_current_noise);
+			si->current_signal = dso->si_current_signal;
+			si->avg_signal = dso->si_avg_signal;
+			si->avg_beacon_signal = dso->si_avg_beacon_signal;
+			si->current_noise = dso->si_current_noise;
+			break;
+		}
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
+
+	return res;
+}
+
+
+struct wpa_scan_results *
+wpa_drv_get_scan_results2(struct wpa_supplicant *wpa_s)
+{
+	struct wpa_scan_results *scan_res;
+#ifdef CONFIG_TESTING_OPTIONS
+	size_t idx;
+#endif /* CONFIG_TESTING_OPTIONS */
+
+	if (!wpa_s->driver->get_scan_results2)
+		return NULL;
+
+	scan_res = wpa_s->driver->get_scan_results2(wpa_s->drv_priv);
+
+#ifdef CONFIG_TESTING_OPTIONS
+	for (idx = 0; scan_res && idx < scan_res->num; idx++) {
+		struct driver_signal_override *dso;
+		struct wpa_scan_res *res = scan_res->res[idx];
+
+		dl_list_for_each(dso, &wpa_s->drv_signal_override,
+				 struct driver_signal_override, list) {
+			if (os_memcmp(res->bssid, dso->bssid, ETH_ALEN) != 0)
+				continue;
+			wpa_printf(MSG_DEBUG,
+				   "Override driver scan signal level %d->%d for "
+				   MACSTR,
+				   res->level, dso->scan_level,
+				   MAC2STR(res->bssid));
+			res->flags |= WPA_SCAN_QUAL_INVALID;
+			if (dso->scan_level < 0)
+				res->flags |= WPA_SCAN_LEVEL_DBM;
+			else
+				res->flags &= ~WPA_SCAN_LEVEL_DBM;
+			res->level = dso->scan_level;
+			break;
+		}
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
+
+	return scan_res;
 }

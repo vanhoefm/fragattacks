@@ -124,13 +124,8 @@ static inline int wpa_drv_stop_sched_scan(struct wpa_supplicant *wpa_s)
 	return -1;
 }
 
-static inline struct wpa_scan_results * wpa_drv_get_scan_results2(
-	struct wpa_supplicant *wpa_s)
-{
-	if (wpa_s->driver->get_scan_results2)
-		return wpa_s->driver->get_scan_results2(wpa_s->drv_priv);
-	return NULL;
-}
+struct wpa_scan_results *
+wpa_drv_get_scan_results2(struct wpa_supplicant *wpa_s);
 
 static inline int wpa_drv_get_bssid(struct wpa_supplicant *wpa_s, u8 *bssid)
 {
@@ -494,13 +489,8 @@ static inline int wpa_drv_signal_monitor(struct wpa_supplicant *wpa_s,
 	return -1;
 }
 
-static inline int wpa_drv_signal_poll(struct wpa_supplicant *wpa_s,
-				      struct wpa_signal_info *si)
-{
-	if (wpa_s->driver->signal_poll)
-		return wpa_s->driver->signal_poll(wpa_s->drv_priv, si);
-	return -1;
-}
+int wpa_drv_signal_poll(struct wpa_supplicant *wpa_s,
+			struct wpa_signal_info *si);
 
 static inline int wpa_drv_channel_info(struct wpa_supplicant *wpa_s,
 				       struct wpa_channel_info *ci)

@@ -480,6 +480,16 @@ struct fils_hlp_req {
 	struct wpabuf *pkt;
 };
 
+struct driver_signal_override {
+	struct dl_list list;
+	u8 bssid[ETH_ALEN];
+	int si_current_signal;
+	int si_avg_signal;
+	int si_avg_beacon_signal;
+	int si_current_noise;
+	int scan_level;
+};
+
 /**
  * struct wpa_supplicant - Internal data for wpa_supplicant interface
  *
@@ -1132,6 +1142,7 @@ struct wpa_supplicant {
 	int *extra_sae_rejected_groups;
 	struct wpabuf *rsnxe_override_assoc;
 	struct wpabuf *rsnxe_override_eapol;
+	struct dl_list drv_signal_override;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 	struct wmm_ac_assoc_data *wmm_ac_assoc_info;
@@ -1569,5 +1580,7 @@ int wpas_ctrl_iface_get_pref_freq_list_override(struct wpa_supplicant *wpa_s,
 
 int wpa_is_fils_supported(struct wpa_supplicant *wpa_s);
 int wpa_is_fils_sk_pfs_supported(struct wpa_supplicant *wpa_s);
+
+void wpas_clear_driver_signal_override(struct wpa_supplicant *wpa_s);
 
 #endif /* WPA_SUPPLICANT_I_H */

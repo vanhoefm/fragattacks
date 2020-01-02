@@ -419,6 +419,64 @@ static int wpas_ctrl_iface_set_ric_ies(struct wpa_supplicant *wpa_s,
 }
 
 
+#ifdef CONFIG_TESTING_OPTIONS
+static int wpas_ctrl_iface_set_dso(struct wpa_supplicant *wpa_s,
+				   const char *val)
+{
+	u8 bssid[ETH_ALEN];
+	const char *pos = val;
+	struct driver_signal_override *dso = NULL, *tmp, parsed;
+
+	if (hwaddr_aton(pos, bssid))
+		return -1;
+	pos = os_strchr(pos, ' ');
+
+	dl_list_for_each(tmp, &wpa_s->drv_signal_override,
+			 struct driver_signal_override, list) {
+		if (os_memcmp(bssid, tmp->bssid, ETH_ALEN) == 0) {
+			dso = tmp;
+			break;
+		}
+	}
+
+	if (!pos) {
+		/* Remove existing entry */
+		if (dso) {
+			dl_list_del(&dso->list);
+			os_free(dso);
+		}
+		return 0;
+	}
+	pos++;
+
+	/* Update an existing entry or add a new one */
+	os_memset(&parsed, 0, sizeof(parsed));
+	if (sscanf(pos, "%d %d %d %d %d",
+		   &parsed.si_current_signal,
+		   &parsed.si_avg_signal,
+		   &parsed.si_avg_beacon_signal,
+		   &parsed.si_current_noise,
+		   &parsed.scan_level) != 5)
+		return -1;
+
+	if (!dso) {
+		dso = os_zalloc(sizeof(*dso));
+		if (!dso)
+			return -1;
+		os_memcpy(dso->bssid, bssid, ETH_ALEN);
+		dl_list_add(&wpa_s->drv_signal_override, &dso->list);
+	}
+	dso->si_current_signal = parsed.si_current_signal;
+	dso->si_avg_signal = parsed.si_avg_signal;
+	dso->si_avg_beacon_signal = parsed.si_avg_beacon_signal;
+	dso->si_current_noise = parsed.si_current_noise;
+	dso->scan_level = parsed.scan_level;
+
+	return 0;
+}
+#endif /* CONFIG_TESTING_OPTIONS */
+
+
 static int wpa_supplicant_ctrl_iface_set(struct wpa_supplicant *wpa_s,
 					 char *cmd)
 {
@@ -713,6 +771,8 @@ static int wpa_supplicant_ctrl_iface_set(struct wpa_supplicant *wpa_s,
 			wpa_s->sae_commit_override = NULL;
 		else
 			wpa_s->sae_commit_override = wpabuf_parse_bin(value);
+	} else if (os_strcasecmp(cmd, "driver_signal_override") == 0) {
+		ret = wpas_ctrl_iface_set_dso(wpa_s, value);
 #ifdef CONFIG_DPP
 	} else if (os_strcasecmp(cmd, "dpp_config_obj_override") == 0) {
 		os_free(wpa_s->dpp_config_obj_override);
@@ -8104,6 +8164,7 @@ static void wpa_supplicant_ctrl_iface_flush(struct wpa_supplicant *wpa_s)
 	wpa_s->rsnxe_override_assoc = NULL;
 	wpabuf_free(wpa_s->rsnxe_override_eapol);
 	wpa_s->rsnxe_override_eapol = NULL;
+	wpas_clear_driver_signal_override(wpa_s);
 #ifdef CONFIG_DPP
 	os_free(wpa_s->dpp_config_obj_override);
 	wpa_s->dpp_config_obj_override = NULL;
