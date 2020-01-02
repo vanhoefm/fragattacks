@@ -1850,7 +1850,7 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 
 	if (to_5ghz)
 		min_diff -= 2;
-	diff = selected->level - current_bss->level;
+	diff = selected->level - cur_level;
 	if (diff < min_diff) {
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"Skip roam - too small difference in signal level (%d < %d)",
