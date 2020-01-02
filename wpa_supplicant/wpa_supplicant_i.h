@@ -47,6 +47,9 @@ struct ctrl_iface_global_priv;
 struct wpas_dbus_priv;
 struct wpas_binder_priv;
 
+/* How many seconds to consider old scan results valid for association. */
+#define SCAN_RES_VALID_FOR_CONNECT 5
+
 /**
  * struct wpa_interface - Parameters for wpa_supplicant_add_iface()
  */
@@ -1399,6 +1402,7 @@ int wpas_beacon_rep_scan_process(struct wpa_supplicant *wpa_s,
 				 struct scan_info *info);
 void wpas_clear_beacon_rep_data(struct wpa_supplicant *wpa_s);
 void wpas_flush_fils_hlp_req(struct wpa_supplicant *wpa_s);
+void wpas_clear_disabled_interface(void *eloop_ctx, void *timeout_ctx);
 
 
 /* MBO functions */

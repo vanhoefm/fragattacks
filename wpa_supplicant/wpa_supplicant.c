@@ -476,6 +476,17 @@ void wpas_flush_fils_hlp_req(struct wpa_supplicant *wpa_s)
 }
 
 
+void wpas_clear_disabled_interface(void *eloop_ctx, void *timeout_ctx)
+{
+	struct wpa_supplicant *wpa_s = eloop_ctx;
+
+	if (wpa_s->wpa_state != WPA_INTERFACE_DISABLED)
+		return;
+	wpa_dbg(wpa_s, MSG_DEBUG, "Clear cached state on disabled interface");
+	wpa_bss_flush(wpa_s);
+}
+
+
 static void wpa_supplicant_cleanup(struct wpa_supplicant *wpa_s)
 {
 	int i;
@@ -551,6 +562,7 @@ static void wpa_supplicant_cleanup(struct wpa_supplicant *wpa_s)
 #endif /* CONFIG_DELAYED_MIC_ERROR_REPORT */
 
 	eloop_cancel_timeout(wpas_network_reenabled, wpa_s, NULL);
+	eloop_cancel_timeout(wpas_clear_disabled_interface, wpa_s, NULL);
 
 	wpas_wps_deinit(wpa_s);
 

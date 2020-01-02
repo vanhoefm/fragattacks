@@ -2253,7 +2253,8 @@ int wpa_supplicant_fast_associate(struct wpa_supplicant *wpa_s)
 		return -1;
 
 	os_get_reltime(&now);
-	if (os_reltime_expired(&now, &wpa_s->last_scan, 5)) {
+	if (os_reltime_expired(&now, &wpa_s->last_scan,
+			       SCAN_RES_VALID_FOR_CONNECT)) {
 		wpa_printf(MSG_DEBUG, "Fast associate: Old scan results");
 		return -1;
 	}
@@ -4321,6 +4322,7 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 {
 	struct wpa_supplicant *wpa_s = ctx;
 	int resched;
+	struct os_reltime age, clear_at;
 #ifndef CONFIG_NO_STDOUT_DEBUG
 	int level = MSG_DEBUG;
 #endif /* CONFIG_NO_STDOUT_DEBUG */
@@ -4859,6 +4861,8 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 	case EVENT_INTERFACE_ENABLED:
 		wpa_dbg(wpa_s, MSG_DEBUG, "Interface was enabled");
 		if (wpa_s->wpa_state == WPA_INTERFACE_DISABLED) {
+			eloop_cancel_timeout(wpas_clear_disabled_interface,
+					     wpa_s, NULL);
 			wpa_supplicant_update_mac_addr(wpa_s);
 			wpa_supplicant_set_default_scan_ies(wpa_s);
 			if (wpa_s->p2p_mgmt) {
@@ -4927,7 +4931,20 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 				wpa_s, WLAN_REASON_DEAUTH_LEAVING, 1);
 		}
 		wpa_supplicant_mark_disassoc(wpa_s);
-		wpa_bss_flush(wpa_s);
+		os_reltime_age(&wpa_s->last_scan, &age);
+		if (age.sec >= SCAN_RES_VALID_FOR_CONNECT) {
+			clear_at.sec = SCAN_RES_VALID_FOR_CONNECT;
+			clear_at.usec = 0;
+		} else {
+			struct os_reltime tmp;
+
+			tmp.sec = SCAN_RES_VALID_FOR_CONNECT;
+			tmp.usec = 0;
+			os_reltime_sub(&tmp, &age, &clear_at);
+		}
+		eloop_register_timeout(clear_at.sec, clear_at.usec,
+				       wpas_clear_disabled_interface,
+				       wpa_s, NULL);
 		radio_remove_works(wpa_s, NULL, 0);
 
 		wpa_supplicant_set_state(wpa_s, WPA_INTERFACE_DISABLED);
