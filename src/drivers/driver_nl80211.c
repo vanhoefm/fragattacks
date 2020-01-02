@@ -66,48 +66,6 @@ enum nlmsgerr_attrs {
 #define SOL_NETLINK 270
 #endif
 
-#ifndef CONFIG_LIBNL20
-/*
- * libnl 1.1 has a bug, it tries to allocate socket numbers densely
- * but when you free a socket again it will mess up its bitmap and
- * and use the wrong number the next time it needs a socket ID.
- * Therefore, we wrap the handle alloc/destroy and add our own pid
- * accounting.
- */
-static uint32_t port_bitmap[32] = { 0 };
-
-static struct nl_handle *nl80211_handle_alloc(void *cb)
-{
-	struct nl_handle *handle;
-	uint32_t pid = getpid() & 0x3FFFFF;
-	int i;
-
-	handle = nl_handle_alloc_cb(cb);
-
-	for (i = 0; i < 1024; i++) {
-		if (port_bitmap[i / 32] & (1 << (i % 32)))
-			continue;
-		port_bitmap[i / 32] |= 1 << (i % 32);
-		pid += i << 22;
-		break;
-	}
-
-	nl_socket_set_local_port(handle, pid);
-
-	return handle;
-}
-
-static void nl80211_handle_destroy(struct nl_handle *handle)
-{
-	uint32_t port = nl_socket_get_local_port(handle);
-
-	port >>= 22;
-	port_bitmap[port / 32] &= ~(1 << (port % 32));
-
-	nl_handle_destroy(handle);
-}
-#endif /* CONFIG_LIBNL20 */
-
 
 #ifdef ANDROID
 /* system/core/libnl_2 does not include nl_socket_set_nonblocking() */
@@ -117,11 +75,11 @@ static void nl80211_handle_destroy(struct nl_handle *handle)
 #endif /* ANDROID */
 
 
-static struct nl_handle * nl_create_handle(struct nl_cb *cb, const char *dbg)
+static struct nl_sock * nl_create_handle(struct nl_cb *cb, const char *dbg)
 {
-	struct nl_handle *handle;
+	struct nl_sock *handle;
 
-	handle = nl80211_handle_alloc(cb);
+	handle = nl_socket_alloc_cb(cb);
 	if (handle == NULL) {
 		wpa_printf(MSG_ERROR, "nl80211: Failed to allocate netlink "
 			   "callbacks (%s)", dbg);
@@ -131,7 +89,7 @@ static struct nl_handle * nl_create_handle(struct nl_cb *cb, const char *dbg)
 	if (genl_connect(handle)) {
 		wpa_printf(MSG_ERROR, "nl80211: Failed to connect to generic "
 			   "netlink (%s)", dbg);
-		nl80211_handle_destroy(handle);
+		nl_socket_free(handle);
 		return NULL;
 	}
 
@@ -139,11 +97,11 @@ static struct nl_handle * nl_create_handle(struct nl_cb *cb, const char *dbg)
 }
 
 
-static void nl_destroy_handles(struct nl_handle **handle)
+static void nl_destroy_handles(struct nl_sock **handle)
 {
 	if (*handle == NULL)
 		return;
-	nl80211_handle_destroy(*handle);
+	nl_socket_free(*handle);
 	*handle = NULL;
 }
 
@@ -154,11 +112,10 @@ static void nl_destroy_handles(struct nl_handle **handle)
 #define ELOOP_SOCKET_INVALID	(intptr_t) 0x88888889ULL
 #endif
 
-static void nl80211_register_eloop_read(struct nl_handle **handle,
+static void nl80211_register_eloop_read(struct nl_sock **handle,
 					eloop_sock_handler handler,
 					void *eloop_data, int persist)
 {
-#ifdef CONFIG_LIBNL20
 	/*
 	 * libnl uses a pretty small buffer (32 kB that gets converted to 64 kB)
 	 * by default. It is possible to hit that limit in some cases where
@@ -172,7 +129,6 @@ static void nl80211_register_eloop_read(struct nl_handle **handle,
 			   strerror(errno));
 		/* continue anyway with the default (smaller) buffer */
 	}
-#endif /* CONFIG_LIBNL20 */
 
 	nl_socket_set_nonblocking(*handle);
 	eloop_register_read_sock(nl_socket_get_fd(*handle), handler,
@@ -183,7 +139,7 @@ static void nl80211_register_eloop_read(struct nl_handle **handle,
 }
 
 
-static void nl80211_destroy_eloop_handle(struct nl_handle **handle, int persist)
+static void nl80211_destroy_eloop_handle(struct nl_sock **handle, int persist)
 {
 	if (!persist)
 		*handle = (void *) (((intptr_t) *handle) ^
@@ -391,7 +347,7 @@ static void nl80211_nlmsg_clear(struct nl_msg *msg)
 
 
 static int send_and_recv(struct nl80211_global *global,
-			 struct nl_handle *nl_handle, struct nl_msg *msg,
+			 struct nl_sock *nl_handle, struct nl_msg *msg,
 			 int (*valid_handler)(struct nl_msg *, void *),
 			 void *valid_data)
 {
@@ -1789,7 +1745,7 @@ err:
 
 static void nl80211_check_global(struct nl80211_global *global)
 {
-	struct nl_handle *handle;
+	struct nl_sock *handle;
 	const char *groups[] = { "scan", "mlme", "regulatory", "vendor", NULL };
 	int ret;
 	unsigned int i;
@@ -2087,7 +2043,7 @@ static void * wpa_driver_nl80211_init(void *ctx, const char *ifname,
 
 
 static int nl80211_register_frame(struct i802_bss *bss,
-				  struct nl_handle *nl_handle,
+				  struct nl_sock *nl_handle,
 				  u16 type, const u8 *match, size_t match_len)
 {
 	struct wpa_driver_nl80211_data *drv = bss->drv;
@@ -2757,7 +2713,7 @@ static void wpa_driver_nl80211_deinit(struct i802_bss *bss)
 	}
 
 	if (drv->rtnl_sk)
-		nl80211_handle_destroy(drv->rtnl_sk);
+		nl_socket_free(drv->rtnl_sk);
 
 	if (bss->added_bridge) {
 		if (linux_set_iface_flags(drv->global->ioctl_sock, bss->brname,
@@ -3271,7 +3227,7 @@ static int nl80211_set_conn_keys(struct wpa_driver_associate_params *params,
 int wpa_driver_nl80211_mlme(struct wpa_driver_nl80211_data *drv,
 			    const u8 *addr, int cmd, u16 reason_code,
 			    int local_state_change,
-			    struct nl_handle *nl_connect)
+			    struct nl_sock *nl_connect)
 {
 	int ret;
 	struct nl_msg *msg;
@@ -3300,7 +3256,7 @@ int wpa_driver_nl80211_mlme(struct wpa_driver_nl80211_data *drv,
 
 static int wpa_driver_nl80211_disconnect(struct wpa_driver_nl80211_data *drv,
 					 u16 reason_code,
-					 struct nl_handle *nl_connect)
+					 struct nl_sock *nl_connect)
 {
 	int ret;
 	int drv_associated = drv->associated;
@@ -3332,7 +3288,7 @@ static int wpa_driver_nl80211_deauthenticate(struct i802_bss *bss,
 		return nl80211_leave_ibss(drv, 1);
 	}
 	if (!(drv->capa.flags & WPA_DRIVER_FLAGS_SME)) {
-		struct nl_handle *nl_connect = NULL;
+		struct nl_sock *nl_connect = NULL;
 
 		if (bss->use_nl_connect)
 			nl_connect = bss->nl_connect;
@@ -5775,7 +5731,7 @@ static int nl80211_connect_common(struct wpa_driver_nl80211_data *drv,
 static int wpa_driver_nl80211_try_connect(
 	struct wpa_driver_nl80211_data *drv,
 	struct wpa_driver_associate_params *params,
-	struct nl_handle *nl_connect)
+	struct nl_sock *nl_connect)
 {
 	struct nl_msg *msg;
 	enum nl80211_auth_type type;
@@ -5866,7 +5822,7 @@ fail:
 static int wpa_driver_nl80211_connect(
 	struct wpa_driver_nl80211_data *drv,
 	struct wpa_driver_associate_params *params,
-	struct nl_handle *nl_connect)
+	struct nl_sock *nl_connect)
 {
 	int ret;
 
@@ -5914,7 +5870,7 @@ static int wpa_driver_nl80211_associate(
 	if (!(drv->capa.flags & WPA_DRIVER_FLAGS_SME)) {
 		enum nl80211_iftype nlmode = params->p2p ?
 			NL80211_IFTYPE_P2P_CLIENT : NL80211_IFTYPE_STATION;
-		struct nl_handle *nl_connect = NULL;
+		struct nl_sock *nl_connect = NULL;
 
 		if (wpa_driver_nl80211_set_mode(priv, nlmode) < 0)
 			return -1;

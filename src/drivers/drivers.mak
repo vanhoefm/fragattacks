@@ -176,7 +176,6 @@ endif
 ifdef CONFIG_LIBNL32
   DRV_LIBS += -lnl-3
   DRV_LIBS += -lnl-genl-3
-  DRV_CFLAGS += -DCONFIG_LIBNL20
   ifdef LIBNL_INC
     DRV_CFLAGS += -I$(LIBNL_INC)
   else
@@ -193,14 +192,8 @@ else
   else
     ifndef CONFIG_OSX
       DRV_LIBS += -lnl
-    endif
-  endif
-
-  ifdef CONFIG_LIBNL20
-    ifndef CONFIG_LIBNL_TINY
       DRV_LIBS += -lnl-genl
     endif
-    DRV_CFLAGS += -DCONFIG_LIBNL20
   endif
 endif
 endif

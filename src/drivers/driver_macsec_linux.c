@@ -54,8 +54,6 @@ struct macsec_drv_data {
 	struct nl_sock *sk;
 	struct macsec_genl_ctx ctx;
 
-	struct netlink_data *netlink;
-	struct nl_handle *nl;
 	char ifname[IFNAMSIZ + 1];
 	int ifi;
 	int parent_ifi;

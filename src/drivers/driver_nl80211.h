@@ -17,13 +17,6 @@
 #include "utils/list.h"
 #include "driver.h"
 
-#ifdef CONFIG_LIBNL20
-/* libnl 2.0 compatibility code */
-#define nl_handle nl_sock
-#define nl80211_handle_alloc nl_socket_alloc_cb
-#define nl80211_handle_destroy nl_socket_free
-#endif /* CONFIG_LIBNL20 */
-
 struct nl80211_global {
 	void *ctx;
 	struct dl_list interfaces;
@@ -32,11 +25,11 @@ struct nl80211_global {
 	int if_add_wdevid_set;
 	struct netlink_data *netlink;
 	struct nl_cb *nl_cb;
-	struct nl_handle *nl;
+	struct nl_sock *nl;
 	int nl80211_id;
 	int ioctl_sock; /* socket for ioctl() use */
 
-	struct nl_handle *nl_event;
+	struct nl_sock *nl_event;
 };
 
 struct nl80211_wiphy_data {
@@ -44,7 +37,7 @@ struct nl80211_wiphy_data {
 	struct dl_list bsss;
 	struct dl_list drvs;
 
-	struct nl_handle *nl_beacons;
+	struct nl_sock *nl_beacons;
 	struct nl_cb *nl_cb;
 
 	int wiphy_idx;
@@ -75,7 +68,7 @@ struct i802_bss {
 	int if_dynamic;
 
 	void *ctx;
-	struct nl_handle *nl_preq, *nl_mgmt, *nl_connect;
+	struct nl_sock *nl_preq, *nl_mgmt, *nl_connect;
 	struct nl_cb *nl_cb;
 
 	struct nl80211_wiphy_data *wiphy_data;
@@ -192,7 +185,7 @@ struct wpa_driver_nl80211_data {
 
 	int eapol_sock; /* socket for EAPOL frames */
 
-	struct nl_handle *rtnl_sk; /* nl_sock for NETLINK_ROUTE */
+	struct nl_sock *rtnl_sk; /* nl_sock for NETLINK_ROUTE */
 
 	struct drv_nl80211_if_info default_if_indices[16];
 	struct drv_nl80211_if_info *if_indices;
@@ -256,7 +249,7 @@ int wpa_driver_nl80211_set_mode(struct i802_bss *bss,
 int wpa_driver_nl80211_mlme(struct wpa_driver_nl80211_data *drv,
 			    const u8 *addr, int cmd, u16 reason_code,
 			    int local_state_change,
-			    struct nl_handle *nl_connect);
+			    struct nl_sock *nl_connect);
 
 int nl80211_create_monitor_interface(struct wpa_driver_nl80211_data *drv);
 void nl80211_remove_monitor_interface(struct wpa_driver_nl80211_data *drv);
@@ -275,7 +268,7 @@ int process_bss_event(struct nl_msg *msg, void *arg);
 const char * nl80211_iftype_str(enum nl80211_iftype mode);
 
 #ifdef ANDROID
-int android_nl_socket_set_nonblocking(struct nl_handle *handle);
+int android_nl_socket_set_nonblocking(struct nl_sock *handle);
 int android_pno_start(struct i802_bss *bss,
 		      struct wpa_driver_scan_params *params);
 int android_pno_stop(struct i802_bss *bss);

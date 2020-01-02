@@ -160,7 +160,7 @@ ifdef NEED_LIBNL
 ifdef CONFIG_LIBNL32
   DRV_LIBS += -lnl-3
   DRV_LIBS += -lnl-genl-3
-  DRV_CFLAGS += -DCONFIG_LIBNL20 -I/usr/include/libnl3
+  DRV_CFLAGS += -I/usr/include/libnl3
 ifdef CONFIG_LIBNL3_ROUTE
   DRV_LIBS += -lnl-route-3
   DRV_CFLAGS += -DCONFIG_LIBNL3_ROUTE
@@ -170,13 +170,7 @@ else
     DRV_LIBS += -lnl-tiny
   else
     DRV_LIBS += -lnl
-  endif
-
-  ifdef CONFIG_LIBNL20
-    ifndef CONFIG_LIBNL_TINY
-      DRV_LIBS += -lnl-genl
-    endif
-    DRV_CFLAGS += -DCONFIG_LIBNL20
+    DRV_LIBS += -lnl-genl
   endif
 endif
 endif
