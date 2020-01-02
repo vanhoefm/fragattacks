@@ -1,5 +1,5 @@
 # Roaming tests
-# Copyright (c) 2013, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2019, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -242,3 +242,61 @@ def test_ap_roam_wpa2_psk_race(dev, apdev):
     for i in range(3):
         time.sleep(0.8)
         hwsim_utils.test_connectivity(dev[0], hapd0)
+
+def test_ap_roam_signal_level_override(dev, apdev):
+    """Roam between two APs based on driver signal level override"""
+    hapd0 = hostapd.add_ap(apdev[0], {"ssid": "test-open"})
+    bssid0 = apdev[0]['bssid']
+    hapd1 = hostapd.add_ap(apdev[1], {"ssid": "test-open"})
+    bssid1 = apdev[1]['bssid']
+    dev[0].scan_for_bss(bssid0, freq=2412)
+    dev[0].scan_for_bss(bssid1, freq=2412)
+
+    dev[0].connect("test-open", key_mgmt="NONE")
+    bssid = dev[0].get_status_field('bssid')
+    if bssid == bssid0:
+        dst = bssid1
+        src = bssid0
+    else:
+        dst = bssid0
+        src = bssid1
+
+    dev[0].scan(freq=2412)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], 0.5)
+    if ev is not None:
+        raise Exception("Unexpected roam")
+
+    orig_res = dev[0].request("SIGNAL_POLL")
+    dev[0].set("driver_signal_override", src + " -1 -2 -3 -4 -5")
+    res = dev[0].request("SIGNAL_POLL").splitlines()
+    if "RSSI=-1" not in res or \
+       "AVG_RSSI=-2" not in res or \
+       "AVG_BEACON_RSSI=-3" not in res or \
+       "NOISE=-4" not in res:
+        raise Exception("SIGNAL_POLL override did not work: " + str(res))
+
+    dev[0].set("driver_signal_override", src)
+    new_res = dev[0].request("SIGNAL_POLL")
+    if orig_res != new_res:
+        raise Exception("SIGNAL_POLL restore did not work: " + new_res)
+
+    tests = [("-30 -30 -30 -95 -30", "-30 -30 -30 -95 -30"),
+             ("-30 -30 -30 -95 -30", "-20 -20 -20 -95 -20"),
+             ("-90 -90 -90 -95 -90", "-89 -89 -89 -95 -89"),
+             ("-90 -90 -90 -95 -95", "-89 -89 -89 -95 -89")]
+    for src_override, dst_override in tests:
+        dev[0].set("driver_signal_override", src + " " + src_override)
+        dev[0].set("driver_signal_override", dst + " " + dst_override)
+        dev[0].scan(freq=2412)
+        ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], 0.1)
+        if ev is not None:
+            raise Exception("Unexpected roam")
+        dev[0].dump_monitor()
+
+    dev[0].set("driver_signal_override", src + " -90 -90 -90 -95 -90")
+    dev[0].set("driver_signal_override", dst + " -80 -80 -80 -95 -80")
+    dev[0].scan(freq=2412)
+    dev[0].wait_connected()
+    if dst != dev[0].get_status_field('bssid'):
+        raise Exception("Unexpected AP after roam")
+    dev[0].dump_monitor()
