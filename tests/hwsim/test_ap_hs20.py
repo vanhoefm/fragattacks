@@ -1024,6 +1024,7 @@ def test_ap_hs20_roaming_consortiums_match(dev, apdev):
     params['hessid'] = bssid
     hostapd.add_ap(apdev[0], params)
 
+    dev[0].flush_scan_cache()
     dev[0].hs20_enable()
     tests = [("112233", "112233"),
              ("ffffff,1020304050,eeeeee", "1020304050")]
