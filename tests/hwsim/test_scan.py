@@ -1210,6 +1210,7 @@ def test_scan_bss_limit(dev, apdev):
         pass
 
 def _test_scan_bss_limit(dev, apdev):
+    dev[0].flush_scan_cache()
     # Trigger 'Increasing the MAX BSS count to 2 because all BSSes are in use.
     # We should normally not get here!' message by limiting the maximum BSS
     # count to one so that the second AP would not fit in the BSS list and the
