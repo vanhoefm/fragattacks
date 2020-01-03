@@ -372,12 +372,6 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 	}
 	params.wep_tx_keyidx = ssid->wep_tx_keyidx;
 
-	bssid_changed = !is_zero_ether_addr(wpa_s->bssid);
-	os_memset(wpa_s->bssid, 0, ETH_ALEN);
-	os_memcpy(wpa_s->pending_bssid, bss->bssid, ETH_ALEN);
-	if (bssid_changed)
-		wpas_notify_bssid_changed(wpa_s);
-
 	if ((wpa_bss_get_vendor_ie(bss, WPA_IE_VENDOR_TYPE) ||
 	     wpa_bss_get_ie(bss, WLAN_EID_RSN)) &&
 	    wpa_key_mgmt_wpa(ssid->key_mgmt)) {
@@ -717,6 +711,12 @@ static void sme_send_authentication(struct wpa_supplicant *wpa_s,
 		wpa_s->sme.sae.state = start ? SAE_COMMITTED : SAE_CONFIRMED;
 	}
 #endif /* CONFIG_SAE */
+
+	bssid_changed = !is_zero_ether_addr(wpa_s->bssid);
+	os_memset(wpa_s->bssid, 0, ETH_ALEN);
+	os_memcpy(wpa_s->pending_bssid, bss->bssid, ETH_ALEN);
+	if (bssid_changed)
+		wpas_notify_bssid_changed(wpa_s);
 
 	old_ssid = wpa_s->current_ssid;
 	wpa_s->current_ssid = ssid;
