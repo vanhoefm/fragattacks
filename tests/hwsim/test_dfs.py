@@ -26,7 +26,7 @@ def wait_dfs_event(hapd, event, timeout):
         raise Exception("Unexpected DFS event: " + ev + " (expected: %s)" % event)
     return ev
 
-def start_dfs_ap(ap, allow_failure=False, ssid="dfs", ht=True, ht40=False,
+def start_dfs_ap(ap, ssid="dfs", ht=True, ht40=False,
                  ht40minus=False, vht80=False, vht20=False, chanlist=None,
                  channel=None, country="FI"):
     ifname = ap['ifname']
@@ -65,11 +65,6 @@ def start_dfs_ap(ap, allow_failure=False, ssid="dfs", ht=True, ht40=False,
 
     state = hapd.get_status_field("state")
     if state != "DFS":
-        if allow_failure:
-            logger.info("Interface state not DFS: " + state)
-            if not os.path.exists("dfs"):
-                raise HwsimSkip("Assume DFS testing not supported")
-            raise Exception("Failed to start DFS AP")
         raise Exception("Unexpected interface state: " + state)
 
     return hapd
@@ -85,7 +80,7 @@ def test_dfs(dev, apdev):
     """DFS CAC functionality on clear channel"""
     try:
         hapd = None
-        hapd = start_dfs_ap(apdev[0], allow_failure=True, country="US")
+        hapd = start_dfs_ap(apdev[0], country="US")
 
         ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 70)
         if "success=1" not in ev:
@@ -137,7 +132,7 @@ def test_dfs_etsi(dev, apdev, params):
         raise HwsimSkip("Skip test case with long duration due to --long not specified")
     try:
         hapd = None
-        hapd = start_dfs_ap(apdev[0], allow_failure=True)
+        hapd = start_dfs_ap(apdev[0])
 
         ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 70)
         if "success=1" not in ev:
@@ -201,7 +196,7 @@ def test_dfs_radar1(dev, apdev):
     """DFS CAC functionality with radar detected during initial CAC"""
     try:
         hapd = None
-        hapd = start_dfs_ap(apdev[0], allow_failure=True)
+        hapd = start_dfs_ap(apdev[0])
         time.sleep(1)
 
         dfs_simulate_radar(hapd)
@@ -290,7 +285,7 @@ def test_dfs_radar_chanlist(dev, apdev):
     """DFS chanlist when radar is detected"""
     try:
         hapd = None
-        hapd = start_dfs_ap(apdev[0], chanlist="40 44", allow_failure=True)
+        hapd = start_dfs_ap(apdev[0], chanlist="40 44")
         time.sleep(1)
 
         dfs_simulate_radar(hapd)
@@ -321,8 +316,7 @@ def test_dfs_radar_chanlist_vht80(dev, apdev):
     """DFS chanlist when radar is detected and VHT80 configured"""
     try:
         hapd = None
-        hapd = start_dfs_ap(apdev[0], chanlist="36", ht40=True, vht80=True,
-                            allow_failure=True)
+        hapd = start_dfs_ap(apdev[0], chanlist="36", ht40=True, vht80=True)
         time.sleep(1)
 
         dfs_simulate_radar(hapd)
@@ -356,8 +350,7 @@ def test_dfs_radar_chanlist_vht20(dev, apdev):
     """DFS chanlist when radar is detected and VHT40 configured"""
     try:
         hapd = None
-        hapd = start_dfs_ap(apdev[0], chanlist="36", vht20=True,
-                            allow_failure=True)
+        hapd = start_dfs_ap(apdev[0], chanlist="36", vht20=True)
         time.sleep(1)
 
         dfs_simulate_radar(hapd)
@@ -388,8 +381,7 @@ def test_dfs_radar_no_ht(dev, apdev):
     """DFS chanlist when radar is detected and no HT configured"""
     try:
         hapd = None
-        hapd = start_dfs_ap(apdev[0], chanlist="36", ht=False,
-                            allow_failure=True)
+        hapd = start_dfs_ap(apdev[0], chanlist="36", ht=False)
         time.sleep(1)
 
         dfs_simulate_radar(hapd)
@@ -420,8 +412,7 @@ def test_dfs_radar_ht40minus(dev, apdev):
     """DFS chanlist when radar is detected and HT40- configured"""
     try:
         hapd = None
-        hapd = start_dfs_ap(apdev[0], chanlist="36", ht40minus=True,
-                            allow_failure=True)
+        hapd = start_dfs_ap(apdev[0], chanlist="36", ht40minus=True)
         time.sleep(1)
 
         dfs_simulate_radar(hapd)
@@ -456,8 +447,7 @@ def test_dfs_ht40_minus(dev, apdev, params):
         raise HwsimSkip("Skip test case with long duration due to --long not specified")
     try:
         hapd = None
-        hapd = start_dfs_ap(apdev[0], allow_failure=True, ht40minus=True,
-                            channel=104)
+        hapd = start_dfs_ap(apdev[0], ht40minus=True, channel=104)
 
         ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 70)
         if "success=1" not in ev:
@@ -487,7 +477,7 @@ def test_dfs_cac_restart_on_enable(dev, apdev):
     """DFS CAC interrupted and restarted"""
     try:
         hapd = None
-        hapd = start_dfs_ap(apdev[0], allow_failure=True)
+        hapd = start_dfs_ap(apdev[0])
         time.sleep(0.1)
         subprocess.check_call(['ip', 'link', 'set', 'dev', hapd.ifname, 'down'])
         ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 5)
