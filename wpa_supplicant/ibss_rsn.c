@@ -69,6 +69,9 @@ static int supp_ether_send(void *ctx, const u8 *dest, u16 proto, const u8 *buf,
 		   "len=%lu)",
 		   __func__, MAC2STR(dest), proto, (unsigned long) len);
 
+	if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_CONTROL_PORT)
+		return wpa_drv_tx_control_port(wpa_s, dest, proto, buf, len);
+
 	if (wpa_s->l2)
 		return l2_packet_send(wpa_s->l2, dest, proto, buf, len);
 

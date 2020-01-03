@@ -112,6 +112,9 @@ static int wpa_ether_send(struct wpa_supplicant *wpa_s, const u8 *dest,
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
 
+	if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_CONTROL_PORT)
+		return wpa_drv_tx_control_port(wpa_s, dest, proto, buf, len);
+
 	if (wpa_s->l2) {
 		return l2_packet_send(wpa_s->l2, dest, proto, buf, len);
 	}
