@@ -3510,6 +3510,14 @@ int wpa_sm_has_ptk(struct wpa_sm *sm)
 }
 
 
+int wpa_sm_has_ptk_installed(struct wpa_sm *sm)
+{
+	if (!sm)
+		return 0;
+	return sm->ptk.installed;
+}
+
+
 void wpa_sm_update_replay_ctr(struct wpa_sm *sm, const u8 *replay_ctr)
 {
 	os_memcpy(sm->rx_replay_counter, replay_ctr, WPA_REPLAY_COUNTER_LEN);

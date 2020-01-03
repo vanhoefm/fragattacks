@@ -64,13 +64,16 @@ static int supp_ether_send(void *ctx, const u8 *dest, u16 proto, const u8 *buf,
 {
 	struct ibss_rsn_peer *peer = ctx;
 	struct wpa_supplicant *wpa_s = peer->ibss_rsn->wpa_s;
+	int encrypt = peer->authentication_status & IBSS_RSN_REPORTED_PTK;
 
-	wpa_printf(MSG_DEBUG, "SUPP: %s(dest=" MACSTR " proto=0x%04x "
-		   "len=%lu)",
-		   __func__, MAC2STR(dest), proto, (unsigned long) len);
+	wpa_printf(MSG_DEBUG, "SUPP: %s(dest=" MACSTR
+		   " proto=0x%04x len=%lu no_encrypt=%d)",
+		   __func__, MAC2STR(dest), proto, (unsigned long) len,
+		   !encrypt);
 
 	if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_CONTROL_PORT)
-		return wpa_drv_tx_control_port(wpa_s, dest, proto, buf, len);
+		return wpa_drv_tx_control_port(wpa_s, dest, proto, buf, len,
+					       !encrypt);
 
 	if (wpa_s->l2)
 		return l2_packet_send(wpa_s->l2, dest, proto, buf, len);

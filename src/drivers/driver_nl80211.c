@@ -5093,7 +5093,8 @@ static void nl80211_teardown_ap(struct i802_bss *bss)
 
 
 static int nl80211_tx_control_port(void *priv, const u8 *dest,
-				   u16 proto, const u8 *buf, size_t len)
+				   u16 proto, const u8 *buf, size_t len,
+				   int no_encrypt)
 {
 	struct i802_bss *bss = priv;
 	struct nl_msg *msg;
@@ -5101,14 +5102,16 @@ static int nl80211_tx_control_port(void *priv, const u8 *dest,
 
 	wpa_printf(MSG_DEBUG,
 		   "nl80211: Send over control port dest=" MACSTR
-		   " proto=0x%04x len=%u",
-		   MAC2STR(dest), proto, (unsigned int) len);
+		   " proto=0x%04x len=%u no_encrypt=%d",
+		   MAC2STR(dest), proto, (unsigned int) len, no_encrypt);
 
 	msg = nl80211_bss_msg(bss, 0, NL80211_CMD_CONTROL_PORT_FRAME);
 	if (!msg ||
 	    nla_put_u16(msg, NL80211_ATTR_CONTROL_PORT_ETHERTYPE, proto) ||
 	    nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN, dest) ||
-	    nla_put(msg, NL80211_ATTR_FRAME, len, buf)) {
+	    nla_put(msg, NL80211_ATTR_FRAME, len, buf) ||
+	    (no_encrypt &&
+	     nla_put_flag(msg, NL80211_ATTR_CONTROL_PORT_NO_ENCRYPT))) {
 		nlmsg_free(msg);
 		return -ENOBUFS;
 	}

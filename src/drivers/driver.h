@@ -2878,6 +2878,7 @@ struct wpa_driver_ops {
 	 * @proto: Ethertype in host byte order
 	 * @buf: Frame payload starting from IEEE 802.1X header
 	 * @len: Frame payload length
+	 * @no_encrypt: Do not encrypt frame
 	 *
 	 * Returns 0 on success, else an error
 	 *
@@ -2894,7 +2895,8 @@ struct wpa_driver_ops {
 	 * API users will fall back to sending the frame via a normal socket.
 	 */
 	int (*tx_control_port)(void *priv, const u8 *dest,
-			       u16 proto, const u8 *buf, size_t len);
+			       u16 proto, const u8 *buf, size_t len,
+			       int no_encrypt);
 
 	/**
 	 * hapd_send_eapol - Send an EAPOL packet (AP only)
