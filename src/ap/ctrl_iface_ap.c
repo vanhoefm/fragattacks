@@ -462,9 +462,6 @@ static int p2p_manager_disconnect(struct hostapd_data *hapd, u16 stype,
 	int ret;
 	u8 *pos;
 
-	if (!hapd->drv_priv || !hapd->driver->send_frame)
-		return -1;
-
 	mgmt = os_zalloc(sizeof(*mgmt) + 100);
 	if (mgmt == NULL)
 		return -1;
@@ -498,8 +495,7 @@ static int p2p_manager_disconnect(struct hostapd_data *hapd, u16 stype,
 	pos += 2;
 	*pos++ = minor_reason_code;
 
-	ret = hapd->driver->send_frame(hapd->drv_priv, (u8 *) mgmt,
-				       pos - (u8 *) mgmt, 1);
+	ret = hostapd_drv_send_mlme(hapd, mgmt, pos - (u8 *) mgmt, 0);
 	os_free(mgmt);
 
 	return ret < 0 ? -1 : 0;
