@@ -3762,6 +3762,9 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "server_id") == 0) {
 		os_free(bss->server_id);
 		bss->server_id = os_strdup(pos);
+	} else if (os_strcmp(buf, "wps_application_ext") == 0) {
+		wpabuf_free(bss->wps_application_ext);
+		bss->wps_application_ext = wpabuf_parse_bin(pos);
 #ifdef CONFIG_WPS_NFC
 	} else if (os_strcmp(buf, "wps_nfc_dev_pw_id") == 0) {
 		bss->wps_nfc_dev_pw_id = atoi(pos);

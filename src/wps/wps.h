@@ -98,6 +98,7 @@ struct wps_device_data {
 	u16 config_methods;
 	struct wpabuf *vendor_ext_m1;
 	struct wpabuf *vendor_ext[MAX_WPS_VENDOR_EXTENSIONS];
+	struct wpabuf *application_ext;
 
 	int p2p;
 	u8 multi_ap_ext;

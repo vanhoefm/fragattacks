@@ -985,6 +985,21 @@ static int hostapd_wps_set_vendor_ext(struct hostapd_data *hapd,
 }
 
 
+static int hostapd_wps_set_application_ext(struct hostapd_data *hapd,
+					   struct wps_context *wps)
+{
+	wpabuf_free(wps->dev.application_ext);
+
+	if (!hapd->conf->wps_application_ext) {
+		wps->dev.application_ext = NULL;
+		return 0;
+	}
+
+	wps->dev.application_ext = wpabuf_dup(hapd->conf->wps_application_ext);
+	return wps->dev.application_ext ? 0 : -1;
+}
+
+
 static void hostapd_free_wps(struct wps_context *wps)
 {
 	int i;
@@ -1074,7 +1089,8 @@ int hostapd_init_wps(struct hostapd_data *hapd,
 	os_memcpy(wps->dev.pri_dev_type, hapd->conf->device_type,
 		  WPS_DEV_TYPE_LEN);
 
-	if (hostapd_wps_set_vendor_ext(hapd, wps) < 0)
+	if (hostapd_wps_set_vendor_ext(hapd, wps) < 0 ||
+	    hostapd_wps_set_application_ext(hapd, wps) < 0)
 		goto fail;
 
 	wps->dev.os_version = WPA_GET_BE32(hapd->conf->os_version);
@@ -1311,6 +1327,7 @@ void hostapd_update_wps(struct hostapd_data *hapd)
 #endif /* CONFIG_WPS_UPNP */
 
 	hostapd_wps_set_vendor_ext(hapd, hapd->wps);
+	hostapd_wps_set_application_ext(hapd, hapd->wps);
 
 	if (hapd->conf->wps_state)
 		wps_registrar_update_ie(hapd->wps->registrar);
