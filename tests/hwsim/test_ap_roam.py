@@ -48,6 +48,27 @@ def test_ap_roam_open_failed(dev, apdev):
     dev[0].wait_connected(timeout=5)
     hwsim_utils.test_connectivity(dev[0], hapd0)
 
+def test_ap_roam_open_failed_ssid_mismatch(dev, apdev):
+    """Roam failure due to SSID mismatch"""
+    hapd0 = hostapd.add_ap(apdev[0], {"ssid": "test-open"})
+    bssid0 = hapd0.own_addr()
+    hapd1 = hostapd.add_ap(apdev[1], {"ssid": "test-open2"})
+    bssid1 = hapd1.own_addr()
+    dev[0].flush_scan_cache()
+    dev[0].scan_for_bss(bssid0, freq=2412)
+    dev[0].scan_for_bss(bssid1, freq=2412)
+    dev[0].connect("test-open", key_mgmt="NONE", scan_freq="2412")
+    hapd0.wait_sta()
+    bssid = dev[0].get_status_field("bssid")
+    if bssid != bssid0:
+        raise Exception("Unexpected BSSID reported after initial connection: " + bssid)
+    if "FAIL" not in dev[0].request("ROAM " + bssid1):
+        raise Exception("ROAM succeed unexpectedly")
+    bssid = dev[0].get_status_field("bssid")
+    if bssid != bssid0:
+        raise Exception("Unexpected BSSID reported after failed roam attempt: " + bssid)
+    hwsim_utils.test_connectivity(dev[0], hapd0)
+
 @remote_compatible
 def test_ap_roam_wpa2_psk(dev, apdev):
     """Roam between two WPA2-PSK APs"""
@@ -63,6 +84,33 @@ def test_ap_roam_wpa2_psk(dev, apdev):
     hwsim_utils.test_connectivity(dev[0], hapd1)
     dev[0].roam(apdev[0]['bssid'])
     hapd0.wait_sta()
+    hwsim_utils.test_connectivity(dev[0], hapd0)
+
+def test_ap_roam_wpa2_psk_pmf_mismatch(dev, apdev):
+    """Roam between two WPA2-PSK APs - PMF mismatch"""
+    params = hostapd.wpa2_params(ssid="test-wpa2-psk", passphrase="12345678")
+    params['ieee80211w'] = '1'
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    bssid0 = hapd0.own_addr()
+    params['ieee80211w'] = '0'
+    hapd1 = hostapd.add_ap(apdev[1], params)
+    bssid1 = hapd1.own_addr()
+    dev[0].flush_scan_cache()
+    dev[0].scan_for_bss(bssid0, freq=2412)
+    dev[0].scan_for_bss(bssid1, freq=2412)
+    dev[0].connect("test-wpa2-psk", psk="12345678", ieee80211w='2')
+    hapd0.wait_sta()
+    bssid = dev[0].get_status_field("bssid")
+    if bssid != bssid0:
+        raise Exception("Unexpected BSSID reported after initial connection: " + bssid)
+    if "OK" not in dev[0].request("ROAM " + apdev[1]['bssid']):
+        raise Exception("ROAM failed")
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=0.5)
+    if ev is not None:
+        raise Exception("Unexpected connection reported")
+    bssid = dev[0].get_status_field("bssid")
+    if bssid != bssid0:
+        raise Exception("Unexpected BSSID reported after failed roam attempt: " + bssid)
     hwsim_utils.test_connectivity(dev[0], hapd0)
 
 def get_blacklist(dev):
