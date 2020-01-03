@@ -700,7 +700,7 @@ int hostapd_drv_send_mlme(struct hostapd_data *hapd,
 	if (!hapd->driver || !hapd->driver->send_mlme || !hapd->drv_priv)
 		return 0;
 	return hapd->driver->send_mlme(hapd->drv_priv, msg, len, noack, 0,
-				       csa_offs, csa_offs_len);
+				       csa_offs, csa_offs_len, no_encrypt);
 }
 
 

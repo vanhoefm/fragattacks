@@ -8751,7 +8751,8 @@ static int driver_nl80211_if_remove(void *priv, enum wpa_driver_if_type type,
 static int driver_nl80211_send_mlme(void *priv, const u8 *data,
 				    size_t data_len, int noack,
 				    unsigned int freq,
-				    const u16 *csa_offs, size_t csa_offs_len)
+				    const u16 *csa_offs, size_t csa_offs_len,
+				    int no_encrypt)
 {
 	struct i802_bss *bss = priv;
 	return wpa_driver_nl80211_send_mlme(bss, data, data_len, noack,
