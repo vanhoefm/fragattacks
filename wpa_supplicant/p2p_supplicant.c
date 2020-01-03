@@ -2422,7 +2422,7 @@ static void wpas_go_neg_completed(void *ctx, struct p2p_go_neg_results *res)
 		wpas_start_wps_enrollee(group_wpa_s, res);
 	}
 
-	wpa_s->p2p_long_listen = 0;
+	wpa_s->global->p2p_init_wpa_s->p2p_long_listen = 0;
 	eloop_cancel_timeout(wpas_p2p_long_listen_timeout, wpa_s, NULL);
 
 	eloop_cancel_timeout(wpas_p2p_group_formation_timeout, wpa_s, NULL);
@@ -4750,7 +4750,8 @@ void wpas_p2p_deinit(struct wpa_supplicant *wpa_s)
 	eloop_cancel_timeout(wpas_p2p_psk_failure_removal, wpa_s, NULL);
 	eloop_cancel_timeout(wpas_p2p_group_formation_timeout, wpa_s, NULL);
 	eloop_cancel_timeout(wpas_p2p_join_scan, wpa_s, NULL);
-	wpa_s->p2p_long_listen = 0;
+	if (wpa_s->global->p2p_init_wpa_s)
+		wpa_s->global->p2p_init_wpa_s->p2p_long_listen = 0;
 	eloop_cancel_timeout(wpas_p2p_long_listen_timeout, wpa_s, NULL);
 	eloop_cancel_timeout(wpas_p2p_group_idle_timeout, wpa_s, NULL);
 	wpas_p2p_remove_pending_group_interface(wpa_s);
@@ -5635,7 +5636,7 @@ int wpas_p2p_connect(struct wpa_supplicant *wpa_s, const u8 *peer_addr,
 		go_intent = wpa_s->conf->p2p_go_intent;
 
 	if (!auth)
-		wpa_s->p2p_long_listen = 0;
+		wpa_s->global->p2p_init_wpa_s->p2p_long_listen = 0;
 
 	wpa_s->p2p_wps_method = wps_method;
 	wpa_s->p2p_persistent_group = !!persistent_group;
@@ -6952,7 +6953,7 @@ int wpas_p2p_find(struct wpa_supplicant *wpa_s, unsigned int timeout,
 		  u8 seek_cnt, const char **seek_string, int freq)
 {
 	wpas_p2p_clear_pending_action_tx(wpa_s);
-	wpa_s->p2p_long_listen = 0;
+	wpa_s->global->p2p_init_wpa_s->p2p_long_listen = 0;
 
 	if (wpa_s->global->p2p_disabled || wpa_s->global->p2p == NULL ||
 	    wpa_s->p2p_in_provisioning) {
@@ -6997,7 +6998,7 @@ static void wpas_p2p_scan_res_ignore_search(struct wpa_supplicant *wpa_s,
 static void wpas_p2p_stop_find_oper(struct wpa_supplicant *wpa_s)
 {
 	wpas_p2p_clear_pending_action_tx(wpa_s);
-	wpa_s->p2p_long_listen = 0;
+	wpa_s->global->p2p_init_wpa_s->p2p_long_listen = 0;
 	eloop_cancel_timeout(wpas_p2p_long_listen_timeout, wpa_s, NULL);
 	eloop_cancel_timeout(wpas_p2p_join_scan, wpa_s, NULL);
 
@@ -7023,7 +7024,7 @@ void wpas_p2p_stop_find(struct wpa_supplicant *wpa_s)
 static void wpas_p2p_long_listen_timeout(void *eloop_ctx, void *timeout_ctx)
 {
 	struct wpa_supplicant *wpa_s = eloop_ctx;
-	wpa_s->p2p_long_listen = 0;
+	wpa_s->global->p2p_init_wpa_s->p2p_long_listen = 0;
 }
 
 
@@ -7052,7 +7053,7 @@ int wpas_p2p_listen(struct wpa_supplicant *wpa_s, unsigned int timeout)
 		timeout = 3600;
 	}
 	eloop_cancel_timeout(wpas_p2p_long_listen_timeout, wpa_s, NULL);
-	wpa_s->p2p_long_listen = 0;
+	wpa_s->global->p2p_init_wpa_s->p2p_long_listen = 0;
 
 	/*
 	 * Stop previous find/listen operation to avoid trying to request a new
@@ -7064,7 +7065,7 @@ int wpas_p2p_listen(struct wpa_supplicant *wpa_s, unsigned int timeout)
 
 	res = wpas_p2p_listen_start(wpa_s, timeout * 1000);
 	if (res == 0 && timeout * 1000 > wpa_s->max_remain_on_chan) {
-		wpa_s->p2p_long_listen = timeout * 1000;
+		wpa_s->global->p2p_init_wpa_s->p2p_long_listen = timeout * 1000;
 		eloop_register_timeout(timeout, 0,
 				       wpas_p2p_long_listen_timeout,
 				       wpa_s, NULL);
@@ -7171,7 +7172,7 @@ static void wpas_p2p_group_deinit(struct wpa_supplicant *wpa_s)
 
 int wpas_p2p_reject(struct wpa_supplicant *wpa_s, const u8 *addr)
 {
-	wpa_s->p2p_long_listen = 0;
+	wpa_s->global->p2p_init_wpa_s->p2p_long_listen = 0;
 
 	if (wpa_s->global->p2p_disabled || wpa_s->global->p2p == NULL)
 		return -1;
