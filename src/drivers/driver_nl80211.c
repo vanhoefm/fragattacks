@@ -5190,8 +5190,7 @@ static int wpa_driver_nl80211_hapd_send_eapol(
 	pos += 2;
 	memcpy(pos, data, data_len);
 
-	res = wpa_driver_nl80211_send_frame(bss, (u8 *) hdr, len, encrypt, 0,
-					    0, 0, 0, 0, NULL, 0);
+	res = nl80211_send_monitor(drv, hdr, len, encrypt, 0);
 	if (res < 0) {
 		wpa_printf(MSG_ERROR, "i802_send_eapol - packet len: %lu - "
 			   "failed: %d (%s)",
