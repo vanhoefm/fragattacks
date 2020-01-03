@@ -7947,15 +7947,6 @@ static int nl80211_signal_poll(void *priv, struct wpa_signal_info *si)
 }
 
 
-static int nl80211_send_frame(void *priv, const u8 *data, size_t data_len,
-			      int encrypt)
-{
-	struct i802_bss *bss = priv;
-	return wpa_driver_nl80211_send_frame(bss, data, data_len, encrypt, 0,
-					     0, 0, 0, 0, NULL, 0);
-}
-
-
 static int nl80211_set_param(void *priv, const char *param)
 {
 	struct i802_bss *bss = priv;
@@ -11284,7 +11275,6 @@ const struct wpa_driver_ops wpa_driver_nl80211_ops = {
 	.signal_monitor = nl80211_signal_monitor,
 	.signal_poll = nl80211_signal_poll,
 	.channel_info = nl80211_channel_info,
-	.send_frame = nl80211_send_frame,
 	.set_param = nl80211_set_param,
 	.get_radio_name = nl80211_get_radio_name,
 	.add_pmkid = nl80211_add_pmkid,
