@@ -7480,21 +7480,21 @@ static int nl80211_send_frame_cmd(struct i802_bss *bss,
 			   (long long unsigned int) cookie);
 
 		if (save_cookie)
-			drv->send_action_cookie = no_ack ? (u64) -1 : cookie;
+			drv->send_frame_cookie = no_ack ? (u64) -1 : cookie;
 
-		if (drv->num_send_action_cookies == MAX_SEND_ACTION_COOKIES) {
+		if (drv->num_send_frame_cookies == MAX_SEND_FRAME_COOKIES) {
 			wpa_printf(MSG_DEBUG,
-				   "nl80211: Drop oldest pending send action cookie 0x%llx",
+				   "nl80211: Drop oldest pending send frame cookie 0x%llx",
 				   (long long unsigned int)
-				   drv->send_action_cookies[0]);
-			os_memmove(&drv->send_action_cookies[0],
-				   &drv->send_action_cookies[1],
-				   (MAX_SEND_ACTION_COOKIES - 1) *
+				   drv->send_frame_cookies[0]);
+			os_memmove(&drv->send_frame_cookies[0],
+				   &drv->send_frame_cookies[1],
+				   (MAX_SEND_FRAME_COOKIES - 1) *
 				   sizeof(u64));
-			drv->num_send_action_cookies--;
+			drv->num_send_frame_cookies--;
 		}
-		drv->send_action_cookies[drv->num_send_action_cookies] = cookie;
-		drv->num_send_action_cookies++;
+		drv->send_frame_cookies[drv->num_send_frame_cookies] = cookie;
+		drv->num_send_frame_cookies++;
 	}
 
 fail:
@@ -7585,19 +7585,19 @@ static void wpa_driver_nl80211_send_action_cancel_wait(void *priv)
 	u64 cookie;
 
 	/* Cancel the last pending TX cookie */
-	nl80211_frame_wait_cancel(bss, drv->send_action_cookie);
+	nl80211_frame_wait_cancel(bss, drv->send_frame_cookie);
 
 	/*
 	 * Cancel the other pending TX cookies, if any. This is needed since
 	 * the driver may keep a list of all pending offchannel TX operations
 	 * and free up the radio only once they have expired or cancelled.
 	 */
-	for (i = drv->num_send_action_cookies; i > 0; i--) {
-		cookie = drv->send_action_cookies[i - 1];
-		if (cookie != drv->send_action_cookie)
+	for (i = drv->num_send_frame_cookies; i > 0; i--) {
+		cookie = drv->send_frame_cookies[i - 1];
+		if (cookie != drv->send_frame_cookie)
 			nl80211_frame_wait_cancel(bss, cookie);
 	}
-	drv->num_send_action_cookies = 0;
+	drv->num_send_frame_cookies = 0;
 }
 
 

@@ -694,12 +694,12 @@ static void mlme_event_mgmt_tx_status(struct wpa_driver_nl80211_data *drv,
 			return;
 
 		cookie_val = nla_get_u64(cookie);
-		wpa_printf(MSG_DEBUG, "nl80211: Action TX status:"
-			   " cookie=0x%llx%s (ack=%d)",
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: Frame TX status: cookie=0x%llx%s (ack=%d)",
 			   (long long unsigned int) cookie_val,
-			   cookie_val == drv->send_action_cookie ?
+			   cookie_val == drv->send_frame_cookie ?
 			   " (match)" : " (unknown)", ack != NULL);
-		if (cookie_val != drv->send_action_cookie)
+		if (cookie_val != drv->send_frame_cookie)
 			return;
 	}
 
