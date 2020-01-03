@@ -487,9 +487,6 @@ static int ibss_rsn_send_auth(struct ibss_rsn *ibss_rsn, const u8 *da, int seq)
 	const size_t auth_length = IEEE80211_HDRLEN + sizeof(auth.u.auth);
 	struct wpa_supplicant *wpa_s = ibss_rsn->wpa_s;
 
-	if (wpa_s->driver->send_frame == NULL)
-		return -1;
-
 	os_memset(&auth, 0, sizeof(auth));
 
 	auth.frame_control = IEEE80211_FC(WLAN_FC_TYPE_MGMT,
@@ -505,8 +502,7 @@ static int ibss_rsn_send_auth(struct ibss_rsn *ibss_rsn, const u8 *da, int seq)
 	wpa_printf(MSG_DEBUG, "RSN: IBSS TX Auth frame (SEQ %d) to " MACSTR,
 		   seq, MAC2STR(da));
 
-	return wpa_s->driver->send_frame(wpa_s->drv_priv, (u8 *) &auth,
-					 auth_length, 0);
+	return wpa_drv_send_mlme(wpa_s, (u8 *) &auth, auth_length, 0, 0);
 }
 
 
