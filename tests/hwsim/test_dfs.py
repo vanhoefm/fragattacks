@@ -28,7 +28,7 @@ def wait_dfs_event(hapd, event, timeout):
 
 def start_dfs_ap(ap, ssid="dfs", ht=True, ht40=False,
                  ht40minus=False, vht80=False, vht20=False, chanlist=None,
-                 channel=None, country="FI"):
+                 channel=None, country="FI", rrm_beacon_report=False):
     ifname = ap['ifname']
     logger.info("Starting AP " + ifname + " on DFS channel")
     hapd = hostapd.add_ap(ap, {}, no_enable=True)
@@ -57,6 +57,8 @@ def start_dfs_ap(ap, ssid="dfs", ht=True, ht40=False,
         hapd.set("chanlist", chanlist)
     if channel:
         hapd.set("channel", str(channel))
+    if rrm_beacon_report:
+        hapd.set("rrm_beacon_report", "1")
     hapd.enable()
 
     ev = wait_dfs_event(hapd, "DFS-CAC-START", 5)
@@ -493,5 +495,34 @@ def test_dfs_cac_restart_on_enable(dev, apdev):
             raise Exception("Unexpected DFS event: " + ev)
         hapd.disable()
 
+    finally:
+        clear_regdom(hapd, dev)
+
+def test_dfs_rrm(dev, apdev, params):
+    """DFS with RRM [long]"""
+    if not params['long']:
+        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+    try:
+        hapd = None
+        hapd = start_dfs_ap(apdev[0], country="US", rrm_beacon_report=True)
+
+        ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 70)
+        if "success=1" not in ev or "freq=5260" not in ev:
+            raise Exception("Unexpected DFS freq result")
+        ev = hapd.wait_event(["AP-ENABLED"], timeout=5)
+        if not ev:
+            raise Exception("AP setup timed out")
+
+        dev[0].connect("dfs", key_mgmt="NONE", scan_freq="5260")
+        dev[0].wait_regdom(country_ie=True)
+        hapd.wait_sta()
+        hwsim_utils.test_connectivity(dev[0], hapd)
+        addr = dev[0].own_addr()
+        token = hapd.request("REQ_BEACON " + addr + " " + "51000000000002ffffffffffff")
+        if "FAIL" in token:
+            raise Exception("REQ_BEACON failed")
+        ev = hapd.wait_event(["BEACON-RESP-RX"], timeout=10)
+        if ev is None:
+            raise Exception("Beacon report response not received")
     finally:
         clear_regdom(hapd, dev)
