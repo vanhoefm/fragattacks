@@ -3654,61 +3654,6 @@ int wpa_driver_nl80211_authenticate_retry(struct wpa_driver_nl80211_data *drv)
 }
 
 
-static int wpa_driver_nl80211_send_frame(struct i802_bss *bss,
-					 const void *data, size_t len,
-					 int encrypt, int noack,
-					 unsigned int freq, int no_cck,
-					 int offchanok, unsigned int wait_time,
-					 const u16 *csa_offs,
-					 size_t csa_offs_len)
-{
-	struct wpa_driver_nl80211_data *drv = bss->drv;
-	u64 cookie;
-	int res;
-
-	if (freq == 0 && drv->nlmode == NL80211_IFTYPE_ADHOC) {
-		freq = nl80211_get_assoc_freq(drv);
-		wpa_printf(MSG_DEBUG,
-			   "nl80211: send_frame - Use assoc_freq=%u for IBSS",
-			   freq);
-	}
-	if (freq == 0) {
-		wpa_printf(MSG_DEBUG, "nl80211: send_frame - Use bss->freq=%u",
-			   bss->freq);
-		freq = bss->freq;
-	}
-
-	if (drv->use_monitor) {
-		wpa_printf(MSG_DEBUG, "nl80211: send_frame(freq=%u bss->freq=%u) -> send_monitor",
-			   freq, bss->freq);
-		return nl80211_send_monitor(drv, data, len, encrypt, noack);
-	}
-
-	wpa_printf(MSG_DEBUG, "nl80211: send_frame -> send_frame_cmd");
-	res = nl80211_send_frame_cmd(bss, freq, wait_time, data, len,
-				     &cookie, no_cck, noack, offchanok,
-				     csa_offs, csa_offs_len);
-	if (res == 0 && !noack) {
-		const struct ieee80211_mgmt *mgmt;
-		u16 fc;
-
-		mgmt = (const struct ieee80211_mgmt *) data;
-		fc = le_to_host16(mgmt->frame_control);
-		if (WLAN_FC_GET_TYPE(fc) == WLAN_FC_TYPE_MGMT &&
-		    WLAN_FC_GET_STYPE(fc) == WLAN_FC_STYPE_ACTION) {
-			wpa_printf(MSG_MSGDUMP,
-				   "nl80211: Update send_action_cookie from 0x%llx to 0x%llx",
-				   (long long unsigned int)
-				   drv->send_action_cookie,
-				   (long long unsigned int) cookie);
-			drv->send_action_cookie = cookie;
-		}
-	}
-
-	return res;
-}
-
-
 static int wpa_driver_nl80211_send_mlme(struct i802_bss *bss, const u8 *data,
 					size_t data_len, int noack,
 					unsigned int freq, int no_cck,
@@ -3721,6 +3666,8 @@ static int wpa_driver_nl80211_send_mlme(struct i802_bss *bss, const u8 *data,
 	struct ieee80211_mgmt *mgmt;
 	int encrypt = !no_encrypt;
 	u16 fc;
+	u64 cookie;
+	int res;
 
 	mgmt = (struct ieee80211_mgmt *) data;
 	fc = le_to_host16(mgmt->frame_control);
@@ -3777,11 +3724,41 @@ static int wpa_driver_nl80211_send_mlme(struct i802_bss *bss, const u8 *data,
 			encrypt = 0;
 	}
 
-	wpa_printf(MSG_DEBUG, "nl80211: send_mlme -> send_frame");
-	return wpa_driver_nl80211_send_frame(bss, data, data_len, encrypt,
-					     noack, freq, no_cck, offchanok,
-					     wait_time, csa_offs,
-					     csa_offs_len);
+	if (freq == 0 && drv->nlmode == NL80211_IFTYPE_ADHOC) {
+		freq = nl80211_get_assoc_freq(drv);
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: send_mlme - Use assoc_freq=%u for IBSS",
+			   freq);
+	}
+	if (freq == 0) {
+		wpa_printf(MSG_DEBUG, "nl80211: send_mlme - Use bss->freq=%u",
+			   bss->freq);
+		freq = bss->freq;
+	}
+
+	if (drv->use_monitor) {
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: send_frame(freq=%u bss->freq=%u) -> send_monitor",
+			   freq, bss->freq);
+		return nl80211_send_monitor(drv, data, data_len, encrypt,
+					    noack);
+	}
+
+	wpa_printf(MSG_DEBUG, "nl80211: send_mlme -> send_frame_cmd");
+	res = nl80211_send_frame_cmd(bss, freq, wait_time, data, data_len,
+				     &cookie, no_cck, noack, offchanok,
+				     csa_offs, csa_offs_len);
+	if (res == 0 && !noack &&
+	    WLAN_FC_GET_TYPE(fc) == WLAN_FC_TYPE_MGMT &&
+	    WLAN_FC_GET_STYPE(fc) == WLAN_FC_STYPE_ACTION) {
+		wpa_printf(MSG_MSGDUMP,
+			   "nl80211: Update send_action_cookie from 0x%llx to 0x%llx",
+			   (long long unsigned int) drv->send_action_cookie,
+			   (long long unsigned int) cookie);
+		drv->send_action_cookie = cookie;
+	}
+
+	return res;
 }
 
 
