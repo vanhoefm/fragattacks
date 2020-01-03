@@ -5092,6 +5092,37 @@ static void nl80211_teardown_ap(struct i802_bss *bss)
 }
 
 
+static int nl80211_tx_control_port(void *priv, const u8 *dest,
+				   u16 proto, const u8 *buf, size_t len)
+{
+	struct i802_bss *bss = priv;
+	struct nl_msg *msg;
+	int ret;
+
+	wpa_printf(MSG_DEBUG,
+		   "nl80211: Send over control port dest=" MACSTR
+		   " proto=0x%04x len=%u",
+		   MAC2STR(dest), proto, (unsigned int) len);
+
+	msg = nl80211_bss_msg(bss, 0, NL80211_CMD_CONTROL_PORT_FRAME);
+	if (!msg ||
+	    nla_put_u16(msg, NL80211_ATTR_CONTROL_PORT_ETHERTYPE, proto) ||
+	    nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN, dest) ||
+	    nla_put(msg, NL80211_ATTR_FRAME, len, buf)) {
+		nlmsg_free(msg);
+		return -ENOBUFS;
+	}
+
+	ret = send_and_recv_msgs(bss->drv, msg, NULL, NULL);
+	if (ret)
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: tx_control_port failed: ret=%d (%s)",
+			   ret, strerror(ret));
+
+	return ret;
+}
+
+
 static int nl80211_send_eapol_data(struct i802_bss *bss,
 				   const u8 *addr, const u8 *data,
 				   size_t data_len)
@@ -11232,6 +11263,7 @@ const struct wpa_driver_ops wpa_driver_nl80211_ops = {
 	.get_hw_feature_data = nl80211_get_hw_feature_data,
 	.sta_add = wpa_driver_nl80211_sta_add,
 	.sta_remove = driver_nl80211_sta_remove,
+	.tx_control_port = nl80211_tx_control_port,
 	.hapd_send_eapol = wpa_driver_nl80211_hapd_send_eapol,
 	.sta_set_flags = wpa_driver_nl80211_sta_set_flags,
 	.sta_set_airtime_weight = driver_nl80211_sta_set_airtime_weight,

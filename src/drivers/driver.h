@@ -1704,6 +1704,8 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_FLAGS_FTM_RESPONDER		0x0100000000000000ULL
 /** Driver support 4-way handshake offload for WPA-Personal */
 #define WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_PSK	0x0200000000000000ULL
+/** Driver supports a separate control port for EAPOL frames */
+#define WPA_DRIVER_FLAGS_CONTROL_PORT		0x0400000000000000ULL
 	u64 flags;
 
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \
@@ -2868,6 +2870,31 @@ struct wpa_driver_ops {
 	 */
 	int (*read_sta_data)(void *priv, struct hostap_sta_driver_data *data,
 			     const u8 *addr);
+
+	/**
+	 * tx_control_port - Send a frame over the 802.1X controlled port
+	 * @priv: Private driver interface data
+	 * @dest: Destination MAC address
+	 * @proto: Ethertype in host byte order
+	 * @buf: Frame payload starting from IEEE 802.1X header
+	 * @len: Frame payload length
+	 *
+	 * Returns 0 on success, else an error
+	 *
+	 * This is like a normal Ethernet send except that the driver is aware
+	 * (by other means than the Ethertype) that this frame is special,
+	 * and more importantly it gains an ordering between the transmission of
+	 * the frame and other driver management operations such as key
+	 * installations. This can be used to work around known limitations in
+	 * IEEE 802.11 protocols such as race conditions between rekeying 4-way
+	 * handshake message 4/4 and a PTK being overwritten.
+	 *
+	 * This function is only used for a given interface if the driver
+	 * instance reports WPA_DRIVER_FLAGS_CONTROL_PORT capability. Otherwise,
+	 * API users will fall back to sending the frame via a normal socket.
+	 */
+	int (*tx_control_port)(void *priv, const u8 *dest,
+			       u16 proto, const u8 *buf, size_t len);
 
 	/**
 	 * hapd_send_eapol - Send an EAPOL packet (AP only)

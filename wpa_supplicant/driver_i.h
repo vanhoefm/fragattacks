@@ -342,6 +342,16 @@ static inline int wpa_drv_sta_remove(struct wpa_supplicant *wpa_s,
 	return -1;
 }
 
+static inline int wpa_drv_tx_control_port(struct wpa_supplicant *wpa_s,
+					  const u8 *dest, u16 proto,
+					  const u8 *buf, size_t len)
+{
+	if (!wpa_s->driver->tx_control_port)
+		return -1;
+	return wpa_s->driver->tx_control_port(wpa_s->drv_priv, dest, proto,
+					      buf, len);
+}
+
 static inline int wpa_drv_hapd_send_eapol(struct wpa_supplicant *wpa_s,
 					  const u8 *addr, const u8 *data,
 					  size_t data_len, int encrypt,
