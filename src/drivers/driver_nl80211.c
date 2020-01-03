@@ -5168,6 +5168,10 @@ static int wpa_driver_nl80211_hapd_send_eapol(
 	int res;
 	int qos = flags & WPA_STA_WMM;
 
+	if (drv->capa.flags & WPA_DRIVER_FLAGS_CONTROL_PORT)
+		return nl80211_tx_control_port(bss, addr, ETH_P_EAPOL,
+					       data, data_len, !encrypt);
+
 	if (drv->device_ap_sme || !drv->use_monitor)
 		return nl80211_send_eapol_data(bss, addr, data, data_len);
 
