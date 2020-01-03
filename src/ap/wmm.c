@@ -209,7 +209,7 @@ static void wmm_send_action(struct hostapd_data *hapd, const u8 *addr,
 	os_memcpy(t, tspec, sizeof(struct wmm_tspec_element));
 	len = ((u8 *) (t + 1)) - buf;
 
-	if (hostapd_drv_send_mlme(hapd, m, len, 0) < 0)
+	if (hostapd_drv_send_mlme(hapd, m, len, 0, NULL, 0, 0) < 0)
 		wpa_printf(MSG_INFO, "wmm_send_action: send failed");
 }
 

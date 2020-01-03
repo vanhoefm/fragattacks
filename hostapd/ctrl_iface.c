@@ -1662,7 +1662,7 @@ static int hostapd_ctrl_iface_mgmt_tx(struct hostapd_data *hapd, char *cmd)
 		return -1;
 	}
 
-	res = hostapd_drv_send_mlme(hapd, buf, len, 0);
+	res = hostapd_drv_send_mlme(hapd, buf, len, 0, NULL, 0, 0);
 	os_free(buf);
 	return res;
 }

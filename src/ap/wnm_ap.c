@@ -641,7 +641,7 @@ int wnm_send_disassoc_imminent(struct hostapd_data *hapd,
 
 	wpa_printf(MSG_DEBUG, "WNM: Send BSS Transition Management Request frame to indicate imminent disassociation (disassoc_timer=%d) to "
 		   MACSTR, disassoc_timer, MAC2STR(sta->addr));
-	if (hostapd_drv_send_mlme(hapd, buf, pos - buf, 0) < 0) {
+	if (hostapd_drv_send_mlme(hapd, buf, pos - buf, 0, NULL, 0, 0) < 0) {
 		wpa_printf(MSG_DEBUG, "Failed to send BSS Transition "
 			   "Management Request frame");
 		return -1;
@@ -714,7 +714,7 @@ int wnm_send_ess_disassoc_imminent(struct hostapd_data *hapd,
 	os_memcpy(pos, url, url_len);
 	pos += url_len;
 
-	if (hostapd_drv_send_mlme(hapd, buf, pos - buf, 0) < 0) {
+	if (hostapd_drv_send_mlme(hapd, buf, pos - buf, 0, NULL, 0, 0) < 0) {
 		wpa_printf(MSG_DEBUG, "Failed to send BSS Transition "
 			   "Management Request frame");
 		return -1;
@@ -790,7 +790,7 @@ int wnm_send_bss_tm_req(struct hostapd_data *hapd, struct sta_info *sta,
 				  mbo_len);
 	}
 
-	if (hostapd_drv_send_mlme(hapd, buf, pos - buf, 0) < 0) {
+	if (hostapd_drv_send_mlme(hapd, buf, pos - buf, 0, NULL, 0, 0) < 0) {
 		wpa_printf(MSG_DEBUG,
 			   "Failed to send BSS Transition Management Request frame");
 		os_free(buf);
@@ -834,7 +834,7 @@ int wnm_send_coloc_intf_req(struct hostapd_data *hapd, struct sta_info *sta,
 	wpa_printf(MSG_DEBUG, "WNM: Sending Collocated Interference Request to "
 		   MACSTR " (dialog_token=%u auto_report=%u timeout=%u)",
 		   MAC2STR(sta->addr), dialog_token, auto_report, timeout);
-	if (hostapd_drv_send_mlme(hapd, buf, pos - buf, 0) < 0) {
+	if (hostapd_drv_send_mlme(hapd, buf, pos - buf, 0, NULL, 0, 0) < 0) {
 		wpa_printf(MSG_DEBUG,
 			   "WNM: Failed to send Collocated Interference Request frame");
 		return -1;

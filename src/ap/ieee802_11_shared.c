@@ -112,7 +112,8 @@ void ieee802_11_send_sa_query_req(struct hostapd_data *hapd,
 		end += oci_ie_len;
 	}
 #endif /* CONFIG_OCV */
-	if (hostapd_drv_send_mlme(hapd, mgmt, end - (u8 *) mgmt, 0) < 0)
+	if (hostapd_drv_send_mlme(hapd, mgmt, end - (u8 *) mgmt, 0, NULL, 0, 0)
+	    < 0)
 		wpa_printf(MSG_INFO, "ieee802_11_send_sa_query_req: send failed");
 
 	os_free(mgmt);
@@ -193,7 +194,8 @@ static void ieee802_11_send_sa_query_resp(struct hostapd_data *hapd,
 		end += oci_ie_len;
 	}
 #endif /* CONFIG_OCV */
-	if (hostapd_drv_send_mlme(hapd, resp, end - (u8 *) resp, 0) < 0)
+	if (hostapd_drv_send_mlme(hapd, resp, end - (u8 *) resp, 0, NULL, 0, 0)
+	    < 0)
 		wpa_printf(MSG_INFO, "ieee80211_mgmt_sa_query_request: send failed");
 
 	os_free(resp);

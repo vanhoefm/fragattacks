@@ -495,7 +495,8 @@ static int p2p_manager_disconnect(struct hostapd_data *hapd, u16 stype,
 	pos += 2;
 	*pos++ = minor_reason_code;
 
-	ret = hostapd_drv_send_mlme(hapd, mgmt, pos - (u8 *) mgmt, 0);
+	ret = hostapd_drv_send_mlme(hapd, mgmt, pos - (u8 *) mgmt, 0, NULL, 0,
+				    0);
 	os_free(mgmt);
 
 	return ret < 0 ? -1 : 0;
