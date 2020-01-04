@@ -148,9 +148,33 @@ static inline int wpa_auth_set_key(struct wpa_authenticator *wpa_auth,
 static inline int wpa_auth_get_seqnum(struct wpa_authenticator *wpa_auth,
 				      const u8 *addr, int idx, u8 *seq)
 {
+	int res;
+
 	if (wpa_auth->cb->get_seqnum == NULL)
 		return -1;
-	return wpa_auth->cb->get_seqnum(wpa_auth->cb_ctx, addr, idx, seq);
+	res = wpa_auth->cb->get_seqnum(wpa_auth->cb_ctx, addr, idx, seq);
+#ifdef CONFIG_TESTING_OPTIONS
+	if (!addr && idx < 4 && wpa_auth->conf.gtk_rsc_override_set) {
+		wpa_printf(MSG_DEBUG,
+			   "TESTING: Override GTK RSC %016llx --> %016llx",
+			   (long long unsigned) WPA_GET_LE64(seq),
+			   (long long unsigned)
+			   WPA_GET_LE64(wpa_auth->conf.gtk_rsc_override));
+		os_memcpy(seq, wpa_auth->conf.gtk_rsc_override,
+			  WPA_KEY_RSC_LEN);
+	}
+	if (!addr && idx >= 4 && idx <= 5 &&
+	    wpa_auth->conf.igtk_rsc_override_set) {
+		wpa_printf(MSG_DEBUG,
+			   "TESTING: Override IGTK RSC %016llx --> %016llx",
+			   (long long unsigned) WPA_GET_LE64(seq),
+			   (long long unsigned)
+			   WPA_GET_LE64(wpa_auth->conf.igtk_rsc_override));
+		os_memcpy(seq, wpa_auth->conf.igtk_rsc_override,
+			  WPA_KEY_RSC_LEN);
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
+	return res;
 }
 
 

@@ -126,6 +126,22 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 			  wpabuf_head(conf->rsnxe_override_eapol),
 			  wconf->rsnxe_override_eapol_len);
 	}
+	if (conf->gtk_rsc_override &&
+	    wpabuf_len(conf->gtk_rsc_override) > 0 &&
+	    wpabuf_len(conf->gtk_rsc_override) <= WPA_KEY_RSC_LEN) {
+		os_memcpy(wconf->gtk_rsc_override,
+			  wpabuf_head(conf->gtk_rsc_override),
+			  wpabuf_len(conf->gtk_rsc_override));
+		wconf->gtk_rsc_override_set = 1;
+	}
+	if (conf->igtk_rsc_override &&
+	    wpabuf_len(conf->igtk_rsc_override) > 0 &&
+	    wpabuf_len(conf->igtk_rsc_override) <= WPA_KEY_RSC_LEN) {
+		os_memcpy(wconf->igtk_rsc_override,
+			  wpabuf_head(conf->igtk_rsc_override),
+			  wpabuf_len(conf->igtk_rsc_override));
+		wconf->igtk_rsc_override_set = 1;
+	}
 #endif /* CONFIG_TESTING_OPTIONS */
 #ifdef CONFIG_P2P
 	os_memcpy(wconf->ip_addr_go, conf->ip_addr_go, 4);
