@@ -863,7 +863,12 @@ def test_ap_wpa2_delayed_m1_m3_zero_tk(dev, apdev):
     if "OK" not in hapd.request("RESEND_M3 " + addr):
         raise Exception("RESEND_M3 failed")
 
-    if "OK" not in hapd.request("SET_KEY 3 %s %d %d %s %s" % (addr, 0, 1, 6*"00", 16*"00")):
+    KEY_FLAG_RX = 0x04
+    KEY_FLAG_TX = 0x08
+    KEY_FLAG_PAIRWISE = 0x20
+    KEY_FLAG_RX_TX = KEY_FLAG_RX | KEY_FLAG_TX
+    KEY_FLAG_PAIRWISE_RX_TX = KEY_FLAG_PAIRWISE | KEY_FLAG_RX_TX
+    if "OK" not in hapd.request("SET_KEY 3 %s %d %d %s %s %d" % (addr, 0, 1, 6*"00", 16*"00", KEY_FLAG_PAIRWISE_RX_TX)):
         raise Exception("SET_KEY failed")
     time.sleep(0.1)
     hwsim_utils.test_connectivity(dev[0], hapd, timeout=1, broadcast=False,

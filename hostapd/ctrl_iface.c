@@ -2226,11 +2226,12 @@ static int hostapd_ctrl_set_key(struct hostapd_data *hapd, const char *cmd)
 	u8 addr[ETH_ALEN];
 	const char *pos = cmd;
 	enum wpa_alg alg;
+	enum key_flag key_flag;
 	int idx, set_tx;
 	u8 seq[6], key[WPA_TK_MAX_LEN];
 	size_t key_len;
 
-	/* parameters: alg addr idx set_tx seq key */
+	/* parameters: alg addr idx set_tx seq key key_flag */
 
 	alg = atoi(pos);
 	pos = os_strchr(pos, ' ');
@@ -2259,13 +2260,24 @@ static int hostapd_ctrl_set_key(struct hostapd_data *hapd, const char *cmd)
 	if (*pos != ' ')
 		return -1;
 	pos++;
-	key_len = os_strlen(pos) / 2;
+	if (!os_strchr(pos, ' '))
+		return -1;
+	key_len = (os_strchr(pos, ' ') - pos) / 2;
 	if (hexstr2bin(pos, key, key_len) < 0)
+		return -1;
+	pos += 2 * key_len;
+	if (*pos != ' ')
+		return -1;
+
+	pos++;
+	key_flag = atoi(pos);
+	pos = os_strchr(pos, ' ');
+	if (pos)
 		return -1;
 
 	wpa_printf(MSG_INFO, "TESTING: Set key");
 	return hostapd_drv_set_key(hapd->conf->iface, hapd, alg, addr, idx, 0,
-				   set_tx, seq, 6, key, key_len, 0);
+				   set_tx, seq, 6, key, key_len, key_flag);
 }
 
 
