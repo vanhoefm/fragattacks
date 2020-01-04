@@ -10258,3 +10258,17 @@ def run_ap_wps_reg_config_and_sae(dev, apdev):
 
     dev[1].connect(new_ssid, psk=new_passphrase, scan_freq="2412", proto="WPA2",
                    key_mgmt="WPA-PSK", ieee80211w="0")
+
+def test_ap_wps_appl_ext(dev, apdev):
+    """WPS Application Extension attribute"""
+    ssid = "test-wps-conf"
+    params = {"ssid": ssid, "eap_server": "1", "wps_state": "2",
+              "wps_application_ext": 16*"11" + 5*"ee",
+              "wpa_passphrase": "12345678", "wpa": "2",
+              "wpa_key_mgmt": "WPA-PSK", "rsn_pairwise": "CCMP"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    pin = dev[0].wps_read_pin()
+    hapd.request("WPS_PIN any " + pin)
+    dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412")
+    dev[0].request("WPS_PIN %s %s" % (apdev[0]['bssid'], pin))
+    dev[0].wait_connected(timeout=30)
