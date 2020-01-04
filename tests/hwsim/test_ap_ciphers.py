@@ -979,3 +979,104 @@ def test_ap_wpa2_plaintext_group_m1_pmf(dev, apdev):
     if "OK" not in hapd.request("RESEND_GROUP_M1 " + addr):
         raise Exception("RESEND_GROUP_M1 failed")
     time.sleep(0.1)
+
+def test_ap_wpa2_gtk_initial_rsc_tkip(dev, apdev):
+    """Initial group cipher RSC (TKIP)"""
+    run_ap_wpa2_gtk_initial_rsc(dev, apdev, "TKIP")
+
+def test_ap_wpa2_gtk_initial_rsc_ccmp(dev, apdev):
+    """Initial group cipher RSC (CCMP)"""
+    run_ap_wpa2_gtk_initial_rsc(dev, apdev, "CCMP")
+
+def test_ap_wpa2_gtk_initial_rsc_ccmp_256(dev, apdev):
+    """Initial group cipher RSC (CCMP-256)"""
+    run_ap_wpa2_gtk_initial_rsc(dev, apdev, "CCMP-256")
+
+def test_ap_wpa2_gtk_initial_rsc_gcmp(dev, apdev):
+    """Initial group cipher RSC (GCMP)"""
+    run_ap_wpa2_gtk_initial_rsc(dev, apdev, "GCMP")
+
+def test_ap_wpa2_gtk_initial_rsc_gcmp_256(dev, apdev):
+    """Initial group cipher RSC (GCMP-256)"""
+    run_ap_wpa2_gtk_initial_rsc(dev, apdev, "GCMP-256")
+
+def run_ap_wpa2_gtk_initial_rsc(dev, apdev, cipher):
+    if cipher not in dev[0].get_capability("pairwise") or \
+       cipher not in dev[0].get_capability("group"):
+        raise HwsimSkip("Cipher %s not supported" % cipher)
+
+    params = hostapd.wpa2_params(ssid="test-wpa2-psk", passphrase="12345678")
+    params["rsn_pairwise"] = cipher
+    params["group_cipher"] = cipher
+    params["gtk_rsc_override"] = "341200000000"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+
+    dev[0].connect("test-wpa2-psk", psk="12345678", proto="WPA2",
+                   pairwise=cipher, group=cipher, scan_freq="2412")
+    hapd.wait_sta()
+    # Verify that unicast traffic works, but broadcast traffic does not.
+    hwsim_utils.test_connectivity(dev[0], hapd, broadcast=False)
+    hwsim_utils.test_connectivity(dev[0], hapd, success_expected=False)
+    hwsim_utils.test_connectivity(dev[0], hapd, success_expected=False)
+
+def test_ap_wpa2_igtk_initial_rsc_aes_128_cmac(dev, apdev):
+    """Initial management group cipher RSC (AES-128-CMAC)"""
+    run_ap_wpa2_igtk_initial_rsc(dev, apdev, "AES-128-CMAC")
+
+def test_ap_wpa2_igtk_initial_rsc_bip_gmac_128(dev, apdev):
+    """Initial management group cipher RSC (BIP-GMAC-128)"""
+    run_ap_wpa2_igtk_initial_rsc(dev, apdev, "BIP-GMAC-128")
+
+def test_ap_wpa2_igtk_initial_rsc_bip_gmac_256(dev, apdev):
+    """Initial management group cipher RSC (BIP-GMAC-256)"""
+    run_ap_wpa2_igtk_initial_rsc(dev, apdev, "BIP-GMAC-256")
+
+def test_ap_wpa2_igtk_initial_rsc_bip_cmac_256(dev, apdev):
+    """Initial management group cipher RSC (BIP-CMAC-256)"""
+    run_ap_wpa2_igtk_initial_rsc(dev, apdev, "BIP-CMAC-256")
+
+def run_ap_wpa2_igtk_initial_rsc(dev, apdev, cipher):
+    if cipher not in dev[0].get_capability("group_mgmt"):
+        raise HwsimSkip("Cipher %s not supported" % cipher)
+
+    params = hostapd.wpa2_params(ssid="test-wpa2-psk", passphrase="12345678")
+    params["ieee80211w"] = "2"
+    params["rsn_pairwise"] = "CCMP"
+    params["group_cipher"] = "CCMP"
+    params["group_mgmt_cipher"] = cipher
+    params["igtk_rsc_override"] = "341200000000"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+
+    dev[0].connect("test-wpa2-psk", psk="12345678", proto="WPA2",
+                   ieee80211w="2", pairwise="CCMP", group="CCMP",
+                   group_mgmt=cipher,
+                   scan_freq="2412")
+    hapd.wait_sta()
+    # Verify that broadcast robust management frames are dropped.
+    dev[0].note("Sending broadcast Deauthentication and Disassociation frames with too small IPN")
+    hapd.request("DEAUTHENTICATE ff:ff:ff:ff:ff:ff test=1")
+    hapd.request("DISASSOCIATE ff:ff:ff:ff:ff:ff test=1")
+    hapd.request("DEAUTHENTICATE ff:ff:ff:ff:ff:ff test=1")
+    hapd.request("DISASSOCIATE ff:ff:ff:ff:ff:ff test=1")
+    dev[0].note("Done sending broadcast Deauthentication and Disassociation frames with too small IPN")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=1)
+    if ev is not None:
+        raise Exception("Unexpected disconnection")
+
+    # Verify thar unicast robust management frames go through.
+    hapd.request("DEAUTHENTICATE " + dev[0].own_addr() + " reason=123 test=1")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=1)
+    if ev is None:
+        raise Exception("Disconnection not reported")
+    if "reason=123" not in ev:
+        raise Exception("Unexpected disconnection reason: " + ev)
