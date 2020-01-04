@@ -1464,6 +1464,13 @@ def test_wpas_mesh_gate_forwarding(dev, apdev, p):
             break
         time.sleep(0.5)
 
+    if addr0 not in da and addr1 not in da:
+        filt = "wlan.sa==%s" % addr2
+        mesh = run_tshark(capfile, filt, ["wlan.mesh.control_field"])
+        if "1" not in mesh:
+            # Wireshark regression in mesh control field parsing:
+            # https://bugs.wireshark.org/bugzilla/show_bug.cgi?id=15521
+            raise HwsimSkip("tshark bug 15521")
     if addr0 not in da:
         raise Exception("Frame to gate %s not observed" % addr0)
     if addr1 not in da:
