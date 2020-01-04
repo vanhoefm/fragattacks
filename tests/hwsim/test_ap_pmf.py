@@ -489,6 +489,128 @@ def test_ap_pmf_sta_sa_query_local_failure(dev, apdev):
     wpas.request("DISCONNECT")
     dev[0].wait_disconnected()
 
+def test_ap_pmf_sta_sa_query_hostapd(dev, apdev):
+    """WPA2-PSK AP with station using SA Query (hostapd)"""
+    ssid = "assoc-comeback"
+    passphrase = "12345678"
+    addr = dev[0].own_addr()
+
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase,
+                                 wpa_key_mgmt="WPA-PSK-SHA256",
+                                 ieee80211w="2")
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+
+    dev[0].connect(ssid, psk=passphrase, ieee80211w="2",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2",
+                   scan_freq="2412")
+    hapd.wait_sta()
+    if "OK" not in hapd.request("DEAUTHENTICATE " + addr + " test=0") or \
+       "OK" not in hapd.request("DISASSOCIATE " + addr + " test=0"):
+        raise Exception("Failed to send unprotected disconnection messages")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=1)
+    if ev is not None:
+        raise Exception("Unexpected disconnection")
+
+    if "OK" not in hapd.request("DEAUTHENTICATE " + addr + " reason=6 test=0") or \
+       "OK" not in hapd.request("DISASSOCIATE " + addr + " reason=7 test=0"):
+        raise Exception("Failed to send unprotected disconnection messages (2)")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=1)
+    if ev is not None:
+        raise Exception("Unexpected disconnection")
+    if wt.get_sta_counter("valid_saqueryreq_tx", bssid, addr) < 1:
+        raise Exception("STA did not send SA Query")
+    if wt.get_sta_counter("valid_saqueryresp_rx", bssid, addr) < 1:
+        raise Exception("AP did not reply to SA Query")
+
+def test_ap_pmf_sta_sa_query_no_response_hostapd(dev, apdev):
+    """WPA2-PSK AP with station using SA Query and getting no response (hostapd)"""
+    ssid = "assoc-comeback"
+    passphrase = "12345678"
+    addr = dev[0].own_addr()
+
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase,
+                                 wpa_key_mgmt="WPA-PSK-SHA256",
+                                 ieee80211w="2")
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+
+    dev[0].connect(ssid, psk=passphrase, ieee80211w="2",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2",
+                   scan_freq="2412")
+    hapd.wait_sta()
+    hapd.set("ext_mgmt_frame_handling", "1")
+    if "OK" not in hapd.request("DEAUTHENTICATE " + addr + " reason=6 test=0") or \
+       "OK" not in hapd.request("DISASSOCIATE " + addr + " reason=7 test=0"):
+        raise Exception("Failed to send unprotected disconnection messages")
+    dev[0].wait_disconnected()
+    hapd.set("ext_mgmt_frame_handling", "0")
+    if wt.get_sta_counter("valid_saqueryreq_tx", bssid, addr) < 1:
+        raise Exception("STA did not send SA Query")
+    if wt.get_sta_counter("valid_saqueryresp_rx", bssid, addr) > 0:
+        raise Exception("AP replied to SA Query")
+    dev[0].wait_connected()
+
+def test_ap_pmf_sta_unprot_deauth_burst_hostapd(dev, apdev):
+    """WPA2-PSK AP with station receiving burst of unprotected Deauthentication frames (hostapd)"""
+    ssid = "deauth-attack"
+    passphrase = "12345678"
+    addr = dev[0].own_addr()
+
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase,
+                                 wpa_key_mgmt="WPA-PSK-SHA256",
+                                 ieee80211w="2")
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+
+    dev[0].connect(ssid, psk=passphrase, ieee80211w="2",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2",
+                   scan_freq="2412")
+    hapd.wait_sta()
+    for i in range(10):
+        if "OK" not in hapd.request("DEAUTHENTICATE " + addr + " reason=6 test=0") or \
+           "OK" not in hapd.request("DISASSOCIATE " + addr + " reason=7 test=0"):
+            raise Exception("Failed to send unprotected disconnection messages")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=1)
+    if ev is not None:
+        raise Exception("Unexpected disconnection")
+    num_req = wt.get_sta_counter("valid_saqueryreq_tx", bssid, addr)
+    num_resp = wt.get_sta_counter("valid_saqueryresp_rx", bssid, addr)
+    if num_req < 1:
+        raise Exception("STA did not send SA Query")
+    if num_resp < 1:
+        raise Exception("AP did not reply to SA Query")
+    if num_req > 1:
+        raise Exception("STA initiated too many SA Query procedures (%d)" % num_req)
+
+    time.sleep(10)
+    for i in range(5):
+        if "OK" not in hapd.request("DEAUTHENTICATE " + addr + " reason=6 test=0") or \
+           "OK" not in hapd.request("DISASSOCIATE " + addr + " reason=7 test=0"):
+            raise Exception("Failed to send unprotected disconnection messages")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=1)
+    if ev is not None:
+        raise Exception("Unexpected disconnection")
+    num_req = wt.get_sta_counter("valid_saqueryreq_tx", bssid, addr)
+    num_resp = wt.get_sta_counter("valid_saqueryresp_rx", bssid, addr)
+    if num_req != 2 or num_resp != 2:
+        raise Exception("Unexpected number of SA Query procedures (req=%d resp=%d)" % (num_req, num_resp))
+
 def test_ap_pmf_required_eap(dev, apdev):
     """WPA2-EAP AP with PMF required"""
     ssid = "test-pmf-required-eap"

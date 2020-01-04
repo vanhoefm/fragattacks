@@ -631,14 +631,17 @@ def terminate(apdev):
     hapd_global = HostapdGlobal(apdev)
     hapd_global.terminate()
 
-def wpa2_params(ssid=None, passphrase=None):
+def wpa2_params(ssid=None, passphrase=None, wpa_key_mgmt="WPA-PSK",
+                ieee80211w=None):
     params = {"wpa": "2",
-              "wpa_key_mgmt": "WPA-PSK",
+              "wpa_key_mgmt": wpa_key_mgmt,
               "rsn_pairwise": "CCMP"}
     if ssid:
         params["ssid"] = ssid
     if passphrase:
         params["wpa_passphrase"] = passphrase
+    if ieee80211w is not None:
+        params["ieee80211w"] = ieee80211w
     return params
 
 def wpa_params(ssid=None, passphrase=None):
