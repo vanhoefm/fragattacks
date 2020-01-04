@@ -3747,6 +3747,19 @@ static int wpa_driver_nl80211_send_mlme(struct i802_bss *bss, const u8 *data,
 	    WLAN_FC_GET_STYPE(fc) != WLAN_FC_STYPE_ACTION)
 		use_cookie = 0;
 send_frame_cmd:
+#ifdef CONFIG_TESTING_OPTIONS
+	if (no_encrypt && !encrypt && !drv->use_monitor) {
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: Request to send an unencrypted frame - use a monitor interface for this");
+		if (nl80211_create_monitor_interface(drv) < 0)
+			return -1;
+		res = nl80211_send_monitor(drv, data, data_len, encrypt,
+					   noack);
+		nl80211_remove_monitor_interface(drv);
+		return res;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
+
 	wpa_printf(MSG_DEBUG, "nl80211: send_mlme -> send_frame_cmd");
 	res = nl80211_send_frame_cmd(bss, freq, wait_time, data, data_len,
 				     use_cookie, no_cck, noack, offchanok,
