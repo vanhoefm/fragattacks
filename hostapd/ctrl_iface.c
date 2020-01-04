@@ -2155,7 +2155,8 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 					hapd->last_igtk_alg,
 					broadcast_ether_addr,
 					hapd->last_igtk_key_idx, 0, 1, NULL, 0,
-					zero, hapd->last_igtk_len) < 0)
+					zero, hapd->last_igtk_len,
+					KEY_FLAG_GROUP_TX_DEFAULT) < 0)
 			return -1;
 
 		/* Set the previously configured key to reset its TSC */
@@ -2164,7 +2165,8 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 					   broadcast_ether_addr,
 					   hapd->last_igtk_key_idx, 0, 1, NULL,
 					   0, hapd->last_igtk,
-					   hapd->last_igtk_len);
+					   hapd->last_igtk_len,
+					   KEY_FLAG_GROUP_TX_DEFAULT);
 	}
 
 	if (is_broadcast_ether_addr(addr)) {
@@ -2179,7 +2181,8 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 					hapd->last_gtk_alg,
 					broadcast_ether_addr,
 					hapd->last_gtk_key_idx, 0, 1, NULL, 0,
-					zero, hapd->last_gtk_len) < 0)
+					zero, hapd->last_gtk_len,
+					KEY_FLAG_GROUP_TX_DEFAULT) < 0)
 			return -1;
 
 		/* Set the previously configured key to reset its TSC */
@@ -2188,7 +2191,8 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 					   broadcast_ether_addr,
 					   hapd->last_gtk_key_idx, 0, 1, NULL,
 					   0, hapd->last_gtk,
-					   hapd->last_gtk_len);
+					   hapd->last_gtk_len,
+					   KEY_FLAG_GROUP_TX_DEFAULT);
 	}
 
 	sta = ap_get_sta(hapd, addr);
@@ -2205,13 +2209,15 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 	 * in the driver. */
 	if (hostapd_drv_set_key(hapd->conf->iface, hapd, sta->last_tk_alg,
 				sta->addr, sta->last_tk_key_idx, 0, 1, NULL, 0,
-				zero, sta->last_tk_len) < 0)
+				zero, sta->last_tk_len,
+				KEY_FLAG_PAIRWISE_RX_TX) < 0)
 		return -1;
 
 	/* Set the previously configured key to reset its TSC/RSC */
 	return hostapd_drv_set_key(hapd->conf->iface, hapd, sta->last_tk_alg,
 				   sta->addr, sta->last_tk_key_idx, 0, 1, NULL,
-				   0, sta->last_tk, sta->last_tk_len);
+				   0, sta->last_tk, sta->last_tk_len,
+				   KEY_FLAG_PAIRWISE_RX_TX);
 }
 
 
@@ -2259,7 +2265,7 @@ static int hostapd_ctrl_set_key(struct hostapd_data *hapd, const char *cmd)
 
 	wpa_printf(MSG_INFO, "TESTING: Set key");
 	return hostapd_drv_set_key(hapd->conf->iface, hapd, alg, addr, idx, 0,
-				   set_tx, seq, 6, key, key_len);
+				   set_tx, seq, 6, key, key_len, 0);
 }
 
 
@@ -2275,7 +2281,8 @@ static void restore_tk(void *ctx1, void *ctx2)
 	 * preventing encryption of a single EAPOL frame. */
 	hostapd_drv_set_key(hapd->conf->iface, hapd, sta->last_tk_alg,
 			    sta->addr, sta->last_tk_key_idx, 0, 1, NULL, 0,
-			    sta->last_tk, sta->last_tk_len);
+			    sta->last_tk, sta->last_tk_len,
+			    KEY_FLAG_PAIRWISE_RX_TX);
 }
 
 
@@ -2299,7 +2306,7 @@ static int hostapd_ctrl_resend_m1(struct hostapd_data *hapd, const char *cmd)
 			   MAC2STR(sta->addr));
 		hostapd_drv_set_key(hapd->conf->iface, hapd, WPA_ALG_NONE,
 				    sta->addr, sta->last_tk_key_idx, 0, 0, NULL,
-				    0, NULL, 0);
+				    0, NULL, 0, KEY_FLAG_PAIRWISE);
 	}
 
 	wpa_printf(MSG_INFO, "TESTING: Send M1 to " MACSTR, MAC2STR(sta->addr));
@@ -2329,7 +2336,7 @@ static int hostapd_ctrl_resend_m3(struct hostapd_data *hapd, const char *cmd)
 			   MAC2STR(sta->addr));
 		hostapd_drv_set_key(hapd->conf->iface, hapd, WPA_ALG_NONE,
 				    sta->addr, sta->last_tk_key_idx, 0, 0, NULL,
-				    0, NULL, 0);
+				    0, NULL, 0, KEY_FLAG_PAIRWISE);
 	}
 
 	wpa_printf(MSG_INFO, "TESTING: Send M3 to " MACSTR, MAC2STR(sta->addr));
@@ -2359,7 +2366,7 @@ static int hostapd_ctrl_resend_group_m1(struct hostapd_data *hapd,
 			   MAC2STR(sta->addr));
 		hostapd_drv_set_key(hapd->conf->iface, hapd, WPA_ALG_NONE,
 				    sta->addr, sta->last_tk_key_idx, 0, 0, NULL,
-				    0, NULL, 0);
+				    0, NULL, 0, KEY_FLAG_PAIRWISE);
 	}
 
 	wpa_printf(MSG_INFO,

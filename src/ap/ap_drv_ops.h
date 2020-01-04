@@ -91,7 +91,7 @@ int hostapd_drv_set_key(const char *ifname,
 			enum wpa_alg alg, const u8 *addr,
 			int key_idx, int vlan_id, int set_tx,
 			const u8 *seq, size_t seq_len,
-			const u8 *key, size_t key_len);
+			const u8 *key, size_t key_len, enum key_flag key_flag);
 int hostapd_drv_send_mlme(struct hostapd_data *hapd,
 			  const void *msg, size_t len, int noack,
 			  const u16 *csa_offs, size_t csa_offs_len,

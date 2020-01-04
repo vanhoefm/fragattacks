@@ -293,7 +293,7 @@ static void hostapd_broadcast_key_clear_iface(struct hostapd_data *hapd,
 		return;
 	for (i = 0; i < NUM_WEP_KEYS; i++) {
 		if (hostapd_drv_set_key(ifname, hapd, WPA_ALG_NONE, NULL, i, 0,
-					0, NULL, 0, NULL, 0)) {
+					0, NULL, 0, NULL, 0, KEY_FLAG_GROUP)) {
 			wpa_printf(MSG_DEBUG, "Failed to clear default "
 				   "encryption keys (ifname=%s keyidx=%d)",
 				   ifname, i);
@@ -303,7 +303,7 @@ static void hostapd_broadcast_key_clear_iface(struct hostapd_data *hapd,
 		for (i = NUM_WEP_KEYS; i < NUM_WEP_KEYS + 2; i++) {
 			if (hostapd_drv_set_key(ifname, hapd, WPA_ALG_NONE,
 						NULL, i, 0, 0, NULL,
-						0, NULL, 0)) {
+						0, NULL, 0, KEY_FLAG_GROUP)) {
 				wpa_printf(MSG_DEBUG, "Failed to clear "
 					   "default mgmt encryption keys "
 					   "(ifname=%s keyidx=%d)", ifname, i);
@@ -330,7 +330,8 @@ static int hostapd_broadcast_wep_set(struct hostapd_data *hapd)
 	    hostapd_drv_set_key(hapd->conf->iface,
 				hapd, WPA_ALG_WEP, broadcast_ether_addr, idx, 0,
 				1, NULL, 0, ssid->wep.key[idx],
-				ssid->wep.len[idx])) {
+				ssid->wep.len[idx],
+				KEY_FLAG_GROUP_RX_TX_DEFAULT)) {
 		wpa_printf(MSG_WARNING, "Could not set WEP encryption.");
 		errors++;
 	}
@@ -556,7 +557,10 @@ static int hostapd_setup_encryption(char *iface, struct hostapd_data *hapd)
 		    hostapd_drv_set_key(iface, hapd, WPA_ALG_WEP, NULL, i, 0,
 					i == hapd->conf->ssid.wep.idx, NULL, 0,
 					hapd->conf->ssid.wep.key[i],
-					hapd->conf->ssid.wep.len[i])) {
+					hapd->conf->ssid.wep.len[i],
+					i == hapd->conf->ssid.wep.idx ?
+					KEY_FLAG_GROUP_RX_TX_DEFAULT :
+					KEY_FLAG_GROUP_RX_TX)) {
 			wpa_printf(MSG_WARNING, "Could not set WEP "
 				   "encryption.");
 			return -1;

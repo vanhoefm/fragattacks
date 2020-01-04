@@ -30,7 +30,7 @@ struct wpa_sm_ctx {
 	int (*set_key)(void *ctx, enum wpa_alg alg,
 		       const u8 *addr, int key_idx, int set_tx,
 		       const u8 *seq, size_t seq_len,
-		       const u8 *key, size_t key_len);
+		       const u8 *key, size_t key_len, enum key_flag key_flag);
 	void * (*get_network_ctx)(void *ctx);
 	int (*get_bssid)(void *ctx, u8 *bssid);
 	int (*ether_send)(void *ctx, const u8 *dest, u16 proto, const u8 *buf,

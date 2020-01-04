@@ -1592,6 +1592,51 @@ struct wpa_driver_set_key_params {
 	/**
 	 * vlan_id - VLAN index (0..4095) for VLAN offload cases */
 	int vlan_id;
+
+	/**
+	 * key_flag - Additional key flags
+	 *
+	 * %KEY_FLAG_MODIFY
+	 *  Set when an already installed key must be updated.
+	 *  So far the only use-case is changing RX/TX status of
+	 *  installed keys. Must not be set when deleting a key.
+	 * %KEY_FLAG_DEFAULT
+	 *  Set when the key is also a default key. Must not be set when
+	 *  deleting a key.
+	 * %KEY_FLAG_RX
+	 *  The key is valid for RX. Must not be set when deleting a key.
+	 * %KEY_FLAG_TX
+	 *  The key is valid for TX. Must not be set when deleting a key.
+	 * %KEY_FLAG_GROUP
+	 *  The key is a broadcast or group key.
+	 * %KEY_FLAG_PAIRWISE
+	 *  The key is a pairwise key.
+	 * %KEY_FLAG_PMK
+	 *  The key is a Pairwise Master Key (PMK).
+	 *
+	 * Valid and pre-defined combinations are:
+	 * %KEY_FLAG_GROUP_RX_TX
+	 *  WEP key not to be installed as default key.
+	 * %KEY_FLAG_GROUP_RX_TX_DEFAULT
+	 *  Default WEP or WPA-NONE key.
+	 * %KEY_FLAG_GROUP_RX
+	 *  GTK key valid for RX only.
+	 * %KEY_FLAG_GROUP_TX_DEFAULT
+	 *  GTK key valid for TX only, immediately taking over TX.
+	 * %KEY_FLAG_PAIRWISE_RX_TX
+	 *  Pairwise key immediately becoming the active pairwise key.
+	 * %KEY_FLAG_PAIRWISE_RX
+	 *  Pairwise key not yet valid for TX. (Only usable when Extended
+	 *  Key ID is supported by the driver.)
+	 * %KEY_FLAG_PAIRWISE_RX_TX_MODIFY
+	 *  Enable TX for a pairwise key installed with
+	 *  KEY_FLAG_PAIRWISE_RX.
+	 *
+	 * Not a valid standalone key type but pre-defined to be combined
+	 * with other key_flags:
+	 * %KEY_FLAG_RX_TX
+	 *  RX/TX key. */
+	enum key_flag key_flag;
 };
 
 /**

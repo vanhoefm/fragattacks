@@ -378,7 +378,7 @@ static int hostapd_wpa_auth_get_msk(void *ctx, const u8 *addr, u8 *msk,
 
 static int hostapd_wpa_auth_set_key(void *ctx, int vlan_id, enum wpa_alg alg,
 				    const u8 *addr, int idx, u8 *key,
-				    size_t key_len)
+				    size_t key_len, enum key_flag key_flag)
 {
 	struct hostapd_data *hapd = ctx;
 	const char *ifname = hapd->conf->iface;
@@ -423,7 +423,7 @@ static int hostapd_wpa_auth_set_key(void *ctx, int vlan_id, enum wpa_alg alg,
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
 	return hostapd_drv_set_key(ifname, hapd, alg, addr, idx, vlan_id, 1,
-				   NULL, 0, key, key_len);
+				   NULL, 0, key, key_len, key_flag);
 }
 
 

@@ -285,7 +285,8 @@ static void ieee802_1x_tx_key(struct hostapd_data *hapd, struct sta_info *sta)
 		 * has ACKed EAPOL-Key frame */
 		if (hostapd_drv_set_key(hapd->conf->iface, hapd, WPA_ALG_WEP,
 					sta->addr, 0, 0, 1, NULL, 0, ikey,
-					hapd->conf->individual_wep_key_len)) {
+					hapd->conf->individual_wep_key_len,
+					KEY_FLAG_PAIRWISE_RX_TX)) {
 			wpa_printf(MSG_ERROR,
 				   "Could not set individual WEP encryption");
 		}
@@ -2179,7 +2180,8 @@ static void ieee802_1x_rekey(void *eloop_ctx, void *timeout_ctx)
 				broadcast_ether_addr,
 				eapol->default_wep_key_idx, 0, 1, NULL, 0,
 				eapol->default_wep_key,
-				hapd->conf->default_wep_key_len)) {
+				hapd->conf->default_wep_key_len,
+				KEY_FLAG_GROUP_RX_TX_DEFAULT)) {
 		hostapd_logger(hapd, NULL, HOSTAPD_MODULE_IEEE8021X,
 			       HOSTAPD_LEVEL_WARNING,
 			       "failed to configure a new broadcast key");
@@ -2471,7 +2473,7 @@ int ieee802_1x_init(struct hostapd_data *hapd)
 		for (i = 0; i < 4; i++)
 			hostapd_drv_set_key(hapd->conf->iface, hapd,
 					    WPA_ALG_NONE, NULL, i, 0, 0, NULL,
-					    0, NULL, 0);
+					    0, NULL, 0, KEY_FLAG_GROUP_RX_TX);
 
 		ieee802_1x_rekey(hapd, NULL);
 

@@ -682,7 +682,7 @@ int hostapd_drv_set_key(const char *ifname, struct hostapd_data *hapd,
 			enum wpa_alg alg, const u8 *addr,
 			int key_idx, int vlan_id, int set_tx,
 			const u8 *seq, size_t seq_len,
-			const u8 *key, size_t key_len)
+			const u8 *key, size_t key_len, enum key_flag key_flag)
 {
 	struct wpa_driver_set_key_params params;
 
@@ -700,6 +700,7 @@ int hostapd_drv_set_key(const char *ifname, struct hostapd_data *hapd,
 	params.key = key;
 	params.key_len = key_len;
 	params.vlan_id = vlan_id;
+	params.key_flag = key_flag;
 
 	return hapd->driver->set_key(hapd->drv_priv, &params);
 }

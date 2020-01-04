@@ -2622,12 +2622,13 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 static inline int wpa_auth_set_key(struct wpa_authenticator *wpa_auth,
 				   int vlan_id,
 				   enum wpa_alg alg, const u8 *addr, int idx,
-				   u8 *key, size_t key_len)
+				   u8 *key, size_t key_len,
+				   enum key_flag key_flag)
 {
 	if (wpa_auth->cb->set_key == NULL)
 		return -1;
 	return wpa_auth->cb->set_key(wpa_auth->cb_ctx, vlan_id, alg, addr, idx,
-				     key, key_len);
+				     key, key_len, key_flag);
 }
 
 
@@ -2660,7 +2661,7 @@ void wpa_ft_install_ptk(struct wpa_state_machine *sm)
 	 * optimized by adding the STA entry earlier.
 	 */
 	if (wpa_auth_set_key(sm->wpa_auth, 0, alg, sm->addr, 0,
-			     sm->PTK.tk, klen))
+			     sm->PTK.tk, klen, KEY_FLAG_PAIRWISE_RX_TX))
 		return;
 
 	/* FIX: MLME-SetProtection.Request(TA, Tx_Rx) */

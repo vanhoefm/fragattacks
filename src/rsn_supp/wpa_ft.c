@@ -422,8 +422,9 @@ static int wpa_ft_install_ptk(struct wpa_sm *sm, const u8 *bssid)
 	alg = wpa_cipher_to_alg(sm->pairwise_cipher);
 	keylen = wpa_cipher_key_len(sm->pairwise_cipher);
 
-	if (wpa_sm_set_key(sm, alg, bssid, 0, 1, null_rsc,
-			   sizeof(null_rsc), (u8 *) sm->ptk.tk, keylen) < 0) {
+	if (wpa_sm_set_key(sm, alg, bssid, 0, 1, null_rsc, sizeof(null_rsc),
+			   (u8 *) sm->ptk.tk, keylen,
+			   KEY_FLAG_PAIRWISE_RX_TX) < 0) {
 		wpa_printf(MSG_WARNING, "FT: Failed to set PTK to the driver");
 		return -1;
 	}
@@ -773,7 +774,8 @@ static int wpa_ft_process_gtk_subelem(struct wpa_sm *sm, const u8 *gtk_elem,
 		os_memcpy(gtk + 24, tmp, 8);
 	}
 	if (wpa_sm_set_key(sm, alg, broadcast_ether_addr, keyidx, 0,
-			   gtk_elem + 3, rsc_len, gtk, keylen) < 0) {
+			   gtk_elem + 3, rsc_len, gtk, keylen,
+			   KEY_FLAG_GROUP_RX) < 0) {
 		wpa_printf(MSG_WARNING, "WPA: Failed to set GTK to the "
 			   "driver.");
 		return -1;
@@ -840,7 +842,8 @@ static int wpa_ft_process_igtk_subelem(struct wpa_sm *sm, const u8 *igtk_elem,
 			igtk_len);
 	if (wpa_sm_set_key(sm, wpa_cipher_to_alg(sm->mgmt_group_cipher),
 			   broadcast_ether_addr, keyidx, 0,
-			   igtk_elem + 2, 6, igtk, igtk_len) < 0) {
+			   igtk_elem + 2, 6, igtk, igtk_len,
+			   KEY_FLAG_GROUP_RX) < 0) {
 		wpa_printf(MSG_WARNING, "WPA: Failed to set IGTK to the "
 			   "driver.");
 		forced_memzero(igtk, sizeof(igtk));

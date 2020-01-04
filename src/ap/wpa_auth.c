@@ -136,12 +136,13 @@ static inline int wpa_auth_get_msk(struct wpa_authenticator *wpa_auth,
 static inline int wpa_auth_set_key(struct wpa_authenticator *wpa_auth,
 				   int vlan_id,
 				   enum wpa_alg alg, const u8 *addr, int idx,
-				   u8 *key, size_t key_len)
+				   u8 *key, size_t key_len,
+				   enum key_flag key_flag)
 {
 	if (wpa_auth->cb->set_key == NULL)
 		return -1;
 	return wpa_auth->cb->set_key(wpa_auth->cb_ctx, vlan_id, alg, addr, idx,
-				     key, key_len);
+				     key, key_len, key_flag);
 }
 
 
@@ -1738,7 +1739,7 @@ void wpa_remove_ptk(struct wpa_state_machine *sm)
 	sm->PTK_valid = FALSE;
 	os_memset(&sm->PTK, 0, sizeof(sm->PTK));
 	if (wpa_auth_set_key(sm->wpa_auth, 0, WPA_ALG_NONE, sm->addr, 0, NULL,
-			     0))
+			     0, KEY_FLAG_PAIRWISE))
 		wpa_printf(MSG_DEBUG,
 			   "RSN: PTK removal from the driver failed");
 	sm->pairwise_set = FALSE;
@@ -2771,7 +2772,7 @@ int fils_set_tk(struct wpa_state_machine *sm)
 
 	wpa_printf(MSG_DEBUG, "FILS: Configure TK to the driver");
 	if (wpa_auth_set_key(sm->wpa_auth, 0, alg, sm->addr, 0,
-			     sm->PTK.tk, klen)) {
+			     sm->PTK.tk, klen, KEY_FLAG_PAIRWISE_RX_TX)) {
 		wpa_printf(MSG_DEBUG, "FILS: Failed to set TK to the driver");
 		return -1;
 	}
@@ -3396,7 +3397,8 @@ SM_STATE(WPA_PTK, PTKINITDONE)
 		enum wpa_alg alg = wpa_cipher_to_alg(sm->pairwise);
 		int klen = wpa_cipher_key_len(sm->pairwise);
 		if (wpa_auth_set_key(sm->wpa_auth, 0, alg, sm->addr, 0,
-				     sm->PTK.tk, klen)) {
+				     sm->PTK.tk, klen,
+				     KEY_FLAG_PAIRWISE_RX_TX)) {
 			wpa_sta_disconnect(sm->wpa_auth, sm->addr,
 					   WLAN_REASON_PREV_AUTH_NOT_VALID);
 			return;
@@ -3988,7 +3990,8 @@ static int wpa_group_config_group_keys(struct wpa_authenticator *wpa_auth,
 	if (wpa_auth_set_key(wpa_auth, group->vlan_id,
 			     wpa_cipher_to_alg(wpa_auth->conf.wpa_group),
 			     broadcast_ether_addr, group->GN,
-			     group->GTK[group->GN - 1], group->GTK_len) < 0)
+			     group->GTK[group->GN - 1], group->GTK_len,
+			     KEY_FLAG_GROUP_TX_DEFAULT) < 0)
 		ret = -1;
 
 	if (wpa_auth->conf.ieee80211w != NO_MGMT_FRAME_PROTECTION) {
@@ -4001,7 +4004,8 @@ static int wpa_group_config_group_keys(struct wpa_authenticator *wpa_auth,
 		if (ret == 0 &&
 		    wpa_auth_set_key(wpa_auth, group->vlan_id, alg,
 				     broadcast_ether_addr, group->GN_igtk,
-				     group->IGTK[group->GN_igtk - 4], len) < 0)
+				     group->IGTK[group->GN_igtk - 4], len,
+				     KEY_FLAG_GROUP_TX_DEFAULT) < 0)
 			ret = -1;
 	}
 

@@ -147,7 +147,8 @@ static inline int wpa_drv_set_key(struct wpa_supplicant *wpa_s,
 				  enum wpa_alg alg, const u8 *addr,
 				  int key_idx, int set_tx,
 				  const u8 *seq, size_t seq_len,
-				  const u8 *key, size_t key_len)
+				  const u8 *key, size_t key_len,
+				  enum key_flag key_flag)
 {
 	struct wpa_driver_set_key_params params;
 
@@ -161,6 +162,7 @@ static inline int wpa_drv_set_key(struct wpa_supplicant *wpa_s,
 	params.seq_len = seq_len;
 	params.key = key;
 	params.key_len = key_len;
+	params.key_flag = key_flag;
 
 	if (alg != WPA_ALG_NONE) {
 		if (key_idx >= 0 && key_idx <= 6)
