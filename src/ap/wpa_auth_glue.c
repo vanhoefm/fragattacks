@@ -639,10 +639,6 @@ static int hostapd_wpa_auth_send_ether(void *ctx, const u8 *dst, u16 proto,
 	}
 #endif /* CONFIG_IEEE80211R_AP */
 
-	if (hapd->driver && hapd->driver->send_ether)
-		return hapd->driver->send_ether(hapd->drv_priv, dst,
-						hapd->own_addr, proto,
-						data, data_len);
 	if (hapd->l2 == NULL)
 		return -1;
 
@@ -1398,9 +1394,7 @@ int hostapd_setup_wpa(struct hostapd_data *hapd)
 			   hapd->conf->iface;
 		hapd->l2 = l2_packet_init(ft_iface, NULL, ETH_P_RRB,
 					  hostapd_rrb_receive, hapd, 1);
-		if (hapd->l2 == NULL &&
-		    (hapd->driver == NULL ||
-		     hapd->driver->send_ether == NULL)) {
+		if (!hapd->l2) {
 			wpa_printf(MSG_ERROR, "Failed to open l2_packet "
 				   "interface");
 			return -1;

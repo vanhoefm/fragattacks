@@ -3115,19 +3115,6 @@ struct wpa_driver_ops {
 	int (*commit)(void *priv);
 
 	/**
-	 * send_ether - Send an ethernet packet (AP only)
-	 * @priv: private driver interface data
-	 * @dst: Destination MAC address
-	 * @src: Source MAC address
-	 * @proto: Ethertype
-	 * @data: EAPOL packet starting with IEEE 802.1X header
-	 * @data_len: Length of the EAPOL packet in octets
-	 * Returns: 0 on success, -1 on failure
-	 */
-	int (*send_ether)(void *priv, const u8 *dst, const u8 *src, u16 proto,
-			  const u8 *data, size_t data_len);
-
-	/**
 	 * set_radius_acl_auth - Notification of RADIUS ACL change
 	 * @priv: Private driver interface data
 	 * @mac: MAC address of the station
