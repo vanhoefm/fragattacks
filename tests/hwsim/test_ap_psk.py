@@ -3282,3 +3282,27 @@ def test_ap_wpa2_psk_inject_assoc(dev, apdev, params):
                      wait=False)
     if len(res) > 0:
         raise Exception("Unexpected frame from unauthorized STA seen")
+
+def test_ap_wpa2_psk_no_control_port(dev, apdev):
+    """WPA2-PSK AP without nl80211 control port"""
+    ssid = "test-wpa2-psk"
+    passphrase = 'qwertyuiop'
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
+    params['driver_params'] = "control_port=0"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5", drv_params="control_port=0")
+    wpas.connect(ssid, psk=passphrase, scan_freq="2412")
+    hapd.wait_sta()
+    hwsim_utils.test_connectivity(wpas, hapd)
+    if "OK" not in wpas.request("KEY_REQUEST 0 1"):
+        raise Exception("KEY_REQUEST failed")
+    ev = wpas.wait_event(["WPA: Key negotiation completed"])
+    if ev is None:
+        raise Exception("PTK rekey timed out")
+    hapd.wait_ptkinitdone(wpas.own_addr())
+    hwsim_utils.test_connectivity(wpas, hapd)
+    wpas.request("DISCONNECT")
+    wpas.wait_disconnected()
+    wpas.dump_monitor()

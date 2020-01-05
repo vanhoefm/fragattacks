@@ -7250,3 +7250,20 @@ def test_ap_wpa2_eap_tls_tod_tofu(dev, apdev):
         raise Exception("TOD-TOFU policy not reported for server certificate")
     if tod1:
         raise Exception("TOD-TOFU policy unexpectedly reported for CA certificate")
+
+def test_ap_wpa2_eap_sake_no_control_port(dev, apdev):
+    """WPA2-Enterprise connection using EAP-SAKE without nl80211 control port"""
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    params['driver_params'] = "control_port=0"
+    hapd = hostapd.add_ap(apdev[0], params)
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5", drv_params="control_port=0")
+    eap_connect(wpas, hapd, "SAKE", "sake user",
+                password_hex="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+    eap_reauth(wpas, "SAKE")
+
+    logger.info("Negative test with incorrect password")
+    wpas.request("REMOVE_NETWORK all")
+    eap_connect(wpas, hapd, "SAKE", "sake user",
+                password_hex="ff23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                expect_failure=True)
