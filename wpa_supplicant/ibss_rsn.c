@@ -293,6 +293,10 @@ static int auth_send_eapol(void *ctx, const u8 *addr, const u8 *data,
 		   "encrypt=%d)",
 		   __func__, MAC2STR(addr), (unsigned long) data_len, encrypt);
 
+	if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_CONTROL_PORT)
+		return wpa_drv_tx_control_port(wpa_s, addr, ETH_P_EAPOL,
+					       data, data_len, !encrypt);
+
 	if (wpa_s->l2)
 		return l2_packet_send(wpa_s->l2, addr, ETH_P_EAPOL, data,
 				      data_len);
