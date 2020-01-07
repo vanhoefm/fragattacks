@@ -2190,6 +2190,7 @@ static int openssl_cert_tod(X509 *cert)
 		else if (os_strcmp(buf, "1.3.6.1.4.1.40808.1.3.2") == 0 && !tod)
 			tod = 2; /* TOD-TOFU */
 	}
+	sk_POLICYINFO_pop_free(ext, POLICYINFO_free);
 
 	return tod;
 }
