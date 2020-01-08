@@ -276,6 +276,8 @@ struct sta_info {
 	int last_tk_key_idx;
 	u8 last_tk[WPA_TK_MAX_LEN];
 	size_t last_tk_len;
+	u8 *sae_postponed_commit;
+	size_t sae_postponed_commit_len;
 #endif /* CONFIG_TESTING_OPTIONS */
 #ifdef CONFIG_AIRTIME_POLICY
 	unsigned int airtime_weight;

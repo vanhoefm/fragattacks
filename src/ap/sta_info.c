@@ -373,6 +373,10 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
 
 	os_free(sta->ifname_wds);
 
+#ifdef CONFIG_TESTING_OPTIONS
+	os_free(sta->sae_postponed_commit);
+#endif /* CONFIG_TESTING_OPTIONS */
+
 	os_free(sta);
 }
 

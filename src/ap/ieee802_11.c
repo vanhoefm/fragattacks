@@ -316,7 +316,7 @@ static u16 auth_shared_key(struct hostapd_data *hapd, struct sta_info *sta,
 #endif /* CONFIG_NO_RC4 */
 
 
-static int send_auth_reply(struct hostapd_data *hapd,
+static int send_auth_reply(struct hostapd_data *hapd, struct sta_info *sta,
 			   const u8 *dst, const u8 *bssid,
 			   u16 auth_alg, u16 auth_transaction, u16 resp,
 			   const u8 *ies, size_t ies_len, const char *dbg)
@@ -349,6 +349,36 @@ static int send_auth_reply(struct hostapd_data *hapd,
 		   " auth_alg=%d auth_transaction=%d resp=%d (IE len=%lu) (dbg=%s)",
 		   MAC2STR(dst), auth_alg, auth_transaction,
 		   resp, (unsigned long) ies_len, dbg);
+#ifdef CONFIG_TESTING_OPTIONS
+#ifdef CONFIG_SAE
+	if (hapd->conf->sae_confirm_immediate == 2 &&
+	    auth_alg == WLAN_AUTH_SAE) {
+		if (auth_transaction == 1 &&
+		    (resp == WLAN_STATUS_SUCCESS ||
+		     resp == WLAN_STATUS_SAE_HASH_TO_ELEMENT)) {
+			wpa_printf(MSG_DEBUG,
+				   "TESTING: Postpone SAE Commit transmission until Confirm is ready");
+			os_free(sta->sae_postponed_commit);
+			sta->sae_postponed_commit = buf;
+			sta->sae_postponed_commit_len = rlen;
+			return WLAN_STATUS_SUCCESS;
+		}
+
+		if (auth_transaction == 2 && sta && sta->sae_postponed_commit) {
+			wpa_printf(MSG_DEBUG,
+				   "TESTING: Send postponed SAE Commit first, immediately followed by SAE Confirm");
+			if (hostapd_drv_send_mlme(hapd,
+						  sta->sae_postponed_commit,
+						  sta->sae_postponed_commit_len,
+						  0, NULL, 0, 0) < 0)
+				wpa_printf(MSG_INFO, "send_auth_reply: send failed");
+			os_free(sta->sae_postponed_commit);
+			sta->sae_postponed_commit = NULL;
+			sta->sae_postponed_commit_len = 0;
+		}
+	}
+#endif /* CONFIG_SAE */
+#endif /* CONFIG_TESTING_OPTIONS */
 	if (hostapd_drv_send_mlme(hapd, reply, rlen, 0, NULL, 0, 0) < 0)
 		wpa_printf(MSG_INFO, "send_auth_reply: send failed");
 	else
@@ -369,7 +399,7 @@ static void handle_auth_ft_finish(void *ctx, const u8 *dst, const u8 *bssid,
 	struct sta_info *sta;
 	int reply_res;
 
-	reply_res = send_auth_reply(hapd, dst, bssid, WLAN_AUTH_FT,
+	reply_res = send_auth_reply(hapd, NULL, dst, bssid, WLAN_AUTH_FT,
 				    auth_transaction, status, ies, ies_len,
 				    "auth-ft-finish");
 
@@ -514,7 +544,8 @@ static int auth_sae_send_commit(struct hostapd_data *hapd,
 
 	status = (sta->sae->tmp && sta->sae->tmp->h2e) ?
 		WLAN_STATUS_SAE_HASH_TO_ELEMENT : WLAN_STATUS_SUCCESS;
-	reply_res = send_auth_reply(hapd, sta->addr, bssid, WLAN_AUTH_SAE, 1,
+	reply_res = send_auth_reply(hapd, sta, sta->addr, bssid,
+				    WLAN_AUTH_SAE, 1,
 				    status, wpabuf_head(data),
 				    wpabuf_len(data), "sae-send-commit");
 
@@ -535,7 +566,8 @@ static int auth_sae_send_confirm(struct hostapd_data *hapd,
 	if (data == NULL)
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
-	reply_res = send_auth_reply(hapd, sta->addr, bssid, WLAN_AUTH_SAE, 2,
+	reply_res = send_auth_reply(hapd, sta, sta->addr, bssid,
+				    WLAN_AUTH_SAE, 2,
 				    WLAN_STATUS_SUCCESS, wpabuf_head(data),
 				    wpabuf_len(data), "sae-send-confirm");
 
@@ -1103,7 +1135,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 		wpa_printf(MSG_DEBUG, "SAE: TESTING - reflection attack");
 		pos = mgmt->u.auth.variable;
 		end = ((const u8 *) mgmt) + len;
-		send_auth_reply(hapd, mgmt->sa, mgmt->bssid, WLAN_AUTH_SAE,
+		send_auth_reply(hapd, sta, mgmt->sa, mgmt->bssid, WLAN_AUTH_SAE,
 				auth_transaction, resp, pos, end - pos,
 				"auth-sae-reflection-attack");
 		goto remove_sta;
@@ -1111,7 +1143,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 
 	if (hapd->conf->sae_commit_override && auth_transaction == 1) {
 		wpa_printf(MSG_DEBUG, "SAE: TESTING - commit override");
-		send_auth_reply(hapd, mgmt->sa, mgmt->bssid, WLAN_AUTH_SAE,
+		send_auth_reply(hapd, sta, mgmt->sa, mgmt->bssid, WLAN_AUTH_SAE,
 				auth_transaction, resp,
 				wpabuf_head(hapd->conf->sae_commit_override),
 				wpabuf_len(hapd->conf->sae_commit_override),
@@ -1365,7 +1397,7 @@ reply:
 			data = wpabuf_alloc_copy(pos, 2);
 
 		sae_sme_send_external_auth_status(hapd, sta, resp);
-		send_auth_reply(hapd, mgmt->sa, mgmt->bssid, WLAN_AUTH_SAE,
+		send_auth_reply(hapd, sta, mgmt->sa, mgmt->bssid, WLAN_AUTH_SAE,
 				auth_transaction, resp,
 				data ? wpabuf_head(data) : (u8 *) "",
 				data ? wpabuf_len(data) : 0, "auth-sae");
@@ -2006,7 +2038,7 @@ static void handle_auth_fils_finish(struct hostapd_data *hapd,
 	auth_alg = (pub ||
 		    resp == WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED) ?
 		WLAN_AUTH_FILS_SK_PFS : WLAN_AUTH_FILS_SK;
-	send_auth_reply(hapd, sta->addr, hapd->own_addr, auth_alg, 2, resp,
+	send_auth_reply(hapd, sta, sta->addr, hapd->own_addr, auth_alg, 2, resp,
 			data ? wpabuf_head(data) : (u8 *) "",
 			data ? wpabuf_len(data) : 0, "auth-fils-finish");
 	wpabuf_free(data);
@@ -2529,7 +2561,7 @@ static void handle_auth(struct hostapd_data *hapd,
 	}
 
  fail:
-	reply_res = send_auth_reply(hapd, mgmt->sa, mgmt->bssid, auth_alg,
+	reply_res = send_auth_reply(hapd, sta, mgmt->sa, mgmt->bssid, auth_alg,
 				    auth_transaction + 1, resp, resp_ies,
 				    resp_ies_len, "handle-auth");
 
