@@ -244,7 +244,7 @@ def test_ieee8021x_held(dev, apdev):
 def send_eapol_key(dev, bssid, signkey, frame_start, frame_end):
     zero_sign = "00000000000000000000000000000000"
     frame = frame_start + zero_sign + frame_end
-    hmac_obj = hmac.new(binascii.unhexlify(signkey))
+    hmac_obj = hmac.new(binascii.unhexlify(signkey), digestmod='MD5')
     hmac_obj.update(binascii.unhexlify(frame))
     sign = hmac_obj.digest()
     frame = frame_start + binascii.hexlify(sign).decode() + frame_end
