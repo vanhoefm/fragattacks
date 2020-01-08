@@ -930,7 +930,7 @@ static int const_time_tests(void)
 		{ 0, 0 },
 		{ 1, 0 },
 		{ 2, 0 },
-		{ 1 << (sizeof(unsigned int) * 8 - 1), ~0 },
+		{ 1U << (sizeof(unsigned int) * 8 - 1), ~0 },
 		{ ~0 - 1, ~0 },
 		{ ~0, ~0 }
 	};
@@ -941,7 +941,7 @@ static int const_time_tests(void)
 		{ 0, ~0 },
 		{ 1, 0 },
 		{ 2, 0 },
-		{ 1 << (sizeof(unsigned int) * 8 - 1), 0 },
+		{ 1U << (sizeof(unsigned int) * 8 - 1), 0 },
 		{ ~0 - 1, 0 },
 		{ ~0, 0 }
 	};
