@@ -279,7 +279,7 @@ class Hostapd:
             state = sta['hostapdWPAPTKState']
             if state == "11":
                 return
-            os.sleep(0.1)
+            time.sleep(0.1)
             timeout -= 0.1
         raise Exception("Timeout while waiting for PTKINITDONE")
 
