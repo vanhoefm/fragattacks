@@ -8703,13 +8703,20 @@ nl80211_tdls_disable_channel_switch(void *priv, const u8 *addr)
 #endif /* CONFIG TDLS */
 
 
-static int driver_nl80211_set_key(const char *ifname, void *priv,
-				  enum wpa_alg alg, const u8 *addr,
-				  int key_idx, int set_tx,
-				  const u8 *seq, size_t seq_len,
-				  const u8 *key, size_t key_len)
+static int driver_nl80211_set_key(void *priv,
+				  struct wpa_driver_set_key_params *params)
 {
 	struct i802_bss *bss = priv;
+	const char *ifname = params->ifname;
+	enum wpa_alg alg = params->alg;
+	const u8 *addr = params->addr;
+	int key_idx = params->key_idx;
+	int set_tx = params->set_tx;
+	const u8 *seq = params->seq;
+	size_t seq_len = params->seq_len;
+	const u8 *key = params->key;
+	size_t key_len = params->key_len;
+
 	return wpa_driver_nl80211_set_key(ifname, bss, alg, addr, key_idx,
 					  set_tx, seq, seq_len, key, key_len);
 }

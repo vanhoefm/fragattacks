@@ -391,6 +391,7 @@ static void wpa_priv_cmd_set_key(struct wpa_priv_interface *iface,
 {
 	struct privsep_cmd_set_key *params;
 	int res;
+	struct wpa_driver_set_key_params p;
 
 	if (iface->drv_priv == NULL || iface->driver->set_key == NULL)
 		return;
@@ -402,14 +403,18 @@ static void wpa_priv_cmd_set_key(struct wpa_priv_interface *iface,
 
 	params = buf;
 
-	res = iface->driver->set_key(iface->ifname, iface->drv_priv,
-				     params->alg,
-				     params->addr, params->key_idx,
-				     params->set_tx,
-				     params->seq_len ? params->seq : NULL,
-				     params->seq_len,
-				     params->key_len ? params->key : NULL,
-				     params->key_len);
+	os_memset(&p, 0, sizeof(p));
+	p.ifname = iface->ifname;
+	p.alg = params->alg;
+	p.addr = params->addr;
+	p.key_idx = params->key_idx;
+	p.set_tx = params->set_tx;
+	p.seq = params->seq_len ? params->seq : NULL;
+	p.seq_len = params->seq_len;
+	p.key = params->key_len ? params->key : NULL;
+	p.key_len = params->key_len;
+
+	res = iface->driver->set_key(iface->drv_priv, &p);
 	wpa_printf(MSG_DEBUG, "drv->set_key: res=%d", res);
 }
 

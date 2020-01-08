@@ -205,14 +205,19 @@ wpa_driver_privsep_get_scan_results2(void *priv)
 }
 
 
-static int wpa_driver_privsep_set_key(const char *ifname, void *priv,
-				      enum wpa_alg alg, const u8 *addr,
-				      int key_idx, int set_tx,
-				      const u8 *seq, size_t seq_len,
-				      const u8 *key, size_t key_len)
+static int wpa_driver_privsep_set_key(void *priv,
+				      struct wpa_driver_set_key_params *params)
 {
 	struct wpa_driver_privsep_data *drv = priv;
 	struct privsep_cmd_set_key cmd;
+	enum wpa_alg alg = params->alg;
+	const u8 *addr = params->addr;
+	int key_idx = params->key_idx;
+	int set_tx = params->set_tx;
+	const u8 *seq = params->seq;
+	size_t seq_len = params->seq_len;
+	const u8 *key = params->key;
+	size_t key_len = params->key_len;
 
 	wpa_printf(MSG_DEBUG, "%s: priv=%p alg=%d key_idx=%d set_tx=%d",
 		   __func__, priv, alg, key_idx, set_tx);

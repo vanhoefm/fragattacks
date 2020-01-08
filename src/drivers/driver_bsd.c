@@ -331,14 +331,20 @@ bsd_ctrl_iface(void *priv, int enable)
 }
 
 static int
-bsd_set_key(const char *ifname, void *priv, enum wpa_alg alg,
-	    const unsigned char *addr, int key_idx, int set_tx, const u8 *seq,
-	    size_t seq_len, const u8 *key, size_t key_len)
+bsd_set_key(void *priv, struct wpa_driver_set_key_params *params)
 {
 	struct ieee80211req_key wk;
 #ifdef IEEE80211_KEY_NOREPLAY
 	struct bsd_driver_data *drv = priv;
 #endif /* IEEE80211_KEY_NOREPLAY */
+	enum wpa_alg alg = params->alg;
+	const u8 *addr = params->addr;
+	int key_idx = params->key_idx;
+	int set_tx = params->set_tx;
+	const u8 *seq = params->seq;
+	size_t seq_len = params->seq_len;
+	const u8 *key = params->key;
+	size_t key_len = params->key_len;
 
 	wpa_printf(MSG_DEBUG, "%s: alg=%d addr=%p key_idx=%d set_tx=%d "
 		   "seq_len=%zu key_len=%zu", __func__, alg, addr, key_idx,

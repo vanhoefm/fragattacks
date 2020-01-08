@@ -1524,6 +1524,72 @@ struct wpa_driver_mesh_join_params {
 	unsigned int flags;
 };
 
+struct wpa_driver_set_key_params {
+	/**
+	 * ifname - Interface name (for multi-SSID/VLAN support) */
+	const char *ifname;
+
+	/**
+	 * alg - Encryption algorithm
+	 *
+	 * (%WPA_ALG_NONE, %WPA_ALG_WEP, %WPA_ALG_TKIP, %WPA_ALG_CCMP,
+	 * %WPA_ALG_IGTK, %WPA_ALG_PMK, %WPA_ALG_GCMP, %WPA_ALG_GCMP_256,
+	 * %WPA_ALG_CCMP_256, %WPA_ALG_BIP_GMAC_128, %WPA_ALG_BIP_GMAC_256,
+	 * %WPA_ALG_BIP_CMAC_256);
+	 * %WPA_ALG_NONE clears the key. */
+	enum wpa_alg alg;
+
+	/**
+	 * addr - Address of the peer STA
+	 *
+	 * (BSSID of the current AP when setting pairwise key in station mode),
+	 * ff:ff:ff:ff:ff:ff for broadcast keys, %NULL for default keys that
+	 * are used both for broadcast and unicast; when clearing keys, %NULL
+	 * is used to indicate that both the broadcast-only and default key of
+	 * the specified key index is to be cleared */
+	const u8 *addr;
+
+	/**
+	 * key_idx - Key index
+	 *
+	 * (0..3), usually 0 for unicast keys; 0..4095 for IGTK */
+	int key_idx;
+
+	/**
+	 * set_tx - Configure this key as the default Tx key
+	 *
+	 * Only used when driver does not support separate unicast/individual
+	 * key */
+	int set_tx;
+
+	/**
+	 * seq - Sequence number/packet number
+	 *
+	 * seq_len octets, the next packet number to be used for in replay
+	 * protection; configured for Rx keys (in most cases, this is only used
+	 * with broadcast keys and set to zero for unicast keys); %NULL if not
+	 * set */
+	const u8 *seq;
+
+	/**
+	 * seq_len - Length of the seq, depends on the algorithm
+	 *
+	 * TKIP: 6 octets, CCMP/GCMP: 6 octets, IGTK: 6 octets */
+	size_t seq_len;
+
+	/**
+	 * key - Key buffer
+	 *
+	 * TKIP: 16-byte temporal key, 8-byte Tx Mic key, 8-byte Rx Mic Key */
+	const u8 *key;
+
+	/**
+	 * key_len - Length of the key buffer in octets
+	 *
+	 * WEP: 5 or 13, TKIP: 32, CCMP/GCMP: 16, IGTK: 16 */
+	size_t key_len;
+};
+
 /**
  * struct wpa_driver_capa - Driver capability information
  */
@@ -2307,35 +2373,8 @@ struct wpa_driver_ops {
 
 	/**
 	 * set_key - Configure encryption key
-	 * @ifname: Interface name (for multi-SSID/VLAN support)
 	 * @priv: private driver interface data
-	 * @alg: encryption algorithm (%WPA_ALG_NONE, %WPA_ALG_WEP,
-	 *	%WPA_ALG_TKIP, %WPA_ALG_CCMP, %WPA_ALG_IGTK, %WPA_ALG_PMK,
-	 *	%WPA_ALG_GCMP, %WPA_ALG_GCMP_256, %WPA_ALG_CCMP_256,
-	 *	%WPA_ALG_BIP_GMAC_128, %WPA_ALG_BIP_GMAC_256,
-	 *	%WPA_ALG_BIP_CMAC_256);
-	 *	%WPA_ALG_NONE clears the key.
-	 * @addr: Address of the peer STA (BSSID of the current AP when setting
-	 *	pairwise key in station mode), ff:ff:ff:ff:ff:ff for
-	 *	broadcast keys, %NULL for default keys that are used both for
-	 *	broadcast and unicast; when clearing keys, %NULL is used to
-	 *	indicate that both the broadcast-only and default key of the
-	 *	specified key index is to be cleared
-	 * @key_idx: key index (0..3), usually 0 for unicast keys; 0..4095 for
-	 *	IGTK
-	 * @set_tx: configure this key as the default Tx key (only used when
-	 *	driver does not support separate unicast/individual key
-	 * @seq: sequence number/packet number, seq_len octets, the next
-	 *	packet number to be used for in replay protection; configured
-	 *	for Rx keys (in most cases, this is only used with broadcast
-	 *	keys and set to zero for unicast keys); %NULL if not set
-	 * @seq_len: length of the seq, depends on the algorithm:
-	 *	TKIP: 6 octets, CCMP/GCMP: 6 octets, IGTK: 6 octets
-	 * @key: key buffer; TKIP: 16-byte temporal key, 8-byte Tx Mic key,
-	 *	8-byte Rx Mic Key
-	 * @key_len: length of the key buffer in octets (WEP: 5 or 13,
-	 *	TKIP: 32, CCMP/GCMP: 16, IGTK: 16)
-	 *
+	 * @params: Key parameters
 	 * Returns: 0 on success, -1 on failure
 	 *
 	 * Configure the given key for the kernel driver. If the driver
@@ -2356,10 +2395,7 @@ struct wpa_driver_ops {
 	 * in driver_*.c set_key() implementation, see driver_ndis.c for an
 	 * example on how this can be done.
 	 */
-	int (*set_key)(const char *ifname, void *priv, enum wpa_alg alg,
-		       const u8 *addr, int key_idx, int set_tx,
-		       const u8 *seq, size_t seq_len,
-		       const u8 *key, size_t key_len);
+	int (*set_key)(void *priv, struct wpa_driver_set_key_params *params);
 
 	/**
 	 * init - Initialize driver interface

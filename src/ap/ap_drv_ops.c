@@ -684,11 +684,23 @@ int hostapd_drv_set_key(const char *ifname, struct hostapd_data *hapd,
 			const u8 *seq, size_t seq_len,
 			const u8 *key, size_t key_len)
 {
+	struct wpa_driver_set_key_params params;
+
 	if (hapd->driver == NULL || hapd->driver->set_key == NULL)
 		return 0;
-	return hapd->driver->set_key(ifname, hapd->drv_priv, alg, addr,
-				     key_idx, set_tx, seq, seq_len, key,
-				     key_len);
+
+	os_memset(&params, 0, sizeof(params));
+	params.ifname = ifname;
+	params.alg = alg;
+	params.addr = addr;
+	params.key_idx = key_idx;
+	params.set_tx = set_tx;
+	params.seq = seq;
+	params.seq_len = seq_len;
+	params.key = key;
+	params.key_len = key_len;
+
+	return hapd->driver->set_key(hapd->drv_priv, &params);
 }
 
 

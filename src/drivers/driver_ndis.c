@@ -1034,6 +1034,18 @@ static int wpa_driver_ndis_set_key(const char *ifname, void *priv,
 
 
 static int
+wpa_driver_ndis_set_key_wrapper(void *priv,
+				struct wpa_driver_set_key_params *params)
+{
+	return wpa_driver_ndis_set_key(params->ifname, priv,
+				       params->alg, params->addr,
+				       params->key_idx, params->set_tx,
+				       params->seq, params->seq_len,
+				       params->key, params->key_len);
+}
+
+
+static int
 wpa_driver_ndis_associate(void *priv,
 			  struct wpa_driver_associate_params *params)
 {
@@ -3195,7 +3207,7 @@ void driver_ndis_init_ops(void)
 	wpa_driver_ndis_ops.desc = ndis_drv_desc;
 	wpa_driver_ndis_ops.get_bssid = wpa_driver_ndis_get_bssid;
 	wpa_driver_ndis_ops.get_ssid = wpa_driver_ndis_get_ssid;
-	wpa_driver_ndis_ops.set_key = wpa_driver_ndis_set_key;
+	wpa_driver_ndis_ops.set_key = wpa_driver_ndis_set_key_wrapper;
 	wpa_driver_ndis_ops.init = wpa_driver_ndis_init;
 	wpa_driver_ndis_ops.deinit = wpa_driver_ndis_deinit;
 	wpa_driver_ndis_ops.deauthenticate = wpa_driver_ndis_deauthenticate;

@@ -149,6 +149,19 @@ static inline int wpa_drv_set_key(struct wpa_supplicant *wpa_s,
 				  const u8 *seq, size_t seq_len,
 				  const u8 *key, size_t key_len)
 {
+	struct wpa_driver_set_key_params params;
+
+	os_memset(&params, 0, sizeof(params));
+	params.ifname = wpa_s->ifname;
+	params.alg = alg;
+	params.addr = addr;
+	params.key_idx = key_idx;
+	params.set_tx = set_tx;
+	params.seq = seq;
+	params.seq_len = seq_len;
+	params.key = key;
+	params.key_len = key_len;
+
 	if (alg != WPA_ALG_NONE) {
 		if (key_idx >= 0 && key_idx <= 6)
 			wpa_s->keys_cleared &= ~BIT(key_idx);
@@ -156,9 +169,7 @@ static inline int wpa_drv_set_key(struct wpa_supplicant *wpa_s,
 			wpa_s->keys_cleared = 0;
 	}
 	if (wpa_s->driver->set_key) {
-		return wpa_s->driver->set_key(wpa_s->ifname, wpa_s->drv_priv,
-					      alg, addr, key_idx, set_tx,
-					      seq, seq_len, key, key_len);
+		return wpa_s->driver->set_key(wpa_s->drv_priv, &params);
 	}
 	return -1;
 }
