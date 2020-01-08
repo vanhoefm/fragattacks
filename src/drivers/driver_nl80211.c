@@ -3011,11 +3011,8 @@ static int nl80211_set_pmk(struct wpa_driver_nl80211_data *drv,
 }
 
 
-static int wpa_driver_nl80211_set_key(const char *ifname, struct i802_bss *bss,
-				      enum wpa_alg alg, const u8 *addr,
-				      int key_idx, int vlan_id, int set_tx,
-				      const u8 *seq, size_t seq_len,
-				      const u8 *key, size_t key_len)
+static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
+				      struct wpa_driver_set_key_params *params)
 {
 	struct wpa_driver_nl80211_data *drv = bss->drv;
 	int ifindex;
@@ -3023,6 +3020,16 @@ static int wpa_driver_nl80211_set_key(const char *ifname, struct i802_bss *bss,
 	struct nl_msg *key_msg;
 	int ret;
 	int tdls = 0;
+	const char *ifname = params->ifname;
+	enum wpa_alg alg = params->alg;
+	const u8 *addr = params->addr;
+	int key_idx = params->key_idx;
+	int set_tx = params->set_tx;
+	const u8 *seq = params->seq;
+	size_t seq_len = params->seq_len;
+	const u8 *key = params->key;
+	size_t key_len = params->key_len;
+	int vlan_id = params->vlan_id;
 
 	/* Ignore for P2P Device */
 	if (drv->nlmode == NL80211_IFTYPE_P2P_DEVICE)
@@ -3471,6 +3478,7 @@ static int wpa_driver_nl80211_authenticate(
 	enum nl80211_iftype nlmode;
 	int count = 0;
 	int is_retry;
+	struct wpa_driver_set_key_params p;
 
 	nl80211_unmask_11b_rates(bss);
 
@@ -3499,14 +3507,17 @@ retry:
 	if (!msg)
 		goto fail;
 
+	os_memset(&p, 0, sizeof(p));
+	p.ifname = bss->ifname;
+	p.alg = WPA_ALG_WEP;
 	for (i = 0; i < 4; i++) {
 		if (!params->wep_key[i])
 			continue;
-		wpa_driver_nl80211_set_key(bss->ifname, bss, WPA_ALG_WEP,
-					   NULL, i, 0,
-					   i == params->wep_tx_keyidx, NULL, 0,
-					   params->wep_key[i],
-					   params->wep_key_len[i]);
+		p.key_idx = i;
+		p.set_tx = i == params->wep_tx_keyidx;
+		p.key = params->wep_key[i];
+		p.key_len = params->wep_key_len[i];
+		wpa_driver_nl80211_set_key(bss, &p);
 		if (params->wep_tx_keyidx != i)
 			continue;
 		if (nl_add_key(msg, WPA_ALG_WEP, i, 1, NULL, 0,
@@ -8722,20 +8733,8 @@ static int driver_nl80211_set_key(void *priv,
 				  struct wpa_driver_set_key_params *params)
 {
 	struct i802_bss *bss = priv;
-	const char *ifname = params->ifname;
-	enum wpa_alg alg = params->alg;
-	const u8 *addr = params->addr;
-	int key_idx = params->key_idx;
-	int set_tx = params->set_tx;
-	const u8 *seq = params->seq;
-	size_t seq_len = params->seq_len;
-	const u8 *key = params->key;
-	size_t key_len = params->key_len;
-	int vlan_id = params->vlan_id;
 
-	return wpa_driver_nl80211_set_key(ifname, bss, alg, addr, key_idx,
-					  vlan_id, set_tx, seq, seq_len, key,
-					  key_len);
+	return wpa_driver_nl80211_set_key(bss, params);
 }
 
 
