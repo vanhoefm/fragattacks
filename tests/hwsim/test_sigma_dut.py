@@ -162,21 +162,22 @@ def test_sigma_dut_basic(dev, apdev):
     """sigma_dut basic functionality"""
     sigma = start_sigma_dut(dev[0].ifname)
 
-    res = sigma_dut_cmd("UNKNOWN")
-    if "status,INVALID,errorCode,Unknown command" not in res:
-        raise Exception("Unexpected sigma_dut response to unknown command")
-
     tests = [("ca_get_version", "status,COMPLETE,version,1.0"),
              ("device_get_info", "status,COMPLETE,vendor"),
              ("device_list_interfaces,interfaceType,foo", "status,ERROR"),
              ("device_list_interfaces,interfaceType,802.11",
               "status,COMPLETE,interfaceType,802.11,interfaceID," + dev[0].ifname)]
-    for cmd, response in tests:
-        res = sigma_dut_cmd(cmd)
-        if response not in res:
-            raise Exception("Unexpected %s response: %s" % (cmd, res))
+    try:
+        res = sigma_dut_cmd("UNKNOWN")
+        if "status,INVALID,errorCode,Unknown command" not in res:
+            raise Exception("Unexpected sigma_dut response to unknown command")
 
-    stop_sigma_dut(sigma)
+        for cmd, response in tests:
+            res = sigma_dut_cmd(cmd)
+            if response not in res:
+                raise Exception("Unexpected %s response: %s" % (cmd, res))
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_open(dev, apdev):
     """sigma_dut controlled open network association"""
@@ -189,17 +190,18 @@ def run_sigma_dut_open(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
+    try:
+        hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
 
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_set_encryption,interface,%s,ssid,%s,encpType,none" % (ifname, "open"))
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s" % (ifname, "open"))
-    sigma_dut_wait_connected(ifname)
-    sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_encryption,interface,%s,ssid,%s,encpType,none" % (ifname, "open"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s" % (ifname, "open"))
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_psk_pmf(dev, apdev):
     """sigma_dut controlled PSK+PMF association"""
@@ -212,22 +214,23 @@ def run_sigma_dut_psk_pmf(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    ssid = "test-pmf-required"
-    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
-    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
-    params["ieee80211w"] = "2"
-    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        ssid = "test-pmf-required"
+        params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+        params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+        params["ieee80211w"] = "2"
+        hapd = hostapd.add_ap(apdev[0], params)
 
-    sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_set_psk,interface,%s,ssid,%s,passphrase,%s,encpType,aes-ccmp,keymgmttype,wpa2,PMF,Required" % (ifname, "test-pmf-required", "12345678"))
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-pmf-required"))
-    sigma_dut_wait_connected(ifname)
-    sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_psk,interface,%s,ssid,%s,passphrase,%s,encpType,aes-ccmp,keymgmttype,wpa2,PMF,Required" % (ifname, "test-pmf-required", "12345678"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-pmf-required"))
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_psk_pmf_bip_cmac_128(dev, apdev):
     """sigma_dut controlled PSK+PMF association with BIP-CMAC-128"""
@@ -270,35 +273,36 @@ def run_sigma_dut_psk_pmf_cipher(dev, apdev, sigma_cipher, hostapd_cipher,
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    ssid = "test-pmf-required"
-    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
-    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
-    params["ieee80211w"] = "2"
-    params["group_mgmt_cipher"] = hostapd_cipher
-    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        ssid = "test-pmf-required"
+        params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+        params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+        params["ieee80211w"] = "2"
+        params["group_mgmt_cipher"] = hostapd_cipher
+        hapd = hostapd.add_ap(apdev[0], params)
 
-    sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_set_psk,interface,%s,ssid,%s,passphrase,%s,encpType,aes-ccmp,keymgmttype,wpa2,PMF,Required,GroupMgntCipher,%s" % (ifname, "test-pmf-required", "12345678", sigma_cipher))
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-pmf-required"))
-    if failure:
-        ev = dev[0].wait_event(["CTRL-EVENT-NETWORK-NOT-FOUND",
-                                "CTRL-EVENT-CONNECTED"], timeout=10)
-        if ev is None:
-            raise Exception("Network selection result not indicated")
-        if "CTRL-EVENT-CONNECTED" in ev:
-            raise Exception("Unexpected connection")
-        res = sigma_dut_cmd("sta_is_connected,interface," + ifname)
-        if "connected,1" in res:
-            raise Exception("Connection reported")
-    else:
-        sigma_dut_wait_connected(ifname)
-        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_psk,interface,%s,ssid,%s,passphrase,%s,encpType,aes-ccmp,keymgmttype,wpa2,PMF,Required,GroupMgntCipher,%s" % (ifname, "test-pmf-required", "12345678", sigma_cipher))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-pmf-required"))
+        if failure:
+            ev = dev[0].wait_event(["CTRL-EVENT-NETWORK-NOT-FOUND",
+                                    "CTRL-EVENT-CONNECTED"], timeout=10)
+            if ev is None:
+                raise Exception("Network selection result not indicated")
+            if "CTRL-EVENT-CONNECTED" in ev:
+                raise Exception("Unexpected connection")
+            res = sigma_dut_cmd("sta_is_connected,interface," + ifname)
+            if "connected,1" in res:
+                raise Exception("Connection reported")
+        else:
+            sigma_dut_wait_connected(ifname)
+            sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
 
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_sae(dev, apdev):
     """sigma_dut controlled SAE association"""
@@ -308,36 +312,37 @@ def test_sigma_dut_sae(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    ssid = "test-sae"
-    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
-    params['wpa_key_mgmt'] = 'SAE'
-    params["ieee80211w"] = "2"
-    params['sae_groups'] = '19 20 21'
-    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        ssid = "test-sae"
+        params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+        params['wpa_key_mgmt'] = 'SAE'
+        params["ieee80211w"] = "2"
+        params['sae_groups'] = '19 20 21'
+        hapd = hostapd.add_ap(apdev[0], params)
 
-    sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2" % (ifname, "test-sae", "12345678"))
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
-    sigma_dut_wait_connected(ifname)
-    sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
-    if dev[0].get_status_field('sae_group') != '19':
+        sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2" % (ifname, "test-sae", "12345678"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        if dev[0].get_status_field('sae_group') != '19':
             raise Exception("Expected default SAE group not used")
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
 
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
 
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,ECGroupID,20" % (ifname, "test-sae", "12345678"))
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
-    sigma_dut_wait_connected(ifname)
-    sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
-    if dev[0].get_status_field('sae_group') != '20':
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,ECGroupID,20" % (ifname, "test-sae", "12345678"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        if dev[0].get_status_field('sae_group') != '20':
             raise Exception("Expected SAE group not used")
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_sae_groups(dev, apdev):
     """sigma_dut controlled SAE association with group negotiation"""
@@ -347,26 +352,27 @@ def test_sigma_dut_sae_groups(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    ssid = "test-sae"
-    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
-    params['wpa_key_mgmt'] = 'SAE'
-    params["ieee80211w"] = "2"
-    params['sae_groups'] = '19'
-    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        ssid = "test-sae"
+        params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+        params['wpa_key_mgmt'] = 'SAE'
+        params["ieee80211w"] = "2"
+        params['sae_groups'] = '19'
+        hapd = hostapd.add_ap(apdev[0], params)
 
-    sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,ECGroupID,21 20 19" % (ifname, "test-sae", "12345678"))
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
-    sigma_dut_wait_connected(ifname)
-    sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
-    if dev[0].get_status_field('sae_group') != '19':
+        sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,ECGroupID,21 20 19" % (ifname, "test-sae", "12345678"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        if dev[0].get_status_field('sae_group') != '19':
             raise Exception("Expected default SAE group not used")
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
 
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_sae_pmkid_include(dev, apdev):
     """sigma_dut controlled SAE association with PMKID"""
@@ -376,20 +382,22 @@ def test_sigma_dut_sae_pmkid_include(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    ssid = "test-sae"
-    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
-    params['wpa_key_mgmt'] = 'SAE'
-    params["ieee80211w"] = "2"
-    params["sae_confirm_immediate"] = "1"
-    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        ssid = "test-sae"
+        params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+        params['wpa_key_mgmt'] = 'SAE'
+        params["ieee80211w"] = "2"
+        params["sae_confirm_immediate"] = "1"
+        hapd = hostapd.add_ap(apdev[0], params)
 
-    sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,PMKID_Include,enable" % (ifname, "test-sae", "12345678"))
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
-    sigma_dut_wait_connected(ifname)
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-    stop_sigma_dut(sigma)
+        sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,PMKID_Include,enable" % (ifname, "test-sae", "12345678"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_sae_password(dev, apdev):
     """sigma_dut controlled SAE association and long password"""
@@ -426,23 +434,24 @@ def test_sigma_dut_sae_pw_id(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    ssid = "test-sae"
-    params = hostapd.wpa2_params(ssid=ssid)
-    params['wpa_key_mgmt'] = 'SAE'
-    params["ieee80211w"] = "2"
-    params['sae_password'] = 'secret|id=pw id'
-    params['sae_groups'] = '19'
-    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        ssid = "test-sae"
+        params = hostapd.wpa2_params(ssid=ssid)
+        params['wpa_key_mgmt'] = 'SAE'
+        params["ieee80211w"] = "2"
+        params['sae_password'] = 'secret|id=pw id'
+        params['sae_groups'] = '19'
+        hapd = hostapd.add_ap(apdev[0], params)
 
-    sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,AKMSuiteType,8;9,PasswordID,pw id" % (ifname, "test-sae", "secret"))
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
-    sigma_dut_wait_connected(ifname)
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+        sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,AKMSuiteType,8;9,PasswordID,pw id" % (ifname, "test-sae", "secret"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_sae_pw_id_ft(dev, apdev):
     """sigma_dut controlled SAE association with Password Identifier and FT"""
@@ -459,41 +468,42 @@ def run_sigma_dut_sae_pw_id_ft(dev, apdev, over_ds=False):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    ssid = "test-sae"
-    params = hostapd.wpa2_params(ssid=ssid)
-    params['wpa_key_mgmt'] = 'SAE FT-SAE'
-    params["ieee80211w"] = "2"
-    params['sae_password'] = ['pw1|id=id1', 'pw2|id=id2', 'pw3', 'pw4|id=id4']
-    params['mobility_domain'] = 'aabb'
-    params['ft_over_ds'] = '1' if over_ds else '0'
-    bssid = apdev[0]['bssid'].replace(':', '')
-    params['nas_identifier'] = bssid + '.nas.example.com'
-    params['r1_key_holder'] = bssid
-    params['pmk_r1_push'] = '0'
-    params['r0kh'] = 'ff:ff:ff:ff:ff:ff * 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
-    params['r1kh'] = '00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
-    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        ssid = "test-sae"
+        params = hostapd.wpa2_params(ssid=ssid)
+        params['wpa_key_mgmt'] = 'SAE FT-SAE'
+        params["ieee80211w"] = "2"
+        params['sae_password'] = ['pw1|id=id1', 'pw2|id=id2', 'pw3', 'pw4|id=id4']
+        params['mobility_domain'] = 'aabb'
+        params['ft_over_ds'] = '1' if over_ds else '0'
+        bssid = apdev[0]['bssid'].replace(':', '')
+        params['nas_identifier'] = bssid + '.nas.example.com'
+        params['r1_key_holder'] = bssid
+        params['pmk_r1_push'] = '0'
+        params['r0kh'] = 'ff:ff:ff:ff:ff:ff * 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
+        params['r1kh'] = '00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
+        hapd = hostapd.add_ap(apdev[0], params)
 
-    sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
-    if over_ds:
-        sigma_dut_cmd_check("sta_preset_testparameters,interface,%s,FT_DS,Enable" % ifname)
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,AKMSuiteType,8;9,PasswordID,id2" % (ifname, "test-sae", "pw2"))
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
-    sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+        if over_ds:
+            sigma_dut_cmd_check("sta_preset_testparameters,interface,%s,FT_DS,Enable" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,AKMSuiteType,8;9,PasswordID,id2" % (ifname, "test-sae", "pw2"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"))
+        sigma_dut_wait_connected(ifname)
 
-    bssid = apdev[1]['bssid'].replace(':', '')
-    params['nas_identifier'] = bssid + '.nas.example.com'
-    params['r1_key_holder'] = bssid
-    hapd2 = hostapd.add_ap(apdev[1], params)
-    bssid = hapd2.own_addr()
-    sigma_dut_cmd_check("sta_reassoc,interface,%s,Channel,1,bssid,%s" % (ifname, bssid))
-    dev[0].wait_connected()
+        bssid = apdev[1]['bssid'].replace(':', '')
+        params['nas_identifier'] = bssid + '.nas.example.com'
+        params['r1_key_holder'] = bssid
+        hapd2 = hostapd.add_ap(apdev[1], params)
+        bssid = hapd2.own_addr()
+        sigma_dut_cmd_check("sta_reassoc,interface,%s,Channel,1,bssid,%s" % (ifname, bssid))
+        dev[0].wait_connected()
 
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_sta_override_rsne(dev, apdev):
     """sigma_dut and RSNE override on STA"""
@@ -506,35 +516,36 @@ def run_sigma_dut_sta_override_rsne(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    ssid = "test-psk"
-    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
-    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        ssid = "test-psk"
+        params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+        hapd = hostapd.add_ap(apdev[0], params)
 
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
 
-    tests = ["30120100000fac040100000fac040100000fac02",
-             "30140100000fac040100000fac040100000fac02ffff"]
-    for test in tests:
+        tests = ["30120100000fac040100000fac040100000fac02",
+                 "30140100000fac040100000fac040100000fac02ffff"]
+        for test in tests:
+            sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,type,PSK,passphrase,%s,EncpType,aes-ccmp,KeyMgmtType,wpa2" % (ifname, "test-psk", "12345678"))
+            sigma_dut_cmd_check("dev_configure_ie,interface,%s,IE_Name,RSNE,Contents,%s" % (ifname, test))
+            sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-psk"))
+            sigma_dut_wait_connected(ifname)
+            sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+            dev[0].dump_monitor()
+
         sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,type,PSK,passphrase,%s,EncpType,aes-ccmp,KeyMgmtType,wpa2" % (ifname, "test-psk", "12345678"))
-        sigma_dut_cmd_check("dev_configure_ie,interface,%s,IE_Name,RSNE,Contents,%s" % (ifname, test))
+        sigma_dut_cmd_check("dev_configure_ie,interface,%s,IE_Name,RSNE,Contents,300101" % ifname)
         sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-psk"))
-        sigma_dut_wait_connected(ifname)
-        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-        dev[0].dump_monitor()
 
-    sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,type,PSK,passphrase,%s,EncpType,aes-ccmp,KeyMgmtType,wpa2" % (ifname, "test-psk", "12345678"))
-    sigma_dut_cmd_check("dev_configure_ie,interface,%s,IE_Name,RSNE,Contents,300101" % ifname)
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-psk"))
+        ev = dev[0].wait_event(["CTRL-EVENT-ASSOC-REJECT"])
+        if ev is None:
+            raise Exception("Association rejection not reported")
+        if "status_code=40" not in ev:
+            raise Exception("Unexpected status code: " + ev)
 
-    ev = dev[0].wait_event(["CTRL-EVENT-ASSOC-REJECT"])
-    if ev is None:
-        raise Exception("Association rejection not reported")
-    if "status_code=40" not in ev:
-        raise Exception("Unexpected status code: " + ev)
-
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_ap_psk(dev, apdev):
     """sigma_dut controlled AP"""
@@ -657,41 +668,42 @@ def test_sigma_dut_eap_ttls(dev, apdev, params):
 
     cmd = "sta_set_security,type,eapttls,interface,%s,ssid,%s,keymgmttype,wpa2,encType,AES-CCMP,PairwiseCipher,AES-CCMP-128,trustedRootCA,sigma_dut_eap_ttls.ca.pem,username,DOMAIN\mschapv2 user,password,password" % (ifname, ssid)
 
-    tests = ["",
-             ",Domain,server.w1.fi",
-             ",DomainSuffix,w1.fi",
-             ",DomainSuffix,server.w1.fi",
-             ",ServerCert,sigma_dut_eap_ttls.server.pem"]
-    for extra in tests:
-        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
-        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-        sigma_dut_cmd_check(cmd + extra)
-        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid))
-        sigma_dut_wait_connected(ifname)
-        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
-        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-        dev[0].dump_monitor()
+    try:
+        tests = ["",
+                 ",Domain,server.w1.fi",
+                 ",DomainSuffix,w1.fi",
+                 ",DomainSuffix,server.w1.fi",
+                 ",ServerCert,sigma_dut_eap_ttls.server.pem"]
+        for extra in tests:
+            sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+            sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+            sigma_dut_cmd_check(cmd + extra)
+            sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid))
+            sigma_dut_wait_connected(ifname)
+            sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+            sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+            sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+            dev[0].dump_monitor()
 
-    tests = [",Domain,w1.fi",
-             ",DomainSuffix,example.com",
-             ",ServerCert,sigma_dut_eap_ttls.incorrect.pem"]
-    for extra in tests:
-        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
-        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-        sigma_dut_cmd_check(cmd + extra)
-        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid))
-        ev = dev[0].wait_event(["CTRL-EVENT-EAP-TLS-CERT-ERROR"], timeout=10)
-        if ev is None:
-            raise Exception("Server certificate error not reported")
-        res = sigma_dut_cmd("sta_is_connected,interface," + ifname)
-        if "connected,1" in res:
-            raise Exception("Unexpected connection reported")
-        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-        dev[0].dump_monitor()
-
-    stop_sigma_dut(sigma)
+        tests = [",Domain,w1.fi",
+                 ",DomainSuffix,example.com",
+                 ",ServerCert,sigma_dut_eap_ttls.incorrect.pem"]
+        for extra in tests:
+            sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+            sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+            sigma_dut_cmd_check(cmd + extra)
+            sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid))
+            ev = dev[0].wait_event(["CTRL-EVENT-EAP-TLS-CERT-ERROR"], timeout=10)
+            if ev is None:
+                raise Exception("Server certificate error not reported")
+            res = sigma_dut_cmd("sta_is_connected,interface," + ifname)
+            if "connected,1" in res:
+                raise Exception("Unexpected connection reported")
+            sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+            sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+            dev[0].dump_monitor()
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_suite_b(dev, apdev, params):
     """sigma_dut controlled STA Suite B"""
@@ -732,16 +744,17 @@ def test_sigma_dut_suite_b(dev, apdev, params):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname, cert_path=logdir)
 
-    sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_set_security,type,eaptls,interface,%s,ssid,%s,PairwiseCipher,AES-GCMP-256,GroupCipher,AES-GCMP-256,GroupMgntCipher,BIP-GMAC-256,keymgmttype,SuiteB,clientCertificate,suite_b.pem,trustedRootCA,suite_b_ca.pem,CertType,ECC" % (ifname, "test-suite-b"))
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-suite-b"))
-    sigma_dut_wait_connected(ifname)
-    sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+    try:
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_security,type,eaptls,interface,%s,ssid,%s,PairwiseCipher,AES-GCMP-256,GroupCipher,AES-GCMP-256,GroupMgntCipher,BIP-GMAC-256,keymgmttype,SuiteB,clientCertificate,suite_b.pem,trustedRootCA,suite_b_ca.pem,CertType,ECC" % (ifname, "test-suite-b"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-suite-b"))
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_suite_b_rsa(dev, apdev, params):
     """sigma_dut controlled STA Suite B (RSA)"""
@@ -767,20 +780,21 @@ def test_sigma_dut_suite_b_rsa(dev, apdev, params):
 
     cmd = "sta_set_security,type,eaptls,interface,%s,ssid,%s,PairwiseCipher,AES-GCMP-256,GroupCipher,AES-GCMP-256,GroupMgntCipher,BIP-GMAC-256,keymgmttype,SuiteB,clientCertificate,suite_b_rsa.pem,trustedRootCA,suite_b_ca_rsa.pem,CertType,RSA" % (ifname, "test-suite-b")
 
-    tests = ["",
-             ",TLSCipher,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-             ",TLSCipher,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"]
-    for extra in tests:
-        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
-        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-        sigma_dut_cmd_check(cmd + extra)
-        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-suite-b"))
-        sigma_dut_wait_connected(ifname)
-        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
-        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+    try:
+        tests = ["",
+                 ",TLSCipher,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+                 ",TLSCipher,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"]
+        for extra in tests:
+            sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
+            sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+            sigma_dut_cmd_check(cmd + extra)
+            sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-suite-b"))
+            sigma_dut_wait_connected(ifname)
+            sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+            sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+            sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_ap_suite_b(dev, apdev, params):
     """sigma_dut controlled AP Suite B"""
@@ -2705,19 +2719,20 @@ def run_sigma_dut_preconfigured_profile(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    params = hostapd.wpa2_params(ssid="test-psk", passphrase="12345678")
-    hapd = hostapd.add_ap(apdev[0], params)
-    dev[0].connect("test-psk", psk="12345678", scan_freq="2412",
-                   only_add_network=True)
+    try:
+        params = hostapd.wpa2_params(ssid="test-psk", passphrase="12345678")
+        hapd = hostapd.add_ap(apdev[0], params)
+        dev[0].connect("test-psk", psk="12345678", scan_freq="2412",
+                       only_add_network=True)
 
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s" % (ifname, "test-psk"))
-    sigma_dut_wait_connected(ifname)
-    sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s" % (ifname, "test-psk"))
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_wps_pbc(dev, apdev):
     """sigma_dut and WPS PBC Enrollee"""
@@ -2737,15 +2752,17 @@ def run_sigma_dut_wps_pbc(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    cmd = "start_wps_registration,interface,%s" % ifname
-    cmd += ",WpsRole,Enrollee"
-    cmd += ",WpsConfigMethod,PBC"
-    sigma_dut_cmd_check(cmd, timeout=15)
+    try:
+        cmd = "start_wps_registration,interface,%s" % ifname
+        cmd += ",WpsRole,Enrollee"
+        cmd += ",WpsConfigMethod,PBC"
+        sigma_dut_cmd_check(cmd, timeout=15)
 
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-    hapd.disable()
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-    stop_sigma_dut(sigma)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        hapd.disable()
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
     dev[0].flush_scan_cache()
 
 def test_sigma_dut_sta_scan_bss(dev, apdev):
@@ -2980,42 +2997,43 @@ def run_sigma_dut_venue_url(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    ssid = "venue"
-    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
-    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
-    params["ieee80211w"] = "2"
+    try:
+        ssid = "venue"
+        params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+        params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+        params["ieee80211w"] = "2"
 
-    venue_group = 1
-    venue_type = 13
-    venue_info = struct.pack('BB', venue_group, venue_type)
-    lang1 = "eng"
-    name1 = "Example venue"
-    lang2 = "fin"
-    name2 = "Esimerkkipaikka"
-    venue1 = struct.pack('B', len(lang1 + name1)) + lang1.encode() + name1.encode()
-    venue2 = struct.pack('B', len(lang2 + name2)) + lang2.encode() + name2.encode()
-    venue_name = binascii.hexlify(venue_info + venue1 + venue2)
+        venue_group = 1
+        venue_type = 13
+        venue_info = struct.pack('BB', venue_group, venue_type)
+        lang1 = "eng"
+        name1 = "Example venue"
+        lang2 = "fin"
+        name2 = "Esimerkkipaikka"
+        venue1 = struct.pack('B', len(lang1 + name1)) + lang1.encode() + name1.encode()
+        venue2 = struct.pack('B', len(lang2 + name2)) + lang2.encode() + name2.encode()
+        venue_name = binascii.hexlify(venue_info + venue1 + venue2)
 
-    url1 = "http://example.com/venue"
-    url2 = "https://example.org/venue-info/"
-    params["venue_group"] = str(venue_group)
-    params["venue_type"] = str(venue_type)
-    params["venue_name"] = [lang1 + ":" + name1, lang2 + ":" + name2]
-    params["venue_url"] = ["1:" + url1, "2:" + url2]
+        url1 = "http://example.com/venue"
+        url2 = "https://example.org/venue-info/"
+        params["venue_group"] = str(venue_group)
+        params["venue_type"] = str(venue_type)
+        params["venue_name"] = [lang1 + ":" + name1, lang2 + ":" + name2]
+        params["venue_url"] = ["1:" + url1, "2:" + url2]
 
-    hapd = hostapd.add_ap(apdev[0], params)
+        hapd = hostapd.add_ap(apdev[0], params)
 
-    sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_set_psk,interface,%s,ssid,%s,passphrase,%s,encpType,aes-ccmp,keymgmttype,wpa2,PMF,Required" % (ifname, "venue", "12345678"))
-    sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "venue"))
-    sigma_dut_wait_connected(ifname)
-    sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
-    sigma_dut_cmd_check("sta_hs2_venue_info,interface," + ifname + ",Display,Yes")
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_psk,interface,%s,ssid,%s,passphrase,%s,encpType,aes-ccmp,keymgmttype,wpa2,PMF,Required" % (ifname, "venue", "12345678"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "venue"))
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        sigma_dut_cmd_check("sta_hs2_venue_info,interface," + ifname + ",Display,Yes")
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
 def test_sigma_dut_hs20_assoc_24(dev, apdev):
     """sigma_dut controlled Hotspot 2.0 connection (2.4 GHz)"""
@@ -3061,17 +3079,18 @@ def run_sigma_dut_hs20_assoc_2(dev, apdev, band, expect_bssid):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
-    sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,HS2-R3" % ifname)
-    sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
-    sigma_dut_cmd_check("sta_add_credential,interface,%s,type,uname_pwd,realm,example.com,username,hs20-test,password,password" % ifname)
-    res = sigma_dut_cmd_check("sta_hs2_associate,interface,%s,band,%s" % (ifname, band),
-                              timeout=15)
-    sigma_dut_wait_connected(ifname)
-    sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
-    sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
-    sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
-
-    stop_sigma_dut(sigma)
+    try:
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,HS2-R3" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_add_credential,interface,%s,type,uname_pwd,realm,example.com,username,hs20-test,password,password" % ifname)
+        res = sigma_dut_cmd_check("sta_hs2_associate,interface,%s,band,%s" % (ifname, band),
+                                  timeout=15)
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
 
     if "BSSID," + expect_bssid not in res:
         raise Exception("Unexpected BSSID: " + res)
