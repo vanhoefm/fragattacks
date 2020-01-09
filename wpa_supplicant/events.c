@@ -1701,6 +1701,8 @@ static void wpa_supplicant_rsn_preauth_scan_results(
 }
 
 
+#ifndef CONFIG_NO_ROAMING
+
 static int wpas_get_snr_signal_info(u32 frequency, int avg_signal, int noise)
 {
 	if (noise == WPA_INVALID_NOISE)
@@ -1720,6 +1722,8 @@ wpas_get_est_throughput_from_bss_snr(const struct wpa_supplicant *wpa_s,
 
 	return wpas_get_est_tpt(wpa_s, ies, ie_len, rate, snr);
 }
+
+#endif /* CONFIG_NO_ROAMING */
 
 
 static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
