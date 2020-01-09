@@ -124,12 +124,15 @@ def start_sigma_dut(ifname, debug=False, hostapd_logdir=None, cert_path=None,
 
     global sigma_prog
     sigma_prog = sigma
+    res = None
     for i in range(20):
         try:
             res = sigma_dut_cmd("HELLO")
             break
         except:
             time.sleep(0.05)
+    if res is None or "errorCode,Unknown command" not in res:
+        raise Exception("Failed to start sigma_dut")
     return {'cmd': sigma, 'ifname': ifname}
 
 def stop_sigma_dut(sigma):
