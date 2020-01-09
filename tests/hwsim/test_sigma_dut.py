@@ -6,6 +6,8 @@
 # See README for more details.
 
 import binascii
+import errno
+import fcntl
 import hashlib
 import logging
 logger = logging.getLogger()
@@ -34,6 +36,24 @@ def to_hex(s):
 
 def from_hex(s):
     return binascii.unhexlify(s).decode()
+
+def sigma_log_output(cmd):
+    try:
+        out = cmd.stdout.read()
+        if out:
+            logger.debug("sigma_dut stdout: " + str(out.decode()))
+    except IOError as e:
+        if e.errno != errno.EAGAIN:
+            raise
+    try:
+        out = cmd.stderr.read()
+        if out:
+            logger.debug("sigma_dut stderr: " + str(out.decode()))
+    except IOError as e:
+        if e.errno != errno.EAGAIN:
+            raise
+
+sigma_prog = None
 
 def sigma_dut_cmd(cmd, port=9000, timeout=2):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM,
@@ -64,6 +84,9 @@ def sigma_dut_cmd(cmd, port=9000, timeout=2):
     sock.close()
     res = res.rstrip()
     logger.debug("sigma_dut: '%s' --> '%s'" % (cmd, res))
+    global sigma_prog
+    if sigma_prog:
+        sigma_log_output(sigma_prog)
     return res
 
 def sigma_dut_cmd_check(cmd, port=9000, timeout=2):
@@ -94,6 +117,13 @@ def start_sigma_dut(ifname, debug=False, hostapd_logdir=None, cert_path=None,
         cmd += ['-2']
     sigma = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
+    for stream in [sigma.stdout, sigma.stderr]:
+        fd = stream.fileno()
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+    global sigma_prog
+    sigma_prog = sigma
     for i in range(20):
         try:
             res = sigma_dut_cmd("HELLO")
@@ -103,7 +133,11 @@ def start_sigma_dut(ifname, debug=False, hostapd_logdir=None, cert_path=None,
     return {'cmd': sigma, 'ifname': ifname}
 
 def stop_sigma_dut(sigma):
+    global sigma_prog
+    sigma_prog = None
     cmd = sigma['cmd']
+    sigma_log_output(cmd)
+    logger.debug("Terminating sigma_dut process")
     cmd.terminate()
     cmd.wait()
     out, err = cmd.communicate()
