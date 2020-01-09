@@ -95,18 +95,17 @@ def sigma_dut_cmd_check(cmd, port=9000, timeout=2):
         raise Exception("sigma_dut command failed: " + cmd)
     return res
 
-def start_sigma_dut(ifname, debug=False, hostapd_logdir=None, cert_path=None,
+def start_sigma_dut(ifname, hostapd_logdir=None, cert_path=None,
                     bridge=None, sae_h2e=False):
     check_sigma_dut()
     cmd = ['./sigma_dut',
+           '-d',
            '-M', ifname,
            '-S', ifname,
            '-F', '../../hostapd/hostapd',
            '-G',
            '-w', '/var/run/wpa_supplicant/',
            '-j', ifname]
-    if debug:
-        cmd += ['-d']
     if hostapd_logdir:
         cmd += ['-H', hostapd_logdir]
     if cert_path:
@@ -425,7 +424,7 @@ def test_sigma_dut_sae_pw_id(dev, apdev):
         raise HwsimSkip("SAE not supported")
 
     ifname = dev[0].ifname
-    sigma = start_sigma_dut(ifname, debug=True)
+    sigma = start_sigma_dut(ifname)
 
     ssid = "test-sae"
     params = hostapd.wpa2_params(ssid=ssid)
@@ -458,7 +457,7 @@ def run_sigma_dut_sae_pw_id_ft(dev, apdev, over_ds=False):
         raise HwsimSkip("SAE not supported")
 
     ifname = dev[0].ifname
-    sigma = start_sigma_dut(ifname, debug=True)
+    sigma = start_sigma_dut(ifname)
 
     ssid = "test-sae"
     params = hostapd.wpa2_params(ssid=ssid)
@@ -596,7 +595,7 @@ def test_sigma_dut_ap_psk_deauth(dev, apdev, params):
     logdir = os.path.join(params['logdir'],
                           "sigma_dut_ap_psk_deauth.sigma-hostapd")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-psk,MODE,11ng")
@@ -989,7 +988,7 @@ def test_sigma_dut_ap_sae_pw_id(dev, apdev, params):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
@@ -1025,7 +1024,7 @@ def test_sigma_dut_ap_sae_pw_id_ft(dev, apdev, params):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng,DOMAIN,aabb")
@@ -1116,7 +1115,7 @@ def test_sigma_dut_ap_psk_sae_ft(dev, apdev, params):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default,NAME,AP,Program,WPA3")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae-psk,MODE,11ng,DOMAIN,aabb")
@@ -2275,7 +2274,7 @@ def test_sigma_dut_dpp_proto_stop_at_initiator_enrollee(dev, apdev):
     for frame, result, fail in tests:
         dev[0].request("FLUSH")
         dev[1].request("FLUSH")
-        sigma = start_sigma_dut(dev[0].ifname, debug=True)
+        sigma = start_sigma_dut(dev[0].ifname)
         try:
             run_sigma_dut_dpp_proto_stop_at_initiator_enrollee(dev, frame,
                                                                result, fail)
@@ -2766,7 +2765,7 @@ def test_sigma_dut_sta_scan_ssid_bssid(dev, apdev):
     """sigma_dut sta_scan GetParameter,SSID_BSSID"""
     hostapd.add_ap(apdev[0], {"ssid": "abcdef"})
     hostapd.add_ap(apdev[1], {"ssid": "qwerty"})
-    sigma = start_sigma_dut(dev[0].ifname, debug=True)
+    sigma = start_sigma_dut(dev[0].ifname)
     try:
         cmd = "sta_scan,Interface,%s,GetParameter,SSID_BSSID" % dev[0].ifname
         res = sigma_dut_cmd(cmd, timeout=10)
@@ -2841,7 +2840,7 @@ def test_sigma_dut_ap_eap(dev, apdev, params):
     """sigma_dut controlled AP WPA2-Enterprise"""
     logdir = os.path.join(params['logdir'], "sigma_dut_ap_eap.sigma-hostapd")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-eap,MODE,11ng")
@@ -2863,7 +2862,7 @@ def test_sigma_dut_ap_eap_sha256(dev, apdev, params):
     logdir = os.path.join(params['logdir'],
                           "sigma_dut_ap_eap_sha256.sigma-hostapd")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-eap,MODE,11ng")
@@ -2884,7 +2883,7 @@ def test_sigma_dut_ap_ft_eap(dev, apdev, params):
     """sigma_dut controlled AP FT-EAP"""
     logdir = os.path.join(params['logdir'], "sigma_dut_ap_ft_eap.sigma-hostapd")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-ft-eap,MODE,11ng,DOMAIN,0101,FT_OA,Enable")
@@ -2905,7 +2904,7 @@ def test_sigma_dut_ap_ft_psk(dev, apdev, params):
     """sigma_dut controlled AP FT-PSK"""
     logdir = os.path.join(params['logdir'], "sigma_dut_ap_ft_psk.sigma-hostapd")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-ft-psk,MODE,11ng,DOMAIN,0101,FT_OA,Enable")
@@ -2926,7 +2925,7 @@ def test_sigma_dut_ap_ft_over_ds_psk(dev, apdev, params):
     conffile = os.path.join(params['logdir'],
                             "sigma_dut_ap_ft_over_ds_psk.sigma-conf")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-ft-psk,MODE,11ng,DOMAIN,0101,FT_DS,Enable")
@@ -2949,7 +2948,7 @@ def test_sigma_dut_ap_ent_ft_eap(dev, apdev, params):
     logdir = os.path.join(params['logdir'],
                           "sigma_dut_ap_ent_ft_eap.sigma-hostapd")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-ent-ft-eap,MODE,11ng,DOMAIN,0101,FT_OA,Enable")
@@ -2979,7 +2978,7 @@ def test_sigma_dut_venue_url(dev, apdev):
 
 def run_sigma_dut_venue_url(dev, apdev):
     ifname = dev[0].ifname
-    sigma = start_sigma_dut(ifname, debug=True)
+    sigma = start_sigma_dut(ifname)
 
     ssid = "venue"
     params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
@@ -3060,7 +3059,7 @@ def run_sigma_dut_hs20_assoc_2(dev, apdev, band, expect_bssid):
     dev[0].flush_scan_cache()
 
     ifname = dev[0].ifname
-    sigma = start_sigma_dut(ifname, debug=True)
+    sigma = start_sigma_dut(ifname)
 
     sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,HS2-R3" % ifname)
     sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
@@ -3084,7 +3083,7 @@ def test_sigma_dut_ap_hs20(dev, apdev, params):
     conffile = os.path.join(params['logdir'],
                             "sigma_dut_ap_hs20.sigma-conf")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, hostapd_logdir=logdir, debug=True)
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default,NAME,AP,program,HS2-R3")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,WLAN_TAG,1,CHANNEL,1,SSID,test-hs20,MODE,11ng")
@@ -3139,7 +3138,7 @@ def test_sigma_dut_eap_ttls_uosc(dev, apdev, params):
     hapd = hostapd.add_ap(apdev[0], params)
 
     ifname = dev[0].ifname
-    sigma = start_sigma_dut(ifname, cert_path=logdir, debug=True)
+    sigma = start_sigma_dut(ifname, cert_path=logdir)
 
     try:
         cmd = "sta_set_security,type,eapttls,interface,%s,ssid,%s,keymgmttype,wpa2,encType,AES-CCMP,PairwiseCipher,AES-CCMP-128,username,DOMAIN\mschapv2 user,password,password,ServerCert,sigma_dut_eap_ttls_uosc.incorrect.pem" % (ifname, ssid)
@@ -3207,7 +3206,7 @@ def run_sigma_dut_eap_ttls_uosc_tod(dev, apdev, params, tofu):
     hapd = hostapd.add_ap(apdev[0], params)
 
     ifname = dev[0].ifname
-    sigma = start_sigma_dut(ifname, cert_path=logdir, debug=True)
+    sigma = start_sigma_dut(ifname, cert_path=logdir)
 
     try:
         cmd = ("sta_set_security,type,eapttls,interface,%s,ssid,%s,keymgmttype,wpa2,encType,AES-CCMP,PairwiseCipher,AES-CCMP-128,trustedRootCA," + name + ".ca.pem,username,DOMAIN\mschapv2 user,password,password,ServerCert," + name + ".server.pem") % (ifname, ssid)
@@ -3283,7 +3282,7 @@ def run_sigma_dut_eap_ttls_uosc_initial_tod(dev, apdev, params, tofu):
     hapd = hostapd.add_ap(apdev[0], params)
 
     ifname = dev[0].ifname
-    sigma = start_sigma_dut(ifname, cert_path=logdir, debug=True)
+    sigma = start_sigma_dut(ifname, cert_path=logdir)
 
     try:
         cmd = ("sta_set_security,type,eapttls,interface,%s,ssid,%s,keymgmttype,wpa2,encType,AES-CCMP,PairwiseCipher,AES-CCMP-128,trustedRootCA," + name + ".ca.pem,username,DOMAIN\mschapv2 user,password,password") % (ifname, ssid)
@@ -3324,7 +3323,7 @@ def test_sigma_dut_eap_ttls_uosc_ca_mistrust(dev, apdev, params):
     hapd = hostapd.add_ap(apdev[0], params)
 
     ifname = dev[0].ifname
-    sigma = start_sigma_dut(ifname, cert_path=logdir, debug=True)
+    sigma = start_sigma_dut(ifname, cert_path=logdir)
 
     try:
         cmd = "sta_set_security,type,eapttls,interface,%s,ssid,%s,keymgmttype,wpa2,encType,AES-CCMP,PairwiseCipher,AES-CCMP-128,trustedRootCA,sigma_dut_eap_ttls_uosc_ca_mistrust.ca.pem,username,DOMAIN\mschapv2 user,password,password,domainSuffix,w1.fi" % (ifname, ssid)
@@ -3394,7 +3393,7 @@ def test_sigma_dut_sae_h2e(dev, apdev):
     start_sae_pwe_ap(apdev[0], 2)
 
     ifname = dev[0].ifname
-    sigma = start_sigma_dut(ifname, sae_h2e=True, debug=True)
+    sigma = start_sigma_dut(ifname, sae_h2e=True)
     try:
         connect_sae_pwe_sta(dev[0], ifname)
         connect_sae_pwe_sta(dev[0], ifname, extra="sae_pwe,h2e")
@@ -3414,7 +3413,7 @@ def test_sigma_dut_sae_h2e_ap_loop(dev, apdev):
     start_sae_pwe_ap(apdev[0], 0)
 
     ifname = dev[0].ifname
-    sigma = start_sigma_dut(ifname, sae_h2e=True, debug=True)
+    sigma = start_sigma_dut(ifname, sae_h2e=True)
     try:
         connect_sae_pwe_sta(dev[0], ifname)
         connect_sae_pwe_sta(dev[0], ifname, extra="sae_pwe,loop")
@@ -3431,7 +3430,7 @@ def test_sigma_dut_sae_h2e_ap_h2e(dev, apdev):
     start_sae_pwe_ap(apdev[0], 1)
 
     ifname = dev[0].ifname
-    sigma = start_sigma_dut(ifname, sae_h2e=True, debug=True)
+    sigma = start_sigma_dut(ifname, sae_h2e=True)
     try:
         connect_sae_pwe_sta(dev[0], ifname)
         no_connect_sae_pwe_sta(dev[0], ifname, extra="sae_pwe,loop")
@@ -3447,8 +3446,7 @@ def test_sigma_dut_ap_sae_h2e(dev, apdev, params):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir,
-                                debug=True)
+        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
@@ -3476,8 +3474,7 @@ def test_sigma_dut_ap_sae_h2e_only(dev, apdev, params):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir,
-                                debug=True)
+        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
@@ -3513,8 +3510,7 @@ def test_sigma_dut_ap_sae_loop_only(dev, apdev, params):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir,
-                                debug=True)
+        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
@@ -3637,8 +3633,7 @@ def test_sigma_dut_ap_sae_h2e_rsnxe_mismatch(dev, apdev, params):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir,
-                                debug=True)
+        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
@@ -3672,8 +3667,7 @@ def test_sigma_dut_ap_sae_h2e_group_rejection(dev, apdev, params):
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir,
-                                debug=True)
+        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
