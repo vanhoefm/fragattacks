@@ -798,6 +798,7 @@ def eap_test(dev, ap, eap_params, method, user, release=0):
         params['hs20_release'] = str(release)
     hapd = hostapd.add_ap(ap, params)
 
+    dev.flush_scan_cache()
     dev.hs20_enable()
     dev.add_cred_values({'realm': "example.com",
                          'ca_cert': "auth_serv/ca.pem",
