@@ -551,7 +551,7 @@ def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30,
             raise Exception("Could not ping hostapd")
         hapd.set_defaults()
         fields = ["ssid", "wpa_passphrase", "nas_identifier", "wpa_key_mgmt",
-                  "wpa",
+                  "wpa", "wpa_deny_ptk0_rekey",
                   "wpa_pairwise", "rsn_pairwise", "auth_server_addr",
                   "acct_server_addr", "osu_server_uri"]
         for field in fields:

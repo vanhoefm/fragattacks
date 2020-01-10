@@ -211,10 +211,49 @@ def test_ap_wpa2_ptk_rekey(dev, apdev):
     params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, psk=passphrase, wpa_ptk_rekey="1", scan_freq="2412")
-    ev = dev[0].wait_event(["WPA: Key negotiation completed"])
+    ev = dev[0].wait_event(["WPA: Key negotiation completed",
+                            "CTRL-EVENT-DISCONNECTED"])
     if ev is None:
         raise Exception("PTK rekey timed out")
+    if "CTRL-EVENT-DISCONNECTED" in ev:
+       raise Exception("Disconnect instead of rekey")
     hwsim_utils.test_connectivity(dev[0], hapd)
+
+def test_ap_wpa2_ptk_rekey_blocked_ap(dev, apdev):
+    """WPA2-PSK AP and PTK rekey enforced by station and AP blocking it"""
+    ssid = "test-wpa2-psk"
+    passphrase = 'qwertyuiop'
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
+    params['wpa_deny_ptk0_rekey'] = "2"
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].connect(ssid, psk=passphrase, wpa_ptk_rekey="1", scan_freq="2412")
+    ev = dev[0].wait_event(["WPA: Key negotiation completed",
+                            "CTRL-EVENT-DISCONNECTED"])
+    if ev is None:
+        raise Exception("PTK rekey timed out")
+    if "WPA: Key negotiation completed" in ev:
+        raise Exception("No disconnect, PTK rekey succeeded")
+    ev = dev[0].wait_event(["WPA: Key negotiation completed"], timeout=1)
+    if ev is None:
+        raise Exception("Reconnect too slow")
+
+def test_ap_wpa2_ptk_rekey_blocked_sta(dev, apdev):
+    """WPA2-PSK AP and PTK rekey enforced by station while also blocking it"""
+    ssid = "test-wpa2-psk"
+    passphrase = 'qwertyuiop'
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].connect(ssid, psk=passphrase, wpa_ptk_rekey="1", scan_freq="2412",
+                   wpa_deny_ptk0_rekey="2")
+    ev = dev[0].wait_event(["WPA: Key negotiation completed",
+                            "CTRL-EVENT-DISCONNECTED"])
+    if ev is None:
+        raise Exception("PTK rekey timed out")
+    if "WPA: Key negotiation completed" in ev:
+        raise Exception("No disconnect, PTK rekey succeeded")
+    ev = dev[0].wait_event(["WPA: Key negotiation completed"], timeout=1)
+    if ev is None:
+        raise Exception("Reconnect too slow")
 
 def test_ap_wpa2_ptk_rekey_anonce(dev, apdev):
     """WPA2-PSK AP and PTK rekey enforced by station and ANonce change"""

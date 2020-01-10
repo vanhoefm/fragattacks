@@ -5131,6 +5131,46 @@ def test_ap_wpa2_eap_reauth(dev, apdev):
     if state != "COMPLETED":
         raise Exception("Reauthentication did not complete")
 
+def test_ap_wpa2_eap_reauth_ptk_rekey_blocked_ap(dev, apdev):
+    """WPA2-Enterprise and Authenticator forcing reauthentication with PTK rekey blocked on AP"""
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    params['eap_reauth_period'] = '2'
+    params['wpa_deny_ptk0_rekey'] = '2'
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "PAX", "pax.user@example.com",
+                password_hex="0123456789abcdef0123456789abcdef")
+    logger.info("Wait for disconnect due to reauth")
+    ev = dev[0].wait_event(["CTRL-EVENT-EAP-STARTED",
+                            "CTRL-EVENT-DISCONNECTED"], timeout=10)
+    if ev is None:
+        raise Exception("Timeout on reauthentication")
+    if "CTRL-EVENT-EAP-STARTED" in ev:
+        raise Exception("Reauthentication without disconnect")
+
+    ev = dev[0].wait_event(["WPA: Key negotiation completed"], timeout=1)
+    if ev is None:
+        raise Exception("Timeout on reconnect")
+
+def test_ap_wpa2_eap_reauth_ptk_rekey_blocked_sta(dev, apdev):
+    """WPA2-Enterprise and Authenticator forcing reauthentication with PTK rekey blocked on station"""
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    params['eap_reauth_period'] = '2'
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "PAX", "pax.user@example.com",
+                password_hex="0123456789abcdef0123456789abcdef",
+                wpa_deny_ptk0_rekey="2")
+    logger.info("Wait for disconnect due to reauth")
+    ev = dev[0].wait_event(["CTRL-EVENT-EAP-STARTED",
+                            "CTRL-EVENT-DISCONNECTED"], timeout=10)
+    if ev is None:
+        raise Exception("Timeout on reauthentication")
+    if "CTRL-EVENT-EAP-STARTED" in ev:
+        raise Exception("Reauthentication without disconnect")
+
+    ev = dev[0].wait_event(["WPA: Key negotiation completed"], timeout=1)
+    if ev is None:
+        raise Exception("Timeout on reconnect")
+
 def test_ap_wpa2_eap_request_identity_message(dev, apdev):
     """Optional displayable message in EAP Request-Identity"""
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
