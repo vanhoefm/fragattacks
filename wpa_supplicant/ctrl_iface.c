@@ -8108,6 +8108,8 @@ static void wpa_supplicant_ctrl_iface_flush(struct wpa_supplicant *wpa_s)
 
 	wpa_s->no_keep_alive = 0;
 	wpa_s->own_disconnect_req = 0;
+	wpa_s->own_reconnect_req = 0;
+	wpa_s->deny_ptk0_rekey = 0;
 
 	os_free(wpa_s->disallow_aps_bssid);
 	wpa_s->disallow_aps_bssid = NULL;

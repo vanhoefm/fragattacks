@@ -553,6 +553,19 @@ struct wpa_ssid {
 	 */
 	int wpa_ptk_rekey;
 
+	/** wpa_deny_ptk0_rekey - Control PTK0 rekeying
+	 *
+	 * Rekeying a pairwise key using only keyid 0 (PTK0 rekey) has many
+	 * broken implementations and should be avoided when using or
+	 * interacting with one.
+	 *
+	 * 0 = always rekey when configured/instructed
+	 * 1 = only rekey when the local driver is explicitly indicating it can
+	 *	perform this operation without issues
+	 * 2 = never allow PTK0 rekeys
+	 */
+	enum ptk0_rekey_handling wpa_deny_ptk0_rekey;
+
 	/**
 	 * group_rekey - Group rekeying time in seconds
 	 *

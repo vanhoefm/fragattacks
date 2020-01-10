@@ -200,6 +200,15 @@ static void eapol_port_timers_tick(void *eloop_ctx, void *timeout_ctx)
 }
 
 
+static int eapol_sm_confirm_auth(struct eapol_sm *sm)
+{
+	if (!sm->ctx->confirm_auth_cb)
+		return 0;
+
+	return sm->ctx->confirm_auth_cb(sm->ctx->ctx);
+}
+
+
 static void eapol_enable_timer_tick(struct eapol_sm *sm)
 {
 	if (sm->timer_tick_enabled)
@@ -316,6 +325,11 @@ SM_STATE(SUPP_PAE, AUTHENTICATED)
 
 SM_STATE(SUPP_PAE, RESTART)
 {
+	if (eapol_sm_confirm_auth(sm)) {
+		/* Don't process restart, we are already reconnecting */
+		return;
+	}
+
 	SM_ENTRY(SUPP_PAE, RESTART);
 	sm->eapRestart = TRUE;
 	if (sm->altAccept) {

@@ -206,6 +206,12 @@ static void supp_deauthenticate(void * ctx, u16 reason_code)
 }
 
 
+static void supp_reconnect(void *ctx)
+{
+	wpa_printf(MSG_DEBUG, "SUPP: %s (TODO)", __func__);
+}
+
+
 static int ibss_rsn_supp_init(struct ibss_rsn_peer *peer, const u8 *own_addr,
 			      const u8 *psk)
 {
@@ -225,6 +231,7 @@ static int ibss_rsn_supp_init(struct ibss_rsn_peer *peer, const u8 *own_addr,
 	ctx->mlme_setprotection = supp_mlme_setprotection;
 	ctx->cancel_auth_timeout = supp_cancel_auth_timeout;
 	ctx->deauthenticate = supp_deauthenticate;
+	ctx->reconnect = supp_reconnect;
 	peer->supp = wpa_sm_init(ctx);
 	if (peer->supp == NULL) {
 		wpa_printf(MSG_DEBUG, "SUPP: wpa_sm_init() failed");

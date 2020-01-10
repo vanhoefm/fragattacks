@@ -2895,6 +2895,7 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 #endif /* CONFIG_AP */
 
 	eloop_cancel_timeout(wpas_network_reenabled, wpa_s, NULL);
+	wpa_s->own_reconnect_req = 0;
 
 	ft_completed = wpa_ft_is_completed(wpa_s->wpa);
 	if (data && wpa_supplicant_event_associnfo(wpa_s, data) < 0)
@@ -3255,21 +3256,25 @@ static void wpa_supplicant_event_disassoc_finish(struct wpa_supplicant *wpa_s,
 		if (wpa_s->wpa_state == WPA_COMPLETED &&
 		    wpa_s->current_ssid &&
 		    wpa_s->current_ssid->mode == WPAS_MODE_INFRA &&
-		    !locally_generated &&
-		    disconnect_reason_recoverable(reason_code)) {
+		    (wpa_s->own_reconnect_req ||
+		     (!locally_generated &&
+		      disconnect_reason_recoverable(reason_code)))) {
 			/*
 			 * It looks like the AP has dropped association with
-			 * us, but could allow us to get back in. Try to
-			 * reconnect to the same BSS without full scan to save
-			 * time for some common cases.
+			 * us, but could allow us to get back in. This is also
+			 * triggered for cases where local reconnection request
+			 * is used to force reassociation with the same BSS.
+			 * Try to reconnect to the same BSS without a full scan
+			 * to save time for some common cases.
 			 */
 			fast_reconnect = wpa_s->current_bss;
 			fast_reconnect_ssid = wpa_s->current_ssid;
-		} else if (wpa_s->wpa_state >= WPA_ASSOCIATING)
+		} else if (wpa_s->wpa_state >= WPA_ASSOCIATING) {
 			wpa_supplicant_req_scan(wpa_s, 0, 100000);
-		else
+		} else {
 			wpa_dbg(wpa_s, MSG_DEBUG, "Do not request new "
 				"immediate scan");
+		}
 	} else {
 		wpa_dbg(wpa_s, MSG_DEBUG, "Auto connect disabled: do not "
 			"try to re-connect");

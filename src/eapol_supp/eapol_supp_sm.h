@@ -298,6 +298,15 @@ struct eapol_ctx {
 	 * @len: Length of anonymous identity in octets
 	 */
 	void (*set_anon_id)(void *ctx, const u8 *id, size_t len);
+
+	/**
+	 * confirm_auth_cb - Callback confirming if we can install a new PTK
+	 * @ctx: eapol_ctx from eap_peer_sm_init() call
+	 * Returns: 0 when authentication can continue, -1 when reconnecting
+	 *
+	 * Automatically triggers a reconnect when not.
+	 */
+	int (*confirm_auth_cb)(void *ctx);
 };
 
 

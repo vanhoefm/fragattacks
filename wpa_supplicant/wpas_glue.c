@@ -486,6 +486,12 @@ static void _wpa_supplicant_deauthenticate(void *wpa_s, u16 reason_code)
 }
 
 
+static void _wpa_supplicant_reconnect(void *wpa_s)
+{
+	wpa_supplicant_reconnect(wpa_s);
+}
+
+
 static void * wpa_supplicant_get_network_ctx(void *wpa_s)
 {
 	return wpa_supplicant_get_ssid(wpa_s);
@@ -1058,6 +1064,20 @@ static void wpa_supplicant_eap_error_cb(void *ctx, int error_code)
 }
 
 
+static int wpa_supplicant_eap_auth_start_cb(void *ctx)
+{
+	struct wpa_supplicant *wpa_s = ctx;
+
+	if (!wpa_s->new_connection && wpa_s->deny_ptk0_rekey) {
+		wpa_msg(wpa_s, MSG_INFO,
+			"WPA: PTK0 rekey not allowed, reconnecting");
+		wpa_supplicant_reconnect(wpa_s);
+		return -1;
+	}
+	return 0;
+}
+
+
 static void wpa_supplicant_set_anon_id(void *ctx, const u8 *id, size_t len)
 {
 	struct wpa_supplicant *wpa_s = ctx;
@@ -1136,6 +1156,7 @@ int wpa_supplicant_init_eapol(struct wpa_supplicant *wpa_s)
 	ctx->cert_in_cb = wpa_s->conf->cert_in_cb;
 	ctx->status_cb = wpa_supplicant_status_cb;
 	ctx->eap_error_cb = wpa_supplicant_eap_error_cb;
+	ctx->confirm_auth_cb = wpa_supplicant_eap_auth_start_cb;
 	ctx->set_anon_id = wpa_supplicant_set_anon_id;
 	ctx->cb_ctx = wpa_s;
 	wpa_s->eapol = eapol_sm_init(ctx);
@@ -1222,6 +1243,7 @@ int wpa_supplicant_init_wpa(struct wpa_supplicant *wpa_s)
 	ctx->set_state = _wpa_supplicant_set_state;
 	ctx->get_state = _wpa_supplicant_get_state;
 	ctx->deauthenticate = _wpa_supplicant_deauthenticate;
+	ctx->reconnect = _wpa_supplicant_reconnect;
 	ctx->set_key = wpa_supplicant_set_key;
 	ctx->get_network_ctx = wpa_supplicant_get_network_ctx;
 	ctx->get_bssid = wpa_supplicant_get_bssid;
@@ -1286,6 +1308,7 @@ void wpa_supplicant_rsn_supp_set_config(struct wpa_supplicant *wpa_s,
 		conf.ssid = ssid->ssid;
 		conf.ssid_len = ssid->ssid_len;
 		conf.wpa_ptk_rekey = ssid->wpa_ptk_rekey;
+		conf.wpa_deny_ptk0_rekey = ssid->wpa_deny_ptk0_rekey;
 		conf.owe_ptk_workaround = ssid->owe_ptk_workaround;
 #ifdef CONFIG_P2P
 		if (ssid->p2p_group && wpa_s->current_bss &&

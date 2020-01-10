@@ -900,6 +900,7 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	INT_DEF(mesh_rssi_threshold, DEFAULT_MESH_RSSI_THRESHOLD);
 #endif /* CONFIG_MESH */
 	INT(wpa_ptk_rekey);
+	INT(wpa_deny_ptk0_rekey);
 	INT(group_rekey);
 	INT(ignore_broadcast_ssid);
 #ifdef CONFIG_DPP

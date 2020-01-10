@@ -183,6 +183,14 @@ void wpa_sm_key_request(struct wpa_sm *sm, int error, int pairwise)
 	int key_info, ver;
 	u8 bssid[ETH_ALEN], *rbuf, *key_mic, *mic;
 
+	if (pairwise && sm->wpa_deny_ptk0_rekey &&
+	    wpa_sm_get_state(sm) == WPA_COMPLETED) {
+		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
+			"WPA: PTK0 rekey not allowed, reconnecting");
+		wpa_sm_reconnect(sm);
+		return;
+	}
+
 	if (wpa_use_akm_defined(sm->key_mgmt))
 		ver = WPA_KEY_INFO_TYPE_AKM_DEFINED;
 	else if (wpa_key_mgmt_ft(sm->key_mgmt) ||
@@ -615,6 +623,13 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 	if (wpa_sm_get_network_ctx(sm) == NULL) {
 		wpa_msg(sm->ctx->msg_ctx, MSG_WARNING, "WPA: No SSID info "
 			"found (msg 1 of 4)");
+		return;
+	}
+
+	if (sm->wpa_deny_ptk0_rekey && wpa_sm_get_state(sm) == WPA_COMPLETED) {
+		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
+			"WPA: PTK0 rekey not allowed, reconnecting");
+		wpa_sm_reconnect(sm);
 		return;
 	}
 
@@ -3141,6 +3156,9 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 		break;
 	case WPA_PARAM_SAE_PWE:
 		sm->sae_pwe = value;
+		break;
+	case WPA_PARAM_DENY_PTK0_REKEY:
+		sm->wpa_deny_ptk0_rekey = value;
 		break;
 	default:
 		break;

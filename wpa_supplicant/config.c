@@ -2495,6 +2495,7 @@ static const struct parse_data ssid_fields[] = {
 	{ INT(dot11MeshHoldingTimeout) },
 #endif /* CONFIG_MESH */
 	{ INT(wpa_ptk_rekey) },
+	{ INT_RANGE(wpa_deny_ptk0_rekey, 0, 2) },
 	{ INT(group_rekey) },
 	{ STR(bgscan) },
 	{ INT_RANGE(ignore_broadcast_ssid, 0, 2) },
@@ -3020,6 +3021,7 @@ void wpa_config_set_network_defaults(struct wpa_ssid *ssid)
 	ssid->pairwise_cipher = DEFAULT_PAIRWISE;
 	ssid->group_cipher = DEFAULT_GROUP;
 	ssid->key_mgmt = DEFAULT_KEY_MGMT;
+	ssid->wpa_deny_ptk0_rekey = PTK0_REKEY_ALLOW_ALWAYS;
 	ssid->bg_scan_period = DEFAULT_BG_SCAN_PERIOD;
 	ssid->ht = 1;
 #ifdef IEEE8021X_EAPOL

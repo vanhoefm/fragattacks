@@ -41,6 +41,12 @@ static void _wpa_supplicant_deauthenticate(void *wpa_s, u16 reason_code)
 }
 
 
+static void _wpa_supplicant_reconnect(void *wpa_s)
+{
+	wpa_supplicant_reconnect(wpa_s);
+}
+
+
 static u8 * wpa_alloc_eapol(const struct wpa_supplicant *wpa_s, u8 type,
 			    const void *data, u16 data_len,
 			    size_t *msg_len, void **data_pos)
@@ -245,6 +251,7 @@ static void wpa_init_conf(struct wpa_supplicant *wpa_s, const char *ifname)
 	ctx->set_config_blob = wpa_supplicant_set_config_blob;
 	ctx->get_config_blob = wpa_supplicant_get_config_blob;
 	ctx->mlme_setprotection = wpa_supplicant_mlme_setprotection;
+	ctx->reconnect = _wpa_supplicant_reconnect;
 
 	wpa_s->wpa = wpa_sm_init(ctx);
 	assert(wpa_s->wpa != NULL);

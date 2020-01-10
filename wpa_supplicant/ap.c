@@ -345,6 +345,7 @@ static int wpa_supplicant_conf_ap(struct wpa_supplicant *wpa_s,
 
 	bss->isolate = !wpa_s->conf->p2p_intra_bss;
 	bss->force_per_enrollee_psk = wpa_s->global->p2p_per_sta_psk;
+	bss->wpa_deny_ptk0_rekey = ssid->wpa_deny_ptk0_rekey;
 
 	if (ssid->p2p_group) {
 		os_memcpy(bss->ip_addr_go, wpa_s->p2pdev->conf->ip_addr_go, 4);

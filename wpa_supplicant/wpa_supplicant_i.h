@@ -554,6 +554,7 @@ struct wpa_supplicant {
 
 	/* Selected configuration (based on Beacon/ProbeResp WPA IE) */
 	int pairwise_cipher;
+	int deny_ptk0_rekey;
 	int group_cipher;
 	int key_mgmt;
 	int wpa_proto;
@@ -1071,6 +1072,7 @@ struct wpa_supplicant {
 	unsigned int wmm_ac_supported:1;
 	unsigned int ext_work_in_progress:1;
 	unsigned int own_disconnect_req:1;
+	unsigned int own_reconnect_req:1;
 	unsigned int ignore_post_flush_scan_res:1;
 
 #define MAC_ADDR_RAND_SCAN       BIT(0)
@@ -1325,6 +1327,7 @@ const char * wpa_supplicant_get_eap_mode(struct wpa_supplicant *wpa_s);
 void wpa_supplicant_cancel_auth_timeout(struct wpa_supplicant *wpa_s);
 void wpa_supplicant_deauthenticate(struct wpa_supplicant *wpa_s,
 				   u16 reason_code);
+void wpa_supplicant_reconnect(struct wpa_supplicant *wpa_s);
 
 struct wpa_ssid * wpa_supplicant_add_network(struct wpa_supplicant *wpa_s);
 int wpa_supplicant_remove_network(struct wpa_supplicant *wpa_s, int id);

@@ -27,6 +27,7 @@ struct wpa_sm_ctx {
 	void (*set_state)(void *ctx, enum wpa_states state);
 	enum wpa_states (*get_state)(void *ctx);
 	void (*deauthenticate)(void * ctx, u16 reason_code);
+	void (*reconnect)(void *ctx);
 	int (*set_key)(void *ctx, enum wpa_alg alg,
 		       const u8 *addr, int key_idx, int set_tx,
 		       const u8 *seq, size_t seq_len,
@@ -100,6 +101,7 @@ enum wpa_sm_conf_params {
 	WPA_PARAM_MFP,
 	WPA_PARAM_OCV,
 	WPA_PARAM_SAE_PWE,
+	WPA_PARAM_DENY_PTK0_REKEY,
 };
 
 struct rsn_supp_config {
@@ -111,6 +113,7 @@ struct rsn_supp_config {
 	const u8 *ssid;
 	size_t ssid_len;
 	int wpa_ptk_rekey;
+	int wpa_deny_ptk0_rekey;
 	int p2p;
 	int wpa_rsc_relaxation;
 	int owe_ptk_workaround;

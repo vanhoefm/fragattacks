@@ -1760,6 +1760,20 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 	} else
 		wpa_sm_set_pmk_from_pmksa(wpa_s->wpa);
 
+	if (ssid->mode != WPAS_MODE_IBSS &&
+	    !(wpa_s->drv_flags & WPA_DRIVER_FLAGS_WIRED) &&
+	    (ssid->wpa_deny_ptk0_rekey == PTK0_REKEY_ALLOW_NEVER ||
+	     (ssid->wpa_deny_ptk0_rekey == PTK0_REKEY_ALLOW_LOCAL_OK &&
+	      !(wpa_s->drv_flags & WPA_DRIVER_FLAGS_SAFE_PTK0_REKEYS)))) {
+		wpa_msg(wpa_s, MSG_INFO,
+			"Disable PTK0 rekey support - replaced with reconnect");
+		wpa_s->deny_ptk0_rekey = 1;
+		wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_DENY_PTK0_REKEY, 1);
+	} else {
+		wpa_s->deny_ptk0_rekey = 0;
+		wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_DENY_PTK0_REKEY, 0);
+	}
+
 	return 0;
 }
 
@@ -2057,6 +2071,7 @@ void wpa_supplicant_associate(struct wpa_supplicant *wpa_s,
 	int rand_style;
 
 	wpa_s->own_disconnect_req = 0;
+	wpa_s->own_reconnect_req = 0;
 
 	/*
 	 * If we are starting a new connection, any previously pending EAPOL
@@ -3842,6 +3857,15 @@ void wpa_supplicant_deauthenticate(struct wpa_supplicant *wpa_s,
 
 	wpa_supplicant_clear_connection(wpa_s, addr);
 }
+
+
+void wpa_supplicant_reconnect(struct wpa_supplicant *wpa_s)
+{
+	wpa_s->own_reconnect_req = 1;
+	wpa_supplicant_deauthenticate(wpa_s, WLAN_REASON_UNSPECIFIED);
+
+}
+
 
 static void wpa_supplicant_enable_one_network(struct wpa_supplicant *wpa_s,
 					      struct wpa_ssid *ssid)
@@ -7081,7 +7105,7 @@ void wpas_connection_failed(struct wpa_supplicant *wpa_s, const u8 *bssid)
 	 * There is no point in blacklisting the AP if this event is
 	 * generated based on local request to disconnect.
 	 */
-	if (wpa_s->own_disconnect_req) {
+	if (wpa_s->own_disconnect_req || wpa_s->own_reconnect_req) {
 		wpa_s->own_disconnect_req = 0;
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"Ignore connection failure due to local request to disconnect");

@@ -63,6 +63,7 @@ struct wpa_sm {
 	u8 ssid[32];
 	size_t ssid_len;
 	int wpa_ptk_rekey;
+	int wpa_deny_ptk0_rekey:1;
 	int p2p;
 	int wpa_rsc_relaxation;
 	int owe_ptk_workaround;
@@ -208,6 +209,12 @@ static inline int wpa_sm_set_key(struct wpa_sm *sm, enum wpa_alg alg,
 	WPA_ASSERT(sm->ctx->set_key);
 	return sm->ctx->set_key(sm->ctx->ctx, alg, addr, key_idx, set_tx,
 				seq, seq_len, key, key_len, key_flag);
+}
+
+static inline void wpa_sm_reconnect(struct wpa_sm *sm)
+{
+	WPA_ASSERT(sm->ctx->reconnect);
+	sm->ctx->reconnect(sm->ctx->ctx);
 }
 
 static inline void * wpa_sm_get_network_ctx(struct wpa_sm *sm)
