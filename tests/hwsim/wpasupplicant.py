@@ -1089,7 +1089,7 @@ class WpaSupplicant:
                       "engine", "fils_dh_group", "bssid_hint",
                       "dpp_csign", "dpp_csign_expiry",
                       "dpp_netaccesskey", "dpp_netaccesskey_expiry",
-                      "group_mgmt", "owe_group",
+                      "group_mgmt", "owe_group", "owe_only",
                       "roaming_consortium_selection", "ocv",
                       "multi_ap_backhaul_sta", "rx_stbc", "tx_stbc",
                       "ft_eap_pmksa_caching"]

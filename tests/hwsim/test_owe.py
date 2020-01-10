@@ -224,6 +224,36 @@ def test_owe_transition_mode_open_only_ap(dev, apdev):
     if val != "NONE":
         raise Exception("Unexpected key_mgmt: " + val)
 
+def test_owe_only_sta(dev, apdev):
+    """Opportunistic Wireless Encryption transition mode disabled on STA"""
+    if "OWE" not in dev[0].get_capability("key_mgmt"):
+        raise HwsimSkip("OWE not supported")
+    dev[0].flush_scan_cache()
+    params = {"ssid": "owe-test-open"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    dev[0].scan_for_bss(bssid, freq="2412")
+    id = dev[0].connect("owe-test-open", key_mgmt="OWE", ieee80211w="2",
+                        scan_freq="2412", owe_only="1", wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-NETWORK-NOT-FOUND"], timeout=10)
+    if not ev:
+        raise Exception("Unknown result for the connection attempt")
+    if "CTRL-EVENT-CONNECTED" in ev:
+        raise Exception("Unexpected connection to open network")
+    dev[0].request("DISCONNECT")
+    dev[0].dump_monitor()
+
+    params = {"ssid": "owe-test-open",
+              "wpa": "2",
+              "ieee80211w": "2",
+              "wpa_key_mgmt": "OWE",
+              "rsn_pairwise": "CCMP"}
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    dev[0].request("RECONNECT")
+    dev[0].wait_connected()
+
 def test_owe_transition_mode_open_multiple_scans(dev, apdev):
     """Opportunistic Wireless Encryption transition mode and need for multiple scans"""
     if "OWE" not in dev[0].get_capability("key_mgmt"):
