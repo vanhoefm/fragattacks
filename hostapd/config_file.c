@@ -2874,6 +2874,15 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		bss->wpa_gmk_rekey = atoi(pos);
 	} else if (os_strcmp(buf, "wpa_ptk_rekey") == 0) {
 		bss->wpa_ptk_rekey = atoi(pos);
+	} else if (os_strcmp(buf, "wpa_deny_ptk0_rekey") == 0) {
+		bss->wpa_deny_ptk0_rekey = atoi(pos);
+		if (bss->wpa_deny_ptk0_rekey < 0 ||
+		    bss->wpa_deny_ptk0_rekey > 2) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: Invalid wpa_deny_ptk0_rekey=%d; allowed range 0..2",
+				   line, bss->wpa_deny_ptk0_rekey);
+			return 1;
+		}
 	} else if (os_strcmp(buf, "wpa_group_update_count") == 0) {
 		char *endp;
 		unsigned long val = strtoul(pos, &endp, 0);

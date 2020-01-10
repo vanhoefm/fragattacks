@@ -781,8 +781,18 @@ static void wpa_request_new_ptk(struct wpa_state_machine *sm)
 	if (sm == NULL)
 		return;
 
-	sm->PTKRequest = TRUE;
-	sm->PTK_valid = 0;
+	if (sm->wpa_auth->conf.wpa_deny_ptk0_rekey) {
+		wpa_printf(MSG_INFO,
+			   "WPA: PTK0 rekey not allowed, disconnect " MACSTR,
+			   MAC2STR(sm->addr));
+		sm->Disconnect = TRUE;
+		/* Try to encourage the STA to reconnect */
+		sm->disconnect_reason =
+			WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA;
+	} else {
+		sm->PTKRequest = TRUE;
+		sm->PTK_valid = 0;
+	}
 }
 
 
@@ -1801,6 +1811,15 @@ int wpa_auth_sm_event(struct wpa_state_machine *sm, enum wpa_event event)
 				return 1; /* should not really happen */
 			sm->Init = FALSE;
 			sm->AuthenticationRequest = TRUE;
+			break;
+		} else if (sm->wpa_auth->conf.wpa_deny_ptk0_rekey) {
+			wpa_printf(MSG_INFO,
+				   "WPA: PTK0 rekey not allowed, disconnect "
+				   MACSTR, MAC2STR(sm->addr));
+			sm->Disconnect = TRUE;
+			/* Try to encourage the STA reconnect */
+			sm->disconnect_reason =
+				WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA;
 			break;
 		}
 		if (sm->GUpdateStationKeys) {

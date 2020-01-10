@@ -1381,6 +1381,16 @@ int hostapd_setup_wpa(struct hostapd_data *hapd)
 		_conf.tx_status = 1;
 	if (hapd->iface->drv_flags & WPA_DRIVER_FLAGS_AP_MLME)
 		_conf.ap_mlme = 1;
+
+	if (!(hapd->iface->drv_flags & WPA_DRIVER_FLAGS_WIRED) &&
+	    (hapd->conf->wpa_deny_ptk0_rekey == PTK0_REKEY_ALLOW_NEVER ||
+	     (hapd->conf->wpa_deny_ptk0_rekey == PTK0_REKEY_ALLOW_LOCAL_OK &&
+	      !(hapd->iface->drv_flags & WPA_DRIVER_FLAGS_SAFE_PTK0_REKEYS)))) {
+		wpa_msg(hapd->msg_ctx, MSG_INFO,
+			"Disable PTK0 rekey support - replaced with disconnect");
+		_conf.wpa_deny_ptk0_rekey = 1;
+	}
+
 	hapd->wpa_auth = wpa_init(hapd->own_addr, &_conf, &cb, hapd);
 	if (hapd->wpa_auth == NULL) {
 		wpa_printf(MSG_ERROR, "WPA initialization failed.");

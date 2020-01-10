@@ -445,4 +445,10 @@ enum key_flag {
 					  KEY_FLAG_MODIFY,
 };
 
+enum ptk0_rekey_handling {
+	PTK0_REKEY_ALLOW_ALWAYS,
+	PTK0_REKEY_ALLOW_LOCAL_OK,
+	PTK0_REKEY_ALLOW_NEVER
+};
+
 #endif /* DEFS_H */
