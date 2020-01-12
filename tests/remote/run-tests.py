@@ -278,9 +278,15 @@ def main():
 
     # now run test cases
     for dut in duts:
-        logger.warning("DUT: " + str(dut))
+        if len(requested_hwsim_tests) > 0:
+            logger.warning("DUT (apdev): " + str(dut))
+        else:
+            logger.warning("DUT: " + str(dut))
     for ref in refs:
-        logger.warning("REF: " + str(ref))
+        if len(requested_hwsim_tests) > 0:
+            logger.warning("REF   (dev): " + str(ref))
+        else:
+            logger.warning("REF: " + str(ref))
     for monitor in monitors:
         logger.warning("MON: " + str(monitor))
 
