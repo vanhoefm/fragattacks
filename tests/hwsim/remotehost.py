@@ -106,3 +106,9 @@ class Host():
                 self.local_execute(["scp", self.user + "@[" + self.host + "]:" + log, local_log_dir])
             self.execute(["rm", log])
         del self.logs[:]
+
+    def send_file(self, src, dst):
+        if self.host is None:
+            return
+        self.local_execute(["scp", src,
+                            self.user + "@[" + self.host + "]:" + dst])

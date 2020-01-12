@@ -135,6 +135,9 @@ class HostapdGlobal:
         self.ctrl.terminate()
         self.ctrl = None
 
+    def send_file(self, src, dst):
+        self.host.send_file(src, dst)
+
 class Hostapd:
     def __init__(self, ifname, bssidx=0, hostname=None, port=8877):
         self.hostname = hostname
@@ -524,6 +527,9 @@ class Hostapd:
     def note(self, txt):
         self.request("NOTE " + txt)
 
+    def send_file(self, src, dst):
+        self.host.send_file(src, dst)
+
 def add_ap(apdev, params, wait_enabled=True, no_enable=False, timeout=30,
            global_ctrl_override=None, driver=False):
         if isinstance(apdev, dict):
@@ -747,3 +753,7 @@ def ht40_minus_params(channel="1", ssid=None, country=None):
 def cmd_execute(apdev, cmd, shell=False):
     hapd_global = HostapdGlobal(apdev)
     return hapd_global.cmd_execute(cmd, shell=shell)
+
+def send_file(apdev, src, dst):
+    hapd_global = HostapdGlobal(apdev)
+    return hapd_global.send_file(src, dst)
