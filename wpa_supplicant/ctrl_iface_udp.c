@@ -516,7 +516,7 @@ static void wpa_supplicant_ctrl_iface_send(struct wpa_supplicant *wpa_s,
 		return;
 
 	if (ifname)
-		os_snprintf(levelstr, sizeof(levelstr), "IFACE=%s <%d>",
+		os_snprintf(levelstr, sizeof(levelstr), "IFNAME=%s <%d>",
 			    ifname, level);
 	else
 		os_snprintf(levelstr, sizeof(levelstr), "<%d>", level);

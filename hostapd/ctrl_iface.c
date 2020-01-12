@@ -4689,13 +4689,8 @@ static void hostapd_ctrl_iface_send_internal(int sock, struct dl_list *ctrl_dst,
 		return;
 	idx = 0;
 	if (ifname) {
-#ifdef CONFIG_CTRL_IFACE_UDP
-		io[idx].iov_base = "IFACE=";
-		io[idx].iov_len = 6;
-#else /* CONFIG_CTRL_IFACE_UDP */
 		io[idx].iov_base = "IFNAME=";
 		io[idx].iov_len = 7;
-#endif /* CONFIG_CTRL_IFACE_UDP */
 		idx++;
 		io[idx].iov_base = (char *) ifname;
 		io[idx].iov_len = os_strlen(ifname);
