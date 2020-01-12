@@ -5,6 +5,7 @@
 # See README for more details.
 
 import os
+import re
 import time
 import logging
 import binascii
@@ -593,6 +594,8 @@ def add_bss(apdev, ifname, confname, ignore_error=False):
         hostname = None
         port = 8878
     hapd_global = HostapdGlobal(apdev)
+    confname = cfg_file(apdev, confname, ifname)
+    hapd_global.send_file(confname, confname)
     hapd_global.add_bss(phy, confname, ignore_error)
     port = hapd_global.get_ctrl_iface_port(ifname)
     hapd = Hostapd(ifname, hostname=hostname, port=port)
@@ -611,6 +614,8 @@ def add_iface(apdev, confname):
         hostname = None
         port = 8878
     hapd_global = HostapdGlobal(apdev)
+    confname = cfg_file(apdev, confname, ifname)
+    hapd_global.send_file(confname, confname)
     hapd_global.add_iface(ifname, confname)
     port = hapd_global.get_ctrl_iface_port(ifname)
     hapd = Hostapd(ifname, hostname=hostname, port=port)
@@ -789,3 +794,41 @@ def acl_file(dev, apdev, conf):
         return conf
 
     return filename
+
+def bssid_inc(apdev, inc=1):
+    parts = apdev['bssid'].split(':')
+    parts[5] = '%02x' % (int(parts[5], 16) + int(inc))
+    bssid = '%s:%s:%s:%s:%s:%s' % (parts[0], parts[1], parts[2],
+                                   parts[3], parts[4], parts[5])
+    return bssid
+
+def cfg_file(apdev, conf, ifname=None):
+    # put cfg file in /tmp directory
+    fname = os.path.join("/tmp", conf)
+
+    match = re.search(r'^bss-\d+', conf)
+    if match:
+        with open(fname, 'w') as f:
+            idx = ''.join(filter(str.isdigit, conf))
+            if ifname is None:
+                ifname = apdev['ifname']
+                if idx != '1':
+                    ifname = ifname + '-' + idx
+
+            f.write("driver=nl80211\n")
+            f.write("ctrl_interface=/var/run/hostapd\n")
+            f.write("hw_mode=g\n")
+            f.write("channel=1\n")
+            f.write("ieee80211n=1\n")
+            f.write("interface=%s\n" % ifname)
+
+            f.write("ssid=bss-%s\n" % idx)
+            if conf == 'bss-2-dup.conf':
+                bssid = apdev['bssid']
+            else:
+                bssid = bssid_inc(apdev, int(idx) - 1)
+            f.write("bssid=%s\n" % bssid)
+    else:
+        return conf
+
+    return fname
