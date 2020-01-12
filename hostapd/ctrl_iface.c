@@ -69,9 +69,6 @@
 #define HOSTAPD_CLI_DUP_VALUE_MAX_LEN 256
 
 #ifdef CONFIG_CTRL_IFACE_UDP
-#define COOKIE_LEN 8
-static unsigned char cookie[COOKIE_LEN];
-static unsigned char gcookie[COOKIE_LEN];
 #define HOSTAPD_CTRL_IFACE_PORT		8877
 #define HOSTAPD_CTRL_IFACE_PORT_LIMIT	50
 #define HOSTAPD_GLOBAL_CTRL_IFACE_PORT		8878
@@ -3529,7 +3526,7 @@ static void hostapd_ctrl_iface_receive(int sock, void *eloop_ctx,
 	int reply_len;
 	int level = MSG_DEBUG;
 #ifdef CONFIG_CTRL_IFACE_UDP
-	unsigned char lcookie[COOKIE_LEN];
+	unsigned char lcookie[CTRL_IFACE_COOKIE_LEN];
 #endif /* CONFIG_CTRL_IFACE_UDP */
 
 	res = recvfrom(sock, buf, sizeof(buf) - 1, 0,
@@ -3554,28 +3551,30 @@ static void hostapd_ctrl_iface_receive(int sock, void *eloop_ctx,
 #ifdef CONFIG_CTRL_IFACE_UDP
 	if (os_strcmp(buf, "GET_COOKIE") == 0) {
 		os_memcpy(reply, "COOKIE=", 7);
-		wpa_snprintf_hex(reply + 7, 2 * COOKIE_LEN + 1,
-				 cookie, COOKIE_LEN);
-		reply_len = 7 + 2 * COOKIE_LEN;
+		wpa_snprintf_hex(reply + 7, 2 * CTRL_IFACE_COOKIE_LEN + 1,
+				 hapd->ctrl_iface_cookie,
+				 CTRL_IFACE_COOKIE_LEN);
+		reply_len = 7 + 2 * CTRL_IFACE_COOKIE_LEN;
 		goto done;
 	}
 
 	if (os_strncmp(buf, "COOKIE=", 7) != 0 ||
-	    hexstr2bin(buf + 7, lcookie, COOKIE_LEN) < 0) {
+	    hexstr2bin(buf + 7, lcookie, CTRL_IFACE_COOKIE_LEN) < 0) {
 		wpa_printf(MSG_DEBUG,
 			   "CTRL: No cookie in the request - drop request");
 		os_free(reply);
 		return;
 	}
 
-	if (os_memcmp(cookie, lcookie, COOKIE_LEN) != 0) {
+	if (os_memcmp(hapd->ctrl_iface_cookie, lcookie,
+		      CTRL_IFACE_COOKIE_LEN) != 0) {
 		wpa_printf(MSG_DEBUG,
 			   "CTRL: Invalid cookie in the request - drop request");
 		os_free(reply);
 		return;
 	}
 
-	pos = buf + 7 + 2 * COOKIE_LEN;
+	pos = buf + 7 + 2 * CTRL_IFACE_COOKIE_LEN;
 	while (*pos == ' ')
 		pos++;
 #endif /* CONFIG_CTRL_IFACE_UDP */
@@ -3664,7 +3663,7 @@ int hostapd_ctrl_iface_init(struct hostapd_data *hapd)
 
 	dl_list_init(&hapd->ctrl_dst);
 	hapd->ctrl_sock = -1;
-	os_get_random(cookie, COOKIE_LEN);
+	os_get_random(hapd->ctrl_iface_cookie, CTRL_IFACE_COOKIE_LEN);
 
 #ifdef CONFIG_CTRL_IFACE_UDP_REMOTE
 	hints.ai_flags = AI_PASSIVE;
@@ -4243,7 +4242,7 @@ static int hostapd_global_ctrl_iface_ifname(struct hapd_interfaces *interfaces,
 static void hostapd_global_ctrl_iface_receive(int sock, void *eloop_ctx,
 					      void *sock_ctx)
 {
-	void *interfaces = eloop_ctx;
+	struct hapd_interfaces *interfaces = eloop_ctx;
 	char buffer[256], *buf = buffer;
 	int res;
 	struct sockaddr_storage from;
@@ -4252,7 +4251,7 @@ static void hostapd_global_ctrl_iface_receive(int sock, void *eloop_ctx,
 	int reply_len;
 	const int reply_size = 4096;
 #ifdef CONFIG_CTRL_IFACE_UDP
-	unsigned char lcookie[COOKIE_LEN];
+	unsigned char lcookie[CTRL_IFACE_COOKIE_LEN];
 #endif /* CONFIG_CTRL_IFACE_UDP */
 
 	res = recvfrom(sock, buffer, sizeof(buffer) - 1, 0,
@@ -4281,28 +4280,30 @@ static void hostapd_global_ctrl_iface_receive(int sock, void *eloop_ctx,
 #ifdef CONFIG_CTRL_IFACE_UDP
 	if (os_strcmp(buf, "GET_COOKIE") == 0) {
 		os_memcpy(reply, "COOKIE=", 7);
-		wpa_snprintf_hex(reply + 7, 2 * COOKIE_LEN + 1,
-				 gcookie, COOKIE_LEN);
-		reply_len = 7 + 2 * COOKIE_LEN;
+		wpa_snprintf_hex(reply + 7, 2 * CTRL_IFACE_COOKIE_LEN + 1,
+				 interfaces->ctrl_iface_cookie,
+				 CTRL_IFACE_COOKIE_LEN);
+		reply_len = 7 + 2 * CTRL_IFACE_COOKIE_LEN;
 		goto send_reply;
 	}
 
 	if (os_strncmp(buf, "COOKIE=", 7) != 0 ||
-	    hexstr2bin(buf + 7, lcookie, COOKIE_LEN) < 0) {
+	    hexstr2bin(buf + 7, lcookie, CTRL_IFACE_COOKIE_LEN) < 0) {
 		wpa_printf(MSG_DEBUG,
 			   "CTRL: No cookie in the request - drop request");
 		os_free(reply);
 		return;
 	}
 
-	if (os_memcmp(gcookie, lcookie, COOKIE_LEN) != 0) {
+	if (os_memcmp(interfaces->ctrl_iface_cookie, lcookie,
+		      CTRL_IFACE_COOKIE_LEN) != 0) {
 		wpa_printf(MSG_DEBUG,
 			   "CTRL: Invalid cookie in the request - drop request");
 		os_free(reply);
 		return;
 	}
 
-	buf += 7 + 2 * COOKIE_LEN;
+	buf += 7 + 2 * CTRL_IFACE_COOKIE_LEN;
 	while (*buf == ' ')
 		buf++;
 #endif /* CONFIG_CTRL_IFACE_UDP */
@@ -4446,7 +4447,7 @@ int hostapd_global_ctrl_iface_init(struct hapd_interfaces *interface)
 		}
 	}
 
-	os_get_random(gcookie, COOKIE_LEN);
+	os_get_random(interface->ctrl_iface_cookie, CTRL_IFACE_COOKIE_LEN);
 
 #ifdef CONFIG_CTRL_IFACE_UDP_REMOTE
 	hints.ai_flags = AI_PASSIVE;
