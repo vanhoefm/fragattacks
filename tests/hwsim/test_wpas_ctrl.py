@@ -802,6 +802,7 @@ def test_wpas_ctrl_level(dev):
     finally:
         dev[2].mon.request("LEVEL 3")
 
+@remote_compatible
 def test_wpas_ctrl_bssid_filter(dev, apdev):
     """wpa_supplicant bssid_filter"""
     try:
@@ -818,7 +819,8 @@ def test_wpas_ctrl_bssid_filter(dev, apdev):
         bss = dev[2].get_bss(apdev[1]['bssid'])
         if bss and len(bss) != 0:
             raise Exception("Unexpected BSS data")
-        dev[2].request("SET bssid_filter ")
+        dev[2].request("SET bssid_filter " + apdev[0]['bssid'] + " " + \
+                       apdev[1]['bssid'])
         dev[2].scan(freq="2412")
         bss = dev[2].get_bss(apdev[0]['bssid'])
         if bss is None or len(bss) == 0:
