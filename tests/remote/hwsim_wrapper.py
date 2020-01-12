@@ -67,13 +67,15 @@ def run_hwsim_test(devices, setup_params, refs, duts, monitors, hwsim_test):
             dut_host.dev['bssid'] = rutils.get_mac_addr(dut_host)
             apdev.append(dut_host.dev)
 
-        # run hwsim test/currently only 2 params tests
         if hwsim_test.__code__.co_argcount == 1:
             hwsim_test(dev)
         elif hwsim_test.__code__.co_argcount == 2:
             hwsim_test(dev, apdev)
         else:
-            raise Exception("more than 2 arguments required")
+            params = {}
+            params['long'] = 1
+            params['logdir'] = local_log_dir
+            hwsim_test(dev, apdev, params)
 
        # hostapd/wpa_supplicant cleanup
         for wpas in dev:
