@@ -239,6 +239,8 @@ def get_ipv6(client, ifname=None):
 
     for line in lines:
         res = line.find("Scope:Link")
+        if res == -1:
+            res = line.find("<link>")
         if res != -1:
             break
 
@@ -248,6 +250,8 @@ def get_ipv6(client, ifname=None):
             addr_mask = words[2]
             addr = addr_mask.split("/")
             return addr[0]
+        if words[0] == "inet6":
+            return words[1]
 
     return "unknown"
 
@@ -281,7 +285,7 @@ def get_mac_addr(host, iface=None):
     for word in words:
         if found == 1:
             return word
-        if word == "HWaddr":
+        if word == "HWaddr" or word == "ether":
             found = 1
     raise Exception("Could not find HWaddr")
 
