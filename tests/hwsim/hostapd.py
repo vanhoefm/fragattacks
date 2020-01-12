@@ -757,3 +757,35 @@ def cmd_execute(apdev, cmd, shell=False):
 def send_file(apdev, src, dst):
     hapd_global = HostapdGlobal(apdev)
     return hapd_global.send_file(src, dst)
+
+def acl_file(dev, apdev, conf):
+    filename = os.path.join("/tmp", conf)
+
+    if conf == 'hostapd.macaddr':
+        with open(filename, 'w') as f:
+            mac0 = dev[0].get_status_field("address")
+            f.write(mac0 + '\n')
+            f.write("02:00:00:00:00:12\n")
+            f.write("02:00:00:00:00:34\n")
+            f.write("-02:00:00:00:00:12\n")
+            f.write("-02:00:00:00:00:34\n")
+            f.write("01:01:01:01:01:01\n")
+            f.write("03:01:01:01:01:03\n")
+    elif conf == 'hostapd.accept':
+        with open(filename, 'w') as f:
+            mac0 = dev[0].get_status_field("address")
+            mac1 = dev[1].get_status_field("address")
+            f.write(mac0 + "    1\n")
+            f.write(mac1 + "    2\n")
+    elif conf == 'hostapd.accept2':
+        with open(filename, 'w') as f:
+            mac0 = dev[0].get_status_field("address")
+            mac1 = dev[1].get_status_field("address")
+            mac2 = dev[2].get_status_field("address")
+            f.write(mac0 + "    1\n")
+            f.write(mac1 + "    2\n")
+            f.write(mac2 + "    3\n")
+    else:
+        return conf
+
+    return filename

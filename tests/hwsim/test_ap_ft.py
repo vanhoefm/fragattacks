@@ -336,15 +336,18 @@ def test_ap_ft_vlan(dev, apdev):
     """WPA2-PSK-FT AP with VLAN"""
     ssid = "test-ft"
     passphrase = "12345678"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.accept')
+    hostapd.send_file(apdev[0], filename, filename)
+    hostapd.send_file(apdev[1], filename, filename)
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
 
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, conndev="brvlan1")
@@ -355,16 +358,19 @@ def test_ap_ft_vlan_disconnected(dev, apdev):
     """WPA2-PSK-FT AP with VLAN and local key generation"""
     ssid = "test-ft"
     passphrase = "12345678"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.accept')
+    hostapd.send_file(apdev[0], filename, filename)
+    hostapd.send_file(apdev[1], filename, filename)
 
     params = ft_params1a(ssid=ssid, passphrase=passphrase)
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     params['ft_psk_generate_local'] = "1"
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
 
     params = ft_params2a(ssid=ssid, passphrase=passphrase)
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     params['ft_psk_generate_local'] = "1"
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
@@ -376,10 +382,12 @@ def test_ap_ft_vlan_2(dev, apdev):
     """WPA2-PSK-FT AP with VLAN and dest-AP does not have VLAN info locally"""
     ssid = "test-ft"
     passphrase = "12345678"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.accept')
+    hostapd.send_file(apdev[0], filename, filename)
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
 
     params = ft_params2(ssid=ssid, passphrase=passphrase)
@@ -407,15 +415,18 @@ def test_ap_ft_many_vlan(dev, apdev):
     """WPA2-PSK-FT AP with VLAN multiple times"""
     ssid = "test-ft"
     passphrase = "12345678"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.accept')
+    hostapd.send_file(apdev[0], filename, filename)
+    hostapd.send_file(apdev[1], filename, filename)
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
 
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, roams=50,
@@ -707,14 +718,17 @@ def test_ap_ft_vlan_over_ds(dev, apdev):
     """WPA2-PSK-FT AP over DS with VLAN"""
     ssid = "test-ft"
     passphrase = "12345678"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.accept')
+    hostapd.send_file(apdev[0], filename, filename)
+    hostapd.send_file(apdev[1], filename, filename)
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
@@ -739,14 +753,17 @@ def test_ap_ft_vlan_over_ds_many(dev, apdev):
     """WPA2-PSK-FT AP over DS with VLAN multiple times"""
     ssid = "test-ft"
     passphrase = "12345678"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.accept')
+    hostapd.send_file(apdev[0], filename, filename)
+    hostapd.send_file(apdev[1], filename, filename)
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
@@ -944,16 +961,19 @@ def test_ap_ft_over_ds_pull_vlan(dev, apdev):
     """WPA2-PSK-FT AP over DS (pull PMK) with VLAN"""
     ssid = "test-ft"
     passphrase = "12345678"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.accept')
+    hostapd.send_file(apdev[0], filename, filename)
+    hostapd.send_file(apdev[1], filename, filename)
 
     params = ft_params1(ssid=ssid, passphrase=passphrase)
     params["pmk_r1_push"] = "0"
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     hapd0 = hostapd.add_ap(apdev[0]['ifname'], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params["pmk_r1_push"] = "0"
     params['dynamic_vlan'] = "1"
-    params['accept_mac_file'] = "hostapd.accept"
+    params['accept_mac_file'] = filename
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,

@@ -283,11 +283,13 @@ def test_hapd_ctrl_ess_disassoc(dev, apdev):
 def test_hapd_ctrl_set_deny_mac_file(dev, apdev):
     """hostapd and SET deny_mac_file ctrl_iface command"""
     ssid = "hapd-ctrl"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.macaddr')
     params = {"ssid": ssid}
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
     dev[1].connect(ssid, key_mgmt="NONE", scan_freq="2412")
-    if "OK" not in hapd.request("SET deny_mac_file hostapd.macaddr"):
+    hapd.send_file(filename, filename)
+    if "OK" not in hapd.request("SET deny_mac_file " + filename):
         raise Exception("Unexpected SET failure")
     dev[0].wait_disconnected(timeout=15)
     ev = dev[1].wait_event(["CTRL-EVENT-DISCONNECTED"], 1)
@@ -297,12 +299,14 @@ def test_hapd_ctrl_set_deny_mac_file(dev, apdev):
 def test_hapd_ctrl_set_accept_mac_file(dev, apdev):
     """hostapd and SET accept_mac_file ctrl_iface command"""
     ssid = "hapd-ctrl"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.macaddr')
     params = {"ssid": ssid}
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
     dev[1].connect(ssid, key_mgmt="NONE", scan_freq="2412")
+    hapd.send_file(filename, filename)
     hapd.request("SET macaddr_acl 1")
-    if "OK" not in hapd.request("SET accept_mac_file hostapd.macaddr"):
+    if "OK" not in hapd.request("SET accept_mac_file " + filename):
         raise Exception("Unexpected SET failure")
     dev[1].wait_disconnected(timeout=15)
     ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], 1)
@@ -312,12 +316,14 @@ def test_hapd_ctrl_set_accept_mac_file(dev, apdev):
 def test_hapd_ctrl_set_accept_mac_file_vlan(dev, apdev):
     """hostapd and SET accept_mac_file ctrl_iface command (VLAN ID)"""
     ssid = "hapd-ctrl"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.accept')
     params = {"ssid": ssid}
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
     dev[1].connect(ssid, key_mgmt="NONE", scan_freq="2412")
+    hapd.send_file(filename, filename)
     hapd.request("SET macaddr_acl 1")
-    if "OK" not in hapd.request("SET accept_mac_file hostapd.accept"):
+    if "OK" not in hapd.request("SET accept_mac_file " + filename):
         raise Exception("Unexpected SET failure")
     dev[1].wait_disconnected(timeout=15)
     dev[0].wait_disconnected(timeout=15)

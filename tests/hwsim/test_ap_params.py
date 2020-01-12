@@ -140,8 +140,10 @@ def test_ap_acl_accept(dev, apdev):
     """MAC ACL accept list"""
     ssid = "acl"
     params = {}
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.macaddr')
+    hostapd.send_file(apdev[0], filename, filename)
     params['ssid'] = ssid
-    params['accept_mac_file'] = "hostapd.macaddr"
+    params['accept_mac_file'] = filename
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412")
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
@@ -161,8 +163,10 @@ def test_ap_acl_deny(dev, apdev):
     """MAC ACL deny list"""
     ssid = "acl"
     params = {}
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.macaddr')
+    hostapd.send_file(apdev[0], filename, filename)
     params['ssid'] = ssid
-    params['deny_mac_file'] = "hostapd.macaddr"
+    params['deny_mac_file'] = filename
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412", passive=True)
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412", wait_connect=False)
@@ -176,8 +180,10 @@ def test_ap_acl_mgmt(dev, apdev):
     """MAC ACL accept/deny management"""
     ssid = "acl"
     params = {}
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.macaddr')
+    hostapd.send_file(apdev[0], filename, filename)
     params['ssid'] = ssid
-    params['deny_mac_file'] = "hostapd.macaddr"
+    params['deny_mac_file'] = filename
     hapd = hostapd.add_ap(apdev[0], params)
 
     accept = hapd.request("ACCEPT_ACL SHOW").splitlines()
