@@ -88,10 +88,10 @@ def run_hwsim_test(devices, setup_params, refs, duts, monitors, hwsim_test):
             monitor.remove(dut_host)
 
         for ref_host in ref_hosts:
-            ref_host.execute(["killall", "wpa_supplicant"])
+            rutils.kill_wpasupplicant(ref_host, setup_params)
             ref_host.get_logs(local_log_dir)
         for dut_host in dut_hosts:
-            dut_host.execute(["killall", "hostapd"])
+            rutils.kill_hostapd(dut_host, setup_params)
             dut_host.get_logs(local_log_dir)
         if mon is not None:
             wlantest.Wlantest.reset_remote_wlantest()
@@ -113,10 +113,10 @@ def run_hwsim_test(devices, setup_params, refs, duts, monitors, hwsim_test):
             monitor.remove(dut_host)
 
         for ref_host in ref_hosts:
-            ref_host.execute(["killall", "wpa_supplicant"])
+            rutils.kill_wpasupplicant(ref_host, setup_params)
             ref_host.get_logs(local_log_dir)
         for dut_host in dut_hosts:
-            dut_host.execute(["killall", "hostapd"])
+            rutils.kill_hostapd(dut_host, setup_params)
             dut_host.get_logs(local_log_dir)
         if mon is not None:
             wlantest.Wlantest.reset_remote_wlantest()

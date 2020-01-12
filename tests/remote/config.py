@@ -17,8 +17,8 @@ logger = logging.getLogger()
 # definitions in the format as below. In other case HWSIM cfg will be used.
 #
 setup_params = {"setup_hw" : "./tests/setup_hw.sh",
-                "hostapd" : "./tests/hostapd",
-                "wpa_supplicant" : "./tests/wpa_supplicant",
+                "hostapd" : "./tests/hostapd-rt",
+                "wpa_supplicant" : "./tests/wpa_supplicant-rt",
                 "iperf" : "iperf",
                 "wlantest" : "./tests/wlantest",
                 "wlantest_cli" : "./tests/wlantest_cli",

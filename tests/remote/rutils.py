@@ -138,6 +138,12 @@ def run_wpasupplicant(host, setup_params):
     if status != 0:
         raise Exception("Could not run wpa_supplicant: " + buf)
 
+def kill_wpasupplicant(host, setup_params):
+    host.execute(['killall', setup_params['wpa_supplicant']])
+
+def kill_hostapd(host, setup_params):
+    host.execute(['killall', setup_params['hostapd']])
+
 def get_ap_params(channel="1", bw="HT20", country="US", security="open", ht_capab=None, vht_capab=None):
     ssid = "test_" + channel + "_" + security + "_" + bw
 
