@@ -975,21 +975,15 @@ fail:
 }
 
 
-static int acs_request_scan(struct hostapd_iface *iface)
+static int * acs_request_scan_add_freqs(struct hostapd_iface *iface,
+					struct hostapd_hw_modes *mode,
+					int *freq)
 {
-	struct wpa_driver_scan_params params;
 	struct hostapd_channel_data *chan;
-	int i, *freq;
+	int i;
 
-	os_memset(&params, 0, sizeof(params));
-	params.freqs = os_calloc(iface->current_mode->num_channels + 1,
-				 sizeof(params.freqs[0]));
-	if (params.freqs == NULL)
-		return -1;
-
-	freq = params.freqs;
-	for (i = 0; i < iface->current_mode->num_channels; i++) {
-		chan = &iface->current_mode->channels[i];
+	for (i = 0; i < mode->num_channels; i++) {
+		chan = &mode->channels[i];
 		if (chan->flag & HOSTAPD_CHAN_DISABLED)
 			continue;
 
@@ -998,6 +992,39 @@ static int acs_request_scan(struct hostapd_iface *iface)
 
 		*freq++ = chan->freq;
 	}
+
+	return freq;
+}
+
+
+static int acs_request_scan(struct hostapd_iface *iface)
+{
+	struct wpa_driver_scan_params params;
+	int i, *freq;
+	int num_channels;
+	struct hostapd_hw_modes *mode;
+
+	os_memset(&params, 0, sizeof(params));
+
+	num_channels = 0;
+	for (i = 0; i < iface->num_hw_features; i++) {
+		mode = &iface->hw_features[i];
+		if (!hostapd_hw_skip_mode(iface, mode))
+			num_channels += mode->num_channels;
+	}
+
+	params.freqs = os_calloc(num_channels + 1, sizeof(params.freqs[0]));
+	if (params.freqs == NULL)
+		return -1;
+
+	freq = params.freqs;
+
+	for (i = 0; i < iface->num_hw_features; i++) {
+		mode = &iface->hw_features[i];
+		if (!hostapd_hw_skip_mode(iface, mode))
+			freq = acs_request_scan_add_freqs(iface, mode, freq);
+	}
+
 	*freq = 0;
 
 	if (params.freqs == freq) {
