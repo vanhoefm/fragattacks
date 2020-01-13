@@ -1085,3 +1085,20 @@ int hostapd_hw_get_channel(struct hostapd_data *hapd, int freq)
 	}
 	return 0;
 }
+
+
+int hostapd_hw_skip_mode(struct hostapd_iface *iface,
+			 struct hostapd_hw_modes *mode)
+{
+	int i;
+
+	if (iface->current_mode)
+		return mode != iface->current_mode;
+	if (mode->mode != HOSTAPD_MODE_IEEE80211B)
+		return 0;
+	for (i = 0; i < iface->num_hw_features; i++) {
+		if (iface->hw_features[i].mode == HOSTAPD_MODE_IEEE80211G)
+			return 1;
+	}
+	return 0;
+}

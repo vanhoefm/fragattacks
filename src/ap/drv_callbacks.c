@@ -1429,15 +1429,33 @@ static void hostapd_event_eapol_rx(struct hostapd_data *hapd, const u8 *src,
 #endif /* HOSTAPD */
 
 
+static struct hostapd_channel_data *
+hostapd_get_mode_chan(struct hostapd_hw_modes *mode, unsigned int freq)
+{
+	int i;
+	struct hostapd_channel_data *chan;
+
+	for (i = 0; i < mode->num_channels; i++) {
+		chan = &mode->channels[i];
+		if ((unsigned int) chan->freq == freq)
+			return chan;
+	}
+
+	return NULL;
+}
+
+
 static struct hostapd_channel_data * hostapd_get_mode_channel(
 	struct hostapd_iface *iface, unsigned int freq)
 {
 	int i;
 	struct hostapd_channel_data *chan;
 
-	for (i = 0; i < iface->current_mode->num_channels; i++) {
-		chan = &iface->current_mode->channels[i];
-		if ((unsigned int) chan->freq == freq)
+	for (i = 0; i < iface->num_hw_features; i++) {
+		if (hostapd_hw_skip_mode(iface, &iface->hw_features[i]))
+			continue;
+		chan = hostapd_get_mode_chan(&iface->hw_features[i], freq);
+		if (chan)
 			return chan;
 	}
 
