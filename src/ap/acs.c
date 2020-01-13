@@ -512,14 +512,14 @@ static int is_in_chanlist(struct hostapd_iface *iface,
 }
 
 
-static void acs_survey_all_chans_interference_factor(
-	struct hostapd_iface *iface)
+static void acs_survey_mode_interference_factor(
+	struct hostapd_iface *iface, struct hostapd_hw_modes *mode)
 {
 	int i;
 	struct hostapd_channel_data *chan;
 
-	for (i = 0; i < iface->current_mode->num_channels; i++) {
-		chan = &iface->current_mode->channels[i];
+	for (i = 0; i < mode->num_channels; i++) {
+		chan = &mode->channels[i];
 
 		if (!acs_usable_chan(chan))
 			continue;
@@ -534,6 +534,20 @@ static void acs_survey_all_chans_interference_factor(
 
 		wpa_printf(MSG_DEBUG, "ACS:  * interference factor average: %Lg",
 			   chan->interference_factor);
+	}
+}
+
+
+static void acs_survey_all_chans_interference_factor(
+	struct hostapd_iface *iface)
+{
+	int i;
+	struct hostapd_hw_modes *mode;
+
+	for (i = 0; i < iface->num_hw_features; i++) {
+		mode = &iface->hw_features[i];
+		if (!hostapd_hw_skip_mode(iface, mode))
+			acs_survey_mode_interference_factor(iface, mode);
 	}
 }
 
