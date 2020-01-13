@@ -879,10 +879,43 @@ static int hostapd_is_usable_chans(struct hostapd_iface *iface)
 }
 
 
+static void hostapd_determine_mode(struct hostapd_iface *iface)
+{
+	int i;
+	enum hostapd_hw_mode target_mode;
+
+	if (iface->current_mode ||
+	    iface->conf->hw_mode != HOSTAPD_MODE_IEEE80211ANY)
+		return;
+
+	if (iface->freq < 4000)
+		target_mode = HOSTAPD_MODE_IEEE80211G;
+	else if (iface->freq > 50000)
+		target_mode = HOSTAPD_MODE_IEEE80211AD;
+	else
+		target_mode = HOSTAPD_MODE_IEEE80211A;
+
+	for (i = 0; i < iface->num_hw_features; i++) {
+		struct hostapd_hw_modes *mode;
+
+		mode = &iface->hw_features[i];
+		if (mode->mode == target_mode) {
+			iface->current_mode = mode;
+			iface->conf->hw_mode = mode->mode;
+			break;
+		}
+	}
+
+	if (!iface->current_mode)
+		wpa_printf(MSG_ERROR, "ACS: Cannot decide mode");
+}
+
+
 static enum hostapd_chan_status
 hostapd_check_chans(struct hostapd_iface *iface)
 {
 	if (iface->freq) {
+		hostapd_determine_mode(iface);
 		if (hostapd_is_usable_chans(iface))
 			return HOSTAPD_CHAN_VALID;
 		else
