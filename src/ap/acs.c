@@ -622,58 +622,24 @@ static int is_common_24ghz_chan(int chan)
 #define ACS_24GHZ_PREFER_1_6_11 0.8
 #endif /* ACS_24GHZ_PREFER_1_6_11 */
 
-/*
- * At this point it's assumed chan->interference_factor has been computed.
- * This function should be reusable regardless of interference computation
- * option (survey, BSS, spectral, ...). chan->interference factor must be
- * summable (i.e., must be always greater than zero).
- */
-static struct hostapd_channel_data *
-acs_find_ideal_chan(struct hostapd_iface *iface)
+static void
+acs_find_ideal_chan_mode(struct hostapd_iface *iface,
+			 struct hostapd_hw_modes *mode,
+			 int n_chans, u32 bw,
+			 struct hostapd_channel_data **rand_chan,
+			 struct hostapd_channel_data **ideal_chan,
+			 long double *ideal_factor)
 {
-	struct hostapd_channel_data *chan, *adj_chan, *ideal_chan = NULL,
-		*rand_chan = NULL;
-	long double factor, ideal_factor = 0;
+	struct hostapd_channel_data *chan, *adj_chan = NULL;
+	long double factor;
 	int i, j;
-	int n_chans = 1;
-	u32 bw;
 	unsigned int k;
 
-	/* TODO: HT40- support */
-
-	if (iface->conf->ieee80211n &&
-	    iface->conf->secondary_channel == -1) {
-		wpa_printf(MSG_ERROR, "ACS: HT40- is not supported yet. Please try HT40+");
-		return NULL;
-	}
-
-	if (iface->conf->ieee80211n &&
-	    iface->conf->secondary_channel)
-		n_chans = 2;
-
-	if (iface->conf->ieee80211ac || iface->conf->ieee80211ax) {
-		switch (hostapd_get_oper_chwidth(iface->conf)) {
-		case CHANWIDTH_80MHZ:
-			n_chans = 4;
-			break;
-		case CHANWIDTH_160MHZ:
-			n_chans = 8;
-			break;
-		}
-	}
-
-	bw = num_chan_to_bw(n_chans);
-
-	/* TODO: VHT/HE80+80. Update acs_adjust_center_freq() too. */
-
-	wpa_printf(MSG_DEBUG,
-		   "ACS: Survey analysis for selected bandwidth %d MHz", bw);
-
-	for (i = 0; i < iface->current_mode->num_channels; i++) {
+	for (i = 0; i < mode->num_channels; i++) {
 		double total_weight;
 		struct acs_bias *bias, tmp_bias;
 
-		chan = &iface->current_mode->channels[i];
+		chan = &mode->channels[i];
 
 		/* Since in the current ACS implementation the first channel is
 		 * always a primary channel, skip channels not available as
@@ -694,7 +660,7 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 
 		/* HT40 on 5 GHz has a limited set of primary channels as per
 		 * 11n Annex J */
-		if (iface->current_mode->mode == HOSTAPD_MODE_IEEE80211A &&
+		if (mode->mode == HOSTAPD_MODE_IEEE80211A &&
 		    iface->conf->ieee80211n &&
 		    iface->conf->secondary_channel &&
 		    !acs_usable_ht40_chan(chan)) {
@@ -703,7 +669,7 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 			continue;
 		}
 
-		if (iface->current_mode->mode == HOSTAPD_MODE_IEEE80211A &&
+		if (mode->mode == HOSTAPD_MODE_IEEE80211A &&
 		    (iface->conf->ieee80211ac || iface->conf->ieee80211ax)) {
 			if (hostapd_get_oper_chwidth(iface->conf) ==
 			    CHANWIDTH_80MHZ &&
@@ -755,7 +721,7 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 
 		/* 2.4 GHz has overlapping 20 MHz channels. Include adjacent
 		 * channel interference factor. */
-		if (is_24ghz_mode(iface->current_mode->mode)) {
+		if (is_24ghz_mode(mode->mode)) {
 			for (j = 0; j < n_chans; j++) {
 				adj_chan = acs_find_chan(iface, chan->freq +
 							 (j * 20) - 5);
@@ -801,7 +767,7 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 					break;
 				bias = NULL;
 			}
-		} else if (is_24ghz_mode(iface->current_mode->mode) &&
+		} else if (is_24ghz_mode(mode->mode) &&
 			   is_common_24ghz_chan(chan->chan)) {
 			tmp_bias.channel = chan->chan;
 			tmp_bias.bias = ACS_24GHZ_PREFER_1_6_11;
@@ -820,14 +786,71 @@ acs_find_ideal_chan(struct hostapd_iface *iface)
 		}
 
 		if (acs_usable_chan(chan) &&
-		    (!ideal_chan || factor < ideal_factor)) {
-			ideal_factor = factor;
-			ideal_chan = chan;
+		    (!*ideal_chan || factor < *ideal_factor)) {
+			*ideal_factor = factor;
+			*ideal_chan = chan;
 		}
 
 		/* This channel would at least be usable */
-		if (!rand_chan)
-			rand_chan = chan;
+		if (!(*rand_chan))
+			*rand_chan = chan;
+	}
+}
+
+
+/*
+ * At this point it's assumed chan->interference_factor has been computed.
+ * This function should be reusable regardless of interference computation
+ * option (survey, BSS, spectral, ...). chan->interference factor must be
+ * summable (i.e., must be always greater than zero).
+ */
+static struct hostapd_channel_data *
+acs_find_ideal_chan(struct hostapd_iface *iface)
+{
+	struct hostapd_channel_data *ideal_chan = NULL,
+		*rand_chan = NULL;
+	long double ideal_factor = 0;
+	int i;
+	int n_chans = 1;
+	u32 bw;
+	struct hostapd_hw_modes *mode;
+
+	/* TODO: HT40- support */
+
+	if (iface->conf->ieee80211n &&
+	    iface->conf->secondary_channel == -1) {
+		wpa_printf(MSG_ERROR, "ACS: HT40- is not supported yet. Please try HT40+");
+		return NULL;
+	}
+
+	if (iface->conf->ieee80211n &&
+	    iface->conf->secondary_channel)
+		n_chans = 2;
+
+	if (iface->conf->ieee80211ac || iface->conf->ieee80211ax) {
+		switch (hostapd_get_oper_chwidth(iface->conf)) {
+		case CHANWIDTH_80MHZ:
+			n_chans = 4;
+			break;
+		case CHANWIDTH_160MHZ:
+			n_chans = 8;
+			break;
+		}
+	}
+
+	bw = num_chan_to_bw(n_chans);
+
+	/* TODO: VHT/HE80+80. Update acs_adjust_center_freq() too. */
+
+	wpa_printf(MSG_DEBUG,
+		   "ACS: Survey analysis for selected bandwidth %d MHz", bw);
+
+	for (i = 0; i < iface->num_hw_features; i++) {
+		mode = &iface->hw_features[i];
+		if (!hostapd_hw_skip_mode(iface, mode))
+			acs_find_ideal_chan_mode(iface, mode, n_chans, bw,
+						 &rand_chan, &ideal_chan,
+						 &ideal_factor);
 	}
 
 	if (ideal_chan) {
