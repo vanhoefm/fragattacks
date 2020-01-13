@@ -538,20 +538,40 @@ static void acs_survey_all_chans_interference_factor(
 }
 
 
-static struct hostapd_channel_data *acs_find_chan(struct hostapd_iface *iface,
-						  int freq)
+static struct hostapd_channel_data *
+acs_find_chan_mode(struct hostapd_hw_modes *mode, int freq)
 {
 	struct hostapd_channel_data *chan;
 	int i;
 
-	for (i = 0; i < iface->current_mode->num_channels; i++) {
-		chan = &iface->current_mode->channels[i];
+	for (i = 0; i < mode->num_channels; i++) {
+		chan = &mode->channels[i];
 
 		if (chan->flag & HOSTAPD_CHAN_DISABLED)
 			continue;
 
 		if (chan->freq == freq)
 			return chan;
+	}
+
+	return NULL;
+}
+
+
+static struct hostapd_channel_data *
+acs_find_chan(struct hostapd_iface *iface, int freq)
+{
+	int i;
+	struct hostapd_hw_modes *mode;
+	struct hostapd_channel_data *chan;
+
+	for (i = 0; i < iface->num_hw_features; i++) {
+		mode = &iface->hw_features[i];
+		if (!hostapd_hw_skip_mode(iface, mode)) {
+			chan = acs_find_chan_mode(mode, freq);
+			if (chan)
+				return chan;
+		}
 	}
 
 	return NULL;
