@@ -462,21 +462,35 @@ static int acs_survey_list_is_sufficient(struct hostapd_channel_data *chan)
 }
 
 
-static int acs_surveys_are_sufficient(struct hostapd_iface *iface)
+static int acs_surveys_are_sufficient_mode(struct hostapd_hw_modes *mode)
 {
 	int i;
 	struct hostapd_channel_data *chan;
-	int valid = 0;
 
-	for (i = 0; i < iface->current_mode->num_channels; i++) {
-		chan = &iface->current_mode->channels[i];
+	for (i = 0; i < mode->num_channels; i++) {
+		chan = &mode->channels[i];
 		if (!(chan->flag & HOSTAPD_CHAN_DISABLED) &&
 		    acs_survey_list_is_sufficient(chan))
-			valid++;
+			return 1;
 	}
 
-	/* We need at least survey data for one channel */
-	return !!valid;
+	return 0;
+}
+
+
+static int acs_surveys_are_sufficient(struct hostapd_iface *iface)
+{
+	int i;
+	struct hostapd_hw_modes *mode;
+
+	for (i = 0; i < iface->num_hw_features; i++) {
+		mode = &iface->hw_features[i];
+		if (!hostapd_hw_skip_mode(iface, mode) &&
+		    acs_surveys_are_sufficient_mode(mode))
+			return 1;
+	}
+
+	return 0;
 }
 
 
