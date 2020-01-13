@@ -261,13 +261,13 @@ static void acs_clean_chan_surveys(struct hostapd_channel_data *chan)
 }
 
 
-void acs_cleanup(struct hostapd_iface *iface)
+static void acs_cleanup_mode(struct hostapd_hw_modes *mode)
 {
 	int i;
 	struct hostapd_channel_data *chan;
 
-	for (i = 0; i < iface->current_mode->num_channels; i++) {
-		chan = &iface->current_mode->channels[i];
+	for (i = 0; i < mode->num_channels; i++) {
+		chan = &mode->channels[i];
 
 		if (chan->flag & HOSTAPD_CHAN_SURVEY_LIST_INITIALIZED)
 			acs_clean_chan_surveys(chan);
@@ -276,6 +276,15 @@ void acs_cleanup(struct hostapd_iface *iface)
 		chan->flag |= HOSTAPD_CHAN_SURVEY_LIST_INITIALIZED;
 		chan->min_nf = 0;
 	}
+}
+
+
+void acs_cleanup(struct hostapd_iface *iface)
+{
+	int i;
+
+	for (i = 0; i < iface->num_hw_features; i++)
+		acs_cleanup_mode(&iface->hw_features[i]);
 
 	iface->chans_surveyed = 0;
 	iface->acs_num_completed_scans = 0;
