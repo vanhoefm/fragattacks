@@ -468,9 +468,9 @@ int hostapd_set_freq_params(struct hostapd_freq_params *data,
 			data->bandwidth = (1 << (u8) bw) * 20;
 			data->center_freq1 = freq1;
 			data->center_freq2 = freq2;
-			data->ht_enabled = 0;
-			data->vht_enabled = 0;
 		}
+		data->ht_enabled = 0;
+		data->vht_enabled = 0;
 
 		return 0;
 	}
