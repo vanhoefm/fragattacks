@@ -1041,9 +1041,15 @@ int hostapd_select_hw_mode(struct hostapd_iface *iface)
 	}
 
 	if (iface->current_mode == NULL) {
-		if (!(iface->drv_flags & WPA_DRIVER_FLAGS_ACS_OFFLOAD) ||
-		    !(iface->drv_flags & WPA_DRIVER_FLAGS_SUPPORT_HW_MODE_ANY))
-		{
+		if ((iface->drv_flags & WPA_DRIVER_FLAGS_ACS_OFFLOAD) &&
+		    (iface->drv_flags & WPA_DRIVER_FLAGS_SUPPORT_HW_MODE_ANY)) {
+			wpa_printf(MSG_DEBUG,
+				   "Using offloaded hw_mode=any ACS");
+		} else if (!(iface->drv_flags & WPA_DRIVER_FLAGS_ACS_OFFLOAD) &&
+			   iface->conf->hw_mode == HOSTAPD_MODE_IEEE80211ANY) {
+			wpa_printf(MSG_DEBUG,
+				   "Using internal ACS for hw_mode=any");
+		} else {
 			wpa_printf(MSG_ERROR,
 				   "Hardware does not support configured mode");
 			hostapd_logger(iface->bss[0], NULL,

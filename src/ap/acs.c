@@ -1085,7 +1085,8 @@ enum hostapd_chan_status acs_init(struct hostapd_iface *iface)
 		return HOSTAPD_CHAN_ACS;
 	}
 
-	if (!iface->current_mode)
+	if (!iface->current_mode &&
+	    iface->conf->hw_mode != HOSTAPD_MODE_IEEE80211ANY)
 		return HOSTAPD_CHAN_INVALID;
 
 	acs_cleanup(iface);
