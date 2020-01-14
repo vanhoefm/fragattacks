@@ -5786,12 +5786,22 @@ enum qca_wlan_vendor_attr_rrop_info {
 enum qca_wlan_vendor_attr_rtplinst {
 	QCA_WLAN_VENDOR_ATTR_RTPLINST_INVALID = 0,
 
-	/* Primary channel number (u8) */
+	/* Primary channel number (u8).
+	 * Note: If both the driver and user space application support the
+	 * 6 GHz band, this attribute is deprecated and
+	 * QCA_WLAN_VENDOR_ATTR_RTPLINST_PRIMARY_FREQUENCY should be used. To
+	 * maintain backward compatibility,
+	 * QCA_WLAN_VENDOR_ATTR_RTPLINST_PRIMARY is still used if either the
+	 * driver or user space application or both do not support the 6 GHz
+	 * band.
+	 */
 	QCA_WLAN_VENDOR_ATTR_RTPLINST_PRIMARY = 1,
 	/* Representative Tx power in dBm (s32) with emphasis on throughput. */
 	QCA_WLAN_VENDOR_ATTR_RTPLINST_TXPOWER_THROUGHPUT = 2,
 	/* Representative Tx power in dBm (s32) with emphasis on range. */
 	QCA_WLAN_VENDOR_ATTR_RTPLINST_TXPOWER_RANGE = 3,
+	/* Primary channel center frequency (u32) in MHz */
+	QCA_WLAN_VENDOR_ATTR_RTPLINST_PRIMARY_FREQUENCY = 4,
 
 	QCA_WLAN_VENDOR_ATTR_RTPLINST_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_RTPLINST_MAX =
