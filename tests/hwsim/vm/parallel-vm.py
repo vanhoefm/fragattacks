@@ -104,7 +104,7 @@ def vm_read_stdout(vm, test_queue):
         if e.errno == errno.EAGAIN:
             return False
         raise
-    logger.debug("VM[%d] stdout.read[%s]" % (vm['idx'], out))
+    logger.debug("VM[%d] stdout.read[%s]" % (vm['idx'], out.rstrip()))
     pending = vm['pending'] + out
     lines = []
     while True:
@@ -389,6 +389,8 @@ def main():
                    help="run tests under valgrind")
     p.add_argument('--telnet', dest='telnet', metavar='<baseport>', type=int,
                    help="enable telnet server inside VMs, specify the base port here")
+    p.add_argument('--nocurses', dest='nocurses', action='store_const',
+                   const=True, default=False, help="Don't use curses for output")
     p.add_argument('params', nargs='*')
     args = p.parse_args()
 
@@ -452,7 +454,10 @@ def main():
         tests = [t for t in tests if t not in long_tests]
 
     logger.setLevel(debug_level)
-    log_handler = logging.FileHandler('parallel-vm.log')
+    if not args.nocurses:
+        log_handler = logging.FileHandler('parallel-vm.log')
+    else:
+        log_handler = logging.StreamHandler(sys.stdout)
     log_handler.setLevel(debug_level)
     fmt = "%(asctime)s %(levelname)s %(message)s"
     log_formatter = logging.Formatter(fmt)
@@ -481,7 +486,21 @@ def main():
         vm[i]['skip_reason'] = []
     print('')
 
-    curses.wrapper(show_progress)
+    if not args.nocurses:
+        curses.wrapper(show_progress)
+    else:
+        class FakeScreen:
+            def leaveok(self, n):
+                pass
+            def refresh(self):
+                pass
+            def addstr(self, *args, **kw):
+                pass
+            def move(self, x, y):
+                pass
+            def clrtoeol(self):
+                pass
+        show_progress(FakeScreen())
 
     with open('{}/{}-parallel.log'.format(dir, timestamp), 'w') as f:
         for i in range(0, num_servers):
