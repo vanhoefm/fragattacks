@@ -879,10 +879,11 @@ static int hostapd_is_usable_chans(struct hostapd_iface *iface)
 	if (!iface->conf->secondary_channel)
 		return 1;
 
+	if (hostapd_is_usable_chan(iface, iface->freq +
+				   iface->conf->secondary_channel * 20, 0))
+		return 1;
 	if (!iface->conf->ht40_plus_minus_allowed)
-		return hostapd_is_usable_chan(
-			iface,
-			iface->freq + iface->conf->secondary_channel * 20, 0);
+		return 0;
 
 	/* Both HT40+ and HT40- are set, pick a valid secondary channel */
 	secondary_freq = iface->freq + 20;
