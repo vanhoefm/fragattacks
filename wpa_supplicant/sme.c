@@ -170,7 +170,7 @@ static struct wpabuf * sme_auth_build_sae_commit(struct wpa_supplicant *wpa_s,
 		os_memcpy(wpa_s->sme.sae.tmp->bssid, bssid, ETH_ALEN);
 
 reuse_data:
-	len = wpa_s->sme.sae_token ? wpabuf_len(wpa_s->sme.sae_token) : 0;
+	len = wpa_s->sme.sae_token ? 3 + wpabuf_len(wpa_s->sme.sae_token) : 0;
 	if (ssid->sae_password_id)
 		len += 4 + os_strlen(ssid->sae_password_id);
 	buf = wpabuf_alloc(4 + SAE_COMMIT_MAX_LEN + len);
@@ -1181,11 +1181,16 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 	    (external || wpa_s->current_bss) && wpa_s->current_ssid) {
 		int default_groups[] = { 19, 20, 21, 0 };
 		u16 group;
+		const u8 *token_pos;
+		size_t token_len;
+		int h2e = 0;
 
 		groups = wpa_s->conf->sae_groups;
 		if (!groups || groups[0] <= 0)
 			groups = default_groups;
 
+		wpa_hexdump(MSG_DEBUG, "SME: SAE anti-clogging token request",
+			    data, len);
 		if (len < sizeof(le16)) {
 			wpa_dbg(wpa_s, MSG_DEBUG,
 				"SME: Too short SAE anti-clogging token request");
@@ -1203,8 +1208,30 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 			return -1;
 		}
 		wpabuf_free(wpa_s->sme.sae_token);
-		wpa_s->sme.sae_token = wpabuf_alloc_copy(data + sizeof(le16),
-							 len - sizeof(le16));
+		token_pos = data + sizeof(le16);
+		token_len = len - sizeof(le16);
+		if (wpa_s->sme.sae.tmp)
+			h2e = wpa_s->sme.sae.tmp->h2e;
+		if (h2e) {
+			if (token_len < 3) {
+				wpa_dbg(wpa_s, MSG_DEBUG,
+					"SME: Too short SAE anti-clogging token container");
+				return -1;
+			}
+			if (token_pos[0] != WLAN_EID_EXTENSION ||
+			    token_pos[1] == 0 ||
+			    token_pos[1] > token_len - 2 ||
+			    token_pos[2] != WLAN_EID_EXT_ANTI_CLOGGING_TOKEN) {
+				wpa_dbg(wpa_s, MSG_DEBUG,
+					"SME: Invalid SAE anti-clogging token container header");
+				return -1;
+			}
+			token_len = token_pos[1] - 1;
+			token_pos += 3;
+		}
+		wpa_s->sme.sae_token = wpabuf_alloc_copy(token_pos, token_len);
+		wpa_hexdump_buf(MSG_DEBUG, "SME: Requested anti-clogging token",
+				wpa_s->sme.sae_token);
 		if (!external)
 			sme_send_authentication(wpa_s, wpa_s->current_bss,
 						wpa_s->current_ssid, 2);

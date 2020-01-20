@@ -658,7 +658,7 @@ static int check_sae_token(struct hostapd_data *hapd, const u8 *addr,
 
 
 static struct wpabuf * auth_build_token_req(struct hostapd_data *hapd,
-					    int group, const u8 *addr)
+					    int group, const u8 *addr, int h2e)
 {
 	struct wpabuf *buf;
 	u8 *token;
@@ -684,11 +684,18 @@ static struct wpabuf * auth_build_token_req(struct hostapd_data *hapd,
 			  sizeof(hapd->sae_pending_token_idx));
 	}
 
-	buf = wpabuf_alloc(sizeof(le16) + SHA256_MAC_LEN);
+	buf = wpabuf_alloc(sizeof(le16) + 3 + SHA256_MAC_LEN);
 	if (buf == NULL)
 		return NULL;
 
 	wpabuf_put_le16(buf, group); /* Finite Cyclic Group */
+
+	if (h2e) {
+		/* Encapsulate Anti-clogging Token field in a container IE */
+		wpabuf_put_u8(buf, WLAN_EID_EXTENSION);
+		wpabuf_put_u8(buf, 1 + SHA256_MAC_LEN);
+		wpabuf_put_u8(buf, WLAN_EID_EXT_ANTI_CLOGGING_TOKEN);
+	}
 
 	p_idx = sae_token_hash(hapd, addr);
 	token_idx = hapd->sae_pending_token_idx[p_idx];
@@ -1332,11 +1339,17 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 		}
 
 		if (!token && use_sae_anti_clogging(hapd) && !allow_reuse) {
+			int h2e = 0;
+
 			wpa_printf(MSG_DEBUG,
 				   "SAE: Request anti-clogging token from "
 				   MACSTR, MAC2STR(sta->addr));
+			if (sta->sae->tmp)
+				h2e = sta->sae->tmp->h2e;
+			if (status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT)
+				h2e = 1;
 			data = auth_build_token_req(hapd, sta->sae->group,
-						    sta->addr);
+						    sta->addr, h2e);
 			resp = WLAN_STATUS_ANTI_CLOGGING_TOKEN_REQ;
 			if (hapd->conf->mesh & MESH_ENABLED)
 				sae_set_state(sta, SAE_NOTHING,
