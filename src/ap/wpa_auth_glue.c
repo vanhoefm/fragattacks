@@ -37,6 +37,8 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 				  struct hostapd_config *iconf,
 				  struct wpa_auth_config *wconf)
 {
+	int sae_pw_id;
+
 	os_memset(wconf, 0, sizeof(*wconf));
 	wconf->wpa = conf->wpa;
 	wconf->wpa_key_mgmt = conf->wpa_key_mgmt;
@@ -155,6 +157,11 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 		  FILS_CACHE_ID_LEN);
 #endif /* CONFIG_FILS */
 	wconf->sae_pwe = conf->sae_pwe;
+	sae_pw_id = hostapd_sae_pw_id_in_use(conf);
+	if (sae_pw_id == 2)
+		wconf->sae_pwe = 1;
+	else if (sae_pw_id == 1 && wconf->sae_pwe == 0)
+		wconf->sae_pwe = 2;
 }
 
 

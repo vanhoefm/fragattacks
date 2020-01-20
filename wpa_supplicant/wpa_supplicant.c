@@ -1272,7 +1272,7 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 			      u8 *wpa_ie, size_t *wpa_ie_len)
 {
 	struct wpa_ie_data ie;
-	int sel, proto;
+	int sel, proto, sae_pwe;
 	const u8 *bss_wpa, *bss_rsn, *bss_rsnx, *bss_osen;
 
 	if (bss) {
@@ -1617,7 +1617,10 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 #ifdef CONFIG_OCV
 	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_OCV, ssid->ocv);
 #endif /* CONFIG_OCV */
-	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_SAE_PWE, wpa_s->conf->sae_pwe);
+	sae_pwe = wpa_s->conf->sae_pwe;
+	if (ssid->sae_password_id)
+		sae_pwe = 1;
+	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_SAE_PWE, sae_pwe);
 
 	if (wpa_sm_set_assoc_wpa_ie_default(wpa_s->wpa, wpa_ie, wpa_ie_len)) {
 		wpa_msg(wpa_s, MSG_WARNING, "WPA: Failed to generate WPA IE");
@@ -1993,7 +1996,7 @@ static void wpa_s_setup_sae_pt(struct wpa_config *conf, struct wpa_ssid *ssid)
 	if (!password)
 		password = ssid->passphrase;
 
-	if (conf->sae_pwe == 0 || !password) {
+	if ((conf->sae_pwe == 0 && !ssid->sae_password_id) || !password) {
 		/* PT derivation not needed */
 		sae_deinit_pt(ssid->pt);
 		ssid->pt = NULL;

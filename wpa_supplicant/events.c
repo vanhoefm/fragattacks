@@ -854,6 +854,7 @@ static int rate_match(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 			if (flagged && ((rate_ie[j] & 0x7f) ==
 					BSS_MEMBERSHIP_SELECTOR_SAE_H2E_ONLY)) {
 				if (wpa_s->conf->sae_pwe == 0 &&
+				    !ssid->sae_password_id &&
 				    wpa_key_mgmt_sae(ssid->key_mgmt)) {
 					if (debug_print)
 						wpa_dbg(wpa_s, MSG_DEBUG,
@@ -1299,7 +1300,7 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 		}
 
 #ifdef CONFIG_SAE
-		if (wpa_s->conf->sae_pwe == 1 &&
+		if ((wpa_s->conf->sae_pwe == 1 || ssid->sae_password_id) &&
 		    wpa_key_mgmt_sae(ssid->key_mgmt) &&
 		    (!(ie = wpa_bss_get_ie(bss, WLAN_EID_RSNX)) ||
 		     ie[1] < 1 ||

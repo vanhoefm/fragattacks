@@ -1014,7 +1014,8 @@ u8 * hostapd_eid_rsnxe(struct hostapd_data *hapd, u8 *eid, size_t len)
 
 	if (!(hapd->conf->wpa & WPA_PROTO_RSN) ||
 	    !wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt) ||
-	    (hapd->conf->sae_pwe != 1 && hapd->conf->sae_pwe != 2) ||
+	    (hapd->conf->sae_pwe != 1 && hapd->conf->sae_pwe != 2 &&
+	     !hostapd_sae_pw_id_in_use(hapd->conf)) ||
 	    len < 3)
 		return pos;
 

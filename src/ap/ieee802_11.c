@@ -88,6 +88,7 @@ u8 * hostapd_eid_supp_rates(struct hostapd_data *hapd, u8 *eid)
 {
 	u8 *pos = eid;
 	int i, num, count;
+	int h2e_required;
 
 	if (hapd->iface->current_rates == NULL)
 		return eid;
@@ -98,8 +99,10 @@ u8 * hostapd_eid_supp_rates(struct hostapd_data *hapd, u8 *eid)
 		num++;
 	if (hapd->iconf->ieee80211ac && hapd->iconf->require_vht)
 		num++;
-	if (hapd->conf->sae_pwe == 1 &&
-	    wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt))
+	h2e_required = (hapd->conf->sae_pwe == 1 ||
+			hostapd_sae_pw_id_in_use(hapd->conf) == 2) &&
+		wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt);
+	if (h2e_required)
 		num++;
 	if (num > 8) {
 		/* rest of the rates are encoded in Extended supported
@@ -127,9 +130,7 @@ u8 * hostapd_eid_supp_rates(struct hostapd_data *hapd, u8 *eid)
 		*pos++ = 0x80 | BSS_MEMBERSHIP_SELECTOR_VHT_PHY;
 	}
 
-	if (hapd->conf->sae_pwe == 1 &&
-	    wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt) &&
-	    count < 8) {
+	if (h2e_required && count < 8) {
 		count++;
 		*pos++ = 0x80 | BSS_MEMBERSHIP_SELECTOR_SAE_H2E_ONLY;
 	}
@@ -142,6 +143,7 @@ u8 * hostapd_eid_ext_supp_rates(struct hostapd_data *hapd, u8 *eid)
 {
 	u8 *pos = eid;
 	int i, num, count;
+	int h2e_required;
 
 	if (hapd->iface->current_rates == NULL)
 		return eid;
@@ -151,8 +153,10 @@ u8 * hostapd_eid_ext_supp_rates(struct hostapd_data *hapd, u8 *eid)
 		num++;
 	if (hapd->iconf->ieee80211ac && hapd->iconf->require_vht)
 		num++;
-	if (hapd->conf->sae_pwe == 1 &&
-	    wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt))
+	h2e_required = (hapd->conf->sae_pwe == 1 ||
+			hostapd_sae_pw_id_in_use(hapd->conf) == 2) &&
+		wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt);
+	if (h2e_required)
 		num++;
 	if (num <= 8)
 		return eid;
@@ -183,8 +187,7 @@ u8 * hostapd_eid_ext_supp_rates(struct hostapd_data *hapd, u8 *eid)
 			*pos++ = 0x80 | BSS_MEMBERSHIP_SELECTOR_VHT_PHY;
 	}
 
-	if (hapd->conf->sae_pwe == 1 &&
-	    wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt)) {
+	if (h2e_required) {
 		count++;
 		if (count > 8)
 			*pos++ = 0x80 | BSS_MEMBERSHIP_SELECTOR_SAE_H2E_ONLY;
@@ -453,7 +456,9 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 		use_pt = sta->sae->tmp->h2e;
 	}
 
-	if (status_code == WLAN_STATUS_SUCCESS)
+	if (rx_id)
+		use_pt = 1;
+	else if (status_code == WLAN_STATUS_SUCCESS)
 		use_pt = 0;
 	else if (status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT)
 		use_pt = 1;
@@ -1060,11 +1065,20 @@ static void sae_pick_next_group(struct hostapd_data *hapd, struct sta_info *sta)
 
 static int sae_status_success(struct hostapd_data *hapd, u16 status_code)
 {
-	return (hapd->conf->sae_pwe == 0 &&
+	int sae_pwe = hapd->conf->sae_pwe;
+	int id_in_use;
+
+	id_in_use = hostapd_sae_pw_id_in_use(hapd->conf);
+	if (id_in_use == 2)
+		sae_pwe = 1;
+	else if (id_in_use == 1 && sae_pwe == 0)
+		sae_pwe = 2;
+
+	return (sae_pwe == 0 &&
 		status_code == WLAN_STATUS_SUCCESS) ||
-		(hapd->conf->sae_pwe == 1 &&
+		(sae_pwe == 1 &&
 		 status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT) ||
-		(hapd->conf->sae_pwe == 2 &&
+		(sae_pwe == 2 &&
 		 (status_code == WLAN_STATUS_SUCCESS ||
 		  status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT));
 }

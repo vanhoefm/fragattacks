@@ -131,7 +131,10 @@ static struct wpabuf * sme_auth_build_sae_commit(struct wpa_supplicant *wpa_s,
 		return NULL;
 	}
 
-	if (wpa_s->conf->sae_pwe == 1 || wpa_s->conf->sae_pwe == 2) {
+	if (ssid->sae_password_id)
+		use_pt = 1;
+
+	if (use_pt || wpa_s->conf->sae_pwe == 1 || wpa_s->conf->sae_pwe == 2) {
 		bss = wpa_bss_get_bssid_latest(wpa_s, bssid);
 		if (bss) {
 			const u8 *rsnxe;
@@ -142,7 +145,8 @@ static struct wpabuf * sme_auth_build_sae_commit(struct wpa_supplicant *wpa_s,
 					    BIT(WLAN_RSNX_CAPAB_SAE_H2E));
 		}
 
-		if (wpa_s->conf->sae_pwe == 1 && !use_pt) {
+		if ((wpa_s->conf->sae_pwe == 1 || ssid->sae_password_id) &&
+		    !use_pt) {
 			wpa_printf(MSG_DEBUG,
 				   "SAE: Cannot use H2E with the selected AP");
 			return NULL;
