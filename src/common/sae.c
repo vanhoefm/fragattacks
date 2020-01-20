@@ -864,7 +864,7 @@ size_t sae_ecc_prime_len_2_hash_len(size_t prime_len)
 }
 
 
-struct crypto_ec_point *
+static struct crypto_ec_point *
 sae_derive_pt_ecc(struct crypto_ec *ec, int group,
 		  const u8 *ssid, size_t ssid_len,
 		  const u8 *password, size_t password_len,
