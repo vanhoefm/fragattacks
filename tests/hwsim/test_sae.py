@@ -2250,3 +2250,24 @@ def run_sae_h2e_rsnxe_mismatch_ap(dev, apdev, rsnxe):
     finally:
         dev[0].set("sae_groups", "")
         dev[0].set("sae_pwe", "0")
+
+def test_sae_forced_anti_clogging_h2e(dev, apdev):
+    """SAE anti clogging (forced, H2E)"""
+    if "SAE" not in dev[0].get_capability("auth_alg") or \
+       "SAE" not in dev[1].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE WPA-PSK'
+    params['sae_pwe'] = "1"
+    params['sae_anti_clogging_threshold'] = '0'
+    hostapd.add_ap(apdev[0], params)
+    dev[2].connect("test-sae", psk="12345678", scan_freq="2412")
+    try:
+        for i in range(2):
+            dev[i].request("SET sae_groups ")
+            dev[i].set("sae_pwe", "1")
+            dev[i].connect("test-sae", psk="12345678", key_mgmt="SAE",
+                           scan_freq="2412")
+    finally:
+        for i in range(2):
+            dev[i].set("sae_pwe", "0")
