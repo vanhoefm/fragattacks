@@ -772,8 +772,8 @@ static int freq_allowed(int *freqs, int freq)
 }
 
 
-static int rate_match(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
-		      int debug_print)
+static int rate_match(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
+		      struct wpa_bss *bss, int debug_print)
 {
 	const struct hostapd_hw_modes *mode = NULL, *modes;
 	const u8 scan_ie[2] = { WLAN_EID_SUPP_RATES, WLAN_EID_EXT_SUPP_RATES };
@@ -853,7 +853,8 @@ static int rate_match(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 #ifdef CONFIG_SAE
 			if (flagged && ((rate_ie[j] & 0x7f) ==
 					BSS_MEMBERSHIP_SELECTOR_SAE_H2E_ONLY)) {
-				if (wpa_s->conf->sae_pwe == 0) {
+				if (wpa_s->conf->sae_pwe == 0 &&
+				    wpa_key_mgmt_sae(ssid->key_mgmt)) {
 					if (debug_print)
 						wpa_dbg(wpa_s, MSG_DEBUG,
 							"   SAE H2E disabled");
@@ -1290,7 +1291,7 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 		}
 #endif /* CONFIG_MESH */
 
-		if (!rate_match(wpa_s, bss, debug_print)) {
+		if (!rate_match(wpa_s, ssid, bss, debug_print)) {
 			if (debug_print)
 				wpa_dbg(wpa_s, MSG_DEBUG,
 					"   skip - rate sets do not match");
