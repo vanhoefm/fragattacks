@@ -348,41 +348,6 @@ def test_wpas_mesh_secure_sae_password(dev, apdev):
 
     check_mesh_joined_connected(dev, connectivity=True)
 
-def test_wpas_mesh_secure_sae_password_id(dev, apdev):
-    """Secure mesh using sae_password and password identifier"""
-    check_mesh_support(dev[0], secure=True)
-    dev[0].request("SET sae_groups ")
-    id = add_mesh_secure_net(dev[0], psk=False, sae_password=True,
-                             sae_password_id="pw id")
-    dev[0].mesh_group_add(id)
-
-    dev[1].request("SET sae_groups ")
-    id = add_mesh_secure_net(dev[1], sae_password=True,
-                             sae_password_id="pw id")
-    dev[1].mesh_group_add(id)
-
-    check_mesh_joined_connected(dev, connectivity=True)
-
-def test_wpas_mesh_secure_sae_password_id_mismatch(dev, apdev):
-    """Secure mesh using sae_password and password identifier mismatch"""
-    check_mesh_support(dev[0], secure=True)
-    dev[0].request("SET sae_groups ")
-    id = add_mesh_secure_net(dev[0], psk=False, sae_password=True,
-                             sae_password_id="pw id")
-    dev[0].mesh_group_add(id)
-
-    dev[1].request("SET sae_groups ")
-    id = add_mesh_secure_net(dev[1], sae_password=True,
-                             sae_password_id="wrong")
-    dev[1].mesh_group_add(id)
-
-    check_mesh_joined2(dev)
-
-    ev = dev[0].wait_event(["CTRL-EVENT-SAE-UNKNOWN-PASSWORD-IDENTIFIER"],
-                           timeout=10)
-    if ev is None:
-        raise Exception("Unknown Password Identifier not noticed")
-
 def test_mesh_secure_pmf(dev, apdev):
     """Secure mesh network connectivity with PMF enabled"""
     check_mesh_support(dev[0], secure=True)
