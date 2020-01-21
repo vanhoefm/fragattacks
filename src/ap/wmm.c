@@ -111,8 +111,10 @@ u8 * hostapd_eid_wmm(struct hostapd_data *hapd, u8 *eid)
 	u8 *pos = eid;
 	struct wmm_parameter_element *wmm =
 		(struct wmm_parameter_element *) (pos + 2);
-	struct hostapd_wmm_ac_params wmmp[WMM_AC_NUM] = { 0 };
+	struct hostapd_wmm_ac_params wmmp[WMM_AC_NUM];
 	int e;
+
+	os_memset(wmmp, 0, sizeof(wmmp));
 
 	if (!hapd->conf->wmm_enabled)
 		return eid;
