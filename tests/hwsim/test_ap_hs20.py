@@ -1273,6 +1273,7 @@ def test_ap_hs20_connect_no_full_match(dev, apdev):
     params['anqp_3gpp_cell_net'] = "555,444"
     hostapd.add_ap(apdev[0], params)
 
+    dev[0].flush_scan_cache()
     dev[0].hs20_enable()
 
     vals = {'username': "user",
