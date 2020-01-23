@@ -4412,9 +4412,9 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 				   line, pos);
 			return 1;
 		}
+#endif /* CONFIG_OWE */
 	} else if (os_strcmp(buf, "coloc_intf_reporting") == 0) {
 		bss->coloc_intf_reporting = atoi(pos);
-#endif /* CONFIG_OWE */
 	} else if (os_strcmp(buf, "multi_ap") == 0) {
 		int val = atoi(pos);
 
