@@ -658,3 +658,57 @@ def test_owe_invalid_assoc_resp(dev, apdev):
         raise Exception("No result reported for empty public key")
     dev[0].request("REMOVE_NETWORK all")
     dev[0].dump_monitor()
+
+def start_owe(dev, apdev, workaround=0):
+    if "OWE" not in dev[0].get_capability("key_mgmt"):
+        raise HwsimSkip("OWE not supported")
+    params = {"ssid": "owe",
+              "wpa": "2",
+              "ieee80211w": "2",
+              "wpa_key_mgmt": "OWE",
+              "owe_ptk_workaround": str(workaround),
+              "rsn_pairwise": "CCMP"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    dev[0].scan_for_bss(hapd.own_addr(), freq="2412")
+    return hapd
+
+def owe_check_ok(dev, hapd, owe_group, owe_ptk_workaround):
+    dev.connect("owe", key_mgmt="OWE", ieee80211w="2",
+                owe_group=owe_group, owe_ptk_workaround=owe_ptk_workaround,
+                scan_freq="2412")
+    hapd.wait_sta()
+    dev.request("REMOVE_NETWORK all")
+    dev.wait_disconnected()
+    dev.dump_monitor()
+
+def test_owe_ptk_workaround_ap(dev, apdev):
+    """Opportunistic Wireless Encryption - AP using PTK workaround"""
+    hapd = start_owe(dev, apdev, workaround=1)
+    for group, workaround in [(19, 0), (20, 0), (21, 0),
+                              (19, 1), (20, 1), (21, 1)]:
+        owe_check_ok(dev[0], hapd, str(group), str(workaround))
+
+def test_owe_ptk_hash(dev, apdev):
+    """Opportunistic Wireless Encryption - PTK derivation hash alg"""
+    hapd = start_owe(dev, apdev)
+    for group, workaround in [(19, 0), (20, 0), (21, 0), (19, 1)]:
+        owe_check_ok(dev[0], hapd, str(group), str(workaround))
+
+    for group in [20, 21]:
+        dev[0].connect("owe", key_mgmt="OWE", ieee80211w="2",
+                       owe_group=str(group), owe_ptk_workaround="1",
+                       scan_freq="2412", wait_connect=False)
+        ev = dev[0].wait_event(["PMKSA-CACHE-ADDED"], timeout=10)
+        if ev is None:
+            raise Exception("Could not complete OWE association")
+        ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                "CTRL-EVENT-DISCONNECTED"], timeout=5)
+        if ev is None:
+            raise Exception("Unknown connection result")
+        if "CTRL-EVENT-CONNECTED" in ev:
+            raise Exception("Unexpected connection")
+        dev[0].request("REMOVE_NETWORK all")
+        ev = dev[0].wait_event(["PMKSA-CACHE-REMOVED"], timeout=5)
+        if ev is None:
+            raise Exception("No PMKSA cache removal event seen")
+        dev[0].dump_monitor()
