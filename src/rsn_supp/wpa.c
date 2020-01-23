@@ -2913,7 +2913,7 @@ void wpa_sm_set_scard_ctx(struct wpa_sm *sm, void *scard_ctx)
 
 
 /**
- * wpa_sm_set_config - Notification of current configration change
+ * wpa_sm_set_config - Notification of current configuration change
  * @sm: Pointer to WPA state machine data from wpa_sm_init()
  * @config: Pointer to current network configuration
  *
