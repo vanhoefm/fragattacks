@@ -1368,6 +1368,20 @@ static int phy_info_edmg_capa(struct hostapd_hw_modes *mode,
 }
 
 
+static int cw2ecw(unsigned int cw)
+{
+	int bit;
+
+	if (cw == 0)
+		return 0;
+
+	for (bit = 1; cw != 1; bit++)
+		cw >>= 1;
+
+	return bit;
+}
+
+
 static void phy_info_freq(struct hostapd_hw_modes *mode,
 			  struct hostapd_channel_data *chan,
 			  struct nlattr *tb_freq[])
@@ -1475,9 +1489,11 @@ static void phy_info_freq(struct hostapd_hw_modes *mode,
 
 			ac = wmm_map[ac];
 			chan->wmm_rules[ac].min_cwmin =
-				nla_get_u16(tb_wmm[NL80211_WMMR_CW_MIN]);
+				cw2ecw(nla_get_u16(
+					       tb_wmm[NL80211_WMMR_CW_MIN]));
 			chan->wmm_rules[ac].min_cwmax =
-				nla_get_u16(tb_wmm[NL80211_WMMR_CW_MAX]);
+				cw2ecw(nla_get_u16(
+					       tb_wmm[NL80211_WMMR_CW_MAX]));
 			chan->wmm_rules[ac].min_aifs =
 				nla_get_u8(tb_wmm[NL80211_WMMR_AIFSN]);
 			chan->wmm_rules[ac].max_txop =
