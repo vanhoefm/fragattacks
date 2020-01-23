@@ -2347,7 +2347,7 @@ void scan_est_throughput(struct wpa_supplicant *wpa_s,
 	if (!ie_len)
 		ie_len = res->beacon_ie_len;
 	res->est_throughput =
-		wpas_get_est_tpt(wpa_s, ies, res->ie_len, rate, snr);
+		wpas_get_est_tpt(wpa_s, ies, ie_len, rate, snr);
 
 	/* TODO: channel utilization and AP load (e.g., from AP Beacon) */
 }
