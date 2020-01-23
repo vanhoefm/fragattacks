@@ -1440,6 +1440,12 @@ static void phy_info_freq(struct hostapd_hw_modes *mode,
 			[NL80211_WMMR_AIFSN] = { .type = NLA_U8 },
 			[NL80211_WMMR_TXOP] = { .type = NLA_U16 },
 		};
+		static const u8 wmm_map[4] = {
+			[NL80211_AC_BE] = WMM_AC_BE,
+			[NL80211_AC_BK] = WMM_AC_BK,
+			[NL80211_AC_VI] = WMM_AC_VI,
+			[NL80211_AC_VO] = WMM_AC_VO,
+		};
 		struct nlattr *nl_wmm;
 		struct nlattr *tb_wmm[NL80211_WMMR_MAX + 1];
 		int rem_wmm, ac, count = 0;
@@ -1461,12 +1467,13 @@ static void phy_info_freq(struct hostapd_hw_modes *mode,
 				return;
 			}
 			ac = nl_wmm->nla_type;
-			if (ac < 0 || ac >= WMM_AC_NUM) {
+			if ((unsigned int) ac >= ARRAY_SIZE(wmm_map)) {
 				wpa_printf(MSG_DEBUG,
 					   "nl80211: Invalid AC value %d", ac);
 				return;
 			}
 
+			ac = wmm_map[ac];
 			chan->wmm_rules[ac].min_cwmin =
 				nla_get_u16(tb_wmm[NL80211_WMMR_CW_MIN]);
 			chan->wmm_rules[ac].min_cwmax =
