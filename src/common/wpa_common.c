@@ -407,11 +407,32 @@ int wpa_pmk_to_ptk(const u8 *pmk, size_t pmk_len, const char *label,
 #else /* CONFIG_SUITEB192 || CONFIG_FILS */
 		return -1;
 #endif /* CONFIG_SUITEB192 || CONFIG_FILS */
-	} else if (wpa_key_mgmt_sha256(akmp) || akmp == WPA_KEY_MGMT_OWE) {
+	} else if (wpa_key_mgmt_sha256(akmp)) {
 		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA256)");
 		if (sha256_prf(pmk, pmk_len, label, data, data_len,
 			       tmp, ptk_len) < 0)
 			return -1;
+#ifdef CONFIG_OWE
+	} else if (akmp == WPA_KEY_MGMT_OWE && pmk_len == 32) {
+		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA256)");
+		if (sha256_prf(pmk, pmk_len, label, data, data_len,
+			       tmp, ptk_len) < 0)
+			return -1;
+	} else if (akmp == WPA_KEY_MGMT_OWE && pmk_len == 48) {
+		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA384)");
+		if (sha384_prf(pmk, pmk_len, label, data, data_len,
+			       tmp, ptk_len) < 0)
+			return -1;
+	} else if (akmp == WPA_KEY_MGMT_OWE && pmk_len == 64) {
+		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA512)");
+		if (sha512_prf(pmk, pmk_len, label, data, data_len,
+			       tmp, ptk_len) < 0)
+			return -1;
+	} else if (akmp == WPA_KEY_MGMT_OWE) {
+		wpa_printf(MSG_INFO, "OWE: Unknown PMK length %u",
+			   (unsigned int) pmk_len);
+		return -1;
+#endif /* CONFIG_OWE */
 #ifdef CONFIG_DPP
 	} else if (akmp == WPA_KEY_MGMT_DPP && pmk_len == 32) {
 		wpa_printf(MSG_DEBUG, "WPA: PTK derivation using PRF(SHA256)");
