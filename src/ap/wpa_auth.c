@@ -56,7 +56,7 @@ static int wpa_group_config_group_keys(struct wpa_authenticator *wpa_auth,
 				       struct wpa_group *group);
 static int wpa_derive_ptk(struct wpa_state_machine *sm, const u8 *snonce,
 			  const u8 *pmk, unsigned int pmk_len,
-			  struct wpa_ptk *ptk);
+			  struct wpa_ptk *ptk, int force_sha256);
 static void wpa_group_free(struct wpa_authenticator *wpa_auth,
 			   struct wpa_group *group);
 static void wpa_group_get(struct wpa_authenticator *wpa_auth,
@@ -926,7 +926,8 @@ static int wpa_try_alt_snonce(struct wpa_state_machine *sm, u8 *data,
 			pmk_len = sm->pmk_len;
 		}
 
-		if (wpa_derive_ptk(sm, sm->alt_SNonce, pmk, pmk_len, &PTK) < 0)
+		if (wpa_derive_ptk(sm, sm->alt_SNonce, pmk, pmk_len, &PTK, 0) <
+		    0)
 			break;
 
 		if (wpa_verify_key_mic(sm->wpa_key_mgmt, pmk_len, &PTK,
@@ -2233,10 +2234,11 @@ SM_STATE(WPA_PTK, PTKSTART)
 
 static int wpa_derive_ptk(struct wpa_state_machine *sm, const u8 *snonce,
 			  const u8 *pmk, unsigned int pmk_len,
-			  struct wpa_ptk *ptk)
+			  struct wpa_ptk *ptk, int force_sha256)
 {
 	const u8 *z = NULL;
 	size_t z_len = 0;
+	int akmp;
 
 #ifdef CONFIG_IEEE80211R_AP
 	if (wpa_key_mgmt_ft(sm->wpa_key_mgmt)) {
@@ -2262,9 +2264,12 @@ static int wpa_derive_ptk(struct wpa_state_machine *sm, const u8 *snonce,
 	}
 #endif /* CONFIG_DPP2 */
 
+	akmp = sm->wpa_key_mgmt;
+	if (force_sha256)
+		akmp = WPA_KEY_MGMT_PSK_SHA256;
 	return wpa_pmk_to_ptk(pmk, pmk_len, "Pairwise key expansion",
 			      sm->wpa_auth->addr, sm->addr, sm->ANonce, snonce,
-			      ptk, sm->wpa_key_mgmt, sm->pairwise, z, z_len);
+			      ptk, akmp, sm->pairwise, z, z_len);
 }
 
 
@@ -2844,6 +2849,7 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 	struct wpa_eapol_key *key;
 	struct wpa_eapol_ie_parse kde;
 	int vlan_id = 0;
+	int owe_ptk_workaround = !!wpa_auth->conf.owe_ptk_workaround;
 
 	SM_ENTRY_MA(WPA_PTK, PTKCALCNEGOTIATING, wpa_ptk);
 	sm->EAPOLKeyReceived = FALSE;
@@ -2881,7 +2887,8 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 			pmk_len = sm->pmksa->pmk_len;
 		}
 
-		if (wpa_derive_ptk(sm, sm->SNonce, pmk, pmk_len, &PTK) < 0)
+		if (wpa_derive_ptk(sm, sm->SNonce, pmk, pmk_len, &PTK,
+				   owe_ptk_workaround == 2) < 0)
 			break;
 
 		if (mic_len &&
@@ -2904,6 +2911,16 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 			break;
 		}
 #endif /* CONFIG_FILS */
+
+#ifdef CONFIG_OWE
+		if (sm->wpa_key_mgmt == WPA_KEY_MGMT_OWE && pmk_len > 32 &&
+		    owe_ptk_workaround == 1) {
+			wpa_printf(MSG_DEBUG,
+				   "OWE: Try PTK derivation workaround with SHA256");
+			owe_ptk_workaround = 2;
+			continue;
+		}
+#endif /* CONFIG_OWE */
 
 		if (!wpa_key_mgmt_wpa_psk(sm->wpa_key_mgmt) ||
 		    wpa_key_mgmt_sae(sm->wpa_key_mgmt))

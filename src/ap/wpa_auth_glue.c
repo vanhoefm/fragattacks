@@ -162,6 +162,9 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 		wconf->sae_pwe = 1;
 	else if (sae_pw_id == 1 && wconf->sae_pwe == 0)
 		wconf->sae_pwe = 2;
+#ifdef CONFIG_OWE
+	wconf->owe_ptk_workaround = conf->owe_ptk_workaround;
+#endif /* CONFIG_OWE */
 }
 
 

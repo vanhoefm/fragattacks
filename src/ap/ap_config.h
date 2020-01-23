@@ -733,6 +733,7 @@ struct hostapd_bss_config {
 	size_t owe_transition_ssid_len;
 	char owe_transition_ifname[IFNAMSIZ + 1];
 	int *owe_groups;
+	int owe_ptk_workaround;
 #endif /* CONFIG_OWE */
 
 	int coloc_intf_reporting;
