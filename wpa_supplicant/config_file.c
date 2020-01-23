@@ -910,6 +910,7 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 #endif /* CONFIG_DPP */
 	INT(owe_group);
 	INT(owe_only);
+	INT(owe_ptk_workaround);
 	INT(multi_ap_backhaul_sta);
 	INT(ft_eap_pmksa_caching);
 #ifdef CONFIG_HT_OVERRIDES

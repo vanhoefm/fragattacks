@@ -1286,6 +1286,7 @@ void wpa_supplicant_rsn_supp_set_config(struct wpa_supplicant *wpa_s,
 		conf.ssid = ssid->ssid;
 		conf.ssid_len = ssid->ssid_len;
 		conf.wpa_ptk_rekey = ssid->wpa_ptk_rekey;
+		conf.owe_ptk_workaround = ssid->owe_ptk_workaround;
 #ifdef CONFIG_P2P
 		if (ssid->p2p_group && wpa_s->current_bss &&
 		    !wpa_s->p2p_disable_ip_addr_req) {

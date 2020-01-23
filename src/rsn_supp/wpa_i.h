@@ -63,6 +63,7 @@ struct wpa_sm {
 	int wpa_ptk_rekey;
 	int p2p;
 	int wpa_rsc_relaxation;
+	int owe_ptk_workaround;
 
 	u8 own_addr[ETH_ALEN];
 	const char *ifname;

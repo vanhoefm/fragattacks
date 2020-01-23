@@ -1009,6 +1009,19 @@ struct wpa_ssid {
 	int owe_only;
 
 	/**
+	 * owe_ptk_workaround - OWE PTK derivation workaround
+	 *
+	 * Initial OWE implementation used SHA256 when deriving the PTK for all
+	 * OWE groups. This was supposed to change to SHA384 for group 20 and
+	 * SHA512 for group 21. This parameter can be used to enable older
+	 * behavior mainly for testing purposes. There is no impact to group 19
+	 * behavior, but if enabled, this will make group 20 and 21 cases use
+	 * SHA256-based PTK derivation which will not work with the updated
+	 * OWE implementation on the AP side.
+	 */
+	int owe_ptk_workaround;
+
+	/**
 	 * owe_transition_bss_select_count - OWE transition BSS select count
 	 *
 	 * This is an internally used variable (i.e., not used in external

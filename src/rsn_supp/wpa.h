@@ -113,6 +113,7 @@ struct rsn_supp_config {
 	int wpa_ptk_rekey;
 	int p2p;
 	int wpa_rsc_relaxation;
+	int owe_ptk_workaround;
 	const u8 *fils_cache_id;
 };
 

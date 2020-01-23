@@ -570,6 +570,7 @@ static int wpa_derive_ptk(struct wpa_sm *sm, const unsigned char *src_addr,
 {
 	const u8 *z = NULL;
 	size_t z_len = 0;
+	int akmp;
 
 #ifdef CONFIG_IEEE80211R
 	if (wpa_key_mgmt_ft(sm->key_mgmt))
@@ -583,9 +584,18 @@ static int wpa_derive_ptk(struct wpa_sm *sm, const unsigned char *src_addr,
 	}
 #endif /* CONFIG_DPP2 */
 
+	akmp = sm->key_mgmt;
+#ifdef CONFIG_OWE
+	if (sm->owe_ptk_workaround && akmp == WPA_KEY_MGMT_OWE &&
+	    sm->pmk_len > 32) {
+		wpa_printf(MSG_DEBUG,
+			   "OWE: Force SHA256 for PTK derivation");
+		akmp = WPA_KEY_MGMT_PSK_SHA256;
+	}
+#endif /* CONFIG_OWE */
 	return wpa_pmk_to_ptk(sm->pmk, sm->pmk_len, "Pairwise key expansion",
 			      sm->own_addr, sm->bssid, sm->snonce,
-			      key->key_nonce, ptk, sm->key_mgmt,
+			      key->key_nonce, ptk, akmp,
 			      sm->pairwise_cipher, z, z_len);
 }
 
@@ -2940,6 +2950,7 @@ void wpa_sm_set_config(struct wpa_sm *sm, struct rsn_supp_config *config)
 		sm->wpa_ptk_rekey = config->wpa_ptk_rekey;
 		sm->p2p = config->p2p;
 		sm->wpa_rsc_relaxation = config->wpa_rsc_relaxation;
+		sm->owe_ptk_workaround = config->owe_ptk_workaround;
 #ifdef CONFIG_FILS
 		if (config->fils_cache_id) {
 			sm->fils_cache_id_set = 1;
@@ -2959,6 +2970,7 @@ void wpa_sm_set_config(struct wpa_sm *sm, struct rsn_supp_config *config)
 		sm->wpa_ptk_rekey = 0;
 		sm->p2p = 0;
 		sm->wpa_rsc_relaxation = 0;
+		sm->owe_ptk_workaround = 0;
 	}
 }
 
