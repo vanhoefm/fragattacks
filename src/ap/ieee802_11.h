@@ -49,6 +49,8 @@ u8 * hostapd_eid_ext_capab(struct hostapd_data *hapd, u8 *eid);
 u8 * hostapd_eid_qos_map_set(struct hostapd_data *hapd, u8 *eid);
 u8 * hostapd_eid_supp_rates(struct hostapd_data *hapd, u8 *eid);
 u8 * hostapd_eid_ext_supp_rates(struct hostapd_data *hapd, u8 *eid);
+u8 * hostapd_eid_rm_enabled_capab(struct hostapd_data *hapd, u8 *eid,
+				  size_t len);
 u8 * hostapd_eid_ht_capabilities(struct hostapd_data *hapd, u8 *eid);
 u8 * hostapd_eid_ht_operation(struct hostapd_data *hapd, u8 *eid);
 u8 * hostapd_eid_secondary_channel(struct hostapd_data *hapd, u8 *eid);

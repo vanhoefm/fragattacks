@@ -36,27 +36,6 @@
 
 #ifdef NEED_AP_MLME
 
-static u8 * hostapd_eid_rm_enabled_capab(struct hostapd_data *hapd, u8 *eid,
-					 size_t len)
-{
-	size_t i;
-
-	for (i = 0; i < RRM_CAPABILITIES_IE_LEN; i++) {
-		if (hapd->conf->radio_measurements[i])
-			break;
-	}
-
-	if (i == RRM_CAPABILITIES_IE_LEN || len < 2 + RRM_CAPABILITIES_IE_LEN)
-		return eid;
-
-	*eid++ = WLAN_EID_RRM_ENABLED_CAPABILITIES;
-	*eid++ = RRM_CAPABILITIES_IE_LEN;
-	os_memcpy(eid, hapd->conf->radio_measurements, RRM_CAPABILITIES_IE_LEN);
-
-	return eid + RRM_CAPABILITIES_IE_LEN;
-}
-
-
 static u8 * hostapd_eid_bss_load(struct hostapd_data *hapd, u8 *eid, size_t len)
 {
 	if (len < 2 + 5)
