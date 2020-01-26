@@ -1120,6 +1120,133 @@ static int x509_parse_ext_issuer_alt_name(struct x509_certificate *cert,
 }
 
 
+static int x509_id_cert_policy_any_oid(struct asn1_oid *oid)
+{
+	return oid->len == 5 &&
+		oid->oid[0] == 2 /* iso/itu-t */ &&
+		oid->oid[1] == 5 /* X.500 Directory Services */ &&
+		oid->oid[2] == 29 /* id-ce */ &&
+		oid->oid[3] == 32 /* id-ce-certificate-policies */ &&
+		oid->oid[4] == 0 /* anyPolicy */;
+}
+
+
+static int x509_id_wfa_oid(struct asn1_oid *oid)
+{
+	return oid->len >= 7 &&
+		oid->oid[0] == 1 /* iso */ &&
+		oid->oid[1] == 3 /* identified-organization */ &&
+		oid->oid[2] == 6 /* dod */ &&
+		oid->oid[3] == 1 /* internet */ &&
+		oid->oid[4] == 4 /* private */ &&
+		oid->oid[5] == 1 /* enterprise */ &&
+		oid->oid[6] == 40808 /* WFA */;
+}
+
+
+static int x509_id_wfa_tod_oid(struct asn1_oid *oid)
+{
+	return oid->len >= 9 &&
+		x509_id_wfa_oid(oid) &&
+		oid->oid[7] == 1 &&
+		oid->oid[8] == 3;
+}
+
+
+static int x509_id_wfa_tod_strict_oid(struct asn1_oid *oid)
+{
+	return oid->len == 10 &&
+		x509_id_wfa_tod_oid(oid) &&
+		oid->oid[9] == 1;
+}
+
+
+static int x509_id_wfa_tod_tofu_oid(struct asn1_oid *oid)
+{
+	return oid->len == 10 &&
+		x509_id_wfa_tod_oid(oid) &&
+		oid->oid[9] == 2;
+}
+
+
+static int x509_parse_ext_certificate_policies(struct x509_certificate *cert,
+					       const u8 *pos, size_t len)
+{
+	struct asn1_hdr hdr;
+	const u8 *end;
+
+	/*
+	 * certificatePolicies ::= SEQUENCE SIZE (1..MAX) OF PolicyInformation
+	 *
+	 * PolicyInformation ::= SEQUENCE {
+	 *      policyIdentifier   CertPolicyId,
+	 *      policyQualifiers   SEQUENCE SIZE (1..MAX) OF
+	 *                              PolicyQualifierInfo OPTIONAL }
+	 *
+	 * CertPolicyId ::= OBJECT IDENTIFIER
+	 */
+
+	if (asn1_get_next(pos, len, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_UNIVERSAL ||
+	    hdr.tag != ASN1_TAG_SEQUENCE) {
+		wpa_printf(MSG_DEBUG, "X509: Expected SEQUENCE (certificatePolicies) - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		return -1;
+	}
+	if (hdr.length > pos + len - hdr.payload)
+		return -1;
+	pos = hdr.payload;
+	end = pos + hdr.length;
+
+	wpa_hexdump(MSG_MSGDUMP, "X509: certificatePolicies", pos, end - pos);
+
+	while (pos < end) {
+		const u8 *pol_end;
+		struct asn1_oid oid;
+		char buf[80];
+
+		if (asn1_get_next(pos, len, &hdr) < 0 ||
+		    hdr.class != ASN1_CLASS_UNIVERSAL ||
+		    hdr.tag != ASN1_TAG_SEQUENCE) {
+			wpa_printf(MSG_DEBUG, "X509: Expected SEQUENCE (PolicyInformation) - found class %d tag 0x%x",
+				   hdr.class, hdr.tag);
+			return -1;
+		}
+		if (hdr.length > pos + len - hdr.payload)
+			return -1;
+		pos = hdr.payload;
+		pol_end = pos + hdr.length;
+		wpa_hexdump(MSG_MSGDUMP, "X509: PolicyInformation",
+			    pos, pol_end - pos);
+
+		if (asn1_get_oid(pos, pol_end - pos, &oid, &pos))
+			return -1;
+		if (x509_id_cert_policy_any_oid(&oid)) {
+			os_strlcpy(buf, "anyPolicy-STRICT", sizeof(buf));
+			cert->certificate_policy |=
+				X509_EXT_CERT_POLICY_ANY;
+		} else if (x509_id_wfa_tod_strict_oid(&oid)) {
+			os_strlcpy(buf, "TOD-STRICT", sizeof(buf));
+			cert->certificate_policy |=
+				X509_EXT_CERT_POLICY_TOD_STRICT;
+		} else if (x509_id_wfa_tod_tofu_oid(&oid)) {
+			os_strlcpy(buf, "TOD-TOFU", sizeof(buf));
+			cert->certificate_policy |=
+				X509_EXT_CERT_POLICY_TOD_TOFU;
+		} else {
+			asn1_oid_to_str(&oid, buf, sizeof(buf));
+		}
+		wpa_printf(MSG_DEBUG, "policyIdentifier: %s", buf);
+
+		pos = pol_end;
+	}
+
+	cert->extensions_present |= X509_EXT_CERTIFICATE_POLICY;
+
+	return 0;
+}
+
+
 static int x509_id_pkix_oid(struct asn1_oid *oid)
 {
 	return oid->len >= 7 &&
@@ -1234,7 +1361,6 @@ static int x509_parse_extension_data(struct x509_certificate *cert,
 		return 1;
 
 	/* TODO: add other extensions required by RFC 3280, Ch 4.2:
-	 * certificate policies (section 4.2.1.5)
 	 * name constraints (section 4.2.1.11)
 	 * policy constraints (section 4.2.1.12)
 	 * inhibit any-policy (section 4.2.1.15)
@@ -1248,6 +1374,8 @@ static int x509_parse_extension_data(struct x509_certificate *cert,
 		return x509_parse_ext_issuer_alt_name(cert, pos, len);
 	case 19: /* id-ce-basicConstraints */
 		return x509_parse_ext_basic_constraints(cert, pos, len);
+	case 32: /* id-ce-certificatePolicies */
+		return x509_parse_ext_certificate_policies(cert, pos, len);
 	case 37: /* id-ce-extKeyUsage */
 		return x509_parse_ext_ext_key_usage(cert, pos, len);
 	default:
