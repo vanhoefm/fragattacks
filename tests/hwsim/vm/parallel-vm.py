@@ -592,6 +592,14 @@ def main():
     missing['wmediumd not available'] = 'wmediumd'
     missing['DPP not supported'] = 'CONFIG_DPP'
     missing['DPP version 2 not supported'] = 'CONFIG_DPP2'
+    missing['EAP method PWD not supported in the build'] = 'CONFIG_EAP_PWD'
+    missing['EAP method TEAP not supported in the build'] = 'CONFIG_EAP_TEAP'
+    missing['FILS not supported'] = 'CONFIG_FILS'
+    missing['FILS-SK-PFS not supported'] = 'CONFIG_FILS_SK_PFS'
+    missing['OWE not supported'] = 'CONFIG_OWE'
+    missing['SAE not supported'] = 'CONFIG_SAE'
+    missing['Not using OpenSSL'] = 'CONFIG_TLS=openssl'
+    missing['wpa_supplicant TLS library is not OpenSSL: internal'] = 'CONFIG_TLS=openssl'
     missing_items = []
     other_reasons = []
     for reason in sorted(set(skip_reason)):
