@@ -24,7 +24,7 @@ from hwsim import HWSimRadio
 import hwsim_utils
 from test_dpp import check_dpp_capab, update_hapd_config, wait_auth_success
 from test_suite_b import check_suite_b_192_capa, suite_b_as_params, suite_b_192_rsa_ap_params
-from test_ap_eap import check_eap_capa, int_eap_server_params
+from test_ap_eap import check_eap_capa, int_eap_server_params, check_domain_match, check_domain_suffix_match
 from test_ap_hs20 import hs20_ap_params
 
 def check_sigma_dut():
@@ -649,6 +649,7 @@ def test_sigma_dut_ap_psk_deauth(dev, apdev, params):
 
 def test_sigma_dut_eap_ttls(dev, apdev, params):
     """sigma_dut controlled STA and EAP-TTLS parameters"""
+    check_domain_match(dev[0])
     logdir = params['logdir']
 
     with open("auth_serv/ca.pem", "r") as f:
@@ -3351,6 +3352,7 @@ def run_sigma_dut_eap_ttls_uosc_initial_tod(dev, apdev, params, tofu):
 
 def test_sigma_dut_eap_ttls_uosc_ca_mistrust(dev, apdev, params):
     """sigma_dut controlled STA and EAP-TTLS with UOSC when CA is not trusted"""
+    check_domain_suffix_match(dev[0])
     logdir = params['logdir']
 
     with open("auth_serv/ca.pem", "r") as f:
