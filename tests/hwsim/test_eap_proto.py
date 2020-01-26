@@ -8947,10 +8947,15 @@ def test_eap_proto_ttls_errors(dev, apdev):
               "user", "autheap=MSCHAPV2"),
              (1, "eap_msg_alloc;eap_peer_tls_build_ack",
               "user", "autheap=MSCHAPV2"),
-             (1, "tls_connection_decrypt;eap_peer_tls_decrypt",
-              "user", "autheap=MSCHAPV2"),
              (1, "eap_peer_tls_phase2_nak;eap_ttls_phase2_request_eap_method",
               "cert user", "autheap=MSCHAPV2")]
+    tls = dev[0].request("GET tls_library")
+    if tls.startswith("internal"):
+        tests += [(1, "tlsv1_client_decrypt;eap_peer_tls_decrypt",
+                   "user", "autheap=MSCHAPV2")]
+    else:
+        tests += [(1, "tls_connection_decrypt;eap_peer_tls_decrypt",
+                   "user", "autheap=MSCHAPV2")]
     for count, func, identity, phase2 in tests:
         with alloc_fail(dev[0], count, func):
             dev[0].connect("eap-test", key_mgmt="WPA-EAP", scan_freq="2412",
