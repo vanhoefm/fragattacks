@@ -119,6 +119,11 @@ def check_dh_dsa_support(dev):
     if tls.startswith("internal"):
         raise HwsimSkip("DH DSA not supported with this TLS library: " + tls)
 
+def check_ec_support(dev):
+    tls = dev.request("GET tls_library")
+    if tls.startswith("internal"):
+        raise HwsimSkip("EC not supported with this TLS library: " + tls)
+
 def read_pem(fname):
     with open(fname, "r") as f:
         lines = f.readlines()
@@ -5899,6 +5904,7 @@ def test_ap_wpa2_eap_tls_13_ec(dev, apdev):
 
 def test_ap_wpa2_eap_tls_rsa_and_ec(dev, apdev, params):
     """EAP-TLS and both RSA and EC sertificates certificates"""
+    check_ec_support(dev[0])
     ca = os.path.join(params['logdir'], "ap_wpa2_eap_tls_rsa_and_ec.ca.pem")
     with open(ca, "w") as f:
         with open("auth_serv/ca.pem", "r") as f2:
@@ -5942,6 +5948,7 @@ def test_ap_wpa2_eap_tls_rsa_and_ec(dev, apdev, params):
 
 def test_ap_wpa2_eap_tls_ec_and_rsa(dev, apdev, params):
     """EAP-TLS and both EC and RSA sertificates certificates"""
+    check_ec_support(dev[0])
     ca = os.path.join(params['logdir'], "ap_wpa2_eap_tls_ec_and_rsa.ca.pem")
     with open(ca, "w") as f:
         with open("auth_serv/ca.pem", "r") as f2:
