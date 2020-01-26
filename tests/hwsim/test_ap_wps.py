@@ -44,6 +44,7 @@ from wpasupplicant import WpaSupplicant
 from utils import HwsimSkip, alloc_fail, fail_test, skip_with_fips
 from utils import wait_fail_trigger, clear_regdom
 from test_ap_eap import int_eap_server_params
+from test_sae import check_sae_capab
 
 def wps_start_ap(apdev, ssid="test-wps-conf"):
     params = {"ssid": ssid, "eap_server": "1", "wps_state": "2",
@@ -10165,6 +10166,7 @@ def test_ap_wps_and_sae(dev, apdev):
         dev[0].set("wps_cred_add_sae", "0")
 
 def run_ap_wps_and_sae(dev, apdev):
+    check_sae_capab(dev[0])
     ssid = "test-wps-sae"
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": ssid, "eap_server": "1", "wps_state": "1",
@@ -10203,6 +10205,7 @@ def test_ap_wps_conf_and_sae(dev, apdev):
         dev[0].set("wps_cred_add_sae", "0")
 
 def run_ap_wps_conf_and_sae(dev, apdev):
+    check_sae_capab(dev[0])
     ssid = "test-wps-conf-sae"
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": ssid, "eap_server": "1", "wps_state": "2",
@@ -10235,6 +10238,7 @@ def test_ap_wps_reg_config_and_sae(dev, apdev):
         dev[0].set("wps_cred_add_sae", "0")
 
 def run_ap_wps_reg_config_and_sae(dev, apdev):
+    check_sae_capab(dev[0])
     ssid = "test-wps-init-ap-pin-sae"
     appin = "12345670"
     hostapd.add_ap(apdev[0],

@@ -1,5 +1,5 @@
 # Test cases for SAE
-# Copyright (c) 2013-2016, Jouni Malinen <j@w1.fi>
+# Copyright (c) 2013-2020, Jouni Malinen <j@w1.fi>
 #
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
@@ -20,11 +20,14 @@ from wpasupplicant import WpaSupplicant
 from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger, start_monitor, stop_monitor, radiotap_build
 from test_ap_psk import find_wpas_process, read_process_memory, verify_not_present, get_key_locations
 
+def check_sae_capab(dev):
+    if "SAE" not in dev.get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
 @remote_compatible
 def test_sae(dev, apdev):
     """SAE with default group"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -51,8 +54,7 @@ def test_sae(dev, apdev):
 @remote_compatible
 def test_sae_password_ecc(dev, apdev):
     """SAE with number of different passwords (ECC)"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -71,8 +73,7 @@ def test_sae_password_ecc(dev, apdev):
 @remote_compatible
 def test_sae_password_ffc(dev, apdev):
     """SAE with number of different passwords (FFC)"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -104,8 +105,7 @@ def test_sae_pmksa_caching_pmkid(dev, apdev):
         dev[0].set("sae_pmkid_in_assoc", "0")
 
 def run_sae_pmksa_caching(dev, apdev):
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -133,8 +133,7 @@ def run_sae_pmksa_caching(dev, apdev):
 @remote_compatible
 def test_sae_pmksa_caching_disabled(dev, apdev):
     """SAE and PMKSA caching disabled"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -156,8 +155,7 @@ def test_sae_pmksa_caching_disabled(dev, apdev):
 
 def test_sae_groups(dev, apdev):
     """SAE with all supported groups"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     # This is the full list of supported groups, but groups 14-16 (2048-4096 bit
     # MODP) and group 21 (521-bit random ECP group) are a bit too slow on some
     # VMs and can result in hitting the mac80211 authentication timeout, so
@@ -218,8 +216,7 @@ def test_sae_groups(dev, apdev):
 @remote_compatible
 def test_sae_group_nego(dev, apdev):
     """SAE group negotiation"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae-group-nego",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -234,8 +231,7 @@ def test_sae_group_nego(dev, apdev):
 
 def test_sae_group_nego_no_match(dev, apdev):
     """SAE group negotiation (no match)"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae-group-nego",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -254,8 +250,8 @@ def test_sae_group_nego_no_match(dev, apdev):
 @remote_compatible
 def test_sae_anti_clogging(dev, apdev):
     """SAE anti clogging"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
+    check_sae_capab(dev[1])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_anti_clogging_threshold'] = '1'
@@ -275,8 +271,8 @@ def test_sae_anti_clogging(dev, apdev):
 
 def test_sae_forced_anti_clogging(dev, apdev):
     """SAE anti clogging (forced)"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
+    check_sae_capab(dev[1])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE WPA-PSK'
     params['sae_anti_clogging_threshold'] = '0'
@@ -289,8 +285,8 @@ def test_sae_forced_anti_clogging(dev, apdev):
 
 def test_sae_mixed(dev, apdev):
     """Mixed SAE and non-SAE network"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
+    check_sae_capab(dev[1])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE WPA-PSK'
     params['sae_anti_clogging_threshold'] = '0'
@@ -310,8 +306,7 @@ def test_sae_mixed(dev, apdev):
 
 def test_sae_and_psk(dev, apdev):
     """SAE and PSK enabled in network profile"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     hostapd.add_ap(apdev[0], params)
@@ -322,8 +317,7 @@ def test_sae_and_psk(dev, apdev):
 
 def test_sae_and_psk2(dev, apdev):
     """SAE and PSK enabled in network profile (use PSK)"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-psk", passphrase="12345678")
     hostapd.add_ap(apdev[0], params)
 
@@ -333,8 +327,8 @@ def test_sae_and_psk2(dev, apdev):
 
 def test_sae_mixed_mfp(dev, apdev):
     """Mixed SAE and non-SAE network and MFP required with SAE"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
+    check_sae_capab(dev[1])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE WPA-PSK'
     params["ieee80211w"] = "1"
@@ -365,8 +359,8 @@ def test_sae_mixed_mfp(dev, apdev):
 
 def test_sae_mfp(dev, apdev):
     """SAE and MFP enabled without sae_require_mfp"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
+    check_sae_capab(dev[1])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params["ieee80211w"] = "1"
@@ -383,8 +377,7 @@ def test_sae_mfp(dev, apdev):
 @remote_compatible
 def test_sae_missing_password(dev, apdev):
     """SAE and missing password"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -401,8 +394,7 @@ def test_sae_missing_password(dev, apdev):
 
 def test_sae_key_lifetime_in_memory(dev, apdev, params):
     """SAE and key lifetime in memory"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     password = "5ad144a7c1f5a5503baa6fa01dabc15b1843e8c01662d78d16b70b5cd23cf8b"
     p = hostapd.wpa2_params(ssid="test-sae", passphrase=password)
     p['wpa_key_mgmt'] = 'SAE'
@@ -526,8 +518,7 @@ def test_sae_key_lifetime_in_memory(dev, apdev, params):
 @remote_compatible
 def test_sae_oom_wpas(dev, apdev):
     """SAE and OOM in wpa_supplicant"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -572,8 +563,7 @@ def test_sae_oom_wpas(dev, apdev):
 @remote_compatible
 def test_sae_proto_ecc(dev, apdev):
     """SAE protocol testing (ECC)"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -671,8 +661,7 @@ def test_sae_proto_ecc(dev, apdev):
 @remote_compatible
 def test_sae_proto_ffc(dev, apdev):
     """SAE protocol testing (FFC)"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -752,8 +741,7 @@ def test_sae_proto_ffc(dev, apdev):
 
 def test_sae_proto_commit_delayed(dev, apdev):
     """SAE protocol testing - Commit delayed"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -829,8 +817,7 @@ def test_sae_proto_commit_delayed(dev, apdev):
 
 def test_sae_proto_commit_replay(dev, apdev):
     """SAE protocol testing - Commit replay"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -913,8 +900,7 @@ def test_sae_proto_commit_replay(dev, apdev):
 
 def test_sae_proto_confirm_replay(dev, apdev):
     """SAE protocol testing - Confirm replay"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1055,8 +1041,7 @@ def test_sae_proto_hostapd_ffc(dev, apdev):
 @remote_compatible
 def test_sae_no_ffc_by_default(dev, apdev):
     """SAE and default groups rejecting FFC"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     hapd = hostapd.add_ap(apdev[0], params)
@@ -1073,8 +1058,7 @@ def test_sae_no_ffc_by_default(dev, apdev):
     dev[0].request("REMOVE_NETWORK all")
 
 def sae_reflection_attack(apdev, dev, group):
-    if "SAE" not in dev.get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev)
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="no-knowledge-of-passphrase")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1124,8 +1108,7 @@ def test_sae_reflection_attack_ffc(dev, apdev):
     sae_reflection_attack(apdev[0], dev[0], 15)
 
 def sae_reflection_attack_internal(apdev, dev, group):
-    if "SAE" not in dev.get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev)
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="no-knowledge-of-passphrase")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1157,8 +1140,7 @@ def test_sae_reflection_attack_ffc_internal(dev, apdev):
 @remote_compatible
 def test_sae_commit_override(dev, apdev):
     """SAE commit override (hostapd)"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1174,8 +1156,7 @@ def test_sae_commit_override(dev, apdev):
 @remote_compatible
 def test_sae_commit_override2(dev, apdev):
     """SAE commit override (wpa_supplicant)"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1190,8 +1171,7 @@ def test_sae_commit_override2(dev, apdev):
 
 def test_sae_commit_invalid_scalar_element_ap(dev, apdev):
     """SAE commit invalid scalar/element from AP"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1206,8 +1186,7 @@ def test_sae_commit_invalid_scalar_element_ap(dev, apdev):
 
 def test_sae_commit_invalid_element_ap(dev, apdev):
     """SAE commit invalid element from AP"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1222,8 +1201,7 @@ def test_sae_commit_invalid_element_ap(dev, apdev):
 
 def test_sae_commit_invalid_scalar_element_sta(dev, apdev):
     """SAE commit invalid scalar/element from STA"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1238,8 +1216,7 @@ def test_sae_commit_invalid_scalar_element_sta(dev, apdev):
 
 def test_sae_commit_invalid_element_sta(dev, apdev):
     """SAE commit invalid element from STA"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1255,8 +1232,7 @@ def test_sae_commit_invalid_element_sta(dev, apdev):
 @remote_compatible
 def test_sae_anti_clogging_proto(dev, apdev):
     """SAE anti clogging protocol testing"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="no-knowledge-of-passphrase")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1298,8 +1274,7 @@ def test_sae_anti_clogging_proto(dev, apdev):
 @remote_compatible
 def test_sae_no_random(dev, apdev):
     """SAE and no random numbers available"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     hapd = hostapd.add_ap(apdev[0], params)
@@ -1316,8 +1291,7 @@ def test_sae_no_random(dev, apdev):
 @remote_compatible
 def test_sae_pwe_failure(dev, apdev):
     """SAE and pwe failure"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_groups'] = '19 15'
@@ -1357,8 +1331,7 @@ def test_sae_pwe_failure(dev, apdev):
 @remote_compatible
 def test_sae_bignum_failure(dev, apdev):
     """SAE and bignum failure"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_groups'] = '19 15 22'
@@ -1433,8 +1406,7 @@ def test_sae_bignum_failure(dev, apdev):
 
 def test_sae_bignum_failure_unsafe_group(dev, apdev):
     """SAE and bignum failure unsafe group"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_groups'] = '22'
@@ -1456,8 +1428,7 @@ def test_sae_bignum_failure_unsafe_group(dev, apdev):
 
 def test_sae_invalid_anti_clogging_token_req(dev, apdev):
     """SAE and invalid anti-clogging token request"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     # Beacon more frequently since Probe Request frames are practically ignored
@@ -1540,8 +1511,7 @@ def test_sae_invalid_anti_clogging_token_req(dev, apdev):
 
 def test_sae_password(dev, apdev):
     """SAE and sae_password in hostapd configuration"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE WPA-PSK'
@@ -1558,8 +1528,7 @@ def test_sae_password(dev, apdev):
 
 def test_sae_password_short(dev, apdev):
     """SAE and short password"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_password'] = "secret"
@@ -1571,8 +1540,7 @@ def test_sae_password_short(dev, apdev):
 
 def test_sae_password_long(dev, apdev):
     """SAE and long password"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_password'] = 100*"A"
@@ -1586,8 +1554,7 @@ def test_sae_connect_cmd(dev, apdev):
     """SAE with connect command"""
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
-    if "SAE" not in wpas.get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(wpas)
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     hapd = hostapd.add_ap(apdev[0], params)
@@ -1604,8 +1571,7 @@ def test_sae_connect_cmd(dev, apdev):
         raise Exception("No connection result reported")
 
 def run_sae_password_id(dev, apdev, groups=None):
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae")
     params['wpa_key_mgmt'] = 'SAE'
     if groups:
@@ -1654,8 +1620,7 @@ def test_sae_password_id_ffc(dev, apdev):
 
 def test_sae_password_id_only(dev, apdev):
     """SAE and password identifier (exclusively)"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_password'] = 'secret|id=pw id'
@@ -1667,8 +1632,7 @@ def test_sae_password_id_only(dev, apdev):
 
 def test_sae_forced_anti_clogging_pw_id(dev, apdev):
     """SAE anti clogging (forced and Password Identifier)"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_anti_clogging_threshold'] = '0'
@@ -1681,8 +1645,7 @@ def test_sae_forced_anti_clogging_pw_id(dev, apdev):
 
 def test_sae_reauth(dev, apdev):
     """SAE reauthentication"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae",
                                  passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1755,8 +1718,7 @@ def sae_rx_commit_token_req(sock, radiotap, send_two=False):
     return True
 
 def run_sae_anti_clogging_during_attack(dev, apdev):
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_groups'] = '21'
@@ -1835,8 +1797,7 @@ def run_sae_anti_clogging_during_attack(dev, apdev):
 
 def test_sae_sync(dev, apdev):
     """SAE dot11RSNASAESync"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_sync'] = '1'
@@ -1858,8 +1819,7 @@ def test_sae_sync(dev, apdev):
 
 def test_sae_confirm_immediate(dev, apdev):
     """SAE and AP sending Confirm message without waiting STA"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_confirm_immediate'] = '1'
@@ -1870,8 +1830,7 @@ def test_sae_confirm_immediate(dev, apdev):
 
 def test_sae_confirm_immediate2(dev, apdev):
     """SAE and AP sending Confirm message without waiting STA (2)"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_confirm_immediate'] = '2'
@@ -1952,8 +1911,7 @@ def start_sae_pwe_ap(apdev, group, sae_pwe):
     return hostapd.add_ap(apdev, params)
 
 def run_sae_pwe_group(dev, apdev, group):
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     tls = dev[0].request("GET tls_library")
     if group in [27, 28, 29, 30]:
         if tls.startswith("OpenSSL") and "run=OpenSSL 1." in tls:
@@ -1979,6 +1937,7 @@ def check_sae_pwe_group(dev, group, sae_pwe):
 
 def test_sae_pwe_h2e_only_ap(dev, apdev):
     """SAE PWE derivation with H2E-only AP"""
+    check_sae_capab(dev[0])
     start_sae_pwe_ap(apdev[0], 19, 1)
     try:
         check_sae_pwe_group(dev[0], 19, 1)
@@ -1995,6 +1954,7 @@ def test_sae_pwe_h2e_only_ap(dev, apdev):
 
 def test_sae_pwe_h2e_only_ap_sta_forcing_loop(dev, apdev):
     """SAE PWE derivation with H2E-only AP and STA forcing loop"""
+    check_sae_capab(dev[0])
     start_sae_pwe_ap(apdev[0], 19, 1)
     dev[0].set("ignore_sae_h2e_only", "1")
     dev[0].connect("sae-pwe", psk="12345678", key_mgmt="SAE", scan_freq="2412",
@@ -2006,6 +1966,7 @@ def test_sae_pwe_h2e_only_ap_sta_forcing_loop(dev, apdev):
 
 def test_sae_pwe_loop_only_ap(dev, apdev):
     """SAE PWE derivation with loop-only AP"""
+    check_sae_capab(dev[0])
     start_sae_pwe_ap(apdev[0], 19, 0)
     try:
         check_sae_pwe_group(dev[0], 19, 0)
@@ -2022,6 +1983,7 @@ def test_sae_pwe_loop_only_ap(dev, apdev):
 
 def test_sae_h2e_rejected_groups(dev, apdev):
     """SAE H2E and rejected groups indication"""
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_groups'] = "19"
@@ -2046,6 +2008,7 @@ def test_sae_h2e_rejected_groups(dev, apdev):
 
 def test_sae_h2e_rejected_groups_unexpected(dev, apdev):
     """SAE H2E and rejected groups indication (unexpected group)"""
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_groups'] = "19 20"
@@ -2070,8 +2033,7 @@ def test_sae_h2e_rejected_groups_unexpected(dev, apdev):
 
 def test_sae_h2e_password_id(dev, apdev):
     """SAE H2E and password identifier"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_pwe'] = '1'
@@ -2098,8 +2060,7 @@ def test_sae_pwe_in_psk_ap(dev, apdev):
 
 def test_sae_auth_restart(dev, apdev):
     """SAE and authentication restarts with H2E/looping"""
-    if "SAE" not in dev[0].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_pwe'] = '2'
@@ -2128,6 +2089,7 @@ def test_sae_auth_restart(dev, apdev):
 
 def test_sae_h2e_rsnxe_mismatch(dev, apdev):
     """SAE H2E and RSNXE mismatch in EAPOL-Key msg 2/4"""
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_pwe'] = "1"
@@ -2156,6 +2118,7 @@ def test_sae_h2e_rsnxe_mismatch(dev, apdev):
 
 def test_sae_h2e_rsnxe_mismatch_retries(dev, apdev):
     """SAE H2E and RSNXE mismatch in EAPOL-Key msg 2/4 retries"""
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_pwe'] = "1"
@@ -2191,6 +2154,7 @@ def test_sae_h2e_rsnxe_mismatch_retries(dev, apdev):
 
 def test_sae_h2e_rsnxe_mismatch_assoc(dev, apdev):
     """SAE H2E and RSNXE mismatch in EAPOL-Key msg 2/4 (assoc)"""
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_pwe'] = "1"
@@ -2227,6 +2191,7 @@ def test_sae_h2e_rsnxe_mismatch_ap2(dev, apdev):
     run_sae_h2e_rsnxe_mismatch_ap(dev, apdev, "F400")
 
 def run_sae_h2e_rsnxe_mismatch_ap(dev, apdev, rsnxe):
+    check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_pwe'] = "1"
@@ -2253,9 +2218,8 @@ def run_sae_h2e_rsnxe_mismatch_ap(dev, apdev, rsnxe):
 
 def test_sae_forced_anti_clogging_h2e(dev, apdev):
     """SAE anti clogging (forced, H2E)"""
-    if "SAE" not in dev[0].get_capability("auth_alg") or \
-       "SAE" not in dev[1].get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
+    check_sae_capab(dev[0])
+    check_sae_capab(dev[1])
     params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
     params['wpa_key_mgmt'] = 'SAE WPA-PSK'
     params['sae_pwe'] = "1"
