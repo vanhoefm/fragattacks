@@ -1713,14 +1713,14 @@ def test_dpp_auto_connect_1(dev, apdev):
     try:
         run_dpp_auto_connect(dev, apdev, 1)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_auto_connect_2(dev, apdev):
     """DPP and auto connect (2)"""
     try:
         run_dpp_auto_connect(dev, apdev, 2)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_auto_connect_2_connect_cmd(dev, apdev):
     """DPP and auto connect (2) using connect_cmd"""
@@ -1730,7 +1730,7 @@ def test_dpp_auto_connect_2_connect_cmd(dev, apdev):
     try:
         run_dpp_auto_connect(dev_new, apdev, 2)
     finally:
-        wpas.set("dpp_config_processing", "0")
+        wpas.set("dpp_config_processing", "0", allow_fail=True)
 
 def run_dpp_auto_connect(dev, apdev, processing):
     check_dpp_capab(dev[0])
@@ -1777,28 +1777,28 @@ def test_dpp_auto_connect_legacy(dev, apdev):
     try:
         run_dpp_auto_connect_legacy(dev, apdev)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_auto_connect_legacy_ssid_charset(dev, apdev):
     """DPP and auto connect (legacy, ssid_charset)"""
     try:
         run_dpp_auto_connect_legacy(dev, apdev, ssid_charset=12345)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_auto_connect_legacy_sae_1(dev, apdev):
     """DPP and auto connect (legacy SAE)"""
     try:
         run_dpp_auto_connect_legacy(dev, apdev, conf='sta-sae', psk_sae=True)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_auto_connect_legacy_sae_2(dev, apdev):
     """DPP and auto connect (legacy SAE)"""
     try:
         run_dpp_auto_connect_legacy(dev, apdev, conf='sta-sae', sae_only=True)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_auto_connect_legacy_psk_sae_1(dev, apdev):
     """DPP and auto connect (legacy PSK+SAE)"""
@@ -1806,7 +1806,7 @@ def test_dpp_auto_connect_legacy_psk_sae_1(dev, apdev):
         run_dpp_auto_connect_legacy(dev, apdev, conf='sta-psk-sae',
                                     psk_sae=True)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_auto_connect_legacy_psk_sae_2(dev, apdev):
     """DPP and auto connect (legacy PSK+SAE)"""
@@ -1814,14 +1814,14 @@ def test_dpp_auto_connect_legacy_psk_sae_2(dev, apdev):
         run_dpp_auto_connect_legacy(dev, apdev, conf='sta-psk-sae',
                                     sae_only=True)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_auto_connect_legacy_psk_sae_3(dev, apdev):
     """DPP and auto connect (legacy PSK+SAE)"""
     try:
         run_dpp_auto_connect_legacy(dev, apdev, conf='sta-psk-sae')
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def run_dpp_auto_connect_legacy(dev, apdev, conf='sta-psk',
                                 ssid_charset=None,
@@ -1870,7 +1870,7 @@ def test_dpp_auto_connect_legacy_pmf_required(dev, apdev):
     try:
         run_dpp_auto_connect_legacy_pmf_required(dev, apdev)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def run_dpp_auto_connect_legacy_pmf_required(dev, apdev):
     check_dpp_capab(dev[0])
@@ -2408,21 +2408,21 @@ def test_dpp_own_config(dev, apdev):
     try:
         run_dpp_own_config(dev, apdev)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_own_config_group_id(dev, apdev):
     """DPP configurator signing own connector"""
     try:
         run_dpp_own_config(dev, apdev, extra=" group_id=test-group")
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_own_config_curve_mismatch(dev, apdev):
     """DPP configurator signing own connector using mismatching curve"""
     try:
         run_dpp_own_config(dev, apdev, own_curve="BP-384", expect_failure=True)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def run_dpp_own_config(dev, apdev, own_curve=None, expect_failure=False,
                        extra=None):
@@ -2463,21 +2463,21 @@ def test_dpp_own_config_ap(dev, apdev):
     try:
         run_dpp_own_config_ap(dev, apdev)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_own_config_ap_group_id(dev, apdev):
     """DPP configurator (AP) signing own connector (group_id)"""
     try:
         run_dpp_own_config_ap(dev, apdev, extra=" group_id=test-group")
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_own_config_ap_reconf(dev, apdev):
     """DPP configurator (AP) signing own connector and configurator reconf"""
     try:
         run_dpp_own_config_ap(dev, apdev)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def run_dpp_own_config_ap(dev, apdev, reconf_configurator=False, extra=None):
     check_dpp_capab(dev[0])
@@ -2517,10 +2517,10 @@ def test_dpp_intro_mismatch(dev, apdev):
         check_dpp_capab(wpas)
         run_dpp_intro_mismatch(dev, apdev, wpas)
     finally:
-        dev[0].set("dpp_config_processing", "0")
-        dev[2].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
+        dev[2].set("dpp_config_processing", "0", allow_fail=True)
         if wpas:
-            wpas.set("dpp_config_processing", "0")
+            wpas.set("dpp_config_processing", "0", allow_fail=True)
 
 def run_dpp_intro_mismatch(dev, apdev, wpas):
     check_dpp_capab(dev[0])
@@ -4001,7 +4001,7 @@ def test_dpp_peer_intro_failures(dev, apdev):
     try:
         run_dpp_peer_intro_failures(dev, apdev)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def run_dpp_peer_intro_failures(dev, apdev):
     check_dpp_capab(dev[0])
@@ -4229,7 +4229,7 @@ def test_dpp_network_addition_failure(dev, apdev):
     try:
         run_dpp_network_addition_failure(dev, apdev)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def run_dpp_network_addition_failure(dev, apdev):
     check_dpp_capab(dev[0])
@@ -4297,6 +4297,7 @@ def test_dpp_conf_file_update(dev, apdev, params):
         f.write("update_config=1\n")
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     wpas.interface_add("wlan5", config=config)
+    check_dpp_capab(wpas)
     wpas.set("dpp_config_processing", "1")
     run_dpp_qr_code_auth_unicast([wpas, dev[1]], apdev, None,
                                  init_extra="conf=sta-dpp",
@@ -4392,7 +4393,7 @@ def test_dpp_legacy_and_dpp_akm(dev, apdev):
     try:
         run_dpp_legacy_and_dpp_akm(dev, apdev)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def run_dpp_legacy_and_dpp_akm(dev, apdev):
     check_dpp_capab(dev[0], min_ver=2)
@@ -4472,7 +4473,7 @@ def test_dpp_controller_relay(dev, apdev, params):
     try:
         run_dpp_controller_relay(dev, apdev, params)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
         dev[1].request("DPP_CONTROLLER_STOP")
 
 def run_dpp_controller_relay(dev, apdev, params):
@@ -4700,28 +4701,28 @@ def test_dpp_conn_status_success(dev, apdev):
     try:
         run_dpp_conn_status(dev, apdev)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_conn_status_wrong_passphrase(dev, apdev):
     """DPP connection status - wrong passphrase"""
     try:
         run_dpp_conn_status(dev, apdev, result=2)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_conn_status_no_ap(dev, apdev):
     """DPP connection status - no AP"""
     try:
         run_dpp_conn_status(dev, apdev, result=10)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_conn_status_connector_mismatch(dev, apdev):
     """DPP connection status - invalid Connector"""
     try:
         run_dpp_conn_status(dev, apdev, result=8)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def test_dpp_conn_status_assoc_reject(dev, apdev):
     """DPP connection status - association rejection"""
@@ -4729,7 +4730,7 @@ def test_dpp_conn_status_assoc_reject(dev, apdev):
         dev[0].request("TEST_ASSOC_IE 30020000")
         run_dpp_conn_status(dev, apdev, assoc_reject=True)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def run_dpp_conn_status(dev, apdev, result=0, assoc_reject=False):
     check_dpp_capab(dev[0], min_ver=2)
@@ -4841,6 +4842,7 @@ def test_dpp_config_save3(dev, apdev, params):
     run_dpp_config_save(dev, apdev, config, "\\u0001*\\u00c2\\u00bc\\u00c3\\u009e\\u00c3\\u00bf", '012ac2bcc39ec3bf')
 
 def run_dpp_config_save(dev, apdev, config, conf_ssid, exp_ssid):
+    check_dpp_capab(dev[1])
     with open(config, "w") as f:
         f.write("update_config=1\n" +
                 "dpp_config_processing=1\n")

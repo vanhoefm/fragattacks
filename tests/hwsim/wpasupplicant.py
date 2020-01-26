@@ -330,8 +330,10 @@ class WpaSupplicant:
         if not self.ping():
             logger.info("No PING response from " + self.ifname + " after reset")
 
-    def set(self, field, value):
+    def set(self, field, value, allow_fail=False):
         if "OK" not in self.request("SET " + field + " " + value):
+            if allow_fail:
+                return
             raise Exception("Failed to set wpa_supplicant parameter " + field)
 
     def add_network(self):

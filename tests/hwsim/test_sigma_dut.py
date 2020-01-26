@@ -1412,6 +1412,7 @@ def test_sigma_dut_dpp_qr_resp_chan_list(dev, apdev):
 
 def test_sigma_dut_dpp_qr_resp_status_query(dev, apdev):
     """sigma_dut DPP/QR responder status query"""
+    check_dpp_capab(dev[1])
     params = hostapd.wpa2_params(ssid="DPPNET01",
                                  passphrase="ThisIsDppPassphrase")
     hapd = hostapd.add_ap(apdev[0], params)
@@ -1420,7 +1421,7 @@ def test_sigma_dut_dpp_qr_resp_status_query(dev, apdev):
         dev[1].set("dpp_config_processing", "2")
         run_sigma_dut_dpp_qr_resp(dev, apdev, 3, status_query=True)
     finally:
-        dev[1].set("dpp_config_processing", "0")
+        dev[1].set("dpp_config_processing", "0", allow_fail=True)
 
 def run_sigma_dut_dpp_qr_resp(dev, apdev, conf_idx, chan_list=None,
                               listen_chan=None, status_query=False):
@@ -2538,7 +2539,7 @@ def test_sigma_dut_dpp_proto_peer_disc_req(dev, apdev):
         if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK,NetworkIntroResult,Errorsent" not in res:
             raise Exception("Unexpected result: " + res)
     finally:
-        dev[0].set("dpp_config_processing", "0")
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
         stop_sigma_dut(sigma)
 
 def test_sigma_dut_dpp_self_config(dev, apdev):
@@ -2581,7 +2582,7 @@ def test_sigma_dut_ap_dpp_self_config(dev, apdev, params):
             run_sigma_dut_ap_dpp_self_config(dev, apdev)
         finally:
             stop_sigma_dut(sigma)
-            dev[0].set("dpp_config_processing", "0")
+            dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
 def run_sigma_dut_ap_dpp_self_config(dev, apdev):
     check_dpp_capab(dev[0])
