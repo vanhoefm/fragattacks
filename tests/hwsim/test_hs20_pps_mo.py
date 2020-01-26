@@ -12,7 +12,7 @@ import subprocess
 import hostapd
 from utils import HwsimSkip
 from test_ap_hs20 import hs20_ap_params, interworking_select, interworking_connect, check_sp_type
-from test_ap_eap import check_eap_capa
+from test_ap_eap import check_eap_capa, check_domain_suffix_match
 
 def check_hs20_osu_client():
     if not os.path.exists("../../hs20/client/hs20-osu-client"):
@@ -27,6 +27,7 @@ def test_hs20_pps_mo_1(dev, apdev):
     """Hotspot 2.0 PPS MO with username/password credential"""
     check_hs20_osu_client()
     check_eap_capa(dev[0], "MSCHAPV2")
+    check_domain_suffix_match(dev[0])
     bssid = apdev[0]['bssid']
     params = hs20_ap_params()
     params['hessid'] = bssid
