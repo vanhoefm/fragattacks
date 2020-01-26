@@ -532,7 +532,7 @@ static int tls_process_certificate(struct tlsv1_client *conn, u8 ct,
 		}
 	} else if (conn->cred && conn->cred->cert_probe) {
 		wpa_printf(MSG_DEBUG,
-			   "TLSv1: Reject server certificate on probe-only rune");
+			   "TLSv1: Reject server certificate on probe-only run");
 		if (conn->event_cb) {
 			union tls_event_data ev;
 			char buf[128];
