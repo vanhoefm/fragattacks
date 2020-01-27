@@ -9169,12 +9169,14 @@ int dpp_bootstrap_info(struct dpp_global *dpp, int id,
 			   "mac_addr=" MACSTR "\n"
 			   "info=%s\n"
 			   "num_freq=%u\n"
+			   "use_freq=%u\n"
 			   "curve=%s\n"
 			   "pkhash=%s\n",
 			   dpp_bootstrap_type_txt(bi->type),
 			   MAC2STR(bi->mac_addr),
 			   bi->info ? bi->info : "",
 			   bi->num_freq,
+			   bi->num_freq == 1 ? bi->freq[0] : 0,
 			   bi->curve->name,
 			   pkhash);
 }
