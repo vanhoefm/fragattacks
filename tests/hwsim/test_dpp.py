@@ -3894,7 +3894,7 @@ def test_dpp_bootstrap_key_autogen_issues(dev, apdev):
     dev[0].dpp_listen(2412)
     with alloc_fail(dev[1], 1, "dpp_autogen_bootstrap_key"):
         dev[1].dpp_auth_init(peer=id1, expect_fail=True)
-    with alloc_fail(dev[1], 2, "=dpp_autogen_bootstrap_key"):
+    with alloc_fail(dev[1], 1, "dpp_gen_uri;dpp_autogen_bootstrap_key"):
         dev[1].dpp_auth_init(peer=id1, expect_fail=True)
     with fail_test(dev[1], 1, "dpp_keygen;dpp_autogen_bootstrap_key"):
         dev[1].dpp_auth_init(peer=id1, expect_fail=True)
@@ -4198,7 +4198,7 @@ def run_dpp_bootstrap_gen_failures(dev):
         if "FAIL" not in dev.request("DPP_BOOTSTRAP_GEN type=qrcode"):
             raise Exception("Command accepted unexpectedly")
 
-    with alloc_fail(dev, 2, "=" + func):
+    with alloc_fail(dev, 1, "dpp_gen_uri;dpp_bootstrap_gen"):
         if "FAIL" not in dev.request("DPP_BOOTSTRAP_GEN type=qrcode"):
             raise Exception("Command accepted unexpectedly")
 

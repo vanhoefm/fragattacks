@@ -1,7 +1,7 @@
 /*
  * DPP functionality shared between hostapd and wpa_supplicant
  * Copyright (c) 2017, Qualcomm Atheros, Inc.
- * Copyright (c) 2018-2019, The Linux Foundation
+ * Copyright (c) 2018-2020, The Linux Foundation
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -820,6 +820,8 @@ void dpp_bootstrap_info_free(struct dpp_bootstrap_info *info)
 		return;
 	os_free(info->uri);
 	os_free(info->info);
+	os_free(info->chan);
+	os_free(info->pk);
 	EVP_PKEY_free(info->pubkey);
 	os_free(info);
 }
@@ -1471,8 +1473,8 @@ int dpp_bootstrap_key_hash(struct dpp_bootstrap_info *bi)
 }
 
 
-char * dpp_keygen(struct dpp_bootstrap_info *bi, const char *curve,
-		  const u8 *privkey, size_t privkey_len)
+static int dpp_keygen(struct dpp_bootstrap_info *bi, const char *curve,
+		      const u8 *privkey, size_t privkey_len)
 {
 	char *base64 = NULL;
 	char *pos, *end;
@@ -1488,7 +1490,7 @@ char * dpp_keygen(struct dpp_bootstrap_info *bi, const char *curve,
 		if (!bi->curve) {
 			wpa_printf(MSG_INFO, "DPP: Unsupported curve: %s",
 				   curve);
-			return NULL;
+			return -1;
 		}
 	}
 	if (privkey)
@@ -1528,11 +1530,13 @@ char * dpp_keygen(struct dpp_bootstrap_info *bi, const char *curve,
 			break;
 		os_memmove(pos, pos + 1, end - pos);
 	}
-	return base64;
+	os_free(bi->pk);
+	bi->pk = base64;
+	return 0;
 fail:
 	os_free(base64);
 	wpabuf_free(der);
-	return NULL;
+	return -1;
 }
 
 
@@ -2198,11 +2202,42 @@ static int dpp_prepare_channel_list(struct dpp_authentication *auth,
 }
 
 
+static int dpp_gen_uri(struct dpp_bootstrap_info *bi)
+{
+	char macstr[ETH_ALEN * 2 + 10];
+	size_t len;
+
+	len = 4; /* "DPP:" */
+	if (bi->chan)
+		len += 3 + os_strlen(bi->chan); /* C:...; */
+	if (is_zero_ether_addr(bi->mac_addr))
+		macstr[0] = '\0';
+	else
+		os_snprintf(macstr, sizeof(macstr), "M:" COMPACT_MACSTR ";",
+			    MAC2STR(bi->mac_addr));
+	len += os_strlen(macstr); /* M:...; */
+	if (bi->info)
+		len += 3 + os_strlen(bi->info); /* I:...; */
+	len += 4 + os_strlen(bi->pk); /* K:...;; */
+
+	os_free(bi->uri);
+	bi->uri = os_malloc(len + 1);
+	if (!bi->uri)
+		return -1;
+	os_snprintf(bi->uri, len + 1, "DPP:%s%s%s%s%s%s%sK:%s;;",
+		    bi->chan ? "C:" : "", bi->chan ? bi->chan : "",
+		    bi->chan ? ";" : "",
+		    macstr,
+		    bi->info ? "I:" : "", bi->info ? bi->info : "",
+		    bi->info ? ";" : "",
+		    bi->pk);
+	return 0;
+}
+
+
 static int dpp_autogen_bootstrap_key(struct dpp_authentication *auth)
 {
 	struct dpp_bootstrap_info *bi;
-	char *pk = NULL;
-	size_t len;
 
 	if (auth->own_bi)
 		return 0; /* already generated */
@@ -2211,27 +2246,17 @@ static int dpp_autogen_bootstrap_key(struct dpp_authentication *auth)
 	if (!bi)
 		return -1;
 	bi->type = DPP_BOOTSTRAP_QR_CODE;
-	pk = dpp_keygen(bi, auth->peer_bi->curve->name, NULL, 0);
-	if (!pk)
+	if (dpp_keygen(bi, auth->peer_bi->curve->name, NULL, 0) < 0 ||
+	    dpp_gen_uri(bi) < 0)
 		goto fail;
-
-	len = 4; /* "DPP:" */
-	len += 4 + os_strlen(pk);
-	bi->uri = os_malloc(len + 1);
-	if (!bi->uri)
-		goto fail;
-	os_snprintf(bi->uri, len + 1, "DPP:K:%s;;", pk);
 	wpa_printf(MSG_DEBUG,
 		   "DPP: Auto-generated own bootstrapping key info: URI %s",
 		   bi->uri);
 
 	auth->tmp_own_bi = auth->own_bi = bi;
 
-	os_free(pk);
-
 	return 0;
 fail:
-	os_free(pk);
 	dpp_bootstrap_info_free(bi);
 	return -1;
 }
@@ -9000,11 +9025,10 @@ struct dpp_bootstrap_info * dpp_add_nfc_uri(struct dpp_global *dpp,
 
 int dpp_bootstrap_gen(struct dpp_global *dpp, const char *cmd)
 {
-	char *chan = NULL, *mac = NULL, *info = NULL, *pk = NULL, *curve = NULL;
+	char *mac = NULL, *info = NULL, *curve = NULL;
 	char *key = NULL;
 	u8 *privkey = NULL;
 	size_t privkey_len = 0;
-	size_t len;
 	int ret = -1;
 	struct dpp_bootstrap_info *bi;
 
@@ -9024,7 +9048,7 @@ int dpp_bootstrap_gen(struct dpp_global *dpp, const char *cmd)
 	else
 		goto fail;
 
-	chan = get_param(cmd, " chan=");
+	bi->chan = get_param(cmd, " chan=");
 	mac = get_param(cmd, " mac=");
 	info = get_param(cmd, " info=");
 	curve = get_param(cmd, " curve=");
@@ -9038,43 +9062,19 @@ int dpp_bootstrap_gen(struct dpp_global *dpp, const char *cmd)
 			goto fail;
 	}
 
-	pk = dpp_keygen(bi, curve, privkey, privkey_len);
-	if (!pk)
+	if (dpp_keygen(bi, curve, privkey, privkey_len) < 0 ||
+	    dpp_parse_uri_chan_list(bi, bi->chan) < 0 ||
+	    dpp_parse_uri_mac(bi, mac) < 0 ||
+	    dpp_parse_uri_info(bi, info) < 0 ||
+	    dpp_gen_uri(bi) < 0)
 		goto fail;
 
-	len = 4; /* "DPP:" */
-	if (chan) {
-		if (dpp_parse_uri_chan_list(bi, chan) < 0)
-			goto fail;
-		len += 3 + os_strlen(chan); /* C:...; */
-	}
-	if (mac) {
-		if (dpp_parse_uri_mac(bi, mac) < 0)
-			goto fail;
-		len += 3 + os_strlen(mac); /* M:...; */
-	}
-	if (info) {
-		if (dpp_parse_uri_info(bi, info) < 0)
-			goto fail;
-		len += 3 + os_strlen(info); /* I:...; */
-	}
-	len += 4 + os_strlen(pk);
-	bi->uri = os_malloc(len + 1);
-	if (!bi->uri)
-		goto fail;
-	os_snprintf(bi->uri, len + 1, "DPP:%s%s%s%s%s%s%s%s%sK:%s;;",
-		    chan ? "C:" : "", chan ? chan : "", chan ? ";" : "",
-		    mac ? "M:" : "", mac ? mac : "", mac ? ";" : "",
-		    info ? "I:" : "", info ? info : "", info ? ";" : "",
-		    pk);
 	bi->id = dpp_next_id(dpp);
 	dl_list_add(&dpp->bootstrap, &bi->list);
 	ret = bi->id;
 	bi = NULL;
 fail:
 	os_free(curve);
-	os_free(pk);
-	os_free(chan);
 	os_free(mac);
 	os_free(info);
 	str_clear_free(key);
