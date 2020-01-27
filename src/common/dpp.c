@@ -9216,6 +9216,88 @@ void dpp_bootstrap_find_pair(struct dpp_global *dpp, const u8 *i_bootstrap,
 }
 
 
+static int dpp_nfc_update_bi_channel(struct dpp_bootstrap_info *own_bi,
+				     struct dpp_bootstrap_info *peer_bi)
+{
+	unsigned int i, freq = 0;
+	enum hostapd_hw_mode mode;
+	u8 op_class, channel;
+	char chan[20];
+
+	if (peer_bi->num_freq == 0)
+		return 0; /* no channel preference/constraint */
+
+	for (i = 0; i < peer_bi->num_freq; i++) {
+		if (own_bi->num_freq == 0 ||
+		    freq_included(own_bi->freq, own_bi->num_freq,
+				  peer_bi->freq[i])) {
+			freq = peer_bi->freq[i];
+			break;
+		}
+	}
+	if (!freq) {
+		wpa_printf(MSG_DEBUG, "DPP: No common channel found");
+		return -1;
+	}
+
+	mode = ieee80211_freq_to_channel_ext(freq, 0, 0, &op_class, &channel);
+	if (mode == NUM_HOSTAPD_MODES) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Could not determine operating class or channel number for %u MHz",
+			   freq);
+	}
+
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Selected %u MHz (op_class %u channel %u) as the negotiation channel based on information from NFC negotiated handover",
+		   freq, op_class, channel);
+	os_snprintf(chan, sizeof(chan), "%u/%u", op_class, channel);
+	os_free(own_bi->chan);
+	own_bi->chan = os_strdup(chan);
+	own_bi->freq[0] = freq;
+	own_bi->num_freq = 1;
+	os_free(peer_bi->chan);
+	peer_bi->chan = os_strdup(chan);
+	peer_bi->freq[0] = freq;
+	peer_bi->num_freq = 1;
+
+	return dpp_gen_uri(own_bi);
+}
+
+
+static int dpp_nfc_update_bi_key(struct dpp_bootstrap_info *own_bi,
+				 struct dpp_bootstrap_info *peer_bi)
+{
+	if (peer_bi->curve == own_bi->curve)
+		return 0;
+
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Update own bootstrapping key to match peer curve from NFC handover");
+
+	EVP_PKEY_free(own_bi->pubkey);
+	own_bi->pubkey = NULL;
+
+	if (dpp_keygen(own_bi, peer_bi->curve->name, NULL, 0) < 0 ||
+	    dpp_gen_uri(own_bi) < 0)
+		goto fail;
+
+	return 0;
+fail:
+	dl_list_del(&own_bi->list);
+	dpp_bootstrap_info_free(own_bi);
+	return -1;
+}
+
+
+int dpp_nfc_update_bi(struct dpp_bootstrap_info *own_bi,
+		      struct dpp_bootstrap_info *peer_bi)
+{
+	if (dpp_nfc_update_bi_channel(own_bi, peer_bi) < 0 ||
+	    dpp_nfc_update_bi_key(own_bi, peer_bi) < 0)
+		return -1;
+	return 0;
+}
+
+
 static unsigned int dpp_next_configurator_id(struct dpp_global *dpp)
 {
 	struct dpp_configurator *conf;
