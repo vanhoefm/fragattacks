@@ -8160,10 +8160,10 @@ enum qca_vendor_wlan_sta_guard_interval {
  * used by QCA_NL80211_VENDOR_SUBCMD_GET_STA_INFO vendor command.
  *
  * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_MAC:
- * Required attribute in request, 6-byte MAC address,
- * used in both STA and AP modes.
- * MAC address of the station for which information is requested (BSSID of the
- * AP in STA mode).
+ * Required attribute in request for AP mode only, 6-byte MAC address,
+ * corresponding to the station's MAC address for which information is
+ * requested. For STA mode this is not required as the info always correspond
+ * to the self STA and the current/last association.
  *
  * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_FLAGS:
  * Optionally used in response, u32 attribute, contains a bitmap of different
@@ -8191,7 +8191,7 @@ enum qca_vendor_wlan_sta_guard_interval {
  * back to host from target.
  *
  * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_RETRY_EXHAUSTED:
- * Optionally used in response, u32 attribute, used in AP mode only.
+ * Optionally used in response, u32 attribute, used in both STA and AP mode.
  * Value indicates the number of data frames not transmitted successfully even
  * after retrying the packets for the number of times equal to the total number
  * of retries allowed for that packet and for which the TX status has been
@@ -8208,10 +8208,151 @@ enum qca_vendor_wlan_sta_guard_interval {
  * after retrying the packets.
  *
  * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_TX_RETRY_EXHAUSTED:
- * Optionally used in response, u32 attribute, used in AP mode only.
+ * Optionally used in response, u32 attribute, used in both STA & AP mode.
  * Value indicates the number of data frames not transmitted successfully even
  * after retrying the packets for the number of times equal to the total number
  * of retries allowed for that packet.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_PROBE_REQ_BMISS_COUNT: u32, used in
+ * the STA mode only. Represent the number of probe requests sent by the STA
+ * while attempting to roam on missing certain number of beacons from the
+ * connected AP. If queried in the disconnected state, this represents the
+ * count for the last connected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_PROBE_RESP_BMISS_COUNT: u32, used in
+ * the STA mode. Represent the number of probe responses received by the station
+ * while attempting to roam on missing certain number of beacons from the
+ * connected AP. When queried in the disconnected state, this represents the
+ * count when in last connected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_TX_ALL_COUNT: u32, used in the
+ * STA mode only. Represents the total number of frames sent out by STA
+ * including Data, ACK, RTS, CTS, Control Management. This data is maintained
+ * only for the connect session. Represents the count of last connected session,
+ * when queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_RTS_COUNT: u32, used in the STA mode.
+ * Total number of RTS sent out by the STA. This data is maintained per connect
+ * session. Represents the count of last connected session, when queried in the
+ * disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_RTS_RETRY_FAIL_COUNT: u32, used in the
+ * STA mode.Represent the number of RTS transmission failure that reach retry
+ * limit. This data is maintained per connect session. Represents the count of
+ * last connected session, when queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_DATA_NON_AGGREGATED_COUNT: u32, used in
+ * the STA mode. Represent the total number of non aggregated frames transmitted
+ * by the STA. This data is maintained per connect session. Represents the count
+ * of last connected session, when queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_DATA_AGGREGATED_COUNT: u32, used in the
+ * STA mode. Represent the total number of aggregated frames transmitted by the
+ * STA. This data is maintained per connect session. Represents the count of
+ * last connected session, when queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_FRAMES_GOOD_PLCP_COUNT: u32, used in
+ * the STA mode. Represents the number of received frames with a good PLCP. This
+ * data is maintained per connect session. Represents the count of last
+ * connected session, when queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_FRAMES_INVALID_DELIMITER_COUNT: u32,
+ * used in the STA mode. Represents the number of occasions that no valid
+ * delimiter is detected by A-MPDU parser. This data is maintained per connect
+ * session. Represents the count of last connected session, when queried in the
+ * disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_FRAMES_CRC_FAIL_COUNT: u32, used in the
+ * STA mode. Represents the number of frames for which CRC check failed in the
+ * MAC. This data is maintained per connect session. Represents the count of
+ * last connected session, when queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_ACKS_GOOD_FCS_COUNT: u32, used in the
+ * STA mode. Represents the number of unicast ACKs received with good FCS. This
+ * data is maintained per connect session. Represents the count of last
+ * connected session, when queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_BLOCKACK_COUNT: u32, used in the STA
+ * mode. Represents the number of received Block Acks. This data is maintained
+ * per connect session. Represents the count of last connected session, when
+ * queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_BEACON_COUNT: u32, used in the STA
+ * mode. Represents the number of beacons received from the connected BSS. This
+ * data is maintained per connect session. Represents the count of last
+ * connected session, when queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_OTHER_BEACON_COUNT: u32, used in the
+ * STA mode. Represents the number of beacons received by the other BSS when in
+ * connected state (through the probes done by the STA). This data is maintained
+ * per connect session. Represents the count of last connected session, when
+ * queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_UCAST_DATA_GOOD_FCS_COUNT: u64, used in
+ * the STA mode. Represents the number of received DATA frames with good FCS and
+ * matching Receiver Address when in connected state. This data is maintained
+ * per connect session. Represents the count of last connected session, when
+ * queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_DATA_BC_MC_DROP_COUNT: u32, used in the
+ * STA mode. Represents the number of RX Data multicast frames dropped by the HW
+ * when in the connected state. This data is maintained per connect session.
+ * Represents the count of last connected session, when queried in the
+ * disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_POWER_24G_1MBPS: u32, used in the
+ * STA mode. This represents the target power in dBm for the transmissions done
+ * to the AP in 2.4 GHz at 1 Mbps (DSSS) rate. This data is maintained per
+ * connect session. Represents the count of last connected session, when
+ * queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_POWER_24G_6MBPS: u32, used in the
+ * STA mode. This represents the Target power in dBm for transmissions done to
+ * the AP in 2.4 GHz at 6 Mbps (OFDM) rate. This data is maintained per connect
+ * session. Represents the count of last connected session, when queried in the
+ * disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_POWER_24G_MCS0: u32, used in the
+ * STA mode. This represents the Target power in dBm for transmissions done to
+ * the AP in 2.4 GHz at MCS0 rate. This data is maintained per connect session.
+ * Represents the count of last connected session, when queried in the
+ * disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_POWER_5G_6MBPS: u32, used in the
+ * STA mode. This represents the Target power in dBm for transmissions done to
+ * the AP in 5 GHz at 6 Mbps (OFDM) rate. This data is maintained per connect
+ * session. Represents the count of last connected session, when queried in
+ * the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_POWER_5G_MCS0: u32, used in the
+ * STA mode. This represents the Target power in dBm for for transmissions done
+ * to the AP in 5 GHz at MCS0 rate. This data is maintained per connect session.
+ * Represents the count of last connected session, when queried in the
+ * disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_HW_BUFFERS_OVERFLOW_COUNT: u32, used
+ * in the STA mode. This represents the Nested attribute representing the
+ * overflow counts of each receive buffer allocated to the hardware during the
+ * STA's connection. The number of hw buffers might vary for each WLAN
+ * solution and hence this attribute represents the nested array of all such
+ * HW buffer count. This data is maintained per connect session. Represents
+ * the count of last connected session, when queried in the disconnected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_MAX_TX_POWER: u32, Max TX power (dBm)
+ * allowed as per the regulatory requirements for the current or last connected
+ * session. Used in the STA mode.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_LATEST_TX_POWER: u32, Latest TX power
+ * (dBm) used by the station in its latest unicast frame while communicating
+ * to the AP in the connected state. When queried in the disconnected state,
+ * this represents the TX power used by the STA with last AP communication
+ * when in connected state.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_ANI_LEVEL: u32, Adaptive noise immunity
+ * level used to adjust the RX sensitivity. Represents the current ANI level
+ * when queried in the connected state. When queried in the disconnected
+ * state, this corresponds to the latest ANI level at the instance of
+ * disconnection.
  */
 enum qca_wlan_vendor_attr_get_sta_info {
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_INVALID = 0,
@@ -8225,6 +8366,31 @@ enum qca_wlan_vendor_attr_get_sta_info {
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_TX_TOTAL = 8,
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_TX_RETRY = 9,
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_TX_RETRY_EXHAUSTED = 10,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_PROBE_REQ_BMISS_COUNT = 11,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_PROBE_RESP_BMISS_COUNT = 12,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_TX_ALL_COUNT = 13,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_RTS_COUNT = 14,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_RTS_RETRY_FAIL_COUNT = 15,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_DATA_NON_AGGREGATED_COUNT = 16,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TX_DATA_AGGREGATED_COUNT = 17,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_FRAMES_GOOD_PLCP_COUNT = 18,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_FRAMES_INVALID_DELIMITER_COUNT = 19,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_FRAMES_CRC_FAIL_COUNT = 20,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_ACKS_GOOD_FCS_COUNT = 21,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_BLOCKACK_COUNT = 22,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_BEACON_COUNT = 23,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_OTHER_BEACON_COUNT = 24,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_UCAST_DATA_GOOD_FCS_COUNT = 25,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_DATA_BC_MC_DROP_COUNT = 26,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_POWER_24G_1MBPS = 27,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_POWER_24G_6MBPS = 28,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_POWER_24G_MCS0 = 29,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_POWER_5G_6MBPS = 30,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_TARGET_POWER_5G_MCS0 = 31,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_RX_HW_BUFFERS_OVERFLOW_COUNT = 32,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_MAX_TX_POWER = 33,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_LATEST_TX_POWER = 34,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_ANI_LEVEL = 35,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_AFTER_LAST,
