@@ -4882,6 +4882,54 @@ def test_dpp_nfc_uri(dev, apdev):
     dev[1].dpp_auth_init(nfc_uri=uri, configurator=conf_id, conf="sta-dpp")
     wait_auth_success(dev[0], dev[1], configurator=dev[1], enrollee=dev[0])
 
+def test_dpp_nfc_negotiated_handover(dev, apdev):
+    """DPP bootstrapping via NFC negotiated handover"""
+    run_dpp_nfc_negotiated_handover(dev, apdev)
+
+def test_dpp_nfc_negotiated_handover_diff_curve(dev, apdev):
+    """DPP bootstrapping via NFC negotiated handover (different curve)"""
+    run_dpp_nfc_negotiated_handover(dev, apdev, curve0="prime256v1",
+                                    curve1="secp384r1")
+
+def run_dpp_nfc_negotiated_handover(dev, apdev, curve0=None, curve1=None):
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    id0 = dev[0].dpp_bootstrap_gen(type="nfc-uri", chan="81/6,11", mac=True,
+                                   curve=curve0)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+    logger.info("Generated URI[0]: " + uri0)
+    id1 = dev[1].dpp_bootstrap_gen(type="nfc-uri", chan="81/1,6,11", mac=True,
+                                   curve=curve1)
+    uri1 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
+    logger.info("Generated URI[1]: " + uri1)
+
+    # dev[0] acting as NFC Handover Requestor
+    # dev[1] acting as NFC Handover Selector
+    res = dev[1].request("DPP_NFC_HANDOVER_REQ own=%d uri=%s" % (id1, uri0))
+    if "FAIL" in res:
+        raise Exception("Failed to process NFC Handover Request")
+    info = dev[1].request("DPP_BOOTSTRAP_INFO %d" % id1)
+    logger.info("Updated local bootstrapping info:\n" + info)
+    freq = None
+    for line in info.splitlines():
+        if line.startswith("use_freq="):
+            freq = int(line.split('=')[1])
+    if freq is None:
+        raise Exception("Selected channel not indicated")
+    uri1 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
+    logger.info("Updated URI[1]: " + uri1)
+    dev[1].dpp_listen(freq)
+    res = dev[0].request("DPP_NFC_HANDOVER_SEL own=%d uri=%s" % (id0, uri1))
+    if "FAIL" in res:
+        raise Exception("Failed to process NFC Handover Select")
+    peer = int(res)
+
+    conf_id = dev[0].dpp_configurator_add()
+    dev[0].dpp_auth_init(peer=peer, own=id0, configurator=conf_id,
+                         conf="sta-dpp")
+    wait_auth_success(dev[1], dev[0], configurator=dev[0], enrollee=dev[1])
+
 def test_dpp_with_p2p_device(dev, apdev):
     """DPP exchange when driver uses a separate P2P Device interface"""
     check_dpp_capab(dev[0])
