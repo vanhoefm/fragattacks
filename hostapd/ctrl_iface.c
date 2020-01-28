@@ -59,6 +59,7 @@
 #include "ap/neighbor_db.h"
 #include "ap/rrm.h"
 #include "ap/dpp_hostapd.h"
+#include "ap/dfs.h"
 #include "wps/wps_defs.h"
 #include "wps/wps.h"
 #include "fst/fst_ctrl_iface.h"
@@ -2528,7 +2529,10 @@ static int hostapd_ctrl_iface_chan_switch(struct hostapd_iface *iface,
 #ifdef NEED_AP_MLME
 	struct csa_settings settings;
 	int ret;
+	int dfs_range = 0;
 	unsigned int i;
+	int bandwidth;
+	u8 chan;
 
 	ret = hostapd_parse_csa_settings(pos, &settings);
 	if (ret)
@@ -2539,6 +2543,61 @@ static int hostapd_ctrl_iface_chan_switch(struct hostapd_iface *iface,
 		wpa_printf(MSG_INFO,
 			   "chanswitch: invalid frequency settings provided");
 		return ret;
+	}
+
+	switch (settings.freq_params.bandwidth) {
+	case 40:
+		bandwidth = CHAN_WIDTH_40;
+		break;
+	case 80:
+		if (settings.freq_params.center_freq2)
+			bandwidth = CHAN_WIDTH_80P80;
+		else
+			bandwidth = CHAN_WIDTH_80;
+		break;
+	case 160:
+		bandwidth = CHAN_WIDTH_160;
+		break;
+	default:
+		bandwidth = CHAN_WIDTH_20;
+		break;
+	}
+
+	if (settings.freq_params.center_freq1)
+		dfs_range += hostapd_is_dfs_overlap(
+			iface, bandwidth, settings.freq_params.center_freq1);
+	else
+		dfs_range += hostapd_is_dfs_overlap(
+			iface, bandwidth, settings.freq_params.freq);
+
+	if (settings.freq_params.center_freq2)
+		dfs_range += hostapd_is_dfs_overlap(
+			iface, bandwidth, settings.freq_params.center_freq2);
+
+	if (dfs_range) {
+		ret = ieee80211_freq_to_chan(settings.freq_params.freq, &chan);
+		if (ret == NUM_HOSTAPD_MODES) {
+			wpa_printf(MSG_ERROR,
+				   "Failed to get channel for (freq=%d, sec_channel_offset=%d, bw=%d)",
+				   settings.freq_params.freq,
+				   settings.freq_params.sec_channel_offset,
+				   settings.freq_params.bandwidth);
+			return -1;
+		}
+
+		settings.freq_params.channel = chan;
+
+		wpa_printf(MSG_DEBUG,
+			   "DFS/CAC to (channel=%u, freq=%d, sec_channel_offset=%d, bw=%d, center_freq1=%d)",
+			   settings.freq_params.channel,
+			   settings.freq_params.freq,
+			   settings.freq_params.sec_channel_offset,
+			   settings.freq_params.bandwidth,
+			   settings.freq_params.center_freq1);
+
+		/* Perform CAC and switch channel */
+		hostapd_switch_channel_fallback(iface, &settings.freq_params);
+		return 0;
 	}
 
 	for (i = 0; i < iface->num_bss; i++) {
