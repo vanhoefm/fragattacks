@@ -292,9 +292,8 @@ bsd_send_mlme_param(void *priv, const u8 op, const u16 reason, const u8 *addr)
 }
 
 static int
-bsd_ctrl_iface(void *priv, int enable)
+bsd_get_iface_flags(struct bsd_driver_data *drv)
 {
-	struct bsd_driver_data *drv = priv;
 	struct ifreq ifr;
 
 	os_memset(&ifr, 0, sizeof(ifr));
@@ -305,24 +304,6 @@ bsd_ctrl_iface(void *priv, int enable)
 			   strerror(errno));
 		return -1;
 	}
-	drv->flags = ifr.ifr_flags;
-
-	if (enable) {
-		if (ifr.ifr_flags & IFF_UP)
-			return 0;
-		ifr.ifr_flags |= IFF_UP;
-	} else {
-		if (!(ifr.ifr_flags & IFF_UP))
-			return 0;
-		ifr.ifr_flags &= ~IFF_UP;
-	}
-
-	if (ioctl(drv->global->sock, SIOCSIFFLAGS, &ifr) < 0) {
-		wpa_printf(MSG_ERROR, "ioctl[SIOCSIFFLAGS]: %s",
-			   strerror(errno));
-		return -1;
-	}
-
 	drv->flags = ifr.ifr_flags;
 	return 0;
 }
@@ -543,7 +524,7 @@ bsd_set_ieee8021x(void *priv, struct wpa_bss_params *params)
 			   __func__);
 		return -1;
 	}
-	return bsd_ctrl_iface(priv, 1);
+	return 0;
 }
 
 static void
@@ -956,8 +937,7 @@ bsd_init(struct hostapd_data *hapd, struct wpa_init_params *params)
 	if (l2_packet_get_own_addr(drv->sock_xmit, params->own_addr))
 		goto bad;
 
-	/* mark down during setup */
-	if (bsd_ctrl_iface(drv, 0) < 0)
+	if (bsd_get_iface_flags(drv) < 0)
 		goto bad;
 
 	if (bsd_set_mediaopt(drv, IFM_OMASK, IFM_IEEE80211_HOSTAP) < 0) {
@@ -982,18 +962,9 @@ bsd_deinit(void *priv)
 {
 	struct bsd_driver_data *drv = priv;
 
-	if (drv->ifindex != 0)
-		bsd_ctrl_iface(drv, 0);
 	if (drv->sock_xmit != NULL)
 		l2_packet_deinit(drv->sock_xmit);
 	os_free(drv);
-}
-
-
-static int
-bsd_commit(void *priv)
-{
-	return bsd_ctrl_iface(priv, 1);
 }
 
 
@@ -1250,8 +1221,11 @@ wpa_driver_bsd_scan(void *priv, struct wpa_driver_scan_params *params)
 	}
 
 	/* NB: interface must be marked UP to do a scan */
-	if (bsd_ctrl_iface(drv, 1) < 0)
+	if (!(drv->flags & IFF_UP)) {
+		wpa_printf(MSG_DEBUG, "%s: interface is not up, cannot scan",
+			   __func__);
 		return -1;
+	}
 
 #ifdef IEEE80211_IOC_SCAN_MAX_SSID
 	os_memset(&sr, 0, sizeof(sr));
@@ -1541,7 +1515,7 @@ wpa_driver_bsd_init(void *ctx, const char *ifname, void *priv)
 		goto fail;
 
 	/* Down interface during setup. */
-	if (bsd_ctrl_iface(drv, 0) < 0)
+	if (bsd_get_iface_flags(drv) < 0)
 		goto fail;
 
 	drv->opmode = get80211opmode(drv);
@@ -1561,9 +1535,6 @@ wpa_driver_bsd_deinit(void *priv)
 
 	if (drv->ifindex != 0 && !drv->if_removed) {
 		wpa_driver_bsd_set_wpa(drv, 0);
-
-		/* NB: mark interface down */
-		bsd_ctrl_iface(drv, 0);
 
 		wpa_driver_bsd_set_wpa_internal(drv, drv->prev_wpa,
 						drv->prev_privacy);
@@ -1687,7 +1658,6 @@ const struct wpa_driver_ops wpa_driver_bsd_ops = {
 	.sta_disassoc		= bsd_sta_disassoc,
 	.sta_deauth		= bsd_sta_deauth,
 	.sta_set_flags		= bsd_set_sta_authorized,
-	.commit			= bsd_commit,
 #else /* HOSTAPD */
 	.init2			= wpa_driver_bsd_init,
 	.deinit			= wpa_driver_bsd_deinit,
