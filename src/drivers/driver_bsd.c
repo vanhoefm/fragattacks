@@ -1478,12 +1478,6 @@ wpa_driver_bsd_init(void *ctx, const char *ifname, void *priv)
 	if (drv == NULL)
 		return NULL;
 
-	/*
-	 * NB: We require the interface name be mappable to an index.
-	 *     This implies we do not support having wpa_supplicant
-	 *     wait for an interface to appear.  This seems ok; that
-	 *     doesn't belong here; it's really the job of devd.
-	 */
 	drv->ifindex = if_nametoindex(ifname);
 	if (drv->ifindex == 0) {
 		wpa_printf(MSG_DEBUG, "%s: interface %s does not exist",
