@@ -1205,14 +1205,14 @@ static int x509_parse_ext_certificate_policies(struct x509_certificate *cert,
 		struct asn1_oid oid;
 		char buf[80];
 
-		if (asn1_get_next(pos, len, &hdr) < 0 ||
+		if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
 		    hdr.class != ASN1_CLASS_UNIVERSAL ||
 		    hdr.tag != ASN1_TAG_SEQUENCE) {
 			wpa_printf(MSG_DEBUG, "X509: Expected SEQUENCE (PolicyInformation) - found class %d tag 0x%x",
 				   hdr.class, hdr.tag);
 			return -1;
 		}
-		if (hdr.length > pos + len - hdr.payload)
+		if (hdr.length > end - hdr.payload)
 			return -1;
 		pos = hdr.payload;
 		pol_end = pos + hdr.length;
