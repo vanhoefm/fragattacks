@@ -856,7 +856,7 @@ int hostapd_handle_dfs(struct hostapd_iface *iface)
 }
 
 
-static int hostapd_config_dfs_chan_available(struct hostapd_iface *iface)
+int hostapd_is_dfs_chan_available(struct hostapd_iface *iface)
 {
 	int n_chans, n_chans1, start_chan_idx, start_chan_idx1;
 
@@ -904,7 +904,7 @@ int hostapd_dfs_complete_cac(struct hostapd_iface *iface, int success, int freq,
 			 * another radio.
 			 */
 			if (iface->state != HAPD_IFACE_ENABLED &&
-			    hostapd_config_dfs_chan_available(iface)) {
+			    hostapd_is_dfs_chan_available(iface)) {
 				hostapd_setup_interface_complete(iface, 0);
 				iface->cac_started = 0;
 			}
