@@ -2432,6 +2432,96 @@ static int hostapd_ctrl_get_pmk(struct hostapd_data *hapd, const char *cmd,
 #endif /* CONFIG_TESTING_OPTIONS */
 
 
+static int hostapd_ctrl_check_freq_params(struct hostapd_freq_params *params)
+{
+	switch (params->bandwidth) {
+	case 0:
+		/* bandwidth not specified: use 20 MHz by default */
+		/* fall-through */
+	case 20:
+		if (params->center_freq1 &&
+		    params->center_freq1 != params->freq)
+			return -1;
+
+		if (params->center_freq2 || params->sec_channel_offset)
+			return -1;
+		break;
+	case 40:
+		if (params->center_freq2 || !params->sec_channel_offset)
+			return -1;
+
+		if (!params->center_freq1)
+			break;
+		switch (params->sec_channel_offset) {
+		case 1:
+			if (params->freq + 10 != params->center_freq1)
+				return -1;
+			break;
+		case -1:
+			if (params->freq - 10 != params->center_freq1)
+				return -1;
+			break;
+		default:
+			return -1;
+		}
+		break;
+	case 80:
+		if (!params->center_freq1 || !params->sec_channel_offset)
+			return 1;
+
+		switch (params->sec_channel_offset) {
+		case 1:
+			if (params->freq - 10 != params->center_freq1 &&
+			    params->freq + 30 != params->center_freq1)
+				return 1;
+			break;
+		case -1:
+			if (params->freq + 10 != params->center_freq1 &&
+			    params->freq - 30 != params->center_freq1)
+				return -1;
+			break;
+		default:
+			return -1;
+		}
+
+		/* Adjacent and overlapped are not allowed for 80+80 */
+		if (params->center_freq2 &&
+		    params->center_freq1 - params->center_freq2 <= 80 &&
+		    params->center_freq2 - params->center_freq1 <= 80)
+			return 1;
+		break;
+	case 160:
+		if (!params->center_freq1 || params->center_freq2 ||
+		    !params->sec_channel_offset)
+			return -1;
+
+		switch (params->sec_channel_offset) {
+		case 1:
+			if (params->freq + 70 != params->center_freq1 &&
+			    params->freq + 30 != params->center_freq1 &&
+			    params->freq - 10 != params->center_freq1 &&
+			    params->freq - 50 != params->center_freq1)
+				return -1;
+			break;
+		case -1:
+			if (params->freq + 50 != params->center_freq1 &&
+			    params->freq + 10 != params->center_freq1 &&
+			    params->freq - 30 != params->center_freq1 &&
+			    params->freq - 70 != params->center_freq1)
+				return -1;
+			break;
+		default:
+			return -1;
+		}
+		break;
+	default:
+		return -1;
+	}
+
+	return 0;
+}
+
+
 static int hostapd_ctrl_iface_chan_switch(struct hostapd_iface *iface,
 					  char *pos)
 {
@@ -2443,6 +2533,13 @@ static int hostapd_ctrl_iface_chan_switch(struct hostapd_iface *iface,
 	ret = hostapd_parse_csa_settings(pos, &settings);
 	if (ret)
 		return ret;
+
+	ret = hostapd_ctrl_check_freq_params(&settings.freq_params);
+	if (ret) {
+		wpa_printf(MSG_INFO,
+			   "chanswitch: invalid frequency settings provided");
+		return ret;
+	}
 
 	for (i = 0; i < iface->num_bss; i++) {
 
