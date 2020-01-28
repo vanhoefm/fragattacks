@@ -1290,3 +1290,56 @@ int hostapd_handle_dfs_offload(struct hostapd_iface *iface)
 		   __func__, iface->freq);
 	return 2;
 }
+
+
+int hostapd_is_dfs_overlap(struct hostapd_iface *iface, enum chan_width width,
+			   int center_freq)
+{
+	struct hostapd_channel_data *chan;
+	struct hostapd_hw_modes *mode = iface->current_mode;
+	int half_width;
+	int res = 0;
+	int i;
+
+	if (!iface->conf->ieee80211h || !mode ||
+	    mode->mode != HOSTAPD_MODE_IEEE80211A)
+		return 0;
+
+	switch (width) {
+	case CHAN_WIDTH_20_NOHT:
+	case CHAN_WIDTH_20:
+		half_width = 10;
+		break;
+	case CHAN_WIDTH_40:
+		half_width = 20;
+		break;
+	case CHAN_WIDTH_80:
+	case CHAN_WIDTH_80P80:
+		half_width = 40;
+		break;
+	case CHAN_WIDTH_160:
+		half_width = 80;
+		break;
+	default:
+		wpa_printf(MSG_WARNING, "DFS chanwidth %d not supported",
+			   width);
+		return 0;
+	}
+
+	for (i = 0; i < mode->num_channels; i++) {
+		chan = &mode->channels[i];
+
+		if (!(chan->flag & HOSTAPD_CHAN_RADAR))
+			continue;
+
+		if (center_freq - chan->freq < half_width &&
+		    chan->freq - center_freq < half_width)
+			res++;
+	}
+
+	wpa_printf(MSG_DEBUG, "DFS: (%d, %d): in range: %s",
+		   center_freq - half_width, center_freq + half_width,
+		   res ? "yes" : "no");
+
+	return res;
+}

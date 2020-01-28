@@ -30,5 +30,7 @@ int hostapd_dfs_start_cac(struct hostapd_iface *iface, int freq,
 			  int ht_enabled, int chan_offset, int chan_width,
 			  int cf1, int cf2);
 int hostapd_handle_dfs_offload(struct hostapd_iface *iface);
+int hostapd_is_dfs_overlap(struct hostapd_iface *iface, enum chan_width width,
+			   int center_freq);
 
 #endif /* DFS_H */
