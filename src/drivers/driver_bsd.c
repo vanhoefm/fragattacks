@@ -59,14 +59,13 @@ struct bsd_driver_global {
 struct bsd_driver_data {
 	struct dl_list	list;
 	struct bsd_driver_global *global;
-	struct hostapd_data *hapd;	/* back pointer */
+	void	*ctx;
 
 	struct l2_packet_data *sock_xmit;/* raw packet xmit socket */
 	char	ifname[IFNAMSIZ+1];	/* interface name */
 	int	flags;
 	unsigned int ifindex;		/* interface index */
 	int	if_removed;		/* has the interface been removed? */
-	void	*ctx;
 	struct wpa_driver_capa capa;	/* driver capability */
 	int	is_ap;			/* Access point mode */
 	int	prev_roaming;	/* roaming state to restore on deinit */
@@ -816,14 +815,14 @@ bsd_wireless_event_receive(int sock, void *ctx, void *sock_ctx)
 			break;
 		case RTM_IEEE80211_LEAVE:
 			leave = (struct ieee80211_leave_event *) &ifan[1];
-			drv_event_disassoc(drv->hapd, leave->iev_addr);
+			drv_event_disassoc(drv->ctx, leave->iev_addr);
 			break;
 		case RTM_IEEE80211_JOIN:
 #ifdef RTM_IEEE80211_REJOIN
 		case RTM_IEEE80211_REJOIN:
 #endif
 			join = (struct ieee80211_join_event *) &ifan[1];
-			bsd_new_sta(drv, drv->hapd, join->iev_addr);
+			bsd_new_sta(drv, drv->ctx, join->iev_addr);
 			break;
 		case RTM_IEEE80211_REPLAY:
 			/* ignore */
@@ -837,7 +836,7 @@ bsd_wireless_event_receive(int sock, void *ctx, void *sock_ctx)
 			os_memset(&data, 0, sizeof(data));
 			data.michael_mic_failure.unicast = 1;
 			data.michael_mic_failure.src = mic->iev_src;
-			wpa_supplicant_event(drv->hapd,
+			wpa_supplicant_event(drv->ctx,
 					     EVENT_MICHAEL_MIC_FAILURE, &data);
 			break;
 		}
@@ -849,7 +848,7 @@ static void
 handle_read(void *ctx, const u8 *src_addr, const u8 *buf, size_t len)
 {
 	struct bsd_driver_data *drv = ctx;
-	drv_event_eapol_rx(drv->hapd, src_addr, buf, len);
+	drv_event_eapol_rx(drv->ctx, src_addr, buf, len);
 }
 
 static void *
@@ -870,7 +869,7 @@ bsd_init(struct hostapd_data *hapd, struct wpa_init_params *params)
 		goto bad;
 	}
 
-	drv->hapd = hapd;
+	drv->ctx = hapd;
 	drv->global = params->global_priv;
 	os_strlcpy(drv->ifname, params->ifname, sizeof(drv->ifname));
 
