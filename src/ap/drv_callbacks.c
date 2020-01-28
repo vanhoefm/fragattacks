@@ -945,6 +945,12 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 	} else if (hapd->iface->drv_flags & WPA_DRIVER_FLAGS_DFS_OFFLOAD) {
 		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_CSA_FINISHED
 			"freq=%d dfs=%d", freq, is_dfs);
+	} else if (is_dfs &&
+		   hostapd_is_dfs_required(hapd->iface) &&
+		   !hostapd_is_dfs_chan_available(hapd->iface) &&
+		   !hapd->iface->cac_started) {
+		hostapd_disable_iface(hapd->iface);
+		hostapd_enable_iface(hapd->iface);
 	}
 
 	for (i = 0; i < hapd->iface->num_bss; i++)
