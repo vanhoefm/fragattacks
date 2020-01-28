@@ -89,7 +89,6 @@ bsd_get_drvindex(void *priv, unsigned int ifindex)
 	return NULL;
 }
 
-#ifndef HOSTAPD
 static struct bsd_driver_data *
 bsd_get_drvname(void *priv, const char *ifname)
 {
@@ -102,7 +101,6 @@ bsd_get_drvname(void *priv, const char *ifname)
 	}
 	return NULL;
 }
-#endif /* HOSTAPD */
 
 static int
 bsd_set80211(void *priv, int op, int val, const void *arg, int arg_len)
@@ -657,6 +655,153 @@ rtbuf_len(void)
 	return len;
 }
 
+static void
+bsd_wireless_event_receive(int sock, void *ctx, void *sock_ctx)
+{
+	struct bsd_driver_global *global = sock_ctx;
+	struct bsd_driver_data *drv;
+	struct if_announcemsghdr *ifan;
+	struct if_msghdr *ifm;
+	struct rt_msghdr *rtm;
+	union wpa_event_data event;
+	struct ieee80211_michael_event *mic;
+	struct ieee80211_leave_event *leave;
+	struct ieee80211_join_event *join;
+	int n;
+
+	n = read(sock, global->event_buf, global->event_buf_len);
+	if (n < 0) {
+		if (errno != EINTR && errno != EAGAIN)
+			wpa_printf(MSG_ERROR, "%s read() failed: %s",
+				   __func__, strerror(errno));
+		return;
+	}
+
+	rtm = (struct rt_msghdr *) global->event_buf;
+	if (rtm->rtm_version != RTM_VERSION) {
+		wpa_printf(MSG_DEBUG, "Invalid routing message version=%d",
+			   rtm->rtm_version);
+		return;
+	}
+	os_memset(&event, 0, sizeof(event));
+	switch (rtm->rtm_type) {
+	case RTM_IEEE80211:
+		ifan = (struct if_announcemsghdr *) rtm;
+		drv = bsd_get_drvindex(global, ifan->ifan_index);
+		if (drv == NULL)
+			return;
+		switch (ifan->ifan_what) {
+		case RTM_IEEE80211_ASSOC:
+		case RTM_IEEE80211_REASSOC:
+			if (drv->is_ap)
+				break;
+			wpa_supplicant_event(drv->ctx, EVENT_ASSOC, NULL);
+			break;
+		case RTM_IEEE80211_DISASSOC:
+			if (drv->is_ap)
+				break;
+			wpa_supplicant_event(drv->ctx, EVENT_DISASSOC, NULL);
+			break;
+		case RTM_IEEE80211_SCAN:
+			if (drv->is_ap)
+				break;
+			wpa_supplicant_event(drv->ctx, EVENT_SCAN_RESULTS,
+					     NULL);
+			break;
+		case RTM_IEEE80211_LEAVE:
+			leave = (struct ieee80211_leave_event *) &ifan[1];
+			drv_event_disassoc(drv->ctx, leave->iev_addr);
+			break;
+		case RTM_IEEE80211_JOIN:
+#ifdef RTM_IEEE80211_REJOIN
+		case RTM_IEEE80211_REJOIN:
+#endif
+			join = (struct ieee80211_join_event *) &ifan[1];
+			bsd_new_sta(drv, drv->ctx, join->iev_addr);
+			break;
+		case RTM_IEEE80211_REPLAY:
+			/* ignore */
+			break;
+		case RTM_IEEE80211_MICHAEL:
+			mic = (struct ieee80211_michael_event *) &ifan[1];
+			wpa_printf(MSG_DEBUG,
+				"Michael MIC failure wireless event: "
+				"keyix=%u src_addr=" MACSTR, mic->iev_keyix,
+				MAC2STR(mic->iev_src));
+			os_memset(&event, 0, sizeof(event));
+			event.michael_mic_failure.unicast =
+				!IEEE80211_IS_MULTICAST(mic->iev_dst);
+			event.michael_mic_failure.src = mic->iev_src;
+			wpa_supplicant_event(drv->ctx,
+					     EVENT_MICHAEL_MIC_FAILURE, &event);
+			break;
+		}
+		break;
+	case RTM_IFANNOUNCE:
+		ifan = (struct if_announcemsghdr *) rtm;
+		switch (ifan->ifan_what) {
+		case IFAN_DEPARTURE:
+			drv = bsd_get_drvindex(global, ifan->ifan_index);
+			if (drv)
+				drv->if_removed = 1;
+			event.interface_status.ievent = EVENT_INTERFACE_REMOVED;
+			break;
+		case IFAN_ARRIVAL:
+			drv = bsd_get_drvname(global, ifan->ifan_name);
+			if (drv) {
+				drv->ifindex = ifan->ifan_index;
+				drv->if_removed = 0;
+			}
+			event.interface_status.ievent = EVENT_INTERFACE_ADDED;
+			break;
+		default:
+			wpa_printf(MSG_DEBUG, "RTM_IFANNOUNCE: unknown action");
+			return;
+		}
+		wpa_printf(MSG_DEBUG, "RTM_IFANNOUNCE: Interface '%s' %s",
+			   ifan->ifan_name,
+			   ifan->ifan_what == IFAN_DEPARTURE ?
+				"removed" : "added");
+		os_strlcpy(event.interface_status.ifname, ifan->ifan_name,
+			   sizeof(event.interface_status.ifname));
+		if (drv) {
+			wpa_supplicant_event(drv->ctx, EVENT_INTERFACE_STATUS,
+					     &event);
+			/*
+			 * Set ifindex to zero after sending the event as the
+			 * event might query the driver to ensure a match.
+			 */
+			if (ifan->ifan_what == IFAN_DEPARTURE)
+				drv->ifindex = 0;
+		} else {
+			wpa_supplicant_event_global(global->ctx,
+						    EVENT_INTERFACE_STATUS,
+						    &event);
+		}
+		break;
+	case RTM_IFINFO:
+		ifm = (struct if_msghdr *) rtm;
+		drv = bsd_get_drvindex(global, ifm->ifm_index);
+		if (drv == NULL)
+			return;
+		if ((ifm->ifm_flags & IFF_UP) == 0 &&
+		    (drv->flags & IFF_UP) != 0) {
+			wpa_printf(MSG_DEBUG, "RTM_IFINFO: Interface '%s' DOWN",
+				   drv->ifname);
+			wpa_supplicant_event(drv->ctx, EVENT_INTERFACE_DISABLED,
+					     NULL);
+		} else if ((ifm->ifm_flags & IFF_UP) != 0 &&
+		    (drv->flags & IFF_UP) == 0) {
+			wpa_printf(MSG_DEBUG, "RTM_IFINFO: Interface '%s' UP",
+				   drv->ifname);
+			wpa_supplicant_event(drv->ctx, EVENT_INTERFACE_ENABLED,
+					     NULL);
+		}
+		drv->flags = ifm->ifm_flags;
+		break;
+	}
+}
+
 #ifdef HOSTAPD
 
 /*
@@ -775,76 +920,6 @@ bsd_sta_disassoc(void *priv, const u8 *own_addr, const u8 *addr,
 }
 
 static void
-bsd_wireless_event_receive(int sock, void *ctx, void *sock_ctx)
-{
-	struct bsd_driver_global *global = sock_ctx;
-	struct bsd_driver_data *drv;
-	struct if_announcemsghdr *ifan;
-	struct rt_msghdr *rtm;
-	struct ieee80211_michael_event *mic;
-	struct ieee80211_join_event *join;
-	struct ieee80211_leave_event *leave;
-	int n;
-	union wpa_event_data data;
-
-	n = read(sock, global->event_buf, global->event_buf_len);
-	if (n < 0) {
-		if (errno != EINTR && errno != EAGAIN)
-			wpa_printf(MSG_ERROR, "%s read() failed: %s",
-				   __func__, strerror(errno));
-		return;
-	}
-
-	rtm = (struct rt_msghdr *) global->event_buf;
-	if (rtm->rtm_version != RTM_VERSION) {
-		wpa_printf(MSG_DEBUG, "Invalid routing message version=%d",
-			   rtm->rtm_version);
-		return;
-	}
-	switch (rtm->rtm_type) {
-	case RTM_IEEE80211:
-		ifan = (struct if_announcemsghdr *) rtm;
-		drv = bsd_get_drvindex(global, ifan->ifan_index);
-		if (drv == NULL)
-			return;
-		switch (ifan->ifan_what) {
-		case RTM_IEEE80211_ASSOC:
-		case RTM_IEEE80211_REASSOC:
-		case RTM_IEEE80211_DISASSOC:
-		case RTM_IEEE80211_SCAN:
-			break;
-		case RTM_IEEE80211_LEAVE:
-			leave = (struct ieee80211_leave_event *) &ifan[1];
-			drv_event_disassoc(drv->ctx, leave->iev_addr);
-			break;
-		case RTM_IEEE80211_JOIN:
-#ifdef RTM_IEEE80211_REJOIN
-		case RTM_IEEE80211_REJOIN:
-#endif
-			join = (struct ieee80211_join_event *) &ifan[1];
-			bsd_new_sta(drv, drv->ctx, join->iev_addr);
-			break;
-		case RTM_IEEE80211_REPLAY:
-			/* ignore */
-			break;
-		case RTM_IEEE80211_MICHAEL:
-			mic = (struct ieee80211_michael_event *) &ifan[1];
-			wpa_printf(MSG_DEBUG,
-				"Michael MIC failure wireless event: "
-				"keyix=%u src_addr=" MACSTR, mic->iev_keyix,
-				MAC2STR(mic->iev_src));
-			os_memset(&data, 0, sizeof(data));
-			data.michael_mic_failure.unicast = 1;
-			data.michael_mic_failure.src = mic->iev_src;
-			wpa_supplicant_event(drv->ctx,
-					     EVENT_MICHAEL_MIC_FAILURE, &data);
-			break;
-		}
-		break;
-	}
-}
-
-static void
 handle_read(void *ctx, const u8 *src_addr, const u8 *buf, size_t len)
 {
 	struct bsd_driver_data *drv = ctx;
@@ -870,6 +945,7 @@ bsd_init(struct hostapd_data *hapd, struct wpa_init_params *params)
 	}
 
 	drv->ctx = hapd;
+	drv->is_ap = 1;
 	drv->global = params->global_priv;
 	os_strlcpy(drv->ifname, params->ifname, sizeof(drv->ifname));
 
@@ -1213,153 +1289,6 @@ wpa_driver_bsd_scan(void *priv, struct wpa_driver_scan_params *params)
 }
 
 static void
-wpa_driver_bsd_event_receive(int sock, void *ctx, void *sock_ctx)
-{
-	struct bsd_driver_global *global = sock_ctx;
-	struct bsd_driver_data *drv;
-	struct if_announcemsghdr *ifan;
-	struct if_msghdr *ifm;
-	struct rt_msghdr *rtm;
-	union wpa_event_data event;
-	struct ieee80211_michael_event *mic;
-	struct ieee80211_leave_event *leave;
-	struct ieee80211_join_event *join;
-	int n;
-
-	n = read(sock, global->event_buf, global->event_buf_len);
-	if (n < 0) {
-		if (errno != EINTR && errno != EAGAIN)
-			wpa_printf(MSG_ERROR, "%s read() failed: %s",
-				   __func__, strerror(errno));
-		return;
-	}
-
-	rtm = (struct rt_msghdr *) global->event_buf;
-	if (rtm->rtm_version != RTM_VERSION) {
-		wpa_printf(MSG_DEBUG, "Invalid routing message version=%d",
-			   rtm->rtm_version);
-		return;
-	}
-	os_memset(&event, 0, sizeof(event));
-	switch (rtm->rtm_type) {
-	case RTM_IFANNOUNCE:
-		ifan = (struct if_announcemsghdr *) rtm;
-		switch (ifan->ifan_what) {
-		case IFAN_DEPARTURE:
-			drv = bsd_get_drvindex(global, ifan->ifan_index);
-			if (drv)
-				drv->if_removed = 1;
-			event.interface_status.ievent = EVENT_INTERFACE_REMOVED;
-			break;
-		case IFAN_ARRIVAL:
-			drv = bsd_get_drvname(global, ifan->ifan_name);
-			if (drv) {
-				drv->ifindex = ifan->ifan_index;
-				drv->if_removed = 0;
-			}
-			event.interface_status.ievent = EVENT_INTERFACE_ADDED;
-			break;
-		default:
-			wpa_printf(MSG_DEBUG, "RTM_IFANNOUNCE: unknown action");
-			return;
-		}
-		wpa_printf(MSG_DEBUG, "RTM_IFANNOUNCE: Interface '%s' %s",
-			   ifan->ifan_name,
-			   ifan->ifan_what == IFAN_DEPARTURE ?
-				"removed" : "added");
-		os_strlcpy(event.interface_status.ifname, ifan->ifan_name,
-			   sizeof(event.interface_status.ifname));
-		if (drv) {
-			wpa_supplicant_event(drv->ctx, EVENT_INTERFACE_STATUS,
-					     &event);
-			/*
-			 * Set ifindex to zero after sending the event as the
-			 * event might query the driver to ensure a match.
-			 */
-			if (ifan->ifan_what == IFAN_DEPARTURE)
-				drv->ifindex = 0;
-		} else {
-			wpa_supplicant_event_global(global->ctx,
-						    EVENT_INTERFACE_STATUS,
-						    &event);
-		}
-		break;
-	case RTM_IEEE80211:
-		ifan = (struct if_announcemsghdr *) rtm;
-		drv = bsd_get_drvindex(global, ifan->ifan_index);
-		if (drv == NULL)
-			return;
-		switch (ifan->ifan_what) {
-		case RTM_IEEE80211_ASSOC:
-		case RTM_IEEE80211_REASSOC:
-			if (drv->is_ap)
-				break;
-			wpa_supplicant_event(drv->ctx, EVENT_ASSOC, NULL);
-			break;
-		case RTM_IEEE80211_DISASSOC:
-			if (drv->is_ap)
-				break;
-			wpa_supplicant_event(drv->ctx, EVENT_DISASSOC, NULL);
-			break;
-		case RTM_IEEE80211_SCAN:
-			if (drv->is_ap)
-				break;
-			wpa_supplicant_event(drv->ctx, EVENT_SCAN_RESULTS,
-					     NULL);
-			break;
-		case RTM_IEEE80211_LEAVE:
-			leave = (struct ieee80211_leave_event *) &ifan[1];
-			drv_event_disassoc(drv->ctx, leave->iev_addr);
-			break;
-		case RTM_IEEE80211_JOIN:
-#ifdef RTM_IEEE80211_REJOIN
-		case RTM_IEEE80211_REJOIN:
-#endif
-			join = (struct ieee80211_join_event *) &ifan[1];
-			bsd_new_sta(drv, drv->ctx, join->iev_addr);
-			break;
-		case RTM_IEEE80211_REPLAY:
-			/* ignore */
-			break;
-		case RTM_IEEE80211_MICHAEL:
-			mic = (struct ieee80211_michael_event *) &ifan[1];
-			wpa_printf(MSG_DEBUG,
-				"Michael MIC failure wireless event: "
-				"keyix=%u src_addr=" MACSTR, mic->iev_keyix,
-				MAC2STR(mic->iev_src));
-
-			os_memset(&event, 0, sizeof(event));
-			event.michael_mic_failure.unicast =
-				!IEEE80211_IS_MULTICAST(mic->iev_dst);
-			wpa_supplicant_event(drv->ctx,
-					     EVENT_MICHAEL_MIC_FAILURE, &event);
-			break;
-		}
-		break;
-	case RTM_IFINFO:
-		ifm = (struct if_msghdr *) rtm;
-		drv = bsd_get_drvindex(global, ifm->ifm_index);
-		if (drv == NULL)
-			return;
-		if ((ifm->ifm_flags & IFF_UP) == 0 &&
-		    (drv->flags & IFF_UP) != 0) {
-			wpa_printf(MSG_DEBUG, "RTM_IFINFO: Interface '%s' DOWN",
-				   drv->ifname);
-			wpa_supplicant_event(drv->ctx, EVENT_INTERFACE_DISABLED,
-					     NULL);
-		} else if ((ifm->ifm_flags & IFF_UP) != 0 &&
-		    (drv->flags & IFF_UP) == 0) {
-			wpa_printf(MSG_DEBUG, "RTM_IFINFO: Interface '%s' UP",
-				   drv->ifname);
-			wpa_supplicant_event(drv->ctx, EVENT_INTERFACE_ENABLED,
-					     NULL);
-		}
-		drv->flags = ifm->ifm_flags;
-		break;
-	}
-}
-
-static void
 wpa_driver_bsd_add_scan_entry(struct wpa_scan_results *res,
 			      struct ieee80211req_scan_result *sr)
 {
@@ -1669,9 +1598,7 @@ bsd_global_init(void *ctx)
 #if defined(RO_MSGFILTER) || defined(ROUTE_MSGFILTER)
 	unsigned char msgfilter[] = {
 		RTM_IEEE80211,
-#ifndef HOSTAPD
 		RTM_IFINFO, RTM_IFANNOUNCE,
-#endif
 	};
 #endif
 #ifdef ROUTE_MSGFILTER
@@ -1721,14 +1648,8 @@ bsd_global_init(void *ctx)
 		goto fail;
 	}
 
-#ifdef HOSTAPD
 	eloop_register_read_sock(global->route, bsd_wireless_event_receive,
 				 NULL, global);
-
-#else /* HOSTAPD */
-	eloop_register_read_sock(global->route, wpa_driver_bsd_event_receive,
-				 NULL, global);
-#endif /* HOSTAPD */
 
 	return global;
 
