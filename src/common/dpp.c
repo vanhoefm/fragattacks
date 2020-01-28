@@ -1920,9 +1920,11 @@ static struct wpabuf * dpp_auth_build_resp(struct dpp_authentication *auth,
 
 #ifdef CONFIG_DPP2
 	/* Protocol Version */
-	wpabuf_put_le16(msg, DPP_ATTR_PROTOCOL_VERSION);
-	wpabuf_put_le16(msg, 1);
-	wpabuf_put_u8(msg, 2);
+	if (auth->peer_version >= 2) {
+		wpabuf_put_le16(msg, DPP_ATTR_PROTOCOL_VERSION);
+		wpabuf_put_le16(msg, 1);
+		wpabuf_put_u8(msg, 2);
+	}
 #endif /* CONFIG_DPP2 */
 
 	attr_end = wpabuf_put(msg, 0);
