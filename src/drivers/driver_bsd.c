@@ -9,7 +9,6 @@
 
 #include "includes.h"
 #include <sys/ioctl.h>
-#include <sys/sysctl.h>
 
 #include "common.h"
 #include "driver.h"
@@ -51,8 +50,6 @@ struct bsd_driver_global {
 	void		*ctx;
 	int		sock;			/* socket for 802.11 ioctls */
 	int		route;			/* routing socket for events */
-	char		*event_buf;
-	size_t		event_buf_len;
 	struct dl_list	ifaces;			/* list of interfaces */
 };
 
@@ -620,25 +617,10 @@ bsd_set_opt_ie(void *priv, const u8 *ie, size_t ie_len)
 	return 0;
 }
 
-static size_t
-rtbuf_len(void)
-{
-	size_t len;
-
-	int mib[6] = {CTL_NET, AF_ROUTE, 0, AF_INET, NET_RT_DUMP, 0};
-
-	if (sysctl(mib, 6, NULL, &len, NULL, 0) < 0) {
-		wpa_printf(MSG_WARNING, "%s failed: %s", __func__,
-			   strerror(errno));
-		len = 2048;
-	}
-
-	return len;
-}
-
 static void
 bsd_wireless_event_receive(int sock, void *ctx, void *sock_ctx)
 {
+	char event_buf[2048]; /* max size of a single route(4) msg */
 	struct bsd_driver_global *global = sock_ctx;
 	struct bsd_driver_data *drv;
 	struct if_announcemsghdr *ifan;
@@ -650,7 +632,7 @@ bsd_wireless_event_receive(int sock, void *ctx, void *sock_ctx)
 	struct ieee80211_join_event *join;
 	int n;
 
-	n = read(sock, global->event_buf, global->event_buf_len);
+	n = read(sock, event_buf, sizeof(event_buf));
 	if (n < 0) {
 		if (errno != EINTR && errno != EAGAIN)
 			wpa_printf(MSG_ERROR, "%s read() failed: %s",
@@ -658,7 +640,7 @@ bsd_wireless_event_receive(int sock, void *ctx, void *sock_ctx)
 		return;
 	}
 
-	rtm = (struct rt_msghdr *) global->event_buf;
+	rtm = (struct rt_msghdr *) event_buf;
 	if (rtm->rtm_version != RTM_VERSION) {
 		wpa_printf(MSG_DEBUG, "Invalid routing message version=%d",
 			   rtm->rtm_version);
@@ -1605,13 +1587,6 @@ bsd_global_init(void *ctx)
 		wpa_printf(MSG_ERROR, "socket[PF_ROUTE,ROUTE_MSGFILTER]: %s",
 			   strerror(errno));
 #endif
-
-	global->event_buf_len = rtbuf_len();
-	global->event_buf = os_malloc(global->event_buf_len);
-	if (global->event_buf == NULL) {
-		wpa_printf(MSG_ERROR, "%s: os_malloc() failed", __func__);
-		goto fail;
-	}
 
 	eloop_register_read_sock(global->route, bsd_wireless_event_receive,
 				 NULL, global);
