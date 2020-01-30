@@ -307,3 +307,21 @@ int asn1_get_integer(const u8 *buf, size_t len, int *integer, const u8 **next)
 	*integer = value;
 	return 0;
 }
+
+
+int asn1_get_sequence(const u8 *buf, size_t len, struct asn1_hdr *hdr,
+		      const u8 **next)
+{
+	if (asn1_get_next(buf, len, hdr) < 0 ||
+	    hdr->class != ASN1_CLASS_UNIVERSAL ||
+	    hdr->tag != ASN1_TAG_SEQUENCE) {
+		wpa_printf(MSG_DEBUG,
+			   "ASN.1: Expected SEQUENCE - found class %d tag 0x%x",
+			   hdr->class, hdr->tag);
+		return -1;
+	}
+
+	if (next)
+		*next = hdr->payload + hdr->length;
+	return 0;
+}
