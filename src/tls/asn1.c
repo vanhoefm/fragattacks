@@ -325,3 +325,27 @@ int asn1_get_sequence(const u8 *buf, size_t len, struct asn1_hdr *hdr,
 		*next = hdr->payload + hdr->length;
 	return 0;
 }
+
+
+int asn1_get_alg_id(const u8 *buf, size_t len, struct asn1_oid *oid,
+		    const u8 **params, size_t *params_len, const u8 **next)
+{
+	const u8 *pos = buf, *end = buf + len;
+	struct asn1_hdr hdr;
+
+	/*
+	 * AlgorithmIdentifier ::= SEQUENCE {
+	 *     algorithm            OBJECT IDENTIFIER,
+	 *     parameters           ANY DEFINED BY algorithm OPTIONAL}
+	 */
+	if (asn1_get_sequence(pos, end - pos, &hdr, next) < 0 ||
+	    asn1_get_oid(hdr.payload, hdr.length, oid, &pos) < 0)
+		return -1;
+
+	if (params && params_len) {
+		*params = pos;
+		*params_len = hdr.payload + hdr.length - pos;
+	}
+
+	return 0;
+}

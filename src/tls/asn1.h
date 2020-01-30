@@ -68,6 +68,8 @@ int asn1_oid_equal(const struct asn1_oid *a, const struct asn1_oid *b);
 int asn1_get_integer(const u8 *buf, size_t len, int *integer, const u8 **next);
 int asn1_get_sequence(const u8 *buf, size_t len, struct asn1_hdr *hdr,
 		      const u8 **next);
+int asn1_get_alg_id(const u8 *buf, size_t len, struct asn1_oid *oid,
+		    const u8 **params, size_t *params_len, const u8 **next);
 
 extern struct asn1_oid asn1_sha1_oid;
 extern struct asn1_oid asn1_sha256_oid;
