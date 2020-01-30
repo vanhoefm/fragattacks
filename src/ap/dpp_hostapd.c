@@ -762,6 +762,33 @@ static void hostapd_dpp_handle_config_obj(struct hostapd_data *hapd,
 }
 
 
+static int hostapd_dpp_handle_key_pkg(struct hostapd_data *hapd,
+				      struct dpp_asymmetric_key *key)
+{
+#ifdef CONFIG_DPP2
+	int res;
+
+	if (!key)
+		return 0;
+
+	wpa_printf(MSG_DEBUG, "DPP: Received Configurator backup");
+	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONF_RECEIVED);
+
+	while (key) {
+		res = dpp_configurator_from_backup(
+			hapd->iface->interfaces->dpp, key);
+		if (res < 0)
+			return -1;
+		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONFIGURATOR_ID "%d",
+			res);
+		key = key->next;
+	}
+#endif /* CONFIG_DPP2 */
+
+	return 0;
+}
+
+
 static void hostapd_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 				    enum gas_query_ap_result result,
 				    const struct wpabuf *adv_proto,
@@ -806,6 +833,9 @@ static void hostapd_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 	}
 
 	hostapd_dpp_handle_config_obj(hapd, auth, &auth->conf_obj[0]);
+	if (hostapd_dpp_handle_key_pkg(hapd, auth->conf_key_pkg) < 0)
+		goto fail;
+
 	status = DPP_STATUS_OK;
 #ifdef CONFIG_TESTING_OPTIONS
 	if (dpp_test == DPP_TEST_REJECT_CONFIG) {

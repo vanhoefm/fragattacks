@@ -7590,15 +7590,41 @@ int dpp_configurator_get_key(const struct dpp_configurator *conf, char *buf,
 }
 
 
+static int dpp_configurator_gen_kid(struct dpp_configurator *conf)
+{
+	struct wpabuf *csign_pub = NULL;
+	u8 kid_hash[SHA256_MAC_LEN];
+	const u8 *addr[1];
+	size_t len[1];
+	int res;
+
+	csign_pub = dpp_get_pubkey_point(conf->csign, 1);
+	if (!csign_pub) {
+		wpa_printf(MSG_INFO, "DPP: Failed to extract C-sign-key");
+		return -1;
+	}
+
+	/* kid = SHA256(ANSI X9.63 uncompressed C-sign-key) */
+	addr[0] = wpabuf_head(csign_pub);
+	len[0] = wpabuf_len(csign_pub);
+	res = sha256_vector(1, addr, len, kid_hash);
+	wpabuf_free(csign_pub);
+	if (res < 0) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Failed to derive kid for C-sign-key");
+		return -1;
+	}
+
+	conf->kid = base64_url_encode(kid_hash, sizeof(kid_hash), NULL);
+	return conf->kid ? 0 : -1;
+}
+
+
 struct dpp_configurator *
 dpp_keygen_configurator(const char *curve, const u8 *privkey,
 			size_t privkey_len)
 {
 	struct dpp_configurator *conf;
-	struct wpabuf *csign_pub = NULL;
-	u8 kid_hash[SHA256_MAC_LEN];
-	const u8 *addr[1];
-	size_t len[1];
 
 	conf = os_zalloc(sizeof(*conf));
 	if (!conf)
@@ -7624,31 +7650,12 @@ dpp_keygen_configurator(const char *curve, const u8 *privkey,
 		goto fail;
 	conf->own = 1;
 
-	csign_pub = dpp_get_pubkey_point(conf->csign, 1);
-	if (!csign_pub) {
-		wpa_printf(MSG_INFO, "DPP: Failed to extract C-sign-key");
+	if (dpp_configurator_gen_kid(conf) < 0)
 		goto fail;
-	}
-
-	/* kid = SHA256(ANSI X9.63 uncompressed C-sign-key) */
-	addr[0] = wpabuf_head(csign_pub);
-	len[0] = wpabuf_len(csign_pub);
-	if (sha256_vector(1, addr, len, kid_hash) < 0) {
-		wpa_printf(MSG_DEBUG,
-			   "DPP: Failed to derive kid for C-sign-key");
-		goto fail;
-	}
-
-	conf->kid = base64_url_encode(kid_hash, sizeof(kid_hash), NULL);
-	if (!conf->kid)
-		goto fail;
-out:
-	wpabuf_free(csign_pub);
 	return conf;
 fail:
 	dpp_configurator_free(conf);
-	conf = NULL;
-	goto out;
+	return NULL;
 }
 
 
@@ -10205,6 +10212,48 @@ int dpp_configurator_get_key_id(struct dpp_global *dpp, unsigned int id,
 
 
 #ifdef CONFIG_DPP2
+
+int dpp_configurator_from_backup(struct dpp_global *dpp,
+				 struct dpp_asymmetric_key *key)
+{
+	struct dpp_configurator *conf;
+	const EC_KEY *eckey;
+	const EC_GROUP *group;
+	int nid;
+	const struct dpp_curve_params *curve;
+
+	if (!key->csign)
+		return -1;
+	eckey = EVP_PKEY_get0_EC_KEY(key->csign);
+	if (!eckey)
+		return -1;
+	group = EC_KEY_get0_group(eckey);
+	if (!group)
+		return -1;
+	nid = EC_GROUP_get_curve_name(group);
+	curve = dpp_get_curve_nid(nid);
+	if (!curve) {
+		wpa_printf(MSG_INFO, "DPP: Unsupported group in c-sign-key");
+		return -1;
+	}
+
+	conf = os_zalloc(sizeof(*conf));
+	if (!conf)
+		return -1;
+	conf->curve = curve;
+	conf->csign = key->csign;
+	key->csign = NULL;
+	conf->own = 1;
+	if (dpp_configurator_gen_kid(conf) < 0) {
+		dpp_configurator_free(conf);
+		return -1;
+	}
+
+	conf->id = dpp_next_configurator_id(dpp);
+	dl_list_add(&dpp->configurator, &conf->list);
+	return conf->id;
+}
+
 
 static void dpp_controller_conn_status_result_wait_timeout(void *eloop_ctx,
 							   void *timeout_ctx);

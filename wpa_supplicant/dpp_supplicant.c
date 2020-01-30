@@ -1262,6 +1262,32 @@ static int wpas_dpp_handle_config_obj(struct wpa_supplicant *wpa_s,
 }
 
 
+static int wpas_dpp_handle_key_pkg(struct wpa_supplicant *wpa_s,
+				   struct dpp_asymmetric_key *key)
+{
+#ifdef CONFIG_DPP2
+	int res;
+
+	if (!key)
+		return 0;
+
+	wpa_printf(MSG_DEBUG, "DPP: Received Configurator backup");
+	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONF_RECEIVED);
+
+	while (key) {
+		res = dpp_configurator_from_backup(wpa_s->dpp, key);
+		if (res < 0)
+			return -1;
+		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONFIGURATOR_ID "%d",
+			res);
+		key = key->next;
+	}
+#endif /* CONFIG_DPP2 */
+
+	return 0;
+}
+
+
 static void wpas_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 				 enum gas_query_result result,
 				 const struct wpabuf *adv_proto,
@@ -1318,6 +1344,8 @@ static void wpas_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 	}
 	if (auth->num_conf_obj)
 		wpas_dpp_post_process_config(wpa_s, auth);
+	if (wpas_dpp_handle_key_pkg(wpa_s, auth->conf_key_pkg) < 0)
+		goto fail;
 
 	status = DPP_STATUS_OK;
 #ifdef CONFIG_TESTING_OPTIONS
