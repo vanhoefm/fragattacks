@@ -471,7 +471,7 @@ def test_fils_sk_erp_followed_by_pmksa_caching(dev, apdev, params):
 
     pmksa = dev[0].get_pmksa(bssid)
     if pmksa is None:
-	    raise Exception("No PMKSA cache entry created")
+        raise Exception("No PMKSA cache entry created")
 
     dev[0].request("DISCONNECT")
     dev[0].wait_disconnected()
@@ -493,9 +493,9 @@ def test_fils_sk_erp_followed_by_pmksa_caching(dev, apdev, params):
 
     pmksa2 = dev[0].get_pmksa(bssid)
     if pmksa2 is None:
-	    raise Exception("No PMKSA cache entry found")
+        raise Exception("No PMKSA cache entry found")
     if pmksa['pmkid'] != pmksa2['pmkid']:
-	    raise Exception("Unexpected PMKID change")
+        raise Exception("Unexpected PMKID change")
 
 def test_fils_sk_erp_another_ssid(dev, apdev, params):
     """FILS SK using ERP and roam to another SSID"""
