@@ -11,14 +11,94 @@
 #include "common.h"
 #include "asn1.h"
 
-struct asn1_oid asn1_sha1_oid = {
+const struct asn1_oid asn1_sha1_oid = {
 	.oid = { 1, 3, 14, 3, 2, 26 },
 	.len = 6
 };
 
-struct asn1_oid asn1_sha256_oid = {
+const struct asn1_oid asn1_sha256_oid = {
 	.oid = { 2, 16, 840, 1, 101, 3, 4, 2, 1 },
 	.len = 9
+};
+
+const struct asn1_oid asn1_ec_public_key_oid = {
+	.oid = { 1, 2, 840, 10045, 2, 1 },
+	.len = 6
+};
+
+const struct asn1_oid asn1_prime256v1_oid = {
+	.oid = { 1, 2, 840, 10045, 3, 1, 7 },
+	.len = 7
+};
+
+const struct asn1_oid asn1_secp384r1_oid = {
+	.oid = { 1, 3, 132, 0, 34 },
+	.len = 5
+};
+
+const struct asn1_oid asn1_secp521r1_oid = {
+	.oid = { 1, 3, 132, 0, 35 },
+	.len = 5
+};
+
+const struct asn1_oid asn1_brainpoolP256r1_oid = {
+	.oid = { 1, 3, 36, 3, 3, 2, 8, 1, 1, 7 },
+	.len = 10
+};
+
+const struct asn1_oid asn1_brainpoolP384r1_oid = {
+	.oid = { 1, 3, 36, 3, 3, 2, 8, 1, 1, 11 },
+	.len = 10
+};
+
+const struct asn1_oid asn1_brainpoolP512r1_oid = {
+	.oid = { 1, 3, 36, 3, 3, 2, 8, 1, 1, 13 },
+	.len = 10
+};
+
+const struct asn1_oid asn1_aes_siv_cmac_aead_256_oid = {
+	.oid = { 1, 2, 840, 113549, 1, 9, 16, 3, 22 },
+	.len = 9
+};
+
+const struct asn1_oid asn1_aes_siv_cmac_aead_384_oid = {
+	.oid = { 1, 2, 840, 113549, 1, 9, 16, 3, 23 },
+	.len = 9
+};
+
+const struct asn1_oid asn1_aes_siv_cmac_aead_512_oid = {
+	.oid = { 1, 2, 840, 113549, 1, 9, 16, 3, 24 },
+	.len = 9
+};
+
+const struct asn1_oid asn1_pbkdf2_oid = {
+	.oid = { 1, 2, 840, 113549, 1, 5, 12 },
+	.len = 7
+};
+
+const struct asn1_oid asn1_pbkdf2_hmac_sha256_oid = {
+	.oid = { 1, 2, 840, 113549, 2, 9 },
+	.len = 6
+};
+
+const struct asn1_oid asn1_pbkdf2_hmac_sha384_oid = {
+	.oid = { 1, 2, 840, 113549, 2, 10 },
+	.len = 6
+};
+
+const struct asn1_oid asn1_pbkdf2_hmac_sha512_oid = {
+	.oid = { 1, 2, 840, 113549, 2, 11 },
+	.len = 6
+};
+
+const struct asn1_oid asn1_dpp_config_params_oid = {
+	.oid = { 1, 3, 6, 1, 4, 1, 40808, 1, 2, 1 },
+	.len = 10
+};
+
+const struct asn1_oid asn1_dpp_asymmetric_key_package_oid = {
+	.oid = { 1, 3, 6, 1, 4, 1, 40808, 1, 2, 2 },
+	.len = 10
 };
 
 
