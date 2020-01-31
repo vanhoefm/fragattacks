@@ -70,6 +70,17 @@ int asn1_get_sequence(const u8 *buf, size_t len, struct asn1_hdr *hdr,
 		      const u8 **next);
 int asn1_get_alg_id(const u8 *buf, size_t len, struct asn1_oid *oid,
 		    const u8 **params, size_t *params_len, const u8 **next);
+void asn1_put_integer(struct wpabuf *buf, int val);
+void asn1_put_octet_string(struct wpabuf *buf, const struct wpabuf *val);
+void asn1_put_oid(struct wpabuf *buf, const struct asn1_oid *oid);
+void asn1_put_hdr(struct wpabuf *buf, u8 class, int constructed, u8 tag,
+		  size_t len);
+void asn1_put_sequence(struct wpabuf *buf, const struct wpabuf *payload);
+void asn1_put_set(struct wpabuf *buf, const struct wpabuf *payload);
+void asn1_put_utf8string(struct wpabuf *buf, const char *val);
+struct wpabuf * asn1_build_alg_id(const struct asn1_oid *oid,
+				  const struct wpabuf *params);
+struct wpabuf * asn1_encaps(struct wpabuf *buf, u8 class, u8 tag);
 
 extern const struct asn1_oid asn1_sha1_oid;
 extern const struct asn1_oid asn1_sha256_oid;

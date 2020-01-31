@@ -9,6 +9,7 @@
 #include "includes.h"
 
 #include "common.h"
+#include "utils/wpabuf.h"
 #include "asn1.h"
 
 const struct asn1_oid asn1_sha1_oid = {
@@ -428,4 +429,153 @@ int asn1_get_alg_id(const u8 *buf, size_t len, struct asn1_oid *oid,
 	}
 
 	return 0;
+}
+
+
+void asn1_put_integer(struct wpabuf *buf, int val)
+{
+	u8 bin[4];
+	int zeros;
+
+	WPA_PUT_BE32(bin, val);
+	zeros = 0;
+	while (zeros < 3 && bin[zeros] == 0)
+		zeros++;
+	wpabuf_put_u8(buf, ASN1_TAG_INTEGER);
+	wpabuf_put_u8(buf, 4 - zeros);
+	wpabuf_put_data(buf, &bin[zeros], 4 - zeros);
+}
+
+
+static void asn1_put_len(struct wpabuf *buf, size_t len)
+{
+	if (len <= 0x7f) {
+		wpabuf_put_u8(buf, len);
+	} else if (len <= 0xff) {
+		wpabuf_put_u8(buf, 0x80 | 1);
+		wpabuf_put_u8(buf, len);
+	} else if (len <= 0xffff) {
+		wpabuf_put_u8(buf, 0x80 | 2);
+		wpabuf_put_be16(buf, len);
+	} else if (len <= 0xffffff) {
+		wpabuf_put_u8(buf, 0x80 | 3);
+		wpabuf_put_be24(buf, len);
+	} else {
+		wpabuf_put_u8(buf, 0x80 | 4);
+		wpabuf_put_be32(buf, len);
+	}
+}
+
+
+void asn1_put_octet_string(struct wpabuf *buf, const struct wpabuf *val)
+{
+	wpabuf_put_u8(buf, ASN1_TAG_OCTETSTRING);
+	asn1_put_len(buf, wpabuf_len(val));
+	wpabuf_put_buf(buf, val);
+}
+
+
+void asn1_put_oid(struct wpabuf *buf, const struct asn1_oid *oid)
+{
+	u8 *len;
+	size_t i;
+
+	if (oid->len < 2)
+		return;
+	wpabuf_put_u8(buf, ASN1_TAG_OID);
+	len = wpabuf_put(buf, 1);
+	wpabuf_put_u8(buf, 40 * oid->oid[0] + oid->oid[1]);
+	for (i = 2; i < oid->len; i++) {
+		unsigned long val = oid->oid[i];
+		u8 bytes[8];
+		int idx = 0;
+
+		while (val) {
+			bytes[idx] = (idx ? 0x80 : 0x00) | (val & 0x7f);
+			idx++;
+			val >>= 7;
+		}
+		if (idx == 0) {
+			bytes[idx] = 0;
+			idx = 1;
+		}
+		while (idx > 0) {
+			idx--;
+			wpabuf_put_u8(buf, bytes[idx]);
+		}
+	}
+	*len = (u8 *) wpabuf_put(buf, 0) - len - 1;
+}
+
+
+void asn1_put_hdr(struct wpabuf *buf, u8 class, int constructed, u8 tag,
+		  size_t len)
+{
+	wpabuf_put_u8(buf, class << 6 | (constructed ? 0x20 : 0x00) | tag);
+	asn1_put_len(buf, len);
+}
+
+
+void asn1_put_sequence(struct wpabuf *buf, const struct wpabuf *payload)
+{
+	asn1_put_hdr(buf, ASN1_CLASS_UNIVERSAL, 1, ASN1_TAG_SEQUENCE,
+		     wpabuf_len(payload));
+	wpabuf_put_buf(buf, payload);
+}
+
+
+void asn1_put_set(struct wpabuf *buf, const struct wpabuf *payload)
+{
+	asn1_put_hdr(buf, ASN1_CLASS_UNIVERSAL, 1, ASN1_TAG_SET,
+		     wpabuf_len(payload));
+	wpabuf_put_buf(buf, payload);
+}
+
+
+void asn1_put_utf8string(struct wpabuf *buf, const char *val)
+{
+	asn1_put_hdr(buf, ASN1_CLASS_UNIVERSAL, 0, ASN1_TAG_UTF8STRING,
+		     os_strlen(val));
+	wpabuf_put_str(buf, val);
+}
+
+
+struct wpabuf * asn1_build_alg_id(const struct asn1_oid *oid,
+				  const struct wpabuf *params)
+{
+	struct wpabuf *buf;
+	size_t len;
+
+	/*
+	 * AlgorithmIdentifier ::= SEQUENCE {
+	 *    algorithm		OBJECT IDENTIFIER,
+	 *    parameters	ANY DEFINED BY algorithm OPTIONAL}
+	 */
+
+	len = 100;
+	if (params)
+		len += wpabuf_len(params);
+	buf = wpabuf_alloc(len);
+	if (!buf)
+		return NULL;
+	asn1_put_oid(buf, oid);
+	if (params)
+		wpabuf_put_buf(buf, params);
+	return asn1_encaps(buf, ASN1_CLASS_UNIVERSAL, ASN1_TAG_SEQUENCE);
+}
+
+
+struct wpabuf * asn1_encaps(struct wpabuf *buf, u8 class, u8 tag)
+{
+	struct wpabuf *res;
+
+	if (!buf)
+		return NULL;
+	res = wpabuf_alloc(10 + wpabuf_len(buf));
+	if (res) {
+		asn1_put_hdr(res, class, 1, tag, wpabuf_len(buf));
+		wpabuf_put_buf(res, buf);
+	}
+	wpabuf_clear_free(buf);
+	return res;
 }
