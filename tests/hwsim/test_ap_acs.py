@@ -135,11 +135,18 @@ def test_ap_multi_bss_acs(dev, apdev):
 
 def test_ap_acs_40mhz(dev, apdev):
     """Automatic channel selection for 40 MHz channel"""
+    run_ap_acs_40mhz(dev, apdev, '[HT40+]')
+
+def test_ap_acs_40mhz_plus_or_minus(dev, apdev):
+    """Automatic channel selection for 40 MHz channel (plus or minus)"""
+    run_ap_acs_40mhz(dev, apdev, '[HT40+][HT40-]')
+
+def run_ap_acs_40mhz(dev, apdev, ht_capab):
     clear_scan_cache(apdev[0])
     force_prev_ap_on_24g(apdev[0])
     params = hostapd.wpa2_params(ssid="test-acs", passphrase="12345678")
     params['channel'] = '0'
-    params['ht_capab'] = '[HT40+]'
+    params['ht_capab'] = ht_capab
     hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
     wait_acs(hapd)
 
