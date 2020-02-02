@@ -387,7 +387,7 @@ def test_ap_ft_vlan_2(dev, apdev):
     hapd1 = hostapd.add_ap(apdev[1]['ifname'], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, conndev="brvlan1",
-	      force_initial_conn_to_first_ap=True)
+              force_initial_conn_to_first_ap=True)
     if "[WPA2-FT/PSK-CCMP]" not in dev[0].request("SCAN_RESULTS"):
         raise Exception("Scan results missing RSN element info")
 

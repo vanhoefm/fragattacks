@@ -4187,13 +4187,13 @@ def ocsp_resp_ca_signed(reqfile, outfile, status):
         return
     arg = ["openssl", "ocsp",
            "-index", "auth_serv/index%s.txt" % status,
-	   "-rsigner", "auth_serv/ca.pem",
-	   "-rkey", "auth_serv/ca-key.pem",
-	   "-CA", "auth_serv/ca.pem",
-	   "-ndays", "7",
-	   "-reqin", reqfile,
-	   "-resp_no_certs",
-	   "-respout", outfile]
+           "-rsigner", "auth_serv/ca.pem",
+           "-rkey", "auth_serv/ca-key.pem",
+           "-CA", "auth_serv/ca.pem",
+           "-ndays", "7",
+           "-reqin", reqfile,
+           "-resp_no_certs",
+           "-respout", outfile]
     run_openssl(arg)
     if not os.path.exists(outfile):
         raise HwsimSkip("No OCSP response available")
@@ -4204,12 +4204,12 @@ def ocsp_resp_server_signed(reqfile, outfile):
         return
     arg = ["openssl", "ocsp",
            "-index", "auth_serv/index.txt",
-	   "-rsigner", "auth_serv/server.pem",
-	   "-rkey", "auth_serv/server.key",
-	   "-CA", "auth_serv/ca.pem",
-	   "-ndays", "7",
-	   "-reqin", reqfile,
-	   "-respout", outfile]
+           "-rsigner", "auth_serv/server.pem",
+           "-rkey", "auth_serv/server.key",
+           "-CA", "auth_serv/ca.pem",
+           "-ndays", "7",
+           "-reqin", reqfile,
+           "-respout", outfile]
     run_openssl(arg)
     if not os.path.exists(outfile):
         raise HwsimSkip("No OCSP response available")

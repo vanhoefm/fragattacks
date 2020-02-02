@@ -494,9 +494,9 @@ def test_wpas_config_file_set_global(dev):
                   "pkcs11_module_path", "openssl_ciphers", "pcsc_reader",
                   "pcsc_pin", "driver_param", "manufacturer", "model_name",
                   "model_number", "serial_number", "config_methods",
-	          "p2p_ssid_postfix", "autoscan", "ext_password_backend",
-	          "osu_dir", "wowlan_triggers", "fst_group_id",
-	          "sched_scan_plans", "non_pref_chan"]
+                  "p2p_ssid_postfix", "autoscan", "ext_password_backend",
+                  "osu_dir", "wowlan_triggers", "fst_group_id",
+                  "sched_scan_plans", "non_pref_chan"]
         for field in fields:
             if "FAIL" not in wpas.request('SET %s hello\nmodel_name=foobar' % field):
                 raise Exception("Invalid %s value accepted" % field)
