@@ -1523,3 +1523,67 @@ def test_ap_ht40_disable(dev, apdev):
     logger.info("SIGNAL_POLL: " + str(sig))
     if "WIDTH=20 MHz" not in sig:
         raise Exception("Station did not report 20 MHz bandwidth")
+
+def test_ap_ht_wmm_etsi(dev, apdev):
+    """HT and WMM contents in ETSI"""
+    run_ap_ht_wmm(dev, apdev, "FI")
+
+def test_ap_ht_wmm_fcc(dev, apdev):
+    """HT and WMM contents in FCC"""
+    run_ap_ht_wmm(dev, apdev, "US")
+
+def run_ap_ht_wmm(dev, apdev, country):
+    clear_scan_cache(apdev[0])
+    try:
+        hapd = None
+        params = {"ssid": "test",
+                  "hw_mode": "a",
+                  "channel": "36",
+                  "country_code": country}
+        hapd = hostapd.add_ap(apdev[0], params)
+        freq = hapd.get_status_field("freq")
+        bssid = hapd.own_addr()
+        dev[0].connect("test", key_mgmt="NONE", scan_freq=freq)
+        bss = dev[0].get_bss(bssid)
+        ie = parse_ie(bss['ie'])
+        if 221 not in ie:
+            raise Exception("Could not find WMM IE")
+        wmm = ie[221]
+        if len(wmm) != 24:
+            raise Exception("Unexpected WMM IE length")
+        id, subtype, version, info, reserved = struct.unpack('>LBBBB', wmm[0:8])
+        if id != 0x0050f202 or subtype != 1 or version != 1:
+            raise Exception("Not a WMM IE")
+        ac = []
+        for i in range(4):
+            ac.append(struct.unpack('<BBH', wmm[8 + i * 4: 12 + i * 4]))
+        logger.info("WMM AC info: " + str(ac))
+
+        aifsn = (ac[0][0] & 0x0f, ac[1][0] & 0x0f,
+                 ac[2][0] & 0x0f, ac[3][0] & 0x0f)
+        logger.info("AIFSN: " + str(aifsn))
+        if aifsn != (3, 7, 2, 2):
+            raise Exception("Unexpected AIFSN value: " + str(aifsn))
+
+        ecw_min = (ac[0][1] & 0x0f, ac[1][1] & 0x0f,
+                   ac[2][1] & 0x0f, ac[3][1] & 0x0f)
+        logger.info("ECW min: " + str(ecw_min))
+        if ecw_min != (4, 4, 3, 2):
+            raise Exception("Unexpected ECW min value: " + str(ecw_min))
+
+        ecw_max = ((ac[0][1] & 0xf0) >> 4, (ac[1][1] & 0xf0) >> 4,
+                   (ac[2][1] & 0xf0) >> 4, (ac[3][1] & 0xf0) >> 4)
+        logger.info("ECW max: " + str(ecw_max))
+        if ecw_max != (10, 10, 4, 3):
+            raise Exception("Unexpected ECW max value: " + str(ecw_max))
+
+        txop = (ac[0][2], ac[1][2], ac[2][2], ac[3][2])
+        logger.info("TXOP: " + str(txop))
+        if txop != (0, 0, 94, 47):
+            raise Exception("Unexpected TXOP value: " + str(txop))
+    finally:
+        dev[0].request("DISCONNECT")
+        if hapd:
+            hapd.request("DISABLE")
+        set_world_reg(apdev[0], None, dev[0])
+        dev[0].flush_scan_cache()
