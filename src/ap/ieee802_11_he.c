@@ -413,3 +413,18 @@ u16 copy_sta_he_capab(struct hostapd_data *hapd, struct sta_info *sta,
 
 	return WLAN_STATUS_SUCCESS;
 }
+
+
+int hostapd_get_he_twt_responder(struct hostapd_data *hapd,
+				 enum ieee80211_op_mode mode)
+{
+	u8 *mac_cap;
+
+	if (!hapd->iface->current_mode ||
+	    !hapd->iface->current_mode->he_capab)
+		return 0;
+
+	mac_cap = hapd->iface->current_mode->he_capab[mode].mac_cap;
+
+	return mac_cap[HE_MAC_CAPAB_0] & HE_MACCAP_TWT_RESPONDER;
+}

@@ -182,6 +182,7 @@ struct hostapd_channel_data {
 	struct hostapd_wmm_rule wmm_rules[WMM_AC_NUM];
 };
 
+#define HE_MAC_CAPAB_0		0
 #define HE_MAX_MAC_CAPAB_SIZE	6
 #define HE_MAX_PHY_CAPAB_SIZE	11
 #define HE_MAX_MCS_CAPAB_SIZE	12
@@ -1487,6 +1488,11 @@ struct wpa_driver_ap_params {
 	 * he_spr_srg_obss_pd_max_offset - Maximum TX power offset
 	 */
 	 int he_spr_srg_obss_pd_max_offset;
+
+	/**
+	 * twt_responder - Whether Target Wait Time responder is enabled
+	 */
+	int twt_responder;
 };
 
 struct wpa_driver_mesh_bss_params {

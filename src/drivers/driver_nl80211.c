@@ -4348,6 +4348,13 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 
 		nla_nest_end(msg, spr);
 	}
+
+	if (params->twt_responder) {
+		wpa_printf(MSG_DEBUG, "nl80211: twt_responder=%d",
+			   params->twt_responder);
+		if (nla_put_flag(msg, NL80211_ATTR_TWT_RESPONDER))
+			goto fail;
+	}
 #endif /* CONFIG_IEEE80211AX */
 
 	ret = send_and_recv_msgs(drv, msg, NULL, NULL);
