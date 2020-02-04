@@ -1823,6 +1823,8 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_FLAGS_CONTROL_PORT		0x0400000000000000ULL
 /** Driver supports VLAN offload */
 #define WPA_DRIVER_FLAGS_VLAN_OFFLOAD		0x0800000000000000ULL
+/** Driver supports UPDATE_FT_IES command */
+#define WPA_DRIVER_FLAGS_UPDATE_FT_IES		0x1000000000000000ULL
 	u64 flags;
 
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \

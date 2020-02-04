@@ -78,6 +78,7 @@ struct wiphy_info_data {
 	unsigned int wmm_ac_supported:1;
 	unsigned int mac_addr_rand_scan_supported:1;
 	unsigned int mac_addr_rand_sched_scan_supported:1;
+	unsigned int update_ft_ies_supported:1;
 };
 
 
@@ -242,6 +243,9 @@ static void wiphy_info_supp_cmds(struct wiphy_info_data *info,
 			break;
 		case NL80211_CMD_SET_QOS_MAP:
 			info->set_qos_map_supported = 1;
+			break;
+		case NL80211_CMD_UPDATE_FT_IES:
+			info->update_ft_ies_supported = 1;
 			break;
 		}
 	}
@@ -911,6 +915,9 @@ static int wpa_driver_nl80211_get_info(struct wpa_driver_nl80211_data *drv,
 		drv->capa.max_sched_scan_plan_interval = UINT32_MAX;
 		drv->capa.max_sched_scan_plan_iterations = 0;
 	}
+
+	if (info->update_ft_ies_supported)
+		drv->capa.flags |= WPA_DRIVER_FLAGS_UPDATE_FT_IES;
 
 	return 0;
 }

@@ -1458,6 +1458,11 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 	if (!(wpa_s->drv_flags & WPA_DRIVER_FLAGS_SAE))
 		sel &= ~(WPA_KEY_MGMT_SAE | WPA_KEY_MGMT_FT_SAE);
 #endif /* CONFIG_SAE */
+#ifdef CONFIG_IEEE80211R
+	if (!(wpa_s->drv_flags & (WPA_DRIVER_FLAGS_SME |
+				  WPA_DRIVER_FLAGS_UPDATE_FT_IES)))
+		sel &= ~WPA_KEY_MGMT_FT;
+#endif /* CONFIG_IEEE80211R */
 	if (0) {
 #ifdef CONFIG_IEEE80211R
 #ifdef CONFIG_SHA384
