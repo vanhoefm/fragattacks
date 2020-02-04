@@ -192,9 +192,12 @@ u8 * hostapd_eid_he_operation(struct hostapd_data *hapd, u8 *eid)
 		params |= (hapd->iface->conf->he_op.he_rts_threshold <<
 			   HE_OPERATION_RTS_THRESHOLD_OFFSET);
 
-	if (hapd->iface->conf->he_op.he_bss_color)
-		params |= (hapd->iface->conf->he_op.he_bss_color <<
-			   HE_OPERATION_BSS_COLOR_OFFSET);
+	if (hapd->iface->conf->he_op.he_bss_color_disabled)
+		params |= HE_OPERATION_BSS_COLOR_DISABLED;
+	if (hapd->iface->conf->he_op.he_bss_color_partial)
+		params |= HE_OPERATION_BSS_COLOR_PARTIAL;
+	params |= hapd->iface->conf->he_op.he_bss_color <<
+		HE_OPERATION_BSS_COLOR_OFFSET;
 
 	/* HE minimum required basic MCS and NSS for STAs */
 	oper->he_mcs_nss_set =

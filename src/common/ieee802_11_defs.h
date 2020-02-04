@@ -2198,7 +2198,7 @@ struct ieee80211_spatial_reuse {
 #define HE_OPERATION_BSS_COLOR_MASK		((u32) (BIT(24) | BIT(25) | \
 							BIT(26) | BIT(27) | \
 							BIT(28) | BIT(29)))
-#define HE_OPERATION_PARTIAL_BSS_COLOR		((u32) BIT(30))
+#define HE_OPERATION_BSS_COLOR_PARTIAL		((u32) BIT(30))
 #define HE_OPERATION_BSS_COLOR_DISABLED		((u32) BIT(31))
 #define HE_OPERATION_BSS_COLOR_OFFSET		24
 

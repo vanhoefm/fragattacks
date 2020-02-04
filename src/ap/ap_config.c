@@ -251,6 +251,9 @@ struct hostapd_config * hostapd_config_defaults(void)
 		HE_OPERATION_RTS_THRESHOLD_OFFSET;
 	/* Set default basic MCS/NSS set to single stream MCS 0-7 */
 	conf->he_op.he_basic_mcs_nss_set = 0xfffc;
+	conf->he_op.he_bss_color_disabled = 1;
+	conf->he_op.he_bss_color_partial = 0;
+	conf->he_op.he_bss_color = 1;
 #endif /* CONFIG_IEEE80211AX */
 
 	/* The third octet of the country string uses an ASCII space character
