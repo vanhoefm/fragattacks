@@ -1421,6 +1421,11 @@ int ieee802_11_set_beacon(struct hostapd_data *hapd)
 		hapd->iface->conf->spr.srg_obss_pd_min_offset;
 	params.he_spr_srg_obss_pd_max_offset =
 		hapd->iface->conf->spr.srg_obss_pd_max_offset;
+	params.he_bss_color_disabled =
+		hapd->iface->conf->he_op.he_bss_color_disabled;
+	params.he_bss_color_partial =
+		hapd->iface->conf->he_op.he_bss_color_partial;
+	params.he_bss_color = hapd->iface->conf->he_op.he_bss_color;
 	params.twt_responder = hostapd_get_he_twt_responder(hapd,
 							    IEEE80211_MODE_AP);
 #endif /* CONFIG_IEEE80211AX */

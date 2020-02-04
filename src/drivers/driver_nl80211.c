@@ -4362,6 +4362,21 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 		nla_nest_end(msg, spr);
 	}
 
+	if (params->freq && params->freq->he_enabled) {
+		struct nlattr *bss_color;
+
+		bss_color = nla_nest_start(msg, NL80211_ATTR_HE_BSS_COLOR);
+		if (!bss_color ||
+		    (params->he_bss_color_disabled &&
+		     nla_put_flag(msg, NL80211_HE_BSS_COLOR_ATTR_DISABLED)) ||
+		    (params->he_bss_color_partial &&
+		     nla_put_flag(msg, NL80211_HE_BSS_COLOR_ATTR_PARTIAL)) ||
+		    nla_put_u8(msg, NL80211_HE_BSS_COLOR_ATTR_COLOR,
+			       params->he_bss_color))
+			goto fail;
+		nla_nest_end(msg, bss_color);
+	}
+
 	if (params->twt_responder) {
 		wpa_printf(MSG_DEBUG, "nl80211: twt_responder=%d",
 			   params->twt_responder);

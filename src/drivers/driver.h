@@ -1482,6 +1482,21 @@ struct wpa_driver_ap_params {
 	 int he_spr_srg_obss_pd_max_offset;
 
 	/**
+	 * he_bss_color - Whether the BSS Color is disabled
+	 */
+	int he_bss_color_disabled;
+
+	/**
+	 * he_bss_color_partial - The BSS Color AID equation
+	 */
+	int he_bss_color_partial;
+
+	/**
+	 * he_bss_color - The BSS Color of the AP
+	 */
+	int he_bss_color;
+
+	/**
 	 * twt_responder - Whether Target Wait Time responder is enabled
 	 */
 	int twt_responder;
