@@ -19,6 +19,10 @@
 
 #define OUI_QCA 0x001374
 
+#ifndef BIT
+#define BIT(x) (1U << (x))
+#endif
+
 /**
  * enum qca_radiotap_vendor_ids - QCA radiotap vendor namespace IDs
  */
