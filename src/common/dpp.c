@@ -2335,6 +2335,19 @@ fail:
 }
 
 
+static struct dpp_authentication * dpp_alloc_auth(void *msg_ctx)
+{
+	struct dpp_authentication *auth;
+
+	auth = os_zalloc(sizeof(*auth));
+	if (!auth)
+		return NULL;
+	auth->msg_ctx = msg_ctx;
+	auth->conf_resp_status = 255;
+	return auth;
+}
+
+
 struct dpp_authentication * dpp_auth_init(void *msg_ctx,
 					  struct dpp_bootstrap_info *peer_bi,
 					  struct dpp_bootstrap_info *own_bi,
@@ -2352,10 +2365,9 @@ struct dpp_authentication * dpp_auth_init(void *msg_ctx,
 	u8 test_hash[SHA256_MAC_LEN];
 #endif /* CONFIG_TESTING_OPTIONS */
 
-	auth = os_zalloc(sizeof(*auth));
+	auth = dpp_alloc_auth(msg_ctx);
 	if (!auth)
 		return NULL;
-	auth->msg_ctx = msg_ctx;
 	auth->initiator = 1;
 	auth->waiting_auth_resp = 1;
 	auth->allowed_roles = dpp_allowed_roles;
@@ -3289,10 +3301,9 @@ dpp_auth_req_rx(void *msg_ctx, u8 dpp_allowed_roles, int qr_mutual,
 		    wrapped_data, wrapped_data_len);
 	attr_len = wrapped_data - 4 - attr_start;
 
-	auth = os_zalloc(sizeof(*auth));
+	auth = dpp_alloc_auth(msg_ctx);
 	if (!auth)
 		goto fail;
-	auth->msg_ctx = msg_ctx;
 	auth->peer_bi = peer_bi;
 	auth->own_bi = own_bi;
 	auth->curve = own_bi->curve;
