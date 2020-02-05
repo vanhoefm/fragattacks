@@ -70,6 +70,7 @@ struct sae_data {
 	u8 pmk[SAE_PMK_LEN];
 	u8 pmkid[SAE_PMKID_LEN];
 	struct crypto_bignum *peer_commit_scalar;
+	struct crypto_bignum *peer_commit_scalar_accepted;
 	int group;
 	unsigned int sync; /* protocol instance variable: Sync */
 	u16 rc; /* protocol instance variable: Rc (received send-confirm) */

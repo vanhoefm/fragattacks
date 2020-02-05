@@ -123,6 +123,7 @@ void sae_clear_data(struct sae_data *sae)
 		return;
 	sae_clear_temp_data(sae);
 	crypto_bignum_deinit(sae->peer_commit_scalar, 0);
+	crypto_bignum_deinit(sae->peer_commit_scalar_accepted, 0);
 	os_memset(sae, 0, sizeof(*sae));
 }
 
@@ -1833,8 +1834,9 @@ static u16 sae_parse_commit_scalar(struct sae_data *sae, const u8 **pos,
 	 * shall be dropped if the peer-scalar is identical to the one used in
 	 * the existing protocol instance.
 	 */
-	if (sae->state == SAE_ACCEPTED && sae->peer_commit_scalar &&
-	    crypto_bignum_cmp(sae->peer_commit_scalar, peer_scalar) == 0) {
+	if (sae->state == SAE_ACCEPTED && sae->peer_commit_scalar_accepted &&
+	    crypto_bignum_cmp(sae->peer_commit_scalar_accepted,
+			      peer_scalar) == 0) {
 		wpa_printf(MSG_DEBUG, "SAE: Do not accept re-use of previous "
 			   "peer-commit-scalar");
 		crypto_bignum_deinit(peer_scalar, 0);

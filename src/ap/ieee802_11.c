@@ -839,6 +839,9 @@ void sae_accept_sta(struct hostapd_data *hapd, struct sta_info *sta)
 	mlme_authenticate_indication(hapd, sta);
 	wpa_auth_sm_event(sta->wpa_sm, WPA_AUTH);
 	sae_set_state(sta, SAE_ACCEPTED, "Accept Confirm");
+	crypto_bignum_deinit(sta->sae->peer_commit_scalar_accepted, 0);
+	sta->sae->peer_commit_scalar_accepted = sta->sae->peer_commit_scalar;
+	sta->sae->peer_commit_scalar = NULL;
 	wpa_auth_pmksa_add_sae(hapd->wpa_auth, sta->addr,
 			       sta->sae->pmk, sta->sae->pmkid);
 	sae_sme_send_external_auth_status(hapd, sta, WLAN_STATUS_SUCCESS);
