@@ -4394,6 +4394,39 @@ def test_dpp_duplicated_auth_resp(dev, apdev):
 
     wait_conf_completion(dev[1], dev[0])
 
+def test_dpp_duplicated_auth_conf(dev, apdev):
+    """DPP and duplicated Authentication Confirmation"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+    dev[0].set("ext_mgmt_frame_handling", "1")
+    dev[1].set("ext_mgmt_frame_handling", "1")
+    dev[0].dpp_listen(2412)
+    dev[1].dpp_auth_init(uri=uri0)
+
+    # DPP Authentication Request
+    rx_process_frame(dev[0])
+
+    # DPP Authentication Response
+    rx_process_frame(dev[1])
+
+    # DPP Authentication Confirmation
+    msg = rx_process_frame(dev[0])
+    # Duplicated frame
+    if "OK" not in dev[0].request("MGMT_RX_PROCESS freq={} datarate={} ssi_signal={} frame={}".format(msg['freq'], msg['datarate'], msg['ssi_signal'], binascii.hexlify(msg['frame']).decode())):
+        raise Exception("MGMT_RX_PROCESS failed")
+
+    wait_auth_success(dev[0], dev[1])
+
+    # DPP Configuration Request
+    rx_process_frame(dev[1])
+
+    # DPP Configuration Response
+    rx_process_frame(dev[0])
+
+    wait_conf_completion(dev[1], dev[0])
+
 def test_dpp_enrollee_reject_config(dev, apdev):
     """DPP and Enrollee rejecting Config Object"""
     check_dpp_capab(dev[0])
