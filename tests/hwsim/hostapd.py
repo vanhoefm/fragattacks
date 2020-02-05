@@ -179,6 +179,9 @@ class Hostapd:
             self.bssid = self.get_status_field('bssid[%d]' % self.bssidx)
         return self.bssid
 
+    def get_addr(self, group=False):
+        return self.own_addr()
+
     def request(self, cmd):
         logger.debug(self.dbg + ": CTRL: " + cmd)
         return self.ctrl.request(cmd)

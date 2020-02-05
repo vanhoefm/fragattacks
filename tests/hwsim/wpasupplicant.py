@@ -598,6 +598,15 @@ class WpaSupplicant:
             res = self.p2p_dev_addr()
         return res
 
+    def get_addr(self, group=False):
+        dev_addr = self.own_addr()
+        if not group:
+            addr = self.get_status_field('address')
+            if addr:
+                dev_addr = addr
+
+        return dev_addr
+
     def p2p_listen(self):
         return self.global_request("P2P_LISTEN")
 
