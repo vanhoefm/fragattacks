@@ -491,6 +491,80 @@ def test_ap_open_disconnect_in_ps(dev, apdev, params):
         if state != 2:
             raise Exception("Didn't observe TIM bit getting set and unset (state=%d)" % state)
 
+def test_ap_open_sta_ps(dev, apdev):
+    """Station power save operation"""
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
+    dev[0].connect("open", key_mgmt="NONE", scan_freq="2412",
+                   bg_scan_period="0")
+    hapd.wait_sta()
+
+    time.sleep(0.2)
+    try:
+        dev[0].cmd_execute(['iw', 'dev', dev[0].ifname,
+                            'set', 'power_save', 'on'])
+        run_ap_open_sta_ps(dev, hapd)
+    finally:
+        dev[0].cmd_execute(['iw', 'dev', dev[0].ifname,
+                            'set', 'power_save', 'on'])
+
+def run_ap_open_sta_ps(dev, hapd):
+    hwsim_utils.test_connectivity(dev[0], hapd)
+    # Give time to enter PS
+    time.sleep(0.2)
+
+    phyname = dev[0].get_driver_status_field("phyname")
+    hw_conf = '/sys/kernel/debug/ieee80211/' + phyname + '/hw_conf'
+
+    try:
+        ok = False
+        for i in range(10):
+            with open(hw_conf, 'r') as f:
+                val = int(f.read())
+            if val & 2:
+                ok = True
+                break
+            time.sleep(0.2)
+
+        if not ok:
+            raise Exception("STA did not enter power save")
+    except FileNotFoundError:
+        raise HwsimSkip("Kernel does not support inspecting HW PS state")
+
+def test_ap_open_ps_mc_buf(dev, apdev, params):
+    """Multicast buffering with a station in power save"""
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
+    dev[0].connect("open", key_mgmt="NONE", scan_freq="2412",
+                   bg_scan_period="0")
+    hapd.wait_sta()
+
+    buffered_mcast = 0
+    try:
+        dev[0].cmd_execute(['iw', 'dev', dev[0].ifname,
+                            'set', 'power_save', 'on'])
+        # Give time to enter PS
+        time.sleep(0.3)
+
+        for i in range(10):
+            # Verify that multicast frames are released
+            hwsim_utils.run_multicast_connectivity_test(hapd, dev[0])
+
+            # Check frames were buffered until DTIM
+            out = run_tshark(os.path.join(params['logdir'], "hwsim0.pcapng"),
+                             "wlan.fc.type_subtype == 0x0008",
+                             ["wlan.tim.bmapctl.multicast"])
+            for line in out.splitlines():
+                buffered_mcast = int(line)
+                if buffered_mcast == 1:
+                    break
+            if buffered_mcast == 1:
+                break
+    finally:
+        dev[0].cmd_execute(['iw', 'dev', dev[0].ifname,
+                            'set', 'power_save', 'off'])
+
+    if buffered_mcast != 1:
+        raise Exception("AP did not buffer multicast frames")
+
 @remote_compatible
 def test_ap_open_select_network(dev, apdev):
     """Open mode connection and SELECT_NETWORK to change network"""
