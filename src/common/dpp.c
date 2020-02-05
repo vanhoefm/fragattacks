@@ -4235,7 +4235,11 @@ int dpp_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
 
-	if (auth->initiator || !auth->own_bi) {
+	if (auth->initiator || !auth->own_bi || !auth->waiting_auth_conf) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: initiator=%d own_bi=%d waiting_auth_conf=%d",
+			   auth->initiator, !!auth->own_bi,
+			   auth->waiting_auth_conf);
 		dpp_auth_fail(auth, "Unexpected Authentication Confirm");
 		return -1;
 	}
