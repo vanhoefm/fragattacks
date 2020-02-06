@@ -1355,10 +1355,12 @@ def test_sigma_dut_ap_owe_transition_mode_2(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
 
-def dpp_init_enrollee(dev, id1):
+def dpp_init_enrollee(dev, id1, enrollee_role):
     logger.info("Starting DPP initiator/enrollee in a thread")
     time.sleep(1)
     cmd = "DPP_AUTH_INIT peer=%d role=enrollee" % id1
+    if enrollee_role == "Configurator":
+        cmd += " netrole=configurator"
     if "OK" not in dev.request(cmd):
         raise Exception("Failed to initiate DPP Authentication")
     ev = dev.wait_event(["DPP-CONF-RECEIVED"], timeout=5)
@@ -1424,8 +1426,13 @@ def test_sigma_dut_dpp_qr_resp_status_query(dev, apdev):
     finally:
         dev[1].set("dpp_config_processing", "0", allow_fail=True)
 
+def test_sigma_dut_dpp_qr_resp_configurator(dev, apdev):
+    """sigma_dut DPP/QR responder (configurator provisioning)"""
+    run_sigma_dut_dpp_qr_resp(dev, apdev, -1, enrollee_role="Configurator")
+
 def run_sigma_dut_dpp_qr_resp(dev, apdev, conf_idx, chan_list=None,
-                              listen_chan=None, status_query=False):
+                              listen_chan=None, status_query=False,
+                              enrollee_role="STA"):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     sigma = start_sigma_dut(dev[0].ifname)
@@ -1442,9 +1449,12 @@ def run_sigma_dut_dpp_qr_resp(dev, apdev, conf_idx, chan_list=None,
 
         id1 = dev[1].dpp_qr_code(uri)
 
-        t = threading.Thread(target=dpp_init_enrollee, args=(dev[1], id1))
+        t = threading.Thread(target=dpp_init_enrollee, args=(dev[1], id1,
+                                                             enrollee_role))
         t.start()
-        cmd = "dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Responder,DPPConfIndex,%d,DPPAuthDirection,Single,DPPProvisioningRole,Configurator,DPPConfEnrolleeRole,STA,DPPSigningKeyECC,P-256,DPPBS,QR,DPPTimeout,6" % conf_idx
+        cmd = "dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Responder,DPPAuthDirection,Single,DPPProvisioningRole,Configurator,DPPConfEnrolleeRole,%s,DPPSigningKeyECC,P-256,DPPBS,QR,DPPTimeout,6" % enrollee_role
+        if conf_idx is not None:
+            cmd += ",DPPConfIndex,%d" % conf_idx
         if listen_chan:
             cmd += ",DPPListenChannel," + str(listen_chan)
         if status_query:
@@ -1506,6 +1516,39 @@ def test_sigma_dut_dpp_qr_init_enrollee(dev, apdev):
 
         res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,DPPAuthDirection,Single,DPPProvisioningRole,Enrollee,DPPBS,QR,DPPTimeout,6,DPPWaitForConnect,Yes", timeout=10)
         if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK,NetworkIntroResult,OK,NetworkConnectResult,OK" not in res:
+            raise Exception("Unexpected result: " + res)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+        stop_sigma_dut(sigma)
+
+def test_sigma_dut_dpp_qr_init_enrollee_configurator(dev, apdev):
+    """sigma_dut DPP/QR initiator as Enrollee (to become Configurator)"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    sigma = start_sigma_dut(dev[0].ifname)
+    try:
+        cmd = "DPP_CONFIGURATOR_ADD"
+        res = dev[1].request(cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to add configurator")
+        conf_id = int(res)
+
+        id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
+        uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+
+        dev[1].set("dpp_configurator_params",
+                   " conf=configurator ssid=%s configurator=%d" % (to_hex("DPPNET01"), conf_id))
+        cmd = "DPP_LISTEN 2437 role=configurator"
+        if "OK" not in dev[1].request(cmd):
+            raise Exception("Failed to start listen operation")
+
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
+        if "status,COMPLETE" not in res:
+            raise Exception("dev_exec_action did not succeed: " + res)
+
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,DPPAuthDirection,Single,DPPProvisioningRole,Enrollee,DPPNetworkRole,Configurator,DPPBS,QR,DPPTimeout,6", timeout=10)
+        if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK" not in res:
             raise Exception("Unexpected result: " + res)
     finally:
         dev[0].set("dpp_config_processing", "0")
