@@ -162,8 +162,8 @@ def wpas_get_nfc_uri(start_listen=True):
     wpas = wpas_connect()
     if wpas is None:
         return None
-    global own_id
-    own_id = dpp_bootstrap_gen(wpas, type="nfc-uri", chan="81/1", mac=True)
+    global own_id, chanlist
+    own_id = dpp_bootstrap_gen(wpas, type="nfc-uri", chan=chanlist, mac=True)
     res = wpas.request("DPP_BOOTSTRAP_GET_URI %d" % own_id).rstrip()
     if "FAIL" in res:
         return None
@@ -579,6 +579,7 @@ def main():
     parser.add_argument('--success',
                         help='success file for writing success update')
     parser.add_argument('--device', default='usb', help='NFC device to open')
+    parser.add_argument('--chan', default='81/1', help='channel list')
     parser.add_argument('command', choices=['write-nfc-uri',
                                             'write-nfc-hs'],
                         nargs='?')
@@ -590,6 +591,9 @@ def main():
 
     global no_wait
     no_wait = args.no_wait
+
+    global chanlist
+    chanlist = args.chan
 
     logging.basicConfig(level=args.loglevel)
 
