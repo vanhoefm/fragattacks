@@ -254,6 +254,7 @@ struct dpp_authentication {
 	struct dpp_configuration *conf2_ap;
 	struct dpp_configuration *conf_sta;
 	struct dpp_configuration *conf2_sta;
+	int provision_configurator;
 	struct dpp_configurator *conf;
 	struct dpp_config_obj {
 		char *connector; /* received signedConnector */

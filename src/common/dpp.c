@@ -4517,6 +4517,10 @@ static int dpp_configuration_parse_helper(struct dpp_authentication *auth,
 		conf = conf_ap;
 	}
 
+	pos = os_strstr(cmd, " conf=configurator");
+	if (pos)
+		auth->provision_configurator = 1;
+
 	if (!conf)
 		return 0;
 
@@ -5602,6 +5606,12 @@ static struct wpabuf * dpp_build_enveloped_data(struct dpp_authentication *auth)
 	if (!auth->conf) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No Configurator instance selected for the session - cannot build DPPEnvelopedData");
+		return NULL;
+	}
+
+	if (!auth->provision_configurator) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Configurator provisioning not allowed");
 		return NULL;
 	}
 
