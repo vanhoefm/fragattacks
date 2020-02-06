@@ -242,7 +242,8 @@ def test_dpp_qr_code_auth_unicast_ap_enrollee(dev, apdev):
 
 def run_dpp_configurator_enrollee(dev, apdev, conf_curve=None):
     run_dpp_qr_code_auth_unicast(dev, apdev, None, netrole="configurator",
-                                 configurator=True, conf_curve=conf_curve)
+                                 configurator=True, conf_curve=conf_curve,
+                                 conf="configurator")
     ev = dev[0].wait_event(["DPP-CONFIGURATOR-ID"], timeout=2)
     if ev is None:
         raise Exception("No Configurator instance added")
@@ -306,7 +307,8 @@ def test_dpp_qr_code_set_key(dev, apdev):
 def run_dpp_qr_code_auth_unicast(dev, apdev, curve, netrole=None, key=None,
                                  require_conf_success=False, init_extra=None,
                                  require_conf_failure=False,
-                                 configurator=False, conf_curve=None):
+                                 configurator=False, conf_curve=None,
+                                 conf=None):
     check_dpp_capab(dev[0], curve and "brainpool" in curve)
     check_dpp_capab(dev[1], curve and "brainpool" in curve)
     if configurator:
@@ -320,7 +322,8 @@ def run_dpp_qr_code_auth_unicast(dev, apdev, curve, netrole=None, key=None,
 
     logger.info("dev1 scans QR Code and initiates DPP Authentication")
     dev[0].dpp_listen(2412, netrole=netrole)
-    dev[1].dpp_auth_init(uri=uri0, extra=init_extra, configurator=conf_id)
+    dev[1].dpp_auth_init(uri=uri0, extra=init_extra, configurator=conf_id,
+                         conf=conf)
     wait_auth_success(dev[0], dev[1], configurator=dev[1], enrollee=dev[0],
                       allow_enrollee_failure=True,
                       allow_configurator_failure=not require_conf_success,
