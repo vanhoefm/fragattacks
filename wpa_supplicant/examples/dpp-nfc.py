@@ -234,6 +234,7 @@ def dpp_handover_client(llc):
     print("Received message")
     print("alternative carriers: " + str(message[0].alternative_carriers))
 
+    dpp_found = False
     for carrier in message:
         if isinstance(carrier, ndef.HandoverSelectRecord):
             continue
@@ -243,6 +244,7 @@ def dpp_handover_client(llc):
                 print("URI Identifier Code 'None' not seen")
                 continue
             print("DPP carrier type match - send to wpa_supplicant")
+            dpp_found = True
             uri = carrier.data[1:].decode("utf-8")
             print("DPP URI: " + uri)
             res = wpas_report_handover_sel(uri)
@@ -270,6 +272,12 @@ def dpp_handover_client(llc):
                 print("Failed to initiate DPP authentication")
             break
 
+    if not dpp_found:
+        print("DPP carrier not seen in response - allow peer to initiate a new handover with different parameters")
+        client.close()
+        print("Returning from dpp_handover_client")
+        return
+
     print("Remove peer")
     client.close()
     print("Done with handover")
@@ -293,6 +301,7 @@ class HandoverServer(nfc.handover.HandoverServer):
         self.sent_carrier = None
         self.ho_server_processing = False
         self.success = False
+        self.try_own = False
 
     def process_handover_request_message(self, records):
         self.ho_server_processing = True
@@ -359,7 +368,10 @@ class HandoverServer(nfc.handover.HandoverServer):
                 break
 
         summary("Sending handover select: " + str(sel))
-        self.success = True
+        if found:
+            self.success = True
+        else:
+            self.try_own = True
         return sel
 
 def clear_raw_mode():
@@ -508,6 +520,12 @@ def llcp_worker(llc):
     global srv
     global wait_connection
     while not wait_connection and srv.sent_carrier is None:
+        if srv.try_own:
+            srv.try_own = False
+            print("Try to initiate another handover with own parameters")
+            dpp_handover_client(llc)
+            print("Exiting llcp_worker thread (retry with own parameters)")
+            return
         if srv.ho_server_processing:
             time.sleep(0.025)
         elif no_input:
