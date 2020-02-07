@@ -1000,6 +1000,12 @@ def test_ap_ft_sae_h2e(dev, apdev):
     finally:
         dev[0].set("sae_pwe", "0")
 
+def test_ap_ft_sae_h2e_and_loop(dev, apdev):
+    """WPA2-PSK-FT-SAE AP (AP H2E, STA loop)"""
+    dev[0].set("sae_pwe", "0")
+    hapd0, hapd1 = start_ft_sae(dev[0], apdev, sae_pwe="2")
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True)
+
 def test_ap_ft_sae_ptk_rekey0(dev, apdev):
     """WPA2-PSK-FT-SAE AP and PTK rekey triggered by station"""
     hapd0, hapd1 = start_ft_sae(dev[0], apdev)
