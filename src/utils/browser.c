@@ -7,7 +7,11 @@
  */
 
 #include "includes.h"
+#ifdef USE_WEBKIT2
+#include <webkit2/webkit2.h>
+#else /* USE_WEBKIT2 */
 #include <webkit/webkit.h>
+#endif /* USE_WEBKIT2 */
 
 #include "common.h"
 #include "browser.h"
@@ -53,7 +57,11 @@ static void browser_update_title(struct browser_context *ctx)
 static void view_cb_notify_progress(WebKitWebView *view, GParamSpec *pspec,
 				    struct browser_context *ctx)
 {
+#ifdef USE_WEBKIT2
+	ctx->progress = 100 * webkit_web_view_get_estimated_load_progress(view);
+#else /* USE_WEBKIT2 */
 	ctx->progress = 100 * webkit_web_view_get_progress(view);
+#endif /* USE_WEBKIT2 */
 	wpa_printf(MSG_DEBUG, "BROWSER:%s progress=%d", __func__,
 		   ctx->progress);
 	browser_update_title(ctx);
@@ -63,23 +71,43 @@ static void view_cb_notify_progress(WebKitWebView *view, GParamSpec *pspec,
 static void view_cb_notify_load_status(WebKitWebView *view, GParamSpec *pspec,
 				       struct browser_context *ctx)
 {
+#ifdef USE_WEBKIT2
+	int status = webkit_web_view_get_estimated_load_progress(view);
+#else /* USE_WEBKIT2 */
 	int status = webkit_web_view_get_load_status(view);
+#endif /* USE_WEBKIT2 */
 	wpa_printf(MSG_DEBUG, "BROWSER:%s load-status=%d uri=%s",
 		   __func__, status, webkit_web_view_get_uri(view));
 }
 
 
 static void view_cb_resource_request_starting(WebKitWebView *view,
+#ifndef USE_WEBKIT2
 					      WebKitWebFrame *frame,
+#endif /* USE_WEBKIT2 */
 					      WebKitWebResource *res,
+#ifdef USE_WEBKIT2
+					      WebKitURIRequest *req,
+#else /* USE_WEBKIT2 */
 					      WebKitNetworkRequest *req,
 					      WebKitNetworkResponse *resp,
+#endif /* USE_WEBKIT2 */
 					      struct browser_context *ctx)
 {
+#ifdef USE_WEBKIT2
+	const gchar *uri = webkit_uri_request_get_uri(req);
+#else /* USE_WEBKIT2 */
 	const gchar *uri = webkit_network_request_get_uri(req);
+#endif /* USE_WEBKIT2 */
 	wpa_printf(MSG_DEBUG, "BROWSER:%s uri=%s", __func__, uri);
-	if (g_str_has_suffix(uri, "/favicon.ico"))
+	if (g_str_has_suffix(uri, "/favicon.ico")) {
+#ifdef USE_WEBKIT2
+		webkit_uri_request_set_uri(req, "about:blank");
+#else /* USE_WEBKIT2 */
 		webkit_network_request_set_uri(req, "about:blank");
+#endif /* USE_WEBKIT2 */
+	}
+
 	if (g_str_has_prefix(uri, "osu://")) {
 		ctx->success = atoi(uri + 6);
 		gtk_main_quit();
@@ -96,21 +124,49 @@ static void view_cb_resource_request_starting(WebKitWebView *view,
 
 
 static gboolean view_cb_mime_type_policy_decision(
-	WebKitWebView *view, WebKitWebFrame *frame, WebKitNetworkRequest *req,
+	WebKitWebView *view,
+#ifndef USE_WEBKIT2
+	WebKitWebFrame *frame, WebKitNetworkRequest *req,
 	gchar *mime, WebKitWebPolicyDecision *policy,
+#else /* USE_WEBKIT2 */
+	WebKitPolicyDecision *policy,
+	WebKitPolicyDecisionType type,
+#endif /* USE_WEBKIT2 */
 	struct browser_context *ctx)
 {
+#ifdef USE_WEBKIT2
+	wpa_printf(MSG_DEBUG, "BROWSER:%s type=%d", __func__, type);
+	switch (type) {
+	case WEBKIT_POLICY_DECISION_TYPE_RESPONSE: {
+		/* This function makes webkit send a download signal for all
+		 * unknown mime types. */
+		WebKitResponsePolicyDecision *response;
+
+		response = WEBKIT_RESPONSE_POLICY_DECISION(policy);
+		if (!webkit_response_policy_decision_is_mime_type_supported(
+			    response)) {
+			webkit_policy_decision_download(policy);
+			return TRUE;
+		}
+		break;
+	}
+	default:
+		break;
+	}
+#else /* USE_WEBKIT2 */
 	wpa_printf(MSG_DEBUG, "BROWSER:%s mime=%s", __func__, mime);
 
 	if (!webkit_web_view_can_show_mime_type(view, mime)) {
 		webkit_web_policy_decision_download(policy);
 		return TRUE;
 	}
+#endif /* USE_WEBKIT2 */
 
 	return FALSE;
 }
 
 
+#ifndef USE_WEBKIT2
 static gboolean view_cb_download_requested(WebKitWebView *view,
 					   WebKitDownload *dl,
 					   struct browser_context *ctx)
@@ -120,6 +176,7 @@ static gboolean view_cb_download_requested(WebKitWebView *view,
 	wpa_printf(MSG_DEBUG, "BROWSER:%s uri=%s", __func__, uri);
 	return FALSE;
 }
+#endif /* USE_WEBKIT2 */
 
 
 static void view_cb_hovering_over_link(WebKitWebView *view, gchar *title,
@@ -137,6 +194,7 @@ static void view_cb_hovering_over_link(WebKitWebView *view, gchar *title,
 }
 
 
+#ifndef USE_WEBKIT2
 static void view_cb_title_changed(WebKitWebView *view, WebKitWebFrame *frame,
 				  const char *title,
 				  struct browser_context *ctx)
@@ -146,24 +204,31 @@ static void view_cb_title_changed(WebKitWebView *view, WebKitWebFrame *frame,
 	ctx->title = os_strdup(title);
 	browser_update_title(ctx);
 }
+#endif /* USE_WEBKIT2 */
 
 
 int hs20_web_browser(const char *url)
 {
 	GtkWidget *scroll;
-	SoupSession *s;
 	WebKitWebView *view;
+#ifdef USE_WEBKIT2
+	WebKitSettings *settings;
+#else /* USE_WEBKIT2 */
 	WebKitWebSettings *settings;
+	SoupSession *s;
+#endif /* USE_WEBKIT2 */
 	struct browser_context ctx;
 
 	memset(&ctx, 0, sizeof(ctx));
 	if (!gtk_init_check(NULL, NULL))
 		return -1;
 
+#ifndef USE_WEBKIT2
 	s = webkit_get_default_session();
 	g_object_set(G_OBJECT(s), "ssl-ca-file",
 		     "/etc/ssl/certs/ca-certificates.crt", NULL);
 	g_object_set(G_OBJECT(s), "ssl-strict", FALSE, NULL);
+#endif /* USE_WEBKIT2 */
 
 	ctx.win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_role(GTK_WINDOW(ctx.win), "Hotspot 2.0 client");
@@ -181,16 +246,30 @@ int hs20_web_browser(const char *url)
 			 G_CALLBACK(view_cb_notify_progress), &ctx);
 	g_signal_connect(G_OBJECT(view), "notify::load-status",
 			 G_CALLBACK(view_cb_notify_load_status), &ctx);
+#ifdef USE_WEBKIT2
+	g_signal_connect(G_OBJECT(view), "resource-load-started",
+			 G_CALLBACK(view_cb_resource_request_starting), &ctx);
+	g_signal_connect(G_OBJECT(view), "decide-policy",
+			 G_CALLBACK(view_cb_mime_type_policy_decision), &ctx);
+	/* TODO: Implement these?
+	  g_signal_connect(G_OBJECT(view), "download-started",
+			 G_CALLBACK(view_cb_download_requested), &ctx);
+	  g_signal_connect(G_OBJECT(view), "notify::title",
+			 G_CALLBACK(view_cb_title_changed), &ctx);
+	*/
+#else /* USE_WEBKIT2 */
 	g_signal_connect(G_OBJECT(view), "resource-request-starting",
 			 G_CALLBACK(view_cb_resource_request_starting), &ctx);
 	g_signal_connect(G_OBJECT(view), "mime-type-policy-decision-requested",
 			 G_CALLBACK(view_cb_mime_type_policy_decision), &ctx);
 	g_signal_connect(G_OBJECT(view), "download-requested",
 			 G_CALLBACK(view_cb_download_requested), &ctx);
-	g_signal_connect(G_OBJECT(view), "hovering-over-link",
-			 G_CALLBACK(view_cb_hovering_over_link), &ctx);
 	g_signal_connect(G_OBJECT(view), "title-changed",
 			 G_CALLBACK(view_cb_title_changed), &ctx);
+#endif /* USE_WEBKIT2 */
+
+	g_signal_connect(G_OBJECT(view), "hovering-over-link",
+			 G_CALLBACK(view_cb_hovering_over_link), &ctx);
 
 	gtk_container_add(GTK_CONTAINER(scroll), GTK_WIDGET(view));
 	gtk_container_add(GTK_CONTAINER(ctx.win), GTK_WIDGET(scroll));
