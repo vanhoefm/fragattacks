@@ -5570,7 +5570,7 @@ dpp_build_enc_cont_info(struct dpp_authentication *auth, size_t hash_len,
 
 	/* encryptedContent [0] IMPLICIT EncryptedContent OPTIONAL
 	 * EncryptedContent ::= OCTET STRING */
-	asn1_put_hdr(enc_cont_info, ASN1_CLASS_CONTEXT_SPECIFIC, 1, 0,
+	asn1_put_hdr(enc_cont_info, ASN1_CLASS_CONTEXT_SPECIFIC, 0, 0,
 		     wpabuf_len(enc_cont));
 	wpabuf_put_buf(enc_cont_info, enc_cont);
 
