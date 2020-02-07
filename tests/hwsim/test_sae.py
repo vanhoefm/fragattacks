@@ -2235,3 +2235,23 @@ def test_sae_forced_anti_clogging_h2e(dev, apdev):
     finally:
         for i in range(2):
             dev[i].set("sae_pwe", "0")
+
+def test_sae_forced_anti_clogging_h2e_loop(dev, apdev):
+    """SAE anti clogging (forced, H2E + loop)"""
+    check_sae_capab(dev[0])
+    check_sae_capab(dev[1])
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE WPA-PSK'
+    params['sae_pwe'] = "2"
+    params['sae_anti_clogging_threshold'] = '0'
+    hostapd.add_ap(apdev[0], params)
+    dev[2].connect("test-sae", psk="12345678", scan_freq="2412")
+    try:
+        for i in range(2):
+            dev[i].request("SET sae_groups ")
+            dev[i].set("sae_pwe", "2")
+            dev[i].connect("test-sae", psk="12345678", key_mgmt="SAE",
+                           scan_freq="2412")
+    finally:
+        for i in range(2):
+            dev[i].set("sae_pwe", "0")
