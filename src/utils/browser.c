@@ -213,6 +213,7 @@ int hs20_web_browser(const char *url)
 	WebKitWebView *view;
 #ifdef USE_WEBKIT2
 	WebKitSettings *settings;
+	WebKitWebContext *wkctx;
 #else /* USE_WEBKIT2 */
 	WebKitWebSettings *settings;
 	SoupSession *s;
@@ -283,6 +284,12 @@ int hs20_web_browser(const char *url)
 		     "AppleWebKit/537.15 (KHTML, like Gecko) "
 		     "hs20-client/1.0", NULL);
 	g_object_set(G_OBJECT(settings), "auto-load-images", TRUE, NULL);
+
+#ifdef USE_WEBKIT2
+	wkctx = webkit_web_context_get_default();
+	webkit_web_context_set_tls_errors_policy(
+		wkctx, WEBKIT_TLS_ERRORS_POLICY_IGNORE);
+#endif /* USE_WEBKIT2 */
 
 	webkit_web_view_load_uri(view, url);
 
