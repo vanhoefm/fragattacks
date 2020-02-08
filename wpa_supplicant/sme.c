@@ -1291,6 +1291,19 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 				   "SAE: Ignore commit message while waiting for confirm");
 			return 0;
 		}
+		if (wpa_s->sme.sae.tmp && wpa_s->sme.sae.tmp->h2e &&
+		    status_code == WLAN_STATUS_SUCCESS) {
+			wpa_printf(MSG_DEBUG,
+				   "SAE: Unexpected use of status code 0 in SAE commit when H2E was expected");
+			return -1;
+		}
+		if (wpa_s->sme.sae.tmp && !wpa_s->sme.sae.tmp->h2e &&
+		    status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT) {
+			wpa_printf(MSG_DEBUG,
+				   "SAE: Unexpected use of status code for H2E in SAE commit when H2E was not expected");
+			return -1;
+		}
+
 		if (groups && groups[0] <= 0)
 			groups = NULL;
 		res = sae_parse_commit(&wpa_s->sme.sae, data, len, NULL, NULL,
