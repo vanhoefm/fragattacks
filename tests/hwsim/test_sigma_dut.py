@@ -332,6 +332,12 @@ def test_sigma_dut_sae(dev, apdev):
         sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
         if dev[0].get_status_field('sae_group') != '19':
             raise Exception("Expected default SAE group not used")
+        res = sigma_dut_cmd_check("sta_get_parameter,interface,%s,Parameter,PMK" % ifname)
+        logger.info("Reported PMK: " + res)
+        if ",PMK," not in res:
+            raise Exception("PMK not reported");
+        if hapd.request("GET_PMK " + dev[0].own_addr()) != res.split(',')[3]:
+            raise Exception("Mismatch in reported PMK")
         sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
 
         sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
@@ -953,10 +959,17 @@ def test_sigma_dut_ap_sae(dev, apdev, params):
             sigma_dut_cmd_check("ap_config_commit,NAME,AP")
 
             dev[0].request("SET sae_groups ")
-            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
-                           ieee80211w="2", scan_freq="2412")
+            id = dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                                ieee80211w="2", scan_freq="2412")
             if dev[0].get_status_field('sae_group') != '19':
                 raise Exception("Expected default SAE group not used")
+
+            res = sigma_dut_cmd_check("ap_get_parameter,name,AP,STA_MAC_Address,%s,Parameter,PMK" % dev[0].own_addr())
+            logger.info("Reported PMK: " + res)
+            if ",PMK," not in res:
+                raise Exception("PMK not reported");
+            if dev[0].get_pmk(id) != res.split(',')[3]:
+                raise Exception("Mismatch in reported PMK")
 
             sigma_dut_cmd_check("ap_reset_default")
         finally:
@@ -1201,6 +1214,12 @@ def run_sigma_dut_owe(dev, apdev):
                             timeout=10)
         sigma_dut_wait_connected(ifname)
         sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        res = sigma_dut_cmd_check("sta_get_parameter,interface,%s,Parameter,PMK" % ifname)
+        logger.info("Reported PMK: " + res)
+        if ",PMK," not in res:
+            raise Exception("PMK not reported");
+        if hapd.request("GET_PMK " + dev[0].own_addr()) != res.split(',')[3]:
+            raise Exception("Mismatch in reported PMK")
 
         dev[0].dump_monitor()
         sigma_dut_cmd("sta_reassoc,interface,%s,Channel,1,bssid,%s" % (ifname, bssid))
@@ -1250,8 +1269,15 @@ def test_sigma_dut_ap_owe(dev, apdev, params):
             sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,OWE")
             sigma_dut_cmd_check("ap_config_commit,NAME,AP")
 
-            dev[0].connect("owe", key_mgmt="OWE", ieee80211w="2",
-                           scan_freq="2412")
+            id = dev[0].connect("owe", key_mgmt="OWE", ieee80211w="2",
+                                scan_freq="2412")
+
+            res = sigma_dut_cmd_check("ap_get_parameter,name,AP,STA_MAC_Address,%s,Parameter,PMK" % dev[0].own_addr())
+            logger.info("Reported PMK: " + res)
+            if ",PMK," not in res:
+                raise Exception("PMK not reported");
+            if dev[0].get_pmk(id) != res.split(',')[3]:
+                raise Exception("Mismatch in reported PMK")
 
             sigma_dut_cmd_check("ap_reset_default")
         finally:
