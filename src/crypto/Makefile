@@ -54,6 +54,8 @@ LIB_OBJS= \
 	sha384.o \
 	sha384-prf.o \
 	sha384-internal.o \
+	sha512.o \
+	sha512-prf.o \
 	sha512-internal.o
 
 LIB_OBJS += crypto_internal.o
