@@ -101,6 +101,7 @@ u8 * hostapd_eid_supp_rates(struct hostapd_data *hapd, u8 *eid)
 		num++;
 	h2e_required = (hapd->conf->sae_pwe == 1 ||
 			hostapd_sae_pw_id_in_use(hapd->conf) == 2) &&
+		hapd->conf->sae_pwe != 3 &&
 		wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt);
 	if (h2e_required)
 		num++;
@@ -155,6 +156,7 @@ u8 * hostapd_eid_ext_supp_rates(struct hostapd_data *hapd, u8 *eid)
 		num++;
 	h2e_required = (hapd->conf->sae_pwe == 1 ||
 			hostapd_sae_pw_id_in_use(hapd->conf) == 2) &&
+		hapd->conf->sae_pwe != 3 &&
 		wpa_key_mgmt_sae(hapd->conf->wpa_key_mgmt);
 	if (h2e_required)
 		num++;
@@ -456,7 +458,7 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 		use_pt = sta->sae->tmp->h2e;
 	}
 
-	if (rx_id)
+	if (rx_id && hapd->conf->sae_pwe != 3)
 		use_pt = 1;
 	else if (status_code == WLAN_STATUS_SUCCESS)
 		use_pt = 0;
@@ -1079,12 +1081,12 @@ static int sae_status_success(struct hostapd_data *hapd, u16 status_code)
 	int id_in_use;
 
 	id_in_use = hostapd_sae_pw_id_in_use(hapd->conf);
-	if (id_in_use == 2)
+	if (id_in_use == 2 && sae_pwe != 3)
 		sae_pwe = 1;
 	else if (id_in_use == 1 && sae_pwe == 0)
 		sae_pwe = 2;
 
-	return (sae_pwe == 0 &&
+	return ((sae_pwe == 0 || sae_pwe == 3) &&
 		status_code == WLAN_STATUS_SUCCESS) ||
 		(sae_pwe == 1 &&
 		 status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT) ||

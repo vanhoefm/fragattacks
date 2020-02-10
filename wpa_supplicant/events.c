@@ -1301,6 +1301,7 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_SAE
 		if ((wpa_s->conf->sae_pwe == 1 || ssid->sae_password_id) &&
+		    wpa_s->conf->sae_pwe != 3 &&
 		    wpa_key_mgmt_sae(ssid->key_mgmt) &&
 		    (!(ie = wpa_bss_get_ie(bss, WLAN_EID_RSNX)) ||
 		     ie[1] < 1 ||
