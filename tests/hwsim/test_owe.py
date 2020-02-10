@@ -34,8 +34,12 @@ def test_owe(dev, apdev):
     if "[WPA2-OWE-CCMP]" not in bss['flags']:
         raise Exception("OWE AKM not recognized: " + bss['flags'])
 
-    dev[0].connect("owe", key_mgmt="OWE", ieee80211w="2",
-                   scan_freq="2412")
+    id = dev[0].connect("owe", key_mgmt="OWE", ieee80211w="2", scan_freq="2412")
+    hapd.wait_sta()
+    pmk_h = hapd.request("GET_PMK " + dev[0].own_addr())
+    pmk_w = dev[0].get_pmk(id)
+    if pmk_h != pmk_w:
+        raise Exception("Fetched PMK does not match: hostapd %s, wpa_supplicant %s" % (pmk_h, pmk_w))
     hwsim_utils.test_connectivity(dev[0], hapd)
     val = dev[0].get_status_field("key_mgmt")
     if val != "OWE":

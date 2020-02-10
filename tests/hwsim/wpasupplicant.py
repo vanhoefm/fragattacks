@@ -1300,6 +1300,14 @@ class WpaSupplicant:
             return vals
         return None
 
+    def get_pmk(self, network_id):
+        bssid = self.get_status_field('bssid')
+        res = self.request("PMKSA_GET %d" % network_id)
+        for val in res.splitlines():
+            if val.startswith(bssid):
+                return val.split(' ')[2]
+        return None
+
     def get_sta(self, addr, info=None, next=False):
         cmd = "STA-NEXT " if next else "STA "
         if addr is None:

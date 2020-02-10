@@ -39,6 +39,7 @@ def test_sae(dev, apdev):
     dev[0].request("SET sae_groups ")
     id = dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
                         scan_freq="2412")
+    hapd.wait_sta()
     if dev[0].get_status_field('sae_group') != '19':
             raise Exception("Expected default SAE group not used")
     bss = dev[0].get_bss(apdev[0]['bssid'])
@@ -50,6 +51,11 @@ def test_sae(dev, apdev):
     res = hapd.request("STA-FIRST")
     if "sae_group=19" not in res.splitlines():
         raise Exception("hostapd STA output did not specify SAE group")
+
+    pmk_h = hapd.request("GET_PMK " + dev[0].own_addr())
+    pmk_w = dev[0].get_pmk(id)
+    if pmk_h != pmk_w:
+        raise Exception("Fetched PMK does not match: hostapd %s, wpa_supplicant %s" % (pmk_h, pmk_w))
 
 @remote_compatible
 def test_sae_password_ecc(dev, apdev):
