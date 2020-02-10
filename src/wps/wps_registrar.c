@@ -160,6 +160,7 @@ struct wps_registrar {
 				 const u8 *pri_dev_type, u16 config_methods,
 				 u16 dev_password_id, u8 request_type,
 				 const char *dev_name);
+	int (*lookup_pskfile_cb)(void *ctx, const u8 *mac_addr, const u8 **psk);
 	void *cb_ctx;
 
 	struct dl_list pins;
@@ -682,6 +683,7 @@ wps_registrar_init(struct wps_context *wps,
 	reg->reg_success_cb = cfg->reg_success_cb;
 	reg->set_sel_reg_cb = cfg->set_sel_reg_cb;
 	reg->enrollee_seen_cb = cfg->enrollee_seen_cb;
+	reg->lookup_pskfile_cb = cfg->lookup_pskfile_cb;
 	reg->cb_ctx = cfg->cb_ctx;
 	reg->skip_cred_build = cfg->skip_cred_build;
 	if (cfg->extra_cred) {
@@ -1291,6 +1293,15 @@ static void wps_cb_set_sel_reg(struct wps_registrar *reg)
 }
 
 
+static int wps_cp_lookup_pskfile(struct wps_registrar *reg, const u8 *mac_addr,
+				 const u8 **psk)
+{
+	if (!reg->lookup_pskfile_cb)
+		return 0;
+	return reg->lookup_pskfile_cb(reg->cb_ctx, mac_addr, psk);
+}
+
+
 static int wps_set_ie(struct wps_registrar *reg)
 {
 	struct wpabuf *beacon;
@@ -1645,6 +1656,8 @@ int wps_build_cred(struct wps_data *wps, struct wpabuf *msg)
 {
 	struct wpabuf *cred;
 	struct wps_registrar *reg = wps->wps->registrar;
+	const u8 *pskfile_psk;
+	char hex[65];
 
 	if (wps->wps->registrar->skip_cred_build)
 		goto skip_cred_build;
@@ -1760,9 +1773,14 @@ int wps_build_cred(struct wps_data *wps, struct wpabuf *msg)
 				      wps->new_psk, wps->new_psk_len);
 		os_memcpy(wps->cred.key, wps->new_psk, wps->new_psk_len);
 		wps->cred.key_len = wps->new_psk_len;
+	} else if (wps_cp_lookup_pskfile(reg, wps->mac_addr_e, &pskfile_psk)) {
+		wpa_hexdump_key(MSG_DEBUG, "WPS: Use PSK from wpa_psk_file",
+				pskfile_psk, PMK_LEN);
+		wpa_snprintf_hex(hex, sizeof(hex), pskfile_psk, PMK_LEN);
+		os_memcpy(wps->cred.key, hex, PMK_LEN * 2);
+		wps->cred.key_len = PMK_LEN * 2;
 	} else if (!wps->wps->registrar->force_per_enrollee_psk &&
 		   wps->use_psk_key && wps->wps->psk_set) {
-		char hex[65];
 		wpa_printf(MSG_DEBUG, "WPS: Use PSK format for Network Key");
 		wpa_snprintf_hex(hex, sizeof(hex), wps->wps->psk, PMK_LEN);
 		os_memcpy(wps->cred.key, hex, PMK_LEN * 2);
@@ -1773,7 +1791,6 @@ int wps_build_cred(struct wps_data *wps, struct wpabuf *msg)
 			  wps->wps->network_key_len);
 		wps->cred.key_len = wps->wps->network_key_len;
 	} else if (wps->auth_type & (WPS_AUTH_WPAPSK | WPS_AUTH_WPA2PSK)) {
-		char hex[65];
 		/* Generate a random per-device PSK */
 		os_free(wps->new_psk);
 		wps->new_psk_len = PMK_LEN;

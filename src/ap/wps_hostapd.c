@@ -269,6 +269,44 @@ static void hostapd_wps_enrollee_seen_cb(void *ctx, const u8 *addr,
 }
 
 
+static int hostapd_wps_lookup_pskfile_cb(void *ctx, const u8 *mac_addr,
+					 const u8 **psk)
+{
+	const struct hostapd_data *hapd = ctx;
+	const struct hostapd_wpa_psk *wpa_psk;
+	const u8 *any_psk = NULL;
+	const u8 *dev_psk = NULL;
+
+	for (wpa_psk = hapd->conf->ssid.wpa_psk; wpa_psk;
+	     wpa_psk = wpa_psk->next) {
+		if (!wpa_psk->wps)
+			continue;
+
+		if (!any_psk && is_zero_ether_addr(wpa_psk->addr))
+			any_psk = wpa_psk->psk;
+
+		if (mac_addr && !dev_psk &&
+		    os_memcmp(mac_addr, wpa_psk->addr, ETH_ALEN) == 0) {
+			dev_psk = wpa_psk->psk;
+			break;
+		}
+	}
+
+	if (dev_psk) {
+		*psk = dev_psk;
+	} else if (any_psk) {
+		*psk = any_psk;
+	} else {
+		*psk = NULL;
+		wpa_printf(MSG_DEBUG,
+			   "WPS: No appropriate PSK in wpa_psk_file");
+		return 0;
+	}
+
+	return 1;
+}
+
+
 static void wps_reload_config(void *eloop_data, void *user_ctx)
 {
 	struct hostapd_iface *iface = eloop_data;
@@ -1213,6 +1251,7 @@ int hostapd_init_wps(struct hostapd_data *hapd,
 	cfg.pin_needed_cb = hostapd_wps_pin_needed_cb;
 	cfg.reg_success_cb = hostapd_wps_reg_success_cb;
 	cfg.enrollee_seen_cb = hostapd_wps_enrollee_seen_cb;
+	cfg.lookup_pskfile_cb = hostapd_wps_lookup_pskfile_cb;
 	cfg.cb_ctx = hapd;
 	cfg.skip_cred_build = conf->skip_cred_build;
 	cfg.extra_cred = conf->extra_cred;

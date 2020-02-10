@@ -152,6 +152,7 @@ struct hostapd_wpa_psk {
 	struct hostapd_wpa_psk *next;
 	int group;
 	char keyid[KEYID_LEN];
+	int wps;
 	u8 psk[PMK_LEN];
 	u8 addr[ETH_ALEN];
 	u8 p2p_dev_addr[ETH_ALEN];

@@ -345,6 +345,14 @@ struct wps_registrar_config {
 				 const char *dev_name);
 
 	/**
+	 * lookup_pskfile_cb - Callback for searching for PSK in wpa_psk_file
+	 * @ctx: Higher layer context data (cb_ctx)
+	 * @addr: Enrollee's MAC address
+	 * @psk: Pointer to found PSK (output arg)
+	 */
+	int (*lookup_pskfile_cb)(void *ctx, const u8 *mac_addr, const u8 **psk);
+
+	/**
 	 * cb_ctx: Higher layer context data for Registrar callbacks
 	 */
 	void *cb_ctx;

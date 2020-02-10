@@ -301,6 +301,7 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 
 	while (fgets(buf, sizeof(buf), f)) {
 		int vlan_id = 0;
+		int wps = 0;
 
 		line++;
 
@@ -331,6 +332,8 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 				value = "";
 			if (!os_strcmp(name, "keyid")) {
 				keyid = value;
+			} else if (!os_strcmp(name, "wps")) {
+				wps = atoi(value);
 			} else if (!os_strcmp(name, "vlanid")) {
 				vlan_id = atoi(value);
 			} else {
@@ -405,6 +408,8 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 				break;
 			}
 		}
+
+		psk->wps = wps;
 
 		psk->next = ssid->wpa_psk;
 		ssid->wpa_psk = psk;
