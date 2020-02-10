@@ -2567,8 +2567,14 @@ static int wpa_supplicant_event_associnfo(struct wpa_supplicant *wpa_s,
 			wpa_s->connection_set = 1;
 			wpa_s->connection_ht = req_elems.ht_capabilities &&
 				resp_elems.ht_capabilities;
+			/* Do not include subset of VHT on 2.4 GHz vendor
+			 * extension in consideration for reporting VHT
+			 * association. */
 			wpa_s->connection_vht = req_elems.vht_capabilities &&
-				resp_elems.vht_capabilities;
+				resp_elems.vht_capabilities &&
+				(!data->assoc_info.freq ||
+				 wpas_freq_to_band(data->assoc_info.freq) !=
+				 BAND_2_4_GHZ);
 			wpa_s->connection_he = req_elems.he_capabilities &&
 				resp_elems.he_capabilities;
 		}
