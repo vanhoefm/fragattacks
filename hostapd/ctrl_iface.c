@@ -2388,6 +2388,34 @@ static int hostapd_ctrl_resend_group_m1(struct hostapd_data *hapd,
 					plain ? restore_tk : NULL, hapd, sta);
 }
 
+
+static int hostapd_ctrl_get_pmk(struct hostapd_data *hapd, const char *cmd,
+				char *buf, size_t buflen)
+{
+	struct sta_info *sta;
+	u8 addr[ETH_ALEN];
+	const u8 *pmk;
+	int pmk_len;
+
+	if (hwaddr_aton(cmd, addr))
+		return -1;
+
+	sta = ap_get_sta(hapd, addr);
+	if (!sta || !sta->wpa_sm) {
+		wpa_printf(MSG_DEBUG, "No STA WPA state machine for " MACSTR,
+			   MAC2STR(addr));
+		return -1;
+	}
+	pmk = wpa_auth_get_pmk(sta->wpa_sm, &pmk_len);
+	if (!pmk) {
+		wpa_printf(MSG_DEBUG, "No PMK stored for " MACSTR,
+			   MAC2STR(addr));
+		return -1;
+	}
+
+	return wpa_snprintf_hex(buf, buflen, pmk, pmk_len);
+}
+
 #endif /* CONFIG_TESTING_OPTIONS */
 
 
@@ -3256,6 +3284,9 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 	} else if (os_strcmp(buf, "REKEY_GTK") == 0) {
 		if (wpa_auth_rekey_gtk(hapd->wpa_auth) < 0)
 			reply_len = -1;
+	} else if (os_strncmp(buf, "GET_PMK ", 8) == 0) {
+		reply_len = hostapd_ctrl_get_pmk(hapd, buf + 8, reply,
+						 reply_size);
 #endif /* CONFIG_TESTING_OPTIONS */
 	} else if (os_strncmp(buf, "CHAN_SWITCH ", 12) == 0) {
 		if (hostapd_ctrl_iface_chan_switch(hapd->iface, buf + 12))
