@@ -1636,6 +1636,63 @@ def test_sae_password_id_only(dev, apdev):
     dev[0].connect("test-sae", sae_password="secret", sae_password_id="pw id",
                    key_mgmt="SAE", scan_freq="2412")
 
+def test_sae_password_id_pwe_looping(dev, apdev):
+    """SAE and password identifier with forced PWE looping)"""
+    check_sae_capab(dev[0])
+    params = hostapd.wpa2_params(ssid="test-sae")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = 'secret|id=pw id'
+    params['sae_pwe'] = "3"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].request("SET sae_groups ")
+    try:
+        dev[0].set("sae_pwe", "3")
+        dev[0].connect("test-sae", sae_password="secret",
+                       sae_password_id="pw id",
+                       key_mgmt="SAE", scan_freq="2412")
+    finally:
+        dev[0].set("sae_pwe", "0")
+
+def test_sae_password_id_pwe_check_ap(dev, apdev):
+    """SAE and password identifier with STA using unexpected PWE derivation)"""
+    check_sae_capab(dev[0])
+    params = hostapd.wpa2_params(ssid="test-sae")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = 'secret|id=pw id'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].request("SET sae_groups ")
+    try:
+        dev[0].set("sae_pwe", "3")
+        dev[0].connect("test-sae", sae_password="secret",
+                       sae_password_id="pw id",
+                       key_mgmt="SAE", scan_freq="2412", wait_connect=False)
+        ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                "CTRL-EVENT-SSID-TEMP-DISABLED"], timeout=10)
+        if ev is None or "CTRL-EVENT-SSID-TEMP-DISABLED" not in ev:
+            raise Exception("Connection failure not reported")
+    finally:
+        dev[0].set("sae_pwe", "0")
+
+def test_sae_password_id_pwe_check_sta(dev, apdev):
+    """SAE and password identifier with AP using unexpected PWE derivation)"""
+    check_sae_capab(dev[0])
+    params = hostapd.wpa2_params(ssid="test-sae")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_pwe'] = "3"
+    params['sae_password'] = 'secret|id=pw id'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].request("SET sae_groups ")
+    dev[0].connect("test-sae", sae_password="secret",
+                   sae_password_id="pw id",
+                   key_mgmt="SAE", scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-NETWORK-NOT-FOUND"], timeout=10)
+    if ev is None or "CTRL-EVENT-NETWORK-NOT-FOUND" not in ev:
+        raise Exception("Connection failure not reported")
+
 def test_sae_forced_anti_clogging_pw_id(dev, apdev):
     """SAE anti clogging (forced and Password Identifier)"""
     check_sae_capab(dev[0])
