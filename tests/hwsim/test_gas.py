@@ -1209,6 +1209,7 @@ def test_gas_anqp_extra_elements(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = apdev[0]['bssid']
 
+    dev[0].flush_scan_cache()
     dev[0].scan_for_bss(bssid, freq="2412", force_scan=True)
     if "OK" not in dev[0].request("ANQP_GET " + bssid + " 265,266"):
         raise Exception("ANQP_GET command failed")
