@@ -2144,6 +2144,7 @@ wpas_dpp_rx_pkex_commit_reveal_resp(struct wpa_supplicant *wpa_s, const u8 *src,
 	if (wpas_dpp_auth_init(wpa_s, cmd) < 0) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Authentication initialization failed");
+		offchannel_send_action_done(wpa_s);
 		return;
 	}
 }
@@ -2617,6 +2618,8 @@ int wpas_dpp_pkex_remove(struct wpa_supplicant *wpa_s, const char *id)
 
 void wpas_dpp_stop(struct wpa_supplicant *wpa_s)
 {
+	if (wpa_s->dpp_auth || wpa_s->dpp_pkex)
+		offchannel_send_action_done(wpa_s);
 	dpp_auth_deinit(wpa_s->dpp_auth);
 	wpa_s->dpp_auth = NULL;
 	dpp_pkex_free(wpa_s->dpp_pkex);
