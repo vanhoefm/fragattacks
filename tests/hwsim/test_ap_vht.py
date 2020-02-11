@@ -903,15 +903,70 @@ def test_ap_vht_on_24ghz(dev, apdev):
         if "OK" not in dev[0].request("VENDOR_ELEM_ADD 13 dd1300904c0400bf0c3240820feaff0000eaff0000"):
             raise Exception("Failed to add vendor element")
         dev[0].connect("test-vht-2g", scan_freq="2412", key_mgmt="NONE")
+        hapd.wait_sta()
         hwsim_utils.test_connectivity(dev[0], hapd)
         sta = hapd.get_sta(dev[0].own_addr())
         if '[VENDOR_VHT]' not in sta['flags']:
             raise Exception("No VENDOR_VHT STA flag")
 
         dev[1].connect("test-vht-2g", scan_freq="2412", key_mgmt="NONE")
+        hapd.wait_sta()
         sta = hapd.get_sta(dev[1].own_addr())
         if '[VENDOR_VHT]' in sta['flags']:
             raise Exception("Unexpected VENDOR_VHT STA flag")
+
+        status = dev[0].get_status()
+        if 'wifi_generation' in status:
+            if status['wifi_generation'] != "4":
+                raise Exception("Unexpected wifi_generation value: " + status['wifi_generation'])
+
+        status = dev[1].get_status()
+        if 'wifi_generation' in status:
+            if status['wifi_generation'] != "4":
+                raise Exception("Unexpected wifi_generation value(2): " + status['wifi_generation'])
+    finally:
+        dev[0].request("VENDOR_ELEM_REMOVE 13 *")
+
+def test_ap_vht_on_24ghz_2(dev, apdev):
+    """Subset of VHT features on 2.4 GHz (2)"""
+    hapd = None
+    params = {"ssid": "test-vht-2g",
+              "hw_mode": "g",
+              "channel": "1",
+              "ieee80211n": "1",
+              "ieee80211ac": "1",
+              "vendor_vht": "1",
+              "vht_capab": "[MAX-MPDU-11454]",
+              "vht_oper_chwidth": "0",
+              "vht_oper_centr_freq_seg0_idx": "1"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        if "OK" not in dev[0].request("VENDOR_ELEM_ADD 13 bf0cfa048003aaaa0000aaaa0000dd1300904c0400bf0c3240820feaff0000eaff0000"):
+            raise Exception("Failed to add vendor element")
+        dev[0].connect("test-vht-2g", scan_freq="2412", key_mgmt="NONE")
+        hapd.wait_sta()
+        hwsim_utils.test_connectivity(dev[0], hapd)
+        sta = hapd.get_sta(dev[0].own_addr())
+        if '[VHT]' not in sta['flags']:
+            raise Exception("No VHT STA flag")
+
+        dev[1].connect("test-vht-2g", scan_freq="2412", key_mgmt="NONE")
+        hapd.wait_sta()
+        sta = hapd.get_sta(dev[1].own_addr())
+        if '[VENDOR_VHT]' in sta['flags']:
+            raise Exception("Unexpected VENDOR_VHT STA flag")
+        if '[VHT]' in sta['flags']:
+            raise Exception("Unexpected VHT STA flag")
+
+        status = dev[0].get_status()
+        if 'wifi_generation' in status:
+            if status['wifi_generation'] != "4":
+                raise Exception("Unexpected wifi_generation value: " + status['wifi_generation'])
+
+        status = dev[1].get_status()
+        if 'wifi_generation' in status:
+            if status['wifi_generation'] != "4":
+                raise Exception("Unexpected wifi_generation value(2): " + status['wifi_generation'])
     finally:
         dev[0].request("VENDOR_ELEM_REMOVE 13 *")
 
