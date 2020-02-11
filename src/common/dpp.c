@@ -4680,9 +4680,22 @@ int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
 			 const char *cmd)
 {
 	const char *pos;
+	char *tmp = NULL;
+	int ret = -1;
 
 	if (!cmd)
 		return 0;
+	if (cmd[0] != ' ') {
+		size_t len;
+
+		len = os_strlen(cmd);
+		tmp = os_malloc(len + 2);
+		if (!tmp)
+			goto fail;
+		tmp[0] = ' ';
+		os_memcpy(tmp + 1, cmd, len + 1);
+		cmd = tmp;
+	}
 
 	wpa_printf(MSG_DEBUG, "DPP: Set configurator parameters: %s", cmd);
 
@@ -4693,7 +4706,7 @@ int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
 		if (!auth->conf) {
 			wpa_printf(MSG_INFO,
 				   "DPP: Could not find the specified configurator");
-			return -1;
+			goto fail;
 		}
 	}
 
@@ -4712,9 +4725,12 @@ int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
 	if (dpp_configuration_parse(auth, cmd) < 0) {
 		wpa_msg(msg_ctx, MSG_INFO,
 			"DPP: Failed to set configurator parameters");
-		return -1;
+		goto fail;
 	}
-	return 0;
+	ret = 0;
+fail:
+	os_free(tmp);
+	return ret;
 }
 
 
