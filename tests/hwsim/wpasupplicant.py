@@ -1476,7 +1476,7 @@ class WpaSupplicant:
                       extra=None, own=None, role=None, neg_freq=None,
                       ssid=None, passphrase=None, expect_fail=False,
                       tcp_addr=None, tcp_port=None, conn_status=False,
-                      ssid_charset=None, nfc_uri=None):
+                      ssid_charset=None, nfc_uri=None, netrole=None):
         cmd = "DPP_AUTH_INIT"
         if peer is None:
             if nfc_uri:
@@ -1508,6 +1508,8 @@ class WpaSupplicant:
             cmd += " tcp_port=" + tcp_port
         if conn_status:
             cmd += " conn_status=1"
+        if netrole:
+            cmd += " netrole=" + netrole
         res = self.request(cmd)
         if expect_fail:
             if "FAIL" not in res:

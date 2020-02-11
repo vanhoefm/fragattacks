@@ -1954,6 +1954,30 @@ def run_dpp_qr_code_auth_responder_configurator(dev, apdev, extra):
     wait_auth_success(dev[0], dev[1], configurator=dev[0], enrollee=dev[1],
                       stop_responder=True)
 
+def test_dpp_qr_code_auth_enrollee_init_netrole(dev, apdev):
+    """DPP QR Code and enrollee initiating with netrole specified"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    conf_id = dev[0].dpp_configurator_add()
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+    dev[0].set("dpp_configurator_params",
+               " conf=configurator configurator=%d" % conf_id)
+    dev[0].dpp_listen(2412, role="configurator")
+    dev[1].dpp_auth_init(uri=uri0, role="enrollee", netrole="configurator")
+    wait_auth_success(dev[0], dev[1], configurator=dev[0], enrollee=dev[1],
+                      stop_responder=True)
+    dev[0].dump_monitor()
+    dev[1].dump_monitor()
+
+    # verify that netrole resets back to sta, if not explicitly stated
+    dev[0].set("dpp_configurator_params",
+               "conf=sta-dpp configurator=%d" % conf_id)
+    dev[0].dpp_listen(2412, role="configurator")
+    dev[1].dpp_auth_init(uri=uri0, role="enrollee")
+    wait_auth_success(dev[0], dev[1], configurator=dev[0], enrollee=dev[1],
+                      stop_responder=True)
+
 def test_dpp_qr_code_hostapd_init(dev, apdev):
     """DPP QR Code and hostapd as initiator"""
     check_dpp_capab(dev[0])
