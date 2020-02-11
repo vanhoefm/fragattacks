@@ -751,6 +751,8 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 			wpa_s->dpp_netrole = DPP_NETROLE_CONFIGURATOR;
 		else
 			wpa_s->dpp_netrole = DPP_NETROLE_STA;
+	} else {
+		wpa_s->dpp_netrole = DPP_NETROLE_STA;
 	}
 
 	pos = os_strstr(cmd, " neg_freq=");
