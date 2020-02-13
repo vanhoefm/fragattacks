@@ -577,18 +577,18 @@ skip_wpa_check:
 		npos = owe_assoc_req_process(hapd, sta,
 					     elems.owe_dh, elems.owe_dh_len,
 					     p, sizeof(buf) - (p - buf),
-					     &reason);
+					     &status);
 		if (npos)
 			p = npos;
+
 		if (!npos &&
-		    reason == WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED) {
-			status = WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED;
+		    status == WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED) {
 			hostapd_sta_assoc(hapd, addr, reassoc, status, buf,
 					  p - buf);
 			return 0;
 		}
 
-		if (!npos || reason != WLAN_STATUS_SUCCESS)
+		if (!npos || status != WLAN_STATUS_SUCCESS)
 			goto fail;
 	}
 #endif /* CONFIG_OWE */

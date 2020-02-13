@@ -3951,12 +3951,12 @@ done:
 #ifdef CONFIG_OWE
 u8 * owe_assoc_req_process(struct hostapd_data *hapd, struct sta_info *sta,
 			   const u8 *owe_dh, u8 owe_dh_len,
-			   u8 *owe_buf, size_t owe_buf_len, u16 *reason)
+			   u8 *owe_buf, size_t owe_buf_len, u16 *status)
 {
 #ifdef CONFIG_TESTING_OPTIONS
 	if (hapd->conf->own_ie_override) {
 		wpa_printf(MSG_DEBUG, "OWE: Using IE override");
-		*reason = WLAN_STATUS_SUCCESS;
+		*status = WLAN_STATUS_SUCCESS;
 		return wpa_auth_write_assoc_resp_owe(sta->wpa_sm, owe_buf,
 						     owe_buf_len, NULL, 0);
 	}
@@ -3966,18 +3966,18 @@ u8 * owe_assoc_req_process(struct hostapd_data *hapd, struct sta_info *sta,
 		wpa_printf(MSG_DEBUG, "OWE: Using PMKSA caching");
 		owe_buf = wpa_auth_write_assoc_resp_owe(sta->wpa_sm, owe_buf,
 							owe_buf_len, NULL, 0);
-		*reason = WLAN_STATUS_SUCCESS;
+		*status = WLAN_STATUS_SUCCESS;
 		return owe_buf;
 	}
 
 	if (sta->owe_pmk && sta->external_dh_updated) {
 		wpa_printf(MSG_DEBUG, "OWE: Using previously derived PMK");
-		*reason = WLAN_STATUS_SUCCESS;
+		*status = WLAN_STATUS_SUCCESS;
 		return owe_buf;
 	}
 
-	*reason = owe_process_assoc_req(hapd, sta, owe_dh, owe_dh_len);
-	if (*reason != WLAN_STATUS_SUCCESS)
+	*status = owe_process_assoc_req(hapd, sta, owe_dh, owe_dh_len);
+	if (*status != WLAN_STATUS_SUCCESS)
 		return NULL;
 
 	owe_buf = wpa_auth_write_assoc_resp_owe(sta->wpa_sm, owe_buf,
@@ -3988,7 +3988,7 @@ u8 * owe_assoc_req_process(struct hostapd_data *hapd, struct sta_info *sta,
 
 		pub = crypto_ecdh_get_pubkey(sta->owe_ecdh, 0);
 		if (!pub) {
-			*reason = WLAN_STATUS_UNSPECIFIED_FAILURE;
+			*status = WLAN_STATUS_UNSPECIFIED_FAILURE;
 			return owe_buf;
 		}
 
