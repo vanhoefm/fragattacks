@@ -8383,6 +8383,22 @@ enum qca_vendor_wlan_sta_guard_interval {
  * when queried in the connected state. When queried in the disconnected
  * state, this corresponds to the latest ANI level at the instance of
  * disconnection.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_BEACON_IES: Binary attribute containing
+ * the raw information elements from Beacon frames. Represents the Beacon frames
+ * of the current BSS in the connected state. When queried in the disconnected
+ * state, these IEs correspond to the last connected BSSID.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_PROBE_RESP_IES: Binary attribute
+ * containing the raw information elements from Probe Response frames.
+ * Represents the Probe Response frames of the current BSS in the connected
+ * state. When queried in the disconnected state, these IEs correspond to the
+ * last connected BSSID.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_DRIVER_DISCONNECT_REASON: u32, Driver
+ * disconnect reason for the last disconnection if the disconnection is
+ * triggered from the host driver. The values are referred from
+ * enum qca_disconnect_reason_codes.
  */
 enum qca_wlan_vendor_attr_get_sta_info {
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_INVALID = 0,
@@ -8421,6 +8437,9 @@ enum qca_wlan_vendor_attr_get_sta_info {
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_MAX_TX_POWER = 33,
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_LATEST_TX_POWER = 34,
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_ANI_LEVEL = 35,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_BEACON_IES = 36,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_PROBE_RESP_IES = 37,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_DRIVER_DISCONNECT_REASON = 38,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_AFTER_LAST,
