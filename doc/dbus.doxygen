@@ -2107,7 +2107,7 @@ i.e., returned by fi.w1.wpa_supplicant1.Interface.AddNetwork.
 
       <li>
 	<h3>Properties - a{sv} - (read/write)</h3>
-	<p>Properties of the configured network. Dictionary contains entries from "network" block of wpa_supplicant configuration file. All values are string type, e.g., frequency is "2437", not 2437.
+	<p>Properties of the configured network. Dictionary contains entries from "network" block of wpa_supplicant configuration file. All values are string type, e.g., frequency is "2437", not 2437. When setting the properties, use the same format as for the AddNetwork() function.</p>
       </li>
     </ul>
 
