@@ -137,16 +137,17 @@ static int hostapd_wps_new_psk_cb(void *ctx, const u8 *mac_addr,
 	if (ssid->wpa_psk_file) {
 		FILE *f;
 		char hex[PMK_LEN * 2 + 1];
+
 		/* Add the new PSK to PSK list file */
 		f = fopen(ssid->wpa_psk_file, "a");
-		if (f == NULL) {
-			wpa_printf(MSG_DEBUG, "Failed to add the PSK to "
-				   "'%s'", ssid->wpa_psk_file);
+		if (!f) {
+			wpa_printf(MSG_DEBUG, "Failed to add the PSK to '%s'",
+				   ssid->wpa_psk_file);
 			return -1;
 		}
 
 		wpa_snprintf_hex(hex, sizeof(hex), psk, psk_len);
-		fprintf(f, MACSTR " %s\n", MAC2STR(mac_addr), hex);
+		fprintf(f, "wps=1 " MACSTR " %s\n", MAC2STR(mac_addr), hex);
 		fclose(f);
 	}
 
