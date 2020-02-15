@@ -379,11 +379,10 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 		len = os_strlen(pos);
 		if (len == 64 && hexstr2bin(pos, psk->psk, PMK_LEN) == 0)
 			ok = 1;
-		else if (len >= 8 && len < 64) {
-			pbkdf2_sha1(pos, ssid->ssid, ssid->ssid_len,
-				    4096, psk->psk, PMK_LEN);
+		else if (len >= 8 && len < 64 &&
+			 pbkdf2_sha1(pos, ssid->ssid, ssid->ssid_len,
+				     4096, psk->psk, PMK_LEN) == 0)
 			ok = 1;
-		}
 		if (!ok) {
 			wpa_printf(MSG_ERROR, "Invalid PSK '%s' on line %d in "
 				   "'%s'", pos, line, fname);
