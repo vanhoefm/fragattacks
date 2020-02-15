@@ -17,6 +17,7 @@
 #include "crypto/sha256.h"
 #include "crypto/random.h"
 #include "common/ieee802_11_defs.h"
+#include "common/wpa_common.h"
 #include "wps_i.h"
 #include "wps_dev_attr.h"
 #include "wps_upnp.h"
@@ -1763,9 +1764,9 @@ int wps_build_cred(struct wps_data *wps, struct wpabuf *msg)
 		   wps->use_psk_key && wps->wps->psk_set) {
 		char hex[65];
 		wpa_printf(MSG_DEBUG, "WPS: Use PSK format for Network Key");
-		wpa_snprintf_hex(hex, sizeof(hex), wps->wps->psk, 32);
-		os_memcpy(wps->cred.key, hex, 32 * 2);
-		wps->cred.key_len = 32 * 2;
+		wpa_snprintf_hex(hex, sizeof(hex), wps->wps->psk, PMK_LEN);
+		os_memcpy(wps->cred.key, hex, PMK_LEN * 2);
+		wps->cred.key_len = PMK_LEN * 2;
 	} else if (!wps->wps->registrar->force_per_enrollee_psk &&
 		   wps->wps->network_key) {
 		os_memcpy(wps->cred.key, wps->wps->network_key,
@@ -1775,7 +1776,7 @@ int wps_build_cred(struct wps_data *wps, struct wpabuf *msg)
 		char hex[65];
 		/* Generate a random per-device PSK */
 		os_free(wps->new_psk);
-		wps->new_psk_len = 32;
+		wps->new_psk_len = PMK_LEN;
 		wps->new_psk = os_malloc(wps->new_psk_len);
 		if (wps->new_psk == NULL)
 			return -1;
