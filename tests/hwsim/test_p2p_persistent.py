@@ -130,7 +130,7 @@ def test_persistent_group_per_sta_psk(dev):
     if ev is None:
         raise Exception("Group removal event timed out")
     if not dev[2].discover_peer(addr0, social=True):
-        raise Exception("Peer " + peer + " not found")
+        raise Exception("Peer " + addr0 + " not found")
     dev[2].dump_monitor()
     peer = dev[2].get_peer(addr0)
     dev[2].global_request("P2P_GROUP_ADD persistent=" + peer['persistent'] + " freq=2412")
