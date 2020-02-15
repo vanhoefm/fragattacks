@@ -500,7 +500,7 @@ def iperf_wait(server, client, server_thread, client_thread, timeout=None, iperf
 
     server.wait_execute_complete(server_thread, 5)
     if server_thread.isAlive():
-        raise Execption("iperf server thread still alive")
+        raise Exception("iperf server thread still alive")
 
     return
 
