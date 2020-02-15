@@ -108,7 +108,7 @@ class P2P_Connect():
 		self.path = None
 		try:
 			self.path = self.wpas.GetInterface(ifname)
-		except:
+		except dbus.DBusException as exc:
 			if not str(exc).startswith(
 				self.wpas_dbus_interface + \
 				".InterfaceUnknown:"):
