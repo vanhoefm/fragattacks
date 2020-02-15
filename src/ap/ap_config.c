@@ -377,7 +377,8 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 
 		ok = 0;
 		len = os_strlen(pos);
-		if (len == 64 && hexstr2bin(pos, psk->psk, PMK_LEN) == 0)
+		if (len == 2 * PMK_LEN &&
+		    hexstr2bin(pos, psk->psk, PMK_LEN) == 0)
 			ok = 1;
 		else if (len >= 8 && len < 64 &&
 			 pbkdf2_sha1(pos, ssid->ssid, ssid->ssid_len,
