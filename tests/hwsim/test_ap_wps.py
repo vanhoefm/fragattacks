@@ -2162,14 +2162,10 @@ def get_psk(pskfile):
             if l == "# WPA PSKs":
                 continue
             vals = l.split(' ')
-            if len(vals) == 2:
-                addr = vals[0]
-                psk = vals[1]
-            elif len(vals) == 3 and vals[0] == "wps=1":
-                addr = vals[1]
-                psk = vals[2]
-            else:
+            if len(vals) != 3 or vals[0] != "wps=1":
                 continue
+            addr = vals[1]
+            psk = vals[2]
             psks[addr] = psk
     return psks
 
