@@ -348,8 +348,9 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 		if (!token)
 			token = "";
 		if (hwaddr_aton(token, addr)) {
-			wpa_printf(MSG_ERROR, "Invalid MAC address '%s' on "
-				   "line %d in '%s'", token, line, fname);
+			wpa_printf(MSG_ERROR,
+				   "Invalid MAC address '%s' on line %d in '%s'",
+				   token, line, fname);
 			ret = -1;
 			break;
 		}
@@ -385,8 +386,9 @@ static int hostapd_config_read_wpa_psk(const char *fname,
 				     4096, psk->psk, PMK_LEN) == 0)
 			ok = 1;
 		if (!ok) {
-			wpa_printf(MSG_ERROR, "Invalid PSK '%s' on line %d in "
-				   "'%s'", pos, line, fname);
+			wpa_printf(MSG_ERROR,
+				   "Invalid PSK '%s' on line %d in '%s'",
+				   pos, line, fname);
 			os_free(psk);
 			ret = -1;
 			break;
