@@ -724,7 +724,6 @@ struct wpa_supplicant {
 
 	u64 drv_flags;
 	unsigned int drv_enc;
-	unsigned int drv_smps_modes;
 	unsigned int drv_rrm_flags;
 
 	/*

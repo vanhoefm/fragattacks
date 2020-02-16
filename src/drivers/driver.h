@@ -1403,14 +1403,6 @@ struct wpa_driver_ap_params {
 	u8 p2p_go_ctwindow;
 
 	/**
-	 * smps_mode - SMPS mode
-	 *
-	 * SMPS mode to be used by the AP, specified as the relevant bits of
-	 * ht_capab (i.e. HT_CAP_INFO_SMPS_*).
-	 */
-	unsigned int smps_mode;
-
-	/**
 	 * disable_dgaf - Whether group-addressed frames are disabled
 	 */
 	int disable_dgaf;
@@ -1835,10 +1827,6 @@ struct wpa_driver_capa {
 
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \
 	(drv_flags & WPA_DRIVER_FLAGS_FULL_AP_CLIENT_STATE)
-
-#define WPA_DRIVER_SMPS_MODE_STATIC			0x00000001
-#define WPA_DRIVER_SMPS_MODE_DYNAMIC			0x00000002
-	unsigned int smps_modes;
 
 	unsigned int wmm_ac_supported:1;
 

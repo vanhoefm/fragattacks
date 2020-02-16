@@ -463,9 +463,6 @@ struct hostapd_iface {
 
 	u64 drv_flags;
 
-	/* SMPS modes supported by the driver (WPA_DRIVER_SMPS_MODE_*) */
-	unsigned int smps_modes;
-
 	/*
 	 * A bitmap of supported protocols for probe response offload. See
 	 * struct wpa_driver_capa in driver.h

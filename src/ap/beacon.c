@@ -1326,7 +1326,6 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 		break;
 	}
 	params->isolate = hapd->conf->isolate;
-	params->smps_mode = hapd->iconf->ht_capab & HT_CAP_INFO_SMPS_MASK;
 #ifdef NEED_AP_MLME
 	params->cts_protect = !!(ieee802_11_erp_info(hapd) &
 				ERP_INFO_USE_PROTECTION);

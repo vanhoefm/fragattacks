@@ -1171,14 +1171,6 @@ static int hostapd_config_ht_capab(struct hostapd_config *conf,
 	}
 	if (!os_strstr(capab, "[HT40+]") && !os_strstr(capab, "[HT40-]"))
 		conf->secondary_channel = 0;
-	if (os_strstr(capab, "[SMPS-STATIC]")) {
-		conf->ht_capab &= ~HT_CAP_INFO_SMPS_MASK;
-		conf->ht_capab |= HT_CAP_INFO_SMPS_STATIC;
-	}
-	if (os_strstr(capab, "[SMPS-DYNAMIC]")) {
-		conf->ht_capab &= ~HT_CAP_INFO_SMPS_MASK;
-		conf->ht_capab |= HT_CAP_INFO_SMPS_DYNAMIC;
-	}
 	if (os_strstr(capab, "[GF]"))
 		conf->ht_capab |= HT_CAP_INFO_GREEN_FIELD;
 	if (os_strstr(capab, "[SHORT-GI-20]"))
