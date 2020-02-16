@@ -179,6 +179,32 @@ static gboolean view_cb_download_requested(WebKitWebView *view,
 #endif /* USE_WEBKIT2 */
 
 
+#ifdef USE_WEBKIT2
+static void view_cb_mouse_target_changed(WebKitWebView *view,
+					 WebKitHitTestResult *h,
+					 guint modifiers,
+					 struct browser_context *ctx)
+{
+	WebKitHitTestResultContext hc = webkit_hit_test_result_get_context(h);
+	const char *uri = NULL;
+
+	if (hc & WEBKIT_HIT_TEST_RESULT_CONTEXT_LINK)
+		uri = webkit_hit_test_result_get_link_uri(h);
+	else if (hc & WEBKIT_HIT_TEST_RESULT_CONTEXT_IMAGE)
+		uri = webkit_hit_test_result_get_image_uri(h);
+	else if (hc & WEBKIT_HIT_TEST_RESULT_CONTEXT_MEDIA)
+		uri = webkit_hit_test_result_get_media_uri(h);
+
+	wpa_printf(MSG_DEBUG, "BROWSER:%s uri=%s", __func__, uri ? uri : "N/A");
+	os_free(ctx->hover_link);
+	if (uri)
+		ctx->hover_link = os_strdup(uri);
+	else
+		ctx->hover_link = NULL;
+
+	browser_update_title(ctx);
+}
+#else /* USE_WEBKIT2 */
 static void view_cb_hovering_over_link(WebKitWebView *view, gchar *title,
 				       gchar *uri, struct browser_context *ctx)
 {
@@ -192,6 +218,7 @@ static void view_cb_hovering_over_link(WebKitWebView *view, gchar *title,
 
 	browser_update_title(ctx);
 }
+#endif /* USE_WEBKIT2 */
 
 
 #ifndef USE_WEBKIT2
@@ -252,6 +279,8 @@ int hs20_web_browser(const char *url, int ignore_tls)
 			 G_CALLBACK(view_cb_resource_request_starting), &ctx);
 	g_signal_connect(G_OBJECT(view), "decide-policy",
 			 G_CALLBACK(view_cb_mime_type_policy_decision), &ctx);
+	g_signal_connect(G_OBJECT(view), "mouse-target-changed",
+			 G_CALLBACK(view_cb_mouse_target_changed), &ctx);
 	/* TODO: Implement these?
 	  g_signal_connect(G_OBJECT(view), "download-started",
 			 G_CALLBACK(view_cb_download_requested), &ctx);
@@ -265,12 +294,11 @@ int hs20_web_browser(const char *url, int ignore_tls)
 			 G_CALLBACK(view_cb_mime_type_policy_decision), &ctx);
 	g_signal_connect(G_OBJECT(view), "download-requested",
 			 G_CALLBACK(view_cb_download_requested), &ctx);
+	g_signal_connect(G_OBJECT(view), "hovering-over-link",
+			 G_CALLBACK(view_cb_hovering_over_link), &ctx);
 	g_signal_connect(G_OBJECT(view), "title-changed",
 			 G_CALLBACK(view_cb_title_changed), &ctx);
 #endif /* USE_WEBKIT2 */
-
-	g_signal_connect(G_OBJECT(view), "hovering-over-link",
-			 G_CALLBACK(view_cb_hovering_over_link), &ctx);
 
 	gtk_container_add(GTK_CONTAINER(scroll), GTK_WIDGET(view));
 	gtk_container_add(GTK_CONTAINER(ctx.win), GTK_WIDGET(scroll));
