@@ -156,18 +156,12 @@ static void view_cb_resource_request_starting(WebKitWebView *view,
 #endif /* USE_WEBKIT2 */
 
 
-static gboolean view_cb_mime_type_policy_decision(
-	WebKitWebView *view,
-#ifndef USE_WEBKIT2
-	WebKitWebFrame *frame, WebKitNetworkRequest *req,
-	gchar *mime, WebKitWebPolicyDecision *policy,
-#else /* USE_WEBKIT2 */
-	WebKitPolicyDecision *policy,
-	WebKitPolicyDecisionType type,
-#endif /* USE_WEBKIT2 */
-	struct browser_context *ctx)
-{
 #ifdef USE_WEBKIT2
+static gboolean view_cb_decide_policy(WebKitWebView *view,
+				      WebKitPolicyDecision *policy,
+				      WebKitPolicyDecisionType type,
+				      struct browser_context *ctx)
+{
 	wpa_printf(MSG_DEBUG, "BROWSER:%s type=%d", __func__, type);
 	switch (type) {
 	case WEBKIT_POLICY_DECISION_TYPE_RESPONSE: {
@@ -186,17 +180,25 @@ static gboolean view_cb_mime_type_policy_decision(
 	default:
 		break;
 	}
+
+	return FALSE;
+}
 #else /* USE_WEBKIT2 */
+static gboolean view_cb_mime_type_policy_decision(
+	WebKitWebView *view, WebKitWebFrame *frame, WebKitNetworkRequest *req,
+	gchar *mime, WebKitWebPolicyDecision *policy,
+	struct browser_context *ctx)
+{
 	wpa_printf(MSG_DEBUG, "BROWSER:%s mime=%s", __func__, mime);
 
 	if (!webkit_web_view_can_show_mime_type(view, mime)) {
 		webkit_web_policy_decision_download(policy);
 		return TRUE;
 	}
-#endif /* USE_WEBKIT2 */
 
 	return FALSE;
 }
+#endif /* USE_WEBKIT2 */
 
 
 #ifndef USE_WEBKIT2
@@ -323,7 +325,7 @@ int hs20_web_browser(const char *url, int ignore_tls)
 	g_signal_connect(G_OBJECT(view), "resource-load-started",
 			 G_CALLBACK(view_cb_resource_load_starting), &ctx);
 	g_signal_connect(G_OBJECT(view), "decide-policy",
-			 G_CALLBACK(view_cb_mime_type_policy_decision), &ctx);
+			 G_CALLBACK(view_cb_decide_policy), &ctx);
 	g_signal_connect(G_OBJECT(view), "mouse-target-changed",
 			 G_CALLBACK(view_cb_mouse_target_changed), &ctx);
 	g_signal_connect(G_OBJECT(view), "notify::title",
