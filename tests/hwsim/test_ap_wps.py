@@ -2245,6 +2245,98 @@ def test_ap_wps_per_station_psk(dev, apdev):
             dev[1].flush_scan_cache()
             dev[2].flush_scan_cache()
 
+def test_ap_wps_per_station_psk_preset(dev, apdev):
+    """WPS PIN provisioning with per-station PSK preset"""
+    addr0 = dev[0].own_addr()
+    addr1 = dev[1].own_addr()
+    addr2 = dev[2].own_addr()
+    ssid = "wps"
+    appin = "12345670"
+    pskfile = "/tmp/ap_wps_per_enrollee_psk_preset.psk_file"
+    try:
+        os.remove(pskfile)
+    except:
+        pass
+
+    hapd = None
+    try:
+        with open(pskfile, "w") as f:
+            f.write("# WPA PSKs\n")
+            f.write("wps=1 " + addr0 + " preset-passphrase-0\n")
+            f.write("wps=1 " + addr2 + " preset-passphrase-2\n")
+
+        params = {"ssid": ssid, "eap_server": "1", "wps_state": "2",
+                  "wpa": "2", "wpa_key_mgmt": "WPA-PSK",
+                  "rsn_pairwise": "CCMP", "ap_pin": appin,
+                  "wpa_psk_file": pskfile}
+        hapd = hostapd.add_ap(apdev[0], params)
+        bssid = hapd.own_addr()
+
+        logger.info("First enrollee")
+        pin = dev[0].wps_read_pin()
+        hapd.request("WPS_PIN any " + pin)
+        dev[0].scan_for_bss(bssid, freq=2412)
+        dev[0].request("WPS_PIN %s %s" % (bssid, pin))
+        dev[0].wait_connected(timeout=30)
+
+        logger.info("Second enrollee")
+        pin = dev[1].wps_read_pin()
+        hapd.request("WPS_PIN any " + pin)
+        dev[1].scan_for_bss(bssid, freq=2412)
+        dev[1].request("WPS_PIN %s %s" % (bssid, pin))
+        dev[1].wait_connected(timeout=30)
+
+        logger.info("External registrar")
+        dev[2].scan_for_bss(bssid, freq=2412)
+        dev[2].wps_reg(bssid, appin)
+
+        logger.info("Verifying PSK results")
+        psks = get_psk(pskfile)
+        if addr0 not in psks:
+            raise Exception("No PSK recorded for sta0")
+        if addr1 not in psks:
+            raise Exception("No PSK recorded for sta1")
+        if addr2 not in psks:
+            raise Exception("No PSK recorded for sta2")
+        logger.info("PSK[0]: " + psks[addr0])
+        logger.info("PSK[1]: " + psks[addr1])
+        logger.info("PSK[2]: " + psks[addr2])
+        if psks[addr0] == psks[addr1]:
+            raise Exception("Same PSK recorded for sta0 and sta1")
+        if psks[addr0] == psks[addr2]:
+            raise Exception("Same PSK recorded for sta0 and sta2")
+        if psks[addr1] == psks[addr2]:
+            raise Exception("Same PSK recorded for sta1 and sta2")
+        pmk0 = hapd.request("GET_PMK " + addr0)
+        pmk1 = hapd.request("GET_PMK " + addr1)
+        pmk2 = hapd.request("GET_PMK " + addr2)
+        logger.info("PMK[0]: " + pmk0)
+        logger.info("PMK[1]: " + pmk1)
+        logger.info("PMK[2]: " + pmk2)
+        if pmk0 != "565faec21ff04702d9d17c464e1301efd36c8a3ea46bb866b4bec7fed4384579":
+            raise Exception("PSK[0] mismatch")
+        if psks[addr1] != pmk1:
+            raise Exception("PSK[1] mismatch")
+        if psks[addr2] != pmk2:
+            raise Exception("PSK[2] mismatch")
+
+        dev[0].request("REMOVE_NETWORK all")
+        dev[0].wait_disconnected()
+        dev[0].dump_monitor()
+        logger.info("First enrollee again")
+        pin = dev[0].wps_read_pin()
+        hapd.request("WPS_PIN any " + pin)
+        dev[0].scan_for_bss(bssid, freq=2412)
+        dev[0].request("WPS_PIN %s %s" % (bssid, pin))
+        dev[0].wait_connected(timeout=30)
+        psks2 = get_psk(pskfile)
+        if addr0 not in psks2:
+            raise Exception("No PSK recorded for sta0 (2)")
+        if psks[addr0] != psks2[addr0]:
+            raise Exception("Different PSK recorded for sta0(enrollee) and sta0(enrollee 2)")
+    finally:
+        os.remove(pskfile)
+
 def test_ap_wps_per_station_psk_failure(dev, apdev):
     """WPS PBC provisioning with per-station PSK (file not writable)"""
     addr0 = dev[0].p2p_dev_addr()
