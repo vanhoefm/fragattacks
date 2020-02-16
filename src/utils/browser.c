@@ -58,43 +58,6 @@ static void browser_update_title(struct browser_context *ctx)
 }
 
 
-#ifdef USE_WEBKIT2
-static void view_cb_notify_estimated_load_progress(WebKitWebView *view,
-						   GParamSpec *pspec,
-						   struct browser_context *ctx)
-{
-	ctx->progress = 100 * webkit_web_view_get_estimated_load_progress(view);
-	wpa_printf(MSG_DEBUG, "BROWSER:%s progress=%d", __func__,
-		   ctx->progress);
-	browser_update_title(ctx);
-}
-#else /* USE_WEBKIT2 */
-static void view_cb_notify_progress(WebKitWebView *view, GParamSpec *pspec,
-				    struct browser_context *ctx)
-{
-	ctx->progress = 100 * webkit_web_view_get_progress(view);
-	wpa_printf(MSG_DEBUG, "BROWSER:%s progress=%d", __func__,
-		   ctx->progress);
-	browser_update_title(ctx);
-}
-#endif /* USE_WEBKIT2 */
-
-
-#ifndef USE_WEBKIT2
-static void view_cb_notify_load_status(WebKitWebView *view, GParamSpec *pspec,
-				       struct browser_context *ctx)
-{
-	int status = webkit_web_view_get_load_status(view);
-	wpa_printf(MSG_DEBUG, "BROWSER:%s load-status=%d uri=%s",
-		   __func__, status, webkit_web_view_get_uri(view));
-	if (ctx->quit_gtk_main) {
-		gtk_main_quit();
-		ctx->gtk_main_started = 0;
-	}
-}
-#endif /* USE_WEBKIT2 */
-
-
 static void process_request_starting_uri(struct browser_context *ctx,
 					 const char *uri)
 {
@@ -124,6 +87,18 @@ static void process_request_starting_uri(struct browser_context *ctx,
 
 
 #ifdef USE_WEBKIT2
+
+static void view_cb_notify_estimated_load_progress(WebKitWebView *view,
+						   GParamSpec *pspec,
+						   struct browser_context *ctx)
+{
+	ctx->progress = 100 * webkit_web_view_get_estimated_load_progress(view);
+	wpa_printf(MSG_DEBUG, "BROWSER:%s progress=%d", __func__,
+		   ctx->progress);
+	browser_update_title(ctx);
+}
+
+
 static void view_cb_resource_load_starting(WebKitWebView *view,
 					   WebKitWebResource *res,
 					   WebKitURIRequest *req,
@@ -137,26 +112,8 @@ static void view_cb_resource_load_starting(WebKitWebView *view,
 
 	process_request_starting_uri(ctx, uri);
 }
-#else /* USE_WEBKIT2 */
-static void view_cb_resource_request_starting(WebKitWebView *view,
-					      WebKitWebFrame *frame,
-					      WebKitWebResource *res,
-					      WebKitNetworkRequest *req,
-					      WebKitNetworkResponse *resp,
-					      struct browser_context *ctx)
-{
-	const gchar *uri = webkit_network_request_get_uri(req);
-
-	wpa_printf(MSG_DEBUG, "BROWSER:%s uri=%s", __func__, uri);
-	if (g_str_has_suffix(uri, "/favicon.ico"))
-		webkit_network_request_set_uri(req, "about:blank");
-
-	process_request_starting_uri(ctx, uri);
-}
-#endif /* USE_WEBKIT2 */
 
 
-#ifdef USE_WEBKIT2
 static gboolean view_cb_decide_policy(WebKitWebView *view,
 				      WebKitPolicyDecision *policy,
 				      WebKitPolicyDecisionType type,
@@ -183,38 +140,8 @@ static gboolean view_cb_decide_policy(WebKitWebView *view,
 
 	return FALSE;
 }
-#else /* USE_WEBKIT2 */
-static gboolean view_cb_mime_type_policy_decision(
-	WebKitWebView *view, WebKitWebFrame *frame, WebKitNetworkRequest *req,
-	gchar *mime, WebKitWebPolicyDecision *policy,
-	struct browser_context *ctx)
-{
-	wpa_printf(MSG_DEBUG, "BROWSER:%s mime=%s", __func__, mime);
-
-	if (!webkit_web_view_can_show_mime_type(view, mime)) {
-		webkit_web_policy_decision_download(policy);
-		return TRUE;
-	}
-
-	return FALSE;
-}
-#endif /* USE_WEBKIT2 */
 
 
-#ifndef USE_WEBKIT2
-static gboolean view_cb_download_requested(WebKitWebView *view,
-					   WebKitDownload *dl,
-					   struct browser_context *ctx)
-{
-	const gchar *uri;
-	uri = webkit_download_get_uri(dl);
-	wpa_printf(MSG_DEBUG, "BROWSER:%s uri=%s", __func__, uri);
-	return FALSE;
-}
-#endif /* USE_WEBKIT2 */
-
-
-#ifdef USE_WEBKIT2
 static void view_cb_mouse_target_changed(WebKitWebView *view,
 					 WebKitHitTestResult *h,
 					 guint modifiers,
@@ -239,7 +166,89 @@ static void view_cb_mouse_target_changed(WebKitWebView *view,
 
 	browser_update_title(ctx);
 }
+
+
+static void view_cb_notify_title(WebKitWebView *view, GParamSpec *ps,
+				 struct browser_context *ctx)
+{
+	const char *title;
+
+	title = webkit_web_view_get_title(ctx->view);
+	wpa_printf(MSG_DEBUG, "BROWSER:%s title=%s", __func__, title);
+	os_free(ctx->title);
+	ctx->title = os_strdup(title);
+	browser_update_title(ctx);
+}
+
 #else /* USE_WEBKIT2 */
+
+static void view_cb_notify_progress(WebKitWebView *view, GParamSpec *pspec,
+				    struct browser_context *ctx)
+{
+	ctx->progress = 100 * webkit_web_view_get_progress(view);
+	wpa_printf(MSG_DEBUG, "BROWSER:%s progress=%d", __func__,
+		   ctx->progress);
+	browser_update_title(ctx);
+}
+
+
+static void view_cb_notify_load_status(WebKitWebView *view, GParamSpec *pspec,
+				       struct browser_context *ctx)
+{
+	int status = webkit_web_view_get_load_status(view);
+	wpa_printf(MSG_DEBUG, "BROWSER:%s load-status=%d uri=%s",
+		   __func__, status, webkit_web_view_get_uri(view));
+	if (ctx->quit_gtk_main) {
+		gtk_main_quit();
+		ctx->gtk_main_started = 0;
+	}
+}
+
+
+static void view_cb_resource_request_starting(WebKitWebView *view,
+					      WebKitWebFrame *frame,
+					      WebKitWebResource *res,
+					      WebKitNetworkRequest *req,
+					      WebKitNetworkResponse *resp,
+					      struct browser_context *ctx)
+{
+	const gchar *uri = webkit_network_request_get_uri(req);
+
+	wpa_printf(MSG_DEBUG, "BROWSER:%s uri=%s", __func__, uri);
+	if (g_str_has_suffix(uri, "/favicon.ico"))
+		webkit_network_request_set_uri(req, "about:blank");
+
+	process_request_starting_uri(ctx, uri);
+}
+
+
+static gboolean view_cb_mime_type_policy_decision(
+	WebKitWebView *view, WebKitWebFrame *frame, WebKitNetworkRequest *req,
+	gchar *mime, WebKitWebPolicyDecision *policy,
+	struct browser_context *ctx)
+{
+	wpa_printf(MSG_DEBUG, "BROWSER:%s mime=%s", __func__, mime);
+
+	if (!webkit_web_view_can_show_mime_type(view, mime)) {
+		webkit_web_policy_decision_download(policy);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+
+static gboolean view_cb_download_requested(WebKitWebView *view,
+					   WebKitDownload *dl,
+					   struct browser_context *ctx)
+{
+	const gchar *uri;
+	uri = webkit_download_get_uri(dl);
+	wpa_printf(MSG_DEBUG, "BROWSER:%s uri=%s", __func__, uri);
+	return FALSE;
+}
+
+
 static void view_cb_hovering_over_link(WebKitWebView *view, gchar *title,
 				       gchar *uri, struct browser_context *ctx)
 {
@@ -253,22 +262,8 @@ static void view_cb_hovering_over_link(WebKitWebView *view, gchar *title,
 
 	browser_update_title(ctx);
 }
-#endif /* USE_WEBKIT2 */
 
 
-#ifdef USE_WEBKIT2
-static void view_cb_notify_title(WebKitWebView *view, GParamSpec *ps,
-				 struct browser_context *ctx)
-{
-	const char *title;
-
-	title = webkit_web_view_get_title(ctx->view);
-	wpa_printf(MSG_DEBUG, "BROWSER:%s title=%s", __func__, title);
-	os_free(ctx->title);
-	ctx->title = os_strdup(title);
-	browser_update_title(ctx);
-}
-#else /* USE_WEBKIT2 */
 static void view_cb_title_changed(WebKitWebView *view, WebKitWebFrame *frame,
 				  const char *title,
 				  struct browser_context *ctx)
@@ -278,6 +273,7 @@ static void view_cb_title_changed(WebKitWebView *view, WebKitWebFrame *frame,
 	ctx->title = os_strdup(title);
 	browser_update_title(ctx);
 }
+
 #endif /* USE_WEBKIT2 */
 
 
