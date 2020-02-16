@@ -55,18 +55,26 @@ static void browser_update_title(struct browser_context *ctx)
 }
 
 
-static void view_cb_notify_progress(WebKitWebView *view, GParamSpec *pspec,
-				    struct browser_context *ctx)
-{
 #ifdef USE_WEBKIT2
+static void view_cb_notify_estimated_load_progress(WebKitWebView *view,
+						   GParamSpec *pspec,
+						   struct browser_context *ctx)
+{
 	ctx->progress = 100 * webkit_web_view_get_estimated_load_progress(view);
-#else /* USE_WEBKIT2 */
-	ctx->progress = 100 * webkit_web_view_get_progress(view);
-#endif /* USE_WEBKIT2 */
 	wpa_printf(MSG_DEBUG, "BROWSER:%s progress=%d", __func__,
 		   ctx->progress);
 	browser_update_title(ctx);
 }
+#else /* USE_WEBKIT2 */
+static void view_cb_notify_progress(WebKitWebView *view, GParamSpec *pspec,
+				    struct browser_context *ctx)
+{
+	ctx->progress = 100 * webkit_web_view_get_progress(view);
+	wpa_printf(MSG_DEBUG, "BROWSER:%s progress=%d", __func__,
+		   ctx->progress);
+	browser_update_title(ctx);
+}
+#endif /* USE_WEBKIT2 */
 
 
 static void view_cb_notify_load_status(WebKitWebView *view, GParamSpec *pspec,
@@ -284,11 +292,12 @@ int hs20_web_browser(const char *url, int ignore_tls)
 
 	view = WEBKIT_WEB_VIEW(webkit_web_view_new());
 	ctx.view = view;
-	g_signal_connect(G_OBJECT(view), "notify::progress",
-			 G_CALLBACK(view_cb_notify_progress), &ctx);
 	g_signal_connect(G_OBJECT(view), "notify::load-status",
 			 G_CALLBACK(view_cb_notify_load_status), &ctx);
 #ifdef USE_WEBKIT2
+	g_signal_connect(G_OBJECT(view), "notify::estimated-load-progress",
+			 G_CALLBACK(view_cb_notify_estimated_load_progress),
+			 &ctx);
 	g_signal_connect(G_OBJECT(view), "resource-load-started",
 			 G_CALLBACK(view_cb_resource_request_starting), &ctx);
 	g_signal_connect(G_OBJECT(view), "decide-policy",
@@ -302,6 +311,8 @@ int hs20_web_browser(const char *url, int ignore_tls)
 			 G_CALLBACK(view_cb_download_requested), &ctx);
 	*/
 #else /* USE_WEBKIT2 */
+	g_signal_connect(G_OBJECT(view), "notify::progress",
+			 G_CALLBACK(view_cb_notify_progress), &ctx);
 	g_signal_connect(G_OBJECT(view), "resource-request-starting",
 			 G_CALLBACK(view_cb_resource_request_starting), &ctx);
 	g_signal_connect(G_OBJECT(view), "mime-type-policy-decision-requested",
