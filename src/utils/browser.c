@@ -77,17 +77,15 @@ static void view_cb_notify_progress(WebKitWebView *view, GParamSpec *pspec,
 #endif /* USE_WEBKIT2 */
 
 
+#ifndef USE_WEBKIT2
 static void view_cb_notify_load_status(WebKitWebView *view, GParamSpec *pspec,
 				       struct browser_context *ctx)
 {
-#ifdef USE_WEBKIT2
-	int status = webkit_web_view_get_estimated_load_progress(view);
-#else /* USE_WEBKIT2 */
 	int status = webkit_web_view_get_load_status(view);
-#endif /* USE_WEBKIT2 */
 	wpa_printf(MSG_DEBUG, "BROWSER:%s load-status=%d uri=%s",
 		   __func__, status, webkit_web_view_get_uri(view));
 }
+#endif /* USE_WEBKIT2 */
 
 
 static void view_cb_resource_request_starting(WebKitWebView *view,
@@ -292,8 +290,6 @@ int hs20_web_browser(const char *url, int ignore_tls)
 
 	view = WEBKIT_WEB_VIEW(webkit_web_view_new());
 	ctx.view = view;
-	g_signal_connect(G_OBJECT(view), "notify::load-status",
-			 G_CALLBACK(view_cb_notify_load_status), &ctx);
 #ifdef USE_WEBKIT2
 	g_signal_connect(G_OBJECT(view), "notify::estimated-load-progress",
 			 G_CALLBACK(view_cb_notify_estimated_load_progress),
@@ -311,6 +307,8 @@ int hs20_web_browser(const char *url, int ignore_tls)
 			 G_CALLBACK(view_cb_download_requested), &ctx);
 	*/
 #else /* USE_WEBKIT2 */
+	g_signal_connect(G_OBJECT(view), "notify::load-status",
+			 G_CALLBACK(view_cb_notify_load_status), &ctx);
 	g_signal_connect(G_OBJECT(view), "notify::progress",
 			 G_CALLBACK(view_cb_notify_progress), &ctx);
 	g_signal_connect(G_OBJECT(view), "resource-request-starting",
