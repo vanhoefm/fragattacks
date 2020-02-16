@@ -1166,22 +1166,6 @@ def test_ap_ht40_csa3(dev, apdev):
         dev[0].flush_scan_cache()
 
 @remote_compatible
-def test_ap_ht_smps(dev, apdev):
-    """SMPS AP configuration options"""
-    params = {"ssid": "ht1", "ht_capab": "[SMPS-STATIC]"}
-    try:
-        hapd = hostapd.add_ap(apdev[0], params)
-    except:
-        raise HwsimSkip("Assume mac80211_hwsim was not recent enough to support SMPS")
-    params = {"ssid": "ht2", "ht_capab": "[SMPS-DYNAMIC]"}
-    hapd2 = hostapd.add_ap(apdev[1], params)
-
-    dev[0].connect("ht1", key_mgmt="NONE", scan_freq="2412")
-    dev[1].connect("ht2", key_mgmt="NONE", scan_freq="2412")
-    hwsim_utils.test_connectivity(dev[0], hapd)
-    hwsim_utils.test_connectivity(dev[1], hapd2)
-
-@remote_compatible
 def test_prefer_ht20(dev, apdev):
     """Preference on HT20 over no-HT"""
     params = {"ssid": "test",
