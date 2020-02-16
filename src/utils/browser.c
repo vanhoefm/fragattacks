@@ -95,34 +95,10 @@ static void view_cb_notify_load_status(WebKitWebView *view, GParamSpec *pspec,
 #endif /* USE_WEBKIT2 */
 
 
-static void view_cb_resource_request_starting(WebKitWebView *view,
-#ifndef USE_WEBKIT2
-					      WebKitWebFrame *frame,
-#endif /* USE_WEBKIT2 */
-					      WebKitWebResource *res,
-#ifdef USE_WEBKIT2
-					      WebKitURIRequest *req,
-#else /* USE_WEBKIT2 */
-					      WebKitNetworkRequest *req,
-					      WebKitNetworkResponse *resp,
-#endif /* USE_WEBKIT2 */
-					      struct browser_context *ctx)
+static void process_request_starting_uri(struct browser_context *ctx,
+					 const char *uri)
 {
-#ifdef USE_WEBKIT2
-	const gchar *uri = webkit_uri_request_get_uri(req);
-#else /* USE_WEBKIT2 */
-	const gchar *uri = webkit_network_request_get_uri(req);
-#endif /* USE_WEBKIT2 */
 	int quit = 0;
-
-	wpa_printf(MSG_DEBUG, "BROWSER:%s uri=%s", __func__, uri);
-	if (g_str_has_suffix(uri, "/favicon.ico")) {
-#ifdef USE_WEBKIT2
-		webkit_uri_request_set_uri(req, "about:blank");
-#else /* USE_WEBKIT2 */
-		webkit_network_request_set_uri(req, "about:blank");
-#endif /* USE_WEBKIT2 */
-	}
 
 	if (g_str_has_prefix(uri, "osu://")) {
 		ctx->success = atoi(uri + 6);
@@ -145,6 +121,39 @@ static void view_cb_resource_request_starting(WebKitWebView *view,
 		}
 	}
 }
+
+
+#ifdef USE_WEBKIT2
+static void view_cb_resource_load_starting(WebKitWebView *view,
+					   WebKitWebResource *res,
+					   WebKitURIRequest *req,
+					   struct browser_context *ctx)
+{
+	const gchar *uri = webkit_uri_request_get_uri(req);
+
+	wpa_printf(MSG_DEBUG, "BROWSER:%s uri=%s", __func__, uri);
+	if (g_str_has_suffix(uri, "/favicon.ico"))
+		webkit_uri_request_set_uri(req, "about:blank");
+
+	process_request_starting_uri(ctx, uri);
+}
+#else /* USE_WEBKIT2 */
+static void view_cb_resource_request_starting(WebKitWebView *view,
+					      WebKitWebFrame *frame,
+					      WebKitWebResource *res,
+					      WebKitNetworkRequest *req,
+					      WebKitNetworkResponse *resp,
+					      struct browser_context *ctx)
+{
+	const gchar *uri = webkit_network_request_get_uri(req);
+
+	wpa_printf(MSG_DEBUG, "BROWSER:%s uri=%s", __func__, uri);
+	if (g_str_has_suffix(uri, "/favicon.ico"))
+		webkit_network_request_set_uri(req, "about:blank");
+
+	process_request_starting_uri(ctx, uri);
+}
+#endif /* USE_WEBKIT2 */
 
 
 static gboolean view_cb_mime_type_policy_decision(
@@ -312,7 +321,7 @@ int hs20_web_browser(const char *url, int ignore_tls)
 			 G_CALLBACK(view_cb_notify_estimated_load_progress),
 			 &ctx);
 	g_signal_connect(G_OBJECT(view), "resource-load-started",
-			 G_CALLBACK(view_cb_resource_request_starting), &ctx);
+			 G_CALLBACK(view_cb_resource_load_starting), &ctx);
 	g_signal_connect(G_OBJECT(view), "decide-policy",
 			 G_CALLBACK(view_cb_mime_type_policy_decision), &ctx);
 	g_signal_connect(G_OBJECT(view), "mouse-target-changed",
