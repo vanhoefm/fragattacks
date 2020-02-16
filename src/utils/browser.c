@@ -24,12 +24,15 @@ struct browser_context {
 	int progress;
 	char *hover_link;
 	char *title;
+	int gtk_main_started;
+	int quit_gtk_main;
 };
 
 static void win_cb_destroy(GtkWidget *win, struct browser_context *ctx)
 {
 	wpa_printf(MSG_DEBUG, "BROWSER:%s", __func__);
-	gtk_main_quit();
+	if (ctx->gtk_main_started)
+		gtk_main_quit();
 }
 
 
@@ -84,6 +87,10 @@ static void view_cb_notify_load_status(WebKitWebView *view, GParamSpec *pspec,
 	int status = webkit_web_view_get_load_status(view);
 	wpa_printf(MSG_DEBUG, "BROWSER:%s load-status=%d uri=%s",
 		   __func__, status, webkit_web_view_get_uri(view));
+	if (ctx->quit_gtk_main) {
+		gtk_main_quit();
+		ctx->gtk_main_started = 0;
+	}
 }
 #endif /* USE_WEBKIT2 */
 
@@ -106,6 +113,8 @@ static void view_cb_resource_request_starting(WebKitWebView *view,
 #else /* USE_WEBKIT2 */
 	const gchar *uri = webkit_network_request_get_uri(req);
 #endif /* USE_WEBKIT2 */
+	int quit = 0;
+
 	wpa_printf(MSG_DEBUG, "BROWSER:%s uri=%s", __func__, uri);
 	if (g_str_has_suffix(uri, "/favicon.ico")) {
 #ifdef USE_WEBKIT2
@@ -117,15 +126,23 @@ static void view_cb_resource_request_starting(WebKitWebView *view,
 
 	if (g_str_has_prefix(uri, "osu://")) {
 		ctx->success = atoi(uri + 6);
-		gtk_main_quit();
-	}
-	if (g_str_has_prefix(uri, "http://localhost:12345")) {
+		quit = 1;
+	} else if (g_str_has_prefix(uri, "http://localhost:12345")) {
 		/*
 		 * This is used as a special trigger to indicate that the
 		 * user exchange has been completed.
 		 */
 		ctx->success = 1;
-		gtk_main_quit();
+		quit = 1;
+	}
+
+	if (quit) {
+		if (ctx->gtk_main_started) {
+			gtk_main_quit();
+			ctx->gtk_main_started = 0;
+		} else {
+			ctx->quit_gtk_main = 1;
+		}
 	}
 }
 
@@ -344,6 +361,7 @@ int hs20_web_browser(const char *url, int ignore_tls)
 
 	webkit_web_view_load_uri(view, url);
 
+	ctx.gtk_main_started = 1;
 	gtk_main();
 	gtk_widget_destroy(ctx.win);
 	while (gtk_events_pending())
