@@ -3152,7 +3152,7 @@ static void check_workarounds(struct hs20_osu_client *ctx)
 
 static void usage(void)
 {
-	printf("usage: hs20-osu-client [-dddqqKt] [-S<station ifname>] \\\n"
+	printf("usage: hs20-osu-client [-dddqqKtT] [-S<station ifname>] \\\n"
 	       "    [-w<wpa_supplicant ctrl_iface dir>] "
 	       "[-r<result file>] [-f<debug file>] \\\n"
 	       "    [-s<summary file>] \\\n"
@@ -3198,7 +3198,7 @@ int main(int argc, char *argv[])
 		return -1;
 
 	for (;;) {
-		c = getopt(argc, argv, "df:hKNo:O:qr:s:S:tw:x:");
+		c = getopt(argc, argv, "df:hKNo:O:qr:s:S:tTw:x:");
 		if (c < 0)
 			break;
 		switch (c) {
@@ -3235,6 +3235,9 @@ int main(int argc, char *argv[])
 			break;
 		case 't':
 			wpa_debug_timestamp++;
+			break;
+		case 'T':
+			ctx.ignore_tls = 1;
 			break;
 		case 'w':
 			wpas_ctrl_path = optarg;
@@ -3403,7 +3406,7 @@ int main(int argc, char *argv[])
 
 		wpa_printf(MSG_INFO, "Launch web browser to URL %s",
 			   argv[optind + 1]);
-		ret = hs20_web_browser(argv[optind + 1], 1);
+		ret = hs20_web_browser(argv[optind + 1], ctx.ignore_tls);
 		wpa_printf(MSG_INFO, "Web browser result: %d", ret);
 	} else if (strcmp(argv[optind], "parse_cert") == 0) {
 		if (argc - optind < 2) {
