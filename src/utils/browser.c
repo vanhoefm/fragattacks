@@ -302,10 +302,6 @@ int hs20_web_browser(const char *url, int ignore_tls)
 			 G_CALLBACK(view_cb_mouse_target_changed), &ctx);
 	g_signal_connect(G_OBJECT(view), "notify::title",
 			 G_CALLBACK(view_cb_notify_title), &ctx);
-	/* TODO: Implement these?
-	  g_signal_connect(G_OBJECT(view), "download-started",
-			 G_CALLBACK(view_cb_download_requested), &ctx);
-	*/
 #else /* USE_WEBKIT2 */
 	g_signal_connect(G_OBJECT(view), "notify::load-status",
 			 G_CALLBACK(view_cb_notify_load_status), &ctx);
