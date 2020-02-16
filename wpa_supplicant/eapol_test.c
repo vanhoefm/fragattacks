@@ -1390,7 +1390,7 @@ int main(int argc, char *argv[])
 			eapol_test.ctrl_iface = 1;
 			break;
 		case 'v':
-			printf("eapol_test v" VERSION_STR "\n");
+			printf("eapol_test v%s\n", VERSION_STR);
 			return 0;
 		case 'W':
 			wait_for_monitor++;

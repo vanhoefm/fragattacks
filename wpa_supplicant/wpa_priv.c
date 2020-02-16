@@ -1189,14 +1189,15 @@ static void wpa_priv_fd_workaround(void)
 
 static void usage(void)
 {
-	printf("wpa_priv v" VERSION_STR "\n"
+	printf("wpa_priv v%s\n"
 	       "Copyright (c) 2007-2017, Jouni Malinen <j@w1.fi> and "
 	       "contributors\n"
 	       "\n"
 	       "usage:\n"
 	       "  wpa_priv [-Bdd] [-c<ctrl dir>] [-P<pid file>] "
 	       "<driver:ifname> \\\n"
-	       "           [driver:ifname ...]\n");
+	       "           [driver:ifname ...]\n",
+	       VERSION_STR);
 }
 
 
