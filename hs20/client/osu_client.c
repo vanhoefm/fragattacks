@@ -2406,7 +2406,7 @@ static int cmd_osu_select(struct hs20_osu_client *ctx, const char *dir,
 
 	snprintf(fname, sizeof(fname), "file://%s/osu-providers.html", dir);
 	write_summary(ctx, "Start web browser with OSU provider selection page");
-	ret = hs20_web_browser(fname);
+	ret = hs20_web_browser(fname, 0);
 
 selected:
 	if (ret > 0 && (size_t) ret <= osu_count) {
@@ -3403,7 +3403,7 @@ int main(int argc, char *argv[])
 
 		wpa_printf(MSG_INFO, "Launch web browser to URL %s",
 			   argv[optind + 1]);
-		ret = hs20_web_browser(argv[optind + 1]);
+		ret = hs20_web_browser(argv[optind + 1], 1);
 		wpa_printf(MSG_INFO, "Web browser result: %d", ret);
 	} else if (strcmp(argv[optind], "parse_cert") == 0) {
 		if (argc - optind < 2) {

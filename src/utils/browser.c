@@ -207,13 +207,12 @@ static void view_cb_title_changed(WebKitWebView *view, WebKitWebFrame *frame,
 #endif /* USE_WEBKIT2 */
 
 
-int hs20_web_browser(const char *url)
+int hs20_web_browser(const char *url, int ignore_tls)
 {
 	GtkWidget *scroll;
 	WebKitWebView *view;
 #ifdef USE_WEBKIT2
 	WebKitSettings *settings;
-	WebKitWebContext *wkctx;
 #else /* USE_WEBKIT2 */
 	WebKitWebSettings *settings;
 	SoupSession *s;
@@ -228,7 +227,8 @@ int hs20_web_browser(const char *url)
 	s = webkit_get_default_session();
 	g_object_set(G_OBJECT(s), "ssl-ca-file",
 		     "/etc/ssl/certs/ca-certificates.crt", NULL);
-	g_object_set(G_OBJECT(s), "ssl-strict", FALSE, NULL);
+	if (ignore_tls)
+		g_object_set(G_OBJECT(s), "ssl-strict", FALSE, NULL);
 #endif /* USE_WEBKIT2 */
 
 	ctx.win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -286,9 +286,13 @@ int hs20_web_browser(const char *url)
 	g_object_set(G_OBJECT(settings), "auto-load-images", TRUE, NULL);
 
 #ifdef USE_WEBKIT2
-	wkctx = webkit_web_context_get_default();
-	webkit_web_context_set_tls_errors_policy(
-		wkctx, WEBKIT_TLS_ERRORS_POLICY_IGNORE);
+	if (ignore_tls) {
+		WebKitWebContext *wkctx;
+
+		wkctx = webkit_web_context_get_default();
+		webkit_web_context_set_tls_errors_policy(
+			wkctx, WEBKIT_TLS_ERRORS_POLICY_IGNORE);
+	}
 #endif /* USE_WEBKIT2 */
 
 	webkit_web_view_load_uri(view, url);
