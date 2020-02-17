@@ -1140,14 +1140,66 @@ static int wpa_supplicant_install_igtk(struct wpa_sm *sm,
 }
 
 
+static int wpa_supplicant_install_bigtk(struct wpa_sm *sm,
+				       const struct wpa_bigtk_kde *bigtk,
+				       int wnm_sleep)
+{
+	size_t len = wpa_cipher_key_len(sm->mgmt_group_cipher);
+	u16 keyidx = WPA_GET_LE16(bigtk->keyid);
+
+	/* Detect possible key reinstallation */
+	if ((sm->bigtk.bigtk_len == len &&
+	     os_memcmp(sm->bigtk.bigtk, bigtk->bigtk,
+		       sm->bigtk.bigtk_len) == 0) ||
+	    (sm->bigtk_wnm_sleep.bigtk_len == len &&
+	     os_memcmp(sm->bigtk_wnm_sleep.bigtk, bigtk->bigtk,
+		       sm->bigtk_wnm_sleep.bigtk_len) == 0)) {
+		wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG,
+			"WPA: Not reinstalling already in-use BIGTK to the driver (keyidx=%d)",
+			keyidx);
+		return  0;
+	}
+
+	wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG,
+		"WPA: BIGTK keyid %d pn " COMPACT_MACSTR,
+		keyidx, MAC2STR(bigtk->pn));
+	wpa_hexdump_key(MSG_DEBUG, "WPA: BIGTK", bigtk->bigtk, len);
+	if (keyidx < 6 || keyidx > 7) {
+		wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
+			"WPA: Invalid BIGTK KeyID %d", keyidx);
+		return -1;
+	}
+	if (wpa_sm_set_key(sm, wpa_cipher_to_alg(sm->mgmt_group_cipher),
+			   broadcast_ether_addr,
+			   keyidx, 0, bigtk->pn, sizeof(bigtk->pn),
+			   bigtk->bigtk, len, KEY_FLAG_GROUP_RX) < 0) {
+		wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
+			"WPA: Failed to configure BIGTK to the driver");
+		return -1;
+	}
+
+	if (wnm_sleep) {
+		sm->bigtk_wnm_sleep.bigtk_len = len;
+		os_memcpy(sm->bigtk_wnm_sleep.bigtk, bigtk->bigtk,
+			  sm->bigtk_wnm_sleep.bigtk_len);
+	} else {
+		sm->bigtk.bigtk_len = len;
+		os_memcpy(sm->bigtk.bigtk, bigtk->bigtk, sm->bigtk.bigtk_len);
+	}
+
+	return 0;
+}
+
+
 static int ieee80211w_set_keys(struct wpa_sm *sm,
 			       struct wpa_eapol_ie_parse *ie)
 {
+	size_t len;
+
 	if (!wpa_cipher_valid_mgmt_group(sm->mgmt_group_cipher))
 		return 0;
 
 	if (ie->igtk) {
-		size_t len;
 		const struct wpa_igtk_kde *igtk;
 
 		len = wpa_cipher_key_len(sm->mgmt_group_cipher);
@@ -1156,6 +1208,18 @@ static int ieee80211w_set_keys(struct wpa_sm *sm,
 
 		igtk = (const struct wpa_igtk_kde *) ie->igtk;
 		if (wpa_supplicant_install_igtk(sm, igtk, 0) < 0)
+			return -1;
+	}
+
+	if (ie->bigtk && sm->beacon_prot) {
+		const struct wpa_bigtk_kde *bigtk;
+
+		len = wpa_cipher_key_len(sm->mgmt_group_cipher);
+		if (ie->bigtk_len != WPA_BIGTK_KDE_PREFIX_LEN + len)
+			return -1;
+
+		bigtk = (const struct wpa_bigtk_kde *) ie->bigtk;
+		if (wpa_supplicant_install_bigtk(sm, bigtk, 0) < 0)
 			return -1;
 	}
 
@@ -3594,6 +3658,13 @@ int wpa_wnmsleep_install_key(struct wpa_sm *sm, u8 subelem_id, u8 *buf)
 
 		igtk = (const struct wpa_igtk_kde *) (buf + 2);
 		if (wpa_supplicant_install_igtk(sm, igtk, 1) < 0)
+			return -1;
+	} else if (subelem_id == WNM_SLEEP_SUBELEM_BIGTK) {
+		const struct wpa_bigtk_kde *bigtk;
+
+		bigtk = (const struct wpa_bigtk_kde *) (buf + 2);
+		if (sm->beacon_prot &&
+		    wpa_supplicant_install_bigtk(sm, bigtk, 1) < 0)
 			return -1;
 	} else {
 		wpa_printf(MSG_DEBUG, "Unknown element id");

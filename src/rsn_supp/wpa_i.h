@@ -33,6 +33,8 @@ struct wpa_sm {
 	struct wpa_gtk gtk_wnm_sleep;
 	struct wpa_igtk igtk;
 	struct wpa_igtk igtk_wnm_sleep;
+	struct wpa_bigtk bigtk;
+	struct wpa_bigtk bigtk_wnm_sleep;
 
 	struct eapol_sm *eapol; /* EAPOL state machine from upper level code */
 

@@ -855,6 +855,74 @@ static int wpa_ft_process_igtk_subelem(struct wpa_sm *sm, const u8 *igtk_elem,
 }
 
 
+static int wpa_ft_process_bigtk_subelem(struct wpa_sm *sm, const u8 *bigtk_elem,
+				       size_t bigtk_elem_len)
+{
+	u8 bigtk[WPA_BIGTK_MAX_LEN];
+	size_t bigtk_len;
+	u16 keyidx;
+	const u8 *kek;
+	size_t kek_len;
+
+	if (!sm->beacon_prot || !bigtk_elem ||
+	    (sm->mgmt_group_cipher != WPA_CIPHER_AES_128_CMAC &&
+	     sm->mgmt_group_cipher != WPA_CIPHER_BIP_GMAC_128 &&
+	     sm->mgmt_group_cipher != WPA_CIPHER_BIP_GMAC_256 &&
+	     sm->mgmt_group_cipher != WPA_CIPHER_BIP_CMAC_256))
+		return 0;
+
+	if (wpa_key_mgmt_fils(sm->key_mgmt)) {
+		kek = sm->ptk.kek2;
+		kek_len = sm->ptk.kek2_len;
+	} else {
+		kek = sm->ptk.kek;
+		kek_len = sm->ptk.kek_len;
+	}
+
+	wpa_hexdump_key(MSG_DEBUG, "FT: Received BIGTK in Reassoc Resp",
+			bigtk_elem, bigtk_elem_len);
+
+	bigtk_len = wpa_cipher_key_len(sm->mgmt_group_cipher);
+	if (bigtk_elem_len != 2 + 6 + 1 + bigtk_len + 8) {
+		wpa_printf(MSG_DEBUG,
+			   "FT: Invalid BIGTK sub-elem length %lu",
+			   (unsigned long) bigtk_elem_len);
+		return -1;
+	}
+	if (bigtk_elem[8] != bigtk_len) {
+		wpa_printf(MSG_DEBUG,
+			   "FT: Invalid BIGTK sub-elem Key Length %d",
+			   bigtk_elem[8]);
+		return -1;
+	}
+
+	if (aes_unwrap(kek, kek_len, bigtk_len / 8, bigtk_elem + 9, bigtk)) {
+		wpa_printf(MSG_WARNING,
+			   "FT: AES unwrap failed - could not decrypt BIGTK");
+		return -1;
+	}
+
+	/* KeyID[2] | IPN[6] | Key Length[1] | Key[16+8] */
+
+	keyidx = WPA_GET_LE16(bigtk_elem);
+
+	wpa_hexdump_key(MSG_DEBUG, "FT: BIGTK from Reassoc Resp", bigtk,
+			bigtk_len);
+	if (wpa_sm_set_key(sm, wpa_cipher_to_alg(sm->mgmt_group_cipher),
+			   broadcast_ether_addr, keyidx, 0,
+			   bigtk_elem + 2, 6, bigtk, bigtk_len,
+			   KEY_FLAG_GROUP_RX) < 0) {
+		wpa_printf(MSG_WARNING,
+			   "WPA: Failed to set BIGTK to the driver");
+		forced_memzero(bigtk, sizeof(bigtk));
+		return -1;
+	}
+	forced_memzero(bigtk, sizeof(bigtk));
+
+	return 0;
+}
+
+
 int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 				 size_t ies_len, const u8 *src_addr)
 {
@@ -1036,10 +1104,9 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 
 	sm->ft_reassoc_completed = 1;
 
-	if (wpa_ft_process_gtk_subelem(sm, parse.gtk, parse.gtk_len) < 0)
-		return -1;
-
-	if (wpa_ft_process_igtk_subelem(sm, parse.igtk, parse.igtk_len) < 0)
+	if (wpa_ft_process_gtk_subelem(sm, parse.gtk, parse.gtk_len) < 0 ||
+	    wpa_ft_process_igtk_subelem(sm, parse.igtk, parse.igtk_len) < 0 ||
+	    wpa_ft_process_bigtk_subelem(sm, parse.bigtk, parse.bigtk_len) < 0)
 		return -1;
 
 	if (sm->set_ptk_after_assoc) {

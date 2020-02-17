@@ -280,6 +280,15 @@ static void wnm_sleep_mode_exit_success(struct wpa_supplicant *wpa_s,
 			wpa_wnmsleep_install_key(wpa_s->wpa,
 						 WNM_SLEEP_SUBELEM_IGTK, ptr);
 			ptr += 10 + WPA_IGTK_LEN;
+		} else if (*ptr == WNM_SLEEP_SUBELEM_BIGTK) {
+			if (ptr[1] < 2 + 6 + WPA_BIGTK_LEN) {
+				wpa_printf(MSG_DEBUG,
+					   "WNM: Too short BIGTK subelem");
+				break;
+			}
+			wpa_wnmsleep_install_key(wpa_s->wpa,
+						 WNM_SLEEP_SUBELEM_BIGTK, ptr);
+			ptr += 10 + WPA_BIGTK_LEN;
 		} else
 			break; /* skip the loop */
 	}
