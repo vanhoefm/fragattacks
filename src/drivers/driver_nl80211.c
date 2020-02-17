@@ -4353,7 +4353,8 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 		spr = nla_nest_start(msg, NL80211_ATTR_HE_OBSS_PD);
 		wpa_printf(MSG_DEBUG, "nl80211: he_spr=%d", params->he_spr);
 
-		if (nla_put_u8(msg, NL80211_HE_OBSS_PD_ATTR_MIN_OFFSET,
+		if (!spr ||
+		    nla_put_u8(msg, NL80211_HE_OBSS_PD_ATTR_MIN_OFFSET,
 			       params->he_spr_srg_obss_pd_min_offset) ||
 		    nla_put_u8(msg, NL80211_HE_OBSS_PD_ATTR_MAX_OFFSET,
 			       params->he_spr_srg_obss_pd_max_offset))
