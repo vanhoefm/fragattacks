@@ -397,6 +397,8 @@ static void hostapd_ext_capab_byte(struct hostapd_data *hapd, u8 *pos, int idx)
 					       * Identifiers Used Exclusively */
 		}
 #endif /* CONFIG_SAE */
+		if (hapd->conf->beacon_prot)
+			*pos |= 0x10; /* Bit 84 - Beacon Protection Enabled */
 		break;
 	}
 }
@@ -456,6 +458,8 @@ u8 * hostapd_eid_ext_capab(struct hostapd_data *hapd, u8 *eid)
 	    hostapd_sae_pw_id_in_use(hapd->conf))
 		len = 11;
 #endif /* CONFIG_SAE */
+	if (len < 11 && hapd->conf->beacon_prot)
+		len = 11;
 	if (len < hapd->iface->extended_capa_len)
 		len = hapd->iface->extended_capa_len;
 	if (len == 0)

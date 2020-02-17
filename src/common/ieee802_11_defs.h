@@ -558,6 +558,7 @@
 #define WLAN_EXT_CAPAB_COMPLETE_NON_TX_BSSID_PROFILE 80
 #define WLAN_EXT_CAPAB_SAE_PW_ID 81
 #define WLAN_EXT_CAPAB_SAE_PW_ID_EXCLUSIVELY 82
+#define WLAN_EXT_CAPAB_BEACON_PROTECTION 84
 
 /* Extended RSN Capabilities */
 /* bits 0-3: Field length (n-1) */
