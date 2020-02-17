@@ -6,6 +6,7 @@
 
 from remotehost import remote_compatible
 import binascii
+import os
 import time
 import logging
 logger = logging.getLogger()
@@ -915,3 +916,127 @@ def test_ap_pmf_sa_query_timeout(dev, apdev):
     ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=1.5)
     if ev is not None:
         raise Exception("Unexpected disconnection after reconnection seen")
+
+def mac80211_read_key(keydir):
+    vals = {}
+    for name in os.listdir(keydir):
+        try:
+            with open(os.path.join(keydir, name)) as f:
+                vals[name] = f.read().strip()
+        except OSError as e:
+            pass
+    return vals
+
+def test_ap_pmf_beacon_protection_bip(dev, apdev):
+    """WPA2-PSK Beacon protection (BIP)"""
+    """WPA2-PSK AP with PMF required and Beacon protection enabled (BIP)"""
+    run_ap_pmf_beacon_protection(dev, apdev, "AES-128-CMAC")
+
+def test_ap_pmf_beacon_protection_bip_cmac_256(dev, apdev):
+    """WPA2-PSK Beacon protection (BIP-CMAC-256)"""
+    run_ap_pmf_beacon_protection(dev, apdev, "BIP-CMAC-256")
+
+def test_ap_pmf_beacon_protection_bip_gmac_128(dev, apdev):
+    """WPA2-PSK Beacon protection (BIP-GMAC-128)"""
+    run_ap_pmf_beacon_protection(dev, apdev, "BIP-GMAC-128")
+
+def test_ap_pmf_beacon_protection_bip_gmac_256(dev, apdev):
+    """WPA2-PSK Beacon protection (BIP-GMAC-256)"""
+    run_ap_pmf_beacon_protection(dev, apdev, "BIP-GMAC-256")
+
+def run_ap_pmf_beacon_protection(dev, apdev, cipher):
+    ssid = "test-beacon-prot"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    params["beacon_prot"] = "1"
+    params["group_mgmt_cipher"] = cipher
+    try:
+        hapd = hostapd.add_ap(apdev[0], params)
+    except Exception as e:
+        if "Failed to enable hostapd interface" in str(e):
+            raise HwsimSkip("Beacon protection not supported")
+        raise
+
+    bssid = hapd.own_addr()
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+
+    # STA with Beacon protection enabled
+    dev[0].connect(ssid, psk="12345678", ieee80211w="2", beacon_prot="1",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
+
+    # STA with Beacon protection disabled
+    dev[1].connect(ssid, psk="12345678", ieee80211w="2",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
+
+    time.sleep(1)
+
+    sta_key = None
+    ap_key = None
+
+    phy = dev[0].get_driver_status_field("phyname")
+    keys = "/sys/kernel/debug/ieee80211/%s/keys" % phy
+    try:
+        for key in os.listdir(keys):
+            keydir = os.path.join(keys, key)
+            vals = mac80211_read_key(keydir)
+            keyidx = int(vals['keyidx'])
+            if keyidx == 6 or keyidx == 7:
+                sta_key = vals;
+                break
+    except OSError as e:
+        raise HwsimSkip("debugfs not supported in mac80211 (STA)")
+
+    phy = hapd.get_driver_status_field("phyname")
+    keys = "/sys/kernel/debug/ieee80211/%s/keys" % phy
+    try:
+        for key in os.listdir(keys):
+            keydir = os.path.join(keys, key)
+            vals = mac80211_read_key(keydir)
+            keyidx = int(vals['keyidx'])
+            if keyidx == 6 or keyidx == 7:
+                ap_key = vals;
+                break
+    except OSError as e:
+        raise HwsimSkip("debugfs not supported in mac80211 (AP)")
+
+    if not sta_key:
+        raise Exception("Could not find STA key information from debugfs")
+    logger.info("STA key: " + str(sta_key))
+
+    if not ap_key:
+        raise Exception("Could not find AP key information from debugfs")
+    logger.info("AP key: " + str(ap_key))
+
+    if sta_key['key'] != ap_key['key']:
+        raise Exception("AP and STA BIGTK mismatch")
+
+    if sta_key['keyidx'] != ap_key['keyidx']:
+        raise Exception("AP and STA BIGTK keyidx mismatch")
+
+    if sta_key['algorithm'] != ap_key['algorithm']:
+        raise Exception("AP and STA BIGTK algorithm mismatch")
+
+    replays = int(sta_key['replays'])
+    icverrors = int(sta_key['icverrors'])
+    if replays > 0 or icverrors > 0:
+        raise Exception("STA reported errors: replays=%d icverrors=%d" % replays, icverrors)
+
+    rx_spec = int(sta_key['rx_spec'], base=16)
+    if rx_spec < 3:
+        raise Exception("STA did not update BIGTK receive counter sufficiently")
+
+    tx_spec = int(ap_key['tx_spec'], base=16)
+    if tx_spec < 3:
+        raise Exception("AP did not update BIGTK BIPN sufficiently")
+
+    valid_bip = wt.get_bss_counter('valid_bip_mmie', bssid)
+    invalid_bip = wt.get_bss_counter('invalid_bip_mmie', bssid)
+    missing_bip = wt.get_bss_counter('missing_bip_mmie', bssid)
+    logger.info("wlantest BIP counters: valid=%d invalid=%d missing=%d" % (valid_bip, invalid_bip, missing_bip))
+    if valid_bip < 0 or invalid_bip > 0 or missing_bip > 0:
+        raise Exception("Unexpected wlantest BIP counters: valid=%d invalid=%d missing=%d" % (valid_bip, invalid_bip, missing_bip))
