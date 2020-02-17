@@ -925,6 +925,10 @@ static int wpa_ft_parse_ftie(const u8 *ie, size_t ie_len,
 			parse->oci_len = len;
 			break;
 #endif /* CONFIG_OCV */
+		case FTIE_SUBELEM_BIGTK:
+			parse->bigtk = pos;
+			parse->bigtk_len = len;
+			break;
 		default:
 			wpa_printf(MSG_DEBUG, "FT: Unknown subelem id %u", id);
 			break;

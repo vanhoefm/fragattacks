@@ -321,6 +321,7 @@ struct rsn_ftie_sha384 {
 #define FTIE_SUBELEM_R0KH_ID 3
 #define FTIE_SUBELEM_IGTK 4
 #define FTIE_SUBELEM_OCI 5
+#define FTIE_SUBELEM_BIGTK 6
 
 struct rsn_rdie {
 	u8 id;
@@ -455,6 +456,8 @@ struct wpa_ft_ies {
 	size_t tie_len;
 	const u8 *igtk;
 	size_t igtk_len;
+	const u8 *bigtk;
+	size_t bigtk_len;
 #ifdef CONFIG_OCV
 	const u8 *oci;
 	size_t oci_len;
