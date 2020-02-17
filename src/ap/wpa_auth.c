@@ -3805,6 +3805,7 @@ static int wpa_gtk_update(struct wpa_authenticator *wpa_auth,
 			  struct wpa_group *group)
 {
 	int ret = 0;
+	size_t len;
 
 	os_memcpy(group->GNonce, group->Counter, WPA_NONCE_LEN);
 	inc_byte_array(group->Counter, WPA_NONCE_LEN);
@@ -3816,7 +3817,6 @@ static int wpa_gtk_update(struct wpa_authenticator *wpa_auth,
 			group->GTK[group->GN - 1], group->GTK_len);
 
 	if (wpa_auth->conf.ieee80211w != NO_MGMT_FRAME_PROTECTION) {
-		size_t len;
 		len = wpa_cipher_key_len(wpa_auth->conf.group_mgmt_cipher);
 		os_memcpy(group->GNonce, group->Counter, WPA_NONCE_LEN);
 		inc_byte_array(group->Counter, WPA_NONCE_LEN);
@@ -3826,6 +3826,19 @@ static int wpa_gtk_update(struct wpa_authenticator *wpa_auth,
 			ret = -1;
 		wpa_hexdump_key(MSG_DEBUG, "IGTK",
 				group->IGTK[group->GN_igtk - 4], len);
+	}
+
+	if (wpa_auth->conf.ieee80211w != NO_MGMT_FRAME_PROTECTION &&
+	    wpa_auth->conf.beacon_prot) {
+		len = wpa_cipher_key_len(wpa_auth->conf.group_mgmt_cipher);
+		os_memcpy(group->GNonce, group->Counter, WPA_NONCE_LEN);
+		inc_byte_array(group->Counter, WPA_NONCE_LEN);
+		if (wpa_gmk_to_gtk(group->GMK, "BIGTK key expansion",
+				   wpa_auth->addr, group->GNonce,
+				   group->BIGTK[group->GN_bigtk - 6], len) < 0)
+			ret = -1;
+		wpa_hexdump_key(MSG_DEBUG, "BIGTK",
+				group->BIGTK[group->GN_bigtk - 6], len);
 	}
 
 	return ret;
@@ -3846,6 +3859,8 @@ static void wpa_group_gtk_init(struct wpa_authenticator *wpa_auth,
 	group->GM = 2;
 	group->GN_igtk = 4;
 	group->GM_igtk = 5;
+	group->GN_bigtk = 6;
+	group->GM_bigtk = 7;
 	/* GTK[GN] = CalcGTK() */
 	wpa_gtk_update(wpa_auth, group);
 }
@@ -3982,6 +3997,9 @@ static void wpa_group_setkeys(struct wpa_authenticator *wpa_auth,
 	tmp = group->GM_igtk;
 	group->GM_igtk = group->GN_igtk;
 	group->GN_igtk = tmp;
+	tmp = group->GM_bigtk;
+	group->GM_bigtk = group->GN_bigtk;
+	group->GN_bigtk = tmp;
 	/* "GKeyDoneStations = GNoStations" is done in more robust way by
 	 * counting the STAs that are marked with GUpdateStationKeys instead of
 	 * including all STAs that could be in not-yet-completed state. */
@@ -4022,6 +4040,13 @@ static int wpa_group_config_group_keys(struct wpa_authenticator *wpa_auth,
 		    wpa_auth_set_key(wpa_auth, group->vlan_id, alg,
 				     broadcast_ether_addr, group->GN_igtk,
 				     group->IGTK[group->GN_igtk - 4], len,
+				     KEY_FLAG_GROUP_TX_DEFAULT) < 0)
+			ret = -1;
+
+		if (ret == 0 && wpa_auth->conf.beacon_prot &&
+		    wpa_auth_set_key(wpa_auth, group->vlan_id, alg,
+				     broadcast_ether_addr, group->GN_bigtk,
+				     group->BIGTK[group->GN_bigtk - 6], len,
 				     KEY_FLAG_GROUP_TX_DEFAULT) < 0)
 			ret = -1;
 	}
@@ -4165,6 +4190,9 @@ void wpa_gtk_rekey(struct wpa_authenticator *wpa_auth)
 		tmp = group->GM_igtk;
 		group->GM_igtk = group->GN_igtk;
 		group->GN_igtk = tmp;
+		tmp = group->GM_bigtk;
+		group->GM_bigtk = group->GN_bigtk;
+		group->GN_bigtk = tmp;
 		wpa_gtk_update(wpa_auth, group);
 		wpa_group_config_group_keys(wpa_auth, group);
 	}

@@ -193,7 +193,9 @@ struct wpa_group {
 	Boolean first_sta_seen;
 	Boolean reject_4way_hs_for_entropy;
 	u8 IGTK[2][WPA_IGTK_MAX_LEN];
+	u8 BIGTK[2][WPA_IGTK_MAX_LEN];
 	int GN_igtk, GM_igtk;
+	int GN_bigtk, GM_bigtk;
 	/* Number of references except those in struct wpa_group->next */
 	unsigned int references;
 	unsigned int num_setup_iface;
