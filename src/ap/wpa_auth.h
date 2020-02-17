@@ -188,6 +188,7 @@ struct wpa_auth_config {
 	int okc;
 	int tx_status;
 	enum mfp_options ieee80211w;
+	int beacon_prot;
 	int group_mgmt_cipher;
 	int sae_require_mfp;
 #ifdef CONFIG_OCV

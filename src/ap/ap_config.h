@@ -349,6 +349,7 @@ struct hostapd_bss_config {
 	int wpa_key_mgmt;
 	enum mfp_options ieee80211w;
 	int group_mgmt_cipher;
+	int beacon_prot;
 	/* dot11AssociationSAQueryMaximumTimeout (in TUs) */
 	unsigned int assoc_sa_query_max_timeout;
 	/* dot11AssociationSAQueryRetryTimeout (in TUs) */
