@@ -1875,7 +1875,8 @@ enum wnm_sleep_mode_response_status {
 /* WNM-Sleep Mode subelement IDs */
 enum wnm_sleep_mode_subelement_id {
 	WNM_SLEEP_SUBELEM_GTK = 0,
-	WNM_SLEEP_SUBELEM_IGTK = 1
+	WNM_SLEEP_SUBELEM_IGTK = 1,
+	WNM_SLEEP_SUBELEM_BIGTK = 2,
 };
 
 /* Channel Switch modes (802.11h) */

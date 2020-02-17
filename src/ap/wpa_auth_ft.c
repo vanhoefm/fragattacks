@@ -2282,6 +2282,54 @@ static u8 * wpa_ft_igtk_subelem(struct wpa_state_machine *sm, size_t *len)
 }
 
 
+static u8 * wpa_ft_bigtk_subelem(struct wpa_state_machine *sm, size_t *len)
+{
+	u8 *subelem, *pos;
+	struct wpa_group *gsm = sm->group;
+	size_t subelem_len;
+	const u8 *kek;
+	size_t kek_len;
+	size_t bigtk_len;
+
+	if (wpa_key_mgmt_fils(sm->wpa_key_mgmt)) {
+		kek = sm->PTK.kek2;
+		kek_len = sm->PTK.kek2_len;
+	} else {
+		kek = sm->PTK.kek;
+		kek_len = sm->PTK.kek_len;
+	}
+
+	bigtk_len = wpa_cipher_key_len(sm->wpa_auth->conf.group_mgmt_cipher);
+
+	/* Sub-elem ID[1] | Length[1] | KeyID[2] | BIPN[6] | Key Length[1] |
+	 * Key[16+8] */
+	subelem_len = 1 + 1 + 2 + 6 + 1 + bigtk_len + 8;
+	subelem = os_zalloc(subelem_len);
+	if (subelem == NULL)
+		return NULL;
+
+	pos = subelem;
+	*pos++ = FTIE_SUBELEM_BIGTK;
+	*pos++ = subelem_len - 2;
+	WPA_PUT_LE16(pos, gsm->GN_bigtk);
+	pos += 2;
+	wpa_auth_get_seqnum(sm->wpa_auth, NULL, gsm->GN_bigtk, pos);
+	pos += 6;
+	*pos++ = bigtk_len;
+	if (aes_wrap(kek, kek_len, bigtk_len / 8,
+		     gsm->IGTK[gsm->GN_bigtk - 6], pos)) {
+		wpa_printf(MSG_DEBUG,
+			   "FT: BIGTK subelem encryption failed: kek_len=%d",
+			   (int) kek_len);
+		os_free(subelem);
+		return NULL;
+	}
+
+	*len = subelem_len;
+	return subelem;
+}
+
+
 static u8 * wpa_ft_process_rdie(struct wpa_state_machine *sm,
 				u8 *pos, u8 *end, u8 id, u8 descr_count,
 				const u8 *ies, size_t ies_len)
@@ -2510,6 +2558,29 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 			os_memcpy(subelem + subelem_len, igtk, igtk_len);
 			subelem_len += igtk_len;
 			os_free(igtk);
+		}
+		if (sm->mgmt_frame_prot && conf->beacon_prot) {
+			u8 *bigtk;
+			size_t bigtk_len;
+			u8 *nbuf;
+
+			bigtk = wpa_ft_bigtk_subelem(sm, &bigtk_len);
+			if (!bigtk) {
+				wpa_printf(MSG_DEBUG,
+					   "FT: Failed to add BIGTK subelement");
+				os_free(subelem);
+				return NULL;
+			}
+			nbuf = os_realloc(subelem, subelem_len + bigtk_len);
+			if (!nbuf) {
+				os_free(subelem);
+				os_free(bigtk);
+				return NULL;
+			}
+			subelem = nbuf;
+			os_memcpy(subelem + subelem_len, bigtk, bigtk_len);
+			subelem_len += bigtk_len;
+			os_free(bigtk);
 		}
 #ifdef CONFIG_OCV
 		if (wpa_auth_uses_ocv(sm)) {

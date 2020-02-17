@@ -54,6 +54,7 @@ static int ieee802_11_send_wnmsleep_resp(struct hostapd_data *hapd,
 	size_t len;
 	size_t gtk_elem_len = 0;
 	size_t igtk_elem_len = 0;
+	size_t bigtk_elem_len = 0;
 	struct wnm_sleep_element wnmsleep_ie;
 	u8 *wnmtfs_ie, *oci_ie;
 	u8 wnmsleep_ie_len, oci_ie_len;
@@ -122,8 +123,10 @@ static int ieee802_11_send_wnmsleep_resp(struct hostapd_data *hapd,
 
 #define MAX_GTK_SUBELEM_LEN 45
 #define MAX_IGTK_SUBELEM_LEN 26
+#define MAX_BIGTK_SUBELEM_LEN 26
 	mgmt = os_zalloc(sizeof(*mgmt) + wnmsleep_ie_len +
 			 MAX_GTK_SUBELEM_LEN + MAX_IGTK_SUBELEM_LEN +
+			 MAX_BIGTK_SUBELEM_LEN +
 			 oci_ie_len);
 	if (mgmt == NULL) {
 		wpa_printf(MSG_DEBUG, "MLME: Failed to allocate buffer for "
@@ -157,10 +160,19 @@ static int ieee802_11_send_wnmsleep_resp(struct hostapd_data *hapd,
 		pos += igtk_elem_len;
 		wpa_printf(MSG_DEBUG, "Pass 4 igtk_len = %d",
 			   (int) igtk_elem_len);
+		if (hapd->conf->beacon_prot) {
+			res = wpa_wnmsleep_bigtk_subelem(sta->wpa_sm, pos);
+			if (res < 0)
+				goto fail;
+			bigtk_elem_len = res;
+			pos += bigtk_elem_len;
+			wpa_printf(MSG_DEBUG, "Pass 4 bigtk_len = %d",
+				   (int) bigtk_elem_len);
+		}
 
 		WPA_PUT_LE16((u8 *)
 			     &mgmt->u.action.u.wnm_sleep_resp.keydata_len,
-			     gtk_elem_len + igtk_elem_len);
+			     gtk_elem_len + igtk_elem_len + bigtk_elem_len);
 	}
 	os_memcpy(pos, &wnmsleep_ie, wnmsleep_ie_len);
 	/* copy TFS IE here */
@@ -176,7 +188,8 @@ static int ieee802_11_send_wnmsleep_resp(struct hostapd_data *hapd,
 #endif /* CONFIG_OCV */
 
 	len = 1 + sizeof(mgmt->u.action.u.wnm_sleep_resp) + gtk_elem_len +
-		igtk_elem_len + wnmsleep_ie_len + wnmtfs_ie_len + oci_ie_len;
+		igtk_elem_len + bigtk_elem_len +
+		wnmsleep_ie_len + wnmtfs_ie_len + oci_ie_len;
 
 	/* In driver, response frame should be forced to sent when STA is in
 	 * PS mode */
@@ -189,8 +202,8 @@ static int ieee802_11_send_wnmsleep_resp(struct hostapd_data *hapd,
 
 		/* when entering wnmsleep
 		 * 1. pause the node in driver
-		 * 2. mark the node so that AP won't update GTK/IGTK during
-		 * WNM Sleep
+		 * 2. mark the node so that AP won't update GTK/IGTK/BIGTK
+		 * during WNM Sleep
 		 */
 		if (wnmsleep_ie.status == WNM_STATUS_SLEEP_ACCEPT &&
 		    wnmsleep_ie.action_type == WNM_SLEEP_MODE_ENTER) {
@@ -201,7 +214,7 @@ static int ieee802_11_send_wnmsleep_resp(struct hostapd_data *hapd,
 		}
 		/* when exiting wnmsleep
 		 * 1. unmark the node
-		 * 2. start GTK/IGTK update if MFP is not used
+		 * 2. start GTK/IGTK/BIGTK update if MFP is not used
 		 * 3. unpause the node in driver
 		 */
 		if ((wnmsleep_ie.status == WNM_STATUS_SLEEP_ACCEPT ||
@@ -221,6 +234,7 @@ static int ieee802_11_send_wnmsleep_resp(struct hostapd_data *hapd,
 
 #undef MAX_GTK_SUBELEM_LEN
 #undef MAX_IGTK_SUBELEM_LEN
+#undef MAX_BIGTK_SUBELEM_LEN
 fail:
 	os_free(wnmtfs_ie);
 	os_free(oci_ie);
