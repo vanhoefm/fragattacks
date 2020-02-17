@@ -109,6 +109,7 @@ WPA_CIPHER_BIP_CMAC_256)
 #define RSN_KEY_DATA_MULTIBAND_GTK RSN_SELECTOR(0x00, 0x0f, 0xac, 11)
 #define RSN_KEY_DATA_MULTIBAND_KEYID RSN_SELECTOR(0x00, 0x0f, 0xac, 12)
 #define RSN_KEY_DATA_OCI RSN_SELECTOR(0x00, 0x0f, 0xac, 13)
+#define RSN_KEY_DATA_BIGTK RSN_SELECTOR(0x00, 0x0f, 0xac, 14)
 
 #define WFA_KEY_DATA_IP_ADDR_REQ RSN_SELECTOR(0x50, 0x6f, 0x9a, 4)
 #define WFA_KEY_DATA_IP_ADDR_ALLOC RSN_SELECTOR(0x50, 0x6f, 0x9a, 5)
@@ -130,6 +131,8 @@ WPA_CIPHER_BIP_CMAC_256)
 
 #define WPA_IGTK_LEN 16
 #define WPA_IGTK_MAX_LEN 32
+#define WPA_BIGTK_LEN 16
+#define WPA_BIGTK_MAX_LEN 32
 
 
 /* IEEE 802.11, 7.3.2.25.3 RSN Capabilities */
@@ -227,6 +230,11 @@ struct wpa_igtk {
 	size_t igtk_len;
 };
 
+struct wpa_bigtk {
+	u8 bigtk[WPA_BIGTK_MAX_LEN];
+	size_t bigtk_len;
+};
+
 /* WPA IE version 1
  * 00-50-f2:1 (OUI:OUI type)
  * 0x01 0x00 (version; little endian)
@@ -290,6 +298,13 @@ struct wpa_igtk_kde {
 	u8 keyid[2];
 	u8 pn[6];
 	u8 igtk[WPA_IGTK_MAX_LEN];
+} STRUCT_PACKED;
+
+#define WPA_BIGTK_KDE_PREFIX_LEN (2 + 6)
+struct wpa_bigtk_kde {
+	u8 keyid[2];
+	u8 pn[6];
+	u8 bigtk[WPA_BIGTK_MAX_LEN];
 } STRUCT_PACKED;
 
 struct rsn_mdie {
@@ -485,6 +500,8 @@ struct wpa_eapol_ie_parse {
 	size_t mac_addr_len;
 	const u8 *igtk;
 	size_t igtk_len;
+	const u8 *bigtk;
+	size_t bigtk_len;
 	const u8 *mdie;
 	size_t mdie_len;
 	const u8 *ftie;
