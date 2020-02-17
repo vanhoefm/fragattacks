@@ -1565,7 +1565,7 @@ struct wpa_driver_set_key_params {
 	/**
 	 * key_idx - Key index
 	 *
-	 * (0..3), usually 0 for unicast keys; 0..4095 for IGTK */
+	 * (0..3), usually 0 for unicast keys; 4..5 for IGTK; 6..7 for BIGTK */
 	int key_idx;
 
 	/**
