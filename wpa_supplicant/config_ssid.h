@@ -1047,6 +1047,14 @@ struct wpa_ssid {
 	 * FT initial mobility domain association.
 	 */
 	int ft_eap_pmksa_caching;
+
+	/**
+	 * beacon_prot - Whether Beacon protection is enabled
+	 *
+	 * This depends on management frame protection (ieee80211w) being
+	 * enabled.
+	 */
+	int beacon_prot;
 };
 
 #endif /* CONFIG_SSID_H */

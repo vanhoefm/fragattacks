@@ -2569,6 +2569,7 @@ static const struct parse_data ssid_fields[] = {
 	{ INT_RANGE(owe_ptk_workaround, 0, 1) },
 	{ INT_RANGE(multi_ap_backhaul_sta, 0, 1) },
 	{ INT_RANGE(ft_eap_pmksa_caching, 0, 1) },
+	{ INT_RANGE(beacon_prot, 0, 1) },
 };
 
 #undef OFFSET

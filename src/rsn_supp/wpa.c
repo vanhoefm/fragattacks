@@ -2959,6 +2959,7 @@ void wpa_sm_set_config(struct wpa_sm *sm, struct rsn_supp_config *config)
 		} else {
 			sm->fils_cache_id_set = 0;
 		}
+		sm->beacon_prot = config->beacon_prot;
 #endif /* CONFIG_FILS */
 	} else {
 		sm->network_ctx = NULL;
@@ -2971,6 +2972,7 @@ void wpa_sm_set_config(struct wpa_sm *sm, struct rsn_supp_config *config)
 		sm->p2p = 0;
 		sm->wpa_rsc_relaxation = 0;
 		sm->owe_ptk_workaround = 0;
+		sm->beacon_prot = 0;
 	}
 }
 

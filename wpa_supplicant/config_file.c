@@ -913,6 +913,7 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	INT(owe_ptk_workaround);
 	INT(multi_ap_backhaul_sta);
 	INT(ft_eap_pmksa_caching);
+	INT(beacon_prot);
 #ifdef CONFIG_HT_OVERRIDES
 	INT_DEF(disable_ht, DEFAULT_DISABLE_HT);
 	INT_DEF(disable_ht40, DEFAULT_DISABLE_HT40);

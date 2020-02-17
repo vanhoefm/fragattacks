@@ -1309,6 +1309,7 @@ void wpa_supplicant_rsn_supp_set_config(struct wpa_supplicant *wpa_s,
 			conf.fils_cache_id =
 				wpa_bss_get_fils_cache_id(wpa_s->current_bss);
 #endif /* CONFIG_FILS */
+		conf.beacon_prot = ssid->beacon_prot;
 	}
 	wpa_sm_set_config(wpa_s->wpa, ssid ? &conf : NULL);
 }
