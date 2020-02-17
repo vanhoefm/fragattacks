@@ -3163,7 +3163,7 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 	if ((ret == -ENOENT || ret == -ENOLINK) && alg == WPA_ALG_NONE)
 		ret = 0;
 	if (ret)
-		wpa_printf(MSG_DEBUG, "nl80211: set_key failed; err=%d %s)",
+		wpa_printf(MSG_DEBUG, "nl80211: set_key failed; err=%d %s",
 			   ret, strerror(-ret));
 
 	/*
@@ -3227,8 +3227,9 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 	if (ret == -ENOENT)
 		ret = 0;
 	if (ret)
-		wpa_printf(MSG_DEBUG, "nl80211: set_key default failed; "
-			   "err=%d %s)", ret, strerror(-ret));
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: set_key default failed; err=%d %s",
+			   ret, strerror(-ret));
 	return ret;
 
 fail:
