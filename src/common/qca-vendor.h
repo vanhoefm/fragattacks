@@ -2084,7 +2084,7 @@ enum qca_wlan_vendor_attr_config {
 	 * take the union of IEs from both of these interfaces and send in
 	 * further disassoc/deauth frames.
 	 */
-	QCA_WLAN_VENDOR_ATTR_DISCONNECT_IES = 58,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_DISCONNECT_IES = 58,
 
 	/* 8-bit unsigned value for ELNA bypass.
 	 * 1-Enable, 0-Disable
@@ -2096,13 +2096,21 @@ enum qca_wlan_vendor_attr_config {
 	 * scenarios where STA cannot honor the Beacon Report Request from AP.
 	 * 1-Enable, 0-Disable.
 	 */
-	QCA_WLAN_VENDOR_ATTR_BEACON_REPORT_FAIL = 60,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_BEACON_REPORT_FAIL = 60,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_CONFIG_MAX =
 	QCA_WLAN_VENDOR_ATTR_CONFIG_AFTER_LAST - 1,
 };
+
+/* Compatibility defines for previously used incorrect enum
+ * qca_wlan_vendor_attr_config names. These values should not be used in any
+ * new implementation. */
+#define QCA_WLAN_VENDOR_ATTR_DISCONNECT_IES \
+	QCA_WLAN_VENDOR_ATTR_CONFIG_DISCONNECT_IES
+#define QCA_WLAN_VENDOR_ATTR_BEACON_REPORT_FAIL \
+	QCA_WLAN_VENDOR_ATTR_CONFIG_BEACON_REPORT_FAIL
 
 /**
  * enum qca_wlan_vendor_attr_sap_config - Parameters for AP configuration
