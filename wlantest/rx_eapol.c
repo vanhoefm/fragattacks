@@ -548,6 +548,65 @@ static void learn_kde_keys(struct wlantest *wt, struct wlantest_bss *bss,
 				 (unsigned) ie.igtk_len);
 		}
 	}
+
+	if (ie.bigtk) {
+		wpa_hexdump(MSG_MSGDUMP, "EAPOL-Key Key Data - BIGTK KDE",
+			    ie.bigtk, ie.bigtk_len);
+		if (ie.bigtk_len == 24) {
+			u16 id;
+
+			id = WPA_GET_LE16(ie.bigtk);
+			if (id < 6 || id > 7) {
+				add_note(wt, MSG_INFO,
+					 "Unexpected BIGTK KeyID %u", id);
+			} else {
+				const u8 *ipn;
+
+				add_note(wt, MSG_DEBUG, "BIGTK KeyID %u", id);
+				wpa_hexdump(MSG_DEBUG, "BIPN", ie.bigtk + 2, 6);
+				wpa_hexdump(MSG_DEBUG, "BIGTK", ie.bigtk + 8,
+					    16);
+				os_memcpy(bss->igtk[id], ie.bigtk + 8, 16);
+				bss->igtk_len[id] = 16;
+				ipn = ie.bigtk + 2;
+				bss->ipn[id][0] = ipn[5];
+				bss->ipn[id][1] = ipn[4];
+				bss->ipn[id][2] = ipn[3];
+				bss->ipn[id][3] = ipn[2];
+				bss->ipn[id][4] = ipn[1];
+				bss->ipn[id][5] = ipn[0];
+				bss->bigtk_idx = id;
+			}
+		} else if (ie.bigtk_len == 40) {
+			u16 id;
+
+			id = WPA_GET_LE16(ie.bigtk);
+			if (id < 6 || id > 7) {
+				add_note(wt, MSG_INFO,
+					 "Unexpected BIGTK KeyID %u", id);
+			} else {
+				const u8 *ipn;
+
+				add_note(wt, MSG_DEBUG, "BIGTK KeyID %u", id);
+				wpa_hexdump(MSG_DEBUG, "BIPN", ie.bigtk + 2, 6);
+				wpa_hexdump(MSG_DEBUG, "BIGTK", ie.bigtk + 8,
+					    32);
+				os_memcpy(bss->igtk[id], ie.bigtk + 8, 32);
+				bss->igtk_len[id] = 32;
+				ipn = ie.bigtk + 2;
+				bss->ipn[id][0] = ipn[5];
+				bss->ipn[id][1] = ipn[4];
+				bss->ipn[id][2] = ipn[3];
+				bss->ipn[id][3] = ipn[2];
+				bss->ipn[id][4] = ipn[1];
+				bss->ipn[id][5] = ipn[0];
+				bss->bigtk_idx = id;
+			}
+		} else {
+			add_note(wt, MSG_INFO, "Invalid BIGTK KDE length %u",
+				 (unsigned) ie.bigtk_len);
+		}
+	}
 }
 
 
