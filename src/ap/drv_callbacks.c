@@ -623,6 +623,11 @@ skip_wpa_check:
 	pfs_fail:
 #endif /* CONFIG_DPP2 */
 
+	if (elems.rrm_enabled &&
+	    elems.rrm_enabled_len >= sizeof(sta->rrm_enabled_capa))
+	    os_memcpy(sta->rrm_enabled_capa, elems.rrm_enabled,
+		      sizeof(sta->rrm_enabled_capa));
+
 #if defined(CONFIG_IEEE80211R_AP) || defined(CONFIG_FILS) || defined(CONFIG_OWE)
 	hostapd_sta_assoc(hapd, addr, reassoc, status, buf, p - buf);
 
