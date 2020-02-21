@@ -449,6 +449,10 @@ static void wiphy_info_ext_feature_flags(struct wiphy_info_data *info,
 	if (ext_feature_isset(ext_features, len,
 			      NL80211_EXT_FEATURE_CAN_REPLACE_PTK0))
 		capa->flags |= WPA_DRIVER_FLAGS_SAFE_PTK0_REKEYS;
+
+	if (ext_feature_isset(ext_features, len,
+			      NL80211_EXT_FEATURE_BEACON_PROTECTION))
+		capa->flags |= WPA_DRIVER_FLAGS_BEACON_PROTECTION;
 }
 
 

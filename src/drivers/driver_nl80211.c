@@ -3189,8 +3189,10 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 				   alg == WPA_ALG_BIP_GMAC_128 ||
 				   alg == WPA_ALG_BIP_GMAC_256 ||
 				   alg == WPA_ALG_BIP_CMAC_256) ?
-				   NL80211_KEY_DEFAULT_MGMT :
-				   NL80211_KEY_DEFAULT))
+			 (key_idx == 6 || key_idx == 7 ?
+			  NL80211_KEY_DEFAULT_BEACON :
+			  NL80211_KEY_DEFAULT_MGMT) :
+			 NL80211_KEY_DEFAULT))
 		goto fail;
 	if (addr && is_broadcast_ether_addr(addr)) {
 		struct nlattr *types;

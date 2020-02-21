@@ -1840,6 +1840,8 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_FLAGS_UPDATE_FT_IES		0x1000000000000000ULL
 /** Driver can correctly rekey PTKs without Extended Key ID */
 #define WPA_DRIVER_FLAGS_SAFE_PTK0_REKEYS	0x2000000000000000ULL
+/** Driver supports Beacon protection */
+#define WPA_DRIVER_FLAGS_BEACON_PROTECTION	0x4000000000000000ULL
 	u64 flags;
 
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \

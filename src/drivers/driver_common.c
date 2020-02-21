@@ -314,6 +314,7 @@ const char * driver_flag_to_string(u64 flag)
 	DF2S(VLAN_OFFLOAD);
 	DF2S(UPDATE_FT_IES);
 	DF2S(SAFE_PTK0_REKEYS);
+	DF2S(BEACON_PROTECTION);
 	}
 	return "UNKNOWN";
 #undef DF2S
