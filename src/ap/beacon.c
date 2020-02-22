@@ -566,8 +566,8 @@ static u8 * hostapd_gen_probe_resp(struct hostapd_data *hapd,
 	if (hapd->iconf->ieee80211ax) {
 		pos = hostapd_eid_he_capab(hapd, pos, IEEE80211_MODE_AP);
 		pos = hostapd_eid_he_operation(hapd, pos);
-		pos = hostapd_eid_he_mu_edca_parameter_set(hapd, pos);
 		pos = hostapd_eid_spatial_reuse(hapd, pos);
+		pos = hostapd_eid_he_mu_edca_parameter_set(hapd, pos);
 	}
 #endif /* CONFIG_IEEE80211AX */
 
@@ -1287,8 +1287,8 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 		tailpos = hostapd_eid_he_capab(hapd, tailpos,
 					       IEEE80211_MODE_AP);
 		tailpos = hostapd_eid_he_operation(hapd, tailpos);
-		tailpos = hostapd_eid_he_mu_edca_parameter_set(hapd, tailpos);
 		tailpos = hostapd_eid_spatial_reuse(hapd, tailpos);
+		tailpos = hostapd_eid_he_mu_edca_parameter_set(hapd, tailpos);
 	}
 #endif /* CONFIG_IEEE80211AX */
 
