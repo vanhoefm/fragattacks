@@ -220,7 +220,6 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 	}
 #endif /* CONFIG_P2P */
 
-#ifdef CONFIG_IEEE80211N
 #ifdef NEED_AP_MLME
 	if (elems.ht_capabilities &&
 	    (hapd->iface->conf->ht_capab &
@@ -234,7 +233,6 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			ht40_intolerant_add(hapd->iface, sta);
 	}
 #endif /* NEED_AP_MLME */
-#endif /* CONFIG_IEEE80211N */
 
 #ifdef CONFIG_INTERWORKING
 	if (elems.ext_capab && elems.ext_capab_len > 4) {

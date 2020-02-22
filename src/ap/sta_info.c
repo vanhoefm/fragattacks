@@ -233,9 +233,7 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
 	sta->assoc_ie_taxonomy = NULL;
 #endif /* CONFIG_TAXONOMY */
 
-#ifdef CONFIG_IEEE80211N
 	ht40_intolerant_remove(hapd->iface, sta);
-#endif /* CONFIG_IEEE80211N */
 
 #ifdef CONFIG_P2P
 	if (sta->no_p2p_set) {
@@ -246,10 +244,10 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
 	}
 #endif /* CONFIG_P2P */
 
-#if defined(NEED_AP_MLME) && defined(CONFIG_IEEE80211N)
+#ifdef NEED_AP_MLME
 	if (hostapd_ht_operation_update(hapd->iface) > 0)
 		set_beacon++;
-#endif /* NEED_AP_MLME && CONFIG_IEEE80211N */
+#endif /* NEED_AP_MLME */
 
 #ifdef CONFIG_MESH
 	if (hapd->mesh_sta_free_cb)

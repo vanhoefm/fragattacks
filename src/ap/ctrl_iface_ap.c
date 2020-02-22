@@ -345,7 +345,6 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 	}
 #endif /* CONFIG_IEEE80211AC */
 
-#ifdef CONFIG_IEEE80211N
 	if ((sta->flags & WLAN_STA_HT) && sta->ht_capabilities) {
 		res = os_snprintf(buf + len, buflen - len,
 				  "ht_caps_info=0x%04x\n",
@@ -354,7 +353,6 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 		if (!os_snprintf_error(buflen - len, res))
 			len += res;
 	}
-#endif /* CONFIG_IEEE80211N */
 
 	if (sta->ext_capability &&
 	    buflen - len > (unsigned) (11 + 2 * sta->ext_capability[0])) {

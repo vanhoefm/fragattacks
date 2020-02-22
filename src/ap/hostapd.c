@@ -481,11 +481,9 @@ static void sta_track_deinit(struct hostapd_iface *iface)
 static void hostapd_cleanup_iface_partial(struct hostapd_iface *iface)
 {
 	wpa_printf(MSG_DEBUG, "%s(%p)", __func__, iface);
-#ifdef CONFIG_IEEE80211N
 #ifdef NEED_AP_MLME
 	hostapd_stop_setup_timers(iface);
 #endif /* NEED_AP_MLME */
-#endif /* CONFIG_IEEE80211N */
 	if (iface->current_mode)
 		acs_cleanup(iface);
 	hostapd_free_hw_features(iface->hw_features, iface->num_hw_features);
@@ -2349,12 +2347,10 @@ void hostapd_interface_deinit(struct hostapd_iface *iface)
 		hostapd_bss_deinit(iface->bss[j]);
 	}
 
-#ifdef CONFIG_IEEE80211N
 #ifdef NEED_AP_MLME
 	hostapd_stop_setup_timers(iface);
 	eloop_cancel_timeout(ap_ht2040_timeout, iface, NULL);
 #endif /* NEED_AP_MLME */
-#endif /* CONFIG_IEEE80211N */
 }
 
 

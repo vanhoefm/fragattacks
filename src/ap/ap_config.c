@@ -1169,7 +1169,6 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 	}
 #endif /* CONFIG_IEEE80211R_AP */
 
-#ifdef CONFIG_IEEE80211N
 	if (full_config && conf->ieee80211n &&
 	    conf->hw_mode == HOSTAPD_MODE_IEEE80211B) {
 		bss->disable_11n = 1;
@@ -1194,7 +1193,6 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 			   "requires CCMP/GCMP to be enabled, disabling HT "
 			   "capabilities");
 	}
-#endif /* CONFIG_IEEE80211N */
 
 #ifdef CONFIG_IEEE80211AC
 	if (full_config && conf->ieee80211ac &&

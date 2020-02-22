@@ -904,14 +904,12 @@ OBJS += ../src/ap/bss_load.o
 OBJS += ../src/ap/eap_user_db.o
 OBJS += ../src/ap/neighbor_db.o
 OBJS += ../src/ap/rrm.o
-ifdef CONFIG_IEEE80211N
 OBJS += ../src/ap/ieee802_11_ht.o
 ifdef CONFIG_IEEE80211AC
 OBJS += ../src/ap/ieee802_11_vht.o
 endif
 ifdef CONFIG_IEEE80211AX
 OBJS += ../src/ap/ieee802_11_he.o
-endif
 endif
 ifdef CONFIG_WNM_AP
 CFLAGS += -DCONFIG_WNM_AP
@@ -932,14 +930,11 @@ OBJS += ../src/eap_server/eap_server.o
 OBJS += ../src/eap_server/eap_server_identity.o
 OBJS += ../src/eap_server/eap_server_methods.o
 
-ifdef CONFIG_IEEE80211N
-CFLAGS += -DCONFIG_IEEE80211N
 ifdef CONFIG_IEEE80211AC
 CFLAGS += -DCONFIG_IEEE80211AC
 endif
 ifdef CONFIG_IEEE80211AX
 CFLAGS += -DCONFIG_IEEE80211AX
-endif
 endif
 
 ifdef NEED_AP_MLME

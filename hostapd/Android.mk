@@ -281,10 +281,6 @@ L_CFLAGS += -DCONFIG_WNM -DCONFIG_WNM_AP
 OBJS += src/ap/wnm_ap.c
 endif
 
-ifdef CONFIG_IEEE80211N
-L_CFLAGS += -DCONFIG_IEEE80211N
-endif
-
 ifdef CONFIG_IEEE80211AC
 L_CFLAGS += -DCONFIG_IEEE80211AC
 endif
@@ -999,9 +995,7 @@ OBJS += src/ap/hw_features.c
 OBJS += src/ap/dfs.c
 L_CFLAGS += -DNEED_AP_MLME
 endif
-ifdef CONFIG_IEEE80211N
 OBJS += src/ap/ieee802_11_ht.c
-endif
 
 ifdef CONFIG_IEEE80211AC
 OBJS += src/ap/ieee802_11_vht.c

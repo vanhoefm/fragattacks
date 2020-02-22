@@ -331,10 +331,6 @@ CFLAGS += -DCONFIG_WNM -DCONFIG_WNM_AP
 OBJS += ../src/ap/wnm_ap.o
 endif
 
-ifdef CONFIG_IEEE80211N
-CFLAGS += -DCONFIG_IEEE80211N
-endif
-
 ifdef CONFIG_IEEE80211AC
 CFLAGS += -DCONFIG_IEEE80211AC
 endif
@@ -1155,9 +1151,7 @@ OBJS += ../src/ap/hw_features.o
 OBJS += ../src/ap/dfs.o
 CFLAGS += -DNEED_AP_MLME
 endif
-ifdef CONFIG_IEEE80211N
 OBJS += ../src/ap/ieee802_11_ht.o
-endif
 
 ifdef CONFIG_IEEE80211AC
 OBJS += ../src/ap/ieee802_11_vht.o

@@ -224,7 +224,6 @@ int hostapd_prepare_rates(struct hostapd_iface *iface,
 }
 
 
-#ifdef CONFIG_IEEE80211N
 static int ieee80211n_allowed_ht40_channel_pair(struct hostapd_iface *iface)
 {
 	int pri_freq, sec_freq;
@@ -667,12 +666,9 @@ static int ieee80211ax_supported_he_capab(struct hostapd_iface *iface)
 }
 #endif /* CONFIG_IEEE80211AX */
 
-#endif /* CONFIG_IEEE80211N */
-
 
 int hostapd_check_ht_capab(struct hostapd_iface *iface)
 {
-#ifdef CONFIG_IEEE80211N
 	int ret;
 
 	if (is_6ghz_freq(iface->freq))
@@ -705,7 +701,6 @@ int hostapd_check_ht_capab(struct hostapd_iface *iface)
 		return ret;
 	if (!ieee80211n_allowed_ht40_channel_pair(iface))
 		return -1;
-#endif /* CONFIG_IEEE80211N */
 
 	return 0;
 }

@@ -233,12 +233,10 @@ static void mesh_mpm_send_plink_action(struct wpa_supplicant *wpa_s,
 		  2 + 24 + /* peering management */
 		  2 + 96 + 32 + 32 + /* AMPE (96 + max GTKlen + max IGTKlen) */
 		  2 + 16;  /* MIC */
-#ifdef CONFIG_IEEE80211N
 	if (type != PLINK_CLOSE && wpa_s->mesh_ht_enabled) {
 		buf_len += 2 + 26 + /* HT capabilities */
 			   2 + 22;  /* HT operation */
 	}
-#endif /* CONFIG_IEEE80211N */
 #ifdef CONFIG_IEEE80211AC
 	if (type != PLINK_CLOSE && wpa_s->mesh_vht_enabled) {
 		buf_len += 2 + 12 + /* VHT Capabilities */
@@ -354,7 +352,6 @@ static void mesh_mpm_send_plink_action(struct wpa_supplicant *wpa_s,
 				   wpabuf_put(buf, PMKID_LEN));
 	}
 
-#ifdef CONFIG_IEEE80211N
 	if (type != PLINK_CLOSE && wpa_s->mesh_ht_enabled) {
 		u8 ht_capa_oper[2 + 26 + 2 + 22];
 
@@ -362,7 +359,6 @@ static void mesh_mpm_send_plink_action(struct wpa_supplicant *wpa_s,
 		pos = hostapd_eid_ht_operation(bss, pos);
 		wpabuf_put_data(buf, ht_capa_oper, pos - ht_capa_oper);
 	}
-#endif /* CONFIG_IEEE80211N */
 #ifdef CONFIG_IEEE80211AC
 	if (type != PLINK_CLOSE && wpa_s->mesh_vht_enabled) {
 		u8 vht_capa_oper[2 + 12 + 2 + 5];
@@ -696,9 +692,7 @@ static struct sta_info * mesh_mpm_add_peer(struct wpa_supplicant *wpa_s,
 	struct mesh_conf *conf = wpa_s->ifmsh->mconf;
 	struct hostapd_data *data = wpa_s->ifmsh->bss[0];
 	struct sta_info *sta;
-#ifdef CONFIG_IEEE80211N
 	struct ieee80211_ht_operation *oper;
-#endif /* CONFIG_IEEE80211N */
 	int ret;
 
 	if (elems->mesh_config_len >= 7 &&
@@ -729,7 +723,6 @@ static struct sta_info * mesh_mpm_add_peer(struct wpa_supplicant *wpa_s,
 	if (!sta->my_lid)
 		mesh_mpm_init_link(wpa_s, sta);
 
-#ifdef CONFIG_IEEE80211N
 	copy_sta_ht_capab(data, sta, elems->ht_capabilities);
 
 	oper = (struct ieee80211_ht_operation *) elems->ht_operation;
@@ -743,7 +736,6 @@ static struct sta_info * mesh_mpm_add_peer(struct wpa_supplicant *wpa_s,
 	}
 
 	update_ht_state(data, sta);
-#endif /* CONFIG_IEEE80211N */
 
 #ifdef CONFIG_IEEE80211AC
 	copy_sta_vht_capab(data, sta, elems->vht_capabilities);

@@ -525,14 +525,12 @@ static u8 * hostapd_gen_probe_resp(struct hostapd_data *hapd,
 
 	pos = hostapd_eid_supported_op_classes(hapd, pos);
 
-#ifdef CONFIG_IEEE80211N
 	/* Secondary Channel Offset element */
 	/* TODO: The standard doesn't specify a position for this element. */
 	pos = hostapd_eid_secondary_channel(hapd, pos);
 
 	pos = hostapd_eid_ht_capabilities(hapd, pos);
 	pos = hostapd_eid_ht_operation(hapd, pos);
-#endif /* CONFIG_IEEE80211N */
 
 	pos = hostapd_eid_ext_capab(hapd, pos);
 
@@ -1245,14 +1243,12 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 
 	tailpos = hostapd_eid_supported_op_classes(hapd, tailpos);
 
-#ifdef CONFIG_IEEE80211N
 	/* Secondary Channel Offset element */
 	/* TODO: The standard doesn't specify a position for this element. */
 	tailpos = hostapd_eid_secondary_channel(hapd, tailpos);
 
 	tailpos = hostapd_eid_ht_capabilities(hapd, tailpos);
 	tailpos = hostapd_eid_ht_operation(hapd, tailpos);
-#endif /* CONFIG_IEEE80211N */
 
 	tailpos = hostapd_eid_ext_capab(hapd, tailpos);
 

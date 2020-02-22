@@ -3136,7 +3136,6 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 	if (resp != WLAN_STATUS_SUCCESS)
 		return resp;
 
-#ifdef CONFIG_IEEE80211N
 	resp = copy_sta_ht_capab(hapd, sta, elems.ht_capabilities);
 	if (resp != WLAN_STATUS_SUCCESS)
 		return resp;
@@ -3147,7 +3146,6 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 			       "mandatory HT PHY - reject association");
 		return WLAN_STATUS_ASSOC_DENIED_NO_HT;
 	}
-#endif /* CONFIG_IEEE80211N */
 
 #ifdef CONFIG_IEEE80211AC
 	if (hapd->iconf->ieee80211ac) {
@@ -3392,7 +3390,6 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 	pfs_fail:
 #endif /* CONFIG_DPP2 */
 
-#ifdef CONFIG_IEEE80211N
 		if ((sta->flags & (WLAN_STA_HT | WLAN_STA_VHT)) &&
 		    wpa_auth_get_pairwise(sta->wpa_sm) == WPA_CIPHER_TKIP) {
 			hostapd_logger(hapd, sta->addr,
@@ -3402,7 +3399,6 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 				       "association");
 			return WLAN_STATUS_CIPHER_REJECTED_PER_POLICY;
 		}
-#endif /* CONFIG_IEEE80211N */
 #ifdef CONFIG_HS20
 	} else if (hapd->conf->osen) {
 		if (elems.osen == NULL) {
@@ -3603,10 +3599,8 @@ static int add_associated_sta(struct hostapd_data *hapd,
 		sta->ft_over_ds = 0;
 	}
 
-#ifdef CONFIG_IEEE80211N
 	if (sta->flags & WLAN_STA_HT)
 		hostapd_get_ht_capab(hapd, sta->ht_capabilities, &ht_cap);
-#endif /* CONFIG_IEEE80211N */
 #ifdef CONFIG_IEEE80211AC
 	if (sta->flags & WLAN_STA_VHT)
 		hostapd_get_vht_capab(hapd, sta->vht_capabilities, &vht_cap);
@@ -3754,10 +3748,8 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 	if (sta && status_code == WLAN_STATUS_ASSOC_REJECTED_TEMPORARILY)
 		p = hostapd_eid_assoc_comeback_time(hapd, sta, p);
 
-#ifdef CONFIG_IEEE80211N
 	p = hostapd_eid_ht_capabilities(hapd, p);
 	p = hostapd_eid_ht_operation(hapd, p);
-#endif /* CONFIG_IEEE80211N */
 
 #ifdef CONFIG_IEEE80211AC
 	if (hapd->iconf->ieee80211ac && !hapd->conf->disable_11ac &&
@@ -4335,9 +4327,7 @@ static void handle_assoc(struct hostapd_data *hapd,
 			ieee802_11_set_beacons(hapd->iface);
 	}
 
-#ifdef CONFIG_IEEE80211N
 	update_ht_state(hapd, sta);
-#endif /* CONFIG_IEEE80211N */
 
 	hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE80211,
 		       HOSTAPD_LEVEL_DEBUG,
@@ -4676,14 +4666,12 @@ static int handle_action(struct hostapd_data *hapd,
 #endif /* CONFIG_FST */
 	case WLAN_ACTION_PUBLIC:
 	case WLAN_ACTION_PROTECTED_DUAL:
-#ifdef CONFIG_IEEE80211N
 		if (len >= IEEE80211_HDRLEN + 2 &&
 		    mgmt->u.action.u.public_action.action ==
 		    WLAN_PA_20_40_BSS_COEX) {
 			hostapd_2040_coex_action(hapd, mgmt, len);
 			return 1;
 		}
-#endif /* CONFIG_IEEE80211N */
 #ifdef CONFIG_DPP
 		if (len >= IEEE80211_HDRLEN + 6 &&
 		    mgmt->u.action.u.vs_public_action.action ==

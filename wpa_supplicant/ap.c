@@ -44,7 +44,6 @@ static void wpas_wps_ap_pin_timeout(void *eloop_data, void *user_ctx);
 #endif /* CONFIG_WPS */
 
 
-#ifdef CONFIG_IEEE80211N
 static void wpas_conf_ap_vht(struct wpa_supplicant *wpa_s,
 			     struct wpa_ssid *ssid,
 			     struct hostapd_config *conf,
@@ -130,7 +129,6 @@ no_vht:
 		conf->channel + conf->secondary_channel * 2;
 	conf->vht_oper_chwidth = CHANWIDTH_USE_HT;
 }
-#endif /* CONFIG_IEEE80211N */
 
 
 int wpa_supplicant_conf_ap_ht(struct wpa_supplicant *wpa_s,
@@ -149,7 +147,6 @@ int wpa_supplicant_conf_ap_ht(struct wpa_supplicant *wpa_s,
 	/* TODO: enable HT40 if driver supports it;
 	 * drop to 11b if driver does not support 11g */
 
-#ifdef CONFIG_IEEE80211N
 	/*
 	 * Enable HT20 if the driver supports it, by setting conf->ieee80211n
 	 * and a mask of allowed capabilities within conf->ht_capab.
@@ -269,7 +266,6 @@ int wpa_supplicant_conf_ap_ht(struct wpa_supplicant *wpa_s,
 			conf->no_pri_sec_switch = 1;
 		}
 	}
-#endif /* CONFIG_IEEE80211N */
 
 	return 0;
 }

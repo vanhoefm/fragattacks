@@ -1151,7 +1151,6 @@ static int add_r1kh(struct hostapd_bss_config *bss, char *value)
 #endif /* CONFIG_IEEE80211R_AP */
 
 
-#ifdef CONFIG_IEEE80211N
 static int hostapd_config_ht_capab(struct hostapd_config *conf,
 				   const char *capab)
 {
@@ -1204,7 +1203,6 @@ static int hostapd_config_ht_capab(struct hostapd_config *conf,
 
 	return 0;
 }
-#endif /* CONFIG_IEEE80211N */
 
 
 #ifdef CONFIG_IEEE80211AC
@@ -3422,7 +3420,6 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		if (bss->ocv && !bss->ieee80211w)
 			bss->ieee80211w = 1;
 #endif /* CONFIG_OCV */
-#ifdef CONFIG_IEEE80211N
 	} else if (os_strcmp(buf, "ieee80211n") == 0) {
 		conf->ieee80211n = atoi(pos);
 	} else if (os_strcmp(buf, "ht_capab") == 0) {
@@ -3435,7 +3432,6 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		conf->require_ht = atoi(pos);
 	} else if (os_strcmp(buf, "obss_interval") == 0) {
 		conf->obss_interval = atoi(pos);
-#endif /* CONFIG_IEEE80211N */
 #ifdef CONFIG_IEEE80211AC
 	} else if (os_strcmp(buf, "ieee80211ac") == 0) {
 		conf->ieee80211ac = atoi(pos);
