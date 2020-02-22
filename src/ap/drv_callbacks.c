@@ -467,6 +467,9 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			return WLAN_STATUS_INVALID_IE;
 #endif /* CONFIG_HS20 */
 	}
+#ifdef CONFIG_WPS
+skip_wpa_check:
+#endif /* CONFIG_WPS */
 
 #ifdef CONFIG_MBO
 	if (hapd->conf->mbo_enabled && (hapd->conf->wpa & 2) &&
@@ -477,10 +480,6 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 	}
 #endif /* CONFIG_MBO */
-
-#ifdef CONFIG_WPS
-skip_wpa_check:
-#endif /* CONFIG_WPS */
 
 #ifdef CONFIG_IEEE80211R_AP
 	p = wpa_sm_write_assoc_resp_ies(sta->wpa_sm, buf, sizeof(buf),
