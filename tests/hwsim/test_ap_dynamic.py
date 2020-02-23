@@ -404,21 +404,23 @@ def test_ap_bss_add_out_of_memory(dev, apdev):
     ifname1 = apdev[0]['ifname']
     ifname2 = apdev[0]['ifname'] + '-2'
 
-    hapd_bss_out_of_mem(hapd2, 'phy3', 'bss-1.conf', 1, 'hostapd_add_iface')
+    confname1 = hostapd.cfg_file(apdev[0], "bss-1.conf")
+    confname2 = hostapd.cfg_file(apdev[0], "bss-2.conf")
+    hapd_bss_out_of_mem(hapd2, 'phy3', confname1, 1, 'hostapd_add_iface')
     for i in range(1, 3):
-        hapd_bss_out_of_mem(hapd2, 'phy3', 'bss-1.conf',
+        hapd_bss_out_of_mem(hapd2, 'phy3', confname1,
                             i, 'hostapd_interface_init_bss')
-    hapd_bss_out_of_mem(hapd2, 'phy3', 'bss-1.conf',
+    hapd_bss_out_of_mem(hapd2, 'phy3', confname1,
                         1, 'ieee802_11_build_ap_params')
 
-    hostapd.add_bss(apdev[0], ifname1, 'bss-1.conf')
+    hostapd.add_bss(apdev[0], ifname1, confname1)
 
-    hapd_bss_out_of_mem(hapd2, 'phy3', 'bss-2.conf',
+    hapd_bss_out_of_mem(hapd2, 'phy3', confname2,
                         1, 'hostapd_interface_init_bss')
-    hapd_bss_out_of_mem(hapd2, 'phy3', 'bss-2.conf',
+    hapd_bss_out_of_mem(hapd2, 'phy3', confname2,
                         1, 'ieee802_11_build_ap_params')
 
-    hostapd.add_bss(apdev[0], ifname2, 'bss-2.conf')
+    hostapd.add_bss(apdev[0], ifname2, confname2)
     hostapd.remove_bss(apdev[0], ifname2)
     hostapd.remove_bss(apdev[0], ifname1)
 
