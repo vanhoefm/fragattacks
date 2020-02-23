@@ -39,6 +39,8 @@ def test_ap_vlan_open(dev, apdev):
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "brvlan2")
     hwsim_utils.test_connectivity(dev[2], hapd)
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_vlan_file_open(dev, apdev):
     """AP VLAN with open network and vlan_file mapping"""
@@ -56,6 +58,8 @@ def test_ap_vlan_file_open(dev, apdev):
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "brvlan2")
     hwsim_utils.test_connectivity(dev[2], hapd)
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_vlan_file_open2(dev, apdev):
     """AP VLAN with open network and vlan_file mapping (2)"""
@@ -73,6 +77,8 @@ def test_ap_vlan_file_open2(dev, apdev):
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "brvlan2")
     hwsim_utils.test_connectivity_iface(dev[2], hapd, "hwsimbr3")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_vlan_file_parsing(dev, apdev, params):
     """hostapd vlan_file/mac_file parsing"""
@@ -132,6 +138,8 @@ def test_ap_vlan_wpa2(dev, apdev):
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "brvlan2")
     hwsim_utils.test_connectivity(dev[2], hapd)
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_vlan_wpa2_radius(dev, apdev):
     """AP VLAN with WPA2-Enterprise and RADIUS attributes"""
@@ -201,6 +209,8 @@ def test_ap_vlan_wpa2_radius_local(dev, apdev):
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "test_br_vlan1")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "test_br_vlan2")
     hwsim_utils.test_connectivity(dev[2], hapd)
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_vlan_wpa2_radius_id_change(dev, apdev):
     """AP VLAN with WPA2-Enterprise and RADIUS attributes changing VLANID"""
@@ -364,6 +374,8 @@ def test_ap_vlan_tagged(dev, apdev):
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brlo.1")
     hwsim_utils.test_connectivity_iface(dev[1], hapd, "brlo.2")
     hwsim_utils.test_connectivity(dev[2], hapd)
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def ap_vlan_iface_cleanup_multibss_cleanup():
     subprocess.call(['ifconfig', 'dummy0', 'down'],
@@ -632,6 +644,8 @@ def test_ap_vlan_without_station(dev, apdev, p):
 
         dev[0].request("DISCONNECT")
         dev[0].wait_disconnected()
+        if filename.startswith('/tmp/'):
+            os.unlink(filename)
 
     finally:
         subprocess.call(['ip', 'link', 'set', 'dev', 'brvlan1', 'down'])
@@ -741,6 +755,8 @@ def test_ap_vlan_reconnect(dev, apdev):
     dev[0].connect("test-vlan", psk="12345678", scan_freq="2412")
     hapd.wait_sta()
     hwsim_utils.test_connectivity_iface(dev[0], hapd, "brvlan1")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_vlan_psk(dev, apdev, params):
     """AP VLAN based on PSK/passphrase"""

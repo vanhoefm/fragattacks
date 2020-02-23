@@ -6,6 +6,7 @@
 
 import logging
 logger = logging.getLogger()
+import os
 from remotehost import remote_compatible
 import hostapd
 import hwsim_utils
@@ -295,6 +296,8 @@ def test_hapd_ctrl_set_deny_mac_file(dev, apdev):
     ev = dev[1].wait_event(["CTRL-EVENT-DISCONNECTED"], 1)
     if ev is not None:
         raise Exception("Unexpected disconnection")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_hapd_ctrl_set_accept_mac_file(dev, apdev):
     """hostapd and SET accept_mac_file ctrl_iface command"""
@@ -312,6 +315,8 @@ def test_hapd_ctrl_set_accept_mac_file(dev, apdev):
     ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], 1)
     if ev is not None:
         raise Exception("Unexpected disconnection")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_hapd_ctrl_set_accept_mac_file_vlan(dev, apdev):
     """hostapd and SET accept_mac_file ctrl_iface command (VLAN ID)"""
@@ -327,6 +332,8 @@ def test_hapd_ctrl_set_accept_mac_file_vlan(dev, apdev):
         raise Exception("Unexpected SET failure")
     dev[1].wait_disconnected(timeout=15)
     dev[0].wait_disconnected(timeout=15)
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 @remote_compatible
 def test_hapd_ctrl_set_error_cases(dev, apdev):

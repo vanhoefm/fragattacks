@@ -158,6 +158,8 @@ def test_ap_acl_accept(dev, apdev):
     ev = dev[1].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
     if ev is not None:
         raise Exception("Unexpected association")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_acl_deny(dev, apdev):
     """MAC ACL deny list"""
@@ -175,6 +177,8 @@ def test_ap_acl_deny(dev, apdev):
     ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
     if ev is not None:
         raise Exception("Unexpected association")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_acl_mgmt(dev, apdev):
     """MAC ACL accept/deny management"""
@@ -247,6 +251,8 @@ def test_ap_acl_mgmt(dev, apdev):
     hapd.request("DENY_ACL ADD_MAC " + dev[0].own_addr())
     dev[0].wait_disconnected()
     dev[0].request("DISCONNECT")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 @remote_compatible
 def test_ap_wds_sta(dev, apdev):

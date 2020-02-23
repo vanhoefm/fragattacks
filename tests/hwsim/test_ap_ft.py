@@ -353,6 +353,8 @@ def test_ap_ft_vlan(dev, apdev):
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, conndev="brvlan1")
     if "[WPA2-FT/PSK-CCMP]" not in dev[0].request("SCAN_RESULTS"):
         raise Exception("Scan results missing RSN element info")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_ft_vlan_disconnected(dev, apdev):
     """WPA2-PSK-FT AP with VLAN and local key generation"""
@@ -377,6 +379,8 @@ def test_ap_ft_vlan_disconnected(dev, apdev):
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, conndev="brvlan1")
     if "[WPA2-FT/PSK-CCMP]" not in dev[0].request("SCAN_RESULTS"):
         raise Exception("Scan results missing RSN element info")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_ft_vlan_2(dev, apdev):
     """WPA2-PSK-FT AP with VLAN and dest-AP does not have VLAN info locally"""
@@ -398,6 +402,8 @@ def test_ap_ft_vlan_2(dev, apdev):
               force_initial_conn_to_first_ap=True)
     if "[WPA2-FT/PSK-CCMP]" not in dev[0].request("SCAN_RESULTS"):
         raise Exception("Scan results missing RSN element info")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_ft_many(dev, apdev):
     """WPA2-PSK-FT AP multiple times"""
@@ -431,6 +437,8 @@ def test_ap_ft_many_vlan(dev, apdev):
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, roams=50,
               conndev="brvlan1")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_ft_mixed(dev, apdev):
     """WPA2-PSK-FT mixed-mode AP"""
@@ -735,6 +743,8 @@ def test_ap_ft_vlan_over_ds(dev, apdev):
               conndev="brvlan1")
     check_mib(dev[0], [("dot11RSNAAuthenticationSuiteRequested", "00-0f-ac-4"),
                        ("dot11RSNAAuthenticationSuiteSelected", "00-0f-ac-4")])
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_ft_over_ds_many(dev, apdev):
     """WPA2-PSK-FT AP over DS multiple times"""
@@ -768,6 +778,8 @@ def test_ap_ft_vlan_over_ds_many(dev, apdev):
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
               roams=50, conndev="brvlan1")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 @remote_compatible
 def test_ap_ft_over_ds_unknown_target(dev, apdev):
@@ -978,6 +990,8 @@ def test_ap_ft_over_ds_pull_vlan(dev, apdev):
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase, over_ds=True,
               conndev="brvlan1")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None):
     if "SAE" not in dev.get_capability("auth_alg"):

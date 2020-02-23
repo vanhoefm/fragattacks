@@ -10,6 +10,7 @@ import time
 import logging
 import binascii
 import struct
+import tempfile
 import wpaspy
 import remotehost
 import utils
@@ -764,33 +765,33 @@ def send_file(apdev, src, dst):
     return hapd_global.send_file(src, dst)
 
 def acl_file(dev, apdev, conf):
-    filename = os.path.join("/tmp", conf)
+    fd, filename = tempfile.mkstemp(dir='/tmp', prefix=conf + '-')
+    f = os.fdopen(fd, 'w')
 
     if conf == 'hostapd.macaddr':
-        with open(filename, 'w') as f:
-            mac0 = dev[0].get_status_field("address")
-            f.write(mac0 + '\n')
-            f.write("02:00:00:00:00:12\n")
-            f.write("02:00:00:00:00:34\n")
-            f.write("-02:00:00:00:00:12\n")
-            f.write("-02:00:00:00:00:34\n")
-            f.write("01:01:01:01:01:01\n")
-            f.write("03:01:01:01:01:03\n")
+        mac0 = dev[0].get_status_field("address")
+        f.write(mac0 + '\n')
+        f.write("02:00:00:00:00:12\n")
+        f.write("02:00:00:00:00:34\n")
+        f.write("-02:00:00:00:00:12\n")
+        f.write("-02:00:00:00:00:34\n")
+        f.write("01:01:01:01:01:01\n")
+        f.write("03:01:01:01:01:03\n")
     elif conf == 'hostapd.accept':
-        with open(filename, 'w') as f:
-            mac0 = dev[0].get_status_field("address")
-            mac1 = dev[1].get_status_field("address")
-            f.write(mac0 + "    1\n")
-            f.write(mac1 + "    2\n")
+        mac0 = dev[0].get_status_field("address")
+        mac1 = dev[1].get_status_field("address")
+        f.write(mac0 + "    1\n")
+        f.write(mac1 + "    2\n")
     elif conf == 'hostapd.accept2':
-        with open(filename, 'w') as f:
-            mac0 = dev[0].get_status_field("address")
-            mac1 = dev[1].get_status_field("address")
-            mac2 = dev[2].get_status_field("address")
-            f.write(mac0 + "    1\n")
-            f.write(mac1 + "    2\n")
-            f.write(mac2 + "    3\n")
+        mac0 = dev[0].get_status_field("address")
+        mac1 = dev[1].get_status_field("address")
+        mac2 = dev[2].get_status_field("address")
+        f.write(mac0 + "    1\n")
+        f.write(mac1 + "    2\n")
+        f.write(mac2 + "    3\n")
     else:
+        f.close()
+        os.unlink(filename)
         return conf
 
     return filename
@@ -803,34 +804,33 @@ def bssid_inc(apdev, inc=1):
     return bssid
 
 def cfg_file(apdev, conf, ifname=None):
-    # put cfg file in /tmp directory
-    fname = os.path.join("/tmp", conf)
-
     match = re.search(r'^bss-.+', conf)
     if match:
-        with open(fname, 'w') as f:
-            idx = ''.join(filter(str.isdigit, conf.split('-')[-1]))
-            if ifname is None:
-                ifname = apdev['ifname']
-                if idx != '1':
-                    ifname = ifname + '-' + idx
+        # put cfg file in /tmp directory
+        fd, fname = tempfile.mkstemp(dir='/tmp', prefix=conf + '-')
+        f = os.fdopen(fd, 'w')
+        idx = ''.join(filter(str.isdigit, conf.split('-')[-1]))
+        if ifname is None:
+            ifname = apdev['ifname']
+            if idx != '1':
+                ifname = ifname + '-' + idx
 
-            f.write("driver=nl80211\n")
-            f.write("ctrl_interface=/var/run/hostapd\n")
-            f.write("hw_mode=g\n")
-            f.write("channel=1\n")
-            f.write("ieee80211n=1\n")
-            if conf.startswith('bss-ht40-'):
-                f.write("ht_capab=[HT40+]\n")
-            f.write("interface=%s\n" % ifname)
+        f.write("driver=nl80211\n")
+        f.write("ctrl_interface=/var/run/hostapd\n")
+        f.write("hw_mode=g\n")
+        f.write("channel=1\n")
+        f.write("ieee80211n=1\n")
+        if conf.startswith('bss-ht40-'):
+            f.write("ht_capab=[HT40+]\n")
+        f.write("interface=%s\n" % ifname)
 
-            f.write("ssid=bss-%s\n" % idx)
-            if conf == 'bss-2-dup.conf':
-                bssid = apdev['bssid']
-            else:
-                bssid = bssid_inc(apdev, int(idx) - 1)
-            f.write("bssid=%s\n" % bssid)
-    else:
-        return conf
+        f.write("ssid=bss-%s\n" % idx)
+        if conf == 'bss-2-dup.conf':
+            bssid = apdev['bssid']
+        else:
+            bssid = bssid_inc(apdev, int(idx) - 1)
+        f.write("bssid=%s\n" % bssid)
 
-    return fname
+        return fname
+
+    return conf
