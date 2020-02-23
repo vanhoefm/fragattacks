@@ -1287,6 +1287,14 @@ static int hostapd_ctrl_iface_get_config(struct hostapd_data *hapd,
 		pos += ret;
 	}
 
+	if (hapd->conf->wpa && hapd->conf->wpa_deny_ptk0_rekey) {
+		ret = os_snprintf(pos, end - pos, "wpa_deny_ptk0_rekey=%d\n",
+				  hapd->conf->wpa_deny_ptk0_rekey);
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+
 	return pos - buf;
 }
 
