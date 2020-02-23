@@ -290,7 +290,7 @@ def main():
     for monitor in monitors:
         logger.warning("MON: " + str(monitor))
 
-    # run check_devices at begining
+    # run check_devices at beginning
     logger.warning("RUN check_devices")
     try:
         check_devices(devices, setup_params, refs, duts, monitors)
