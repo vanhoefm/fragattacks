@@ -501,9 +501,13 @@ def test_ap_bss_config_file(dev, apdev, params):
     if not os.path.exists(prg):
         prg = '../../hostapd/hostapd'
     phy = get_phy(apdev[0])
+    confname1 = hostapd.cfg_file(apdev[0], "bss-1.conf")
+    confname2 = hostapd.cfg_file(apdev[0], "bss-2.conf")
+    confname3 = hostapd.cfg_file(apdev[0], "bss-3.conf")
+
     cmd = [prg, '-B', '-dddt', '-P', pidfile, '-f', logfile, '-S', '-T',
-           '-b', phy + ':bss-1.conf', '-b', phy + ':bss-2.conf',
-           '-b', phy + ':bss-3.conf']
+           '-b', phy + ':' + confname1, '-b', phy + ':' + confname2,
+           '-b', phy + ':' + confname3]
     res = subprocess.check_call(cmd)
     if res != 0:
         raise Exception("Could not start hostapd: %s" % str(res))
