@@ -806,10 +806,10 @@ def cfg_file(apdev, conf, ifname=None):
     # put cfg file in /tmp directory
     fname = os.path.join("/tmp", conf)
 
-    match = re.search(r'^bss-\d+', conf)
+    match = re.search(r'^bss-.+', conf)
     if match:
         with open(fname, 'w') as f:
-            idx = ''.join(filter(str.isdigit, conf))
+            idx = ''.join(filter(str.isdigit, conf.split('-')[-1]))
             if ifname is None:
                 ifname = apdev['ifname']
                 if idx != '1':
@@ -820,6 +820,8 @@ def cfg_file(apdev, conf, ifname=None):
             f.write("hw_mode=g\n")
             f.write("channel=1\n")
             f.write("ieee80211n=1\n")
+            if conf.startswith('bss-ht40-'):
+                f.write("ht_capab=[HT40+]\n")
             f.write("interface=%s\n" % ifname)
 
             f.write("ssid=bss-%s\n" % idx)

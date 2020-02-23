@@ -158,20 +158,25 @@ def test_ap_bss_add_remove_during_ht_scan(dev, apdev):
         dev[i].flush_scan_cache()
     ifname1 = apdev[0]['ifname']
     ifname2 = apdev[0]['ifname'] + '-2'
-    hostapd.add_bss(apdev[0], ifname1, 'bss-ht40-1.conf')
-    hostapd.add_bss(apdev[0], ifname2, 'bss-ht40-2.conf')
+    confname1 = hostapd.cfg_file(apdev[0], "bss-ht40-1.conf")
+    confname2 = hostapd.cfg_file(apdev[0], "bss-ht40-2.conf")
+    hapd_global = hostapd.HostapdGlobal(apdev)
+    hapd_global.send_file(confname1, confname1)
+    hapd_global.send_file(confname2, confname2)
+    hostapd.add_bss(apdev[0], ifname1, confname1)
+    hostapd.add_bss(apdev[0], ifname2, confname2)
     multi_check(apdev[0], dev, [True, True], scan_opt=False)
     hostapd.remove_bss(apdev[0], ifname2)
     hostapd.remove_bss(apdev[0], ifname1)
 
-    hostapd.add_bss(apdev[0], ifname1, 'bss-ht40-1.conf')
-    hostapd.add_bss(apdev[0], ifname2, 'bss-ht40-2.conf')
+    hostapd.add_bss(apdev[0], ifname1, confname1)
+    hostapd.add_bss(apdev[0], ifname2, confname2)
     hostapd.remove_bss(apdev[0], ifname2)
     multi_check(apdev[0], dev, [True, False], scan_opt=False)
     hostapd.remove_bss(apdev[0], ifname1)
 
-    hostapd.add_bss(apdev[0], ifname1, 'bss-ht40-1.conf')
-    hostapd.add_bss(apdev[0], ifname2, 'bss-ht40-2.conf')
+    hostapd.add_bss(apdev[0], ifname1, confname1)
+    hostapd.add_bss(apdev[0], ifname2, confname2)
     hostapd.remove_bss(apdev[0], ifname1)
     multi_check(apdev[0], dev, [False, False])
 
