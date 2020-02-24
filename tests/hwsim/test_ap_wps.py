@@ -956,9 +956,7 @@ def test_ap_wps_setup_locked_2(dev, apdev):
     dev[0].request("WPS_CANCEL")
     dev[0].wait_disconnected()
 
-@remote_compatible
-def test_ap_wps_pbc_overlap_2ap(dev, apdev):
-    """WPS PBC session overlap with two active APs"""
+def setup_ap_wps_pbc_overlap_2ap(apdev):
     params = {"ssid": "wps1", "eap_server": "1", "wps_state": "2",
               "wpa_passphrase": "12345678", "wpa": "2",
               "wpa_key_mgmt": "WPA-PSK", "rsn_pairwise": "CCMP",
@@ -971,16 +969,41 @@ def test_ap_wps_pbc_overlap_2ap(dev, apdev):
     hapd2 = hostapd.add_ap(apdev[1], params)
     hapd.request("WPS_PBC")
     hapd2.request("WPS_PBC")
+    return hapd, hapd2
+
+@remote_compatible
+def test_ap_wps_pbc_overlap_2ap(dev, apdev):
+    """WPS PBC session overlap with two active APs"""
+    hapd, hapd2 = setup_ap_wps_pbc_overlap_2ap(apdev)
     logger.info("WPS provisioning step")
     dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412", force_scan=True)
     dev[0].scan_for_bss(apdev[1]['bssid'], freq="2412")
     dev[0].request("WPS_PBC")
     ev = dev[0].wait_event(["WPS-OVERLAP-DETECTED"], timeout=15)
-    if ev is None:
-        raise Exception("PBC session overlap not detected")
     hapd.request("DISABLE")
     hapd2.request("DISABLE")
     dev[0].flush_scan_cache()
+    if ev is None:
+        raise Exception("PBC session overlap not detected")
+
+@remote_compatible
+def test_ap_wps_pbc_overlap_2ap_specific_bssid(dev, apdev):
+    """WPS PBC session overlap with two active APs (specific BSSID selected)"""
+    hapd, hapd2 = setup_ap_wps_pbc_overlap_2ap(apdev)
+    logger.info("WPS provisioning step")
+    dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412", force_scan=True)
+    dev[0].scan_for_bss(apdev[1]['bssid'], freq="2412")
+    dev[0].request("WPS_PBC " + apdev[0]['bssid'])
+    ev = dev[0].wait_event(["WPS-OVERLAP-DETECTED",
+                            "CTRL-EVENT-CONNECTED"], timeout=15)
+    dev[0].request("DISCONNECT")
+    hapd.request("DISABLE")
+    hapd2.request("DISABLE")
+    dev[0].flush_scan_cache()
+    if ev is None:
+        raise Exception("PBC session overlap result not reported")
+    if "CTRL-EVENT-CONNECTED" not in ev:
+        raise Exception("Connection did not complete")
 
 @remote_compatible
 def test_ap_wps_pbc_overlap_2sta(dev, apdev):

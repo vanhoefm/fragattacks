@@ -638,6 +638,7 @@ def clear_pbc_overlap(dev, ap):
     dev[1].request("P2P_CANCEL")
     dev[0].p2p_stop_find()
     dev[1].p2p_stop_find()
+    remove_group(dev[0], dev[1], allow_failure=True)
     dev[0].dump_monitor()
     dev[1].dump_monitor()
     time.sleep(0.1)
@@ -653,9 +654,9 @@ def test_grpform_pbc_overlap(dev, apdev):
     hapd.request("WPS_PBC")
     time.sleep(0.1)
 
-    # Since P2P Client scan case is now optimzied to use a specific SSID, the
+    # Since P2P Client scan case is now optimized to use a specific SSID, the
     # WPS AP will not reply to that and the scan after GO Negotiation can quite
-    # likely miss the AP due to dwell time being short enoguh to miss the Beacon
+    # likely miss the AP due to dwell time being short enough to miss the Beacon
     # frame. This has made the test case somewhat pointless, but keep it here
     # for now with an additional scan to confirm that PBC detection works if
     # there is a BSS entry for a overlapping AP.
@@ -677,11 +678,11 @@ def test_grpform_pbc_overlap(dev, apdev):
         raise Exception("Failed to authorize GO Neg")
     if "OK" not in dev[1].global_request("P2P_CONNECT " + addr0 + " pbc go_intent=15 freq=2412"):
         raise Exception("Failed to initiate GO Neg")
-    ev = dev[0].wait_global_event(["WPS-OVERLAP-DETECTED"], timeout=15)
-    if ev is None:
-        raise Exception("PBC overlap not reported")
-
+    ev = dev[0].wait_global_event(["WPS-OVERLAP-DETECTED",
+                                   "P2P-GROUP-FORMATION-SUCCESS"], timeout=15)
     clear_pbc_overlap(dev, apdev[0])
+    if ev is None or "P2P-GROUP-FORMATION-SUCCESS" not in ev:
+        raise Exception("P2P group formation did not complete")
 
 @remote_compatible
 def test_grpform_pbc_overlap_group_iface(dev, apdev):
@@ -713,14 +714,9 @@ def test_grpform_pbc_overlap_group_iface(dev, apdev):
         raise Exception("Failed to initiate GO Neg")
     ev = dev[0].wait_global_event(["WPS-OVERLAP-DETECTED",
                                    "P2P-GROUP-FORMATION-SUCCESS"], timeout=15)
-    if ev is None or "WPS-OVERLAP-DETECTED" not in ev:
-        # Do not report this as failure since the P2P group formation case
-        # using a separate group interface has limited chances of "seeing" the
-        # overlapping AP due to a per-SSID scan and no prior scan operations on
-        # the group interface.
-        logger.info("PBC overlap not reported")
-
     clear_pbc_overlap(dev, apdev[0])
+    if ev is None or "P2P-GROUP-FORMATION-SUCCESS" not in ev:
+        raise Exception("P2P group formation did not complete")
 
 @remote_compatible
 def test_grpform_goneg_fail_with_group_iface(dev):
