@@ -1829,6 +1829,10 @@ int wpas_wps_scan_pbc_overlap(struct wpa_supplicant *wpa_s,
 	wpa_printf(MSG_DEBUG, "WPS: Check whether PBC session overlap is "
 		   "present in scan results; selected BSSID " MACSTR,
 		   MAC2STR(selected->bssid));
+	if (!is_zero_ether_addr(ssid->bssid))
+		wpa_printf(MSG_DEBUG,
+			   "WPS: Network profile limited to accept only a single BSSID " MACSTR,
+			   MAC2STR(ssid->bssid));
 
 	/* Make sure that only one AP is in active PBC mode */
 	wps_ie = wpa_bss_get_vendor_ie_multi(selected, WPS_IE_VENDOR_TYPE);
@@ -1848,6 +1852,14 @@ int wpas_wps_scan_pbc_overlap(struct wpa_supplicant *wpa_s,
 		if (!ap->pbc_active ||
 		    os_memcmp(selected->bssid, ap->bssid, ETH_ALEN) == 0)
 			continue;
+
+		if (!is_zero_ether_addr(ssid->bssid) &&
+		    os_memcmp(ap->bssid, ssid->bssid, ETH_ALEN) != 0) {
+			wpa_printf(MSG_DEBUG, "WPS: Ignore another BSS " MACSTR
+				   " in active PBC mode due to local BSSID limitation",
+				   MAC2STR(ap->bssid));
+			continue;
+		}
 
 		wpa_printf(MSG_DEBUG, "WPS: Another BSS in active PBC mode: "
 			   MACSTR, MAC2STR(ap->bssid));
