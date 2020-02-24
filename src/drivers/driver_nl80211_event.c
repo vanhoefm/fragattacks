@@ -683,11 +683,16 @@ static void mlme_event_mgmt_tx_status(struct wpa_driver_nl80211_data *drv,
 				      size_t len, struct nlattr *ack)
 {
 	union wpa_event_data event;
-	const struct ieee80211_hdr *hdr;
-	u16 fc;
+	const struct ieee80211_hdr *hdr = (const struct ieee80211_hdr *) frame;
+	u16 fc = le_to_host16(hdr->frame_control);
 
 	wpa_printf(MSG_DEBUG, "nl80211: Frame TX status event");
-	if (!is_ap_interface(drv->nlmode)) {
+
+	if (WLAN_FC_GET_TYPE(fc) != WLAN_FC_TYPE_MGMT)
+		return;
+
+	if (!is_ap_interface(drv->nlmode) &&
+	    WLAN_FC_GET_STYPE(fc) == WLAN_FC_STYPE_ACTION) {
 		u64 cookie_val;
 
 		if (!cookie)
@@ -701,10 +706,12 @@ static void mlme_event_mgmt_tx_status(struct wpa_driver_nl80211_data *drv,
 			   " (match)" : " (unknown)", ack != NULL);
 		if (cookie_val != drv->send_frame_cookie)
 			return;
+	} else if (!is_ap_interface(drv->nlmode) &&
+		   WLAN_FC_GET_STYPE(fc) == WLAN_FC_STYPE_AUTH) {
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: Authentication frame TX status: ack=%d",
+			   !!ack);
 	}
-
-	hdr = (const struct ieee80211_hdr *) frame;
-	fc = le_to_host16(hdr->frame_control);
 
 	os_memset(&event, 0, sizeof(event));
 	event.tx_status.type = WLAN_FC_GET_TYPE(fc);
