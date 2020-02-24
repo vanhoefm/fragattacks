@@ -85,7 +85,7 @@ struct ieee802_11_elems {
 	const u8 *fils_hlp;
 	const u8 *fils_ip_addr_assign;
 	const u8 *key_delivery;
-	const u8 *fils_wrapped_data;
+	const u8 *wrapped_data;
 	const u8 *fils_pk;
 	const u8 *fils_nonce;
 	const u8 *owe_dh;
@@ -138,7 +138,7 @@ struct ieee802_11_elems {
 	u8 fils_hlp_len;
 	u8 fils_ip_addr_assign_len;
 	u8 key_delivery_len;
-	u8 fils_wrapped_data_len;
+	u8 wrapped_data_len;
 	u8 fils_pk_len;
 	u8 owe_dh_len;
 	u8 power_capab_len;

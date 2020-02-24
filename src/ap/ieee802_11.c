@@ -1820,11 +1820,11 @@ void handle_auth_fils(struct hostapd_data *hapd, struct sta_info *sta,
 		    FILS_SESSION_LEN);
 	os_memcpy(sta->fils_session, elems.fils_session, FILS_SESSION_LEN);
 
-	/* FILS Wrapped Data */
-	if (elems.fils_wrapped_data) {
+	/* Wrapped Data */
+	if (elems.wrapped_data) {
 		wpa_hexdump(MSG_DEBUG, "FILS: Wrapped Data",
-			    elems.fils_wrapped_data,
-			    elems.fils_wrapped_data_len);
+			    elems.wrapped_data,
+			    elems.wrapped_data_len);
 		if (!pmksa) {
 #ifndef CONFIG_NO_RADIUS
 			if (!sta->eapol_sm) {
@@ -1834,8 +1834,8 @@ void handle_auth_fils(struct hostapd_data *hapd, struct sta_info *sta,
 			wpa_printf(MSG_DEBUG,
 				   "FILS: Forward EAP-Initiate/Re-auth to authentication server");
 			ieee802_1x_encapsulate_radius(
-				hapd, sta, elems.fils_wrapped_data,
-				elems.fils_wrapped_data_len);
+				hapd, sta, elems.wrapped_data,
+				elems.wrapped_data_len);
 			sta->fils_pending_cb = cb;
 			wpa_printf(MSG_DEBUG,
 				   "FILS: Will send Authentication frame once the response from authentication server is available");
@@ -1844,8 +1844,8 @@ void handle_auth_fils(struct hostapd_data *hapd, struct sta_info *sta,
 			 * to maintain a copy of the EAP-Initiate/Reauth
 			 * message. */
 			if (fils_pmkid_erp(wpa_auth_sta_key_mgmt(sta->wpa_sm),
-					   elems.fils_wrapped_data,
-					   elems.fils_wrapped_data_len,
+					   elems.wrapped_data,
+					   elems.wrapped_data_len,
 					   sta->fils_erp_pmkid) == 0)
 				sta->fils_erp_pmkid_set = 1;
 			return;
@@ -1988,12 +1988,12 @@ prepare_auth_resp_fils(struct hostapd_data *hapd,
 	wpabuf_put_u8(data, WLAN_EID_EXT_FILS_SESSION);
 	wpabuf_put_data(data, sta->fils_session, FILS_SESSION_LEN);
 
-	/* FILS Wrapped Data */
+	/* Wrapped Data */
 	if (!pmksa && erp_resp) {
 		wpabuf_put_u8(data, WLAN_EID_EXTENSION); /* Element ID */
 		wpabuf_put_u8(data, 1 + wpabuf_len(erp_resp)); /* Length */
 		/* Element ID Extension */
-		wpabuf_put_u8(data, WLAN_EID_EXT_FILS_WRAPPED_DATA);
+		wpabuf_put_u8(data, WLAN_EID_EXT_WRAPPED_DATA);
 		wpabuf_put_buf(data, erp_resp);
 
 		if (fils_rmsk_to_pmk(wpa_auth_sta_key_mgmt(sta->wpa_sm),

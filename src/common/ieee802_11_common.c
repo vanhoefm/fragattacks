@@ -245,9 +245,9 @@ static int ieee802_11_parse_extension(const u8 *pos, size_t elen,
 		elems->key_delivery = pos;
 		elems->key_delivery_len = elen;
 		break;
-	case WLAN_EID_EXT_FILS_WRAPPED_DATA:
-		elems->fils_wrapped_data = pos;
-		elems->fils_wrapped_data_len = elen;
+	case WLAN_EID_EXT_WRAPPED_DATA:
+		elems->wrapped_data = pos;
+		elems->wrapped_data_len = elen;
 		break;
 	case WLAN_EID_EXT_FILS_PUBLIC_KEY:
 		if (elen < 1)

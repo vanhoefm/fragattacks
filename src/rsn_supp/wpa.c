@@ -3867,13 +3867,13 @@ struct wpabuf * fils_build_auth(struct wpa_sm *sm, int dh_group, const u8 *md)
 	wpabuf_put_u8(buf, WLAN_EID_EXT_FILS_SESSION);
 	wpabuf_put_data(buf, sm->fils_session, FILS_SESSION_LEN);
 
-	/* FILS Wrapped Data */
+	/* Wrapped Data */
 	sm->fils_erp_pmkid_set = 0;
 	if (erp_msg) {
 		wpabuf_put_u8(buf, WLAN_EID_EXTENSION); /* Element ID */
 		wpabuf_put_u8(buf, 1 + wpabuf_len(erp_msg)); /* Length */
 		/* Element ID Extension */
-		wpabuf_put_u8(buf, WLAN_EID_EXT_FILS_WRAPPED_DATA);
+		wpabuf_put_u8(buf, WLAN_EID_EXT_WRAPPED_DATA);
 		wpabuf_put_buf(buf, erp_msg);
 		/* Calculate pending PMKID here so that we do not need to
 		 * maintain a copy of the EAP-Initiate/Reauth message. */
@@ -4078,16 +4078,16 @@ int fils_process_auth(struct wpa_sm *sm, const u8 *bssid, const u8 *data,
 		goto fail;
 	}
 
-	/* FILS Wrapped Data */
-	if (!sm->cur_pmksa && elems.fils_wrapped_data) {
+	/* Wrapped Data */
+	if (!sm->cur_pmksa && elems.wrapped_data) {
 		u8 rmsk[ERP_MAX_KEY_LEN];
 		size_t rmsk_len;
 
 		wpa_hexdump(MSG_DEBUG, "FILS: Wrapped Data",
-			    elems.fils_wrapped_data,
-			    elems.fils_wrapped_data_len);
-		eapol_sm_process_erp_finish(sm->eapol, elems.fils_wrapped_data,
-					    elems.fils_wrapped_data_len);
+			    elems.wrapped_data,
+			    elems.wrapped_data_len);
+		eapol_sm_process_erp_finish(sm->eapol, elems.wrapped_data,
+					    elems.wrapped_data_len);
 		if (eapol_sm_failed(sm->eapol))
 			goto fail;
 
