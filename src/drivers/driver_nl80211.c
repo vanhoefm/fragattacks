@@ -8846,11 +8846,11 @@ static int driver_nl80211_send_mlme(void *priv, const u8 *data,
 				    size_t data_len, int noack,
 				    unsigned int freq,
 				    const u16 *csa_offs, size_t csa_offs_len,
-				    int no_encrypt)
+				    int no_encrypt, unsigned int wait)
 {
 	struct i802_bss *bss = priv;
 	return wpa_driver_nl80211_send_mlme(bss, data, data_len, noack,
-					    freq, 0, 0, 0, csa_offs,
+					    freq, 0, 0, wait, csa_offs,
 					    csa_offs_len, no_encrypt);
 }
 

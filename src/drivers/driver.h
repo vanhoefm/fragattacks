@@ -2715,11 +2715,13 @@ struct wpa_driver_ops {
 	 * @csa_offs_len: Number of elements in csa_offs
 	 * @no_encrypt: Do not encrypt frame even if appropriate key exists
 	 *	(used only for testing purposes)
+	 * @wait: Time to wait off-channel for a response (in ms), or zero
 	 * Returns: 0 on success, -1 on failure
 	 */
 	int (*send_mlme)(void *priv, const u8 *data, size_t data_len,
 			 int noack, unsigned int freq, const u16 *csa_offs,
-			 size_t csa_offs_len, int no_encrypt);
+			 size_t csa_offs_len, int no_encrypt,
+			 unsigned int wait);
 
 	/**
 	 * update_ft_ies - Update FT (IEEE 802.11r) IEs
