@@ -1834,4 +1834,10 @@ fail:
 	goto done;
 }
 
+
+size_t crypto_ecdh_prime_len(struct crypto_ecdh *ecdh)
+{
+	return crypto_ec_prime_len(ecdh->ec);
+}
+
 #endif /* CONFIG_ECC */

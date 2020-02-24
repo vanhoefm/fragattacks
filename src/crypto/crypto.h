@@ -916,5 +916,6 @@ struct wpabuf * crypto_ecdh_get_pubkey(struct crypto_ecdh *ecdh, int inc_y);
 struct wpabuf * crypto_ecdh_set_peerkey(struct crypto_ecdh *ecdh, int inc_y,
 					const u8 *key, size_t len);
 void crypto_ecdh_deinit(struct crypto_ecdh *ecdh);
+size_t crypto_ecdh_prime_len(struct crypto_ecdh *ecdh);
 
 #endif /* CRYPTO_H */
