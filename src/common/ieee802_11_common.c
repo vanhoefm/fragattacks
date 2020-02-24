@@ -206,6 +206,8 @@ static int ieee802_11_parse_extension(const u8 *pos, size_t elen,
 	ext_id = *pos++;
 	elen--;
 
+	elems->frag_ies.last_eid_ext = 0;
+
 	switch (ext_id) {
 	case WLAN_EID_EXT_ASSOC_DELAY_INFO:
 		if (elen != 1)
@@ -295,7 +297,36 @@ static int ieee802_11_parse_extension(const u8 *pos, size_t elen,
 		return -1;
 	}
 
+	if (elen == 254)
+		elems->frag_ies.last_eid_ext = ext_id;
+
 	return 0;
+}
+
+
+static void ieee802_11_parse_fragment(struct frag_ies_info *frag_ies,
+				      const u8 *pos, u8 elen)
+{
+	if (frag_ies->n_frags >= MAX_NUM_FRAG_IES_SUPPORTED) {
+		wpa_printf(MSG_MSGDUMP, "Too many element fragments - skip");
+		return;
+	}
+
+	/*
+	 * Note: while EID == 0 is a valid ID (SSID IE), it should not be
+	 * fragmented.
+	 */
+	if (!frag_ies->last_eid) {
+		wpa_printf(MSG_MSGDUMP,
+			   "Fragment without a valid last element - skip");
+		return;
+	}
+
+	frag_ies->frags[frag_ies->n_frags].ie = pos;
+	frag_ies->frags[frag_ies->n_frags].ie_len = elen;
+	frag_ies->frags[frag_ies->n_frags].eid = frag_ies->last_eid;
+	frag_ies->frags[frag_ies->n_frags].eid_ext = frag_ies->last_eid_ext;
+	frag_ies->n_frags++;
 }
 
 
@@ -516,7 +547,7 @@ ParseRes ieee802_11_parse_elems(const u8 *start, size_t len,
 			elems->dils_len = elen;
 			break;
 		case WLAN_EID_FRAGMENT:
-			/* TODO */
+			ieee802_11_parse_fragment(&elems->frag_ies, pos, elen);
 			break;
 		case WLAN_EID_EXTENSION:
 			if (ieee802_11_parse_extension(pos, elen, elems,
@@ -532,6 +563,12 @@ ParseRes ieee802_11_parse_elems(const u8 *start, size_t len,
 				   id, elen);
 			break;
 		}
+
+		if (id != WLAN_EID_FRAGMENT && elen == 255)
+			elems->frag_ies.last_eid = id;
+
+		if (id == WLAN_EID_EXTENSION && !elems->frag_ies.last_eid_ext)
+			elems->frag_ies.last_eid = 0;
 	}
 
 	if (!for_each_element_completed(elem, start, len)) {
@@ -2390,4 +2427,79 @@ int op_class_to_ch_width(u8 op_class)
 		return CHANWIDTH_8640MHZ;
 	}
 	return CHANWIDTH_USE_HT;
+}
+
+
+struct wpabuf * ieee802_11_defrag_data(struct ieee802_11_elems *elems,
+				       u8 eid, u8 eid_ext,
+				       const u8 *data, u8 len)
+{
+	struct frag_ies_info *frag_ies = &elems->frag_ies;
+	struct wpabuf *buf;
+	unsigned int i;
+
+	if (!elems || !data || !len)
+		return NULL;
+
+	buf = wpabuf_alloc_copy(data, len);
+	if (!buf)
+		return NULL;
+
+	for (i = 0; i < frag_ies->n_frags; i++) {
+		int ret;
+
+		if (frag_ies->frags[i].eid != eid ||
+		    frag_ies->frags[i].eid_ext != eid_ext)
+			continue;
+
+		ret = wpabuf_resize(&buf, frag_ies->frags[i].ie_len);
+		if (ret < 0) {
+			wpabuf_free(buf);
+			return NULL;
+		}
+
+		/* Copy only the fragment data (without the EID and length) */
+		wpabuf_put_data(buf, frag_ies->frags[i].ie,
+				frag_ies->frags[i].ie_len);
+	}
+
+	return buf;
+}
+
+
+struct wpabuf * ieee802_11_defrag(struct ieee802_11_elems *elems,
+				  u8 eid, u8 eid_ext)
+{
+	const u8 *data;
+	u8 len;
+
+	/*
+	 * TODO: Defragmentation mechanism can be supported for all IEs. For now
+	 * handle only those that are used (or use ieee802_11_defrag_data()).
+	 */
+	switch (eid) {
+	case WLAN_EID_EXTENSION:
+		switch (eid_ext) {
+		case WLAN_EID_EXT_FILS_HLP_CONTAINER:
+			data = elems->fils_hlp;
+			len = elems->fils_hlp_len;
+			break;
+		case WLAN_EID_EXT_WRAPPED_DATA:
+			data = elems->wrapped_data;
+			len = elems->wrapped_data_len;
+			break;
+		default:
+			wpa_printf(MSG_DEBUG,
+				   "Defragmentation not supported. eid_ext=%u",
+				   eid_ext);
+			return NULL;
+		}
+		break;
+	default:
+		wpa_printf(MSG_DEBUG,
+			   "Defragmentation not supported. eid=%u", eid);
+		return NULL;
+	}
+
+	return ieee802_11_defrag_data(elems, eid, eid_ext, data, len);
 }
