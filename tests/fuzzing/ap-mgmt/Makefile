@@ -24,6 +24,8 @@ LIBS += $(SRC)/utils/libutils.a
 ELIBS += $(SRC)/crypto/libcrypto.a
 ELIBS += $(SRC)/tls/libtls.a
 
+OBJS += $(SRC)/drivers/driver_common.o
+
 ap-mgmt: ap-mgmt.o $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LIBS) $(ELIBS)
 

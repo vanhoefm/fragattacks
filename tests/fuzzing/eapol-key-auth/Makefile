@@ -17,6 +17,8 @@ LIBS += $(SRC)/eap_server/libeap_server.a
 LIBS += $(SRC)/ap/libap.a
 LIBS += $(SRC)/radius/libradius.a
 
+OBJS += $(SRC)/drivers/driver_common.o
+
 eapol-key-auth: eapol-key-auth.o $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ -Wl,--start-group $(LIBS) -Wl,--end-group
 
