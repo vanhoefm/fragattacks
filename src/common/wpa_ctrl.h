@@ -380,6 +380,10 @@ extern "C" {
 #define WDS_STA_INTERFACE_ADDED "WDS-STA-INTERFACE-ADDED "
 #define WDS_STA_INTERFACE_REMOVED "WDS-STA-INTERFACE-REMOVED "
 
+#ifndef BIT
+#define BIT(x) (1U << (x))
+#endif
+
 /* BSS command information masks */
 
 #define WPA_BSS_MASK_ALL		0xFFFDFFFF
