@@ -169,12 +169,13 @@ static void supp_eapol_key_request(void *eloop_data, void *user_ctx)
 
 static int auth_set_key(void *ctx, int vlan_id, enum wpa_alg alg,
 			const u8 *addr, int idx, u8 *key,
-			size_t key_len)
+			size_t key_len, enum key_flag key_flag)
 {
 	struct wpa *wpa = ctx;
 
-	wpa_printf(MSG_DEBUG, "AUTH: %s (vlan_id=%d alg=%d idx=%d key_len=%d)",
-		   __func__, vlan_id, alg, idx, (int) key_len);
+	wpa_printf(MSG_DEBUG,
+		   "AUTH: %s (vlan_id=%d alg=%d idx=%d key_len=%d key_flag=0x%x)",
+		   __func__, vlan_id, alg, idx, (int) key_len, key_flag);
 	if (addr)
 		wpa_printf(MSG_DEBUG, "AUTH: addr=" MACSTR, MAC2STR(addr));
 
