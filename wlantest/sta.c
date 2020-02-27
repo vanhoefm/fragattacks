@@ -156,7 +156,8 @@ void sta_update_assoc(struct wlantest_sta *sta, struct ieee802_11_elems *elems)
 			   MAC2STR(sta->addr), sta->pairwise_cipher,
 			   MAC2STR(bss->bssid), bss->pairwise_cipher);
 	}
-	if (sta->proto && data.group_cipher != bss->group_cipher) {
+	if (sta->proto && data.group_cipher != bss->group_cipher &&
+	    bss->ies_set) {
 		wpa_printf(MSG_INFO, "Mismatch in group cipher: STA "
 			   MACSTR " 0x%x != BSS " MACSTR " 0x%x",
 			   MAC2STR(sta->addr), data.group_cipher,

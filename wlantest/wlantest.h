@@ -135,6 +135,7 @@ struct wlantest_bss {
 	size_t ssid_len;
 	int beacon_seen;
 	int proberesp_seen;
+	int ies_set;
 	int parse_error_reported;
 	u8 wpaie[257];
 	u8 rsnie[257];
@@ -265,7 +266,7 @@ struct wlantest_bss * bss_find(struct wlantest *wt, const u8 *bssid);
 struct wlantest_bss * bss_get(struct wlantest *wt, const u8 *bssid);
 void bss_deinit(struct wlantest_bss *bss);
 void bss_update(struct wlantest *wt, struct wlantest_bss *bss,
-		struct ieee802_11_elems *elems);
+		struct ieee802_11_elems *elems, int beacon);
 void bss_flush(struct wlantest *wt);
 int bss_add_pmk_from_passphrase(struct wlantest_bss *bss,
 				const char *passphrase);

@@ -129,7 +129,7 @@ static void bss_add_pmk(struct wlantest *wt, struct wlantest_bss *bss)
 
 
 void bss_update(struct wlantest *wt, struct wlantest_bss *bss,
-		struct ieee802_11_elems *elems)
+		struct ieee802_11_elems *elems, int beacon)
 {
 	struct wpa_ie_data data;
 	int update = 0;
@@ -137,15 +137,18 @@ void bss_update(struct wlantest *wt, struct wlantest_bss *bss,
 	if (bss->capab_info != bss->prev_capab_info)
 		update = 1;
 
-	if (elems->ssid == NULL || elems->ssid_len > 32) {
-		wpa_printf(MSG_INFO, "Invalid or missing SSID in a Beacon "
-			   "frame for " MACSTR, MAC2STR(bss->bssid));
+	if (beacon && (!elems->ssid || elems->ssid_len > 32)) {
+		wpa_printf(MSG_INFO,
+			   "Invalid or missing SSID in a %s frame for " MACSTR,
+			   beacon == 1 ? "Beacon" : "Probe Response",
+			   MAC2STR(bss->bssid));
 		bss->parse_error_reported = 1;
 		return;
 	}
 
-	if (bss->ssid_len != elems->ssid_len ||
-	    os_memcmp(bss->ssid, elems->ssid, bss->ssid_len) != 0) {
+	if (beacon &&
+	    (bss->ssid_len != elems->ssid_len ||
+	     os_memcmp(bss->ssid, elems->ssid, bss->ssid_len) != 0)) {
 		wpa_printf(MSG_DEBUG, "Store SSID '%s' for BSSID " MACSTR,
 			   wpa_ssid_txt(elems->ssid, elems->ssid_len),
 			   MAC2STR(bss->bssid));
@@ -223,7 +226,11 @@ void bss_update(struct wlantest *wt, struct wlantest_bss *bss,
 	if (!update)
 		return;
 
-	bss->beacon_seen = 1;
+	if (beacon == 1)
+		bss->beacon_seen = 1;
+	else if (beacon == 2)
+		bss->proberesp_seen = 1;
+	bss->ies_set = 1;
 	bss->prev_capab_info = bss->capab_info;
 	bss->proto = 0;
 	bss->pairwise_cipher = 0;

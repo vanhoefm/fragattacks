@@ -222,6 +222,25 @@ static void derive_ptk(struct wlantest *wt, struct wlantest_bss *bss,
 }
 
 
+static void elems_from_eapol_ie(struct ieee802_11_elems *elems,
+				struct wpa_eapol_ie_parse *ie)
+{
+	os_memset(elems, 0, sizeof(*elems));
+	if (ie->wpa_ie) {
+		elems->wpa_ie = ie->wpa_ie + 2;
+		elems->wpa_ie_len = ie->wpa_ie_len - 2;
+	}
+	if (ie->rsn_ie) {
+		elems->rsn_ie = ie->rsn_ie + 2;
+		elems->rsn_ie_len = ie->rsn_ie_len - 2;
+	}
+	if (ie->osen) {
+		elems->osen = ie->osen + 2;
+		elems->osen_len = ie->osen_len - 2;
+	}
+}
+
+
 static void rx_data_eapol_key_2_of_4(struct wlantest *wt, const u8 *dst,
 				     const u8 *src, const u8 *data, size_t len)
 {
@@ -268,19 +287,7 @@ static void rx_data_eapol_key_2_of_4(struct wlantest *wt, const u8 *dst,
 	if (!sta->assocreq_seen) {
 		struct ieee802_11_elems elems;
 
-		os_memset(&elems, 0, sizeof(elems));
-		if (ie.wpa_ie) {
-			elems.wpa_ie = ie.wpa_ie + 2;
-			elems.wpa_ie_len = ie.wpa_ie_len - 2;
-		}
-		if (ie.rsn_ie) {
-			elems.rsn_ie = ie.rsn_ie + 2;
-			elems.rsn_ie_len = ie.rsn_ie_len - 2;
-		}
-		if (ie.osen) {
-			elems.osen = ie.osen + 2;
-			elems.osen_len = ie.osen_len - 2;
-		}
+		elems_from_eapol_ie(&elems, &ie);
 		wpa_printf(MSG_DEBUG,
 			   "Update STA data based on IEs in EAPOL-Key 2/4");
 		sta_update_assoc(sta, &elems);
@@ -748,6 +755,15 @@ static void rx_data_eapol_key_3_of_4(struct wlantest *wt, const u8 *dst,
 		add_note(wt, MSG_INFO, "Failed to parse EAPOL-Key Key Data");
 		os_free(decrypted_buf);
 		return;
+	}
+
+	if (!bss->ies_set) {
+		struct ieee802_11_elems elems;
+
+		elems_from_eapol_ie(&elems, &ie);
+		wpa_printf(MSG_DEBUG,
+			   "Update BSS data based on IEs in EAPOL-Key 3/4");
+		bss_update(wt, bss, &elems, 0);
 	}
 
 	if ((ie.wpa_ie &&
