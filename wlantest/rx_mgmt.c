@@ -640,6 +640,7 @@ static void rx_mgmt_assoc_req(struct wlantest *wt, const u8 *data, size_t len)
 		os_memcpy(sta->assocreq_ies, mgmt->u.assoc_req.variable,
 			  sta->assocreq_ies_len);
 
+	sta->assocreq_seen = 1;
 	sta_update_assoc(sta, &elems);
 }
 
@@ -875,6 +876,7 @@ static void rx_mgmt_reassoc_req(struct wlantest *wt, const u8 *data,
 		os_memcpy(sta->assocreq_ies, mgmt->u.reassoc_req.variable,
 			  sta->assocreq_ies_len);
 
+	sta->assocreq_seen = 1;
 	sta_update_assoc(sta, &elems);
 
 	/* TODO: FT protocol: verify FTE MIC and update GTK/IGTK for the BSS */

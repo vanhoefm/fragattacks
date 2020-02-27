@@ -257,7 +257,35 @@ static void rx_data_eapol_key_2_of_4(struct wlantest *wt, const u8 *dst,
 	}
 	os_memcpy(sta->snonce, hdr->key_nonce, WPA_NONCE_LEN);
 	key_info = WPA_GET_BE16(hdr->key_info);
+	key_data = mic + mic_len + 2;
 	key_data_len = WPA_GET_BE16(mic + mic_len);
+
+	if (wpa_supplicant_parse_ies(key_data, key_data_len, &ie) < 0) {
+		add_note(wt, MSG_INFO, "Failed to parse EAPOL-Key Key Data");
+		return;
+	}
+
+	if (!sta->assocreq_seen) {
+		struct ieee802_11_elems elems;
+
+		os_memset(&elems, 0, sizeof(elems));
+		if (ie.wpa_ie) {
+			elems.wpa_ie = ie.wpa_ie + 2;
+			elems.wpa_ie_len = ie.wpa_ie_len - 2;
+		}
+		if (ie.rsn_ie) {
+			elems.rsn_ie = ie.rsn_ie + 2;
+			elems.rsn_ie_len = ie.rsn_ie_len - 2;
+		}
+		if (ie.osen) {
+			elems.osen = ie.osen + 2;
+			elems.osen_len = ie.osen_len - 2;
+		}
+		wpa_printf(MSG_DEBUG,
+			   "Update STA data based on IEs in EAPOL-Key 2/4");
+		sta_update_assoc(sta, &elems);
+	}
+
 	derive_ptk(wt, bss, sta, key_info & WPA_KEY_INFO_TYPE_MASK, data, len);
 
 	if (!sta->ptk_set && !sta->tptk_set) {
@@ -281,18 +309,10 @@ static void rx_data_eapol_key_2_of_4(struct wlantest *wt, const u8 *dst,
 	}
 	add_note(wt, MSG_DEBUG, "Valid MIC found in EAPOL-Key 2/4");
 
-	key_data = mic + mic_len + 2;
-
-	if (wpa_supplicant_parse_ies(key_data, key_data_len, &ie) < 0) {
-		add_note(wt, MSG_INFO, "Failed to parse EAPOL-Key Key Data");
-		return;
-	}
-
 	if (ie.wpa_ie) {
 		wpa_hexdump(MSG_MSGDUMP, "EAPOL-Key Key Data - WPA IE",
 			    ie.wpa_ie, ie.wpa_ie_len);
 		if (os_memcmp(ie.wpa_ie, sta->rsnie, ie.wpa_ie_len) != 0) {
-			struct ieee802_11_elems elems;
 			add_note(wt, MSG_INFO,
 				 "Mismatch in WPA IE between EAPOL-Key 2/4 "
 				 "and (Re)Association Request from " MACSTR,
@@ -303,17 +323,6 @@ static void rx_data_eapol_key_2_of_4(struct wlantest *wt, const u8 *dst,
 				    "Request",
 				    sta->rsnie,
 				    sta->rsnie[0] ? 2 + sta->rsnie[1] : 0);
-			/*
-			 * The sniffer may have missed (Re)Association
-			 * Request, so try to survive with the information from
-			 * EAPOL-Key.
-			 */
-			os_memset(&elems, 0, sizeof(elems));
-			elems.wpa_ie = ie.wpa_ie + 2;
-			elems.wpa_ie_len = ie.wpa_ie_len - 2;
-			wpa_printf(MSG_DEBUG, "Update STA data based on WPA "
-				   "IE in EAPOL-Key 2/4");
-			sta_update_assoc(sta, &elems);
 		}
 	}
 
@@ -321,7 +330,6 @@ static void rx_data_eapol_key_2_of_4(struct wlantest *wt, const u8 *dst,
 		wpa_hexdump(MSG_MSGDUMP, "EAPOL-Key Key Data - RSN IE",
 			    ie.rsn_ie, ie.rsn_ie_len);
 		if (os_memcmp(ie.rsn_ie, sta->rsnie, ie.rsn_ie_len) != 0) {
-			struct ieee802_11_elems elems;
 			add_note(wt, MSG_INFO,
 				 "Mismatch in RSN IE between EAPOL-Key 2/4 "
 				 "and (Re)Association Request from " MACSTR,
@@ -332,17 +340,6 @@ static void rx_data_eapol_key_2_of_4(struct wlantest *wt, const u8 *dst,
 				    "Request",
 				    sta->rsnie,
 				    sta->rsnie[0] ? 2 + sta->rsnie[1] : 0);
-			/*
-			 * The sniffer may have missed (Re)Association
-			 * Request, so try to survive with the information from
-			 * EAPOL-Key.
-			 */
-			os_memset(&elems, 0, sizeof(elems));
-			elems.rsn_ie = ie.rsn_ie + 2;
-			elems.rsn_ie_len = ie.rsn_ie_len - 2;
-			wpa_printf(MSG_DEBUG, "Update STA data based on RSN "
-				   "IE in EAPOL-Key 2/4");
-			sta_update_assoc(sta, &elems);
 		}
 	}
 }
