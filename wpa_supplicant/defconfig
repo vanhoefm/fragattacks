@@ -607,3 +607,5 @@ CONFIG_BGSCAN_SIMPLE=y
 
 # Device Provisioning Protocol (DPP)
 CONFIG_DPP=y
+
+CONFIG_TESTING_OPTIONS=y
