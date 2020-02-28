@@ -1906,7 +1906,7 @@ def test_ap_ft_oom(dev, apdev):
     """WPA2-PSK-FT and OOM"""
     dst = setup_ap_ft_oom(dev, apdev)
     with alloc_fail(dev[0], 1, "wpa_ft_gen_req_ies"):
-        dev[0].roam(dst)
+        dev[0].roam(dst, check_bssid=False)
 
 def test_ap_ft_oom2(dev, apdev):
     """WPA2-PSK-FT and OOM (2)"""
@@ -1949,7 +1949,7 @@ def test_ap_ft_ap_oom(dev, apdev):
     bssid1 = hapd1.own_addr()
     dev[0].scan_for_bss(bssid1, freq="2412")
     # This roam will fail due to missing PMK-R0 (OOM prevented storing it)
-    dev[0].roam(bssid1)
+    dev[0].roam(bssid1, check_bssid=False)
 
 def test_ap_ft_ap_oom2(dev, apdev):
     """WPA2-PSK-FT and AP OOM 2"""
@@ -1994,15 +1994,15 @@ def test_ap_ft_ap_oom3(dev, apdev):
     dev[0].scan_for_bss(bssid1, freq="2412")
     with alloc_fail(hapd1, 1, "wpa_ft_pull_pmk_r1"):
         # This will fail due to not being able to send out PMK-R1 pull request
-        dev[0].roam(bssid1)
+        dev[0].roam(bssid1, check_bssid=False)
 
     with fail_test(hapd1, 2, "os_get_random;wpa_ft_pull_pmk_r1"):
         # This will fail due to not being able to send out PMK-R1 pull request
-        dev[0].roam(bssid1)
+        dev[0].roam(bssid1, check_bssid=False)
 
     with fail_test(hapd1, 2, "aes_siv_encrypt;wpa_ft_pull_pmk_r1"):
         # This will fail due to not being able to send out PMK-R1 pull request
-        dev[0].roam(bssid1)
+        dev[0].roam(bssid1, check_bssid=False)
 
 def test_ap_ft_ap_oom3b(dev, apdev):
     """WPA2-PSK-FT and AP OOM 3b"""
@@ -2076,23 +2076,23 @@ def test_ap_ft_ap_oom5(dev, apdev):
     dev[0].scan_for_bss(bssid1, freq="2412")
     with alloc_fail(hapd1, 1, "=wpa_ft_process_auth_req"):
         # This will fail to roam
-        dev[0].roam(bssid1)
+        dev[0].roam(bssid1, check_bssid=False)
 
     with fail_test(hapd1, 1, "os_get_random;wpa_ft_process_auth_req"):
         # This will fail to roam
-        dev[0].roam(bssid1)
+        dev[0].roam(bssid1, check_bssid=False)
 
     with fail_test(hapd1, 1, "sha256_prf_bits;wpa_pmk_r1_to_ptk;wpa_ft_process_auth_req"):
         # This will fail to roam
-        dev[0].roam(bssid1)
+        dev[0].roam(bssid1, check_bssid=False)
 
     with fail_test(hapd1, 3, "wpa_pmk_r1_to_ptk;wpa_ft_process_auth_req"):
         # This will fail to roam
-        dev[0].roam(bssid1)
+        dev[0].roam(bssid1, check_bssid=False)
 
     with fail_test(hapd1, 1, "wpa_derive_pmk_r1_name;wpa_ft_process_auth_req"):
         # This will fail to roam
-        dev[0].roam(bssid1)
+        dev[0].roam(bssid1, check_bssid=False)
 
 def test_ap_ft_ap_oom6(dev, apdev):
     """WPA2-PSK-FT and AP OOM 6"""
@@ -2231,10 +2231,10 @@ def test_ap_ft_ap_oom8(dev, apdev):
     dev[0].scan_for_bss(bssid1, freq="2412")
     with fail_test(hapd1, 1, "wpa_derive_pmk_r0;wpa_ft_psk_pmk_r1"):
         # This will fail to roam
-        dev[0].roam(bssid1)
+        dev[0].roam(bssid1, check_bssid=False)
     with fail_test(hapd1, 1, "wpa_derive_pmk_r1;wpa_ft_psk_pmk_r1"):
         # This will fail to roam
-        dev[0].roam(bssid1)
+        dev[0].roam(bssid1, check_bssid=False)
 
 def test_ap_ft_ap_oom9(dev, apdev):
     """WPA2-PSK-FT and AP OOM 9"""

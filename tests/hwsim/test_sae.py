@@ -2318,3 +2318,151 @@ def test_sae_forced_anti_clogging_h2e_loop(dev, apdev):
     finally:
         for i in range(2):
             dev[i].set("sae_pwe", "0")
+
+def test_sae_okc(dev, apdev):
+    """SAE and opportunistic key caching"""
+    check_sae_capab(dev[0])
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['okc'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    dev[0].set("sae_groups", "")
+    id = dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
+                        okc=True, scan_freq="2412")
+    dev[0].dump_monitor()
+    hapd.wait_sta()
+    if "sae_group" not in dev[0].get_status():
+        raise Exception("SAE authentication not used")
+
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    bssid2 = hapd2.own_addr()
+
+    dev[0].scan_for_bss(bssid2, freq=2412)
+    dev[0].roam(bssid2)
+    dev[0].dump_monitor()
+    hapd2.wait_sta()
+    if "sae_group" in dev[0].get_status():
+        raise Exception("SAE authentication used during roam to AP2")
+
+    dev[0].roam(bssid)
+    dev[0].dump_monitor()
+    hapd.wait_sta()
+    if "sae_group" in dev[0].get_status():
+        raise Exception("SAE authentication used during roam to AP1")
+
+def test_sae_okc_sta_only(dev, apdev):
+    """SAE and opportunistic key caching only on STA"""
+    check_sae_capab(dev[0])
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    dev[0].set("sae_groups", "")
+    id = dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
+                        okc=True, scan_freq="2412")
+    dev[0].dump_monitor()
+    hapd.wait_sta()
+    if "sae_group" not in dev[0].get_status():
+        raise Exception("SAE authentication not used")
+
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    bssid2 = hapd2.own_addr()
+
+    dev[0].scan_for_bss(bssid2, freq=2412)
+    dev[0].roam(bssid2, assoc_reject_ok=True)
+    dev[0].dump_monitor()
+    hapd2.wait_sta()
+    if "sae_group" not in dev[0].get_status():
+        raise Exception("SAE authentication not used during roam to AP2")
+
+def test_sae_okc_pmk_lifetime(dev, apdev):
+    """SAE and opportunistic key caching and PMK lifetime"""
+    check_sae_capab(dev[0])
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['okc'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    dev[0].set("sae_groups", "")
+    dev[0].set("dot11RSNAConfigPMKLifetime", "10")
+    dev[0].set("dot11RSNAConfigPMKReauthThreshold", "30")
+    id = dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
+                        okc=True, scan_freq="2412")
+    dev[0].dump_monitor()
+    hapd.wait_sta()
+    if "sae_group" not in dev[0].get_status():
+        raise Exception("SAE authentication not used")
+
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    bssid2 = hapd2.own_addr()
+
+    time.sleep(5)
+    dev[0].scan_for_bss(bssid2, freq=2412)
+    dev[0].roam(bssid2)
+    dev[0].dump_monitor()
+    hapd2.wait_sta()
+    if "sae_group" not in dev[0].get_status():
+        raise Exception("SAE authentication not used during roam to AP2 after reauth threshold")
+
+def test_sae_pmk_lifetime(dev, apdev):
+    """SAE and opportunistic key caching and PMK lifetime"""
+    check_sae_capab(dev[0])
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    dev[0].set("sae_groups", "")
+    dev[0].set("dot11RSNAConfigPMKLifetime", "10")
+    dev[0].set("dot11RSNAConfigPMKReauthThreshold", "50")
+    id = dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
+                        scan_freq="2412")
+    dev[0].dump_monitor()
+    hapd.wait_sta()
+    if "sae_group" not in dev[0].get_status():
+        raise Exception("SAE authentication not used")
+
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    bssid2 = hapd2.own_addr()
+
+    dev[0].scan_for_bss(bssid2, freq=2412)
+    dev[0].roam(bssid2)
+    dev[0].dump_monitor()
+    hapd2.wait_sta()
+    if "sae_group" not in dev[0].get_status():
+        raise Exception("SAE authentication not used during roam to AP2")
+
+    dev[0].roam(bssid)
+    dev[0].dump_monitor()
+    hapd.wait_sta()
+    if "sae_group" in dev[0].get_status():
+        raise Exception("SAE authentication used during roam to AP1")
+
+    time.sleep(6)
+    dev[0].scan_for_bss(bssid2, freq=2412)
+    dev[0].roam(bssid2)
+    dev[0].dump_monitor()
+    hapd2.wait_sta()
+    if "sae_group" not in dev[0].get_status():
+        raise Exception("SAE authentication not used during roam to AP2 after reauth threshold")
+
+    ev = dev[0].wait_event(["PMKSA-CACHE-REMOVED"], 11)
+    if ev is None:
+        raise Exception("PMKSA cache entry did not expire")
+    if bssid2 not in ev:
+        ev = dev[0].wait_event(["PMKSA-CACHE-REMOVED"], 11)
+        if ev is None:
+            raise Exception("PMKSA cache entry did not expire")
+        if bssid2 not in ev:
+            raise Exception("PMKSA cache entry for the current AP did not expire")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], 1)
+    if ev is None:
+        raise Exception("Disconnection not reported after PMKSA cache entry expiration")
+
+    dev[0].wait_connected()
+    if "sae_group" not in dev[0].get_status():
+        raise Exception("SAE authentication not used after PMKSA cache entry expiration")

@@ -1191,7 +1191,8 @@ class WpaSupplicant:
                                  "CTRL-EVENT-SCAN-RESULTS"], timeout=0.5)
         self.dump_monitor()
 
-    def roam(self, bssid, fail_test=False, assoc_reject_ok=False):
+    def roam(self, bssid, fail_test=False, assoc_reject_ok=False,
+             check_bssid=True):
         self.dump_monitor()
         if "OK" not in self.request("ROAM " + bssid):
             raise Exception("ROAM failed")
@@ -1205,13 +1206,18 @@ class WpaSupplicant:
                 raise Exception("Unexpected connection")
             self.dump_monitor()
             return
-        ev = self.wait_event(["CTRL-EVENT-CONNECTED",
-                              "CTRL-EVENT-ASSOC-REJECT"], timeout=10)
+        if assoc_reject_ok:
+            ev = self.wait_event(["CTRL-EVENT-CONNECTED"], timeout=10)
+        else:
+            ev = self.wait_event(["CTRL-EVENT-CONNECTED",
+                                  "CTRL-EVENT-ASSOC-REJECT"], timeout=10)
         if ev is None:
             raise Exception("Roaming with the AP timed out")
         if "CTRL-EVENT-ASSOC-REJECT" in ev:
             raise Exception("Roaming association rejected")
         self.dump_monitor()
+        if check_bssid and self.get_status_field('bssid') != bssid:
+            raise Exception("Did not roam to correct BSSID")
 
     def roam_over_ds(self, bssid, fail_test=False):
         self.dump_monitor()
