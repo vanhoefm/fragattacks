@@ -132,6 +132,38 @@ static void write_decrypted_note(struct wlantest *wt, const u8 *decrypted,
 }
 
 
+static u8 * try_ptk(int pairwise_cipher, struct wpa_ptk *ptk,
+		    const struct ieee80211_hdr *hdr,
+		    const u8 *data, size_t data_len, size_t *decrypted_len)
+{
+	u8 *decrypted;
+	unsigned int tk_len = ptk->tk_len;
+
+	decrypted = NULL;
+	if ((pairwise_cipher == WPA_CIPHER_CCMP ||
+	     pairwise_cipher == 0) && tk_len == 16) {
+		decrypted = ccmp_decrypt(ptk->tk, hdr, data,
+					 data_len, decrypted_len);
+	} else if ((pairwise_cipher == WPA_CIPHER_CCMP_256 ||
+		    pairwise_cipher == 0) && tk_len == 32) {
+		decrypted = ccmp_256_decrypt(ptk->tk, hdr, data,
+					     data_len, decrypted_len);
+	} else if ((pairwise_cipher == WPA_CIPHER_GCMP ||
+		    pairwise_cipher == WPA_CIPHER_GCMP_256 ||
+		    pairwise_cipher == 0) &&
+		   (tk_len == 16 || tk_len == 32)) {
+		decrypted = gcmp_decrypt(ptk->tk, tk_len, hdr,
+					 data, data_len, decrypted_len);
+	} else if ((pairwise_cipher == WPA_CIPHER_TKIP ||
+		    pairwise_cipher == 0) && tk_len == 32) {
+		decrypted = tkip_decrypt(ptk->tk, hdr, data, data_len,
+					 decrypted_len);
+	}
+
+	return decrypted;
+}
+
+
 static u8 * try_all_ptk(struct wlantest *wt, int pairwise_cipher,
 			const struct ieee80211_hdr *hdr, int keyid,
 			const u8 *data, size_t data_len, size_t *decrypted_len)
@@ -142,27 +174,8 @@ static u8 * try_all_ptk(struct wlantest *wt, int pairwise_cipher,
 
 	wpa_debug_level = MSG_WARNING;
 	dl_list_for_each(ptk, &wt->ptk, struct wlantest_ptk, list) {
-		unsigned int tk_len = ptk->ptk_len - 32;
-		decrypted = NULL;
-		if ((pairwise_cipher == WPA_CIPHER_CCMP ||
-		     pairwise_cipher == 0) && tk_len == 16) {
-			decrypted = ccmp_decrypt(ptk->ptk.tk, hdr, data,
-						 data_len, decrypted_len);
-		} else if ((pairwise_cipher == WPA_CIPHER_CCMP_256 ||
-			    pairwise_cipher == 0) && tk_len == 32) {
-			decrypted = ccmp_256_decrypt(ptk->ptk.tk, hdr, data,
-						     data_len, decrypted_len);
-		} else if ((pairwise_cipher == WPA_CIPHER_GCMP ||
-			    pairwise_cipher == WPA_CIPHER_GCMP_256 ||
-			    pairwise_cipher == 0) &&
-			   (tk_len == 16 || tk_len == 32)) {
-			decrypted = gcmp_decrypt(ptk->ptk.tk, tk_len, hdr,
-						 data, data_len, decrypted_len);
-		} else if ((pairwise_cipher == WPA_CIPHER_TKIP ||
-			    pairwise_cipher == 0) && tk_len == 32) {
-			decrypted = tkip_decrypt(ptk->ptk.tk, hdr, data,
-						 data_len, decrypted_len);
-		}
+		decrypted = try_ptk(pairwise_cipher, &ptk->ptk, hdr,
+				    data, data_len, decrypted_len);
 		if (decrypted) {
 			wpa_debug_level = prev_level;
 			add_note(wt, MSG_DEBUG,
@@ -540,6 +553,20 @@ skip_replay_det:
 					data, len, &dlen);
 		if (decrypted) {
 			add_note(wt, MSG_DEBUG, "Current PTK did not work, but found a match from all known PTKs");
+		}
+	}
+	if (!decrypted) {
+		struct wpa_ptk zero_ptk;
+
+		os_memset(&zero_ptk, 0, sizeof(zero_ptk));
+		zero_ptk.tk_len = wpa_cipher_key_len(sta->pairwise_cipher);
+		decrypted = try_ptk(sta->pairwise_cipher, &zero_ptk, hdr,
+				    data, len, &dlen);
+		if (decrypted) {
+			add_note(wt, MSG_DEBUG,
+				 "Frame was encrypted with zero TK");
+			write_decrypted_note(wt, decrypted, zero_ptk.tk,
+					     zero_ptk.tk_len, keyid);
 		}
 	}
 	if (decrypted) {
