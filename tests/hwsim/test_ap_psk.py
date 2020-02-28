@@ -23,7 +23,7 @@ from utils import HwsimSkip, fail_test, skip_with_fips, start_monitor, stop_moni
 import hwsim_utils
 from wpasupplicant import WpaSupplicant
 from tshark import run_tshark
-from wlantest import WlantestCapture
+from wlantest import WlantestCapture, Wlantest
 
 def check_mib(dev, vals):
     mib = dev.get_mib()
@@ -210,6 +210,12 @@ def test_ap_wpa2_ptk_rekey(dev, apdev):
     passphrase = 'qwertyuiop'
     params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
     hapd = hostapd.add_ap(apdev[0], params)
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase(passphrase)
+
     dev[0].connect(ssid, psk=passphrase, wpa_ptk_rekey="1", scan_freq="2412")
     ev = dev[0].wait_event(["WPA: Key negotiation completed",
                             "CTRL-EVENT-DISCONNECTED"])
