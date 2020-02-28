@@ -489,7 +489,7 @@ static int is_in_chanlist(struct hostapd_iface *iface,
 }
 
 
-static void acs_survey_all_chans_intereference_factor(
+static void acs_survey_all_chans_interference_factor(
 	struct hostapd_iface *iface)
 {
 	int i;
@@ -566,7 +566,7 @@ static int is_common_24ghz_chan(int chan)
 #endif /* ACS_24GHZ_PREFER_1_6_11 */
 
 /*
- * At this point it's assumed chan->interface_factor has been computed.
+ * At this point it's assumed chan->interference_factor has been computed.
  * This function should be reusable regardless of interference computation
  * option (survey, BSS, spectral, ...). chan->interference factor must be
  * summable (i.e., must be always greater than zero).
@@ -826,7 +826,7 @@ static int acs_study_survey_based(struct hostapd_iface *iface)
 		return -1;
 	}
 
-	acs_survey_all_chans_intereference_factor(iface);
+	acs_survey_all_chans_interference_factor(iface);
 	return 0;
 }
 
