@@ -416,6 +416,20 @@ pmksa_cache_get_opportunistic(struct rsn_pmksa_cache *pmksa, void *network_ctx,
 	while (entry) {
 		if (entry->network_ctx == network_ctx &&
 		    (!akmp || entry->akmp == akmp)) {
+			struct os_reltime now;
+
+			if (wpa_key_mgmt_sae(entry->akmp) &&
+			    os_get_reltime(&now) == 0 &&
+			    entry->reauth_time < now.sec) {
+				wpa_printf(MSG_DEBUG,
+					   "RSN: Do not clone PMKSA cache entry for "
+					   MACSTR
+					   " since its reauth threshold has passed",
+					   MAC2STR(entry->aa));
+				entry = entry->next;
+				continue;
+			}
+
 			entry = pmksa_cache_clone_entry(pmksa, entry, aa);
 			if (entry) {
 				wpa_printf(MSG_DEBUG, "RSN: added "
