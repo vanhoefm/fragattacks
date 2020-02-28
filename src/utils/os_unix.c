@@ -337,6 +337,8 @@ char * os_rel2abs_path(const char *rel_path)
 
 int os_program_init(void)
 {
+	unsigned int seed;
+
 #ifdef ANDROID
 	/*
 	 * We ignore errors here since errors are normal if we
@@ -364,6 +366,9 @@ int os_program_init(void)
 	cap.inheritable = 0;
 	capset(&header, &cap);
 #endif /* ANDROID */
+
+	os_get_random((unsigned char *) &seed, sizeof(seed));
+	srandom(seed);
 
 	return 0;
 }
