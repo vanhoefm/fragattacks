@@ -533,6 +533,20 @@ int pmksa_cache_set_current(struct wpa_sm *sm, const u8 *pmkid,
 							      network_ctx,
 							      fils_cache_id);
 	if (sm->cur_pmksa) {
+		struct os_reltime now;
+
+		if (wpa_key_mgmt_sae(sm->cur_pmksa->akmp) &&
+		    os_get_reltime(&now) == 0 &&
+		    sm->cur_pmksa->reauth_time < now.sec) {
+			wpa_printf(MSG_DEBUG,
+				   "RSN: Do not allow PMKSA cache entry for "
+				   MACSTR
+				   " to be used for SAE since its reauth threshold has passed",
+				   MAC2STR(sm->cur_pmksa->aa));
+			sm->cur_pmksa = NULL;
+			return -1;
+		}
+
 		wpa_hexdump(MSG_DEBUG, "RSN: PMKSA cache entry found - PMKID",
 			    sm->cur_pmksa->pmkid, PMKID_LEN);
 		return 0;
