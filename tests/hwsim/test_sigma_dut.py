@@ -3809,3 +3809,27 @@ def test_sigma_dut_ap_sae_h2e_group_rejection(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
             dev[0].set("sae_pwe", "0")
+
+def test_sigma_dut_ap_sae_h2e_anti_clogging(dev, apdev, params):
+    """sigma_dut controlled AP with SAE H2E and anti-clogging token"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_sae_h2e_anti_clogging.sigma-hostapd")
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, sae_h2e=True, hostapd_logdir=logdir)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,SAE,PSK,12345678,AntiCloggingThreshold,0")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].set("sae_groups", "")
+            dev[0].set("sae_pwe", "2")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", scan_freq="2412")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+            dev[0].set("sae_pwe", "0")
