@@ -2798,6 +2798,12 @@ dbus_bool_t wpas_dbus_getter_capabilities(
 			goto nomem;
 #endif /* CONFIG_WPS */
 
+#ifdef CONFIG_SAE
+		if ((capa.key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_SAE) &&
+		    !wpa_dbus_dict_string_array_add_element(&iter_array, "sae"))
+			goto nomem;
+#endif /* CONFIG_SAE */
+
 		if (!wpa_dbus_dict_end_string_array(&iter_dict,
 						    &iter_dict_entry,
 						    &iter_dict_val,

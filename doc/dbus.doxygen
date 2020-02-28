@@ -651,7 +651,7 @@ fi.w1.wpa_supplicant1.CreateInterface.
 	  <tr><td>Pairwise</td><td>as</td><td>Possible array elements: "ccmp-256", "gcmp-256", "ccmp", "gcmp", "tkip", "none"</td>
 	  <tr><td>Group</td><td>as</td><td>Possible array elements: "ccmp-256", "gcmp-256", "ccmp", "gcmp", "tkip", "wep104", "wep40"</td>
 	  <tr><td>GroupMgmt</td><td>as</td><td>Possible array elements: "aes-128-cmac", "bip-gmac-128", "bip-gmac-256", "bip-cmac-256"</td>
-	  <tr><td>KeyMgmt</td><td>as</td><td>Possible array elements: "wpa-psk", "wpa-ft-psk", "wpa-psk-sha256", "wpa-eap", "wpa-ft-eap", "wpa-eap-sha256", "ieee8021x", "wpa-none", "wps", "none"</td>
+	  <tr><td>KeyMgmt</td><td>as</td><td>Possible array elements: "wpa-psk", "wpa-ft-psk", "wpa-psk-sha256", "wpa-eap", "wpa-ft-eap", "wpa-eap-sha256", "sae", "ieee8021x", "wpa-none", "wps", "none"</td>
 	  <tr><td>Protocol</td><td>as</td><td>Possible array elements: "rsn", "wpa"</td>
 	  <tr><td>AuthAlg</td><td>as</td><td>Possible array elements: "open", "shared", "leap"</td>
 	  <tr><td>Scan</td><td>as</td><td>Possible array elements: "active", "passive", "ssid"</td>
