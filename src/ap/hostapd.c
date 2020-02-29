@@ -58,8 +58,10 @@
 
 
 static int hostapd_flush_old_stations(struct hostapd_data *hapd, u16 reason);
+#ifdef CONFIG_WEP
 static int hostapd_setup_encryption(char *iface, struct hostapd_data *hapd);
 static int hostapd_broadcast_wep_clear(struct hostapd_data *hapd);
+#endif /* CONFIG_WEP */
 static int setup_interface2(struct hostapd_iface *iface);
 static void channel_list_update_timeout(void *eloop_ctx, void *timeout_ctx);
 static void hostapd_interface_setup_failure_handler(void *eloop_ctx,
@@ -89,7 +91,9 @@ void hostapd_reconfig_encryption(struct hostapd_data *hapd)
 		return;
 
 	hostapd_set_privacy(hapd, 0);
+#ifdef CONFIG_WEP
 	hostapd_setup_encryption(hapd->conf->iface, hapd);
+#endif /* CONFIG_WEP */
 }
 
 
@@ -142,7 +146,9 @@ static void hostapd_reload_bss(struct hostapd_data *hapd)
 		wpa_deinit(hapd->wpa_auth);
 		hapd->wpa_auth = NULL;
 		hostapd_set_privacy(hapd, 0);
+#ifdef CONFIG_WEP
 		hostapd_setup_encryption(hapd->conf->iface, hapd);
+#endif /* CONFIG_WEP */
 		hostapd_set_generic_elem(hapd, (u8 *) "", 0);
 	}
 
@@ -170,7 +176,9 @@ static void hostapd_clear_old(struct hostapd_iface *iface)
 	for (j = 0; j < iface->num_bss; j++) {
 		hostapd_flush_old_stations(iface->bss[j],
 					   WLAN_REASON_PREV_AUTH_NOT_VALID);
+#ifdef CONFIG_WEP
 		hostapd_broadcast_wep_clear(iface->bss[j]);
+#endif /* CONFIG_WEP */
 
 #ifndef CONFIG_NO_RADIUS
 		/* TODO: update dynamic data based on changed configuration
@@ -284,6 +292,8 @@ int hostapd_reload_config(struct hostapd_iface *iface)
 }
 
 
+#ifdef CONFIG_WEP
+
 static void hostapd_broadcast_key_clear_iface(struct hostapd_data *hapd,
 					      const char *ifname)
 {
@@ -338,6 +348,8 @@ static int hostapd_broadcast_wep_set(struct hostapd_data *hapd)
 
 	return errors;
 }
+
+#endif /* CONFIG_WEP */
 
 
 static void hostapd_free_hapd_data(struct hostapd_data *hapd)
@@ -524,6 +536,8 @@ static void hostapd_cleanup_iface(struct hostapd_iface *iface)
 }
 
 
+#ifdef CONFIG_WEP
+
 static void hostapd_clear_wep(struct hostapd_data *hapd)
 {
 	if (hapd->drv_priv && !hapd->iface->driver_ap_teardown && hapd->conf) {
@@ -571,6 +585,8 @@ static int hostapd_setup_encryption(char *iface, struct hostapd_data *hapd)
 	return 0;
 }
 
+#endif /* CONFIG_WEP */
+
 
 static int hostapd_flush_old_stations(struct hostapd_data *hapd, u16 reason)
 {
@@ -606,7 +622,9 @@ static void hostapd_bss_deinit_no_free(struct hostapd_data *hapd)
 {
 	hostapd_free_stas(hapd);
 	hostapd_flush_old_stations(hapd, WLAN_REASON_DEAUTH_LEAVING);
+#ifdef CONFIG_WEP
 	hostapd_clear_wep(hapd);
+#endif /* CONFIG_WEP */
 }
 
 
@@ -1161,9 +1179,11 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
 					   WLAN_REASON_PREV_AUTH_NOT_VALID);
 	hostapd_set_privacy(hapd, 0);
 
+#ifdef CONFIG_WEP
 	hostapd_broadcast_wep_clear(hapd);
 	if (hostapd_setup_encryption(conf->iface, hapd))
 		return -1;
+#endif /* CONFIG_WEP */
 
 	/*
 	 * Fetch the SSID from the system and use it or,

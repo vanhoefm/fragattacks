@@ -11,11 +11,16 @@ import subprocess
 from remotehost import remote_compatible
 import hostapd
 import hwsim_utils
-from utils import clear_regdom
+from utils import clear_regdom, HwsimSkip
+
+def check_wep_capa(dev):
+    if "WEP40" not in dev.get_capability("group"):
+        raise HwsimSkip("WEP not supported")
 
 @remote_compatible
 def test_wep_open_auth(dev, apdev):
     """WEP Open System authentication"""
+    check_wep_capa(dev[0])
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wep-open",
                            "wep_key0": '"hello"'})
@@ -35,6 +40,8 @@ def test_wep_open_auth(dev, apdev):
 @remote_compatible
 def test_wep_shared_key_auth(dev, apdev):
     """WEP Shared Key authentication"""
+    check_wep_capa(dev[0])
+    check_wep_capa(dev[1])
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wep-shared-key",
                            "wep_key0": '"hello12345678"',
@@ -50,6 +57,7 @@ def test_wep_shared_key_auth(dev, apdev):
 @remote_compatible
 def test_wep_shared_key_auth_not_allowed(dev, apdev):
     """WEP Shared Key authentication not allowed"""
+    check_wep_capa(dev[0])
     hostapd.add_ap(apdev[0],
                    {"ssid": "wep-shared-key",
                     "wep_key0": '"hello12345678"',
@@ -63,6 +71,9 @@ def test_wep_shared_key_auth_not_allowed(dev, apdev):
 
 def test_wep_shared_key_auth_multi_key(dev, apdev):
     """WEP Shared Key authentication with multiple keys"""
+    check_wep_capa(dev[0])
+    check_wep_capa(dev[1])
+    check_wep_capa(dev[2])
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wep-shared-key",
                            "wep_key0": '"hello12345678"',
@@ -92,6 +103,7 @@ def test_wep_shared_key_auth_multi_key(dev, apdev):
 
 def test_wep_ht_vht(dev, apdev):
     """WEP and HT/VHT"""
+    check_wep_capa(dev[0])
     dev[0].flush_scan_cache()
     try:
         hapd = None
@@ -124,6 +136,7 @@ def test_wep_ht_vht(dev, apdev):
 
 def test_wep_ifdown(dev, apdev):
     """AP with WEP and external ifconfig down"""
+    check_wep_capa(dev[0])
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wep-open",
                            "wep_key0": '"hello"'})

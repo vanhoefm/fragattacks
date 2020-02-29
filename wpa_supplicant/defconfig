@@ -603,3 +603,11 @@ CONFIG_BGSCAN_SIMPLE=y
 
 # Device Provisioning Protocol (DPP)
 CONFIG_DPP=y
+
+# Wired equivalent privacy (WEP)
+# WEP is an obsolete cryptographic data confidentiality algorithm that is not
+# considered secure. It should not be used for anything anymore. The
+# functionality needed to use WEP is available in the current wpa_supplicant
+# release under this optional build parameter. This functionality is subject to
+# be completely removed in a future release.
+#CONFIG_WEP=y

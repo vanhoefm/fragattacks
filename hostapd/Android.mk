@@ -309,6 +309,10 @@ OBJS += src/fst/fst_ctrl_iface.c
 endif
 endif
 
+ifdef CONFIG_WEP
+L_CFLAGS += -DCONFIG_WEP
+endif
+
 
 include $(LOCAL_PATH)/src/drivers/drivers.mk
 

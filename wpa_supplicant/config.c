@@ -1856,6 +1856,8 @@ static char * wpa_config_write_machine_password(const struct parse_data *data,
 #endif /* IEEE8021X_EAPOL */
 
 
+#ifdef CONFIG_WEP
+
 static int wpa_config_parse_wep_key(u8 *key, size_t *len, int line,
 				    const char *value, int idx)
 {
@@ -1965,6 +1967,8 @@ static char * wpa_config_write_wep_key3(const struct parse_data *data,
 	return wpa_config_write_wep_key(ssid, 3);
 }
 #endif /* NO_CONFIG_WRITE */
+
+#endif /* CONFIG_WEP */
 
 
 #ifdef CONFIG_P2P
@@ -2451,11 +2455,13 @@ static const struct parse_data ssid_fields[] = {
 	{ STRe(openssl_ciphers, openssl_ciphers) },
 	{ INTe(erp, erp) },
 #endif /* IEEE8021X_EAPOL */
+#ifdef CONFIG_WEP
 	{ FUNC_KEY(wep_key0) },
 	{ FUNC_KEY(wep_key1) },
 	{ FUNC_KEY(wep_key2) },
 	{ FUNC_KEY(wep_key3) },
 	{ INT(wep_tx_keyidx) },
+#endif /* CONFIG_WEP */
 	{ INT(priority) },
 #ifdef IEEE8021X_EAPOL
 	{ INT(eap_workaround) },

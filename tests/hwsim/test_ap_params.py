@@ -16,6 +16,7 @@ import hwsim_utils
 import hostapd
 from tshark import run_tshark
 from utils import alloc_fail, HwsimSkip, parse_ie
+from test_wep import check_wep_capa
 
 @remote_compatible
 def test_ap_fragmentation_rts_set_high(dev, apdev):
@@ -334,6 +335,7 @@ def test_ap_wds_sta_open(dev, apdev):
 
 def test_ap_wds_sta_wep(dev, apdev):
     """WEP AP with STA using 4addr mode"""
+    check_wep_capa(dev[0])
     ssid = "test-wds-wep"
     params = {}
     params['ssid'] = ssid
@@ -658,6 +660,7 @@ def test_ap_beacon_rate_vht(dev, apdev):
 
 def test_ap_wep_to_wpa(dev, apdev):
     """WEP to WPA2-PSK configuration change in hostapd"""
+    check_wep_capa(dev[0])
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wep-to-wpa",
                            "wep_key0": '"hello"'})

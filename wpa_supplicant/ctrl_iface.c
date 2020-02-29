@@ -3949,8 +3949,10 @@ static const struct cipher_info ciphers[] = {
 	{ WPA_DRIVER_CAPA_ENC_GCMP, "GCMP", 0 },
 	{ WPA_DRIVER_CAPA_ENC_TKIP, "TKIP", 0 },
 	{ WPA_DRIVER_CAPA_KEY_MGMT_WPA_NONE, "NONE", 0 },
+#ifdef CONFIG_WEP
 	{ WPA_DRIVER_CAPA_ENC_WEP104, "WEP104", 1 },
 	{ WPA_DRIVER_CAPA_ENC_WEP40, "WEP40", 1 }
+#endif /* CONFIG_WEP */
 };
 
 static const struct cipher_info ciphers_group_mgmt[] = {
@@ -4012,7 +4014,11 @@ static int ctrl_iface_get_capability_group(int res, char *strict,
 	if (res < 0) {
 		if (strict)
 			return 0;
+#ifdef CONFIG_WEP
 		len = os_strlcpy(buf, "CCMP TKIP WEP104 WEP40", buflen);
+#else /* CONFIG_WEP */
+		len = os_strlcpy(buf, "CCMP TKIP", buflen);
+#endif /* CONFIG_WEP */
 		if (len >= buflen)
 			return -1;
 		return len;

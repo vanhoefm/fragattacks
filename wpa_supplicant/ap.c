@@ -390,6 +390,7 @@ static int wpa_supplicant_conf_ap(struct wpa_supplicant *wpa_s,
 		bss->ssid.wpa_psk_set = 1;
 	} else if (ssid->passphrase) {
 		bss->ssid.wpa_passphrase = os_strdup(ssid->passphrase);
+#ifdef CONFIG_WEP
 	} else if (ssid->wep_key_len[0] || ssid->wep_key_len[1] ||
 		   ssid->wep_key_len[2] || ssid->wep_key_len[3]) {
 		struct hostapd_wep_keys *wep = &bss->ssid.wep;
@@ -405,6 +406,7 @@ static int wpa_supplicant_conf_ap(struct wpa_supplicant *wpa_s,
 		}
 		wep->idx = ssid->wep_tx_keyidx;
 		wep->keys_set = 1;
+#endif /* CONFIG_WEP */
 	}
 #ifdef CONFIG_SAE
 	if (ssid->sae_password) {
@@ -486,11 +488,12 @@ static int wpa_supplicant_conf_ap(struct wpa_supplicant *wpa_s,
 	bss->wpa_group = wpa_select_ap_group_cipher(bss->wpa, bss->wpa_pairwise,
 						    bss->rsn_pairwise);
 
-	if (bss->wpa && bss->ieee802_1x)
+	if (bss->wpa && bss->ieee802_1x) {
 		bss->ssid.security_policy = SECURITY_WPA;
-	else if (bss->wpa)
+	} else if (bss->wpa) {
 		bss->ssid.security_policy = SECURITY_WPA_PSK;
-	else if (bss->ieee802_1x) {
+#ifdef CONFIG_WEP
+	} else if (bss->ieee802_1x) {
 		int cipher = WPA_CIPHER_NONE;
 		bss->ssid.security_policy = SECURITY_IEEE_802_1X;
 		bss->ssid.wep.default_len = bss->default_wep_key_len;
@@ -508,6 +511,7 @@ static int wpa_supplicant_conf_ap(struct wpa_supplicant *wpa_s,
 		bss->wpa_group = cipher;
 		bss->wpa_pairwise = cipher;
 		bss->rsn_pairwise = cipher;
+#endif /* CONFIG_WEP */
 	} else {
 		bss->ssid.security_policy = SECURITY_PLAINTEXT;
 		bss->wpa_group = WPA_CIPHER_NONE;

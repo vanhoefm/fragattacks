@@ -2664,7 +2664,10 @@ dbus_bool_t wpas_dbus_getter_capabilities(
 	/***** group cipher */
 	if (res < 0) {
 		const char *args[] = {
-			"ccmp", "tkip", "wep104", "wep40"
+			"ccmp", "tkip",
+#ifdef CONFIG_WEP
+			"wep104", "wep40"
+#endif /* CONFIG_WEP */
 		};
 
 		if (!wpa_dbus_dict_append_string_array(
@@ -2691,12 +2694,14 @@ dbus_bool_t wpas_dbus_getter_capabilities(
 		    ((capa.enc & WPA_DRIVER_CAPA_ENC_TKIP) &&
 		     !wpa_dbus_dict_string_array_add_element(
 			     &iter_array, "tkip")) ||
+#ifdef CONFIG_WEP
 		    ((capa.enc & WPA_DRIVER_CAPA_ENC_WEP104) &&
 		     !wpa_dbus_dict_string_array_add_element(
 			     &iter_array, "wep104")) ||
 		    ((capa.enc & WPA_DRIVER_CAPA_ENC_WEP40) &&
 		     !wpa_dbus_dict_string_array_add_element(
 			     &iter_array, "wep40")) ||
+#endif /* CONFIG_WEP */
 		    !wpa_dbus_dict_end_string_array(&iter_dict,
 						    &iter_dict_entry,
 						    &iter_dict_val,
@@ -4733,9 +4738,14 @@ static dbus_bool_t wpas_dbus_get_bss_security_prop(
 
 	/* Group */
 	switch (ie_data->group_cipher) {
+#ifdef CONFIG_WEP
 	case WPA_CIPHER_WEP40:
 		group = "wep40";
 		break;
+	case WPA_CIPHER_WEP104:
+		group = "wep104";
+		break;
+#endif /* CONFIG_WEP */
 	case WPA_CIPHER_TKIP:
 		group = "tkip";
 		break;
@@ -4744,9 +4754,6 @@ static dbus_bool_t wpas_dbus_get_bss_security_prop(
 		break;
 	case WPA_CIPHER_GCMP:
 		group = "gcmp";
-		break;
-	case WPA_CIPHER_WEP104:
-		group = "wep104";
 		break;
 	case WPA_CIPHER_CCMP_256:
 		group = "ccmp-256";

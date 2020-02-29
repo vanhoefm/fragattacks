@@ -145,11 +145,12 @@ def test_wpas_ctrl_network(dev):
     if "FAIL" not in dev[0].request("SET_NETWORK " + str(id) + ' identity 12x3'):
         raise Exception("Unexpected success for invalid identity string")
 
-    for i in range(0, 4):
-        if "FAIL" in dev[0].request("SET_NETWORK " + str(id) + ' wep_key' + str(i) + ' aabbccddee'):
-            raise Exception("Unexpected wep_key set failure")
-        if dev[0].get_network(id, "wep_key" + str(i)) != '*':
-            raise Exception("Unexpected wep_key get failure")
+    if "WEP40" in dev[0].get_capability("group"):
+        for i in range(0, 4):
+            if "FAIL" in dev[0].request("SET_NETWORK " + str(id) + ' wep_key' + str(i) + ' aabbccddee'):
+                raise Exception("Unexpected wep_key set failure")
+            if dev[0].get_network(id, "wep_key" + str(i)) != '*':
+                raise Exception("Unexpected wep_key get failure")
 
     if "FAIL" in dev[0].request("SET_NETWORK " + str(id) + ' psk_list P2P-00:11:22:33:44:55-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'):
         raise Exception("Unexpected failure for psk_list string")
@@ -205,11 +206,12 @@ def test_wpas_ctrl_network(dev):
         raise Exception("Invalid WEP key accepted")
     if "FAIL" not in dev[0].request('SET_NETWORK ' + str(id) + ' wep_key0 "12345678901234567"'):
         raise Exception("Too long WEP key accepted")
-    # too short WEP key is ignored
-    dev[0].set_network_quoted(id, "wep_key0", "1234")
-    dev[0].set_network_quoted(id, "wep_key1", "12345")
-    dev[0].set_network_quoted(id, "wep_key2", "1234567890123")
-    dev[0].set_network_quoted(id, "wep_key3", "1234567890123456")
+    if "WEP40" in dev[0].get_capability("group"):
+        # too short WEP key is ignored
+        dev[0].set_network_quoted(id, "wep_key0", "1234")
+        dev[0].set_network_quoted(id, "wep_key1", "12345")
+        dev[0].set_network_quoted(id, "wep_key2", "1234567890123")
+        dev[0].set_network_quoted(id, "wep_key3", "1234567890123456")
 
     dev[0].set_network(id, "go_p2p_dev_addr", "any")
     if dev[0].get_network(id, "go_p2p_dev_addr") is not None:

@@ -13,6 +13,7 @@ import hwsim_utils
 from wpasupplicant import WpaSupplicant
 from utils import HwsimSkip, skip_with_fips
 from test_rfkill import get_rfkill
+from test_wep import check_wep_capa
 
 def get_wext_interface():
     if not os.path.exists("/proc/net/wireless"):
@@ -149,6 +150,7 @@ def test_wext_pmksa_cache(dev, apdev):
 def test_wext_wep_open_auth(dev, apdev):
     """WEP Open System authentication"""
     wpas = get_wext_interface()
+    check_wep_capa(wpas)
 
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wep-open",
@@ -162,6 +164,7 @@ def test_wext_wep_open_auth(dev, apdev):
 def test_wext_wep_shared_key_auth(dev, apdev):
     """WEP Shared Key authentication"""
     wpas = get_wext_interface()
+    check_wep_capa(wpas)
 
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wep-shared-key",

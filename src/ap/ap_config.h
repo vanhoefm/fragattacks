@@ -67,6 +67,7 @@ struct hostapd_radius_servers;
 struct ft_remote_r0kh;
 struct ft_remote_r1kh;
 
+#ifdef CONFIG_WEP
 #define NUM_WEP_KEYS 4
 struct hostapd_wep_keys {
 	u8 idx;
@@ -75,10 +76,13 @@ struct hostapd_wep_keys {
 	int keys_set;
 	size_t default_len; /* key length used for dynamic key generation */
 };
+#endif /* CONFIG_WEP */
 
 typedef enum hostap_security_policy {
 	SECURITY_PLAINTEXT = 0,
+#ifdef CONFIG_WEP
 	SECURITY_STATIC_WEP = 1,
+#endif /* CONFIG_WEP */
 	SECURITY_IEEE_802_1X = 2,
 	SECURITY_WPA_PSK = 3,
 	SECURITY_WPA = 4,
@@ -102,7 +106,9 @@ struct hostapd_ssid {
 	char *wpa_psk_file;
 	struct sae_pt *pt;
 
+#ifdef CONFIG_WEP
 	struct hostapd_wep_keys wep;
+#endif /* CONFIG_WEP */
 
 #define DYNAMIC_VLAN_DISABLED 0
 #define DYNAMIC_VLAN_OPTIONAL 1
@@ -321,10 +327,12 @@ struct hostapd_bss_config {
 	size_t eap_req_id_text_len;
 	int eapol_key_index_workaround;
 
+#ifdef CONFIG_WEP
 	size_t default_wep_key_len;
 	int individual_wep_key_len;
 	int wep_rekeying_period;
 	int broadcast_key_idx_min, broadcast_key_idx_max;
+#endif /* CONFIG_WEP */
 	int eap_reauth_period;
 	int erp_send_reauth_start;
 	char *erp_domain;

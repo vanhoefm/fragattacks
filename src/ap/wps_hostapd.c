@@ -651,8 +651,10 @@ static int hapd_wps_cred_cb(struct hostapd_data *hapd, void *ctx)
 		    (str_starts(buf, "ssid=") ||
 		     str_starts(buf, "ssid2=") ||
 		     str_starts(buf, "auth_algs=") ||
+#ifdef CONFIG_WEP
 		     str_starts(buf, "wep_default_key=") ||
 		     str_starts(buf, "wep_key") ||
+#endif /* CONFIG_WEP */
 		     str_starts(buf, "wps_state=") ||
 		     (pmf_changed && str_starts(buf, "ieee80211w=")) ||
 		     str_starts(buf, "wpa=") ||
@@ -1196,6 +1198,7 @@ int hostapd_init_wps(struct hostapd_data *hapd,
 		wpa_snprintf_hex((char *) wps->network_key, 2 * PMK_LEN + 1,
 				 conf->ssid.wpa_psk->psk, PMK_LEN);
 		wps->network_key_len = 2 * PMK_LEN;
+#ifdef CONFIG_WEP
 	} else if (conf->ssid.wep.keys_set && conf->ssid.wep.key[0]) {
 		wps->network_key = os_malloc(conf->ssid.wep.len[0]);
 		if (wps->network_key == NULL)
@@ -1203,6 +1206,7 @@ int hostapd_init_wps(struct hostapd_data *hapd,
 		os_memcpy(wps->network_key, conf->ssid.wep.key[0],
 			  conf->ssid.wep.len[0]);
 		wps->network_key_len = conf->ssid.wep.len[0];
+#endif /* CONFIG_WEP */
 	}
 
 	if (conf->ssid.wpa_psk) {

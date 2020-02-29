@@ -137,6 +137,7 @@ void ieee802_1x_set_sta_authorized(struct hostapd_data *hapd,
 }
 
 
+#ifdef CONFIG_WEP
 #ifndef CONFIG_FIPS
 #ifndef CONFIG_NO_RC4
 
@@ -297,6 +298,7 @@ static void ieee802_1x_tx_key(struct hostapd_data *hapd, struct sta_info *sta)
 
 #endif /* CONFIG_NO_RC4 */
 #endif /* CONFIG_FIPS */
+#endif /* CONFIG_WEP */
 
 
 const char *radius_mode_txt(struct hostapd_data *hapd)
@@ -2114,6 +2116,8 @@ void ieee802_1x_abort_auth(struct hostapd_data *hapd, struct sta_info *sta)
 }
 
 
+#ifdef CONFIG_WEP
+
 static int ieee802_1x_rekey_broadcast(struct hostapd_data *hapd)
 {
 	struct eapol_authenticator *eapol = hapd->eapol_auth;
@@ -2197,6 +2201,8 @@ static void ieee802_1x_rekey(void *eloop_ctx, void *timeout_ctx)
 				       ieee802_1x_rekey, hapd, NULL);
 	}
 }
+
+#endif /* CONFIG_WEP */
 
 
 static void ieee802_1x_eapol_send(void *ctx, void *sta_ctx, u8 type,
@@ -2361,6 +2367,7 @@ static void _ieee802_1x_abort_auth(void *ctx, void *sta_ctx)
 }
 
 
+#ifdef CONFIG_WEP
 static void _ieee802_1x_tx_key(void *ctx, void *sta_ctx)
 {
 #ifndef CONFIG_FIPS
@@ -2372,6 +2379,7 @@ static void _ieee802_1x_tx_key(void *ctx, void *sta_ctx)
 #endif /* CONFIG_NO_RC4 */
 #endif /* CONFIG_FIPS */
 }
+#endif /* CONFIG_WEP */
 
 
 static void ieee802_1x_eapol_event(void *ctx, void *sta_ctx,
@@ -2422,7 +2430,6 @@ static int ieee802_1x_erp_add_key(void *ctx, struct eap_server_erp_key *erp)
 
 int ieee802_1x_init(struct hostapd_data *hapd)
 {
-	int i;
 	struct eapol_auth_config conf;
 	struct eapol_auth_cb cb;
 
@@ -2433,7 +2440,9 @@ int ieee802_1x_init(struct hostapd_data *hapd)
 	conf.ctx = hapd;
 	conf.eap_reauth_period = hapd->conf->eap_reauth_period;
 	conf.wpa = hapd->conf->wpa;
+#ifdef CONFIG_WEP
 	conf.individual_wep_key_len = hapd->conf->individual_wep_key_len;
+#endif /* CONFIG_WEP */
 	conf.eap_req_id_text = hapd->conf->eap_req_id_text;
 	conf.eap_req_id_text_len = hapd->conf->eap_req_id_text_len;
 	conf.erp_send_reauth_start = hapd->conf->erp_send_reauth_start;
@@ -2448,7 +2457,9 @@ int ieee802_1x_init(struct hostapd_data *hapd)
 	cb.logger = ieee802_1x_logger;
 	cb.set_port_authorized = ieee802_1x_set_port_authorized;
 	cb.abort_auth = _ieee802_1x_abort_auth;
+#ifdef CONFIG_WEP
 	cb.tx_key = _ieee802_1x_tx_key;
+#endif /* CONFIG_WEP */
 	cb.eapol_event = ieee802_1x_eapol_event;
 #ifdef CONFIG_ERP
 	cb.erp_get_key = ieee802_1x_erp_get_key;
@@ -2469,7 +2480,10 @@ int ieee802_1x_init(struct hostapd_data *hapd)
 		return -1;
 #endif /* CONFIG_NO_RADIUS */
 
+#ifdef CONFIG_WEP
 	if (hapd->conf->default_wep_key_len) {
+		int i;
+
 		for (i = 0; i < 4; i++)
 			hostapd_drv_set_key(hapd->conf->iface, hapd,
 					    WPA_ALG_NONE, NULL, i, 0, 0, NULL,
@@ -2480,6 +2494,7 @@ int ieee802_1x_init(struct hostapd_data *hapd)
 		if (!hapd->eapol_auth->default_wep_key)
 			return -1;
 	}
+#endif /* CONFIG_WEP */
 
 	return 0;
 }
@@ -2499,7 +2514,9 @@ void ieee802_1x_erp_flush(struct hostapd_data *hapd)
 
 void ieee802_1x_deinit(struct hostapd_data *hapd)
 {
+#ifdef CONFIG_WEP
 	eloop_cancel_timeout(ieee802_1x_rekey, hapd, NULL);
+#endif /* CONFIG_WEP */
 
 	if (hapd->driver && hapd->drv_priv &&
 	    (hapd->conf->ieee802_1x || hapd->conf->wpa))

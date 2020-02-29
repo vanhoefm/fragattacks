@@ -1238,6 +1238,10 @@ OBJS += ../src/fst/fst_ctrl_iface.o
 endif
 endif
 
+ifdef CONFIG_WEP
+CFLAGS += -DCONFIG_WEP
+endif
+
 ALL=hostapd hostapd_cli
 
 all: verify_config $(ALL)

@@ -1843,6 +1843,10 @@ OBJS_t2 += $(FST_OBJS)
 OBJS_nfc += $(FST_OBJS)
 endif
 
+ifdef CONFIG_WEP
+CFLAGS += -DCONFIG_WEP
+endif
+
 ifndef LDO
 LDO=$(CC)
 endif

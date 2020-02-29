@@ -479,6 +479,7 @@ int wpa_supplicant_scard_init(struct wpa_supplicant *wpa_s,
 
 #ifndef CONFIG_NO_SCAN_PROCESSING
 
+#ifdef CONFIG_WEP
 static int has_wep_key(struct wpa_ssid *ssid)
 {
 	int i;
@@ -490,6 +491,7 @@ static int has_wep_key(struct wpa_ssid *ssid)
 
 	return 0;
 }
+#endif /* CONFIG_WEP */
 
 
 static int wpa_supplicant_match_privacy(struct wpa_bss *bss,
@@ -510,8 +512,10 @@ static int wpa_supplicant_match_privacy(struct wpa_bss *bss,
 		return 1;
 #endif /* CONFIG_OWE */
 
+#ifdef CONFIG_WEP
 	if (has_wep_key(ssid))
 		privacy = 1;
+#endif /* CONFIG_WEP */
 
 #ifdef IEEE8021X_EAPOL
 	if ((ssid->key_mgmt & WPA_KEY_MGMT_IEEE8021X_NO_WPA) &&
@@ -540,17 +544,21 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 	int proto_match = 0;
 	const u8 *rsn_ie, *wpa_ie;
 	int ret;
+#ifdef CONFIG_WEP
 	int wep_ok;
+#endif /* CONFIG_WEP */
 
 	ret = wpas_wps_ssid_bss_match(wpa_s, ssid, bss);
 	if (ret >= 0)
 		return ret;
 
+#ifdef CONFIG_WEP
 	/* Allow TSN if local configuration accepts WEP use without WPA/WPA2 */
 	wep_ok = !wpa_key_mgmt_wpa(ssid->key_mgmt) &&
 		(((ssid->key_mgmt & WPA_KEY_MGMT_NONE) &&
 		  ssid->wep_key_len[ssid->wep_tx_keyidx] > 0) ||
 		 (ssid->key_mgmt & WPA_KEY_MGMT_IEEE8021X_NO_WPA));
+#endif /* CONFIG_WEP */
 
 	rsn_ie = wpa_bss_get_ie(bss, WLAN_EID_RSN);
 	while ((ssid->proto & (WPA_PROTO_RSN | WPA_PROTO_OSEN)) && rsn_ie) {
@@ -567,6 +575,7 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 		if (!ie.has_group)
 			ie.group_cipher = wpa_default_rsn_cipher(bss->freq);
 
+#ifdef CONFIG_WEP
 		if (wep_ok &&
 		    (ie.group_cipher & (WPA_CIPHER_WEP40 | WPA_CIPHER_WEP104)))
 		{
@@ -575,6 +584,7 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 					"   selected based on TSN in RSN IE");
 			return 1;
 		}
+#endif /* CONFIG_WEP */
 
 		if (!(ie.proto & ssid->proto) &&
 		    !(ssid->proto & WPA_PROTO_OSEN)) {
@@ -655,6 +665,7 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 			break;
 		}
 
+#ifdef CONFIG_WEP
 		if (wep_ok &&
 		    (ie.group_cipher & (WPA_CIPHER_WEP40 | WPA_CIPHER_WEP104)))
 		{
@@ -663,6 +674,7 @@ static int wpa_supplicant_ssid_bss_match(struct wpa_supplicant *wpa_s,
 					"   selected based on TSN in WPA IE");
 			return 1;
 		}
+#endif /* CONFIG_WEP */
 
 		if (!(ie.proto & ssid->proto)) {
 			if (debug_print)
@@ -1236,6 +1248,7 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 			continue;
 		}
 
+#ifdef CONFIG_WEP
 		if (wpa && !wpa_key_mgmt_wpa(ssid->key_mgmt) &&
 		    has_wep_key(ssid)) {
 			if (debug_print)
@@ -1243,6 +1256,7 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 					"   skip - ignore WPA/WPA2 AP for WEP network block");
 			continue;
 		}
+#endif /* CONFIG_WEP */
 
 		if ((ssid->key_mgmt & WPA_KEY_MGMT_OSEN) && !osen &&
 		    !rsn_osen) {
@@ -3077,6 +3091,7 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 		wpa_s->pending_eapol_rx = NULL;
 	}
 
+#ifdef CONFIG_WEP
 	if ((wpa_s->key_mgmt == WPA_KEY_MGMT_NONE ||
 	     wpa_s->key_mgmt == WPA_KEY_MGMT_IEEE8021X_NO_WPA) &&
 	    wpa_s->current_ssid &&
@@ -3084,6 +3099,7 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 		/* Set static WEP keys again */
 		wpa_set_wep_keys(wpa_s, wpa_s->current_ssid);
 	}
+#endif /* CONFIG_WEP */
 
 #ifdef CONFIG_IBSS_RSN
 	if (wpa_s->current_ssid &&

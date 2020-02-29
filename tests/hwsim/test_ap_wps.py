@@ -45,6 +45,7 @@ from utils import HwsimSkip, alloc_fail, fail_test, skip_with_fips
 from utils import wait_fail_trigger, clear_regdom
 from test_ap_eap import int_eap_server_params
 from test_sae import check_sae_capab
+from test_wep import check_wep_capa
 
 def wps_start_ap(apdev, ssid="test-wps-conf"):
     params = {"ssid": ssid, "eap_server": "1", "wps_state": "2",
@@ -10036,6 +10037,7 @@ def test_ap_wps_ignore_broadcast_ssid(dev, apdev):
 
 def test_ap_wps_wep(dev, apdev):
     """WPS AP trying to enable WEP"""
+    check_wep_capa(dev[0])
     ssid = "test-wps"
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": ssid, "eap_server": "1", "wps_state": "1",

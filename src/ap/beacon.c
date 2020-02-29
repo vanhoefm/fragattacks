@@ -1360,10 +1360,13 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 	params->key_mgmt_suites = hapd->conf->wpa_key_mgmt;
 	params->auth_algs = hapd->conf->auth_algs;
 	params->wpa_version = hapd->conf->wpa;
-	params->privacy = hapd->conf->ssid.wep.keys_set || hapd->conf->wpa ||
+	params->privacy = hapd->conf->wpa;
+#ifdef CONFIG_WEP
+	params->privacy |= hapd->conf->ssid.wep.keys_set ||
 		(hapd->conf->ieee802_1x &&
 		 (hapd->conf->default_wep_key_len ||
 		  hapd->conf->individual_wep_key_len));
+#endif /* CONFIG_WEP */
 	switch (hapd->conf->ignore_broadcast_ssid) {
 	case 0:
 		params->hide_ssid = NO_SSID_HIDING;

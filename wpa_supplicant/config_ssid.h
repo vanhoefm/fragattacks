@@ -300,6 +300,7 @@ struct wpa_ssid {
 	struct eap_peer_config eap;
 #endif /* IEEE8021X_EAPOL */
 
+#ifdef CONFIG_WEP
 #define NUM_WEP_KEYS 4
 #define MAX_WEP_KEY_LEN 16
 	/**
@@ -316,6 +317,7 @@ struct wpa_ssid {
 	 * wep_tx_keyidx - Default key index for TX frames using WEP
 	 */
 	int wep_tx_keyidx;
+#endif /* CONFIG_WEP */
 
 	/**
 	 * proactive_key_caching - Enable proactive key caching

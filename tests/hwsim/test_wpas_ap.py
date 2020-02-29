@@ -13,6 +13,7 @@ import hwsim_utils
 from utils import HwsimSkip, alloc_fail, clear_regdom_dev
 from wpasupplicant import WpaSupplicant
 from test_p2p_channel import set_country
+from test_wep import check_wep_capa
 
 def wait_ap_ready(dev):
     ev = dev.wait_event(["CTRL-EVENT-CONNECTED"])
@@ -103,6 +104,7 @@ def test_wpas_ap_open_isolate(dev):
 @remote_compatible
 def test_wpas_ap_wep(dev):
     """wpa_supplicant AP mode - WEP"""
+    check_wep_capa(dev[0])
     id = dev[0].add_network()
     dev[0].set_network(id, "mode", "2")
     dev[0].set_network_quoted(id, "ssid", "wpas-ap-wep")
@@ -540,17 +542,18 @@ def test_wpas_ap_oom(dev):
         dev[0].wait_disconnected()
     dev[0].request("REMOVE_NETWORK all")
 
-    id = dev[0].add_network()
-    dev[0].set_network(id, "mode", "2")
-    dev[0].set_network_quoted(id, "ssid", "wpas-ap")
-    dev[0].set_network(id, "key_mgmt", "NONE")
-    dev[0].set_network_quoted(id, "wep_key0", "hello")
-    dev[0].set_network(id, "frequency", "2412")
-    dev[0].set_network(id, "scan_freq", "2412")
-    with alloc_fail(dev[0], 1, "=wpa_supplicant_conf_ap"):
-        dev[0].select_network(id)
-        dev[0].wait_disconnected()
-    dev[0].request("REMOVE_NETWORK all")
+    if "WEP40" in dev[0].get_capability("group"):
+        id = dev[0].add_network()
+        dev[0].set_network(id, "mode", "2")
+        dev[0].set_network_quoted(id, "ssid", "wpas-ap")
+        dev[0].set_network(id, "key_mgmt", "NONE")
+        dev[0].set_network_quoted(id, "wep_key0", "hello")
+        dev[0].set_network(id, "frequency", "2412")
+        dev[0].set_network(id, "scan_freq", "2412")
+        with alloc_fail(dev[0], 1, "=wpa_supplicant_conf_ap"):
+            dev[0].select_network(id)
+            dev[0].wait_disconnected()
+        dev[0].request("REMOVE_NETWORK all")
 
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     wpas.interface_add("wlan5")

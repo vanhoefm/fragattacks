@@ -1965,10 +1965,12 @@ const char * wpa_cipher_txt(int cipher)
 	switch (cipher) {
 	case WPA_CIPHER_NONE:
 		return "NONE";
+#ifdef CONFIG_WEP
 	case WPA_CIPHER_WEP40:
 		return "WEP-40";
 	case WPA_CIPHER_WEP104:
 		return "WEP-104";
+#endif /* CONFIG_WEP */
 	case WPA_CIPHER_TKIP:
 		return "TKIP";
 	case WPA_CIPHER_CCMP:
@@ -2467,10 +2469,12 @@ int wpa_parse_cipher(const char *value)
 			val |= WPA_CIPHER_GCMP;
 		else if (os_strcmp(start, "TKIP") == 0)
 			val |= WPA_CIPHER_TKIP;
+#ifdef CONFIG_WEP
 		else if (os_strcmp(start, "WEP104") == 0)
 			val |= WPA_CIPHER_WEP104;
 		else if (os_strcmp(start, "WEP40") == 0)
 			val |= WPA_CIPHER_WEP40;
+#endif /* CONFIG_WEP */
 		else if (os_strcmp(start, "NONE") == 0)
 			val |= WPA_CIPHER_NONE;
 		else if (os_strcmp(start, "GTK_NOT_USED") == 0)

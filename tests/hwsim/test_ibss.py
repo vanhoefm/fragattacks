@@ -13,6 +13,7 @@ import subprocess
 
 import hwsim_utils
 from utils import alloc_fail, wait_fail_trigger
+from test_wep import check_wep_capa
 
 def connect_ibss_cmd(dev, id, freq=2412):
     dev.dump_monitor()
@@ -395,6 +396,9 @@ def test_ibss_rsn_tkip(dev):
 
 def test_ibss_wep(dev):
     """IBSS with WEP"""
+    check_wep_capa(dev[0])
+    check_wep_capa(dev[1])
+
     ssid = "ibss-wep"
 
     id = add_ibss(dev[0], ssid, key_mgmt="NONE", wep_key0='"hello"')

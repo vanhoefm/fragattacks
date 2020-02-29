@@ -823,6 +823,7 @@ static void write_eap(HKEY hk, struct wpa_ssid *ssid)
 #endif /* IEEE8021X_EAPOL */
 
 
+#ifdef CONFIG_WEP
 static void write_wep_key(HKEY hk, int idx, struct wpa_ssid *ssid)
 {
 	char field[20], *value;
@@ -834,11 +835,12 @@ static void write_wep_key(HKEY hk, int idx, struct wpa_ssid *ssid)
 		os_free(value);
 	}
 }
+#endif /* CONFIG_WEP */
 
 
 static int wpa_config_write_network(HKEY hk, struct wpa_ssid *ssid, int id)
 {
-	int i, errors = 0;
+	int errors = 0;
 	HKEY nhk, netw;
 	LONG ret;
 	TCHAR name[5];
@@ -924,9 +926,15 @@ static int wpa_config_write_network(HKEY hk, struct wpa_ssid *ssid, int id)
 	INTe(engine2, phase2_cert.engine);
 	INT_DEF(eapol_flags, DEFAULT_EAPOL_FLAGS);
 #endif /* IEEE8021X_EAPOL */
-	for (i = 0; i < 4; i++)
-		write_wep_key(netw, i, ssid);
-	INT(wep_tx_keyidx);
+#ifdef CONFIG_WEP
+	{
+		int i;
+
+		for (i = 0; i < 4; i++)
+			write_wep_key(netw, i, ssid);
+		INT(wep_tx_keyidx);
+	}
+#endif /* CONFIG_WEP */
 	INT(priority);
 #ifdef IEEE8021X_EAPOL
 	INT_DEF(eap_workaround, DEFAULT_EAP_WORKAROUND);

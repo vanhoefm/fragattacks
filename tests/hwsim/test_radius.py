@@ -21,6 +21,7 @@ import hostapd
 from utils import HwsimSkip, require_under_vm, skip_with_fips, alloc_fail, fail_test, wait_fail_trigger
 from test_ap_hs20 import build_dhcp_ack
 from test_ap_ft import ft_params1
+from test_wep import check_wep_capa
 
 def connect(dev, ssid, wait_connect=True):
     dev.connect(ssid, key_mgmt="WPA-EAP", scan_freq="2412",
@@ -442,6 +443,7 @@ def test_radius_acct_ft_psk(dev, apdev):
 
 def test_radius_acct_ieee8021x(dev, apdev):
     """RADIUS Accounting - IEEE 802.1X"""
+    check_wep_capa(dev[0])
     skip_with_fips(dev[0])
     as_hapd = hostapd.Hostapd("as")
     params = hostapd.radius_params()

@@ -227,6 +227,7 @@ static int wpa_supplicant_eapol_send(void *ctx, int type, const u8 *buf,
 }
 
 
+#ifdef CONFIG_WEP
 /**
  * wpa_eapol_set_wep_key - set WEP key for the driver
  * @ctx: Pointer to wpa_supplicant data (wpa_s)
@@ -254,6 +255,7 @@ static int wpa_eapol_set_wep_key(void *ctx, int unicast, int keyidx,
 			       unicast ? KEY_FLAG_PAIRWISE_RX_TX :
 			       KEY_FLAG_GROUP_RX_TX_DEFAULT);
 }
+#endif /* CONFIG_WEP */
 
 
 static void wpa_supplicant_aborted_cached(void *ctx)
@@ -1133,7 +1135,9 @@ int wpa_supplicant_init_eapol(struct wpa_supplicant *wpa_s)
 	ctx->preauth = 0;
 	ctx->eapol_done_cb = wpa_supplicant_notify_eapol_done;
 	ctx->eapol_send = wpa_supplicant_eapol_send;
+#ifdef CONFIG_WEP
 	ctx->set_wep_key = wpa_eapol_set_wep_key;
+#endif /* CONFIG_WEP */
 #ifndef CONFIG_NO_CONFIG_BLOBS
 	ctx->set_config_blob = wpa_supplicant_set_config_blob;
 	ctx->get_config_blob = wpa_supplicant_get_config_blob;

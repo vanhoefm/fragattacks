@@ -223,7 +223,7 @@ u8 * hostapd_eid_rm_enabled_capab(struct hostapd_data *hapd, u8 *eid,
 u16 hostapd_own_capab_info(struct hostapd_data *hapd)
 {
 	int capab = WLAN_CAPABILITY_ESS;
-	int privacy;
+	int privacy = 0;
 	int dfs;
 	int i;
 
@@ -239,12 +239,14 @@ u16 hostapd_own_capab_info(struct hostapd_data *hapd)
 	    hapd->iconf->preamble == SHORT_PREAMBLE)
 		capab |= WLAN_CAPABILITY_SHORT_PREAMBLE;
 
+#ifdef CONFIG_WEP
 	privacy = hapd->conf->ssid.wep.keys_set;
 
 	if (hapd->conf->ieee802_1x &&
 	    (hapd->conf->default_wep_key_len ||
 	     hapd->conf->individual_wep_key_len))
 		privacy = 1;
+#endif /* CONFIG_WEP */
 
 	if (hapd->conf->wpa)
 		privacy = 1;
@@ -284,6 +286,7 @@ u16 hostapd_own_capab_info(struct hostapd_data *hapd)
 }
 
 
+#ifdef CONFIG_WEP
 #ifndef CONFIG_NO_RC4
 static u16 auth_shared_key(struct hostapd_data *hapd, struct sta_info *sta,
 			   u16 auth_transaction, const u8 *challenge,
@@ -340,6 +343,7 @@ static u16 auth_shared_key(struct hostapd_data *hapd, struct sta_info *sta,
 	return 0;
 }
 #endif /* CONFIG_NO_RC4 */
+#endif /* CONFIG_WEP */
 
 
 static int send_auth_reply(struct hostapd_data *hapd, struct sta_info *sta,
@@ -2543,6 +2547,7 @@ static void handle_auth(struct hostapd_data *hapd,
 		sta->auth_alg = WLAN_AUTH_OPEN;
 		mlme_authenticate_indication(hapd, sta);
 		break;
+#ifdef CONFIG_WEP
 #ifndef CONFIG_NO_RC4
 	case WLAN_AUTH_SHARED_KEY:
 		resp = auth_shared_key(hapd, sta, auth_transaction, challenge,
@@ -2561,6 +2566,7 @@ static void handle_auth(struct hostapd_data *hapd,
 		}
 		break;
 #endif /* CONFIG_NO_RC4 */
+#endif /* CONFIG_WEP */
 #ifdef CONFIG_IEEE80211R_AP
 	case WLAN_AUTH_FT:
 		sta->auth_alg = WLAN_AUTH_FT;
@@ -4946,6 +4952,7 @@ static void hostapd_set_wds_encryption(struct hostapd_data *hapd,
 				       struct sta_info *sta,
 				       char *ifname_wds)
 {
+#ifdef CONFIG_WEP
 	int i;
 	struct hostapd_ssid *ssid = &hapd->conf->ssid;
 
@@ -4966,6 +4973,7 @@ static void hostapd_set_wds_encryption(struct hostapd_data *hapd,
 			break;
 		}
 	}
+#endif /* CONFIG_WEP */
 }
 
 

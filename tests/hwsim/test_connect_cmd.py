@@ -12,6 +12,7 @@ import hwsim_utils
 import hostapd
 from wpasupplicant import WpaSupplicant
 from p2p_utils import *
+from test_wep import check_wep_capa
 
 def test_connect_cmd_open(dev, apdev):
     """Open connection using cfg80211 connect command"""
@@ -31,11 +32,13 @@ def test_connect_cmd_open(dev, apdev):
 
 def test_connect_cmd_wep(dev, apdev):
     """WEP Open System using cfg80211 connect command"""
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
+    check_wep_capa(wpas)
+
     params = {"ssid": "sta-connect-wep", "wep_key0": '"hello"'}
     hapd = hostapd.add_ap(apdev[0], params)
 
-    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
-    wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
     wpas.connect("sta-connect-wep", key_mgmt="NONE", scan_freq="2412",
                  wep_key0='"hello"')
     wpas.dump_monitor()
@@ -46,12 +49,14 @@ def test_connect_cmd_wep(dev, apdev):
 
 def test_connect_cmd_wep_shared(dev, apdev):
     """WEP Shared key using cfg80211 connect command"""
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
+    check_wep_capa(wpas)
+
     params = {"ssid": "sta-connect-wep", "wep_key0": '"hello"',
               "auth_algs": "2"}
     hapd = hostapd.add_ap(apdev[0], params)
 
-    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
-    wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
     id = wpas.connect("sta-connect-wep", key_mgmt="NONE", scan_freq="2412",
                       auth_alg="SHARED", wep_key0='"hello"')
     wpas.dump_monitor()

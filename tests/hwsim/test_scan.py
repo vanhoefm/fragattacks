@@ -19,6 +19,7 @@ from utils import HwsimSkip, fail_test, alloc_fail, wait_fail_trigger, parse_ie
 from utils import clear_regdom_dev
 from tshark import run_tshark
 from test_ap_csa import switch_channel, wait_channel_switch, csa_supported
+from test_wep import check_wep_capa
 
 def check_scan(dev, params, other_started=False, test_busy=False):
     if not other_started:
@@ -434,6 +435,7 @@ def test_scan_for_auth_fail(dev, apdev):
 @remote_compatible
 def test_scan_for_auth_wep(dev, apdev):
     """cfg80211 scan-for-auth workaround with WEP keys"""
+    check_wep_capa(dev[0])
     dev[0].flush_scan_cache()
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wep", "wep_key0": '"abcde"',

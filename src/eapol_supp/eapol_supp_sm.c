@@ -692,6 +692,7 @@ struct eap_key_data {
 
 static void eapol_sm_processKey(struct eapol_sm *sm)
 {
+#ifdef CONFIG_WEP
 #ifndef CONFIG_FIPS
 	struct ieee802_1x_hdr *hdr;
 	struct ieee802_1x_eapol_key *key;
@@ -866,6 +867,7 @@ static void eapol_sm_processKey(struct eapol_sm *sm)
 		}
 	}
 #endif /* CONFIG_FIPS */
+#endif /* CONFIG_WEP */
 }
 
 

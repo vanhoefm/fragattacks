@@ -130,6 +130,7 @@ static void wpas_update_owe_connect_params(struct wpa_supplicant *wpa_s);
 #endif /* CONFIG_OWE */
 
 
+#ifdef CONFIG_WEP
 /* Configure default/group WEP keys for static WEP */
 int wpa_set_wep_keys(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 {
@@ -150,6 +151,7 @@ int wpa_set_wep_keys(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 
 	return set;
 }
+#endif /* CONFIG_WEP */
 
 
 int wpa_supplicant_set_wpa_none_key(struct wpa_supplicant *wpa_s,
@@ -396,7 +398,9 @@ void wpa_supplicant_initiate_eapol(struct wpa_supplicant *wpa_s)
 void wpa_supplicant_set_non_wpa_policy(struct wpa_supplicant *wpa_s,
 				       struct wpa_ssid *ssid)
 {
+#ifdef CONFIG_WEP
 	int i;
+#endif /* CONFIG_WEP */
 
 	if (ssid->key_mgmt & WPA_KEY_MGMT_WPS)
 		wpa_s->key_mgmt = WPA_KEY_MGMT_WPS;
@@ -414,6 +418,7 @@ void wpa_supplicant_set_non_wpa_policy(struct wpa_supplicant *wpa_s,
 	wpa_s->group_cipher = WPA_CIPHER_NONE;
 	wpa_s->mgmt_group_cipher = 0;
 
+#ifdef CONFIG_WEP
 	for (i = 0; i < NUM_WEP_KEYS; i++) {
 		if (ssid->wep_key_len[i] > 5) {
 			wpa_s->pairwise_cipher = WPA_CIPHER_WEP104;
@@ -425,6 +430,7 @@ void wpa_supplicant_set_non_wpa_policy(struct wpa_supplicant *wpa_s,
 			break;
 		}
 	}
+#endif /* CONFIG_WEP */
 
 	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_RSN_ENABLED, 0);
 	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_KEY_MGMT, wpa_s->key_mgmt);
@@ -3319,7 +3325,7 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 	struct wpa_supplicant *wpa_s = work->wpa_s;
 	u8 *wpa_ie;
 	const u8 *edmg_ie_oper;
-	int use_crypt, ret, i, bssid_changed;
+	int use_crypt, ret, bssid_changed;
 	unsigned int cipher_pairwise, cipher_group, cipher_group_mgmt;
 	struct wpa_driver_associate_params params;
 	int wep_keys_set = 0;
@@ -3429,10 +3435,12 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 	    wpa_s->key_mgmt == WPA_KEY_MGMT_IEEE8021X_NO_WPA) {
 		if (wpa_s->key_mgmt == WPA_KEY_MGMT_NONE)
 			use_crypt = 0;
+#ifdef CONFIG_WEP
 		if (wpa_set_wep_keys(wpa_s, ssid)) {
 			use_crypt = 1;
 			wep_keys_set = 1;
 		}
+#endif /* CONFIG_WEP */
 	}
 	if (wpa_s->key_mgmt == WPA_KEY_MGMT_WPS)
 		use_crypt = 0;
@@ -3577,12 +3585,18 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 	wpa_s->auth_alg = params.auth_alg;
 	params.mode = ssid->mode;
 	params.bg_scan_period = ssid->bg_scan_period;
-	for (i = 0; i < NUM_WEP_KEYS; i++) {
-		if (ssid->wep_key_len[i])
-			params.wep_key[i] = ssid->wep_key[i];
-		params.wep_key_len[i] = ssid->wep_key_len[i];
+#ifdef CONFIG_WEP
+	{
+		int i;
+
+		for (i = 0; i < NUM_WEP_KEYS; i++) {
+			if (ssid->wep_key_len[i])
+				params.wep_key[i] = ssid->wep_key[i];
+			params.wep_key_len[i] = ssid->wep_key_len[i];
+		}
+		params.wep_tx_keyidx = ssid->wep_tx_keyidx;
 	}
-	params.wep_tx_keyidx = ssid->wep_tx_keyidx;
+#endif /* CONFIG_WEP */
 
 	if ((wpa_s->drv_flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_PSK) &&
 	    (params.key_mgmt_suite == WPA_KEY_MGMT_PSK ||
@@ -3740,11 +3754,13 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 		wpa_supplicant_req_auth_timeout(wpa_s, timeout, 0);
 	}
 
+#ifdef CONFIG_WEP
 	if (wep_keys_set &&
 	    (wpa_s->drv_flags & WPA_DRIVER_FLAGS_SET_KEYS_AFTER_ASSOC)) {
 		/* Set static WEP keys again */
 		wpa_set_wep_keys(wpa_s, ssid);
 	}
+#endif /* CONFIG_WEP */
 
 	if (wpa_s->current_ssid && wpa_s->current_ssid != ssid) {
 		/*
@@ -7330,8 +7346,10 @@ int wpa_supplicant_ctrl_iface_ctrl_rsp_handle(struct wpa_supplicant *wpa_s,
 
 int wpas_network_disabled(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 {
+#ifdef CONFIG_WEP
 	int i;
 	unsigned int drv_enc;
+#endif /* CONFIG_WEP */
 
 	if (wpa_s->p2p_mgmt)
 		return 1; /* no normal network profiles on p2p_mgmt interface */
@@ -7342,6 +7360,7 @@ int wpas_network_disabled(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 	if (ssid->disabled)
 		return 1;
 
+#ifdef CONFIG_WEP
 	if (wpa_s->drv_capa_known)
 		drv_enc = wpa_s->drv_enc;
 	else
@@ -7359,6 +7378,7 @@ int wpas_network_disabled(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 			continue;
 		return 1; /* invalid WEP key */
 	}
+#endif /* CONFIG_WEP */
 
 	if (wpa_key_mgmt_wpa_psk(ssid->key_mgmt) && !ssid->psk_set &&
 	    (!ssid->passphrase || ssid->ssid_len != 0) && !ssid->ext_psk &&

@@ -648,6 +648,8 @@ SM_STEP(REAUTH_TIMER)
 
 
 
+#ifdef CONFIG_WEP
+
 /* Authenticator Key Transmit state machine */
 
 SM_STATE(AUTH_KEY_TX, NO_KEY_TRANSMIT)
@@ -725,6 +727,8 @@ SM_STEP(KEY_RX)
 		break;
 	}
 }
+
+#endif /* CONFIG_WEP */
 
 
 
@@ -813,10 +817,12 @@ eapol_auth_alloc(struct eapol_authenticator *eapol, const u8 *addr,
 
 	sm->portControl = Auto;
 
+#ifdef CONFIG_WEP
 	if (!eapol->conf.wpa &&
 	    (eapol->default_wep_key || eapol->conf.individual_wep_key_len > 0))
 		sm->keyTxEnabled = TRUE;
 	else
+#endif /* CONFIG_WEP */
 		sm->keyTxEnabled = FALSE;
 	if (eapol->conf.wpa)
 		sm->portValid = FALSE;
@@ -910,10 +916,12 @@ restart:
 		SM_STEP_RUN(BE_AUTH);
 	if (sm->initializing || eapol_sm_sta_entry_alive(eapol, addr))
 		SM_STEP_RUN(REAUTH_TIMER);
+#ifdef CONFIG_WEP
 	if (sm->initializing || eapol_sm_sta_entry_alive(eapol, addr))
 		SM_STEP_RUN(AUTH_KEY_TX);
 	if (sm->initializing || eapol_sm_sta_entry_alive(eapol, addr))
 		SM_STEP_RUN(KEY_RX);
+#endif /* CONFIG_WEP */
 	if (sm->initializing || eapol_sm_sta_entry_alive(eapol, addr))
 		SM_STEP_RUN(CTRL_DIR);
 
@@ -1167,7 +1175,9 @@ static int eapol_auth_conf_clone(struct eapol_auth_config *dst,
 	dst->ctx = src->ctx;
 	dst->eap_reauth_period = src->eap_reauth_period;
 	dst->wpa = src->wpa;
+#ifdef CONFIG_WEP
 	dst->individual_wep_key_len = src->individual_wep_key_len;
+#endif /* CONFIG_WEP */
 	os_free(dst->eap_req_id_text);
 	if (src->eap_req_id_text) {
 		dst->eap_req_id_text = os_memdup(src->eap_req_id_text,
@@ -1221,10 +1231,12 @@ struct eapol_authenticator * eapol_auth_init(struct eapol_auth_config *conf,
 		return NULL;
 	}
 
+#ifdef CONFIG_WEP
 	if (conf->individual_wep_key_len > 0) {
 		/* use key0 in individual key and key1 in broadcast key */
 		eapol->default_wep_key_idx = 1;
 	}
+#endif /* CONFIG_WEP */
 
 	eapol->cb.eapol_send = cb->eapol_send;
 	eapol->cb.aaa_send = cb->aaa_send;
@@ -1249,6 +1261,8 @@ void eapol_auth_deinit(struct eapol_authenticator *eapol)
 		return;
 
 	eapol_auth_conf_free(&eapol->conf);
+#ifdef CONFIG_WEP
 	os_free(eapol->default_wep_key);
+#endif /* CONFIG_WEP */
 	os_free(eapol);
 }

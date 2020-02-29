@@ -429,8 +429,6 @@ def test_ap_config_set_oom(dev, apdev):
 
     tests = [(1, "hostapd_parse_das_client",
               "SET radius_das_client 192.168.1.123 pw"),
-             (1, "hostapd_config_read_wep", "SET wep_key0 \"hello\""),
-             (1, "hostapd_config_read_wep", "SET wep_key0 0102030405"),
              (1, "hostapd_parse_chanlist", "SET chanlist 1 6 11-13"),
              (1, "hostapd_config_bss", "SET bss foo"),
              (2, "hostapd_config_bss", "SET bss foo"),
@@ -486,6 +484,9 @@ def test_ap_config_set_oom(dev, apdev):
              (1, "hostapd_parse_intlist", "SET sae_groups 19 25"),
              (1, "hostapd_parse_intlist", "SET basic_rates 10 20 55 110"),
              (1, "hostapd_parse_intlist", "SET supported_rates 10 20 55 110")]
+    if "WEP40" in dev[0].get_capability("group"):
+        tests += [(1, "hostapd_config_read_wep", "SET wep_key0 \"hello\""),
+                  (1, "hostapd_config_read_wep", "SET wep_key0 0102030405")]
     for count, func, cmd in tests:
         with alloc_fail(hapd, count, func):
             if "FAIL" not in hapd.request(cmd):
@@ -533,14 +534,15 @@ def test_ap_config_set_oom(dev, apdev):
 def test_ap_config_set_errors(dev, apdev):
     """hostapd configuration parsing errors"""
     hapd = hostapd.add_ap(apdev[0], {"ssid": "foobar"})
-    hapd.set("wep_key0", '"hello"')
-    hapd.set("wep_key1", '"hello"')
-    hapd.set("wep_key0", '')
-    hapd.set("wep_key0", '"hello"')
-    if "FAIL" not in hapd.request("SET wep_key1 \"hello\""):
-        raise Exception("SET wep_key1 allowed to override existing key")
-    hapd.set("wep_key1", '')
-    hapd.set("wep_key1", '"hello"')
+    if "WEP40" in dev[0].get_capability("group"):
+        hapd.set("wep_key0", '"hello"')
+        hapd.set("wep_key1", '"hello"')
+        hapd.set("wep_key0", '')
+        hapd.set("wep_key0", '"hello"')
+        if "FAIL" not in hapd.request("SET wep_key1 \"hello\""):
+            raise Exception("SET wep_key1 allowed to override existing key")
+        hapd.set("wep_key1", '')
+        hapd.set("wep_key1", '"hello"')
 
     hapd.set("auth_server_addr", "127.0.0.1")
     hapd.set("acct_server_addr", "127.0.0.1")

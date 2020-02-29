@@ -213,8 +213,22 @@ static struct wpa_ssid * wpa_config_read_network(FILE *f, int *line, int id)
 			}
 		}
 
-		if (wpa_config_set(ssid, pos, pos2, *line) < 0)
+		if (wpa_config_set(ssid, pos, pos2, *line) < 0) {
+#ifndef CONFIG_WEP
+			if (os_strcmp(pos, "wep_key0") == 0 ||
+			    os_strcmp(pos, "wep_key1") == 0 ||
+			    os_strcmp(pos, "wep_key2") == 0 ||
+			    os_strcmp(pos, "wep_key3") == 0 ||
+			    os_strcmp(pos, "wep_tx_keyidx") == 0) {
+				wpa_printf(MSG_ERROR,
+					   "Line %d: unsupported WEP parameter",
+					   *line);
+				ssid->disabled = 1;
+				continue;
+			}
+#endif /* CONFIG_WEP */
 			errors++;
+		}
 	}
 
 	if (!end) {
@@ -653,6 +667,7 @@ static void write_eap(FILE *f, struct wpa_ssid *ssid)
 #endif /* IEEE8021X_EAPOL */
 
 
+#ifdef CONFIG_WEP
 static void write_wep_key(FILE *f, int idx, struct wpa_ssid *ssid)
 {
 	char field[20], *value;
@@ -667,6 +682,7 @@ static void write_wep_key(FILE *f, int idx, struct wpa_ssid *ssid)
 		os_free(value);
 	}
 }
+#endif /* CONFIG_WEP */
 
 
 #ifdef CONFIG_P2P
@@ -741,8 +757,6 @@ static void write_mka_ckn(FILE *f, struct wpa_ssid *ssid)
 
 static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 {
-	int i;
-
 #define STR(t) write_str(f, #t, ssid)
 #define INT(t) write_int(f, #t, ssid->t, 0)
 #define INTe(t, m) write_int(f, #t, ssid->eap.m, 0)
@@ -831,9 +845,15 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	STR(openssl_ciphers);
 	INTe(erp, erp);
 #endif /* IEEE8021X_EAPOL */
-	for (i = 0; i < 4; i++)
-		write_wep_key(f, i, ssid);
-	INT(wep_tx_keyidx);
+#ifdef CONFIG_WEP
+	{
+		int i;
+
+		for (i = 0; i < 4; i++)
+			write_wep_key(f, i, ssid);
+		INT(wep_tx_keyidx);
+	}
+#endif /* CONFIG_WEP */
 	INT(priority);
 #ifdef IEEE8021X_EAPOL
 	INT_DEF(eap_workaround, DEFAULT_EAP_WORKAROUND);

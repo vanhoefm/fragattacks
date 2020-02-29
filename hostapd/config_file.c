@@ -793,6 +793,7 @@ static int hostapd_config_parse_cipher(int line, const char *value)
 }
 
 
+#ifdef CONFIG_WEP
 static int hostapd_config_read_wep(struct hostapd_wep_keys *wep, int keyidx,
 				   char *val)
 {
@@ -843,6 +844,7 @@ static int hostapd_config_read_wep(struct hostapd_wep_keys *wep, int keyidx,
 
 	return 0;
 }
+#endif /* CONFIG_WEP */
 
 
 static int hostapd_parse_chanlist(struct hostapd_config *conf, char *val)
@@ -2664,6 +2666,7 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "erp_domain") == 0) {
 		os_free(bss->erp_domain);
 		bss->erp_domain = os_strdup(pos);
+#ifdef CONFIG_WEP
 	} else if (os_strcmp(buf, "wep_key_len_broadcast") == 0) {
 		int val = atoi(pos);
 
@@ -2691,6 +2694,7 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 				   line, bss->wep_rekeying_period);
 			return 1;
 		}
+#endif /* CONFIG_WEP */
 	} else if (os_strcmp(buf, "eap_reauth_period") == 0) {
 		bss->eap_reauth_period = atoi(pos);
 		if (bss->eap_reauth_period < 0) {
@@ -3311,6 +3315,7 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		bss->ignore_broadcast_ssid = atoi(pos);
 	} else if (os_strcmp(buf, "no_probe_resp_if_max_sta") == 0) {
 		bss->no_probe_resp_if_max_sta = atoi(pos);
+#ifdef CONFIG_WEP
 	} else if (os_strcmp(buf, "wep_default_key") == 0) {
 		bss->ssid.wep.idx = atoi(pos);
 		if (bss->ssid.wep.idx > 3) {
@@ -3329,6 +3334,7 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 				   line, buf);
 			return 1;
 		}
+#endif /* CONFIG_WEP */
 #ifndef CONFIG_NO_VLAN
 	} else if (os_strcmp(buf, "dynamic_vlan") == 0) {
 		bss->ssid.dynamic_vlan = atoi(pos);
