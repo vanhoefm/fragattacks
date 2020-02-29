@@ -8193,6 +8193,8 @@ static void wpa_supplicant_ctrl_iface_flush(struct wpa_supplicant *wpa_s)
 	wpa_s->disconnected = 0;
 	os_free(wpa_s->next_scan_freqs);
 	wpa_s->next_scan_freqs = NULL;
+	os_memset(wpa_s->next_scan_bssid, 0, ETH_ALEN);
+	wpa_s->next_scan_bssid_wildcard_ssid = 0;
 	os_free(wpa_s->select_network_scan_freqs);
 	wpa_s->select_network_scan_freqs = NULL;
 
@@ -8528,6 +8530,9 @@ static void wpas_ctrl_scan(struct wpa_supplicant *wpa_s, char *params,
 				goto done;
 			}
 			os_memcpy(wpa_s->next_scan_bssid, bssid, ETH_ALEN);
+
+			wpa_s->next_scan_bssid_wildcard_ssid =
+				os_strstr(params, "wildcard_ssid=1") != NULL;
 		}
 
 		pos = params;

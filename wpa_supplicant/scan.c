@@ -1251,7 +1251,8 @@ ssid_list_set:
 
 		params.bssid = wpa_s->next_scan_bssid;
 		bss = wpa_bss_get_bssid_latest(wpa_s, params.bssid);
-		if (bss && bss->ssid_len && params.num_ssids == 1 &&
+		if (!wpa_s->next_scan_bssid_wildcard_ssid &&
+		    bss && bss->ssid_len && params.num_ssids == 1 &&
 		    params.ssids[0].ssid_len == 0) {
 			params.ssids[0].ssid = bss->ssid;
 			params.ssids[0].ssid_len = bss->ssid_len;
@@ -1328,6 +1329,7 @@ scan:
 #ifdef CONFIG_INTERWORKING
 		wpa_s->interworking_fast_assoc_tried = 0;
 #endif /* CONFIG_INTERWORKING */
+		wpa_s->next_scan_bssid_wildcard_ssid = 0;
 		if (params.bssid)
 			os_memset(wpa_s->next_scan_bssid, 0, ETH_ALEN);
 	}

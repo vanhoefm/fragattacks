@@ -715,6 +715,7 @@ struct wpa_supplicant {
 	int scan_id[MAX_SCAN_ID];
 	unsigned int scan_id_count;
 	u8 next_scan_bssid[ETH_ALEN];
+	unsigned int next_scan_bssid_wildcard_ssid:1;
 
 	struct wpa_ssid_value *ssids_from_scan_req;
 	unsigned int num_ssids_from_scan_req;
