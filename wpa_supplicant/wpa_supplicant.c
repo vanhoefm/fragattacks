@@ -3328,7 +3328,9 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 	int use_crypt, ret, bssid_changed;
 	unsigned int cipher_pairwise, cipher_group, cipher_group_mgmt;
 	struct wpa_driver_associate_params params;
+#if defined(CONFIG_WEP) || defined(IEEE8021X_EAPOL)
 	int wep_keys_set = 0;
+#endif /* CONFIG_WEP || IEEE8021X_EAPOL */
 	int assoc_failed = 0;
 	struct wpa_ssid *old_ssid;
 	u8 prev_bssid[ETH_ALEN];
