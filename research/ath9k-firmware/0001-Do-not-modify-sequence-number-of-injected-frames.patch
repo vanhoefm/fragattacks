@@ -1,0 +1,74 @@
+From 6bdda82886a2e65cbac47d96eb45a205c951353d Mon Sep 17 00:00:00 2001
+From: Mathy <mathy.vanhoef@nyu.edu>
+Date: Sun, 1 Mar 2020 04:53:33 -0500
+Subject: [PATCH] Do not modify sequence number of injected frames
+
+This was tested on Debian for a device purely in monitor mode, and
+for a device that had both a managed client interface and a monitor
+interface.
+---
+ install.sh                    | 23 +++++++++++++++++++++++
+ target_firmware/wlan/if_owl.c |  6 ++++++
+ 2 files changed, 29 insertions(+)
+ create mode 100755 install.sh
+
+diff --git a/install.sh b/install.sh
+new file mode 100755
+index 0000000..d620f78
+--- /dev/null
++++ b/install.sh
+@@ -0,0 +1,23 @@
++#!/bin/bash
++set -e
++
++# Make backup of original firmware
++if [[ ! -e /usr/lib/firmware/htc_7010.fw.backup ]];
++then
++	cp /usr/lib/firmware/htc_7010.fw /usr/lib/firmware/htc_7010.fw.backup
++	cp /usr/lib/firmware/htc_9271.fw /usr/lib/firmware/htc_9271.fw.backup
++	echo "Made backup of original files (old directory)"
++fi
++
++if [[ ! -e /usr/lib/firmware/ath9k_htc/htc_7010-1.4.0.fw.backup ]];
++then
++	cp /usr/lib/firmware/ath9k_htc/htc_7010-1.4.0.fw /usr/lib/firmware/ath9k_htc/htc_7010-1.4.0.fw.backup
++	cp /usr/lib/firmware/ath9k_htc/htc_9271-1.4.0.fw /usr/lib/firmware/ath9k_htc/htc_9271-1.4.0.fw.backup
++	echo "Made backup of original files (new directory)"
++fi
++
++cp target_firmware/htc_*.fw /usr/lib/firmware/
++cp target_firmware/htc_7010.fw /usr/lib/firmware/ath9k_htc/htc_7010-1.4.0.fw
++cp target_firmware/htc_9271.fw /usr/lib/firmware/ath9k_htc/htc_9271-1.4.0.fw
++echo "Copied compiled firmware to the system"
++
+diff --git a/target_firmware/wlan/if_owl.c b/target_firmware/wlan/if_owl.c
+index 6dda78c..3058efc 100755
+--- a/target_firmware/wlan/if_owl.c
++++ b/target_firmware/wlan/if_owl.c
+@@ -837,10 +837,14 @@ static void ath_tgt_tx_seqno_normal(struct ath_tx_buf *bf)
+ 
+ 	INCR(ni->ni_txseqmgmt, IEEE80211_SEQ_MAX);
+ 
++	// Mathy: this field doesn't seem to influence seqno of injected frames
+ 	bf->bf_seqno = (tid->seq_next << IEEE80211_SEQ_SEQ_SHIFT);
+ 
++#if 0
++	// Mathy: this DOES influence seqno of injected frames
+ 	*(u_int16_t *)wh->i_seq = adf_os_cpu_to_le16(bf->bf_seqno);
+ 	wh->i_seq[0] |= fragno;
++#endif
+ 
+ 	if (!(wh->i_fc[1] & IEEE80211_FC1_MORE_FRAG))
+ 		INCR(tid->seq_next, IEEE80211_SEQ_MAX);
+@@ -931,6 +935,8 @@ static a_int32_t ath_tgt_txbuf_setup(struct ath_softc_tgt *sc,
+ 		bf->bf_shpream = AH_FALSE;
+ 
+ 	bf->bf_flags = HAL_TXDESC_CLRDMASK;
++	// Mathy: to prevent seqno from being overwritten in injected
++	//        frames, this doesn't have to be set to PSPOLL.
+ 	bf->bf_atype = HAL_PKT_TYPE_NORMAL;
+ 
+ 	return 0;
+-- 
+2.20.1
+
