@@ -82,6 +82,13 @@ static inline int wpa_key_mgmt_wpa_ieee8021x(int akm)
 			 WPA_KEY_MGMT_FT_FILS_SHA384));
 }
 
+static inline int wpa_key_mgmt_wpa_psk_no_sae(int akm)
+{
+	return !!(akm & (WPA_KEY_MGMT_PSK |
+			 WPA_KEY_MGMT_FT_PSK |
+			 WPA_KEY_MGMT_PSK_SHA256));
+}
+
 static inline int wpa_key_mgmt_wpa_psk(int akm)
 {
 	return !!(akm & (WPA_KEY_MGMT_PSK |
