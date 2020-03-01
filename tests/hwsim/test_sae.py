@@ -2466,3 +2466,41 @@ def test_sae_pmk_lifetime(dev, apdev):
     dev[0].wait_connected()
     if "sae_group" not in dev[0].get_status():
         raise Exception("SAE authentication not used after PMKSA cache entry expiration")
+
+def test_sae_and_psk_multiple_passwords(dev, apdev, params):
+    """SAE and PSK with multiple passwords/passphrases"""
+    check_sae_capab(dev[0])
+    check_sae_capab(dev[1])
+    addr0 = dev[0].own_addr()
+    addr1 = dev[1].own_addr()
+    psk_file = os.path.join(params['logdir'],
+                            'sae_and_psk_multiple_passwords.wpa_psk')
+    with open(psk_file, 'w') as f:
+        f.write(addr0 + ' passphrase0\n')
+        f.write(addr1 + ' passphrase1\n')
+    params = hostapd.wpa2_params(ssid="test-sae")
+    params['wpa_key_mgmt'] = 'SAE WPA-PSK'
+    params['sae_password'] = ['passphrase0|mac=' + addr0,
+                              'passphrase1|mac=' + addr1]
+    params['wpa_psk_file'] = psk_file
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].set("sae_groups", "")
+    dev[0].connect("test-sae", sae_password="passphrase0",
+                   key_mgmt="SAE", scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+
+    dev[0].connect("test-sae", psk="passphrase0", scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+
+    dev[1].set("sae_groups", "")
+    dev[1].connect("test-sae", sae_password="passphrase1",
+                   key_mgmt="SAE", scan_freq="2412")
+    dev[1].request("REMOVE_NETWORK all")
+    dev[1].wait_disconnected()
+
+    dev[1].connect("test-sae", psk="passphrase1", scan_freq="2412")
+    dev[1].request("REMOVE_NETWORK all")
+    dev[1].wait_disconnected()
