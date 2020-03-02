@@ -1456,6 +1456,17 @@ def test_scan_parsing(dev, apdev):
     res = dev[0].request("BSS 02:ff:00:00:00:09")
     logger.info("Updated BSS:\n" + res)
 
+def get_probe_req_ies(hapd):
+    for i in range(10):
+        msg = hapd.mgmt_rx()
+        if msg is None:
+            break
+        if msg['subtype'] != 4:
+            continue
+        return parse_ie(binascii.hexlify(msg['payload']).decode())
+
+    raise Exception("Probe Request not seen")
+
 def test_scan_specific_bssid(dev, apdev):
     """Scan for a specific BSSID"""
     dev[0].flush_scan_cache()
@@ -1485,6 +1496,29 @@ def test_scan_specific_bssid(dev, apdev):
         raise Exception("First scan for unknown BSSID returned unexpected response")
     if bss2 and 'beacon_ie' in bss2 and 'ie' in bss2 and bss2['beacon_ie'] == bss2['ie']:
         raise Exception("Second scan did find Probe Response frame")
+
+    hapd.dump_monitor()
+    hapd.set("ext_mgmt_frame_handling", "1")
+
+    # With specific SSID in the Probe Request frame
+    dev[0].request("SCAN TYPE=ONLY freq=2412 bssid=" + bssid)
+    ev = dev[0].wait_event(["CTRL-EVENT-SCAN-RESULTS"], timeout=10)
+    if ev is None:
+        raise Exception("Scan did not complete")
+    ie = get_probe_req_ies(hapd)
+    if ie[0] != b"test-scan":
+        raise Exception("Specific SSID not seen in Probe Request frame")
+
+    hapd.dump_monitor()
+
+    # Without specific SSID in the Probe Request frame
+    dev[0].request("SCAN TYPE=ONLY freq=2412 wildcard_ssid=1 bssid=" + bssid)
+    ev = dev[0].wait_event(["CTRL-EVENT-SCAN-RESULTS"], timeout=10)
+    if ev is None:
+        raise Exception("Scan did not complete")
+    ie = get_probe_req_ies(hapd)
+    if len(ie[0]) != 0:
+        raise Exception("Wildcard SSID not seen in Probe Request frame")
 
 def test_scan_probe_req_events(dev, apdev):
     """Probe Request frame RX events from hostapd"""
