@@ -10,6 +10,7 @@ import os
 
 from wpasupplicant import WpaSupplicant
 import hostapd
+from test_sae import check_sae_capab
 
 config_checks = [("ap_scan", "0"),
                  ("update_config", "1"),
@@ -594,3 +595,52 @@ def test_wpas_config_file_key_mgmt(dev, apdev, params):
 
     wpas.interface_remove("wlan5")
     wpas.interface_add("wlan5", config=config)
+
+def check_network_config(config, network_expected, check=None):
+    with open(config, "r") as f:
+        data = f.read()
+        logger.info("Configuration file contents:\n" + data.rstrip())
+        if network_expected and "network=" not in data:
+            raise Exception("Missing network block in configuration data")
+        if not network_expected and "network=" in data:
+            raise Exception("Unexpected network block in configuration data")
+        if check and check not in data:
+            raise Exception("Missing " + check)
+
+def test_wpas_config_file_sae(dev, apdev, params):
+    """wpa_supplicant config file writing with SAE"""
+    config = os.path.join(params['logdir'], 'wpas_config_file_sae.conf')
+    with open(config, "w") as f:
+        f.write("update_config=1\n")
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5", config=config)
+    check_sae_capab(wpas)
+
+    # Valid SAE configuration with sae_password
+    wpas.connect("test-sae", sae_password="sae-password", key_mgmt="SAE",
+                 only_add_network=True)
+    wpas.save_config()
+    check_network_config(config, True, check="key_mgmt=SAE")
+
+    wpas.request("REMOVE_NETWORK all")
+    wpas.save_config()
+    check_network_config(config, False)
+
+    # Valid SAE configuration with psk
+    wpas.connect("test-sae", psk="sae-password", key_mgmt="SAE",
+                 only_add_network=True)
+    wpas.save_config()
+    check_network_config(config, True, check="key_mgmt=SAE")
+    wpas.request("REMOVE_NETWORK all")
+
+    # Invalid PSK configuration with sae_password
+    wpas.connect("test-psk", sae_password="sae-password", key_mgmt="WPA-PSK",
+                 only_add_network=True)
+    wpas.save_config()
+    check_network_config(config, False)
+
+    # Invalid SAE configuration with raw_psk
+    wpas.connect("test-sae", raw_psk=32*"00", key_mgmt="SAE",
+                 only_add_network=True)
+    wpas.save_config()
+    check_network_config(config, False)

@@ -1434,6 +1434,10 @@ class WpaSupplicant:
     def note(self, txt):
         self.request("NOTE " + txt)
 
+    def save_config(self):
+        if "OK" not in self.request("SAVE_CONFIG"):
+            raise Exception("Failed to save configuration file")
+
     def wait_regdom(self, country_ie=False):
         for i in range(5):
             ev = self.wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=1)
