@@ -219,6 +219,16 @@ def test_wpas_mesh_open(dev, apdev):
     if mode != "mesh":
         raise Exception("Unexpected mode: " + mode)
 
+    dev[0].scan(freq="2462")
+    bss = dev[0].get_bss(dev[1].own_addr())
+    if bss and 'ie' in bss and "ff0724" in bss['ie']:
+        sta = dev[0].request("STA " + dev[1].own_addr())
+        logger.info("STA info:\n" + sta.rstrip())
+        if "[HE]" not in sta:
+            raise Exception("Missing STA HE flag")
+        if "[VHT]" in sta:
+            raise Exception("Unexpected STA VHT flag")
+
 def test_wpas_mesh_open_no_auto(dev, apdev):
     """wpa_supplicant open MESH network connectivity"""
     check_mesh_support(dev[0])
@@ -1058,6 +1068,14 @@ def _test_wpas_mesh_open_vht40(dev, apdev):
         raise Exception("Unexpected SIGNAL_POLL value(2b): " + str(sig))
     if "CENTER_FRQ1=5190" not in sig:
         raise Exception("Unexpected SIGNAL_POLL value(3b): " + str(sig))
+
+    dev[0].scan(freq="5180")
+    bss = dev[0].get_bss(dev[1].own_addr())
+    if bss and 'ie' in bss and "ff0724" in bss['ie']:
+        sta = dev[0].request("STA " + dev[1].own_addr())
+        logger.info("STA info:\n" + sta.rstrip())
+        if "[HT][VHT][HE]" not in sta:
+            raise Exception("Missing STA flags")
 
     dev[0].mesh_group_remove()
     dev[1].mesh_group_remove()
