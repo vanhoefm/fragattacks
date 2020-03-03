@@ -144,30 +144,44 @@ static int dfs_chan_range_available(struct hostapd_hw_modes *mode,
 	int i;
 	u32 bw = num_chan_to_bw(num_chans);
 
-	if (first_chan_idx + num_chans > mode->num_channels)
+	if (first_chan_idx + num_chans > mode->num_channels) {
+		wpa_printf(MSG_DEBUG,
+			   "DFS: some channels in range not defined");
 		return 0;
+	}
 
 	first_chan = &mode->channels[first_chan_idx];
 
 	/* hostapd DFS implementation assumes the first channel as primary.
 	 * If it's not allowed to use the first channel as primary, decline the
 	 * whole channel range. */
-	if (!chan_pri_allowed(first_chan))
+	if (!chan_pri_allowed(first_chan)) {
+		wpa_printf(MSG_DEBUG, "DFS: primary chanenl not allowed");
 		return 0;
+	}
 
 	for (i = 0; i < num_chans; i++) {
 		chan = dfs_get_chan_data(mode, first_chan->freq + i * 20,
 					 first_chan_idx);
-		if (!chan)
+		if (!chan) {
+			wpa_printf(MSG_DEBUG, "DFS: no channel data for %d",
+				   first_chan->freq + i * 20);
 			return 0;
+		}
 
 		/* HT 40 MHz secondary channel availability checked only for
 		 * primary channel */
-		if (!chan_bw_allowed(chan, bw, 1, !i))
+		if (!chan_bw_allowed(chan, bw, 1, !i)) {
+			wpa_printf(MSG_DEBUG, "DFS: bw now allowed for %d",
+				   first_chan->freq + i * 20);
 			return 0;
+		}
 
-		if (!dfs_channel_available(chan, skip_radar))
+		if (!dfs_channel_available(chan, skip_radar)) {
+			wpa_printf(MSG_DEBUG, "DFS: channel not available %d",
+				   first_chan->freq + i * 20);
 			return 0;
+		}
 	}
 
 	return 1;
@@ -210,22 +224,36 @@ static int dfs_find_channel(struct hostapd_iface *iface,
 		if (iface->conf->ieee80211n &&
 		    iface->conf->secondary_channel &&
 		    (!dfs_is_chan_allowed(chan, n_chans) ||
-		     !(chan->allowed_bw & HOSTAPD_CHAN_WIDTH_40P)))
+		     !(chan->allowed_bw & HOSTAPD_CHAN_WIDTH_40P))) {
+			wpa_printf(MSG_DEBUG,
+				   "DFS: channel %d (%d) is incompatible",
+				   chan->freq, chan->chan);
 			continue;
+		}
 
 		/* Skip incompatible chandefs */
-		if (!dfs_chan_range_available(mode, i, n_chans, skip_radar))
+		if (!dfs_chan_range_available(mode, i, n_chans, skip_radar)) {
+			wpa_printf(MSG_DEBUG,
+				   "DFS: range not available for %d (%d)",
+				   chan->freq, chan->chan);
 			continue;
+		}
 
-		if (!is_in_chanlist(iface, chan))
+		if (!is_in_chanlist(iface, chan)) {
+			wpa_printf(MSG_DEBUG,
+				   "DFS: channel %d (%d) not in chanlist",
+				   chan->freq, chan->chan);
 			continue;
+		}
 
 		if (ret_chan && idx == channel_idx) {
-			wpa_printf(MSG_DEBUG, "Selected ch. #%d", chan->chan);
+			wpa_printf(MSG_DEBUG, "Selected channel %d (%d)",
+				   chan->freq, chan->chan);
 			*ret_chan = chan;
 			return idx;
 		}
-		wpa_printf(MSG_DEBUG, "Adding channel: %d", chan->chan);
+		wpa_printf(MSG_DEBUG, "Adding channel %d (%d)",
+			   chan->freq, chan->chan);
 		channel_idx++;
 	}
 	return channel_idx;
@@ -459,6 +487,8 @@ dfs_get_valid_channel(struct hostapd_iface *iface,
 
 	/* Get the count first */
 	num_available_chandefs = dfs_find_channel(iface, NULL, 0, skip_radar);
+	wpa_printf(MSG_DEBUG, "DFS: num_available_chandefs=%d",
+		   num_available_chandefs);
 	if (num_available_chandefs == 0)
 		return NULL;
 
@@ -466,6 +496,11 @@ dfs_get_valid_channel(struct hostapd_iface *iface,
 		return NULL;
 	chan_idx = _rand % num_available_chandefs;
 	dfs_find_channel(iface, &chan, chan_idx, skip_radar);
+	if (chan)
+		wpa_printf(MSG_DEBUG, "DFS: got random channel %d (%d)",
+			   chan->freq, chan->chan);
+	else
+		wpa_printf(MSG_DEBUG, "DFS: no random channel found");
 
 	/* dfs_find_channel() calculations assume HT40+ */
 	if (iface->conf->secondary_channel)
