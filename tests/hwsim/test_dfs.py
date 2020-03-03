@@ -28,7 +28,8 @@ def wait_dfs_event(hapd, event, timeout):
 
 def start_dfs_ap(ap, ssid="dfs", ht=True, ht40=False,
                  ht40minus=False, vht80=False, vht20=False, chanlist=None,
-                 channel=None, country="FI", rrm_beacon_report=False):
+                 channel=None, country="FI", rrm_beacon_report=False,
+                 chan100=False):
     ifname = ap['ifname']
     logger.info("Starting AP " + ifname + " on DFS channel")
     hapd = hostapd.add_ap(ap, {}, no_enable=True)
@@ -37,7 +38,10 @@ def start_dfs_ap(ap, ssid="dfs", ht=True, ht40=False,
     hapd.set("ieee80211d", "1")
     hapd.set("ieee80211h", "1")
     hapd.set("hw_mode", "a")
-    hapd.set("channel", "52")
+    if chan100:
+        hapd.set("channel", "100")
+    else:
+        hapd.set("channel", "52")
     if not ht:
         hapd.set("ieee80211n", "0")
     if ht40:
@@ -48,7 +52,10 @@ def start_dfs_ap(ap, ssid="dfs", ht=True, ht40=False,
     if vht80:
         hapd.set("ieee80211ac", "1")
         hapd.set("vht_oper_chwidth", "1")
-        hapd.set("vht_oper_centr_freq_seg0_idx", "58")
+        if chan100:
+            hapd.set("vht_oper_centr_freq_seg0_idx", "106")
+        else:
+            hapd.set("vht_oper_centr_freq_seg0_idx", "58")
     if vht20:
         hapd.set("ieee80211ac", "1")
         hapd.set("vht_oper_chwidth", "0")
@@ -524,5 +531,80 @@ def test_dfs_rrm(dev, apdev, params):
         ev = hapd.wait_event(["BEACON-RESP-RX"], timeout=10)
         if ev is None:
             raise Exception("Beacon report response not received")
+    finally:
+        clear_regdom(hapd, dev)
+
+def test_dfs_radar_vht80_downgrade(dev, apdev, params):
+    """DFS channel bandwidth downgrade from VHT80 to VHT40 [long]"""
+    if not params['long']:
+        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+    try:
+        # Start with 80 MHz channel 100 (5500 MHz) to find a radar
+        hapd = None
+        hapd = start_dfs_ap(apdev[0], chanlist="100-140",
+                            ht40=True, vht80=True, chan100=True)
+        time.sleep(1)
+        dfs_simulate_radar(hapd)
+
+        ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 5)
+        if ev is None:
+            raise Exception("Timeout on DFS aborted event")
+        if "success=0 freq=5500" not in ev:
+            raise Exception("Unexpected DFS aborted event contents: " + ev)
+
+        ev = wait_dfs_event(hapd, "DFS-RADAR-DETECTED", 5)
+        if "freq=5500" not in ev:
+            raise Exception("Unexpected DFS radar detection freq: " + ev)
+
+        # The only other available 80 MHz channel in the chanlist is
+        # 116 (5580 MHz), so that will be selected next.
+        ev = wait_dfs_event(hapd, "DFS-NEW-CHANNEL", 5)
+        if "freq=5580 chan=116 sec_chan=1" not in ev:
+            raise Exception("Unexpected DFS new freq: " + ev)
+
+        ev = wait_dfs_event(hapd, None, 5)
+        if "DFS-CAC-START" not in ev:
+            raise Exception("Unexpected DFS event: " + ev)
+        if "freq=5580" not in ev:
+            raise Exception("Unexpected DFS CAC freq: " + ev)
+
+        time.sleep(1)
+        dfs_simulate_radar(hapd)
+        ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 5)
+        if ev is None:
+            raise Exception("Timeout on DFS aborted event (2)")
+        if "success=0 freq=5580" not in ev:
+            raise Exception("Unexpected DFS aborted event (2) contents: " + ev)
+
+        ev = wait_dfs_event(hapd, "DFS-RADAR-DETECTED", 5)
+        if "freq=5580" not in ev:
+            raise Exception("Unexpected DFS radar detection (2) freq: " + ev)
+
+        # No more 80 MHz channels are available, so have to downgrade to 40 MHz
+        # channels and the only remaining one is channel 132 (5660 MHz).
+        ev = wait_dfs_event(hapd, "DFS-NEW-CHANNEL", 5)
+        if "freq=5660 chan=132 sec_chan=1" not in ev:
+            raise Exception("Unexpected DFS new freq (2): " + ev)
+
+        ev = wait_dfs_event(hapd, None, 5)
+        if "DFS-CAC-START" not in ev:
+            raise Exception("Unexpected DFS event: " + ev)
+        if "freq=5660" not in ev:
+            raise Exception("Unexpected DFS CAC freq (2): " + ev)
+
+        ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 70)
+        if "success=1" not in ev:
+            raise Exception("CAC failed")
+        if "freq=5660" not in ev:
+            raise Exception("Unexpected DFS freq result: " + ev)
+
+        ev = wait_dfs_event(hapd, None, 5)
+        if "AP-ENABLED" not in ev:
+            raise Exception("Unexpected DFS event: " + ev)
+        dev[0].connect("dfs", key_mgmt="NONE", scan_freq="5660")
+        dev[0].wait_regdom(country_ie=True)
+        sig = dev[0].request("SIGNAL_POLL").splitlines()
+        if "FREQUENCY=5660" not in sig or "WIDTH=40 MHz" not in sig:
+            raise Exception("Unexpected SIGNAL_POLL value: " + str(sig))
     finally:
         clear_regdom(hapd, dev)
