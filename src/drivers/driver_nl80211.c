@@ -3055,7 +3055,7 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 	struct nl_msg *msg;
 	struct nl_msg *key_msg;
 	int ret;
-	int tdls = 0;
+	int skip_set_key = 1;
 	const char *ifname = params->ifname;
 	enum wpa_alg alg = params->alg;
 	const u8 *addr = params->addr;
@@ -3066,6 +3066,7 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 	const u8 *key = params->key;
 	size_t key_len = params->key_len;
 	int vlan_id = params->vlan_id;
+	enum key_flag key_flag = params->key_flag;
 
 	/* Ignore for P2P Device */
 	if (drv->nlmode == NL80211_IFTYPE_P2P_DEVICE)
@@ -3073,15 +3074,17 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 
 	ifindex = if_nametoindex(ifname);
 	wpa_printf(MSG_DEBUG, "%s: ifindex=%d (%s) alg=%d addr=%p key_idx=%d "
-		   "set_tx=%d seq_len=%lu key_len=%lu",
+		   "set_tx=%d seq_len=%lu key_len=%lu key_flag=0x%x",
 		   __func__, ifindex, ifname, alg, addr, key_idx, set_tx,
-		   (unsigned long) seq_len, (unsigned long) key_len);
+		   (unsigned long) seq_len, (unsigned long) key_len, key_flag);
 #ifdef CONFIG_TDLS
-	if (key_idx == -1) {
+	if (key_idx == -1)
 		key_idx = 0;
-		tdls = 1;
-	}
 #endif /* CONFIG_TDLS */
+	if (check_key_flag(key_flag)) {
+		wpa_printf(MSG_DEBUG, "%s: invalid key_flag", __func__);
+		return -EINVAL;
+	}
 
 #ifdef CONFIG_DRIVER_NL80211_QCA
 	if (alg == WPA_ALG_PMK &&
@@ -3096,13 +3099,23 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 	if (alg == WPA_ALG_PMK &&
 	    (drv->capa.flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_8021X))
 		return nl80211_set_pmk(drv, key, key_len, addr);
+	if (key_flag & KEY_FLAG_PMK) {
+		/* The driver does not have any offload mechanism for PMK, so
+		 * there is no need to configure this key. */
+		return 0;
+	}
 
 	ret = -ENOBUFS;
 	key_msg = nlmsg_alloc();
 	if (!key_msg)
 		return ret;
 
-	if (alg == WPA_ALG_NONE) {
+	if (alg == WPA_ALG_NONE && (key_flag & KEY_FLAG_RX_TX)) {
+		wpa_printf(MSG_DEBUG, "%s: invalid key_flag to delete key",
+			   __func__);
+		ret = -EINVAL;
+		goto fail2;
+	} else if (alg == WPA_ALG_NONE) {
 		msg = nl80211_ifindex_msg(drv, ifindex, 0, NL80211_CMD_DEL_KEY);
 		if (!msg)
 			goto fail2;
@@ -3135,14 +3148,33 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 		if (nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN, addr))
 			goto fail;
 
-		if (alg != WPA_ALG_WEP && key_idx && !set_tx) {
+		if ((key_flag & KEY_FLAG_GROUP_MASK) == KEY_FLAG_GROUP_RX) {
 			wpa_printf(MSG_DEBUG, "   RSN IBSS RX GTK");
 			if (nla_put_u32(key_msg, NL80211_KEY_TYPE,
 					NL80211_KEYTYPE_GROUP))
 				goto fail;
+		} else if (!(key_flag & KEY_FLAG_PAIRWISE)) {
+			wpa_printf(MSG_DEBUG,
+				   "   key_flag missing PAIRWISE when setting a pairwise key");
+			ret = -EINVAL;
+			goto fail;
+		} else if (alg == WPA_ALG_WEP &&
+			   (key_flag & KEY_FLAG_RX_TX) == KEY_FLAG_RX_TX) {
+			wpa_printf(MSG_DEBUG, "   unicast WEP key");
+			skip_set_key = 0;
+		} else {
+			wpa_printf(MSG_DEBUG, "   pairwise key");
 		}
-	} else if (addr && is_broadcast_ether_addr(addr)) {
+	} else if ((key_flag & KEY_FLAG_PAIRWISE) ||
+		   !(key_flag & KEY_FLAG_GROUP)) {
+		wpa_printf(MSG_DEBUG,
+			   "   invalid key_flag for a broadcast key");
+		ret = -EINVAL;
+		goto fail;
+	} else {
 		wpa_printf(MSG_DEBUG, "   broadcast key");
+		if (key_flag & KEY_FLAG_DEFAULT)
+			skip_set_key = 0;
 	}
 	if (nla_put_u8(key_msg, NL80211_KEY_IDX, key_idx) ||
 	    nla_put_nested(msg, NL80211_ATTR_KEY, key_msg))
@@ -3165,14 +3197,12 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 			   ret, strerror(-ret));
 
 	/*
-	 * If we failed or don't need to set the default TX key (below),
+	 * If we failed or don't need to set the key as default (below),
 	 * we're done here.
 	 */
-	if (ret || !set_tx || alg == WPA_ALG_NONE || tdls)
+	if (ret || skip_set_key)
 		return ret;
-	if (is_ap_interface(drv->nlmode) && addr &&
-	    !is_broadcast_ether_addr(addr))
-		return ret;
+	wpa_printf(MSG_DEBUG, "nl80211: NL80211_CMD_SET_KEY - default key");
 
 	ret = -ENOBUFS;
 	key_msg = nlmsg_alloc();
