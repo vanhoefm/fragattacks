@@ -2487,7 +2487,7 @@ int ieee802_1x_init(struct hostapd_data *hapd)
 		for (i = 0; i < 4; i++)
 			hostapd_drv_set_key(hapd->conf->iface, hapd,
 					    WPA_ALG_NONE, NULL, i, 0, 0, NULL,
-					    0, NULL, 0, KEY_FLAG_GROUP_RX_TX);
+					    0, NULL, 0, KEY_FLAG_GROUP);
 
 		ieee802_1x_rekey(hapd, NULL);
 
