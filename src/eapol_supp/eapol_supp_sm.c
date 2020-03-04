@@ -843,7 +843,7 @@ static void eapol_sm_processKey(struct eapol_sm *sm)
 
 	if (sm->ctx->set_wep_key &&
 	    sm->ctx->set_wep_key(sm->ctx->ctx,
-				 key->key_index & IEEE8021X_KEY_INDEX_FLAG,
+				 !!(key->key_index & IEEE8021X_KEY_INDEX_FLAG),
 				 key->key_index & IEEE8021X_KEY_INDEX_MASK,
 				 datakey, key_len) < 0) {
 		wpa_printf(MSG_WARNING, "EAPOL: Failed to set WEP key to the "
