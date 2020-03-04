@@ -3556,6 +3556,9 @@ retry:
 		p.set_tx = i == params->wep_tx_keyidx;
 		p.key = params->wep_key[i];
 		p.key_len = params->wep_key_len[i];
+		p.key_flag = i == params->wep_tx_keyidx ?
+			KEY_FLAG_GROUP_RX_TX_DEFAULT :
+			KEY_FLAG_GROUP_RX_TX;
 		wpa_driver_nl80211_set_key(bss, &p);
 		if (params->wep_tx_keyidx != i)
 			continue;
