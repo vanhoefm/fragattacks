@@ -3097,9 +3097,10 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 	    (drv->capa.flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_8021X))
 		return nl80211_set_pmk(drv, key, key_len, addr);
 
+	ret = -ENOBUFS;
 	key_msg = nlmsg_alloc();
 	if (!key_msg)
-		return -ENOBUFS;
+		return ret;
 
 	if (alg == WPA_ALG_NONE) {
 		msg = nl80211_ifindex_msg(drv, ifindex, 0, NL80211_CMD_DEL_KEY);
@@ -3109,8 +3110,10 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 		u32 suite;
 
 		suite = wpa_alg_to_cipher_suite(alg, key_len);
-		if (!suite)
+		if (!suite) {
+			ret = -EINVAL;
 			goto fail2;
+		}
 		msg = nl80211_ifindex_msg(drv, ifindex, 0, NL80211_CMD_NEW_KEY);
 		if (!msg)
 			goto fail2;
@@ -3179,9 +3182,10 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 	    !is_broadcast_ether_addr(addr))
 		return ret;
 
+	ret = -ENOBUFS;
 	key_msg = nlmsg_alloc();
 	if (!key_msg)
-		return -ENOBUFS;
+		return ret;
 
 	msg = nl80211_ifindex_msg(drv, ifindex, 0, NL80211_CMD_SET_KEY);
 	if (!msg)
@@ -3243,7 +3247,7 @@ fail:
 fail2:
 	nl80211_nlmsg_clear(key_msg);
 	nlmsg_free(key_msg);
-	return -ENOBUFS;
+	return ret;
 }
 
 
