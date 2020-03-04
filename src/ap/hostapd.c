@@ -336,7 +336,7 @@ static int hostapd_broadcast_wep_set(struct hostapd_data *hapd)
 	struct hostapd_ssid *ssid = &hapd->conf->ssid;
 
 	idx = ssid->wep.idx;
-	if (ssid->wep.default_len &&
+	if (ssid->wep.default_len && ssid->wep.key[idx] &&
 	    hostapd_drv_set_key(hapd->conf->iface,
 				hapd, WPA_ALG_WEP, broadcast_ether_addr, idx, 0,
 				1, NULL, 0, ssid->wep.key[idx],
