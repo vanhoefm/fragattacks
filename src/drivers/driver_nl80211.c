@@ -3142,15 +3142,7 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 				goto fail;
 		}
 	} else if (addr && is_broadcast_ether_addr(addr)) {
-		struct nlattr *types;
-
 		wpa_printf(MSG_DEBUG, "   broadcast key");
-
-		types = nla_nest_start(key_msg, NL80211_KEY_DEFAULT_TYPES);
-		if (!types ||
-		    nla_put_flag(key_msg, NL80211_KEY_DEFAULT_TYPE_MULTICAST))
-			goto fail;
-		nla_nest_end(key_msg, types);
 	}
 	if (nla_put_u8(key_msg, NL80211_KEY_IDX, key_idx) ||
 	    nla_put_nested(msg, NL80211_ATTR_KEY, key_msg))
