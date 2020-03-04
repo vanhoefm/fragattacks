@@ -468,6 +468,42 @@ def test_sigma_dut_sae_pw_id(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
+def test_sigma_dut_sae_pw_id_pwe_loop(dev, apdev):
+    """sigma_dut controlled SAE association with Password Identifier and forced PWE looping"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname)
+
+    try:
+        ssid = "test-sae"
+        params = hostapd.wpa2_params(ssid=ssid)
+        params['wpa_key_mgmt'] = 'SAE'
+        params["ieee80211w"] = "2"
+        params['sae_password'] = 'secret|id=pw id'
+        params['sae_groups'] = '19'
+        hapd = hostapd.add_ap(apdev[0], params)
+
+        sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,AKMSuiteType,8;9,PasswordID,pw id,sae_pwe,looping" % (ifname, "test-sae", "secret"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"),
+                            timeout=10)
+        for i in range(3):
+            ev = dev[0].wait_event(["SME: Trying to authenticate",
+                                    "CTRL-EVENT-CONNECTED"], timeout=10)
+            if ev is None:
+                raise Exception("Network selection result not indicated")
+            if "CTRL-EVENT-CONNECTED" in ev:
+                raise Exception("Unexpected connection")
+        res = sigma_dut_cmd("sta_is_connected,interface," + ifname)
+        if "connected,1" in res:
+            raise Exception("Connection reported")
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
+
 def test_sigma_dut_sae_pw_id_ft(dev, apdev):
     """sigma_dut controlled SAE association with Password Identifier and FT"""
     run_sigma_dut_sae_pw_id_ft(dev, apdev)
@@ -1054,6 +1090,42 @@ def test_sigma_dut_ap_sae_pw_id(dev, apdev, params):
                                ieee80211w="2", scan_freq="2412")
                 dev[0].request("REMOVE_NETWORK all")
                 dev[0].wait_disconnected()
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_sae_pw_id_pwe_loop(dev, apdev, params):
+    """sigma_dut controlled AP with SAE Password Identifier and forced PWE looping"""
+    logdir = os.path.join(params['logdir'],
+                          "sigma_dut_ap_sae_pw_id_pwe_loop.sigma-hostapd")
+    conffile = os.path.join(params['logdir'],
+                            "sigma_dut_ap_sae_pw_id_pwe_loop.sigma-conf")
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,AKMSuiteType,8,SAEPasswords,12345678:pwid,PMF,Required,sae_pwe,looping")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            with open("/tmp/sigma_dut-ap.conf", "rb") as f:
+                with open(conffile, "wb") as f2:
+                    f2.write(f.read())
+
+            dev[0].set("sae_groups", "")
+            dev[0].connect("test-sae", key_mgmt="SAE", sae_password="12345678",
+                           sae_password_id="pwid",
+                           ieee80211w="2", scan_freq="2412", wait_connect=False)
+            ev = dev[0].wait_event(["CTRL-EVENT-NETWORK-NOT-FOUND",
+                                    "CTRL-EVENT-CONNECTED"], timeout=10)
+            if ev is None:
+                raise Exception("Network selection result not indicated")
+            if "CTRL-EVENT-CONNECTED" in ev:
+                raise Exception("Unexpected connection")
+            dev[0].request("REMOVE_NETWORK all")
 
             sigma_dut_cmd_check("ap_reset_default")
         finally:
