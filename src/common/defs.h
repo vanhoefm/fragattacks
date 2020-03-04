@@ -431,7 +431,6 @@ enum chan_width {
 };
 
 enum key_flag {
-	KEY_FLAG_MODIFY			= BIT(0),
 	KEY_FLAG_DEFAULT		= BIT(1),
 	KEY_FLAG_RX			= BIT(2),
 	KEY_FLAG_TX			= BIT(3),
@@ -448,8 +447,6 @@ enum key_flag {
 					  KEY_FLAG_DEFAULT,
 	KEY_FLAG_PAIRWISE_RX_TX		= KEY_FLAG_PAIRWISE | KEY_FLAG_RX_TX,
 	KEY_FLAG_PAIRWISE_RX		= KEY_FLAG_PAIRWISE | KEY_FLAG_RX,
-	KEY_FLAG_PAIRWISE_RX_TX_MODIFY	= KEY_FLAG_PAIRWISE_RX_TX |
-					  KEY_FLAG_MODIFY,
 };
 
 enum ptk0_rekey_handling {
