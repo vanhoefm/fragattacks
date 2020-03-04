@@ -447,7 +447,22 @@ enum key_flag {
 					  KEY_FLAG_DEFAULT,
 	KEY_FLAG_PAIRWISE_RX_TX		= KEY_FLAG_PAIRWISE | KEY_FLAG_RX_TX,
 	KEY_FLAG_PAIRWISE_RX		= KEY_FLAG_PAIRWISE | KEY_FLAG_RX,
+	/* Max allowed flags for each key type */
+	KEY_FLAG_PAIRWISE_MASK		= KEY_FLAG_PAIRWISE_RX_TX,
+	KEY_FLAG_GROUP_MASK		= KEY_FLAG_GROUP_RX_TX_DEFAULT,
+	KEY_FLAG_PMK_MASK		= KEY_FLAG_PMK,
 };
+
+static inline int check_key_flag(enum key_flag key_flag)
+{
+	return !!(!key_flag ||
+		  ((key_flag & KEY_FLAG_PAIRWISE) &&
+		   (key_flag & ~KEY_FLAG_PAIRWISE_MASK)) ||
+		  ((key_flag & KEY_FLAG_GROUP) &&
+		   (key_flag & ~KEY_FLAG_GROUP_MASK)) ||
+		  ((key_flag & KEY_FLAG_PMK) &&
+		   (key_flag & ~KEY_FLAG_PMK_MASK)));
+}
 
 enum ptk0_rekey_handling {
 	PTK0_REKEY_ALLOW_ALWAYS,
