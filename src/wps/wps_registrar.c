@@ -3478,6 +3478,7 @@ static void wps_registrar_set_selected_timeout(void *eloop_ctx,
 		   "unselect internal Registrar");
 	reg->selected_registrar = 0;
 	reg->pbc = 0;
+	wps_registrar_expire_pins(reg);
 	wps_registrar_selected_registrar_changed(reg, 0);
 }
 
