@@ -10397,3 +10397,40 @@ def test_ap_wps_appl_ext(dev, apdev):
     dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412")
     dev[0].request("WPS_PIN %s %s" % (apdev[0]['bssid'], pin))
     dev[0].wait_connected(timeout=30)
+
+def test_ap_wps_pbc_ap_timeout(dev, apdev, params):
+    """WPS PBC timeout on AP [long]"""
+    if not params['long']:
+        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+    run_ap_wps_ap_timeout(dev, apdev, "WPS_PBC")
+
+def test_ap_wps_pin_ap_timeout(dev, apdev, params):
+    """WPS PIN timeout on AP [long]"""
+    if not params['long']:
+        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+    run_ap_wps_ap_timeout(dev, apdev, "WPS_PIN any 12345670 10")
+
+def run_ap_wps_ap_timeout(dev, apdev, cmd):
+    ssid = "test-wps-conf"
+    hapd = hostapd.add_ap(apdev[0],
+                          {"ssid": ssid, "eap_server": "1", "wps_state": "2",
+                           "wpa_passphrase": "12345678", "wpa": "2",
+                           "wpa_key_mgmt": "WPA-PSK", "rsn_pairwise": "CCMP"})
+    bssid = hapd.own_addr()
+    hapd.request(cmd)
+    time.sleep(1)
+    dev[0].scan_for_bss(bssid, freq="2412")
+    bss = dev[0].get_bss(bssid)
+    logger.info("BSS during active Registrar: " + str(bss))
+    if not bss['ie'].endswith("0106ffffffffffff"):
+        raise Exception("Authorized MAC not included")
+    ev = hapd.wait_event(["WPS-TIMEOUT"], timeout=130)
+    if ev is None and "PBC" in cmd:
+        raise Exception("WPS-TIMEOUT not reported")
+    time.sleep(5)
+    dev[0].flush_scan_cache()
+    dev[0].scan_for_bss(bssid, freq="2412", force_scan=True)
+    bss = dev[0].get_bss(bssid)
+    logger.info("BSS after timeout: " + str(bss))
+    if bss['ie'].endswith("0106ffffffffffff"):
+        raise Exception("Authorized MAC not removed")
