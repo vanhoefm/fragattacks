@@ -3118,12 +3118,13 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 		    nla_put_u32(key_msg, NL80211_KEY_CIPHER, suite))
 			goto fail;
 		wpa_hexdump_key(MSG_DEBUG, "nl80211: KEY_DATA", key, key_len);
-	}
 
-	if (seq && seq_len) {
-		if (nla_put(key_msg, NL80211_KEY_SEQ, seq_len, seq))
-			goto fail;
-		wpa_hexdump(MSG_DEBUG, "nl80211: KEY_SEQ", seq, seq_len);
+		if (seq && seq_len) {
+			if (nla_put(key_msg, NL80211_KEY_SEQ, seq_len, seq))
+				goto fail;
+			wpa_hexdump(MSG_DEBUG, "nl80211: KEY_SEQ",
+				    seq, seq_len);
+		}
 	}
 
 	if (addr && !is_broadcast_ether_addr(addr)) {
