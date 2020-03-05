@@ -227,7 +227,7 @@ static int wpa_tdls_set_key(struct wpa_sm *sm, struct wpa_tdls_peer *peer)
 
 	wpa_printf(MSG_DEBUG, "TDLS: Configure pairwise key for peer " MACSTR,
 		   MAC2STR(peer->addr));
-	if (wpa_sm_set_key(sm, alg, peer->addr, -1, 1, rsc, sizeof(rsc),
+	if (wpa_sm_set_key(sm, alg, peer->addr, 0, 1, rsc, sizeof(rsc),
 			   peer->tpk.tk, key_len,
 			   KEY_FLAG_PAIRWISE_RX_TX) < 0) {
 		wpa_printf(MSG_WARNING, "TDLS: Failed to set TPK to the "

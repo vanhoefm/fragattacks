@@ -3077,10 +3077,7 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 		   "set_tx=%d seq_len=%lu key_len=%lu key_flag=0x%x",
 		   __func__, ifindex, ifname, alg, addr, key_idx, set_tx,
 		   (unsigned long) seq_len, (unsigned long) key_len, key_flag);
-#ifdef CONFIG_TDLS
-	if (key_idx == -1)
-		key_idx = 0;
-#endif /* CONFIG_TDLS */
+
 	if (check_key_flag(key_flag)) {
 		wpa_printf(MSG_DEBUG, "%s: invalid key_flag", __func__);
 		return -EINVAL;
