@@ -1546,9 +1546,8 @@ struct wpa_driver_set_key_params {
 	 * alg - Encryption algorithm
 	 *
 	 * (%WPA_ALG_NONE, %WPA_ALG_WEP, %WPA_ALG_TKIP, %WPA_ALG_CCMP,
-	 * %WPA_ALG_IGTK, %WPA_ALG_PMK, %WPA_ALG_GCMP, %WPA_ALG_GCMP_256,
-	 * %WPA_ALG_CCMP_256, %WPA_ALG_BIP_GMAC_128, %WPA_ALG_BIP_GMAC_256,
-	 * %WPA_ALG_BIP_CMAC_256);
+	 * %WPA_ALG_IGTK, %WPA_ALG_GCMP, %WPA_ALG_GCMP_256, %WPA_ALG_CCMP_256,
+	 * %WPA_ALG_BIP_GMAC_128, %WPA_ALG_BIP_GMAC_256, %WPA_ALG_BIP_CMAC_256);
 	 * %WPA_ALG_NONE clears the key. */
 	enum wpa_alg alg;
 
@@ -1698,7 +1697,7 @@ struct wpa_driver_capa {
 /** Driver takes care of all DFS operations */
 #define WPA_DRIVER_FLAGS_DFS_OFFLOAD			0x00000004
 /** Driver takes care of RSN 4-way handshake internally; PMK is configured with
- * struct wpa_driver_ops::set_key using alg = WPA_ALG_PMK */
+ * struct wpa_driver_ops::set_key using key_flag = KEY_FLAG_PMK */
 #define WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_8021X		0x00000008
 /** Driver is for a wired Ethernet interface */
 #define WPA_DRIVER_FLAGS_WIRED		0x00000010

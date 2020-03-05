@@ -352,7 +352,7 @@ static void wpa_supplicant_eapol_cb(struct eapol_sm *eapol,
 	wpa_hexdump_key(MSG_DEBUG, "RSN: Configure PMK for driver-based 4-way "
 			"handshake", pmk, pmk_len);
 
-	if (wpa_drv_set_key(wpa_s, WPA_ALG_PMK, NULL, 0, 0, NULL, 0, pmk,
+	if (wpa_drv_set_key(wpa_s, 0, NULL, 0, 0, NULL, 0, pmk,
 			    pmk_len, KEY_FLAG_PMK)) {
 		wpa_printf(MSG_DEBUG, "Failed to set PMK to the driver");
 	}
@@ -1196,7 +1196,7 @@ static int wpa_supplicant_key_mgmt_set_pmk(void *ctx, const u8 *pmk,
 
 	if (wpa_s->conf->key_mgmt_offload &&
 	    (wpa_s->drv_flags & WPA_DRIVER_FLAGS_KEY_MGMT_OFFLOAD))
-		return wpa_drv_set_key(wpa_s, WPA_ALG_PMK, NULL, 0, 0,
+		return wpa_drv_set_key(wpa_s, 0, NULL, 0, 0,
 				       NULL, 0, pmk, pmk_len, KEY_FLAG_PMK);
 	else
 		return 0;

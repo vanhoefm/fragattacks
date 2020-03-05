@@ -2883,7 +2883,6 @@ static u32 wpa_alg_to_cipher_suite(enum wpa_alg alg, size_t key_len)
 	case WPA_ALG_KRK:
 		return RSN_CIPHER_SUITE_KRK;
 	case WPA_ALG_NONE:
-	case WPA_ALG_PMK:
 		wpa_printf(MSG_ERROR, "nl80211: Unexpected encryption algorithm %d",
 			   alg);
 		return 0;
@@ -3084,7 +3083,7 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 	}
 
 #ifdef CONFIG_DRIVER_NL80211_QCA
-	if (alg == WPA_ALG_PMK &&
+	if ((key_flag & KEY_FLAG_PMK) &&
 	    (drv->capa.flags & WPA_DRIVER_FLAGS_KEY_MGMT_OFFLOAD)) {
 		wpa_printf(MSG_DEBUG, "%s: calling issue_key_mgmt_set_key",
 			   __func__);
@@ -3093,10 +3092,9 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 	}
 #endif /* CONFIG_DRIVER_NL80211_QCA */
 
-	if (alg == WPA_ALG_PMK &&
-	    (drv->capa.flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_8021X))
-		return nl80211_set_pmk(drv, key, key_len, addr);
 	if (key_flag & KEY_FLAG_PMK) {
+		if (drv->capa.flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_8021X)
+			return nl80211_set_pmk(drv, key, key_len, addr);
 		/* The driver does not have any offload mechanism for PMK, so
 		 * there is no need to configure this key. */
 		return 0;

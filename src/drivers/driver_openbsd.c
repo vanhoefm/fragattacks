@@ -73,11 +73,12 @@ wpa_driver_openbsd_set_key(void *priv, struct wpa_driver_set_key_params *params)
 {
 	struct openbsd_driver_data *drv = priv;
 	struct ieee80211_keyavail keyavail;
-	enum wpa_alg alg = params->alg;
+	enum key_flag key_flag = params->key_flag;
 	const u8 *key = params->key;
 	size_t key_len = params->key_len;
 
-	if (alg != WPA_ALG_PMK || key_len > IEEE80211_PMK_LEN)
+	if (key_len > IEEE80211_PMK_LEN ||
+	    (key_flag & KEY_FLAG_PMK_MASK) != KEY_FLAG_PMK) {
 		return -1;
 
 	memset(&keyavail, 0, sizeof(keyavail));
