@@ -598,7 +598,7 @@ static int wpa_derive_ptk(struct wpa_sm *sm, const unsigned char *src_addr,
 	    sm->pmk_len > 32) {
 		wpa_printf(MSG_DEBUG,
 			   "OWE: Force SHA256 for PTK derivation");
-		akmp = WPA_KEY_MGMT_PSK_SHA256;
+		akmp |= WPA_KEY_MGMT_PSK_SHA256;
 	}
 #endif /* CONFIG_OWE */
 	return wpa_pmk_to_ptk(sm->pmk, sm->pmk_len, "Pairwise key expansion",

@@ -2286,7 +2286,7 @@ static int wpa_derive_ptk(struct wpa_state_machine *sm, const u8 *snonce,
 
 	akmp = sm->wpa_key_mgmt;
 	if (force_sha256)
-		akmp = WPA_KEY_MGMT_PSK_SHA256;
+		akmp |= WPA_KEY_MGMT_PSK_SHA256;
 	return wpa_pmk_to_ptk(pmk, pmk_len, "Pairwise key expansion",
 			      sm->wpa_auth->addr, sm->addr, sm->ANonce, snonce,
 			      ptk, akmp, sm->pairwise, z, z_len);
