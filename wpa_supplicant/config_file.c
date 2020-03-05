@@ -1612,9 +1612,16 @@ int wpa_config_write(const char *name, struct wpa_config *config)
 #endif /* CONFIG_NO_CONFIG_BLOBS */
 	int ret = 0;
 	const char *orig_name = name;
-	int tmp_len = os_strlen(name) + 5; /* allow space for .tmp suffix */
-	char *tmp_name = os_malloc(tmp_len);
+	int tmp_len;
+	char *tmp_name;
 
+	if (!name) {
+		wpa_printf(MSG_ERROR, "No configuration file for writing");
+		return -1;
+	}
+
+	tmp_len = os_strlen(name) + 5; /* allow space for .tmp suffix */
+	tmp_name = os_malloc(tmp_len);
 	if (tmp_name) {
 		os_snprintf(tmp_name, tmp_len, "%s.tmp", name);
 		name = tmp_name;
