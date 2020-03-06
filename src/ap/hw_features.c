@@ -785,7 +785,7 @@ static int hostapd_is_usable_edmg(struct hostapd_iface *iface)
 
 	/* 60 GHz channels 1..6 */
 	for (i = 0; i < 6; i++) {
-		int freq = 56160 + 2160 * i;
+		int freq = 56160 + 2160 * (i + 1);
 
 		if (edmg.channels & BIT(i)) {
 			contiguous++;
