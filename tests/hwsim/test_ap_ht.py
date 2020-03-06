@@ -1005,7 +1005,10 @@ def test_ap_ht_40mhz_intolerant_ap(dev, apdev):
 
     logger.info("Waiting for co-ex report from STA")
     ok = False
-    for i in range(0, 20):
+    for i in range(4):
+        ev = dev[0].wait_event(['CTRL-EVENT-SCAN-RESULTS'], timeout=20)
+        if ev is None:
+            raise Exception("No OBSS scan seen")
         time.sleep(1)
         if hapd.get_status_field("secondary_channel") == "0":
             logger.info("AP moved to 20 MHz channel")
