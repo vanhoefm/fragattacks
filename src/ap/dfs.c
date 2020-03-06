@@ -263,6 +263,7 @@ static int dfs_find_channel(struct hostapd_iface *iface,
 static void dfs_adjust_center_freq(struct hostapd_iface *iface,
 				   struct hostapd_channel_data *chan,
 				   int secondary_channel,
+				   int sec_chan_idx_80p80,
 				   u8 *oper_centr_freq_seg0_idx,
 				   u8 *oper_centr_freq_seg1_idx)
 {
@@ -289,8 +290,14 @@ static void dfs_adjust_center_freq(struct hostapd_iface *iface,
 	case CHANWIDTH_160MHZ:
 		*oper_centr_freq_seg0_idx = chan->chan + 14;
 		break;
+	case CHANWIDTH_80P80MHZ:
+		*oper_centr_freq_seg0_idx = chan->chan + 6;
+		*oper_centr_freq_seg1_idx = sec_chan_idx_80p80 + 6;
+		break;
+
 	default:
-		wpa_printf(MSG_INFO, "DFS only VHT20/40/80/160 is supported now");
+		wpa_printf(MSG_INFO,
+			   "DFS: Unsupported channel width configuration");
 		*oper_centr_freq_seg0_idx = 0;
 		break;
 	}
@@ -469,8 +476,11 @@ dfs_get_valid_channel(struct hostapd_iface *iface,
 {
 	struct hostapd_hw_modes *mode;
 	struct hostapd_channel_data *chan = NULL;
+	struct hostapd_channel_data *chan2 = NULL;
 	int num_available_chandefs;
-	int chan_idx;
+	int chan_idx, chan_idx2;
+	int sec_chan_idx_80p80 = -1;
+	int i;
 	u32 _rand;
 
 	wpa_printf(MSG_DEBUG, "DFS: Selecting random channel");
@@ -496,11 +506,12 @@ dfs_get_valid_channel(struct hostapd_iface *iface,
 		return NULL;
 	chan_idx = _rand % num_available_chandefs;
 	dfs_find_channel(iface, &chan, chan_idx, skip_radar);
-	if (chan)
-		wpa_printf(MSG_DEBUG, "DFS: got random channel %d (%d)",
-			   chan->freq, chan->chan);
-	else
+	if (!chan) {
 		wpa_printf(MSG_DEBUG, "DFS: no random channel found");
+		return NULL;
+	}
+	wpa_printf(MSG_DEBUG, "DFS: got random channel %d (%d)",
+		   chan->freq, chan->chan);
 
 	/* dfs_find_channel() calculations assume HT40+ */
 	if (iface->conf->secondary_channel)
@@ -508,8 +519,45 @@ dfs_get_valid_channel(struct hostapd_iface *iface,
 	else
 		*secondary_channel = 0;
 
+	/* Get secondary channel for HT80P80 */
+	if (hostapd_get_oper_chwidth(iface->conf) == CHANWIDTH_80P80MHZ) {
+		if (num_available_chandefs <= 1) {
+			wpa_printf(MSG_ERROR,
+				   "only 1 valid chan, can't support 80+80");
+			return NULL;
+		}
+
+		/*
+		 * Loop all channels except channel1 to find a valid channel2
+		 * that is not adjacent to channel1.
+		 */
+		for (i = 0; i < num_available_chandefs - 1; i++) {
+			/* start from chan_idx + 1, end when chan_idx - 1 */
+			chan_idx2 = (chan_idx + 1 + i) % num_available_chandefs;
+			dfs_find_channel(iface, &chan2, chan_idx2, skip_radar);
+			if (chan2 && abs(chan2->chan - chan->chan) > 12) {
+				/* two channels are not adjacent */
+				sec_chan_idx_80p80 = chan2->chan;
+				wpa_printf(MSG_DEBUG,
+					   "DFS: got second chan: %d (%d)",
+					   chan2->freq, chan2->chan);
+				break;
+			}
+		}
+
+		/* Check if we got a valid secondary channel which is not
+		 * adjacent to the first channel.
+		 */
+		if (sec_chan_idx_80p80 == -1) {
+			wpa_printf(MSG_INFO,
+				   "DFS: failed to get chan2 for 80+80");
+			return NULL;
+		}
+	}
+
 	dfs_adjust_center_freq(iface, chan,
 			       *secondary_channel,
+			       sec_chan_idx_80p80,
 			       oper_centr_freq_seg0_idx,
 			       oper_centr_freq_seg1_idx);
 
