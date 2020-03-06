@@ -96,7 +96,7 @@ def sigma_dut_cmd_check(cmd, port=9000, timeout=2):
     return res
 
 def start_sigma_dut(ifname, hostapd_logdir=None, cert_path=None,
-                    bridge=None, sae_h2e=False):
+                    bridge=None, sae_h2e=False, owe_ptk_workaround=False):
     check_sigma_dut()
     cmd = ['./sigma_dut',
            '-d',
@@ -114,6 +114,8 @@ def start_sigma_dut(ifname, hostapd_logdir=None, cert_path=None,
         cmd += ['-b', bridge]
     if sae_h2e:
         cmd += ['-2']
+    if owe_ptk_workaround:
+        cmd += ['-3']
     sigma = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
     for stream in [sigma.stdout, sigma.stderr]:
@@ -1327,6 +1329,35 @@ def run_sigma_dut_owe(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
+def test_sigma_dut_owe_ptk_workaround(dev, apdev):
+    """sigma_dut controlled OWE station with PTK workaround"""
+    if "OWE" not in dev[0].get_capability("key_mgmt"):
+        raise HwsimSkip("OWE not supported")
+
+    params = {"ssid": "owe",
+              "wpa": "2",
+              "wpa_key_mgmt": "OWE",
+              "owe_ptk_workaround": "1",
+              "owe_groups": "20",
+              "ieee80211w": "2",
+              "rsn_pairwise": "CCMP"}
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname, owe_ptk_workaround=True)
+
+    try:
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,owe,Type,OWE,ECGroupID,20" % ifname)
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,owe,channel,1" % ifname,
+                            timeout=10)
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
+        dev[0].set("ignore_old_scan_res", "0")
+
 def test_sigma_dut_ap_owe(dev, apdev, params):
     """sigma_dut controlled AP with OWE"""
     logdir = os.path.join(params['logdir'],
@@ -1387,6 +1418,25 @@ def test_sigma_dut_ap_owe_ecgroupid(dev, apdev):
                 raise Exception("Unexpected rejection reason: " + ev)
             dev[0].dump_monitor()
 
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_owe_ptk_workaround(dev, apdev):
+    """sigma_dut controlled AP with OWE PTK workaround"""
+    if "OWE" not in dev[0].get_capability("key_mgmt"):
+        raise HwsimSkip("OWE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, owe_ptk_workaround=True)
+        try:
+            sigma_dut_cmd_check("ap_reset_default,NAME,AP,Program,WPA3")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,owe,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,OWE,ECGroupID,20,PMF,Required")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].connect("owe", key_mgmt="OWE", ieee80211w="2",
+                           owe_group="20", owe_ptk_workaround="1",
+                           scan_freq="2412")
             sigma_dut_cmd_check("ap_reset_default")
         finally:
             stop_sigma_dut(sigma)
