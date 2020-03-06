@@ -1168,6 +1168,38 @@ def test_ap_ht40_csa3(dev, apdev):
         set_world_reg(apdev[0], None, dev[0])
         dev[0].flush_scan_cache()
 
+def test_ap_ht_20_to_40_csa(dev, apdev):
+    """HT with 20 MHz channel width doing CSA to 40 MHz"""
+    csa_supported(dev[0])
+
+    params = {"ssid": "ht",
+              "channel": "1",
+              "ieee80211n": "1"}
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("ht", key_mgmt="NONE", scan_freq="2412")
+    hapd.wait_sta()
+    res = dev[0].request("SIGNAL_POLL")
+    logger.info("SIGNAL_POLL:\n" + res)
+    sig = res.splitlines()
+    if 'WIDTH=20 MHz' not in sig:
+        raise Exception("20 MHz channel bandwidth not used on the original channel")
+
+    hapd.request("CHAN_SWITCH 5 2462 ht sec_channel_offset=-1 bandwidth=40")
+    ev = hapd.wait_event(["AP-CSA-FINISHED"], timeout=10)
+    if ev is None:
+        raise Exception("CSA finished event timed out")
+    if "freq=2462" not in ev:
+        raise Exception("Unexpected channel in CSA finished event")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+    if ev is not None:
+        raise Exception("Unexpected STA disconnection during CSA")
+    res = dev[0].request("SIGNAL_POLL")
+    logger.info("SIGNAL_POLL:\n" + res)
+    sig = res.splitlines()
+    if 'WIDTH=40 MHz' not in sig:
+        raise Exception("40 MHz channel bandwidth not used on the new channel")
+
 @remote_compatible
 def test_prefer_ht20(dev, apdev):
     """Preference on HT20 over no-HT"""
