@@ -644,3 +644,11 @@ def test_wpas_config_file_sae(dev, apdev, params):
                  only_add_network=True)
     wpas.save_config()
     check_network_config(config, False)
+
+def test_wpas_config_update_without_file(dev, apdev):
+    """wpa_supplicant SAVE_CONFIG without config file"""
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5")
+    wpas.set("update_config", "1")
+    if "FAIL" not in wpas.request("SAVE_CONFIG"):
+        raise Exception("SAVE_CONFIG accepted unexpectedly")
