@@ -2233,7 +2233,7 @@ static int osu_connect(struct hs20_osu_client *ctx, const char *bssid,
 	wpa_ctrl_close(mon);
 
 	if (res < 0) {
-		wpa_printf(MSG_INFO, "Could not connect");
+		wpa_printf(MSG_INFO, "Could not connect to OSU network");
 		write_summary(ctx, "Could not connect to OSU network");
 		wpa_printf(MSG_INFO, "Remove OSU network connection");
 		snprintf(buf, sizeof(buf), "REMOVE_NETWORK %d", id);
