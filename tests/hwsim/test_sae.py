@@ -2253,6 +2253,10 @@ def test_sae_h2e_rsnxe_mismatch_ap2(dev, apdev):
     """SAE H2E and RSNXE mismatch in EAPOL-Key msg 3/4"""
     run_sae_h2e_rsnxe_mismatch_ap(dev, apdev, "F400")
 
+def test_sae_h2e_rsnxe_mismatch_ap3(dev, apdev):
+    """SAE H2E and RSNXE mismatch in EAPOL-Key msg 3/4"""
+    run_sae_h2e_rsnxe_mismatch_ap(dev, apdev, "")
+
 def run_sae_h2e_rsnxe_mismatch_ap(dev, apdev, rsnxe):
     check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
