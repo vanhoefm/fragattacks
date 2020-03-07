@@ -107,9 +107,6 @@ static void view_cb_resource_load_starting(WebKitWebView *view,
 	const gchar *uri = webkit_uri_request_get_uri(req);
 
 	wpa_printf(MSG_DEBUG, "BROWSER:%s uri=%s", __func__, uri);
-	if (g_str_has_suffix(uri, "/favicon.ico"))
-		webkit_uri_request_set_uri(req, "about:blank");
-
 	process_request_starting_uri(ctx, uri);
 }
 
@@ -132,6 +129,21 @@ static gboolean view_cb_decide_policy(WebKitWebView *view,
 			webkit_policy_decision_download(policy);
 			return TRUE;
 		}
+		break;
+	}
+	case WEBKIT_POLICY_DECISION_TYPE_NAVIGATION_ACTION: {
+		WebKitNavigationPolicyDecision *d;
+		WebKitNavigationAction *a;
+		WebKitURIRequest *req;
+		const gchar *uri;
+
+		d = WEBKIT_NAVIGATION_POLICY_DECISION(policy);
+		a = webkit_navigation_policy_decision_get_navigation_action(d);
+		req = webkit_navigation_action_get_request(a);
+		uri = webkit_uri_request_get_uri(req);
+		wpa_printf(MSG_DEBUG, "BROWSER:%s navigation action: uri=%s",
+			   __func__, uri);
+		process_request_starting_uri(ctx, uri);
 		break;
 	}
 	default:
