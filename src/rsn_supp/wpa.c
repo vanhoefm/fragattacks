@@ -1472,6 +1472,11 @@ static int wpa_supplicant_validate_ie(struct wpa_sm *sm,
 	      os_memcmp(sm->ap_rsnxe, ie->rsnxe, sm->ap_rsnxe_len) != 0))) {
 		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
 			"WPA: RSNXE mismatch between Beacon/ProbeResp and EAPOL-Key msg 3/4");
+		wpa_hexdump(MSG_INFO, "RSNXE in Beacon/ProbeResp",
+			    sm->ap_rsnxe, sm->ap_rsnxe_len);
+		wpa_hexdump(MSG_INFO, "RSNXE in EAPOL-Key msg 3/4",
+			    ie->rsnxe, ie->rsnxe_len);
+		wpa_sm_deauthenticate(sm, WLAN_REASON_IE_IN_4WAY_DIFFERS);
 		return -1;
 	}
 
