@@ -82,23 +82,30 @@ int wpa_sm_set_ft_params(struct wpa_sm *sm, const u8 *ies, size_t ies_len)
 	if (sm == NULL)
 		return 0;
 
+	if (!get_ie(ies, ies_len, WLAN_EID_MOBILITY_DOMAIN)) {
+		os_free(sm->assoc_resp_ies);
+		sm->assoc_resp_ies = NULL;
+		sm->assoc_resp_ies_len = 0;
+		os_memset(sm->mobility_domain, 0, MOBILITY_DOMAIN_ID_LEN);
+		os_memset(sm->r0kh_id, 0, FT_R0KH_ID_MAX_LEN);
+		sm->r0kh_id_len = 0;
+		os_memset(sm->r1kh_id, 0, FT_R1KH_ID_LEN);
+		return 0;
+	}
+
 	use_sha384 = wpa_key_mgmt_sha384(sm->key_mgmt);
 	if (wpa_ft_parse_ies(ies, ies_len, &ft, use_sha384) < 0)
 		return -1;
 
-	if (ft.mdie && ft.mdie_len < MOBILITY_DOMAIN_ID_LEN + 1)
+	if (ft.mdie_len < MOBILITY_DOMAIN_ID_LEN + 1)
 		return -1;
 
-	if (ft.mdie) {
-		wpa_hexdump(MSG_DEBUG, "FT: Mobility domain",
-			    ft.mdie, MOBILITY_DOMAIN_ID_LEN);
-		os_memcpy(sm->mobility_domain, ft.mdie,
-			  MOBILITY_DOMAIN_ID_LEN);
-		sm->mdie_ft_capab = ft.mdie[MOBILITY_DOMAIN_ID_LEN];
-		wpa_printf(MSG_DEBUG, "FT: Capability and Policy: 0x%02x",
-			   sm->mdie_ft_capab);
-	} else
-		os_memset(sm->mobility_domain, 0, MOBILITY_DOMAIN_ID_LEN);
+	wpa_hexdump(MSG_DEBUG, "FT: Mobility domain",
+		    ft.mdie, MOBILITY_DOMAIN_ID_LEN);
+	os_memcpy(sm->mobility_domain, ft.mdie, MOBILITY_DOMAIN_ID_LEN);
+	sm->mdie_ft_capab = ft.mdie[MOBILITY_DOMAIN_ID_LEN];
+	wpa_printf(MSG_DEBUG, "FT: Capability and Policy: 0x%02x",
+		   sm->mdie_ft_capab);
 
 	if (ft.r0kh_id) {
 		wpa_hexdump(MSG_DEBUG, "FT: R0KH-ID",
@@ -125,10 +132,10 @@ int wpa_sm_set_ft_params(struct wpa_sm *sm, const u8 *ies, size_t ies_len)
 	sm->assoc_resp_ies = os_malloc(ft.mdie_len + 2 + ft.ftie_len + 2);
 	if (sm->assoc_resp_ies) {
 		u8 *pos = sm->assoc_resp_ies;
-		if (ft.mdie) {
-			os_memcpy(pos, ft.mdie - 2, ft.mdie_len + 2);
-			pos += ft.mdie_len + 2;
-		}
+
+		os_memcpy(pos, ft.mdie - 2, ft.mdie_len + 2);
+		pos += ft.mdie_len + 2;
+
 		if (ft.ftie) {
 			os_memcpy(pos, ft.ftie - 2, ft.ftie_len + 2);
 			pos += ft.ftie_len + 2;
