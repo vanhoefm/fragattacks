@@ -3351,3 +3351,36 @@ def test_ap_wpa2_psk_no_control_port(dev, apdev):
     wpas.request("DISCONNECT")
     wpas.wait_disconnected()
     wpas.dump_monitor()
+
+def test_ap_wpa2_psk_rsne_mismatch_ap(dev, apdev):
+    """RSNE mismatch in EAPOL-Key msg 3/4"""
+    ie = "30140100000fac040100000fac040100000fac020c80"
+    run_ap_wpa2_psk_rsne_mismatch_ap(dev, apdev, ie)
+
+def test_ap_wpa2_psk_rsne_mismatch_ap2(dev, apdev):
+    """RSNE mismatch in EAPOL-Key msg 3/4"""
+    ie = "30150100000fac040100000fac040100000fac020c0000"
+    run_ap_wpa2_psk_rsne_mismatch_ap(dev, apdev, ie)
+
+def test_ap_wpa2_psk_rsne_mismatch_ap3(dev, apdev):
+    """RSNE mismatch in EAPOL-Key msg 3/4"""
+    run_ap_wpa2_psk_rsne_mismatch_ap(dev, apdev, "")
+
+def run_ap_wpa2_psk_rsne_mismatch_ap(dev, apdev, rsne):
+    params = hostapd.wpa2_params(ssid="psk", passphrase="12345678")
+    params['rsne_override_eapol'] = rsne
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("psk", psk="12345678", scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["Associated with"], timeout=10)
+    if ev is None:
+        raise Exception("No indication of association seen")
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-DISCONNECTED"], timeout=5)
+    dev[0].request("REMOVE_NETWORK all")
+    if ev is None:
+        raise Exception("No disconnection seen")
+    if "CTRL-EVENT-DISCONNECTED" not in ev:
+        raise Exception("Unexpected connection")
+    if "reason=17 locally_generated=1" not in ev:
+        raise Exception("Unexpected disconnection reason: " + ev)
