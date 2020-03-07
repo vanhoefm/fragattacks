@@ -1027,6 +1027,13 @@ int ap_sta_bind_vlan(struct hostapd_data *hapd, struct sta_info *sta)
 	int ret;
 	int old_vlanid = sta->vlan_id_bound;
 
+	if ((sta->flags & WLAN_STA_WDS) && sta->vlan_id == 0) {
+		wpa_printf(MSG_DEBUG,
+			   "Do not override WDS VLAN assignment for STA "
+			   MACSTR, MAC2STR(sta->addr));
+		return 0;
+	}
+
 	iface = hapd->conf->iface;
 	if (hapd->conf->ssid.vlan[0])
 		iface = hapd->conf->ssid.vlan;
