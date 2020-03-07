@@ -18,6 +18,7 @@ struct wpa_scan_res;
 #define WPA_BSS_AUTHENTICATED		BIT(4)
 #define WPA_BSS_ASSOCIATED		BIT(5)
 #define WPA_BSS_ANQP_FETCH_TRIED	BIT(6)
+#define WPA_BSS_OWE_TRANSITION		BIT(7)
 
 struct wpa_bss_anqp_elem {
 	struct dl_list list;
