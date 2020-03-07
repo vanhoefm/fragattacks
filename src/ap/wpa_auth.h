@@ -225,6 +225,7 @@ struct wpa_auth_config {
 	size_t rsnxe_override_eapol_len;
 	u8 gtk_rsc_override[WPA_KEY_RSC_LEN];
 	u8 igtk_rsc_override[WPA_KEY_RSC_LEN];
+	unsigned int rsnxe_override_eapol_set:1;
 	unsigned int gtk_rsc_override_set:1;
 	unsigned int igtk_rsc_override_set:1;
 #endif /* CONFIG_TESTING_OPTIONS */

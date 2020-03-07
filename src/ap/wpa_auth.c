@@ -3221,13 +3221,45 @@ static int ocv_oci_add(struct wpa_state_machine *sm, u8 **argpos)
 }
 
 
+#ifdef CONFIG_TESTING_OPTIONS
+static u8 * replace_ie(const char *name, const u8 *old_buf, size_t *len, u8 eid,
+		       const u8 *ie, size_t ie_len)
+{
+	const u8 *elem;
+	u8 *buf;
+
+	wpa_printf(MSG_DEBUG, "TESTING: %s EAPOL override", name);
+	wpa_hexdump(MSG_DEBUG, "TESTING: wpa_ie before override",
+		    old_buf, *len);
+	buf = os_malloc(*len + ie_len);
+	if (!buf)
+		return NULL;
+	os_memcpy(buf, old_buf, *len);
+	elem = get_ie(buf, *len, eid);
+	if (elem) {
+		u8 elem_len = 2 + elem[1];
+
+		os_memmove((void *) elem, elem + elem_len,
+			   *len - (elem - buf) - elem_len);
+		*len -= elem_len;
+	}
+	os_memcpy(buf + *len, ie, ie_len);
+	*len += ie_len;
+	wpa_hexdump(MSG_DEBUG, "TESTING: wpa_ie after EAPOL override",
+		    buf, *len);
+
+	return buf;
+}
+#endif /* CONFIG_TESTING_OPTIONS */
+
+
 SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 {
 	u8 rsc[WPA_KEY_RSC_LEN], *_rsc, *gtk, *kde = NULL, *pos, dummy_gtk[32];
-	size_t gtk_len, kde_len;
+	size_t gtk_len, kde_len, wpa_ie_len;
 	struct wpa_group *gsm = sm->group;
 	u8 *wpa_ie;
-	int wpa_ie_len, secure, gtkidx, encr = 0;
+	int secure, gtkidx, encr = 0;
 	u8 *wpa_ie_buf = NULL;
 
 	SM_ENTRY_MA(WPA_PTK, PTKINITNEGOTIATING, wpa_ptk);
@@ -3255,7 +3287,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 	wpa_ie_len = sm->wpa_auth->wpa_ie_len;
 	if (sm->wpa == WPA_VERSION_WPA &&
 	    (sm->wpa_auth->conf.wpa & WPA_PROTO_RSN) &&
-	    wpa_ie_len > wpa_ie[1] + 2 && wpa_ie[0] == WLAN_EID_RSN) {
+	    wpa_ie_len > wpa_ie[1] + 2U && wpa_ie[0] == WLAN_EID_RSN) {
 		/* WPA-only STA, remove RSN IE and possible MDIE */
 		wpa_ie = wpa_ie + wpa_ie[1] + 2;
 		if (wpa_ie[0] == WLAN_EID_MOBILITY_DOMAIN)
@@ -3263,32 +3295,14 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 		wpa_ie_len = wpa_ie[1] + 2;
 	}
 #ifdef CONFIG_TESTING_OPTIONS
-	if (sm->wpa_auth->conf.rsnxe_override_eapol_len) {
-		u8 *obuf = sm->wpa_auth->conf.rsnxe_override_eapol;
-		size_t olen = sm->wpa_auth->conf.rsnxe_override_eapol_len;
-		const u8 *rsnxe;
-
-		wpa_hexdump(MSG_DEBUG,
-			    "TESTING: wpa_ie before RSNXE EAPOL override",
-			    wpa_ie, wpa_ie_len);
-		wpa_ie_buf = os_malloc(wpa_ie_len + olen);
+	if (sm->wpa_auth->conf.rsnxe_override_eapol_set) {
+		wpa_ie_buf = replace_ie(
+			"RSNXE", wpa_ie, &wpa_ie_len, WLAN_EID_RSNX,
+			sm->wpa_auth->conf.rsnxe_override_eapol,
+			sm->wpa_auth->conf.rsnxe_override_eapol_len);
 		if (!wpa_ie_buf)
-			return;
-		os_memcpy(wpa_ie_buf, wpa_ie, wpa_ie_len);
+			goto done;
 		wpa_ie = wpa_ie_buf;
-		rsnxe = get_ie(wpa_ie, wpa_ie_len, WLAN_EID_RSNX);
-		if (rsnxe) {
-			u8 rsnxe_len = 2 + rsnxe[1];
-
-			os_memmove((void *) rsnxe, rsnxe + rsnxe_len,
-				   wpa_ie_len - (rsnxe - wpa_ie) - rsnxe_len);
-			wpa_ie_len -= rsnxe_len;
-		}
-		os_memcpy(wpa_ie + wpa_ie_len, obuf, olen);
-		wpa_ie_len += olen;
-		wpa_hexdump(MSG_DEBUG,
-			    "TESTING: wpa_ie after RSNXE EAPOL override",
-			    wpa_ie, wpa_ie_len);
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
 	wpa_auth_logger(sm->wpa_auth, sm->addr, LOGGER_DEBUG,

@@ -123,6 +123,7 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 	}
 	if (conf->rsnxe_override_eapol &&
 	    wpabuf_len(conf->rsnxe_override_eapol) <= MAX_OWN_IE_OVERRIDE) {
+		wconf->rsnxe_override_eapol_set = 1;
 		wconf->rsnxe_override_eapol_len =
 			wpabuf_len(conf->rsnxe_override_eapol);
 		os_memcpy(wconf->rsnxe_override_eapol,
