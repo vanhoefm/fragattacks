@@ -902,6 +902,7 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 #ifdef CONFIG_TESTING_OPTIONS
 	wpabuf_free(conf->own_ie_override);
 	wpabuf_free(conf->sae_commit_override);
+	wpabuf_free(conf->rsne_override_eapol);
 	wpabuf_free(conf->rsnxe_override_eapol);
 	wpabuf_free(conf->gtk_rsc_override);
 	wpabuf_free(conf->igtk_rsc_override);

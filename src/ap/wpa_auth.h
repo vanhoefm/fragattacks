@@ -221,10 +221,13 @@ struct wpa_auth_config {
 	double corrupt_gtk_rekey_mic_probability;
 	u8 own_ie_override[MAX_OWN_IE_OVERRIDE];
 	size_t own_ie_override_len;
+	u8 rsne_override_eapol[MAX_OWN_IE_OVERRIDE];
+	size_t rsne_override_eapol_len;
 	u8 rsnxe_override_eapol[MAX_OWN_IE_OVERRIDE];
 	size_t rsnxe_override_eapol_len;
 	u8 gtk_rsc_override[WPA_KEY_RSC_LEN];
 	u8 igtk_rsc_override[WPA_KEY_RSC_LEN];
+	unsigned int rsne_override_eapol_set:1;
 	unsigned int rsnxe_override_eapol_set:1;
 	unsigned int gtk_rsc_override_set:1;
 	unsigned int igtk_rsc_override_set:1;

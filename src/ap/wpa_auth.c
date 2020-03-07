@@ -3260,7 +3260,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 	struct wpa_group *gsm = sm->group;
 	u8 *wpa_ie;
 	int secure, gtkidx, encr = 0;
-	u8 *wpa_ie_buf = NULL;
+	u8 *wpa_ie_buf = NULL, *wpa_ie_buf2 = NULL;
 
 	SM_ENTRY_MA(WPA_PTK, PTKINITNEGOTIATING, wpa_ptk);
 	sm->TimeoutEvt = FALSE;
@@ -3295,6 +3295,15 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 		wpa_ie_len = wpa_ie[1] + 2;
 	}
 #ifdef CONFIG_TESTING_OPTIONS
+	if (sm->wpa_auth->conf.rsne_override_eapol_set) {
+		wpa_ie_buf2 = replace_ie(
+			"RSNE", wpa_ie, &wpa_ie_len, WLAN_EID_RSN,
+			sm->wpa_auth->conf.rsne_override_eapol,
+			sm->wpa_auth->conf.rsne_override_eapol_len);
+		if (!wpa_ie_buf2)
+			goto done;
+		wpa_ie = wpa_ie_buf2;
+	}
 	if (sm->wpa_auth->conf.rsnxe_override_eapol_set) {
 		wpa_ie_buf = replace_ie(
 			"RSNXE", wpa_ie, &wpa_ie_len, WLAN_EID_RSNX,
@@ -3458,6 +3467,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 done:
 	os_free(kde);
 	os_free(wpa_ie_buf);
+	os_free(wpa_ie_buf2);
 }
 
 

@@ -121,6 +121,15 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 			  wpabuf_head(conf->own_ie_override),
 			  wconf->own_ie_override_len);
 	}
+	if (conf->rsne_override_eapol &&
+	    wpabuf_len(conf->rsne_override_eapol) <= MAX_OWN_IE_OVERRIDE) {
+		wconf->rsne_override_eapol_set = 1;
+		wconf->rsne_override_eapol_len =
+			wpabuf_len(conf->rsne_override_eapol);
+		os_memcpy(wconf->rsne_override_eapol,
+			  wpabuf_head(conf->rsne_override_eapol),
+			  wconf->rsne_override_eapol_len);
+	}
 	if (conf->rsnxe_override_eapol &&
 	    wpabuf_len(conf->rsnxe_override_eapol) <= MAX_OWN_IE_OVERRIDE) {
 		wconf->rsnxe_override_eapol_set = 1;
