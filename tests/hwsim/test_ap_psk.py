@@ -3384,3 +3384,23 @@ def run_ap_wpa2_psk_rsne_mismatch_ap(dev, apdev, rsne):
         raise Exception("Unexpected connection")
     if "reason=17 locally_generated=1" not in ev:
         raise Exception("Unexpected disconnection reason: " + ev)
+
+def test_ap_wpa2_psk_rsnxe_mismatch_ap(dev, apdev):
+    """RSNXE mismatch in EAPOL-Key msg 3/4"""
+    params = hostapd.wpa2_params(ssid="psk", passphrase="12345678")
+    params['rsnxe_override_eapol'] = "F40100"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("psk", psk="12345678", scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["Associated with"], timeout=10)
+    if ev is None:
+        raise Exception("No indication of association seen")
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-DISCONNECTED"], timeout=5)
+    dev[0].request("REMOVE_NETWORK all")
+    if ev is None:
+        raise Exception("No disconnection seen")
+    if "CTRL-EVENT-DISCONNECTED" not in ev:
+        raise Exception("Unexpected connection")
+    if "reason=17 locally_generated=1" not in ev:
+        raise Exception("Unexpected disconnection reason: " + ev)
