@@ -421,10 +421,10 @@ int hostapd_get_he_twt_responder(struct hostapd_data *hapd,
 	u8 *mac_cap;
 
 	if (!hapd->iface->current_mode ||
-	    !hapd->iface->current_mode->he_capab)
+	    !hapd->iface->current_mode->he_capab[mode].he_supported)
 		return 0;
 
 	mac_cap = hapd->iface->current_mode->he_capab[mode].mac_cap;
 
-	return mac_cap[HE_MAC_CAPAB_0] & HE_MACCAP_TWT_RESPONDER;
+	return !!(mac_cap[HE_MAC_CAPAB_0] & HE_MACCAP_TWT_RESPONDER);
 }
