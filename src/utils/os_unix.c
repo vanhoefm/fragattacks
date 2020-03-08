@@ -367,8 +367,8 @@ int os_program_init(void)
 	capset(&header, &cap);
 #endif /* ANDROID */
 
-	os_get_random((unsigned char *) &seed, sizeof(seed));
-	srandom(seed);
+	if (os_get_random((unsigned char *) &seed, sizeof(seed)) == 0)
+		srandom(seed);
 
 	return 0;
 }
