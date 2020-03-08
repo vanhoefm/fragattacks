@@ -230,6 +230,7 @@ def test_ap_wps_conf(dev, apdev):
                            "wpa_key_mgmt": "WPA-PSK", "rsn_pairwise": "CCMP"})
     logger.info("WPS provisioning step")
     hapd.request("WPS_PBC")
+    dev[0].set("device_name", "Device A")
     dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412")
     dev[0].dump_monitor()
     dev[0].request("WPS_PBC " + apdev[0]['bssid'])
@@ -262,6 +263,7 @@ def test_ap_wps_conf_5ghz(dev, apdev):
         hapd = hostapd.add_ap(apdev[0], params)
         logger.info("WPS provisioning step")
         hapd.request("WPS_PBC")
+        dev[0].set("device_name", "Device A")
         dev[0].scan_for_bss(apdev[0]['bssid'], freq="5180")
         dev[0].request("WPS_PBC " + apdev[0]['bssid'])
         dev[0].wait_connected(timeout=30)
@@ -285,6 +287,7 @@ def test_ap_wps_conf_chan14(dev, apdev):
         hapd = hostapd.add_ap(apdev[0], params)
         logger.info("WPS provisioning step")
         hapd.request("WPS_PBC")
+        dev[0].set("device_name", "Device A")
         dev[0].request("WPS_PBC")
         dev[0].wait_connected(timeout=30)
 
