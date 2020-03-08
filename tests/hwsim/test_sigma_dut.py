@@ -505,6 +505,7 @@ def test_sigma_dut_sae_pw_id_pwe_loop(dev, apdev):
         sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
     finally:
         stop_sigma_dut(sigma)
+        dev[0].set("sae_pwe", "0")
 
 def test_sigma_dut_sae_pw_id_ft(dev, apdev):
     """sigma_dut controlled SAE association with Password Identifier and FT"""
