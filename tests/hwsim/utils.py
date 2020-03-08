@@ -162,7 +162,7 @@ def clear_regdom_dev(dev, count=1):
         dev[i].request("DISCONNECT")
     for i in range(count):
         dev[i].disconnect_and_stop_scan()
-    subprocess.call(['iw', 'reg', 'set', '00'])
+    dev[0].cmd_execute(['iw', 'reg', 'set', '00'])
     wait_regdom_changes(dev[0])
     country = dev[0].get_driver_status_field("country")
     logger.info("Country code at the end: " + country)
