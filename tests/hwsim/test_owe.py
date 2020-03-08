@@ -329,6 +329,51 @@ def run_owe_transition_mode_multi_bss(dev, apdev):
         raise Exception("Unexpected key_mgmt: " + val)
     hwsim_utils.test_connectivity(dev[0], hapd2)
 
+def test_owe_transition_mode_rsne_mismatch(dev, apdev):
+    """Opportunistic Wireless Encryption transition mode and RSNE mismatch"""
+    if "OWE" not in dev[0].get_capability("key_mgmt"):
+        raise HwsimSkip("OWE not supported")
+    dev[0].flush_scan_cache()
+    params = {"ssid": "owe-random",
+              "wpa": "2",
+              "wpa_key_mgmt": "OWE",
+              "rsn_pairwise": "CCMP",
+              "ieee80211w": "2",
+              "rsne_override_eapol": "30140100000fac040100000fac040100000fac020c00",
+              "owe_transition_bssid": apdev[1]['bssid'],
+              "owe_transition_ssid": '"owe-test"',
+              "ignore_broadcast_ssid": "1"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    params = {"ssid": "owe-test",
+              "owe_transition_bssid": apdev[0]['bssid'],
+              "owe_transition_ssid": '"owe-random"'}
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    bssid2 = hapd2.own_addr()
+
+    dev[0].scan_for_bss(bssid, freq="2412")
+    dev[0].scan_for_bss(bssid2, freq="2412")
+
+    id = dev[0].connect("owe-test", key_mgmt="OWE", ieee80211w="2",
+                        scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["PMKSA-CACHE-ADDED"], timeout=5)
+    if ev is None:
+        raise Exception("OWE PMKSA not created")
+    ev = dev[0].wait_event(["WPA: IE in 3/4 msg does not match with IE in Beacon/ProbeResp"],
+                           timeout=5)
+    if ev is None:
+        raise Exception("RSNE mismatch not reported")
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-DISCONNECTED"], timeout=5)
+    dev[0].request("REMOVE_NETWORK all")
+    if ev is None:
+        raise Exception("No disconnection seen")
+    if "CTRL-EVENT-DISCONNECTED" not in ev:
+        raise Exception("Unexpected connection")
+    if "reason=17 locally_generated=1" not in ev:
+        raise Exception("Unexpected disconnection reason: " + ev)
+
 def test_owe_unsupported_group(dev, apdev):
     """Opportunistic Wireless Encryption and unsupported group"""
     try:
