@@ -2613,6 +2613,11 @@ static void handle_auth(struct hostapd_data *hapd,
 #endif /* CONFIG_FILS */
 	}
 
+#ifdef CONFIG_TESTING_OPTIONS
+	wpa_msg(hapd->msg_ctx, MSG_INFO, "Client " MACSTR " is connecting",
+		 MAC2STR(sta->addr));
+#endif /* CONFIG_TESTING_OPTIONS */
+
  fail:
 	reply_res = send_auth_reply(hapd, sta, mgmt->sa, mgmt->bssid, auth_alg,
 				    auth_transaction + 1, resp, resp_ies,
