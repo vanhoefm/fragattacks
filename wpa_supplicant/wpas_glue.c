@@ -398,6 +398,13 @@ static int wpa_get_beacon_ie(struct wpa_supplicant *wpa_s)
 			curr = bss;
 			break;
 		}
+#ifdef CONFIG_OWE
+		if (ssid && (ssid->key_mgmt & WPA_KEY_MGMT_OWE) &&
+		    (bss->flags & WPA_BSS_OWE_TRANSITION)) {
+			curr = bss;
+			break;
+		}
+#endif /* CONFIG_OWE */
 	}
 
 	if (curr) {
