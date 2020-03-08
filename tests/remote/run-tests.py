@@ -32,7 +32,7 @@ from hwsim_wrapper import run_hwsim_test
 def usage():
     print("USAGE: " + sys.argv[0] + " -t devices")
     print("USAGE: " + sys.argv[0] + " -t check_devices")
-    print("USAGE: " + sys.argv[0] + " -d <dut_name> -t <all|sanity|tests_to_run> [-r <ref_name>] [-c <cfg_file.py>] [-m <all|monitor_name>] [-h hwsim_tests][-R][-T][-P][-v]")
+    print("USAGE: " + sys.argv[0] + " -d <dut_name> -t <all|sanity|tests_to_run> [-r <ref_name>] [-c <cfg_file.py>] [-m <all|monitor_name>] [-h hwsim_tests] [-f hwsim_modules][-R][-T][-P][-v]")
     print("USAGE: " + sys.argv[0])
 
 def get_devices(devices, duts, refs, monitors):
@@ -71,6 +71,8 @@ def main():
     requested_tests = ["help"]
     requested_hwsim_tests = []
     hwsim_tests = []
+    requested_modules = []
+    modules_tests = []
     cfg_file = "cfg.py"
     log_dir = "./logs/"
     verbose = False
@@ -80,8 +82,9 @@ def main():
 
     # parse input parameters
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "d:r:t:l:k:c:m:h:vRPT",
-                                   ["dut=", "ref=", "tests=", "log-dir=",
+        opts, args = getopt.getopt(sys.argv[1:], "d:f:r:t:l:k:c:m:h:vRPT",
+                                   ["dut=", "modules=", "ref=", "tests=",
+                                    "log-dir=",
                                     "cfg=", "key=", "monitor=", "hwsim="])
     except getopt.GetoptError as err:
         print(err)
@@ -113,6 +116,8 @@ def main():
             cfg_file = argument
         elif option in ("-h", "--hwsim"):
             requested_hwsim_tests = re.split('; | |, ', argument)
+        elif option in ("-f", "--modules"):
+            requested_modules = re.split('; | |, ', argument)
         else:
             assert False, "unhandled option"
 
@@ -207,6 +212,22 @@ def main():
                     logger.warning("hwsim test case: " + test + " NOT-FOUND")
                     continue
                 hwsim_tests_to_run.append(t)
+
+    # import test_* from modules
+    files = os.listdir("../hwsim/")
+    for t in files:
+        m = re.match(r'(test_.*)\.py$', t)
+        if m:
+            mod = __import__(m.group(1))
+            if mod.__name__.replace('test_', '', 1) not in requested_modules:
+                continue
+            for key, val in mod.__dict__.items():
+                if key.startswith("test_"):
+                    modules_tests.append(val)
+
+    if len(requested_modules) > 0:
+        requested_hwsim_tests = modules_tests
+        hwsim_tests_to_run = modules_tests
 
     # sort the list
     test_names.sort()
