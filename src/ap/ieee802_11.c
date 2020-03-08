@@ -383,7 +383,7 @@ static int send_auth_reply(struct hostapd_data *hapd, struct sta_info *sta,
 #ifdef CONFIG_SAE
 	if (hapd->conf->sae_confirm_immediate == 2 &&
 	    auth_alg == WLAN_AUTH_SAE) {
-		if (auth_transaction == 1 &&
+		if (auth_transaction == 1 && sta &&
 		    (resp == WLAN_STATUS_SUCCESS ||
 		     resp == WLAN_STATUS_SAE_HASH_TO_ELEMENT)) {
 			wpa_printf(MSG_DEBUG,
