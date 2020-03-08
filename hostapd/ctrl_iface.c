@@ -47,6 +47,7 @@
 #include "ap/ap_config.h"
 #include "ap/ieee802_1x.h"
 #include "ap/wpa_auth.h"
+#include "ap/wpa_auth_i.h"
 #include "ap/ieee802_11.h"
 #include "ap/sta_info.h"
 #include "ap/wps_hostapd.h"
@@ -2416,6 +2417,31 @@ static int hostapd_ctrl_get_pmk(struct hostapd_data *hapd, const char *cmd,
 	return wpa_snprintf_hex(buf, buflen, pmk, pmk_len);
 }
 
+
+static int hostapd_get_tk(struct hostapd_data *hapd, const char *txtaddr, char *buf, size_t buflen)
+{
+	u8 addr[ETH_ALEN];
+	struct sta_info *sta;
+	int klen;
+	int res;
+
+	wpa_printf(MSG_DEBUG, "CTRL_IFACE GET_TK %s", txtaddr);
+
+	if (hwaddr_aton(txtaddr, addr)) return -1;
+	sta = ap_get_sta(hapd, addr);
+	if (!sta) return -1;
+
+	if (sta->wpa_sm == NULL) return -1;
+	klen = wpa_cipher_key_len(sta->wpa_sm->pairwise);
+	if (klen <= 0) return -1;
+
+	res = wpa_snprintf_hex(buf, buflen, sta->wpa_sm->PTK.tk, klen);
+	buf[res++] = '\n';
+	buf[res] = '\0';
+
+	return res;
+}
+
 #endif /* CONFIG_TESTING_OPTIONS */
 
 
@@ -3287,6 +3313,8 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 	} else if (os_strncmp(buf, "GET_PMK ", 8) == 0) {
 		reply_len = hostapd_ctrl_get_pmk(hapd, buf + 8, reply,
 						 reply_size);
+	} else if (os_strncmp(buf, "GET_TK ", 7) == 0) {
+		reply_len = hostapd_get_tk(hapd, buf + 7, reply, reply_size);
 #endif /* CONFIG_TESTING_OPTIONS */
 	} else if (os_strncmp(buf, "CHAN_SWITCH ", 12) == 0) {
 		if (hostapd_ctrl_iface_chan_switch(hapd->iface, buf + 12))
