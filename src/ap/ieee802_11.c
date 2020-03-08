@@ -639,13 +639,15 @@ static int use_sae_anti_clogging(struct hostapd_data *hapd)
 }
 
 
-static u8 sae_token_hash(struct hostapd_data *hapd, const u8 *addr)
+static int sae_token_hash(struct hostapd_data *hapd, const u8 *addr, u8 *idx)
 {
 	u8 hash[SHA256_MAC_LEN];
 
-	hmac_sha256(hapd->sae_token_key, sizeof(hapd->sae_token_key),
-		    addr, ETH_ALEN, hash);
-	return hash[0];
+	if (hmac_sha256(hapd->sae_token_key, sizeof(hapd->sae_token_key),
+			addr, ETH_ALEN, hash) < 0)
+		return -1;
+	*idx = hash[0];
+	return 0;
 }
 
 
@@ -658,9 +660,8 @@ static int check_sae_token(struct hostapd_data *hapd, const u8 *addr,
 	u16 token_idx;
 	u8 idx;
 
-	if (token_len != SHA256_MAC_LEN)
+	if (token_len != SHA256_MAC_LEN || sae_token_hash(hapd, addr, &idx) < 0)
 		return -1;
-	idx = sae_token_hash(hapd, addr);
 	token_idx = hapd->sae_pending_token_idx[idx];
 	if (token_idx == 0 || token_idx != WPA_GET_BE16(token)) {
 		wpa_printf(MSG_DEBUG, "SAE: Invalid anti-clogging token from "
@@ -724,7 +725,10 @@ static struct wpabuf * auth_build_token_req(struct hostapd_data *hapd,
 		wpabuf_put_u8(buf, WLAN_EID_EXT_ANTI_CLOGGING_TOKEN);
 	}
 
-	p_idx = sae_token_hash(hapd, addr);
+	if (sae_token_hash(hapd, addr, &p_idx) < 0) {
+		wpabuf_free(buf);
+		return NULL;
+	}
 	token_idx = hapd->sae_pending_token_idx[p_idx];
 	if (!token_idx) {
 		hapd->sae_token_idx++;
