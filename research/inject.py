@@ -57,6 +57,9 @@ class Station():
 		self.options = daemon.options
 		self.state = Station.INIT
 		self.tk = None
+		# TODO: Get the current PN from the kernel, increment by 0x99,
+		# and use that to inject packets. Causes less interference.
+		# Though perhaps causing interference might be good...
 		self.pn = 0x99
 
 		# Contains either the "to-DS" or "from-DS" flag.
@@ -344,11 +347,14 @@ class Authenticator(Daemon):
 
 		# Raise event when client is assigned an IP address
 		station = self.stations[clientmac]
-		if not station.is_connected() and clientmac in self.dhcp.leases:
-			# TODO: We should wait a bit until the peer received the DHCP Ack ...
-			peerip = self.dhcp.leases[clientmac]
-			log(STATUS, "Client %s with IP %s has connected" % (clientmac, peerip))
-			station.handle_connected(self.arp_sender_ip, peerip)
+		if DHCP in p and not station.is_connected() and clientmac in self.dhcp.leases:
+			req_type = next(opt[1] for opt in p[DHCP].options if isinstance(opt, tuple) and opt[0] == 'message-type')
+			# This assures we only mark it was connected after receiving a DHCP Request
+			if req_type == 3:
+				# TODO: We should wait a bit until the peer received the DHCP Ack ...
+				peerip = self.dhcp.leases[clientmac]
+				log(STATUS, "Client %s with IP %s has connected" % (clientmac, peerip))
+				station.handle_connected(self.arp_sender_ip, peerip)
 
 		station.handle_eth_rx(p)
 
@@ -396,7 +402,7 @@ class Authenticator(Daemon):
 		# Use a dedicated IP address for our ARP ping and replies
 		self.arp_sender_ip = self.dhcp.pool.pop()
 		self.arp_sock = ARP_sock(sock=self.sock_eth, IP_addr=self.arp_sender_ip, ARP_addr=self.apmac)
-		log(STATUS, "Injecting ARP packets with sender IP of %s" % self.arp_sender_ip)
+		log(STATUS, "Will inject ARP packets using sender IP %s" % self.arp_sender_ip)
 
 
 class Supplicant(Daemon):
