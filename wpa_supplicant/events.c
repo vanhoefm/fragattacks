@@ -995,6 +995,24 @@ static void owe_trans_ssid(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 	*ret_ssid = pos;
 	*ret_ssid_len = ssid_len;
 
+	if (!(bss->flags & WPA_BSS_OWE_TRANSITION)) {
+		struct wpa_ssid *ssid;
+
+		for (ssid = wpa_s->conf->ssid; ssid; ssid = ssid->next) {
+			if (wpas_network_disabled(wpa_s, ssid))
+				continue;
+			if (ssid->ssid_len == ssid_len &&
+			    os_memcmp(ssid->ssid, pos, ssid_len) == 0) {
+				/* OWE BSS in transition mode for a currently
+				 * enabled OWE network. */
+				wpa_dbg(wpa_s, MSG_DEBUG,
+					"OWE: transition mode OWE SSID for active OWE profile");
+				bss->flags |= WPA_BSS_OWE_TRANSITION;
+				break;
+			}
+		}
+	}
+
 	if (bss->ssid_len > 0)
 		return;
 
