@@ -5375,7 +5375,6 @@ fail:
 	return asn1_encaps(asn1_encaps(key,
 				       ASN1_CLASS_UNIVERSAL, ASN1_TAG_SEQUENCE),
 			   ASN1_CLASS_UNIVERSAL, ASN1_TAG_SEQUENCE);
-	return key;
 }
 
 
