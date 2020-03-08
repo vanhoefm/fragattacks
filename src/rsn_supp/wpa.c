@@ -1424,11 +1424,10 @@ static int wpa_supplicant_validate_ie(struct wpa_sm *sm,
 			wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
 				"WPA: Could not find AP from "
 				"the scan results");
-		} else {
-			wpa_msg(sm->ctx->msg_ctx, MSG_DEBUG,
-				"WPA: Found the current AP from "
-				"updated scan results");
+			return -1;
 		}
+		wpa_msg(sm->ctx->msg_ctx, MSG_DEBUG,
+			"WPA: Found the current AP from updated scan results");
 	}
 
 	if (ie->wpa_ie == NULL && ie->rsn_ie == NULL &&
