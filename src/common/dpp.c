@@ -5230,7 +5230,7 @@ static struct wpabuf * dpp_build_conf_params(void)
 
 	asn1_put_utf8string(buf, conf_template);
 	if (connector_template)
-		asn1_put_utf8string(buf, conf_template);
+		asn1_put_utf8string(buf, connector_template);
 	return asn1_encaps(buf, ASN1_CLASS_UNIVERSAL, ASN1_TAG_SEQUENCE);
 }
 
