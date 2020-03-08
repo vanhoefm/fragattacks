@@ -5219,7 +5219,7 @@ static int nl80211_tx_control_port(void *priv, const u8 *dest,
 	if (ret)
 		wpa_printf(MSG_DEBUG,
 			   "nl80211: tx_control_port failed: ret=%d (%s)",
-			   ret, strerror(ret));
+			   ret, strerror(-ret));
 
 	return ret;
 }
