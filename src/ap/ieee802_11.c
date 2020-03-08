@@ -536,10 +536,13 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 
 	buf = wpabuf_alloc(SAE_COMMIT_MAX_LEN +
 			   (rx_id ? 3 + os_strlen(rx_id) : 0));
-	if (buf == NULL)
-		return NULL;
-	sae_write_commit(sta->sae, buf, sta->sae->tmp ?
-			 sta->sae->tmp->anti_clogging_token : NULL, rx_id);
+	if (buf &&
+	    sae_write_commit(sta->sae, buf, sta->sae->tmp ?
+			     sta->sae->tmp->anti_clogging_token : NULL,
+			     rx_id) < 0) {
+		wpabuf_free(buf);
+		buf = NULL;
+	}
 
 	return buf;
 }

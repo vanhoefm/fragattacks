@@ -182,8 +182,11 @@ reuse_data:
 		wpabuf_put_le16(buf, use_pt ? WLAN_STATUS_SAE_HASH_TO_ELEMENT :
 				WLAN_STATUS_SUCCESS);
 	}
-	sae_write_commit(&wpa_s->sme.sae, buf, wpa_s->sme.sae_token,
-			 ssid->sae_password_id);
+	if (sae_write_commit(&wpa_s->sme.sae, buf, wpa_s->sme.sae_token,
+			     ssid->sae_password_id) < 0) {
+		wpabuf_free(buf);
+		return NULL;
+	}
 	if (ret_use_pt)
 		*ret_use_pt = use_pt;
 
