@@ -2396,8 +2396,10 @@ void ibss_mesh_setup_freq(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_HT_OVERRIDES
 	if (ssid->disable_ht40) {
+#ifdef CONFIG_VHT_OVERRIDES
 		if (ssid->disable_vht)
 			return;
+#endif /* CONFIG_VHT_OVERRIDES */
 		goto skip_ht40;
 	}
 #endif /* CONFIG_HT_OVERRIDES */
