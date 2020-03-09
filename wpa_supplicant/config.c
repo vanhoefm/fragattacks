@@ -2544,6 +2544,9 @@ static const struct parse_data ssid_fields[] = {
 	{ INT_RANGE(vht_tx_mcs_nss_7, -1, 3) },
 	{ INT_RANGE(vht_tx_mcs_nss_8, -1, 3) },
 #endif /* CONFIG_VHT_OVERRIDES */
+#ifdef CONFIG_HE_OVERRIDES
+	{ INT_RANGE(disable_he, 0, 1)},
+#endif /* CONFIG_HE_OVERRIDES */
 	{ INT(ap_max_inactivity) },
 	{ INT(dtim_period) },
 	{ INT(beacon_int) },

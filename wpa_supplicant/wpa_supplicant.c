@@ -2406,6 +2406,10 @@ void ibss_mesh_setup_freq(struct wpa_supplicant *wpa_s,
 	/* Allow HE on 2.4 GHz without VHT: see nl80211_put_freq_params() */
 	if (is_24ghz)
 		freq->he_enabled = mode->he_capab[ieee80211_mode].he_supported;
+#ifdef CONFIG_HE_OVERRIDES
+	if (is_24ghz && ssid->disable_he)
+		freq->he_enabled = 0;
+#endif /* CONFIG_HE_OVERRIDES */
 
 	/* Setup higher BW only for 5 GHz */
 	if (mode->mode != HOSTAPD_MODE_IEEE80211A)
@@ -2604,6 +2608,12 @@ skip_ht40:
 #endif /* CONFIG_HT_OVERRIDES */
 	}
 
+#ifdef CONFIG_HE_OVERRIDES
+	if (ssid->disable_he) {
+		vht_freq.he_enabled = 0;
+		freq->he_enabled = 0;
+	}
+#endif /* CONFIG_HE_OVERRIDES */
 	if (hostapd_set_freq_params(&vht_freq, mode->mode, freq->freq,
 				    freq->channel, ssid->enable_edmg,
 				    ssid->edmg_channel, freq->ht_enabled,
@@ -3710,6 +3720,9 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 	params.vhtcaps_mask = &vhtcaps_mask;
 	wpa_supplicant_apply_vht_overrides(wpa_s, ssid, &params);
 #endif /* CONFIG_VHT_OVERRIDES */
+#ifdef CONFIG_HE_OVERRIDES
+	wpa_supplicant_apply_he_overrides(wpa_s, ssid, &params);
+#endif /* CONFIG_HE_OVERRIDES */
 
 #ifdef CONFIG_P2P
 	/*
@@ -5270,6 +5283,19 @@ void wpa_supplicant_apply_vht_overrides(
 	OVERRIDE_MCS(8);
 }
 #endif /* CONFIG_VHT_OVERRIDES */
+
+
+#ifdef CONFIG_HE_OVERRIDES
+void wpa_supplicant_apply_he_overrides(
+	struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
+	struct wpa_driver_associate_params *params)
+{
+	if (!ssid)
+		return;
+
+	params->disable_he = ssid->disable_he;
+}
+#endif /* CONFIG_HE_OVERRIDES */
 
 
 static int pcsc_reader_init(struct wpa_supplicant *wpa_s)

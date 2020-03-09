@@ -1869,6 +1869,9 @@ pfs_fail:
 	params.vhtcaps_mask = &vhtcaps_mask;
 	wpa_supplicant_apply_vht_overrides(wpa_s, wpa_s->current_ssid, &params);
 #endif /* CONFIG_VHT_OVERRIDES */
+#ifdef CONFIG_HE_OVERRIDES
+	wpa_supplicant_apply_he_overrides(wpa_s, wpa_s->current_ssid, &params);
+#endif /* CONFIG_HE_OVERRIDES */
 #ifdef CONFIG_IEEE80211R
 	if (auth_type == WLAN_AUTH_FT && wpa_s->sme.ft_ies &&
 	    get_ie(wpa_s->sme.ft_ies, wpa_s->sme.ft_ies_len,

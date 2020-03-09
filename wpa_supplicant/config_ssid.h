@@ -779,6 +779,16 @@ struct wpa_ssid {
 	    vht_tx_mcs_nss_7, vht_tx_mcs_nss_8;
 #endif /* CONFIG_VHT_OVERRIDES */
 
+#ifdef CONFIG_HE_OVERRIDES
+	/**
+	 * disable_he - Disable HE (IEEE 802.11ax) for this network
+	 *
+	 * By default, use it if it is available, but this can be configured
+	 * to 1 to have it disabled.
+	 */
+	int disable_he;
+#endif /* CONFIG_HE_OVERRIDES */
+
 	/**
 	 * ap_max_inactivity - Timeout in seconds to detect STA's inactivity
 	 *

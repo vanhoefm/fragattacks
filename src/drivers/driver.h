@@ -1096,6 +1096,13 @@ struct wpa_driver_associate_params {
 	const struct ieee80211_vht_capabilities *vhtcaps_mask;
 #endif /* CONFIG_VHT_OVERRIDES */
 
+#ifdef CONFIG_HE_OVERRIDES
+	/**
+	 * disable_he - Disable HE for this connection
+	 */
+	int disable_he;
+#endif /* CONFIG_HE_OVERRIDES */
+
 	/**
 	 * req_key_mgmt_offload - Request key management offload for connection
 	 *
