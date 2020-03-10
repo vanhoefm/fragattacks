@@ -1753,8 +1753,41 @@ static enum hostapd_hw_mode get_qca_hw_mode(u8 hw_mode)
 }
 
 
-static unsigned int chan_2ghz_or_5ghz_to_freq(u8 chan)
+static unsigned int chan_to_freq(struct wpa_driver_nl80211_data *drv,
+				 u8 chan, enum hostapd_hw_mode hw_mode)
 {
+	if (hw_mode == NUM_HOSTAPD_MODES) {
+		/* For drivers that do not report ACS_HW_MODE */
+		u16 num_modes, flags;
+		struct hostapd_hw_modes *modes;
+		u8 dfs_domain;
+		int i;
+
+		modes = nl80211_get_hw_feature_data(drv->first_bss, &num_modes,
+						    &flags, &dfs_domain);
+		if (!modes) {
+			wpa_printf(MSG_DEBUG,
+				   "nl80211: Fetching hardware mode failed");
+			goto try_2_4_or_5;
+		}
+		if (num_modes == 1)
+			hw_mode = modes[0].mode;
+
+		for (i = 0; i < num_modes; i++) {
+			os_free(modes[i].channels);
+			os_free(modes[i].rates);
+		}
+
+		os_free(modes);
+	}
+
+	if (hw_mode == HOSTAPD_MODE_IEEE80211AD) {
+		if (chan >= 1 && chan <= 6)
+			return 56160 + (2160 * chan);
+		return 0;
+	}
+
+try_2_4_or_5:
 	if (chan >= 1 && chan <= 13)
 		return 2407 + 5 * chan;
 	if (chan == 14)
@@ -1785,34 +1818,8 @@ static void qca_nl80211_acs_select_ch(struct wpa_driver_nl80211_data *drv,
 		return;
 
 	os_memset(&event, 0, sizeof(event));
-	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_FREQUENCY]) {
-		event.acs_selected_channels.pri_freq = nla_get_u32(
-			tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_FREQUENCY]);
-	} else {
-		chan = nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_CHANNEL]);
-		event.acs_selected_channels.pri_freq =
-			chan_2ghz_or_5ghz_to_freq(chan);
-	}
+	event.acs_selected_channels.hw_mode = NUM_HOSTAPD_MODES;
 
-	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_FREQUENCY]) {
-		event.acs_selected_channels.sec_freq = nla_get_u32(
-			tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_FREQUENCY]);
-	} else {
-		chan = nla_get_u8(
-			tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_CHANNEL]);
-		event.acs_selected_channels.sec_freq =
-			chan_2ghz_or_5ghz_to_freq(chan);
-	}
-
-	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG0_CENTER_CHANNEL])
-		event.acs_selected_channels.vht_seg0_center_ch =
-			nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG0_CENTER_CHANNEL]);
-	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG1_CENTER_CHANNEL])
-		event.acs_selected_channels.vht_seg1_center_ch =
-			nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG1_CENTER_CHANNEL]);
-	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_CHWIDTH])
-		event.acs_selected_channels.ch_width =
-			nla_get_u16(tb[QCA_WLAN_VENDOR_ATTR_ACS_CHWIDTH]);
 	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_HW_MODE]) {
 		u8 hw_mode = nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_HW_MODE]);
 
@@ -1827,6 +1834,36 @@ static void qca_nl80211_acs_select_ch(struct wpa_driver_nl80211_data *drv,
 		}
 	}
 
+	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_FREQUENCY]) {
+		event.acs_selected_channels.pri_freq = nla_get_u32(
+			tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_FREQUENCY]);
+	} else {
+		chan = nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_PRIMARY_CHANNEL]);
+		event.acs_selected_channels.pri_freq =
+			chan_to_freq(drv, chan,
+				     event.acs_selected_channels.hw_mode);
+	}
+
+	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_FREQUENCY]) {
+		event.acs_selected_channels.sec_freq = nla_get_u32(
+			tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_FREQUENCY]);
+	} else {
+		chan = nla_get_u8(
+			tb[QCA_WLAN_VENDOR_ATTR_ACS_SECONDARY_CHANNEL]);
+		event.acs_selected_channels.sec_freq =
+			chan_to_freq(drv, chan,
+				     event.acs_selected_channels.hw_mode);
+	}
+
+	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG0_CENTER_CHANNEL])
+		event.acs_selected_channels.vht_seg0_center_ch =
+			nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG0_CENTER_CHANNEL]);
+	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG1_CENTER_CHANNEL])
+		event.acs_selected_channels.vht_seg1_center_ch =
+			nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG1_CENTER_CHANNEL]);
+	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_CHWIDTH])
+		event.acs_selected_channels.ch_width =
+			nla_get_u16(tb[QCA_WLAN_VENDOR_ATTR_ACS_CHWIDTH]);
 	wpa_printf(MSG_INFO,
 		   "nl80211: ACS Results: PFreq: %d SFreq: %d BW: %d VHT0: %d VHT1: %d HW_MODE: %d",
 		   event.acs_selected_channels.pri_freq,
