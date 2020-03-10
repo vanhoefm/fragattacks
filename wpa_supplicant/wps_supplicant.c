@@ -532,6 +532,7 @@ static int wpa_supplicant_wps_cred(void *ctx,
 		ssid->key_mgmt = WPA_KEY_MGMT_PSK;
 		if (wpa_s->conf->wps_cred_add_sae &&
 		    cred->key_len != 2 * PMK_LEN) {
+			ssid->auth_alg = 0;
 			ssid->key_mgmt |= WPA_KEY_MGMT_SAE;
 			ssid->ieee80211w = MGMT_FRAME_PROTECTION_OPTIONAL;
 		}
