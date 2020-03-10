@@ -14,6 +14,7 @@
 #include "utils/common.h"
 #include "common/ieee802_11_common.h"
 #include "wpa_supplicant_i.h"
+#include "bss.h"
 
 
 static enum chan_allowed allow_channel(struct hostapd_hw_modes *mode,
@@ -356,9 +357,25 @@ static int wpas_op_class_supported(struct wpa_supplicant *wpa_s,
 }
 
 
+static int wpas_sta_secondary_channel_offset(struct wpa_bss *bss, u8 *current,
+					     u8 *channel)
+{
+
+	u8 *ies, phy_type;
+	size_t ies_len;
+
+	if (!bss)
+		return -1;
+	ies = (u8 *) (bss + 1);
+	ies_len = bss->ie_len ? bss->ie_len : bss->beacon_ie_len;
+	return wpas_get_op_chan_phy(bss->freq, ies, ies_len, current,
+				    channel, &phy_type);
+}
+
+
 size_t wpas_supp_op_class_ie(struct wpa_supplicant *wpa_s,
 			     struct wpa_ssid *ssid,
-			     int freq, u8 *pos, size_t len)
+			     struct wpa_bss *bss, u8 *pos, size_t len)
 {
 	struct wpabuf *buf;
 	u8 op, current, chan;
@@ -366,11 +383,13 @@ size_t wpas_supp_op_class_ie(struct wpa_supplicant *wpa_s,
 	size_t res;
 
 	/*
-	 * Assume 20 MHz channel for now.
-	 * TODO: Use the secondary channel and VHT channel width that will be
-	 * used after association.
+	 * Determine the current operating class correct mode based on
+	 * advertised BSS capabilities, if available. Fall back to a less
+	 * accurate guess based on frequency if the needed IEs are not available
+	 * or used.
 	 */
-	if (ieee80211_freq_to_channel_ext(freq, 0, CHANWIDTH_USE_HT,
+	if (wpas_sta_secondary_channel_offset(bss, &current, &chan) < 0 &&
+	    ieee80211_freq_to_channel_ext(bss->freq, 0, CHANWIDTH_USE_HT,
 					  &current, &chan) == NUM_HOSTAPD_MODES)
 		return 0;
 

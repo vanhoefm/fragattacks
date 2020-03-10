@@ -1394,6 +1394,8 @@ int wpas_update_random_addr(struct wpa_supplicant *wpa_s, int style);
 int wpas_update_random_addr_disassoc(struct wpa_supplicant *wpa_s);
 void add_freq(int *freqs, int *num_freqs, int freq);
 
+int wpas_get_op_chan_phy(int freq, const u8 *ies, size_t ies_len,
+			 u8 *op_class, u8 *chan, u8 *phy_type);
 void wpas_rrm_reset(struct wpa_supplicant *wpa_s);
 void wpas_rrm_process_neighbor_rep(struct wpa_supplicant *wpa_s,
 				   const u8 *report, size_t report_len);
@@ -1453,7 +1455,7 @@ enum chan_allowed verify_channel(struct hostapd_hw_modes *mode, u8 op_class,
 				 u8 channel, u8 bw);
 size_t wpas_supp_op_class_ie(struct wpa_supplicant *wpa_s,
 			     struct wpa_ssid *ssid,
-			     int freq, u8 *pos, size_t len);
+			     struct wpa_bss *bss, u8 *pos, size_t len);
 int * wpas_supp_op_classes(struct wpa_supplicant *wpa_s);
 
 int wpas_enable_mac_addr_randomization(struct wpa_supplicant *wpa_s,
