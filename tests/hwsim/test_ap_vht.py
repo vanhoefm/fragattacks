@@ -75,6 +75,11 @@ def test_ap_vht80(dev, apdev):
             raise Exception("Missing STA flag: HT")
         if "[VHT]" not in sta['flags']:
             raise Exception("Missing STA flag: VHT")
+        if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+            raise Exception("No Supported Operating Classes information for STA")
+        opclass = int(sta['supp_op_classes'][0:2], 16)
+        if opclass != 128:
+            raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
     except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
@@ -290,6 +295,13 @@ def test_ap_vht_20(devs, apdevs):
         hapd = hostapd.add_ap(ap, params)
         dev.connect("test-vht20", scan_freq="5180", key_mgmt="NONE")
         hwsim_utils.test_connectivity(dev, hapd)
+
+        sta = hapd.get_sta(dev.own_addr())
+        if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+            raise Exception("No Supported Operating Classes information for STA")
+        opclass = int(sta['supp_op_classes'][0:2], 16)
+        if opclass != 115:
+            raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
     finally:
         dev.request("DISCONNECT")
         clear_regdom(hapd, devs)
@@ -313,6 +325,13 @@ def test_ap_vht_40(devs, apdevs):
         hapd = hostapd.add_ap(ap, params)
         dev.connect("test-vht40", scan_freq="5180", key_mgmt="NONE")
         hwsim_utils.test_connectivity(dev, hapd)
+
+        sta = hapd.get_sta(dev.own_addr())
+        if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+            raise Exception("No Supported Operating Classes information for STA")
+        opclass = int(sta['supp_op_classes'][0:2], 16)
+        if opclass != 116:
+            raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
     finally:
         dev.request("DISCONNECT")
         clear_regdom(hapd, devs)
@@ -395,6 +414,13 @@ def test_ap_vht160(dev, apdev):
             raise Exception("Unexpected SIGNAL_POLL value(1): " + str(sig))
         if "WIDTH=160 MHz" not in sig:
             raise Exception("Unexpected SIGNAL_POLL value(2): " + str(sig))
+
+        sta = hapd.get_sta(dev[0].own_addr())
+        if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+            raise Exception("No Supported Operating Classes information for STA")
+        opclass = int(sta['supp_op_classes'][0:2], 16)
+        if opclass != 129:
+            raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
     except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
@@ -644,6 +670,13 @@ def test_ap_vht80plus80(dev, apdev):
             raise Exception("Unexpected SIGNAL_POLL value(3): " + str(sig))
         if "CENTER_FRQ2=5775" not in sig:
             raise Exception("Unexpected SIGNAL_POLL value(4): " + str(sig))
+
+        sta = hapd2.get_sta(dev[1].own_addr())
+        if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+            raise Exception("No Supported Operating Classes information for STA")
+        opclass = int(sta['supp_op_classes'][0:2], 16)
+        if opclass != 130:
+            raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
     except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():

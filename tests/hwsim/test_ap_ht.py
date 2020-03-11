@@ -73,6 +73,18 @@ def test_ap_ht40_scan(dev, apdev):
     sta = hapd.get_sta(dev[0].own_addr())
     logger.info("hostapd STA: " + str(sta))
 
+    res = dev[0].request("SIGNAL_POLL")
+    logger.info("STA SIGNAL_POLL:\n" + res.strip())
+    sig = res.splitlines()
+    if "WIDTH=40 MHz" not in sig:
+        raise Exception("Not a 40 MHz connection")
+
+    if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+        raise Exception("No Supported Operating Classes information for STA")
+    opclass = int(sta['supp_op_classes'][0:2], 16)
+    if opclass != 84:
+        raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
+
 def test_ap_ht_wifi_generation(dev, apdev):
     """HT and wifi_generation"""
     clear_scan_cache(apdev[0])
@@ -891,6 +903,13 @@ def test_ap_require_ht(dev, apdev):
                    disable_max_amsdu="1", ampdu_factor="2",
                    ampdu_density="1", disable_ht40="1", disable_sgi="1",
                    disable_ldpc="1", rx_stbc="2", tx_stbc="1")
+
+    sta = hapd.get_sta(dev[0].own_addr())
+    if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+        raise Exception("No Supported Operating Classes information for STA")
+    opclass = int(sta['supp_op_classes'][0:2], 16)
+    if opclass != 81:
+        raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
 
 def test_ap_ht_stbc(dev, apdev):
     """HT STBC overrides"""
