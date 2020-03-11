@@ -2465,28 +2465,41 @@ static void multi_ap_process_assoc_resp(struct wpa_supplicant *wpa_s,
 	const u8 *map_sub_elem, *pos;
 	size_t len;
 
-	if (!wpa_s->current_ssid ||
-	    !wpa_s->current_ssid->multi_ap_backhaul_sta ||
-	    !ies ||
-	    ieee802_11_parse_elems(ies, ies_len, &elems, 1) == ParseFailed)
-		return;
+	wpa_s->multi_ap_ie = 0;
 
-	if (!elems.multi_ap || elems.multi_ap_len < 7) {
-		wpa_printf(MSG_INFO, "AP doesn't support Multi-AP protocol");
-		goto fail;
-	}
+	if (!ies ||
+	    ieee802_11_parse_elems(ies, ies_len, &elems, 1) == ParseFailed ||
+	    !elems.multi_ap || elems.multi_ap_len < 7)
+		return;
 
 	pos = elems.multi_ap + 4;
 	len = elems.multi_ap_len - 4;
 
 	map_sub_elem = get_ie(pos, len, MULTI_AP_SUB_ELEM_TYPE);
-	if (!map_sub_elem || map_sub_elem[1] < 1) {
-		wpa_printf(MSG_INFO, "invalid Multi-AP sub elem type");
+	if (!map_sub_elem || map_sub_elem[1] < 1)
+		return;
+
+	wpa_s->multi_ap_backhaul = !!(map_sub_elem[2] & MULTI_AP_BACKHAUL_BSS);
+	wpa_s->multi_ap_fronthaul = !!(map_sub_elem[2] &
+				       MULTI_AP_FRONTHAUL_BSS);
+	wpa_s->multi_ap_ie = 1;
+}
+
+
+static void multi_ap_set_4addr_mode(struct wpa_supplicant *wpa_s)
+{
+	if (!wpa_s->current_ssid ||
+	    !wpa_s->current_ssid->multi_ap_backhaul_sta)
+		return;
+
+	if (!wpa_s->multi_ap_ie) {
+		wpa_printf(MSG_INFO,
+			   "AP does not include valid Multi-AP element");
 		goto fail;
 	}
 
-	if (!(map_sub_elem[2] & MULTI_AP_BACKHAUL_BSS)) {
-		if ((map_sub_elem[2] & MULTI_AP_FRONTHAUL_BSS) &&
+	if (!wpa_s->multi_ap_backhaul) {
+		if (wpa_s->multi_ap_fronthaul &&
 		    wpa_s->current_ssid->key_mgmt & WPA_KEY_MGMT_WPS) {
 			wpa_printf(MSG_INFO,
 				   "WPS active, accepting fronthaul-only BSS");
@@ -2987,6 +3000,8 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 			return;
 		}
 	}
+
+	multi_ap_set_4addr_mode(wpa_s);
 
 	if (wpa_s->conf->ap_scan == 1 &&
 	    wpa_s->drv_flags & WPA_DRIVER_FLAGS_BSS_SELECTION) {

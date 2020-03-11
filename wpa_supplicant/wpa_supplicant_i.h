@@ -1287,6 +1287,9 @@ struct wpa_supplicant {
 	unsigned int enabled_4addr_mode:1;
 	unsigned int multi_bss_support:1;
 	unsigned int drv_authorized_port:1;
+	unsigned int multi_ap_ie:1;
+	unsigned int multi_ap_backhaul:1;
+	unsigned int multi_ap_fronthaul:1;
 };
 
 
