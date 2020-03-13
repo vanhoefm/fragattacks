@@ -2614,7 +2614,7 @@ static void handle_auth(struct hostapd_data *hapd,
 	}
 
 #ifdef CONFIG_TESTING_OPTIONS
-	wpa_msg(hapd->msg_ctx, MSG_INFO, "Client " MACSTR " is connecting",
+	wpa_msg(hapd->msg_ctx, MSG_INFO, "AP-STA-CONNECTING " MACSTR,
 		 MAC2STR(sta->addr));
 #endif /* CONFIG_TESTING_OPTIONS */
 
