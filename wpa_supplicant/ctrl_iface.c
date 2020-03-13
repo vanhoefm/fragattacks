@@ -9424,6 +9424,22 @@ static int wpas_ctrl_resend_assoc(struct wpa_supplicant *wpa_s)
 #endif /* CONFIG_SME */
 }
 
+
+static int wpa_supplicant_ctrl_iface_get_gtk(struct wpa_supplicant *wpa_s,
+					     char *buf, size_t buflen)
+{
+	int pos;
+
+	if (wpa_s->last_gtk_len == 0)
+		return -1;
+	if (buflen < wpa_s->last_gtk_len + 20)
+		return -1;
+
+	pos  = wpa_snprintf_hex(buf, buflen,  wpa_s->last_gtk, wpa_s->last_gtk_len);
+	pos += os_snprintf(buf + pos, buflen - pos, " %d\n", wpa_s->last_gtk_idx);
+	return pos;
+}
+
 #endif /* CONFIG_TESTING_OPTIONS */
 
 
@@ -10767,6 +10783,8 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 		sme_event_unprot_disconnect(
 			wpa_s, wpa_s->bssid, NULL,
 			WLAN_REASON_CLASS2_FRAME_FROM_NONAUTH_STA);
+	} else if (os_strcmp(buf, "GET_GTK") == 0) {
+		reply_len = wpa_supplicant_ctrl_iface_get_gtk(wpa_s, reply, reply_size);
 #endif /* CONFIG_TESTING_OPTIONS */
 	} else if (os_strncmp(buf, "VENDOR_ELEM_ADD ", 16) == 0) {
 		if (wpas_ctrl_vendor_elem_add(wpa_s, buf + 16) < 0)

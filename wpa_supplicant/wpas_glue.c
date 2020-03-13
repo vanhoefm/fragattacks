@@ -515,6 +515,7 @@ static int wpa_supplicant_set_key(void *_wpa_s, enum wpa_alg alg,
 	    alg != WPA_ALG_NONE && key_len <= sizeof(wpa_s->last_gtk)) {
 		os_memcpy(wpa_s->last_gtk, key, key_len);
 		wpa_s->last_gtk_len = key_len;
+		wpa_s->last_gtk_idx = key_idx;
 	}
 #endif /* CONFIG_TESTING_GET_GTK */
 #ifdef CONFIG_TESTING_OPTIONS

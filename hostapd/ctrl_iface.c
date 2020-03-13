@@ -2442,6 +2442,21 @@ static int hostapd_get_tk(struct hostapd_data *hapd, const char *txtaddr, char *
 	return res;
 }
 
+
+static int hostapd_get_gtk(struct hostapd_data *hapd,  char *buf, size_t buflen)
+{
+	int pos;
+
+	if (hapd->last_gtk_len <= 0)
+		return -1;
+	if (buflen < hapd->last_gtk_len + 20)
+		return -1;
+
+	pos  = wpa_snprintf_hex(buf, buflen,  hapd->last_gtk, hapd->last_gtk_len);
+	pos += os_snprintf(buf + pos, buflen - pos, " %d\n", hapd->last_gtk_key_idx);
+	return pos;
+}
+
 #endif /* CONFIG_TESTING_OPTIONS */
 
 
@@ -3315,6 +3330,8 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 						 reply_size);
 	} else if (os_strncmp(buf, "GET_TK ", 7) == 0) {
 		reply_len = hostapd_get_tk(hapd, buf + 7, reply, reply_size);
+	} else if (os_strcmp(buf, "GET_GTK") == 0) {
+		reply_len = hostapd_get_gtk(hapd, reply, reply_size);
 #endif /* CONFIG_TESTING_OPTIONS */
 	} else if (os_strncmp(buf, "CHAN_SWITCH ", 12) == 0) {
 		if (hostapd_ctrl_iface_chan_switch(hapd->iface, buf + 12))
