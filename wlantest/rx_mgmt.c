@@ -1646,7 +1646,8 @@ static int check_mgmt_ccmp(struct wlantest *wt, const u8 *data, size_t len)
 	if (sta == NULL)
 		return 0;
 
-	if ((sta->rsn_capab & WPA_CAPABILITY_MFPC) &&
+	if ((bss->rsn_capab & WPA_CAPABILITY_MFPC) &&
+	    (sta->rsn_capab & WPA_CAPABILITY_MFPC) &&
 	    (sta->state == STATE3 ||
 	     WLAN_FC_GET_STYPE(fc) == WLAN_FC_STYPE_ACTION)) {
 		add_note(wt, MSG_INFO, "Robust individually-addressed "
