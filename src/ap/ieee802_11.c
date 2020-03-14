@@ -3810,7 +3810,22 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 	}
 #endif /* CONFIG_FST */
 
+#ifdef CONFIG_TESTING_OPTIONS
+	if (hapd->conf->rsnxe_override_ft &&
+	    buf + buflen - p >=
+	    (long int) wpabuf_len(hapd->conf->rsnxe_override_ft) &&
+	    sta && sta->auth_alg == WLAN_AUTH_FT) {
+		wpa_printf(MSG_DEBUG, "TESTING: RSNXE FT override");
+		os_memcpy(p, wpabuf_head(hapd->conf->rsnxe_override_ft),
+			  wpabuf_len(hapd->conf->rsnxe_override_ft));
+		p += wpabuf_len(hapd->conf->rsnxe_override_ft);
+		goto rsnxe_done;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 	p = hostapd_eid_rsnxe(hapd, p, buf + buflen - p);
+#ifdef CONFIG_TESTING_OPTIONS
+rsnxe_done:
+#endif /* CONFIG_TESTING_OPTIONS */
 
 #ifdef CONFIG_OWE
 	if ((hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_OWE) &&

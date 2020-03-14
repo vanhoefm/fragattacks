@@ -4182,6 +4182,12 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "rsnxe_override_eapol") == 0) {
 		wpabuf_free(bss->rsnxe_override_eapol);
 		bss->rsnxe_override_eapol = wpabuf_parse_bin(pos);
+	} else if (os_strcmp(buf, "rsne_override_ft") == 0) {
+		wpabuf_free(bss->rsne_override_ft);
+		bss->rsne_override_ft = wpabuf_parse_bin(pos);
+	} else if (os_strcmp(buf, "rsnxe_override_ft") == 0) {
+		wpabuf_free(bss->rsnxe_override_ft);
+		bss->rsnxe_override_ft = wpabuf_parse_bin(pos);
 	} else if (os_strcmp(buf, "gtk_rsc_override") == 0) {
 		wpabuf_free(bss->gtk_rsc_override);
 		bss->gtk_rsc_override = wpabuf_parse_bin(pos);

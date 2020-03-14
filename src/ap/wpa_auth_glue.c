@@ -139,6 +139,24 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 			  wpabuf_head(conf->rsnxe_override_eapol),
 			  wconf->rsnxe_override_eapol_len);
 	}
+	if (conf->rsne_override_ft &&
+	    wpabuf_len(conf->rsne_override_ft) <= MAX_OWN_IE_OVERRIDE) {
+		wconf->rsne_override_ft_set = 1;
+		wconf->rsne_override_ft_len =
+			wpabuf_len(conf->rsne_override_ft);
+		os_memcpy(wconf->rsne_override_ft,
+			  wpabuf_head(conf->rsne_override_ft),
+			  wconf->rsne_override_ft_len);
+	}
+	if (conf->rsnxe_override_ft &&
+	    wpabuf_len(conf->rsnxe_override_ft) <= MAX_OWN_IE_OVERRIDE) {
+		wconf->rsnxe_override_ft_set = 1;
+		wconf->rsnxe_override_ft_len =
+			wpabuf_len(conf->rsnxe_override_ft);
+		os_memcpy(wconf->rsnxe_override_ft,
+			  wpabuf_head(conf->rsnxe_override_ft),
+			  wconf->rsnxe_override_ft_len);
+	}
 	if (conf->gtk_rsc_override &&
 	    wpabuf_len(conf->gtk_rsc_override) > 0 &&
 	    wpabuf_len(conf->gtk_rsc_override) <= WPA_KEY_RSC_LEN) {

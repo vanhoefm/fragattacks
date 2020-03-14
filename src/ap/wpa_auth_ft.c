@@ -2468,7 +2468,7 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 	u8 *end, *mdie, *ftie, *rsnie = NULL, *r0kh_id, *subelem = NULL;
 	u8 *fte_mic, *elem_count;
 	size_t mdie_len, ftie_len, rsnie_len = 0, r0kh_id_len, subelem_len = 0;
-	u8 rsnxe[10];
+	u8 rsnxe_buf[10], *rsnxe = rsnxe_buf;
 	size_t rsnxe_len;
 	int res;
 	struct wpa_auth_config *conf;
@@ -2490,6 +2490,32 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 
 	end = pos + max_len;
 
+#ifdef CONFIG_TESTING_OPTIONS
+	if (auth_alg == WLAN_AUTH_FT &&
+	    sm->wpa_auth->conf.rsne_override_ft_set) {
+		wpa_printf(MSG_DEBUG,
+			   "TESTING: RSNE FT override for MIC calculation");
+		rsnie = sm->wpa_auth->conf.rsne_override_ft;
+		rsnie_len = sm->wpa_auth->conf.rsne_override_ft_len;
+		if (end - pos < (long int) rsnie_len)
+			return pos;
+		os_memcpy(pos, rsnie, rsnie_len);
+		rsnie = pos;
+		pos += rsnie_len;
+		if (rsnie_len > PMKID_LEN && sm->pmk_r1_name_valid) {
+			int idx;
+
+			/* Replace all 0xff PMKID with the valid PMKR1Name */
+			for (idx = 0; idx < PMKID_LEN; idx++) {
+				if (rsnie[rsnie_len - 1 - idx] != 0xff)
+					break;
+			}
+			if (idx == PMKID_LEN)
+				os_memcpy(&rsnie[rsnie_len - PMKID_LEN],
+					  sm->pmk_r1_name, WPA_PMK_NAME_LEN);
+		}
+	} else
+#endif /* CONFIG_TESTING_OPTIONS */
 	if (auth_alg == WLAN_AUTH_FT ||
 	    ((auth_alg == WLAN_AUTH_FILS_SK ||
 	      auth_alg == WLAN_AUTH_FILS_SK_PFS ||
@@ -2655,10 +2681,19 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 	if (ric_start == pos)
 		ric_start = NULL;
 
-	res = wpa_write_rsnxe(&sm->wpa_auth->conf, rsnxe, sizeof(rsnxe));
+	res = wpa_write_rsnxe(&sm->wpa_auth->conf, rsnxe, sizeof(rsnxe_buf));
 	if (res < 0)
 		return NULL;
 	rsnxe_len = res;
+#ifdef CONFIG_TESTING_OPTIONS
+	if (auth_alg == WLAN_AUTH_FT &&
+	    sm->wpa_auth->conf.rsnxe_override_ft_set) {
+		wpa_printf(MSG_DEBUG,
+			   "TESTING: RSNXE FT override for MIC calculation");
+		rsnxe = sm->wpa_auth->conf.rsnxe_override_ft;
+		rsnxe_len = sm->wpa_auth->conf.rsnxe_override_ft_len;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 	if (auth_alg == WLAN_AUTH_FT && rsnxe_len)
 		*elem_count += 1;
 

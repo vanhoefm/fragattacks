@@ -679,6 +679,8 @@ struct hostapd_bss_config {
 	struct wpabuf *sae_commit_override;
 	struct wpabuf *rsne_override_eapol;
 	struct wpabuf *rsnxe_override_eapol;
+	struct wpabuf *rsne_override_ft;
+	struct wpabuf *rsnxe_override_ft;
 	struct wpabuf *gtk_rsc_override;
 	struct wpabuf *igtk_rsc_override;
 #endif /* CONFIG_TESTING_OPTIONS */
