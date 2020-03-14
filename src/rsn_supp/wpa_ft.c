@@ -1090,6 +1090,50 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 		return -1;
 	}
 
+	if (!sm->ap_rsn_ie) {
+		wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG,
+			"FT: No RSNE for this AP known - trying to get from scan results");
+		if (wpa_sm_get_beacon_ie(sm) < 0) {
+			wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
+				"FT: Could not find AP from the scan results");
+			return -1;
+		}
+		wpa_msg(sm->ctx->msg_ctx, MSG_DEBUG,
+			"FT: Found the current AP from updated scan results");
+	}
+
+	if (sm->ap_rsn_ie &&
+	    wpa_compare_rsn_ie(wpa_key_mgmt_ft(sm->key_mgmt),
+			       sm->ap_rsn_ie, sm->ap_rsn_ie_len,
+			       parse.rsn - 2, parse.rsn_len + 2)) {
+		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
+			"FT: RSNE mismatch between Beacon/ProbeResp and FT protocol Reassociation Response frame");
+		wpa_hexdump(MSG_INFO, "RSNE in Beacon/ProbeResp",
+			    sm->ap_rsn_ie, sm->ap_rsn_ie_len);
+		wpa_hexdump(MSG_INFO,
+			    "RSNE in FT protocol Reassociation Response frame",
+			    parse.rsn ? parse.rsn - 2 : NULL,
+			    parse.rsn ? parse.rsn_len + 2 : 0);
+		return -1;
+	}
+
+	if ((sm->ap_rsnxe && !parse.rsnxe) ||
+	    (!sm->ap_rsnxe && parse.rsnxe) ||
+	    (sm->ap_rsnxe && parse.rsnxe &&
+	     (sm->ap_rsnxe_len != 2 + parse.rsnxe_len ||
+	      os_memcmp(sm->ap_rsnxe, parse.rsnxe - 2,
+			sm->ap_rsnxe_len) != 0))) {
+		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
+			"FT: RSNXE mismatch between Beacon/ProbeResp and FT protocol Reassociation Response frame");
+		wpa_hexdump(MSG_INFO, "RSNXE in Beacon/ProbeResp",
+			    sm->ap_rsnxe, sm->ap_rsnxe_len);
+		wpa_hexdump(MSG_INFO,
+			    "RSNXE in FT protocol Reassociation Response frame",
+			    parse.rsnxe ? parse.rsnxe - 2 : NULL,
+			    parse.rsnxe ? parse.rsnxe_len + 2 : 0);
+		return -1;
+	}
+
 #ifdef CONFIG_OCV
 	if (wpa_sm_ocv_enabled(sm)) {
 		struct wpa_channel_info ci;
