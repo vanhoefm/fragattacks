@@ -195,6 +195,7 @@ struct wlantest {
 	unsigned int rx_ctrl;
 	unsigned int rx_data;
 	unsigned int fcs_error;
+	unsigned int frame_num;
 
 	void *write_pcap; /* pcap_t* */
 	void *write_pcap_dumper; /* pcpa_dumper_t */

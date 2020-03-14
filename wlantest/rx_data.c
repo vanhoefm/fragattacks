@@ -191,6 +191,23 @@ static u8 * try_all_ptk(struct wlantest *wt, int pairwise_cipher,
 }
 
 
+static void check_plaintext_prot(struct wlantest *wt,
+				 const struct ieee80211_hdr *hdr,
+				 const u8 *data, size_t len)
+{
+	if (len < 8 + 3 || data[8] != 0xaa || data[9] != 0xaa ||
+	    data[10] != 0x03)
+		return;
+
+	add_note(wt, MSG_DEBUG,
+		 "Plaintext payload in protected frame");
+	wpa_printf(MSG_INFO, "Plaintext payload in protected frame #%u: A2="
+		   MACSTR " seq=%u",
+		   wt->frame_num, MAC2STR(hdr->addr2),
+		   WLAN_GET_SEQ_SEQ(le_to_host16(hdr->seq_ctrl)));
+}
+
+
 static void rx_data_bss_prot_group(struct wlantest *wt,
 				   const struct ieee80211_hdr *hdr,
 				   size_t hdrlen,
@@ -241,6 +258,7 @@ static void rx_data_bss_prot_group(struct wlantest *wt,
 		}
 	}
 
+	check_plaintext_prot(wt, hdr, data, len);
 	keyid = data[3] >> 6;
 	if (bss->gtk_len[keyid] == 0 && bss->group_cipher != WPA_CIPHER_WEP40)
 	{
@@ -401,6 +419,7 @@ static void rx_data_bss_prot(struct wlantest *wt,
 			tdls = found;
 		}
 	}
+	check_plaintext_prot(wt, hdr, data, len);
 	if ((sta == NULL ||
 	     (!sta->ptk_set && sta->pairwise_cipher != WPA_CIPHER_WEP40)) &&
 	    tk == NULL) {
