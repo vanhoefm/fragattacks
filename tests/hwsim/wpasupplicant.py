@@ -1199,22 +1199,31 @@ class WpaSupplicant:
         if fail_test:
             if assoc_reject_ok:
                 ev = self.wait_event(["CTRL-EVENT-CONNECTED",
+                                      "CTRL-EVENT-DISCONNECTED",
                                       "CTRL-EVENT-ASSOC-REJECT"], timeout=1)
             else:
-                ev = self.wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
+                ev = self.wait_event(["CTRL-EVENT-CONNECTED",
+                                      "CTRL-EVENT-DISCONNECTED"], timeout=1)
+            if ev and "CTRL-EVENT-DISCONNECTED" in ev:
+                self.dump_monitor()
+                return
             if ev is not None and "CTRL-EVENT-ASSOC-REJECT" not in ev:
                 raise Exception("Unexpected connection")
             self.dump_monitor()
             return
         if assoc_reject_ok:
-            ev = self.wait_event(["CTRL-EVENT-CONNECTED"], timeout=10)
+            ev = self.wait_event(["CTRL-EVENT-CONNECTED",
+                                  "CTRL-EVENT-DISCONNECTED"], timeout=10)
         else:
             ev = self.wait_event(["CTRL-EVENT-CONNECTED",
+                                      "CTRL-EVENT-DISCONNECTED",
                                   "CTRL-EVENT-ASSOC-REJECT"], timeout=10)
         if ev is None:
             raise Exception("Roaming with the AP timed out")
         if "CTRL-EVENT-ASSOC-REJECT" in ev:
             raise Exception("Roaming association rejected")
+        if "CTRL-EVENT-DISCONNECTED" in ev:
+            raise Exception("Unexpected disconnection when waiting for roam to complete")
         self.dump_monitor()
         if check_bssid and self.get_status_field('bssid') != bssid:
             raise Exception("Did not roam to correct BSSID")

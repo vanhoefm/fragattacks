@@ -993,7 +993,8 @@ def test_ap_ft_over_ds_pull_vlan(dev, apdev):
     if filename.startswith('/tmp/'):
         os.unlink(filename)
 
-def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None):
+def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None,
+                 rsne_override=None, rsnxe_override=None):
     if "SAE" not in dev.get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     ssid = "test-ft"
@@ -1005,6 +1006,10 @@ def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None):
         params['wpa_ptk_rekey'] = str(wpa_ptk_rekey)
     if sae_pwe is not None:
         params['sae_pwe'] = sae_pwe
+    if rsne_override:
+        params['rsne_override_ft'] = rsne_override
+    if rsnxe_override:
+        params['rsnxe_override_ft'] = rsnxe_override
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params['wpa_key_mgmt'] = "FT-SAE"
@@ -1012,6 +1017,10 @@ def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None):
         params['wpa_ptk_rekey'] = str(wpa_ptk_rekey)
     if sae_pwe is not None:
         params['sae_pwe'] = sae_pwe
+    if rsne_override:
+        params['rsne_override_ft'] = rsne_override
+    if rsnxe_override:
+        params['rsnxe_override_ft'] = rsnxe_override
     hapd1 = hostapd.add_ap(apdev[1], params)
     key_mgmt = hapd1.get_config()['key_mgmt']
     if key_mgmt.split(' ')[0] != "FT-SAE":
@@ -1087,6 +1096,59 @@ def test_ap_ft_sae_over_ds_ptk_rekey_ap(dev, apdev):
     run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
               over_ds=True, only_one_way=True)
     check_ptk_rekey(dev[0], hapd0, hapd1)
+
+def test_ap_ft_sae_h2e_rsne_override(dev, apdev):
+    """WPA2-PSK-FT-SAE AP (H2E) and RSNE override (same value)"""
+    try:
+        dev[0].set("sae_pwe", "2")
+        hapd0, hapd1 = start_ft_sae(dev[0], apdev, sae_pwe="2",
+                                    rsne_override="30260100000fac040100000fac040100000fac090c000100" + 16*"ff")
+        run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True)
+    finally:
+        dev[0].set("sae_pwe", "0")
+
+def test_ap_ft_sae_h2e_rsnxe_override(dev, apdev):
+    """WPA2-PSK-FT-SAE AP (H2E) and RSNXE override (same value)"""
+    try:
+        dev[0].set("sae_pwe", "2")
+        hapd0, hapd1 = start_ft_sae(dev[0], apdev, sae_pwe="2",
+                                    rsnxe_override="F40120")
+        run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True)
+    finally:
+        dev[0].set("sae_pwe", "0")
+
+def test_ap_ft_sae_h2e_rsne_mismatch(dev, apdev):
+    """WPA2-PSK-FT-SAE AP (H2E) and RSNE mismatch"""
+    try:
+        dev[0].set("sae_pwe", "2")
+        hapd0, hapd1 = start_ft_sae(dev[0], apdev, sae_pwe="2",
+                                    rsne_override="30260100000fac040100000fac040100000fac090c010100" + 16*"ff")
+        run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
+                  fail_test=True)
+    finally:
+        dev[0].set("sae_pwe", "0")
+
+def test_ap_ft_sae_h2e_rsne_mismatch_pmkr1name(dev, apdev):
+    """WPA2-PSK-FT-SAE AP (H2E) and RSNE mismatch in PMKR1Name"""
+    try:
+        dev[0].set("sae_pwe", "2")
+        hapd0, hapd1 = start_ft_sae(dev[0], apdev, sae_pwe="2",
+                                    rsne_override="30260100000fac040100000fac040100000fac090c000100" + 16*"00")
+        run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
+                  fail_test=True)
+    finally:
+        dev[0].set("sae_pwe", "0")
+
+def test_ap_ft_sae_h2e_rsnxe_mismatch(dev, apdev):
+    """WPA2-PSK-FT-SAE AP (H2E) and RSNXE mismatch"""
+    try:
+        dev[0].set("sae_pwe", "2")
+        hapd0, hapd1 = start_ft_sae(dev[0], apdev, sae_pwe="2",
+                                    rsnxe_override="F40160")
+        run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
+                  fail_test=True)
+    finally:
+        dev[0].set("sae_pwe", "0")
 
 def test_ap_ft_sae_pw_id(dev, apdev):
     """FT-SAE with Password Identifier"""
@@ -1906,7 +1968,7 @@ def test_ap_ft_oom(dev, apdev):
     """WPA2-PSK-FT and OOM"""
     dst = setup_ap_ft_oom(dev, apdev)
     with alloc_fail(dev[0], 1, "wpa_ft_gen_req_ies"):
-        dev[0].roam(dst, check_bssid=False)
+        dev[0].roam(dst, check_bssid=False, fail_test=True)
 
 def test_ap_ft_oom2(dev, apdev):
     """WPA2-PSK-FT and OOM (2)"""
