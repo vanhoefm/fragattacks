@@ -3105,7 +3105,12 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 	if (!key_msg)
 		return ret;
 
-	if (alg == WPA_ALG_NONE && (key_flag & KEY_FLAG_RX_TX)) {
+	if ((key_flag & KEY_FLAG_PAIRWISE_MASK) ==
+	    KEY_FLAG_PAIRWISE_RX_TX_MODIFY) {
+		msg = nl80211_ifindex_msg(drv, ifindex, 0, NL80211_CMD_SET_KEY);
+		if (!msg)
+			goto fail2;
+	} else if (alg == WPA_ALG_NONE && (key_flag & KEY_FLAG_RX_TX)) {
 		wpa_printf(MSG_DEBUG, "%s: invalid key_flag to delete key",
 			   __func__);
 		ret = -EINVAL;
@@ -3143,7 +3148,16 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 		if (nla_put(msg, NL80211_ATTR_MAC, ETH_ALEN, addr))
 			goto fail;
 
-		if ((key_flag & KEY_FLAG_GROUP_MASK) == KEY_FLAG_GROUP_RX) {
+		if ((key_flag & KEY_FLAG_PAIRWISE_MASK) ==
+		    KEY_FLAG_PAIRWISE_RX ||
+		    (key_flag & KEY_FLAG_PAIRWISE_MASK) ==
+		    KEY_FLAG_PAIRWISE_RX_TX_MODIFY) {
+			if (nla_put_u8(key_msg, NL80211_KEY_MODE,
+				       key_flag == KEY_FLAG_PAIRWISE_RX ?
+				       NL80211_KEY_NO_TX : NL80211_KEY_SET_TX))
+				goto fail;
+		} else if ((key_flag & KEY_FLAG_GROUP_MASK) ==
+			   KEY_FLAG_GROUP_RX) {
 			wpa_printf(MSG_DEBUG, "   RSN IBSS RX GTK");
 			if (nla_put_u32(key_msg, NL80211_KEY_TYPE,
 					NL80211_KEYTYPE_GROUP))

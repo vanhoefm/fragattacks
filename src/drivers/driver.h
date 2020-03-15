@@ -1841,6 +1841,8 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_FLAGS_SAFE_PTK0_REKEYS	0x2000000000000000ULL
 /** Driver supports Beacon protection */
 #define WPA_DRIVER_FLAGS_BEACON_PROTECTION	0x4000000000000000ULL
+/** Driver supports Extended Key ID */
+#define WPA_DRIVER_FLAGS_EXTENDED_KEY_ID	0x8000000000000000ULL
 	u64 flags;
 
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \
