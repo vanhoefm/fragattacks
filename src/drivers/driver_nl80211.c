@@ -3758,7 +3758,7 @@ static int wpa_driver_nl80211_send_mlme(struct i802_bss *bss, const u8 *data,
 
 	mgmt = (struct ieee80211_mgmt *) data;
 	fc = le_to_host16(mgmt->frame_control);
-	wpa_printf(MSG_DEBUG, "nl80211: send_mlme - da= " MACSTR
+	wpa_printf(MSG_DEBUG, "nl80211: send_mlme - da=" MACSTR
 		   " noack=%d freq=%u no_cck=%d offchanok=%d wait_time=%u no_encrypt=%d fc=0x%x (%s) nlmode=%d",
 		   MAC2STR(mgmt->da), noack, freq, no_cck, offchanok, wait_time,
 		   no_encrypt, fc, fc2str(fc), drv->nlmode);
