@@ -1608,6 +1608,10 @@ struct wpa_driver_set_key_params {
 	/**
 	 * key_flag - Additional key flags
 	 *
+	 * %KEY_FLAG_MODIFY
+	 *  Set when an already installed key must be updated.
+	 *  So far the only use-case is changing RX/TX status for
+	 *  pairwise keys. Must not be set when deleting a key.
 	 * %KEY_FLAG_DEFAULT
 	 *  Set when the key is also a default key. Must not be set when
 	 *  deleting a key.
@@ -1636,6 +1640,9 @@ struct wpa_driver_set_key_params {
 	 * %KEY_FLAG_PAIRWISE_RX
 	 *  Pairwise key not yet valid for TX. (Only usable when Extended
 	 *  Key ID is supported by the driver.)
+	 * %KEY_FLAG_PAIRWISE_RX_TX_MODIFY
+	 *  Enable TX for a pairwise key installed with
+	 *  KEY_FLAG_PAIRWISE_RX.
 	 *
 	 * Not a valid standalone key type but pre-defined to be combined
 	 * with other key_flags:

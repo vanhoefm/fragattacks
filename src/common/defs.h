@@ -430,6 +430,7 @@ enum chan_width {
 };
 
 enum key_flag {
+	KEY_FLAG_MODIFY			= BIT(0),
 	KEY_FLAG_DEFAULT		= BIT(1),
 	KEY_FLAG_RX			= BIT(2),
 	KEY_FLAG_TX			= BIT(3),
@@ -446,8 +447,10 @@ enum key_flag {
 					  KEY_FLAG_DEFAULT,
 	KEY_FLAG_PAIRWISE_RX_TX		= KEY_FLAG_PAIRWISE | KEY_FLAG_RX_TX,
 	KEY_FLAG_PAIRWISE_RX		= KEY_FLAG_PAIRWISE | KEY_FLAG_RX,
+	KEY_FLAG_PAIRWISE_RX_TX_MODIFY	= KEY_FLAG_PAIRWISE_RX_TX |
+					  KEY_FLAG_MODIFY,
 	/* Max allowed flags for each key type */
-	KEY_FLAG_PAIRWISE_MASK		= KEY_FLAG_PAIRWISE_RX_TX,
+	KEY_FLAG_PAIRWISE_MASK		= KEY_FLAG_PAIRWISE_RX_TX_MODIFY,
 	KEY_FLAG_GROUP_MASK		= KEY_FLAG_GROUP_RX_TX_DEFAULT,
 	KEY_FLAG_PMK_MASK		= KEY_FLAG_PMK,
 };
@@ -455,7 +458,7 @@ enum key_flag {
 static inline int check_key_flag(enum key_flag key_flag)
 {
 	return !!(!key_flag ||
-		  ((key_flag & KEY_FLAG_PAIRWISE) &&
+		  ((key_flag & (KEY_FLAG_PAIRWISE | KEY_FLAG_MODIFY)) &&
 		   (key_flag & ~KEY_FLAG_PAIRWISE_MASK)) ||
 		  ((key_flag & KEY_FLAG_GROUP) &&
 		   (key_flag & ~KEY_FLAG_GROUP_MASK)) ||
