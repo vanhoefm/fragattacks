@@ -4,6 +4,7 @@
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
 
+import hostapd
 from remotehost import remote_compatible
 import time
 import logging
@@ -815,3 +816,36 @@ def run_wpas_ap_sae(dev, sae_password, sae_password_id=False):
     dev[1].request("SET sae_groups ")
     dev[1].connect("wpas-ap-sae", key_mgmt="SAE", sae_password="12345678",
                    sae_password_id=pw_id, scan_freq="2412")
+
+def test_wpas_ap_scan(dev, apdev):
+    """wpa_supplicant AP mode and scanning"""
+    dev[0].flush_scan_cache()
+
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
+    bssid = hapd.own_addr()
+
+    id = dev[0].add_network()
+    dev[0].set_network(id, "mode", "2")
+    dev[0].set_network_quoted(id, "ssid", "wpas-ap-open")
+    dev[0].set_network(id, "key_mgmt", "NONE")
+    dev[0].set_network(id, "frequency", "2412")
+    dev[0].set_network(id, "scan_freq", "2412")
+    dev[0].select_network(id)
+    wait_ap_ready(dev[0])
+    dev[0].dump_monitor()
+
+    if "OK" not in dev[0].request("SCAN freq=2412"):
+        raise Exception("SCAN command not accepted")
+    ev = dev[0].wait_event(["CTRL-EVENT-SCAN-RESULTS",
+                            "CTRL-EVENT-SCAN-FAILED"], 15)
+    if ev is None:
+        raise Exception("Scan result timed out")
+    if "CTRL-EVENT-SCAN-FAILED ret=-95" in ev:
+        # Scanning in AP mode not supported
+        return
+    if "CTRL-EVENT-SCAN-FAILED" in ev:
+        raise Exception("Unexpected scan failure reason: " + ev)
+    if "CTRL-EVENT-SCAN-RESULTS" in ev:
+        bss = dev[0].get_bss(bssid)
+        if not bss:
+            raise Exception("AP not found in scan")
