@@ -3107,6 +3107,13 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 	wpa_s->last_eapol_matches_bssid = 0;
 
 #ifdef CONFIG_TESTING_OPTIONS
+	if (wpa_s->rsne_override_eapol) {
+		wpa_printf(MSG_DEBUG,
+			   "TESTING: RSNE EAPOL-Key msg 2/4 override");
+		wpa_sm_set_assoc_wpa_ie(wpa_s->wpa,
+					wpabuf_head(wpa_s->rsne_override_eapol),
+					wpabuf_len(wpa_s->rsne_override_eapol));
+	}
 	if (wpa_s->rsnxe_override_eapol) {
 		wpa_printf(MSG_DEBUG,
 			   "TESTING: RSNXE EAPOL-Key msg 2/4 override");
