@@ -2150,6 +2150,42 @@ def test_sae_auth_restart(dev, apdev):
         dev[0].set("sae_groups", "")
         dev[0].set("sae_pwe", "0")
 
+def test_sae_rsne_mismatch(dev, apdev):
+    """SAE and RSNE mismatch in EAPOL-Key msg 2/4"""
+    check_sae_capab(dev[0])
+    dev[0].set("sae_groups", "")
+
+    params = hostapd.wpa2_params(ssid="sae-pwe", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    # First, test with matching RSNE to confirm testing capability
+    dev[0].set("rsne_override_eapol",
+               "30140100000fac040100000fac040100000fac080000")
+    dev[0].connect("sae-pwe", psk="12345678", key_mgmt="SAE",
+                   scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+
+    # Then, test with modified RSNE
+    tests = ["30140100000fac040100000fac040100000fac080010", "0000"]
+    for ie in tests:
+        dev[0].set("rsne_override_eapol", ie)
+        dev[0].connect("sae-pwe", psk="12345678", key_mgmt="SAE",
+                       scan_freq="2412", wait_connect=False)
+        ev = dev[0].wait_event(["Associated with"], timeout=10)
+        if ev is None:
+            raise Exception("No indication of association seen")
+        ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                "CTRL-EVENT-DISCONNECTED"], timeout=5)
+        dev[0].request("REMOVE_NETWORK all")
+        if ev is None:
+            raise Exception("No disconnection seen")
+        if "CTRL-EVENT-DISCONNECTED" not in ev:
+            raise Exception("Unexpected connection")
+        dev[0].dump_monitor()
+
 def test_sae_h2e_rsnxe_mismatch(dev, apdev):
     """SAE H2E and RSNXE mismatch in EAPOL-Key msg 2/4"""
     check_sae_capab(dev[0])
