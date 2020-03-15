@@ -662,6 +662,7 @@ def test_pmksa_cache_ap_expiration(dev, apdev):
     params = hostapd.wpa2_eap_params(ssid="test-pmksa-cache")
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = apdev[0]['bssid']
+
     dev[0].connect("test-pmksa-cache", proto="RSN", key_mgmt="WPA-EAP",
                    eap="GPSK", identity="gpsk-user-session-timeout",
                    password="abcdefghijklmnop0123456789abcdef",
@@ -669,20 +670,44 @@ def test_pmksa_cache_ap_expiration(dev, apdev):
     ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=5)
     if ev is None:
         raise Exception("No connection event received from hostapd")
+    hapd.dump_monitor()
+
     dev[0].request("DISCONNECT")
+    ev = hapd.wait_event(["AP-STA-DISCONNECTED"], timeout=5)
+    if ev is None:
+        raise Exception("No disconnection event received from hostapd")
+    dev[0].wait_disconnected()
+
+    # Wait for session timeout to remove PMKSA cache entry
     time.sleep(5)
     dev[0].dump_monitor()
+    hapd.dump_monitor()
+
     dev[0].request("RECONNECT")
     ev = dev[0].wait_event(["CTRL-EVENT-EAP-STARTED",
                             "CTRL-EVENT-CONNECTED"], timeout=20)
     if ev is None:
-        raise Exception("Roaming with the AP timed out")
+        raise Exception("Reconnection with the AP timed out")
     if "CTRL-EVENT-CONNECTED" in ev:
         raise Exception("EAP exchange missing")
     dev[0].wait_connected(timeout=20, error="Reconnect timed out")
     dev[0].dump_monitor()
+    ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=5)
+    if ev is None:
+        raise Exception("No connection event received from hostapd [2]")
+    hapd.dump_monitor()
+
+    # Wait for session timeout
+    ev = hapd.wait_event(["AP-STA-DISCONNECTED"], timeout=10)
+    if ev is None:
+        raise Exception("No disconnection event received from hostapd [2]")
     dev[0].wait_disconnected(timeout=20)
     dev[0].wait_connected(timeout=20, error="Reassociation timed out")
+    ev = hapd.wait_event(["AP-STA-CONNECTED"], timeout=5)
+    if ev is None:
+        raise Exception("No connection event received from hostapd [3]")
+    hapd.dump_monitor()
+    dev[0].dump_monitor()
 
 def test_pmksa_cache_multiple_sta(dev, apdev):
     """PMKSA cache with multiple stations"""
