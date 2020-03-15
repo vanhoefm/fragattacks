@@ -464,6 +464,9 @@ static void learn_kde_keys(struct wlantest *wt, struct wlantest_bss *bss,
 			    ie.rsn_ie, ie.rsn_ie_len);
 	}
 
+	if (ie.key_id)
+		add_note(wt, MSG_DEBUG, "KeyID %u", ie.key_id[0]);
+
 	if (ie.gtk) {
 		wpa_hexdump(MSG_MSGDUMP, "EAPOL-Key Key Data - GTK KDE",
 			    ie.gtk, ie.gtk_len);

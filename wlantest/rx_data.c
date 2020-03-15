@@ -466,9 +466,13 @@ static void rx_data_bss_prot(struct wlantest *wt,
 	}
 
 	keyid = data[3] >> 6;
-	if (keyid != 0) {
-		add_note(wt, MSG_INFO, "Unexpected non-zero KeyID %d in "
-			 "individually addressed Data frame from " MACSTR,
+	if (keyid != 0 &&
+	    (!(sta->rsn_capab & WPA_CAPABILITY_EXT_KEY_ID_FOR_UNICAST) ||
+	     !(bss->rsn_capab & WPA_CAPABILITY_EXT_KEY_ID_FOR_UNICAST) ||
+	     keyid != 1)) {
+		add_note(wt, MSG_INFO,
+			 "Unexpected KeyID %d in individually addressed Data frame from "
+			 MACSTR,
 			 keyid, MAC2STR(hdr->addr2));
 	}
 
