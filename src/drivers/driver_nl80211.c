@@ -3107,6 +3107,8 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 
 	if ((key_flag & KEY_FLAG_PAIRWISE_MASK) ==
 	    KEY_FLAG_PAIRWISE_RX_TX_MODIFY) {
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: SET_KEY (pairwise RX/TX modify)");
 		msg = nl80211_ifindex_msg(drv, ifindex, 0, NL80211_CMD_SET_KEY);
 		if (!msg)
 			goto fail2;
@@ -3116,6 +3118,7 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 		ret = -EINVAL;
 		goto fail2;
 	} else if (alg == WPA_ALG_NONE) {
+		wpa_printf(MSG_DEBUG, "nl80211: DEL_KEY");
 		msg = nl80211_ifindex_msg(drv, ifindex, 0, NL80211_CMD_DEL_KEY);
 		if (!msg)
 			goto fail2;
@@ -3127,6 +3130,7 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 			ret = -EINVAL;
 			goto fail2;
 		}
+		wpa_printf(MSG_DEBUG, "nl80211: NEW_KEY");
 		msg = nl80211_ifindex_msg(drv, ifindex, 0, NL80211_CMD_NEW_KEY);
 		if (!msg)
 			goto fail2;
