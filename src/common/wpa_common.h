@@ -494,6 +494,7 @@ struct wpa_eapol_ie_parse {
 	const u8 *rsn_ie;
 	size_t rsn_ie_len;
 	const u8 *pmkid;
+	const u8 *key_id;
 	const u8 *gtk;
 	size_t gtk_len;
 	const u8 *mac_addr;

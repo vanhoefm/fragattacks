@@ -2717,6 +2717,14 @@ static int wpa_parse_generic(const u8 *pos, const u8 *end,
 		return 0;
 	}
 
+	if (pos[1] >= RSN_SELECTOR_LEN + 2 &&
+	    RSN_SELECTOR_GET(pos + 2) == RSN_KEY_DATA_KEYID) {
+		ie->key_id = pos + 2 + RSN_SELECTOR_LEN;
+		wpa_hexdump(MSG_DEBUG, "WPA: KeyID in EAPOL-Key",
+			    pos, pos[1] + 2);
+		return 0;
+	}
+
 	if (pos[1] > RSN_SELECTOR_LEN + 2 &&
 	    RSN_SELECTOR_GET(pos + 2) == RSN_KEY_DATA_GROUPKEY) {
 		ie->gtk = pos + 2 + RSN_SELECTOR_LEN;
