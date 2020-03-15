@@ -685,20 +685,26 @@ static void mlme_event_mgmt_tx_status(struct wpa_driver_nl80211_data *drv,
 	union wpa_event_data event;
 	const struct ieee80211_hdr *hdr = (const struct ieee80211_hdr *) frame;
 	u16 fc = le_to_host16(hdr->frame_control);
+	u64 cookie_val = 0;
 
-	wpa_printf(MSG_DEBUG, "nl80211: Frame TX status event");
+	if (cookie)
+		cookie_val = nla_get_u64(cookie);
+	wpa_printf(MSG_DEBUG,
+		   "nl80211: Frame TX status event A1=" MACSTR
+		   " %sstype=%d cookie=0x%llx%s ack=%d",
+		   MAC2STR(hdr->addr1),
+		   WLAN_FC_GET_TYPE(fc) != WLAN_FC_TYPE_MGMT ? "not-mgmt " : "",
+		   WLAN_FC_GET_STYPE(fc), (long long unsigned int) cookie_val,
+		   cookie ? "" : "(N/A)", ack != NULL);
 
 	if (WLAN_FC_GET_TYPE(fc) != WLAN_FC_TYPE_MGMT)
 		return;
 
 	if (!is_ap_interface(drv->nlmode) &&
 	    WLAN_FC_GET_STYPE(fc) == WLAN_FC_STYPE_ACTION) {
-		u64 cookie_val;
-
 		if (!cookie)
 			return;
 
-		cookie_val = nla_get_u64(cookie);
 		wpa_printf(MSG_DEBUG,
 			   "nl80211: Frame TX status: cookie=0x%llx%s (ack=%d)",
 			   (long long unsigned int) cookie_val,
