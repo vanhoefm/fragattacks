@@ -2024,15 +2024,6 @@ static int _wpa_supplicant_event_scan_results(struct wpa_supplicant *wpa_s,
 		goto scan_work_done;
 	}
 
-	if (ap) {
-		wpa_dbg(wpa_s, MSG_DEBUG, "Ignore scan results in AP mode");
-#ifdef CONFIG_AP
-		if (wpa_s->ap_iface->scan_cb)
-			wpa_s->ap_iface->scan_cb(wpa_s->ap_iface);
-#endif /* CONFIG_AP */
-		goto scan_work_done;
-	}
-
 	wpa_dbg(wpa_s, MSG_DEBUG, "New scan results available (own=%u ext=%u)",
 		wpa_s->own_scan_running,
 		data ? data->scan_info.external_scan : 0);
@@ -2048,6 +2039,15 @@ static int _wpa_supplicant_event_scan_results(struct wpa_supplicant *wpa_s,
 	wpas_notify_scan_results(wpa_s);
 
 	wpas_notify_scan_done(wpa_s, 1);
+
+	if (ap) {
+		wpa_dbg(wpa_s, MSG_DEBUG, "Ignore scan results in AP mode");
+#ifdef CONFIG_AP
+		if (wpa_s->ap_iface->scan_cb)
+			wpa_s->ap_iface->scan_cb(wpa_s->ap_iface);
+#endif /* CONFIG_AP */
+		goto scan_work_done;
+	}
 
 	if (data && data->scan_info.external_scan) {
 		wpa_dbg(wpa_s, MSG_DEBUG, "Do not use results from externally requested scan operation for network selection");
