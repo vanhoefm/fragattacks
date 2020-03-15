@@ -2681,12 +2681,10 @@ static int wpa_parse_vendor_specific(const u8 *pos, const u8 *end,
 /**
  * wpa_parse_generic - Parse EAPOL-Key Key Data Generic IEs
  * @pos: Pointer to the IE header
- * @end: Pointer to the end of the Key Data buffer
  * @ie: Pointer to parsed IE data
  * Returns: 0 on success, 1 if end mark is found, -1 on failure
  */
-static int wpa_parse_generic(const u8 *pos, const u8 *end,
-			     struct wpa_eapol_ie_parse *ie)
+static int wpa_parse_generic(const u8 *pos, struct wpa_eapol_ie_parse *ie)
 {
 	if (pos[1] == 0)
 		return 1;
@@ -2708,8 +2706,7 @@ static int wpa_parse_generic(const u8 *pos, const u8 *end,
 		return 0;
 	}
 
-	if (1 + RSN_SELECTOR_LEN < end - pos &&
-	    pos[1] >= RSN_SELECTOR_LEN + PMKID_LEN &&
+	if (pos[1] >= RSN_SELECTOR_LEN + PMKID_LEN &&
 	    RSN_SELECTOR_GET(pos + 2) == RSN_KEY_DATA_PMKID) {
 		ie->pmkid = pos + 2 + RSN_SELECTOR_LEN;
 		wpa_hexdump(MSG_DEBUG, "WPA: PMKID in EAPOL-Key",
@@ -2895,7 +2892,7 @@ int wpa_parse_kde_ies(const u8 *buf, size_t len, struct wpa_eapol_ie_parse *ie)
 				ie->supp_oper_classes_len = pos[1];
 			}
 		} else if (*pos == WLAN_EID_VENDOR_SPECIFIC) {
-			ret = wpa_parse_generic(pos, end, ie);
+			ret = wpa_parse_generic(pos, ie);
 			if (ret < 0)
 				break;
 			if (ret > 0) {
