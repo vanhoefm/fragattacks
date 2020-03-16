@@ -644,7 +644,7 @@ def test_sigma_dut_ap_psk_sha256(dev, apdev, params):
     logdir = os.path.join(params['logdir'],
                           "sigma_dut_ap_psk_sha256.sigma-hostapd")
     with HWSimRadio() as (radio, iface):
-        sigma = start_sigma_dut(iface)
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
             sigma_dut_cmd_check("ap_reset_default")
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-psk,MODE,11ng")
