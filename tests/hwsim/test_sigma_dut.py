@@ -3956,3 +3956,67 @@ def test_sigma_dut_ap_sae_h2e_anti_clogging(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
             dev[0].set("sae_pwe", "0")
+
+def test_sigma_dut_ap_5ghz(dev, apdev, params):
+    """sigma_dut controlled AP on 5 GHz"""
+    run_sigma_dut_ap_channel(dev, apdev, params, 36, '11na', 5180,
+                             check_signal="WIDTH=20 MHz")
+
+def test_sigma_dut_ap_ht40plus(dev, apdev, params):
+    """sigma_dut controlled AP and HT40+"""
+    run_sigma_dut_ap_channel(dev, apdev, params, 36, '11na', 5180,
+                             extra="width,40", check_signal="WIDTH=40 MHz")
+
+def test_sigma_dut_ap_ht40minus(dev, apdev, params):
+    """sigma_dut controlled AP and HT40-"""
+    run_sigma_dut_ap_channel(dev, apdev, params, 40, '11na', 5200,
+                             extra="width,40", check_signal="WIDTH=40 MHz")
+
+def test_sigma_dut_ap_vht40(dev, apdev, params):
+    """sigma_dut controlled AP and VHT40"""
+    run_sigma_dut_ap_channel(dev, apdev, params, 36, '11ac', 5180,
+                             extra="width,40", check_signal="WIDTH=40 MHz",
+                             program="VHT")
+
+def test_sigma_dut_ap_vht80(dev, apdev, params):
+    """sigma_dut controlled AP and VHT80"""
+    run_sigma_dut_ap_channel(dev, apdev, params, 36, '11ac', 5180,
+                             extra="width,80", check_signal="WIDTH=80 MHz",
+                             program="VHT")
+
+def run_sigma_dut_ap_channel(dev, apdev, params, channel, mode, scan_freq,
+                             extra=None, check_signal=None, program=None):
+    logdir = params['prefix'] + ".sigma-hostapd"
+    with HWSimRadio() as (radio, iface):
+        subprocess.call(['iw', 'reg', 'set', 'US'])
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            cmd = "ap_reset_default"
+            if program:
+                cmd += ",program," + program
+            sigma_dut_cmd_check(cmd)
+            cmd = "ap_set_wireless,NAME,AP,CHANNEL,%d,SSID,test-psk,MODE,%s" % (channel, mode)
+            if extra:
+                cmd += "," + extra
+            sigma_dut_cmd_check(cmd)
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-PSK,PSK,12345678")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            with open("/tmp/sigma_dut-ap.conf", "rb") as f:
+                with open(params['prefix'] + ".sigma-conf", "wb") as f2:
+                    f2.write(f.read())
+
+            dev[0].connect("test-psk", psk="12345678", scan_freq=str(scan_freq))
+            sig = dev[0].request("SIGNAL_POLL")
+            logger.info("SIGNAL_POLL:\n" + sig.strip())
+            dev[0].request("DISCONNECT")
+            dev[0].wait_disconnected()
+
+            sigma_dut_cmd_check("ap_reset_default")
+
+            if check_signal and check_signal not in sig:
+                raise Exception("Unexpected SIGNAL_POLL data")
+        finally:
+            stop_sigma_dut(sigma)
+            subprocess.call(['iw', 'reg', 'set', '00'])
+            dev[0].flush_scan_cache()

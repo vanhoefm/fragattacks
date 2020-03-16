@@ -516,6 +516,8 @@ def main():
                     params = {}
                     params['logdir'] = args.logdir
                     params['long'] = args.long
+                    params['name'] = name
+                    params['prefix'] = os.path.join(args.logdir, name)
                     t(dev, apdev, params)
                 elif t.__code__.co_argcount > 1:
                     t(dev, apdev)
