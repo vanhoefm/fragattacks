@@ -2185,67 +2185,77 @@ void scan_snr(struct wpa_scan_res *res)
 }
 
 
-static unsigned int max_ht20_rate(int snr)
+static unsigned int max_ht20_rate(int snr, int vht)
 {
-	if (snr < 6)
+	if (snr < 2)
+		return 0;
+	if (snr < 5)
 		return 6500; /* HT20 MCS0 */
-	if (snr < 8)
+	if (snr < 9)
 		return 13000; /* HT20 MCS1 */
-	if (snr < 13)
+	if (snr < 11)
 		return 19500; /* HT20 MCS2 */
-	if (snr < 17)
+	if (snr < 15)
 		return 26000; /* HT20 MCS3 */
-	if (snr < 20)
+	if (snr < 18)
 		return 39000; /* HT20 MCS4 */
-	if (snr < 23)
+	if (snr < 20)
 		return 52000; /* HT20 MCS5 */
-	if (snr < 24)
+	if (snr < 25)
 		return 58500; /* HT20 MCS6 */
-	return 65000; /* HT20 MCS7 */
+	if (snr < 29 || !vht)
+		return 65000; /* HT20 MCS7 */
+	return 78000; /* VHT20 MCS8 */
 }
 
 
-static unsigned int max_ht40_rate(int snr)
+static unsigned int max_ht40_rate(int snr, int vht)
 {
-	if (snr < 3)
+	if (snr < 5)
+		return 0;
+	if (snr < 8)
 		return 13500; /* HT40 MCS0 */
-	if (snr < 6)
+	if (snr < 12)
 		return 27000; /* HT40 MCS1 */
-	if (snr < 10)
+	if (snr < 14)
 		return 40500; /* HT40 MCS2 */
-	if (snr < 15)
+	if (snr < 18)
 		return 54000; /* HT40 MCS3 */
-	if (snr < 17)
+	if (snr < 21)
 		return 81000; /* HT40 MCS4 */
-	if (snr < 22)
+	if (snr < 23)
 		return 108000; /* HT40 MCS5 */
-	if (snr < 24)
+	if (snr < 28)
 		return 121500; /* HT40 MCS6 */
-	return 135000; /* HT40 MCS7 */
+	if (snr < 32 || !vht)
+		return 135000; /* HT40 MCS7 */
+	if (snr < 34)
+		return 162000; /* VHT40 MCS8 */
+	return 180000; /* VHT40 MCS9 */
 }
 
 
 static unsigned int max_vht80_rate(int snr)
 {
-	if (snr < 1)
+	if (snr < 8)
 		return 0;
-	if (snr < 2)
-		return 29300; /* VHT80 MCS0 */
-	if (snr < 5)
-		return 58500; /* VHT80 MCS1 */
-	if (snr < 9)
-		return 87800; /* VHT80 MCS2 */
 	if (snr < 11)
-		return 117000; /* VHT80 MCS3 */
+		return 29300; /* VHT80 MCS0 */
 	if (snr < 15)
+		return 58500; /* VHT80 MCS1 */
+	if (snr < 17)
+		return 87800; /* VHT80 MCS2 */
+	if (snr < 21)
+		return 117000; /* VHT80 MCS3 */
+	if (snr < 24)
 		return 175500; /* VHT80 MCS4 */
-	if (snr < 16)
+	if (snr < 26)
 		return 234000; /* VHT80 MCS5 */
-	if (snr < 18)
+	if (snr < 31)
 		return 263300; /* VHT80 MCS6 */
-	if (snr < 20)
+	if (snr < 35)
 		return 292500; /* VHT80 MCS7 */
-	if (snr < 22)
+	if (snr < 37)
 		return 351000; /* VHT80 MCS8 */
 	return 390000; /* VHT80 MCS9 */
 }
@@ -2285,7 +2295,7 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 	if (capab == CAPAB_HT || capab == CAPAB_HT40 || capab == CAPAB_VHT) {
 		ie = get_ie(ies, ies_len, WLAN_EID_HT_CAP);
 		if (ie) {
-			tmp = max_ht20_rate(snr);
+			tmp = max_ht20_rate(snr, 0);
 			if (tmp > est)
 				est = tmp;
 		}
@@ -2295,7 +2305,7 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 		ie = get_ie(ies, ies_len, WLAN_EID_HT_OPERATION);
 		if (ie && ie[1] >= 2 &&
 		    (ie[3] & HT_INFO_HT_PARAM_SECONDARY_CHNL_OFF_MASK)) {
-			tmp = max_ht40_rate(snr);
+			tmp = max_ht40_rate(snr, 0);
 			if (tmp > est)
 				est = tmp;
 		}
@@ -2305,7 +2315,7 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 		/* Use +1 to assume VHT is always faster than HT */
 		ie = get_ie(ies, ies_len, WLAN_EID_VHT_CAP);
 		if (ie) {
-			tmp = max_ht20_rate(snr) + 1;
+			tmp = max_ht20_rate(snr, 1) + 1;
 			if (tmp > est)
 				est = tmp;
 
@@ -2313,7 +2323,7 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 			if (ie && ie[1] >= 2 &&
 			    (ie[3] &
 			     HT_INFO_HT_PARAM_SECONDARY_CHNL_OFF_MASK)) {
-				tmp = max_ht40_rate(snr) + 1;
+				tmp = max_ht40_rate(snr, 1) + 1;
 				if (tmp > est)
 					est = tmp;
 			}
