@@ -2185,80 +2185,74 @@ void scan_snr(struct wpa_scan_res *res)
 }
 
 
+static unsigned int interpolate_rate(int snr, int snr0, int snr1,
+				     int rate0, int rate1)
+{
+	return rate0 + (snr - snr0) * (rate1 - rate0) / (snr1 - snr0);
+}
+
+
+#define INTERPOLATE_RATE(snr0, snr1, rate0, rate1) \
+	if (snr < (snr1)) \
+		return interpolate_rate(snr, (snr0), (snr1), (rate0), (rate1))
+
 static unsigned int max_ht20_rate(int snr, int vht)
 {
-	if (snr < 2)
+	if (snr < 0)
 		return 0;
-	if (snr < 5)
-		return 6500; /* HT20 MCS0 */
-	if (snr < 9)
-		return 13000; /* HT20 MCS1 */
-	if (snr < 11)
-		return 19500; /* HT20 MCS2 */
-	if (snr < 15)
-		return 26000; /* HT20 MCS3 */
-	if (snr < 18)
-		return 39000; /* HT20 MCS4 */
-	if (snr < 20)
-		return 52000; /* HT20 MCS5 */
-	if (snr < 25)
-		return 58500; /* HT20 MCS6 */
-	if (snr < 29 || !vht)
-		return 65000; /* HT20 MCS7 */
-	return 78000; /* VHT20 MCS8 */
+	INTERPOLATE_RATE(0, 2, 0, 6500); /* HT20 MCS0 */
+	INTERPOLATE_RATE(2, 5, 6500, 13000); /* HT20 MCS1 */
+	INTERPOLATE_RATE(5, 9, 13000, 19500); /* HT20 MCS2 */
+	INTERPOLATE_RATE(9, 11, 19500, 26000); /* HT20 MCS3 */
+	INTERPOLATE_RATE(11, 15, 26000, 39000); /* HT20 MCS4 */
+	INTERPOLATE_RATE(15, 18, 39000, 52000); /* HT20 MCS5 */
+	INTERPOLATE_RATE(18, 20, 52000, 58500); /* HT20 MCS6 */
+	INTERPOLATE_RATE(20, 25, 58500, 65000); /* HT20 MCS7 */
+	if (!vht)
+		return 65000;
+	INTERPOLATE_RATE(25, 29, 65000, 78000); /* VHT20 MCS8 */
+	return 78000;
 }
 
 
 static unsigned int max_ht40_rate(int snr, int vht)
 {
-	if (snr < 5)
+	if (snr < 0)
 		return 0;
-	if (snr < 8)
-		return 13500; /* HT40 MCS0 */
-	if (snr < 12)
-		return 27000; /* HT40 MCS1 */
-	if (snr < 14)
-		return 40500; /* HT40 MCS2 */
-	if (snr < 18)
-		return 54000; /* HT40 MCS3 */
-	if (snr < 21)
-		return 81000; /* HT40 MCS4 */
-	if (snr < 23)
-		return 108000; /* HT40 MCS5 */
-	if (snr < 28)
-		return 121500; /* HT40 MCS6 */
-	if (snr < 32 || !vht)
-		return 135000; /* HT40 MCS7 */
-	if (snr < 34)
-		return 162000; /* VHT40 MCS8 */
-	return 180000; /* VHT40 MCS9 */
+	INTERPOLATE_RATE(0, 5, 0, 13500); /* HT40 MCS0 */
+	INTERPOLATE_RATE(5, 8, 13500, 27000); /* HT40 MCS1 */
+	INTERPOLATE_RATE(8, 12, 27000, 40500); /* HT40 MCS2 */
+	INTERPOLATE_RATE(12, 14, 40500, 54000); /* HT40 MCS3 */
+	INTERPOLATE_RATE(14, 18, 54000, 81000); /* HT40 MCS4 */
+	INTERPOLATE_RATE(18, 21, 81000, 108000); /* HT40 MCS5 */
+	INTERPOLATE_RATE(21, 23, 108000, 121500); /* HT40 MCS6 */
+	INTERPOLATE_RATE(23, 28, 121500, 135000); /* HT40 MCS7 */
+	if (!vht)
+		return 135000;
+	INTERPOLATE_RATE(28, 32, 135000, 162000); /* VHT40 MCS8 */
+	INTERPOLATE_RATE(32, 34, 162000, 180000); /* VHT40 MCS9 */
+	return 180000;
 }
 
 
 static unsigned int max_vht80_rate(int snr)
 {
-	if (snr < 8)
+	if (snr < 0)
 		return 0;
-	if (snr < 11)
-		return 29300; /* VHT80 MCS0 */
-	if (snr < 15)
-		return 58500; /* VHT80 MCS1 */
-	if (snr < 17)
-		return 87800; /* VHT80 MCS2 */
-	if (snr < 21)
-		return 117000; /* VHT80 MCS3 */
-	if (snr < 24)
-		return 175500; /* VHT80 MCS4 */
-	if (snr < 26)
-		return 234000; /* VHT80 MCS5 */
-	if (snr < 31)
-		return 263300; /* VHT80 MCS6 */
-	if (snr < 35)
-		return 292500; /* VHT80 MCS7 */
-	if (snr < 37)
-		return 351000; /* VHT80 MCS8 */
-	return 390000; /* VHT80 MCS9 */
+	INTERPOLATE_RATE(0, 8, 0, 29300); /* VHT80 MCS0 */
+	INTERPOLATE_RATE(8, 11, 29300, 58500); /* VHT80 MCS1 */
+	INTERPOLATE_RATE(11, 15, 58500, 87800); /* VHT80 MCS2 */
+	INTERPOLATE_RATE(15, 17, 87800, 117000); /* VHT80 MCS3 */
+	INTERPOLATE_RATE(17, 21, 117000, 175500); /* VHT80 MCS4 */
+	INTERPOLATE_RATE(21, 24, 175500, 234000); /* VHT80 MCS5 */
+	INTERPOLATE_RATE(24, 26, 234000, 263300); /* VHT80 MCS6 */
+	INTERPOLATE_RATE(26, 31, 263300, 292500); /* VHT80 MCS7 */
+	INTERPOLATE_RATE(31, 35, 292500, 351000); /* VHT80 MCS8 */
+	INTERPOLATE_RATE(35, 37, 351000, 390000); /* VHT80 MCS9 */
+	return 390000;
 }
+
+#undef INTERPOLATE_RATE
 
 
 unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
@@ -2280,14 +2274,32 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 		rate = 9 * 2;
 	else if (rate > 12 * 2 && snr < 7)
 		rate = 12 * 2;
+	else if (rate > 12 * 2 && snr < 8)
+		rate = 14 * 2;
+	else if (rate > 12 * 2 && snr < 9)
+		rate = 16 * 2;
 	else if (rate > 18 * 2 && snr < 10)
 		rate = 18 * 2;
 	else if (rate > 24 * 2 && snr < 11)
 		rate = 24 * 2;
+	else if (rate > 24 * 2 && snr < 12)
+		rate = 27 * 2;
+	else if (rate > 24 * 2 && snr < 13)
+		rate = 30 * 2;
+	else if (rate > 24 * 2 && snr < 14)
+		rate = 33 * 2;
 	else if (rate > 36 * 2 && snr < 15)
 		rate = 36 * 2;
+	else if (rate > 36 * 2 && snr < 16)
+		rate = 39 * 2;
+	else if (rate > 36 * 2 && snr < 17)
+		rate = 42 * 2;
+	else if (rate > 36 * 2 && snr < 18)
+		rate = 45 * 2;
 	else if (rate > 48 * 2 && snr < 19)
 		rate = 48 * 2;
+	else if (rate > 48 * 2 && snr < 20)
+		rate = 51 * 2;
 	else if (rate > 54 * 2 && snr < 21)
 		rate = 54 * 2;
 	est = rate * 500;
