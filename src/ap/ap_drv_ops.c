@@ -588,7 +588,7 @@ int hostapd_set_frag(struct hostapd_data *hapd, int frag)
 int hostapd_sta_set_flags(struct hostapd_data *hapd, u8 *addr,
 			  int total_flags, int flags_or, int flags_and)
 {
-	if (hapd->driver == NULL || hapd->driver->sta_set_flags == NULL)
+	if (!hapd->driver || !hapd->drv_priv || !hapd->driver->sta_set_flags)
 		return 0;
 	return hapd->driver->sta_set_flags(hapd->drv_priv, addr, total_flags,
 					   flags_or, flags_and);
