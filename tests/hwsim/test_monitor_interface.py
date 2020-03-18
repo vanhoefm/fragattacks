@@ -4,6 +4,7 @@
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
 
+import binascii
 from remotehost import remote_compatible
 import logging
 logger = logging.getLogger()
@@ -12,6 +13,7 @@ import time
 import hwsim_utils
 import hostapd
 from wpasupplicant import WpaSupplicant
+from utils import radiotap_build, start_monitor, stop_monitor
 
 def test_monitor_iface_open(dev, apdev):
     """Open connection using cfg80211 monitor interface on AP"""
@@ -72,9 +74,20 @@ def test_monitor_iface_unknown_sta(dev, apdev):
     hapd.request("DEAUTHENTICATE " + addr)
     # But the unprotected Deauth from TX frame-from-unassoc-STA will now be
     # processed
-    dev[0].request("DATA_TEST_CONFIG 1")
-    dev[0].request("DATA_TEST_TX " + bssid + " " + addr + " 0")
-    dev[0].request("DATA_TEST_CONFIG 0")
+    try:
+        sock = start_monitor(apdev[1]["ifname"])
+        radiotap = radiotap_build()
+
+        bssid = hapd.own_addr().replace(':', '')
+        addr = dev[0].own_addr().replace(':', '')
+
+        # Inject Data frame from STA to AP since we not have SA in place
+        # anymore for normal data TX
+        frame = binascii.unhexlify("48010000" + bssid + addr + bssid + "0000")
+        sock.send(radiotap + frame)
+    finally:
+        stop_monitor(apdev[1]["ifname"])
+
     ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=5)
     if ev is None:
         raise Exception("No disconnection")
