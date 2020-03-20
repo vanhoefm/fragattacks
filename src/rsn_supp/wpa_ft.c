@@ -181,6 +181,7 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	int mdie_len;
 	u8 rsnxe[10];
 	size_t rsnxe_len;
+	int rsnxe_used;
 	int res;
 
 	sm->ft_completed = 0;
@@ -309,10 +310,13 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	ftie_pos = pos;
 	*pos++ = WLAN_EID_FAST_BSS_TRANSITION;
 	ftie_len = pos++;
+	rsnxe_used = wpa_key_mgmt_sae(sm->key_mgmt) && anonce &&
+		(sm->sae_pwe == 1 || sm->sae_pwe == 2);
 	if (wpa_key_mgmt_sha384(sm->key_mgmt)) {
 		struct rsn_ftie_sha384 *ftie;
 
 		ftie = (struct rsn_ftie_sha384 *) pos;
+		ftie->mic_control[0] = !!rsnxe_used;
 		fte_mic = ftie->mic;
 		elem_count = &ftie->mic_control[1];
 		pos += sizeof(*ftie);
@@ -323,6 +327,7 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 		struct rsn_ftie *ftie;
 
 		ftie = (struct rsn_ftie *) pos;
+		ftie->mic_control[0] = !!rsnxe_used;
 		fte_mic = ftie->mic;
 		elem_count = &ftie->mic_control[1];
 		pos += sizeof(*ftie);

@@ -808,7 +808,7 @@ int wpa_write_ftie(struct wpa_auth_config *conf, int use_sha384,
 		   const u8 *r0kh_id, size_t r0kh_id_len,
 		   const u8 *anonce, const u8 *snonce,
 		   u8 *buf, size_t len, const u8 *subelem,
-		   size_t subelem_len)
+		   size_t subelem_len, int rsnxe_used)
 {
 	u8 *pos = buf, *ielen;
 	size_t hdrlen = use_sha384 ? sizeof(struct rsn_ftie_sha384) :
@@ -826,7 +826,7 @@ int wpa_write_ftie(struct wpa_auth_config *conf, int use_sha384,
 
 		os_memset(hdr, 0, sizeof(*hdr));
 		pos += sizeof(*hdr);
-		WPA_PUT_LE16(hdr->mic_control, 0);
+		WPA_PUT_LE16(hdr->mic_control, !!rsnxe_used);
 		if (anonce)
 			os_memcpy(hdr->anonce, anonce, WPA_NONCE_LEN);
 		if (snonce)
@@ -836,7 +836,7 @@ int wpa_write_ftie(struct wpa_auth_config *conf, int use_sha384,
 
 		os_memset(hdr, 0, sizeof(*hdr));
 		pos += sizeof(*hdr);
-		WPA_PUT_LE16(hdr->mic_control, 0);
+		WPA_PUT_LE16(hdr->mic_control, !!rsnxe_used);
 		if (anonce)
 			os_memcpy(hdr->anonce, anonce, WPA_NONCE_LEN);
 		if (snonce)
@@ -2470,6 +2470,7 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 	size_t mdie_len, ftie_len, rsnie_len = 0, r0kh_id_len, subelem_len = 0;
 	u8 rsnxe_buf[10], *rsnxe = rsnxe_buf;
 	size_t rsnxe_len;
+	int rsnxe_used;
 	int res;
 	struct wpa_auth_config *conf;
 	struct wpa_ft_ies parse;
@@ -2643,9 +2644,11 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 		anonce = NULL;
 		snonce = NULL;
 	}
+	rsnxe_used = (auth_alg == WLAN_AUTH_FT) &&
+		(conf->sae_pwe == 1 || conf->sae_pwe == 2);
 	res = wpa_write_ftie(conf, use_sha384, r0kh_id, r0kh_id_len,
 			     anonce, snonce, pos, end - pos,
-			     subelem, subelem_len);
+			     subelem, subelem_len, rsnxe_used);
 	os_free(subelem);
 	if (res < 0)
 		return NULL;
@@ -3166,7 +3169,8 @@ pmk_r1_derived:
 	pos += ret;
 
 	ret = wpa_write_ftie(conf, use_sha384, parse.r0kh_id, parse.r0kh_id_len,
-			     sm->ANonce, sm->SNonce, pos, end - pos, NULL, 0);
+			     sm->ANonce, sm->SNonce, pos, end - pos, NULL, 0,
+			     0);
 	if (ret < 0)
 		goto fail;
 	pos += ret;

@@ -3422,7 +3422,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 					     conf->r0_key_holder_len,
 					     NULL, NULL, pos,
 					     kde + kde_len - pos,
-					     NULL, 0);
+					     NULL, 0, 0);
 		}
 		if (res < 0) {
 			wpa_printf(MSG_ERROR, "FT: Failed to insert FTIE "
@@ -5087,7 +5087,7 @@ int wpa_auth_write_fte(struct wpa_authenticator *wpa_auth, int use_sha384,
 
 	return wpa_write_ftie(conf, use_sha384, conf->r0_key_holder,
 			      conf->r0_key_holder_len,
-			      NULL, NULL, buf, len, NULL, 0);
+			      NULL, NULL, buf, len, NULL, 0, 0);
 }
 #endif /* CONFIG_IEEE80211R_AP */
 
@@ -5289,7 +5289,7 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 					     conf->r0_key_holder_len,
 					     NULL, NULL, pos,
 					     kde + kde_len - pos,
-					     NULL, 0);
+					     NULL, 0, 0);
 		}
 		if (res < 0) {
 			wpa_printf(MSG_ERROR, "FT: Failed to insert FTIE "
