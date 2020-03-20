@@ -947,6 +947,7 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 	int use_sha384 = wpa_key_mgmt_sha384(sm->key_mgmt);
 	const u8 *anonce, *snonce, *fte_mic;
 	u8 fte_elem_count;
+	int own_rsnxe_used, rsnxe_used;
 
 	wpa_hexdump(MSG_DEBUG, "FT: Response IEs", ies, ies_len);
 
@@ -985,6 +986,7 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 
 		anonce = ftie->anonce;
 		snonce = ftie->snonce;
+		rsnxe_used = ftie->mic_control[0] & 0x01;
 		fte_elem_count = ftie->mic_control[1];
 		fte_mic = ftie->mic;
 	} else {
@@ -998,6 +1000,7 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 
 		anonce = ftie->anonce;
 		snonce = ftie->snonce;
+		rsnxe_used = ftie->mic_control[0] & 0x01;
 		fte_elem_count = ftie->mic_control[1];
 		fte_mic = ftie->mic;
 	}
@@ -1095,6 +1098,12 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 		return -1;
 	}
 
+	if (rsnxe_used && !sm->ap_rsnxe) {
+		wpa_printf(MSG_INFO,
+			   "FT: FTE indicated that AP uses RSNXE, but RSNXE was not included in Beacon/Probe Response frames");
+		return -1;
+	}
+
 	if (!sm->ap_rsn_ie) {
 		wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG,
 			"FT: No RSNE for this AP known - trying to get from scan results");
@@ -1122,7 +1131,9 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 		return -1;
 	}
 
-	if ((sm->ap_rsnxe && !parse.rsnxe) ||
+	own_rsnxe_used = wpa_key_mgmt_sae(sm->key_mgmt) &&
+		(sm->sae_pwe == 1 || sm->sae_pwe == 2);
+	if ((sm->ap_rsnxe && !parse.rsnxe && own_rsnxe_used) ||
 	    (!sm->ap_rsnxe && parse.rsnxe) ||
 	    (sm->ap_rsnxe && parse.rsnxe &&
 	     (sm->ap_rsnxe_len != 2 + parse.rsnxe_len ||
