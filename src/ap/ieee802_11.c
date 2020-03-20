@@ -3661,7 +3661,8 @@ static int add_associated_sta(struct hostapd_data *hapd,
 
 static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 			   const u8 *addr, u16 status_code, int reassoc,
-			   const u8 *ies, size_t ies_len, int rssi)
+			   const u8 *ies, size_t ies_len, int rssi,
+			   int omit_rsnxe)
 {
 	int send_len;
 	u8 *buf;
@@ -3731,7 +3732,8 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 		 * Transition Information, RSN, [RIC Response] */
 		p = wpa_sm_write_assoc_resp_ies(sta->wpa_sm, p,
 						buf + buflen - p,
-						sta->auth_alg, ies, ies_len);
+						sta->auth_alg, ies, ies_len,
+						omit_rsnxe);
 		if (!p) {
 			wpa_printf(MSG_DEBUG,
 				   "FT: Failed to write AssocResp IEs");
@@ -3822,7 +3824,8 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 		goto rsnxe_done;
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
-	p = hostapd_eid_rsnxe(hapd, p, buf + buflen - p);
+	if (!omit_rsnxe)
+		p = hostapd_eid_rsnxe(hapd, p, buf + buflen - p);
 #ifdef CONFIG_TESTING_OPTIONS
 rsnxe_done:
 #endif /* CONFIG_TESTING_OPTIONS */
@@ -4043,7 +4046,7 @@ void fils_hlp_finish_assoc(struct hostapd_data *hapd, struct sta_info *sta)
 	reply_res = send_assoc_resp(hapd, sta, sta->addr, WLAN_STATUS_SUCCESS,
 				    sta->fils_pending_assoc_is_reassoc,
 				    sta->fils_pending_assoc_req,
-				    sta->fils_pending_assoc_req_len, 0);
+				    sta->fils_pending_assoc_req_len, 0, 0);
 	os_free(sta->fils_pending_assoc_req);
 	sta->fils_pending_assoc_req = NULL;
 	sta->fils_pending_assoc_req_len = 0;
@@ -4091,6 +4094,7 @@ static void handle_assoc(struct hostapd_data *hapd,
 #ifdef CONFIG_FILS
 	int delay_assoc = 0;
 #endif /* CONFIG_FILS */
+	int omit_rsnxe = 0;
 
 	if (len < IEEE80211_HDRLEN + (reassoc ? sizeof(mgmt->u.reassoc_req) :
 				      sizeof(mgmt->u.assoc_req))) {
@@ -4303,6 +4307,7 @@ static void handle_assoc(struct hostapd_data *hapd,
 	resp = check_assoc_ies(hapd, sta, pos, left, reassoc);
 	if (resp != WLAN_STATUS_SUCCESS)
 		goto fail;
+	omit_rsnxe = !get_ie(pos, left, WLAN_EID_RSNX);
 
 	if (hostapd_get_aid(hapd, sta) < 0) {
 		hostapd_logger(hapd, mgmt->sa, HOSTAPD_MODULE_IEEE80211,
@@ -4456,7 +4461,7 @@ static void handle_assoc(struct hostapd_data *hapd,
 #endif /* CONFIG_FILS */
 
 	reply_res = send_assoc_resp(hapd, sta, mgmt->sa, resp, reassoc, pos,
-				    left, rssi);
+				    left, rssi, omit_rsnxe);
 	os_free(tmp);
 
 	/*

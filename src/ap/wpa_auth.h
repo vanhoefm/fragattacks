@@ -425,7 +425,8 @@ void wpa_auth_eapol_key_tx_status(struct wpa_authenticator *wpa_auth,
 #ifdef CONFIG_IEEE80211R_AP
 u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 				 size_t max_len, int auth_alg,
-				 const u8 *req_ies, size_t req_ies_len);
+				 const u8 *req_ies, size_t req_ies_len,
+				 int omit_rsnxe);
 void wpa_ft_process_auth(struct wpa_state_machine *sm, const u8 *bssid,
 			 u16 auth_transaction, const u8 *ies, size_t ies_len,
 			 void (*cb)(void *ctx, const u8 *dst, const u8 *bssid,

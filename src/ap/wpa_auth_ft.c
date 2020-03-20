@@ -2463,7 +2463,8 @@ static u8 * wpa_ft_process_ric(struct wpa_state_machine *sm, u8 *pos, u8 *end,
 
 u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 				 size_t max_len, int auth_alg,
-				 const u8 *req_ies, size_t req_ies_len)
+				 const u8 *req_ies, size_t req_ies_len,
+				 int omit_rsnxe)
 {
 	u8 *end, *mdie, *ftie, *rsnie = NULL, *r0kh_id, *subelem = NULL;
 	u8 *fte_mic, *elem_count;
@@ -2684,10 +2685,15 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 	if (ric_start == pos)
 		ric_start = NULL;
 
-	res = wpa_write_rsnxe(&sm->wpa_auth->conf, rsnxe, sizeof(rsnxe_buf));
-	if (res < 0)
-		return NULL;
-	rsnxe_len = res;
+	if (omit_rsnxe) {
+		rsnxe_len = 0;
+	} else {
+		res = wpa_write_rsnxe(&sm->wpa_auth->conf, rsnxe,
+				      sizeof(rsnxe_buf));
+		if (res < 0)
+			return NULL;
+		rsnxe_len = res;
+	}
 #ifdef CONFIG_TESTING_OPTIONS
 	if (auth_alg == WLAN_AUTH_FT &&
 	    sm->wpa_auth->conf.rsnxe_override_ft_set) {
