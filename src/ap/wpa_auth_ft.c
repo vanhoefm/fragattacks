@@ -3242,10 +3242,13 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 	int use_sha384;
 	const u8 *anonce, *snonce, *fte_mic;
 	u8 fte_elem_count;
+	int rsnxe_used;
+	struct wpa_auth_config *conf;
 
 	if (sm == NULL)
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
+	conf = &sm->wpa_auth->conf;
 	use_sha384 = wpa_key_mgmt_sha384(sm->wpa_key_mgmt);
 
 	wpa_hexdump(MSG_DEBUG, "FT: Reassoc Req IEs", ies, ies_len);
@@ -3274,8 +3277,7 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 
 	mdie = (struct rsn_mdie *) parse.mdie;
 	if (mdie == NULL || parse.mdie_len < sizeof(*mdie) ||
-	    os_memcmp(mdie->mobility_domain,
-		      sm->wpa_auth->conf.mobility_domain,
+	    os_memcmp(mdie->mobility_domain, conf->mobility_domain,
 		      MOBILITY_DOMAIN_ID_LEN) != 0) {
 		wpa_printf(MSG_DEBUG, "FT: Invalid MDIE");
 		return WLAN_STATUS_INVALID_MDIE;
@@ -3292,6 +3294,7 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 
 		anonce = ftie->anonce;
 		snonce = ftie->snonce;
+		rsnxe_used = ftie->mic_control[0] & 0x01;
 		fte_elem_count = ftie->mic_control[1];
 		fte_mic = ftie->mic;
 	} else {
@@ -3305,6 +3308,7 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 
 		anonce = ftie->anonce;
 		snonce = ftie->snonce;
+		rsnxe_used = ftie->mic_control[0] & 0x01;
 		fte_elem_count = ftie->mic_control[1];
 		fte_mic = ftie->mic;
 	}
@@ -3350,14 +3354,14 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 		return WLAN_STATUS_INVALID_FTIE;
 	}
 
-	if (os_memcmp_const(parse.r1kh_id, sm->wpa_auth->conf.r1_key_holder,
+	if (os_memcmp_const(parse.r1kh_id, conf->r1_key_holder,
 			    FT_R1KH_ID_LEN) != 0) {
 		wpa_printf(MSG_DEBUG, "FT: Unknown R1KH-ID used in "
 			   "ReassocReq");
 		wpa_hexdump(MSG_DEBUG, "FT: R1KH-ID in FTIE",
 			    parse.r1kh_id, FT_R1KH_ID_LEN);
 		wpa_hexdump(MSG_DEBUG, "FT: Expected R1KH-ID",
-			    sm->wpa_auth->conf.r1_key_holder, FT_R1KH_ID_LEN);
+			    conf->r1_key_holder, FT_R1KH_ID_LEN);
 		return WLAN_STATUS_INVALID_FTIE;
 	}
 
@@ -3417,6 +3421,13 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 			    parse.rsnxe ? parse.rsnxe - 2 : NULL,
 			    parse.rsnxe ? parse.rsnxe_len + 2 : 0);
 		return WLAN_STATUS_INVALID_FTIE;
+	}
+
+	if (rsnxe_used && (conf->sae_pwe == 1 || conf->sae_pwe == 2) &&
+	    !parse.rsnxe) {
+		wpa_printf(MSG_INFO,
+			   "FT: FTE indicated that STA uses RSNXE, but RSNXE was not included");
+		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 	}
 
 #ifdef CONFIG_OCV
