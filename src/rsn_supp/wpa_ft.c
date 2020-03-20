@@ -162,6 +162,7 @@ int wpa_sm_set_ft_params(struct wpa_sm *sm, const u8 *ies, size_t ies_len)
  * @ric_ies: Optional IE(s), e.g., WMM TSPEC(s), for RIC-Request or %NULL
  * @ric_ies_len: Length of ric_ies buffer in octets
  * @ap_mdie: Mobility Domain IE from the target AP
+ * @omit_rsnxe: Whether RSNXE is omitted from Reassociation Request frame
  * Returns: Pointer to buffer with IEs or %NULL on failure
  *
  * Caller is responsible for freeing the returned buffer with os_free();
@@ -171,7 +172,7 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 			       const u8 *kck, size_t kck_len,
 			       const u8 *target_ap,
 			       const u8 *ric_ies, size_t ric_ies_len,
-			       const u8 *ap_mdie)
+			       const u8 *ap_mdie, int omit_rsnxe)
 {
 	size_t buf_len;
 	u8 *buf, *pos, *ftie_len, *ftie_pos, *fte_mic, *elem_count;
@@ -375,12 +376,16 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 		pos += ric_ies_len;
 	}
 
-	res = wpa_gen_rsnxe(sm, rsnxe, sizeof(rsnxe));
-	if (res < 0) {
-		os_free(buf);
-		return NULL;
+	if (omit_rsnxe) {
+		rsnxe_len = 0;
+	} else {
+		res = wpa_gen_rsnxe(sm, rsnxe, sizeof(rsnxe));
+		if (res < 0) {
+			os_free(buf);
+			return NULL;
+		}
+		rsnxe_len = res;
 	}
-	rsnxe_len = res;
 
 	if (kck) {
 		/*
@@ -463,7 +468,7 @@ int wpa_ft_prepare_auth_request(struct wpa_sm *sm, const u8 *mdie)
 	}
 
 	ft_ies = wpa_ft_gen_req_ies(sm, &ft_ies_len, NULL, sm->pmk_r0_name,
-				    NULL, 0, sm->bssid, NULL, 0, mdie);
+				    NULL, 0, sm->bssid, NULL, 0, mdie, 0);
 	if (ft_ies) {
 		wpa_sm_update_ft_ies(sm, sm->mobility_domain,
 				     ft_ies, ft_ies_len);
@@ -659,7 +664,8 @@ int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 				    sm->pmk_r1_name,
 				    kck, kck_len, bssid,
 				    ric_ies, ric_ies_len,
-				    parse.mdie ? parse.mdie - 2 : NULL);
+				    parse.mdie ? parse.mdie - 2 : NULL,
+				    !sm->ap_rsnxe);
 	if (ft_ies) {
 		wpa_sm_update_ft_ies(sm, sm->mobility_domain,
 				     ft_ies, ft_ies_len);
@@ -1220,7 +1226,7 @@ int wpa_ft_start_over_ds(struct wpa_sm *sm, const u8 *target_ap,
 	}
 
 	ft_ies = wpa_ft_gen_req_ies(sm, &ft_ies_len, NULL, sm->pmk_r0_name,
-				    NULL, 0, target_ap, NULL, 0, mdie);
+				    NULL, 0, target_ap, NULL, 0, mdie, 0);
 	if (ft_ies) {
 		sm->over_the_ds_in_progress = 1;
 		os_memcpy(sm->target_ap, target_ap, ETH_ALEN);
