@@ -2869,6 +2869,16 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		}
 	} else if (os_strcmp(buf, "wpa") == 0) {
 		bss->wpa = atoi(pos);
+	} else if (os_strcmp(buf, "extended_key_id") == 0) {
+		int val = atoi(pos);
+
+		if (bss->extended_key_id < 0 || bss->extended_key_id > 2) {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: Invalid extended_key_id=%d; allowed range 0..2",
+				   line, bss->extended_key_id);
+			return 1;
+		}
+		bss->extended_key_id = val;
 	} else if (os_strcmp(buf, "wpa_group_rekey") == 0) {
 		bss->wpa_group_rekey = atoi(pos);
 		bss->wpa_group_rekey_set = 1;

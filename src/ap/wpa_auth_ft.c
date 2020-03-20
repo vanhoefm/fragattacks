@@ -2775,7 +2775,7 @@ void wpa_ft_install_ptk(struct wpa_state_machine *sm)
 	 * again after association to get the PTK configured, but that could be
 	 * optimized by adding the STA entry earlier.
 	 */
-	if (wpa_auth_set_key(sm->wpa_auth, 0, alg, sm->addr, 0,
+	if (wpa_auth_set_key(sm->wpa_auth, 0, alg, sm->addr, sm->keyidx_active,
 			     sm->PTK.tk, klen, KEY_FLAG_PAIRWISE_RX_TX))
 		return;
 

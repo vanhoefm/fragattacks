@@ -354,6 +354,7 @@ struct hostapd_bss_config {
 			* algorithms, WPA_AUTH_ALG_{OPEN,SHARED,LEAP} */
 
 	int wpa; /* bitfield of WPA_PROTO_WPA, WPA_PROTO_RSN */
+	int extended_key_id;
 	int wpa_key_mgmt;
 	enum mfp_options ieee80211w;
 	int group_mgmt_cipher;

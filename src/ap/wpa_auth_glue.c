@@ -41,6 +41,7 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 
 	os_memset(wconf, 0, sizeof(*wconf));
 	wconf->wpa = conf->wpa;
+	wconf->extended_key_id = conf->extended_key_id;
 	wconf->wpa_key_mgmt = conf->wpa_key_mgmt;
 	wconf->wpa_pairwise = conf->wpa_pairwise;
 	wconf->wpa_group = conf->wpa_group;
@@ -433,7 +434,11 @@ static int hostapd_wpa_auth_set_key(void *ctx, int vlan_id, enum wpa_alg alg,
 	}
 
 #ifdef CONFIG_TESTING_OPTIONS
-	if (addr && !is_broadcast_ether_addr(addr)) {
+	if (key_flag & KEY_FLAG_MODIFY) {
+		/* We are updating an already installed key. Don't overwrite
+		 * the already stored key information with zeros.
+		 */
+	} else if (addr && !is_broadcast_ether_addr(addr)) {
 		struct sta_info *sta;
 
 		sta = ap_get_sta(hapd, addr);
@@ -1418,6 +1423,12 @@ int hostapd_setup_wpa(struct hostapd_data *hapd)
 			"Disable PTK0 rekey support - replaced with disconnect");
 		_conf.wpa_deny_ptk0_rekey = 1;
 	}
+
+	if (_conf.extended_key_id &&
+	    (hapd->iface->drv_flags & WPA_DRIVER_FLAGS_EXTENDED_KEY_ID))
+		wpa_msg(hapd->msg_ctx, MSG_DEBUG, "Extended Key ID supported");
+	else
+		_conf.extended_key_id = 0;
 
 	hapd->wpa_auth = wpa_init(hapd->own_addr, &_conf, &cb, hapd);
 	if (hapd->wpa_auth == NULL) {

@@ -1295,6 +1295,14 @@ static int hostapd_ctrl_iface_get_config(struct hostapd_data *hapd,
 		pos += ret;
 	}
 
+	if ((hapd->conf->wpa & WPA_PROTO_RSN) && hapd->conf->extended_key_id) {
+		ret = os_snprintf(pos, end - pos, "extended_key_id=%d\n",
+				  hapd->conf->extended_key_id);
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+
 	return pos - buf;
 }
 

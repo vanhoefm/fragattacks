@@ -781,7 +781,7 @@ static void wpa_request_new_ptk(struct wpa_state_machine *sm)
 	if (sm == NULL)
 		return;
 
-	if (sm->wpa_auth->conf.wpa_deny_ptk0_rekey) {
+	if (!sm->use_ext_key_id && sm->wpa_auth->conf.wpa_deny_ptk0_rekey) {
 		wpa_printf(MSG_INFO,
 			   "WPA: PTK0 rekey not allowed, disconnect " MACSTR,
 			   MAC2STR(sm->addr));
@@ -790,6 +790,8 @@ static void wpa_request_new_ptk(struct wpa_state_machine *sm)
 		sm->disconnect_reason =
 			WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA;
 	} else {
+		if (sm->use_ext_key_id)
+			sm->keyidx_active ^= 1; /* flip Key ID */
 		sm->PTKRequest = TRUE;
 		sm->PTK_valid = 0;
 	}
@@ -1754,6 +1756,11 @@ void wpa_remove_ptk(struct wpa_state_machine *sm)
 			     0, KEY_FLAG_PAIRWISE))
 		wpa_printf(MSG_DEBUG,
 			   "RSN: PTK removal from the driver failed");
+	if (sm->wpa_auth->conf.extended_key_id && sm->use_ext_key_id &&
+	    wpa_auth_set_key(sm->wpa_auth, 0, WPA_ALG_NONE, sm->addr, 1, NULL,
+			     0, KEY_FLAG_PAIRWISE))
+		wpa_printf(MSG_DEBUG,
+			   "RSN: PTK Key ID 1 removal from the driver failed");
 	sm->pairwise_set = FALSE;
 	eloop_cancel_timeout(wpa_rekey_ptk, sm->wpa_auth, sm);
 }
@@ -1812,16 +1819,23 @@ int wpa_auth_sm_event(struct wpa_state_machine *sm, enum wpa_event event)
 			sm->Init = FALSE;
 			sm->AuthenticationRequest = TRUE;
 			break;
-		} else if (sm->wpa_auth->conf.wpa_deny_ptk0_rekey) {
+		}
+
+		if (!sm->use_ext_key_id &&
+		    sm->wpa_auth->conf.wpa_deny_ptk0_rekey) {
 			wpa_printf(MSG_INFO,
 				   "WPA: PTK0 rekey not allowed, disconnect "
 				   MACSTR, MAC2STR(sm->addr));
 			sm->Disconnect = TRUE;
-			/* Try to encourage the STA reconnect */
+			/* Try to encourage the STA to reconnect */
 			sm->disconnect_reason =
 				WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA;
 			break;
 		}
+
+		if (sm->use_ext_key_id)
+			sm->keyidx_active ^= 1; /* flip Key ID */
+
 		if (sm->GUpdateStationKeys) {
 			/*
 			 * Reauthentication cancels the pending group key
@@ -3261,6 +3275,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 	u8 *wpa_ie;
 	int secure, gtkidx, encr = 0;
 	u8 *wpa_ie_buf = NULL, *wpa_ie_buf2 = NULL;
+	u8 hdr[2];
 
 	SM_ENTRY_MA(WPA_PTK, PTKINITNEGOTIATING, wpa_ptk);
 	sm->TimeoutEvt = FALSE;
@@ -3317,6 +3332,18 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 	wpa_auth_logger(sm->wpa_auth, sm->addr, LOGGER_DEBUG,
 			"sending 3/4 msg of 4-Way Handshake");
 	if (sm->wpa == WPA_VERSION_WPA2) {
+		if (sm->use_ext_key_id && sm->TimeoutCtr == 1 &&
+		    wpa_auth_set_key(sm->wpa_auth, 0,
+				     wpa_cipher_to_alg(sm->pairwise),
+				     sm->addr,
+				     sm->keyidx_active, sm->PTK.tk,
+				     wpa_cipher_key_len(sm->pairwise),
+				     KEY_FLAG_PAIRWISE_RX)) {
+			wpa_sta_disconnect(sm->wpa_auth, sm->addr,
+					   WLAN_REASON_PREV_AUTH_NOT_VALID);
+			return;
+		}
+
 		/* WPA2 send GTK in the 4-way handshake */
 		secure = 1;
 		gtk = gsm->GTK[gsm->GN - 1];
@@ -3357,6 +3384,10 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 	}
 
 	kde_len = wpa_ie_len + ieee80211w_kde_len(sm) + ocv_oci_len(sm);
+
+	if (sm->use_ext_key_id)
+		kde_len += 2 + RSN_SELECTOR_LEN + 2;
+
 	if (gtk)
 		kde_len += 2 + RSN_SELECTOR_LEN + 2 + gtk_len;
 #ifdef CONFIG_IEEE80211R_AP
@@ -3392,10 +3423,15 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 		pos += elen;
 	}
 #endif /* CONFIG_IEEE80211R_AP */
+	hdr[1] = 0;
+
+	if (sm->use_ext_key_id) {
+		hdr[0] = sm->keyidx_active & 0x01;
+		pos = wpa_add_kde(pos, RSN_KEY_DATA_KEYID, hdr, 2, NULL, 0);
+	}
+
 	if (gtk) {
-		u8 hdr[2];
 		hdr[0] = gtkidx & 0x03;
-		hdr[1] = 0;
 		pos = wpa_add_kde(pos, RSN_KEY_DATA_GROUPKEY, hdr, 2,
 				  gtk, gtk_len);
 	}
@@ -3478,9 +3514,17 @@ SM_STATE(WPA_PTK, PTKINITDONE)
 	if (sm->Pair) {
 		enum wpa_alg alg = wpa_cipher_to_alg(sm->pairwise);
 		int klen = wpa_cipher_key_len(sm->pairwise);
-		if (wpa_auth_set_key(sm->wpa_auth, 0, alg, sm->addr, 0,
-				     sm->PTK.tk, klen,
-				     KEY_FLAG_PAIRWISE_RX_TX)) {
+		int res;
+
+		if (sm->use_ext_key_id)
+			res = wpa_auth_set_key(sm->wpa_auth, 0, 0, sm->addr,
+					       sm->keyidx_active, NULL, 0,
+					       KEY_FLAG_PAIRWISE_RX_TX_MODIFY);
+		else
+			res = wpa_auth_set_key(sm->wpa_auth, 0, alg, sm->addr,
+					       0, sm->PTK.tk, klen,
+					       KEY_FLAG_PAIRWISE_RX_TX);
+		if (res) {
 			wpa_sta_disconnect(sm->wpa_auth, sm->addr,
 					   WLAN_REASON_PREV_AUTH_NOT_VALID);
 			return;
@@ -5167,6 +5211,7 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 	struct wpa_group *gsm = sm->group;
 	u8 *wpa_ie;
 	int wpa_ie_len, secure, gtkidx, encr = 0;
+	u8 hdr[2];
 
 	/* Send EAPOL(1, 1, 1, Pair, P, RSC, ANonce, MIC(PTK), RSNIE, [MDIE],
 	   GTK[GN], IGTK, [BIGTK], [FTIE], [TIE * 2])
@@ -5219,6 +5264,10 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 	}
 
 	kde_len = wpa_ie_len + ieee80211w_kde_len(sm) + ocv_oci_len(sm);
+
+	if (sm->use_ext_key_id)
+		kde_len += 2 + RSN_SELECTOR_LEN + 2;
+
 	if (gtk)
 		kde_len += 2 + RSN_SELECTOR_LEN + 2 + gtk_len;
 #ifdef CONFIG_IEEE80211R_AP
@@ -5251,10 +5300,15 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 		pos += elen;
 	}
 #endif /* CONFIG_IEEE80211R_AP */
+	hdr[1] = 0;
+
+	if (sm->use_ext_key_id) {
+		hdr[0] = sm->keyidx_active & 0x01;
+		pos = wpa_add_kde(pos, RSN_KEY_DATA_KEYID, hdr, 2, NULL, 0);
+	}
+
 	if (gtk) {
-		u8 hdr[2];
 		hdr[0] = gtkidx & 0x03;
-		hdr[1] = 0;
 		pos = wpa_add_kde(pos, RSN_KEY_DATA_GROUPKEY, hdr, 2,
 				  gtk, gtk_len);
 	}

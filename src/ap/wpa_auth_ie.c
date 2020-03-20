@@ -297,6 +297,8 @@ int wpa_write_rsn_ie(struct wpa_auth_config *conf, u8 *buf, size_t len,
 	if (rsn_testing)
 		capab |= BIT(8) | BIT(15);
 #endif /* CONFIG_RSN_TESTING */
+	if (conf->extended_key_id)
+		capab |= WPA_CAPABILITY_EXT_KEY_ID_FOR_UNICAST;
 	WPA_PUT_LE16(pos, capab);
 	pos += 2;
 
@@ -553,6 +555,7 @@ int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 			const u8 *mdie, size_t mdie_len,
 			const u8 *owe_dh, size_t owe_dh_len)
 {
+	struct wpa_auth_config *conf = &wpa_auth->conf;
 	struct wpa_ie_data data;
 	int ciphers, key_mgmt, res, version;
 	u32 selector;
@@ -943,6 +946,23 @@ int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 		return WPA_INVALID_PMKID;
 	}
 #endif /* CONFIG_DPP */
+
+	if (conf->extended_key_id && sm->wpa == WPA_VERSION_WPA2 &&
+	    sm->pairwise != WPA_CIPHER_TKIP &&
+	    (data.capabilities & WPA_CAPABILITY_EXT_KEY_ID_FOR_UNICAST)) {
+		sm->use_ext_key_id = TRUE;
+		if (conf->extended_key_id == 2 &&
+		    !wpa_key_mgmt_ft(sm->wpa_key_mgmt) &&
+		    !wpa_key_mgmt_fils(sm->wpa_key_mgmt))
+			sm->keyidx_active = 1;
+		else
+			sm->keyidx_active = 0;
+		wpa_printf(MSG_DEBUG,
+			   "RSN: Extended Key ID supported (start with %d)",
+			   sm->keyidx_active);
+	} else {
+		sm->use_ext_key_id = FALSE;
+	}
 
 	if (sm->wpa_ie == NULL || sm->wpa_ie_len < wpa_ie_len) {
 		os_free(sm->wpa_ie);

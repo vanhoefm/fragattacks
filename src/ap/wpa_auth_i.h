@@ -61,6 +61,8 @@ struct wpa_state_machine {
 	unsigned int pmk_len;
 	u8 pmkid[PMKID_LEN]; /* valid if pmkid_set == 1 */
 	struct wpa_ptk PTK;
+	u8 keyidx_active;
+	Boolean use_ext_key_id;
 	Boolean PTK_valid;
 	Boolean pairwise_set;
 	Boolean tk_already_set;
