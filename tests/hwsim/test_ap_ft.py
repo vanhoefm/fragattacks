@@ -994,7 +994,8 @@ def test_ap_ft_over_ds_pull_vlan(dev, apdev):
         os.unlink(filename)
 
 def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None,
-                 rsne_override=None, rsnxe_override=None):
+                 rsne_override=None, rsnxe_override=None,
+                 no_beacon_rsnxe2=False):
     if "SAE" not in dev.get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     ssid = "test-ft"
@@ -1021,6 +1022,8 @@ def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None,
         params['rsne_override_ft'] = rsne_override
     if rsnxe_override:
         params['rsnxe_override_ft'] = rsnxe_override
+    if no_beacon_rsnxe2:
+        params['no_beacon_rsnxe'] = "1"
     hapd1 = hostapd.add_ap(apdev[1], params)
     key_mgmt = hapd1.get_config()['key_mgmt']
     if key_mgmt.split(' ')[0] != "FT-SAE":
@@ -1048,6 +1051,32 @@ def test_ap_ft_sae_h2e_and_loop(dev, apdev):
     dev[0].set("sae_pwe", "0")
     hapd0, hapd1 = start_ft_sae(dev[0], apdev, sae_pwe="2")
     run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True)
+
+def test_ap_ft_sae_h2e_and_loop2(dev, apdev):
+    """WPA2-PSK-FT-SAE AP (AP loop, STA H2E)"""
+    try:
+        dev[0].set("sae_pwe", "2")
+        hapd0, hapd1 = start_ft_sae(dev[0], apdev, sae_pwe="0")
+        run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True)
+    finally:
+        dev[0].set("sae_pwe", "0")
+
+def test_ap_ft_sae_h2e_downgrade_attack(dev, apdev):
+    """WPA2-PSK-FT-SAE AP (H2E downgrade attack)"""
+    try:
+        dev[0].set("sae_pwe", "2")
+        hapd0, hapd1 = start_ft_sae(dev[0], apdev, sae_pwe="2",
+                                    no_beacon_rsnxe2=True)
+        run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
+                  force_initial_conn_to_first_ap=True,
+                  return_after_initial=True)
+        dev[0].scan_for_bss(hapd1.own_addr(), freq="2412")
+        dev[0].request("ROAM " + hapd1.own_addr())
+        ev = dev[0].wait_event(["CTRL-EVENT-ASSOC-REJECT"], timeout=10)
+        if ev is None:
+            raise Exception("Association not rejected")
+    finally:
+        dev[0].set("sae_pwe", "0")
 
 def test_ap_ft_sae_ptk_rekey0(dev, apdev):
     """WPA2-PSK-FT-SAE AP and PTK rekey triggered by station"""
