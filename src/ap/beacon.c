@@ -323,6 +323,12 @@ static u8 * hostapd_get_rsnxe(struct hostapd_data *hapd, u8 *pos, size_t len)
 {
 	const u8 *ie;
 
+#ifdef CONFIG_TESTING_OPTIONS
+	if (hapd->conf->no_beacon_rsnxe) {
+		wpa_printf(MSG_INFO, "TESTING: Do not add RSNXE into Beacon");
+		return pos;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 	ie = hostapd_wpa_ie(hapd, WLAN_EID_RSNX);
 	if (!ie || 2U + ie[1] > len)
 		return pos;

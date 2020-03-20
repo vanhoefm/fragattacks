@@ -683,6 +683,7 @@ struct hostapd_bss_config {
 	struct wpabuf *rsnxe_override_ft;
 	struct wpabuf *gtk_rsc_override;
 	struct wpabuf *igtk_rsc_override;
+	int no_beacon_rsnxe;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 #define MESH_ENABLED BIT(0)

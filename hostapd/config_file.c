@@ -4194,6 +4194,8 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "igtk_rsc_override") == 0) {
 		wpabuf_free(bss->igtk_rsc_override);
 		bss->igtk_rsc_override = wpabuf_parse_bin(pos);
+	} else if (os_strcmp(buf, "no_beacon_rsnxe") == 0) {
+		bss->no_beacon_rsnxe = atoi(pos);
 #endif /* CONFIG_TESTING_OPTIONS */
 #ifdef CONFIG_SAE
 	} else if (os_strcmp(buf, "sae_password") == 0) {
