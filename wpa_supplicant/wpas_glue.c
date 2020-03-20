@@ -533,7 +533,8 @@ static int wpa_supplicant_set_key(void *_wpa_s, enum wpa_alg alg,
 	}
 #endif /* CONFIG_TESTING_GET_GTK */
 #ifdef CONFIG_TESTING_OPTIONS
-	if (addr && !is_broadcast_ether_addr(addr)) {
+	if (addr && !is_broadcast_ether_addr(addr) &&
+	    !(key_flag & KEY_FLAG_MODIFY)) {
 		wpa_s->last_tk_alg = alg;
 		os_memcpy(wpa_s->last_tk_addr, addr, ETH_ALEN);
 		wpa_s->last_tk_key_idx = key_idx;
@@ -1077,7 +1078,8 @@ static int wpa_supplicant_eap_auth_start_cb(void *ctx)
 {
 	struct wpa_supplicant *wpa_s = ctx;
 
-	if (!wpa_s->new_connection && wpa_s->deny_ptk0_rekey) {
+	if (!wpa_s->new_connection && wpa_s->deny_ptk0_rekey &&
+	    !wpa_sm_ext_key_id_active(wpa_s->wpa)) {
 		wpa_msg(wpa_s, MSG_INFO,
 			"WPA: PTK0 rekey not allowed, reconnecting");
 		wpa_supplicant_reconnect(wpa_s);

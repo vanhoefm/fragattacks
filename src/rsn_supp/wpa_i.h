@@ -68,6 +68,10 @@ struct wpa_sm {
 	int wpa_rsc_relaxation;
 	int owe_ptk_workaround;
 	int beacon_prot;
+	int ext_key_id; /* whether Extended Key ID is enabled */
+	int use_ext_key_id; /* whether Extended Key ID has been detected
+			     * to be used */
+	int keyidx_active; /* Key ID for the active TK */
 
 	u8 own_addr[ETH_ALEN];
 	const char *ifname;

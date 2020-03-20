@@ -102,6 +102,8 @@ enum wpa_sm_conf_params {
 	WPA_PARAM_OCV,
 	WPA_PARAM_SAE_PWE,
 	WPA_PARAM_DENY_PTK0_REKEY,
+	WPA_PARAM_EXT_KEY_ID,
+	WPA_PARAM_USE_EXT_KEY_ID,
 };
 
 struct rsn_supp_config {
@@ -154,6 +156,8 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 int wpa_sm_get_status(struct wpa_sm *sm, char *buf, size_t buflen,
 		      int verbose);
 int wpa_sm_pmf_enabled(struct wpa_sm *sm);
+int wpa_sm_ext_key_id(struct wpa_sm *sm);
+int wpa_sm_ext_key_id_active(struct wpa_sm *sm);
 int wpa_sm_ocv_enabled(struct wpa_sm *sm);
 
 void wpa_sm_key_request(struct wpa_sm *sm, int error, int pairwise);
@@ -296,6 +300,16 @@ static inline int wpa_sm_get_status(struct wpa_sm *sm, char *buf,
 }
 
 static inline int wpa_sm_pmf_enabled(struct wpa_sm *sm)
+{
+	return 0;
+}
+
+static inline int wpa_sm_ext_key_id(struct wpa_sm *sm)
+{
+	return 0;
+}
+
+static inline int wpa_sm_ext_key_id_active(struct wpa_sm *sm)
 {
 	return 0;
 }

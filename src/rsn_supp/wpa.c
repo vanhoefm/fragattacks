@@ -183,7 +183,7 @@ void wpa_sm_key_request(struct wpa_sm *sm, int error, int pairwise)
 	int key_info, ver;
 	u8 bssid[ETH_ALEN], *rbuf, *key_mic, *mic;
 
-	if (pairwise && sm->wpa_deny_ptk0_rekey &&
+	if (pairwise && sm->wpa_deny_ptk0_rekey && !sm->use_ext_key_id &&
 	    wpa_sm_get_state(sm) == WPA_COMPLETED) {
 		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
 			"WPA: PTK0 rekey not allowed, reconnecting");
@@ -608,6 +608,51 @@ static int wpa_derive_ptk(struct wpa_sm *sm, const unsigned char *src_addr,
 }
 
 
+static int wpa_handle_ext_key_id(struct wpa_sm *sm,
+				 struct wpa_eapol_ie_parse *kde)
+{
+	if (sm->ext_key_id) {
+		u16 key_id;
+
+		if (!kde->key_id) {
+			wpa_msg(sm->ctx->msg_ctx,
+				sm->use_ext_key_id ? MSG_INFO : MSG_DEBUG,
+				"RSN: No Key ID in Extended Key ID handshake");
+			sm->keyidx_active = 0;
+			return sm->use_ext_key_id ? -1 : 0;
+		}
+
+		key_id = kde->key_id[0] & 0x03;
+		if (key_id > 1) {
+			wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
+				"RSN: Invalid Extended Key ID: %d", key_id);
+			return -1;
+		}
+		wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG,
+			"RSN: Using Extended Key ID %d", key_id);
+		sm->keyidx_active = key_id;
+		sm->use_ext_key_id = 1;
+	} else {
+		if (kde->key_id && (kde->key_id[0] & 0x03)) {
+			wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
+				"RSN: Non-zero Extended Key ID Key ID in PTK0 handshake");
+			return -1;
+		}
+
+		if (kde->key_id) {
+			/* This is not supposed to be included here, but ignore
+			 * the case of matching Key ID 0 just in case. */
+			wpa_msg(sm->ctx->msg_ctx, MSG_DEBUG,
+				"RSN: Extended Key ID Key ID 0 in PTK0 handshake");
+		}
+		sm->keyidx_active = 0;
+		sm->use_ext_key_id = 0;
+	}
+
+	return 0;
+}
+
+
 static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 					  const unsigned char *src_addr,
 					  const struct wpa_eapol_key *key,
@@ -626,7 +671,8 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 		return;
 	}
 
-	if (sm->wpa_deny_ptk0_rekey && wpa_sm_get_state(sm) == WPA_COMPLETED) {
+	if (sm->wpa_deny_ptk0_rekey && !sm->use_ext_key_id &&
+	    wpa_sm_get_state(sm) == WPA_COMPLETED) {
 		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
 			"WPA: PTK0 rekey not allowed, reconnecting");
 		wpa_sm_reconnect(sm);
@@ -859,13 +905,14 @@ static int wpa_supplicant_install_ptk(struct wpa_sm *sm,
 		wpa_hexdump(MSG_DEBUG, "WPA: RSC", key_rsc, rsclen);
 	}
 
-	if (wpa_sm_set_key(sm, alg, sm->bssid, 0, 1, key_rsc, rsclen,
-			   sm->ptk.tk, keylen,
+	if (wpa_sm_set_key(sm, alg, sm->bssid, sm->keyidx_active, 1, key_rsc,
+			   rsclen, sm->ptk.tk, keylen,
 			   KEY_FLAG_PAIRWISE | key_flag) < 0) {
 		wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
-			"WPA: Failed to set PTK to the "
-			"driver (alg=%d keylen=%d bssid=" MACSTR ")",
-			alg, keylen, MAC2STR(sm->bssid));
+			"WPA: Failed to set PTK to the driver (alg=%d keylen=%d bssid="
+			MACSTR " idx=%d key_flag=0x%x)",
+			alg, keylen, MAC2STR(sm->bssid),
+			sm->keyidx_active, key_flag);
 		return -1;
 	}
 
@@ -879,7 +926,23 @@ static int wpa_supplicant_install_ptk(struct wpa_sm *sm,
 		eloop_register_timeout(sm->wpa_ptk_rekey, 0, wpa_sm_rekey_ptk,
 				       sm, NULL);
 	}
+	return 0;
+}
 
+
+static int wpa_supplicant_activate_ptk(struct wpa_sm *sm)
+{
+	wpa_dbg(sm->ctx->msg_ctx, MSG_DEBUG,
+		"WPA: Activate PTK (idx=%d bssid=" MACSTR ")",
+		sm->keyidx_active, MAC2STR(sm->bssid));
+
+	if (wpa_sm_set_key(sm, 0, sm->bssid, sm->keyidx_active, 0, NULL, 0,
+			   NULL, 0, KEY_FLAG_PAIRWISE_RX_TX_MODIFY) < 0) {
+		wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
+			"WPA: Failed to activate PTK for TX (idx=%d bssid="
+			MACSTR ")", sm->keyidx_active, MAC2STR(sm->bssid));
+		return -1;
+	}
 	return 0;
 }
 
@@ -1582,6 +1645,9 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 	if (wpa_supplicant_validate_ie(sm, sm->bssid, &ie) < 0)
 		goto failed;
 
+	if (wpa_handle_ext_key_id(sm, &ie))
+		goto failed;
+
 	if (os_memcmp(sm->anonce, key->key_nonce, WPA_NONCE_LEN) != 0) {
 		wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
 			"WPA: ANonce from message 1 of 4-Way Handshake "
@@ -1627,6 +1693,10 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 	}
 #endif /* CONFIG_OCV */
 
+	if (sm->use_ext_key_id &&
+	    wpa_supplicant_install_ptk(sm, key, KEY_FLAG_RX))
+		goto failed;
+
 	if (wpa_supplicant_send_4_of_4(sm, sm->bssid, key, ver, key_info,
 				       &sm->ptk) < 0) {
 		goto failed;
@@ -1638,7 +1708,14 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 	sm->renew_snonce = 1;
 
 	if (key_info & WPA_KEY_INFO_INSTALL) {
-		if (wpa_supplicant_install_ptk(sm, key, KEY_FLAG_RX_TX))
+		int res;
+
+		if (sm->use_ext_key_id)
+			res = wpa_supplicant_activate_ptk(sm);
+		else
+			res = wpa_supplicant_install_ptk(sm, key,
+							 KEY_FLAG_RX_TX);
+		if (res)
 			goto failed;
 	}
 
@@ -2880,6 +2957,8 @@ void wpa_sm_notify_assoc(struct wpa_sm *sm, const u8 *bssid)
 #ifdef CONFIG_P2P
 	os_memset(sm->p2p_ip_addr, 0, sizeof(sm->p2p_ip_addr));
 #endif /* CONFIG_P2P */
+
+	sm->keyidx_active = 0;
 }
 
 
@@ -2911,6 +2990,7 @@ void wpa_sm_notify_disassoc(struct wpa_sm *sm)
 
 	/* Keys are not needed in the WPA state machine anymore */
 	wpa_sm_drop_sa(sm);
+	sm->keyidx_active = 0;
 
 	sm->msg_3_of_4_ok = 0;
 	os_memset(sm->bssid, 0, ETH_ALEN);
@@ -3164,6 +3244,12 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 	case WPA_PARAM_DENY_PTK0_REKEY:
 		sm->wpa_deny_ptk0_rekey = value;
 		break;
+	case WPA_PARAM_EXT_KEY_ID:
+		sm->ext_key_id = value;
+		break;
+	case WPA_PARAM_USE_EXT_KEY_ID:
+		sm->use_ext_key_id = value;
+		break;
 	default:
 		break;
 	}
@@ -3235,6 +3321,18 @@ int wpa_sm_pmf_enabled(struct wpa_sm *sm)
 		return 1;
 
 	return 0;
+}
+
+
+int wpa_sm_ext_key_id(struct wpa_sm *sm)
+{
+	return sm ? sm->ext_key_id : 0;
+}
+
+
+int wpa_sm_ext_key_id_active(struct wpa_sm *sm)
+{
+	return sm ? sm->use_ext_key_id : 0;
 }
 
 
@@ -4253,6 +4351,8 @@ static int fils_ft_build_assoc_req_rsne(struct wpa_sm *sm, struct wpabuf *buf)
 		capab |= WPA_CAPABILITY_MFPR;
 	if (sm->ocv)
 		capab |= WPA_CAPABILITY_OCVC;
+	if (sm->ext_key_id)
+		capab |= WPA_CAPABILITY_EXT_KEY_ID_FOR_UNICAST;
 	wpabuf_put_le16(buf, capab);
 
 	/* PMKID Count */
@@ -4680,6 +4780,7 @@ int fils_process_assoc_resp(struct wpa_sm *sm, const u8 *resp, size_t len)
 			   keylen, (long unsigned int) sm->ptk.tk_len);
 		goto fail;
 	}
+
 	rsclen = wpa_cipher_rsc_len(sm->pairwise_cipher);
 	wpa_hexdump_key(MSG_DEBUG, "FILS: Set TK to driver",
 			sm->ptk.tk, keylen);

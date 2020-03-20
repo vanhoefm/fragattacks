@@ -44,6 +44,7 @@
 #define DEFAULT_MBO_CELL_CAPA MBO_CELL_CAPA_NOT_SUPPORTED
 #define DEFAULT_DISASSOC_IMMINENT_RSSI_THRESHOLD -75
 #define DEFAULT_OCE_SUPPORT OCE_STA
+#define DEFAULT_EXTENDED_KEY_ID 0
 
 #include "config_ssid.h"
 #include "wps/wps.h"
@@ -1570,6 +1571,17 @@ struct wpa_config {
 	 * By default BSS transition management is enabled
 	 */
 	int disable_btm;
+
+	/**
+	 * extended_key_id - Extended Key ID support
+	 *
+	 * IEEE Std 802.11-2016 optionally allows to use Key ID 0 and 1 for PTK
+	 * keys with Extended Key ID.
+	 *
+	 * 0 = don't use Extended Key ID
+	 * 1 = use Extended Key ID when possible
+	 */
+	int extended_key_id;
 };
 
 

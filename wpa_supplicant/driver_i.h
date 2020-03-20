@@ -165,7 +165,14 @@ static inline int wpa_drv_set_key(struct wpa_supplicant *wpa_s,
 	params.key_flag = key_flag;
 
 	if (alg != WPA_ALG_NONE) {
-		if (key_idx >= 0 && key_idx <= 6)
+		/* keyidx = 1 can be either a broadcast or--with
+		 * Extended Key ID--a unicast key. Use bit 15 for
+		 * the pairwise keyidx 1 which is hopefully high enough
+		 * to not clash with future extensions.
+		 */
+		if (key_idx == 1 && (key_flag & KEY_FLAG_PAIRWISE))
+			wpa_s->keys_cleared &= ~BIT(15);
+		else if (key_idx >= 0 && key_idx <= 5)
 			wpa_s->keys_cleared &= ~BIT(key_idx);
 		else
 			wpa_s->keys_cleared = 0;

@@ -277,6 +277,15 @@ static int wpa_config_read_global(struct wpa_config *config, HKEY hk)
 	wpa_config_read_reg_dword(hk, TEXT("okc"), &config->okc);
 	wpa_config_read_reg_dword(hk, TEXT("pmf"), &val);
 	config->pmf = val;
+	if (wpa_config_read_reg_dword(hk, TEXT("extended_key_id"),
+				      &val) == 0) {
+		if (val < 0 || val > 1) {
+			wpa_printf(MSG_ERROR,
+				   "Invalid Extended Key ID setting (%d)", val);
+			errors++;
+		}
+		config->extended_key_id = val;
+	}
 
 	return errors ? -1 : 0;
 }

@@ -991,20 +991,25 @@ dbus_bool_t wpas_dbus_getter_global_capabilities(
 	const struct wpa_dbus_property_desc *property_desc,
 	DBusMessageIter *iter, DBusError *error, void *user_data)
 {
-	const char *capabilities[11];
+	const char *capabilities[12];
 	size_t num_items = 0;
-#ifdef CONFIG_FILS
 	struct wpa_global *global = user_data;
 	struct wpa_supplicant *wpa_s;
+#ifdef CONFIG_FILS
 	int fils_supported = 0, fils_sk_pfs_supported = 0;
+#endif /* CONFIG_FILS */
+	int ext_key_id_supported = 0;
 
 	for (wpa_s = global->ifaces; wpa_s; wpa_s = wpa_s->next) {
+#ifdef CONFIG_FILS
 		if (wpa_is_fils_supported(wpa_s))
 			fils_supported = 1;
 		if (wpa_is_fils_sk_pfs_supported(wpa_s))
 			fils_sk_pfs_supported = 1;
-	}
 #endif /* CONFIG_FILS */
+		if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_EXTENDED_KEY_ID)
+			ext_key_id_supported = 1;
+	}
 
 #ifdef CONFIG_AP
 	capabilities[num_items++] = "ap";
@@ -1037,6 +1042,8 @@ dbus_bool_t wpas_dbus_getter_global_capabilities(
 #ifdef CONFIG_OWE
 	capabilities[num_items++] = "owe";
 #endif /* CONFIG_OWE */
+	if (ext_key_id_supported)
+		capabilities[num_items++] = "extended_key_id";
 
 	return wpas_dbus_simple_array_property_getter(iter,
 						      DBUS_TYPE_STRING,

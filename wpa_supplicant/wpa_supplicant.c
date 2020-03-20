@@ -748,10 +748,15 @@ void wpa_clear_keys(struct wpa_supplicant *wpa_s, const u8 *addr)
 		wpa_drv_set_key(wpa_s, WPA_ALG_NONE, NULL, i, 0, NULL, 0,
 				NULL, 0, KEY_FLAG_GROUP);
 	}
-	if (!(wpa_s->keys_cleared & BIT(0)) && addr &&
+	/* Pairwise Key ID 1 for Extended Key ID is tracked in bit 15 */
+	if (!(wpa_s->keys_cleared & (BIT(0) | BIT(15))) && addr &&
 	    !is_zero_ether_addr(addr)) {
-		wpa_drv_set_key(wpa_s, WPA_ALG_NONE, addr, 0, 0, NULL, 0, NULL,
-				0, KEY_FLAG_PAIRWISE);
+		if (!(wpa_s->keys_cleared & BIT(0)))
+			wpa_drv_set_key(wpa_s, WPA_ALG_NONE, addr, 0, 0, NULL,
+					0, NULL, 0, KEY_FLAG_PAIRWISE);
+		if (!(wpa_s->keys_cleared & BIT(15)))
+			wpa_drv_set_key(wpa_s, WPA_ALG_NONE, addr, 1, 0, NULL,
+					0, NULL, 0, KEY_FLAG_PAIRWISE);
 		/* MLME-SETPROTECTION.request(None) */
 		wpa_drv_mlme_setprotection(
 			wpa_s, addr,
@@ -1634,6 +1639,30 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 	if (ssid->sae_password_id && sae_pwe != 3)
 		sae_pwe = 1;
 	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_SAE_PWE, sae_pwe);
+
+	/* Extended Key ID is only supported in infrastructure BSS so far */
+	if (ssid->mode == WPAS_MODE_INFRA && wpa_s->conf->extended_key_id &&
+	    (ssid->proto & WPA_PROTO_RSN) &&
+	    ssid->pairwise_cipher & (WPA_CIPHER_CCMP | WPA_CIPHER_CCMP_256 |
+				     WPA_CIPHER_GCMP | WPA_CIPHER_GCMP_256) &&
+	    (wpa_s->drv_flags & WPA_DRIVER_FLAGS_EXTENDED_KEY_ID)) {
+		int use_ext_key_id = 0;
+
+		wpa_msg(wpa_s, MSG_DEBUG,
+			"WPA: Enable Extended Key ID support");
+		wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_EXT_KEY_ID,
+				 wpa_s->conf->extended_key_id);
+		if (bss_rsn &&
+		    wpa_s->conf->extended_key_id &&
+		    wpa_s->pairwise_cipher != WPA_CIPHER_TKIP &&
+		    (ie.capabilities & WPA_CAPABILITY_EXT_KEY_ID_FOR_UNICAST))
+			use_ext_key_id = 1;
+		wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_USE_EXT_KEY_ID,
+				 use_ext_key_id);
+	} else {
+		wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_EXT_KEY_ID, 0);
+		wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_USE_EXT_KEY_ID, 0);
+	}
 
 	if (wpa_sm_set_assoc_wpa_ie_default(wpa_s->wpa, wpa_ie, wpa_ie_len)) {
 		wpa_msg(wpa_s, MSG_WARNING, "WPA: Failed to generate WPA IE");
