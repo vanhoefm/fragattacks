@@ -7,6 +7,7 @@
  */
 
 #include "includes.h"
+#include <limits.h>
 
 #include "common/ieee802_11_defs.h"
 #include "common.h"
@@ -885,15 +886,25 @@ int int_array_len(const int *a)
 
 void int_array_concat(int **res, const int *a)
 {
-	int reslen, alen, i;
+	int reslen, alen, i, new_len;
 	int *n;
 
 	reslen = int_array_len(*res);
 	alen = int_array_len(a);
-
-	n = os_realloc_array(*res, reslen + alen + 1, sizeof(int));
-	if (n == NULL) {
+	new_len = reslen + alen + 1;
+	if (reslen < 0 || alen < 0 || new_len < 0) {
+		/* This should not really happen, but if it did, something
+		 * overflowed. Do not try to merge the arrays; instead, make
+		 * this behave like memory allocation failure to avoid messing
+		 * up memory. */
 		os_free(*res);
+		*res = NULL;
+		return;
+	}
+	n = os_realloc_array(*res, new_len, sizeof(int));
+	if (n == NULL) {
+		if (new_len)
+			os_free(*res);
 		*res = NULL;
 		return;
 	}
@@ -952,6 +963,15 @@ void int_array_add_unique(int **res, int a)
 			return; /* already in the list */
 	}
 
+	if (reslen > INT_MAX - 2) {
+		/* This should not really happen in practice, but if it did,
+		 * something would overflow. Do not try to add the new value;
+		 * instead, make this behave like memory allocation failure to
+		 * avoid messing up memory. */
+		os_free(*res);
+		*res = NULL;
+		return;
+	}
 	n = os_realloc_array(*res, reslen + 2, sizeof(int));
 	if (n == NULL) {
 		os_free(*res);
