@@ -1041,7 +1041,7 @@ def test_prefer_vht40(dev, apdev):
             raise Exception("Unexpected BSS0 est_throughput: " + est)
 
         est = dev[0].get_bss(bssid2)['est_throughput']
-        if est != "135001":
+        if est != "180001":
             raise Exception("Unexpected BSS1 est_throughput: " + est)
     finally:
         dev[0].request("DISCONNECT")
