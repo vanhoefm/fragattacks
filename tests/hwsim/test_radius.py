@@ -963,7 +963,7 @@ def test_radius_macacl_unreachable(dev, apdev):
     hapd.set("auth_server_port", "1812")
     hapd.disable()
     hapd.enable()
-    dev[0].wait_connected()
+    dev[0].wait_connected(timeout=20)
     dev[0].request("DISCONNECT")
     dev[0].wait_disconnected()
 
