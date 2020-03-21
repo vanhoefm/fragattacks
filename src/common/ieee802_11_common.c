@@ -365,6 +365,11 @@ ParseRes ieee802_11_parse_elems(const u8 *start, size_t len,
 					   elen);
 				break;
 			}
+			if (elems->ssid) {
+				wpa_printf(MSG_MSGDUMP,
+					   "Ignored duplicated SSID element");
+				break;
+			}
 			elems->ssid = pos;
 			elems->ssid_len = elen;
 			break;
