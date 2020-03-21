@@ -3042,8 +3042,8 @@ void wpa_sm_set_config(struct wpa_sm *sm, struct rsn_supp_config *config)
 		} else {
 			sm->fils_cache_id_set = 0;
 		}
-		sm->beacon_prot = config->beacon_prot;
 #endif /* CONFIG_FILS */
+		sm->beacon_prot = config->beacon_prot;
 	} else {
 		sm->network_ctx = NULL;
 		sm->allowed_pairwise_cipher = 0;
