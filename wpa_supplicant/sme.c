@@ -2658,6 +2658,10 @@ void sme_event_unprot_disconnect(struct wpa_supplicant *wpa_s, const u8 *sa,
 		return;
 	if (wpa_s->sme.sa_query_count > 0)
 		return;
+#ifdef CONFIG_TESTING_OPTIONS
+	if (wpa_s->disable_sa_query)
+		return;
+#endif /* CONFIG_TESTING_OPTIONS */
 
 	os_get_reltime(&now);
 	if (wpa_s->sme.last_unprot_disconnect.sec &&

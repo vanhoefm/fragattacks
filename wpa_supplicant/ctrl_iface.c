@@ -721,6 +721,8 @@ static int wpa_supplicant_ctrl_iface_set(struct wpa_supplicant *wpa_s,
 		wpa_s->ignore_assoc_disallow = !!atoi(value);
 		wpa_drv_ignore_assoc_disallow(wpa_s,
 					      wpa_s->ignore_assoc_disallow);
+	} else if (os_strcasecmp(cmd, "disable_sa_query") == 0) {
+		wpa_s->disable_sa_query = !!atoi(value);
 	} else if (os_strcasecmp(cmd, "ignore_sae_h2e_only") == 0) {
 		wpa_s->ignore_sae_h2e_only = !!atoi(value);
 	} else if (os_strcasecmp(cmd, "extra_sae_rejected_groups") == 0) {
@@ -8170,6 +8172,7 @@ static void wpa_supplicant_ctrl_iface_flush(struct wpa_supplicant *wpa_s)
 	wpa_s->p2p_go_csa_on_inv = 0;
 	wpa_s->ignore_auth_resp = 0;
 	wpa_s->ignore_assoc_disallow = 0;
+	wpa_s->disable_sa_query = 0;
 	wpa_s->testing_resend_assoc = 0;
 	wpa_s->ignore_sae_h2e_only = 0;
 	wpa_s->reject_btm_req_reason = 0;
