@@ -71,13 +71,21 @@ def test_bgscan_simple(dev, apdev):
 
 def test_bgscan_simple_beacon_loss(dev, apdev):
     """bgscan_simple and beacon loss"""
-    hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
+    params = hostapd.wpa2_params(ssid="bgscan", passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    hapd = hostapd.add_ap(apdev[0], params)
 
-    dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
-                   bgscan="simple:1:-20:2")
+    dev[0].set("disable_sa_query", "1")
+    dev[0].connect("bgscan", ieee80211w="2", key_mgmt="WPA-PSK-SHA256",
+                   psk="12345678", scan_freq="2412", bgscan="simple:1:-20:2")
     hapd.set("ext_mgmt_frame_handling", "1")
     if "OK" not in hapd.request("STOP_AP"):
         raise Exception("Failed to stop AP")
+    hapd.disable()
+    hapd.set("ssid", "foo")
+    hapd.set("beacon_int", "10000")
+    hapd.enable()
     ev = dev[0].wait_event(["CTRL-EVENT-BEACON-LOSS"], timeout=10)
     if ev is None:
         raise Exception("Beacon loss not reported")
