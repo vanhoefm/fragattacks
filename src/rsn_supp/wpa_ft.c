@@ -178,7 +178,6 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	u8 *buf, *pos, *ftie_len, *ftie_pos, *fte_mic, *elem_count;
 	struct rsn_mdie *mdie;
 	struct rsn_ie_hdr *rsnie;
-	u16 capab;
 	int mdie_len;
 	u8 rsnxe[10];
 	size_t rsnxe_len;
@@ -258,16 +257,7 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	pos += RSN_SELECTOR_LEN;
 
 	/* RSN Capabilities */
-	capab = 0;
-	if (sm->mfp)
-		capab |= WPA_CAPABILITY_MFPC;
-	if (sm->mfp == 2)
-		capab |= WPA_CAPABILITY_MFPR;
-	if (sm->ocv)
-		capab |= WPA_CAPABILITY_OCVC;
-	if (sm->ext_key_id)
-		capab |= WPA_CAPABILITY_EXT_KEY_ID_FOR_UNICAST;
-	WPA_PUT_LE16(pos, capab);
+	WPA_PUT_LE16(pos, rsn_supp_capab(sm));
 	pos += 2;
 
 	/* PMKID Count */
