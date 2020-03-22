@@ -104,7 +104,7 @@ struct eloop_data {
 
 	struct dl_list timeout;
 
-	int signal_count;
+	size_t signal_count;
 	struct eloop_signal *signals;
 	int signaled;
 	int pending_terminate;
@@ -968,7 +968,7 @@ static void eloop_handle_alarm(int sig)
 
 static void eloop_handle_signal(int sig)
 {
-	int i;
+	size_t i;
 
 #ifndef CONFIG_NATIVE_WINDOWS
 	if ((sig == SIGINT || sig == SIGTERM) && !eloop.pending_terminate) {
@@ -992,7 +992,7 @@ static void eloop_handle_signal(int sig)
 
 static void eloop_process_pending_signals(void)
 {
-	int i;
+	size_t i;
 
 	if (eloop.signaled == 0)
 		return;
