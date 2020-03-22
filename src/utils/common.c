@@ -791,6 +791,10 @@ int freq_range_list_parse(struct wpa_freq_range_list *res, const char *value)
 	 */
 	pos = value;
 	while (pos && pos[0]) {
+		if (count == UINT_MAX) {
+			os_free(freq);
+			return -1;
+		}
 		n = os_realloc_array(freq, count + 1,
 				     sizeof(struct wpa_freq_range));
 		if (n == NULL) {
