@@ -2612,7 +2612,7 @@ static const struct parse_data ssid_fields[] = {
 int wpa_config_add_prio_network(struct wpa_config *config,
 				struct wpa_ssid *ssid)
 {
-	int prio;
+	size_t prio;
 	struct wpa_ssid *prev, **nlist;
 
 	/*
@@ -4318,7 +4318,7 @@ struct wpa_config * wpa_config_alloc_empty(const char *ctrl_interface,
  */
 void wpa_config_debug_dump_networks(struct wpa_config *config)
 {
-	int prio;
+	size_t prio;
 	struct wpa_ssid *ssid;
 
 	for (prio = 0; prio < config->num_prio; prio++) {
@@ -4649,7 +4649,7 @@ static int wpa_config_process_p2p_pref_chan(
 	struct wpa_config *config, int line, const char *pos)
 {
 	struct p2p_channel *pref = NULL, *n;
-	unsigned int num = 0;
+	size_t num = 0;
 	const char *pos2;
 	u8 op_class, chan;
 

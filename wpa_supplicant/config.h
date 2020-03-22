@@ -332,7 +332,7 @@ struct wpa_cred {
 	 */
 	unsigned int max_bss_load;
 
-	unsigned int num_req_conn_capab;
+	size_t num_req_conn_capab;
 	u8 *req_conn_capab_proto;
 	int **req_conn_capab_port;
 
@@ -403,7 +403,7 @@ struct wpa_config {
 	 * This indicates how many per-priority network lists are included in
 	 * pssid.
 	 */
-	int num_prio;
+	size_t num_prio;
 
 	/**
 	 * cred - Head of the credential list

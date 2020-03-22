@@ -1536,7 +1536,7 @@ struct wpa_bss * wpa_supplicant_pick_network(struct wpa_supplicant *wpa_s,
 					     struct wpa_ssid **selected_ssid)
 {
 	struct wpa_bss *selected = NULL;
-	int prio;
+	size_t prio;
 	struct wpa_ssid *next_ssid = NULL;
 	struct wpa_ssid *ssid;
 
@@ -1691,7 +1691,7 @@ int wpa_supplicant_connect(struct wpa_supplicant *wpa_s,
 static struct wpa_ssid *
 wpa_supplicant_pick_new_network(struct wpa_supplicant *wpa_s)
 {
-	int prio;
+	size_t prio;
 	struct wpa_ssid *ssid;
 
 	for (prio = 0; prio < wpa_s->conf->num_prio; prio++) {

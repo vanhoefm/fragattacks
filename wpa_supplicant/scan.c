@@ -2628,8 +2628,8 @@ void wpa_scan_free_params(struct wpa_driver_scan_params *params)
 
 int wpas_start_pno(struct wpa_supplicant *wpa_s)
 {
-	int ret, prio;
-	size_t i, num_ssid, num_match_ssid;
+	int ret;
+	size_t prio, i, num_ssid, num_match_ssid;
 	struct wpa_ssid *ssid;
 	struct wpa_driver_scan_params params;
 	struct sched_scan_plan scan_plan;
