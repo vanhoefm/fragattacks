@@ -607,8 +607,8 @@ struct wpa_supplicant {
 	  * results.
 	  */
 	struct wpa_bss **last_scan_res;
-	unsigned int last_scan_res_used;
-	unsigned int last_scan_res_size;
+	size_t last_scan_res_used;
+	size_t last_scan_res_size;
 	struct os_reltime last_scan;
 
 	const struct wpa_driver_ops *driver;
