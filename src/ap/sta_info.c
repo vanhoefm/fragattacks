@@ -1140,6 +1140,8 @@ static void ap_sa_query_timer(void *eloop_ctx, void *timeout_ctx)
 	if (sta->sa_query_count > 0 &&
 	    ap_check_sa_query_timeout(hapd, sta))
 		return;
+	if (sta->sa_query_count >= 1000)
+		return;
 
 	nbuf = os_realloc_array(sta->sa_query_trans_id,
 				sta->sa_query_count + 1,
