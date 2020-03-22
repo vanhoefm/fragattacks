@@ -1109,7 +1109,9 @@ static void wpa_supplicant_scan(void *eloop_ctx, void *timeout_ctx)
 		     tssid = tssid->next) {
 			if (wpas_network_disabled(wpa_s, tssid))
 				continue;
-			if ((params.freqs || !freqs_set) && tssid->scan_freq) {
+			if (((params.freqs || !freqs_set) &&
+			     tssid->scan_freq) &&
+			    int_array_len(params.freqs) < 100) {
 				int_array_concat(&params.freqs,
 						 tssid->scan_freq);
 			} else {
