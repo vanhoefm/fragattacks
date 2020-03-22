@@ -18,7 +18,7 @@ import hwsim_utils
 from hwsim import HWSimRadio
 import hostapd
 from tshark import run_tshark
-from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger, skip_with_fips, parse_ie
+from utils import *
 from wlantest import Wlantest
 from test_ap_psk import check_mib, find_wpas_process, read_process_memory, verify_not_present, get_key_locations
 from test_rrm import check_beacon_req
@@ -995,7 +995,7 @@ def test_ap_ft_over_ds_pull_vlan(dev, apdev):
 
 def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None,
                  rsne_override=None, rsnxe_override=None,
-                 no_beacon_rsnxe2=False):
+                 no_beacon_rsnxe2=False, ext_key_id=False):
     if "SAE" not in dev.get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     ssid = "test-ft"
@@ -1011,6 +1011,8 @@ def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None,
         params['rsne_override_ft'] = rsne_override
     if rsnxe_override:
         params['rsnxe_override_ft'] = rsnxe_override
+    if ext_key_id:
+        params['extended_key_id'] = '1'
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params['wpa_key_mgmt'] = "FT-SAE"
@@ -1024,6 +1026,8 @@ def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None,
         params['rsnxe_override_ft'] = rsnxe_override
     if no_beacon_rsnxe2:
         params['no_beacon_rsnxe'] = "1"
+    if ext_key_id:
+        params['extended_key_id'] = '1'
     hapd1 = hostapd.add_ap(apdev[1], params)
     key_mgmt = hapd1.get_config()['key_mgmt']
     if key_mgmt.split(' ')[0] != "FT-SAE":
@@ -1098,6 +1102,24 @@ def test_ap_ft_sae_ptk_rekey_ap(dev, apdev):
     run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
               only_one_way=True)
     check_ptk_rekey(dev[0], hapd0, hapd1)
+
+def test_ap_ft_sae_ptk_rekey_ap_ext_key_id(dev, apdev):
+    """WPA2-PSK-FT-SAE AP and PTK rekey triggered by AP (Ext Key ID)"""
+    check_ext_key_id_capa(dev[0])
+    try:
+        dev[0].set("extended_key_id", "1")
+        hapd0, hapd1 = start_ft_sae(dev[0], apdev, wpa_ptk_rekey=2,
+                                    ext_key_id=True)
+        check_ext_key_id_capa(hapd0)
+        check_ext_key_id_capa(hapd1)
+        run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True,
+                  only_one_way=True)
+        check_ptk_rekey(dev[0], hapd0, hapd1)
+        idx = int(dev[0].request("GET last_tk_key_idx"))
+        if idx != 1:
+            raise Exception("Unexpected Key ID after TK rekey: %d" % idx)
+    finally:
+        dev[0].set("extended_key_id", "0")
 
 def test_ap_ft_sae_over_ds(dev, apdev):
     """WPA2-PSK-FT-SAE AP over DS"""

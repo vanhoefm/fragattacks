@@ -19,7 +19,7 @@ import subprocess
 import time
 
 import hostapd
-from utils import HwsimSkip, fail_test, skip_with_fips, start_monitor, stop_monitor, radiotap_build
+from utils import *
 import hwsim_utils
 from wpasupplicant import WpaSupplicant
 from tshark import run_tshark
@@ -3404,3 +3404,91 @@ def test_ap_wpa2_psk_rsnxe_mismatch_ap(dev, apdev):
         raise Exception("Unexpected connection")
     if "reason=17 locally_generated=1" not in ev:
         raise Exception("Unexpected disconnection reason: " + ev)
+
+def test_ap_wpa2_psk_ext_key_id_ptk_rekey_ap0(dev, apdev):
+    """WPA2-PSK AP and PTK rekey by AP (disabled on STA)"""
+    run_ap_wpa2_psk_ext_key_id_ptk_rekey_ap(dev, apdev, 1, 0)
+
+def test_ap_wpa2_psk_ext_key_id_ptk_rekey_ap1(dev, apdev):
+    """WPA2-PSK AP and PTK rekey by AP (start with Key ID 0)"""
+    run_ap_wpa2_psk_ext_key_id_ptk_rekey_ap(dev, apdev, 1, 1)
+
+def test_ap_wpa2_psk_ext_key_id_ptk_rekey_ap2(dev, apdev):
+    """WPA2-PSK AP and PTK rekey by AP (start with Key ID 1)"""
+    run_ap_wpa2_psk_ext_key_id_ptk_rekey_ap(dev, apdev, 2, 1)
+
+def run_ap_wpa2_psk_ext_key_id_ptk_rekey_ap(dev, apdev, ap_ext_key_id,
+                                            sta_ext_key_id):
+    check_ext_key_id_capa(dev[0])
+    ssid = "test-wpa2-psk"
+    passphrase = 'qwertyuiop'
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
+    params['wpa_ptk_rekey'] = '2'
+    params['extended_key_id'] = str(ap_ext_key_id)
+    hapd = hostapd.add_ap(apdev[0], params)
+    check_ext_key_id_capa(hapd)
+    try:
+        dev[0].set("extended_key_id", str(sta_ext_key_id))
+        dev[0].connect(ssid, psk=passphrase, scan_freq="2412")
+        idx = int(dev[0].request("GET last_tk_key_idx"))
+        expect_idx = 1 if ap_ext_key_id == 2 and sta_ext_key_id else 0
+        if idx != expect_idx:
+            raise Exception("Unexpected Key ID for the first TK: %d (expected %d)" % (idx, expect_idx))
+        ev = dev[0].wait_event(["WPA: Key negotiation completed"])
+        if ev is None:
+            raise Exception("PTK rekey timed out")
+        idx = int(dev[0].request("GET last_tk_key_idx"))
+        expect_idx = 1 if ap_ext_key_id == 1 and sta_ext_key_id else 0
+        if idx != expect_idx:
+            raise Exception("Unexpected Key ID for the second TK: %d (expected %d)" % (idx, expect_idx))
+        hwsim_utils.test_connectivity(dev[0], hapd)
+    finally:
+        dev[0].set("extended_key_id", "0")
+
+def test_ap_wpa2_psk_ext_key_id_ptk_rekey_sta0(dev, apdev):
+    """Extended Key ID and PTK rekey by station (Ext Key ID disabled on AP)"""
+    run_ap_wpa2_psk_ext_key_id_ptk_rekey_sta(dev, apdev, 0)
+
+def test_ap_wpa2_psk_ext_key_id_ptk_rekey_sta1(dev, apdev):
+    """Extended Key ID and PTK rekey by station (start with Key ID 0)"""
+    run_ap_wpa2_psk_ext_key_id_ptk_rekey_sta(dev, apdev, 1)
+
+def test_ap_wpa2_psk_ext_key_id_ptk_rekey_sta2(dev, apdev):
+    """Extended Key ID and PTK rekey by station (start with Key ID 1)"""
+    run_ap_wpa2_psk_ext_key_id_ptk_rekey_sta(dev, apdev, 2)
+
+def run_ap_wpa2_psk_ext_key_id_ptk_rekey_sta(dev, apdev, ext_key_id):
+    check_ext_key_id_capa(dev[0])
+    ssid = "test-wpa2-psk"
+    passphrase = 'qwertyuiop'
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
+    params['extended_key_id'] = str(ext_key_id)
+    hapd = hostapd.add_ap(apdev[0], params)
+    check_ext_key_id_capa(hapd)
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase(passphrase)
+
+    try:
+        dev[0].set("extended_key_id", "1")
+        dev[0].connect(ssid, psk=passphrase, wpa_ptk_rekey="1",
+                       scan_freq="2412")
+        idx = int(dev[0].request("GET last_tk_key_idx"))
+        expect_idx = 1 if ext_key_id == 2 else 0
+        if idx != expect_idx:
+            raise Exception("Unexpected Key ID for the first TK: %d (expected %d)" % (idx, expect_idx))
+        ev = dev[0].wait_event(["WPA: Key negotiation completed",
+                                "CTRL-EVENT-DISCONNECTED"])
+        if ev is None:
+            raise Exception("PTK rekey timed out")
+        if "CTRL-EVENT-DISCONNECTED" in ev:
+            raise Exception("Disconnect instead of rekey")
+        idx = int(dev[0].request("GET last_tk_key_idx"))
+        expect_idx = 1 if ext_key_id == 1 else 0
+        if idx != expect_idx:
+            raise Exception("Unexpected Key ID for the second TK: %d (expected %d)" % (idx, expect_idx))
+        hwsim_utils.test_connectivity(dev[0], hapd)
+    finally:
+        dev[0].set("extended_key_id", "0")

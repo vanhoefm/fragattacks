@@ -89,6 +89,11 @@ def skip_with_fips(dev, reason="Not supported in FIPS mode"):
     if res and 'FIPS' in res:
         raise HwsimSkip(reason)
 
+def check_ext_key_id_capa(dev):
+    res = dev.get_driver_status_field('capa.flags')
+    if (int(res, 0) & 0x8000000000000000) == 0:
+        raise HwsimSkip("Extended Key ID not supported")
+
 def get_phy(ap, ifname=None):
     phy = "phy3"
     try:
