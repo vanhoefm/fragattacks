@@ -68,7 +68,7 @@ struct eloop_signal {
 };
 
 struct eloop_sock_table {
-	int count;
+	size_t count;
 	struct eloop_sock *table;
 	eloop_event_type type;
 	int changed;
@@ -125,7 +125,8 @@ static void eloop_sigsegv_handler(int sig)
 
 static void eloop_trace_sock_add_ref(struct eloop_sock_table *table)
 {
-	int i;
+	size_t i;
+
 	if (table == NULL || table->table == NULL)
 		return;
 	for (i = 0; i < table->count; i++) {
@@ -139,7 +140,8 @@ static void eloop_trace_sock_add_ref(struct eloop_sock_table *table)
 
 static void eloop_trace_sock_remove_ref(struct eloop_sock_table *table)
 {
-	int i;
+	size_t i;
+
 	if (table == NULL || table->table == NULL)
 		return;
 	for (i = 0; i < table->count; i++) {
@@ -385,7 +387,7 @@ static void eloop_sock_table_remove_sock(struct eloop_sock_table *table,
 #ifdef CONFIG_ELOOP_KQUEUE
 	struct kevent ke;
 #endif /* CONFIG_ELOOP_KQUEUE */
-	int i;
+	size_t i;
 
 	if (table == NULL || table->table == NULL || table->count == 0)
 		return;
@@ -444,7 +446,7 @@ static int eloop_sock_table_set_fds(struct eloop_sock_table *readers,
 				    struct pollfd **pollfds_map,
 				    int max_pollfd_map)
 {
-	int i;
+	size_t i;
 	int nxt = 0;
 	int fd;
 	struct pollfd *pfd;
@@ -519,7 +521,7 @@ static int eloop_sock_table_dispatch_table(struct eloop_sock_table *table,
 					   int max_pollfd_map,
 					   short int revents)
 {
-	int i;
+	size_t i;
 	struct pollfd *pfd;
 
 	if (!table || !table->table)
@@ -572,7 +574,7 @@ static void eloop_sock_table_dispatch(struct eloop_sock_table *readers,
 static void eloop_sock_table_set_fds(struct eloop_sock_table *table,
 				     fd_set *fds)
 {
-	int i;
+	size_t i;
 
 	FD_ZERO(fds);
 
@@ -589,7 +591,7 @@ static void eloop_sock_table_set_fds(struct eloop_sock_table *table,
 static void eloop_sock_table_dispatch(struct eloop_sock_table *table,
 				      fd_set *fds)
 {
-	int i;
+	size_t i;
 
 	if (table == NULL || table->table == NULL)
 		return;
@@ -653,7 +655,8 @@ static void eloop_sock_table_dispatch(struct kevent *events, int nfds)
 
 static int eloop_sock_table_requeue(struct eloop_sock_table *table)
 {
-	int i, r;
+	size_t i;
+	int r;
 
 	r = 0;
 	for (i = 0; i < table->count && table->table; i++) {
@@ -694,7 +697,8 @@ int eloop_sock_requeue(void)
 static void eloop_sock_table_destroy(struct eloop_sock_table *table)
 {
 	if (table) {
-		int i;
+		size_t i;
+
 		for (i = 0; i < table->count && table->table; i++) {
 			wpa_printf(MSG_INFO, "ELOOP: remaining socket: "
 				   "sock=%d eloop_data=%p user_data=%p "
