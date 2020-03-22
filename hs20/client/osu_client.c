@@ -2907,7 +2907,7 @@ static char * get_hostname(const char *url)
 static int osu_cert_cb(void *_ctx, struct http_cert *cert)
 {
 	struct hs20_osu_client *ctx = _ctx;
-	unsigned int i, j;
+	size_t i, j;
 	int found;
 	char *host = NULL;
 
@@ -3002,7 +3002,7 @@ static int osu_cert_cb(void *_ctx, struct http_cert *cert)
 		size_t name_len = os_strlen(name);
 
 		wpa_printf(MSG_INFO,
-			   "[%i] Looking for icon file name '%s' match",
+			   "[%zu] Looking for icon file name '%s' match",
 			   j, name);
 		for (i = 0; i < cert->num_logo; i++) {
 			struct http_logo *logo = &cert->logo[i];
@@ -3010,7 +3010,7 @@ static int osu_cert_cb(void *_ctx, struct http_cert *cert)
 			char *pos;
 
 			wpa_printf(MSG_INFO,
-				   "[%i] Comparing to '%s' uri_len=%d name_len=%d",
+				   "[%zu] Comparing to '%s' uri_len=%d name_len=%d",
 				   i, logo->uri, (int) uri_len, (int) name_len);
 			if (uri_len < 1 + name_len) {
 				wpa_printf(MSG_INFO, "URI Length is too short");
@@ -3044,7 +3044,7 @@ static int osu_cert_cb(void *_ctx, struct http_cert *cert)
 
 			if (logo->hash_len != 32) {
 				wpa_printf(MSG_INFO,
-					   "[%i][%i] Icon hash length invalid (should be 32): %d",
+					   "[%zu][%zu] Icon hash length invalid (should be 32): %d",
 					   j, i, (int) logo->hash_len);
 				continue;
 			}
@@ -3054,7 +3054,7 @@ static int osu_cert_cb(void *_ctx, struct http_cert *cert)
 			}
 
 			wpa_printf(MSG_DEBUG,
-				   "[%u][%u] Icon hash did not match", j, i);
+				   "[%zu][%zu] Icon hash did not match", j, i);
 			wpa_hexdump_ascii(MSG_DEBUG, "logo->hash",
 					  logo->hash, 32);
 			wpa_hexdump_ascii(MSG_DEBUG, "ctx->icon_hash[j]",
