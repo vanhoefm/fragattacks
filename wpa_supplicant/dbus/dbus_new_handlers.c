@@ -1146,7 +1146,7 @@ static int wpas_dbus_get_scan_ies(DBusMessage *message, DBusMessageIter *var,
 				  DBusMessage **reply)
 {
 	u8 *ies = NULL, *nies;
-	int ies_len = 0;
+	size_t ies_len = 0;
 	DBusMessageIter array_iter, sub_array_iter;
 	char *val;
 	int len;
@@ -1177,7 +1177,7 @@ static int wpas_dbus_get_scan_ies(DBusMessage *message, DBusMessageIter *var,
 		dbus_message_iter_recurse(&array_iter, &sub_array_iter);
 
 		dbus_message_iter_get_fixed_array(&sub_array_iter, &val, &len);
-		if (len == 0) {
+		if (len <= 0) {
 			dbus_message_iter_next(&array_iter);
 			continue;
 		}
@@ -1208,7 +1208,7 @@ static int wpas_dbus_get_scan_channels(DBusMessage *message,
 {
 	DBusMessageIter array_iter, sub_array_iter;
 	int *freqs = NULL, *nfreqs;
-	int freqs_num = 0;
+	size_t freqs_num = 0;
 
 	if (dbus_message_iter_get_arg_type(var) != DBUS_TYPE_ARRAY) {
 		wpa_printf(MSG_DEBUG,
