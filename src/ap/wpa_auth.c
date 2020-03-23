@@ -1741,7 +1741,7 @@ void wpa_remove_ptk(struct wpa_state_machine *sm)
 			     0, KEY_FLAG_PAIRWISE))
 		wpa_printf(MSG_DEBUG,
 			   "RSN: PTK removal from the driver failed");
-	if (sm->wpa_auth->conf.extended_key_id && sm->use_ext_key_id &&
+	if (sm->use_ext_key_id &&
 	    wpa_auth_set_key(sm->wpa_auth, 0, WPA_ALG_NONE, sm->addr, 1, NULL,
 			     0, KEY_FLAG_PAIRWISE))
 		wpa_printf(MSG_DEBUG,
