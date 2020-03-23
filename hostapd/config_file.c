@@ -2872,10 +2872,10 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "extended_key_id") == 0) {
 		int val = atoi(pos);
 
-		if (bss->extended_key_id < 0 || bss->extended_key_id > 2) {
+		if (val < 0 || val > 2) {
 			wpa_printf(MSG_ERROR,
 				   "Line %d: Invalid extended_key_id=%d; allowed range 0..2",
-				   line, bss->extended_key_id);
+				   line, val);
 			return 1;
 		}
 		bss->extended_key_id = val;
