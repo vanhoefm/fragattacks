@@ -339,10 +339,10 @@ static void rx_data_bss_prot(struct wlantest *wt,
 	struct wlantest_sta *sta, *sta2;
 	int keyid;
 	u16 fc = le_to_host16(hdr->frame_control);
-	u8 *decrypted;
+	u8 *decrypted = NULL;
 	size_t dlen;
 	int tid;
-	u8 pn[6], *rsc;
+	u8 pn[6], *rsc = NULL;
 	struct wlantest_tdls *tdls = NULL, *found;
 	const u8 *tk = NULL;
 	int ptk_iter_done = 0;
@@ -424,8 +424,14 @@ static void rx_data_bss_prot(struct wlantest *wt,
 	     (!sta->ptk_set && sta->pairwise_cipher != WPA_CIPHER_WEP40)) &&
 	    tk == NULL) {
 		add_note(wt, MSG_MSGDUMP, "No PTK known to decrypt the frame");
-		if (dl_list_empty(&wt->ptk))
+		if (dl_list_empty(&wt->ptk)) {
+			if (len >= 4 && sta) {
+				keyid = data[3] >> 6;
+				goto check_zero_tk;
+			}
 			return;
+		}
+
 		try_ptk_iter = 1;
 	}
 
@@ -578,16 +584,25 @@ skip_replay_det:
 			add_note(wt, MSG_DEBUG, "Current PTK did not work, but found a match from all known PTKs");
 		}
 	}
+check_zero_tk:
 	if (!decrypted) {
 		struct wpa_ptk zero_ptk;
+		int old_debug_level = wpa_debug_level;
 
 		os_memset(&zero_ptk, 0, sizeof(zero_ptk));
 		zero_ptk.tk_len = wpa_cipher_key_len(sta->pairwise_cipher);
+		wpa_debug_level = MSG_ERROR;
 		decrypted = try_ptk(sta->pairwise_cipher, &zero_ptk, hdr,
 				    data, len, &dlen);
+		wpa_debug_level = old_debug_level;
 		if (decrypted) {
 			add_note(wt, MSG_DEBUG,
 				 "Frame was encrypted with zero TK");
+			wpa_printf(MSG_INFO, "Zero TK used in frame #%u: A2="
+				   MACSTR " seq=%u",
+				   wt->frame_num, MAC2STR(hdr->addr2),
+				   WLAN_GET_SEQ_SEQ(
+					   le_to_host16(hdr->seq_ctrl)));
 			write_decrypted_note(wt, decrypted, zero_ptk.tk,
 					     zero_ptk.tk_len, keyid);
 		}
@@ -597,7 +612,7 @@ skip_replay_det:
 		const u8 *peer_addr = NULL;
 		if (!(fc & (WLAN_FC_FROMDS | WLAN_FC_TODS)))
 			peer_addr = hdr->addr1;
-		if (!replay)
+		if (!replay && rsc)
 			os_memcpy(rsc, pn, 6);
 		rx_data_process(wt, bss->bssid, sta->addr, dst, src, decrypted,
 				dlen, 1, peer_addr);
