@@ -267,7 +267,9 @@ pmksa_cache_add_entry(struct rsn_pmksa_cache *pmksa,
 		   entry->network_ctx, entry->akmp);
 	wpa_sm_add_pmkid(pmksa->sm, entry->network_ctx, entry->aa, entry->pmkid,
 			 entry->fils_cache_id_set ? entry->fils_cache_id : NULL,
-			 entry->pmk, entry->pmk_len);
+			 entry->pmk, entry->pmk_len,
+			 pmksa->sm->dot11RSNAConfigPMKLifetime,
+			 pmksa->sm->dot11RSNAConfigPMKReauthThreshold);
 
 	return entry;
 }

@@ -2357,6 +2357,8 @@ struct wpa_pmkid_params {
 	const u8 *pmkid;
 	const u8 *pmk;
 	size_t pmk_len;
+	u32 pmk_lifetime;
+	u8 pmk_reauth_threshold;
 };
 
 /* Mask used to specify which connection parameters have to be updated */

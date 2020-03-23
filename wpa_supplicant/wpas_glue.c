@@ -574,7 +574,8 @@ static struct wpa_ssid * wpas_get_network_ctx(struct wpa_supplicant *wpa_s,
 static int wpa_supplicant_add_pmkid(void *_wpa_s, void *network_ctx,
 				    const u8 *bssid, const u8 *pmkid,
 				    const u8 *fils_cache_id,
-				    const u8 *pmk, size_t pmk_len)
+				    const u8 *pmk, size_t pmk_len,
+				    u32 pmk_lifetime, u8 pmk_reauth_threshold)
 {
 	struct wpa_supplicant *wpa_s = _wpa_s;
 	struct wpa_ssid *ssid;
@@ -596,6 +597,8 @@ static int wpa_supplicant_add_pmkid(void *_wpa_s, void *network_ctx,
 	params.pmkid = pmkid;
 	params.pmk = pmk;
 	params.pmk_len = pmk_len;
+	params.pmk_lifetime = pmk_lifetime;
+	params.pmk_reauth_threshold = pmk_reauth_threshold;
 
 	return wpa_drv_add_pmkid(wpa_s, &params);
 }

@@ -42,7 +42,8 @@ struct wpa_sm_ctx {
 			    size_t *msg_len, void **data_pos);
 	int (*add_pmkid)(void *ctx, void *network_ctx, const u8 *bssid,
 			 const u8 *pmkid, const u8 *fils_cache_id,
-			 const u8 *pmk, size_t pmk_len);
+			 const u8 *pmk, size_t pmk_len, u32 pmk_lifetime,
+			 u8 pmk_reauth_threshold);
 	int (*remove_pmkid)(void *ctx, void *network_ctx, const u8 *bssid,
 			    const u8 *pmkid, const u8 *fils_cache_id);
 	void (*set_config_blob)(void *ctx, struct wpa_config_blob *blob);
