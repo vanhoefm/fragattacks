@@ -749,7 +749,7 @@ void wpa_clear_keys(struct wpa_supplicant *wpa_s, const u8 *addr)
 				NULL, 0, KEY_FLAG_GROUP);
 	}
 	/* Pairwise Key ID 1 for Extended Key ID is tracked in bit 15 */
-	if (!(wpa_s->keys_cleared & (BIT(0) | BIT(15))) && addr &&
+	if (~wpa_s->keys_cleared & (BIT(0) | BIT(15)) && addr &&
 	    !is_zero_ether_addr(addr)) {
 		if (!(wpa_s->keys_cleared & BIT(0)))
 			wpa_drv_set_key(wpa_s, WPA_ALG_NONE, addr, 0, 0, NULL,
