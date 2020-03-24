@@ -256,6 +256,8 @@ void hostapd_neighbor_set_own_report(struct hostapd_data *hapd)
 		/* VHT bit added in IEEE P802.11-REVmc/D4.3 */
 		if (vht)
 			bssid_info |= NEI_REP_BSSID_INFO_VHT;
+		if (he)
+			bssid_info |= NEI_REP_BSSID_INFO_HE;
 	}
 
 	/* TODO: Set NEI_REP_BSSID_INFO_MOBILITY_DOMAIN if MDE is set */
