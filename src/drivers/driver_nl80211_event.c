@@ -1855,6 +1855,9 @@ static void qca_nl80211_acs_select_ch(struct wpa_driver_nl80211_data *drv,
 				     event.acs_selected_channels.hw_mode);
 	}
 
+	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_EDMG_CHANNEL])
+		event.acs_selected_channels.edmg_channel =
+			nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_EDMG_CHANNEL]);
 	if (tb[QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG0_CENTER_CHANNEL])
 		event.acs_selected_channels.vht_seg0_center_ch =
 			nla_get_u8(tb[QCA_WLAN_VENDOR_ATTR_ACS_VHT_SEG0_CENTER_CHANNEL]);
@@ -1865,13 +1868,14 @@ static void qca_nl80211_acs_select_ch(struct wpa_driver_nl80211_data *drv,
 		event.acs_selected_channels.ch_width =
 			nla_get_u16(tb[QCA_WLAN_VENDOR_ATTR_ACS_CHWIDTH]);
 	wpa_printf(MSG_INFO,
-		   "nl80211: ACS Results: PFreq: %d SFreq: %d BW: %d VHT0: %d VHT1: %d HW_MODE: %d",
+		   "nl80211: ACS Results: PFreq: %d SFreq: %d BW: %d VHT0: %d VHT1: %d HW_MODE: %d EDMGCH: %d",
 		   event.acs_selected_channels.pri_freq,
 		   event.acs_selected_channels.sec_freq,
 		   event.acs_selected_channels.ch_width,
 		   event.acs_selected_channels.vht_seg0_center_ch,
 		   event.acs_selected_channels.vht_seg1_center_ch,
-		   event.acs_selected_channels.hw_mode);
+		   event.acs_selected_channels.hw_mode,
+		   event.acs_selected_channels.edmg_channel);
 
 	/* Ignore ACS channel list check for backwards compatibility */
 

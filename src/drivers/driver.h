@@ -2329,6 +2329,9 @@ struct drv_acs_params {
 
 	/* ACS frequency list info */
 	const int *freq_list;
+
+	/* Indicates whether EDMG is enabled */
+	int edmg_enabled;
 };
 
 struct wpa_bss_trans_info {
@@ -5724,6 +5727,7 @@ union wpa_event_data {
 	 * struct acs_selected_channels - Data for EVENT_ACS_CHANNEL_SELECTED
 	 * @pri_freq: Selected primary frequency
 	 * @sec_freq: Selected secondary frequency
+	 * @edmg_channel: Selected EDMG channel
 	 * @vht_seg0_center_ch: VHT mode Segment0 center channel
 	 *	The value is the index of the channel center frequency for
 	 *	20 MHz, 40 MHz, and 80 MHz channels. The value is the center
@@ -5742,6 +5746,7 @@ union wpa_event_data {
 	struct acs_selected_channels {
 		unsigned int pri_freq;
 		unsigned int sec_freq;
+		u8 edmg_channel;
 		u8 vht_seg0_center_ch;
 		u8 vht_seg1_center_ch;
 		u16 ch_width;

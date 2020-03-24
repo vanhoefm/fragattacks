@@ -938,6 +938,7 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 	}
 
 	params.freq_list = freq_list;
+	params.edmg_enabled = hapd->iface->conf->enable_edmg;
 
 	params.ht_enabled = !!(hapd->iface->conf->ieee80211n);
 	params.ht40_enabled = !!(hapd->iface->conf->ht_capab &
