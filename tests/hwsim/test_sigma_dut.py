@@ -3005,6 +3005,34 @@ def test_sigma_dut_sta_scan_ssid_bssid(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
+def test_sigma_dut_sta_scan_short_ssid(dev, apdev):
+    """sigma_dut sta_scan ShortSSID"""
+    dev[0].flush_scan_cache()
+    ssid = "test-short-ssid-list"
+    hapd = hostapd.add_ap(apdev[0], {"ssid": ssid,
+                                     "ignore_broadcast_ssid": "1"})
+    bssid = apdev[0]['bssid']
+    payload = struct.pack('>L', binascii.crc32(ssid.encode()))
+    val = binascii.hexlify(payload).decode()
+    sigma = start_sigma_dut(dev[0].ifname)
+    found = False
+    try:
+        cmd = "sta_scan,Interface,%s,ChnlFreq,2412,ShortSSID,%s" % (dev[0].ifname, val)
+        for i in range(10):
+            sigma_dut_cmd_check(cmd, timeout=5)
+            ev = dev[0].wait_event(["CTRL-EVENT-SCAN-RESULTS"])
+            if ev is None:
+                raise Exception("Scan did not complete")
+            if bssid in dev[0].request("SCAN_RESULTS"):
+                found = True
+                break
+    finally:
+        stop_sigma_dut(sigma)
+        dev[0].request("VENDOR_ELEM_REMOVE 14 *")
+
+    if not found:
+        raise Exception("AP not found in scan results")
+
 def test_sigma_dut_ap_osen(dev, apdev, params):
     """sigma_dut controlled AP with OSEN"""
     logdir = os.path.join(params['logdir'],
