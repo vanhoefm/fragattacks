@@ -7449,6 +7449,7 @@ enum qca_wlan_vendor_cfr_method {
  *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_CTRL_FILTER
  *	%QCA_WLAN_VENDOR_ATTR_PEER_CFR_GROUP_DATA_FILTER
  * @QCA_WLAN_CFR_ALL_PACKET: Filter all packets.
+ * @QCA_WLAN_VENDOR_CFR_NDPA_NDP_ALL: Filter all NDPA NDP frames.
  */
 enum qca_wlan_vendor_cfr_capture_type {
 	QCA_WLAN_VENDOR_CFR_DIRECT_FTM = 0,
@@ -7456,6 +7457,7 @@ enum qca_wlan_vendor_cfr_capture_type {
 	QCA_WLAN_VENDOR_CFR_DIRECT_NDPA_NDP = 2,
 	QCA_WLAN_VENDOR_CFR_TA_RA = 3,
 	QCA_WLAN_VENDOR_CFR_ALL_PACKET = 4,
+	QCA_WLAN_VENDOR_CFR_NDPA_NDP_ALL = 5,
 };
 
 /**
