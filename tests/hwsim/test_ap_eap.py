@@ -7326,6 +7326,11 @@ def test_ap_wpa3_eap_transition_disable(dev, apdev):
                         eap="GPSK", identity="gpsk user",
                         password="abcdefghijklmnop0123456789abcdef",
                         scan_freq="2412")
+    ev = dev[0].wait_event(["TRANSITION-DISABLE"], timeout=1)
+    if ev is None:
+        raise Exception("Transition disable not indicated")
+    if ev.split(' ')[1] != "04":
+        raise Exception("Unexpected transition disable bitmap: " + ev)
 
     val = dev[0].get_network(id, "ieee80211w")
     if val != "2":
