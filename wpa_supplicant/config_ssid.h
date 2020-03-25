@@ -1070,6 +1070,26 @@ struct wpa_ssid {
 	 * enabled.
 	 */
 	int beacon_prot;
+
+	/**
+	 * transition_disable - Transition Disable indication
+	 * The AP can notify authenticated stations to disable transition mode
+	 * in their network profiles when the network has completed transition
+	 * steps, i.e., once sufficiently large number of APs in the ESS have
+	 * been updated to support the more secure alternative. When this
+	 * indication is used, the stations are expected to automatically
+	 * disable transition mode and less secure security options. This
+	 * includes use of WEP, TKIP (including use of TKIP as the group
+	 * cipher), and connections without PMF.
+	 * Bitmap bits:
+	 * bit 0 (0x01): WPA3-Personal (i.e., disable WPA2-Personal = WPA-PSK
+	 *	and only allow SAE to be used)
+	 * bit 1 (0x02): SAE-PK (disable SAE without use of SAE-PK)
+	 * bit 2 (0x04): WPA3-Enterprise (move to requiring PMF)
+	 * bit 3 (0x08): Enhanced Open (disable use of open network; require
+	 *	OWE)
+	 */
+	u8 transition_disable;
 };
 
 #endif /* CONFIG_SSID_H */

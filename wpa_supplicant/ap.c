@@ -607,6 +607,8 @@ no_wps:
 	bss->ftm_responder = wpa_s->conf->ftm_responder;
 	bss->ftm_initiator = wpa_s->conf->ftm_initiator;
 
+	bss->transition_disable = ssid->transition_disable;
+
 	return 0;
 }
 
