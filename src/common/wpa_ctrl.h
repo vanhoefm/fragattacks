@@ -380,6 +380,9 @@ extern "C" {
 #define WDS_STA_INTERFACE_ADDED "WDS-STA-INTERFACE-ADDED "
 #define WDS_STA_INTERFACE_REMOVED "WDS-STA-INTERFACE-REMOVED "
 
+/* Transition mode disabled indication - followed by bitmap */
+#define TRANSITION_DISABLE "TRANSITION-DISABLE "
+
 #ifndef BIT
 #define BIT(x) (1U << (x))
 #endif

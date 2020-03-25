@@ -516,6 +516,8 @@ struct wpa_eapol_ie_parse {
 	size_t ftie_len;
 	const u8 *ip_addr_req;
 	const u8 *ip_addr_alloc;
+	const u8 *transition_disable;
+	size_t transition_disable_len;
 	const u8 *oci;
 	size_t oci_len;
 	const u8 *osen;

@@ -1238,6 +1238,73 @@ static int wpa_supplicant_channel_info(void *_wpa_s,
 	return wpa_drv_channel_info(wpa_s, ci);
 }
 
+
+static void disable_wpa_wpa2(struct wpa_ssid *ssid)
+{
+	ssid->proto &= ~WPA_PROTO_WPA;
+	ssid->proto |= WPA_PROTO_RSN;
+	ssid->key_mgmt &= ~(WPA_KEY_MGMT_PSK | WPA_KEY_MGMT_FT_PSK |
+			    WPA_KEY_MGMT_PSK_SHA256);
+	ssid->group_cipher &= ~WPA_CIPHER_TKIP;
+	if (!(ssid->group_cipher & (WPA_CIPHER_CCMP | WPA_CIPHER_GCMP |
+				    WPA_CIPHER_GCMP_256 | WPA_CIPHER_CCMP_256)))
+		ssid->group_cipher |= WPA_CIPHER_CCMP;
+	ssid->ieee80211w = MGMT_FRAME_PROTECTION_REQUIRED;
+}
+
+
+static void wpa_supplicant_transition_disable(void *_wpa_s, u8 bitmap)
+{
+	struct wpa_supplicant *wpa_s = _wpa_s;
+	struct wpa_ssid *ssid;
+	int changed = 0;
+
+	wpa_msg(wpa_s, MSG_INFO, TRANSITION_DISABLE "%02x", bitmap);
+
+	ssid = wpa_s->current_ssid;
+	if (!ssid)
+		return;
+
+	if ((bitmap & TRANSITION_DISABLE_WPA3_PERSONAL) &&
+	    wpa_key_mgmt_sae(wpa_s->key_mgmt) &&
+	    (ssid->key_mgmt & (WPA_KEY_MGMT_SAE | WPA_KEY_MGMT_FT_SAE)) &&
+	    (ssid->ieee80211w != MGMT_FRAME_PROTECTION_REQUIRED ||
+	     (ssid->group_cipher & WPA_CIPHER_TKIP))) {
+		wpa_printf(MSG_DEBUG,
+			   "WPA3-Personal transition mode disabled based on AP notification");
+		disable_wpa_wpa2(ssid);
+		changed = 1;
+	}
+
+	if ((bitmap & TRANSITION_DISABLE_WPA3_ENTERPRISE) &&
+	    wpa_key_mgmt_wpa_ieee8021x(wpa_s->key_mgmt) &&
+	    (ssid->key_mgmt & (WPA_KEY_MGMT_IEEE8021X |
+			       WPA_KEY_MGMT_FT_IEEE8021X |
+			       WPA_KEY_MGMT_IEEE8021X_SHA256)) &&
+	    (ssid->ieee80211w != MGMT_FRAME_PROTECTION_REQUIRED ||
+	     (ssid->group_cipher & WPA_CIPHER_TKIP))) {
+		disable_wpa_wpa2(ssid);
+		changed = 1;
+	}
+
+	if ((bitmap & TRANSITION_DISABLE_ENHANCED_OPEN) &&
+	    wpa_s->key_mgmt == WPA_KEY_MGMT_OWE &&
+	    (ssid->key_mgmt & WPA_KEY_MGMT_OWE) &&
+	    !ssid->owe_only) {
+		ssid->owe_only = 1;
+		changed = 1;
+	}
+
+	if (!changed)
+		return;
+
+#ifndef CONFIG_NO_CONFIG_WRITE
+	if (wpa_s->conf->update_config &&
+	    wpa_config_write(wpa_s->confname, wpa_s->conf))
+		wpa_printf(MSG_DEBUG, "Failed to update configuration");
+#endif /* CONFIG_NO_CONFIG_WRITE */
+}
+
 #endif /* CONFIG_NO_WPA */
 
 
@@ -1290,6 +1357,7 @@ int wpa_supplicant_init_wpa(struct wpa_supplicant *wpa_s)
 	ctx->key_mgmt_set_pmk = wpa_supplicant_key_mgmt_set_pmk;
 	ctx->fils_hlp_rx = wpa_supplicant_fils_hlp_rx;
 	ctx->channel_info = wpa_supplicant_channel_info;
+	ctx->transition_disable = wpa_supplicant_transition_disable;
 
 	wpa_s->wpa = wpa_sm_init(ctx);
 	if (wpa_s->wpa == NULL) {

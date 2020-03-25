@@ -1771,6 +1771,8 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 			sm->cur_pmksa = sa;
 	}
 
+	if (ie.transition_disable)
+		wpa_sm_transition_disable(sm, ie.transition_disable[0]);
 	sm->msg_3_of_4_ok = 1;
 	return;
 
@@ -4808,6 +4810,9 @@ int fils_process_assoc_resp(struct wpa_sm *sm, const u8 *resp, size_t len)
 	wpa_printf(MSG_DEBUG, "FILS: Auth+Assoc completed successfully");
 	sm->fils_completed = 1;
 	forced_memzero(&gd, sizeof(gd));
+
+	if (kde.transition_disable)
+		wpa_sm_transition_disable(sm, kde.transition_disable[0]);
 
 	return 0;
 fail:

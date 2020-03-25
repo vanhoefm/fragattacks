@@ -2784,6 +2784,16 @@ static int wpa_parse_generic(const u8 *pos, struct wpa_eapol_ie_parse *ie)
 		return 0;
 	}
 
+	if (pos[1] >= RSN_SELECTOR_LEN + 1 &&
+	    RSN_SELECTOR_GET(pos + 2) == WFA_KEY_DATA_TRANSITION_DISABLE) {
+		ie->transition_disable = pos + 2 + RSN_SELECTOR_LEN;
+		ie->transition_disable_len = pos[1] - RSN_SELECTOR_LEN;
+		wpa_hexdump(MSG_DEBUG,
+			    "WPA: Transition Disable KDE in EAPOL-Key",
+			    pos, pos[1] + 2);
+		return 0;
+	}
+
 	return 0;
 }
 

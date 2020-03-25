@@ -426,6 +426,12 @@ static inline int wpa_sm_channel_info(struct wpa_sm *sm,
 	return sm->ctx->channel_info(sm->ctx->ctx, ci);
 }
 
+static inline void wpa_sm_transition_disable(struct wpa_sm *sm, u8 bitmap)
+{
+	if (sm->ctx->transition_disable)
+		sm->ctx->transition_disable(sm->ctx->ctx, bitmap);
+}
+
 
 int wpa_eapol_key_send(struct wpa_sm *sm, struct wpa_ptk *ptk,
 		       int ver, const u8 *dest, u16 proto,
