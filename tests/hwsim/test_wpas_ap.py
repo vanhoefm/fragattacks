@@ -849,3 +849,58 @@ def test_wpas_ap_scan(dev, apdev):
         bss = dev[0].get_bss(bssid)
         if not bss:
             raise Exception("AP not found in scan")
+
+def test_wpas_ap_sae(dev):
+    """wpa_supplicant AP mode - SAE using psk"""
+    run_wpas_ap_sae(dev, False)
+
+def test_wpas_ap_sae_and_psk_transition_disable(dev):
+    """wpa_supplicant AP mode - SAE+PSK transition disable indication"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    if "SAE" not in dev[1].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    dev[0].set("sae_groups", "")
+    id = dev[0].add_network()
+    dev[0].set_network(id, "mode", "2")
+    dev[0].set_network_quoted(id, "ssid", "wpas-ap-sae")
+    dev[0].set_network(id, "proto", "WPA2")
+    dev[0].set_network(id, "key_mgmt", "SAE")
+    dev[0].set_network(id, "transition_disable", "1")
+    dev[0].set_network(id, "ieee80211w", "1")
+    dev[0].set_network(id, "pairwise", "CCMP")
+    dev[0].set_network(id, "group", "CCMP")
+    dev[0].set_network_quoted(id, "psk", "12345678")
+    dev[0].set_network(id, "frequency", "2412")
+    dev[0].set_network(id, "scan_freq", "2412")
+    dev[0].set_network(id, "wps_disabled", "1")
+    dev[0].select_network(id)
+    wait_ap_ready(dev[0])
+
+    dev[1].set("sae_groups", "")
+    dev[1].connect("wpas-ap-sae", key_mgmt="SAE WPA-PSK",
+                   psk="12345678", ieee80211w="1",
+                   scan_freq="2412")
+    ev = dev[1].wait_event(["TRANSITION-DISABLE"], timeout=1)
+    if ev is None:
+        raise Exception("Transition disable not indicated")
+    if ev.split(' ')[1] != "01":
+        raise Exception("Unexpected transition disable bitmap: " + ev)
+
+    val = dev[1].get_network(id, "ieee80211w")
+    if val != "2":
+        raise Exception("Unexpected ieee80211w value: " + val)
+    val = dev[1].get_network(id, "key_mgmt")
+    if val != "SAE":
+        raise Exception("Unexpected key_mgmt value: " + val)
+    val = dev[1].get_network(id, "group")
+    if val != "CCMP":
+        raise Exception("Unexpected group value: " + val)
+    val = dev[1].get_network(id, "proto")
+    if val != "RSN":
+        raise Exception("Unexpected proto value: " + val)
+
+    dev[1].request("DISCONNECT")
+    dev[1].wait_disconnected()
+    dev[1].request("RECONNECT")
+    dev[1].wait_connected()

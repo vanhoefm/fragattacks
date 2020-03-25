@@ -761,3 +761,47 @@ def test_owe_ptk_hash(dev, apdev):
         if ev is None:
             raise Exception("No PMKSA cache removal event seen")
         dev[0].dump_monitor()
+
+def test_owe_transition_mode_disable(dev, apdev):
+    """Opportunistic Wireless Encryption transition mode disable"""
+    if "OWE" not in dev[0].get_capability("key_mgmt"):
+        raise HwsimSkip("OWE not supported")
+    dev[0].flush_scan_cache()
+    params = {"ssid": "owe-random",
+              "wpa": "2",
+              "wpa_key_mgmt": "OWE",
+              "rsn_pairwise": "CCMP",
+              "ieee80211w": "2",
+              "transition_disable": '0x08',
+              "owe_transition_bssid": apdev[1]['bssid'],
+              "owe_transition_ssid": '"owe-test"',
+              "ignore_broadcast_ssid": "1"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    params = {"ssid": "owe-test",
+              "owe_transition_bssid": apdev[0]['bssid'],
+              "owe_transition_ssid": '"owe-random"'}
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    bssid2 = hapd2.own_addr()
+
+    dev[0].scan_for_bss(bssid, freq="2412")
+    dev[0].scan_for_bss(bssid2, freq="2412")
+
+    id = dev[0].connect("owe-test", key_mgmt="OWE", ieee80211w="2",
+                        scan_freq="2412")
+
+    ev = dev[0].wait_event(["TRANSITION-DISABLE"], timeout=1)
+    if ev is None:
+        raise Exception("Transition disable not indicated")
+    if ev.split(' ')[1] != "08":
+        raise Exception("Unexpected transition disable bitmap: " + ev)
+
+    val = dev[0].get_network(id, "owe_only")
+    if val != "1":
+        raise Exception("Unexpected owe_only value: " + val)
+
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    dev[0].request("RECONNECT")
+    dev[0].wait_connected()

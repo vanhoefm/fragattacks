@@ -363,6 +363,42 @@ def test_sae_mixed_mfp(dev, apdev):
     dev[2].connect("test-sae", psk="12345678", ieee80211w="0", scan_freq="2412")
     dev[2].dump_monitor()
 
+def test_sae_and_psk_transition_disable(dev, apdev):
+    """SAE and PSK transition disable indication"""
+    check_sae_capab(dev[0])
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
+    params["ieee80211w"] = "1"
+    params['wpa_key_mgmt'] = 'SAE WPA-PSK'
+    params['transition_disable'] = '0x01'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].request("SET sae_groups ")
+    id = dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE WPA-PSK",
+                        ieee80211w="1", scan_freq="2412")
+    ev = dev[0].wait_event(["TRANSITION-DISABLE"], timeout=1)
+    if ev is None:
+        raise Exception("Transition disable not indicated")
+    if ev.split(' ')[1] != "01":
+        raise Exception("Unexpected transition disable bitmap: " + ev)
+
+    val = dev[0].get_network(id, "ieee80211w")
+    if val != "2":
+        raise Exception("Unexpected ieee80211w value: " + val)
+    val = dev[0].get_network(id, "key_mgmt")
+    if val != "SAE":
+        raise Exception("Unexpected key_mgmt value: " + val)
+    val = dev[0].get_network(id, "group")
+    if val != "CCMP":
+        raise Exception("Unexpected group value: " + val)
+    val = dev[0].get_network(id, "proto")
+    if val != "RSN":
+        raise Exception("Unexpected proto value: " + val)
+
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    dev[0].request("RECONNECT")
+    dev[0].wait_connected()
+
 def test_sae_mfp(dev, apdev):
     """SAE and MFP enabled without sae_require_mfp"""
     check_sae_capab(dev[0])

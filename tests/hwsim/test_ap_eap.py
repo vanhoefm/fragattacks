@@ -7314,3 +7314,33 @@ def test_ap_wpa2_eap_sake_no_control_port(dev, apdev):
     eap_connect(wpas, hapd, "SAKE", "sake user",
                 password_hex="ff23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
                 expect_failure=True)
+
+def test_ap_wpa3_eap_transition_disable(dev, apdev):
+    """WPA3-Enterprise transition disable indication"""
+    params = hostapd.wpa2_eap_params(ssid="test-wpa3-eap")
+    params["ieee80211w"] = "1"
+    params['transition_disable'] = '0x04'
+    hapd = hostapd.add_ap(apdev[0], params)
+    id = dev[0].connect("test-wpa3-eap", key_mgmt="WPA-EAP", ieee80211w="1",
+                        proto="WPA WPA2", pairwise="CCMP", group="TKIP CCMP",
+                        eap="GPSK", identity="gpsk user",
+                        password="abcdefghijklmnop0123456789abcdef",
+                        scan_freq="2412")
+
+    val = dev[0].get_network(id, "ieee80211w")
+    if val != "2":
+        raise Exception("Unexpected ieee80211w value: " + val)
+    val = dev[0].get_network(id, "key_mgmt")
+    if val != "WPA-EAP":
+        raise Exception("Unexpected key_mgmt value: " + val)
+    val = dev[0].get_network(id, "group")
+    if val != "CCMP":
+        raise Exception("Unexpected group value: " + val)
+    val = dev[0].get_network(id, "proto")
+    if val != "RSN":
+        raise Exception("Unexpected proto value: " + val)
+
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    dev[0].request("RECONNECT")
+    dev[0].wait_connected()
