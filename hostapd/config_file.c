@@ -4462,6 +4462,8 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		conf->rssi_reject_assoc_timeout = atoi(pos);
 	} else if (os_strcmp(buf, "pbss") == 0) {
 		bss->pbss = atoi(pos);
+	} else if (os_strcmp(buf, "transition_disable") == 0) {
+		bss->transition_disable = strtol(pos, NULL, 16);
 #ifdef CONFIG_AIRTIME_POLICY
 	} else if (os_strcmp(buf, "airtime_mode") == 0) {
 		int val = atoi(pos);

@@ -2712,8 +2712,13 @@ static struct wpabuf * fils_prepare_plainbuf(struct wpa_state_machine *sm,
 	u8 *gtk, dummy_gtk[32];
 	size_t gtk_len;
 	struct wpa_group *gsm;
+	size_t plain_len;
+	struct wpa_auth_config *conf = &sm->wpa_auth->conf;
 
-	plain = wpabuf_alloc(1000 + ieee80211w_kde_len(sm));
+	plain_len = 1000 + ieee80211w_kde_len(sm);
+	if (conf->transition_disable)
+		plain_len += 2 + RSN_SELECTOR_LEN + 1;
+	plain = wpabuf_alloc(plain_len);
 	if (!plain)
 		return NULL;
 
@@ -2765,6 +2770,13 @@ static struct wpabuf * fils_prepare_plainbuf(struct wpa_state_machine *sm,
 	tmp = wpabuf_put(plain, 0);
 	tmp2 = ieee80211w_kde_add(sm, tmp);
 	wpabuf_put(plain, tmp2 - tmp);
+
+	if (conf->transition_disable) {
+		tmp = wpabuf_put(plain, 0);
+		tmp2 = wpa_add_kde(tmp, WFA_KEY_DATA_TRANSITION_DISABLE,
+				   &conf->transition_disable, 1, NULL, 0);
+		wpabuf_put(plain, tmp2 - tmp);
+	}
 
 	*len = (u8 *) wpabuf_put(plain, 0) - len - 1;
 
@@ -3276,6 +3288,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 	int secure, gtkidx, encr = 0;
 	u8 *wpa_ie_buf = NULL, *wpa_ie_buf2 = NULL;
 	u8 hdr[2];
+	struct wpa_auth_config *conf = &sm->wpa_auth->conf;
 
 	SM_ENTRY_MA(WPA_PTK, PTKINITNEGOTIATING, wpa_ptk);
 	sm->TimeoutEvt = FALSE;
@@ -3400,6 +3413,10 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 	if (WPA_GET_BE32(sm->ip_addr) > 0)
 		kde_len += 2 + RSN_SELECTOR_LEN + 3 * 4;
 #endif /* CONFIG_P2P */
+
+	if (conf->transition_disable)
+		kde_len += 2 + RSN_SELECTOR_LEN + 1;
+
 	kde = os_malloc(kde_len);
 	if (kde == NULL)
 		goto done;
@@ -3442,9 +3459,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 #ifdef CONFIG_IEEE80211R_AP
 	if (wpa_key_mgmt_ft(sm->wpa_key_mgmt)) {
 		int res;
-		struct wpa_auth_config *conf;
 
-		conf = &sm->wpa_auth->conf;
 		if (sm->assoc_resp_ftie &&
 		    kde + kde_len - pos >= 2 + sm->assoc_resp_ftie[1]) {
 			os_memcpy(pos, sm->assoc_resp_ftie,
@@ -3492,6 +3507,10 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 				  addr, sizeof(addr), NULL, 0);
 	}
 #endif /* CONFIG_P2P */
+
+	if (conf->transition_disable)
+		pos = wpa_add_kde(pos, WFA_KEY_DATA_TRANSITION_DISABLE,
+				  &conf->transition_disable, 1, NULL, 0);
 
 	wpa_send_eapol(sm->wpa_auth, sm,
 		       (secure ? WPA_KEY_INFO_SECURE : 0) |

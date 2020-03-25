@@ -251,6 +251,7 @@ struct wpa_auth_config {
 #endif /* CONFIG_FILS */
 	int sae_pwe;
 	int owe_ptk_workaround;
+	u8 transition_disable;
 };
 
 typedef enum {

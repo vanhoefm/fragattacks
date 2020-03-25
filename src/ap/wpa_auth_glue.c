@@ -195,6 +195,7 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 #ifdef CONFIG_OWE
 	wconf->owe_ptk_workaround = conf->owe_ptk_workaround;
 #endif /* CONFIG_OWE */
+	wconf->transition_disable = conf->transition_disable;
 }
 
 

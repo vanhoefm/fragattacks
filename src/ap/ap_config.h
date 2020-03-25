@@ -756,6 +756,8 @@ struct hostapd_bss_config {
 
 	u8 send_probe_response;
 
+	u8 transition_disable;
+
 #define BACKHAUL_BSS 1
 #define FRONTHAUL_BSS 2
 	int multi_ap; /* bitmap of BACKHAUL_BSS, FRONTHAUL_BSS */
