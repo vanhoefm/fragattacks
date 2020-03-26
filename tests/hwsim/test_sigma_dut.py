@@ -4117,3 +4117,29 @@ def test_sigma_dut_ap_beacon_prot(dev, apdev, params):
     logger.info("wlantest BIP counters: valid=%d invalid=%d missing=%d" % (valid_bip, invalid_bip, missing_bip))
     if valid_bip < 0 or invalid_bip > 0 or missing_bip > 0:
         raise Exception("Unexpected wlantest BIP counters: valid=%d invalid=%d missing=%d" % (valid_bip, invalid_bip, missing_bip))
+
+def test_sigma_dut_ap_transition_disable(dev, apdev, params):
+    """sigma_dut controlled AP and transition disabled indication"""
+    logdir = params['prefix'] + ".sigma-hostapd"
+
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-SAE,PSK,12345678,PMF,Required,Transition_Disable,1,Transition_Disable_Index,0")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+            bssid = sigma_dut_cmd_check("ap_get_mac_address,NAME,AP")
+
+            dev[0].set("sae_groups", "")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", scan_freq="2412")
+            ev = dev[0].wait_event(["TRANSITION-DISABLE"], timeout=1)
+            if ev is None:
+                raise Exception("Transition disable not indicated")
+            if ev.split(' ')[1] != "01":
+                raise Exception("Unexpected transition disable bitmap: " + ev)
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
