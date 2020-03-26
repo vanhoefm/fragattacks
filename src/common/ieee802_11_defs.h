@@ -1316,6 +1316,8 @@ struct ieee80211_ampe_ie {
 #define OWE_IE_VENDOR_TYPE 0x506f9a1c
 #define OWE_OUI_TYPE 28
 #define MULTI_AP_OUI_TYPE 0x1B
+#define DPP_CC_IE_VENDOR_TYPE 0x506f9a1e
+#define DPP_CC_OUI_TYPE 0x1e
 
 #define MULTI_AP_SUB_ELEM_TYPE 0x06
 #define MULTI_AP_TEAR_DOWN BIT(4)
