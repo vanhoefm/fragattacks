@@ -26,6 +26,7 @@ from test_dpp import check_dpp_capab, update_hapd_config, wait_auth_success
 from test_suite_b import check_suite_b_192_capa, suite_b_as_params, suite_b_192_rsa_ap_params
 from test_ap_eap import check_eap_capa, int_eap_server_params, check_domain_match, check_domain_suffix_match
 from test_ap_hs20 import hs20_ap_params
+from test_ap_pmf import check_mac80211_bigtk
 
 def check_sigma_dut():
     if not os.path.exists("./sigma_dut"):
@@ -4048,3 +4049,36 @@ def run_sigma_dut_ap_channel(dev, apdev, params, channel, mode, scan_freq,
             stop_sigma_dut(sigma)
             subprocess.call(['iw', 'reg', 'set', '00'])
             dev[0].flush_scan_cache()
+
+def test_sigma_dut_beacon_prot(dev, apdev):
+    """sigma_dut controlled STA and beacon protection"""
+    ssid = "test-pmf-required"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    params["beacon_prot"] = "1"
+    try:
+        hapd = hostapd.add_ap(apdev[0], params)
+    except Exception as e:
+        if "Failed to enable hostapd interface" in str(e):
+            raise HwsimSkip("Beacon protection not supported")
+        raise
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname)
+
+    try:
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,PMF" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,type,PSK,passphrase,%s,encpType,aes-ccmp,keymgmttype,wpa2,PMF,Required,BeaconProtection,1" % (ifname, "test-pmf-required", "12345678"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-pmf-required"),
+                            timeout=10)
+        sigma_dut_wait_connected(ifname)
+
+        time.sleep(1)
+        check_mac80211_bigtk(dev[0], hapd)
+
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
+        dev[0].set("ignore_old_scan_res", "0")

@@ -927,58 +927,11 @@ def mac80211_read_key(keydir):
             pass
     return vals
 
-def test_ap_pmf_beacon_protection_bip(dev, apdev):
-    """WPA2-PSK Beacon protection (BIP)"""
-    """WPA2-PSK AP with PMF required and Beacon protection enabled (BIP)"""
-    run_ap_pmf_beacon_protection(dev, apdev, "AES-128-CMAC")
-
-def test_ap_pmf_beacon_protection_bip_cmac_256(dev, apdev):
-    """WPA2-PSK Beacon protection (BIP-CMAC-256)"""
-    run_ap_pmf_beacon_protection(dev, apdev, "BIP-CMAC-256")
-
-def test_ap_pmf_beacon_protection_bip_gmac_128(dev, apdev):
-    """WPA2-PSK Beacon protection (BIP-GMAC-128)"""
-    run_ap_pmf_beacon_protection(dev, apdev, "BIP-GMAC-128")
-
-def test_ap_pmf_beacon_protection_bip_gmac_256(dev, apdev):
-    """WPA2-PSK Beacon protection (BIP-GMAC-256)"""
-    run_ap_pmf_beacon_protection(dev, apdev, "BIP-GMAC-256")
-
-def run_ap_pmf_beacon_protection(dev, apdev, cipher):
-    ssid = "test-beacon-prot"
-    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
-    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
-    params["ieee80211w"] = "2"
-    params["beacon_prot"] = "1"
-    params["group_mgmt_cipher"] = cipher
-    try:
-        hapd = hostapd.add_ap(apdev[0], params)
-    except Exception as e:
-        if "Failed to enable hostapd interface" in str(e):
-            raise HwsimSkip("Beacon protection not supported")
-        raise
-
-    bssid = hapd.own_addr()
-
-    Wlantest.setup(hapd)
-    wt = Wlantest()
-    wt.flush()
-    wt.add_passphrase("12345678")
-
-    # STA with Beacon protection enabled
-    dev[0].connect(ssid, psk="12345678", ieee80211w="2", beacon_prot="1",
-                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
-
-    # STA with Beacon protection disabled
-    dev[1].connect(ssid, psk="12345678", ieee80211w="2",
-                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
-
-    time.sleep(1)
-
+def check_mac80211_bigtk(dev, hapd):
     sta_key = None
     ap_key = None
 
-    phy = dev[0].get_driver_status_field("phyname")
+    phy = dev.get_driver_status_field("phyname")
     keys = "/sys/kernel/debug/ieee80211/%s/keys" % phy
     try:
         for key in os.listdir(keys):
@@ -1033,6 +986,55 @@ def run_ap_pmf_beacon_protection(dev, apdev, cipher):
     tx_spec = int(ap_key['tx_spec'], base=16)
     if tx_spec < 3:
         raise Exception("AP did not update BIGTK BIPN sufficiently")
+
+def test_ap_pmf_beacon_protection_bip(dev, apdev):
+    """WPA2-PSK Beacon protection (BIP)"""
+    """WPA2-PSK AP with PMF required and Beacon protection enabled (BIP)"""
+    run_ap_pmf_beacon_protection(dev, apdev, "AES-128-CMAC")
+
+def test_ap_pmf_beacon_protection_bip_cmac_256(dev, apdev):
+    """WPA2-PSK Beacon protection (BIP-CMAC-256)"""
+    run_ap_pmf_beacon_protection(dev, apdev, "BIP-CMAC-256")
+
+def test_ap_pmf_beacon_protection_bip_gmac_128(dev, apdev):
+    """WPA2-PSK Beacon protection (BIP-GMAC-128)"""
+    run_ap_pmf_beacon_protection(dev, apdev, "BIP-GMAC-128")
+
+def test_ap_pmf_beacon_protection_bip_gmac_256(dev, apdev):
+    """WPA2-PSK Beacon protection (BIP-GMAC-256)"""
+    run_ap_pmf_beacon_protection(dev, apdev, "BIP-GMAC-256")
+
+def run_ap_pmf_beacon_protection(dev, apdev, cipher):
+    ssid = "test-beacon-prot"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    params["beacon_prot"] = "1"
+    params["group_mgmt_cipher"] = cipher
+    try:
+        hapd = hostapd.add_ap(apdev[0], params)
+    except Exception as e:
+        if "Failed to enable hostapd interface" in str(e):
+            raise HwsimSkip("Beacon protection not supported")
+        raise
+
+    bssid = hapd.own_addr()
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+
+    # STA with Beacon protection enabled
+    dev[0].connect(ssid, psk="12345678", ieee80211w="2", beacon_prot="1",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
+
+    # STA with Beacon protection disabled
+    dev[1].connect(ssid, psk="12345678", ieee80211w="2",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
+
+    time.sleep(1)
+    check_mac80211_bigtk(dev[0], hapd)
 
     valid_bip = wt.get_bss_counter('valid_bip_mmie', bssid)
     invalid_bip = wt.get_bss_counter('invalid_bip_mmie', bssid)
