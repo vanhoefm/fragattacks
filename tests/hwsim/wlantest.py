@@ -91,7 +91,8 @@ class Wlantest:
 
     @classmethod
     def setup(cls, wpa, is_p2p=False):
-        cls.chan_from_wpa(wpa, is_p2p)
+        if wpa:
+            cls.chan_from_wpa(wpa, is_p2p)
         cls.start_remote_wlantest()
         cls.setup_done = True
 

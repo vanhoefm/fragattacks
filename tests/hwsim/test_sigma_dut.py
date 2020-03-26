@@ -22,6 +22,7 @@ import hostapd
 from utils import HwsimSkip
 from hwsim import HWSimRadio
 import hwsim_utils
+from wlantest import Wlantest
 from test_dpp import check_dpp_capab, update_hapd_config, wait_auth_success
 from test_suite_b import check_suite_b_192_capa, suite_b_as_params, suite_b_192_rsa_ap_params
 from test_ap_eap import check_eap_capa, int_eap_server_params, check_domain_match, check_domain_suffix_match
@@ -4082,3 +4083,37 @@ def test_sigma_dut_beacon_prot(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
         dev[0].set("ignore_old_scan_res", "0")
+
+def test_sigma_dut_ap_beacon_prot(dev, apdev, params):
+    """sigma_dut controlled AP and beacon protection"""
+    logdir = params['prefix'] + ".sigma-hostapd"
+
+    Wlantest.setup(None)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-psk,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-PSK,PSK,12345678,PMF,Required,BeaconProtection,1")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+            bssid = sigma_dut_cmd_check("ap_get_mac_address,NAME,AP")
+
+            dev[0].connect("test-psk", key_mgmt="WPA-PSK-SHA256",
+                           psk="12345678", scan_freq="2412",
+                           ieee80211w="2", beacon_prot="1")
+            time.sleep(1)
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
+    valid_bip = wt.get_bss_counter('valid_bip_mmie', bssid)
+    invalid_bip = wt.get_bss_counter('invalid_bip_mmie', bssid)
+    missing_bip = wt.get_bss_counter('missing_bip_mmie', bssid)
+    logger.info("wlantest BIP counters: valid=%d invalid=%d missing=%d" % (valid_bip, invalid_bip, missing_bip))
+    if valid_bip < 0 or invalid_bip > 0 or missing_bip > 0:
+        raise Exception("Unexpected wlantest BIP counters: valid=%d invalid=%d missing=%d" % (valid_bip, invalid_bip, missing_bip))
