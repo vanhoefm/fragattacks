@@ -134,6 +134,7 @@ struct dpp_bootstrap_info {
 	int own;
 	EVP_PKEY *pubkey;
 	u8 pubkey_hash[SHA256_MAC_LEN];
+	u8 pubkey_hash_chirp[SHA256_MAC_LEN];
 	const struct dpp_curve_params *curve;
 	unsigned int pkex_t; /* number of failures before dpp_pkex
 			      * instantiation */
@@ -436,7 +437,6 @@ extern size_t dpp_nonce_override_len;
 
 void dpp_bootstrap_info_free(struct dpp_bootstrap_info *info);
 const char * dpp_bootstrap_type_txt(enum dpp_bootstrap_type type);
-int dpp_bootstrap_key_hash(struct dpp_bootstrap_info *bi);
 int dpp_parse_uri_chan_list(struct dpp_bootstrap_info *bi,
 			    const char *chan_list);
 int dpp_parse_uri_mac(struct dpp_bootstrap_info *bi, const char *mac);
@@ -596,6 +596,7 @@ int dpp_controller_start(struct dpp_global *dpp,
 void dpp_controller_stop(struct dpp_global *dpp);
 int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
 		 const struct hostapd_ip_addr *addr, int port);
+struct wpabuf * dpp_build_presence_announcement(struct dpp_bootstrap_info *bi);
 
 struct dpp_global_config {
 	void *msg_ctx;

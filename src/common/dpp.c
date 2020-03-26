@@ -1056,6 +1056,32 @@ static const struct dpp_curve_params * dpp_get_curve_nid(int nid)
 }
 
 
+static int dpp_bi_pubkey_hash(struct dpp_bootstrap_info *bi,
+			      const u8 *data, size_t data_len)
+{
+	const u8 *addr[2];
+	size_t len[2];
+
+	addr[0] = data;
+	len[0] = data_len;
+	if (sha256_vector(1, addr, len, bi->pubkey_hash) < 0)
+		return -1;
+	wpa_hexdump(MSG_DEBUG, "DPP: Public key hash",
+		    bi->pubkey_hash, SHA256_MAC_LEN);
+
+	addr[0] = (const u8 *) "chirp";
+	len[0] = 5;
+	addr[1] = data;
+	len[1] = data_len;
+	if (sha256_vector(2, addr, len, bi->pubkey_hash_chirp) < 0)
+		return -1;
+	wpa_hexdump(MSG_DEBUG, "DPP: Public key hash (chirp)",
+		    bi->pubkey_hash_chirp, SHA256_MAC_LEN);
+
+	return 0;
+}
+
+
 static int dpp_parse_uri_pk(struct dpp_bootstrap_info *bi, const char *info)
 {
 	const char *end;
@@ -1094,14 +1120,11 @@ static int dpp_parse_uri_pk(struct dpp_bootstrap_info *bi, const char *info)
 	wpa_hexdump(MSG_DEBUG, "DPP: Base64 decoded URI public-key",
 		    data, data_len);
 
-	if (sha256_vector(1, (const u8 **) &data, &data_len,
-			  bi->pubkey_hash) < 0) {
+	if (dpp_bi_pubkey_hash(bi, data, data_len) < 0) {
 		wpa_printf(MSG_DEBUG, "DPP: Failed to hash public key");
 		os_free(data);
 		return -1;
 	}
-	wpa_hexdump(MSG_DEBUG, "DPP: Public key hash",
-		    bi->pubkey_hash, SHA256_MAC_LEN);
 
 	/* DER encoded ASN.1 SubjectPublicKeyInfo
 	 *
@@ -1519,27 +1542,19 @@ fail:
 }
 
 
-int dpp_bootstrap_key_hash(struct dpp_bootstrap_info *bi)
+static int dpp_bootstrap_key_hash(struct dpp_bootstrap_info *bi)
 {
 	struct wpabuf *der;
 	int res;
-	const u8 *addr[1];
-	size_t len[1];
 
 	der = dpp_bootstrap_key_der(bi->pubkey);
 	if (!der)
 		return -1;
 	wpa_hexdump_buf(MSG_DEBUG, "DPP: Compressed public key (DER)",
 			der);
-
-	addr[0] = wpabuf_head(der);
-	len[0] = wpabuf_len(der);
-	res = sha256_vector(1, addr, len, bi->pubkey_hash);
+	res = dpp_bi_pubkey_hash(bi, wpabuf_head(der), wpabuf_len(der));
 	if (res < 0)
 		wpa_printf(MSG_DEBUG, "DPP: Failed to hash public key");
-	else
-		wpa_hexdump(MSG_DEBUG, "DPP: Public key hash", bi->pubkey_hash,
-			    SHA256_MAC_LEN);
 	wpabuf_free(der);
 	return res;
 }
@@ -1552,8 +1567,6 @@ static int dpp_keygen(struct dpp_bootstrap_info *bi, const char *curve,
 	char *pos, *end;
 	size_t len;
 	struct wpabuf *der = NULL;
-	const u8 *addr[1];
-	int res;
 
 	if (!curve) {
 		bi->curve = &dpp_curves[0];
@@ -1579,15 +1592,10 @@ static int dpp_keygen(struct dpp_bootstrap_info *bi, const char *curve,
 	wpa_hexdump_buf(MSG_DEBUG, "DPP: Compressed public key (DER)",
 			der);
 
-	addr[0] = wpabuf_head(der);
-	len = wpabuf_len(der);
-	res = sha256_vector(1, addr, &len, bi->pubkey_hash);
-	if (res < 0) {
+	if (dpp_bi_pubkey_hash(bi, wpabuf_head(der), wpabuf_len(der)) < 0) {
 		wpa_printf(MSG_DEBUG, "DPP: Failed to hash public key");
 		goto fail;
 	}
-	wpa_hexdump(MSG_DEBUG, "DPP: Public key hash", bi->pubkey_hash,
-		    SHA256_MAC_LEN);
 
 	base64 = base64_encode(wpabuf_head(der), wpabuf_len(der), &len);
 	wpabuf_free(der);
@@ -12209,6 +12217,24 @@ void dpp_controller_stop(struct dpp_global *dpp)
 		dpp_controller_free(dpp->controller);
 		dpp->controller = NULL;
 	}
+}
+
+
+struct wpabuf * dpp_build_presence_announcement(struct dpp_bootstrap_info *bi)
+{
+	struct wpabuf *msg;
+
+	wpa_printf(MSG_DEBUG, "DPP: Build Presence Announcement frame");
+
+	msg = dpp_alloc_msg(DPP_PA_PRESENCE_ANNOUNCEMENT, 4 + SHA256_MAC_LEN);
+	if (!msg)
+		return NULL;
+
+	/* Responder Bootstrapping Key Hash */
+	dpp_build_attr_r_bootstrap_key_hash(msg, bi->pubkey_hash_chirp);
+	wpa_hexdump_buf(MSG_DEBUG,
+			"DPP: Presence Announcement frame attributes", msg);
+	return msg;
 }
 
 #endif /* CONFIG_DPP2 */
