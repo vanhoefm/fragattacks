@@ -2463,6 +2463,13 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "skip_inactivity_poll") == 0) {
 		bss->skip_inactivity_poll = atoi(pos);
 	} else if (os_strcmp(buf, "country_code") == 0) {
+		if (pos[0] < 'A' || pos[0] > 'Z' ||
+		    pos[1] < 'A' || pos[1] > 'Z') {
+			wpa_printf(MSG_ERROR,
+				   "Line %d: Invalid country_code '%s'",
+				   line, pos);
+			return 1;
+		}
 		os_memcpy(conf->country, pos, 2);
 	} else if (os_strcmp(buf, "country3") == 0) {
 		conf->country[2] = strtol(pos, NULL, 16);
