@@ -562,6 +562,7 @@ dpp_pkex_finish(struct dpp_global *dpp, struct dpp_pkex *pkex, const u8 *peer,
 const char * dpp_bootstrap_get_uri(struct dpp_global *dpp, unsigned int id);
 int dpp_bootstrap_info(struct dpp_global *dpp, int id,
 		       char *reply, int reply_size);
+int dpp_bootstrap_set(struct dpp_global *dpp, int id, const char *params);
 void dpp_bootstrap_find_pair(struct dpp_global *dpp, const u8 *i_bootstrap,
 			     const u8 *r_bootstrap,
 			     struct dpp_bootstrap_info **own_bi,

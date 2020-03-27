@@ -10532,6 +10532,26 @@ int dpp_bootstrap_info(struct dpp_global *dpp, int id,
 }
 
 
+int dpp_bootstrap_set(struct dpp_global *dpp, int id, const char *params)
+{
+	struct dpp_bootstrap_info *bi;
+
+	bi = dpp_bootstrap_get_id(dpp, id);
+	if (!bi)
+		return -1;
+
+	str_clear_free(bi->configurator_params);
+
+	if (params) {
+		bi->configurator_params = os_strdup(params);
+		return bi->configurator_params ? 0 : -1;
+	}
+
+	bi->configurator_params = NULL;
+	return 0;
+}
+
+
 void dpp_bootstrap_find_pair(struct dpp_global *dpp, const u8 *i_bootstrap,
 			     const u8 *r_bootstrap,
 			     struct dpp_bootstrap_info **own_bi,
