@@ -78,7 +78,8 @@ def test_bgscan_simple_beacon_loss(dev, apdev):
 
     dev[0].set("disable_sa_query", "1")
     dev[0].connect("bgscan", ieee80211w="2", key_mgmt="WPA-PSK-SHA256",
-                   psk="12345678", scan_freq="2412", bgscan="simple:1:-20:2")
+                   psk="12345678", scan_freq="2412",
+                   bgscan="simple:100:-20:200")
     hapd.set("ext_mgmt_frame_handling", "1")
     if "OK" not in hapd.request("STOP_AP"):
         raise Exception("Failed to stop AP")
@@ -253,7 +254,7 @@ def test_bgscan_learn_beacon_loss(dev, apdev):
 
     dev[0].set("disable_sa_query", "1")
     dev[0].connect("bgscan", ieee80211w="2", key_mgmt="WPA-PSK-SHA256",
-                   psk="12345678", scan_freq="2412", bgscan="learn:1:-20:2")
+                   psk="12345678", scan_freq="2412", bgscan="learn:100:-20:200")
     hapd.set("ext_mgmt_frame_handling", "1")
     if "OK" not in hapd.request("STOP_AP"):
         raise Exception("Failed to stop AP")
