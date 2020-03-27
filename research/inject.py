@@ -9,8 +9,10 @@ from scapy.contrib.wpa_eapol import WPA_key
 #   However, this number is not incremented when the MoreFragments flag is set,
 #   meaning we can inject fragmented frames (albeit with a different sequence
 #   number than then one we use for injection this this script).
-#   TODO: The above cannot be relied on when other frames and send between
-#	  the two fragments?
+# - The above trick does not work when we want to inject other frames between
+#   two fragmented frames (the chip will assign them difference sequence numbers).
+#   Even when the fragments use a unique QoS TID, sending frames between them
+#   will make the chip assign difference sequence numbers to both fragments.
 # - Overwriting the sequence can be avoided by patching `ath_tgt_tx_seqno_normal`
 #   and commenting out the two lines that modify `i_seq`.
 # - See also the comment in Station.inject_next_frags to avoid other bugs with
@@ -48,7 +50,9 @@ def argv_pop_argument(argument):
 
 class TestOptions():
 	def __init__(self):
-		self.test = None
+		# Workaround for ath9k_htc bugs
+		self.inject_workaround = False
+
 		self.interface = None
 		self.clientip = None
 		self.routerip = None
@@ -348,7 +352,11 @@ class Station():
 		# includes beacons). Injecting a dummy packet like below avoid this,
 		# and assures packets keep being sent normally (when the last fragment
 		# had the MF flag set).
-		if frag != None and frag.FCfield & 0x4 != 0:
+		#
+		# Note: when the device is only operating in monitor mode, this does
+		#	not seem to be a problem.
+		#
+		if self.options.inject_workaround and frag != None and frag.FCfield & 0x4 != 0:
 			self.daemon.inject_mon(Dot11(addr1="ff:ff:ff:ff:ff:ff"))
 			print("[Injected packet] Prevent ath9k_htc bug after fragment injection")
 
@@ -457,6 +465,15 @@ class Daemon():
 		time.sleep(0.5)
 		subprocess.check_output(["iw", self.nic_mon, "set", "type", "monitor"])
 		subprocess.check_output(["ifconfig", self.nic_mon, "up"])
+
+		# 3. Remember whether to need to perform a workaround.
+		driver = get_device_driver(self.nic_iface)
+		if driver == None:
+			log(WARNING, "Unable to detect driver of interface!")
+			log(WARNING, "Injecting fragments may contains bugs.")
+		elif driver == "ath9k_htc":
+			options.inject_workaround = True
+			log(STATUS, "Detect ath9k_htc, using injection bug workarounds")
 
 	def inject_mon(self, p):
 		self.sock_mon.send(p)
@@ -752,7 +769,6 @@ if __name__ == "__main__":
 
 	options = TestOptions()
 	options.interface = sys.argv[1]
-	# options.test = TestOptions.Inject_Ping
 
 	# Parse remaining options
 	start_ap = argv_pop_argument("--ap")
