@@ -5467,8 +5467,12 @@ enum qca_wlan_vendor_attr_spectral_scan {
 	 * QCA_WLAN_VENDOR_SPECTRAL_SCAN_MODE_AGILE
 	 *    Center frequency (in MHz) of the span of interest or
 	 *    for convenience, center frequency (in MHz) of any channel
-	 *    in the span of interest. If agile spectral scan is initiated
-	 *    without setting a valid frequency it returns the error code
+	 *    in the span of interest. For 80+80 MHz agile spectral scan
+	 *    request it represents center frequency (in MHz) of the primary
+	 *    80 MHz span or for convenience, center frequency (in MHz) of any
+	 *    channel in the primary 80 MHz span. If agile spectral scan is
+	 *    initiated without setting a valid frequency it returns the
+	 *    error code
 	 *    (QCA_WLAN_VENDOR_SPECTRAL_SCAN_ERR_PARAM_NOT_INITIALIZED).
 	 * u32 attribute.
 	 */
@@ -5495,6 +5499,20 @@ enum qca_wlan_vendor_attr_spectral_scan {
 	 * 1-enable, 0-disable
 	 */
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CONFIG_DMA_BUFFER_DEBUG = 28,
+	/* This specifies the frequency span over which spectral scan would be
+	 * carried out. Its value depends on the value of
+	 * QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_MODE and the relation is as
+	 * follows.
+	 * QCA_WLAN_VENDOR_SPECTRAL_SCAN_MODE_NORMAL
+	 *    Not applicable. Spectral scan would happen in the operating span.
+	 * QCA_WLAN_VENDOR_SPECTRAL_SCAN_MODE_AGILE
+	 *    This attribute is applicable only for agile spectral scan
+	 *    requests in 80+80 MHz mode. It represents center frequency (in
+	 *    MHz) of the secondary 80 MHz span or for convenience, center
+	 *    frequency (in MHz) of any channel in the secondary 80 MHz span.
+	 * u32 attribute.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CONFIG_FREQUENCY_2 = 29,
 
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CONFIG_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_SPECTRAL_SCAN_CONFIG_MAX =
