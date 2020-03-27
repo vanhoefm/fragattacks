@@ -1490,6 +1490,17 @@ class WpaSupplicant:
             raise Exception("Failed to generate bootstrapping info")
         return int(res)
 
+    def dpp_bootstrap_set(self, id, conf=None, configurator=None, extra=None):
+        cmd = "DPP_BOOTSTRAP_SET %d" % id
+        if extra:
+            cmd += " " + extra
+        if conf:
+            cmd += " conf=" + conf
+        if configurator is not None:
+            cmd += " configurator=%d" % configurator
+        if "OK" not in self.request(cmd):
+            raise Exception("Failed to set bootstrapping parameters")
+
     def dpp_listen(self, freq, netrole=None, qr=None, role=None):
         cmd = "DPP_LISTEN " + str(freq)
         if netrole:

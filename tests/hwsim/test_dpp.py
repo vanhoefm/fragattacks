@@ -4571,18 +4571,29 @@ def test_dpp_controller_relay(dev, apdev, params):
         dev[0].set("dpp_config_processing", "0", allow_fail=True)
         dev[1].request("DPP_CONTROLLER_STOP")
 
-def run_dpp_controller_relay(dev, apdev, params):
+def test_dpp_controller_relay_chirp(dev, apdev, params):
+    """DPP Controller/Relay with chirping"""
+    try:
+        run_dpp_controller_relay(dev, apdev, params, chirp=True)
+    finally:
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
+        dev[1].request("DPP_CONTROLLER_STOP")
+
+def run_dpp_controller_relay(dev, apdev, params, chirp=False):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     prefix = "dpp_controller_relay"
+    if chirp:
+        prefix += "_chirp"
     cap_lo = os.path.join(params['logdir'], prefix + ".lo.pcap")
 
     wt = WlantestCapture('lo', cap_lo)
 
     # Controller
     conf_id = dev[1].dpp_configurator_add()
-    dev[1].set("dpp_configurator_params",
-               " conf=sta-dpp configurator=%d" % conf_id)
+    if not chirp:
+        dev[1].set("dpp_configurator_params",
+                   " conf=sta-dpp configurator=%d" % conf_id)
     id_c = dev[1].dpp_bootstrap_gen()
     uri_c = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id_c)
     res = dev[1].request("DPP_BOOTSTRAP_INFO %d" % id_c)
@@ -4601,20 +4612,40 @@ def run_dpp_controller_relay(dev, apdev, params):
     params = {"ssid": "unconfigured",
               "channel": "6",
               "dpp_controller": "ipaddr=127.0.0.1 pkhash=" + pkhash}
+    if chirp:
+        params["channel"] = "11"
+        params["dpp_configurator_connectivity"] = "1"
     relay = hostapd.add_ap(apdev[1], params)
     check_dpp_capab(relay)
 
     # Enroll Relay to the network
     # TODO: Do this over TCP once direct Enrollee-over-TCP case is supported
-    id_h = relay.dpp_bootstrap_gen(chan="81/6", mac=True)
+    if chirp:
+        id_h = relay.dpp_bootstrap_gen(chan="81/11", mac=True)
+    else:
+        id_h = relay.dpp_bootstrap_gen(chan="81/6", mac=True)
     uri_r = relay.request("DPP_BOOTSTRAP_GET_URI %d" % id_h)
     dev[1].dpp_auth_init(uri=uri_r, conf="ap-dpp", configurator=conf_id)
     wait_auth_success(relay, dev[1], configurator=dev[1], enrollee=relay)
     update_hapd_config(relay)
 
-    # Initiate from Enrollee with broadcast DPP Authentication Request
+    # Initiate from Enrollee with broadcast DPP Authentication Request or
+    # using chirping
     dev[0].set("dpp_config_processing", "2")
-    dev[0].dpp_auth_init(uri=uri_c, role="enrollee")
+    if chirp:
+        id1 = dev[0].dpp_bootstrap_gen()
+        uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
+        idc = dev[1].dpp_qr_code(uri)
+        dev[1].dpp_bootstrap_set(idc, conf="sta-dpp", configurator=conf_id)
+        if "OK" not in dev[0].request("DPP_CHIRP own=%d iter=5" % id1):
+            raise Exception("DPP_CHIRP failed")
+        ev = relay.wait_event(["DPP-RX"], timeout=10)
+        if ev is None:
+            raise Exception("Presence Announcement not seen")
+        if "type=13" not in ev:
+            raise Exception("Unexpected DPP frame received: " + ev)
+    else:
+        dev[0].dpp_auth_init(uri=uri_c, role="enrollee")
     wait_auth_success(dev[1], dev[0], configurator=dev[1], enrollee=dev[0],
                       allow_enrollee_failure=True,
                       allow_configurator_failure=True)
@@ -5039,3 +5070,111 @@ def test_dpp_with_p2p_device(dev, apdev):
         dev[0].dpp_auth_init(uri=uri1)
         wait_auth_success(wpas, dev[0], configurator=dev[0], enrollee=wpas,
                           allow_enrollee_failure=True)
+
+def test_dpp_chirp(dev, apdev, params):
+    """DPP chirp [long]"""
+    if not params['long']:
+        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+    check_dpp_capab(dev[0])
+    dev[0].flush_scan_cache()
+
+    params = {"ssid": "dpp",
+              "channel": "11"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    check_dpp_capab(hapd)
+    dpp_cc = False
+
+    id1 = dev[0].dpp_bootstrap_gen(chan="81/1")
+    if "OK" not in dev[0].request("DPP_CHIRP own=%d iter=5" % id1):
+        raise Exception("DPP_CHIRP failed")
+    chan1 = 0
+    chan6 = 0
+    chan11 = 0
+    for i in range(30):
+        ev = dev[0].wait_event(["DPP-CHIRP-STOPPED",
+                                "DPP-TX "], timeout=60)
+        if ev is None:
+            raise Exception("DPP chirp stop not reported")
+        if "DPP-CHIRP-STOPPED" in ev:
+            break
+        if "type=13" not in ev:
+            continue
+        freq = int(ev.split(' ')[2].split('=')[1])
+        if freq == 2412:
+            chan1 += 1
+        elif freq == 2437:
+            chan6 += 1
+        elif freq == 2462:
+            chan11 += 1
+        if not dpp_cc:
+            hapd.set("dpp_configurator_connectivity", "1")
+            if "OK" not in hapd.request("UPDATE_BEACON"):
+                raise Exception("UPDATE_BEACON failed")
+            dpp_cc = True
+    if chan1 != 5 or chan6 != 5 or chan11 != 1:
+        raise Exception("Unexpected number of presence announcements sent: %d %d %d" % (chan1, chan6, chan11))
+
+def test_dpp_chirp_listen(dev, apdev, params):
+    """DPP chirp with listen [long]"""
+    if not params['long']:
+        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    id1 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
+
+    if "OK" not in dev[0].request("DPP_CHIRP own=%d iter=2 listen=2412" % id1):
+        raise Exception("DPP_CHIRP failed")
+    for i in range(30):
+        ev = dev[0].wait_event(["DPP-CHIRP-STOPPED",
+                                "DPP-TX "], timeout=60)
+        if ev is None:
+            raise Exception("DPP chirp stop not reported")
+        if "DPP-CHIRP-STOPPED" in ev:
+            break
+
+def test_dpp_chirp_configurator(dev, apdev):
+    """DPP chirp with a standalone Configurator"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    id1 = dev[0].dpp_bootstrap_gen(chan="81/1")
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
+
+    conf_id = dev[1].dpp_configurator_add()
+    idc = dev[1].dpp_qr_code(uri)
+    dev[1].dpp_bootstrap_set(idc, conf="sta-dpp", configurator=conf_id)
+    dev[1].dpp_listen(2437)
+
+    if "OK" not in dev[0].request("DPP_CHIRP own=%d iter=2" % id1):
+        raise Exception("DPP_CHIRP failed")
+
+    ev = dev[1].wait_event(["DPP-RX"], timeout=10)
+    if ev is None:
+        raise Exception("Presence Announcement not seen")
+    if "type=13" not in ev:
+        raise Exception("Unexpected DPP frame received: " + ev)
+
+    wait_auth_success(dev[0], dev[1], dev[1], dev[0])
+
+def test_dpp_chirp_configurator_inits(dev, apdev):
+    """DPP chirp with a standalone Configurator initiating"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    id1 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
+
+    conf_id = dev[1].dpp_configurator_add()
+    idc = dev[1].dpp_qr_code(uri)
+
+    if "OK" not in dev[0].request("DPP_CHIRP own=%d iter=2 listen=2412" % id1):
+        raise Exception("DPP_CHIRP failed")
+    for i in range(2):
+        ev = dev[0].wait_event(["DPP-TX "], timeout=10)
+        if ev is None or "type=13" not in ev:
+            raise Exception("Presence Announcement not sent")
+
+    dev[1].dpp_auth_init(uri=uri, conf="sta-dpp", configurator=conf_id)
+    wait_auth_success(dev[0], dev[1], dev[1], dev[0])
