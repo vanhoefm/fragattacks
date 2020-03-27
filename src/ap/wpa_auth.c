@@ -5278,4 +5278,11 @@ int wpa_auth_rekey_gtk(struct wpa_authenticator *wpa_auth)
 	return eloop_register_timeout(0, 0, wpa_rekey_gtk, wpa_auth, NULL);
 }
 
+
+int wpa_auth_rekey_ptk(struct wpa_state_machine *sm)
+{
+	eloop_cancel_timeout(wpa_rekey_ptk, sm->wpa_auth, sm);
+	return eloop_register_timeout(0, 0, wpa_rekey_ptk, sm->wpa_auth, sm);
+}
+
 #endif /* CONFIG_TESTING_OPTIONS */

@@ -102,6 +102,7 @@ class Station():
 
 		# Contains either the "to-DS" or "from-DS" flag.
 		self.FCfield = Dot11(FCfield=ds_status).FCfield
+		self.seqnum = 1
 
 		# MAC address and IP of the station that our script controls.
 		# Can be either an AP or client.
@@ -188,11 +189,16 @@ class Station():
 		# represents the final destination. Otherwise its the BSSID.
 		p.addr3 = destmac if p.FCfield & 1 else self.mac
 
-	def get_header(self, seqnum=0xAA, prior=1, **kwargs):
+	def get_header(self, seqnum=None, prior=1, **kwargs):
 		"""
 		Generate a default common header. By default use priority of 1 so destination
 		will still accept lower Packet Numbers on other priorities.
 		"""
+
+		if seqnum == None:
+			seqnum = self.seqnum
+			self.seqnum += 1
+
 		header = Dot11(type="Data", SC=(seqnum << 4))
 		self.set_header(header, prior=prior, **kwargs)
 		return header
@@ -261,9 +267,8 @@ class Station():
 
 	def generate_linux_attack_ping(self):
 		magic = b"generate_test_ping"
-		seqnum = 0xAA
 
-		header = self.get_header(seqnum=seqnum)
+		header = self.get_header()
 		request = LLC()/SNAP()/IP(src=self.ip, dst=self.peerip)/ICMP()/Raw(magic)
 		frag1, frag2 = self.create_fragments(header, request, 2)
 
@@ -286,7 +291,7 @@ class Station():
 
 		test = TestCase()
 		for frag in frags:
-			test.fragments.append(MetaFrag(frag), MetaFrag.BeforeAuth, False)
+			test.fragments.append(MetaFrag(frag), MetaFrag.StartAuth, False)
 
 		return test
 
@@ -304,8 +309,8 @@ class Station():
 		# To generate the tests we need to know the MAC and IP addresses
 
 		test = TestCase()
-		#test.fragments.append(MetaFrag(frag1, MetaFrag.BeforeAuthDone, False))
-		#test.fragments.append(MetaFrag(frag2copy, MetaFrag.BeforeAuthDone, False))
+		#test.fragments.append(MetaFrag(frag1, MetaFrag.BeforeAuth, False))
+		#test.fragments.append(MetaFrag(frag2copy, MetaFrag.BeforeAuth, False))
 		#test.fragments.append(MetaFrag(frag2copy, MetaFrag.AfterAuth, False))
 		test.fragments.append(MetaFrag(header/LLC()/SNAP()/IP()/ICMP(), MetaFrag.AfterAuth, False))
 		#test.fragments.append(MetaFrag(frag2, MetaFrag.AfterAuth, True))
@@ -340,9 +345,9 @@ class Station():
 		#self.text = self.generate_test_eapol()
 		#self.test = self.generate_test_eapol_debug()
 		#self.test = self.generate_linux_attack()
-		#self.test = TestCase()
+		self.test = TestCase()
 		#self.test = self.generate_test_ping_mixed()
-		self.test = self.generate_linux_attack_ping()
+		#self.test = self.generate_linux_attack_ping()
 
 		# - Test case to check if the receiver supports interleaved priority
 		#   reception. It seems Windows 10 / Intel might not support this.
@@ -449,6 +454,8 @@ class Station():
 		log(STATUS, "MetaFrag.Connected", color="green")
 		self.inject_next_frags(MetaFrag.Connected)
 
+		#self.daemon.rekey(self)
+
 	def set_ip_addresses(self, ip, peerip):
 		self.ip = ip
 		self.peerip = peerip
@@ -500,6 +507,10 @@ class Daemon():
 	def get_gtk(self):
 		gtk, idx = wpaspy_command(self.wpaspy_ctrl, "GET_GTK").split()
 		return bytes.fromhex(gtk), int(idx)
+
+	@abc.abstractmethod
+	def rekey(self, station):
+		pass
 
 	# TODO: Might be good to put this into libwifi?
 	def configure_interfaces(self):
@@ -598,8 +609,11 @@ class Authenticator(Daemon):
 		return bytes.fromhex(tk)
 
 	def time_tick(self):
-		for station in self.stations.items():
+		for station in self.stations.values():
 			station.time_tick()
+
+	def rekey(self, station):
+		wpaspy_command(self.wpaspy_ctrl, "REKEY_PTK " + station.peermac)
 
 	def force_reconnect(self, station):
 		# Confirmed to *instantly* reconnect: Arch Linux, Windows 10 with Intel WiFi chip, iPad Pro 13.3.1
@@ -712,6 +726,19 @@ class Supplicant(Daemon):
 			raise Exception("Couldn't retrieve session key of client")
 		else:
 			return bytes.fromhex(tk)
+
+	def rekey(self, station):
+		# WAG320N: does not work (Broadcom - no reply)
+		# MediaTek: starts handshake. But must send Msg2/4 in plaintext! Request optionally in plaintext.
+		# RT-N10: we get a deauthentication as a reply. Connection is killed.
+		# LANCOM: does not work (no reply)
+		# Aruba: TODO
+		# ==> Only reliable way is to configure AP to constantly rekey the PTK, and wait
+		#     untill the AP starts a rekey.
+		#wpaspy_command(self.wpaspy_ctrl, "KEY_REQUEST 0 1")
+
+		log(ERROR, "Supplicant.rekey() was found to be unreliable and shouldn't be used.")
+		quit(1)
 
 	def time_tick(self):
 		self.station.time_tick()

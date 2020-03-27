@@ -2358,6 +2358,23 @@ static int hostapd_ctrl_resend_m3(struct hostapd_data *hapd, const char *cmd)
 }
 
 
+static int hostapd_ctrl_rekey_ptk(struct hostapd_data *hapd, const char *cmd)
+{
+	struct sta_info *sta;
+	u8 addr[ETH_ALEN];
+
+	if (hwaddr_aton(cmd, addr))
+		return -1;
+
+	sta = ap_get_sta(hapd, addr);
+	if (!sta || !sta->wpa_sm)
+		return -1;
+
+	wpa_printf(MSG_INFO, "TESTING: Reking PTK of " MACSTR, MAC2STR(sta->addr));
+	return wpa_auth_rekey_ptk(sta->wpa_sm);
+}
+
+
 static int hostapd_ctrl_resend_group_m1(struct hostapd_data *hapd,
 					const char *cmd)
 {
@@ -3318,6 +3335,9 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 			reply_len = -1;
 	} else if (os_strncmp(buf, "RESEND_M3 ", 10) == 0) {
 		if (hostapd_ctrl_resend_m3(hapd, buf + 10) < 0)
+			reply_len = -1;
+	} else if (os_strncmp(buf, "REKEY_PTK ", 10) == 0) {
+		if (hostapd_ctrl_rekey_ptk(hapd, buf + 10) < 0)
 			reply_len = -1;
 	} else if (os_strncmp(buf, "RESEND_GROUP_M1 ", 16) == 0) {
 		if (hostapd_ctrl_resend_group_m1(hapd, buf + 16) < 0)
