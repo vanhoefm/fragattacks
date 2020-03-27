@@ -4763,7 +4763,7 @@ def run_dpp_controller_rx_failure(dev, apdev):
              "eloop_sock_table_add_sock;?eloop_register_sock;dpp_controller_tcp_cb",
              "dpp_controller_rx",
              "dpp_controller_rx_auth_req",
-             "wpabuf_alloc;=dpp_controller_rx_auth_req"]
+             "wpabuf_alloc;=dpp_tcp_send_msg;dpp_controller_rx_auth_req"]
     cmd = "DPP_AUTH_INIT peer=%d tcp_addr=127.0.0.1" % peer
     for func in tests:
         with alloc_fail(dev[0], 1, func):
