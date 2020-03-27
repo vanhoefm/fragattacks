@@ -11684,6 +11684,76 @@ static int dpp_controller_rx_conn_status_result(struct dpp_connection *conn,
 }
 
 
+static int dpp_controller_rx_presence_announcement(struct dpp_connection *conn,
+						   const u8 *hdr, const u8 *buf,
+						   size_t len)
+{
+	const u8 *r_bootstrap;
+	u16 r_bootstrap_len;
+	struct dpp_bootstrap_info *peer_bi;
+	struct dpp_authentication *auth;
+	struct dpp_global *dpp = conn->ctrl->global;
+
+	if (conn->auth) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Ignore Presence Announcement during ongoing Authentication");
+		return -1;
+	}
+
+	wpa_printf(MSG_DEBUG, "DPP: Presence Announcement");
+
+	r_bootstrap = dpp_get_attr(buf, len, DPP_ATTR_R_BOOTSTRAP_KEY_HASH,
+				   &r_bootstrap_len);
+	if (!r_bootstrap || r_bootstrap_len != SHA256_MAC_LEN) {
+		wpa_msg(dpp->msg_ctx, MSG_INFO, DPP_EVENT_FAIL
+			"Missing or invalid required Responder Bootstrapping Key Hash attribute");
+		return -1;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: Responder Bootstrapping Key Hash",
+		    r_bootstrap, r_bootstrap_len);
+	peer_bi = dpp_bootstrap_find_chirp(dpp, r_bootstrap);
+	if (!peer_bi) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No matching bootstrapping information found");
+		return -1;
+	}
+
+	auth = dpp_auth_init(dpp, dpp->msg_ctx, peer_bi, NULL,
+			     DPP_CAPAB_CONFIGURATOR, -1, NULL, 0);
+	if (!auth)
+		return -1;
+	if (dpp_set_configurator(conn->auth,
+				 conn->ctrl->configurator_params) < 0) {
+		dpp_auth_deinit(auth);
+		dpp_connection_remove(conn);
+		return -1;
+	}
+
+	conn->auth = auth;
+
+	wpabuf_free(conn->msg_out);
+	conn->msg_out_pos = 0;
+	conn->msg_out = wpabuf_alloc(4 + wpabuf_len(conn->auth->req_msg) - 1);
+	if (!conn->msg_out)
+		return -1;
+	wpabuf_put_be32(conn->msg_out, wpabuf_len(conn->auth->req_msg) - 1);
+	wpabuf_put_data(conn->msg_out, wpabuf_head_u8(conn->auth->req_msg) + 1,
+			wpabuf_len(conn->auth->req_msg) - 1);
+
+	if (dpp_tcp_send(conn) == 1) {
+		if (!conn->write_eloop) {
+			if (eloop_register_sock(conn->sock, EVENT_TYPE_WRITE,
+						dpp_conn_tx_ready,
+						conn, NULL) < 0)
+				return -1;
+			conn->write_eloop = 1;
+		}
+	}
+
+	return 0;
+}
+
+
 static int dpp_controller_rx_action(struct dpp_connection *conn, const u8 *msg,
 				    size_t len)
 {
@@ -11734,6 +11804,9 @@ static int dpp_controller_rx_action(struct dpp_connection *conn, const u8 *msg,
 	case DPP_PA_CONNECTION_STATUS_RESULT:
 		return dpp_controller_rx_conn_status_result(conn, msg, pos,
 							    end - pos);
+	case DPP_PA_PRESENCE_ANNOUNCEMENT:
+		return dpp_controller_rx_presence_announcement(conn, msg, pos,
+							       end - pos);
 	default:
 		/* TODO: missing messages types */
 		wpa_printf(MSG_DEBUG,
