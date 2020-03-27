@@ -769,12 +769,12 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 		wpa_s->dpp_auth = NULL;
 	}
 
-	auth = dpp_auth_init(wpa_s, peer_bi, own_bi, allowed_roles, neg_freq,
-			     wpa_s->hw.modes, wpa_s->hw.num_modes);
+	auth = dpp_auth_init(wpa_s->dpp, wpa_s, peer_bi, own_bi, allowed_roles,
+			     neg_freq, wpa_s->hw.modes, wpa_s->hw.num_modes);
 	if (!auth)
 		goto fail;
 	wpas_dpp_set_testing_options(wpa_s, auth);
-	if (dpp_set_configurator(wpa_s->dpp, wpa_s, auth, cmd) < 0) {
+	if (dpp_set_configurator(auth, cmd) < 0) {
 		dpp_auth_deinit(auth);
 		goto fail;
 	}
@@ -1013,7 +1013,8 @@ static void wpas_dpp_rx_auth_req(struct wpa_supplicant *wpa_s, const u8 *src,
 
 	wpa_s->dpp_gas_client = 0;
 	wpa_s->dpp_auth_ok_on_ack = 0;
-	wpa_s->dpp_auth = dpp_auth_req_rx(wpa_s, wpa_s->dpp_allowed_roles,
+	wpa_s->dpp_auth = dpp_auth_req_rx(wpa_s->dpp, wpa_s,
+					  wpa_s->dpp_allowed_roles,
 					  wpa_s->dpp_qr_mutual,
 					  peer_bi, own_bi, freq, hdr, buf, len);
 	if (!wpa_s->dpp_auth) {
@@ -1021,7 +1022,7 @@ static void wpas_dpp_rx_auth_req(struct wpa_supplicant *wpa_s, const u8 *src,
 		return;
 	}
 	wpas_dpp_set_testing_options(wpa_s, wpa_s->dpp_auth);
-	if (dpp_set_configurator(wpa_s->dpp, wpa_s, wpa_s->dpp_auth,
+	if (dpp_set_configurator(wpa_s->dpp_auth,
 				 wpa_s->dpp_configurator_params) < 0) {
 		dpp_auth_deinit(wpa_s->dpp_auth);
 		wpa_s->dpp_auth = NULL;
@@ -2340,13 +2341,13 @@ int wpas_dpp_configurator_sign(struct wpa_supplicant *wpa_s, const char *cmd)
 	int ret = -1;
 	char *curve = NULL;
 
-	auth = os_zalloc(sizeof(*auth));
+	auth = dpp_alloc_auth(wpa_s->dpp, wpa_s);
 	if (!auth)
 		return -1;
 
 	curve = get_param(cmd, " curve=");
 	wpas_dpp_set_testing_options(wpa_s, auth);
-	if (dpp_set_configurator(wpa_s->dpp, wpa_s, auth, cmd) == 0 &&
+	if (dpp_set_configurator(auth, cmd) == 0 &&
 	    dpp_configurator_own_config(auth, curve, 0) == 0)
 		ret = wpas_dpp_handle_config_obj(wpa_s, auth,
 						 &auth->conf_obj[0]);

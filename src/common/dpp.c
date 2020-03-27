@@ -2335,20 +2335,22 @@ fail:
 }
 
 
-static struct dpp_authentication * dpp_alloc_auth(void *msg_ctx)
+struct dpp_authentication *
+dpp_alloc_auth(struct dpp_global *dpp, void *msg_ctx)
 {
 	struct dpp_authentication *auth;
 
 	auth = os_zalloc(sizeof(*auth));
 	if (!auth)
 		return NULL;
+	auth->global = dpp;
 	auth->msg_ctx = msg_ctx;
 	auth->conf_resp_status = 255;
 	return auth;
 }
 
 
-struct dpp_authentication * dpp_auth_init(void *msg_ctx,
+struct dpp_authentication * dpp_auth_init(struct dpp_global *dpp, void *msg_ctx,
 					  struct dpp_bootstrap_info *peer_bi,
 					  struct dpp_bootstrap_info *own_bi,
 					  u8 dpp_allowed_roles,
@@ -2365,7 +2367,7 @@ struct dpp_authentication * dpp_auth_init(void *msg_ctx,
 	u8 test_hash[SHA256_MAC_LEN];
 #endif /* CONFIG_TESTING_OPTIONS */
 
-	auth = dpp_alloc_auth(msg_ctx);
+	auth = dpp_alloc_auth(dpp, msg_ctx);
 	if (!auth)
 		return NULL;
 	auth->initiator = 1;
@@ -3259,8 +3261,8 @@ static int dpp_auth_build_resp_status(struct dpp_authentication *auth,
 
 
 struct dpp_authentication *
-dpp_auth_req_rx(void *msg_ctx, u8 dpp_allowed_roles, int qr_mutual,
-		struct dpp_bootstrap_info *peer_bi,
+dpp_auth_req_rx(struct dpp_global *dpp, void *msg_ctx, u8 dpp_allowed_roles,
+		int qr_mutual, struct dpp_bootstrap_info *peer_bi,
 		struct dpp_bootstrap_info *own_bi,
 		unsigned int freq, const u8 *hdr, const u8 *attr_start,
 		size_t attr_len)
@@ -3301,7 +3303,7 @@ dpp_auth_req_rx(void *msg_ctx, u8 dpp_allowed_roles, int qr_mutual,
 		    wrapped_data, wrapped_data_len);
 	attr_len = wrapped_data - 4 - attr_start;
 
-	auth = dpp_alloc_auth(msg_ctx);
+	auth = dpp_alloc_auth(dpp, msg_ctx);
 	if (!auth)
 		goto fail;
 	auth->peer_bi = peer_bi;
@@ -4675,9 +4677,7 @@ dpp_configurator_get_id(struct dpp_global *dpp, unsigned int id)
 }
 
 
-int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
-			 struct dpp_authentication *auth,
-			 const char *cmd)
+int dpp_set_configurator(struct dpp_authentication *auth, const char *cmd)
 {
 	const char *pos;
 	char *tmp = NULL;
@@ -4702,7 +4702,7 @@ int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
 	pos = os_strstr(cmd, " configurator=");
 	if (pos) {
 		pos += 14;
-		auth->conf = dpp_configurator_get_id(dpp, atoi(pos));
+		auth->conf = dpp_configurator_get_id(auth->global, atoi(pos));
 		if (!auth->conf) {
 			wpa_printf(MSG_INFO,
 				   "DPP: Could not find the specified configurator");
@@ -4723,7 +4723,7 @@ int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
 	}
 
 	if (dpp_configuration_parse(auth, cmd) < 0) {
-		wpa_msg(msg_ctx, MSG_INFO,
+		wpa_msg(auth->msg_ctx, MSG_INFO,
 			"DPP: Failed to set configurator parameters");
 		goto fail;
 	}
@@ -11401,7 +11401,8 @@ static int dpp_controller_rx_auth_req(struct dpp_connection *conn,
 		return 0;
 	}
 
-	conn->auth = dpp_auth_req_rx(conn->ctrl->global->msg_ctx,
+	conn->auth = dpp_auth_req_rx(conn->ctrl->global,
+				     conn->ctrl->global->msg_ctx,
 				     conn->ctrl->allowed_roles,
 				     conn->ctrl->qr_mutual,
 				     peer_bi, own_bi, -1, hdr, buf, len);
@@ -11410,8 +11411,7 @@ static int dpp_controller_rx_auth_req(struct dpp_connection *conn,
 		return -1;
 	}
 
-	if (dpp_set_configurator(conn->ctrl->global, conn->ctrl->global->msg_ctx,
-				 conn->auth,
+	if (dpp_set_configurator(conn->auth,
 				 conn->ctrl->configurator_params) < 0) {
 		dpp_connection_remove(conn);
 		return -1;

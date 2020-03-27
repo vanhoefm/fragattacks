@@ -199,6 +199,7 @@ struct dpp_asymmetric_key {
 #define DPP_MAX_CONF_OBJ 10
 
 struct dpp_authentication {
+	struct dpp_global *global;
 	void *msg_ctx;
 	u8 peer_version;
 	const struct dpp_curve_params *curve;
@@ -429,8 +430,10 @@ int dpp_parse_uri_mac(struct dpp_bootstrap_info *bi, const char *mac);
 int dpp_parse_uri_info(struct dpp_bootstrap_info *bi, const char *info);
 int dpp_nfc_update_bi(struct dpp_bootstrap_info *own_bi,
 		      struct dpp_bootstrap_info *peer_bi);
+struct dpp_authentication *
+dpp_alloc_auth(struct dpp_global *dpp, void *msg_ctx);
 struct hostapd_hw_modes;
-struct dpp_authentication * dpp_auth_init(void *msg_ctx,
+struct dpp_authentication * dpp_auth_init(struct dpp_global *dpp, void *msg_ctx,
 					  struct dpp_bootstrap_info *peer_bi,
 					  struct dpp_bootstrap_info *own_bi,
 					  u8 dpp_allowed_roles,
@@ -438,8 +441,8 @@ struct dpp_authentication * dpp_auth_init(void *msg_ctx,
 					  struct hostapd_hw_modes *own_modes,
 					  u16 num_modes);
 struct dpp_authentication *
-dpp_auth_req_rx(void *msg_ctx, u8 dpp_allowed_roles, int qr_mutual,
-		struct dpp_bootstrap_info *peer_bi,
+dpp_auth_req_rx(struct dpp_global *dpp, void *msg_ctx, u8 dpp_allowed_roles,
+			int qr_mutual, struct dpp_bootstrap_info *peer_bi,
 		struct dpp_bootstrap_info *own_bi,
 		unsigned int freq, const u8 *hdr, const u8 *attr_start,
 		size_t attr_len);
@@ -464,9 +467,7 @@ int dpp_akm_dpp(enum dpp_akm akm);
 int dpp_akm_ver2(enum dpp_akm akm);
 int dpp_configuration_valid(const struct dpp_configuration *conf);
 void dpp_configuration_free(struct dpp_configuration *conf);
-int dpp_set_configurator(struct dpp_global *dpp, void *msg_ctx,
-			 struct dpp_authentication *auth,
-			 const char *cmd);
+int dpp_set_configurator(struct dpp_authentication *auth, const char *cmd);
 void dpp_auth_deinit(struct dpp_authentication *auth);
 struct wpabuf *
 dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,

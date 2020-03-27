@@ -543,15 +543,15 @@ int hostapd_dpp_auth_init(struct hostapd_data *hapd, const char *cmd)
 		dpp_auth_deinit(hapd->dpp_auth);
 	}
 
-	hapd->dpp_auth = dpp_auth_init(hapd->msg_ctx, peer_bi, own_bi,
+	hapd->dpp_auth = dpp_auth_init(hapd->iface->interfaces->dpp,
+				       hapd->msg_ctx, peer_bi, own_bi,
 				       allowed_roles, neg_freq,
 				       hapd->iface->hw_features,
 				       hapd->iface->num_hw_features);
 	if (!hapd->dpp_auth)
 		goto fail;
 	hostapd_dpp_set_testing_options(hapd, hapd->dpp_auth);
-	if (dpp_set_configurator(hapd->iface->interfaces->dpp, hapd->msg_ctx,
-				 hapd->dpp_auth, cmd) < 0) {
+	if (dpp_set_configurator(hapd->dpp_auth, cmd) < 0) {
 		dpp_auth_deinit(hapd->dpp_auth);
 		hapd->dpp_auth = NULL;
 		goto fail;
@@ -663,7 +663,8 @@ static void hostapd_dpp_rx_auth_req(struct hostapd_data *hapd, const u8 *src,
 	}
 
 	hapd->dpp_auth_ok_on_ack = 0;
-	hapd->dpp_auth = dpp_auth_req_rx(hapd->msg_ctx, hapd->dpp_allowed_roles,
+	hapd->dpp_auth = dpp_auth_req_rx(hapd->iface->interfaces->dpp,
+					 hapd->msg_ctx, hapd->dpp_allowed_roles,
 					 hapd->dpp_qr_mutual,
 					 peer_bi, own_bi, freq, hdr, buf, len);
 	if (!hapd->dpp_auth) {
@@ -671,8 +672,7 @@ static void hostapd_dpp_rx_auth_req(struct hostapd_data *hapd, const u8 *src,
 		return;
 	}
 	hostapd_dpp_set_testing_options(hapd, hapd->dpp_auth);
-	if (dpp_set_configurator(hapd->iface->interfaces->dpp, hapd->msg_ctx,
-				 hapd->dpp_auth,
+	if (dpp_set_configurator(hapd->dpp_auth,
 				 hapd->dpp_configurator_params) < 0) {
 		dpp_auth_deinit(hapd->dpp_auth);
 		hapd->dpp_auth = NULL;
@@ -1675,14 +1675,13 @@ int hostapd_dpp_configurator_sign(struct hostapd_data *hapd, const char *cmd)
 	int ret = -1;
 	char *curve = NULL;
 
-	auth = os_zalloc(sizeof(*auth));
+	auth = dpp_alloc_auth(hapd->iface->interfaces->dpp, hapd->msg_ctx);
 	if (!auth)
 		return -1;
 
 	curve = get_param(cmd, " curve=");
 	hostapd_dpp_set_testing_options(hapd, auth);
-	if (dpp_set_configurator(hapd->iface->interfaces->dpp, hapd->msg_ctx,
-				 auth, cmd) == 0 &&
+	if (dpp_set_configurator(auth, cmd) == 0 &&
 	    dpp_configurator_own_config(auth, curve, 1) == 0) {
 		hostapd_dpp_handle_config_obj(hapd, auth, &auth->conf_obj[0]);
 		ret = 0;
