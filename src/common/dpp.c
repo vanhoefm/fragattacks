@@ -11095,6 +11095,32 @@ static int dpp_tcp_send(struct dpp_connection *conn)
 }
 
 
+static int dpp_tcp_send_msg(struct dpp_connection *conn,
+			    const struct wpabuf *msg)
+{
+	wpabuf_free(conn->msg_out);
+	conn->msg_out_pos = 0;
+	conn->msg_out = wpabuf_alloc(4 + wpabuf_len(msg) - 1);
+	if (!conn->msg_out)
+		return -1;
+	wpabuf_put_be32(conn->msg_out, wpabuf_len(msg) - 1);
+	wpabuf_put_data(conn->msg_out, wpabuf_head_u8(msg) + 1,
+			wpabuf_len(msg) - 1);
+
+	if (dpp_tcp_send(conn) == 1) {
+		if (!conn->write_eloop) {
+			if (eloop_register_sock(conn->sock, EVENT_TYPE_WRITE,
+						dpp_conn_tx_ready,
+						conn, NULL) < 0)
+				return -1;
+			conn->write_eloop = 1;
+		}
+	}
+
+	return 0;
+}
+
+
 static void dpp_controller_start_gas_client(struct dpp_connection *conn)
 {
 	struct dpp_authentication *auth = conn->auth;
@@ -11108,27 +11134,8 @@ static void dpp_controller_start_gas_client(struct dpp_connection *conn)
 		return;
 	}
 
-	wpabuf_free(conn->msg_out);
-	conn->msg_out_pos = 0;
-	conn->msg_out = wpabuf_alloc(4 + wpabuf_len(buf) - 1);
-	if (!conn->msg_out) {
-		wpabuf_free(buf);
-		return;
-	}
-	wpabuf_put_be32(conn->msg_out, wpabuf_len(buf) - 1);
-	wpabuf_put_data(conn->msg_out, wpabuf_head_u8(buf) + 1,
-			wpabuf_len(buf) - 1);
+	dpp_tcp_send_msg(conn, buf);
 	wpabuf_free(buf);
-
-	if (dpp_tcp_send(conn) == 1) {
-		if (!conn->write_eloop) {
-			if (eloop_register_sock(conn->sock, EVENT_TYPE_WRITE,
-						dpp_conn_tx_ready,
-						conn, NULL) < 0)
-				return;
-			conn->write_eloop = 1;
-		}
-	}
 }
 
 
@@ -11498,26 +11505,7 @@ static int dpp_controller_rx_auth_req(struct dpp_connection *conn,
 		return -1;
 	}
 
-	wpabuf_free(conn->msg_out);
-	conn->msg_out_pos = 0;
-	conn->msg_out = wpabuf_alloc(4 + wpabuf_len(conn->auth->resp_msg) - 1);
-	if (!conn->msg_out)
-		return -1;
-	wpabuf_put_be32(conn->msg_out, wpabuf_len(conn->auth->resp_msg) - 1);
-	wpabuf_put_data(conn->msg_out, wpabuf_head_u8(conn->auth->resp_msg) + 1,
-			wpabuf_len(conn->auth->resp_msg) - 1);
-
-	if (dpp_tcp_send(conn) == 1) {
-		if (!conn->write_eloop) {
-			if (eloop_register_sock(conn->sock, EVENT_TYPE_WRITE,
-						dpp_conn_tx_ready,
-						conn, NULL) < 0)
-				return -1;
-			conn->write_eloop = 1;
-		}
-	}
-
-	return 0;
+	return dpp_tcp_send_msg(conn, conn->auth->resp_msg);
 }
 
 
@@ -11526,6 +11514,7 @@ static int dpp_controller_rx_auth_resp(struct dpp_connection *conn,
 {
 	struct dpp_authentication *auth = conn->auth;
 	struct wpabuf *msg;
+	int res;
 
 	if (!auth)
 		return -1;
@@ -11544,30 +11533,10 @@ static int dpp_controller_rx_auth_resp(struct dpp_connection *conn,
 		return -1;
 	}
 
-	wpabuf_free(conn->msg_out);
-	conn->msg_out_pos = 0;
-	conn->msg_out = wpabuf_alloc(4 + wpabuf_len(msg) - 1);
-	if (!conn->msg_out) {
-		wpabuf_free(msg);
-		return -1;
-	}
-	wpabuf_put_be32(conn->msg_out, wpabuf_len(msg) - 1);
-	wpabuf_put_data(conn->msg_out, wpabuf_head_u8(msg) + 1,
-			wpabuf_len(msg) - 1);
-	wpabuf_free(msg);
-
 	conn->on_tcp_tx_complete_auth_ok = 1;
-	if (dpp_tcp_send(conn) == 1) {
-		if (!conn->write_eloop) {
-			if (eloop_register_sock(conn->sock, EVENT_TYPE_WRITE,
-						dpp_conn_tx_ready,
-						conn, NULL) < 0)
-				return -1;
-			conn->write_eloop = 1;
-		}
-	}
-
-	return 0;
+	res = dpp_tcp_send_msg(conn, msg);
+	wpabuf_free(msg);
+	return res;
 }
 
 
@@ -11730,27 +11699,7 @@ static int dpp_controller_rx_presence_announcement(struct dpp_connection *conn,
 	}
 
 	conn->auth = auth;
-
-	wpabuf_free(conn->msg_out);
-	conn->msg_out_pos = 0;
-	conn->msg_out = wpabuf_alloc(4 + wpabuf_len(conn->auth->req_msg) - 1);
-	if (!conn->msg_out)
-		return -1;
-	wpabuf_put_be32(conn->msg_out, wpabuf_len(conn->auth->req_msg) - 1);
-	wpabuf_put_data(conn->msg_out, wpabuf_head_u8(conn->auth->req_msg) + 1,
-			wpabuf_len(conn->auth->req_msg) - 1);
-
-	if (dpp_tcp_send(conn) == 1) {
-		if (!conn->write_eloop) {
-			if (eloop_register_sock(conn->sock, EVENT_TYPE_WRITE,
-						dpp_conn_tx_ready,
-						conn, NULL) < 0)
-				return -1;
-			conn->write_eloop = 1;
-		}
-	}
-
-	return 0;
+	return dpp_tcp_send_msg(conn, conn->auth->req_msg);
 }
 
 
@@ -11901,7 +11850,7 @@ static int dpp_tcp_rx_gas_resp(struct dpp_connection *conn, struct wpabuf *resp)
 {
 	struct dpp_authentication *auth = conn->auth;
 	int res;
-	struct wpabuf *msg, *encaps;
+	struct wpabuf *msg;
 	enum dpp_status_error status;
 
 	wpa_printf(MSG_DEBUG,
@@ -11923,35 +11872,19 @@ static int dpp_tcp_rx_gas_resp(struct dpp_connection *conn, struct wpabuf *resp)
 	if (auth->peer_version < 2 || auth->conf_resp_status != DPP_STATUS_OK)
 		return -1;
 
-#ifdef CONFIG_DPP2
 	wpa_printf(MSG_DEBUG, "DPP: Send DPP Configuration Result");
 	status = res < 0 ? DPP_STATUS_CONFIG_REJECTED : DPP_STATUS_OK;
 	msg = dpp_build_conf_result(auth, status);
 	if (!msg)
 		return -1;
 
-	encaps = wpabuf_alloc(4 + wpabuf_len(msg) - 1);
-	if (!encaps) {
-		wpabuf_free(msg);
-		return -1;
-	}
-	wpabuf_put_be32(encaps, wpabuf_len(msg) - 1);
-	wpabuf_put_data(encaps, wpabuf_head_u8(msg) + 1, wpabuf_len(msg) - 1);
-	wpabuf_free(msg);
-	wpa_hexdump_buf(MSG_MSGDUMP, "DPP: Outgoing TCP message", encaps);
-
-	wpabuf_free(conn->msg_out);
-	conn->msg_out_pos = 0;
-	conn->msg_out = encaps;
 	conn->on_tcp_tx_complete_remove = 1;
-	dpp_tcp_send(conn);
+	res = dpp_tcp_send_msg(conn, msg);
+	wpabuf_free(msg);
 
 	/* This exchange will be terminated in the TX status handler */
 
-	return 0;
-#else /* CONFIG_DPP2 */
-	return -1;
-#endif /* CONFIG_DPP2 */
+	return res;
 }
 
 
