@@ -126,6 +126,7 @@ struct dpp_bootstrap_info {
 	const struct dpp_curve_params *curve;
 	unsigned int pkex_t; /* number of failures before dpp_pkex
 			      * instantiation */
+	char *configurator_params;
 };
 
 #define PKEX_COUNTER_T_LIMIT 5
@@ -275,6 +276,7 @@ struct dpp_authentication {
 	int send_conn_status;
 	int conn_status_requested;
 	int akm_use_selector;
+	int configurator_set;
 #ifdef CONFIG_TESTING_OPTIONS
 	char *config_obj_override;
 	char *discovery_override;

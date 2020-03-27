@@ -894,6 +894,7 @@ void dpp_bootstrap_info_free(struct dpp_bootstrap_info *info)
 	os_free(info->chan);
 	os_free(info->pk);
 	EVP_PKEY_free(info->pubkey);
+	str_clear_free(info->configurator_params);
 	os_free(info);
 }
 
@@ -2370,6 +2371,9 @@ struct dpp_authentication * dpp_auth_init(struct dpp_global *dpp, void *msg_ctx,
 	auth = dpp_alloc_auth(dpp, msg_ctx);
 	if (!auth)
 		return NULL;
+	if (peer_bi->configurator_params &&
+	    dpp_set_configurator(auth, peer_bi->configurator_params) < 0)
+		goto fail;
 	auth->initiator = 1;
 	auth->waiting_auth_resp = 1;
 	auth->allowed_roles = dpp_allowed_roles;
@@ -3305,6 +3309,9 @@ dpp_auth_req_rx(struct dpp_global *dpp, void *msg_ctx, u8 dpp_allowed_roles,
 
 	auth = dpp_alloc_auth(dpp, msg_ctx);
 	if (!auth)
+		goto fail;
+	if (peer_bi && peer_bi->configurator_params &&
+	    dpp_set_configurator(auth, peer_bi->configurator_params) < 0)
 		goto fail;
 	auth->peer_bi = peer_bi;
 	auth->own_bi = own_bi;
@@ -4683,8 +4690,10 @@ int dpp_set_configurator(struct dpp_authentication *auth, const char *cmd)
 	char *tmp = NULL;
 	int ret = -1;
 
-	if (!cmd)
+	if (!cmd || auth->configurator_set)
 		return 0;
+	auth->configurator_set = 1;
+
 	if (cmd[0] != ' ') {
 		size_t len;
 
