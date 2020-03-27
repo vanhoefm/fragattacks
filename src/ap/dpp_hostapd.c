@@ -1132,6 +1132,70 @@ static void hostapd_dpp_rx_conn_status_result(struct hostapd_data *hapd,
 }
 
 
+static void
+hostapd_dpp_rx_presence_announcement(struct hostapd_data *hapd, const u8 *src,
+				     const u8 *hdr, const u8 *buf, size_t len,
+				     unsigned int freq)
+{
+	const u8 *r_bootstrap;
+	u16 r_bootstrap_len;
+	struct dpp_bootstrap_info *peer_bi;
+	struct dpp_authentication *auth;
+
+	wpa_printf(MSG_DEBUG, "DPP: Presence Announcement from " MACSTR,
+		   MAC2STR(src));
+
+	r_bootstrap = dpp_get_attr(buf, len, DPP_ATTR_R_BOOTSTRAP_KEY_HASH,
+				   &r_bootstrap_len);
+	if (!r_bootstrap || r_bootstrap_len != SHA256_MAC_LEN) {
+		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_FAIL
+			"Missing or invalid required Responder Bootstrapping Key Hash attribute");
+		return;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: Responder Bootstrapping Key Hash",
+		    r_bootstrap, r_bootstrap_len);
+	peer_bi = dpp_bootstrap_find_chirp(hapd->iface->interfaces->dpp,
+					   r_bootstrap);
+	if (!peer_bi) {
+		if (dpp_relay_rx_action(hapd->iface->interfaces->dpp,
+					src, hdr, buf, len, freq, NULL,
+					r_bootstrap) == 0)
+			return;
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No matching bootstrapping information found");
+		return;
+	}
+
+	if (hapd->dpp_auth) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Ignore Presence Announcement during ongoing Authentication");
+		return;
+	}
+
+	auth = dpp_auth_init(hapd->iface->interfaces->dpp, hapd->msg_ctx,
+			     peer_bi, NULL, DPP_CAPAB_CONFIGURATOR, freq, NULL,
+			     0);
+	if (!auth)
+		return;
+	hostapd_dpp_set_testing_options(hapd, hapd->dpp_auth);
+	if (dpp_set_configurator(hapd->dpp_auth,
+				 hapd->dpp_configurator_params) < 0) {
+		dpp_auth_deinit(auth);
+		return;
+	}
+
+	auth->neg_freq = freq;
+
+	if (!is_zero_ether_addr(peer_bi->mac_addr))
+		os_memcpy(auth->peer_mac_addr, peer_bi->mac_addr, ETH_ALEN);
+
+	hapd->dpp_auth = auth;
+	if (hostapd_dpp_auth_init_next(hapd) < 0) {
+		dpp_auth_deinit(hapd->dpp_auth);
+		hapd->dpp_auth = NULL;
+	}
+}
+
 #endif /* CONFIG_DPP2 */
 
 
@@ -1580,6 +1644,10 @@ void hostapd_dpp_rx_action(struct hostapd_data *hapd, const u8 *src,
 		break;
 	case DPP_PA_CONNECTION_STATUS_RESULT:
 		hostapd_dpp_rx_conn_status_result(hapd, src, hdr, buf, len);
+		break;
+	case DPP_PA_PRESENCE_ANNOUNCEMENT:
+		hostapd_dpp_rx_presence_announcement(hapd, src, hdr, buf, len,
+						     freq);
 		break;
 #endif /* CONFIG_DPP2 */
 	default:

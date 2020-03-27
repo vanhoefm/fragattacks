@@ -11327,7 +11327,8 @@ int dpp_relay_rx_action(struct dpp_global *dpp, const u8 *src, const u8 *hdr,
 	 * continue that session (send this over TCP) and return 0.
 	 */
 	if (type != DPP_PA_PEER_DISCOVERY_REQ &&
-	    type != DPP_PA_PEER_DISCOVERY_RESP) {
+	    type != DPP_PA_PEER_DISCOVERY_RESP &&
+	    type != DPP_PA_PRESENCE_ANNOUNCEMENT) {
 		dl_list_for_each(ctrl, &dpp->controllers,
 				 struct dpp_relay_controller, list) {
 			dl_list_for_each(conn, &ctrl->conn,
@@ -11342,7 +11343,14 @@ int dpp_relay_rx_action(struct dpp_global *dpp, const u8 *src, const u8 *hdr,
 	if (!r_bootstrap)
 		return -1;
 
-	ctrl = dpp_relay_controller_get(dpp, r_bootstrap);
+	if (type == DPP_PA_PRESENCE_ANNOUNCEMENT) {
+		/* TODO: Could send this to all configured Controllers. For now,
+		 * only the first Controller is supported. */
+		ctrl = dl_list_first(&dpp->controllers,
+				     struct dpp_relay_controller, list);
+	} else {
+		ctrl = dpp_relay_controller_get(dpp, r_bootstrap);
+	}
 	if (!ctrl)
 		return -1;
 
