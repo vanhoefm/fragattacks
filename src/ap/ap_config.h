@@ -740,6 +740,7 @@ struct hostapd_bss_config {
 	struct wpabuf *dpp_csign;
 #ifdef CONFIG_DPP2
 	struct dpp_controller_conf *dpp_controller;
+	int dpp_configurator_connectivity;
 #endif /* CONFIG_DPP2 */
 #endif /* CONFIG_DPP */
 

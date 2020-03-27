@@ -183,6 +183,9 @@ void handle_auth_fils(struct hostapd_data *hapd, struct sta_info *sta,
 size_t hostapd_eid_owe_trans_len(struct hostapd_data *hapd);
 u8 * hostapd_eid_owe_trans(struct hostapd_data *hapd, u8 *eid, size_t len);
 
+size_t hostapd_eid_dpp_cc_len(struct hostapd_data *hapd);
+u8 * hostapd_eid_dpp_cc(struct hostapd_data *hapd, u8 *eid, size_t len);
+
 int get_tx_parameters(struct sta_info *sta, int ap_max_chanwidth,
 		      int ap_seg1_idx, int *bandwidth, int *seg1_idx);
 
