@@ -2246,12 +2246,21 @@ static int dpp_channel_local_list(struct dpp_authentication *auth,
 
 
 static int dpp_prepare_channel_list(struct dpp_authentication *auth,
+				    unsigned int neg_freq,
 				    struct hostapd_hw_modes *own_modes,
 				    u16 num_modes)
 {
 	int res;
 	char freqs[DPP_BOOTSTRAP_MAX_FREQ * 6 + 10], *pos, *end;
 	unsigned int i;
+
+	if (!own_modes) {
+		if (!neg_freq)
+			return -1;
+		auth->num_freq = 1;
+		auth->freq[0] = neg_freq;
+		return 0;
+	}
 
 	if (auth->peer_bi->num_freq > 0)
 		res = dpp_channel_intersect(auth, own_modes, num_modes);
@@ -2392,7 +2401,7 @@ struct dpp_authentication * dpp_auth_init(struct dpp_global *dpp, void *msg_ctx,
 	auth->curve = peer_bi->curve;
 
 	if (dpp_autogen_bootstrap_key(auth) < 0 ||
-	    dpp_prepare_channel_list(auth, own_modes, num_modes) < 0)
+	    dpp_prepare_channel_list(auth, neg_freq, own_modes, num_modes) < 0)
 		goto fail;
 
 #ifdef CONFIG_TESTING_OPTIONS
@@ -2488,6 +2497,8 @@ struct dpp_authentication * dpp_auth_init(struct dpp_global *dpp, void *msg_ctx,
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
 
+	if (neg_freq && auth->num_freq == 1 && auth->freq[0] == neg_freq)
+		neg_freq = 0;
 	auth->req_msg = dpp_auth_build_req(auth, pi, nonce_len, r_pubkey_hash,
 					   i_pubkey_hash, neg_freq);
 	if (!auth->req_msg)
@@ -10597,8 +10608,27 @@ void dpp_bootstrap_find_pair(struct dpp_global *dpp, const u8 *i_bootstrap,
 		if (*own_bi && *peer_bi)
 			break;
 	}
-
 }
+
+
+#ifdef CONFIG_DPP2
+struct dpp_bootstrap_info * dpp_bootstrap_find_chirp(struct dpp_global *dpp,
+						     const u8 *hash)
+{
+	struct dpp_bootstrap_info *bi;
+
+	if (!dpp)
+		return NULL;
+
+	dl_list_for_each(bi, &dpp->bootstrap, struct dpp_bootstrap_info, list) {
+		if (!bi->own && os_memcmp(bi->pubkey_hash_chirp, hash,
+					  SHA256_MAC_LEN) == 0)
+			return bi;
+	}
+
+	return NULL;
+}
+#endif /* CONFIG_DPP2 */
 
 
 static int dpp_nfc_update_bi_channel(struct dpp_bootstrap_info *own_bi,

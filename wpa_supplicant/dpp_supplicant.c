@@ -1694,6 +1694,67 @@ static void wpas_dpp_remove_bi(void *ctx, struct dpp_bootstrap_info *bi)
 		wpas_dpp_chirp_stop(wpa_s);
 }
 
+
+static void
+wpas_dpp_rx_presence_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
+				  const u8 *hdr, const u8 *buf, size_t len,
+				  unsigned int freq)
+{
+	const u8 *r_bootstrap;
+	u16 r_bootstrap_len;
+	struct dpp_bootstrap_info *peer_bi;
+	struct dpp_authentication *auth;
+
+	if (!wpa_s->dpp)
+		return;
+
+	if (wpa_s->dpp_auth) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Ignore Presence Announcement during ongoing Authentication");
+		return;
+	}
+
+	wpa_printf(MSG_DEBUG, "DPP: Presence Announcement from " MACSTR,
+		   MAC2STR(src));
+
+	r_bootstrap = dpp_get_attr(buf, len, DPP_ATTR_R_BOOTSTRAP_KEY_HASH,
+				   &r_bootstrap_len);
+	if (!r_bootstrap || r_bootstrap_len != SHA256_MAC_LEN) {
+		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_FAIL
+			"Missing or invalid required Responder Bootstrapping Key Hash attribute");
+		return;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: Responder Bootstrapping Key Hash",
+		    r_bootstrap, r_bootstrap_len);
+	peer_bi = dpp_bootstrap_find_chirp(wpa_s->dpp, r_bootstrap);
+	if (!peer_bi) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No matching bootstrapping information found");
+		return;
+	}
+
+	auth = dpp_auth_init(wpa_s->dpp, wpa_s, peer_bi, NULL,
+			     DPP_CAPAB_CONFIGURATOR, freq, NULL, 0);
+	if (!auth)
+		return;
+	wpas_dpp_set_testing_options(wpa_s, auth);
+	if (dpp_set_configurator(auth, wpa_s->dpp_configurator_params) < 0) {
+		dpp_auth_deinit(auth);
+		return;
+	}
+
+	auth->neg_freq = freq;
+
+	if (!is_zero_ether_addr(peer_bi->mac_addr))
+		os_memcpy(auth->peer_mac_addr, peer_bi->mac_addr, ETH_ALEN);
+
+	wpa_s->dpp_auth = auth;
+	if (wpas_dpp_auth_init_next(wpa_s) < 0) {
+		dpp_auth_deinit(wpa_s->dpp_auth);
+		wpa_s->dpp_auth = NULL;
+	}
+}
+
 #endif /* CONFIG_DPP2 */
 
 
@@ -2238,6 +2299,10 @@ void wpas_dpp_rx_action(struct wpa_supplicant *wpa_s, const u8 *src,
 		break;
 	case DPP_PA_CONNECTION_STATUS_RESULT:
 		wpas_dpp_rx_conn_status_result(wpa_s, src, hdr, buf, len);
+		break;
+	case DPP_PA_PRESENCE_ANNOUNCEMENT:
+		wpas_dpp_rx_presence_announcement(wpa_s, src, hdr, buf, len,
+						  freq);
 		break;
 #endif /* CONFIG_DPP2 */
 	default:

@@ -578,6 +578,8 @@ void dpp_bootstrap_find_pair(struct dpp_global *dpp, const u8 *i_bootstrap,
 			     const u8 *r_bootstrap,
 			     struct dpp_bootstrap_info **own_bi,
 			     struct dpp_bootstrap_info **peer_bi);
+struct dpp_bootstrap_info * dpp_bootstrap_find_chirp(struct dpp_global *dpp,
+						     const u8 *hash);
 int dpp_configurator_add(struct dpp_global *dpp, const char *cmd);
 int dpp_configurator_remove(struct dpp_global *dpp, const char *id);
 int dpp_configurator_get_key_id(struct dpp_global *dpp, unsigned int id,
