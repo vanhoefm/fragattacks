@@ -454,11 +454,14 @@ class Daemon():
 		# 0. Some users may forget this otherwise
 		subprocess.check_output(["rfkill", "unblock", "wifi"])
 
-		# 1. Remove unused virtual interfaces to start from a clean state
-		subprocess.call(["iw", self.nic_mon, "del"], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+		# 1. Only create a new monitor interface if it does not yet exist
+		try:
+			scapy.arch.get_if_index(self.nic_mon)
+		except IOError:
+			subprocess.call(["iw", self.nic_mon, "del"], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+			subprocess.check_output(["iw", self.nic_iface, "interface", "add", self.nic_mon, "type", "monitor"])
 
 		# 2. Configure monitor mode on interfaces
-		subprocess.check_output(["iw", self.nic_iface, "interface", "add", self.nic_mon, "type", "monitor"])
 		# Some kernels (Debian jessie - 3.16.0-4-amd64) don't properly add the monitor interface. The following ugly
 		# sequence of commands assures the virtual interface is properly registered as a 802.11 monitor interface.
 		subprocess.check_output(["iw", self.nic_mon, "set", "type", "monitor"])
