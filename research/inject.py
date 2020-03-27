@@ -60,7 +60,11 @@ class TestOptions():
 
 class MetaFrag():
 	# StartingAuth, AfterAuthRace
-	BeforeAuth, BeforeAuthDone, AfterAuth = range(3)
+	# StartAuth: when starting the handshake
+	# BeforeAuth: right before last message of the handshake
+	# AfterAuth: right after last message of the handshake
+	# Connected: 1 second after handshake completed (allows peer to install keys)
+	StartAuth, BeforeAuth, AfterAuth, Connected = range(4)
 
 	def __init__(self, frag, trigger, encrypted, inc_pn=1):
 		self.frag = frag
@@ -112,6 +116,8 @@ class Station():
 		# To test frame forwarding to a 3rd party
 		self.othermac = None
 		self.otherip = None
+
+		self.time_connected = None
 
 	def reset_keys(self):
 		self.tk = None
@@ -404,13 +410,13 @@ class Station():
 
 		# Inject any fragments before authenticating
 		if not self.txed_before_auth:
-			log(STATUS, "MetaFrag.BeforeAuth", color="green")
-			self.inject_next_frags(MetaFrag.BeforeAuth)
+			log(STATUS, "MetaFrag.StartAuth", color="green")
+			self.inject_next_frags(MetaFrag.StartAuth)
 			self.txed_before_auth = True
 		# Inject any fragments when almost done authenticating
 		elif is_msg3_or_4 and not self.txed_before_auth_done:
-			log(STATUS, "MetaFrag.BeforeAuthDone", color="green")
-			self.inject_next_frags(MetaFrag.BeforeAuthDone)
+			log(STATUS, "MetaFrag.BeforeAuth", color="green")
+			self.inject_next_frags(MetaFrag.BeforeAuth)
 			self.txed_before_auth_done = True
 
 	def handle_eapol_tx(self, eapol):
@@ -428,22 +434,35 @@ class Station():
 
 	def handle_authenticated(self):
 		"""Called after completion of the 4-way handshake or similar"""
-		if not self.obtained_ip: return
-
-		log(STATUS, "MetaFrag.AfterAuth", color="green")
 		self.tk = self.daemon.get_tk(self)
 		self.gtk, self.gtk_idx = self.daemon.get_gtk()
 
-		time.sleep(1)
+		if not self.obtained_ip: return
+
+		log(STATUS, "MetaFrag.AfterAuth", color="green")
 		self.inject_next_frags(MetaFrag.AfterAuth)
+
+		self.time_connected = time.time() + 1
+
+	def handle_connected(self):
+		"""This is called ~1 second after completing the handshake"""
+		log(STATUS, "MetaFrag.Connected", color="green")
+		self.inject_next_frags(MetaFrag.Connected)
 
 	def set_ip_addresses(self, ip, peerip):
 		self.ip = ip
 		self.peerip = peerip
 		self.obtained_ip = True
 
-		# We can generate tests once we have an IP
+		# We can generate tests once we know the IP addresses
 		self.generate_tests()
+
+	def time_tick(self):
+		# XXX extra check on self.obtained_ip so when the only test is on Connected event,
+		#	this test can be run without requiring a reconnect.
+		if self.time_connected != None and time.time() > self.time_connected and self.obtained_ip:
+			self.handle_connected()
+			self.time_connected = None
 
 class Daemon():
 	def __init__(self, options):
@@ -468,6 +487,10 @@ class Daemon():
 		pass
 
 	def handle_eth(self, p):
+		pass
+
+	@abc.abstractmethod
+	def time_tick(self, station):
 		pass
 
 	@abc.abstractmethod
@@ -535,7 +558,7 @@ class Daemon():
 
 		# Monitor the virtual monitor interface of the client and perform the needed actions
 		while True:
-			sel = select.select([self.sock_mon, self.sock_eth, self.wpaspy_ctrl.s], [], [], 1)
+			sel = select.select([self.sock_mon, self.sock_eth, self.wpaspy_ctrl.s], [], [], 0.5)
 			if self.sock_mon in sel[0]:
 				p = self.sock_mon.recv()
 				if p != None: self.handle_mon(p)
@@ -547,6 +570,8 @@ class Daemon():
 			if self.wpaspy_ctrl.s in sel[0]:
 				msg = self.wpaspy_ctrl.recv()
 				self.handle_wpaspy(msg)
+
+			self.time_tick()
 
 	def stop(self):
 		log(STATUS, "Closing Hostap daemon and cleaning up ...")
@@ -571,6 +596,10 @@ class Authenticator(Daemon):
 	def get_tk(self, station):
 		tk = wpaspy_command(self.wpaspy_ctrl, "GET_TK " + station.peermac)
 		return bytes.fromhex(tk)
+
+	def time_tick(self):
+		for station in self.stations.items():
+			station.time_tick()
 
 	def force_reconnect(self, station):
 		# Confirmed to *instantly* reconnect: Arch Linux, Windows 10 with Intel WiFi chip, iPad Pro 13.3.1
@@ -675,6 +704,7 @@ class Supplicant(Daemon):
 		super().__init__(options)
 		self.station = None
 		self.arp_sock = None
+		self.time_dhcp_discover = None
 
 	def get_tk(self, station):
 		tk = wpaspy_command(self.wpaspy_ctrl, "GET tk")
@@ -682,6 +712,14 @@ class Supplicant(Daemon):
 			raise Exception("Couldn't retrieve session key of client")
 		else:
 			return bytes.fromhex(tk)
+
+	def time_tick(self):
+		self.station.time_tick()
+
+		if self.time_dhcp_discover != None and time.time() > self.time_dhcp_discover:
+			# TODO: Create a timer in case retransmissions are needed
+			self.send_dhcp_discover()
+			self.time_dhcp_discover = None
 
 	def send_dhcp_discover(self):
 		rawmac = bytes.fromhex(self.station.mac.replace(':', ''))
@@ -742,15 +780,11 @@ class Supplicant(Daemon):
 		log(STATUS, "daemon: " + msg)
 
 		if "CTRL-EVENT-CONNECTED" in msg:
-			if not self.station.obtained_ip:
-				# TODO: Create a timer in case retransmissions are needed
+			# This get's the current keys
+			self.station.handle_authenticated()
 
-				# Sleep to make sure the AP installed the key
-				time.sleep(1)
-				self.send_dhcp_discover()
-				self.send_dhcp_discover()
-			else:
-				self.station.handle_authenticated()
+			if not self.station.obtained_ip:
+				self.time_dhcp_discover = time.time() + 0.5
 
 		# Trying to authenticate with 38:2c:4a:c1:69:bc (SSID='backupnetwork2' freq=2462 MHz)
 		elif "Trying to authenticate with" in msg:
