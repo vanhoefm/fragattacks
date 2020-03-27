@@ -602,6 +602,7 @@ struct dpp_global_config {
 	void *msg_ctx;
 	void *cb_ctx;
 	int (*process_conf_obj)(void *ctx, struct dpp_authentication *auth);
+	void (*remove_bi)(void *ctx, struct dpp_bootstrap_info *bi);
 };
 
 struct dpp_global * dpp_global_init(struct dpp_global_config *config);

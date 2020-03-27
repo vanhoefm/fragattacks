@@ -131,6 +131,7 @@ struct dpp_global {
 	struct dl_list tcp_init; /* struct dpp_connection */
 	void *cb_ctx;
 	int (*process_conf_obj)(void *ctx, struct dpp_authentication *auth);
+	void (*remove_bi)(void *ctx, struct dpp_bootstrap_info *bi);
 #endif /* CONFIG_DPP2 */
 };
 
@@ -10333,6 +10334,10 @@ static int dpp_bootstrap_del(struct dpp_global *dpp, unsigned int id)
 		if (id && bi->id != id)
 			continue;
 		found = 1;
+#ifdef CONFIG_DPP2
+		if (dpp->remove_bi)
+			dpp->remove_bi(dpp->cb_ctx, bi);
+#endif /* CONFIG_DPP2 */
 		dl_list_del(&bi->list);
 		dpp_bootstrap_info_free(bi);
 	}
@@ -10903,6 +10908,7 @@ struct dpp_global * dpp_global_init(struct dpp_global_config *config)
 #ifdef CONFIG_DPP2
 	dpp->cb_ctx = config->cb_ctx;
 	dpp->process_conf_obj = config->process_conf_obj;
+	dpp->remove_bi = config->remove_bi;
 #endif /* CONFIG_DPP2 */
 
 	dl_list_init(&dpp->bootstrap);

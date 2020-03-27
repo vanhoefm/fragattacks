@@ -35,5 +35,7 @@ int wpas_dpp_controller_start(struct wpa_supplicant *wpa_s, const char *cmd);
 void wpas_dpp_connected(struct wpa_supplicant *wpa_s);
 void wpas_dpp_send_conn_status_result(struct wpa_supplicant *wpa_s,
 				      enum dpp_status_error result);
+int wpas_dpp_chirp(struct wpa_supplicant *wpa_s, const char *cmd);
+void wpas_dpp_chirp_stop(struct wpa_supplicant *wpa_s);
 
 #endif /* DPP_SUPPLICANT_H */
