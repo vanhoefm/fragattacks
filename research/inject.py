@@ -94,13 +94,7 @@ class Station():
 		self.txed_before_auth_done = False
 		self.obtained_ip = False
 
-		self.tk = None
-		# TODO: Get the current PN from the kernel, increment by 0x99,
-		# and use that to inject packets. Causes less interference.
-		# Though perhaps causing interference might be good...
-		self.pn = 0x8000000
-		self.gtk = None
-		self.gtk_idx = None
+		self.reset_keys()
 
 		# Contains either the "to-DS" or "from-DS" flag.
 		self.FCfield = Dot11(FCfield=ds_status).FCfield
@@ -119,6 +113,14 @@ class Station():
 		self.othermac = None
 		self.otherip = None
 
+	def reset_keys(self):
+		self.tk = None
+		# TODO: Get the current PN from the kernel, increment by 0x99,
+		# and use that to inject packets. Causes less interference.
+		# Though perhaps causing interference might be good...
+		self.pn = 0x100
+		self.gtk = None
+		self.gtk_idx = None
 
 	def handle_mon(self, p):
 		if not self.obtained_ip: return
@@ -131,6 +133,35 @@ class Station():
 		if self.test.verify and self.test.verify in raw(p):
 			log(STATUS, "SUCCESSFULL INJECTION", color="green")
 			print(repr(p))
+
+	def send_mon(self, data, prior=1):
+		"""
+		Right after completing the handshake, it occurred several times that our
+		script was sending data *before* the key had been installed (or the port
+		authorized). This meant traffic was dropped. Use this function to manually
+		send frames over the monitor interface to ensure delivery and encryption.
+		"""
+
+		# If it contains an Ethernet header, strip it, and take addresses from that
+		p = self.get_header(prior=prior)
+		if Ether in data:
+			payload = data.payload
+			p.addr2 = data.src
+
+			# This tests if to-DS is set
+			if p.FCfield & 1:
+				p.addr3 = data.dst
+			else:
+				p.addr1 = data.dst
+
+		else:
+			payload = data
+
+		p = p/LLC()/SNAP()/payload
+		if self.tk: p = self.encrypt(p)
+
+		print("[Injecting]", repr(p))
+		daemon.inject_mon(p)
 
 	def set_header(self, p, forward=False, prior=None):
 		"""Set addresses to send frame to the peer or the 3rd party station."""
@@ -332,6 +363,9 @@ class Station():
 		assert self.peermac == None or self.peermac == peermac
 		self.peermac = peermac
 
+		# Clear the keys on a new connection
+		self.reset_keys()
+
 	def inject_next_frags(self, trigger):
 		frag = None
 
@@ -386,14 +420,11 @@ class Station():
 
 		# - Send over monitor interface to assure order compared to injected fragments.
 		# - This is also important because the station might have already installed the
-		#   key before this script can send the EAPOL frame over Ethernet.
+		#   key before this script can send the EAPOL frame over Ethernet (but we didn't
+		#   yet request the key from this script).
 		# - Send with high priority, otherwise MetaFrag.AfterAuth might be send before
 		#   the EAPOL frame by the Wi-Fi chip.
-		p = Dot11(type="Data", subtype=8)/Dot11QoS(TID=6)/LLC()/SNAP()/eapol
-		self.set_header(p)
-		if self.tk: p = self.encrypt(p)
-		daemon.inject_mon(p)
-		print(repr(p))
+		self.send_mon(eapol)
 
 	def handle_authenticated(self):
 		"""Called after completion of the 4-way handshake or similar"""
@@ -658,7 +689,9 @@ class Supplicant(Daemon):
 		req = req/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=1337)
 		req = req/DHCP(options=[("message-type", "discover"), "end"])
 		print(repr(req))
-		self.sock_eth.send(req)
+
+		self.station.send_mon(req)
+		#self.sock_eth.send(req)
 
 	def send_dhcp_request(self, offer):
 		rawmac = bytes.fromhex(self.station.mac.replace(':', ''))
@@ -670,7 +703,9 @@ class Supplicant(Daemon):
 		reply = reply/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=1337)
 		reply = reply/DHCP(options=[("message-type", "request"), ("requested_addr", myip),
 					    ("hostname", "fragclient"), "end"])
-		self.sock_eth.send(reply)
+
+		self.station.send_mon(reply)
+		#self.sock_eth.send(reply)
 
 	def handle_eth_dhcp(self, p):
 		"""Handle packets needed to connect and request an IP"""
