@@ -109,7 +109,8 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			const u8 *req_ies, size_t req_ies_len, int reassoc)
 {
 	struct sta_info *sta;
-	int new_assoc, res;
+	int new_assoc;
+	enum wpa_validate_result res;
 	struct ieee802_11_elems elems;
 	const u8 *ie;
 	size_t ielen;
@@ -323,33 +324,63 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 					  elems.rsnxe ? elems.rsnxe_len + 2 : 0,
 					  elems.mdie, elems.mdie_len,
 					  elems.owe_dh, elems.owe_dh_len);
-		if (res != WPA_IE_OK) {
+		reason = WLAN_REASON_INVALID_IE;
+		status = WLAN_STATUS_INVALID_IE;
+		switch (res) {
+		case WPA_IE_OK:
+			reason = WLAN_REASON_UNSPECIFIED;
+			status = WLAN_STATUS_SUCCESS;
+			break;
+		case WPA_INVALID_IE:
+			reason = WLAN_REASON_INVALID_IE;
+			status = WLAN_STATUS_INVALID_IE;
+			break;
+		case WPA_INVALID_GROUP:
+			reason = WLAN_REASON_GROUP_CIPHER_NOT_VALID;
+			status = WLAN_STATUS_GROUP_CIPHER_NOT_VALID;
+			break;
+		case WPA_INVALID_PAIRWISE:
+			reason = WLAN_REASON_PAIRWISE_CIPHER_NOT_VALID;
+			status = WLAN_STATUS_PAIRWISE_CIPHER_NOT_VALID;
+			break;
+		case WPA_INVALID_AKMP:
+			reason = WLAN_REASON_AKMP_NOT_VALID;
+			status = WLAN_STATUS_AKMP_NOT_VALID;
+			break;
+		case WPA_NOT_ENABLED:
+			reason = WLAN_REASON_INVALID_IE;
+			status = WLAN_STATUS_INVALID_IE;
+			break;
+		case WPA_ALLOC_FAIL:
+			reason = WLAN_REASON_UNSPECIFIED;
+			status = WLAN_STATUS_UNSPECIFIED_FAILURE;
+			break;
+		case WPA_MGMT_FRAME_PROTECTION_VIOLATION:
+			reason = WLAN_REASON_INVALID_IE;
+			status = WLAN_STATUS_INVALID_IE;
+			break;
+		case WPA_INVALID_MGMT_GROUP_CIPHER:
+			reason = WLAN_REASON_CIPHER_SUITE_REJECTED;
+			status = WLAN_STATUS_CIPHER_REJECTED_PER_POLICY;
+			break;
+		case WPA_INVALID_MDIE:
+			reason = WLAN_REASON_INVALID_MDE;
+			status = WLAN_STATUS_INVALID_MDIE;
+			break;
+		case WPA_INVALID_PROTO:
+			reason = WLAN_REASON_INVALID_IE;
+			status = WLAN_STATUS_INVALID_IE;
+			break;
+		case WPA_INVALID_PMKID:
+			reason = WLAN_REASON_INVALID_PMKID;
+			status = WLAN_STATUS_INVALID_PMKID;
+			break;
+		}
+		if (status != WLAN_STATUS_SUCCESS) {
 			wpa_printf(MSG_DEBUG,
 				   "WPA/RSN information element rejected? (res %u)",
 				   res);
 			wpa_hexdump(MSG_DEBUG, "IE", ie, ielen);
-			if (res == WPA_INVALID_GROUP) {
-				reason = WLAN_REASON_GROUP_CIPHER_NOT_VALID;
-				status = WLAN_STATUS_GROUP_CIPHER_NOT_VALID;
-			} else if (res == WPA_INVALID_PAIRWISE) {
-				reason = WLAN_REASON_PAIRWISE_CIPHER_NOT_VALID;
-				status = WLAN_STATUS_PAIRWISE_CIPHER_NOT_VALID;
-			} else if (res == WPA_INVALID_AKMP) {
-				reason = WLAN_REASON_AKMP_NOT_VALID;
-				status = WLAN_STATUS_AKMP_NOT_VALID;
-			} else if (res == WPA_MGMT_FRAME_PROTECTION_VIOLATION) {
-				reason = WLAN_REASON_INVALID_IE;
-				status = WLAN_STATUS_INVALID_IE;
-			} else if (res == WPA_INVALID_MGMT_GROUP_CIPHER) {
-				reason = WLAN_REASON_CIPHER_SUITE_REJECTED;
-				status = WLAN_STATUS_CIPHER_REJECTED_PER_POLICY;
-			} else if (res == WPA_INVALID_PMKID) {
-				reason = WLAN_REASON_INVALID_PMKID;
-				status = WLAN_STATUS_INVALID_PMKID;
-			} else {
-				reason = WLAN_REASON_INVALID_IE;
-				status = WLAN_STATUS_INVALID_IE;
-			}
 			goto fail;
 		}
 

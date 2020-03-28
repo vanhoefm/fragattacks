@@ -1611,27 +1611,35 @@ static int auth_sae_queued_addr(struct hostapd_data *hapd, const u8 *addr)
 #endif /* CONFIG_SAE */
 
 
-static u16 wpa_res_to_status_code(int res)
+static u16 wpa_res_to_status_code(enum wpa_validate_result res)
 {
-	if (res == WPA_INVALID_GROUP)
-		return WLAN_STATUS_GROUP_CIPHER_NOT_VALID;
-	if (res == WPA_INVALID_PAIRWISE)
-		return WLAN_STATUS_PAIRWISE_CIPHER_NOT_VALID;
-	if (res == WPA_INVALID_AKMP)
-		return WLAN_STATUS_AKMP_NOT_VALID;
-	if (res == WPA_ALLOC_FAIL)
-		return WLAN_STATUS_UNSPECIFIED_FAILURE;
-	if (res == WPA_MGMT_FRAME_PROTECTION_VIOLATION)
-		return WLAN_STATUS_ROBUST_MGMT_FRAME_POLICY_VIOLATION;
-	if (res == WPA_INVALID_MGMT_GROUP_CIPHER)
-		return WLAN_STATUS_CIPHER_REJECTED_PER_POLICY;
-	if (res == WPA_INVALID_MDIE)
-		return WLAN_STATUS_INVALID_MDIE;
-	if (res == WPA_INVALID_PMKID)
-		return WLAN_STATUS_INVALID_PMKID;
-	if (res != WPA_IE_OK)
+	switch (res) {
+	case WPA_IE_OK:
+		return WLAN_STATUS_SUCCESS;
+	case WPA_INVALID_IE:
 		return WLAN_STATUS_INVALID_IE;
-	return WLAN_STATUS_SUCCESS;
+	case WPA_INVALID_GROUP:
+		return WLAN_STATUS_GROUP_CIPHER_NOT_VALID;
+	case WPA_INVALID_PAIRWISE:
+		return WLAN_STATUS_PAIRWISE_CIPHER_NOT_VALID;
+	case WPA_INVALID_AKMP:
+		return WLAN_STATUS_AKMP_NOT_VALID;
+	case WPA_NOT_ENABLED:
+		return WLAN_STATUS_INVALID_IE;
+	case WPA_ALLOC_FAIL:
+		return WLAN_STATUS_UNSPECIFIED_FAILURE;
+	case WPA_MGMT_FRAME_PROTECTION_VIOLATION:
+		return WLAN_STATUS_ROBUST_MGMT_FRAME_POLICY_VIOLATION;
+	case WPA_INVALID_MGMT_GROUP_CIPHER:
+		return WLAN_STATUS_CIPHER_REJECTED_PER_POLICY;
+	case WPA_INVALID_MDIE:
+		return WLAN_STATUS_INVALID_MDIE;
+	case WPA_INVALID_PROTO:
+		return WLAN_STATUS_INVALID_IE;
+	case WPA_INVALID_PMKID:
+		return WLAN_STATUS_INVALID_PMKID;
+	}
+	return WLAN_STATUS_INVALID_IE;
 }
 
 
@@ -1651,7 +1659,7 @@ void handle_auth_fils(struct hostapd_data *hapd, struct sta_info *sta,
 	u16 resp = WLAN_STATUS_SUCCESS;
 	const u8 *end;
 	struct ieee802_11_elems elems;
-	int res;
+	enum wpa_validate_result res;
 	struct wpa_ie_data rsn;
 	struct rsn_pmksa_cache_entry *pmksa = NULL;
 
@@ -3044,7 +3052,7 @@ u16 owe_process_rsn_ie(struct hostapd_data *hapd,
 	u16 status;
 	u8 *owe_buf, ie[256 * 2];
 	size_t ie_len = 0;
-	int res;
+	enum wpa_validate_result res;
 
 	if (!rsn_ie || rsn_ie_len < 2) {
 		wpa_printf(MSG_DEBUG, "OWE: No RSNE in (Re)AssocReq");
@@ -3255,7 +3263,8 @@ static u16 check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 	}
 
 	if (hapd->conf->wpa && wpa_ie) {
-		int res;
+		enum wpa_validate_result res;
+
 		wpa_ie -= 2;
 		wpa_ie_len += 2;
 		if (sta->wpa_sm == NULL)

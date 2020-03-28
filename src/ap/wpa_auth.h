@@ -331,19 +331,20 @@ void wpa_deinit(struct wpa_authenticator *wpa_auth);
 int wpa_reconfig(struct wpa_authenticator *wpa_auth,
 		 struct wpa_auth_config *conf);
 
-enum {
+enum wpa_validate_result {
 	WPA_IE_OK, WPA_INVALID_IE, WPA_INVALID_GROUP, WPA_INVALID_PAIRWISE,
 	WPA_INVALID_AKMP, WPA_NOT_ENABLED, WPA_ALLOC_FAIL,
 	WPA_MGMT_FRAME_PROTECTION_VIOLATION, WPA_INVALID_MGMT_GROUP_CIPHER,
 	WPA_INVALID_MDIE, WPA_INVALID_PROTO, WPA_INVALID_PMKID
 };
 
-int wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
-			struct wpa_state_machine *sm, int freq,
-			const u8 *wpa_ie, size_t wpa_ie_len,
-			const u8 *rsnxe, size_t rsnxe_len,
-			const u8 *mdie, size_t mdie_len,
-			const u8 *owe_dh, size_t owe_dh_len);
+enum wpa_validate_result
+wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
+		    struct wpa_state_machine *sm, int freq,
+		    const u8 *wpa_ie, size_t wpa_ie_len,
+		    const u8 *rsnxe, size_t rsnxe_len,
+		    const u8 *mdie, size_t mdie_len,
+		    const u8 *owe_dh, size_t owe_dh_len);
 int wpa_validate_osen(struct wpa_authenticator *wpa_auth,
 		      struct wpa_state_machine *sm,
 		      const u8 *osen_ie, size_t osen_ie_len);
