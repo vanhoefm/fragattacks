@@ -749,7 +749,7 @@ class Supplicant(Daemon):
 		#	Maybe it's removing the current PTK before a rekey?
 		# RT-N10: we get a deauthentication as a reply. Connection is killed.
 		# LANCOM: does not work (no reply)
-		# Aruba: TODO
+		# Aruba: does not work (no reply)
 		# ==> Only reliable way is to configure AP to constantly rekey the PTK, and wait
 		#     untill the AP starts a rekey.
 		#wpaspy_command(self.wpaspy_ctrl, "KEY_REQUEST 0 1")
@@ -840,14 +840,17 @@ class Supplicant(Daemon):
 			self.station.handle_eapol_tx(bytes.fromhex(payload))
 
 	def reconnect(self):
-		# TODO: Check that ROAM command always performs a deauthentication
 		log(STATUS, "Reconnecting to the AP.", color="green")
 		wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
-		wpaspy_command(self.wpaspy_ctrl, "ROAM " + self.station.peermac)
+		wpaspy_command(self.wpaspy_ctrl, "REASSOCIATE")
 
 	def configure_daemon(self):
 		# TODO: Only enable networks once our script is ready, to prevent
 		#	wpa_supplicant from connecting before our start started.
+
+		# Optimize reassoc-to-same-BSS. This makes the "REASSOCIATE" command skip the
+		# authentication phase (reducing the chance that packet queues are reset).
+		wpaspy_command(self.wpaspy_ctrl, "SET reassoc_same_bss_optim 1")
 
 		# If the user already supplied IPs we can immediately perform tests
 		if self.options.clientip and self.options.routerip:
