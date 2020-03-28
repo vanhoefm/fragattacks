@@ -675,7 +675,7 @@ def run_ap_ft_separate_hostapd(dev, apdev, params, over_ds):
         hapd1 = hostapd.add_ap(apdev2[1], params)
 
         run_roams(dev[0], apdev2, hapd0, hapd1, ssid, passphrase,
-                  over_ds=over_ds, test_connectivity=False)
+                  over_ds=over_ds, test_connectivity=False, roams=2)
 
         hglobal.terminate()
 
@@ -995,7 +995,8 @@ def test_ap_ft_over_ds_pull_vlan(dev, apdev):
 
 def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None,
                  rsne_override=None, rsnxe_override=None,
-                 no_beacon_rsnxe2=False, ext_key_id=False):
+                 no_beacon_rsnxe2=False, ext_key_id=False,
+                 skip_prune_assoc=False):
     if "SAE" not in dev.get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     ssid = "test-ft"
@@ -1013,6 +1014,8 @@ def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None,
         params['rsnxe_override_ft'] = rsnxe_override
     if ext_key_id:
         params['extended_key_id'] = '1'
+    if skip_prune_assoc:
+        params['skip_prune_assoc'] = '1'
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params['wpa_key_mgmt'] = "FT-SAE"
@@ -1028,6 +1031,8 @@ def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None,
         params['no_beacon_rsnxe'] = "1"
     if ext_key_id:
         params['extended_key_id'] = '1'
+    if skip_prune_assoc:
+        params['skip_prune_assoc'] = '1'
     hapd1 = hostapd.add_ap(apdev[1], params)
     key_mgmt = hapd1.get_config()['key_mgmt']
     if key_mgmt.split(' ')[0] != "FT-SAE":
@@ -3294,3 +3299,41 @@ def test_ap_ft_r0_key_expiration(dev, apdev):
     dev[0].dump_monitor()
     dev[0].request("RECONNECT")
     dev[0].wait_connected()
+
+def test_ap_ft_no_full_ap_client_state(dev, apdev):
+    """WPA2-PSK-FT AP with full_ap_client_state=0"""
+    run_ap_ft_skip_prune_assoc(dev, apdev, False, False)
+
+def test_ap_ft_skip_prune_assoc(dev, apdev):
+    """WPA2-PSK-FT AP with skip_prune_assoc"""
+    run_ap_ft_skip_prune_assoc(dev, apdev, True, True)
+
+def test_ap_ft_skip_prune_assoc2(dev, apdev):
+    """WPA2-PSK-FT AP with skip_prune_assoc (disable full_ap_client_state)"""
+    run_ap_ft_skip_prune_assoc(dev, apdev, True, False, test_connectivity=False)
+
+def run_ap_ft_skip_prune_assoc(dev, apdev, skip_prune_assoc,
+                               full_ap_client_state, test_connectivity=True):
+    ssid = "test-ft"
+    passphrase = "12345678"
+
+    params = ft_params1(ssid=ssid, passphrase=passphrase)
+    if skip_prune_assoc:
+        params['skip_prune_assoc'] = '1'
+    if not full_ap_client_state:
+        params['driver_params'] = "full_ap_client_state=0"
+    hapd0 = hostapd.add_ap(apdev[0], params)
+    params = ft_params2(ssid=ssid, passphrase=passphrase)
+    if skip_prune_assoc:
+        params['skip_prune_assoc'] = '1'
+    if not full_ap_client_state:
+        params['driver_params'] = "full_ap_client_state=0"
+    hapd1 = hostapd.add_ap(apdev[1], params)
+
+    run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase,
+              test_connectivity=test_connectivity)
+
+def test_ap_ft_sae_skip_prune_assoc(dev, apdev):
+    """WPA2-PSK-FT-SAE AP with skip_prune_assoc"""
+    hapd0, hapd1 = start_ft_sae(dev[0], apdev, skip_prune_assoc=True)
+    run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678", sae=True)
