@@ -3196,6 +3196,10 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 #ifdef CONFIG_MBO
 	wpas_mbo_check_pmf(wpa_s, bss, wpa_s->current_ssid);
 #endif /* CONFIG_MBO */
+
+#ifdef CONFIG_DPP2
+	wpa_s->dpp_pfs_fallback = 0;
+#endif /* CONFIG_DPP2 */
 }
 
 
@@ -4363,6 +4367,39 @@ static void wpas_event_assoc_reject(struct wpa_supplicant *wpa_s,
 		return;
 	}
 #endif /* CONFIG_OWE */
+
+#ifdef CONFIG_DPP2
+	/* Try to follow AP's PFS policy. WLAN_STATUS_ASSOC_DENIED_UNSPEC is
+	 * the status code defined in the DPP R2 tech spec.
+	 * WLAN_STATUS_AKMP_NOT_VALID is addressed in the same manner as an
+	 * interoperability workaround with older hostapd implementation. */
+	if (wpa_s->current_ssid &&
+	    wpa_s->current_ssid->key_mgmt == WPA_KEY_MGMT_DPP &&
+	    wpa_s->current_ssid->dpp_pfs == 0 &&
+	    (data->assoc_reject.status_code ==
+	     WLAN_STATUS_ASSOC_DENIED_UNSPEC ||
+	     data->assoc_reject.status_code == WLAN_STATUS_AKMP_NOT_VALID)) {
+		struct wpa_ssid *ssid = wpa_s->current_ssid;
+		struct wpa_bss *bss = wpa_s->current_bss;
+
+		wpa_s->current_ssid->dpp_pfs_fallback ^= 1;
+		if (!bss)
+			bss = wpa_supplicant_get_new_bss(wpa_s, bssid);
+		if (!bss || wpa_s->dpp_pfs_fallback) {
+			wpa_printf(MSG_DEBUG,
+				   "DPP: Updated PFS policy for next try");
+			wpas_connection_failed(wpa_s, bssid);
+			wpa_supplicant_mark_disassoc(wpa_s);
+			return;
+		}
+		wpa_printf(MSG_DEBUG, "DPP: Try again with updated PFS policy");
+		wpa_s->dpp_pfs_fallback = 1;
+		wpas_connect_work_done(wpa_s);
+		wpa_supplicant_mark_disassoc(wpa_s);
+		wpa_supplicant_connect(wpa_s, bss, ssid);
+		return;
+	}
+#endif /* CONFIG_DPP2 */
 
 #ifdef CONFIG_MBO
 	if (data->assoc_reject.status_code ==

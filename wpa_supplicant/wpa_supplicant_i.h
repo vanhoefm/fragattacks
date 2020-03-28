@@ -1273,6 +1273,7 @@ struct wpa_supplicant {
 	size_t dpp_last_ssid_len;
 #ifdef CONFIG_DPP2
 	struct dpp_pfs *dpp_pfs;
+	int dpp_pfs_fallback;
 	struct wpabuf *dpp_presence_announcement;
 	struct dpp_bootstrap_info *dpp_chirp_bi;
 	int dpp_chirp_freq;

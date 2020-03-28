@@ -1003,6 +1003,22 @@ struct wpa_ssid {
 	size_t dpp_csign_len;
 
 	/**
+	 * dpp_pfs - DPP PFS
+	 * 0: allow PFS to be used or not used
+	 * 1: require PFS to be used (note: not compatible with DPP R1)
+	 * 2: do not allow PFS to be used
+	 */
+	int dpp_pfs;
+
+	/**
+	 * dpp_pfs_fallback - DPP PFS fallback selection
+	 *
+	 * This is an internally used variable (i.e., not used in external
+	 * configuration) to track state of the DPP PFS fallback mechanism.
+	 */
+	int dpp_pfs_fallback;
+
+	/**
 	 * owe_group - OWE DH Group
 	 *
 	 * 0 = use default (19) first and then try all supported groups one by

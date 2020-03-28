@@ -928,6 +928,7 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	STR(dpp_netaccesskey);
 	INT(dpp_netaccesskey_expiry);
 	STR(dpp_csign);
+	INT(dpp_pfs);
 #endif /* CONFIG_DPP */
 	INT(owe_group);
 	INT(owe_only);

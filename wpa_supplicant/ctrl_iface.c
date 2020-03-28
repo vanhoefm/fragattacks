@@ -8106,6 +8106,7 @@ static void wpa_supplicant_ctrl_iface_flush(struct wpa_supplicant *wpa_s)
 	wpa_s->dpp_resp_retry_time = 0;
 #ifdef CONFIG_DPP2
 	wpas_dpp_chirp_stop(wpa_s);
+	wpa_s->dpp_pfs_fallback = 0;
 #endif /* CONFIG_DPP2 */
 #ifdef CONFIG_TESTING_OPTIONS
 	os_memset(dpp_pkex_own_mac_override, 0, ETH_ALEN);

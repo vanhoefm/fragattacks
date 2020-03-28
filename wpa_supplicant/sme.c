@@ -1793,7 +1793,9 @@ void sme_associate(struct wpa_supplicant *wpa_s, enum wpas_mode mode,
 
 #ifdef CONFIG_DPP2
 	if (wpa_s->key_mgmt == WPA_KEY_MGMT_DPP && wpa_s->current_ssid &&
-	    wpa_s->current_ssid->dpp_netaccesskey) {
+	    wpa_s->current_ssid->dpp_netaccesskey &&
+	    wpa_s->current_ssid->dpp_pfs != 2 &&
+	    !wpa_s->current_ssid->dpp_pfs_fallback) {
 		struct wpa_ssid *ssid = wpa_s->current_ssid;
 
 		dpp_pfs_free(wpa_s->dpp_pfs);

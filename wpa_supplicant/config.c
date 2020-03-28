@@ -2570,6 +2570,7 @@ static const struct parse_data ssid_fields[] = {
 	{ STR_LEN(dpp_netaccesskey) },
 	{ INT(dpp_netaccesskey_expiry) },
 	{ STR_LEN(dpp_csign) },
+	{ INT_RANGE(dpp_pfs, 0, 2) },
 #endif /* CONFIG_DPP */
 	{ INT_RANGE(owe_group, 0, 65535) },
 	{ INT_RANGE(owe_only, 0, 1) },
