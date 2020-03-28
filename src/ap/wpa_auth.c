@@ -1015,9 +1015,9 @@ void wpa_receive(struct wpa_authenticator *wpa_auth,
 	key_data = mic + mic_len + 2;
 	key_data_length = WPA_GET_BE16(mic + mic_len);
 	wpa_printf(MSG_DEBUG, "WPA: Received EAPOL-Key from " MACSTR
-		   " key_info=0x%x type=%u mic_len=%u key_data_length=%u",
+		   " key_info=0x%x type=%u mic_len=%zu key_data_length=%u",
 		   MAC2STR(sm->addr), key_info, key->type,
-		   (unsigned int) mic_len, key_data_length);
+		   mic_len, key_data_length);
 	wpa_hexdump(MSG_MSGDUMP,
 		    "WPA: EAPOL-Key header (ending before Key MIC)",
 		    key, sizeof(*key));
@@ -1025,10 +1025,9 @@ void wpa_receive(struct wpa_authenticator *wpa_auth,
 		    mic, mic_len);
 	if (key_data_length > data_len - sizeof(*hdr) - keyhdrlen) {
 		wpa_printf(MSG_INFO,
-			   "WPA: Invalid EAPOL-Key frame - key_data overflow (%d > %lu)",
+			   "WPA: Invalid EAPOL-Key frame - key_data overflow (%d > %zu)",
 			   key_data_length,
-			   (unsigned long) (data_len - sizeof(*hdr) -
-					    keyhdrlen));
+			   data_len - sizeof(*hdr) - keyhdrlen);
 		return;
 	}
 
@@ -1490,13 +1489,13 @@ void __wpa_send_eapol(struct wpa_authenticator *wpa_auth,
 	pairwise = !!(key_info & WPA_KEY_INFO_KEY_TYPE);
 
 	wpa_printf(MSG_DEBUG,
-		   "WPA: Send EAPOL(version=%d secure=%d mic=%d ack=%d install=%d pairwise=%d kde_len=%lu keyidx=%d encr=%d)",
+		   "WPA: Send EAPOL(version=%d secure=%d mic=%d ack=%d install=%d pairwise=%d kde_len=%zu keyidx=%d encr=%d)",
 		   version,
 		   (key_info & WPA_KEY_INFO_SECURE) ? 1 : 0,
 		   (key_info & WPA_KEY_INFO_MIC) ? 1 : 0,
 		   (key_info & WPA_KEY_INFO_ACK) ? 1 : 0,
 		   (key_info & WPA_KEY_INFO_INSTALL) ? 1 : 0,
-		   pairwise, (unsigned long) kde_len, keyidx, encr);
+		   pairwise, kde_len, keyidx, encr);
 
 	key_data_len = kde_len;
 
@@ -1603,8 +1602,8 @@ void __wpa_send_eapol(struct wpa_authenticator *wpa_auth,
 		    wpa_use_aes_key_wrap(sm->wpa_key_mgmt) ||
 		    version == WPA_KEY_INFO_TYPE_AES_128_CMAC) {
 			wpa_printf(MSG_DEBUG,
-				   "WPA: Encrypt Key Data using AES-WRAP (KEK length %u)",
-				   (unsigned int) sm->PTK.kek_len);
+				   "WPA: Encrypt Key Data using AES-WRAP (KEK length %zu)",
+				   sm->PTK.kek_len);
 			if (aes_wrap(sm->PTK.kek, sm->PTK.kek_len,
 				     (key_data_len - 8) / 8, buf, key_data)) {
 				os_free(hdr);
@@ -2066,13 +2065,12 @@ SM_STATE(WPA_PTK, INITPMK)
 		else
 			pmk_len = PMK_LEN;
 		wpa_printf(MSG_DEBUG,
-			   "WPA: PMK from EAPOL state machine (MSK len=%lu PMK len=%u)",
-			   (unsigned long) len,
-			   pmk_len);
+			   "WPA: PMK from EAPOL state machine (MSK len=%zu PMK len=%u)",
+			   len, pmk_len);
 		if (len < pmk_len) {
 			wpa_printf(MSG_DEBUG,
-				   "WPA: MSK not long enough (%u) to create PMK (%u)",
-				   (unsigned int) len, (unsigned int) pmk_len);
+				   "WPA: MSK not long enough (%zu) to create PMK (%u)",
+				   len, pmk_len);
 			sm->Disconnect = TRUE;
 			return;
 		}
@@ -2504,9 +2502,9 @@ int wpa_fils_validate_key_confirm(struct wpa_state_machine *sm, const u8 *ies,
 
 	if (elems.fils_key_confirm_len != sm->fils_key_auth_len) {
 		wpa_printf(MSG_DEBUG,
-			   "FILS: Unexpected Key-Auth length %d (expected %d)",
+			   "FILS: Unexpected Key-Auth length %d (expected %zu)",
 			   elems.fils_key_confirm_len,
-			   (int) sm->fils_key_auth_len);
+			   sm->fils_key_auth_len);
 		return -1;
 	}
 
@@ -2841,8 +2839,8 @@ u8 * hostapd_eid_assoc_fils_session(struct wpa_state_machine *sm, u8 *buf,
 	os_memcpy(pos, wpabuf_head(plain), wpabuf_len(plain));
 	pos += wpabuf_len(plain);
 
-	wpa_printf(MSG_DEBUG, "%s: plain buf_len: %u", __func__,
-		   (unsigned int) wpabuf_len(plain));
+	wpa_printf(MSG_DEBUG, "%s: plain buf_len: %zu", __func__,
+		   wpabuf_len(plain));
 	wpabuf_clear_free(plain);
 	sm->fils_completed = 1;
 	return pos;
