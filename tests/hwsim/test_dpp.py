@@ -5178,3 +5178,64 @@ def test_dpp_chirp_configurator_inits(dev, apdev):
 
     dev[1].dpp_auth_init(uri=uri, conf="sta-dpp", configurator=conf_id)
     wait_auth_success(dev[0], dev[1], dev[1], dev[0])
+
+def start_dpp_pfs_ap(apdev, pfs):
+    params = {"ssid": "dpp",
+              "wpa": "2",
+              "wpa_key_mgmt": "DPP",
+              "dpp_pfs": str(pfs),
+              "ieee80211w": "2",
+              "rsn_pairwise": "CCMP",
+              "dpp_connector": params1_ap_connector,
+              "dpp_csign": params1_csign,
+              "dpp_netaccesskey": params1_ap_netaccesskey}
+    try:
+        hapd = hostapd.add_ap(apdev, params)
+    except:
+        raise HwsimSkip("DPP not supported")
+    return hapd
+
+def run_dpp_pfs_sta(dev, pfs, fail=False):
+    dev.connect("dpp", key_mgmt="DPP", scan_freq="2412",
+                ieee80211w="2", dpp_pfs=str(pfs),
+                dpp_csign=params1_csign,
+                dpp_connector=params1_sta_connector,
+                dpp_netaccesskey=params1_sta_netaccesskey,
+                wait_connect=not fail)
+    if fail:
+        for i in range(2):
+            ev = dev.wait_event(["CTRL-EVENT-ASSOC-REJECT",
+                                 "CTRL-EVENT-CONNECTED"], timeout=10)
+            if ev is None:
+                raise Exception("Connection result not reported")
+            if "CTRL-EVENT-CONNECTED" in ev:
+                raise Exception("Unexpected connection")
+        dev.request("REMOVE_NETWORK all")
+    else:
+        dev.request("REMOVE_NETWORK all")
+        dev.wait_disconnected()
+    dev.dump_monitor()
+
+def test_dpp_pfs_ap_0(dev, apdev):
+    """DPP PFS AP default"""
+    check_dpp_capab(dev[0])
+    hapd = start_dpp_pfs_ap(apdev[0], 0)
+    run_dpp_pfs_sta(dev[0], 0)
+    run_dpp_pfs_sta(dev[0], 1)
+    run_dpp_pfs_sta(dev[0], 2)
+
+def test_dpp_pfs_ap_1(dev, apdev):
+    """DPP PFS AP required"""
+    check_dpp_capab(dev[0])
+    hapd = start_dpp_pfs_ap(apdev[0], 1)
+    run_dpp_pfs_sta(dev[0], 0)
+    run_dpp_pfs_sta(dev[0], 1)
+    run_dpp_pfs_sta(dev[0], 2, fail=True)
+
+def test_dpp_pfs_ap_2(dev, apdev):
+    """DPP PFS AP not allowed"""
+    check_dpp_capab(dev[0])
+    hapd = start_dpp_pfs_ap(apdev[0], 2)
+    run_dpp_pfs_sta(dev[0], 0)
+    run_dpp_pfs_sta(dev[0], 1, fail=True)
+    run_dpp_pfs_sta(dev[0], 2)
