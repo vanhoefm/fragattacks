@@ -685,6 +685,7 @@ struct hostapd_bss_config {
 	struct wpabuf *gtk_rsc_override;
 	struct wpabuf *igtk_rsc_override;
 	int no_beacon_rsnxe;
+	int skip_prune_assoc;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 #define MESH_ENABLED BIT(0)
