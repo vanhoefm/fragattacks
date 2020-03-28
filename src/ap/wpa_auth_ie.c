@@ -864,6 +864,16 @@ wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 	}
 #endif /* CONFIG_OWE */
 
+#ifdef CONFIG_DPP2
+	if (sm->wpa_key_mgmt == WPA_KEY_MGMT_DPP &&
+	    ((conf->dpp_pfs == 1 && !owe_dh) ||
+	     (conf->dpp_pfs == 2 && owe_dh))) {
+		wpa_printf(MSG_DEBUG, "DPP: PFS %s",
+			   conf->dpp_pfs == 1 ? "required" : "not allowed");
+		return WPA_DENIED_OTHER_REASON;
+	}
+#endif /* CONFIG_DPP2 */
+
 	sm->pairwise = wpa_pick_pairwise_cipher(ciphers, 0);
 	if (sm->pairwise < 0)
 		return WPA_INVALID_PAIRWISE;

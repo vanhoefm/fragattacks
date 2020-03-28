@@ -1638,6 +1638,8 @@ static u16 wpa_res_to_status_code(enum wpa_validate_result res)
 		return WLAN_STATUS_INVALID_IE;
 	case WPA_INVALID_PMKID:
 		return WLAN_STATUS_INVALID_PMKID;
+	case WPA_DENIED_OTHER_REASON:
+		return WLAN_STATUS_ASSOC_DENIED_UNSPEC;
 	}
 	return WLAN_STATUS_INVALID_IE;
 }

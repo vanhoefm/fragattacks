@@ -741,6 +741,7 @@ struct hostapd_bss_config {
 #ifdef CONFIG_DPP2
 	struct dpp_controller_conf *dpp_controller;
 	int dpp_configurator_connectivity;
+	int dpp_pfs;
 #endif /* CONFIG_DPP2 */
 #endif /* CONFIG_DPP */
 

@@ -375,6 +375,10 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			reason = WLAN_REASON_INVALID_PMKID;
 			status = WLAN_STATUS_INVALID_PMKID;
 			break;
+		case WPA_DENIED_OTHER_REASON:
+			reason = WLAN_REASON_UNSPECIFIED;
+			status = WLAN_STATUS_ASSOC_DENIED_UNSPEC;
+			break;
 		}
 		if (status != WLAN_STATUS_SUCCESS) {
 			wpa_printf(MSG_DEBUG,
