@@ -156,7 +156,7 @@ command to get DPP credentials.
 
 > dpp_configurator_add
 (returns configurator id)
-> dpp_configurator_sign conf=<ap-dpp|sta-dpp> configurator=<configurator-id>
+> dpp_configurator_sign conf=<ap-dpp|sta-dpp> configurator=<configurator-id> ssid=<SSID hexdump>
 
 
 Sample AP configuration files after provisioning
