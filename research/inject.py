@@ -37,7 +37,7 @@ def wpaspy_command(ctrl, cmd):
 		log(ERROR, "wpa_supplicant did not recognize the command %s. Did you (re)compile wpa_supplicant?" % cmd.split()[0])
 		quit(1)
 	elif "FAIL" in rval:
-		log(ERROR, "Failed to execute command %s" % cmd)
+		log(ERROR, f"Failed to execute command {cmd}")
 		quit(1)
 	return rval
 
@@ -620,13 +620,16 @@ class Authenticator(Daemon):
 		for station in self.stations.values():
 			station.time_tick()
 
+	def get_ip(self, station):
+		log(STATUS, f"Waiting on client {station.peermac} to get IP")
+
 	def rekey(self, station):
 		wpaspy_command(self.wpaspy_ctrl, "REKEY_PTK " + station.peermac)
 
-	def force_reconnect(self, station):
+	def reconnect(self, station):
 		# Confirmed to *instantly* reconnect: Arch Linux, Windows 10 with Intel WiFi chip, iPad Pro 13.3.1
 		# Reconnects only after a few seconds: MacOS (same with other reasons and with deauthentication)
-		cmd = "DISASSOCIATE %s reason=%d" % (station.peermac, WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA)
+		cmd = f"DISASSOCIATE {station.peermac} reason={WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA}"
 		wpaspy_command(self.wpaspy_ctrl, cmd)
 
 	def handle_eth_dhcp(self, p, station):
@@ -637,7 +640,7 @@ class Authenticator(Daemon):
 		if req_type != 3: return
 
 		peerip = self.dhcp.leases[station.peermac]
-		log(STATUS, "Client %s with IP %s has connected" % (station.peermac, peerip))
+		log(STATUS, f"Client {station.peermac} with IP {peerip} has connected")
 		station.set_ip_addresses(self.arp_sender_ip, peerip)
 		self.force_reconnect(station)
 
@@ -667,14 +670,14 @@ class Authenticator(Daemon):
 				station = Station(self, self.apmac, "from-DS")
 				self.stations[clientmac] = station
 
-			log(STATUS, "Client %s is connecting" % clientmac)
+			log(STATUS, f"Client {clientmac} is connecting")
 			station = self.stations[clientmac]
 			station.handle_connecting(clientmac)
 
 		elif "EAPOL-TX" in msg:
 			cmd, clientmac, payload = msg.split()
 			if not clientmac in self.stations:
-				log(WARNING, "Sending EAPOL to unknown client %s." % clientmac)
+				log(WARNING, f"Sending EAPOL to unknown client {clientmac}.")
 				return
 			self.stations[clientmac].handle_eapol_tx(bytes.fromhex(payload))
 
@@ -682,7 +685,7 @@ class Authenticator(Daemon):
 		elif "AP-STA-CONNECTED" in msg:
 			cmd, clientmac = msg.split()
 			if not clientmac in self.stations:
-				log(WARNING, "Unknown client %s finished authenticating." % clientmac)
+				log(WARNING, f"Unknown client {clientmac} finished authenticating.")
 				return
 			self.stations[clientmac].handle_authenticated()
 
@@ -719,7 +722,7 @@ class Authenticator(Daemon):
 		# Use a dedicated IP address for our ARP ping and replies
 		self.arp_sender_ip = self.dhcp.pool.pop()
 		self.arp_sock = ARP_sock(sock=self.sock_eth, IP_addr=self.arp_sender_ip, ARP_addr=self.apmac)
-		log(STATUS, "Will inject ARP packets using sender IP %s" % self.arp_sender_ip)
+		log(STATUS, f"Will inject ARP packets using sender IP {self.arp_sender_ip}")
 
 
 class Supplicant(Daemon):
@@ -796,7 +799,7 @@ class Supplicant(Daemon):
 		elif req_type == 5:
 			clientip = p[BOOTP].yiaddr
 			serverip = p[IP].src
-			log(STATUS, "Received DHCP ack. My ip is %s and router is %s." % (clientip, serverip))
+			log(STATUS, f"Received DHCP ack. My ip is {clientip} and router is {serverip}.")
 
 			self.initialize_ips(clientip, serverip)
 			self.reconnect()
