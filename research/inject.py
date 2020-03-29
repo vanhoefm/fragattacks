@@ -59,20 +59,38 @@ class TestOptions():
 
 
 class Frag():
-	# StartingAuth, AfterAuthRace
 	# StartAuth: when starting the handshake
 	# BeforeAuth: right before last message of the handshake
 	# AfterAuth: right after last message of the handshake
 	# Connected: 1 second after handshake completed (allows peer to install keys)
 	StartAuth, BeforeAuth, AfterAuth, Connected = range(4)
 
-	def __init__(self, trigger, encrypted, frame=None, wait_rekey=False, inc_pn=1):
-		self.trigger = trigger
-		self.encrypted = encrypted
-		self.wait_rekey = wait_rekey
+	# GetIp: request an IP before continueing (or use existing one)
+	# Rekey: force or wait for a PTK rekey
+	# Reconnect: force a reconnect
+	GetIp, Rekey, Reconnect = range(3)
 
+	def __init__(self, trigger, encrypted, frame=None, flags=None, inc_pn=1):
+		self.trigger = trigger
+
+		if flags != None and not isinstance(flags, list):
+			self.flags = [flags]
+		else:
+			self.flags = flags if flags != None else []
+
+		self.encrypted = encrypted
 		self.inc_pn = inc_pn
 		self.frame = frame
+
+	def next_flag(self):
+		if len(self.flags) == 0:
+			return None
+		return self.flags[0]
+
+	def pop_flag(self):
+		if len(self.flags) == 0:
+			return None
+		return self.flags.pop(0)
 
 class Test():
 	# Type of request packet to use in general tests.
@@ -88,7 +106,7 @@ class Test():
 	def next_trigger_is(self, trigger):
 		if len(self.fragments) == 0:
 			return False
-		return not self.fragments[0].wait_rekey and \
+		return self.fragments[0].next_flag() == None and \
 			self.fragments[0].trigger == trigger
 
 	def next(self):
@@ -96,15 +114,16 @@ class Test():
 		del self.fragments[0]
 		return frag
 
-	def waiting_rekey(self):
+	def next_flag(self):
 		if len(self.fragments) == 0:
-			return False
-		return self.fragments[0].wait_rekey
+			return None
+		return self.fragments[0].next_flag()
 
-	def waited_rekey(self):
-		assert len(self.fragments) > 0
-		assert self.fragments[0].wait_rekey
-		self.fragments[0].wait_rekey = False
+	def pop_flag(self):
+		if len(self.fragments) == 0:
+			return None
+		return self.fragments[0].pop_flag()
+
 
 class Station():
 	def __init__(self, daemon, mac, ds_status):
@@ -112,9 +131,12 @@ class Station():
 		self.options = daemon.options
 		self.txed_before_auth = False
 		self.txed_before_auth_done = False
+		self.first_connect = True
 		self.obtained_ip = False
 
+		# Don't reset PN to have consistency over rekeys and reconnects
 		self.reset_keys()
+		self.pn = 0x100
 
 		# Contains either the "to-DS" or "from-DS" flag.
 		self.FCfield = Dot11(FCfield=ds_status).FCfield
@@ -138,19 +160,13 @@ class Station():
 
 	def reset_keys(self):
 		self.tk = None
-		# TODO: Get the current PN from the kernel, increment by 0x99,
-		# and use that to inject packets. Causes less interference.
-		# Though perhaps causing interference might be good...
-		self.pn = 0x100
 		self.gtk = None
 		self.gtk_idx = None
 
 	def handle_mon(self, p):
-		if not self.obtained_ip: return
+		pass
 
 	def handle_eth(self, p):
-		if not self.obtained_ip: return
-
 		repr(repr(p))
 
 		if self.test != None and self.test.check != None and self.test.check(p):
@@ -333,8 +349,12 @@ class Station():
 
 	def generate_tests(self):
 		self.test = self.generate_test_ping(Test.DHCP,
-				[Frag(Frag.Connected, True)])
-				 #Frag(Frag.Connected, True)])
+				[Frag(Frag.Connected, True, flags=Frag.GetIp)])
+
+		# Worked against Linux Hostapd and RT-AC51U
+		self.test = self.generate_test_ping(Test.DHCP,
+				[Frag(Frag.Connected, True),
+				 Frag(Frag.Connected, True , flags=Frag.Reconnect)])
 
 		#self.test = self.generate_test_ping(Test.DHCP,
 		#		[Frag(Frag.BeforeAuth, True, wait_rekey=True),
@@ -373,6 +393,13 @@ class Station():
 
 		# Clear the keys on a new connection
 		self.reset_keys()
+		self.time_connected = None
+
+		# Generate test cases once we know the MAC addresses
+		# XXX TODO FIXME : Dynamically generate payloads when needed
+		if self.first_connect:
+			self.generate_tests()
+			self.first_connect = False
 
 	def inject_next_frags(self, trigger):
 		frame = None
@@ -425,10 +452,11 @@ class Station():
 			self.txed_before_auth_done = True
 			self.txed_before_auth = False
 
+		self.time_connected = None
+
 	def handle_eapol_tx(self, eapol):
 		eapol = EAPOL(eapol)
-		if self.obtained_ip:
-			self.trigger_eapol_events(eapol)
+		self.trigger_eapol_events(eapol)
 
 		# - Send over monitor interface to assure order compared to injected fragments.
 		# - This is also important because the station might have already installed the
@@ -438,48 +466,60 @@ class Station():
 		#   the EAPOL frame by the Wi-Fi chip.
 		self.send_mon(eapol)
 
+	def check_flags_and_inject(self, trigger):
+		flag = self.test.next_flag()
+		if flag == Frag.GetIp:
+			if self.obtained_ip:
+				self.test.pop_flag()
+			else:
+				# (Re)transmit DHCP frames (or as AP print status message)
+				self.daemon.get_ip(self)
+				# Either schedule a new Connected event, or the initial one. Use 2 seconds
+				# because requesting IP generally takes a bit of time.
+				# TODO: Add an option to configure this timeout.
+				self.time_connected = time.time() + 1
+				log(WARNING, f"Scheduling next Frag.Connected at {self.time_connected}")
+				return
+
+		self.inject_next_frags(trigger)
+
+		flag = self.test.pop_flag()
+		if flag == Frag.Rekey:
+			# Force rekey as AP, wait on rekey as client
+			self.daemon.rekey(self)
+
+		elif flag == Frag.Reconnect:
+			# Full reconnect as AP, reassociation as client
+			self.daemon.reconnect(self)
+
 	def handle_authenticated(self):
 		"""Called after completion of the 4-way handshake or similar"""
 		self.tk = self.daemon.get_tk(self)
 		self.gtk, self.gtk_idx = self.daemon.get_gtk()
 
-		if not self.obtained_ip: return
-
+		# Note that self.time_connect may get changed in check_flags_and_inject
 		log(STATUS, "Frag.AfterAuth", color="green")
-		self.inject_next_frags(Frag.AfterAuth)
-
 		self.time_connected = time.time() + 1
-
-	def check_rekey(self):
-		if self.test.waiting_rekey():
-			# Force rekey as AP, wait on rekey as client
-			self.daemon.rekey(self)
-			self.test.waited_rekey()
+		self.check_flags_and_inject(Frag.AfterAuth)
 
 	def handle_connected(self):
 		"""This is called ~1 second after completing the handshake"""
 		log(STATUS, "Frag.Connected", color="green")
-		self.inject_next_frags(Frag.Connected)
-
-		#self.daemon.rekey(self)
-		self.check_rekey()
+		self.check_flags_and_inject(Frag.Connected)
 
 	def set_ip_addresses(self, ip, peerip):
 		self.ip = ip
 		self.peerip = peerip
 		self.obtained_ip = True
 
-		# We can generate tests once we know the IP addresses
-		self.generate_tests()
-
 	def time_tick(self):
-		# XXX extra check on self.obtained_ip so when the only test is on Connected event,
-		#	this test can be run without requiring a reconnect.
-		if self.time_connected != None and time.time() > self.time_connected and self.obtained_ip:
-			self.handle_connected()
+		if self.time_connected != None and time.time() > self.time_connected:
+			# Note that handle_connected may schedule a new Connected event, so it's
+			# important to clear time_connected *before* calling handle_connected.
 			self.time_connected = None
+			self.handle_connected()
 
-class Daemon():
+class Daemon(metaclass=abc.ABCMeta):
 	def __init__(self, options):
 		self.options = options
 
@@ -517,7 +557,15 @@ class Daemon():
 		return bytes.fromhex(gtk), int(idx)
 
 	@abc.abstractmethod
+	def get_ip(self, station):
+		pass
+
+	@abc.abstractmethod
 	def rekey(self, station):
+		pass
+
+	@abc.abstractmethod
+	def reconnect(self, station):
 		pass
 
 	# TODO: Might be good to put this into libwifi?
@@ -642,7 +690,6 @@ class Authenticator(Daemon):
 		peerip = self.dhcp.leases[station.peermac]
 		log(STATUS, f"Client {station.peermac} with IP {peerip} has connected")
 		station.set_ip_addresses(self.arp_sender_ip, peerip)
-		self.force_reconnect(station)
 
 	def handle_eth(self, p):
 		# Ignore clients not connected to the AP
@@ -730,7 +777,7 @@ class Supplicant(Daemon):
 		super().__init__(options)
 		self.station = None
 		self.arp_sock = None
-		self.time_dhcp_discover = None
+		self.dhcp_xid = None
 
 	def get_tk(self, station):
 		tk = wpaspy_command(self.wpaspy_ctrl, "GET tk")
@@ -738,6 +785,9 @@ class Supplicant(Daemon):
 			raise Exception("Couldn't retrieve session key of client")
 		else:
 			return bytes.fromhex(tk)
+
+	def get_ip(self, station):
+		self.send_dhcp_discover()
 
 	def rekey(self, station):
 		# WAG320N: does not work (Broadcom - no reply)
@@ -755,15 +805,13 @@ class Supplicant(Daemon):
 	def time_tick(self):
 		self.station.time_tick()
 
-		if self.time_dhcp_discover != None and time.time() > self.time_dhcp_discover:
-			# TODO: Create a timer in case retransmissions are needed
-			self.send_dhcp_discover()
-			self.time_dhcp_discover = None
-
 	def send_dhcp_discover(self):
+		if self.dhcp_xid == None:
+			self.dhcp_xid = random.randint(0, 2**31)
+
 		rawmac = bytes.fromhex(self.station.mac.replace(':', ''))
 		req = Ether(dst="ff:ff:ff:ff:ff:ff", src=self.station.mac)/IP(src="0.0.0.0", dst="255.255.255.255")
-		req = req/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=1337)
+		req = req/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=self.dhcp_xid)
 		req = req/DHCP(options=[("message-type", "discover"), "end"])
 		print(repr(req))
 
@@ -777,7 +825,7 @@ class Supplicant(Daemon):
 		xid = offer[BOOTP].xid
 
 		reply = Ether(dst="ff:ff:ff:ff:ff:ff", src=self.station.mac)/IP(src="0.0.0.0", dst="255.255.255.255")
-		reply = reply/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=1337)
+		reply = reply/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=self.dhcp_xid)
 		reply = reply/DHCP(options=[("message-type", "request"), ("requested_addr", myip),
 					    ("hostname", "fragclient"), "end"])
 
@@ -802,17 +850,17 @@ class Supplicant(Daemon):
 			log(STATUS, f"Received DHCP ack. My ip is {clientip} and router is {serverip}.")
 
 			self.initialize_ips(clientip, serverip)
-			self.reconnect()
 
 	def initialize_ips(self, clientip, serverip):
 		self.station.set_ip_addresses(clientip, serverip)
 		self.arp_sock = ARP_sock(sock=self.sock_eth, IP_addr=self.station.ip, ARP_addr=self.station.mac)
 
 	def handle_eth(self, p):
-		if not self.station.obtained_ip:
+		if BOOTP in p and p[BOOTP].xid == self.dhcp_xid:
 			self.handle_eth_dhcp(p)
 		else:
-			self.arp_sock.reply(p)
+			if self.arp_sock != None:
+				self.arp_sock.reply(p)
 			self.station.handle_eth(p)
 
 	def handle_wpaspy(self, msg):
@@ -821,9 +869,6 @@ class Supplicant(Daemon):
 		if "WPA: Key negotiation completed with" in msg:
 			# This get's the current keys
 			self.station.handle_authenticated()
-
-			if not self.station.obtained_ip:
-				self.time_dhcp_discover = time.time() + 0.5
 
 		# Trying to authenticate with 38:2c:4a:c1:69:bc (SSID='backupnetwork2' freq=2462 MHz)
 		elif "Trying to authenticate with" in msg:
@@ -835,9 +880,8 @@ class Supplicant(Daemon):
 			cmd, srcaddr, payload = msg.split()
 			self.station.handle_eapol_tx(bytes.fromhex(payload))
 
-	def reconnect(self):
+	def reconnect(self, station):
 		log(STATUS, "Reconnecting to the AP.", color="green")
-		wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
 		wpaspy_command(self.wpaspy_ctrl, "REASSOCIATE")
 
 	def configure_daemon(self):
@@ -847,11 +891,11 @@ class Supplicant(Daemon):
 		# Optimize reassoc-to-same-BSS. This makes the "REASSOCIATE" command skip the
 		# authentication phase (reducing the chance that packet queues are reset).
 		wpaspy_command(self.wpaspy_ctrl, "SET reassoc_same_bss_optim 1")
+		wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
 
 		# If the user already supplied IPs we can immediately perform tests
 		if self.options.clientip and self.options.routerip:
 			self.initialize_ips(self.options.clientip, self.options.routerip)
-			wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
 
 	def start_daemon(self):
 		log(STATUS, "Starting wpa_supplicant ...")
