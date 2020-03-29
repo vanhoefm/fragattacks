@@ -136,6 +136,9 @@ function finish {
 }
 trap finish EXIT
 
+if [ -z $KVM ]; then
+	RUN_TEST_ARGS="--long $RUN_TEST_ARGS"
+fi
 echo "$RUN_TEST_ARGS" > $argsfile
 
 A="mac80211_hwsim.support_p2p_device=0 "
