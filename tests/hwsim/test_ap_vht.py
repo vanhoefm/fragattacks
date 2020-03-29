@@ -892,7 +892,7 @@ def test_ap_vht_csa_vht40_disable(dev, apdev):
         dev[0].connect("vht", key_mgmt="NONE", scan_freq="5745")
         hwsim_utils.test_connectivity(dev[0], hapd)
 
-        hapd.request("CHAN_SWITCH 5 5200 center_freq1=5200 bandwidth=40 ht")
+        hapd.request("CHAN_SWITCH 5 5200 center_freq1=5210 sec_channel_offset=1 bandwidth=40 ht")
         ev = hapd.wait_event(["AP-CSA-FINISHED"], timeout=10)
         if ev is None:
             raise Exception("CSA finished event timed out")
