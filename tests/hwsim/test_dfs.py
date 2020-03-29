@@ -608,3 +608,52 @@ def test_dfs_radar_vht80_downgrade(dev, apdev, params):
             raise Exception("Unexpected SIGNAL_POLL value: " + str(sig))
     finally:
         clear_regdom(hapd, dev)
+
+def test_dfs_chan_switch(dev, apdev, params):
+    """DFS channel switch [long]"""
+    if not params['long']:
+        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+    try:
+        hapd = None
+        hapd = start_dfs_ap(apdev[0], country="US")
+
+        ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 70)
+        if "success=1" not in ev:
+            raise Exception("CAC failed")
+        if "freq=5260" not in ev:
+            raise Exception("Unexpected DFS freq result")
+        ev = hapd.wait_event(["AP-ENABLED"], timeout=5)
+        if not ev:
+            raise Exception("AP setup timed out")
+        freq = hapd.get_status_field("freq")
+        if freq != "5260":
+            raise Exception("Unexpected frequency")
+
+        dev[0].connect("dfs", key_mgmt="NONE", scan_freq="5260 5280")
+        dev[0].wait_regdom(country_ie=True)
+        hwsim_utils.test_connectivity(dev[0], hapd)
+
+        if "OK" not in hapd.request("CHAN_SWITCH 5 5280 ht"):
+            raise Exception("CHAN_SWITCH failed")
+        # This results in BSS going down before restart, so the STA is expected
+        # to report disconnection.
+        dev[0].wait_disconnected()
+        ev = wait_dfs_event(hapd, "DFS-CAC-START", 5)
+        if "freq=5280" not in ev:
+            raise Exception("Unexpected channel: " + ev)
+        ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 70)
+        if "success=1" not in ev:
+            raise Exception("CAC failed")
+        if "freq=5280" not in ev:
+            raise Exception("Unexpected DFS freq result")
+        ev = hapd.wait_event(["AP-ENABLED"], timeout=5)
+        if not ev:
+            raise Exception("AP setup timed out")
+        freq = hapd.get_status_field("freq")
+        if freq != "5280":
+            raise Exception("Unexpected frequency")
+
+        dev[0].wait_connected(timeout=30)
+        hwsim_utils.test_connectivity(dev[0], hapd)
+    finally:
+        clear_regdom(hapd, dev)
