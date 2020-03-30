@@ -954,8 +954,8 @@ def prepare_tests(test_id):
 				 Frag(Frag.AfterAuth, True, flags=Frag.Reconnect)])
 
 	elif test_id == 3:
-		# Two fragments over different PTK keys. Against RT-AC51U, which
-		# handshakes rekey request, but does rekey handshake in plaintext.
+		# Two fragments over different PTK keys. Against RT-AC51U AP we can
+		# trigger a rekey, but must do the rekey handshake in plaintext.
 		test = PingTest(REQ_DHCP,
 				[Frag(Frag.Connected, True),
 				 Frag(Frag.AfterAuth, True, flags=Frag.Rekey)])
