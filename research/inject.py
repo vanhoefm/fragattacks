@@ -167,7 +167,7 @@ class Test(metaclass=abc.ABCMeta):
 		return False
 
 class PingTest(Test):
-	def __init__(self, ptype, fragments):
+	def __init__(self, ptype, fragments, bcast=False):
 		super().__init__(fragments)
 		self.ptype = ptype
 		self.check_fn = None
@@ -188,6 +188,8 @@ class PingTest(Test):
 
 		# Assign frames to the existing fragment objects
 		for frag, frame in zip(self.fragments, frames):
+			if bcast:
+				frame.addr1 = "ff:ff:ff:ff:ff:ff"
 			frag.frame = frame
 
 class LinuxTest(Test):
@@ -251,6 +253,7 @@ class MacOsTest(Test):
 		# though, meaning it will be treated as a full frame (and not EAPOL).
 		_, request, self.check_fn = generate_request(station, self.ptype)
 		frag2, = create_fragments(header, data=request, num_frags=1)
+		frag2.SC |= 1
 		frag2.addr1 = "ff:ff:ff:ff:ff:ff"
 
 		self.fragments[0].frame = frag1
@@ -939,12 +942,25 @@ def prepare_tests(test_id):
 				[Frag(Frag.Connected, True, flags=Frag.GetIp)])
 
 	elif test_id == 1:
+		# Check if the STA receives broadcast (useful test against AP)
+		test = PingTest(REQ_DHCP,
+				[Frag(Frag.Connected, True)],
+				bcast=True)
+
+	elif test_id == 2:
 		# Cache poison attack. Worked against Linux Hostapd and RT-AC51U.
 		test = PingTest(REQ_ICMP,
 				[Frag(Frag.Connected, True),
-				 Frag(Frag.Connected, True, flags=Frag.Reconnect)])
+				 Frag(Frag.AfterAuth, True, flags=Frag.Reconnect)])
 
-	elif test_id == 1:
+	elif test_id == 3:
+		# Two fragments over different PTK keys. Against RT-AC51U, which
+		# handshakes rekey request, but does rekey handshake in plaintext.
+		test = PingTest(REQ_DHCP,
+				[Frag(Frag.Connected, True),
+				 Frag(Frag.AfterAuth, True, flags=Frag.Rekey)])
+
+	elif test_id == 4:
 		test = MacOsTest(REQ_DHCP)
 
 	# Two fragments over different PTK keys
