@@ -989,7 +989,6 @@ def check_mac80211_bigtk(dev, hapd):
 
 def test_ap_pmf_beacon_protection_bip(dev, apdev):
     """WPA2-PSK Beacon protection (BIP)"""
-    """WPA2-PSK AP with PMF required and Beacon protection enabled (BIP)"""
     run_ap_pmf_beacon_protection(dev, apdev, "AES-128-CMAC")
 
 def test_ap_pmf_beacon_protection_bip_cmac_256(dev, apdev):
@@ -1042,3 +1041,63 @@ def run_ap_pmf_beacon_protection(dev, apdev, cipher):
     logger.info("wlantest BIP counters: valid=%d invalid=%d missing=%d" % (valid_bip, invalid_bip, missing_bip))
     if valid_bip < 0 or invalid_bip > 0 or missing_bip > 0:
         raise Exception("Unexpected wlantest BIP counters: valid=%d invalid=%d missing=%d" % (valid_bip, invalid_bip, missing_bip))
+
+def test_ap_pmf_beacon_protection_mismatch(dev, apdev):
+    """WPA2-PSK Beacon protection MIC mismatch"""
+    run_ap_pmf_beacon_protection_mismatch(dev, apdev, False)
+
+def test_ap_pmf_beacon_protection_missing(dev, apdev):
+    """WPA2-PSK Beacon protection MME missing"""
+    run_ap_pmf_beacon_protection_mismatch(dev, apdev, True)
+
+def run_ap_pmf_beacon_protection_mismatch(dev, apdev, clear):
+    ssid = "test-beacon-prot"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    params["beacon_prot"] = "1"
+    params["group_mgmt_cipher"] = "AES-128-CMAC"
+    try:
+        hapd = hostapd.add_ap(apdev[0], params)
+    except Exception as e:
+        if "Failed to enable hostapd interface" in str(e):
+            raise HwsimSkip("Beacon protection not supported")
+        raise
+
+    bssid = hapd.own_addr()
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+
+    dev[0].connect(ssid, psk="12345678", ieee80211w="2", beacon_prot="1",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
+
+    WPA_ALG_NONE = 0
+    WPA_ALG_IGTK = 4
+    KEY_FLAG_DEFAULT = 0x02
+    KEY_FLAG_TX = 0x08
+    KEY_FLAG_GROUP = 0x10
+    KEY_FLAG_GROUP_TX_DEFAULT = KEY_FLAG_GROUP | KEY_FLAG_TX | KEY_FLAG_DEFAULT
+
+    addr = "ff:ff:ff:ff:ff:ff"
+
+    if clear:
+        res = hapd.request("SET_KEY %d %s %d %d %s %s %d" % (WPA_ALG_NONE, addr, 6, 1, 6*"00", "", KEY_FLAG_GROUP))
+    else:
+        res = hapd.request("SET_KEY %d %s %d %d %s %s %d" % (WPA_ALG_IGTK, addr, 6, 1, 6*"00", 16*"00", KEY_FLAG_GROUP_TX_DEFAULT))
+    if "OK" not in res:
+        raise Exception("SET_KEY failed")
+
+    ev = dev[0].wait_event(["CTRL-EVENT-UNPROT-BEACON"], timeout=5)
+    if ev is None:
+        raise Exception("Unprotected Beacon frame not reported")
+
+    ev = dev[0].wait_event(["CTRL-EVENT-BEACON-LOSS"], timeout=5)
+    if ev is None:
+        raise Exception("Beacon loss not reported")
+
+    ev = hapd.wait_event(["CTRL-EVENT-UNPROT-BEACON"], timeout=5)
+    if ev is None:
+        raise Exception("WNM-Notification Request frame not reported")
