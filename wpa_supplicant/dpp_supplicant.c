@@ -3020,6 +3020,7 @@ int wpas_dpp_chirp(struct wpa_supplicant *wpa_s, const char *cmd)
 
 	wpas_dpp_chirp_stop(wpa_s);
 	wpa_s->dpp_allowed_roles = DPP_CAPAB_ENROLLEE;
+	wpa_s->dpp_qr_mutual = 0;
 	wpa_s->dpp_chirp_bi = bi;
 	wpa_s->dpp_presence_announcement = dpp_build_presence_announcement(bi);
 	if (!wpa_s->dpp_presence_announcement)
