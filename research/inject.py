@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from libwifi import *
-import abc, sys, socket, struct, time, subprocess, atexit, select
+import abc, sys, socket, struct, time, subprocess, atexit, select, copy
 from wpaspy import Ctrl
 from scapy.contrib.wpa_eapol import WPA_key
 
@@ -101,7 +101,7 @@ class Frag():
 	# Reconnect: force a reconnect
 	GetIp, Rekey, Reconnect = range(3)
 
-	def __init__(self, trigger, encrypted, header=None, flags=None, inc_pn=1):
+	def __init__(self, trigger, encrypted, frame=None, flags=None, inc_pn=1):
 		self.trigger = trigger
 
 		if flags != None and not isinstance(flags, list):
@@ -111,7 +111,7 @@ class Frag():
 
 		self.encrypted = encrypted
 		self.inc_pn = inc_pn
-		self.header = header
+		self.frame = frame
 
 	def next_flag(self):
 		if len(self.flags) == 0:
@@ -167,9 +167,11 @@ class Test(metaclass=abc.ABCMeta):
 		return False
 
 class PingTest(Test):
-	def __init__(self, ptype, fragments, bcast=False):
+	def __init__(self, ptype, fragments, bcast=False, separate_with=None):
 		super().__init__(fragments)
 		self.ptype = ptype
+		self.bcast = bcast
+		self.separate_with = separate_with
 		self.check_fn = None
 
 	def check(self, p):
@@ -188,9 +190,22 @@ class PingTest(Test):
 
 		# Assign frames to the existing fragment objects
 		for frag, frame in zip(self.fragments, frames):
-			if bcast:
+			if self.bcast:
 				frame.addr1 = "ff:ff:ff:ff:ff:ff"
 			frag.frame = frame
+
+		# Put the separator between each fragment if requested.
+		if self.separate_with != None:
+			# XXX TODO: when injecting frames with different priorities, these
+			#	    may be reordered by the Wi-Fi chip!! Can be prevent this?
+			for i in range(len(self.fragments) - 1, 0, -1):
+				prev_frag = self.fragments[i - 1]
+
+				sep_frag = Frag(prev_frag.trigger, prev_frag.encrypted)
+				sep_frag.frame = self.separate_with.copy()
+				station.set_header(sep_frag.frame)
+
+				self.fragments.insert(i, sep_frag)
 
 class LinuxTest(Test):
 	def __init__(self, ptype):
@@ -373,7 +388,10 @@ class Station():
 		p.FCfield |= self.FCfield
 		if prior != None:
 			p.subtype = 8
-			p.add_payload(Dot11QoS(TID=prior))
+			if not Dot11QoS in p:
+				p.add_payload(Dot11QoS(TID=prior))
+			else:
+				p[Dot11QoS].TID = prior
 
 		destmac = self.othermac if forward else self.peermac
 		p.addr1 = self.peermac
@@ -938,8 +956,9 @@ def cleanup():
 def prepare_tests(test_id):
 	if test_id == 0:
 		# Simple ping as sanity check
-		test = PingTest(REQ_ICMP,
+		test = PingTest(REQ_DHCP,
 				[Frag(Frag.Connected, True, flags=Frag.GetIp)])
+				#[Frag(Frag.AfterAuth, True, flags=Frag.Rekey)])
 
 	elif test_id == 1:
 		# Check if the STA receives broadcast (useful test against AP)
@@ -961,12 +980,30 @@ def prepare_tests(test_id):
 				 Frag(Frag.AfterAuth, True, flags=Frag.Rekey)])
 
 	elif test_id == 4:
+		# Two fragments over different PTK keys. Against RT-AC51U AP we can
+		# trigger a rekey, but must do the rekey handshake in plaintext.
+		test = PingTest(REQ_DHCP,
+				[Frag(Frag.BeforeAuth, True, flags=Frag.Rekey),
+				 Frag(Frag.AfterAuth, True)])
+
+	elif test_id == 5:
 		test = MacOsTest(REQ_DHCP)
 
-	# Two fragments over different PTK keys
-	#self.test = self.generate_test_ping(REQ_DHCP,
-	#		[Frag(Frag.BeforeAuth, True, wait_rekey=True),
-	#		 Frag(Frag.AfterAuth, True)])
+	elif test_id == 6:
+		# Check if we can send frames in between fragments
+		separator = Dot11(type="Data", subtype=8, SC=(33 << 4))/Dot11QoS()/LLC()/SNAP()
+		#separator.addr2 = "00:11:22:33:44:55"
+		#separator.addr3 = "ff:ff:ff:ff:ff:ff"
+		test = PingTest(REQ_DHCP,
+				[Frag(Frag.Connected, True),
+				 Frag(Frag.Connected, True)],
+				 separate_with=separator)
+
+	# XXX TODO : Hardware decrypts it using old key, software using new key?
+	#	     So right after rekey we inject first with old key, second with new key?
+
+	# XXX TODO : What about extended functionality where we can have
+	#	     two simultaneously pairwise keys?!?!
 
 	# TODO:
 	# - Test case to check if the receiver supports interleaved priority
