@@ -4,7 +4,7 @@ import abc, sys, socket, struct, time, subprocess, atexit, select, copy
 from wpaspy import Ctrl
 from scapy.contrib.wpa_eapol import WPA_key
 
-# NOTES:
+# Ath9k_htc dongle notes:
 # - The ath9k_htc devices by default overwrite the injected sequence number.
 #   However, this number is not incremented when the MoreFragments flag is set,
 #   meaning we can inject fragmented frames (albeit with a different sequence
@@ -17,6 +17,11 @@ from scapy.contrib.wpa_eapol import WPA_key
 #   and commenting out the two lines that modify `i_seq`.
 # - See also the comment in Station.inject_next_frags to avoid other bugs with
 #   ath9k_htc when injecting frames with the MF flag and while being in AP mode.
+# - The at9k_htc dongle, and likely other Wi-Fi devices, will reorder frames with
+#   different QoS priorities. This means injected frames with differen priorities
+#   may get reordered by the driver/chip. We avoided this by modifying the ath9k_htc
+#   driver to send all frames using the transmission queue of priority zero,
+#   independent of the actual QoS priority value used in the frame.
 
 #MAC_STA2 = "d0:7e:35:d9:80:91"
 #MAC_STA2 = "20:16:b9:b2:73:7a"
@@ -196,8 +201,6 @@ class PingTest(Test):
 
 		# Put the separator between each fragment if requested.
 		if self.separate_with != None:
-			# XXX TODO: when injecting frames with different priorities, these
-			#	    may be reordered by the Wi-Fi chip!! Can be prevent this?
 			for i in range(len(self.fragments) - 1, 0, -1):
 				prev_frag = self.fragments[i - 1]
 
