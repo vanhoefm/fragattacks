@@ -1881,6 +1881,13 @@ enum wnm_sleep_mode_subelement_id {
 	WNM_SLEEP_SUBELEM_BIGTK = 2,
 };
 
+/* WNM notification type (IEEE P802.11-REVmd/D3.0, Table 9-430) */
+enum wnm_notification_Type {
+	WNM_NOTIF_TYPE_FIRMWARE_UPDATE = 0,
+	WNM_NOTIF_TYPE_BEACON_PROTECTION_FAILURE = 2,
+	WNM_NOTIF_TYPE_VENDOR_SPECIFIC = 221,
+};
+
 /* Channel Switch modes (802.11h) */
 #define CHAN_SWITCH_MODE_ALLOW_TX	0
 #define CHAN_SWITCH_MODE_BLOCK_TX	1

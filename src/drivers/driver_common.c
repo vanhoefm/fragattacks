@@ -89,6 +89,7 @@ const char * event_to_string(enum wpa_event_type event)
 	E2S(INTERFACE_MAC_CHANGED);
 	E2S(WDS_STA_INTERFACE_STATUS);
 	E2S(UPDATE_DH);
+	E2S(UNPROT_BEACON);
 	}
 
 	return "UNKNOWN";

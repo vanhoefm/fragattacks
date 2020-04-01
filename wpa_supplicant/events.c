@@ -4467,6 +4467,38 @@ static void wpas_event_assoc_reject(struct wpa_supplicant *wpa_s,
 }
 
 
+static void wpas_event_unprot_beacon(struct wpa_supplicant *wpa_s,
+				     struct unprot_beacon *data)
+{
+	struct wpabuf *buf;
+	int res;
+
+	if (!data || wpa_s->wpa_state != WPA_COMPLETED ||
+	    os_memcmp(data->sa, wpa_s->bssid, ETH_ALEN) != 0)
+		return;
+	wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_UNPROT_BEACON MACSTR,
+		MAC2STR(data->sa));
+
+	buf = wpabuf_alloc(4);
+	if (!buf)
+		return;
+
+	wpabuf_put_u8(buf, WLAN_ACTION_WNM);
+	wpabuf_put_u8(buf, WNM_NOTIFICATION_REQ);
+	wpabuf_put_u8(buf, 1); /* Dialog Token */
+	wpabuf_put_u8(buf, WNM_NOTIF_TYPE_BEACON_PROTECTION_FAILURE);
+
+	res = wpa_drv_send_action(wpa_s, wpa_s->assoc_freq, 0, wpa_s->bssid,
+				  wpa_s->own_addr, wpa_s->bssid,
+				  wpabuf_head(buf), wpabuf_len(buf), 0);
+	if (res < 0)
+		wpa_printf(MSG_DEBUG,
+			   "Failed to send WNM-Notification Request frame");
+
+	wpabuf_free(buf);
+}
+
+
 void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 			  union wpa_event_data *data)
 {
@@ -5270,6 +5302,9 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 						 data->sta_opmode.chan_width,
 						 data->sta_opmode.rx_nss);
 #endif /* CONFIG_AP */
+		break;
+	case EVENT_UNPROT_BEACON:
+		wpas_event_unprot_beacon(wpa_s, &data->unprot_beacon);
 		break;
 	default:
 		wpa_msg(wpa_s, MSG_INFO, "Unknown event %d", event);

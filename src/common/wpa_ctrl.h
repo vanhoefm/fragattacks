@@ -95,6 +95,8 @@ extern "C" {
 /** SAE authentication failed due to unknown password identifier */
 #define WPA_EVENT_SAE_UNKNOWN_PASSWORD_IDENTIFIER \
 	"CTRL-EVENT-SAE-UNKNOWN-PASSWORD-IDENTIFIER "
+/** Unprotected Beacon frame dropped */
+#define WPA_EVENT_UNPROT_BEACON "CTRL-EVENT-UNPROT-BEACON "
 
 /** IP subnet status change notification
  *

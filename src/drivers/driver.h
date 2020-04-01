@@ -4970,6 +4970,15 @@ enum wpa_event_type {
 	  * EVENT_UPDATE_DH - Notification of updated DH information
 	  */
 	EVENT_UPDATE_DH,
+
+	/**
+	 * EVENT_UNPROT_BEACON - Unprotected Beacon frame received
+	 *
+	 * This event should be called when a Beacon frame is dropped due to it
+	 * not being protected correctly. union wpa_event_data::unprot_beacon
+	 * is required to provide more details of the frame.
+	 */
+	EVENT_UNPROT_BEACON,
 };
 
 
@@ -5822,6 +5831,13 @@ union wpa_event_data {
 		const u8 *ie;
 		size_t ie_len;
 	} update_dh;
+
+	/**
+	 * struct unprot_beacon - Data for EVENT_UNPROT_BEACON
+	 */
+	struct unprot_beacon {
+		const u8 *sa;
+	} unprot_beacon;
 };
 
 /**
