@@ -330,6 +330,26 @@ skip_replay_det:
 }
 
 
+static u8 * try_ptk_decrypt(struct wlantest *wt, struct wlantest_sta *sta,
+			    const struct ieee80211_hdr *hdr, int keyid,
+			    const u8 *data, size_t len,
+			    const u8 *tk, size_t tk_len, size_t *dlen)
+{
+	u8 *decrypted = NULL;
+
+	if (sta->pairwise_cipher == WPA_CIPHER_CCMP_256)
+		decrypted = ccmp_256_decrypt(tk, hdr, data, len, dlen);
+	else if (sta->pairwise_cipher == WPA_CIPHER_GCMP ||
+		 sta->pairwise_cipher == WPA_CIPHER_GCMP_256)
+		decrypted = gcmp_decrypt(tk, tk_len, hdr, data, len, dlen);
+	else
+		decrypted = ccmp_decrypt(tk, hdr, data, len, dlen);
+	write_decrypted_note(wt, decrypted, tk, tk_len, keyid);
+
+	return decrypted;
+}
+
+
 static void rx_data_bss_prot(struct wlantest *wt,
 			     const struct ieee80211_hdr *hdr, size_t hdrlen,
 			     const u8 *qos, const u8 *dst, const u8 *src,
@@ -562,18 +582,9 @@ skip_replay_det:
 	} else if (sta->pairwise_cipher == WPA_CIPHER_WEP40) {
 		decrypted = wep_decrypt(wt, hdr, data, len, &dlen);
 	} else if (sta->ptk_set) {
-		if (sta->pairwise_cipher == WPA_CIPHER_CCMP_256)
-			decrypted = ccmp_256_decrypt(sta->ptk.tk, hdr, data,
-						     len, &dlen);
-		else if (sta->pairwise_cipher == WPA_CIPHER_GCMP ||
-			 sta->pairwise_cipher == WPA_CIPHER_GCMP_256)
-			decrypted = gcmp_decrypt(sta->ptk.tk, sta->ptk.tk_len,
-						 hdr, data, len, &dlen);
-		else
-			decrypted = ccmp_decrypt(sta->ptk.tk, hdr, data, len,
-						 &dlen);
-		write_decrypted_note(wt, decrypted, sta->ptk.tk,
-				     sta->ptk.tk_len, keyid);
+		decrypted = try_ptk_decrypt(wt, sta, hdr, keyid, data, len,
+					    sta->ptk.tk, sta->ptk.tk_len,
+					    &dlen);
 	} else {
 		decrypted = try_all_ptk(wt, sta->pairwise_cipher, hdr, keyid,
 					data, len, &dlen);
@@ -620,6 +631,22 @@ check_zero_tk:
 				dlen, 1, peer_addr);
 		write_pcap_decrypted(wt, (const u8 *) hdr, hdrlen,
 				     decrypted, dlen);
+	} else if (sta->tptk_set) {
+		/* Check whether TPTK has a matching TK that could be used to
+		 * decrypt the frame. That could happen if EAPOL-Key msg 4/4
+		 * was missing in the capture and this was PTK rekeying. */
+		decrypted = try_ptk_decrypt(wt, sta, hdr, keyid, data, len,
+					    sta->tptk.tk, sta->tptk.tk_len,
+					    &dlen);
+		if (decrypted) {
+			add_note(wt, MSG_DEBUG,
+				 "Update PTK (rekeying; no valid EAPOL-Key msg 4/4 seen)");
+			os_memcpy(&sta->ptk, &sta->tptk, sizeof(sta->ptk));
+			sta->ptk_set = 1;
+			sta->tptk_set = 0;
+			os_memset(sta->rsc_tods, 0, sizeof(sta->rsc_tods));
+			os_memset(sta->rsc_fromds, 0, sizeof(sta->rsc_fromds));
+		}
 	} else {
 		if (!try_ptk_iter && !only_zero_tk)
 			add_note(wt, MSG_DEBUG, "Failed to decrypt frame");
