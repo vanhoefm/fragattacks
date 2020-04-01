@@ -325,7 +325,7 @@ skip_replay_det:
 		write_pcap_decrypted(wt, (const u8 *) hdr, hdrlen,
 				     decrypted, dlen);
 	} else
-		add_note(wt, MSG_DEBUG, "Failed to decrypt frame");
+		add_note(wt, MSG_DEBUG, "Failed to decrypt frame (group)");
 	os_free(decrypted);
 }
 
@@ -348,6 +348,7 @@ static void rx_data_bss_prot(struct wlantest *wt,
 	int ptk_iter_done = 0;
 	int try_ptk_iter = 0;
 	int replay = 0;
+	int only_zero_tk = 0;
 
 	if (hdr->addr1[0] & 0x01) {
 		rx_data_bss_prot_group(wt, hdr, hdrlen, qos, dst, src,
@@ -427,6 +428,7 @@ static void rx_data_bss_prot(struct wlantest *wt,
 		if (dl_list_empty(&wt->ptk)) {
 			if (len >= 4 && sta) {
 				keyid = data[3] >> 6;
+				only_zero_tk = 1;
 				goto check_zero_tk;
 			}
 			return;
@@ -619,7 +621,7 @@ check_zero_tk:
 		write_pcap_decrypted(wt, (const u8 *) hdr, hdrlen,
 				     decrypted, dlen);
 	} else {
-		if (!try_ptk_iter)
+		if (!try_ptk_iter && !only_zero_tk)
 			add_note(wt, MSG_DEBUG, "Failed to decrypt frame");
 
 		/* Assume the frame was corrupted and there was no FCS to check.
