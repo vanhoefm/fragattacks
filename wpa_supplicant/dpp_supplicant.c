@@ -1100,8 +1100,10 @@ static struct wpa_ssid * wpas_dpp_add_network(struct wpa_supplicant *wpa_s,
 	ssid->ssid_len = conf->ssid_len;
 
 	if (conf->connector) {
-		ssid->key_mgmt = WPA_KEY_MGMT_DPP;
-		ssid->ieee80211w = MGMT_FRAME_PROTECTION_REQUIRED;
+		if (dpp_akm_dpp(conf->akm)) {
+			ssid->key_mgmt = WPA_KEY_MGMT_DPP;
+			ssid->ieee80211w = MGMT_FRAME_PROTECTION_REQUIRED;
+		}
 		ssid->dpp_connector = os_strdup(conf->connector);
 		if (!ssid->dpp_connector)
 			goto fail;
@@ -1130,7 +1132,7 @@ static struct wpa_ssid * wpas_dpp_add_network(struct wpa_supplicant *wpa_s,
 
 	if (!conf->connector || dpp_akm_psk(conf->akm) ||
 	    dpp_akm_sae(conf->akm)) {
-		if (!conf->connector)
+		if (!conf->connector || !dpp_akm_dpp(conf->akm))
 			ssid->key_mgmt = 0;
 		if (dpp_akm_psk(conf->akm))
 			ssid->key_mgmt |= WPA_KEY_MGMT_PSK |

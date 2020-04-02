@@ -5236,7 +5236,7 @@ dpp_build_conf_obj(struct dpp_authentication *auth, enum dpp_netrole netrole,
 		return NULL;
 	}
 
-	if (dpp_akm_dpp(conf->akm))
+	if (dpp_akm_dpp(conf->akm) || (auth->peer_version >= 2 && auth->conf))
 		return dpp_build_conf_obj_dpp(auth, conf);
 	return dpp_build_conf_obj_legacy(auth, conf);
 }
@@ -6724,7 +6724,8 @@ static int dpp_parse_cred_dpp(struct dpp_authentication *auth,
 	conf->connector = os_strdup(signed_connector);
 
 	dpp_copy_csign(conf, csign_pub);
-	dpp_copy_netaccesskey(auth, conf);
+	if (dpp_akm_dpp(conf->akm))
+		dpp_copy_netaccesskey(auth, conf);
 
 	ret = 0;
 fail:
@@ -6836,6 +6837,7 @@ static int dpp_parse_conf_obj(struct dpp_authentication *auth,
 	struct json_token *root, *token, *discovery, *cred;
 	struct dpp_config_obj *conf;
 	struct wpabuf *ssid64 = NULL;
+	int legacy;
 
 	root = json_parse((const char *) conf_obj, conf_obj_len);
 	if (!root)
@@ -6923,10 +6925,21 @@ static int dpp_parse_conf_obj(struct dpp_authentication *auth,
 	}
 	conf->akm = dpp_akm_from_str(token->string);
 
-	if (dpp_akm_legacy(conf->akm)) {
+	legacy = dpp_akm_legacy(conf->akm);
+	if (legacy && auth->peer_version >= 2) {
+		struct json_token *csign, *s_conn;
+
+		csign = json_get_member(cred, "csign");
+		s_conn = json_get_member(cred, "signedConnector");
+		if (csign && csign->type == JSON_OBJECT &&
+		    s_conn && s_conn->type == JSON_STRING)
+			legacy = 0;
+	}
+	if (legacy) {
 		if (dpp_parse_cred_legacy(conf, cred) < 0)
 			goto fail;
-	} else if (dpp_akm_dpp(conf->akm)) {
+	} else if (dpp_akm_dpp(conf->akm) ||
+		   (auth->peer_version >= 2 && dpp_akm_legacy(conf->akm))) {
 		if (dpp_parse_cred_dpp(auth, conf, cred) < 0)
 			goto fail;
 	} else {

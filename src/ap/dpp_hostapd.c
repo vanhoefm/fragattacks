@@ -708,7 +708,8 @@ static void hostapd_dpp_handle_config_obj(struct hostapd_data *hapd,
 		 * message. */
 		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CONNECTOR "%s",
 			conf->connector);
-	} else if (conf->passphrase[0]) {
+	}
+	if (conf->passphrase[0]) {
 		char hex[64 * 2 + 1];
 
 		wpa_snprintf_hex(hex, sizeof(hex),
