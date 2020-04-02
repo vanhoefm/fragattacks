@@ -5239,3 +5239,65 @@ def test_dpp_pfs_ap_2(dev, apdev):
     run_dpp_pfs_sta(dev[0], 0)
     run_dpp_pfs_sta(dev[0], 1, fail=True)
     run_dpp_pfs_sta(dev[0], 2)
+
+def test_dpp_reconfig_connector(dev, apdev):
+    """DPP reconfiguration connector"""
+    try:
+        run_dpp_reconfig_connector(dev, apdev)
+    finally:
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
+
+def run_dpp_reconfig_connector(dev, apdev):
+    check_dpp_capab(dev[0], min_ver=2)
+    check_dpp_capab(dev[1], min_ver=2)
+
+    ssid = "reconfig"
+    passphrase = "secret passphrase"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].set("dpp_config_processing", "2")
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+    dev[0].dpp_listen(2412)
+    configurator = dev[1].dpp_configurator_add()
+    conf = 'sta-psk'
+    dev[1].dpp_auth_init(uri=uri0, conf=conf, ssid=ssid,
+                         passphrase=passphrase, configurator=configurator)
+    res = wait_auth_success(dev[0], dev[1], configurator=dev[1],
+                            enrollee=dev[0])
+
+    ev = dev[0].wait_event(["DPP-CONFOBJ-SSID"], timeout=1)
+    if ev is None:
+        raise Exception("SSID not reported")
+    res_ssid = ev.split(' ')[1]
+    if res_ssid != ssid:
+        raise Exception("Unexpected SSID value")
+
+    ev = dev[0].wait_event(["DPP-CONNECTOR"], timeout=1)
+    if ev is None:
+        raise Exception("Connector not reported")
+    connector = ev.split(' ')[1]
+
+    ev = dev[0].wait_event(["DPP-C-SIGN-KEY"], timeout=1)
+    if ev is None:
+        raise Exception("C-sign-key not reported")
+    p = ev.split(' ')
+    csign = p[1]
+
+    ev = dev[0].wait_event(["DPP-NETWORK-ID"], timeout=1)
+    if ev is None:
+        raise Exception("DPP network profile not generated")
+    id = ev.split(' ')[1]
+
+    dev[0].wait_connected()
+
+    n_key_mgmt = dev[0].get_network(id, "key_mgmt")
+    if n_key_mgmt != "WPA-PSK FT-PSK WPA-PSK-SHA256":
+        raise Exception("Unexpected key_mgmt: " + n_key_mgmt)
+    n_connector = dev[0].get_network(id, "dpp_connector")
+    if n_connector.strip('"') != connector:
+        raise Exception("Connector mismatch: %s %s" % (n_connector, connector))
+    n_csign = dev[0].get_network(id, "dpp_csign")
+    if n_csign.strip('"') != csign:
+        raise Exception("csign mismatch: %s %s" % (n_csign, csign))
