@@ -2853,6 +2853,162 @@ def test_sigma_dut_dpp_tcp_enrollee_init(dev, apdev):
         stop_sigma_dut(sigma)
         dev[1].request("DPP_CONTROLLER_STOP")
 
+def test_sigma_dut_dpp_nfc_handover_requestor_enrollee(dev, apdev):
+    """sigma_dut DPP/NFC handover requestor as Enrollee"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    hapd = start_dpp_ap(apdev[0])
+    sigma = start_sigma_dut(dev[0].ifname)
+    try:
+        dev[0].set("dpp_config_processing", "2")
+
+        cmd = "DPP_CONFIGURATOR_ADD key=" + csign
+        res = dev[1].request(cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to add configurator")
+        conf_id = int(res)
+        dev[1].set("dpp_configurator_params",
+                   " conf=sta-dpp ssid=%s configurator=%d" % (to_hex("DPPNET01"), conf_id))
+
+        id_own = dev[1].dpp_bootstrap_gen(type="nfc-uri", chan="81/1,6,11",
+                                          mac=True)
+        uri_own = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id_own)
+
+        res = sigma_dut_cmd_check("dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPBS,NFC")
+        hex = res.split(',')[3]
+        uri_peer = from_hex(hex)
+        logger.info("URI from sigma_dut: " + uri_peer)
+
+        sigma_dut_cmd_check("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,NFC" % to_hex(uri_own))
+
+        res = dev[1].request("DPP_NFC_HANDOVER_REQ own=%d uri=%s" % (id_own,
+                                                                     uri_peer))
+        if "FAIL" in res:
+            raise Exception("Failed to process NFC Handover Request")
+        info = dev[1].request("DPP_BOOTSTRAP_INFO %d" % id_own)
+        logger.info("Updated local bootstrapping info:\n" + info)
+        freq = None
+        for line in info.splitlines():
+            if line.startswith("use_freq="):
+                freq = int(line.split('=')[1])
+        if freq is None:
+            raise Exception("Selected channel not indicated")
+        uri1 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id_own)
+        logger.info("Updated URI[1]: " + uri1)
+        dev[1].dpp_listen(freq, role="configurator")
+
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,DPPProvisioningRole,Enrollee,DPPBS,NFC,DPPNFCHandover,Negotiated_Requestor,DPPTimeout,6,DPPWaitForConnect,Yes", timeout=10)
+        if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK,NetworkIntroResult,OK,NetworkConnectResult,OK" not in res:
+            raise Exception("Unexpected result: " + res)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+        stop_sigma_dut(sigma)
+
+def test_sigma_dut_dpp_nfc_handover_selector_enrollee(dev, apdev):
+    """sigma_dut DPP/NFC handover selector as Enrollee"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    hapd = start_dpp_ap(apdev[0])
+    sigma = start_sigma_dut(dev[0].ifname)
+    try:
+        dev[0].set("dpp_config_processing", "2")
+
+        cmd = "DPP_CONFIGURATOR_ADD key=" + csign
+        res = dev[1].request(cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to add configurator")
+        conf_id = int(res)
+        dev[1].set("dpp_configurator_params",
+                   " conf=sta-dpp ssid=%s configurator=%d" % (to_hex("DPPNET01"), conf_id))
+
+        id_own = dev[1].dpp_bootstrap_gen(type="nfc-uri", chan="81/1,6,11",
+                                          mac=True)
+        uri_own = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id_own)
+
+        res = sigma_dut_cmd_check("dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPBS,NFC")
+        hex = res.split(',')[3]
+        uri_peer = from_hex(hex)
+        logger.info("URI from sigma_dut: " + uri_peer)
+
+        sigma_dut_cmd_check("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,NFC" % to_hex(uri_own))
+
+        res = dev[1].request("DPP_NFC_HANDOVER_SEL own=%d uri=%s" % (id_own,
+                                                                     uri_peer))
+        if "FAIL" in res:
+            raise Exception("Failed to process NFC Handover Select")
+        peer = int(res)
+        dev[1].dpp_auth_init(peer=peer, own=id_own, configurator=conf_id,
+                             conf="sta-dpp", ssid="DPPNET01")
+
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,DPPProvisioningRole,Enrollee,DPPBS,NFC,DPPNFCHandover,Negotiated_Selector,DPPTimeout,6,DPPWaitForConnect,Yes", timeout=10)
+        if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK,NetworkIntroResult,OK,NetworkConnectResult,OK" not in res:
+            raise Exception("Unexpected result: " + res)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+        stop_sigma_dut(sigma)
+
+def test_sigma_dut_dpp_nfc_static_read_enrollee(dev, apdev):
+    """sigma_dut DPP/NFC read tag as Enrollee"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    hapd = start_dpp_ap(apdev[0])
+    sigma = start_sigma_dut(dev[0].ifname)
+    try:
+        dev[0].set("dpp_config_processing", "2")
+
+        cmd = "DPP_CONFIGURATOR_ADD key=" + csign
+        res = dev[1].request(cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to add configurator")
+        conf_id = int(res)
+        dev[1].set("dpp_configurator_params",
+                   " conf=sta-dpp ssid=%s configurator=%d" % (to_hex("DPPNET01"), conf_id))
+
+        id_own = dev[1].dpp_bootstrap_gen(type="nfc-uri", chan="81/6", mac=True)
+        uri_own = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id_own)
+
+        sigma_dut_cmd_check("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,NFC" % to_hex(uri_own))
+        dev[1].dpp_listen(2437, role="configurator")
+
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,DPPProvisioningRole,Enrollee,DPPBS,NFC,DPPNFCHandover,Static,DPPTimeout,6,DPPWaitForConnect,Yes", timeout=10)
+        if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK,NetworkIntroResult,OK,NetworkConnectResult,OK" not in res:
+            raise Exception("Unexpected result: " + res)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+        stop_sigma_dut(sigma)
+
+def test_sigma_dut_dpp_nfc_static_write_enrollee(dev, apdev):
+    """sigma_dut DPP/NFC write tag as Enrollee"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    hapd = start_dpp_ap(apdev[0])
+    sigma = start_sigma_dut(dev[0].ifname)
+    try:
+        dev[0].set("dpp_config_processing", "2")
+
+        cmd = "DPP_CONFIGURATOR_ADD key=" + csign
+        res = dev[1].request(cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to add configurator")
+        conf_id = int(res)
+        dev[1].set("dpp_configurator_params",
+                   " conf=sta-dpp ssid=%s configurator=%d" % (to_hex("DPPNET01"), conf_id))
+
+        res = sigma_dut_cmd_check("dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPBS,NFC")
+        hex = res.split(',')[3]
+        uri_peer = from_hex(hex)
+        logger.info("URI from sigma_dut: " + uri_peer)
+
+        dev[1].dpp_auth_init(nfc_uri=uri_peer, configurator=conf_id,
+                             conf="sta-dpp", ssid="DPPNET01")
+
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Responder,DPPProvisioningRole,Enrollee,DPPBS,NFC,DPPNFCHandover,Static,DPPTimeout,6,DPPWaitForConnect,Yes", timeout=10)
+        if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK,NetworkIntroResult,OK,NetworkConnectResult,OK" not in res:
+            raise Exception("Unexpected result: " + res)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+        stop_sigma_dut(sigma)
+
 def test_sigma_dut_preconfigured_profile(dev, apdev):
     """sigma_dut controlled connection using preconfigured profile"""
     try:
