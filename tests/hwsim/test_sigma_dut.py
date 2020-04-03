@@ -1624,11 +1624,7 @@ csign_pub = "3059301306072a8648ce3d020106082a8648ce3d030107034200042908e1baf7bf4
 ap_connector = "eyJ0eXAiOiJkcHBDb24iLCJraWQiOiJwYWtZbXVzd1dCdWpSYTl5OEsweDViaTVrT3VNT3dzZHRlaml2UG55ZHZzIiwiYWxnIjoiRVMyNTYifQ.eyJncm91cHMiOlt7Imdyb3VwSWQiOiIqIiwibmV0Um9sZSI6ImFwIn1dLCJuZXRBY2Nlc3NLZXkiOnsia3R5IjoiRUMiLCJjcnYiOiJQLTI1NiIsIngiOiIybU5vNXZuRkI5bEw3d1VWb1hJbGVPYzBNSEE1QXZKbnpwZXZULVVTYzVNIiwieSI6IlhzS3dqVHJlLTg5WWdpU3pKaG9CN1haeUttTU05OTl3V2ZaSVl0bi01Q3MifX0.XhjFpZgcSa7G2lHy0OCYTvaZFRo5Hyx6b7g7oYyusLC7C_73AJ4_BxEZQVYJXAtDuGvb3dXSkHEKxREP9Q6Qeg"
 ap_netaccesskey = "30770201010420ceba752db2ad5200fa7bc565b9c05c69b7eb006751b0b329b0279de1c19ca67ca00a06082a8648ce3d030107a14403420004da6368e6f9c507d94bef0515a1722578e73430703902f267ce97af4fe51273935ec2b08d3adefbcf588224b3261a01ed76722a630cf7df7059f64862d9fee42b"
 
-def test_sigma_dut_dpp_qr_init_enrollee(dev, apdev):
-    """sigma_dut DPP/QR initiator as Enrollee"""
-    check_dpp_capab(dev[0])
-    check_dpp_capab(dev[1])
-
+def start_dpp_ap(apdev):
     params = {"ssid": "DPPNET01",
               "wpa": "2",
               "ieee80211w": "2",
@@ -1638,10 +1634,16 @@ def test_sigma_dut_dpp_qr_init_enrollee(dev, apdev):
               "dpp_csign": csign_pub,
               "dpp_netaccesskey": ap_netaccesskey}
     try:
-        hapd = hostapd.add_ap(apdev[0], params)
+        hapd = hostapd.add_ap(apdev, params)
     except:
         raise HwsimSkip("DPP not supported")
+    return hapd
 
+def test_sigma_dut_dpp_qr_init_enrollee(dev, apdev):
+    """sigma_dut DPP/QR initiator as Enrollee"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    hapd = start_dpp_ap(apdev[0])
     sigma = start_sigma_dut(dev[0].ifname)
     try:
         dev[0].set("dpp_config_processing", "2")
@@ -1717,20 +1719,7 @@ def test_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev):
 def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra=''):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-
-    params = {"ssid": "DPPNET01",
-              "wpa": "2",
-              "ieee80211w": "2",
-              "wpa_key_mgmt": "DPP",
-              "rsn_pairwise": "CCMP",
-              "dpp_connector": ap_connector,
-              "dpp_csign": csign_pub,
-              "dpp_netaccesskey": ap_netaccesskey}
-    try:
-        hapd = hostapd.add_ap(apdev[0], params)
-    except:
-        raise HwsimSkip("DPP not supported")
-
+    hapd = start_dpp_ap(apdev[0])
     sigma = start_sigma_dut(dev[0].ifname)
     try:
         dev[0].set("dpp_config_processing", "2")
@@ -1794,20 +1783,7 @@ def test_sigma_dut_dpp_qr_mutual_resp_enrollee_pending(dev, apdev):
 def run_sigma_dut_dpp_qr_mutual_resp_enrollee(dev, apdev, extra=None):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-
-    params = {"ssid": "DPPNET01",
-              "wpa": "2",
-              "ieee80211w": "2",
-              "wpa_key_mgmt": "DPP",
-              "rsn_pairwise": "CCMP",
-              "dpp_connector": ap_connector,
-              "dpp_csign": csign_pub,
-              "dpp_netaccesskey": ap_netaccesskey}
-    try:
-        hapd = hostapd.add_ap(apdev[0], params)
-    except:
-        raise HwsimSkip("DPP not supported")
-
+    hapd = start_dpp_ap(apdev[0])
     sigma = start_sigma_dut(dev[0].ifname)
     try:
         dev[0].set("dpp_config_processing", "2")
@@ -1878,20 +1854,7 @@ def test_sigma_dut_dpp_qr_mutual_init_enrollee_pending(dev, apdev):
 def run_sigma_dut_dpp_qr_mutual_init_enrollee(dev, apdev, resp_pending):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-
-    params = {"ssid": "DPPNET01",
-              "wpa": "2",
-              "ieee80211w": "2",
-              "wpa_key_mgmt": "DPP",
-              "rsn_pairwise": "CCMP",
-              "dpp_connector": ap_connector,
-              "dpp_csign": csign_pub,
-              "dpp_netaccesskey": ap_netaccesskey}
-    try:
-        hapd = hostapd.add_ap(apdev[0], params)
-    except:
-        raise HwsimSkip("DPP not supported")
-
+    hapd = start_dpp_ap(apdev[0])
     sigma = start_sigma_dut(dev[0].ifname)
     try:
         dev[0].set("dpp_config_processing", "2")
@@ -2668,20 +2631,7 @@ def run_sigma_dut_dpp_proto_responder_pkex(dev, step, frame, attr, result, fail)
 def init_sigma_dut_dpp_proto_peer_disc_req(dev, apdev):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-
-    params = {"ssid": "DPPNET01",
-              "wpa": "2",
-              "ieee80211w": "2",
-              "wpa_key_mgmt": "DPP",
-              "rsn_pairwise": "CCMP",
-              "dpp_connector": ap_connector,
-              "dpp_csign": csign_pub,
-              "dpp_netaccesskey": ap_netaccesskey}
-    try:
-        hapd = hostapd.add_ap(apdev[0], params)
-    except:
-        raise HwsimSkip("DPP not supported")
-
+    hapd = start_dpp_ap(apdev[0])
     dev[0].set("dpp_config_processing", "2")
 
     cmd = "DPP_CONFIGURATOR_ADD key=" + csign
