@@ -302,6 +302,58 @@ class EapolTest(Test):
 		self.fragments[0].frame = frag1
 		self.fragments[0].frame = frag2
 
+#TODO: Move this function elsewhere?
+def add_msdu_frag(src, dst, payload):
+	length = len(payload)
+	p = Ether(dst=dst, src=src, type=length)
+
+	payload = raw(payload)
+
+	total_length = len(p) + len(payload)
+	padding = ""
+	if total_length % 4 != 0:
+		padding = b"\x00" * (4 - (total_length % 4))
+
+	return p / payload / Raw(padding)
+
+class EapolMsduTest(Test):
+	def __init__(self, ptype):
+		super().__init__([
+			Frag(Frag.Connected, False),
+			Frag(Frag.Connected, False, delay=2)
+		])
+		self.ptype = ptype
+		self.check_fn = None
+
+	def check(self, p):
+		if self.check_fn == None:
+			return False
+		return self.check_fn(p)
+
+	def generate(self, station):
+		log(STATUS, "Generating ping test", color="green")
+
+		# Generate the single frame
+		header, request, self.check_fn = generate_request(station, self.ptype)
+		# Set the A-MSDU frame type flag in the QoS header
+		header.Reserved = 1
+		# Testing
+		header.addr2 = "00:11:22:33:44:55"
+
+		# Masquerade A-MSDU frame as an EAPOL frame
+		request = LLC()/SNAP()/EAPOL()/Raw(b"\x00\x06AAAAAA") / add_msdu_frag(station.mac, station.peermac, request)
+
+
+		frames = create_fragments(header, request, 1)
+
+		auth = Dot11()/Dot11Auth(status=0, seqnum=1)
+		station.set_header(auth)
+		auth.addr2 = "00:11:22:33:44:55"
+
+		self.fragments[0].frame = auth
+		self.fragments[1].frame = frames[0]
+
+
 # ----------------------------------- Abstract Station Class -----------------------------------
 
 class Station():
@@ -1005,8 +1057,11 @@ def prepare_tests(test_id):
 		#separator.addr3 = "ff:ff:ff:ff:ff:ff"
 		test = PingTest(REQ_DHCP,
 				[Frag(Frag.Connected, True),
-				 Frag(Frag.Connected, True)],
-				 separate_with=separator)
+				 Frag(Frag.Connected, True, delay=1)])
+				 #separate_with=separator)
+
+	elif test_id == 7:
+		test = EapolMsduTest(REQ_DHCP)
 
 	# XXX TODO : Hardware decrypts it using old key, software using new key?
 	#	     So right after rekey we inject first with old key, second with new key?
