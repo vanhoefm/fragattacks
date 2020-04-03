@@ -106,7 +106,7 @@ class Frag():
 	# Reconnect: force a reconnect
 	GetIp, Rekey, Reconnect = range(3)
 
-	def __init__(self, trigger, encrypted, frame=None, flags=None, inc_pn=1):
+	def __init__(self, trigger, encrypted, frame=None, flags=None, inc_pn=1, delay=None):
 		self.trigger = trigger
 
 		if flags != None and not isinstance(flags, list):
@@ -116,6 +116,7 @@ class Frag():
 
 		self.encrypted = encrypted
 		self.inc_pn = inc_pn
+		self.delay = delay
 		self.frame = frame
 
 	def next_flag(self):
@@ -436,15 +437,20 @@ class Station():
 		frame = None
 
 		while self.test != None and self.test.next_trigger_is(trigger):
-			Frag = self.test.next(self)
-			if Frag.encrypted:
+			frag = self.test.next(self)
+			if frag.delay != None:
+				log(STATUS, f"Sleeping {frag.delay} seconds")
+				time.sleep(frag.delay)
+
+			if frag.encrypted:
 				assert self.tk != None and self.gtk != None
-				frame = self.encrypt(Frag.frame, inc_pn=Frag.inc_pn)
+				frame = self.encrypt(frag.frame, inc_pn=frag.inc_pn)
 				log(STATUS, "Encrypted fragment with key " + self.tk.hex())
 			else:
-				frame = Frag.frame
+				frame = frag.frame
+
 			self.daemon.inject_mon(frame)
-			print("[Injected fragment]", repr(frame))
+			log(STATUS, "[Injected fragment] " + repr(frame))
 
 		# With ath9k_htc devices, there's a bug when injecting a frame with the
 		# More Fragments (MF) field *and* operating the interface in AP mode
