@@ -3952,6 +3952,14 @@ dpp_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 		dpp_auth_fail(auth,
 			      "Missing Initiator Bootstrapping Key Hash attribute");
 		return NULL;
+	} else if (auth->own_bi &&
+		   auth->own_bi->type == DPP_BOOTSTRAP_NFC_URI &&
+		   auth->own_bi->nfc_negotiated) {
+		/* NFC negotiated connection handover bootstrapping mandates
+		 * use of mutual authentication */
+		dpp_auth_fail(auth,
+			      "Missing Initiator Bootstrapping Key Hash attribute");
+		return NULL;
 	}
 
 	auth->peer_version = 1; /* default to the first version */

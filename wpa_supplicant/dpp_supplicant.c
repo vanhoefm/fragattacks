@@ -118,6 +118,7 @@ int wpas_dpp_nfc_handover_req(struct wpa_supplicant *wpa_s, const char *cmd)
 	own_bi = dpp_bootstrap_get_id(wpa_s->dpp, atoi(pos));
 	if (!own_bi)
 		return -1;
+	own_bi->nfc_negotiated = 1;
 
 	pos = os_strstr(cmd, " uri=");
 	if (!pos)
@@ -149,6 +150,7 @@ int wpas_dpp_nfc_handover_sel(struct wpa_supplicant *wpa_s, const char *cmd)
 	own_bi = dpp_bootstrap_get_id(wpa_s->dpp, atoi(pos));
 	if (!own_bi)
 		return -1;
+	own_bi->nfc_negotiated = 1;
 
 	pos = os_strstr(cmd, " uri=");
 	if (!pos)

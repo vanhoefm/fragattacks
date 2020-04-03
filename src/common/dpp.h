@@ -138,6 +138,8 @@ struct dpp_bootstrap_info {
 	const struct dpp_curve_params *curve;
 	unsigned int pkex_t; /* number of failures before dpp_pkex
 			      * instantiation */
+	int nfc_negotiated; /* whether this has been used in NFC negotiated
+			     * connection handover */
 	char *configurator_params;
 };
 
