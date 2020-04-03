@@ -283,14 +283,14 @@ static void rx_data_bss_prot_group(struct wlantest *wt,
 		wpa_snprintf_hex(rsc_hex, sizeof(rsc_hex), bss->rsc[keyid], 6);
 		add_note(wt, MSG_INFO, "replay detected: A1=" MACSTR
 			 " A2=" MACSTR " A3=" MACSTR
-			 " seq=%u frag=%u%s keyid=%d %s<=%s",
+			 " seq=%u frag=%u%s keyid=%d #%u %s<=%s",
 			 MAC2STR(hdr->addr1), MAC2STR(hdr->addr2),
 			 MAC2STR(hdr->addr3),
 			 WLAN_GET_SEQ_SEQ(seq_ctrl),
 			 WLAN_GET_SEQ_FRAG(seq_ctrl),
 			 (le_to_host16(hdr->frame_control) & WLAN_FC_RETRY) ?
 			 " Retry" : "",
-			 keyid, pn_hex, rsc_hex);
+			 keyid, wt->frame_num, pn_hex, rsc_hex);
 		replay = 1;
 	}
 
@@ -552,14 +552,14 @@ static void rx_data_bss_prot(struct wlantest *wt,
 		wpa_snprintf_hex(rsc_hex, sizeof(rsc_hex), rsc, 6);
 		add_note(wt, MSG_INFO, "replay detected: A1=" MACSTR
 			 " A2=" MACSTR " A3=" MACSTR
-			 " seq=%u frag=%u%s keyid=%d tid=%d %s<=%s",
+			 " seq=%u frag=%u%s keyid=%d tid=%d #%u %s<=%s",
 			 MAC2STR(hdr->addr1), MAC2STR(hdr->addr2),
 			 MAC2STR(hdr->addr3),
 			 WLAN_GET_SEQ_SEQ(seq_ctrl),
 			 WLAN_GET_SEQ_FRAG(seq_ctrl),
 			 (le_to_host16(hdr->frame_control) &  WLAN_FC_RETRY) ?
 			 " Retry" : "",
-			 keyid, tid, pn_hex, rsc_hex);
+			 keyid, tid, wt->frame_num, pn_hex, rsc_hex);
 		replay = 1;
 	}
 
