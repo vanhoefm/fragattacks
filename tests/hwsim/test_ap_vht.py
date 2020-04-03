@@ -889,7 +889,7 @@ def test_ap_vht_csa_vht40_disable(dev, apdev):
         hapd = hostapd.add_ap(apdev[0], params)
         bssid = hapd.own_addr()
 
-        dev[0].connect("vht", key_mgmt="NONE", scan_freq="5745")
+        dev[0].connect("vht", key_mgmt="NONE", scan_freq="5200 5745")
         hwsim_utils.test_connectivity(dev[0], hapd)
 
         hapd.request("CHAN_SWITCH 5 5200 center_freq1=5210 sec_channel_offset=1 bandwidth=40 ht")
@@ -903,7 +903,14 @@ def test_ap_vht_csa_vht40_disable(dev, apdev):
             raise Exception("Channel switch event not seen")
         if "freq=5200" not in ev:
             raise Exception("Channel mismatch: " + ev)
-        time.sleep(0.5)
+        ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=5)
+        if ev:
+            # mac80211 does not support CSA to disable VHT, so the channel
+            # switch will be followed by disconnection and attempt to reconnect.
+            # Wait for that here to avoid failing the test case based on how
+            # example the connectivity test would get timed compared to getting
+            # disconnected or reconnected.
+            dev[0].wait_connected()
         hwsim_utils.test_connectivity(dev[0], hapd)
 
         dev[1].connect("vht", key_mgmt="NONE", scan_freq="5200")
