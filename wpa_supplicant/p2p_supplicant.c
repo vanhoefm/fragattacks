@@ -3182,8 +3182,12 @@ static void wpas_invitation_received(void *ctx, const u8 *sa, const u8 *bssid,
 					       MAC2STR(sa), s->id);
 			}
 			wpas_p2p_group_add_persistent(
-				wpa_s, s, go, 0, op_freq, 0, 0, 0, 0, 0,
-				0, NULL,
+				wpa_s, s, go, 0, op_freq, 0,
+				wpa_s->conf->p2p_go_ht40,
+				wpa_s->conf->p2p_go_vht,
+				0,
+				wpa_s->conf->p2p_go_he,
+				wpa_s->conf->p2p_go_edmg, NULL,
 				go ? P2P_MAX_INITIAL_CONN_WAIT_GO_REINVOKE : 0,
 				1);
 		} else if (bssid) {
