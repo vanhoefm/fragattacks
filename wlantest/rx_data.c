@@ -291,8 +291,6 @@ static void rx_data_bss_prot_group(struct wlantest *wt,
 			 (le_to_host16(hdr->frame_control) & WLAN_FC_RETRY) ?
 			 " Retry" : "",
 			 keyid, pn_hex, rsc_hex);
-		wpa_hexdump(MSG_INFO, "RX PN", pn, 6);
-		wpa_hexdump(MSG_INFO, "RSC", bss->rsc[keyid], 6);
 		replay = 1;
 	}
 
@@ -562,8 +560,6 @@ static void rx_data_bss_prot(struct wlantest *wt,
 			 (le_to_host16(hdr->frame_control) &  WLAN_FC_RETRY) ?
 			 " Retry" : "",
 			 keyid, tid, pn_hex, rsc_hex);
-		wpa_hexdump(MSG_INFO, "RX PN", pn, 6);
-		wpa_hexdump(MSG_INFO, "RSC", rsc, 6);
 		replay = 1;
 	}
 
