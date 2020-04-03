@@ -5285,6 +5285,13 @@ def run_dpp_reconfig_connector(dev, apdev):
     p = ev.split(' ')
     csign = p[1]
 
+    ev = dev[0].wait_event(["DPP-NET-ACCESS-KEY"], timeout=1)
+    if ev is None:
+        raise Exception("netAccessKey not reported")
+    p = ev.split(' ')
+    net_access_key = p[1]
+    net_access_key_expiry = p[2] if len(p) > 2 else None
+
     ev = dev[0].wait_event(["DPP-NETWORK-ID"], timeout=1)
     if ev is None:
         raise Exception("DPP network profile not generated")
@@ -5301,3 +5308,7 @@ def run_dpp_reconfig_connector(dev, apdev):
     n_csign = dev[0].get_network(id, "dpp_csign")
     if n_csign.strip('"') != csign:
         raise Exception("csign mismatch: %s %s" % (n_csign, csign))
+    n_net_access_key = dev[0].get_network(id, "dpp_netaccesskey")
+    if n_net_access_key.strip('"') != net_access_key:
+        raise Exception("net_access_key mismatch: %s %s" % (n_net_access_key,
+                                                            net_access_key))
