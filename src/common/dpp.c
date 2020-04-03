@@ -6724,7 +6724,7 @@ static int dpp_parse_cred_dpp(struct dpp_authentication *auth,
 	conf->connector = os_strdup(signed_connector);
 
 	dpp_copy_csign(conf, csign_pub);
-	if (dpp_akm_dpp(conf->akm))
+	if (dpp_akm_dpp(conf->akm) || auth->peer_version >= 2)
 		dpp_copy_netaccesskey(auth, conf);
 
 	ret = 0;
