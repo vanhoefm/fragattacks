@@ -325,8 +325,13 @@ skip_replay_det:
 			os_memcpy(bss->rsc[keyid], pn, 6);
 		write_pcap_decrypted(wt, (const u8 *) hdr, hdrlen,
 				     decrypted, dlen);
-	} else
+	} else {
+		wpa_printf(MSG_DEBUG, "Failed to decrypt frame (group) #%u A2="
+			   MACSTR " seq=%u",
+			   wt->frame_num, MAC2STR(hdr->addr2),
+			   WLAN_GET_SEQ_SEQ(le_to_host16(hdr->seq_ctrl)));
 		add_note(wt, MSG_DEBUG, "Failed to decrypt frame (group)");
+	}
 	os_free(decrypted);
 }
 
@@ -370,6 +375,7 @@ static void rx_data_bss_prot(struct wlantest *wt,
 	int try_ptk_iter = 0;
 	int replay = 0;
 	int only_zero_tk = 0;
+	u16 seq_ctrl = le_to_host16(hdr->seq_ctrl);
 
 	if (hdr->addr1[0] & 0x01) {
 		rx_data_bss_prot_group(wt, hdr, hdrlen, qos, dst, src,
@@ -542,7 +548,6 @@ static void rx_data_bss_prot(struct wlantest *wt,
 	else
 		ccmp_get_pn(pn, data);
 	if (os_memcmp(pn, rsc, 6) <= 0) {
-		u16 seq_ctrl = le_to_host16(hdr->seq_ctrl);
 		char pn_hex[6 * 2 + 1], rsc_hex[6 * 2 + 1];
 
 		wpa_snprintf_hex(pn_hex, sizeof(pn_hex), pn, 6);
@@ -649,8 +654,14 @@ check_zero_tk:
 			os_memset(sta->rsc_fromds, 0, sizeof(sta->rsc_fromds));
 		}
 	} else {
-		if (!try_ptk_iter && !only_zero_tk)
+		if (!try_ptk_iter && !only_zero_tk) {
+			wpa_printf(MSG_DEBUG,
+				   "Failed to decrypt frame #%u A2=" MACSTR
+				   " seq=%u",
+				   wt->frame_num, MAC2STR(hdr->addr2),
+				   WLAN_GET_SEQ_SEQ(seq_ctrl));
 			add_note(wt, MSG_DEBUG, "Failed to decrypt frame");
+		}
 
 		/* Assume the frame was corrupted and there was no FCS to check.
 		 * Allow retry of this particular frame to be processed so that
