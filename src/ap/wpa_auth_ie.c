@@ -851,17 +851,6 @@ wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 			   "OWE: No Diffie-Hellman Parameter element");
 		return WPA_INVALID_AKMP;
 	}
-#ifdef CONFIG_DPP
-	if (sm->wpa_key_mgmt == WPA_KEY_MGMT_DPP && owe_dh) {
-		/* Diffie-Hellman Parameter element can be used with DPP as
-		 * well, so allow this to proceed. */
-	} else
-#endif /* CONFIG_DPP */
-	if (sm->wpa_key_mgmt != WPA_KEY_MGMT_OWE && owe_dh) {
-		wpa_printf(MSG_DEBUG,
-			   "OWE: Unexpected Diffie-Hellman Parameter element with non-OWE AKM");
-		return WPA_INVALID_AKMP;
-	}
 #endif /* CONFIG_OWE */
 
 #ifdef CONFIG_DPP2
