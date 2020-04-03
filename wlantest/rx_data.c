@@ -260,8 +260,9 @@ static void rx_data_bss_prot_group(struct wlantest *wt,
 
 	check_plaintext_prot(wt, hdr, data, len);
 	keyid = data[3] >> 6;
-	if (bss->gtk_len[keyid] == 0 && bss->group_cipher != WPA_CIPHER_WEP40)
-	{
+	if (bss->gtk_len[keyid] == 0 &&
+	    (bss->group_cipher != WPA_CIPHER_WEP40 ||
+	     dl_list_empty(&wt->wep))) {
 		add_note(wt, MSG_MSGDUMP, "No GTK known to decrypt the frame "
 			 "(A2=" MACSTR " KeyID=%d)",
 			 MAC2STR(hdr->addr2), keyid);
