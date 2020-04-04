@@ -2526,32 +2526,10 @@ static void handle_auth(struct hostapd_data *hapd,
 	    (!(sta->flags & WLAN_STA_MFP) || !ap_sta_is_authorized(sta)) &&
 	    !(hapd->conf->mesh & MESH_ENABLED) &&
 	    !(sta->added_unassoc)) {
-		/*
-		 * If a station that is already associated to the AP, is trying
-		 * to authenticate again, remove the STA entry, in order to make
-		 * sure the STA PS state gets cleared and configuration gets
-		 * updated. To handle this, station's added_unassoc flag is
-		 * cleared once the station has completed association.
-		 */
-		ap_sta_set_authorized(hapd, sta, 0);
-		hostapd_drv_sta_remove(hapd, sta->addr);
-		sta->flags &= ~(WLAN_STA_ASSOC | WLAN_STA_AUTH |
-				WLAN_STA_AUTHORIZED);
-
-		if (hostapd_sta_add(hapd, sta->addr, 0, 0,
-				    sta->supported_rates,
-				    sta->supported_rates_len,
-				    0, NULL, NULL, NULL, 0,
-				    sta->flags, 0, 0, 0, 0)) {
-			hostapd_logger(hapd, sta->addr,
-				       HOSTAPD_MODULE_IEEE80211,
-				       HOSTAPD_LEVEL_NOTICE,
-				       "Could not add STA to kernel driver");
+		if (ap_sta_re_add(hapd, sta) < 0) {
 			resp = WLAN_STATUS_AP_UNABLE_TO_HANDLE_NEW_STA;
 			goto fail;
 		}
-
-		sta->added_unassoc = 1;
 	}
 
 	switch (auth_alg) {

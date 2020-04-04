@@ -358,5 +358,6 @@ void ap_sta_delayed_1x_auth_fail_disconnect(struct hostapd_data *hapd,
 					    struct sta_info *sta);
 int ap_sta_pending_delayed_1x_auth_fail_disconnect(struct hostapd_data *hapd,
 						   struct sta_info *sta);
+int ap_sta_re_add(struct hostapd_data *hapd, struct sta_info *sta);
 
 #endif /* STA_INFO_H */

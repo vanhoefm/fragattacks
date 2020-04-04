@@ -300,7 +300,7 @@ int wpa_write_ftie(struct wpa_auth_config *conf, int use_sha384,
 int wpa_auth_derive_ptk_ft(struct wpa_state_machine *sm, struct wpa_ptk *ptk);
 struct wpa_ft_pmk_cache * wpa_ft_pmk_cache_init(void);
 void wpa_ft_pmk_cache_deinit(struct wpa_ft_pmk_cache *cache);
-void wpa_ft_install_ptk(struct wpa_state_machine *sm);
+void wpa_ft_install_ptk(struct wpa_state_machine *sm, int retry);
 int wpa_ft_store_pmk_fils(struct wpa_state_machine *sm, const u8 *pmk_r0,
 			  const u8 *pmk_r0_name);
 #endif /* CONFIG_IEEE80211R_AP */

@@ -2747,7 +2747,16 @@ static inline int wpa_auth_set_key(struct wpa_authenticator *wpa_auth,
 }
 
 
-void wpa_ft_install_ptk(struct wpa_state_machine *sm)
+static inline int wpa_auth_add_sta_ft(struct wpa_authenticator *wpa_auth,
+				      const u8 *addr)
+{
+	if (!wpa_auth->cb->add_sta_ft)
+		return -1;
+	return wpa_auth->cb->add_sta_ft(wpa_auth->cb_ctx, addr);
+}
+
+
+void wpa_ft_install_ptk(struct wpa_state_machine *sm, int retry)
 {
 	enum wpa_alg alg;
 	int klen;
@@ -2768,6 +2777,9 @@ void wpa_ft_install_ptk(struct wpa_state_machine *sm)
 			   "FT: Do not re-install same PTK to the driver");
 		return;
 	}
+
+	if (!retry)
+		wpa_auth_add_sta_ft(sm->wpa_auth, sm->addr);
 
 	/* FIX: add STA entry to kernel/driver here? The set_key will fail
 	 * most likely without this.. At the moment, STA entry is added only
@@ -3140,7 +3152,7 @@ pmk_r1_derived:
 	sm->pairwise = pairwise;
 	sm->PTK_valid = TRUE;
 	sm->tk_already_set = FALSE;
-	wpa_ft_install_ptk(sm);
+	wpa_ft_install_ptk(sm, 0);
 
 	if (wpa_ft_set_vlan(sm->wpa_auth, sm->addr, &vlan) < 0) {
 		wpa_printf(MSG_DEBUG, "FT: Failed to configure VLAN");

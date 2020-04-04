@@ -301,6 +301,7 @@ struct wpa_auth_callbacks {
 				 int *bandwidth, int *seg1_idx);
 #ifdef CONFIG_IEEE80211R_AP
 	struct wpa_state_machine * (*add_sta)(void *ctx, const u8 *sta_addr);
+	int (*add_sta_ft)(void *ctx, const u8 *sta_addr);
 	int (*set_vlan)(void *ctx, const u8 *sta_addr,
 			struct vlan_description *vlan);
 	int (*get_vlan)(void *ctx, const u8 *sta_addr,
