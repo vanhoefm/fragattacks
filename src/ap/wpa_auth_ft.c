@@ -4572,7 +4572,6 @@ int wpa_ft_rrb_rx(struct wpa_authenticator *wpa_auth, const u8 *src_addr,
 			return -1;
 		}
 		status_code = WPA_GET_LE16(pos);
-		pos += 2;
 
 		wpa_printf(MSG_DEBUG, "FT: FT Packet Type - Response "
 			   "(status_code=%d)", status_code);
@@ -4583,11 +4582,6 @@ int wpa_ft_rrb_rx(struct wpa_authenticator *wpa_auth, const u8 *src_addr,
 		wpa_printf(MSG_DEBUG, "FT: RRB discarded frame with unknown "
 			   "packet_type %d", frame->packet_type);
 		return -1;
-	}
-
-	if (end > pos) {
-		wpa_hexdump(MSG_DEBUG, "FT: Ignore extra data in end",
-			    pos, end - pos);
 	}
 
 	return 0;
