@@ -3312,8 +3312,17 @@ def test_ap_ft_skip_prune_assoc2(dev, apdev):
     """WPA2-PSK-FT AP with skip_prune_assoc (disable full_ap_client_state)"""
     run_ap_ft_skip_prune_assoc(dev, apdev, True, False, test_connectivity=False)
 
+def test_ap_ft_skip_prune_assoc_pmf(dev, apdev):
+    """WPA2-PSK-FT/PMF AP with skip_prune_assoc"""
+    run_ap_ft_skip_prune_assoc(dev, apdev, True, True, pmf=True)
+
+def test_ap_ft_skip_prune_assoc_pmf_over_ds(dev, apdev):
+    """WPA2-PSK-FT/PMF AP with skip_prune_assoc (over DS)"""
+    run_ap_ft_skip_prune_assoc(dev, apdev, True, True, pmf=True, over_ds=True)
+
 def run_ap_ft_skip_prune_assoc(dev, apdev, skip_prune_assoc,
-                               full_ap_client_state, test_connectivity=True):
+                               full_ap_client_state, test_connectivity=True,
+                               pmf=False, over_ds=False):
     ssid = "test-ft"
     passphrase = "12345678"
 
@@ -3322,16 +3331,21 @@ def run_ap_ft_skip_prune_assoc(dev, apdev, skip_prune_assoc,
         params['skip_prune_assoc'] = '1'
     if not full_ap_client_state:
         params['driver_params'] = "full_ap_client_state=0"
+    if pmf:
+        params["ieee80211w"] = "2"
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     if skip_prune_assoc:
         params['skip_prune_assoc'] = '1'
     if not full_ap_client_state:
         params['driver_params'] = "full_ap_client_state=0"
+    if pmf:
+        params["ieee80211w"] = "2"
     hapd1 = hostapd.add_ap(apdev[1], params)
 
     run_roams(dev[0], apdev, hapd0, hapd1, ssid, passphrase,
-              test_connectivity=test_connectivity)
+              ieee80211w="2" if pmf else "0",
+              over_ds=over_ds, test_connectivity=test_connectivity)
 
 def test_ap_ft_sae_skip_prune_assoc(dev, apdev):
     """WPA2-PSK-FT-SAE AP with skip_prune_assoc"""
