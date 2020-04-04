@@ -2580,3 +2580,30 @@ def test_sae_and_psk_multiple_passwords(dev, apdev, params):
     dev[1].connect("test-sae", psk="passphrase1", scan_freq="2412")
     dev[1].request("REMOVE_NETWORK all")
     dev[1].wait_disconnected()
+
+def test_sae_pmf_roam(dev, apdev):
+    """SAE/PMF roam"""
+    check_sae_capab(dev[0])
+    params = hostapd.wpa2_params(ssid="test-sae", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['ieee80211w'] = '2'
+    params['skip_prune_assoc'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    dev[0].set("sae_groups", "")
+    id = dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE",
+                        ieee80211w="2", scan_freq="2412")
+    dev[0].dump_monitor()
+    hapd.wait_sta()
+
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    bssid2 = hapd2.own_addr()
+
+    dev[0].scan_for_bss(bssid2, freq=2412)
+    dev[0].roam(bssid2)
+    dev[0].dump_monitor()
+    hapd2.wait_sta()
+
+    dev[0].roam(bssid)
+    dev[0].dump_monitor()
