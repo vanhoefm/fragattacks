@@ -2,6 +2,8 @@ ALL=wlantest wlantest_cli test_vectors
 
 all: $(ALL)
 
+UNAME := $(shell uname -s)
+
 ifndef CC
 CC=gcc
 endif
@@ -19,8 +21,10 @@ CFLAGS += -I.
 CFLAGS += -I../src
 CFLAGS += -I../src/utils
 
+ifneq ($(UNAME),Darwin)
 # glibc < 2.17 needs -lrt for clock_gettime()
 LIBS += -lrt
+endif
 
 ifndef LDO
 LDO=$(CC)
