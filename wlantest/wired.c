@@ -212,9 +212,9 @@ static void process_udp(struct wlantest *wt, u32 dst, u32 src,
 		return;
 	udp = (const struct udphdr *) data;
 	/* TODO: check UDP checksum */
-	sport = be_to_host16(udp->source);
-	dport = be_to_host16(udp->dest);
-	ulen = be_to_host16(udp->len);
+	sport = be_to_host16(udp->uh_sport);
+	dport = be_to_host16(udp->uh_dport);
+	ulen = be_to_host16(udp->uh_ulen);
 
 	if (ulen > len)
 		return;
