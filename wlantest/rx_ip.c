@@ -14,6 +14,8 @@
 #include "wlantest.h"
 
 
+#ifndef __APPLE__
+
 static void ping_update(struct wlantest *wt, struct wlantest_sta *sta, int req,
 			u32 src, u32 dst, u16 id, u16 seq)
 {
@@ -95,6 +97,8 @@ static void rx_data_icmp(struct wlantest *wt, const u8 *bssid,
 		ping_update(wt, sta, hdr->type == ICMP_ECHO, src, dst, id, seq);
 }
 
+#endif /* __APPLE__ */
+
 
 static int hwsim_test_packet(const u8 *data, size_t len)
 {
@@ -169,9 +173,11 @@ void rx_data_ip(struct wlantest *wt, const u8 *bssid, const u8 *sta_addr,
 	plen = len - 4 * ip->ip_hl;
 
 	switch (ip->ip_p) {
+#ifndef __APPLE__
 	case IPPROTO_ICMP:
 		rx_data_icmp(wt, bssid, sta_addr, ip->ip_dst.s_addr,
 			     ip->ip_src.s_addr, payload, plen, peer_addr);
 		break;
+#endif /* __APPLE__ */
 	}
 }
