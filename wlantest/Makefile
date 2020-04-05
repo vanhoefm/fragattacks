@@ -42,8 +42,8 @@ endif
 	@$(E) "  CC " $<
 
 
-OBJS_lib += ../src/utils/libutils.a
-OBJS_lib += ../src/crypto/libcrypto.a
+OWN_LIBS += ../src/utils/libutils.a
+OWN_LIBS += ../src/crypto/libcrypto.a
 
 CFLAGS += -DCONFIG_OCV
 CFLAGS += -DCONFIG_IEEE80211R
@@ -98,37 +98,20 @@ TOBJS += gcmp.o
 	$(MAKE) -C ../src/crypto
 
 
-ifneq ($(CONFIG_SOLIB), yes)
-LIBWLANTEST = libwlantest.a
-libwlantest.a: $(OBJS_lib)
-	$(AR) crT libwlantest.a $(OBJS_lib)
-	$(RANLIB) libwlantest.a
-
-else
-CFLAGS  += -fPIC -DPIC
-LDFLAGS += -shared
-
-LIBWLANTEST  = libwlantest.so
-libwlantest.so: $(OBJS_lib)
-	$(LDO) $(LDFLAGS) $(OBJS_lib) -o $(LIBWLANTEST)
-
-endif
-
-
 OBJS_cli = wlantest_cli.o
 
 
-wlantest: $(OBJS) $(LIBWLANTEST)
-	$(LDO) $(LDFLAGS) -o wlantest $(OBJS) -L. -lwlantest $(LIBS)
+wlantest: $(OBJS) $(OWN_LIBS)
+	$(LDO) $(LDFLAGS) -o wlantest $(OBJS) $(OWN_LIBS) $(LIBS)
 
-wlantest_cli: $(OBJS_cli) $(LIBWLANTEST)
-	$(LDO) $(LDFLAGS) -o wlantest_cli $(OBJS_cli) -L. -lwlantest $(LIBS)
+wlantest_cli: $(OBJS_cli) $(OWN_LIBS)
+	$(LDO) $(LDFLAGS) -o wlantest_cli $(OBJS_cli) $(OWN_LIBS) $(LIBS)
 
-test_vectors: $(TOBJS) $(LIBWLANTEST)
-	$(LDO) $(LDFLAGS) -o test_vectors $(TOBJS) -L. -lwlantest $(LIBS)
+test_vectors: $(TOBJS) $(OWN_LIBS)
+	$(LDO) $(LDFLAGS) -o test_vectors $(TOBJS) $(OWN_LIBS) $(LIBS)
 
 clean:
 	$(MAKE) -C ../src clean
-	rm -f core *~ *.o *.d libwlantest.a libwlantest.so $(ALL)
+	rm -f core *~ *.o *.d $(ALL)
 
 -include $(OBJS:%.o=%.d)
