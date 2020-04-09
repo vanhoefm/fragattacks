@@ -1618,8 +1618,13 @@ int wpas_wps_init(struct wpa_supplicant *wpa_s)
 	os_memcpy(wps->dev.mac_addr, wpa_s->own_addr, ETH_ALEN);
 	wpas_wps_set_uuid(wpa_s, wps);
 
+#ifdef CONFIG_NO_TKIP
+	wps->auth_types = WPS_AUTH_WPA2PSK;
+	wps->encr_types = WPS_ENCR_AES;
+#else /* CONFIG_NO_TKIP */
 	wps->auth_types = WPS_AUTH_WPA2PSK | WPS_AUTH_WPAPSK;
 	wps->encr_types = WPS_ENCR_AES | WPS_ENCR_TKIP;
+#endif /* CONFIG_NO_TKIP */
 
 	os_memset(&rcfg, 0, sizeof(rcfg));
 	rcfg.new_psk_cb = wpas_wps_new_psk_cb;

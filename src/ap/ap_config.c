@@ -74,8 +74,13 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 	bss->wpa_disable_eapol_key_retries =
 		DEFAULT_WPA_DISABLE_EAPOL_KEY_RETRIES;
 	bss->wpa_key_mgmt = WPA_KEY_MGMT_PSK;
+#ifdef CONFIG_NO_TKIP
+	bss->wpa_pairwise = WPA_CIPHER_CCMP;
+	bss->wpa_group = WPA_CIPHER_CCMP;
+#else /* CONFIG_NO_TKIP */
 	bss->wpa_pairwise = WPA_CIPHER_TKIP;
 	bss->wpa_group = WPA_CIPHER_TKIP;
+#endif /* CONFIG_NO_TKIP */
 	bss->rsn_pairwise = 0;
 
 	bss->max_num_sta = MAX_STA_COUNT;

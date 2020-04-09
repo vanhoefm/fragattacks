@@ -388,3 +388,10 @@ CONFIG_IPV6=y
 # release under this optional build parameter. This functionality is subject to
 # be completely removed in a future release.
 #CONFIG_WEP=y
+
+# Remove all TKIP functionality
+# TKIP is an old cryptographic data confidentiality algorithm that is not
+# considered secure. It should not be used anymore. For now, the default hostapd
+# build includes this to allow mixed mode WPA+WPA2 networks to be enabled, but
+# that functionality is subject to be removed in the future.
+#CONFIG_NO_TKIP=y

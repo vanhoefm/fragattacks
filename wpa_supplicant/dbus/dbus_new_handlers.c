@@ -2632,7 +2632,11 @@ dbus_bool_t wpas_dbus_getter_capabilities(
 
 	/***** pairwise cipher */
 	if (res < 0) {
+#ifdef CONFIG_NO_TKIP
+		const char *args[] = {"ccmp", "none"};
+#else /* CONFIG_NO_TKIP */
 		const char *args[] = {"ccmp", "tkip", "none"};
+#endif /* CONFIG_NO_TKIP */
 
 		if (!wpa_dbus_dict_append_string_array(
 			    &iter_dict, "Pairwise", args,
@@ -2655,9 +2659,11 @@ dbus_bool_t wpas_dbus_getter_capabilities(
 		    ((capa.enc & WPA_DRIVER_CAPA_ENC_GCMP) &&
 		     !wpa_dbus_dict_string_array_add_element(
 			     &iter_array, "gcmp")) ||
+#ifndef CONFIG_NO_TKIP
 		    ((capa.enc & WPA_DRIVER_CAPA_ENC_TKIP) &&
 		     !wpa_dbus_dict_string_array_add_element(
 			     &iter_array, "tkip")) ||
+#endif /* CONFIG_NO_TKIP */
 		    ((capa.key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_WPA_NONE) &&
 		     !wpa_dbus_dict_string_array_add_element(
 			     &iter_array, "none")) ||
@@ -2671,7 +2677,10 @@ dbus_bool_t wpas_dbus_getter_capabilities(
 	/***** group cipher */
 	if (res < 0) {
 		const char *args[] = {
-			"ccmp", "tkip",
+			"ccmp",
+#ifndef CONFIG_NO_TKIP
+			"tkip",
+#endif /* CONFIG_NO_TKIP */
 #ifdef CONFIG_WEP
 			"wep104", "wep40"
 #endif /* CONFIG_WEP */
@@ -2698,9 +2707,11 @@ dbus_bool_t wpas_dbus_getter_capabilities(
 		    ((capa.enc & WPA_DRIVER_CAPA_ENC_GCMP) &&
 		     !wpa_dbus_dict_string_array_add_element(
 			     &iter_array, "gcmp")) ||
+#ifndef CONFIG_NO_TKIP
 		    ((capa.enc & WPA_DRIVER_CAPA_ENC_TKIP) &&
 		     !wpa_dbus_dict_string_array_add_element(
 			     &iter_array, "tkip")) ||
+#endif /* CONFIG_NO_TKIP */
 #ifdef CONFIG_WEP
 		    ((capa.enc & WPA_DRIVER_CAPA_ENC_WEP104) &&
 		     !wpa_dbus_dict_string_array_add_element(
@@ -4759,9 +4770,11 @@ static dbus_bool_t wpas_dbus_get_bss_security_prop(
 		group = "wep104";
 		break;
 #endif /* CONFIG_WEP */
+#ifndef CONFIG_NO_TKIP
 	case WPA_CIPHER_TKIP:
 		group = "tkip";
 		break;
+#endif /* CONFIG_NO_TKIP */
 	case WPA_CIPHER_CCMP:
 		group = "ccmp";
 		break;
@@ -4784,8 +4797,10 @@ static dbus_bool_t wpas_dbus_get_bss_security_prop(
 
 	/* Pairwise */
 	n = 0;
+#ifndef CONFIG_NO_TKIP
 	if (ie_data->pairwise_cipher & WPA_CIPHER_TKIP)
 		pairwise[n++] = "tkip";
+#endif /* CONFIG_NO_TKIP */
 	if (ie_data->pairwise_cipher & WPA_CIPHER_CCMP)
 		pairwise[n++] = "ccmp";
 	if (ie_data->pairwise_cipher & WPA_CIPHER_GCMP)

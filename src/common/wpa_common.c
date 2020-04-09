@@ -2319,11 +2319,18 @@ enum wpa_alg wpa_cipher_to_alg(int cipher)
 
 int wpa_cipher_valid_pairwise(int cipher)
 {
+#ifdef CONFIG_NO_TKIP
+	return cipher == WPA_CIPHER_CCMP_256 ||
+		cipher == WPA_CIPHER_GCMP_256 ||
+		cipher == WPA_CIPHER_CCMP ||
+		cipher == WPA_CIPHER_GCMP;
+#else /* CONFIG_NO_TKIP */
 	return cipher == WPA_CIPHER_CCMP_256 ||
 		cipher == WPA_CIPHER_GCMP_256 ||
 		cipher == WPA_CIPHER_CCMP ||
 		cipher == WPA_CIPHER_GCMP ||
 		cipher == WPA_CIPHER_TKIP;
+#endif /* CONFIG_NO_TKIP */
 }
 
 
@@ -2476,8 +2483,10 @@ int wpa_parse_cipher(const char *value)
 			val |= WPA_CIPHER_CCMP;
 		else if (os_strcmp(start, "GCMP") == 0)
 			val |= WPA_CIPHER_GCMP;
+#ifndef CONFIG_NO_TKIP
 		else if (os_strcmp(start, "TKIP") == 0)
 			val |= WPA_CIPHER_TKIP;
+#endif /* CONFIG_NO_TKIP */
 #ifdef CONFIG_WEP
 		else if (os_strcmp(start, "WEP104") == 0)
 			val |= WPA_CIPHER_WEP104;

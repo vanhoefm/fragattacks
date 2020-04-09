@@ -314,6 +314,10 @@ ifdef CONFIG_WEP
 L_CFLAGS += -DCONFIG_WEP
 endif
 
+ifdef CONFIG_NO_TKIP
+L_CFLAGS += -DCONFIG_NO_TKIP
+endif
+
 
 include $(LOCAL_PATH)/src/drivers/drivers.mk
 

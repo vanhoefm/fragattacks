@@ -1243,6 +1243,10 @@ ifdef CONFIG_WEP
 CFLAGS += -DCONFIG_WEP
 endif
 
+ifdef CONFIG_NO_TKIP
+CFLAGS += -DCONFIG_NO_TKIP
+endif
+
 ALL=hostapd hostapd_cli
 
 all: verify_config $(ALL)

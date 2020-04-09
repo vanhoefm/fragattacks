@@ -750,10 +750,12 @@ void wpas_dbus_signal_wps_cred(struct wpa_supplicant *wpa_s,
 
 	if (cred->auth_type & WPS_AUTH_OPEN)
 		auth_type[at_num++] = "open";
+#ifndef CONFIG_NO_TKIP
 	if (cred->auth_type & WPS_AUTH_WPAPSK)
 		auth_type[at_num++] = "wpa-psk";
 	if (cred->auth_type & WPS_AUTH_WPA)
 		auth_type[at_num++] = "wpa-eap";
+#endif /* CONFIG_NO_TKIP */
 	if (cred->auth_type & WPS_AUTH_WPA2)
 		auth_type[at_num++] = "wpa2-eap";
 	if (cred->auth_type & WPS_AUTH_WPA2PSK)
@@ -761,8 +763,10 @@ void wpas_dbus_signal_wps_cred(struct wpa_supplicant *wpa_s,
 
 	if (cred->encr_type & WPS_ENCR_NONE)
 		encr_type[et_num++] = "none";
+#ifndef CONFIG_NO_TKIP
 	if (cred->encr_type & WPS_ENCR_TKIP)
 		encr_type[et_num++] = "tkip";
+#endif /* CONFIG_NO_TKIP */
 	if (cred->encr_type & WPS_ENCR_AES)
 		encr_type[et_num++] = "aes";
 

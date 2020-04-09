@@ -1677,8 +1677,10 @@ int wps_build_cred(struct wps_data *wps, struct wpabuf *msg)
 		   wps->wps->auth_types, wps->auth_type);
 	if (wps->auth_type & WPS_AUTH_WPA2PSK)
 		wps->auth_type = WPS_AUTH_WPA2PSK;
+#ifndef CONFIG_NO_TKIP
 	else if (wps->auth_type & WPS_AUTH_WPAPSK)
 		wps->auth_type = WPS_AUTH_WPAPSK;
+#endif /* CONFIG_NO_TKIP */
 	else if (wps->auth_type & WPS_AUTH_OPEN)
 		wps->auth_type = WPS_AUTH_OPEN;
 	else {
@@ -1700,8 +1702,10 @@ int wps_build_cred(struct wps_data *wps, struct wpabuf *msg)
 	    wps->auth_type == WPS_AUTH_WPAPSK) {
 		if (wps->encr_type & WPS_ENCR_AES)
 			wps->encr_type = WPS_ENCR_AES;
+#ifndef CONFIG_NO_TKIP
 		else if (wps->encr_type & WPS_ENCR_TKIP)
 			wps->encr_type = WPS_ENCR_TKIP;
+#endif /* CONFIG_NO_TKIP */
 		else {
 			wpa_printf(MSG_DEBUG, "WPS: No suitable encryption "
 				   "type for WPA/WPA2");

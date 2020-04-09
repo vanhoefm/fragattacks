@@ -364,6 +364,13 @@ static int hapd_wps_reconfig_in_memory(struct hostapd_data *hapd,
 		bss->ssid.ssid_set = 1;
 	}
 
+#ifdef CONFIG_NO_TKIP
+	if (cred->auth_type & (WPS_AUTH_WPA2 | WPS_AUTH_WPA2PSK |
+			       WPS_AUTH_WPA | WPS_AUTH_WPAPSK))
+		bss->wpa = 2;
+	else
+		bss->wpa = 0;
+#else /* CONFIG_NO_TKIP */
 	if ((cred->auth_type & (WPS_AUTH_WPA2 | WPS_AUTH_WPA2PSK)) &&
 	    (cred->auth_type & (WPS_AUTH_WPA | WPS_AUTH_WPAPSK)))
 		bss->wpa = 3;
@@ -373,6 +380,7 @@ static int hapd_wps_reconfig_in_memory(struct hostapd_data *hapd,
 		bss->wpa = 1;
 	else
 		bss->wpa = 0;
+#endif /* CONFIG_NO_TKIP */
 
 	if (bss->wpa) {
 		if (cred->auth_type & (WPS_AUTH_WPA2 | WPS_AUTH_WPA))
@@ -387,8 +395,10 @@ static int hapd_wps_reconfig_in_memory(struct hostapd_data *hapd,
 			else
 				bss->wpa_pairwise |= WPA_CIPHER_CCMP;
 		}
+#ifndef CONFIG_NO_TKIP
 		if (cred->encr_type & WPS_ENCR_TKIP)
 			bss->wpa_pairwise |= WPA_CIPHER_TKIP;
+#endif /* CONFIG_NO_TKIP */
 		bss->rsn_pairwise = bss->wpa_pairwise;
 		bss->wpa_group = wpa_select_ap_group_cipher(bss->wpa,
 							    bss->wpa_pairwise,
@@ -559,6 +569,13 @@ static int hapd_wps_cred_cb(struct hostapd_data *hapd, void *ctx)
 		fprintf(nconf, "\n");
 	}
 
+#ifdef CONFIG_NO_TKIP
+	if (cred->auth_type & (WPS_AUTH_WPA2 | WPS_AUTH_WPA2PSK |
+			       WPS_AUTH_WPA | WPS_AUTH_WPAPSK))
+		wpa = 2;
+	else
+		wpa = 0;
+#else /* CONFIG_NO_TKIP */
 	if ((cred->auth_type & (WPS_AUTH_WPA2 | WPS_AUTH_WPA2PSK)) &&
 	    (cred->auth_type & (WPS_AUTH_WPA | WPS_AUTH_WPAPSK)))
 		wpa = 3;
@@ -568,6 +585,7 @@ static int hapd_wps_cred_cb(struct hostapd_data *hapd, void *ctx)
 		wpa = 1;
 	else
 		wpa = 0;
+#endif /* CONFIG_NO_TKIP */
 
 	if (wpa) {
 		char *prefix;
@@ -611,9 +629,11 @@ static int hapd_wps_cred_cb(struct hostapd_data *hapd, void *ctx)
 
 			prefix = " ";
 		}
+#ifndef CONFIG_NO_TKIP
 		if (cred->encr_type & WPS_ENCR_TKIP) {
 			fprintf(nconf, "%sTKIP", prefix);
 		}
+#endif /* CONFIG_NO_TKIP */
 		fprintf(nconf, "\n");
 
 		if (cred->key_len >= 8 && cred->key_len < 64) {
@@ -1160,12 +1180,24 @@ int hostapd_init_wps(struct hostapd_data *hapd,
 			wps->encr_types_rsn |= WPS_ENCR_AES;
 		}
 		if (conf->rsn_pairwise & WPA_CIPHER_TKIP) {
+#ifdef CONFIG_NO_TKIP
+			wpa_printf(MSG_INFO, "WPS: TKIP not supported");
+			goto fail;
+#else /* CONFIG_NO_TKIP */
 			wps->encr_types |= WPS_ENCR_TKIP;
 			wps->encr_types_rsn |= WPS_ENCR_TKIP;
+#endif /* CONFIG_NO_TKIP */
 		}
 	}
 
 	if (conf->wpa & WPA_PROTO_WPA) {
+#ifdef CONFIG_NO_TKIP
+		if (!(conf->wpa & WPA_PROTO_RSN)) {
+			wpa_printf(MSG_INFO, "WPS: WPA(v1) not supported");
+			goto fail;
+		}
+		conf->wpa &= ~WPA_PROTO_WPA;
+#else /* CONFIG_NO_TKIP */
 		if (conf->wpa_key_mgmt & WPA_KEY_MGMT_PSK)
 			wps->auth_types |= WPS_AUTH_WPAPSK;
 		if (conf->wpa_key_mgmt & WPA_KEY_MGMT_IEEE8021X)
@@ -1179,6 +1211,7 @@ int hostapd_init_wps(struct hostapd_data *hapd,
 			wps->encr_types |= WPS_ENCR_TKIP;
 			wps->encr_types_wpa |= WPS_ENCR_TKIP;
 		}
+#endif /* CONFIG_NO_TKIP */
 	}
 
 	if (conf->ssid.security_policy == SECURITY_PLAINTEXT) {
@@ -1218,10 +1251,17 @@ int hostapd_init_wps(struct hostapd_data *hapd,
 	wps->ap_encr_type = wps->encr_types;
 	if (conf->wps_state == WPS_STATE_NOT_CONFIGURED) {
 		/* Override parameters to enable security by default */
+#ifdef CONFIG_NO_TKIP
+		wps->auth_types = WPS_AUTH_WPA2PSK;
+		wps->encr_types = WPS_ENCR_AES;
+		wps->encr_types_rsn = WPS_ENCR_AES;
+		wps->encr_types_wpa = WPS_ENCR_AES;
+#else /* CONFIG_NO_TKIP */
 		wps->auth_types = WPS_AUTH_WPA2PSK | WPS_AUTH_WPAPSK;
 		wps->encr_types = WPS_ENCR_AES | WPS_ENCR_TKIP;
 		wps->encr_types_rsn = WPS_ENCR_AES | WPS_ENCR_TKIP;
 		wps->encr_types_wpa = WPS_ENCR_AES | WPS_ENCR_TKIP;
+#endif /* CONFIG_NO_TKIP */
 	}
 
 	if ((hapd->conf->multi_ap & FRONTHAUL_BSS) &&
@@ -1801,8 +1841,10 @@ int hostapd_wps_config_ap(struct hostapd_data *hapd, const char *ssid,
 
 	if (os_strncmp(auth, "OPEN", 4) == 0)
 		cred.auth_type = WPS_AUTH_OPEN;
+#ifndef CONFIG_NO_TKIP
 	else if (os_strncmp(auth, "WPAPSK", 6) == 0)
 		cred.auth_type = WPS_AUTH_WPAPSK;
+#endif /* CONFIG_NO_TKIP */
 	else if (os_strncmp(auth, "WPA2PSK", 7) == 0)
 		cred.auth_type = WPS_AUTH_WPA2PSK;
 	else
@@ -1811,8 +1853,10 @@ int hostapd_wps_config_ap(struct hostapd_data *hapd, const char *ssid,
 	if (encr) {
 		if (os_strncmp(encr, "NONE", 4) == 0)
 			cred.encr_type = WPS_ENCR_NONE;
+#ifndef CONFIG_NO_TKIP
 		else if (os_strncmp(encr, "TKIP", 4) == 0)
 			cred.encr_type = WPS_ENCR_TKIP;
+#endif /* CONFIG_NO_TKIP */
 		else if (os_strncmp(encr, "CCMP", 4) == 0)
 			cred.encr_type = WPS_ENCR_AES;
 		else

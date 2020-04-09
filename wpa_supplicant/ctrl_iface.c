@@ -3959,7 +3959,9 @@ static const struct cipher_info ciphers[] = {
 	{ WPA_DRIVER_CAPA_ENC_GCMP_256, "GCMP-256", 0 },
 	{ WPA_DRIVER_CAPA_ENC_CCMP, "CCMP", 0 },
 	{ WPA_DRIVER_CAPA_ENC_GCMP, "GCMP", 0 },
+#ifndef CONFIG_NO_TKIP
 	{ WPA_DRIVER_CAPA_ENC_TKIP, "TKIP", 0 },
+#endif /* CONFIG_NO_TKIP */
 	{ WPA_DRIVER_CAPA_KEY_MGMT_WPA_NONE, "NONE", 0 },
 #ifdef CONFIG_WEP
 	{ WPA_DRIVER_CAPA_ENC_WEP104, "WEP104", 1 },
@@ -3990,7 +3992,11 @@ static int ctrl_iface_get_capability_pairwise(int res, char *strict,
 	if (res < 0) {
 		if (strict)
 			return 0;
+#ifdef CONFIG_NO_TKIP
+		len = os_strlcpy(buf, "CCMP NONE", buflen);
+#else /* CONFIG_NO_TKIP */
 		len = os_strlcpy(buf, "CCMP TKIP NONE", buflen);
+#endif /* CONFIG_NO_TKIP */
 		if (len >= buflen)
 			return -1;
 		return len;
@@ -4027,9 +4033,17 @@ static int ctrl_iface_get_capability_group(int res, char *strict,
 		if (strict)
 			return 0;
 #ifdef CONFIG_WEP
+#ifdef CONFIG_NO_TKIP
+		len = os_strlcpy(buf, "CCMP WEP104 WEP40", buflen);
+#else /* CONFIG_NO_TKIP */
 		len = os_strlcpy(buf, "CCMP TKIP WEP104 WEP40", buflen);
+#endif /* CONFIG_NO_TKIP */
 #else /* CONFIG_WEP */
+#ifdef CONFIG_NO_TKIP
+		len = os_strlcpy(buf, "CCMP", buflen);
+#else /* CONFIG_NO_TKIP */
 		len = os_strlcpy(buf, "CCMP TKIP", buflen);
+#endif /* CONFIG_NO_TKIP */
 #endif /* CONFIG_WEP */
 		if (len >= buflen)
 			return -1;
