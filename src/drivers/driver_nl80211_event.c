@@ -2751,9 +2751,6 @@ static void do_process_drv_event(struct i802_bss *bss, int cmd,
 	case NL80211_CMD_UPDATE_OWE_INFO:
 		mlme_event_dh_event(drv, bss, tb);
 		break;
-	case NL80211_CMD_CONTROL_PORT_FRAME:
-		nl80211_control_port_frame(drv, tb);
-		break;
 	default:
 		wpa_dbg(drv->ctx, MSG_DEBUG, "nl80211: Ignored unknown event "
 			"(cmd=%d)", cmd);
@@ -2842,6 +2839,9 @@ int process_bss_event(struct nl_msg *msg, void *arg)
 		break;
 	case NL80211_CMD_EXTERNAL_AUTH:
 		nl80211_external_auth(bss->drv, tb);
+		break;
+	case NL80211_CMD_CONTROL_PORT_FRAME:
+		nl80211_control_port_frame(bss->drv, tb);
 		break;
 	default:
 		wpa_printf(MSG_DEBUG, "nl80211: Ignored unknown event "
