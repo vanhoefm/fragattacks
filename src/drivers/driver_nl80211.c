@@ -158,6 +158,7 @@ static void wpa_driver_nl80211_deinit(struct i802_bss *bss);
 static int wpa_driver_nl80211_set_mode_ibss(struct i802_bss *bss,
 					    struct hostapd_freq_params *freq);
 
+static int nl80211_init_connect_handle(struct i802_bss *bss);
 static int
 wpa_driver_nl80211_finish_drv_init(struct wpa_driver_nl80211_data *drv,
 				   const u8 *set_addr, int first,
@@ -1928,6 +1929,8 @@ static int nl80211_init_bss(struct i802_bss *bss)
 	nl_cb_set(bss->nl_cb, NL_CB_VALID, NL_CB_CUSTOM,
 		  process_bss_event, bss);
 
+	nl80211_init_connect_handle(bss);
+
 	return 0;
 }
 
@@ -1936,6 +1939,9 @@ static void nl80211_destroy_bss(struct i802_bss *bss)
 {
 	nl_cb_put(bss->nl_cb);
 	bss->nl_cb = NULL;
+
+	if (bss->nl_connect)
+		nl80211_destroy_eloop_handle(&bss->nl_connect, 1);
 }
 
 
@@ -2715,8 +2721,6 @@ wpa_driver_nl80211_finish_drv_init(struct wpa_driver_nl80211_data *drv,
 	if (drv->vendor_cmd_test_avail)
 		qca_vendor_test(drv);
 
-	nl80211_init_connect_handle(bss);
-
 	return 0;
 }
 
@@ -2828,9 +2832,6 @@ static void wpa_driver_nl80211_deinit(struct i802_bss *bss)
 		nl80211_mgmt_unsubscribe(bss, "deinit");
 		nl80211_del_p2pdev(bss);
 	}
-
-	if (bss->nl_connect)
-		nl80211_destroy_eloop_handle(&bss->nl_connect, 1);
 
 	nl80211_destroy_bss(drv->first_bss);
 
