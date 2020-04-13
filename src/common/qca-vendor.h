@@ -646,6 +646,12 @@ enum qca_radiotap_vendor_ids {
  *	code immediately prior to triggering cfg80211_disconnected(). The
  *	attributes used with this event are defined in enum
  *	qca_wlan_vendor_attr_driver_disconnect_reason.
+ *
+ * @QCA_NL80211_VENDOR_SUBCMD_CONFIG_TSPEC: This vendor subcommand is used to
+ *	add/delete TSPEC for each AC. One command is for one specific AC only.
+ *	This command can only be used in STA mode and the STA must be
+ *	associated with an AP when the command is issued. Uses attributes
+ *	defined in enum qca_wlan_vendor_attr_config_tspec.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -825,6 +831,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_GET_SAR_LIMITS_EVENT = 187,
 	QCA_NL80211_VENDOR_SUBCMD_UPDATE_STA_INFO = 188,
 	QCA_NL80211_VENDOR_SUBCMD_DRIVER_DISCONNECT_REASON = 189,
+	QCA_NL80211_VENDOR_SUBCMD_CONFIG_TSPEC = 190,
 };
 
 enum qca_wlan_vendor_attr {
@@ -8925,6 +8932,174 @@ enum qca_wlan_vendor_attr_driver_disconnect_reason {
 	QCA_WLAN_VENDOR_ATTR_DRIVER_DISCONNECT_REASON_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_DRIVER_DISCONNECT_REASON_MAX =
 	QCA_WLAN_VENDOR_ATTR_DRIVER_DISCONNECT_REASON_AFTER_LAST - 1,
+};
+
+/**
+ * enum qca_wlan_tspec_operation - Operation of the config TSPEC request
+ *
+ * Values for %QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_OPERATION.
+ */
+enum qca_wlan_tspec_operation {
+	QCA_WLAN_TSPEC_ADD = 0,
+	QCA_WLAN_TSPEC_DEL = 1,
+	QCA_WLAN_TSPEC_GET = 2,
+};
+
+/**
+ * enum qca_wlan_tspec_direction - Direction in TSPEC
+ * As what is defined in IEEE Std 802.11-2016, Table 9-139.
+ *
+ * Values for %QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_DIRECTION.
+ */
+enum qca_wlan_tspec_direction {
+	QCA_WLAN_TSPEC_DIRECTION_UPLINK = 0,
+	QCA_WLAN_TSPEC_DIRECTION_DOWNLINK = 1,
+	QCA_WLAN_TSPEC_DIRECTION_DIRECT = 2,
+	QCA_WLAN_TSPEC_DIRECTION_BOTH = 3,
+};
+
+/**
+ * enum qca_wlan_tspec_ack_policy - MAC acknowledgement policy in TSPEC
+ * As what is defined in IEEE Std 802.11-201, Table 9-141.
+ *
+ * Values for %QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_ACK_POLICY.
+ */
+enum qca_wlan_tspec_ack_policy {
+	QCA_WLAN_TSPEC_NORMAL_ACK = 0,
+	QCA_WLAN_TSPEC_NO_ACK = 1,
+	/* Reserved */
+	QCA_WLAN_TSPEC_BLOCK_ACK = 3,
+};
+
+/**
+ * enum qca_wlan_vendor_attr_config_tspec - Defines attributes
+ * used by %QCA_NL80211_VENDOR_SUBCMD_CONFIG_TSPEC vendor command.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_OPERATION:
+ * u8 attribute. Specify the TSPEC operation of this request. Possible values
+ * are defined in enum qca_wlan_tspec_operation.
+ * Mandatory attribute for all kinds of config TSPEC requests.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_TSID:
+ * u8 attribute. TS ID. Possible values are 0-7.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD, QCA_WLAN_TSPEC_DEL,
+ * QCA_WLAN_TSPEC_GET. A mandatory attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_DIRECTION:
+ * u8 attribute. Direction of data carried by the TS. Possible values are
+ * defined in enum qca_wlan_tspec_direction.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. A mandatory attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_APSD:
+ * Flag attribute. Indicate whether APSD is enabled for the traffic associated
+ * with the TS. set - enabled, not set - disabled.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. A mandatory attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_USER_PRIORITY:
+ * u8 attribute. User priority to be used for the transport of MSDUs/A-MSDUs
+ * belonging to this TS. Possible values are 0-7.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. An optional attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_ACK_POLICY:
+ * u8 attribute. Indicate whether MAC acknowledgements are required for
+ * MPDUs/A-MSDUs belonging to this TS and the form of those acknowledgements.
+ * Possible values are defined in enum qca_wlan_tspec_ack_policy.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. A mandatory attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_NOMINAL_MSDU_SIZE:
+ * u16 attribute. Specify the nominal size in bytes of MSDUs/A-MSDUs
+ * belonging to this TS.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. A mandatory attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MAXIMUM_MSDU_SIZE:
+ * u16 attribute. Specify the maximum size in bytes of MSDUs/A-MSDUs
+ * belonging to this TS.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. A mandatory attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MIN_SERVICE_INTERVAL:
+ * u32 attribute. Specify the minimum interval in microseconds between the
+ * start of two successive SPs.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. A mandatory attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MAX_SERVICE_INTERVAL:
+ * u32 attribute. Specify the maximum interval in microseconds between the
+ * start of two successive SPs.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. A mandatory attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_INACTIVITY_INTERVAL:
+ * u32 attribute. Specify the minimum interval in microseconds that can elapse
+ * without arrival or transfer of an MPDU belonging to the TS before this TS
+ * is deleted by the MAC entity at the HC.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. A mandatory attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_SUSPENSION_INTERVAL:
+ * u32 attribute. Specify the minimum interval in microseconds that can elapse
+ * without arrival or transfer of an MSDU belonging to the TS before the
+ * generation of successive QoS(+)CF-Poll is stopped for this TS. A value of
+ * 0xFFFFFFFF disables the suspension interval. The value of the suspension
+ * interval is always less than or equal to the inactivity interval.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. A mandatory attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MINIMUM_DATA_RATE:
+ * u32 attribute. Indicate the lowest data rate in bps specified at the MAC
+ * SAP for transport of MSDUs or A-MSDUs belonging to this TS within the
+ * bounds of this TSPEC.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. An optional attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MEAN_DATA_RATE:
+ * u32 attribute. Indicate the average data rate in bps specified at the MAC
+ * SAP for transport of MSDUs or A-MSDUs belonging to this TS within the
+ * bounds of this TSPEC.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. An optional attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_PEAK_DATA_RATE:
+ * u32 attribute. Indicate the maximum allowable data rate in bps specified at
+ * the MAC SAP for transport of MSDUs or A-MSDUs belonging to this TS within
+ * the bounds of this TSPEC.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. An optional attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_BURST_SIZE:
+ * u32 attribute. Specify the maximum burst size in bytes of the MSDUs/A-MSDUs
+ * belonging to this TS that arrive at the MAC SAP at the peak data rate. A
+ * value of 0 indicates that there are no bursts.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. An optional attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MINIMUM_PHY_RATE:
+ * u32 attribute. Indicate the minimum PHY rate in bps for transport of
+ * MSDUs/A-MSDUs belonging to this TS within the bounds of this TSPEC.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. An optional attribute.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_SURPLUS_BANDWIDTH_ALLOWANCE:
+ * u16 attribute. Specify the excess allocation of time (and bandwidth) over
+ * and above the stated application rates required to transport an MSDU/A-MSDU
+ * belonging to the TS in this TSPEC.
+ * Applicable for operation: QCA_WLAN_TSPEC_ADD. A mandatory attribute.
+ */
+enum qca_wlan_vendor_attr_config_tspec {
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_INVALID = 0,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_OPERATION = 1,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_TSID = 2,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_DIRECTION = 3,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_APSD = 4,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_USER_PRIORITY = 5,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_ACK_POLICY = 6,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_NOMINAL_MSDU_SIZE = 7,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MAXIMUM_MSDU_SIZE = 8,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MIN_SERVICE_INTERVAL = 9,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MAX_SERVICE_INTERVAL = 10,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_INACTIVITY_INTERVAL = 11,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_SUSPENSION_INTERVAL = 12,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MINIMUM_DATA_RATE = 13,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MEAN_DATA_RATE = 14,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_PEAK_DATA_RATE = 15,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_BURST_SIZE = 16,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MINIMUM_PHY_RATE = 17,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_SURPLUS_BANDWIDTH_ALLOWANCE = 18,
+
+	/* keep last */
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_AFTER_LAST,
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MAX =
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_AFTER_LAST - 1,
 };
 
 #endif /* QCA_VENDOR_H */
