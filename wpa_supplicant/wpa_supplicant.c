@@ -1639,6 +1639,10 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 	if (ssid->sae_password_id && sae_pwe != 3)
 		sae_pwe = 1;
 	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_SAE_PWE, sae_pwe);
+#ifdef CONFIG_TESTING_OPTIONS
+	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_FT_RSNXE_USED,
+			 wpa_s->ft_rsnxe_used);
+#endif /* CONFIG_TESTING_OPTIONS */
 
 	/* Extended Key ID is only supported in infrastructure BSS so far */
 	if (ssid->mode == WPAS_MODE_INFRA && wpa_s->conf->extended_key_id &&

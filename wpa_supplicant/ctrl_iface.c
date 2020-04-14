@@ -747,6 +747,8 @@ static int wpa_supplicant_ctrl_iface_set(struct wpa_supplicant *wpa_s,
 				break;
 			pos++;
 		}
+	} else if (os_strcasecmp(cmd, "ft_rsnxe_used") == 0) {
+		wpa_s->ft_rsnxe_used = atoi(value);
 	} else if (os_strcasecmp(cmd, "rsne_override_eapol") == 0) {
 		wpabuf_free(wpa_s->rsne_override_eapol);
 		if (os_strcmp(value, "NULL") == 0)
@@ -8184,6 +8186,7 @@ static void wpa_supplicant_ctrl_iface_flush(struct wpa_supplicant *wpa_s)
 	wpa_s->disable_sa_query = 0;
 	wpa_s->testing_resend_assoc = 0;
 	wpa_s->ignore_sae_h2e_only = 0;
+	wpa_s->ft_rsnxe_used = 0;
 	wpa_s->reject_btm_req_reason = 0;
 	wpa_sm_set_test_assoc_ie(wpa_s->wpa, NULL);
 	os_free(wpa_s->get_pref_freq_list_override);

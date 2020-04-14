@@ -305,6 +305,13 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 	ftie_len = pos++;
 	rsnxe_used = wpa_key_mgmt_sae(sm->key_mgmt) && anonce &&
 		(sm->sae_pwe == 1 || sm->sae_pwe == 2);
+#ifdef CONFIG_TESTING_OPTIONS
+	if (anonce && sm->ft_rsnxe_used) {
+		rsnxe_used = sm->ft_rsnxe_used == 1;
+		wpa_printf(MSG_DEBUG, "TESTING: FT: Force RSNXE Used %d",
+			   rsnxe_used);
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 	if (wpa_key_mgmt_sha384(sm->key_mgmt)) {
 		struct rsn_ftie_sha384 *ftie;
 

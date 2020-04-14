@@ -3252,6 +3252,11 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 	case WPA_PARAM_USE_EXT_KEY_ID:
 		sm->use_ext_key_id = value;
 		break;
+#ifdef CONFIG_TESTING_OPTIONS
+	case WPA_PARAM_FT_RSNXE_USED:
+		sm->ft_rsnxe_used = value;
+		break;
+#endif /* CONFIG_TESTING_OPTIONS */
 	default:
 		break;
 	}

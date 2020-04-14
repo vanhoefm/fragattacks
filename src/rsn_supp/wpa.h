@@ -106,6 +106,7 @@ enum wpa_sm_conf_params {
 	WPA_PARAM_DENY_PTK0_REKEY,
 	WPA_PARAM_EXT_KEY_ID,
 	WPA_PARAM_USE_EXT_KEY_ID,
+	WPA_PARAM_FT_RSNXE_USED,
 };
 
 struct rsn_supp_config {
