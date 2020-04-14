@@ -1080,10 +1080,17 @@ def test_ap_ft_sae_h2e_downgrade_attack(dev, apdev):
                   force_initial_conn_to_first_ap=True,
                   return_after_initial=True)
         dev[0].scan_for_bss(hapd1.own_addr(), freq="2412")
-        dev[0].request("ROAM " + hapd1.own_addr())
-        ev = dev[0].wait_event(["CTRL-EVENT-ASSOC-REJECT"], timeout=10)
-        if ev is None:
-            raise Exception("Association not rejected")
+        if "OK" not in dev[0].request("ROAM " + hapd1.own_addr()):
+            raise Exception("ROAM command failed")
+        # The target AP is expected to discard Reassociation Response frame due
+        # to RSNXE Used mismatch. This will result in roaming timeout and
+        # returning back to the old AP.
+        ev = dev[0].wait_event(["CTRL-EVENT-ASSOC-REJECT",
+                                "CTRL-EVENT-CONNECTED"], timeout=10)
+        if ev and "CTRL-EVENT-ASSOC-REJECT" in ev:
+            pass
+        elif ev and hapd1.own_addr() in ev:
+            raise Exception("Roaming succeeded unexpectedly")
     finally:
         dev[0].set("sae_pwe", "0")
 
