@@ -1213,6 +1213,25 @@ def test_ap_ft_sae_h2e_rsnxe_mismatch(dev, apdev):
     finally:
         dev[0].set("sae_pwe", "0")
 
+def test_ap_ft_sae_rsnxe_used_mismatch(dev, apdev):
+    """FT-SAE AP and unexpected RSNXE Used in ReassocReq"""
+    try:
+        hapd0, hapd1 = start_ft_sae(dev[0], apdev, sae_pwe="2")
+        dev[0].set("sae_pwe", "0")
+        dev[0].set("ft_rsnxe_used", "1")
+        next = run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678",
+                         sae=True, return_after_initial=True)
+        if "OK" not in dev[0].request("ROAM " + next):
+            raise Exception("ROAM command failed")
+        # The target AP is expected to discard Reassociation Response frame due
+        # to RSNXE Used mismatch. This will result in roaming timeout and
+        # returning back to the old AP.
+        ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=5)
+        if ev and next in ev:
+            raise Exception("Roaming succeeded unexpectedly")
+    finally:
+        dev[0].set("sae_pwe", "0")
+
 def test_ap_ft_sae_pw_id(dev, apdev):
     """FT-SAE with Password Identifier"""
     if "SAE" not in dev[0].get_capability("auth_alg"):
