@@ -117,7 +117,7 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 	u8 buf[sizeof(struct ieee80211_mgmt) + 1024];
 	u8 *p = buf;
 	u16 reason = WLAN_REASON_UNSPECIFIED;
-	u16 status = WLAN_STATUS_SUCCESS;
+	int status = WLAN_STATUS_SUCCESS;
 	const u8 *p2p_dev_addr = NULL;
 
 	if (addr == NULL) {
@@ -606,17 +606,19 @@ skip_wpa_check:
 	    wpa_auth_sta_key_mgmt(sta->wpa_sm) == WPA_KEY_MGMT_OWE &&
 	    elems.owe_dh) {
 		u8 *npos;
+		u16 ret_status;
 
 		npos = owe_assoc_req_process(hapd, sta,
 					     elems.owe_dh, elems.owe_dh_len,
 					     p, sizeof(buf) - (p - buf),
-					     &status);
+					     &ret_status);
+		status = ret_status;
 		if (npos)
 			p = npos;
 
 		if (!npos &&
 		    status == WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED) {
-			hostapd_sta_assoc(hapd, addr, reassoc, status, buf,
+			hostapd_sta_assoc(hapd, addr, reassoc, ret_status, buf,
 					  p - buf);
 			return 0;
 		}
@@ -709,7 +711,8 @@ skip_wpa_check:
 
 fail:
 #ifdef CONFIG_IEEE80211R_AP
-	hostapd_sta_assoc(hapd, addr, reassoc, status, buf, p - buf);
+	if (status >= 0)
+		hostapd_sta_assoc(hapd, addr, reassoc, status, buf, p - buf);
 #endif /* CONFIG_IEEE80211R_AP */
 	hostapd_drv_sta_disassoc(hapd, sta->addr, reason);
 	ap_free_sta(hapd, sta);

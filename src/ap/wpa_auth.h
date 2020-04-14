@@ -441,7 +441,7 @@ void wpa_ft_process_auth(struct wpa_state_machine *sm, const u8 *bssid,
 				    u16 auth_transaction, u16 resp,
 				    const u8 *ies, size_t ies_len),
 			 void *ctx);
-u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
+int wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 			    size_t ies_len);
 int wpa_ft_action_rx(struct wpa_state_machine *sm, const u8 *data, size_t len);
 int wpa_ft_rrb_rx(struct wpa_authenticator *wpa_auth, const u8 *src_addr,

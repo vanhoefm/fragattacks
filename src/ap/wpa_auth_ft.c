@@ -3247,7 +3247,7 @@ void wpa_ft_process_auth(struct wpa_state_machine *sm, const u8 *bssid,
 }
 
 
-u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
+int wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 			    size_t ies_len)
 {
 	struct wpa_ft_ies parse;
@@ -3445,7 +3445,7 @@ u16 wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 	    !parse.rsnxe) {
 		wpa_printf(MSG_INFO,
 			   "FT: FTE indicated that STA uses RSNXE, but RSNXE was not included");
-		return WLAN_STATUS_UNSPECIFIED_FAILURE;
+		return -1; /* discard request */
 	}
 
 #ifdef CONFIG_OCV
