@@ -523,8 +523,6 @@ class Station():
 		frame = None
 		while self.test.next_trigger_is(trigger):
 			act = self.test.next_action(self)
-			print("Loop:", self.test.actions)
-			print("Loop:", [act.frame for act in self.test.actions])
 
 			# GetIp is a special case. It is only popped when we actually
 			# have an IP. So handle if first as a special case.
@@ -560,7 +558,7 @@ class Station():
 			elif act.action == Action.Reconnect:
 				# Full reconnect as AP, reassociation as client
 				self.daemon.reconnect(self)
-				break
+				#break
 
 			elif act.action == Action.Inject:
 				if act.delay != None:
@@ -574,9 +572,6 @@ class Station():
 				else:
 					frame = act.frame
 
-				print(repr(frame))
-				print(repr(act))
-				print(self.test.actions)
 				self.daemon.inject_mon(frame)
 				log(STATUS, "[Injected fragment] " + repr(frame))
 
@@ -1030,12 +1025,10 @@ def cleanup():
 	daemon.stop()
 
 def prepare_tests(test_name):
-	if test_name == "0":
+	if test_name == "ping":
 		# Simple ping as sanity check
-		test = PingTest(REQ_DHCP,
-				[Action(Action.Connected, Action.Roam),
-				 Action(Action.Connected, enc=False, delay=5),
-				 Action(Action.Connected, enc=False)])
+		test = PingTest(REQ_ARP,
+				[Action(Action.Connected, enc=True)])
 
 	elif test_name == "1":
 		# Check if the STA receives broadcast (useful test against AP)
