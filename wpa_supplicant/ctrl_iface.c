@@ -57,6 +57,10 @@
 #include "dpp_supplicant.h"
 #include "sme.h"
 
+#ifdef CONFIG_TESTING_OPTIONS
+#include <rsn_supp/wpa_i.h>
+#endif /* CONFIG_TESTING_OPTIONS */
+
 #ifdef __NetBSD__
 #include <net/if_ether.h>
 #elif !defined(__CYGWIN__) && !defined(CONFIG_NATIVE_WINDOWS)
@@ -9440,6 +9444,50 @@ static int wpa_supplicant_ctrl_iface_get_gtk(struct wpa_supplicant *wpa_s,
 	return pos;
 }
 
+
+static int wpas_ctrl_get_assoc_resp_ies(struct wpa_supplicant *wpa_s,
+					char *buf, size_t buflen)
+{
+	struct wpa_sm *sm = wpa_s->wpa;
+
+	if (sm->assoc_resp_ies == NULL)
+		return -1;
+
+	return wpa_snprintf_hex(buf, buflen, sm->assoc_resp_ies, sm->assoc_resp_ies_len);
+}
+
+
+static int wpas_ctrl_set_assoc_resp_ies(struct wpa_supplicant *wpa_s, const char *cmd)
+{
+	struct wpa_sm *sm = wpa_s->wpa;
+	size_t len;
+	u8 *buf;
+
+	len = os_strlen(cmd);
+	if (len & 1) return -1;
+	len /= 2;
+
+	buf = os_malloc(len);
+	if (buf == NULL)
+		return -1;
+
+	if (hexstr2bin(cmd, buf, len) < 0) {
+		os_free(buf);
+		return -1;
+	}
+
+	printf("\n\nCurrent value = ");
+	for (int i = 0; i < sm->assoc_resp_ies_len; ++i)
+		printf("%02X ", sm->assoc_resp_ies[i]);
+	printf("\n");
+
+	os_free(sm->assoc_resp_ies);
+	sm->assoc_resp_ies = buf;
+	sm->assoc_resp_ies_len = len;
+
+	return 0;
+}
+
 #endif /* CONFIG_TESTING_OPTIONS */
 
 
@@ -10785,6 +10833,11 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 			WLAN_REASON_CLASS2_FRAME_FROM_NONAUTH_STA);
 	} else if (os_strcmp(buf, "GET_GTK") == 0) {
 		reply_len = wpa_supplicant_ctrl_iface_get_gtk(wpa_s, reply, reply_size);
+	} else if (os_strcmp(buf, "GET_ASSOC_RESP_IES") == 0) {
+		reply_len = wpas_ctrl_get_assoc_resp_ies(wpa_s, reply, reply_size);
+	} else if (os_strncmp(buf, "SET_ASSOC_RESP_IES ", 19) == 0) {
+		if (wpas_ctrl_set_assoc_resp_ies(wpa_s, buf + 19) < 0)
+			reply_len = -1;
 #endif /* CONFIG_TESTING_OPTIONS */
 	} else if (os_strncmp(buf, "VENDOR_ELEM_ADD ", 16) == 0) {
 		if (wpas_ctrl_vendor_elem_add(wpa_s, buf + 16) < 0)
