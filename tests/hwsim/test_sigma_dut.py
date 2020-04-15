@@ -4229,3 +4229,76 @@ def test_sigma_dut_ap_transition_disable(dev, apdev, params):
             sigma_dut_cmd_check("ap_reset_default")
         finally:
             stop_sigma_dut(sigma)
+
+def test_sigma_dut_ft_rsnxe_used_mismatch(dev, apdev):
+    """sigma_dut controlled FT protocol with RSNXE Used mismatch"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname)
+
+    try:
+        ssid = "test-sae"
+        params = hostapd.wpa2_params(ssid=ssid)
+        params['wpa_key_mgmt'] = 'SAE FT-SAE'
+        params["ieee80211w"] = "2"
+        params['sae_password'] = "hello"
+        params['sae_pwe'] = "2"
+        params['mobility_domain'] = 'aabb'
+        bssid = apdev[0]['bssid'].replace(':', '')
+        params['nas_identifier'] = bssid + '.nas.example.com'
+        params['r1_key_holder'] = bssid
+        params['pmk_r1_push'] = '0'
+        params['r0kh'] = 'ff:ff:ff:ff:ff:ff * 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
+        params['r1kh'] = '00:00:00:00:00:00 00:00:00:00:00:00 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
+        hapd = hostapd.add_ap(apdev[0], params)
+        bssid = hapd.own_addr()
+
+        sigma_dut_cmd_check("sta_reset_default,interface,%s" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,AKMSuiteType,8;9" % (ifname, "test-sae", "hello"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"),
+                            timeout=10)
+        sigma_dut_wait_connected(ifname)
+        dev[0].dump_monitor()
+
+        bssid2 = apdev[1]['bssid'].replace(':', '')
+        params['nas_identifier'] = bssid2 + '.nas.example.com'
+        params['r1_key_holder'] = bssid2
+        hapd2 = hostapd.add_ap(apdev[1], params)
+        bssid2 = hapd2.own_addr()
+
+        sigma_dut_cmd_check("sta_reassoc,interface,%s,Channel,1,bssid,%s" % (ifname, bssid2))
+        count = 0
+        for i in range(5):
+            ev = dev[0].wait_event(["Trying to associate",
+                                    "CTRL-EVENT-CONNECTED"], timeout=10)
+            if ev is None:
+                raise Exception("Connection timed out")
+            if "CTRL-EVENT-CONNECTED" in ev:
+                break
+            count += 1
+        dev[0].dump_monitor()
+        if count != 1:
+            raise Exception("Unexpected number of association attempts for the first FT protocol exchange (expecting success)")
+
+        sigma_dut_cmd_check("sta_set_rfeature,interface,%s,prog,WPA3,ReassocReq_RSNXE_Used,1" % ifname)
+        sigma_dut_cmd_check("sta_reassoc,interface,%s,Channel,1,bssid,%s" % (ifname, bssid))
+        count = 0
+        for i in range(5):
+            ev = dev[0].wait_event(["Trying to associate",
+                                    "CTRL-EVENT-CONNECTED"], timeout=10)
+            if ev is None:
+                raise Exception("Connection timed out")
+            if "CTRL-EVENT-CONNECTED" in ev:
+                break
+            count += 1
+        dev[0].dump_monitor()
+        if count != 2:
+            raise Exception("Unexpected number of association attempts for the second FT protocol exchange (expecting failure)")
+
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
