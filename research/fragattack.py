@@ -107,13 +107,20 @@ class Action():
 	# Reconnect: force a reconnect
 	GetIp, Rekey, Reconnect, Roam, Inject, Func = range(6)
 
-	def __init__(self, trigger, action=Inject, func=None, enc=False, frame=None, inc_pn=1, delay=None):
+	def __init__(self, trigger, action=Inject, func=None, enc=False, frame=None, inc_pn=1, delay=None, wait=None):
 		self.trigger = trigger
 		self.action = action
 		self.func = func
 
 		if self.func != None:
 			self.action = Action.Func
+
+		# Take into account default wait values. A wait value of True means the next
+		# Action will not be immediately executed if it has the same trigger (instead
+		# we have to wait on a new trigger e.g. after rekey, reconnect, roam).
+		self.wait = wait
+		if self.wait == None:
+			self.wait = action in [Action.Rekey, Action.Reconnect, Action.Roam]
 
 		# Specific to fragment injection
 		self.encrypted = enc
@@ -548,17 +555,17 @@ class Station():
 			elif act.action == Action.Rekey:
 				# Force rekey as AP, wait on rekey as client
 				self.daemon.rekey(self)
-				break
+				if act.wait: break
 
 			elif act.action == Action.Roam:
 				# Roam as client, TODO XXX what was AP?
 				self.daemon.roam(self)
-				break
+				if act.wait: break
 
 			elif act.action == Action.Reconnect:
 				# Full reconnect as AP, reassociation as client
 				self.daemon.reconnect(self)
-				#break
+				if act.wait: break
 
 			elif act.action == Action.Inject:
 				if act.delay != None:
