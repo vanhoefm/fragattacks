@@ -2647,6 +2647,13 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 	}
 	rsnxe_used = (auth_alg == WLAN_AUTH_FT) &&
 		(conf->sae_pwe == 1 || conf->sae_pwe == 2);
+#ifdef CONFIG_TESTING_OPTIONS
+	if (sm->wpa_auth->conf.ft_rsnxe_used) {
+		rsnxe_used = sm->wpa_auth->conf.ft_rsnxe_used == 1;
+		wpa_printf(MSG_DEBUG, "TESTING: FT: Force RSNXE Used %d",
+			   rsnxe_used);
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 	res = wpa_write_ftie(conf, use_sha384, r0kh_id, r0kh_id_len,
 			     anonce, snonce, pos, end - pos,
 			     subelem, subelem_len, rsnxe_used);

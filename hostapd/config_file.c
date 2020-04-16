@@ -4215,6 +4215,8 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		bss->no_beacon_rsnxe = atoi(pos);
 	} else if (os_strcmp(buf, "skip_prune_assoc") == 0) {
 		bss->skip_prune_assoc = atoi(pos);
+	} else if (os_strcmp(buf, "ft_rsnxe_used") == 0) {
+		bss->ft_rsnxe_used = atoi(pos);
 #endif /* CONFIG_TESTING_OPTIONS */
 #ifdef CONFIG_SAE
 	} else if (os_strcmp(buf, "sae_password") == 0) {

@@ -238,6 +238,7 @@ struct wpa_auth_config {
 	unsigned int rsnxe_override_ft_set:1;
 	unsigned int gtk_rsc_override_set:1;
 	unsigned int igtk_rsc_override_set:1;
+	int ft_rsnxe_used;
 #endif /* CONFIG_TESTING_OPTIONS */
 #ifdef CONFIG_P2P
 	u8 ip_addr_go[4];
@@ -522,5 +523,6 @@ int wpa_auth_resend_group_m1(struct wpa_state_machine *sm,
 			     void *ctx1, void *ctx2);
 int wpa_auth_rekey_gtk(struct wpa_authenticator *wpa_auth);
 void wpa_auth_set_ptk_rekey_timer(struct wpa_state_machine *sm);
+void wpa_auth_set_ft_rsnxe_used(struct wpa_authenticator *wpa_auth, int val);
 
 #endif /* WPA_AUTH_H */

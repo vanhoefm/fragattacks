@@ -5459,4 +5459,11 @@ int wpa_auth_rekey_gtk(struct wpa_authenticator *wpa_auth)
 	return eloop_register_timeout(0, 0, wpa_rekey_gtk, wpa_auth, NULL);
 }
 
+
+void wpa_auth_set_ft_rsnxe_used(struct wpa_authenticator *wpa_auth, int val)
+{
+	if (wpa_auth)
+		wpa_auth->conf.ft_rsnxe_used = val;
+}
+
 #endif /* CONFIG_TESTING_OPTIONS */

@@ -1477,6 +1477,12 @@ static int hostapd_ctrl_iface_set(struct hostapd_data *hapd, char *cmd)
 			if (hapd->started)
 				hostapd_setup_sae_pt(hapd->conf);
 		}
+
+#ifdef CONFIG_TESTING_OPTIONS
+		if (os_strcmp(cmd, "ft_rsnxe_used") == 0)
+			wpa_auth_set_ft_rsnxe_used(hapd->wpa_auth,
+						   hapd->conf->ft_rsnxe_used);
+#endif /* CONFIG_TESTING_OPTIONS */
 	}
 
 	return ret;

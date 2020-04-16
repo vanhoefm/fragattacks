@@ -174,6 +174,7 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 			  wpabuf_len(conf->igtk_rsc_override));
 		wconf->igtk_rsc_override_set = 1;
 	}
+	wconf->ft_rsnxe_used = conf->ft_rsnxe_used;
 #endif /* CONFIG_TESTING_OPTIONS */
 #ifdef CONFIG_P2P
 	os_memcpy(wconf->ip_addr_go, conf->ip_addr_go, 4);
