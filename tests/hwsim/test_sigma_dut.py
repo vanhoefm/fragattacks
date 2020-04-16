@@ -4302,3 +4302,37 @@ def test_sigma_dut_ft_rsnxe_used_mismatch(dev, apdev):
         sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
     finally:
         stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_ft_rsnxe_used_mismatch(dev, apdev, params):
+    """sigma_dut controlled AP with FT and RSNXE Used mismatch"""
+    logdir = params['prefix'] + ".sigma-hostapd"
+    conffile = params['prefix'] + ".sigma-conf"
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng,DOMAIN,aabb")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,AKMSuiteType,8;9,SAEPasswords,hello,PMF,Required")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            with open("/tmp/sigma_dut-ap.conf", "rb") as f:
+                with open(conffile, "wb") as f2:
+                    f2.write(f.read())
+
+            dev[0].connect("test-sae", key_mgmt="FT-SAE", sae_password="hello",
+                           ieee80211w="2", scan_freq="2412")
+
+            sigma_dut_cmd_check("ap_set_rfeature,NAME,AP,type,WPA3,ReassocResp_RSNXE_Used,1")
+            # This would need to be followed by FT protocol roaming test, but
+            # that is not currently convenient to implement, so for now, this
+            # test is based on manual inspection of hostapd getting configured
+            # properly.
+
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].wait_disconnected()
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
