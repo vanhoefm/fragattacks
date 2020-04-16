@@ -996,7 +996,7 @@ def test_ap_ft_over_ds_pull_vlan(dev, apdev):
 def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None,
                  rsne_override=None, rsnxe_override=None,
                  no_beacon_rsnxe2=False, ext_key_id=False,
-                 skip_prune_assoc=False):
+                 skip_prune_assoc=False, ft_rsnxe_used=False):
     if "SAE" not in dev.get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
     ssid = "test-ft"
@@ -1016,6 +1016,8 @@ def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None,
         params['extended_key_id'] = '1'
     if skip_prune_assoc:
         params['skip_prune_assoc'] = '1'
+    if ft_rsnxe_used:
+        params['ft_rsnxe_used'] = '1'
     hapd0 = hostapd.add_ap(apdev[0], params)
     params = ft_params2(ssid=ssid, passphrase=passphrase)
     params['wpa_key_mgmt'] = "FT-SAE"
@@ -1033,6 +1035,8 @@ def start_ft_sae(dev, apdev, wpa_ptk_rekey=None, sae_pwe=None,
         params['extended_key_id'] = '1'
     if skip_prune_assoc:
         params['skip_prune_assoc'] = '1'
+    if ft_rsnxe_used:
+        params['ft_rsnxe_used'] = '1'
     hapd1 = hostapd.add_ap(apdev[1], params)
     key_mgmt = hapd1.get_config()['key_mgmt']
     if key_mgmt.split(' ')[0] != "FT-SAE":
@@ -1223,12 +1227,39 @@ def test_ap_ft_sae_rsnxe_used_mismatch(dev, apdev):
                          sae=True, return_after_initial=True)
         if "OK" not in dev[0].request("ROAM " + next):
             raise Exception("ROAM command failed")
-        # The target AP is expected to discard Reassociation Response frame due
+        # The target AP is expected to discard Reassociation Request frame due
         # to RSNXE Used mismatch. This will result in roaming timeout and
         # returning back to the old AP.
         ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=5)
         if ev and next in ev:
             raise Exception("Roaming succeeded unexpectedly")
+    finally:
+        dev[0].set("sae_pwe", "0")
+
+def test_ap_ft_sae_rsnxe_used_mismatch2(dev, apdev):
+    """FT-SAE AP and unexpected RSNXE Used in ReassocResp"""
+    try:
+        hapd0, hapd1 = start_ft_sae(dev[0], apdev, sae_pwe="0",
+                                    ft_rsnxe_used=True)
+        dev[0].set("sae_pwe", "2")
+        next = run_roams(dev[0], apdev, hapd0, hapd1, "test-ft", "12345678",
+                         sae=True, return_after_initial=True)
+        if "OK" not in dev[0].request("ROAM " + next):
+            raise Exception("ROAM command failed")
+        # The STA is expected to discard Reassociation Response frame due to
+        # RSNXE Used mismatch. This will result in returning back to the old AP.
+        ev = dev[0].wait_disconnected()
+        if next not in ev:
+            raise Exception("Unexpected disconnection BSSID: " + ev)
+        if "reason=13 locally_generated=1" not in ev:
+            raise Exception("Unexpected disconnection reason: " + ev)
+        ev = dev[0].wait_connected()
+        if next in ev:
+            raise Exception("Roaming succeeded unexpectedly")
+
+        hapd0.set("ft_rsnxe_used", "0")
+        hapd1.set("ft_rsnxe_used", "0")
+        dev[0].roam(next);
     finally:
         dev[0].set("sae_pwe", "0")
 
