@@ -2,13 +2,14 @@
 
 ## Installation
 
-1. Install the dependencies in `../../requirements.txt`.
+1. Install the dependencies in `../../requirements.txt` (Python3).
 
 2. Compile the modified `hostapd` and `wpa_supplicant` using `cd research && ./build.sh`.
    If this fails install the required dependencies. The build.sh script is also very
    trivial so you can manually execute each command in that script to see
    where it fails and how to fix it.
 
+3. Before proceding, make sure to have pulled all submodules (i.e., libwifi).
 
 ## Example Usage
 
