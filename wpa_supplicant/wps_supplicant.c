@@ -484,7 +484,7 @@ static int wpa_supplicant_wps_cred(void *ctx,
 	case WPS_ENCR_NONE:
 		break;
 	case WPS_ENCR_TKIP:
-		ssid->pairwise_cipher = WPA_CIPHER_TKIP;
+		ssid->pairwise_cipher = WPA_CIPHER_TKIP | WPA_CIPHER_CCMP;
 		break;
 	case WPS_ENCR_AES:
 		ssid->pairwise_cipher = WPA_CIPHER_CCMP;
@@ -525,7 +525,7 @@ static int wpa_supplicant_wps_cred(void *ctx,
 	case WPS_AUTH_WPAPSK:
 		ssid->auth_alg = WPA_AUTH_ALG_OPEN;
 		ssid->key_mgmt = WPA_KEY_MGMT_PSK;
-		ssid->proto = WPA_PROTO_WPA;
+		ssid->proto = WPA_PROTO_WPA | WPA_PROTO_RSN;
 		break;
 	case WPS_AUTH_WPA2PSK:
 		ssid->auth_alg = WPA_AUTH_ALG_OPEN;
