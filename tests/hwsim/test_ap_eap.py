@@ -24,7 +24,7 @@ import tempfile
 import hwsim_utils
 from hwsim import HWSimRadio
 import hostapd
-from utils import HwsimSkip, alloc_fail, fail_test, skip_with_fips, wait_fail_trigger, require_under_vm
+from utils import *
 from wpasupplicant import WpaSupplicant
 from test_ap_psk import check_mib, find_wpas_process, read_process_memory, verify_not_present, get_key_locations, set_test_assoc_ie
 
@@ -3304,6 +3304,7 @@ def test_ap_wpa2_eap_psk_oom(dev, apdev):
 
 def test_ap_wpa_eap_peap_eap_mschapv2(dev, apdev):
     """WPA-Enterprise connection using EAP-PEAP/EAP-MSCHAPv2"""
+    skip_without_tkip(dev[0])
     check_eap_capa(dev[0], "MSCHAPV2")
     params = hostapd.wpa_eap_params(ssid="test-wpa-eap")
     hapd = hostapd.add_ap(apdev[0], params)
@@ -7317,6 +7318,7 @@ def test_ap_wpa2_eap_sake_no_control_port(dev, apdev):
 
 def test_ap_wpa3_eap_transition_disable(dev, apdev):
     """WPA3-Enterprise transition disable indication"""
+    skip_without_tkip(dev[0])
     params = hostapd.wpa2_eap_params(ssid="test-wpa3-eap")
     params["ieee80211w"] = "1"
     params['transition_disable'] = '0x04'

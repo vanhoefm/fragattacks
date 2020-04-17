@@ -14,7 +14,7 @@ import hwsim_utils
 from hostapd import HostapdGlobal
 from hostapd import Hostapd
 import hostapd
-from utils import HwsimSkip, skip_with_fips
+from utils import *
 from wlantest import Wlantest
 from test_ap_vht import vht_supported
 from test_wep import check_wep_capa
@@ -291,6 +291,8 @@ def test_ap_wpa2_tdls_double_tpk_m2(dev, apdev):
 def test_ap_wpa_tdls(dev, apdev):
     """WPA-PSK AP and two stations using TDLS"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
+    skip_without_tkip(dev[1])
     hapd = hostapd.add_ap(apdev[0],
                           hostapd.wpa_params(ssid="test-wpa-psk",
                                              passphrase="12345678"))
@@ -303,6 +305,7 @@ def test_ap_wpa_tdls(dev, apdev):
 def test_ap_wpa_mixed_tdls(dev, apdev):
     """WPA+WPA2-PSK AP and two stations using TDLS"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     hapd = hostapd.add_ap(apdev[0],
                           hostapd.wpa_mixed_params(ssid="test-wpa-mixed-psk",
                                                    passphrase="12345678"))

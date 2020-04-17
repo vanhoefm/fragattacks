@@ -41,8 +41,7 @@ import xml.etree.ElementTree as ET
 import hwsim_utils
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import HwsimSkip, alloc_fail, fail_test, skip_with_fips
-from utils import wait_fail_trigger, clear_regdom
+from utils import *
 from test_ap_eap import int_eap_server_params
 from test_sae import check_sae_capab
 from test_wep import check_wep_capa
@@ -56,6 +55,7 @@ def wps_start_ap(apdev, ssid="test-wps-conf"):
 @remote_compatible
 def test_ap_wps_init(dev, apdev):
     """Initial AP configuration with first WPS Enrollee"""
+    skip_without_tkip(dev[0])
     ssid = "test-wps"
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": ssid, "eap_server": "1", "wps_state": "1"})
@@ -111,6 +111,7 @@ def test_ap_wps_init(dev, apdev):
 
 def test_ap_wps_init_2ap_pbc(dev, apdev):
     """Initial two-radio AP configuration with first WPS PBC Enrollee"""
+    skip_without_tkip(dev[0])
     ssid = "test-wps"
     params = {"ssid": ssid, "eap_server": "1", "wps_state": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
@@ -147,6 +148,7 @@ def test_ap_wps_init_2ap_pbc(dev, apdev):
 
 def test_ap_wps_init_2ap_pin(dev, apdev):
     """Initial two-radio AP configuration with first WPS PIN Enrollee"""
+    skip_without_tkip(dev[0])
     ssid = "test-wps"
     params = {"ssid": ssid, "eap_server": "1", "wps_state": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
@@ -411,6 +413,7 @@ def test_ap_wps_conf_pin(dev, apdev):
 
 def test_ap_wps_conf_pin_mixed_mode(dev, apdev):
     """WPS PIN provisioning with configured AP (WPA+WPA2)"""
+    skip_without_tkip(dev[0])
     ssid = "test-wps-conf-pin-mixed"
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": ssid, "eap_server": "1", "wps_state": "2",
@@ -588,6 +591,7 @@ def test_ap_wps_reg_connect_zero_len_ap_pin(dev, apdev):
 
 def test_ap_wps_reg_connect_mixed_mode(dev, apdev):
     """WPS registrar using AP PIN to connect (WPA+WPA2)"""
+    skip_without_tkip(dev[0])
     ssid = "test-wps-reg-ap-pin"
     appin = "12345670"
     hostapd.add_ap(apdev[0],
@@ -786,6 +790,7 @@ def test_ap_wps_reg_config_ext_processing(dev, apdev):
 def test_ap_wps_reg_config_tkip(dev, apdev):
     """WPS registrar configuring AP to use TKIP and AP upgrading to TKIP+CCMP"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     ssid = "test-wps-init-ap"
     appin = "12345670"
     hostapd.add_ap(apdev[0],
@@ -1985,6 +1990,7 @@ def _test_ap_wps_er_learn_oom(dev, apdev):
 
 def test_ap_wps_fragmentation(dev, apdev):
     """WPS with fragmentation in EAP-WSC and mixed mode WPA+WPA2"""
+    skip_without_tkip(dev[0])
     ssid = "test-wps-fragmentation"
     appin = "12345670"
     hapd = hostapd.add_ap(apdev[0],
@@ -2458,6 +2464,7 @@ def test_ap_wps_pin_request_file(dev, apdev):
 
 def test_ap_wps_auto_setup_with_config_file(dev, apdev):
     """WPS auto-setup with configuration file"""
+    skip_without_tkip(dev[0])
     conffile = "/tmp/ap_wps_auto_setup_with_config_file.conf"
     ifname = apdev[0]['ifname']
     try:
@@ -3642,6 +3649,7 @@ def test_ap_wps_disabled(dev, apdev):
 
 def test_ap_wps_mixed_cred(dev, apdev):
     """WPS 2.0 STA merging mixed mode WPA/WPA2 credentials"""
+    skip_without_tkip(dev[0])
     ssid = "test-wps-wep"
     params = {"ssid": ssid, "eap_server": "1", "wps_state": "2",
               "skip_cred_build": "1", "extra_cred": "wps-mixed-cred"}
@@ -10134,6 +10142,7 @@ def test_ap_wps_pbc_in_m1(dev, apdev):
 
 def test_ap_wps_pbc_mac_addr_change(dev, apdev, params):
     """WPS M1 with MAC address change"""
+    skip_without_tkip(dev[0])
     ssid = "test-wps-mac-addr-change"
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": ssid, "eap_server": "1", "wps_state": "1"})
@@ -10284,6 +10293,8 @@ def run_ap_wps_conf_pin_cipher(dev, apdev, cipher):
 
 def test_ap_wps_and_sae(dev, apdev):
     """Initial AP configuration with first WPS Enrollee and adding SAE"""
+    skip_without_tkip(dev[0])
+    skip_without_tkip(dev[1])
     try:
         run_ap_wps_and_sae(dev, apdev)
     finally:

@@ -11,7 +11,7 @@ import os
 import hostapd
 import hwsim_utils
 from wpasupplicant import WpaSupplicant
-from utils import HwsimSkip, skip_with_fips
+from utils import *
 from test_rfkill import get_rfkill
 from test_wep import check_wep_capa
 
@@ -56,6 +56,7 @@ def test_wext_wpa2_psk(dev, apdev):
 def test_wext_wpa_psk(dev, apdev):
     """WEXT driver interface with WPA-PSK"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     wpas = get_wext_interface()
 
     params = hostapd.wpa_params(ssid="wext-wpa-psk", passphrase="12345678")

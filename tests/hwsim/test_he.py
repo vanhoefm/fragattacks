@@ -956,6 +956,7 @@ def test_he_use_sta_nsts(dev, apdev):
 
 def test_he_tkip(dev, apdev):
     """HE and TKIP"""
+    skip_without_tkip(dev[0])
     try:
         hapd = None
         params = {"ssid": "he",

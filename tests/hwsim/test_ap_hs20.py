@@ -17,7 +17,7 @@ import socket
 import subprocess
 
 import hostapd
-from utils import HwsimSkip, skip_with_fips, alloc_fail, fail_test, wait_fail_trigger
+from utils import *
 import hwsim_utils
 from tshark import run_tshark
 from wlantest import Wlantest
@@ -5989,6 +5989,9 @@ def test_ap_hs20_set_profile_failures(dev, apdev):
 
 def test_ap_hs20_unexpected(dev, apdev):
     """Unexpected Hotspot 2.0 AP configuration"""
+    skip_without_tkip(dev[0])
+    skip_without_tkip(dev[1])
+    skip_without_tkip(dev[2])
     check_eap_capa(dev[0], "MSCHAPV2")
     bssid = apdev[0]['bssid']
     params = hostapd.wpa_eap_params(ssid="test-hs20-fake")

@@ -94,6 +94,12 @@ def check_ext_key_id_capa(dev):
     if (int(res, 0) & 0x8000000000000000) == 0:
         raise HwsimSkip("Extended Key ID not supported")
 
+def skip_without_tkip(dev):
+    res = dev.get_capability("fips")
+    if "TKIP" not in dev.get_capability("pairwise") or \
+       "TKIP" not in dev.get_capability("group"):
+        raise HwsimSkip("Cipher TKIP not supported")
+
 def get_phy(ap, ifname=None):
     phy = "phy3"
     try:

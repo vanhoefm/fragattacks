@@ -16,8 +16,7 @@ import binascii
 import hwsim_utils
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger, \
-    radiotap_build, start_monitor, stop_monitor
+from utils import *
 from tshark import run_tshark, run_tshark_json
 from test_ap_ht import set_world_reg
 from test_sae import build_sae_commit, sae_rx_commit_token_req
@@ -514,6 +513,7 @@ def test_mesh_secure_gcmp_256_gmac_256(dev, apdev):
 def test_mesh_secure_invalid_pairwise_cipher(dev, apdev):
     """Secure mesh and invalid group cipher"""
     check_mesh_support(dev[0], secure=True)
+    skip_without_tkip(dev[0])
     dev[0].request("SET sae_groups ")
     id = add_mesh_secure_net(dev[0], pairwise="TKIP", group="CCMP")
     if dev[0].mesh_group_add(id) != None:
@@ -524,6 +524,7 @@ def test_mesh_secure_invalid_pairwise_cipher(dev, apdev):
 
 def test_mesh_secure_invalid_group_cipher(dev, apdev):
     """Secure mesh and invalid group cipher"""
+    skip_without_tkip(dev[0])
     check_mesh_support(dev[0], secure=True)
     dev[0].request("SET sae_groups ")
     id = add_mesh_secure_net(dev[0], pairwise="CCMP", group="TKIP")

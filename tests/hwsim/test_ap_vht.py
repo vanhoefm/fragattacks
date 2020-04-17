@@ -1117,6 +1117,7 @@ def test_ap_vht_use_sta_nsts(dev, apdev):
 
 def test_ap_vht_tkip(dev, apdev):
     """VHT and TKIP"""
+    skip_without_tkip(dev[0])
     try:
         hapd = None
         params = {"ssid": "vht",

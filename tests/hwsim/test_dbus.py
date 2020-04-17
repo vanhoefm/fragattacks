@@ -24,7 +24,7 @@ except ImportError:
 
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import HwsimSkip, alloc_fail, fail_test
+from utils import *
 from p2p_utils import *
 from test_ap_tdls import connect_2sta_open
 from test_ap_eap import check_altsubject_match_support
@@ -5553,6 +5553,7 @@ def test_dbus_ap_scan(dev, apdev):
 
 def test_dbus_connect_wpa_eap(dev, apdev):
     """D-Bus AddNetwork and connection with WPA+WPA2-Enterprise AP"""
+    skip_without_tkip(dev[0])
     (bus, wpas_obj, path, if_obj) = prepare_dbus(dev[0])
     iface = dbus.Interface(if_obj, WPAS_DBUS_IFACE)
 

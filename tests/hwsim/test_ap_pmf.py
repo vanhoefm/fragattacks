@@ -13,8 +13,7 @@ logger = logging.getLogger()
 
 import hwsim_utils
 import hostapd
-from utils import alloc_fail, fail_test, wait_fail_trigger, HwsimSkip, \
-    radiotap_build, start_monitor, stop_monitor
+from utils import *
 from wlantest import Wlantest
 from wpasupplicant import WpaSupplicant
 
@@ -854,6 +853,7 @@ def run_ap_pmf_inject_data(dev, apdev):
 
 def test_ap_pmf_tkip_reject(dev, apdev):
     """Mixed mode BSS and MFP-enabled AP rejecting TKIP"""
+    skip_without_tkip(dev[0])
     params = hostapd.wpa2_params(ssid="test-pmf", passphrase="12345678")
     params['wpa'] = '3'
     params["ieee80211w"] = "1"

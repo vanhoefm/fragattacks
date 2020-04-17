@@ -333,6 +333,7 @@ def test_ap_wpa2_sha256_ptk_rekey_ap(dev, apdev):
 def test_ap_wpa_ptk_rekey(dev, apdev):
     """WPA-PSK/TKIP AP and PTK rekey enforced by station"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     ssid = "test-wpa-psk"
     passphrase = 'qwertyuiop'
     params = hostapd.wpa_params(ssid=ssid, passphrase=passphrase)
@@ -349,6 +350,7 @@ def test_ap_wpa_ptk_rekey(dev, apdev):
 def test_ap_wpa_ptk_rekey_ap(dev, apdev):
     """WPA-PSK/TKIP AP and PTK rekey enforced by AP"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     ssid = "test-wpa-psk"
     passphrase = 'qwertyuiop'
     params = hostapd.wpa_params(ssid=ssid, passphrase=passphrase)
@@ -494,6 +496,7 @@ def test_ap_wpa2_gtk_rekey_request(dev, apdev):
 def test_ap_wpa_gtk_rekey(dev, apdev):
     """WPA-PSK/TKIP AP and GTK rekey enforced by AP"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     ssid = "test-wpa-psk"
     passphrase = 'qwertyuiop'
     params = hostapd.wpa_params(ssid=ssid, passphrase=passphrase)
@@ -1565,6 +1568,7 @@ def test_ap_wpa2_psk_ext_eapol_type_diff(dev, apdev):
 @remote_compatible
 def test_ap_wpa_psk_ext_eapol(dev, apdev):
     """WPA2-PSK AP using external EAPOL supplicant"""
+    skip_without_tkip(dev[0])
     (bssid, ssid, hapd, snonce, pmk, addr, wpae) = eapol_test(apdev[0], dev[0],
                                                               wpa2=False)
 
@@ -2803,6 +2807,7 @@ def test_ap_wpa2_psk_incorrect_passphrase(dev, apdev):
 def test_ap_wpa_ie_parsing(dev, apdev):
     """WPA IE parsing"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     ssid = "test-wpa-psk"
     passphrase = 'qwertyuiop'
     params = hostapd.wpa_params(ssid=ssid, passphrase=passphrase)
@@ -3034,6 +3039,7 @@ def test_ap_wpa2_psk_assoc_rsn_pmkid(dev, apdev):
 
 def test_ap_wpa_psk_rsn_pairwise(dev, apdev):
     """WPA-PSK AP and only rsn_pairwise set"""
+    skip_without_tkip(dev[0])
     params = {"ssid": "wpapsk", "wpa": "1", "wpa_key_mgmt": "WPA-PSK",
               "rsn_pairwise": "TKIP", "wpa_passphrase": "1234567890"}
     hapd = hostapd.add_ap(apdev[0], params)
@@ -3154,6 +3160,7 @@ def test_ap_wpa2_disable_eapol_retry_group(dev, apdev):
 
 def test_ap_wpa2_psk_mic_0(dev, apdev):
     """WPA2-PSK/TKIP and MIC=0 in EAPOL-Key msg 3/4"""
+    skip_without_tkip(dev[0])
     bssid = apdev[0]['bssid']
     ssid = "test-wpa2-psk"
     passphrase = 'qwertyuiop'

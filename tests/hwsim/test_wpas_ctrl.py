@@ -17,12 +17,13 @@ import hostapd
 import hwsim_utils
 from hwsim import HWSimRadio
 from wpasupplicant import WpaSupplicant
-from utils import alloc_fail, fail_test
+from utils import *
 from test_wpas_ap import wait_ap_ready
 
 @remote_compatible
 def test_wpas_ctrl_network(dev):
     """wpa_supplicant ctrl_iface network set/get"""
+    skip_without_tkip(dev[0])
     id = dev[0].add_network()
 
     if "FAIL" not in dev[0].request("SET_NETWORK " + str(id)):

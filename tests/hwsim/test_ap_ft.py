@@ -442,6 +442,7 @@ def test_ap_ft_many_vlan(dev, apdev):
 
 def test_ap_ft_mixed(dev, apdev):
     """WPA2-PSK-FT mixed-mode AP"""
+    skip_without_tkip(dev[0])
     ssid = "test-ft-mixed"
     passphrase = "12345678"
 

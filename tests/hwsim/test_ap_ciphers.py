@@ -13,7 +13,7 @@ import subprocess
 
 import hwsim_utils
 import hostapd
-from utils import HwsimSkip, skip_with_fips, require_under_vm
+from utils import *
 from wlantest import Wlantest
 from wpasupplicant import WpaSupplicant
 
@@ -78,12 +78,14 @@ def check_group_mgmt_cipher(dev, ap, cipher, sta_req_cipher=None):
 def test_ap_cipher_tkip(dev, apdev):
     """WPA2-PSK/TKIP connection"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     check_cipher(dev[0], apdev[0], "TKIP")
 
 @remote_compatible
 def test_ap_cipher_tkip_countermeasures_ap(dev, apdev):
     """WPA-PSK/TKIP countermeasures (detected by AP)"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     testfile = "/sys/kernel/debug/ieee80211/%s/netdev:%s/tkip_mic_test" % (dev[0].get_driver_status_field("phyname"), dev[0].ifname)
     if dev[0].cmd_execute(["ls", testfile])[0] != 0:
         raise HwsimSkip("tkip_mic_test not supported in mac80211")
@@ -118,6 +120,7 @@ def test_ap_cipher_tkip_countermeasures_ap(dev, apdev):
 def test_ap_cipher_tkip_countermeasures_ap_mixed_mode(dev, apdev):
     """WPA+WPA2-PSK/TKIP countermeasures (detected by mixed mode AP)"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     testfile = "/sys/kernel/debug/ieee80211/%s/netdev:%s/tkip_mic_test" % (dev[0].get_driver_status_field("phyname"), dev[0].ifname)
     if dev[0].cmd_execute(["ls", testfile])[0] != 0:
         raise HwsimSkip("tkip_mic_test not supported in mac80211")
@@ -166,6 +169,7 @@ def test_ap_cipher_tkip_countermeasures_ap_mixed_mode(dev, apdev):
 def test_ap_cipher_tkip_countermeasures_sta(dev, apdev):
     """WPA-PSK/TKIP countermeasures (detected by STA)"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     params = {"ssid": "tkip-countermeasures",
               "wpa_passphrase": "12345678",
               "wpa": "1",
@@ -202,6 +206,7 @@ def test_ap_cipher_tkip_countermeasures_sta2(dev, apdev, params):
     if not params['long']:
         raise HwsimSkip("Skip test case with long duration due to --long not specified")
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     params = {"ssid": "tkip-countermeasures",
               "wpa_passphrase": "12345678",
               "wpa": "1",
@@ -365,6 +370,7 @@ def test_ap_cipher_gcmp_ccmp(dev, apdev, params):
 def test_ap_cipher_mixed_wpa_wpa2(dev, apdev):
     """WPA2-PSK/CCMP/ and WPA-PSK/TKIP mixed configuration"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     ssid = "test-wpa-wpa2-psk"
     passphrase = "12345678"
     params = {"ssid": ssid,
@@ -516,6 +522,7 @@ def test_ap_cipher_replay_protection_ap_ccmp(dev, apdev):
 
 def test_ap_cipher_replay_protection_ap_tkip(dev, apdev):
     """TKIP replay protection on AP"""
+    skip_without_tkip(dev[0])
     run_ap_cipher_replay_protection_ap(dev, apdev, "TKIP")
 
 def test_ap_cipher_replay_protection_ap_gcmp(dev, apdev):
@@ -572,6 +579,7 @@ def test_ap_cipher_replay_protection_sta_ccmp(dev, apdev):
 
 def test_ap_cipher_replay_protection_sta_tkip(dev, apdev):
     """TKIP replay protection on STA (TK)"""
+    skip_without_tkip(dev[0])
     run_ap_cipher_replay_protection_sta(dev, apdev, "TKIP")
 
 def test_ap_cipher_replay_protection_sta_gcmp(dev, apdev):
@@ -586,6 +594,7 @@ def test_ap_cipher_replay_protection_sta_gtk_ccmp(dev, apdev):
 
 def test_ap_cipher_replay_protection_sta_gtk_tkip(dev, apdev):
     """TKIP replay protection on STA (GTK)"""
+    skip_without_tkip(dev[0])
     run_ap_cipher_replay_protection_sta(dev, apdev, "TKIP", gtk=True)
 
 def test_ap_cipher_replay_protection_sta_gtk_gcmp(dev, apdev):
@@ -987,6 +996,7 @@ def test_ap_wpa2_plaintext_group_m1_pmf(dev, apdev):
 
 def test_ap_wpa2_gtk_initial_rsc_tkip(dev, apdev):
     """Initial group cipher RSC (TKIP)"""
+    skip_without_tkip(dev[0])
     run_ap_wpa2_gtk_initial_rsc(dev, apdev, "TKIP")
 
 def test_ap_wpa2_gtk_initial_rsc_ccmp(dev, apdev):
