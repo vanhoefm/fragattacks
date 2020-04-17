@@ -799,9 +799,9 @@ def test_ap_wps_reg_config_tkip(dev, apdev):
     skip_without_tkip(dev[0])
     ssid = "test-wps-init-ap"
     appin = "12345670"
-    hostapd.add_ap(apdev[0],
-                   {"ssid": ssid, "eap_server": "1", "wps_state": "1",
-                    "ap_pin": appin})
+    hapd = hostapd.add_ap(apdev[0],
+                          {"ssid": ssid, "eap_server": "1", "wps_state": "1",
+                           "ap_pin": appin})
     logger.info("WPS configuration step")
     dev[0].flush_scan_cache()
     dev[0].request("SET wps_version_number 0x10")
@@ -822,8 +822,12 @@ def test_ap_wps_reg_config_tkip(dev, apdev):
         raise Exception("Not fully connected: wpa_state={} bssid={}".format(status['wpa_state'], status['bssid']))
     if status['ssid'] != new_ssid:
         raise Exception("Unexpected SSID")
-    if status['pairwise_cipher'] != 'CCMP' or status['group_cipher'] != 'TKIP':
+    if status['pairwise_cipher'] != 'CCMP':
         raise Exception("Unexpected encryption configuration")
+    if status['group_cipher'] != 'TKIP':
+        conf = hapd.request("GET_CONFIG")
+        if "group_cipher=CCMP" not in conf or status['group_cipher'] != 'CCMP':
+            raise Exception("Unexpected encryption configuration")
     if status['key_mgmt'] != 'WPA2-PSK':
         raise Exception("Unexpected key_mgmt")
 
