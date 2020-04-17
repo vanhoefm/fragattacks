@@ -196,6 +196,9 @@ class Hostapd:
 
     def set(self, field, value):
         if "OK" not in self.request("SET " + field + " " + value):
+            if "TKIP" in value and (field == "wpa_pairwise" or \
+                                    field == "rsn_pairwise"):
+                raise utils.HwsimSkip("Cipher TKIP not supported")
             raise Exception("Failed to set hostapd parameter " + field)
 
     def set_defaults(self):
