@@ -130,7 +130,7 @@ def ft_params2_r0kh_mismatch(rsn=True, ssid=None, passphrase=None):
 
 def run_roams(dev, apdev, hapd0, hapd1, ssid, passphrase, over_ds=False,
               sae=False, eap=False, fail_test=False, roams=1,
-              pairwise_cipher="CCMP", group_cipher="TKIP CCMP", ptk_rekey="0",
+              pairwise_cipher="CCMP", group_cipher="CCMP", ptk_rekey="0",
               test_connectivity=True, eap_identity="gpsk user", conndev=False,
               force_initial_conn_to_first_ap=False, sha384=False,
               group_mgmt=None, ocv=None, sae_password=None,
@@ -454,7 +454,8 @@ def test_ap_ft_mixed(dev, apdev):
     params = ft_params2(rsn=False, ssid=ssid, passphrase=passphrase)
     hapd1 = hostapd.add_ap(apdev[1], params)
 
-    run_roams(dev[0], apdev, hapd, hapd1, ssid, passphrase)
+    run_roams(dev[0], apdev, hapd, hapd1, ssid, passphrase,
+              group_cipher="TKIP CCMP")
 
 def test_ap_ft_pmf(dev, apdev):
     """WPA2-PSK-FT AP with PMF"""
