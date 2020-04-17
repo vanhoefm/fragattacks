@@ -6737,7 +6737,7 @@ def test_ap_wpa2_eap_assoc_rsn(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
 
-    tests = [("Invalid group cipher", "30060100000fac02", 41),
+    tests = [("Invalid group cipher", "30060100000fac02", [40, 41]),
              ("Invalid pairwise cipher", "300c0100000fac040100000fac02", 42)]
     for title, ie, status in tests:
         logger.info(title)
@@ -6749,7 +6749,15 @@ def test_ap_wpa2_eap_assoc_rsn(dev, apdev):
         ev = dev[0].wait_event(["CTRL-EVENT-ASSOC-REJECT"])
         if ev is None:
             raise Exception("Association rejection not reported")
-        if "status_code=" + str(status) not in ev:
+        ok = False
+        if isinstance(status, list):
+            for i in status:
+                ok = "status_code=" + str(i) in ev
+                if ok:
+                    break
+        else:
+            ok = "status_code=" + str(status) in ev
+        if not ok:
             raise Exception("Unexpected status code: " + ev)
         dev[0].request("REMOVE_NETWORK all")
         dev[0].dump_monitor()
