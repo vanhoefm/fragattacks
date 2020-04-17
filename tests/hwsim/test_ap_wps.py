@@ -97,14 +97,20 @@ def test_ap_wps_init(dev, apdev):
     conf = hapd.request("GET_CONFIG")
     if "wps_state=configured" not in conf:
         raise Exception("AP not in WPS configured state")
-    if "wpa=3" not in conf:
-        raise Exception("AP not in WPA+WPA2 configuration")
-    if "rsn_pairwise_cipher=CCMP TKIP" not in conf:
-        raise Exception("Unexpected rsn_pairwise_cipher")
-    if "wpa_pairwise_cipher=CCMP TKIP" not in conf:
-        raise Exception("Unexpected wpa_pairwise_cipher")
-    if "group_cipher=TKIP" not in conf:
-        raise Exception("Unexpected group_cipher")
+    if "wpa=2" in conf:
+        if "rsn_pairwise_cipher=CCMP" not in conf:
+            raise Exception("Unexpected rsn_pairwise_cipher")
+        if "group_cipher=CCMP" not in conf:
+            raise Exception("Unexpected group_cipher")
+    else:
+        if "wpa=3" not in conf:
+            raise Exception("AP not in WPA+WPA2 configuration")
+        if "rsn_pairwise_cipher=CCMP TKIP" not in conf:
+            raise Exception("Unexpected rsn_pairwise_cipher")
+        if "wpa_pairwise_cipher=CCMP TKIP" not in conf:
+            raise Exception("Unexpected wpa_pairwise_cipher")
+        if "group_cipher=TKIP" not in conf:
+            raise Exception("Unexpected group_cipher")
 
     if len(dev[0].list_networks()) != 3:
         raise Exception("Unexpected number of network blocks")
