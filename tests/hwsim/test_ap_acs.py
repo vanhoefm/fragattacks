@@ -12,6 +12,7 @@ import hostapd
 from utils import skip_with_fips, alloc_fail, fail_test, HwsimSkip, clear_regdom
 from test_ap_ht import clear_scan_cache
 from test_dfs import wait_dfs_event
+from test_sae import check_sae_capab
 
 def force_prev_ap_on_24g(ap):
     # For now, make sure the last operating channel was on 2.4 GHz band to get
@@ -118,6 +119,7 @@ def test_ap_acs_invalid_chanlist(dev, apdev):
 def test_ap_multi_bss_acs(dev, apdev):
     """hostapd start with a multi-BSS configuration file using ACS"""
     skip_with_fips(dev[0])
+    check_sae_capab(dev[2])
     force_prev_ap_on_24g(apdev[0])
 
     # start the actual test
@@ -131,7 +133,8 @@ def test_ap_multi_bss_acs(dev, apdev):
 
     dev[0].connect("bss-1", key_mgmt="NONE", scan_freq=freq)
     dev[1].connect("bss-2", psk="12345678", scan_freq=freq)
-    dev[2].connect("bss-3", psk="qwertyuiop", scan_freq=freq)
+    dev[2].set("sae_groups", "")
+    dev[2].connect("bss-3", key_mgmt="SAE", psk="qwertyuiop", scan_freq=freq)
 
 def test_ap_acs_40mhz(dev, apdev):
     """Automatic channel selection for 40 MHz channel"""
