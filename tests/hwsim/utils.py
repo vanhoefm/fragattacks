@@ -13,6 +13,7 @@ import time
 import remotehost
 import logging
 logger = logging.getLogger()
+import hostapd
 
 def get_ifnames():
     ifnames = []
@@ -224,3 +225,20 @@ def start_monitor(ifname, freq=2412):
 def stop_monitor(ifname):
     subprocess.call(["ip", "link", "set", "dev", ifname, "down"])
     subprocess.call(["iw", ifname, "set", "type", "managed"])
+
+def clear_scan_cache(apdev):
+    ifname = apdev['ifname']
+    hostapd.cmd_execute(apdev, ['ifconfig', ifname, 'up'])
+    hostapd.cmd_execute(apdev, ['iw', ifname, 'scan', 'trigger', 'freq', '2412',
+                                'flush'])
+    time.sleep(0.1)
+    hostapd.cmd_execute(apdev, ['ifconfig', ifname, 'down'])
+
+def set_world_reg(apdev0=None, apdev1=None, dev0=None):
+    if apdev0:
+        hostapd.cmd_execute(apdev0, ['iw', 'reg', 'set', '00'])
+    if apdev1:
+        hostapd.cmd_execute(apdev1, ['iw', 'reg', 'set', '00'])
+    if dev0:
+        dev0.cmd_execute(['iw', 'reg', 'set', '00'])
+    time.sleep(0.1)

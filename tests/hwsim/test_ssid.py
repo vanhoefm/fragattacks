@@ -77,7 +77,7 @@ def test_ssid_utf8(dev, apdev):
     if "[UTF-8]" not in dev[0].request("SCAN_RESULTS"):
         raise Exception("[UTF-8] flag not included in SCAN_RESULTS")
 
-def clear_scan_cache(hapd, dev):
+def clear_scan_cache2(hapd, dev):
     # clear BSS table to avoid issues in following test cases
     dev[0].request("REMOVE_NETWORK all")
     dev[1].request("REMOVE_NETWORK all")
@@ -97,7 +97,7 @@ def test_ssid_hidden(dev, apdev):
     ev = dev[1].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
     if ev is not None:
         raise Exception("Unexpected connection")
-    clear_scan_cache(hapd, dev)
+    clear_scan_cache2(hapd, dev)
 
 @remote_compatible
 def test_ssid_hidden2(dev, apdev):
@@ -110,7 +110,7 @@ def test_ssid_hidden2(dev, apdev):
     ev = dev[1].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
     if ev is not None:
         raise Exception("Unexpected connection")
-    clear_scan_cache(hapd, dev)
+    clear_scan_cache2(hapd, dev)
 
 @remote_compatible
 def test_ssid_hidden_wpa2(dev, apdev):
@@ -124,4 +124,4 @@ def test_ssid_hidden_wpa2(dev, apdev):
     ev = dev[1].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
     if ev is not None:
         raise Exception("Unexpected connection")
-    clear_scan_cache(hapd, dev)
+    clear_scan_cache2(hapd, dev)

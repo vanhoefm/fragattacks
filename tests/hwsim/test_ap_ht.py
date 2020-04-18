@@ -12,26 +12,9 @@ import struct
 
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import HwsimSkip, alloc_fail, parse_ie, clear_regdom
+from utils import *
 import hwsim_utils
 from test_ap_csa import csa_supported
-
-def clear_scan_cache(apdev):
-    ifname = apdev['ifname']
-    hostapd.cmd_execute(apdev, ['ifconfig', ifname, 'up'])
-    hostapd.cmd_execute(apdev, ['iw', ifname, 'scan', 'trigger', 'freq', '2412',
-                                'flush'])
-    time.sleep(0.1)
-    hostapd.cmd_execute(apdev, ['ifconfig', ifname, 'down'])
-
-def set_world_reg(apdev0=None, apdev1=None, dev0=None):
-    if apdev0:
-        hostapd.cmd_execute(apdev0, ['iw', 'reg', 'set', '00'])
-    if apdev1:
-        hostapd.cmd_execute(apdev1, ['iw', 'reg', 'set', '00'])
-    if dev0:
-        dev0.cmd_execute(['iw', 'reg', 'set', '00'])
-    time.sleep(0.1)
 
 def test_ap_ht40_scan(dev, apdev):
     """HT40 co-ex scan"""

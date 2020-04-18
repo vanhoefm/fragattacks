@@ -16,7 +16,6 @@ from wpasupplicant import WpaSupplicant
 from utils import *
 from test_dfs import wait_dfs_event
 from test_ap_csa import csa_supported
-from test_ap_ht import clear_scan_cache
 
 def test_ap_vht80(dev, apdev):
     """VHT with 80 MHz channel width"""

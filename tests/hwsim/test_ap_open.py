@@ -18,7 +18,6 @@ from tshark import run_tshark
 from utils import *
 from wpasupplicant import WpaSupplicant
 from wlantest import WlantestCapture
-from test_ap_ht import set_world_reg
 
 @remote_compatible
 def test_ap_open(dev, apdev):

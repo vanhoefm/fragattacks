@@ -15,7 +15,6 @@ from wpasupplicant import WpaSupplicant
 from utils import *
 from test_dfs import wait_dfs_event
 from test_ap_csa import csa_supported
-from test_ap_ht import clear_scan_cache
 
 def test_he_open(dev, apdev):
     """HE AP with open mode configuration"""

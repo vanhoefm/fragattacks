@@ -17,7 +17,6 @@ import time
 import hostapd
 from wpasupplicant import WpaSupplicant
 from utils import *
-from test_ap_ht import clear_scan_cache
 from remotehost import remote_compatible
 
 def check_rrm_support(dev):

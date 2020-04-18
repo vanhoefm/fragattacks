@@ -10,7 +10,6 @@ import time
 
 import hostapd
 from utils import *
-from test_ap_ht import clear_scan_cache
 from test_dfs import wait_dfs_event
 
 def force_prev_ap_on_24g(ap):

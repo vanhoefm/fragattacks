@@ -12,9 +12,8 @@ logger = logging.getLogger()
 import hostapd
 from wpasupplicant import WpaSupplicant
 import hwsim_utils
-from utils import HwsimSkip
+from utils import *
 
-from test_ap_ht import set_world_reg
 from test_ap_psk import parse_eapol, build_eapol, pmk_to_ptk, eapol_key_mic, recv_eapol, send_eapol, reply_eapol, build_eapol_key_3_4, aes_wrap, pad_key_data
 
 #TODO: Refuse setting up AP with OCV but without MFP support
