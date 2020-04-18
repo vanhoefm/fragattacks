@@ -19,7 +19,7 @@ import time
 import hostapd
 import hwsim_utils
 from hwsim import HWSimRadio
-from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger
+from utils import *
 from wpasupplicant import WpaSupplicant
 from wlantest import WlantestCapture
 
@@ -5071,10 +5071,9 @@ def test_dpp_with_p2p_device(dev, apdev):
         wait_auth_success(wpas, dev[0], configurator=dev[0], enrollee=wpas,
                           allow_enrollee_failure=True)
 
-def test_dpp_chirp(dev, apdev, params):
-    """DPP chirp [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_dpp_chirp(dev, apdev):
+    """DPP chirp"""
     check_dpp_capab(dev[0])
     dev[0].flush_scan_cache()
 
@@ -5114,10 +5113,9 @@ def test_dpp_chirp(dev, apdev, params):
     if chan1 != 5 or chan6 != 5 or chan11 != 1:
         raise Exception("Unexpected number of presence announcements sent: %d %d %d" % (chan1, chan6, chan11))
 
-def test_dpp_chirp_listen(dev, apdev, params):
-    """DPP chirp with listen [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_dpp_chirp_listen(dev, apdev):
+    """DPP chirp with listen"""
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 

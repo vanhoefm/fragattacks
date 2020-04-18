@@ -13,7 +13,7 @@ import os
 
 import hwsim_utils
 import hostapd
-from utils import alloc_fail, require_under_vm, get_phy
+from utils import *
 from test_ap_acs import force_prev_ap_on_24g
 
 @remote_compatible

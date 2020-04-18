@@ -9,7 +9,7 @@ logger = logging.getLogger()
 import time
 
 import hostapd
-from utils import skip_with_fips, alloc_fail, fail_test, HwsimSkip, clear_regdom
+from utils import *
 from test_ap_ht import clear_scan_cache
 from test_dfs import wait_dfs_event
 from test_sae import check_sae_capab
@@ -390,10 +390,9 @@ def test_ap_acs_errors(dev, apdev):
         if not ev:
             raise Exception("ACS start timed out")
 
-def test_ap_acs_dfs(dev, apdev, params):
-    """Automatic channel selection, HT scan, and DFS [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_ap_acs_dfs(dev, apdev):
+    """Automatic channel selection, HT scan, and DFS"""
     try:
         hapd = None
         force_prev_ap_on_5g(apdev[0])
@@ -472,10 +471,9 @@ def test_ap_acs_exclude_dfs(dev, apdev, params):
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
-def test_ap_acs_vht160_dfs(dev, apdev, params):
-    """Automatic channel selection 160 MHz, HT scan, and DFS [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_ap_acs_vht160_dfs(dev, apdev):
+    """Automatic channel selection 160 MHz, HT scan, and DFS"""
     try:
         hapd = None
         force_prev_ap_on_5g(apdev[0])

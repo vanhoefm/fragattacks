@@ -135,10 +135,9 @@ def test_dfs(dev, apdev):
     finally:
         clear_regdom(hapd, dev)
 
-def test_dfs_etsi(dev, apdev, params):
-    """DFS and uniform spreading requirement for ETSI [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_dfs_etsi(dev, apdev):
+    """DFS and uniform spreading requirement for ETSI"""
     try:
         hapd = None
         hapd = start_dfs_ap(apdev[0])
@@ -450,10 +449,9 @@ def test_dfs_radar_ht40minus(dev, apdev):
         clear_regdom(hapd, dev)
         dev[0].request("STA_AUTOCONNECT 1")
 
-def test_dfs_ht40_minus(dev, apdev, params):
-    """DFS CAC functionality on channel 104 HT40- [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_dfs_ht40_minus(dev, apdev):
+    """DFS CAC functionality on channel 104 HT40-"""
     try:
         hapd = None
         hapd = start_dfs_ap(apdev[0], ht40minus=True, channel=104)
@@ -505,10 +503,9 @@ def test_dfs_cac_restart_on_enable(dev, apdev):
     finally:
         clear_regdom(hapd, dev)
 
-def test_dfs_rrm(dev, apdev, params):
-    """DFS with RRM [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_dfs_rrm(dev, apdev):
+    """DFS with RRM"""
     try:
         hapd = None
         hapd = start_dfs_ap(apdev[0], country="US", rrm_beacon_report=True)
@@ -534,10 +531,9 @@ def test_dfs_rrm(dev, apdev, params):
     finally:
         clear_regdom(hapd, dev)
 
-def test_dfs_radar_vht80_downgrade(dev, apdev, params):
-    """DFS channel bandwidth downgrade from VHT80 to VHT40 [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_dfs_radar_vht80_downgrade(dev, apdev):
+    """DFS channel bandwidth downgrade from VHT80 to VHT40"""
     try:
         # Start with 80 MHz channel 100 (5500 MHz) to find a radar
         hapd = None
@@ -609,10 +605,9 @@ def test_dfs_radar_vht80_downgrade(dev, apdev, params):
     finally:
         clear_regdom(hapd, dev)
 
-def test_dfs_chan_switch(dev, apdev, params):
-    """DFS channel switch [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_dfs_chan_switch(dev, apdev):
+    """DFS channel switch"""
     try:
         hapd = None
         hapd = start_dfs_ap(apdev[0], country="US")

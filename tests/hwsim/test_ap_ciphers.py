@@ -201,10 +201,9 @@ def test_ap_cipher_tkip_countermeasures_sta(dev, apdev):
     if ev is not None:
         raise Exception("Unexpected connection during TKIP countermeasures")
 
-def test_ap_cipher_tkip_countermeasures_sta2(dev, apdev, params):
-    """WPA-PSK/TKIP countermeasures (detected by two STAs) [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_ap_cipher_tkip_countermeasures_sta2(dev, apdev):
+    """WPA-PSK/TKIP countermeasures (detected by two STAs)"""
     skip_with_fips(dev[0])
     skip_without_tkip(dev[0])
     params = {"ssid": "tkip-countermeasures",

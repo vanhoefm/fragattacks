@@ -420,10 +420,9 @@ def test_he_40(devs, apdevs):
         dev.request("DISCONNECT")
         clear_regdom(hapd, devs)
 
-def test_he160(dev, apdev, params):
-    """HE with 160 MHz channel width (1) [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_he160(dev, apdev):
+    """HE with 160 MHz channel width (1)"""
     try:
         hapd = None
         params = {"ssid": "he",
@@ -492,10 +491,9 @@ def test_he160(dev, apdev, params):
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
-def test_he160b(dev, apdev, params):
-    """HE with 160 MHz channel width (2) [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_he160b(dev, apdev):
+    """HE with 160 MHz channel width (2)"""
     try:
         hapd = None
 

@@ -2513,10 +2513,9 @@ def test_ap_wps_auto_setup_with_config_file(dev, apdev):
         except:
             pass
 
-def test_ap_wps_pbc_timeout(dev, apdev, params):
-    """wpa_supplicant PBC walk time and WPS ER SelReg timeout [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_ap_wps_pbc_timeout(dev, apdev):
+    """wpa_supplicant PBC walk time and WPS ER SelReg timeout"""
     ap_uuid = "27ea801a-9e5c-4e73-bd82-f89cbcd10d7e"
     hapd = add_ssdp_ap(apdev[0], ap_uuid)
 
@@ -10422,16 +10421,14 @@ def test_ap_wps_appl_ext(dev, apdev):
     dev[0].request("WPS_PIN %s %s" % (apdev[0]['bssid'], pin))
     dev[0].wait_connected(timeout=30)
 
-def test_ap_wps_pbc_ap_timeout(dev, apdev, params):
-    """WPS PBC timeout on AP [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_ap_wps_pbc_ap_timeout(dev, apdev):
+    """WPS PBC timeout on AP"""
     run_ap_wps_ap_timeout(dev, apdev, "WPS_PBC")
 
-def test_ap_wps_pin_ap_timeout(dev, apdev, params):
-    """WPS PIN timeout on AP [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_ap_wps_pin_ap_timeout(dev, apdev):
+    """WPS PIN timeout on AP"""
     run_ap_wps_ap_timeout(dev, apdev, "WPS_PIN any 12345670 10")
 
 def run_ap_wps_ap_timeout(dev, apdev, cmd):

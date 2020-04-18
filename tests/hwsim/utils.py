@@ -30,6 +30,10 @@ class HwsimSkip(Exception):
     def __str__(self):
         return self.reason
 
+def long_duration_test(func):
+    func.long_duration_test = True
+    return func
+
 class alloc_fail(object):
     def __init__(self, dev, count, funcs):
         self._dev = dev

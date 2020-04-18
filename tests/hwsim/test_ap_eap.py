@@ -3026,10 +3026,9 @@ def test_ap_wpa2_eap_eke(dev, apdev):
     eap_connect(dev[0], hapd, "EKE", "eke user", password="hello1",
                 expect_failure=True)
 
-def test_ap_wpa2_eap_eke_many(dev, apdev, params):
-    """WPA2-Enterprise connection using EAP-EKE (many connections) [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_ap_wpa2_eap_eke_many(dev, apdev):
+    """WPA2-Enterprise connection using EAP-EKE (many connections)"""
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     hostapd.add_ap(apdev[0], params)
     success = 0

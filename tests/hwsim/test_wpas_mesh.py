@@ -1294,10 +1294,9 @@ def test_wpas_mesh_password_mismatch(dev, apdev):
     if count == 0:
         raise Exception("Neither dev0 nor dev1 reported auth failure")
 
-def test_wpas_mesh_password_mismatch_retry(dev, apdev, params):
-    """Mesh password mismatch and retry [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_wpas_mesh_password_mismatch_retry(dev, apdev):
+    """Mesh password mismatch and retry"""
     check_mesh_support(dev[0], secure=True)
     dev[0].request("SET sae_groups ")
     id = add_mesh_secure_net(dev[0])

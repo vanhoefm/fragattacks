@@ -187,6 +187,18 @@ def rename_log(logdir, basename, testname, dev):
         logger.info("Failed to rename log files")
         logger.info(e)
 
+def is_long_duration_test(t):
+    return hasattr(t, "long_duration_test") and t.long_duration_test
+
+def get_test_description(t):
+    if t.__doc__ is None:
+        desc = "MISSING DESCRIPTION"
+    else:
+        desc = t.__doc__
+    if is_long_duration_test(t):
+        desc += " [long]"
+    return desc
+
 def main():
     tests = []
     test_modules = []
@@ -319,13 +331,10 @@ def main():
     if args.update_tests_db:
         for t in tests_to_run:
             name = t.__name__.replace('test_', '', 1)
-            if t.__doc__ is None:
-                print(name + " - MISSING DESCRIPTION")
-            else:
-                print(name + " - " + t.__doc__)
+            print(name + " - " + get_test_description(t))
             if conn:
                 sql = 'INSERT OR REPLACE INTO tests(test,description) VALUES (?, ?)'
-                params = (name, t.__doc__)
+                params = (name, get_test_description(t))
                 try:
                     conn.execute(sql, params)
                 except Exception as e:
@@ -512,10 +521,11 @@ def main():
                     sys.exit(1)
             skip_reason = None
             try:
+                if is_long_duration_test(t) and not args.long:
+                    raise HwsimSkip("Skip test case with long duration due to --long not specified")
                 if t.__code__.co_argcount > 2:
                     params = {}
                     params['logdir'] = args.logdir
-                    params['long'] = args.long
                     params['name'] = name
                     params['prefix'] = os.path.join(args.logdir, name)
                     t(dev, apdev, params)
