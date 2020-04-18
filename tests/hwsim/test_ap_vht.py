@@ -18,13 +18,6 @@ from test_dfs import wait_dfs_event
 from test_ap_csa import csa_supported
 from test_ap_ht import clear_scan_cache
 
-def vht_supported():
-    cmd = subprocess.Popen(["iw", "reg", "get"], stdout=subprocess.PIPE)
-    reg = cmd.stdout.read()
-    if "@ 80)" in reg or "@ 160)" in reg:
-        return True
-    return False
-
 def test_ap_vht80(dev, apdev):
     """VHT with 80 MHz channel width"""
     try:

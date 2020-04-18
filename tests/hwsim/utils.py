@@ -112,6 +112,13 @@ def check_sae_capab(dev):
     if "SAE" not in dev.get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
 
+def vht_supported():
+    cmd = subprocess.Popen(["iw", "reg", "get"], stdout=subprocess.PIPE)
+    reg = cmd.stdout.read()
+    if "@ 80)" in reg or "@ 160)" in reg:
+        return True
+    return False
+
 def get_phy(ap, ifname=None):
     phy = "phy3"
     try:
