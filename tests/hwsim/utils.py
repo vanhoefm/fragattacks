@@ -108,6 +108,10 @@ def check_wep_capa(dev):
     if "WEP40" not in dev.get_capability("group"):
         raise HwsimSkip("WEP not supported")
 
+def check_sae_capab(dev):
+    if "SAE" not in dev.get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
 def get_phy(ap, ifname=None):
     phy = "phy3"
     try:

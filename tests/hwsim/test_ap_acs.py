@@ -12,7 +12,6 @@ import hostapd
 from utils import *
 from test_ap_ht import clear_scan_cache
 from test_dfs import wait_dfs_event
-from test_sae import check_sae_capab
 
 def force_prev_ap_on_24g(ap):
     # For now, make sure the last operating channel was on 2.4 GHz band to get

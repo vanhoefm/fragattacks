@@ -10,7 +10,7 @@ import os
 
 from wpasupplicant import WpaSupplicant
 import hostapd
-from test_sae import check_sae_capab
+from utils import *
 
 config_checks = [("ap_scan", "0"),
                  ("update_config", "1"),

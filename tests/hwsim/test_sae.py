@@ -17,12 +17,8 @@ import subprocess
 import hwsim_utils
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger, start_monitor, stop_monitor, radiotap_build
+from utils import *
 from test_ap_psk import find_wpas_process, read_process_memory, verify_not_present, get_key_locations
-
-def check_sae_capab(dev):
-    if "SAE" not in dev.get_capability("auth_alg"):
-        raise HwsimSkip("SAE not supported")
 
 @remote_compatible
 def test_sae(dev, apdev):
