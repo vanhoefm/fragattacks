@@ -11,11 +11,7 @@ import subprocess
 from remotehost import remote_compatible
 import hostapd
 import hwsim_utils
-from utils import clear_regdom, HwsimSkip
-
-def check_wep_capa(dev):
-    if "WEP40" not in dev.get_capability("group"):
-        raise HwsimSkip("WEP not supported")
+from utils import *
 
 @remote_compatible
 def test_wep_open_auth(dev, apdev):

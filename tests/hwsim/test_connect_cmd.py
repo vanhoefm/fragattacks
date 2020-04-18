@@ -12,7 +12,7 @@ import hwsim_utils
 import hostapd
 from wpasupplicant import WpaSupplicant
 from p2p_utils import *
-from test_wep import check_wep_capa
+from utils import *
 
 def test_connect_cmd_open(dev, apdev):
     """Open connection using cfg80211 connect command"""

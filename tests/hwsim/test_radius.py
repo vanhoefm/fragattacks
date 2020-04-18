@@ -18,10 +18,9 @@ import threading
 import time
 
 import hostapd
-from utils import HwsimSkip, require_under_vm, skip_with_fips, alloc_fail, fail_test, wait_fail_trigger
+from utils import *
 from test_ap_hs20 import build_dhcp_ack
 from test_ap_ft import ft_params1
-from test_wep import check_wep_capa
 
 def connect(dev, ssid, wait_connect=True):
     dev.connect(ssid, key_mgmt="WPA-EAP", scan_freq="2412",

@@ -13,7 +13,6 @@ import hwsim_utils
 from wpasupplicant import WpaSupplicant
 from utils import *
 from test_rfkill import get_rfkill
-from test_wep import check_wep_capa
 
 def get_wext_interface():
     if not os.path.exists("/proc/net/wireless"):

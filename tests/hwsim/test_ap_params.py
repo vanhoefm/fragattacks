@@ -15,8 +15,7 @@ import time
 import hwsim_utils
 import hostapd
 from tshark import run_tshark
-from utils import alloc_fail, HwsimSkip, parse_ie
-from test_wep import check_wep_capa
+from utils import *
 
 @remote_compatible
 def test_ap_fragmentation_rts_set_high(dev, apdev):

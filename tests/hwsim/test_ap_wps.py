@@ -44,7 +44,6 @@ from wpasupplicant import WpaSupplicant
 from utils import *
 from test_ap_eap import int_eap_server_params
 from test_sae import check_sae_capab
-from test_wep import check_wep_capa
 
 def wps_start_ap(apdev, ssid="test-wps-conf"):
     params = {"ssid": ssid, "eap_server": "1", "wps_state": "2",

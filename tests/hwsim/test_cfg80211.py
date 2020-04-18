@@ -16,7 +16,7 @@ import hwsim_utils
 from tshark import run_tshark
 from nl80211 import *
 from wpasupplicant import WpaSupplicant
-from test_wep import check_wep_capa
+from utils import *
 
 def nl80211_command(dev, cmd, attr):
     res = dev.request("VENDOR ffffffff {} {}".format(nl80211_cmd[cmd],

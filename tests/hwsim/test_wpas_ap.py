@@ -11,10 +11,9 @@ import logging
 logger = logging.getLogger()
 
 import hwsim_utils
-from utils import HwsimSkip, alloc_fail, clear_regdom_dev
+from utils import *
 from wpasupplicant import WpaSupplicant
 from test_p2p_channel import set_country
-from test_wep import check_wep_capa
 
 def wait_ap_ready(dev):
     ev = dev.wait_event(["CTRL-EVENT-CONNECTED"])

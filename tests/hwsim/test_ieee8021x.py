@@ -13,9 +13,8 @@ import time
 
 import hostapd
 import hwsim_utils
-from utils import skip_with_fips
+from utils import *
 from tshark import run_tshark
-from test_wep import check_wep_capa
 
 logger = logging.getLogger()
 

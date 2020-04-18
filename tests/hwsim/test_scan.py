@@ -15,11 +15,9 @@ import subprocess
 
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import HwsimSkip, fail_test, alloc_fail, wait_fail_trigger, parse_ie
-from utils import clear_regdom_dev
+from utils import *
 from tshark import run_tshark
 from test_ap_csa import switch_channel, wait_channel_switch, csa_supported
-from test_wep import check_wep_capa
 
 def check_scan(dev, params, other_started=False, test_busy=False):
     if not other_started:

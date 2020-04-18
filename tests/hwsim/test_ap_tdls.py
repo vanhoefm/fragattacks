@@ -17,7 +17,6 @@ import hostapd
 from utils import *
 from wlantest import Wlantest
 from test_ap_vht import vht_supported
-from test_wep import check_wep_capa
 
 def start_ap_wpa2_psk(ap):
     params = hostapd.wpa2_params(ssid="test-wpa2-psk", passphrase="12345678")
