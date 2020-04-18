@@ -14,7 +14,6 @@ import hostapd
 from wpasupplicant import WpaSupplicant
 from utils import *
 import hwsim_utils
-from test_ap_csa import csa_supported
 
 def test_ap_ht40_scan(dev, apdev):
     """HT40 co-ex scan"""

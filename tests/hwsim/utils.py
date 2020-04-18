@@ -120,6 +120,13 @@ def vht_supported():
         return True
     return False
 
+# This function checks whether the provided dev, which may be either
+# WpaSupplicant or Hostapd supports CSA.
+def csa_supported(dev):
+    res = dev.get_driver_status()
+    if (int(res['capa.flags'], 0) & 0x80000000) == 0:
+        raise HwsimSkip("CSA not supported")
+
 def get_phy(ap, ifname=None):
     phy = "phy3"
     try:
