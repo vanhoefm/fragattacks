@@ -4777,7 +4777,9 @@ int wpa_supplicant_update_mac_addr(struct wpa_supplicant *wpa_s)
 		wpa_s->l2 = l2_packet_init(wpa_s->ifname,
 					   wpa_drv_get_mac_addr(wpa_s),
 					   ETH_P_EAPOL,
-					   wpa_supplicant_rx_eapol, wpa_s, 0);
+					   wpas_eapol_needs_l2_packet(wpa_s) ?
+					   wpa_supplicant_rx_eapol : NULL,
+					   wpa_s, 0);
 		if (wpa_s->l2 == NULL)
 			return -1;
 
