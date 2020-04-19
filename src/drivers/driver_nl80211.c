@@ -158,7 +158,6 @@ static void wpa_driver_nl80211_deinit(struct i802_bss *bss);
 static int wpa_driver_nl80211_set_mode_ibss(struct i802_bss *bss,
 					    struct hostapd_freq_params *freq);
 
-static int nl80211_init_connect_handle(struct i802_bss *bss);
 static int
 wpa_driver_nl80211_finish_drv_init(struct wpa_driver_nl80211_data *drv,
 				   const u8 *set_addr, int first,
@@ -1964,6 +1963,25 @@ static void wpa_driver_nl80211_handle_eapol_tx_status(int sock,
 }
 
 
+static int nl80211_init_connect_handle(struct i802_bss *bss)
+{
+	if (bss->nl_connect) {
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: Connect handle already created (nl_connect=%p)",
+			   bss->nl_connect);
+		return -1;
+	}
+
+	bss->nl_connect = nl_create_handle(bss->nl_cb, "connect");
+	if (!bss->nl_connect)
+		return -1;
+	nl80211_register_eloop_read(&bss->nl_connect,
+				    wpa_driver_nl80211_event_receive,
+				    bss->nl_cb, 1);
+	return 0;
+}
+
+
 static int nl80211_init_bss(struct i802_bss *bss)
 {
 	bss->nl_cb = nl_cb_alloc(NL_CB_DEFAULT);
@@ -2208,25 +2226,6 @@ static int nl80211_register_action_frame(struct i802_bss *bss,
 	u16 type = (WLAN_FC_TYPE_MGMT << 2) | (WLAN_FC_STYPE_ACTION << 4);
 	return nl80211_register_frame(bss, bss->nl_mgmt,
 				      type, match, match_len);
-}
-
-
-static int nl80211_init_connect_handle(struct i802_bss *bss)
-{
-	if (bss->nl_connect) {
-		wpa_printf(MSG_DEBUG,
-			   "nl80211: Connect handle already created (nl_connect=%p)",
-			   bss->nl_connect);
-		return -1;
-	}
-
-	bss->nl_connect = nl_create_handle(bss->nl_cb, "connect");
-	if (!bss->nl_connect)
-		return -1;
-	nl80211_register_eloop_read(&bss->nl_connect,
-				    wpa_driver_nl80211_event_receive,
-				    bss->nl_cb, 1);
-	return 0;
 }
 
 
