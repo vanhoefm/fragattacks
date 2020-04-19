@@ -3359,6 +3359,39 @@ def test_ap_wpa2_psk_no_control_port(dev, apdev):
     wpas.wait_disconnected()
     wpas.dump_monitor()
 
+def test_ap_wpa2_psk_ap_control_port(dev, apdev):
+    """WPA2-PSK AP with nl80211 control port in AP mode"""
+    ssid = "test-wpa2-psk"
+    passphrase = 'qwertyuiop'
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
+    params['driver_params'] = "control_port_ap=1"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    flags = hapd.request("DRIVER_FLAGS").splitlines()[1:]
+    flags2 = hapd.request("DRIVER_FLAGS2").splitlines()[1:]
+    logger.info("AP driver flags: " + str(flags))
+    logger.info("AP driver flags2: " + str(flags2))
+    if 'CONTROL_PORT' not in flags or 'CONTROL_PORT_RX' not in flags2:
+        raise HwsimSkip("No AP driver support for CONTROL_PORT")
+
+    flags = dev[0].request("DRIVER_FLAGS").splitlines()[1:]
+    flags2 = dev[0].request("DRIVER_FLAGS2").splitlines()[1:]
+    logger.info("STA driver flags: " + str(flags))
+    logger.info("STA driver flags2: " + str(flags2))
+    if 'CONTROL_PORT' not in flags or 'CONTROL_PORT_RX' not in flags2:
+        raise HwsimSkip("No STA driver support for CONTROL_PORT")
+
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412")
+    hapd.wait_sta()
+    hwsim_utils.test_connectivity(dev[0], hapd)
+    if "OK" not in dev[0].request("KEY_REQUEST 0 1"):
+        raise Exception("KEY_REQUEST failed")
+    ev = dev[0].wait_event(["WPA: Key negotiation completed"])
+    if ev is None:
+        raise Exception("PTK rekey timed out")
+    hapd.wait_ptkinitdone(dev[0].own_addr())
+    hwsim_utils.test_connectivity(dev[0], hapd)
+
 def test_ap_wpa2_psk_rsne_mismatch_ap(dev, apdev):
     """RSNE mismatch in EAPOL-Key msg 3/4"""
     ie = "30140100000fac040100000fac040100000fac020c80"
