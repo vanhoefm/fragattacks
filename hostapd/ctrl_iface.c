@@ -2439,6 +2439,7 @@ static int hostapd_ctrl_get_pmk(struct hostapd_data *hapd, const char *cmd,
 #endif /* CONFIG_TESTING_OPTIONS */
 
 
+#ifdef NEED_AP_MLME
 static int hostapd_ctrl_check_freq_params(struct hostapd_freq_params *params)
 {
 	switch (params->bandwidth) {
@@ -2527,6 +2528,7 @@ static int hostapd_ctrl_check_freq_params(struct hostapd_freq_params *params)
 
 	return 0;
 }
+#endif /* NEED_AP_MLME */
 
 
 static int hostapd_ctrl_iface_chan_switch(struct hostapd_iface *iface,
