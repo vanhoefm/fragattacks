@@ -74,12 +74,14 @@ static void ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **pr,
 }
 
 
+#ifdef CONFIG_DPP2
 static EC_KEY * EVP_PKEY_get0_EC_KEY(EVP_PKEY *pkey)
 {
 	if (pkey->type != EVP_PKEY_EC)
 		return NULL;
 	return pkey->pkey.ec;
 }
+#endif /* CONFIG_DPP2 */
 
 #endif
 
