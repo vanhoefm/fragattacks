@@ -156,13 +156,12 @@ class Test(metaclass=abc.ABCMeta):
 			self.generate(station)
 			self.generated = True
 
-		return self.actions[0]
+		act = self.actions[0]
+		del self.actions[0]
+		return act
 
 	def get_actions(self, action):
 		return [act for act in self.actions if act.action == action]
-
-	def pop_action(self):
-		del self.actions[0]
 
 	@abc.abstractmethod
 	def generate(self, station):
@@ -368,6 +367,7 @@ class Station():
 		self.txed_before_auth = False
 		self.txed_before_auth_done = False
 		self.obtained_ip = False
+		self.waiting_on_ip = False
 
 		# Don't reset PN to have consistency over rekeys and reconnects
 		self.reset_keys()
@@ -394,6 +394,7 @@ class Station():
 		self.othermac = None
 		self.otherip = None
 
+		# To trigger Connected event 1-2 seconds after Authentication
 		self.time_connected = None
 
 	def reset_keys(self):
@@ -550,23 +551,12 @@ class Station():
 		while self.test.next_trigger_is(trigger):
 			act = self.test.next_action(self)
 
-			# GetIp is a special case. It is only popped when we actually
-			# have an IP. So handle if first as a special case.
-			# TODO: Actually "complete" the action once we have an IP.
 			if act.action == Action.GetIp and not self.obtained_ip:
-				# (Re)transmit DHCP frames (or as AP print status message)
+				self.waiting_on_ip = True
 				self.daemon.get_ip(self)
-				# Either schedule a new Connected event, or the initial one. Use 2 seconds
-				# because requesting IP generally takes a bit of time.
-				# TODO: Add an option to configure this timeout.
-				self.time_connected = time.time() + 1
-				log(WARNING, f"Scheduling next Action.Connected at {self.time_connected}")
 				break
 
-			# All the other actions are always popped
-			self.test.pop_action()
-
-			if act.action == Action.Func:
+			elif act.action == Action.Func:
 				log(STATUS, "[Executing Function]")
 				if act.func(self) != None:
 					break
@@ -636,10 +626,12 @@ class Station():
 		self.peerip = peerip
 		self.obtained_ip = True
 
+		if self.waiting_on_ip:
+			self.waiting_on_ip = False
+			self.perform_actions(Action.Connected)
+
 	def time_tick(self):
 		if self.time_connected != None and time.time() > self.time_connected:
-			# Note that handle_connected may schedule a new Connected event, so it's
-			# important to clear time_connected *before* calling handle_connected.
 			self.time_connected = None
 			self.handle_connected()
 
@@ -905,6 +897,8 @@ class Supplicant(Daemon):
 		self.station = None
 		self.arp_sock = None
 		self.dhcp_xid = None
+		self.dhcp_offer_frame = False
+		self.time_retrans_dhcp = None
 
 	def get_tk(self, station):
 		tk = wpaspy_command(self.wpaspy_ctrl, "GET tk")
@@ -914,7 +908,12 @@ class Supplicant(Daemon):
 			return bytes.fromhex(tk)
 
 	def get_ip(self, station):
-		self.send_dhcp_discover()
+		if not self.dhcp_offer_frame:
+			self.send_dhcp_discover()
+		else:
+			self.send_dhcp_request(self.dhcp_offer_frame)
+
+		self.time_retrans_dhcp = time.time() + 1
 
 	def rekey(self, station):
 		# WAG320N: does not work (Broadcom - no reply)
@@ -930,6 +929,9 @@ class Supplicant(Daemon):
 		log(STATUS, "Client cannot force rekey. Waiting on AP to start PTK rekey.", color="orange")
 
 	def time_tick(self):
+		if self.time_retrans_dhcp != None and time.time() > self.time_retrans_dhcp:
+			self.get_ip(self)
+
 		self.station.time_tick()
 
 	def send_dhcp_discover(self):
@@ -968,14 +970,16 @@ class Supplicant(Daemon):
 		if req_type == 2:
 			log(STATUS, "Received DHCP offer, sending DHCP request.")
 			self.send_dhcp_request(p)
-			self.initialize_peermac(p.src)
+			self.dhcp_offer_frame = p
 
 		# DHCP Ack
 		elif req_type == 5:
 			clientip = p[BOOTP].yiaddr
 			serverip = p[IP].src
+			self.time_retrans_dhcp = None
 			log(STATUS, f"Received DHCP ack. My ip is {clientip} and router is {serverip}.")
 
+			self.initialize_peermac(p.src)
 			self.initialize_ips(clientip, serverip)
 
 	def initialize_peermac(self, peermac):
