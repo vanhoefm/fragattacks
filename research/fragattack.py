@@ -69,16 +69,18 @@ class TestOptions():
 #	  ignored ICMP and ARP packets.
 REQ_ARP, REQ_ICMP, REQ_DHCP = range(3)
 
-def generate_request(sta, ptype):
-	header = sta.get_header()
+def generate_request(sta, ptype, prior=2):
+	header = sta.get_header(prior=prior)
 	if ptype == REQ_ARP:
-		# XXX --- Add extra checks on the ARP packet
-		check = lambda p: ARP in p and p.hwsrc == sta.peermac and p.psrc == sta.peerip
-		request = LLC()/SNAP()/ARP(op=1, hwsrc=sta.mac, psrc=sta.ip, hwdst=sta.peermac, pdst=sta.peerip)
+		# Avoid using sta.get_peermac() because the correct MAC addresses may not
+		# always be known (due to difference between AP and router MAC addresses).
+		check = lambda p: ARP in p and p.hwdst == sta.mac and p.pdst == sta.ip and p.psrc == sta.peerip
+		request = LLC()/SNAP()/ARP(op=1, hwsrc=sta.mac, psrc=sta.ip, pdst=sta.peerip)
 
 	elif ptype == REQ_ICMP:
 		label = b"test_ping_icmp"
 		check = lambda p: ICMP in p and label in raw(p)
+		print(f"Ping from {sta.ip} to {sta.peerip}")
 		request = LLC()/SNAP()/IP(src=sta.ip, dst=sta.peerip)/ICMP()/Raw(label)
 
 	elif ptype == REQ_DHCP:
@@ -344,7 +346,7 @@ class EapolMsduTest(Test):
 		#header.addr2 = "00:11:22:33:44:55"
 
 		# Masquerade A-MSDU frame as an EAPOL frame
-		request = LLC()/SNAP()/EAPOL()/Raw(b"\x00\x06AAAAAA") / add_msdu_frag(station.mac, station.peermac, request)
+		request = LLC()/SNAP()/EAPOL()/Raw(b"\x00\x06AAAAAA") / add_msdu_frag(station.mac, station.get_peermac(), request)
 
 
 		frames = create_fragments(header, request, 1)
@@ -379,6 +381,9 @@ class Station():
 		# Can be either an AP or client.
 		self.mac = mac
 		self.ip = None
+
+		# MAC address of the BSS. This is always the AP.
+		self.bss = None
 
 		# MAC address and IP of the peer station.
 		# Can be either an AP or client.
@@ -443,7 +448,10 @@ class Station():
 		# Priority is only supported in data frames
 		assert (prior == None) or (p.type == 2)
 
+		# Set the appropriate to-DS or from-DS bits
 		p.FCfield |= self.FCfield
+
+		# Add the QoS header if requested
 		if prior != None:
 			p.subtype = 8
 			if not Dot11QoS in p:
@@ -451,12 +459,15 @@ class Station():
 			else:
 				p[Dot11QoS].TID = prior
 
-		destmac = self.othermac if forward else self.peermac
-		p.addr1 = self.peermac
-		p.addr2 = self.mac
-		# Here p.FCfield & 1 tests if to-DS is set. Then this fields
-		# represents the final destination. Otherwise its the BSSID.
-		p.addr3 = destmac if p.FCfield & 1 else self.mac
+		# This checks if the to-DS is set (frame towards the AP)
+		if p.FCfield & 1 != 0:
+			p.addr1 = self.bss
+			p.addr2 = self.mac
+			p.addr3 = self.get_peermac() if not forward else self.othermac
+		else:
+			p.addr1 = self.peermac
+			p.addr2 = self.mac
+			p.addr3 = self.bss
 
 	def get_header(self, seqnum=None, prior=2, **kwargs):
 		"""
@@ -478,14 +489,22 @@ class Station():
 		encrypted = encrypt_ccmp(frame, key, self.pn, keyid)
 		return encrypted
 
-	def handle_connecting(self, peermac):
-		# If the address was already set, it should not be changing
-		assert self.peermac == None or self.peermac == peermac
-		self.peermac = peermac
+	def handle_connecting(self, bss):
+		log(STATUS, f"Station: setting BSS MAC address {bss}")
+		self.bss = bss
 
 		# Clear the keys on a new connection
 		self.reset_keys()
-		self.time_connected = None
+
+	def set_peermac(self, peermac):
+		self.peermac = peermac
+
+	def get_peermac(self):
+		# When being a client, the peermac may not yet be known. In that
+		# case we assume it's the same as the BSS (= AP) MAC address.
+		if self.peermac == None:
+			return self.bss
+		return self.peermac
 
 	def trigger_eapol_events(self, eapol):
 		key_type   = eapol.key_info & 0x0008
@@ -768,7 +787,7 @@ class Authenticator(Daemon):
 		self.stations = dict()
 
 	def get_tk(self, station):
-		tk = wpaspy_command(self.wpaspy_ctrl, "GET_TK " + station.peermac)
+		tk = wpaspy_command(self.wpaspy_ctrl, "GET_TK " + station.get_peermac())
 		return bytes.fromhex(tk)
 
 	def time_tick(self):
@@ -776,26 +795,26 @@ class Authenticator(Daemon):
 			station.time_tick()
 
 	def get_ip(self, station):
-		log(STATUS, f"Waiting on client {station.peermac} to get IP")
+		log(STATUS, f"Waiting on client {station.get_peermac()} to get IP")
 
 	def rekey(self, station):
-		wpaspy_command(self.wpaspy_ctrl, "REKEY_PTK " + station.peermac)
+		wpaspy_command(self.wpaspy_ctrl, "REKEY_PTK " + station.get_peermac())
 
 	def reconnect(self, station):
 		# Confirmed to *instantly* reconnect: Arch Linux, Windows 10 with Intel WiFi chip, iPad Pro 13.3.1
 		# Reconnects only after a few seconds: MacOS (same with other reasons and with deauthentication)
-		cmd = f"DISASSOCIATE {station.peermac} reason={WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA}"
+		cmd = f"DISASSOCIATE {station.get_peermac()} reason={WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA}"
 		wpaspy_command(self.wpaspy_ctrl, cmd)
 
 	def handle_eth_dhcp(self, p, station):
-		if not DHCP in p or not station.peermac in self.dhcp.leases: return
+		if not DHCP in p or not station.get_peermac() in self.dhcp.leases: return
 
 		# This assures we only mark it was connected after receiving a DHCP Request
 		req_type = next(opt[1] for opt in p[DHCP].options if isinstance(opt, tuple) and opt[0] == 'message-type')
 		if req_type != 3: return
 
-		peerip = self.dhcp.leases[station.peermac]
-		log(STATUS, f"Client {station.peermac} with IP {peerip} has connected")
+		peerip = self.dhcp.leases[station.get_peermac()]
+		log(STATUS, f"Client {station.get_peermac()} with IP {peerip} has connected")
 		station.set_ip_addresses(self.arp_sender_ip, peerip)
 
 	def handle_eth(self, p):
@@ -826,7 +845,8 @@ class Authenticator(Daemon):
 
 			log(STATUS, f"Client {clientmac} is connecting")
 			station = self.stations[clientmac]
-			station.handle_connecting(clientmac)
+			station.handle_connecting(self.apmac)
+			station.set_peermac(clientmac)
 
 		elif "EAPOL-TX" in msg:
 			cmd, clientmac, payload = msg.split()
@@ -921,7 +941,7 @@ class Supplicant(Daemon):
 		req = req/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=self.dhcp_xid)
 		req = req/DHCP(options=[("message-type", "discover"), "end"])
 
-		log(STATUS, "Sending DHCP discover with XID {self.dhcp_xid}")
+		log(STATUS, f"Sending DHCP discover with XID {self.dhcp_xid}")
 		self.station.send_mon(req)
 
 	def send_dhcp_request(self, offer):
@@ -935,7 +955,7 @@ class Supplicant(Daemon):
 		reply = reply/DHCP(options=[("message-type", "request"), ("requested_addr", myip),
 					    ("hostname", "fragclient"), "end"])
 
-		log(STATUS, "Sending DHCP request with XID {self.dhcp_xid}")
+		log(STATUS, f"Sending DHCP request with XID {self.dhcp_xid}")
 		self.station.send_mon(reply)
 
 	def handle_eth_dhcp(self, p):
@@ -948,6 +968,7 @@ class Supplicant(Daemon):
 		if req_type == 2:
 			log(STATUS, "Received DHCP offer, sending DHCP request.")
 			self.send_dhcp_request(p)
+			self.initialize_peermac(p.src)
 
 		# DHCP Ack
 		elif req_type == 5:
@@ -957,9 +978,13 @@ class Supplicant(Daemon):
 
 			self.initialize_ips(clientip, serverip)
 
+	def initialize_peermac(self, peermac):
+		log(STATUS, f"Will now use peer MAC address {peermac} instead of the BSS")
+		self.station.set_peermac(peermac)
+
 	def initialize_ips(self, clientip, serverip):
+		self.arp_sock = ARP_sock(sock=self.sock_eth, IP_addr=clientip, ARP_addr=self.station.mac)
 		self.station.set_ip_addresses(clientip, serverip)
-		self.arp_sock = ARP_sock(sock=self.sock_eth, IP_addr=self.station.ip, ARP_addr=self.station.mac)
 
 	def handle_eth(self, p):
 		if BOOTP in p and p[BOOTP].xid == self.dhcp_xid:
@@ -979,8 +1004,8 @@ class Supplicant(Daemon):
 		# Trying to authenticate with 38:2c:4a:c1:69:bc (SSID='backupnetwork2' freq=2462 MHz)
 		elif "Trying to authenticate with" in msg:
 			p = re.compile("Trying to authenticate with (.*) \(SSID")
-			peermac = p.search(msg).group(1)
-			self.station.handle_connecting(peermac)
+			bss = p.search(msg).group(1)
+			self.station.handle_connecting(bss)
 
 		elif "EAPOL-TX" in msg:
 			cmd, srcaddr, payload = msg.split()
@@ -989,7 +1014,7 @@ class Supplicant(Daemon):
 	def roam(self, station):
 		log(STATUS, "Roaming to the current AP.", color="green")
 		wpaspy_command(self.wpaspy_ctrl, "SET reassoc_same_bss_optim 0")
-		wpaspy_command(self.wpaspy_ctrl, "ROAM " + station.peermac)
+		wpaspy_command(self.wpaspy_ctrl, "ROAM " + station.bss)
 
 	def reconnect(self, station):
 		log(STATUS, "Reconnecting to the AP.", color="green")
