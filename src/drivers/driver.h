@@ -1838,7 +1838,7 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_FLAGS_FTM_RESPONDER		0x0100000000000000ULL
 /** Driver support 4-way handshake offload for WPA-Personal */
 #define WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_PSK	0x0200000000000000ULL
-/** Driver supports a separate control port for EAPOL frames */
+/** Driver supports a separate control port TX for EAPOL frames */
 #define WPA_DRIVER_FLAGS_CONTROL_PORT		0x0400000000000000ULL
 /** Driver supports VLAN offload */
 #define WPA_DRIVER_FLAGS_VLAN_OFFLOAD		0x0800000000000000ULL
@@ -1852,6 +1852,8 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_FLAGS_EXTENDED_KEY_ID	0x8000000000000000ULL
 	u64 flags;
 
+/** Driver supports a separate control port RX for EAPOL frames */
+#define WPA_DRIVER_FLAGS2_CONTROL_PORT_RX	0x0000000000000001ULL
 	u64 flags2;
 
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \

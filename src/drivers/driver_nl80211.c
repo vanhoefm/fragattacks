@@ -8124,8 +8124,10 @@ static int nl80211_set_param(void *priv, const char *param)
 		drv->test_use_roc_tx = 1;
 	}
 
-	if (os_strstr(param, "control_port=0"))
+	if (os_strstr(param, "control_port=0")) {
 		drv->capa.flags &= ~WPA_DRIVER_FLAGS_CONTROL_PORT;
+		drv->capa.flags2 &= ~WPA_DRIVER_FLAGS2_CONTROL_PORT_RX;
+	}
 
 	if (os_strstr(param, "full_ap_client_state=0"))
 		drv->capa.flags &= ~WPA_DRIVER_FLAGS_FULL_AP_CLIENT_STATE;

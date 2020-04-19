@@ -441,6 +441,9 @@ static void wiphy_info_ext_feature_flags(struct wiphy_info_data *info,
 	if (ext_feature_isset(ext_features, len,
 			      NL80211_EXT_FEATURE_CONTROL_PORT_OVER_NL80211))
 		capa->flags |= WPA_DRIVER_FLAGS_CONTROL_PORT;
+	if (ext_feature_isset(ext_features, len,
+			      NL80211_EXT_FEATURE_CONTROL_PORT_NO_PREAUTH))
+		capa->flags2 |= WPA_DRIVER_FLAGS2_CONTROL_PORT_RX;
 
 	if (ext_feature_isset(ext_features, len,
 			      NL80211_EXT_FEATURE_VLAN_OFFLOAD))
