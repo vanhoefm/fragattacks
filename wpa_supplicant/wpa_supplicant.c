@@ -4761,6 +4761,13 @@ void wpa_supplicant_rx_eapol(void *ctx, const u8 *src_addr,
 }
 
 
+static int wpas_eapol_needs_l2_packet(struct wpa_supplicant *wpa_s)
+{
+	return !(wpa_s->drv_flags & WPA_DRIVER_FLAGS_CONTROL_PORT) ||
+		!(wpa_s->drv_flags2 & WPA_DRIVER_FLAGS2_CONTROL_PORT_RX);
+}
+
+
 int wpa_supplicant_update_mac_addr(struct wpa_supplicant *wpa_s)
 {
 	if ((!wpa_s->p2p_mgmt ||
@@ -4847,7 +4854,7 @@ int wpa_supplicant_driver_init(struct wpa_supplicant *wpa_s)
 	os_memcpy(wpa_s->perm_addr, wpa_s->own_addr, ETH_ALEN);
 	wpa_sm_set_own_addr(wpa_s->wpa, wpa_s->own_addr);
 
-	if (wpa_s->bridge_ifname[0]) {
+	if (wpa_s->bridge_ifname[0] && wpas_eapol_needs_l2_packet(wpa_s)) {
 		wpa_dbg(wpa_s, MSG_DEBUG, "Receiving packets from bridge "
 			"interface '%s'", wpa_s->bridge_ifname);
 		wpa_s->l2_br = l2_packet_init_bridge(
