@@ -725,6 +725,7 @@ struct wpa_supplicant {
 	unsigned int no_suitable_network;
 
 	u64 drv_flags;
+	u64 drv_flags2;
 	unsigned int drv_enc;
 	unsigned int drv_rrm_flags;
 

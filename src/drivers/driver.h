@@ -1852,6 +1852,8 @@ struct wpa_driver_capa {
 #define WPA_DRIVER_FLAGS_EXTENDED_KEY_ID	0x8000000000000000ULL
 	u64 flags;
 
+	u64 flags2;
+
 #define FULL_AP_CLIENT_STATE_SUPP(drv_flags) \
 	(drv_flags & WPA_DRIVER_FLAGS_FULL_AP_CLIENT_STATE)
 
@@ -5921,6 +5923,7 @@ wpa_get_wowlan_triggers(const char *wowlan_triggers,
 			const struct wpa_driver_capa *capa);
 /* Convert driver flag to string */
 const char * driver_flag_to_string(u64 flag);
+const char * driver_flag2_to_string(u64 flag2);
 
 /* NULL terminated array of linked in driver wrappers */
 extern const struct wpa_driver_ops *const wpa_drivers[];

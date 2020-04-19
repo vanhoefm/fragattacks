@@ -321,3 +321,13 @@ const char * driver_flag_to_string(u64 flag)
 	return "UNKNOWN";
 #undef DF2S
 }
+
+
+const char * driver_flag2_to_string(u64 flag2)
+{
+#define DF2S(x) case WPA_DRIVER_FLAGS2_ ## x: return #x
+	switch (flag2) {
+	}
+	return "UNKNOWN";
+#undef DF2S
+}
