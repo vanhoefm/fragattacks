@@ -5328,7 +5328,10 @@ static int wpa_driver_nl80211_hapd_send_eapol(
 	int res;
 	int qos = flags & WPA_STA_WMM;
 
-	if (drv->capa.flags & WPA_DRIVER_FLAGS_CONTROL_PORT)
+	/* For now, disable EAPOL TX over control port in AP mode by default
+	 * since it does not provide TX status notifications. */
+	if (drv->control_port_ap &&
+	    (drv->capa.flags & WPA_DRIVER_FLAGS_CONTROL_PORT))
 		return nl80211_tx_control_port(bss, addr, ETH_P_EAPOL,
 					       data, data_len, !encrypt);
 
@@ -8172,6 +8175,9 @@ static int nl80211_set_param(void *priv, const char *param)
 		drv->capa.flags &= ~WPA_DRIVER_FLAGS_CONTROL_PORT;
 		drv->capa.flags2 &= ~WPA_DRIVER_FLAGS2_CONTROL_PORT_RX;
 	}
+
+	if (os_strstr(param, "control_port_ap=1"))
+		drv->control_port_ap = 1;
 
 	if (os_strstr(param, "full_ap_client_state=0"))
 		drv->capa.flags &= ~WPA_DRIVER_FLAGS_FULL_AP_CLIENT_STATE;
