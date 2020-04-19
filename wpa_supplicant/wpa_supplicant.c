@@ -4785,15 +4785,16 @@ int wpa_supplicant_update_mac_addr(struct wpa_supplicant *wpa_s)
 						L2_PACKET_FILTER_PKTTYPE))
 			wpa_dbg(wpa_s, MSG_DEBUG,
 				"Failed to attach pkt_type filter");
+
+		if (l2_packet_get_own_addr(wpa_s->l2, wpa_s->own_addr)) {
+			wpa_msg(wpa_s, MSG_ERROR,
+				"Failed to get own L2 address");
+			return -1;
+		}
 	} else {
 		const u8 *addr = wpa_drv_get_mac_addr(wpa_s);
 		if (addr)
 			os_memcpy(wpa_s->own_addr, addr, ETH_ALEN);
-	}
-
-	if (wpa_s->l2 && l2_packet_get_own_addr(wpa_s->l2, wpa_s->own_addr)) {
-		wpa_msg(wpa_s, MSG_ERROR, "Failed to get own L2 address");
-		return -1;
 	}
 
 	wpa_sm_set_own_addr(wpa_s->wpa, wpa_s->own_addr);
