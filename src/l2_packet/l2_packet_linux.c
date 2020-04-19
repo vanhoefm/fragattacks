@@ -312,7 +312,8 @@ struct l2_packet_data * l2_packet_init(
 	ll.sll_family = PF_PACKET;
 	ll.sll_ifindex = ifr.ifr_ifindex;
 	ll.sll_protocol = htons(protocol);
-	if (bind(l2->fd, (struct sockaddr *) &ll, sizeof(ll)) < 0) {
+	if (rx_callback &&
+	    bind(l2->fd, (struct sockaddr *) &ll, sizeof(ll)) < 0) {
 		wpa_printf(MSG_ERROR, "%s: bind[PF_PACKET]: %s",
 			   __func__, strerror(errno));
 		close(l2->fd);
@@ -329,7 +330,8 @@ struct l2_packet_data * l2_packet_init(
 	}
 	os_memcpy(l2->own_addr, ifr.ifr_hwaddr.sa_data, ETH_ALEN);
 
-	eloop_register_read_sock(l2->fd, l2_packet_receive, l2, NULL);
+	if (rx_callback)
+		eloop_register_read_sock(l2->fd, l2_packet_receive, l2, NULL);
 
 	return l2;
 }
