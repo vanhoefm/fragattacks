@@ -277,6 +277,7 @@ def hapd_out_of_mem(hapd, apdev, count, func):
 def test_ap_open_out_of_memory(dev, apdev):
     """hostapd failing to setup interface due to allocation failure"""
     hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
+    flags2 = hapd.request("DRIVER_FLAGS2").splitlines()[1:]
     hapd_out_of_mem(hapd, apdev[1], 1, "hostapd_alloc_bss_data")
 
     for i in range(1, 3):
@@ -292,8 +293,9 @@ def test_ap_open_out_of_memory(dev, apdev):
     for i in range(1, 3):
         hapd_out_of_mem(hapd, apdev[1], i, "=wpa_driver_nl80211_drv_init")
 
-    # eloop_register_read_sock() call from i802_init()
-    hapd_out_of_mem(hapd, apdev[1], 1, "eloop_sock_table_add_sock;?eloop_register_sock;?eloop_register_read_sock;=i802_init")
+    if 'CONTROL_PORT_RX' not in flags2:
+        # eloop_register_read_sock() call from i802_init()
+        hapd_out_of_mem(hapd, apdev[1], 1, "eloop_sock_table_add_sock;?eloop_register_sock;?eloop_register_read_sock;=i802_init")
 
     # verify that a new interface can still be added when memory allocation does
     # not fail
