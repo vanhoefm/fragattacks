@@ -357,6 +357,55 @@ class EapolMsduTest(Test):
 		self.actions[0].frame = auth
 		self.actions[1].frame = frames[0]
 
+
+class QcaDriverTest(Test):
+	"""
+	Against the Aruba AP we cannot send a normal frame between two fragments. Reverse engineering
+	showed that the normal frame causes the fragment cache to be cleared.
+
+	We can work around this by injecting the normal frame (e.g. an EAPOL frame we want to inject
+	in between fragments) as a fragmented frame as well. As a result, the fragment cache will not
+	be cleared.
+
+	Although the above avoids the fragment cache from being cleared, the Aruba AP still may not
+	reassembly the fragments. This is because the second fragment may now hav a higher packet number
+	compared to the fragmented frames we injected in between (it seems no per-QoS replay counter
+	is being used by them). So we must assure packet numbers are higher than the previous frame(s)
+	NOT at the time of reception, but at the time of defragmentation (i.e. once all fragments arrived).
+	"""
+	def __init__(self, ptype):
+		super().__init__([Action(Action.Connected, Action.GetIp),
+				  Action(Action.Connected, enc=True, inc_pn=2, delay=0.2), # 102
+				  Action(Action.Connected, enc=True, inc_pn=-2),	   # 100
+				  Action(Action.Connected, enc=True, inc_pn=1),		   # 101
+				  Action(Action.Connected, enc=True, inc_pn=2, delay=2)])  # 103
+		self.ptype = ptype
+		self.check_fn = None
+
+	def check(self, p):
+		if self.check_fn == None:
+			return False
+		return self.check_fn(p)
+
+	def generate(self, station):
+		log(STATUS, "Generating QCA driver test", color="green")
+
+		# Generate the header and payload
+		header1, request1, self.check_fn = generate_request(station, self.ptype, prior=2)
+		header2, request2, self.check_fn = generate_request(station, self.ptype, prior=4)
+		header1.SC = 10 << 4
+		header2.SC = 20 << 4
+
+		# Generate all the individual (fragmented) frames
+		frames1 = create_fragments(header1, request1, 2)
+		frames2 = create_fragments(header2, request2, 2)
+
+		self.actions[0].frame = frames1[0]
+		self.actions[1].frame = frames2[0]
+		self.actions[2].frame = frames2[1]
+		self.actions[3].frame = frames1[1]
+
+
 # ----------------------------------- Abstract Station Class -----------------------------------
 
 class Station():
@@ -1061,10 +1110,31 @@ def cleanup():
 	daemon.stop()
 
 def prepare_tests(test_name):
-	if test_name == "ping":
+	if test_name == "qca_driver":
+		test = QcaDriverTest(REQ_ICMP)
+
+	elif test_name == "ping":
 		# Simple ping as sanity check
 		test = PingTest(REQ_ARP,
 				[Action(Action.Connected, enc=True)])
+
+	elif test_name == "ping_frag":
+		# Simple ping as sanity check
+		test = PingTest(REQ_ICMP,
+				[Action(Action.Connected, action=Action.GetIp),
+				 Action(Action.Connected, enc=True),
+				 Action(Action.Connected, enc=True),
+				])
+
+	elif test_name == "ping_frag_sep":
+		# Check if we can send frames in between fragments
+		separator = Dot11(type="Data", subtype=8, SC=(33 << 4) | 0)/Dot11QoS()/LLC()/SNAP()
+		test = PingTest(REQ_ICMP,
+				[Action(Action.Connected, action=Action.GetIp),
+				 Action(Action.Connected, enc=True),
+				 Action(Action.Connected, enc=True)],
+				 separate_with=separator
+				)
 
 	elif test_name == "1":
 		# Check if the STA receives broadcast (useful test against AP)
@@ -1097,16 +1167,6 @@ def prepare_tests(test_name):
 
 	elif test_name == "5":
 		test = MacOsTest(REQ_DHCP)
-
-	elif test_name == "6":
-		# Check if we can send frames in between fragments
-		separator = Dot11(type="Data", subtype=8, SC=(33 << 4))/Dot11QoS()/LLC()/SNAP()
-		#separator.addr2 = "00:11:22:33:44:55"
-		#separator.addr3 = "ff:ff:ff:ff:ff:ff"
-		test = PingTest(REQ_DHCP,
-				[Action(Action.Connected, enc=True),
-				 Action(Action.Connected, enc=True, delay=1)])
-				 #separate_with=separator)
 
 	elif test_name == "7":
 		test = EapolMsduTest(REQ_ICMP)
