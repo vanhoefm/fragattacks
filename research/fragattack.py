@@ -5,6 +5,8 @@ import argparse
 from wpaspy import Ctrl
 from scapy.contrib.wpa_eapol import WPA_key
 
+from tests_qca import *
+
 # Ath9k_htc dongle notes:
 # - The ath9k_htc devices by default overwrite the injected sequence number.
 #   However, this number is not incremented when the MoreFragments flag is set,
@@ -359,148 +361,6 @@ class EapolMsduTest(Test):
 		self.actions[1].frame = frames[0]
 
 
-class QcaDriverTest(Test):
-	"""
-	Against the Aruba AP we cannot send a normal frame between two fragments. Reverse engineering
-	showed that the normal frame causes the fragment cache to be cleared.
-
-	We can work around this by injecting the normal frame (e.g. an EAPOL frame we want to inject
-	in between fragments) as a fragmented frame as well. As a result, the fragment cache will not
-	be cleared.
-
-	Although the above avoids the fragment cache from being cleared, the Aruba AP still may not
-	reassembly the fragments. This is because the second fragment may now hav a higher packet number
-	compared to the fragmented frames we injected in between (it seems no per-QoS replay counter
-	is being used by them). So we must assure packet numbers are higher than the previous frame(s)
-	NOT at the time of reception, but at the time of defragmentation (i.e. once all fragments arrived).
-	"""
-	def __init__(self, ptype):
-		super().__init__([Action(Action.Connected, Action.GetIp),
-				  Action(Action.Connected, enc=True, inc_pn=2, delay=0.2), # 102
-				  Action(Action.Connected, enc=True, inc_pn=-2),	   # 100
-				  Action(Action.Connected, enc=True, inc_pn=1),		   # 101
-				  Action(Action.Connected, enc=True, inc_pn=2, delay=2)])  # 103
-		self.ptype = ptype
-		self.check_fn = None
-
-	def check(self, p):
-		if self.check_fn == None:
-			return False
-		return self.check_fn(p)
-
-	def generate(self, station):
-		log(STATUS, "Generating QCA driver test", color="green")
-
-		# Generate the header and payload
-		header1, request1, self.check_fn = generate_request(station, self.ptype, prior=2)
-		header2, request2, self.check_fn = generate_request(station, self.ptype, prior=4)
-		header1.SC = 10 << 4
-		header2.SC = 20 << 4
-
-		# Generate all the individual (fragmented) frames
-		frames1 = create_fragments(header1, request1, 2)
-		frames2 = create_fragments(header2, request2, 2)
-
-		self.actions[0].frame = frames1[0]
-		self.actions[1].frame = frames2[0]
-		self.actions[2].frame = frames2[1]
-		self.actions[3].frame = frames1[1]
-
-
-class QcaTestSplit(Test):
-	"""
-	Mixed encrypted and plaintext are both queued in ol_rx_reorder_store_frag,
-	and both forwarded when all fragments are collected. But when sending
-	[Encrypted, plaintext] and [plaintext, encrypted] the two encrypted fragments
-	are not reassembled. So we cannot this this trick.
-	"""
-	def __init__(self, ptype):
-		super().__init__([Action(Action.Connected, Action.GetIp),
-				  Action(Action.Connected, enc=False, delay=0.2), # 100 (dropped b/c plaintext)
-				  Action(Action.Connected, enc=True, inc_pn=5),	  # 105
-				  Action(Action.Connected, enc=True, inc_pn=-1),   # 104
-				  Action(Action.Connected, enc=False)])	   	  # 112 (dropped b plaintext)
-		self.ptype = ptype
-		self.check_fn = None
-
-	def check(self, p):
-		if self.check_fn == None:
-			return False
-		return self.check_fn(p)
-
-	def generate(self, station):
-		log(STATUS, "Generating QCA driver test", color="green")
-
-		# Generate the header and payload
-		header1, request1, self.check_fn = generate_request(station, self.ptype, prior=2)
-		header2, request2, self.check_fn = generate_request(station, self.ptype, prior=2)
-		header1.SC = 10 << 4
-		header2.SC = 10 << 4
-
-		# Generate all the individual (fragmented) frames
-		frames1 = create_fragments(header1, request1 / Raw(b"1"), 2)
-		frames2 = create_fragments(header2, request2 / Raw(b"2"), 2)
-
-		self.actions[0].frame = frames1[0]
-		self.actions[1].frame = frames2[1] # hopefully dropped
-		self.actions[2].frame = frames2[0] # hopefully dropped
-		self.actions[3].frame = frames1[1]
-
-		self.actions[0].frame.TID = 2
-		self.actions[1].frame.TID = 2
-		self.actions[2].frame.TID = 2
-		self.actions[3].frame.TID = 2
-
-		#self.actions[2].frame.addr3 = "ff:ff:ff:ff:ff:ff"
-
-
-class QcaDriverRekey(Test):
-	def __init__(self, ptype):
-		super().__init__([Action(Action.Connected, Action.GetIp),		# Get IP
-				  Action(Action.Connected, Action.Rekey),		# Wait for rekey
-				  Action(Action.BeforeAuth, enc=True, inc_pn=2),	# Inject first fragment ping
-				  Action(Action.BeforeAuth, func=self.fragment_msg4),	# Fragment Msg4
-				  Action(Action.BeforeAuth, enc=True, inc_pn=-2),	# Inject first fragment Msg4
-				  Action(Action.BeforeAuth, enc=True, inc_pn=1),	# Inject second fragment Msg4
-				  Action(Action.AfterAuth, enc=True, inc_pn=2)])	# Inject second fragment ping
-		self.ptype = ptype
-		self.check_fn = None
-
-	def fragment_msg4(self, station, eapol):
-		header = station.get_header(prior=4)
-		header.SC = 10 << 4
-
-		payload = LLC()/SNAP()/eapol
-
-		frags = create_fragments(header, payload, 2)
-
-		# All Connected and BeforeAuth actions have been popped by now
-		self.actions[0].frame = frags[0]
-		self.actions[1].frame = frags[1]
-
-		# Prevent Station code from sending the EAPOL frame
-		return True
-
-	def check(self, p):
-		if self.check_fn == None:
-			return False
-		return self.check_fn(p)
-
-	def generate(self, station):
-		log(STATUS, "Generating QCA driver test", color="green")
-
-		# Generate the header and payload
-		header, request, self.check_fn = generate_request(station, self.ptype, prior=2)
-		header.SC = 20 << 4
-
-		# Generate all the individual (fragmented) frames
-		frames = create_fragments(header, request, 2)
-
-		# All Connected actions have been popped by now
-		self.actions[0].frame = frames[0]
-		self.actions[4].frame = frames[1]
-
-
 # ----------------------------------- Abstract Station Class -----------------------------------
 
 class Station():
@@ -761,10 +621,14 @@ class Station():
 
 		return result
 
-	def handle_authenticated(self):
-		"""Called after completion of the 4-way handshake or similar"""
+	def update_keys(self):
+		log(STATUS, "Requesting keys from wpa_supplicant")
 		self.tk = self.daemon.get_tk(self)
 		self.gtk, self.gtk_idx = self.daemon.get_gtk()
+
+	def handle_authenticated(self):
+		"""Called after completion of the 4-way handshake or similar"""
+		self.update_keys()
 
 		# Note that self.time_connect may get changed in perform_actions
 		log(STATUS, "Action.AfterAuth", color="green")
@@ -1218,18 +1082,19 @@ def cleanup():
 
 def prepare_tests(test_name):
 	if test_name == "qca_test":
-		test = QcaDriverTest(REQ_ICMP)
+		test = QcaDriverTest()
 
 	elif test_name == "qca_split":
-		test = QcaTestSplit(REQ_ICMP)
+		test = QcaTestSplit()
 
 	elif test_name == "qca_rekey":
-		test = QcaDriverRekey(REQ_ICMP)
+		test = QcaDriverRekey()
 
 	elif test_name == "ping":
 		# Simple ping as sanity check
-		test = PingTest(REQ_ARP,
-				[Action(Action.Connected, enc=True)])
+		test = PingTest(REQ_ICMP,
+				[Action(Action.Connected, action=Action.GetIp),
+				 Action(Action.Connected, enc=True)])
 
 	elif test_name == "ping_frag":
 		# Simple ping as sanity check
