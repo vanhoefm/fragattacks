@@ -460,6 +460,10 @@ static void wiphy_info_ext_feature_flags(struct wiphy_info_data *info,
 	if (ext_feature_isset(ext_features, len,
 			      NL80211_EXT_FEATURE_EXT_KEY_ID))
 		capa->flags |= WPA_DRIVER_FLAGS_EXTENDED_KEY_ID;
+
+	if (ext_feature_isset(ext_features, len,
+			      NL80211_EXT_FEATURE_MULTICAST_REGISTRATIONS))
+		info->drv->multicast_registrations = 1;
 }
 
 

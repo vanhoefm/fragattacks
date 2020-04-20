@@ -2165,7 +2165,8 @@ static void * wpa_driver_nl80211_init(void *ctx, const char *ifname,
 
 static int nl80211_register_frame(struct i802_bss *bss,
 				  struct nl_sock *nl_handle,
-				  u16 type, const u8 *match, size_t match_len)
+				  u16 type, const u8 *match, size_t match_len,
+				  bool multicast)
 {
 	struct wpa_driver_nl80211_data *drv = bss->drv;
 	struct nl_msg *msg;
@@ -2174,10 +2175,12 @@ static int nl80211_register_frame(struct i802_bss *bss,
 
 	buf[0] = '\0';
 	wpa_snprintf_hex(buf, sizeof(buf), match, match_len);
-	wpa_printf(MSG_DEBUG, "nl80211: Register frame type=0x%x (%s) nl_handle=%p match=%s",
-		   type, fc2str(type), nl_handle, buf);
+	wpa_printf(MSG_DEBUG,
+		   "nl80211: Register frame type=0x%x (%s) nl_handle=%p match=%s multicast=%d",
+		   type, fc2str(type), nl_handle, buf, multicast);
 
 	if (!(msg = nl80211_cmd_msg(bss, 0, NL80211_CMD_REGISTER_FRAME)) ||
+	    (multicast && nla_put_flag(msg, NL80211_ATTR_RECEIVE_MULTICAST)) ||
 	    nla_put_u16(msg, NL80211_ATTR_FRAME_TYPE, type) ||
 	    nla_put(msg, NL80211_ATTR_FRAME_MATCH, match_len, match)) {
 		nlmsg_free(msg);
@@ -2225,7 +2228,7 @@ static int nl80211_register_action_frame(struct i802_bss *bss,
 {
 	u16 type = (WLAN_FC_TYPE_MGMT << 2) | (WLAN_FC_STYPE_ACTION << 4);
 	return nl80211_register_frame(bss, bss->nl_mgmt,
-				      type, match, match_len);
+				      type, match, match_len, false);
 }
 
 
@@ -2242,12 +2245,12 @@ static int nl80211_mgmt_subscribe_non_ap(struct i802_bss *bss)
 
 	if (drv->nlmode == NL80211_IFTYPE_ADHOC) {
 		/* register for any AUTH message */
-		nl80211_register_frame(bss, bss->nl_mgmt, type, NULL, 0);
+		nl80211_register_frame(bss, bss->nl_mgmt, type, NULL, 0, false);
 	} else if ((drv->capa.flags & WPA_DRIVER_FLAGS_SAE) &&
 		   !(drv->capa.flags & WPA_DRIVER_FLAGS_SME)) {
 		/* register for SAE Authentication frames */
 		nl80211_register_frame(bss, bss->nl_mgmt, type,
-				       (u8 *) "\x03\x00", 2);
+				       (u8 *) "\x03\x00", 2, false);
 	}
 
 #ifdef CONFIG_INTERWORKING
@@ -2389,7 +2392,7 @@ static int nl80211_mgmt_subscribe_mesh(struct i802_bss *bss)
 	if (nl80211_register_frame(bss, bss->nl_mgmt,
 				   (WLAN_FC_TYPE_MGMT << 2) |
 				   (WLAN_FC_STYPE_AUTH << 4),
-				   NULL, 0) < 0)
+				   NULL, 0, false) < 0)
 		ret = -1;
 
 	/* Mesh peering open */
@@ -2495,7 +2498,7 @@ static int nl80211_mgmt_subscribe_ap(struct i802_bss *bss)
 		if (nl80211_register_frame(bss, bss->nl_mgmt,
 					   (WLAN_FC_TYPE_MGMT << 2) |
 					   (stypes[i] << 4),
-					   NULL, 0) < 0) {
+					   NULL, 0, false) < 0) {
 			goto out_err;
 		}
 	}
@@ -2529,8 +2532,8 @@ static int nl80211_mgmt_subscribe_ap_dev_sme(struct i802_bss *bss)
 		u16 type = (WLAN_FC_TYPE_MGMT << 2) | (WLAN_FC_STYPE_AUTH << 4);
 
 		/* Register for all Authentication frames */
-		if (nl80211_register_frame(bss, bss->nl_mgmt, type, NULL, 0)
-		    < 0)
+		if (nl80211_register_frame(bss, bss->nl_mgmt, type, NULL, 0,
+					   false) < 0)
 			wpa_printf(MSG_DEBUG,
 				   "nl80211: Failed to subscribe to handle Authentication frames - SAE offload may not work");
 	}
@@ -7931,7 +7934,7 @@ static int wpa_driver_nl80211_probe_req_report(struct i802_bss *bss, int report)
 	if (nl80211_register_frame(bss, bss->nl_preq,
 				   (WLAN_FC_TYPE_MGMT << 2) |
 				   (WLAN_FC_STYPE_PROBE_REQ << 4),
-				   NULL, 0) < 0)
+				   NULL, 0, false) < 0)
 		goto out_err;
 
 	nl80211_register_eloop_read(&bss->nl_preq,
@@ -11433,6 +11436,28 @@ fail:
 }
 
 
+#ifdef CONFIG_DPP
+static int nl80211_dpp_listen(void *priv, bool enable)
+{
+	struct i802_bss *bss = priv;
+	struct wpa_driver_nl80211_data *drv = bss->drv;
+	u16 type = (WLAN_FC_TYPE_MGMT << 2) | (WLAN_FC_STYPE_ACTION << 4);
+	struct nl_sock *handle;
+
+	if (!drv->multicast_registrations || !bss->nl_mgmt)
+		return 0; /* cannot do more than hope broadcast RX works */
+
+	wpa_printf(MSG_DEBUG,
+		   "nl80211: Update DPP Public Action frame registration (%s multicast RX)",
+		   enable ? "enable" : "disable");
+	handle = (void *) (((intptr_t) bss->nl_mgmt) ^ ELOOP_SOCKET_INVALID);
+	return nl80211_register_frame(bss, handle, type,
+				      (u8 *) "\x04\x09\x50\x6f\x9a\x1a", 6,
+				      enable);
+}
+#endif /* CONFIG_DPP */
+
+
 const struct wpa_driver_ops wpa_driver_nl80211_ops = {
 	.name = "nl80211",
 	.desc = "Linux nl80211/cfg80211",
@@ -11568,4 +11593,7 @@ const struct wpa_driver_ops wpa_driver_nl80211_ops = {
 	.update_connect_params = nl80211_update_connection_params,
 	.send_external_auth_status = nl80211_send_external_auth_status,
 	.set_4addr_mode = nl80211_set_4addr_mode,
+#ifdef CONFIG_DPP
+	.dpp_listen = nl80211_dpp_listen,
+#endif /* CONFIG_DPP */
 };
