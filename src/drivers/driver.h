@@ -4424,6 +4424,17 @@ struct wpa_driver_ops {
 	 */
 	int (*update_dh_ie)(void *priv, const u8 *peer_mac, u16 reason_code,
 			    const u8 *ie, size_t ie_len);
+
+	/**
+	 * dpp_listen - Notify driver about start/stop of DPP listen
+	 * @priv: Private driver interface data
+	 * @enable: Whether listen state is enabled (or disabled)
+	 * Returns: 0 on success, -1 on failure
+	 *
+	 * This optional callback can be used to update RX frame filtering to
+	 * explicitly allow reception of broadcast Public Action frames.
+	 */
+	int (*dpp_listen)(void *priv, bool enable);
 };
 
 /**
