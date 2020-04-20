@@ -965,8 +965,8 @@ static struct wpabuf * eap_teap_buildReq(struct eap_sm *sm, void *priv, u8 id)
 }
 
 
-static Boolean eap_teap_check(struct eap_sm *sm, void *priv,
-			      struct wpabuf *respData)
+static bool eap_teap_check(struct eap_sm *sm, void *priv,
+			   struct wpabuf *respData)
 {
 	const u8 *pos;
 	size_t len;
@@ -974,10 +974,10 @@ static Boolean eap_teap_check(struct eap_sm *sm, void *priv,
 	pos = eap_hdr_validate(EAP_VENDOR_IETF, EAP_TYPE_TEAP, respData, &len);
 	if (!pos || len < 1) {
 		wpa_printf(MSG_INFO, "EAP-TEAP: Invalid frame");
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
@@ -1974,7 +1974,7 @@ static void eap_teap_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_teap_isDone(struct eap_sm *sm, void *priv)
+static bool eap_teap_isDone(struct eap_sm *sm, void *priv)
 {
 	struct eap_teap_data *data = priv;
 
@@ -2032,7 +2032,7 @@ static u8 * eap_teap_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
-static Boolean eap_teap_isSuccess(struct eap_sm *sm, void *priv)
+static bool eap_teap_isSuccess(struct eap_sm *sm, void *priv)
 {
 	struct eap_teap_data *data = priv;
 

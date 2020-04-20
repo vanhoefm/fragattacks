@@ -236,8 +236,8 @@ static struct wpabuf * eap_ikev2_buildReq(struct eap_sm *sm, void *priv, u8 id)
 }
 
 
-static Boolean eap_ikev2_check(struct eap_sm *sm, void *priv,
-			       struct wpabuf *respData)
+static bool eap_ikev2_check(struct eap_sm *sm, void *priv,
+			    struct wpabuf *respData)
 {
 	const u8 *pos;
 	size_t len;
@@ -246,10 +246,10 @@ static Boolean eap_ikev2_check(struct eap_sm *sm, void *priv,
 			       &len);
 	if (pos == NULL) {
 		wpa_printf(MSG_INFO, "EAP-IKEV2: Invalid frame");
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
@@ -465,14 +465,14 @@ static void eap_ikev2_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_ikev2_isDone(struct eap_sm *sm, void *priv)
+static bool eap_ikev2_isDone(struct eap_sm *sm, void *priv)
 {
 	struct eap_ikev2_data *data = priv;
 	return data->state == DONE || data->state == FAIL;
 }
 
 
-static Boolean eap_ikev2_isSuccess(struct eap_sm *sm, void *priv)
+static bool eap_ikev2_isSuccess(struct eap_sm *sm, void *priv)
 {
 	struct eap_ikev2_data *data = priv;
 	return data->state == DONE && data->ikev2.state == IKEV2_DONE &&

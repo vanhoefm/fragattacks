@@ -664,8 +664,8 @@ static struct wpabuf * eap_aka_buildReq(struct eap_sm *sm, void *priv, u8 id)
 }
 
 
-static Boolean eap_aka_check(struct eap_sm *sm, void *priv,
-			     struct wpabuf *respData)
+static bool eap_aka_check(struct eap_sm *sm, void *priv,
+			  struct wpabuf *respData)
 {
 	struct eap_aka_data *data = priv;
 	const u8 *pos;
@@ -675,25 +675,25 @@ static Boolean eap_aka_check(struct eap_sm *sm, void *priv,
 			       &len);
 	if (pos == NULL || len < 3) {
 		wpa_printf(MSG_INFO, "EAP-AKA: Invalid frame");
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
-static Boolean eap_aka_subtype_ok(struct eap_aka_data *data, u8 subtype)
+static bool eap_aka_subtype_ok(struct eap_aka_data *data, u8 subtype)
 {
 	if (subtype == EAP_AKA_SUBTYPE_CLIENT_ERROR ||
 	    subtype == EAP_AKA_SUBTYPE_AUTHENTICATION_REJECT)
-		return FALSE;
+		return false;
 
 	switch (data->state) {
 	case IDENTITY:
 		if (subtype != EAP_AKA_SUBTYPE_IDENTITY) {
 			wpa_printf(MSG_INFO, "EAP-AKA: Unexpected response "
 				   "subtype %d", subtype);
-			return TRUE;
+			return true;
 		}
 		break;
 	case CHALLENGE:
@@ -701,30 +701,30 @@ static Boolean eap_aka_subtype_ok(struct eap_aka_data *data, u8 subtype)
 		    subtype != EAP_AKA_SUBTYPE_SYNCHRONIZATION_FAILURE) {
 			wpa_printf(MSG_INFO, "EAP-AKA: Unexpected response "
 				   "subtype %d", subtype);
-			return TRUE;
+			return true;
 		}
 		break;
 	case REAUTH:
 		if (subtype != EAP_AKA_SUBTYPE_REAUTHENTICATION) {
 			wpa_printf(MSG_INFO, "EAP-AKA: Unexpected response "
 				   "subtype %d", subtype);
-			return TRUE;
+			return true;
 		}
 		break;
 	case NOTIFICATION:
 		if (subtype != EAP_AKA_SUBTYPE_NOTIFICATION) {
 			wpa_printf(MSG_INFO, "EAP-AKA: Unexpected response "
 				   "subtype %d", subtype);
-			return TRUE;
+			return true;
 		}
 		break;
 	default:
 		wpa_printf(MSG_INFO, "EAP-AKA: Unexpected state (%d) for "
 			   "processing a response", data->state);
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
@@ -1269,7 +1269,7 @@ static void eap_aka_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_aka_isDone(struct eap_sm *sm, void *priv)
+static bool eap_aka_isDone(struct eap_sm *sm, void *priv)
 {
 	struct eap_aka_data *data = priv;
 	return data->state == SUCCESS || data->state == FAILURE;
@@ -1308,7 +1308,7 @@ static u8 * eap_aka_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
-static Boolean eap_aka_isSuccess(struct eap_sm *sm, void *priv)
+static bool eap_aka_isSuccess(struct eap_sm *sm, void *priv)
 {
 	struct eap_aka_data *data = priv;
 	return data->state == SUCCESS;

@@ -360,8 +360,8 @@ static struct wpabuf * eap_sim_buildReq(struct eap_sm *sm, void *priv, u8 id)
 }
 
 
-static Boolean eap_sim_check(struct eap_sm *sm, void *priv,
-			     struct wpabuf *respData)
+static bool eap_sim_check(struct eap_sm *sm, void *priv,
+			  struct wpabuf *respData)
 {
 	const u8 *pos;
 	size_t len;
@@ -369,55 +369,55 @@ static Boolean eap_sim_check(struct eap_sm *sm, void *priv,
 	pos = eap_hdr_validate(EAP_VENDOR_IETF, EAP_TYPE_SIM, respData, &len);
 	if (pos == NULL || len < 3) {
 		wpa_printf(MSG_INFO, "EAP-SIM: Invalid frame");
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
-static Boolean eap_sim_unexpected_subtype(struct eap_sim_data *data,
-					  u8 subtype)
+static bool eap_sim_unexpected_subtype(struct eap_sim_data *data,
+				       u8 subtype)
 {
 	if (subtype == EAP_SIM_SUBTYPE_CLIENT_ERROR)
-		return FALSE;
+		return false;
 
 	switch (data->state) {
 	case START:
 		if (subtype != EAP_SIM_SUBTYPE_START) {
 			wpa_printf(MSG_INFO, "EAP-SIM: Unexpected response "
 				   "subtype %d", subtype);
-			return TRUE;
+			return true;
 		}
 		break;
 	case CHALLENGE:
 		if (subtype != EAP_SIM_SUBTYPE_CHALLENGE) {
 			wpa_printf(MSG_INFO, "EAP-SIM: Unexpected response "
 				   "subtype %d", subtype);
-			return TRUE;
+			return true;
 		}
 		break;
 	case REAUTH:
 		if (subtype != EAP_SIM_SUBTYPE_REAUTHENTICATION) {
 			wpa_printf(MSG_INFO, "EAP-SIM: Unexpected response "
 				   "subtype %d", subtype);
-			return TRUE;
+			return true;
 		}
 		break;
 	case NOTIFICATION:
 		if (subtype != EAP_SIM_SUBTYPE_NOTIFICATION) {
 			wpa_printf(MSG_INFO, "EAP-SIM: Unexpected response "
 				   "subtype %d", subtype);
-			return TRUE;
+			return true;
 		}
 		break;
 	default:
 		wpa_printf(MSG_INFO, "EAP-SIM: Unexpected state (%d) for "
 			   "processing a response", data->state);
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
@@ -794,7 +794,7 @@ static void eap_sim_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_sim_isDone(struct eap_sm *sm, void *priv)
+static bool eap_sim_isDone(struct eap_sm *sm, void *priv)
 {
 	struct eap_sim_data *data = priv;
 	return data->state == SUCCESS || data->state == FAILURE;
@@ -833,7 +833,7 @@ static u8 * eap_sim_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
-static Boolean eap_sim_isSuccess(struct eap_sm *sm, void *priv)
+static bool eap_sim_isSuccess(struct eap_sm *sm, void *priv)
 {
 	struct eap_sim_data *data = priv;
 	return data->state == SUCCESS;
