@@ -13,7 +13,6 @@ LIBS += $(SRC)/common/libcommon.a
 LIBS += $(SRC)/utils/libutils.a
 
 OBJS += $(SRC)/crypto/crypto_openssl.o
-LIBS += -lcrypto
 
 OBJS += $(SRC)/crypto/aes-ctr.o
 OBJS += $(SRC)/crypto/aes-siv.o
@@ -24,7 +23,7 @@ OBJS += $(SRC)/tls/asn1.o
 OBJS += $(SRC)/common/dpp.o
 
 dpp-uri: dpp-uri.o $(OBJS) $(LIBS)
-	$(LDO) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(LDO) $(LDFLAGS) -o $@ $^ -lcrypto
 
 clean:
 	$(MAKE) -C $(SRC) clean
