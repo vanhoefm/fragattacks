@@ -188,6 +188,7 @@ static void wpas_wps_security_workaround(struct wpa_supplicant *wpa_s,
 	const u8 *ie;
 	struct wpa_ie_data adv;
 	int wpa2 = 0, ccmp = 0;
+	enum wpa_driver_if_type iftype;
 
 	/*
 	 * Many existing WPS APs do not know how to negotiate WPA2 or CCMP in
@@ -239,9 +240,12 @@ static void wpas_wps_security_workaround(struct wpa_supplicant *wpa_s,
 		return;
 	}
 
+	iftype = ssid->p2p_group ? WPA_IF_P2P_CLIENT : WPA_IF_STATION;
+
 	if (ccmp && !(ssid->pairwise_cipher & WPA_CIPHER_CCMP) &&
 	    (ssid->pairwise_cipher & WPA_CIPHER_TKIP) &&
-	    (capa.key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK)) {
+	    (capa.key_mgmt_iftype[iftype] &
+	     WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK)) {
 		wpa_printf(MSG_DEBUG, "WPS: Add CCMP into the credential "
 			   "based on scan results");
 		if (wpa_s->conf->ap_scan == 1)

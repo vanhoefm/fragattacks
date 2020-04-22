@@ -946,7 +946,8 @@ static int interworking_set_hs20_params(struct wpa_supplicant *wpa_s,
 	struct wpa_driver_capa capa;
 
 	res = wpa_drv_get_capa(wpa_s, &capa);
-	if (res == 0 && capa.key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_FT) {
+	if (res == 0 && capa.key_mgmt_iftype[WPA_IF_STATION] &
+	    WPA_DRIVER_CAPA_KEY_MGMT_FT) {
 		key_mgmt = wpa_s->conf->pmf != NO_MGMT_FRAME_PROTECTION ?
 			"WPA-EAP WPA-EAP-SHA256 FT-EAP" :
 			"WPA-EAP FT-EAP";
