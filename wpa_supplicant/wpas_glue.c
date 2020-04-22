@@ -248,6 +248,23 @@ static int wpa_eapol_set_wep_key(void *ctx, int unicast, int keyidx,
 		else
 			wpa_s->group_cipher = cipher;
 	}
+#ifdef CONFIG_TESTING_OPTIONS
+	if (unicast) {
+		wpa_s->last_tk_alg = WPA_ALG_WEP;
+		os_memcpy(wpa_s->last_tk_addr, wpa_s->bssid, ETH_ALEN);
+		wpa_s->last_tk_key_idx = keyidx;
+		if (key)
+			os_memcpy(wpa_s->last_tk, key, keylen);
+		wpa_s->last_tk_len = keylen;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
+#ifdef CONFIG_TESTING_GET_GTK
+	else {
+		os_memcpy(wpa_s->last_gtk, key, keylen);
+		wpa_s->last_gtk_len = keylen;
+		wpa_s->last_gtk_idx = keyidx;
+	}
+#endif /* CONFIG_TESTING_GET_GTK */
 	return wpa_drv_set_key(wpa_s, WPA_ALG_WEP,
 			       unicast ? wpa_s->bssid : NULL,
 			       keyidx, unicast, NULL, 0, key, keylen,
@@ -366,6 +383,9 @@ static void wpa_supplicant_notify_eapol_done(void *ctx)
 {
 	struct wpa_supplicant *wpa_s = ctx;
 	wpa_msg(wpa_s, MSG_DEBUG, "WPA: EAPOL processing complete");
+#ifdef CONFIG_TESTING_OPTIONS
+	wpa_msg_ctrl(wpa_s, MSG_INFO, "WPA: EAPOL processing complete");
+#endif /* CONFIG_TESTING_OPTIONS */
 	if (wpa_key_mgmt_wpa_ieee8021x(wpa_s->key_mgmt)) {
 		wpa_supplicant_set_state(wpa_s, WPA_4WAY_HANDSHAKE);
 	} else {
