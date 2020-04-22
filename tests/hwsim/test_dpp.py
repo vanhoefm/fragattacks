@@ -5310,3 +5310,15 @@ def run_dpp_reconfig_connector(dev, apdev):
     if n_net_access_key.strip('"') != net_access_key:
         raise Exception("net_access_key mismatch: %s %s" % (n_net_access_key,
                                                             net_access_key))
+
+def test_dpp_qr_code_auth_rand_mac_addr(dev, apdev):
+    """DPP QR Code and authentication exchange (rand_mac_addr=1)"""
+    flags = int(dev[0].get_driver_status_field('capa.flags'), 16)
+    if flags & 0x0000400000000000 == 0:
+        raise HwsimSkip("Driver does not support random GAS TA")
+
+    try:
+        dev[0].set("gas_rand_mac_addr", "1")
+        run_dpp_qr_code_auth_unicast(dev, apdev, None)
+    finally:
+        dev[0].set("gas_rand_mac_addr", "0")
