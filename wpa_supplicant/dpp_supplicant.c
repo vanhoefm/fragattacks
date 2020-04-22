@@ -1428,7 +1428,7 @@ static void wpas_dpp_start_gas_client(struct wpa_supplicant *wpa_s)
 		   MAC2STR(auth->peer_mac_addr), auth->curr_freq);
 
 	res = gas_query_req(wpa_s->gas, auth->peer_mac_addr, auth->curr_freq,
-			    1, buf, wpas_dpp_gas_resp_cb, wpa_s);
+			    1, 1, buf, wpas_dpp_gas_resp_cb, wpa_s);
 	if (res < 0) {
 		wpa_msg(wpa_s, MSG_DEBUG, "GAS: Failed to send Query Request");
 		wpabuf_free(buf);

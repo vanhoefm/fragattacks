@@ -43,6 +43,7 @@ struct gas_query_pending {
 	unsigned int offchannel_tx_started:1;
 	unsigned int retry:1;
 	unsigned int wildcard_bssid:1;
+	unsigned int maintain_addr:1;
 	int freq;
 	u16 status_code;
 	struct wpabuf *req;
@@ -693,7 +694,8 @@ static void gas_query_start_cb(struct wpa_radio_work *work, int deinit)
 		return;
 	}
 
-	if (wpas_update_random_addr_disassoc(wpa_s) < 0) {
+	if (!query->maintain_addr &&
+	    wpas_update_random_addr_disassoc(wpa_s) < 0) {
 		wpa_msg(wpa_s, MSG_INFO,
 			"Failed to assign random MAC address for GAS");
 		gas_query_free(query, 1);
@@ -749,12 +751,23 @@ static int gas_query_set_sa(struct gas_query *gas,
 	struct wpa_supplicant *wpa_s = gas->wpa_s;
 	struct os_reltime now;
 
-	if (!wpa_s->conf->gas_rand_mac_addr ||
+	if (query->maintain_addr ||
+	    !wpa_s->conf->gas_rand_mac_addr ||
 	    !(wpa_s->current_bss ?
 	      (wpa_s->drv_flags &
 	       WPA_DRIVER_FLAGS_MGMT_TX_RANDOM_TA_CONNECTED) :
 	      (wpa_s->drv_flags & WPA_DRIVER_FLAGS_MGMT_TX_RANDOM_TA))) {
 		/* Use own MAC address as the transmitter address */
+		wpa_printf(MSG_DEBUG,
+			   "GAS: Use own MAC address as the transmitter address%s%s%s",
+			   query->maintain_addr ? " (maintain_addr)" : "",
+			   !wpa_s->conf->gas_rand_mac_addr ? " (no gas_rand_mac_adr set)" : "",
+			   !(wpa_s->current_bss ?
+			     (wpa_s->drv_flags &
+			      WPA_DRIVER_FLAGS_MGMT_TX_RANDOM_TA_CONNECTED) :
+			     (wpa_s->drv_flags &
+			      WPA_DRIVER_FLAGS_MGMT_TX_RANDOM_TA)) ?
+			   " (no driver rand capa" : "");
 		os_memcpy(query->sa, wpa_s->own_addr, ETH_ALEN);
 		return 0;
 	}
@@ -800,6 +813,9 @@ static int gas_query_set_sa(struct gas_query *gas,
  * @gas: GAS query data from gas_query_init()
  * @dst: Destination MAC address for the query
  * @freq: Frequency (in MHz) for the channel on which to send the query
+ * @wildcard_bssid: Force use of wildcard BSSID value
+ * @maintain_addr: Maintain own MAC address for exchange (i.e., ignore MAC
+ *	address randomization rules)
  * @req: GAS query payload (to be freed by gas_query module in case of success
  *	return)
  * @cb: Callback function for reporting GAS query result and response
@@ -807,7 +823,7 @@ static int gas_query_set_sa(struct gas_query *gas,
  * Returns: dialog token (>= 0) on success or -1 on failure
  */
 int gas_query_req(struct gas_query *gas, const u8 *dst, int freq,
-		  int wildcard_bssid, struct wpabuf *req,
+		  int wildcard_bssid, int maintain_addr, struct wpabuf *req,
 		  void (*cb)(void *ctx, const u8 *dst, u8 dialog_token,
 			     enum gas_query_result result,
 			     const struct wpabuf *adv_proto,
@@ -829,6 +845,7 @@ int gas_query_req(struct gas_query *gas, const u8 *dst, int freq,
 		return -1;
 
 	query->gas = gas;
+	query->maintain_addr = !!maintain_addr;
 	if (gas_query_set_sa(gas, query)) {
 		os_free(query);
 		return -1;
