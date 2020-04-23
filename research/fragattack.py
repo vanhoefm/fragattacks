@@ -300,15 +300,14 @@ class LinuxTest(Test):
 		# Fragment 1: normal
 		self.actions[0].frame = frag1
 
-		# Fragment 2: make Linux update latest used crypto Packet Number
+		# Fragment 2: make Linux update latest used crypto Packet Number.
+		# We only change the sequence number since that is not authenticated.
 		frag2enc = frag2.copy()
-		frag2enc.SC ^= (1 << 4) | 1
+		frag2enc.SC ^= (1 << 4)
 		self.actions[1].frame = frag2enc
 
 		# Fragment 3: can now inject last fragment as plaintext
 		self.actions[2].frame = frag2
-
-		return test
 
 class MacOsTest(Test):
 	"""
@@ -1215,6 +1214,9 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=False):
 				   Action(Action.StartAuth, enc=False)]
 
 		test = EapolMsduTest(REQ_ICMP, actions)
+
+	elif test_name == "linux_plain":
+		test = LinuxTest(REQ_ICMP)
 
 	elif test_name == "macos":
 		test = MacOsTest(REQ_DHCP)
