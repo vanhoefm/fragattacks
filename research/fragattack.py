@@ -300,11 +300,11 @@ class LinuxTest(Test):
 		# Fragment 1: normal
 		self.actions[0].frame = frag1
 
-		# Fragment 2: make Linux update latest used crypto Packet Number.
-		# We only change the sequence number since that is not authenticated.
-		frag2enc = frag2.copy()
-		frag2enc.SC ^= (1 << 4)
-		self.actions[1].frame = frag2enc
+		# Fragment 2: make Linux update latest used crypto Packet Number. Use a dummy packet
+		# that can't accidently aggregate with the first fragment in a corrrect packet.
+		p = station.get_header()/LLC()/SNAP()/IP()
+		p.SC = frag2.SC ^ (1 << 4)
+		self.actions[1].frame = p
 
 		# Fragment 3: can now inject last fragment as plaintext
 		self.actions[2].frame = frag2
@@ -1159,6 +1159,8 @@ def stract2action(stract):
 		return Action(trigger, action=Action.GetIp)
 	elif c == 'R':
 		return Action(trigger, action=Action.Rekey)
+	elif c == 'C':
+		return Action(trigger, action=Action.Reconnect)
 	elif c == 'P':
 		return Action(trigger, enc=False)
 	elif c == 'E':
@@ -1294,7 +1296,7 @@ if __name__ == "__main__":
 	parser.add_argument('--peerip', help="IP of the device we will test.")
 	parser.add_argument('--ap', default=False, action='store_true', help="Act as an AP to test clients.")
 	parser.add_argument('--debug', type=int, default=0, help="Debug output level.")
-	parser.add_argument('--delay', type=int, default=0, help="Delay between fragments in certain tests.")
+	parser.add_argument('--delay', type=float, default=0, help="Delay between fragments in certain tests.")
 	parser.add_argument('--inc_pn', type=int, default=1, help="To test non-sequential packet number in fragments.")
 	parser.add_argument('--msdu', default=False, action='store_true', help="Encapsulate pings in an A-MSDU frame.")
 	parser.add_argument('--arp', default=False, action='store_true', help="Override default request with ARP request.")
