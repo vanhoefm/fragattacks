@@ -371,11 +371,8 @@ class EapolTest(Test):
 
 
 class EapolMsduTest(Test):
-	def __init__(self, ptype):
-		super().__init__([
-			Action(Action.Connected, enc=False),
-			Action(Action.Connected, enc=False)
-		])
+	def __init__(self, ptype, actions):
+		super().__init__(actions)
 		self.ptype = ptype
 		self.check_fn = None
 
@@ -397,9 +394,9 @@ class EapolMsduTest(Test):
 		# Masquerade A-MSDU frame as an EAPOL frame
 		request = LLC()/SNAP()/EAPOL()/Raw(b"\x00\x06AAAAAA") / add_msdu_frag(station.mac, station.get_peermac(), request)
 
-
 		frames = create_fragments(header, request, 1)
 
+		# XXX Where was this needed again?
 		auth = Dot11()/Dot11Auth(status=0, seqnum=1)
 		station.set_header(auth)
 		auth.addr2 = "00:11:22:33:44:55"
@@ -902,14 +899,22 @@ class Authenticator(Daemon):
 		else:
 			station.handle_eth(p)
 
+	def add_station(self, clientmac):
+		if not clientmac in self.stations:
+			station = Station(self, self.apmac, "from-DS")
+			self.stations[clientmac] = station
+
+			if self.options.ip and self.options.peerip:
+				# XXX should we also override our own IP? Won't match with DHCP router.
+				self.dhcp.prealloc_ip(clientmac, self.options.peerip)
+				station.set_ip_addresses(self.options.ip, self.options.peerip)
+
 	def handle_wpaspy(self, msg):
 		log(STATUS, "daemon: " + msg)
 
 		if "AP-STA-CONNECTING" in msg:
 			cmd, clientmac = msg.split()
-			if not clientmac in self.stations:
-				station = Station(self, self.apmac, "from-DS")
-				self.stations[clientmac] = station
+			self.add_station(clientmac)
 
 			log(STATUS, f"Client {clientmac} is connecting")
 			station = self.stations[clientmac]
@@ -1165,22 +1170,11 @@ def stract2action(stract):
 
 	raise Exception("Unrecognized action")
 
-def prepare_tests(test_name, actions, delay=0, inc_pn=0, as_msdu=False):
-	# Handle action string
-	if actions != None:
-		actions = [stract2action(stract) for stract in actions.split(",")]
-
-	if test_name == "qca_test":
-		test = QcaDriverTest()
-
-	elif test_name == "qca_split":
-		test = QcaTestSplit()
-
-	elif test_name == "qca_rekey":
-		test = QcaDriverRekey()
-
-	elif test_name == "ping":
-		if actions == None:
+def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=False):
+	if test_name == "ping":
+		if stractions != None:
+			actions = [stract2action(stract) for stract in stractions.split(",")]
+		else:
 			actions = [Action(Action.Connected, action=Action.GetIp),
 				   Action(Action.Connected, enc=True)]
 
@@ -1213,35 +1207,35 @@ def prepare_tests(test_name, actions, delay=0, inc_pn=0, as_msdu=False):
 				 Action(Action.Connected, action=Action.Reconnect),
 				 Action(Action.AfterAuth, enc=True)])
 
+	elif test_name == "eapol_msdu":
+		if stractions != None:
+			actions = [Action(char2trigger(t), enc=False) for t in stractions]
+		else:
+			actions = [Action(Action.StartAuth, enc=False),
+				   Action(Action.StartAuth, enc=False)]
+
+		test = EapolMsduTest(REQ_ICMP, actions)
+
+	elif test_name == "macos":
+		test = MacOsTest(REQ_DHCP)
+
+	elif test_name == "qca_test":
+		test = QcaDriverTest()
+
+	elif test_name == "qca_split":
+		test = QcaTestSplit()
+
+	elif test_name == "qca_rekey":
+		test = QcaDriverRekey()
+
 	# -----------------------------------------------------------------------------------------
 
-	elif test_name == "1":
+	elif test_name == "ping_bcast":
 		# Check if the STA receives broadcast (useful test against AP)
+		# XXX Have both broadcast and unicast IP/ARP inside?
 		test = PingTest(REQ_DHCP,
 				[Action(Action.Connected, enc=True)],
 				bcast=True)
-
-	elif test_name == "3":
-		# Two fragments over different PTK keys. Against RT-AC51U AP we can
-		# trigger a rekey, but must do the rekey handshake in plaintext.
-		test = PingTest(REQ_DHCP,
-				[Action(Action.Connected, enc=True),
-				 Action(Action.Connected, action=Action.Rekey),
-				 Action(Action.AfterAuth, enc=True)])
-
-	elif test_name == "4":
-		# Two fragments over different PTK keys. Against RT-AC51U AP we can
-		# trigger a rekey, but must do the rekey handshake in plaintext.
-		test = PingTest(REQ_DHCP,
-				[Action(Action.Connected, action=Action.Rekey),
-				 Action(Action.BeforeAuth, enc=True),
-				 Action(Action.AfterAuth, enc=True)])
-
-	elif test_name == "5":
-		test = MacOsTest(REQ_DHCP)
-
-	elif test_name == "eapol_msdu":
-		test = EapolMsduTest(REQ_ICMP)
 
 	# XXX TODO : Hardware decrypts it using old key, software using new key?
 	#	     So right after rekey we inject first with old key, second with new key?
