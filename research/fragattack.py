@@ -1169,7 +1169,7 @@ def stract2action(stract):
 
 	raise Exception("Unrecognized action")
 
-def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=False):
+def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=False, ptype=None):
 	if test_name == "ping":
 		if stractions != None:
 			actions = [stract2action(stract) for stract in stractions.split(",")]
@@ -1219,7 +1219,7 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=False):
 		test = LinuxTest(REQ_ICMP)
 
 	elif test_name == "macos":
-		test = MacOsTest(REQ_DHCP)
+		test = MacOsTest(REQ_ICMP)
 
 	elif test_name == "qca_test":
 		test = QcaDriverTest()
@@ -1256,10 +1256,29 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=False):
 	# - Test fragmentation of management frames
 	# - Test fragmentation of group frames (STA mode of RT-AC51u?)
 
-	# Handle delay and inc_pn parameters automatically in all tests somehow
+	# If requested, override delay and inc_pn parameters in the test.
 	test.set_options(delay, inc_pn)
 
+	# If requested, override the ptype
+	if ptype != None:
+		if not hasattr(test, "ptype"):
+			log(WARNING, "Cannot override request type of this test.")
+			quit(1)
+		test.ptype = ptype
+
 	return test
+
+def args2ptype(args):
+	# Only one of these should be given
+	if args.arp + args.dhcp + args.icmp > 1:
+		log(STATUS, "You cannot combine --arp, --dhcp, or --icmp. Please only supply one of them.")
+		quit(1)
+
+	if args.arp: return REQ_ARP
+	if args.dhcp: return REQ_DHCP
+	if args.icmp: return REQ_ICMP
+
+	return None
 
 if __name__ == "__main__":
 	log(WARNING, "Remember to use a modified backports and ath9k_htc firmware!\n")
@@ -1275,12 +1294,17 @@ if __name__ == "__main__":
 	parser.add_argument('--delay', type=int, default=0, help="Delay between fragments in certain tests.")
 	parser.add_argument('--inc_pn', type=int, default=1, help="To test non-sequential packet number in fragments.")
 	parser.add_argument('--msdu', default=False, action='store_true', help="Encapsulate pings in an A-MSDU frame.")
+	parser.add_argument('--arp', default=False, action='store_true', help="Override default request with ARP request.")
+	parser.add_argument('--dhcp', default=False, action='store_true', help="Override default request with DHCP discover.")
+	parser.add_argument('--icmp', default=False, action='store_true', help="Override default request with ICMP ping request.")
 	args = parser.parse_args()
+
+	ptype = args2ptype(args)
 
 	# Convert parsed options to TestOptions object
 	options = TestOptions()
 	options.interface = args.iface
-	options.test = prepare_tests(args.testname, args.actions, args.delay, args.inc_pn, args.msdu)
+	options.test = prepare_tests(args.testname, args.actions, args.delay, args.inc_pn, args.msdu, ptype)
 	options.ip = args.ip
 	options.peerip = args.peerip
 
