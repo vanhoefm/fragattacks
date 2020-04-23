@@ -657,8 +657,8 @@ radius_server_get_new_session(struct radius_server_data *data,
 		return NULL;
 	}
 	sess->eap_if = eap_get_interface(sess->eap);
-	sess->eap_if->eapRestart = TRUE;
-	sess->eap_if->portEnabled = TRUE;
+	sess->eap_if->eapRestart = true;
+	sess->eap_if->portEnabled = true;
 
 	RADIUS_DEBUG("New session 0x%x initialized", sess->sess_id);
 
@@ -909,13 +909,13 @@ radius_server_encapsulate_eap(struct radius_server_data *data,
 	u16 reason = WLAN_REASON_IEEE_802_1X_AUTH_FAILED;
 
 	if (sess->eap_if->eapFail) {
-		sess->eap_if->eapFail = FALSE;
+		sess->eap_if->eapFail = false;
 		code = RADIUS_CODE_ACCESS_REJECT;
 	} else if (sess->eap_if->eapSuccess) {
-		sess->eap_if->eapSuccess = FALSE;
+		sess->eap_if->eapSuccess = false;
 		code = RADIUS_CODE_ACCESS_ACCEPT;
 	} else {
-		sess->eap_if->eapReq = FALSE;
+		sess->eap_if->eapReq = false;
 		code = RADIUS_CODE_ACCESS_CHALLENGE;
 	}
 
@@ -1443,7 +1443,7 @@ static int radius_server_request(struct radius_server_data *data,
 
 	wpabuf_free(sess->eap_if->eapRespData);
 	sess->eap_if->eapRespData = eap;
-	sess->eap_if->eapResp = TRUE;
+	sess->eap_if->eapResp = true;
 	eap_server_sm_step(sess->eap);
 
 	if ((sess->eap_if->eapReq || sess->eap_if->eapSuccess ||
@@ -2207,7 +2207,7 @@ radius_server_init(struct radius_server_conf *conf)
 	dl_list_init(&data->erp_keys);
 	os_get_reltime(&data->start_time);
 	data->conf_ctx = conf->conf_ctx;
-	conf->eap_cfg->backend_auth = TRUE;
+	conf->eap_cfg->backend_auth = true;
 	conf->eap_cfg->eap_server = 1;
 	data->ipv6 = conf->ipv6;
 	data->get_eap_user = conf->get_eap_user;
