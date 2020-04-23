@@ -1223,8 +1223,15 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
 	u8 ip_addr_buf[4];
 #endif /* CONFIG_P2P */
 
-	if (!!authorized == !!(sta->flags & WLAN_STA_AUTHORIZED))
+	if (!!authorized == !!(sta->flags & WLAN_STA_AUTHORIZED)) {
+#ifdef CONFIG_TESTING_OPTIONS
+		if (authorized) {
+			os_snprintf(buf, sizeof(buf), MACSTR, MAC2STR(sta->addr));
+			wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_CONNECTED "%s", buf);
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
 		return;
+	}
 
 	if (authorized)
 		sta->flags |= WLAN_STA_AUTHORIZED;
