@@ -317,9 +317,9 @@ static void wpa_rekey_gtk(void *eloop_ctx, void *timeout_ctx)
 	while (group) {
 		wpa_group_get(wpa_auth, group);
 
-		group->GTKReKey = TRUE;
+		group->GTKReKey = true;
 		do {
-			group->changed = FALSE;
+			group->changed = false;
 			wpa_group_sm_step(wpa_auth, group);
 		} while (group->changed);
 
@@ -420,7 +420,7 @@ static struct wpa_group * wpa_group_init(struct wpa_authenticator *wpa_auth,
 	if (!group)
 		return NULL;
 
-	group->GTKAuthenticator = TRUE;
+	group->GTKAuthenticator = true;
 	group->vlan_id = vlan_id;
 	group->GTK_len = wpa_cipher_key_len(wpa_auth->conf.wpa_group);
 
@@ -442,14 +442,14 @@ static struct wpa_group * wpa_group_init(struct wpa_authenticator *wpa_auth,
 		return NULL;
 	}
 
-	group->GInit = TRUE;
+	group->GInit = true;
 	if (delay_init) {
 		wpa_printf(MSG_DEBUG,
 			   "WPA: Delay group state machine start until Beacon frames have been configured");
 		/* Initialization is completed in wpa_init_keys(). */
 	} else {
 		wpa_group_sm_step(wpa_auth, group);
-		group->GInit = FALSE;
+		group->GInit = false;
 		wpa_group_sm_step(wpa_auth, group);
 	}
 
@@ -546,7 +546,7 @@ int wpa_init_keys(struct wpa_authenticator *wpa_auth)
 	wpa_printf(MSG_DEBUG,
 		   "WPA: Start group state machine to set initial keys");
 	wpa_group_sm_step(wpa_auth, group);
-	group->GInit = FALSE;
+	group->GInit = false;
 	wpa_group_sm_step(wpa_auth, group);
 	if (group->wpa_group_state == WPA_GROUP_FATAL_FAILURE)
 		return -1;
@@ -616,9 +616,9 @@ int wpa_reconfig(struct wpa_authenticator *wpa_auth,
 	 */
 	group = wpa_auth->group;
 	group->GTK_len = wpa_cipher_key_len(wpa_auth->conf.wpa_group);
-	group->GInit = TRUE;
+	group->GInit = true;
 	wpa_group_sm_step(wpa_auth, group);
-	group->GInit = FALSE;
+	group->GInit = false;
 	wpa_group_sm_step(wpa_auth, group);
 
 	return 0;
@@ -661,7 +661,7 @@ int wpa_auth_sta_associated(struct wpa_authenticator *wpa_auth,
 				"FT authentication already completed - do not start 4-way handshake");
 		/* Go to PTKINITDONE state to allow GTK rekeying */
 		sm->wpa_ptk_state = WPA_PTK_PTKINITDONE;
-		sm->Pair = TRUE;
+		sm->Pair = true;
 		return 0;
 	}
 #endif /* CONFIG_IEEE80211R_AP */
@@ -672,14 +672,14 @@ int wpa_auth_sta_associated(struct wpa_authenticator *wpa_auth,
 				"FILS authentication already completed - do not start 4-way handshake");
 		/* Go to PTKINITDONE state to allow GTK rekeying */
 		sm->wpa_ptk_state = WPA_PTK_PTKINITDONE;
-		sm->Pair = TRUE;
+		sm->Pair = true;
 		return 0;
 	}
 #endif /* CONFIG_FILS */
 
 	if (sm->started) {
 		os_memset(&sm->key_replay, 0, sizeof(sm->key_replay));
-		sm->ReAuthenticationRequest = TRUE;
+		sm->ReAuthenticationRequest = true;
 		return wpa_sm_step(sm);
 	}
 
@@ -687,11 +687,11 @@ int wpa_auth_sta_associated(struct wpa_authenticator *wpa_auth,
 			"start authentication");
 	sm->started = 1;
 
-	sm->Init = TRUE;
+	sm->Init = true;
 	if (wpa_sm_step(sm) == 1)
 		return 1; /* should not really happen */
-	sm->Init = FALSE;
-	sm->AuthenticationRequest = TRUE;
+	sm->Init = false;
+	sm->AuthenticationRequest = true;
 	return wpa_sm_step(sm);
 }
 
@@ -726,7 +726,7 @@ static void wpa_free_sta_sm(struct wpa_state_machine *sm)
 #endif /* CONFIG_P2P */
 	if (sm->GUpdateStationKeys) {
 		sm->group->GKeyDoneStations--;
-		sm->GUpdateStationKeys = FALSE;
+		sm->GUpdateStationKeys = false;
 	}
 #ifdef CONFIG_IEEE80211R_AP
 	os_free(sm->assoc_resp_ftie);
@@ -788,14 +788,14 @@ static void wpa_request_new_ptk(struct wpa_state_machine *sm)
 		wpa_printf(MSG_INFO,
 			   "WPA: PTK0 rekey not allowed, disconnect " MACSTR,
 			   MAC2STR(sm->addr));
-		sm->Disconnect = TRUE;
+		sm->Disconnect = true;
 		/* Try to encourage the STA to reconnect */
 		sm->disconnect_reason =
 			WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA;
 	} else {
 		if (sm->use_ext_key_id)
 			sm->keyidx_active ^= 1; /* flip Key ID */
-		sm->PTKRequest = TRUE;
+		sm->PTKRequest = true;
 		sm->PTK_valid = 0;
 	}
 }
@@ -825,7 +825,7 @@ static void wpa_replay_counter_mark_invalid(struct wpa_key_replay_counter *ctr,
 		    (!replay_counter ||
 		     os_memcmp(replay_counter, ctr[i].counter,
 			       WPA_REPLAY_COUNTER_LEN) == 0))
-			ctr[i].valid = FALSE;
+			ctr[i].valid = false;
 	}
 }
 
@@ -976,7 +976,7 @@ static int wpa_try_alt_snonce(struct wpa_state_machine *sm, u8 *data,
 	os_memcpy(sm->SNonce, sm->alt_SNonce, WPA_NONCE_LEN);
 	os_memcpy(&sm->PTK, &PTK, sizeof(PTK));
 	forced_memzero(&PTK, sizeof(PTK));
-	sm->PTK_valid = TRUE;
+	sm->PTK_valid = true;
 
 	return 0;
 }
@@ -1146,7 +1146,7 @@ void wpa_receive(struct wpa_authenticator *wpa_auth,
 					 "Process SNonce update from STA based on retransmitted EAPOL-Key 1/4");
 			sm->update_snonce = 1;
 			os_memcpy(sm->alt_SNonce, sm->SNonce, WPA_NONCE_LEN);
-			sm->alt_snonce_valid = TRUE;
+			sm->alt_snonce_valid = true;
 			os_memcpy(sm->alt_replay_counter,
 				  sm->key_replay[0].counter,
 				  WPA_REPLAY_COUNTER_LEN);
@@ -1278,7 +1278,7 @@ continue_processing:
 	}
 #endif /* CONFIG_FILS */
 
-	sm->MICVerified = FALSE;
+	sm->MICVerified = false;
 	if (sm->PTK_valid && !sm->update_snonce) {
 		if (mic_len &&
 		    wpa_verify_key_mic(sm->wpa_key_mgmt, sm->pmk_len, &sm->PTK,
@@ -1311,7 +1311,7 @@ continue_processing:
 #ifdef TEST_FUZZ
 	continue_fuzz:
 #endif /* TEST_FUZZ */
-		sm->MICVerified = TRUE;
+		sm->MICVerified = true;
 		eloop_cancel_timeout(wpa_send_eapol_timeout, wpa_auth, sm);
 		sm->pending_1_of_4_timeout = 0;
 	}
@@ -1385,7 +1385,7 @@ continue_processing:
 	sm->last_rx_eapol_key_len = data_len;
 
 	sm->rx_eapol_key_secure = !!(key_info & WPA_KEY_INFO_SECURE);
-	sm->EAPOLKeyReceived = TRUE;
+	sm->EAPOLKeyReceived = true;
 	sm->EAPOLKeyPairwise = !!(key_info & WPA_KEY_INFO_KEY_TYPE);
 	sm->EAPOLKeyRequest = !!(key_info & WPA_KEY_INFO_REQUEST);
 	os_memcpy(sm->SNonce, key->key_nonce, WPA_NONCE_LEN);
@@ -1448,7 +1448,7 @@ static void wpa_send_eapol_timeout(void *eloop_ctx, void *timeout_ctx)
 
 	sm->pending_1_of_4_timeout = 0;
 	wpa_auth_logger(wpa_auth, sm->addr, LOGGER_DEBUG, "EAPOL-Key timeout");
-	sm->TimeoutEvt = TRUE;
+	sm->TimeoutEvt = true;
 	wpa_sm_step(sm);
 }
 
@@ -1548,7 +1548,7 @@ void __wpa_send_eapol(struct wpa_authenticator *wpa_auth,
 		  WPA_REPLAY_COUNTER_LEN);
 	wpa_hexdump(MSG_DEBUG, "WPA: Replay Counter",
 		    key->replay_counter, WPA_REPLAY_COUNTER_LEN);
-	sm->key_replay[0].valid = TRUE;
+	sm->key_replay[0].valid = true;
 
 	if (nonce)
 		os_memcpy(key->key_nonce, nonce, WPA_NONCE_LEN);
@@ -1735,7 +1735,7 @@ static int wpa_verify_key_mic(int akmp, size_t pmk_len, struct wpa_ptk *PTK,
 
 void wpa_remove_ptk(struct wpa_state_machine *sm)
 {
-	sm->PTK_valid = FALSE;
+	sm->PTK_valid = false;
 	os_memset(&sm->PTK, 0, sizeof(sm->PTK));
 	if (wpa_auth_set_key(sm->wpa_auth, 0, WPA_ALG_NONE, sm->addr, 0, NULL,
 			     0, KEY_FLAG_PAIRWISE))
@@ -1746,7 +1746,7 @@ void wpa_remove_ptk(struct wpa_state_machine *sm)
 			     0, KEY_FLAG_PAIRWISE))
 		wpa_printf(MSG_DEBUG,
 			   "RSN: PTK Key ID 1 removal from the driver failed");
-	sm->pairwise_set = FALSE;
+	sm->pairwise_set = false;
 	eloop_cancel_timeout(wpa_rekey_ptk, sm->wpa_auth, sm);
 }
 
@@ -1775,7 +1775,7 @@ int wpa_auth_sm_event(struct wpa_state_machine *sm, enum wpa_event event)
 		break;
 	case WPA_DEAUTH:
 	case WPA_DISASSOC:
-		sm->DeauthenticationRequest = TRUE;
+		sm->DeauthenticationRequest = true;
 #ifdef CONFIG_IEEE80211R_AP
 		os_memset(sm->PMK, 0, sizeof(sm->PMK));
 		sm->pmk_len = 0;
@@ -1798,11 +1798,11 @@ int wpa_auth_sm_event(struct wpa_state_machine *sm, enum wpa_event event)
 			wpa_printf(MSG_DEBUG,
 				   "WPA state machine had not been started - initialize now");
 			sm->started = 1;
-			sm->Init = TRUE;
+			sm->Init = true;
 			if (wpa_sm_step(sm) == 1)
 				return 1; /* should not really happen */
-			sm->Init = FALSE;
-			sm->AuthenticationRequest = TRUE;
+			sm->Init = false;
+			sm->AuthenticationRequest = true;
 			break;
 		}
 
@@ -1811,7 +1811,7 @@ int wpa_auth_sm_event(struct wpa_state_machine *sm, enum wpa_event event)
 			wpa_printf(MSG_INFO,
 				   "WPA: PTK0 rekey not allowed, disconnect "
 				   MACSTR, MAC2STR(sm->addr));
-			sm->Disconnect = TRUE;
+			sm->Disconnect = true;
 			/* Try to encourage the STA to reconnect */
 			sm->disconnect_reason =
 				WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA;
@@ -1827,10 +1827,10 @@ int wpa_auth_sm_event(struct wpa_state_machine *sm, enum wpa_event event)
 			 * update for this STA.
 			 */
 			sm->group->GKeyDoneStations--;
-			sm->GUpdateStationKeys = FALSE;
-			sm->PtkGroupInit = TRUE;
+			sm->GUpdateStationKeys = false;
+			sm->PtkGroupInit = true;
 		}
-		sm->ReAuthenticationRequest = TRUE;
+		sm->ReAuthenticationRequest = true;
 		break;
 	case WPA_ASSOC_FT:
 #ifdef CONFIG_IEEE80211R_AP
@@ -1856,7 +1856,7 @@ int wpa_auth_sm_event(struct wpa_state_machine *sm, enum wpa_event event)
 		break;
 #endif /* CONFIG_FILS */
 	case WPA_DRV_STA_REMOVED:
-		sm->tk_already_set = FALSE;
+		sm->tk_already_set = false;
 		return 0;
 	}
 
@@ -1873,7 +1873,7 @@ int wpa_auth_sm_event(struct wpa_state_machine *sm, enum wpa_event event)
 #endif /* CONFIG_FILS */
 
 	if (remove_ptk) {
-		sm->PTK_valid = FALSE;
+		sm->PTK_valid = false;
 		os_memset(&sm->PTK, 0, sizeof(sm->PTK));
 
 		if (event != WPA_REAUTH_EAPOL)
@@ -1885,7 +1885,7 @@ int wpa_auth_sm_event(struct wpa_state_machine *sm, enum wpa_event event)
 		 * wpa_sm_step() is already running - avoid recursive call to
 		 * it by making the existing loop process the new update.
 		 */
-		sm->changed = TRUE;
+		sm->changed = true;
 		return 0;
 	}
 	return wpa_sm_step(sm);
@@ -1898,18 +1898,18 @@ SM_STATE(WPA_PTK, INITIALIZE)
 	if (sm->Init) {
 		/* Init flag is not cleared here, so avoid busy
 		 * loop by claiming nothing changed. */
-		sm->changed = FALSE;
+		sm->changed = false;
 	}
 
 	sm->keycount = 0;
 	if (sm->GUpdateStationKeys)
 		sm->group->GKeyDoneStations--;
-	sm->GUpdateStationKeys = FALSE;
+	sm->GUpdateStationKeys = false;
 	if (sm->wpa == WPA_VERSION_WPA)
-		sm->PInitAKeys = FALSE;
+		sm->PInitAKeys = false;
 	if (1 /* Unicast cipher supported AND (ESS OR ((IBSS or WDS) and
 	       * Local AA > Remote AA)) */) {
-		sm->Pair = TRUE;
+		sm->Pair = true;
 	}
 	wpa_auth_set_eapol(sm->wpa_auth, sm->addr, WPA_EAPOL_portEnabled, 0);
 	wpa_remove_ptk(sm);
@@ -1929,7 +1929,7 @@ SM_STATE(WPA_PTK, DISCONNECT)
 	u16 reason = sm->disconnect_reason;
 
 	SM_ENTRY_MA(WPA_PTK, DISCONNECT, wpa_ptk);
-	sm->Disconnect = FALSE;
+	sm->Disconnect = false;
 	sm->disconnect_reason = 0;
 	if (!reason)
 		reason = WLAN_REASON_PREV_AUTH_NOT_VALID;
@@ -1940,7 +1940,7 @@ SM_STATE(WPA_PTK, DISCONNECT)
 SM_STATE(WPA_PTK, DISCONNECTED)
 {
 	SM_ENTRY_MA(WPA_PTK, DISCONNECTED, wpa_ptk);
-	sm->DeauthenticationRequest = FALSE;
+	sm->DeauthenticationRequest = false;
 }
 
 
@@ -1948,11 +1948,11 @@ SM_STATE(WPA_PTK, AUTHENTICATION)
 {
 	SM_ENTRY_MA(WPA_PTK, AUTHENTICATION, wpa_ptk);
 	os_memset(&sm->PTK, 0, sizeof(sm->PTK));
-	sm->PTK_valid = FALSE;
+	sm->PTK_valid = false;
 	wpa_auth_set_eapol(sm->wpa_auth, sm->addr, WPA_EAPOL_portControl_Auto,
 			   1);
 	wpa_auth_set_eapol(sm->wpa_auth, sm->addr, WPA_EAPOL_portEnabled, 1);
-	sm->AuthenticationRequest = FALSE;
+	sm->AuthenticationRequest = false;
 }
 
 
@@ -1973,18 +1973,18 @@ static void wpa_group_ensure_init(struct wpa_authenticator *wpa_auth,
 	if (random_pool_ready() != 1) {
 		wpa_printf(MSG_INFO,
 			   "WPA: Not enough entropy in random pool to proceed - reject first 4-way handshake");
-		group->reject_4way_hs_for_entropy = TRUE;
+		group->reject_4way_hs_for_entropy = true;
 	} else {
-		group->first_sta_seen = TRUE;
-		group->reject_4way_hs_for_entropy = FALSE;
+		group->first_sta_seen = true;
+		group->reject_4way_hs_for_entropy = false;
 	}
 
 	if (wpa_group_init_gmk_and_counter(wpa_auth, group) < 0 ||
 	    wpa_gtk_update(wpa_auth, group) < 0 ||
 	    wpa_group_config_group_keys(wpa_auth, group) < 0) {
 		wpa_printf(MSG_INFO, "WPA: GMK/GTK setup failed");
-		group->first_sta_seen = FALSE;
-		group->reject_4way_hs_for_entropy = TRUE;
+		group->first_sta_seen = false;
+		group->reject_4way_hs_for_entropy = true;
 	}
 }
 
@@ -1994,7 +1994,7 @@ SM_STATE(WPA_PTK, AUTHENTICATION2)
 	SM_ENTRY_MA(WPA_PTK, AUTHENTICATION2, wpa_ptk);
 
 	wpa_group_ensure_init(sm->wpa_auth, sm->group);
-	sm->ReAuthenticationRequest = FALSE;
+	sm->ReAuthenticationRequest = false;
 
 	/*
 	 * Definition of ANonce selection in IEEE Std 802.11i-2004 is somewhat
@@ -2008,7 +2008,7 @@ SM_STATE(WPA_PTK, AUTHENTICATION2)
 	if (random_get_bytes(sm->ANonce, WPA_NONCE_LEN)) {
 		wpa_printf(MSG_ERROR,
 			   "WPA: Failed to get random data for ANonce.");
-		sm->Disconnect = TRUE;
+		sm->Disconnect = true;
 		return;
 	}
 	wpa_hexdump(MSG_DEBUG, "WPA: Assign ANonce", sm->ANonce,
@@ -2026,7 +2026,7 @@ static int wpa_auth_sm_ptk_update(struct wpa_state_machine *sm)
 	if (random_get_bytes(sm->ANonce, WPA_NONCE_LEN)) {
 		wpa_printf(MSG_ERROR,
 			   "WPA: Failed to get random data for ANonce");
-		sm->Disconnect = TRUE;
+		sm->Disconnect = true;
 		return -1;
 	}
 	wpa_hexdump(MSG_DEBUG, "WPA: Assign new ANonce", sm->ANonce,
@@ -2053,7 +2053,7 @@ SM_STATE(WPA_PTK, INITPMK)
 	} else if (sm->wpa_key_mgmt == WPA_KEY_MGMT_DPP) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No PMKSA cache entry for STA - reject connection");
-		sm->Disconnect = TRUE;
+		sm->Disconnect = true;
 		sm->disconnect_reason = WLAN_REASON_INVALID_PMKID;
 		return;
 #endif /* CONFIG_DPP */
@@ -2071,7 +2071,7 @@ SM_STATE(WPA_PTK, INITPMK)
 			wpa_printf(MSG_DEBUG,
 				   "WPA: MSK not long enough (%zu) to create PMK (%u)",
 				   len, pmk_len);
-			sm->Disconnect = TRUE;
+			sm->Disconnect = true;
 			return;
 		}
 		os_memcpy(sm->PMK, msk, pmk_len);
@@ -2090,21 +2090,21 @@ SM_STATE(WPA_PTK, INITPMK)
 	} else {
 		wpa_printf(MSG_DEBUG, "WPA: Could not get PMK, get_msk: %p",
 			   sm->wpa_auth->cb->get_msk);
-		sm->Disconnect = TRUE;
+		sm->Disconnect = true;
 		return;
 	}
 	forced_memzero(msk, sizeof(msk));
 
 	sm->req_replay_counter_used = 0;
-	/* IEEE 802.11i does not set keyRun to FALSE, but not doing this
+	/* IEEE 802.11i does not set keyRun to false, but not doing this
 	 * will break reauthentication since EAPOL state machines may not be
 	 * get into AUTHENTICATING state that clears keyRun before WPA state
 	 * machine enters AUTHENTICATION2 state and goes immediately to INITPMK
 	 * state and takes PMK from the previously used AAA Key. This will
 	 * eventually fail in 4-Way Handshake because Supplicant uses PMK
-	 * derived from the new AAA Key. Setting keyRun = FALSE here seems to
+	 * derived from the new AAA Key. Setting keyRun = false here seems to
 	 * be good workaround for this issue. */
-	wpa_auth_set_eapol(sm->wpa_auth, sm->addr, WPA_EAPOL_keyRun, 0);
+	wpa_auth_set_eapol(sm->wpa_auth, sm->addr, WPA_EAPOL_keyRun, false);
 }
 
 
@@ -2145,9 +2145,9 @@ SM_STATE(WPA_PTK, PTKSTART)
 	size_t pmkid_len = 0;
 
 	SM_ENTRY_MA(WPA_PTK, PTKSTART, wpa_ptk);
-	sm->PTKRequest = FALSE;
-	sm->TimeoutEvt = FALSE;
-	sm->alt_snonce_valid = FALSE;
+	sm->PTKRequest = false;
+	sm->TimeoutEvt = false;
+	sm->alt_snonce_valid = false;
 
 	sm->TimeoutCtr++;
 	if (sm->TimeoutCtr > sm->wpa_auth->conf.wpa_pairwise_update_count) {
@@ -2312,8 +2312,8 @@ int fils_auth_pmk_to_ptk(struct wpa_state_machine *sm, const u8 *pmk,
 			      fils_ft, &fils_ft_len);
 	if (res < 0)
 		return res;
-	sm->PTK_valid = TRUE;
-	sm->tk_already_set = FALSE;
+	sm->PTK_valid = true;
+	sm->tk_already_set = false;
 
 #ifdef CONFIG_IEEE80211R_AP
 	if (fils_ft_len) {
@@ -2811,7 +2811,7 @@ int fils_set_tk(struct wpa_state_machine *sm)
 		wpa_printf(MSG_DEBUG, "FILS: Failed to set TK to the driver");
 		return -1;
 	}
-	sm->tk_already_set = TRUE;
+	sm->tk_already_set = true;
 
 	return 0;
 }
@@ -2882,8 +2882,8 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 	int owe_ptk_workaround = !!wpa_auth->conf.owe_ptk_workaround;
 
 	SM_ENTRY_MA(WPA_PTK, PTKCALCNEGOTIATING, wpa_ptk);
-	sm->EAPOLKeyReceived = FALSE;
-	sm->update_snonce = FALSE;
+	sm->EAPOLKeyReceived = false;
+	sm->update_snonce = false;
 	os_memset(&PTK, 0, sizeof(PTK));
 
 	mic_len = wpa_mic_len(sm->wpa_key_mgmt, sm->pmk_len);
@@ -3117,11 +3117,11 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 		sm->pmk_len = PMK_LEN;
 	}
 
-	sm->MICVerified = TRUE;
+	sm->MICVerified = true;
 
 	os_memcpy(&sm->PTK, &PTK, sizeof(PTK));
 	forced_memzero(&PTK, sizeof(PTK));
-	sm->PTK_valid = TRUE;
+	sm->PTK_valid = true;
 }
 
 
@@ -3274,7 +3274,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 	struct wpa_auth_config *conf = &sm->wpa_auth->conf;
 
 	SM_ENTRY_MA(WPA_PTK, PTKINITNEGOTIATING, wpa_ptk);
-	sm->TimeoutEvt = FALSE;
+	sm->TimeoutEvt = false;
 
 	sm->TimeoutCtr++;
 	if (conf->wpa_disable_eapol_key_retries && sm->TimeoutCtr > 1) {
@@ -3509,7 +3509,7 @@ done:
 SM_STATE(WPA_PTK, PTKINITDONE)
 {
 	SM_ENTRY_MA(WPA_PTK, PTKINITDONE, wpa_ptk);
-	sm->EAPOLKeyReceived = FALSE;
+	sm->EAPOLKeyReceived = false;
 	if (sm->Pair) {
 		enum wpa_alg alg = wpa_cipher_to_alg(sm->pairwise);
 		int klen = wpa_cipher_key_len(sm->pairwise);
@@ -3529,7 +3529,7 @@ SM_STATE(WPA_PTK, PTKINITDONE)
 			return;
 		}
 		/* FIX: MLME-SetProtection.Request(TA, Tx_Rx) */
-		sm->pairwise_set = TRUE;
+		sm->pairwise_set = true;
 
 		wpa_auth_set_ptk_rekey_timer(sm);
 
@@ -3551,12 +3551,13 @@ SM_STATE(WPA_PTK, PTKINITDONE)
 		wpa_auth_set_eapol(sm->wpa_auth, sm->addr, WPA_EAPOL_portValid,
 				   1);
 	}
-	wpa_auth_set_eapol(sm->wpa_auth, sm->addr, WPA_EAPOL_keyAvailable, 0);
-	wpa_auth_set_eapol(sm->wpa_auth, sm->addr, WPA_EAPOL_keyDone, 1);
+	wpa_auth_set_eapol(sm->wpa_auth, sm->addr, WPA_EAPOL_keyAvailable,
+			   false);
+	wpa_auth_set_eapol(sm->wpa_auth, sm->addr, WPA_EAPOL_keyDone, true);
 	if (sm->wpa == WPA_VERSION_WPA)
-		sm->PInitAKeys = TRUE;
+		sm->PInitAKeys = true;
 	else
-		sm->has_GTK = TRUE;
+		sm->has_GTK = true;
 	wpa_auth_vlogger(sm->wpa_auth, sm->addr, LOGGER_INFO,
 			 "pairwise key handshake completed (%s)",
 			 sm->wpa == WPA_VERSION_WPA ? "WPA" : "RSN");
@@ -3606,7 +3607,7 @@ SM_STEP(WPA_PTK)
 	case WPA_PTK_AUTHENTICATION2:
 		if (wpa_key_mgmt_wpa_ieee8021x(sm->wpa_key_mgmt) &&
 		    wpa_auth_get_eapol(wpa_auth, sm->addr,
-				       WPA_EAPOL_keyRun) > 0)
+				       WPA_EAPOL_keyRun))
 			SM_ENTER(WPA_PTK, INITPMK);
 		else if (wpa_key_mgmt_wpa_psk(sm->wpa_key_mgmt) ||
 			 sm->wpa_key_mgmt == WPA_KEY_MGMT_OWE
@@ -3617,7 +3618,7 @@ SM_STEP(WPA_PTK)
 		break;
 	case WPA_PTK_INITPMK:
 		if (wpa_auth_get_eapol(wpa_auth, sm->addr,
-				       WPA_EAPOL_keyAvailable) > 0) {
+				       WPA_EAPOL_keyAvailable)) {
 			SM_ENTER(WPA_PTK, PTKSTART);
 #ifdef CONFIG_DPP
 		} else if (sm->wpa_key_mgmt == WPA_KEY_MGMT_DPP && sm->pmksa) {
@@ -3700,7 +3701,7 @@ SM_STATE(WPA_PTK_GROUP, IDLE)
 	if (sm->Init) {
 		/* Init flag is not cleared here, so avoid busy
 		 * loop by claiming nothing changed. */
-		sm->changed = FALSE;
+		sm->changed = false;
 	}
 	sm->GTimeoutCtr = 0;
 }
@@ -3730,8 +3731,8 @@ SM_STATE(WPA_PTK_GROUP, REKEYNEGOTIATING)
 	}
 
 	if (sm->wpa == WPA_VERSION_WPA)
-		sm->PInitAKeys = FALSE;
-	sm->TimeoutEvt = FALSE;
+		sm->PInitAKeys = false;
+	sm->TimeoutEvt = false;
 	/* Send EAPOL(1, 1, 1, !Pair, G, RSC, GNonce, MIC(PTK), GTK[GN]) */
 	os_memset(rsc, 0, WPA_KEY_RSC_LEN);
 	if (gsm->wpa_group_state == WPA_GROUP_SETKEYSDONE)
@@ -3797,7 +3798,7 @@ SM_STATE(WPA_PTK_GROUP, REKEYESTABLISHED)
 #endif /* CONFIG_OCV */
 
 	SM_ENTRY_MA(WPA_PTK_GROUP, REKEYESTABLISHED, wpa_ptk_group);
-	sm->EAPOLKeyReceived = FALSE;
+	sm->EAPOLKeyReceived = false;
 
 #ifdef CONFIG_OCV
 	mic_len = wpa_mic_len(sm->wpa_key_mgmt, sm->pmk_len);
@@ -3849,13 +3850,13 @@ SM_STATE(WPA_PTK_GROUP, REKEYESTABLISHED)
 
 	if (sm->GUpdateStationKeys)
 		sm->group->GKeyDoneStations--;
-	sm->GUpdateStationKeys = FALSE;
+	sm->GUpdateStationKeys = false;
 	sm->GTimeoutCtr = 0;
 	/* FIX: MLME.SetProtection.Request(TA, Tx_Rx) */
 	wpa_auth_vlogger(wpa_auth, sm->addr, LOGGER_INFO,
 			 "group key handshake completed (%s)",
 			 sm->wpa == WPA_VERSION_WPA ? "WPA" : "RSN");
-	sm->has_GTK = TRUE;
+	sm->has_GTK = true;
 }
 
 
@@ -3864,8 +3865,8 @@ SM_STATE(WPA_PTK_GROUP, KEYERROR)
 	SM_ENTRY_MA(WPA_PTK_GROUP, KEYERROR, wpa_ptk_group);
 	if (sm->GUpdateStationKeys)
 		sm->group->GKeyDoneStations--;
-	sm->GUpdateStationKeys = FALSE;
-	sm->Disconnect = TRUE;
+	sm->GUpdateStationKeys = false;
+	sm->Disconnect = true;
 	wpa_auth_vlogger(sm->wpa_auth, sm->addr, LOGGER_INFO,
 			 "group key handshake failed (%s) after %u tries",
 			 sm->wpa == WPA_VERSION_WPA ? "WPA" : "RSN",
@@ -3877,7 +3878,7 @@ SM_STEP(WPA_PTK_GROUP)
 {
 	if (sm->Init || sm->PtkGroupInit) {
 		SM_ENTER(WPA_PTK_GROUP, IDLE);
-		sm->PtkGroupInit = FALSE;
+		sm->PtkGroupInit = false;
 	} else switch (sm->wpa_ptk_group_state) {
 	case WPA_PTK_GROUP_IDLE:
 		if (sm->GUpdateStationKeys ||
@@ -3957,7 +3958,7 @@ static void wpa_group_gtk_init(struct wpa_authenticator *wpa_auth,
 	wpa_printf(MSG_DEBUG,
 		   "WPA: group state machine entering state GTK_INIT (VLAN-ID %d)",
 		   group->vlan_id);
-	group->changed = FALSE; /* GInit is not cleared here; avoid loop */
+	group->changed = false; /* GInit is not cleared here; avoid loop */
 	group->wpa_group_state = WPA_GROUP_GTK_INIT;
 
 	/* GTK[0..N] = 0 */
@@ -3981,7 +3982,7 @@ static int wpa_group_update_sta(struct wpa_state_machine *sm, void *ctx)
 	if (sm->wpa_ptk_state != WPA_PTK_PTKINITDONE) {
 		wpa_auth_logger(sm->wpa_auth, sm->addr, LOGGER_DEBUG,
 				"Not in PTKINITDONE; skip Group Key update");
-		sm->GUpdateStationKeys = FALSE;
+		sm->GUpdateStationKeys = false;
 		return 0;
 	}
 	if (sm->GUpdateStationKeys) {
@@ -3999,7 +4000,7 @@ static int wpa_group_update_sta(struct wpa_state_machine *sm, void *ctx)
 		return 0;
 
 	sm->group->GKeyDoneStations++;
-	sm->GUpdateStationKeys = TRUE;
+	sm->GUpdateStationKeys = true;
 
 	wpa_sm_step(sm);
 	return 0;
@@ -4125,9 +4126,9 @@ static void wpa_group_setkeys(struct wpa_authenticator *wpa_auth,
 	wpa_printf(MSG_DEBUG,
 		   "WPA: group state machine entering state SETKEYS (VLAN-ID %d)",
 		   group->vlan_id);
-	group->changed = TRUE;
+	group->changed = true;
 	group->wpa_group_state = WPA_GROUP_SETKEYS;
-	group->GTKReKey = FALSE;
+	group->GTKReKey = false;
 	tmp = group->GM;
 	group->GM = group->GN;
 	group->GN = tmp;
@@ -4199,7 +4200,7 @@ static int wpa_group_disconnect_cb(struct wpa_state_machine *sm, void *ctx)
 		wpa_printf(MSG_DEBUG, "WPA: Mark STA " MACSTR
 			   " for disconnection due to fatal failure",
 			   MAC2STR(sm->addr));
-		sm->Disconnect = TRUE;
+		sm->Disconnect = true;
 	}
 
 	return 0;
@@ -4211,7 +4212,7 @@ static void wpa_group_fatal_failure(struct wpa_authenticator *wpa_auth,
 {
 	wpa_printf(MSG_DEBUG,
 		   "WPA: group state machine entering state FATAL_FAILURE");
-	group->changed = TRUE;
+	group->changed = true;
 	group->wpa_group_state = WPA_GROUP_FATAL_FAILURE;
 	wpa_auth_for_each_sta(wpa_auth, wpa_group_disconnect_cb, group);
 }
@@ -4223,7 +4224,7 @@ static int wpa_group_setkeysdone(struct wpa_authenticator *wpa_auth,
 	wpa_printf(MSG_DEBUG,
 		   "WPA: group state machine entering state SETKEYSDONE (VLAN-ID %d)",
 		   group->vlan_id);
-	group->changed = TRUE;
+	group->changed = true;
 	group->wpa_group_state = WPA_GROUP_SETKEYSDONE;
 
 	if (wpa_group_config_group_keys(wpa_auth, group) < 0) {
@@ -4275,8 +4276,8 @@ static int wpa_sm_step(struct wpa_state_machine *sm)
 		if (sm->pending_deinit)
 			break;
 
-		sm->changed = FALSE;
-		sm->wpa_auth->group->changed = FALSE;
+		sm->changed = false;
+		sm->wpa_auth->group->changed = false;
 
 		SM_STEP_RUN(WPA_PTK);
 		if (sm->pending_deinit)

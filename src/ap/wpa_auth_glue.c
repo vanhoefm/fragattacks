@@ -277,16 +277,15 @@ static void hostapd_wpa_auth_set_eapol(void *ctx, const u8 *addr,
 		break;
 	case WPA_EAPOL_keyRun:
 		if (sta->eapol_sm)
-			sta->eapol_sm->keyRun = value ? TRUE : FALSE;
+			sta->eapol_sm->keyRun = value;
 		break;
 	case WPA_EAPOL_keyAvailable:
 		if (sta->eapol_sm)
-			sta->eapol_sm->eap_if->eapKeyAvailable =
-				value ? TRUE : FALSE;
+			sta->eapol_sm->eap_if->eapKeyAvailable = value;
 		break;
 	case WPA_EAPOL_keyDone:
 		if (sta->eapol_sm)
-			sta->eapol_sm->keyDone = value ? TRUE : FALSE;
+			sta->eapol_sm->keyDone = value;
 		break;
 	case WPA_EAPOL_inc_EapolFramesTx:
 		if (sta->eapol_sm)

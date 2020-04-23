@@ -2799,8 +2799,8 @@ void wpa_ft_install_ptk(struct wpa_state_machine *sm, int retry)
 		return;
 
 	/* FIX: MLME-SetProtection.Request(TA, Tx_Rx) */
-	sm->pairwise_set = TRUE;
-	sm->tk_already_set = TRUE;
+	sm->pairwise_set = true;
+	sm->tk_already_set = true;
 }
 
 
@@ -3157,8 +3157,8 @@ pmk_r1_derived:
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
 	sm->pairwise = pairwise;
-	sm->PTK_valid = TRUE;
-	sm->tk_already_set = FALSE;
+	sm->PTK_valid = true;
+	sm->tk_already_set = false;
 	wpa_ft_install_ptk(sm, 0);
 
 	if (wpa_ft_set_vlan(sm->wpa_auth, sm->addr, &vlan) < 0) {

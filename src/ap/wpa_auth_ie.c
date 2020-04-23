@@ -950,7 +950,7 @@ wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 	if (conf->extended_key_id && sm->wpa == WPA_VERSION_WPA2 &&
 	    sm->pairwise != WPA_CIPHER_TKIP &&
 	    (data.capabilities & WPA_CAPABILITY_EXT_KEY_ID_FOR_UNICAST)) {
-		sm->use_ext_key_id = TRUE;
+		sm->use_ext_key_id = true;
 		if (conf->extended_key_id == 2 &&
 		    !wpa_key_mgmt_ft(sm->wpa_key_mgmt) &&
 		    !wpa_key_mgmt_fils(sm->wpa_key_mgmt))
@@ -961,7 +961,7 @@ wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 			   "RSN: Extended Key ID supported (start with %d)",
 			   sm->keyidx_active);
 	} else {
-		sm->use_ext_key_id = FALSE;
+		sm->use_ext_key_id = false;
 	}
 
 	if (sm->wpa_ie == NULL || sm->wpa_ie_len < wpa_ie_len) {
