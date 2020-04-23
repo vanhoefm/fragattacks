@@ -894,7 +894,7 @@ void wpa_supplicant_set_state(struct wpa_supplicant *wpa_s,
 {
 	enum wpa_states old_state = wpa_s->wpa_state;
 #if defined(CONFIG_FILS) && defined(IEEE8021X_EAPOL)
-	Boolean update_fils_connect_params = FALSE;
+	bool update_fils_connect_params = false;
 #endif /* CONFIG_FILS && IEEE8021X_EAPOL */
 
 	wpa_dbg(wpa_s, MSG_DEBUG, "State: %s -> %s",
@@ -993,7 +993,7 @@ void wpa_supplicant_set_state(struct wpa_supplicant *wpa_s,
 
 #if defined(CONFIG_FILS) && defined(IEEE8021X_EAPOL)
 		if (!fils_hlp_sent && ssid && ssid->eap.erp)
-			update_fils_connect_params = TRUE;
+			update_fils_connect_params = true;
 #endif /* CONFIG_FILS && IEEE8021X_EAPOL */
 #ifdef CONFIG_OWE
 		if (ssid && (ssid->key_mgmt & WPA_KEY_MGMT_OWE))
