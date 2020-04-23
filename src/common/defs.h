@@ -9,15 +9,6 @@
 #ifndef DEFS_H
 #define DEFS_H
 
-#ifdef FALSE
-#undef FALSE
-#endif
-#ifdef TRUE
-#undef TRUE
-#endif
-typedef enum { FALSE = 0, TRUE = 1 } Boolean;
-
-
 #define WPA_CIPHER_NONE BIT(0)
 #define WPA_CIPHER_WEP40 BIT(1)
 #define WPA_CIPHER_WEP104 BIT(2)
