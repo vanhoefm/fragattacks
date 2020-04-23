@@ -1000,9 +1000,11 @@ class Supplicant(Daemon):
 		# Aruba: does not work (no reply)
 		# ==> Only reliable way is to configure AP to constantly rekey the PTK, and wait
 		#     untill the AP starts a rekey.
-		#wpaspy_command(self.wpaspy_ctrl, "KEY_REQUEST 0 1")
-
-		log(STATUS, "Client cannot force rekey. Waiting on AP to start PTK rekey.", color="orange")
+		if self.options.rekey_request:
+			log(STATUS, "Actively requesting PTK rekey", color="green")
+			wpaspy_command(self.wpaspy_ctrl, "KEY_REQUEST 0 1")
+		else:
+			log(STATUS, "Client cannot force rekey. Waiting on AP to start PTK rekey.", color="orange")
 
 	def time_tick(self):
 		if self.time_retrans_dhcp != None and time.time() > self.time_retrans_dhcp:
@@ -1179,13 +1181,14 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=False, ptype
 		test = PingTest(REQ_ICMP, actions, as_msdu=as_msdu)
 
 	elif test_name == "ping_frag_sep":
-		# Check if we can send frames in between fragments. Use priority of 1 since that
-		# is also what we use in send_mon currently.
+		# Check if we can send frames in between fragments. The seperator uses a different QoS TID.
+		# The second fragment must use an incremental PN compared to the first fragment. So this
+		# also tests if the receivers uses a per-QoS receive replay counter.
 		separator = Dot11(type="Data", subtype=8, SC=(33 << 4) | 0)/Dot11QoS(TID=1)/LLC()/SNAP()
 		test = PingTest(REQ_ICMP,
 				[Action(Action.Connected, action=Action.GetIp),
 				 Action(Action.Connected, enc=True),
-				 Action(Action.Connected, enc=True)],
+				 Action(Action.Connected, enc=True, inc_pn=0)],
 				 separate_with=separator, as_msdu=as_msdu,
 				)
 
@@ -1302,6 +1305,7 @@ if __name__ == "__main__":
 	parser.add_argument('--arp', default=False, action='store_true', help="Override default request with ARP request.")
 	parser.add_argument('--dhcp', default=False, action='store_true', help="Override default request with DHCP discover.")
 	parser.add_argument('--icmp', default=False, action='store_true', help="Override default request with ICMP ping request.")
+	parser.add_argument('--rekey-request', default=False, action='store_true', help="Actively request PTK rekey as client.")
 	args = parser.parse_args()
 
 	ptype = args2ptype(args)
@@ -1312,6 +1316,7 @@ if __name__ == "__main__":
 	options.test = prepare_tests(args.testname, args.actions, args.delay, args.inc_pn, args.msdu, ptype)
 	options.ip = args.ip
 	options.peerip = args.peerip
+	options.rekey_request = args.rekey_request
 
 	# Parse remaining options
 	global_log_level -= args.debug
