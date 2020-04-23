@@ -878,7 +878,7 @@ static void handle_eap_response(struct hostapd_data *hapd,
 
 	wpabuf_free(sm->eap_if->eapRespData);
 	sm->eap_if->eapRespData = wpabuf_alloc_copy(eap, len);
-	sm->eapolEap = TRUE;
+	sm->eapolEap = true;
 }
 
 
@@ -909,7 +909,7 @@ static void handle_eap_initiate(struct hostapd_data *hapd,
 
 	wpabuf_free(sm->eap_if->eapRespData);
 	sm->eap_if->eapRespData = wpabuf_alloc_copy(eap, len);
-	sm->eapolEap = TRUE;
+	sm->eapolEap = true;
 #endif /* CONFIG_ERP */
 }
 
@@ -1140,7 +1140,7 @@ void ieee802_1x_receive(struct hostapd_data *hapd, const u8 *sa, const u8 *buf,
 		}
 #endif /* CONFIG_WPS */
 
-		sta->eapol_sm->eap_if->portEnabled = TRUE;
+		sta->eapol_sm->eap_if->portEnabled = true;
 	}
 
 	/* since we support version 1, we can ignore version field and proceed
@@ -1167,7 +1167,7 @@ void ieee802_1x_receive(struct hostapd_data *hapd, const u8 *sa, const u8 *buf,
 				       "cached PMKSA available - ignore it since STA sent EAPOL-Start");
 			wpa_auth_sta_clear_pmksa(sta->wpa_sm, pmksa);
 		}
-		sta->eapol_sm->eapolStart = TRUE;
+		sta->eapol_sm->eapolStart = true;
 		sta->eapol_sm->dot1xAuthEapolStartFramesRx++;
 		eap_server_clear_identity(sta->eapol_sm->eap);
 		wpa_auth_sm_event(sta->wpa_sm, WPA_REAUTH_EAPOL);
@@ -1180,7 +1180,7 @@ void ieee802_1x_receive(struct hostapd_data *hapd, const u8 *sa, const u8 *buf,
 		sta->acct_terminate_cause =
 			RADIUS_ACCT_TERMINATE_CAUSE_USER_REQUEST;
 		accounting_sta_stop(hapd, sta);
-		sta->eapol_sm->eapolLogoff = TRUE;
+		sta->eapol_sm->eapolLogoff = true;
 		sta->eapol_sm->dot1xAuthEapolLogoffFramesRx++;
 		eap_server_clear_identity(sta->eapol_sm->eap);
 		break;
@@ -1297,7 +1297,7 @@ void ieee802_1x_new_station(struct hostapd_data *hapd, struct sta_info *sta)
 	}
 #endif /* CONFIG_WPS */
 
-	sta->eapol_sm->eap_if->portEnabled = TRUE;
+	sta->eapol_sm->eap_if->portEnabled = true;
 
 #ifdef CONFIG_IEEE80211R_AP
 	if (sta->auth_alg == WLAN_AUTH_FT) {
@@ -1306,13 +1306,13 @@ void ieee802_1x_new_station(struct hostapd_data *hapd, struct sta_info *sta)
 			       "PMK from FT - skip IEEE 802.1X/EAP");
 		/* Setup EAPOL state machines to already authenticated state
 		 * because of existing FT information from R0KH. */
-		sta->eapol_sm->keyRun = TRUE;
-		sta->eapol_sm->eap_if->eapKeyAvailable = TRUE;
+		sta->eapol_sm->keyRun = true;
+		sta->eapol_sm->eap_if->eapKeyAvailable = true;
 		sta->eapol_sm->auth_pae_state = AUTH_PAE_AUTHENTICATING;
 		sta->eapol_sm->be_auth_state = BE_AUTH_SUCCESS;
-		sta->eapol_sm->authSuccess = TRUE;
-		sta->eapol_sm->authFail = FALSE;
-		sta->eapol_sm->portValid = TRUE;
+		sta->eapol_sm->authSuccess = true;
+		sta->eapol_sm->authFail = false;
+		sta->eapol_sm->portValid = true;
 		if (sta->eapol_sm->eap)
 			eap_sm_notify_cached(sta->eapol_sm->eap);
 		ap_sta_bind_vlan(hapd, sta);
@@ -1329,13 +1329,13 @@ void ieee802_1x_new_station(struct hostapd_data *hapd, struct sta_info *sta)
 			       "PMK from FILS - skip IEEE 802.1X/EAP");
 		/* Setup EAPOL state machines to already authenticated state
 		 * because of existing FILS information. */
-		sta->eapol_sm->keyRun = TRUE;
-		sta->eapol_sm->eap_if->eapKeyAvailable = TRUE;
+		sta->eapol_sm->keyRun = true;
+		sta->eapol_sm->eap_if->eapKeyAvailable = true;
 		sta->eapol_sm->auth_pae_state = AUTH_PAE_AUTHENTICATING;
 		sta->eapol_sm->be_auth_state = BE_AUTH_SUCCESS;
-		sta->eapol_sm->authSuccess = TRUE;
-		sta->eapol_sm->authFail = FALSE;
-		sta->eapol_sm->portValid = TRUE;
+		sta->eapol_sm->authSuccess = true;
+		sta->eapol_sm->authFail = false;
+		sta->eapol_sm->portValid = true;
 		if (sta->eapol_sm->eap)
 			eap_sm_notify_cached(sta->eapol_sm->eap);
 		wpa_auth_set_ptk_rekey_timer(sta->wpa_sm);
@@ -1350,12 +1350,12 @@ void ieee802_1x_new_station(struct hostapd_data *hapd, struct sta_info *sta)
 			       "PMK from PMKSA cache - skip IEEE 802.1X/EAP");
 		/* Setup EAPOL state machines to already authenticated state
 		 * because of existing PMKSA information in the cache. */
-		sta->eapol_sm->keyRun = TRUE;
-		sta->eapol_sm->eap_if->eapKeyAvailable = TRUE;
+		sta->eapol_sm->keyRun = true;
+		sta->eapol_sm->eap_if->eapKeyAvailable = true;
 		sta->eapol_sm->auth_pae_state = AUTH_PAE_AUTHENTICATING;
 		sta->eapol_sm->be_auth_state = BE_AUTH_SUCCESS;
-		sta->eapol_sm->authSuccess = TRUE;
-		sta->eapol_sm->authFail = FALSE;
+		sta->eapol_sm->authSuccess = true;
+		sta->eapol_sm->authFail = false;
 		if (sta->eapol_sm->eap)
 			eap_sm_notify_cached(sta->eapol_sm->eap);
 		pmksa_cache_to_eapol_data(hapd, pmksa, sta->eapol_sm);
@@ -1367,7 +1367,7 @@ void ieee802_1x_new_station(struct hostapd_data *hapd, struct sta_info *sta)
 			 * re-authentication without having to wait for the
 			 * Supplicant to send EAPOL-Start.
 			 */
-			sta->eapol_sm->reAuthenticate = TRUE;
+			sta->eapol_sm->reAuthenticate = true;
 		}
 		eapol_auth_step(sta->eapol_sm);
 	}
@@ -1415,7 +1415,7 @@ static void ieee802_1x_decapsulate_radius(struct hostapd_data *hapd,
 
 	if (!sm || !sm->last_recv_radius) {
 		if (sm)
-			sm->eap_if->aaaEapNoReq = TRUE;
+			sm->eap_if->aaaEapNoReq = true;
 		return;
 	}
 
@@ -1429,7 +1429,7 @@ static void ieee802_1x_decapsulate_radius(struct hostapd_data *hapd,
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE8021X,
 			       HOSTAPD_LEVEL_WARNING,
 			       "could not extract EAP-Message from RADIUS message");
-		sm->eap_if->aaaEapNoReq = TRUE;
+		sm->eap_if->aaaEapNoReq = true;
 		return;
 	}
 
@@ -1438,7 +1438,7 @@ static void ieee802_1x_decapsulate_radius(struct hostapd_data *hapd,
 			       HOSTAPD_LEVEL_WARNING,
 			       "too short EAP packet received from authentication server");
 		wpabuf_free(eap);
-		sm->eap_if->aaaEapNoReq = TRUE;
+		sm->eap_if->aaaEapNoReq = true;
 		return;
 	}
 
@@ -1473,7 +1473,7 @@ static void ieee802_1x_decapsulate_radius(struct hostapd_data *hapd,
 		       "decapsulated EAP packet (code=%d id=%d len=%d) from RADIUS server: %s",
 		       hdr->code, hdr->identifier, be_to_host16(hdr->length),
 		       buf);
-	sm->eap_if->aaaEapReq = TRUE;
+	sm->eap_if->aaaEapReq = true;
 
 	wpabuf_free(sm->eap_if->aaaEapReqData);
 	sm->eap_if->aaaEapReqData = eap;
@@ -1512,7 +1512,7 @@ static void ieee802_1x_get_keys(struct hostapd_data *hapd,
 			os_memcpy(sm->eap_if->aaaEapKeyData + keys->recv_len,
 				  keys->send, keys->send_len);
 			sm->eap_if->aaaEapKeyDataLen = len;
-			sm->eap_if->aaaEapKeyAvailable = TRUE;
+			sm->eap_if->aaaEapKeyAvailable = true;
 		}
 	} else {
 		wpa_printf(MSG_DEBUG,
@@ -1880,7 +1880,7 @@ static int ieee802_1x_update_vlan(struct radius_msg *msg,
 
 	if (vlan_desc.notempty &&
 	    !hostapd_vlan_valid(hapd->conf->vlan, &vlan_desc)) {
-		sta->eapol_sm->authFail = TRUE;
+		sta->eapol_sm->authFail = true;
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_RADIUS,
 			       HOSTAPD_LEVEL_INFO,
 			       "Invalid VLAN %d%s received from RADIUS server",
@@ -1893,7 +1893,7 @@ static int ieee802_1x_update_vlan(struct radius_msg *msg,
 
 	if (hapd->conf->ssid.dynamic_vlan == DYNAMIC_VLAN_REQUIRED &&
 	    !vlan_desc.notempty) {
-		sta->eapol_sm->authFail = TRUE;
+		sta->eapol_sm->authFail = true;
 		hostapd_logger(hapd, sta->addr, HOSTAPD_MODULE_IEEE8021X,
 			       HOSTAPD_LEVEL_INFO,
 			       "authentication server did not include required VLAN ID in Access-Accept");
@@ -2019,7 +2019,7 @@ ieee802_1x_receive_auth(struct radius_msg *msg, struct radius_msg *req,
 		else
 			ap_sta_no_session_timeout(hapd, sta);
 
-		sm->eap_if->aaaSuccess = TRUE;
+		sm->eap_if->aaaSuccess = true;
 		override_eapReq = 1;
 		ieee802_1x_get_keys(hapd, sta, msg, req, shared_secret,
 				    shared_secret_len);
@@ -2031,7 +2031,7 @@ ieee802_1x_receive_auth(struct radius_msg *msg, struct radius_msg *req,
 				      (int) session_timeout : -1);
 		break;
 	case RADIUS_CODE_ACCESS_REJECT:
-		sm->eap_if->aaaFail = TRUE;
+		sm->eap_if->aaaFail = true;
 		override_eapReq = 1;
 		if (radius_msg_get_attr_int32(msg, RADIUS_ATTR_WLAN_REASON_CODE,
 					      &reason_code) == 0) {
@@ -2042,7 +2042,7 @@ ieee802_1x_receive_auth(struct radius_msg *msg, struct radius_msg *req,
 		}
 		break;
 	case RADIUS_CODE_ACCESS_CHALLENGE:
-		sm->eap_if->aaaEapReq = TRUE;
+		sm->eap_if->aaaEapReq = true;
 		if (session_timeout_set) {
 			/* RFC 2869, Ch. 2.3.2; RFC 3580, Ch. 3.17 */
 			sm->eap_if->aaaMethodTimeout = session_timeout;
@@ -2063,7 +2063,7 @@ ieee802_1x_receive_auth(struct radius_msg *msg, struct radius_msg *req,
 
 	ieee802_1x_decapsulate_radius(hapd, sta);
 	if (override_eapReq)
-		sm->eap_if->aaaEapReq = FALSE;
+		sm->eap_if->aaaEapReq = false;
 
 #ifdef CONFIG_FILS
 #ifdef NEED_AP_MLME
@@ -2109,7 +2109,7 @@ void ieee802_1x_abort_auth(struct hostapd_data *hapd, struct sta_info *sta)
 		wpa_dbg(hapd->msg_ctx, MSG_DEBUG, "EAP Timeout, STA " MACSTR,
 			MAC2STR(sta->addr));
 
-		sm->eap_if->portEnabled = FALSE;
+		sm->eap_if->portEnabled = false;
 		ap_sta_disconnect(hapd, sta, sta->addr,
 				  WLAN_REASON_PREV_AUTH_NOT_VALID);
 	}
@@ -2148,7 +2148,7 @@ static int ieee802_1x_sta_key_available(struct hostapd_data *hapd,
 					struct sta_info *sta, void *ctx)
 {
 	if (sta->eapol_sm) {
-		sta->eapol_sm->eap_if->eapKeyAvailable = TRUE;
+		sta->eapol_sm->eap_if->eapKeyAvailable = true;
 		eapol_auth_step(sta->eapol_sm);
 	}
 	return 0;
@@ -2677,26 +2677,25 @@ const u8 * ieee802_1x_get_session_id(struct eapol_state_machine *sm,
 
 
 void ieee802_1x_notify_port_enabled(struct eapol_state_machine *sm,
-				    int enabled)
+				    bool enabled)
 {
 	if (!sm)
 		return;
-	sm->eap_if->portEnabled = enabled ? TRUE : FALSE;
+	sm->eap_if->portEnabled = enabled;
 	eapol_auth_step(sm);
 }
 
 
-void ieee802_1x_notify_port_valid(struct eapol_state_machine *sm,
-				  int valid)
+void ieee802_1x_notify_port_valid(struct eapol_state_machine *sm, bool valid)
 {
 	if (!sm)
 		return;
-	sm->portValid = valid ? TRUE : FALSE;
+	sm->portValid = valid;
 	eapol_auth_step(sm);
 }
 
 
-void ieee802_1x_notify_pre_auth(struct eapol_state_machine *sm, int pre_auth)
+void ieee802_1x_notify_pre_auth(struct eapol_state_machine *sm, bool pre_auth)
 {
 	if (!sm)
 		return;
@@ -2707,7 +2706,7 @@ void ieee802_1x_notify_pre_auth(struct eapol_state_machine *sm, int pre_auth)
 }
 
 
-static const char * bool_txt(Boolean val)
+static const char * bool_txt(bool val)
 {
 	return val ? "TRUE" : "FALSE";
 }
