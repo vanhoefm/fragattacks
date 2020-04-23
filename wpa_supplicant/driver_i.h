@@ -778,7 +778,7 @@ static inline int wpa_drv_macsec_get_capability(struct wpa_supplicant *wpa_s,
 }
 
 static inline int wpa_drv_enable_protect_frames(struct wpa_supplicant *wpa_s,
-						Boolean enabled)
+						bool enabled)
 {
 	if (!wpa_s->driver->enable_protect_frames)
 		return -1;
@@ -786,7 +786,7 @@ static inline int wpa_drv_enable_protect_frames(struct wpa_supplicant *wpa_s,
 }
 
 static inline int wpa_drv_enable_encrypt(struct wpa_supplicant *wpa_s,
-						Boolean enabled)
+						bool enabled)
 {
 	if (!wpa_s->driver->enable_encrypt)
 		return -1;
@@ -794,7 +794,7 @@ static inline int wpa_drv_enable_encrypt(struct wpa_supplicant *wpa_s,
 }
 
 static inline int wpa_drv_set_replay_protect(struct wpa_supplicant *wpa_s,
-					     Boolean enabled, u32 window)
+					     bool enabled, u32 window)
 {
 	if (!wpa_s->driver->set_replay_protect)
 		return -1;
@@ -811,7 +811,7 @@ static inline int wpa_drv_set_current_cipher_suite(struct wpa_supplicant *wpa_s,
 }
 
 static inline int wpa_drv_enable_controlled_port(struct wpa_supplicant *wpa_s,
-						 Boolean enabled)
+						 bool enabled)
 {
 	if (!wpa_s->driver->enable_controlled_port)
 		return -1;

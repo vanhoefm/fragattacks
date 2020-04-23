@@ -2306,9 +2306,9 @@ struct wmm_params {
 
 #ifdef CONFIG_MACSEC
 struct macsec_init_params {
-	Boolean always_include_sci;
-	Boolean use_es;
-	Boolean use_scb;
+	bool always_include_sci;
+	bool use_es;
+	bool use_scb;
 };
 #endif /* CONFIG_MACSEC */
 
@@ -4003,30 +4003,30 @@ struct wpa_driver_ops {
 	/**
 	 * enable_protect_frames - Set protect frames status
 	 * @priv: Private driver interface data
-	 * @enabled: TRUE = protect frames enabled
-	 *           FALSE = protect frames disabled
+	 * @enabled: true = protect frames enabled
+	 *           false = protect frames disabled
 	 * Returns: 0 on success, -1 on failure (or if not supported)
 	 */
-	int (*enable_protect_frames)(void *priv, Boolean enabled);
+	int (*enable_protect_frames)(void *priv, bool enabled);
 
 	/**
 	 * enable_encrypt - Set encryption status
 	 * @priv: Private driver interface data
-	 * @enabled: TRUE = encrypt outgoing traffic
-	 *           FALSE = integrity-only protection on outgoing traffic
+	 * @enabled: true = encrypt outgoing traffic
+	 *           false = integrity-only protection on outgoing traffic
 	 * Returns: 0 on success, -1 on failure (or if not supported)
 	 */
-	int (*enable_encrypt)(void *priv, Boolean enabled);
+	int (*enable_encrypt)(void *priv, bool enabled);
 
 	/**
 	 * set_replay_protect - Set replay protect status and window size
 	 * @priv: Private driver interface data
-	 * @enabled: TRUE = replay protect enabled
-	 *           FALSE = replay protect disabled
+	 * @enabled: true = replay protect enabled
+	 *           false = replay protect disabled
 	 * @window: replay window size, valid only when replay protect enabled
 	 * Returns: 0 on success, -1 on failure (or if not supported)
 	 */
-	int (*set_replay_protect)(void *priv, Boolean enabled, u32 window);
+	int (*set_replay_protect)(void *priv, bool enabled, u32 window);
 
 	/**
 	 * set_current_cipher_suite - Set current cipher suite
@@ -4039,11 +4039,11 @@ struct wpa_driver_ops {
 	/**
 	 * enable_controlled_port - Set controlled port status
 	 * @priv: Private driver interface data
-	 * @enabled: TRUE = controlled port enabled
-	 *           FALSE = controlled port disabled
+	 * @enabled: true = controlled port enabled
+	 *           false = controlled port disabled
 	 * Returns: 0 on success, -1 on failure (or if not supported)
 	 */
-	int (*enable_controlled_port)(void *priv, Boolean enabled);
+	int (*enable_controlled_port)(void *priv, bool enabled);
 
 	/**
 	 * get_receive_lowest_pn - Get receive lowest pn
