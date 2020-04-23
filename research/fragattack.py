@@ -313,11 +313,8 @@ class MacOsTest(Test):
 	"""
 	See docs/macoxs-reversing.md for background on the attack.
 	"""
-	def __init__(self, ptype):
-		super().__init__([
-			Action(Action.BeforeAuth, enc=False),
-			Action(Action.BeforeAuth, enc=False)
-		])
+	def __init__(self, ptype, actions):
+		super().__init__(actions)
 		self.ptype = ptype
 		self.check_fn = None
 
@@ -1219,7 +1216,13 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=False, ptype
 		test = LinuxTest(REQ_ICMP)
 
 	elif test_name == "macos":
-		test = MacOsTest(REQ_ICMP)
+		if stractions != None:
+			actions = [Action(char2trigger(t), enc=False) for t in stractions]
+		else:
+			actions = [Action(Action.StartAuth, enc=False),
+				   Action(Action.StartAuth, enc=False)]
+
+		test = MacOsTest(REQ_ICMP, actions)
 
 	elif test_name == "qca_test":
 		test = QcaDriverTest()
