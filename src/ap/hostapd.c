@@ -1772,7 +1772,7 @@ static void fst_hostapd_update_mb_ie_cb(void *ctx, const u8 *addr,
 
 
 static const u8 * fst_hostapd_get_sta(struct fst_get_peer_ctx **get_ctx,
-				      Boolean mb_only)
+				      bool mb_only)
 {
 	struct sta_info *s = (struct sta_info *) *get_ctx;
 
@@ -1794,7 +1794,7 @@ static const u8 * fst_hostapd_get_sta(struct fst_get_peer_ctx **get_ctx,
 
 static const u8 * fst_hostapd_get_peer_first(void *ctx,
 					     struct fst_get_peer_ctx **get_ctx,
-					     Boolean mb_only)
+					     bool mb_only)
 {
 	struct hostapd_data *hapd = ctx;
 
@@ -1806,7 +1806,7 @@ static const u8 * fst_hostapd_get_peer_first(void *ctx,
 
 static const u8 * fst_hostapd_get_peer_next(void *ctx,
 					    struct fst_get_peer_ctx **get_ctx,
-					    Boolean mb_only)
+					    bool mb_only)
 {
 	return fst_hostapd_get_sta(get_ctx, mb_only);
 }

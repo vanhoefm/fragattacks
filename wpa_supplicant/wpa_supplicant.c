@@ -5475,7 +5475,7 @@ static void wpas_fst_update_mb_ie_cb(void *ctx, const u8 *addr,
 
 static const u8 * wpas_fst_get_peer_first(void *ctx,
 					  struct fst_get_peer_ctx **get_ctx,
-					  Boolean mb_only)
+					  bool mb_only)
 {
 	struct wpa_supplicant *wpa_s = ctx;
 
@@ -5489,7 +5489,7 @@ static const u8 * wpas_fst_get_peer_first(void *ctx,
 
 static const u8 * wpas_fst_get_peer_next(void *ctx,
 					 struct fst_get_peer_ctx **get_ctx,
-					 Boolean mb_only)
+					 bool mb_only)
 {
 	return NULL;
 }
