@@ -818,11 +818,11 @@ static void wpa_supplicant_key_neg_complete(struct wpa_sm *sm,
 		wpa_sm_mlme_setprotection(
 			sm, addr, MLME_SETPROTECTION_PROTECT_TYPE_RX_TX,
 			MLME_SETPROTECTION_KEY_TYPE_PAIRWISE);
-		eapol_sm_notify_portValid(sm->eapol, TRUE);
+		eapol_sm_notify_portValid(sm->eapol, true);
 		if (wpa_key_mgmt_wpa_psk(sm->key_mgmt) ||
 		    sm->key_mgmt == WPA_KEY_MGMT_DPP ||
 		    sm->key_mgmt == WPA_KEY_MGMT_OWE)
-			eapol_sm_notify_eap_success(sm->eapol, TRUE);
+			eapol_sm_notify_eap_success(sm->eapol, true);
 		/*
 		 * Start preauthentication after a short wait to avoid a
 		 * possible race condition between the data receive and key
@@ -1723,7 +1723,7 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 		wpa_sm_mlme_setprotection(
 			sm, sm->bssid, MLME_SETPROTECTION_PROTECT_TYPE_RX,
 			MLME_SETPROTECTION_KEY_TYPE_PAIRWISE);
-		eapol_sm_notify_portValid(sm->eapol, TRUE);
+		eapol_sm_notify_portValid(sm->eapol, true);
 	}
 	wpa_sm_set_state(sm, WPA_GROUP_HANDSHAKE);
 
@@ -2696,7 +2696,8 @@ static u32 wpa_key_mgmt_suite(struct wpa_sm *sm)
 int wpa_sm_get_mib(struct wpa_sm *sm, char *buf, size_t buflen)
 {
 	char pmkid_txt[PMKID_LEN * 2 + 1];
-	int rsna, ret;
+	bool rsna;
+	int ret;
 	size_t len;
 
 	if (sm->cur_pmksa) {
@@ -2705,12 +2706,9 @@ int wpa_sm_get_mib(struct wpa_sm *sm, char *buf, size_t buflen)
 	} else
 		pmkid_txt[0] = '\0';
 
-	if ((wpa_key_mgmt_wpa_psk(sm->key_mgmt) ||
-	     wpa_key_mgmt_wpa_ieee8021x(sm->key_mgmt)) &&
-	    sm->proto == WPA_PROTO_RSN)
-		rsna = 1;
-	else
-		rsna = 0;
+	rsna = (wpa_key_mgmt_wpa_psk(sm->key_mgmt) ||
+		wpa_key_mgmt_wpa_ieee8021x(sm->key_mgmt)) &&
+		sm->proto == WPA_PROTO_RSN;
 
 	ret = os_snprintf(buf, buflen,
 			  "dot11RSNAOptionImplemented=TRUE\n"
@@ -2913,7 +2911,7 @@ void wpa_sm_notify_assoc(struct wpa_sm *sm, const u8 *bssid)
 		 * Clear portValid to kick EAPOL state machine to re-enter
 		 * AUTHENTICATED state to get the EAPOL port Authorized.
 		 */
-		eapol_sm_notify_portValid(sm->eapol, FALSE);
+		eapol_sm_notify_portValid(sm->eapol, false);
 		wpa_supplicant_key_neg_complete(sm, sm->bssid, 1);
 
 		/* Prepare for the next transition */

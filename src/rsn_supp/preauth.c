@@ -252,9 +252,9 @@ int rsn_preauth_init(struct wpa_sm *sm, const u8 *dst,
 	eapol_sm_configure(sm->preauth_eapol, -1, -1, 5, 6);
 	os_memcpy(sm->preauth_bssid, dst, ETH_ALEN);
 
-	eapol_sm_notify_portValid(sm->preauth_eapol, TRUE);
+	eapol_sm_notify_portValid(sm->preauth_eapol, true);
 	/* 802.1X::portControl = Auto */
-	eapol_sm_notify_portEnabled(sm->preauth_eapol, TRUE);
+	eapol_sm_notify_portEnabled(sm->preauth_eapol, true);
 
 	eloop_register_timeout(sm->dot11RSNAConfigSATimeout, 0,
 			       rsn_preauth_timeout, sm, NULL);
