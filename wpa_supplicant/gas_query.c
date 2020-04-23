@@ -729,19 +729,24 @@ static void gas_query_tx_initial_req(struct gas_query *gas,
 
 static int gas_query_new_dialog_token(struct gas_query *gas, const u8 *dst)
 {
-	static int next_start = 0;
-	int dialog_token;
+	u8 dialog_token;
+	int i;
 
-	for (dialog_token = 0; dialog_token < 256; dialog_token++) {
-		if (gas_query_dialog_token_available(
-			    gas, dst, (next_start + dialog_token) % 256))
+	/* There should never be more than couple active GAS queries in
+	 * progress, so it should be very likely to find an available dialog
+	 * token by checking random values. Use a limit on the number of
+	 * iterations to handle the unexpected case of large number of pending
+	 * queries cleanly. */
+	for (i = 0; i < 256; i++) {
+		/* Get a random number and check if the slot is available */
+		if (os_get_random(&dialog_token, sizeof(dialog_token)) < 0)
 			break;
+		if (gas_query_dialog_token_available(gas, dst, dialog_token))
+			return dialog_token;
 	}
-	if (dialog_token == 256)
-		return -1; /* Too many pending queries */
-	dialog_token = (next_start + dialog_token) % 256;
-	next_start = (dialog_token + 1) % 256;
-	return dialog_token;
+
+	/* No dialog token value available */
+	return -1;
 }
 
 
