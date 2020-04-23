@@ -147,13 +147,13 @@ static u16 copy_supp_rates(struct wpa_supplicant *wpa_s,
 
 
 /* return true if elems from a neighbor match this MBSS */
-static Boolean matches_local(struct wpa_supplicant *wpa_s,
-			     struct ieee802_11_elems *elems)
+static bool matches_local(struct wpa_supplicant *wpa_s,
+			  struct ieee802_11_elems *elems)
 {
 	struct mesh_conf *mconf = wpa_s->ifmsh->mconf;
 
 	if (elems->mesh_config_len < 5)
-		return FALSE;
+		return false;
 
 	return (mconf->meshid_len == elems->mesh_id_len &&
 		os_memcmp(mconf->meshid, elems->mesh_id,
@@ -167,17 +167,17 @@ static Boolean matches_local(struct wpa_supplicant *wpa_s,
 
 
 /* check if local link id is already used with another peer */
-static Boolean llid_in_use(struct wpa_supplicant *wpa_s, u16 llid)
+static bool llid_in_use(struct wpa_supplicant *wpa_s, u16 llid)
 {
 	struct sta_info *sta;
 	struct hostapd_data *hapd = wpa_s->ifmsh->bss[0];
 
 	for (sta = hapd->sta_list; sta; sta = sta->next) {
 		if (sta->my_lid == llid)
-			return TRUE;
+			return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
