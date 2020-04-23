@@ -1297,7 +1297,7 @@ if __name__ == "__main__":
 	parser.add_argument('--ap', default=False, action='store_true', help="Act as an AP to test clients.")
 	parser.add_argument('--debug', type=int, default=0, help="Debug output level.")
 	parser.add_argument('--delay', type=float, default=0, help="Delay between fragments in certain tests.")
-	parser.add_argument('--inc_pn', type=int, default=1, help="To test non-sequential packet number in fragments.")
+	parser.add_argument('--inc-pn', type=int, help="To test non-sequential packet number in fragments.")
 	parser.add_argument('--msdu', default=False, action='store_true', help="Encapsulate pings in an A-MSDU frame.")
 	parser.add_argument('--arp', default=False, action='store_true', help="Override default request with ARP request.")
 	parser.add_argument('--dhcp', default=False, action='store_true', help="Override default request with DHCP discover.")
