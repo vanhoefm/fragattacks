@@ -319,14 +319,14 @@ void wpa_supplicant_initiate_eapol(struct wpa_supplicant *wpa_s)
 		 * per-BSSID EAPOL authentication.
 		 */
 		eapol_sm_notify_portControl(wpa_s->eapol, ForceAuthorized);
-		eapol_sm_notify_eap_success(wpa_s->eapol, TRUE);
-		eapol_sm_notify_eap_fail(wpa_s->eapol, FALSE);
+		eapol_sm_notify_eap_success(wpa_s->eapol, true);
+		eapol_sm_notify_eap_fail(wpa_s->eapol, false);
 		return;
 	}
 #endif /* CONFIG_IBSS_RSN */
 
-	eapol_sm_notify_eap_success(wpa_s->eapol, FALSE);
-	eapol_sm_notify_eap_fail(wpa_s->eapol, FALSE);
+	eapol_sm_notify_eap_success(wpa_s->eapol, false);
+	eapol_sm_notify_eap_fail(wpa_s->eapol, false);
 
 	if (wpa_s->key_mgmt == WPA_KEY_MGMT_NONE ||
 	    wpa_s->key_mgmt == WPA_KEY_MGMT_WPA_NONE)
@@ -1160,7 +1160,7 @@ int wpa_supplicant_reload_configuration(struct wpa_supplicant *wpa_s)
 		 * Clear forced success to clear EAP state for next
 		 * authentication.
 		 */
-		eapol_sm_notify_eap_success(wpa_s->eapol, FALSE);
+		eapol_sm_notify_eap_success(wpa_s->eapol, false);
 	}
 	eapol_sm_notify_config(wpa_s->eapol, NULL, NULL);
 	wpa_sm_set_config(wpa_s->wpa, NULL);
@@ -4751,12 +4751,12 @@ void wpa_supplicant_rx_eapol(void *ctx, const u8 *src_addr,
 		wpa_sm_rx_eapol(wpa_s->wpa, src_addr, buf, len);
 	else if (wpa_key_mgmt_wpa_ieee8021x(wpa_s->key_mgmt)) {
 		/*
-		 * Set portValid = TRUE here since we are going to skip 4-way
+		 * Set portValid = true here since we are going to skip 4-way
 		 * handshake processing which would normally set portValid. We
 		 * need this to allow the EAPOL state machines to be completed
 		 * without going through EAPOL-Key handshake.
 		 */
-		eapol_sm_notify_portValid(wpa_s->eapol, TRUE);
+		eapol_sm_notify_portValid(wpa_s->eapol, true);
 	}
 }
 
@@ -6185,8 +6185,8 @@ static int wpa_supplicant_init_iface(struct wpa_supplicant *wpa_s,
 	}
 
 	/* RSNA Supplicant Key Management - INITIALIZE */
-	eapol_sm_notify_portEnabled(wpa_s->eapol, FALSE);
-	eapol_sm_notify_portValid(wpa_s->eapol, FALSE);
+	eapol_sm_notify_portEnabled(wpa_s->eapol, false);
+	eapol_sm_notify_portValid(wpa_s->eapol, false);
 
 	/* Initialize driver interface and register driver event handler before
 	 * L2 receive handler so that association events are processed before

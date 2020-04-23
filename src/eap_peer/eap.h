@@ -147,7 +147,7 @@ struct eapol_callbacks {
 	 * @variable: EAPOL boolean variable to get
 	 * Returns: Value of the EAPOL variable
 	 */
-	Boolean (*get_bool)(void *ctx, enum eapol_bool_var variable);
+	bool (*get_bool)(void *ctx, enum eapol_bool_var variable);
 
 	/**
 	 * set_bool - Set a boolean EAPOL state variable
@@ -155,8 +155,7 @@ struct eapol_callbacks {
 	 * @variable: EAPOL boolean variable to set
 	 * @value: Value for the EAPOL variable
 	 */
-	void (*set_bool)(void *ctx, enum eapol_bool_var variable,
-			 Boolean value);
+	void (*set_bool)(void *ctx, enum eapol_bool_var variable, bool value);
 
 	/**
 	 * get_int - Get an integer EAPOL state variable

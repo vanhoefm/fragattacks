@@ -322,12 +322,12 @@ void wpa_supplicant_mark_disassoc(struct wpa_supplicant *wpa_s)
 	if (bssid_changed)
 		wpas_notify_bssid_changed(wpa_s);
 
-	eapol_sm_notify_portEnabled(wpa_s->eapol, FALSE);
-	eapol_sm_notify_portValid(wpa_s->eapol, FALSE);
+	eapol_sm_notify_portEnabled(wpa_s->eapol, false);
+	eapol_sm_notify_portValid(wpa_s->eapol, false);
 	if (wpa_key_mgmt_wpa_psk(wpa_s->key_mgmt) ||
 	    wpa_s->key_mgmt == WPA_KEY_MGMT_OWE ||
 	    wpa_s->key_mgmt == WPA_KEY_MGMT_DPP || wpa_s->drv_authorized_port)
-		eapol_sm_notify_eap_success(wpa_s->eapol, FALSE);
+		eapol_sm_notify_eap_success(wpa_s->eapol, false);
 	wpa_s->drv_authorized_port = 0;
 	wpa_s->ap_ies_from_associnfo = 0;
 	wpa_s->current_ssid = NULL;
@@ -3033,7 +3033,7 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 	already_authorized = data && data->assoc_info.authorized;
 
 	/*
-	 * Set portEnabled first to FALSE in order to get EAP state machine out
+	 * Set portEnabled first to false in order to get EAP state machine out
 	 * of the SUCCESS state and eapSuccess cleared. Without this, EAPOL PAE
 	 * state machine may transit to AUTHENTICATING state based on obsolete
 	 * eapSuccess and then trigger BE_AUTH to SUCCESS and PAE to
@@ -3041,16 +3041,16 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 	 * reset the state.
 	 */
 	if (!ft_completed && !already_authorized) {
-		eapol_sm_notify_portEnabled(wpa_s->eapol, FALSE);
-		eapol_sm_notify_portValid(wpa_s->eapol, FALSE);
+		eapol_sm_notify_portEnabled(wpa_s->eapol, false);
+		eapol_sm_notify_portValid(wpa_s->eapol, false);
 	}
 	if (wpa_key_mgmt_wpa_psk(wpa_s->key_mgmt) ||
 	    wpa_s->key_mgmt == WPA_KEY_MGMT_DPP ||
 	    wpa_s->key_mgmt == WPA_KEY_MGMT_OWE || ft_completed ||
 	    already_authorized || wpa_s->drv_authorized_port)
-		eapol_sm_notify_eap_success(wpa_s->eapol, FALSE);
+		eapol_sm_notify_eap_success(wpa_s->eapol, false);
 	/* 802.1X::portControl = Auto */
-	eapol_sm_notify_portEnabled(wpa_s->eapol, TRUE);
+	eapol_sm_notify_portEnabled(wpa_s->eapol, true);
 	wpa_s->eapol_received = 0;
 	if (wpa_s->key_mgmt == WPA_KEY_MGMT_NONE ||
 	    wpa_s->key_mgmt == WPA_KEY_MGMT_WPA_NONE ||
@@ -3082,8 +3082,8 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 		 */
 		wpa_supplicant_cancel_auth_timeout(wpa_s);
 		wpa_supplicant_set_state(wpa_s, WPA_COMPLETED);
-		eapol_sm_notify_portValid(wpa_s->eapol, TRUE);
-		eapol_sm_notify_eap_success(wpa_s->eapol, TRUE);
+		eapol_sm_notify_portValid(wpa_s->eapol, true);
+		eapol_sm_notify_eap_success(wpa_s->eapol, true);
 	} else if ((wpa_s->drv_flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_PSK) &&
 		   wpa_key_mgmt_wpa_psk(wpa_s->key_mgmt)) {
 		/*
@@ -3092,8 +3092,8 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 		 */
 		wpa_supplicant_cancel_auth_timeout(wpa_s);
 		wpa_supplicant_set_state(wpa_s, WPA_COMPLETED);
-		eapol_sm_notify_portValid(wpa_s->eapol, TRUE);
-		eapol_sm_notify_eap_success(wpa_s->eapol, TRUE);
+		eapol_sm_notify_portValid(wpa_s->eapol, true);
+		eapol_sm_notify_eap_success(wpa_s->eapol, true);
 	} else if ((wpa_s->drv_flags & WPA_DRIVER_FLAGS_4WAY_HANDSHAKE_8021X) &&
 		   wpa_key_mgmt_wpa_ieee8021x(wpa_s->key_mgmt)) {
 		/*
@@ -3101,7 +3101,7 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 		 * to allow EAPOL supplicant to complete its work without
 		 * waiting for WPA supplicant.
 		 */
-		eapol_sm_notify_portValid(wpa_s->eapol, TRUE);
+		eapol_sm_notify_portValid(wpa_s->eapol, true);
 	}
 
 	wpa_s->last_eapol_matches_bssid = 0;
@@ -4182,8 +4182,8 @@ static void wpa_supplicant_event_port_authorized(struct wpa_supplicant *wpa_s)
 	if (wpa_s->wpa_state == WPA_ASSOCIATED) {
 		wpa_supplicant_cancel_auth_timeout(wpa_s);
 		wpa_supplicant_set_state(wpa_s, WPA_COMPLETED);
-		eapol_sm_notify_portValid(wpa_s->eapol, TRUE);
-		eapol_sm_notify_eap_success(wpa_s->eapol, TRUE);
+		eapol_sm_notify_portValid(wpa_s->eapol, true);
+		eapol_sm_notify_eap_success(wpa_s->eapol, true);
 		wpa_s->drv_authorized_port = 1;
 	}
 }
