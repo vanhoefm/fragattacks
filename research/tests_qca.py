@@ -34,7 +34,7 @@ class QcaDriverTest(Test):
 			return False
 		return self.check_fn(p)
 
-	def generate(self, station):
+	def prepare(self, station):
 		log(STATUS, "Generating QCA driver test", color="green")
 
 		# Generate the header and payload
@@ -100,7 +100,7 @@ class QcaTestSplit(Test):
 			return False
 		return self.check_fn(p)
 
-	def generate(self, station):
+	def prepare(self, station):
 		log(STATUS, "Generating QCA driver test", color="green")
 
 		# Generate the header and payload
@@ -177,7 +177,7 @@ class QcaDriverRekey(Test):
 			return False
 		return self.check_fn(p)
 
-	def generate(self, station):
+	def prepare(self, station):
 		log(STATUS, "Generating QCA driver test", color="green")
 
 		# Generate the header and payload
