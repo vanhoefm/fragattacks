@@ -1578,7 +1578,7 @@ static void eap_ttls_check_auth_status(struct eap_sm *sm,
 				       struct eap_method_ret *ret)
 {
 	if (ret->methodState == METHOD_DONE) {
-		ret->allowNotifications = FALSE;
+		ret->allowNotifications = false;
 		if (ret->decision == DECISION_UNCOND_SUCC ||
 		    ret->decision == DECISION_COND_SUCC) {
 			wpa_printf(MSG_DEBUG, "EAP-TTLS: Authentication "
@@ -1673,7 +1673,7 @@ static struct wpabuf * eap_ttls_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_ttls_has_reauth_data(struct eap_sm *sm, void *priv)
+static bool eap_ttls_has_reauth_data(struct eap_sm *sm, void *priv)
 {
 	struct eap_ttls_data *data = priv;
 	return tls_connection_established(sm->ssl_ctx, data->ssl.conn) &&
@@ -1764,7 +1764,7 @@ static int eap_ttls_get_status(struct eap_sm *sm, void *priv, char *buf,
 }
 
 
-static Boolean eap_ttls_isKeyAvailable(struct eap_sm *sm, void *priv)
+static bool eap_ttls_isKeyAvailable(struct eap_sm *sm, void *priv)
 {
 	struct eap_ttls_data *data = priv;
 	return data->key_data != NULL && data->phase2_success;

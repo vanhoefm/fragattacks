@@ -1985,7 +1985,7 @@ static struct wpabuf * eap_teap_process(struct eap_sm *sm, void *priv,
 
 
 #if 0 /* TODO */
-static Boolean eap_teap_has_reauth_data(struct eap_sm *sm, void *priv)
+static bool eap_teap_has_reauth_data(struct eap_sm *sm, void *priv)
 {
 	struct eap_teap_data *data = priv;
 
@@ -2048,7 +2048,7 @@ static int eap_teap_get_status(struct eap_sm *sm, void *priv, char *buf,
 }
 
 
-static Boolean eap_teap_isKeyAvailable(struct eap_sm *sm, void *priv)
+static bool eap_teap_isKeyAvailable(struct eap_sm *sm, void *priv)
 {
 	struct eap_teap_data *data = priv;
 

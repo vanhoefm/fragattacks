@@ -44,7 +44,7 @@ enum eapol_bool_var {
 	/**
 	 * EAPOL_eapRestart - Lower layer request to restart authentication
 	 *
-	 * Set to TRUE in lower layer, FALSE in EAP state machine.
+	 * Set to true in lower layer, false in EAP state machine.
 	 */
 	EAPOL_eapRestart,
 
@@ -58,21 +58,21 @@ enum eapol_bool_var {
 	/**
 	 * EAPOL_eapResp - Response to send
 	 *
-	 * Set to TRUE in EAP state machine, FALSE in lower layer.
+	 * Set to true in EAP state machine, false in lower layer.
 	 */
 	EAPOL_eapResp,
 
 	/**
 	 * EAPOL_eapNoResp - Request has been process; no response to send
 	 *
-	 * Set to TRUE in EAP state machine, FALSE in lower layer.
+	 * Set to true in EAP state machine, false in lower layer.
 	 */
 	EAPOL_eapNoResp,
 
 	/**
 	 * EAPOL_eapReq - EAP request available from lower layer
 	 *
-	 * Set to TRUE in lower layer, FALSE in EAP state machine.
+	 * Set to true in lower layer, false in EAP state machine.
 	 */
 	EAPOL_eapReq,
 
