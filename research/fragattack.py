@@ -122,18 +122,30 @@ class Action():
 	# BeforeAuth: right before last message of the handshake
 	# AfterAuth: right after last message of the handshake
 	# Connected: 1 second after handshake completed (allows peer to install keys)
-	StartAuth, BeforeAuth, AfterAuth, Connected = range(4)
+	NoTrigger, StartAuth, BeforeAuth, AfterAuth, Connected = range(5)
 
 	# GetIp: request an IP before continueing (or use existing one)
 	# Rekey: force or wait for a PTK rekey
 	# Reconnect: force a reconnect
-	GetIp, Rekey, Reconnect, Roam, Inject, Func = range(6)
+	# Roam: perform an FT roam
+	# Inject: inject the associated packet
+	# Func: execute a given function
+	# Meta: meta-action used (and removed) during test construction
+	NoAction, GetIp, Rekey, Reconnect, Roam, Inject, Func = range(7)
 
-	def __init__(self, trigger, action=Inject, func=None, enc=False, frame=None, inc_pn=1, delay=None, wait=None, key=None):
+	# Drop: when fragmenting frames, skip the next fragment number. Used in PingTest.
+	MetaDrop = range(0)
+
+	def __init__(self, trigger=Connected, action=Inject, meta_action=None, func=None, enc=False, frame=None, inc_pn=1, delay=None, wait=None, key=None):
 		self.trigger = trigger
 		self.action = action
-		self.func = func
 
+		self.meta_action = meta_action
+		if self.meta_action != None:
+			self.trigger = Action.NoTrigger
+			self.action = Action.NoAction
+
+		self.func = func
 		if self.func != None:
 			self.action = Action.Func
 
@@ -151,12 +163,15 @@ class Action():
 		self.frame = frame
 		self.key = key
 
+	def is_meta(self, meta):
+		return self.meta_action == meta
+
 	def get_action(self):
 		return self.action
 
 	def __str__(self):
-		trigger = ["StartAuth", "BeforeAuth", "AfterAuth", "Connected"][self.trigger]
-		action = ["GetIp", "Rekey", "Reconnect", "Roam", "Inject", "Func"][self.action]
+		trigger = ["NoTigger", "StartAuth", "BeforeAuth", "AfterAuth", "Connected"][self.trigger]
+		action = ["NoAction", "GetIp", "Rekey", "Reconnect", "Roam", "Inject", "Func"][self.action]
 		return f"Action({trigger}, {action})"
 
 	def __repr__(self):
@@ -177,13 +192,22 @@ class Test(metaclass=abc.ABCMeta):
 	def next_trigger_is(self, trigger):
 		if len(self.actions) == 0:
 			return False
+		if self.actions[0].trigger == Action.NoTrigger:
+			return True
 		return self.actions[0].trigger == trigger
+
+	def is_next_inject(self):
+		if len(self.actions) == 0:
+			return False
+		if self.actions[0].is_meta(Action.MetaDrop):
+			return True
+		return self.actions[0].action == Action.Inject
 
 	def next_action(self, station):
 		if len(self.actions) == 0:
 			return None
 
-		if self.actions[0].action == Action.Inject and not self.generated:
+		if not self.generated and self.is_next_inject():
 			self.generate(station)
 			self.generated = True
 
@@ -256,6 +280,19 @@ class PingTest(Test):
 			# Set A-MSDU flag but include a normal payload (fake A-MSDU)
 			header.Reserved = 1
 
+		# Create list of fragment numbers to be used
+		fragnums = []
+		next_fragnum = 0
+		for act in self.actions:
+			if act.is_meta(Action.MetaDrop):
+				next_fragnum += 1
+			elif act.action == Action.Inject:
+				fragnums.append(next_fragnum)
+				next_fragnum += 1
+		print("Actions before:", self.actions)
+		self.actions = list(filter(lambda act: not act.is_meta(Action.MetaDrop), self.actions))
+		print("Actions after:", self.actions)
+
 		# Generate all the individual (fragmented) frames
 		num_frags = len(self.get_actions(Action.Inject))
 		frames = create_fragments(header, request, num_frags)
@@ -264,6 +301,10 @@ class PingTest(Test):
 		for frag, frame in zip(self.get_actions(Action.Inject), frames):
 			if self.bcast:
 				frame.addr1 = "ff:ff:ff:ff:ff:ff"
+
+			# Assign fragment numbers according to MetaDrop rules
+			frame.SC = (frame.SC & 0xfff0) | fragnums.pop(0)
+
 			frag.frame = frame
 
 		# Put the separator after each fragment if requested.
@@ -700,6 +741,7 @@ class Station():
 		self.peerip = peerip
 		self.obtained_ip = True
 
+		log(STATUS, "Waiting on IP before forming next actions: " + str(self.waiting_on_ip))
 		if self.waiting_on_ip:
 			self.waiting_on_ip = False
 			self.perform_actions(Action.Connected)
@@ -1174,6 +1216,8 @@ def stract2action(stract):
 		return Action(trigger, enc=False)
 	elif c == 'E':
 		return Action(trigger, enc=True)
+	elif c == 'D':
+		return Action(meta_action=Action.MetaDrop)
 
 	raise Exception("Unrecognized action")
 
