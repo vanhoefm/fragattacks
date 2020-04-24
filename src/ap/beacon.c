@@ -463,6 +463,9 @@ static u8 * hostapd_gen_probe_resp(struct hostapd_data *hapd,
 			3 + sizeof(struct ieee80211_he_operation) +
 			3 + sizeof(struct ieee80211_he_mu_edca_parameter_set) +
 			3 + sizeof(struct ieee80211_spatial_reuse);
+		if (is_6ghz_op_class(hapd->iconf->op_class))
+			buflen += sizeof(struct ieee80211_he_6ghz_oper_info) +
+				3 + sizeof(struct ieee80211_he_6ghz_band_cap);
 	}
 #endif /* CONFIG_IEEE80211AX */
 
@@ -570,6 +573,7 @@ static u8 * hostapd_gen_probe_resp(struct hostapd_data *hapd,
 		pos = hostapd_eid_he_operation(hapd, pos);
 		pos = hostapd_eid_spatial_reuse(hapd, pos);
 		pos = hostapd_eid_he_mu_edca_parameter_set(hapd, pos);
+		pos = hostapd_eid_he_6ghz_band_cap(hapd, pos);
 	}
 #endif /* CONFIG_IEEE80211AX */
 
@@ -1161,6 +1165,9 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 			3 + sizeof(struct ieee80211_he_operation) +
 			3 + sizeof(struct ieee80211_he_mu_edca_parameter_set) +
 			3 + sizeof(struct ieee80211_spatial_reuse);
+		if (is_6ghz_op_class(hapd->iconf->op_class))
+			tail_len += sizeof(struct ieee80211_he_6ghz_oper_info) +
+				3 + sizeof(struct ieee80211_he_6ghz_band_cap);
 	}
 #endif /* CONFIG_IEEE80211AX */
 
@@ -1288,6 +1295,7 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 		tailpos = hostapd_eid_he_operation(hapd, tailpos);
 		tailpos = hostapd_eid_spatial_reuse(hapd, tailpos);
 		tailpos = hostapd_eid_he_mu_edca_parameter_set(hapd, tailpos);
+		tailpos = hostapd_eid_he_6ghz_band_cap(hapd, tailpos);
 	}
 #endif /* CONFIG_IEEE80211AX */
 

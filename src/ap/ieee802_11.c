@@ -3786,6 +3786,7 @@ static u16 send_assoc_resp(struct hostapd_data *hapd, struct sta_info *sta,
 		p = hostapd_eid_he_operation(hapd, p);
 		p = hostapd_eid_spatial_reuse(hapd, p);
 		p = hostapd_eid_he_mu_edca_parameter_set(hapd, p);
+		p = hostapd_eid_he_6ghz_band_cap(hapd, p);
 	}
 #endif /* CONFIG_IEEE80211AX */
 
