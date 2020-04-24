@@ -2146,10 +2146,9 @@ struct ieee80211_he_operation {
 	le32 he_oper_params; /* HE Operation Parameters[3] and
 			      * BSS Color Information[1] */
 	le16 he_mcs_nss_set;
-	u8 vht_op_info_chwidth;
-	u8 vht_op_info_chan_center_freq_seg0_idx;
-	u8 vht_op_info_chan_center_freq_seg1_idx;
-	/* Followed by conditional MaxBSSID Indicator subfield (u8) */
+	/* Followed by conditional VHT Operation Information (3 octets),
+	 * Max Co-Hosted BSSID Indicator subfield (1 octet), and/or 6 GHz
+	 * Operation Information subfield (5 octets). */
 } STRUCT_PACKED;
 
 /* IEEE P802.11ax/D6.0, Figure 9-787k - 6 GHz Operation Information field */
