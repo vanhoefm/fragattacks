@@ -38,6 +38,7 @@
 #define WLAN_STA_PENDING_FILS_ERP BIT(22)
 #define WLAN_STA_MULTI_AP BIT(23)
 #define WLAN_STA_HE BIT(24)
+#define WLAN_STA_6GHZ BIT(25)
 #define WLAN_STA_PENDING_DISASSOC_CB BIT(29)
 #define WLAN_STA_PENDING_DEAUTH_CB BIT(30)
 #define WLAN_STA_NONERP BIT(31)
@@ -170,6 +171,7 @@ struct sta_info {
 	u8 vht_opmode;
 	struct ieee80211_he_capabilities *he_capab;
 	size_t he_capab_len;
+	struct ieee80211_he_6ghz_band_cap *he_6ghz_capab;
 
 	int sa_query_count; /* number of pending SA Query requests;
 			     * 0 = no SA Query in progress */

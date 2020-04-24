@@ -463,6 +463,32 @@ u16 copy_sta_he_capab(struct hostapd_data *hapd, struct sta_info *sta,
 }
 
 
+u16 copy_sta_he_6ghz_capab(struct hostapd_data *hapd, struct sta_info *sta,
+			   const u8 *he_6ghz_capab)
+{
+	if (!he_6ghz_capab || !hapd->iconf->ieee80211ax ||
+	    !is_6ghz_op_class(hapd->iconf->op_class)) {
+		sta->flags &= ~WLAN_STA_6GHZ;
+		os_free(sta->he_6ghz_capab);
+		sta->he_6ghz_capab = NULL;
+		return WLAN_STATUS_SUCCESS;
+	}
+
+	if (!sta->he_6ghz_capab) {
+		sta->he_6ghz_capab =
+			os_zalloc(sizeof(struct ieee80211_he_6ghz_band_cap));
+		if (!sta->he_6ghz_capab)
+			return WLAN_STATUS_UNSPECIFIED_FAILURE;
+	}
+
+	sta->flags |= WLAN_STA_6GHZ;
+	os_memcpy(sta->he_6ghz_capab, he_6ghz_capab,
+		  sizeof(struct ieee80211_he_6ghz_band_cap));
+
+	return WLAN_STATUS_SUCCESS;
+}
+
+
 int hostapd_get_he_twt_responder(struct hostapd_data *hapd,
 				 enum ieee80211_op_mode mode)
 {

@@ -3181,6 +3181,12 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 					 elems.he_capabilities_len);
 		if (resp != WLAN_STATUS_SUCCESS)
 			return resp;
+		if (is_6ghz_op_class(hapd->iconf->op_class)) {
+			resp = copy_sta_he_6ghz_capab(hapd, sta,
+						      elems.he_6ghz_band_cap);
+			if (resp != WLAN_STATUS_SUCCESS)
+				return resp;
+		}
 	}
 #endif /* CONFIG_IEEE80211AX */
 
@@ -3627,6 +3633,7 @@ static int add_associated_sta(struct hostapd_data *hapd,
 			    sta->flags & WLAN_STA_VHT ? &vht_cap : NULL,
 			    sta->flags & WLAN_STA_HE ? &he_cap : NULL,
 			    sta->flags & WLAN_STA_HE ? sta->he_capab_len : 0,
+			    sta->he_6ghz_capab,
 			    sta->flags | WLAN_STA_ASSOC, sta->qosinfo,
 			    sta->vht_opmode, sta->p2p_ie ? 1 : 0,
 			    set)) {
