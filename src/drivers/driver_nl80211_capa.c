@@ -79,6 +79,8 @@ struct wiphy_info_data {
 	unsigned int mac_addr_rand_scan_supported:1;
 	unsigned int mac_addr_rand_sched_scan_supported:1;
 	unsigned int update_ft_ies_supported:1;
+	unsigned int has_key_mgmt:1;
+	unsigned int has_key_mgmt_iftype:1;
 };
 
 
@@ -249,6 +251,158 @@ static void wiphy_info_supp_cmds(struct wiphy_info_data *info,
 			break;
 		}
 	}
+}
+
+
+static unsigned int get_akm_suites_info(struct nlattr *tb)
+{
+	int i, num;
+	unsigned int key_mgmt = 0;
+	u32 *akms;
+
+	if (!tb)
+		return 0;
+
+	num = nla_len(tb) / sizeof(u32);
+	akms = nla_data(tb);
+	for (i = 0; i < num; i++) {
+		switch (akms[i]) {
+		case RSN_AUTH_KEY_MGMT_UNSPEC_802_1X:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_WPA |
+				WPA_DRIVER_CAPA_KEY_MGMT_WPA2;
+			break;
+		case RSN_AUTH_KEY_MGMT_PSK_OVER_802_1X:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_WPA_PSK |
+				WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK;
+			break;
+		case RSN_AUTH_KEY_MGMT_FT_802_1X:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FT;
+			break;
+		case RSN_AUTH_KEY_MGMT_FT_PSK:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FT_PSK;
+			break;
+		case RSN_AUTH_KEY_MGMT_802_1X_SUITE_B:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B;
+			break;
+		case RSN_AUTH_KEY_MGMT_802_1X_SUITE_B_192:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B_192;
+			break;
+		case RSN_AUTH_KEY_MGMT_OWE:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_OWE;
+			break;
+		case RSN_AUTH_KEY_MGMT_DPP:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_DPP;
+			break;
+		case RSN_AUTH_KEY_MGMT_FILS_SHA256:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA256;
+			break;
+		case RSN_AUTH_KEY_MGMT_FILS_SHA384:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA384;
+			break;
+		case RSN_AUTH_KEY_MGMT_FT_FILS_SHA256:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA256;
+			break;
+		case RSN_AUTH_KEY_MGMT_FT_FILS_SHA384:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA384;
+			break;
+		case RSN_AUTH_KEY_MGMT_SAE:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_SAE;
+			break;
+		}
+	}
+
+	return key_mgmt;
+}
+
+
+static void get_iface_akm_suites_info(struct wiphy_info_data *info,
+					struct nlattr *nl_akms)
+{
+	struct nlattr *tb[NL80211_IFTYPE_AKM_ATTR_MAX + 1];
+	struct nlattr *nl_iftype;
+	unsigned int key_mgmt;
+	int i;
+
+	if (!nl_akms)
+		return;
+
+	nla_parse(tb, NL80211_IFTYPE_AKM_ATTR_MAX,
+		  nla_data(nl_akms), nla_len(nl_akms), NULL);
+
+	if (!tb[NL80211_IFTYPE_AKM_ATTR_IFTYPES] ||
+	    !tb[NL80211_IFTYPE_AKM_ATTR_SUITES])
+		return;
+
+	info->has_key_mgmt_iftype = 1;
+	key_mgmt = get_akm_suites_info(tb[NL80211_IFTYPE_AKM_ATTR_SUITES]);
+
+	nla_for_each_nested(nl_iftype, tb[NL80211_IFTYPE_AKM_ATTR_IFTYPES], i) {
+		switch (nla_type(nl_iftype)) {
+		case NL80211_IFTYPE_ADHOC:
+			info->drv->capa.key_mgmt_iftype[WPA_IF_IBSS] = key_mgmt;
+			break;
+		case NL80211_IFTYPE_STATION:
+			info->drv->capa.key_mgmt_iftype[WPA_IF_STATION] =
+				key_mgmt;
+			break;
+		case NL80211_IFTYPE_AP:
+			info->drv->capa.key_mgmt_iftype[WPA_IF_AP_BSS] =
+				key_mgmt;
+			break;
+		case NL80211_IFTYPE_AP_VLAN:
+			info->drv->capa.key_mgmt_iftype[WPA_IF_AP_VLAN] =
+				key_mgmt;
+			break;
+		case NL80211_IFTYPE_MESH_POINT:
+			info->drv->capa.key_mgmt_iftype[WPA_IF_MESH] = key_mgmt;
+			break;
+		case NL80211_IFTYPE_P2P_CLIENT:
+			info->drv->capa.key_mgmt_iftype[WPA_IF_P2P_CLIENT] =
+				key_mgmt;
+			break;
+		case NL80211_IFTYPE_P2P_GO:
+			info->drv->capa.key_mgmt_iftype[WPA_IF_P2P_GO] =
+				key_mgmt;
+			break;
+		case NL80211_IFTYPE_P2P_DEVICE:
+			info->drv->capa.key_mgmt_iftype[WPA_IF_P2P_DEVICE] =
+				key_mgmt;
+			break;
+		case NL80211_IFTYPE_NAN:
+			info->drv->capa.key_mgmt_iftype[WPA_IF_NAN] = key_mgmt;
+			break;
+		}
+		wpa_printf(MSG_DEBUG, "nl80211: %s supported key_mgmt 0x%x",
+			   nl80211_iftype_str(nla_type(nl_iftype)),
+			   key_mgmt);
+	}
+}
+
+
+static void wiphy_info_iftype_akm_suites(struct wiphy_info_data *info,
+					 struct nlattr *tb)
+{
+	struct nlattr *nl_if;
+	int rem_if;
+
+	if (!tb)
+		return;
+
+	nla_for_each_nested(nl_if, tb, rem_if)
+		get_iface_akm_suites_info(info, nl_if);
+}
+
+
+static void wiphy_info_akm_suites(struct wiphy_info_data *info,
+				  struct nlattr *tb)
+{
+	if (!tb)
+		return;
+
+	info->has_key_mgmt = 1;
+	info->capa->key_mgmt = get_akm_suites_info(tb);
+	wpa_printf(MSG_DEBUG, "nl80211: wiphy supported key_mgmt 0x%x",
+		   info->capa->key_mgmt);
 }
 
 
@@ -696,6 +850,8 @@ static int wiphy_info_handler(struct nl_msg *msg, void *arg)
 	wiphy_info_iface_comb(info, tb[NL80211_ATTR_INTERFACE_COMBINATIONS]);
 	wiphy_info_supp_cmds(info, tb[NL80211_ATTR_SUPPORTED_COMMANDS]);
 	wiphy_info_cipher_suites(info, tb[NL80211_ATTR_CIPHER_SUITES]);
+	wiphy_info_akm_suites(info, tb[NL80211_ATTR_AKM_SUITES]);
+	wiphy_info_iftype_akm_suites(info, tb[NL80211_ATTR_IFTYPE_AKM_SUITES]);
 
 	if (tb[NL80211_ATTR_OFFCHANNEL_TX_OK]) {
 		wpa_printf(MSG_DEBUG, "nl80211: Using driver-based "
@@ -1098,6 +1254,8 @@ static void qca_nl80211_get_features(struct wpa_driver_nl80211_data *drv)
 int wpa_driver_nl80211_capa(struct wpa_driver_nl80211_data *drv)
 {
 	struct wiphy_info_data info;
+	int i;
+
 	if (wpa_driver_nl80211_get_info(drv, &info))
 		return -1;
 
@@ -1105,27 +1263,62 @@ int wpa_driver_nl80211_capa(struct wpa_driver_nl80211_data *drv)
 		return -1;
 
 	drv->has_capability = 1;
-	drv->capa.key_mgmt = WPA_DRIVER_CAPA_KEY_MGMT_WPA |
-		WPA_DRIVER_CAPA_KEY_MGMT_WPA_PSK |
-		WPA_DRIVER_CAPA_KEY_MGMT_WPA2 |
-		WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK |
-		WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B |
-		WPA_DRIVER_CAPA_KEY_MGMT_OWE |
-		WPA_DRIVER_CAPA_KEY_MGMT_DPP;
+	drv->has_driver_key_mgmt = info.has_key_mgmt | info.has_key_mgmt_iftype;
 
-	if (drv->capa.enc & (WPA_DRIVER_CAPA_ENC_CCMP_256 |
-			     WPA_DRIVER_CAPA_ENC_GCMP_256))
-		drv->capa.key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B_192;
+	/* Fallback to hardcoded defaults if the driver does nott advertize any
+	 * AKM capabilities. */
+	if (!drv->has_driver_key_mgmt) {
+		drv->capa.key_mgmt = WPA_DRIVER_CAPA_KEY_MGMT_WPA |
+			WPA_DRIVER_CAPA_KEY_MGMT_WPA_PSK |
+			WPA_DRIVER_CAPA_KEY_MGMT_WPA2 |
+			WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK |
+			WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B |
+			WPA_DRIVER_CAPA_KEY_MGMT_OWE |
+			WPA_DRIVER_CAPA_KEY_MGMT_DPP;
 
-	if (drv->capa.flags & WPA_DRIVER_FLAGS_SME)
-		drv->capa.key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA256 |
-			WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA384 |
-			WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA256 |
-			WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA384 |
-			WPA_DRIVER_CAPA_KEY_MGMT_SAE;
-	else if (drv->capa.flags & WPA_DRIVER_FLAGS_FILS_SK_OFFLOAD)
-		drv->capa.key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA256 |
-			WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA384;
+		if (drv->capa.enc & (WPA_DRIVER_CAPA_ENC_CCMP_256 |
+				     WPA_DRIVER_CAPA_ENC_GCMP_256))
+			drv->capa.key_mgmt |=
+				WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B_192;
+
+		if (drv->capa.flags & WPA_DRIVER_FLAGS_SME)
+			drv->capa.key_mgmt |=
+				WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA256 |
+				WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA384 |
+				WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA256 |
+				WPA_DRIVER_CAPA_KEY_MGMT_FT_FILS_SHA384 |
+				WPA_DRIVER_CAPA_KEY_MGMT_SAE;
+		else if (drv->capa.flags & WPA_DRIVER_FLAGS_FILS_SK_OFFLOAD)
+			drv->capa.key_mgmt |=
+				WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA256 |
+				WPA_DRIVER_CAPA_KEY_MGMT_FILS_SHA384;
+	}
+
+	if (!info.has_key_mgmt_iftype) {
+		/* If the driver does not advertize per interface AKM
+		 * capabilities, consider all interfaces to support default AKMs
+		 * in key_mgmt. */
+		for (i = 0; i < WPA_IF_MAX; i++)
+			drv->capa.key_mgmt_iftype[i] = drv->capa.key_mgmt;
+	} else if (info.has_key_mgmt_iftype && !info.has_key_mgmt) {
+		/* If the driver advertizes only per interface supported AKMs
+		 * but does not advertize per wiphy AKM capabilities, consider
+		 * the default key_mgmt as a mask of per interface supported
+		 * AKMs. */
+		drv->capa.key_mgmt = 0;
+		for (i = 0; i < WPA_IF_MAX; i++)
+			drv->capa.key_mgmt |= drv->capa.key_mgmt_iftype[i];
+	} else if (info.has_key_mgmt_iftype && info.has_key_mgmt) {
+		/* If the driver advertizes AKM capabilities both per wiphy and
+		 * per interface, consider the interfaces for which per
+		 * interface AKM capabilities were not received to support the
+		 * default key_mgmt capabilities.
+		 */
+		for (i = 0; i < WPA_IF_MAX; i++)
+			if (!drv->capa.key_mgmt_iftype[i])
+				drv->capa.key_mgmt_iftype[i] =
+					drv->capa.key_mgmt;
+	}
 
 	drv->capa.auth = WPA_DRIVER_AUTH_OPEN |
 		WPA_DRIVER_AUTH_SHARED |

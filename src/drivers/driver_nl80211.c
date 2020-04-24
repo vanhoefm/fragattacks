@@ -2328,9 +2328,18 @@ static int nl80211_mgmt_subscribe_non_ap(struct i802_bss *bss)
 	/* FT Action frames */
 	if (nl80211_register_action_frame(bss, (u8 *) "\x06", 1) < 0)
 		ret = -1;
-	else
+	else if (!drv->has_driver_key_mgmt) {
+		int i;
+
+		/* Update supported AKMs only if the driver doesn't advertize
+		 * any AKM capabilities. */
 		drv->capa.key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FT |
 			WPA_DRIVER_CAPA_KEY_MGMT_FT_PSK;
+
+		/* Update per interface supported AKMs */
+		for (i = 0; i < WPA_IF_MAX; i++)
+			drv->capa.key_mgmt_iftype[i] = drv->capa.key_mgmt;
+	}
 
 	/* WNM - BSS Transition Management Request */
 	if (nl80211_register_action_frame(bss, (u8 *) "\x0a\x07", 2) < 0)
@@ -5056,6 +5065,10 @@ const char * nl80211_iftype_str(enum nl80211_iftype mode)
 		return "P2P_GO";
 	case NL80211_IFTYPE_P2P_DEVICE:
 		return "P2P_DEVICE";
+	case NL80211_IFTYPE_OCB:
+		return "OCB";
+	case NL80211_IFTYPE_NAN:
+		return "NAN";
 	default:
 		return "unknown";
 	}

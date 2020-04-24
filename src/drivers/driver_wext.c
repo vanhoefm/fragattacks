@@ -968,6 +968,7 @@ static void wext_check_hostap(struct wpa_driver_wext_data *drv)
 static int wpa_driver_wext_finish_drv_init(struct wpa_driver_wext_data *drv)
 {
 	int send_rfkill_event = 0;
+	int i;
 
 	if (linux_set_iface_flags(drv->ioctl_sock, drv->ifname, 1) < 0) {
 		if (rfkill_is_blocked(drv->rfkill)) {
@@ -995,6 +996,10 @@ static int wpa_driver_wext_finish_drv_init(struct wpa_driver_wext_data *drv)
 	}
 
 	wpa_driver_wext_get_range(drv);
+
+	/* Update per interface supported AKMs */
+	for (i = 0; i < WPA_IF_MAX; i++)
+		drv->capa.key_mgmt_iftype[i] = drv->capa.key_mgmt;
 
 	/*
 	 * Unlock the driver's BSSID and force to a random SSID to clear any

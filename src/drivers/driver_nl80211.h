@@ -111,6 +111,7 @@ struct wpa_driver_nl80211_data {
 	unsigned int num_iface_ext_capa;
 
 	int has_capability;
+	int has_driver_key_mgmt;
 
 	int operstate;
 

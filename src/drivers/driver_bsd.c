@@ -1451,6 +1451,7 @@ wpa_driver_bsd_init(void *ctx, const char *ifname, void *priv)
 #define	GETPARAM(drv, param, v) \
 	(((v) = get80211param(drv, param)) != -1)
 	struct bsd_driver_data *drv;
+	int i;
 
 	drv = os_zalloc(sizeof(*drv));
 	if (drv == NULL)
@@ -1485,6 +1486,10 @@ wpa_driver_bsd_init(void *ctx, const char *ifname, void *priv)
 
 	if (wpa_driver_bsd_capa(drv))
 		goto fail;
+
+	/* Update per interface supported AKMs */
+	for (i = 0; i < WPA_IF_MAX; i++)
+		drv->capa.key_mgmt_iftype[i] = drv->capa.key_mgmt;
 
 	/* Down interface during setup. */
 	if (bsd_get_iface_flags(drv) < 0)
