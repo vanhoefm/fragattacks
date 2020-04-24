@@ -506,7 +506,7 @@ CONFIG_AP=y
 CONFIG_P2P=y
 
 # Enable TDLS support
-#CONFIG_TDLS=y
+CONFIG_TDLS=y
 
 # Wi-Fi Display
 # This can be used to enable Wi-Fi Display extensions for P2P using an external
