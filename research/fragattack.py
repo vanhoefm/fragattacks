@@ -306,7 +306,7 @@ class LinuxTest(Test):
 
 		# Fragment 2: make Linux update latest used crypto Packet Number. Use a dummy packet
 		# that can't accidently aggregate with the first fragment in a corrrect packet.
-		p = station.get_header()/LLC()/SNAP()/IP()
+		p = station.get_header()/LLC()/SNAP()/IP()/Raw(b"linux_plain decoy fragment")
 		p.SC = frag2.SC ^ (1 << 4)
 		self.actions[1].frame = p
 
@@ -1068,7 +1068,8 @@ class Supplicant(Daemon):
 			self.initialize_ips(clientip, serverip)
 
 	def initialize_peermac(self, peermac):
-		log(STATUS, f"Will now use peer MAC address {peermac} instead of the BSS")
+		if peermac != self.station.bss:
+			log(STATUS, f"Will now use peer MAC address {peermac} instead of the BSS {self.station.bss}.")
 		self.station.set_peermac(peermac)
 
 	def initialize_ips(self, clientip, serverip):
@@ -1216,7 +1217,11 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=
 
 	elif test_name == "eapol_msdu":
 		if stractions != None:
-			actions = [Action(char2trigger(t), enc=False) for t in stractions]
+			prefix, specific = stractions[:-3], stractions[-2:]
+			actions = []
+			if len(prefix) > 0:
+				actions = [stract2action(stract) for stract in prefix.split(",")]
+			actions += [Action(char2trigger(t), enc=False) for t in specific]
 		else:
 			actions = [Action(Action.StartAuth, enc=False),
 				   Action(Action.StartAuth, enc=False)]
