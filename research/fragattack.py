@@ -247,11 +247,14 @@ class PingTest(Test):
 		# Generate the header and payload
 		header, request, self.check_fn = generate_request(station, self.ptype)
 
-		if self.as_msdu:
+		if self.as_msdu == 1:
 			# Set the A-MSDU frame type flag in the QoS header
 			header.Reserved = 1
 			# Encapsulate the request in an A-MSDU payload
 			request = add_msdu_frag(station.mac, station.get_peermac(), request)
+		elif self.as_msdu == 2:
+			# Set A-MSDU flag but include a normal payload (fake A-MSDU)
+			header.Reserved = 1
 
 		# Generate all the individual (fragmented) frames
 		num_frags = len(self.get_actions(Action.Inject))
@@ -281,6 +284,7 @@ class PingTest(Test):
 class LinuxTest(Test):
 	def __init__(self, ptype):
 		super().__init__([
+			Action(Action.Connected, Action.GetIp), # XXX we don't always want to wait on this?
 			Action(Action.Connected, enc=True),
 			Action(Action.Connected, enc=True),
 			Action(Action.Connected, enc=False)
@@ -529,7 +533,9 @@ class Station():
 		return header
 
 	def encrypt(self, frame, inc_pn=1, force_key=None):
+		# TODO: Option to use per-QoS transmit replay counters?
 		self.pn += inc_pn
+
 		key, keyid = (self.tk, 0) if int(frame.addr1[1], 16) & 1 == 0 else (self.gtk, self.gtk_idx)
 		if force_key == 0:
 			log(STATUS, "Encrypting with all-zero key")
@@ -642,7 +648,7 @@ class Station():
 
 				if act.encrypted:
 					assert self.tk != None and self.gtk != None
-					log(STATUS, "Encrypting with key " + self.tk.hex() + " " + repr(frame))
+					log(STATUS, "Encrypting with key " + self.tk.hex() + " " + repr(act.frame))
 					frame = self.encrypt(act.frame, inc_pn=act.inc_pn, force_key=act.key)
 				else:
 					frame = act.frame
@@ -1170,7 +1176,7 @@ def stract2action(stract):
 
 	raise Exception("Unrecognized action")
 
-def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=False, ptype=None):
+def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=None):
 	if test_name == "ping":
 		if stractions != None:
 			actions = [stract2action(stract) for stract in stractions.split(",")]
@@ -1288,6 +1294,18 @@ def args2ptype(args):
 
 	return None
 
+def args2msdu(args):
+	# Only one of these should be given
+	if args.msdu + args.fake_msdu > 1:
+		log(STATUS, "You cannot combine --msdu and --fake_msdu. Please only supply one of them.")
+		quit(1)
+
+	if args.msdu: return 1
+	if args.fake_msdu: return 2
+
+	return None
+
+
 if __name__ == "__main__":
 	log(WARNING, "Remember to use a modified backports and ath9k_htc firmware!\n")
 
@@ -1302,6 +1320,7 @@ if __name__ == "__main__":
 	parser.add_argument('--delay', type=float, default=0, help="Delay between fragments in certain tests.")
 	parser.add_argument('--inc-pn', type=int, help="To test non-sequential packet number in fragments.")
 	parser.add_argument('--msdu', default=False, action='store_true', help="Encapsulate pings in an A-MSDU frame.")
+	parser.add_argument('--fake-msdu', default=False, action='store_true', help="Set A-MSDU flag but include normal payload.")
 	parser.add_argument('--arp', default=False, action='store_true', help="Override default request with ARP request.")
 	parser.add_argument('--dhcp', default=False, action='store_true', help="Override default request with DHCP discover.")
 	parser.add_argument('--icmp', default=False, action='store_true', help="Override default request with ICMP ping request.")
@@ -1309,11 +1328,12 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	ptype = args2ptype(args)
+	as_msdu = args2msdu(args)
 
 	# Convert parsed options to TestOptions object
 	options = TestOptions()
 	options.interface = args.iface
-	options.test = prepare_tests(args.testname, args.actions, args.delay, args.inc_pn, args.msdu, ptype)
+	options.test = prepare_tests(args.testname, args.actions, args.delay, args.inc_pn, as_msdu, ptype)
 	options.ip = args.ip
 	options.peerip = args.peerip
 	options.rekey_request = args.rekey_request
