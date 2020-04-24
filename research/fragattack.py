@@ -1158,7 +1158,8 @@ class Supplicant(Daemon):
 
 	def reconnect(self, station):
 		log(STATUS, "Reconnecting to the AP.", color="green")
-		wpaspy_command(self.wpaspy_ctrl, "SET reassoc_same_bss_optim 1")
+		optim = "0" if self.options.full_reconnect else "1"
+		wpaspy_command(self.wpaspy_ctrl, f"SET reassoc_same_bss_optim {optim}")
 		wpaspy_command(self.wpaspy_ctrl, "REASSOCIATE")
 
 	def configure_daemon(self):
@@ -1379,6 +1380,7 @@ if __name__ == "__main__":
 	parser.add_argument('--icmp', default=False, action='store_true', help="Override default request with ICMP ping request.")
 	parser.add_argument('--rekey-request', default=False, action='store_true', help="Actively request PTK rekey as client.")
 	parser.add_argument('--rekey-plaintext', default=False, action='store_true', help="Do PTK rekey with plaintext EAPOL frames.")
+	parser.add_argument('--full-reconnect', default=False, action='store_true', help="Reconnect by deauthenticating first.")
 	args = parser.parse_args()
 
 	ptype = args2ptype(args)
@@ -1392,6 +1394,7 @@ if __name__ == "__main__":
 	options.peerip = args.peerip
 	options.rekey_request = args.rekey_request
 	options.rekey_plaintext = args.rekey_plaintext
+	options.full_reconnect = args.full_reconnect
 
 	# Parse remaining options
 	global_log_level -= args.debug
