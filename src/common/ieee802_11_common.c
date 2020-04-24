@@ -294,6 +294,11 @@ static int ieee802_11_parse_extension(const u8 *pos, size_t elen,
 		elems->short_ssid_list = pos;
 		elems->short_ssid_list_len = elen;
 		break;
+	case WLAN_EID_EXT_HE_6GHZ_BAND_CAP:
+		if (elen < sizeof(struct ieee80211_he_6ghz_band_cap))
+			break;
+		elems->he_6ghz_band_cap = pos;
+		break;
 	default:
 		if (show_errors) {
 			wpa_printf(MSG_MSGDUMP,
