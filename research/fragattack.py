@@ -289,9 +289,7 @@ class PingTest(Test):
 			elif act.action == Action.Inject:
 				fragnums.append(next_fragnum)
 				next_fragnum += 1
-		print("Actions before:", self.actions)
 		self.actions = list(filter(lambda act: not act.is_meta(Action.MetaDrop), self.actions))
-		print("Actions after:", self.actions)
 
 		# Generate all the individual (fragmented) frames
 		num_frags = len(self.get_actions(Action.Inject))
@@ -1051,6 +1049,12 @@ class Supplicant(Daemon):
 		if self.options.rekey_request:
 			log(STATUS, "Actively requesting PTK rekey", color="green")
 			wpaspy_command(self.wpaspy_ctrl, "KEY_REQUEST 0 1")
+
+			# The RT-AC51U does the 4-way rekey HS in plaintext. So in some cases we must
+			# remove the keys so our script will send the EAPOL frames in plaintext.
+			if self.options.rekey_plaintext:
+				log(STATUS, "Removing keys to perform rekey using plaintext EAPOL frames")
+				self.station.reset_keys()
 		else:
 			log(STATUS, "Client cannot force rekey. Waiting on AP to start PTK rekey.", color="orange")
 
@@ -1374,6 +1378,7 @@ if __name__ == "__main__":
 	parser.add_argument('--dhcp', default=False, action='store_true', help="Override default request with DHCP discover.")
 	parser.add_argument('--icmp', default=False, action='store_true', help="Override default request with ICMP ping request.")
 	parser.add_argument('--rekey-request', default=False, action='store_true', help="Actively request PTK rekey as client.")
+	parser.add_argument('--rekey-plaintext', default=False, action='store_true', help="Do PTK rekey with plaintext EAPOL frames.")
 	args = parser.parse_args()
 
 	ptype = args2ptype(args)
@@ -1386,6 +1391,7 @@ if __name__ == "__main__":
 	options.ip = args.ip
 	options.peerip = args.peerip
 	options.rekey_request = args.rekey_request
+	options.rekey_plaintext = args.rekey_plaintext
 
 	# Parse remaining options
 	global_log_level -= args.debug
