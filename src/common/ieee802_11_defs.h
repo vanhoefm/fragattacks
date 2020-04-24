@@ -473,6 +473,7 @@
 #define WLAN_EID_EXT_SPATIAL_REUSE 39
 #define WLAN_EID_EXT_OCV_OCI 54
 #define WLAN_EID_EXT_SHORT_SSID_LIST 58
+#define WLAN_EID_EXT_HE_6GHZ_BAND_CAP 59
 #define WLAN_EID_EXT_EDMG_CAPABILITIES 61
 #define WLAN_EID_EXT_EDMG_OPERATION 62
 #define WLAN_EID_EXT_REJECTED_GROUPS 92
@@ -2150,6 +2151,41 @@ struct ieee80211_he_operation {
 	u8 vht_op_info_chan_center_freq_seg1_idx;
 	/* Followed by conditional MaxBSSID Indicator subfield (u8) */
 } STRUCT_PACKED;
+
+/* IEEE P802.11ax/D6.0, Figure 9-787k - 6 GHz Operation Information field */
+struct ieee80211_he_6ghz_oper_info {
+	u8 primary_chan;
+	u8 control;
+	u8 chan_center_freq_seg0;
+	u8 chan_center_freq_seg1;
+	u8 min_rate;
+} STRUCT_PACKED;
+
+#define HE_6GHZ_OPER_INFO_CTRL_CHAN_WIDTH_MASK	(BIT(0) | BIT(1))
+#define HE_6GHZ_OPER_INFO_CTRL_DUP_BEACON	BIT(2)
+
+/* IEEE P802.11ax/D6.0, 9.4.2.261 HE 6 GHz Band Capabilities element */
+struct ieee80211_he_6ghz_band_cap {
+	 /* Minimum MPDU Start Spacing B0..B2
+	  * Maximum A-MPDU Length Exponent B3..B5
+	  * Maximum MPDU Length B6..B7 */
+	u8 a_mpdu_params; /* B0..B7 */
+	u8 info; /* B8..B15 */
+} STRUCT_PACKED;
+
+#define HE_6GHZ_BAND_CAP_MIN_MPDU_START_SPACE_MASK		0x7
+#define HE_6GHZ_BAND_CAP_MAX_A_MPDU_LENGTH_EXPONENT_MASK	0x7
+#define HE_6GHZ_BAND_CAP_MAX_A_MPDU_LENGTH_EXPONENT_SHIFT	3
+#define HE_6GHZ_BAND_CAP_MAX_MPDU_LENGTH_MASK			0x3
+#define HE_6GHZ_BAND_CAP_MAX_MPDU_LENGTH_SHIFT			6
+
+#define HE_6GHZ_BAND_CAP_SMPS_MASK			  (BIT(1) | BIT(2))
+#define HE_6GHZ_BAND_CAP_SMPS_STATIC			  0
+#define HE_6GHZ_BAND_CAP_SMPS_DYNAMIC			  BIT(1)
+#define HE_6GHZ_BAND_CAP_SMPS_DISABLED			  (BIT(1) | BIT(2))
+#define HE_6GHZ_BAND_CAP_RD_RESPONDER			  BIT(3)
+#define HE_6GHZ_BAND_CAP_RX_ANTENNA_PATTERN		  BIT(4)
+#define HE_6GHZ_BAND_CAP_TX_ANTENNA_PATTERN		  BIT(5)
 
 /*
  * IEEE P802.11ax/D4.0, 9.4.2.246 Spatial Reuse Parameter Set element
