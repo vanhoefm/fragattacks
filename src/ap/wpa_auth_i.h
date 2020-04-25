@@ -160,6 +160,7 @@ struct wpa_state_machine {
 #endif /* CONFIG_DPP2 */
 
 #ifdef CONFIG_TESTING_OPTIONS
+	int early_install;
 	void (*eapol_status_cb)(void *ctx1, void *ctx2);
 	void *eapol_status_cb_ctx1;
 	void *eapol_status_cb_ctx2;

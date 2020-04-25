@@ -2362,6 +2362,7 @@ static int hostapd_ctrl_rekey_ptk(struct hostapd_data *hapd, const char *cmd)
 {
 	struct sta_info *sta;
 	u8 addr[ETH_ALEN];
+	int early_install = os_strstr(cmd, "early-install") != NULL;
 
 	if (hwaddr_aton(cmd, addr))
 		return -1;
@@ -2370,8 +2371,9 @@ static int hostapd_ctrl_rekey_ptk(struct hostapd_data *hapd, const char *cmd)
 	if (!sta || !sta->wpa_sm)
 		return -1;
 
-	wpa_printf(MSG_INFO, "TESTING: Reking PTK of " MACSTR, MAC2STR(sta->addr));
-	return wpa_auth_rekey_ptk(sta->wpa_sm);
+	wpa_printf(MSG_INFO, "TESTING: Reking PTK of " MACSTR " early_install=%d",
+		MAC2STR(sta->addr), early_install);
+	return wpa_auth_rekey_ptk(sta->wpa_sm, early_install);
 }
 
 

@@ -892,6 +892,9 @@ static int wpa_receive_error_report(struct wpa_authenticator *wpa_auth,
 	 * Error report is not a request for a new key handshake, but since
 	 * Authenticator may do it, let's change the keys now anyway.
 	 */
+#ifdef CONFIG_TESTING_OPTIONS
+	sm->early_install = 0;
+#endif /* CONFIG_TESTING_OPTIONS */
 	wpa_request_new_ptk(sm);
 	return 0;
 }
@@ -1339,6 +1342,9 @@ continue_processing:
 			wpa_auth_logger(wpa_auth, sm->addr, LOGGER_INFO,
 					"received EAPOL-Key Request for new "
 					"4-Way Handshake");
+#ifdef CONFIG_TESTING_OPTIONS
+			sm->early_install = 0;
+#endif /* CONFIG_TESTING_OPTIONS */
 			wpa_request_new_ptk(sm);
 		} else if (key_data_length > 0 &&
 			   wpa_parse_kde_ies(key_data, key_data_length,
@@ -3400,6 +3406,23 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 		       WPA_KEY_INFO_ACK | WPA_KEY_INFO_INSTALL |
 		       WPA_KEY_INFO_KEY_TYPE,
 		       _rsc, sm->ANonce, kde, pos - kde, 0, encr);
+
+#ifdef CONFIG_TESTING_OPTIONS
+	if (sm->early_install)
+	{
+		sm->early_install = 0;
+		enum wpa_alg alg = wpa_cipher_to_alg(sm->pairwise);
+		int klen = wpa_cipher_key_len(sm->pairwise);
+		if (wpa_auth_set_key(sm->wpa_auth, 0, alg, sm->addr, 0,
+				     sm->PTK.tk, klen,
+				     KEY_FLAG_PAIRWISE_RX_TX)) {
+			wpa_sta_disconnect(sm->wpa_auth, sm->addr,
+					   WLAN_REASON_PREV_AUTH_NOT_VALID);
+			return;
+		}
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
+
 done:
 	os_free(kde);
 	os_free(wpa_ie_buf);
@@ -5279,9 +5302,12 @@ int wpa_auth_rekey_gtk(struct wpa_authenticator *wpa_auth)
 }
 
 
-int wpa_auth_rekey_ptk(struct wpa_state_machine *sm)
+int wpa_auth_rekey_ptk(struct wpa_state_machine *sm, int early_install)
 {
 	eloop_cancel_timeout(wpa_rekey_ptk, sm->wpa_auth, sm);
+#ifdef CONFIG_TESTING_OPTIONS
+	sm->early_install = early_install;
+#endif /* CONFIG_TESTING_OPTIONS */
 	return eloop_register_timeout(0, 0, wpa_rekey_ptk, sm->wpa_auth, sm);
 }
 

