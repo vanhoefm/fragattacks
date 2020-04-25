@@ -2,6 +2,7 @@
 from libwifi import *
 import abc, sys, socket, struct, time, subprocess, atexit, select, copy
 import argparse
+import os.path
 from wpaspy import Ctrl
 from scapy.contrib.wpa_eapol import WPA_key
 
@@ -852,8 +853,10 @@ class Daemon(metaclass=abc.ABCMeta):
 	def run(self):
 		self.configure_interfaces()
 		self.start_daemon()
-		self.sock_mon = MonitorSocket(type=ETH_P_ALL, iface=self.nic_mon)
-		self.sock_eth = L2Socket(type=ETH_P_ALL, iface=self.nic_iface)
+
+		# Wait until daemon started
+		while not os.path.exists("wpaspy_ctrl/" + self.nic_iface):
+			time.sleep(0.1)
 
 		# Open the wpa_supplicant or hostapd control interface
 		try:
@@ -863,6 +866,9 @@ class Daemon(metaclass=abc.ABCMeta):
 			log(ERROR, "It seems wpa_supplicant/hostapd did not start properly, please inspect its output.")
 			log(ERROR, "Did you disable Wi-Fi in the network manager? Otherwise it won't start properly.")
 			raise
+
+		self.sock_mon = MonitorSocket(type=ETH_P_ALL, iface=self.nic_mon)
+		self.sock_eth = L2Socket(type=ETH_P_ALL, iface=self.nic_iface)
 
 		# Post-startup configuration of the supplicant or AP
 		self.configure_daemon()
@@ -1005,7 +1011,6 @@ class Authenticator(Daemon):
 				"../hostapd/hostapd",
 				"-i", self.nic_iface,
 				"hostapd.conf"] + log_level2switch())
-			time.sleep(1)
 		except:
 			if not os.path.exists("../hostapd/hostapd"):
 				log(ERROR, "hostapd executable not found. Did you compile hostapd?")
@@ -1202,7 +1207,6 @@ class Supplicant(Daemon):
 				"-Dnl80211",
 				"-i", self.nic_iface,
 				"-cclient.conf"] + log_level2switch())
-			time.sleep(1)
 		except:
 			if not os.path.exists("../wpa_supplicant/wpa_supplicant"):
 				log(ERROR, "wpa_supplicant executable not found. Did you compile wpa_supplicant?")
