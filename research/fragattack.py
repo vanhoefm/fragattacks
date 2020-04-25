@@ -1231,7 +1231,7 @@ def stract2action(stract):
 
 	raise Exception("Unrecognized action")
 
-def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=None):
+def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=None, bcast=False):
 	if test_name == "ping":
 		if stractions != None:
 			actions = [stract2action(stract) for stract in stractions.split(",")]
@@ -1239,7 +1239,7 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=
 			actions = [Action(Action.Connected, action=Action.GetIp),
 				   Action(Action.Connected, enc=True)]
 
-		test = PingTest(REQ_ICMP, actions, as_msdu=as_msdu)
+		test = PingTest(REQ_ICMP, actions, as_msdu=as_msdu, bcast=bcast)
 
 	elif test_name == "ping_frag_sep":
 		# Check if we can send frames in between fragments. The seperator uses a different QoS TID.
@@ -1250,7 +1250,7 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=
 				[Action(Action.Connected, action=Action.GetIp),
 				 Action(Action.Connected, enc=True),
 				 Action(Action.Connected, enc=True, inc_pn=0)],
-				 separate_with=separator, as_msdu=as_msdu,
+				 separate_with=separator, as_msdu=as_msdu, bcast=bcast,
 				)
 
 	elif test_name == "wep_mixed_key":
@@ -1304,13 +1304,6 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=
 		test = QcaDriverRekey()
 
 	# -----------------------------------------------------------------------------------------
-
-	elif test_name == "ping_bcast":
-		# Check if the STA receives broadcast (useful test against AP)
-		# XXX Have both broadcast and unicast IP/ARP inside?
-		test = PingTest(REQ_DHCP,
-				[Action(Action.Connected, enc=True)],
-				bcast=True)
 
 	# XXX TODO : Hardware decrypts it using old key, software using new key?
 	#	     So right after rekey we inject first with old key, second with new key?
@@ -1386,6 +1379,7 @@ if __name__ == "__main__":
 	parser.add_argument('--rekey-request', default=False, action='store_true', help="Actively request PTK rekey as client.")
 	parser.add_argument('--rekey-plaintext', default=False, action='store_true', help="Do PTK rekey with plaintext EAPOL frames.")
 	parser.add_argument('--full-reconnect', default=False, action='store_true', help="Reconnect by deauthenticating first.")
+	parser.add_argument('--bcast', default=False, action='store_true', help="Send pings using broadcast receiver address.")
 	args = parser.parse_args()
 
 	ptype = args2ptype(args)
@@ -1394,7 +1388,7 @@ if __name__ == "__main__":
 	# Convert parsed options to TestOptions object
 	options = TestOptions()
 	options.interface = args.iface
-	options.test = prepare_tests(args.testname, args.actions, args.delay, args.inc_pn, as_msdu, ptype)
+	options.test = prepare_tests(args.testname, args.actions, args.delay, args.inc_pn, as_msdu, ptype, args.bcast)
 	options.ip = args.ip
 	options.peerip = args.peerip
 	options.rekey_request = args.rekey_request
