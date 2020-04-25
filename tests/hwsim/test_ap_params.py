@@ -601,6 +601,7 @@ def test_ap_beacon_rate_legacy(dev, apdev):
     hapd.set('beacon_rate', '55')
     hapd.enable()
     dev[0].connect('beacon-rate', key_mgmt="NONE", scan_freq="2412")
+    time.sleep(0.5)
 
 def test_ap_beacon_rate_legacy2(dev, apdev):
     """Open AP with Beacon frame TX rate 12 Mbps in VHT BSS"""
@@ -623,6 +624,7 @@ def test_ap_beacon_rate_legacy2(dev, apdev):
         hapd.enable()
         dev[0].scan_for_bss(hapd.own_addr(), freq="5180")
         dev[0].connect('beacon-rate', key_mgmt="NONE", scan_freq="5180")
+        time.sleep(0.5)
     finally:
         dev[0].request("DISCONNECT")
         hapd.request("DISABLE")
@@ -639,6 +641,7 @@ def test_ap_beacon_rate_ht(dev, apdev):
     hapd.set('beacon_rate', 'ht:0')
     hapd.enable()
     dev[0].connect('beacon-rate', key_mgmt="NONE", scan_freq="2412")
+    time.sleep(0.5)
 
 def test_ap_beacon_rate_ht2(dev, apdev):
     """Open AP with Beacon frame TX rate HT-MCS 1 in VHT BSS"""
@@ -661,6 +664,7 @@ def test_ap_beacon_rate_ht2(dev, apdev):
         hapd.enable()
         dev[0].scan_for_bss(hapd.own_addr(), freq="5180")
         dev[0].connect('beacon-rate', key_mgmt="NONE", scan_freq="5180")
+        time.sleep(0.5)
     finally:
         dev[0].request("DISCONNECT")
         hapd.request("DISABLE")
@@ -688,6 +692,7 @@ def test_ap_beacon_rate_vht(dev, apdev):
         hapd.enable()
         dev[0].scan_for_bss(hapd.own_addr(), freq="5180")
         dev[0].connect('beacon-rate', key_mgmt="NONE", scan_freq="5180")
+        time.sleep(0.5)
     finally:
         dev[0].request("DISCONNECT")
         hapd.request("DISABLE")
