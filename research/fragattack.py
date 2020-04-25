@@ -604,6 +604,7 @@ class Station():
 			return self.bss
 		return self.peermac
 
+	# TODO: Show a warning when unusual transitions are detected?
 	def trigger_eapol_events(self, eapol):
 		# Ignore EAP authentication handshakes
 		if EAP in eapol: return None
@@ -739,7 +740,7 @@ class Station():
 		self.peerip = peerip
 		self.obtained_ip = True
 
-		log(STATUS, "Waiting on IP before forming next actions: " + str(self.waiting_on_ip))
+		log(DEBUG, "Waiting on IP before forming next actions: " + str(self.waiting_on_ip))
 		if self.waiting_on_ip:
 			self.waiting_on_ip = False
 			self.perform_actions(Action.Connected)
@@ -910,7 +911,13 @@ class Authenticator(Daemon):
 	def reconnect(self, station):
 		# Confirmed to *instantly* reconnect: Arch Linux, Windows 10 with Intel WiFi chip, iPad Pro 13.3.1
 		# Reconnects only after a few seconds: MacOS (same with other reasons and with deauthentication)
-		cmd = f"DISASSOCIATE {station.get_peermac()} reason={WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA}"
+		# Takes a few seconds, and then does a full new connection: Security Camera
+		if self.options.full_reconnect:
+			log(STATUS, "Deauthentication station to make it reconnect")
+			cmd = f"DEAUTHENTICATE {station.get_peermac()} reason={WLAN_REASON_CLASS2_FRAME_FROM_NONAUTH_STA}"
+		else:
+			log(STATUS, "Disassociating station to make it reconnect")
+			cmd = f"DISASSOCIATE {station.get_peermac()} reason={WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA}"
 		wpaspy_command(self.wpaspy_ctrl, cmd)
 
 	def handle_eth_dhcp(self, p, station):
@@ -952,8 +959,6 @@ class Authenticator(Daemon):
 				station.set_ip_addresses(self.options.ip, self.options.peerip)
 
 	def handle_wpaspy(self, msg):
-		log(STATUS, "daemon: " + msg)
-
 		if "AP-STA-CONNECTING" in msg:
 			cmd, clientmac = msg.split()
 			self.add_station(clientmac)
