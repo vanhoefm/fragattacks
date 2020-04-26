@@ -512,6 +512,7 @@ class Station():
 			log(STATUS, "Received packet: " + repr(p))
 			self.test = None
 
+	# FIXME: EAPOL should not be send to peer_mac() always??
 	def send_mon(self, data, prior=1):
 		"""
 		Right after completing the handshake, it occurred several times that our
@@ -535,8 +536,40 @@ class Station():
 		else:
 			payload = data
 
-		p = p/LLC()/SNAP()/payload
-		if self.tk: p = self.encrypt(p)
+		# Add payload headers
+		payload = LLC()/SNAP()/payload
+
+		# Special case when sending EAP(OL) frames to NetBSD
+		if self.options.freebsd and (EAP in data or EAPOL in data):
+			log(STATUS, "Sending EAPOL as (malformed) broadcast EAPOL/A-MSDU")
+
+			# Broadcast/multicast fragments do not affect the fragment cache
+			p.addr1 = "ff:ff:ff:ff:ff:ff"
+
+			# Encapsulate EAPOL in malformed EAPOL/A-MSDU fragment
+			p.Reserved = 1
+
+			# FreeBSD only accepts the frame if it starts with EAPOL header.
+			# I don't think the value "\x00\06" is important.
+			rawmac = bytes.fromhex(self.mac.replace(':', ''))
+			prefix = raw(LLC()/SNAP()/EAPOL()) + b"\x00\x06" + rawmac
+
+			# FreeBSD doesn't properly parse EAPOL/MSDU frames for some reason.
+			# It's unclear why. Put this code puts the length and addresses at
+			# the rigth positions so FreeBSD will parse the frame.
+			payload = add_msdu_frag(self.mac, self.get_peermac(), payload)
+			payload = prefix + struct.pack(">I", len(payload)) + raw(payload)
+
+			# Put the destination MAC address in the right place
+			rawmac = bytes.fromhex(self.get_peermac().replace(':', ''))
+			payload = payload[:16] + rawmac[:4] + payload[20:]
+
+			p = p/payload
+
+		# Normal case only need to check for encryption
+		else:
+			p = p/payload
+			if self.tk: p = self.encrypt(p)
 
 		log(STATUS, "[Injecting] " + repr(p))
 		daemon.inject_mon(p)
@@ -739,7 +772,7 @@ class Station():
 
 		# Note that self.time_connect may get changed in perform_actions
 		log(STATUS, "Action.AfterAuth", color="green")
-		self.time_connected = time.time() + 1
+		self.time_connected = time.time() + self.options.connected_delay
 		self.perform_actions(Action.AfterAuth)
 
 	def handle_connected(self):
@@ -1030,12 +1063,14 @@ class Authenticator(Daemon):
 						gw='192.168.100.254',
 						renewal_time=600, lease_time=3600)
 		# Configure gateway IP: reply to ARP and ping requests
+		# XXX Should we still do this? What about --ip and --peerip?
 		subprocess.check_output(["ifconfig", self.nic_iface, "192.168.100.254"])
 
 		# Use a dedicated IP address for our ARP ping and replies
 		self.arp_sender_ip = self.dhcp.pool.pop()
 		self.arp_sock = ARP_sock(sock=self.sock_eth, IP_addr=self.arp_sender_ip, ARP_addr=self.apmac)
-		log(STATUS, f"Will inject ARP packets using sender IP {self.arp_sender_ip}")
+		# TODO XXX: This is no longer correct due to --ip and --peerip parameters?
+		#log(STATUS, f"Will inject ARP packets using sender IP {self.arp_sender_ip}")
 
 
 class Supplicant(Daemon):
@@ -1404,6 +1439,8 @@ if __name__ == "__main__":
 	parser.add_argument('--full-reconnect', default=False, action='store_true', help="Reconnect by deauthenticating first.")
 	parser.add_argument('--bcast', default=False, action='store_true', help="Send pings using broadcast receiver address (addr1).")
 	parser.add_argument('--pn-per-qos', default=False, action='store_true', help="Use separate Tx packet counter for each QoS TID.")
+	parser.add_argument('--freebsd', default=False, action='store_true', help="Sent EAP(OL) frames as (malformed) broadcast EAPOL/A-MSDUs.")
+	parser.add_argument('--connected-delay', type=int, default=1, help="Second to wait after AfterAuth before triggering Connected event")
 	args = parser.parse_args()
 
 	ptype = args2ptype(args)
@@ -1420,6 +1457,8 @@ if __name__ == "__main__":
 	options.rekey_early_install = args.rekey_early_install
 	options.full_reconnect = args.full_reconnect
 	options.pn_per_qos = args.pn_per_qos
+	options.freebsd = args.freebsd
+	options.connected_delay = args.connected_delay
 
 	# Parse remaining options
 	global_log_level -= args.debug
