@@ -907,6 +907,9 @@ class Daemon(metaclass=abc.ABCMeta):
 		self.sock_eth.send(p)
 
 	def run(self):
+		# Remove old occurrences of the control interface that didn't get cleaned properly
+		subprocess.call(["rm", "-f", "wpaspy_ctrl/" + self.nic_iface])
+
 		self.configure_interfaces()
 		self.start_daemon()
 
@@ -919,7 +922,8 @@ class Daemon(metaclass=abc.ABCMeta):
 			self.wpaspy_ctrl = Ctrl("wpaspy_ctrl/" + self.nic_iface)
 			self.wpaspy_ctrl.attach()
 		except:
-			log(ERROR, "It seems wpa_supplicant/hostapd did not start properly, please inspect its output.")
+			log(ERROR, "It seems wpa_supplicant/hostapd did not start properly.")
+			log(ERROR, "Please restart it manually and inspect its output.")
 			log(ERROR, "Did you disable Wi-Fi in the network manager? Otherwise it won't start properly.")
 			raise
 
@@ -1061,12 +1065,10 @@ class Authenticator(Daemon):
 			self.stations[clientmac].handle_authenticated()
 
 	def start_daemon(self):
-		log(STATUS, "Starting hostapd ...")
+		cmd = ["../hostapd/hostapd", "-i", self.nic_iface, "hostapd.conf"] + log_level2switch()
+		log(STATUS, "Starting hostapd using: " + " ".join(cmd))
 		try:
-			self.process = subprocess.Popen([
-				"../hostapd/hostapd",
-				"-i", self.nic_iface,
-				"hostapd.conf"] + log_level2switch())
+			self.process = subprocess.Popen(cmd)
 		except:
 			if not os.path.exists("../hostapd/hostapd"):
 				log(ERROR, "hostapd executable not found. Did you compile hostapd?")
@@ -1258,13 +1260,11 @@ class Supplicant(Daemon):
 			self.initialize_ips(self.options.ip, self.options.peerip)
 
 	def start_daemon(self):
-		log(STATUS, "Starting wpa_supplicant ...")
+		cmd = ["../wpa_supplicant/wpa_supplicant", "-Dnl80211", "-i", self.nic_iface,
+			"-cclient.conf"] + log_level2switch()
+		log(STATUS, "Starting wpa_supplicant using: " + " ".join(cmd))
 		try:
-			self.process = subprocess.Popen([
-				"../wpa_supplicant/wpa_supplicant",
-				"-Dnl80211",
-				"-i", self.nic_iface,
-				"-cclient.conf"] + log_level2switch())
+			self.process = subprocess.Popen(cmd)
 		except:
 			if not os.path.exists("../wpa_supplicant/wpa_supplicant"):
 				log(ERROR, "wpa_supplicant executable not found. Did you compile wpa_supplicant?")
