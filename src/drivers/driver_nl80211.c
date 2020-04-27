@@ -2372,7 +2372,8 @@ static int nl80211_mgmt_subscribe_non_ap(struct i802_bss *bss)
 		ret = -1;
 
 	/* Radio Measurement - Radio Measurement Request */
-	if (nl80211_register_action_frame(bss, (u8 *) "\x05\x00", 2) < 0)
+	if  (!drv->no_rrm &&
+	     nl80211_register_action_frame(bss, (u8 *) "\x05\x00", 2) < 0)
 		ret = -1;
 
 	/* Radio Measurement - Link Measurement Request */
@@ -8238,6 +8239,18 @@ static int nl80211_set_param(void *priv, const char *param)
 
 	if (os_strstr(param, "full_ap_client_state=0"))
 		drv->capa.flags &= ~WPA_DRIVER_FLAGS_FULL_AP_CLIENT_STATE;
+
+	if (os_strstr(param, "no_rrm=1")) {
+		drv->no_rrm = 1;
+
+		if (!bss->in_deinit && !is_ap_interface(drv->nlmode) &&
+		    !is_mesh_interface(drv->nlmode)) {
+			nl80211_mgmt_unsubscribe(bss, "no_rrm=1");
+			if (nl80211_mgmt_subscribe_non_ap(bss) < 0)
+				wpa_printf(MSG_DEBUG,
+					   "nl80211: Failed to re-register Action frame processing - ignore for now");
+		}
+	}
 
 	return 0;
 }
