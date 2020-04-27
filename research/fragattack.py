@@ -130,7 +130,7 @@ def freebsd_encap_eapolmsdu(p, src, dst, payload):
 #	  ignored ICMP and ARP packets.
 REQ_ARP, REQ_ICMP, REQ_DHCP = range(3)
 
-def generate_request(sta, ptype, prior=2):
+def generate_request(sta, ptype, prior=2, icmp_size=0):
 	header = sta.get_header(prior=prior)
 	if ptype == REQ_ARP:
 		# Avoid using sta.get_peermac() because the correct MAC addresses may not
@@ -140,8 +140,9 @@ def generate_request(sta, ptype, prior=2):
 
 	elif ptype == REQ_ICMP:
 		label = b"test_ping_icmp"
+		payload = label + b"A" * max(0, icmp_size - len(label))
 		check = lambda p: ICMP in p and label in raw(p)
-		request = LLC()/SNAP()/IP(src=sta.ip, dst=sta.peerip)/ICMP()/Raw(label)
+		request = LLC()/SNAP()/IP(src=sta.ip, dst=sta.peerip)/ICMP()/Raw(payload)
 
 	elif ptype == REQ_DHCP:
 		xid = random.randint(0, 2**31)
@@ -292,13 +293,14 @@ class Test(metaclass=abc.ABCMeta):
 			frag.inc_pn = self.inc_pn
 
 class PingTest(Test):
-	def __init__(self, ptype, fragments, bcast=False, separate_with=None, as_msdu=False):
+	def __init__(self, ptype, fragments, bcast=False, separate_with=None, as_msdu=False, icmp_size=None):
 		super().__init__(fragments)
 		self.ptype = ptype
 		self.bcast = bcast
 		self.separate_with = separate_with
 		self.check_fn = None
 		self.as_msdu = as_msdu
+		self.icmp_size = icmp_size
 
 	def check(self, p):
 		if self.check_fn == None:
@@ -309,7 +311,7 @@ class PingTest(Test):
 		log(STATUS, "Generating ping test", color="green")
 
 		# Generate the header and payload
-		header, request, self.check_fn = generate_request(station, self.ptype)
+		header, request, self.check_fn = generate_request(station, self.ptype, icmp_size=self.icmp_size)
 
 		if self.as_msdu == 1:
 			# Set the A-MSDU frame type flag in the QoS header
@@ -1308,7 +1310,7 @@ def stract2action(stract):
 
 	raise Exception("Unrecognized action")
 
-def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=None, bcast=False):
+def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=None, bcast=False, icmp_size=None):
 	if test_name == "ping":
 		if stractions != None:
 			actions = [stract2action(stract) for stract in stractions.split(",")]
@@ -1316,7 +1318,7 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=
 			actions = [Action(Action.Connected, action=Action.GetIp),
 				   Action(Action.Connected, enc=True)]
 
-		test = PingTest(REQ_ICMP, actions, as_msdu=as_msdu, bcast=bcast)
+		test = PingTest(REQ_ICMP, actions, as_msdu=as_msdu, bcast=bcast, icmp_size=icmp_size)
 
 	elif test_name == "ping_frag_sep":
 		# Check if we can send frames in between fragments. The seperator by default uses a different
@@ -1329,7 +1331,7 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=
 				[Action(Action.Connected, action=Action.GetIp),
 				 Action(Action.Connected, enc=True),
 				 Action(Action.Connected, enc=True, inc_pn=0)],
-				 separate_with=separator, as_msdu=as_msdu, bcast=bcast,
+				 separate_with=separator, as_msdu=as_msdu, bcast=bcast, icmp_size=icmp_size
 				)
 
 	elif test_name == "wep_mixed_key":
@@ -1387,6 +1389,9 @@ def prepare_tests(test_name, stractions, delay=0, inc_pn=0, as_msdu=None, ptype=
 
 	elif test_name == "qca_rekey":
 		test = QcaDriverRekey()
+
+	# No valid test ID/name was given
+	else: return None
 
 	# -----------------------------------------------------------------------------------------
 
@@ -1461,6 +1466,7 @@ if __name__ == "__main__":
 	parser.add_argument('--arp', default=False, action='store_true', help="Override default request with ARP request.")
 	parser.add_argument('--dhcp', default=False, action='store_true', help="Override default request with DHCP discover.")
 	parser.add_argument('--icmp', default=False, action='store_true', help="Override default request with ICMP ping request.")
+	parser.add_argument('--icmp-size', type=int, default=None, help="Second to wait after AfterAuth before triggering Connected event")
 	parser.add_argument('--rekey-request', default=False, action='store_true', help="Actively request PTK rekey as client.")
 	parser.add_argument('--rekey-plaintext', default=False, action='store_true', help="Do PTK rekey with plaintext EAPOL frames.")
 	parser.add_argument('--rekey-early-install', default=False, action='store_true', help="Install PTK after sending Msg3 during rekey.")
@@ -1477,7 +1483,6 @@ if __name__ == "__main__":
 	# Convert parsed options to TestOptions object
 	options = TestOptions()
 	options.interface = args.iface
-	options.test = prepare_tests(args.testname, args.actions, args.delay, args.inc_pn, as_msdu, ptype, args.bcast)
 	options.ip = args.ip
 	options.peerip = args.peerip
 	options.rekey_request = args.rekey_request
@@ -1487,6 +1492,11 @@ if __name__ == "__main__":
 	options.pn_per_qos = args.pn_per_qos
 	options.freebsd_cache = args.freebsd_cache
 	options.connected_delay = args.connected_delay
+	options.test = prepare_tests(args.testname, args.actions, args.delay, args.inc_pn, as_msdu, ptype, args.bcast, args.icmp_size)
+
+	if options.test == None:
+		log(STATUS, f"Test name/id '{args.testname}' not recognized. Specify a valid test case.")
+		quit(1)
 
 	# Parse remaining options
 	global_log_level -= args.debug
