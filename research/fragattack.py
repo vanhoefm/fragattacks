@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# TODO: Other traffic on the interface might interfere with attacks. How to prevent?
 from libwifi import *
 import abc, sys, socket, struct, time, subprocess, atexit, select, copy
 import argparse
