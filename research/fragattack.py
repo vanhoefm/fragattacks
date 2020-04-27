@@ -130,7 +130,7 @@ def freebsd_encap_eapolmsdu(p, src, dst, payload):
 #	  ignored ICMP and ARP packets.
 REQ_ARP, REQ_ICMP, REQ_DHCP = range(3)
 
-def generate_request(sta, ptype, prior=2, icmp_size=0):
+def generate_request(sta, ptype, prior=2, icmp_size=None):
 	header = sta.get_header(prior=prior)
 	if ptype == REQ_ARP:
 		# Avoid using sta.get_peermac() because the correct MAC addresses may not
@@ -140,7 +140,10 @@ def generate_request(sta, ptype, prior=2, icmp_size=0):
 
 	elif ptype == REQ_ICMP:
 		label = b"test_ping_icmp"
+
+		if icmp_size == None: icmp_size = 0
 		payload = label + b"A" * max(0, icmp_size - len(label))
+
 		check = lambda p: ICMP in p and label in raw(p)
 		request = LLC()/SNAP()/IP(src=sta.ip, dst=sta.peerip)/ICMP()/Raw(payload)
 
