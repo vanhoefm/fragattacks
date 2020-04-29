@@ -3655,6 +3655,8 @@ SM_STEP(WPA_PTK)
 			wpa_auth_vlogger(wpa_auth, sm->addr, LOGGER_DEBUG,
 					 "PTKSTART: Retry limit %u reached",
 					 conf->wpa_pairwise_update_count);
+			sm->disconnect_reason =
+				WLAN_REASON_4WAY_HANDSHAKE_TIMEOUT;
 			SM_ENTER(WPA_PTK, DISCONNECT);
 		} else if (sm->TimeoutEvt)
 			SM_ENTER(WPA_PTK, PTKSTART);
@@ -3685,6 +3687,8 @@ SM_STEP(WPA_PTK)
 			wpa_auth_vlogger(wpa_auth, sm->addr, LOGGER_DEBUG,
 					 "PTKINITNEGOTIATING: Retry limit %u reached",
 					 conf->wpa_pairwise_update_count);
+			sm->disconnect_reason =
+				WLAN_REASON_4WAY_HANDSHAKE_TIMEOUT;
 			SM_ENTER(WPA_PTK, DISCONNECT);
 		} else if (sm->TimeoutEvt)
 			SM_ENTER(WPA_PTK, PTKINITNEGOTIATING);
@@ -3867,6 +3871,7 @@ SM_STATE(WPA_PTK_GROUP, KEYERROR)
 		sm->group->GKeyDoneStations--;
 	sm->GUpdateStationKeys = false;
 	sm->Disconnect = true;
+	sm->disconnect_reason = WLAN_REASON_GROUP_KEY_UPDATE_TIMEOUT;
 	wpa_auth_vlogger(sm->wpa_auth, sm->addr, LOGGER_INFO,
 			 "group key handshake failed (%s) after %u tries",
 			 sm->wpa == WPA_VERSION_WPA ? "WPA" : "RSN",
