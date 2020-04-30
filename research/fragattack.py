@@ -124,7 +124,7 @@ def freebsd_encap_eapolmsdu(p, src, dst, payload):
 # XXX --- We should always first see how the DUT reactions to a normal packet.
 #	  For example, Aruba only responded to DHCP after reconnecting, and
 #	  ignored ICMP and ARP packets.
-REQ_ARP, REQ_ICMP, REQ_DHCP = range(3)
+REQ_ARP, REQ_ICMP, REQ_ICMPv6_RA, REQ_DHCP = range(4)
 
 def generate_request(sta, ptype, prior=2, icmp_size=None, padding=None, to_self=False):
 	header = sta.get_header(prior=prior)
@@ -151,6 +151,17 @@ def generate_request(sta, ptype, prior=2, icmp_size=None, padding=None, to_self=
 
 		check = lambda p: ICMP in p and label in raw(p) and p[ICMP].type == 0
 		request = LLC()/SNAP()/IP(src=sta.ip, dst=sta.peerip)/ICMP()/Raw(payload)
+
+	elif ptype == REQ_ICMPv6_RA:
+		dns_ipv6 = "fd75:7c74:2274:1::53"
+
+		p = IPv6(dst="ff02::1", src=sta.ipv6)/ICMPv6ND_RA()
+		p = p/ICMPv6NDOptSrcLLAddr(lladdr=sta.mac)/ICMPv6NDOptMTU()
+		p = p/ICMPv6NDOptPrefixInfo(prefixlen=64, prefix="d00d::")
+		p = p/ICMPv6NDOptRDNSS(lifetime=900, dns=[dns_ipv6])
+
+		request = LLC()/SNAP()/p
+		check = lambda p: IPv6 in p and p[IPv6].dst == dns_ipv6
 
 	elif ptype == REQ_DHCP:
 		xid = random.randint(0, 2**31)
@@ -562,6 +573,7 @@ class Station():
 		# Can be either an AP or client.
 		self.mac = mac
 		self.ip = None
+		self.ipv6 = "fe80::a00:27ff:fec6:2f54"
 
 		# MAC address of the BSS. This is always the AP.
 		self.bss = None
@@ -1034,7 +1046,7 @@ class Authenticator(Daemon):
 	def handle_eth_dhcp(self, p, station):
 		if not DHCP in p or not station.get_peermac() in self.dhcp.leases: return
 
-		# This assures we only mark it was connected after receiving a DHCP Request
+		# This assures we only mark it as connected after receiving a DHCP Request
 		req_type = next(opt[1] for opt in p[DHCP].options if isinstance(opt, tuple) and opt[0] == 'message-type')
 		if req_type != 3: return
 
@@ -1043,18 +1055,22 @@ class Authenticator(Daemon):
 		station.set_ip_addresses(self.arp_sender_ip, peerip)
 
 	def handle_eth(self, p):
+		# TODO: Properly handle IPv6 vs DHCP. Why can't we always call station.handle_eth(p)?
+		# TODO: Shouldn't we handle ARP in the Station() code instead?
+
 		# Ignore clients not connected to the AP
 		clientmac = p[Ether].src
 		if not clientmac in self.stations:
 			return
 
 		# Let clients get IP addresses
-		self.dhcp.reply(p)
+		if not self.options.no_dhcp:
+			self.dhcp.reply(p)
 		self.arp_sock.reply(p)
 
 		# Monitor DHCP messages to know when a client received an IP address
 		station = self.stations[clientmac]
-		if not station.obtained_ip:
+		if not self.options.no_dhcp and not station.obtained_ip:
 			self.handle_eth_dhcp(p, station)
 		else:
 			station.handle_eth(p)
@@ -1458,13 +1474,14 @@ def prepare_tests(opt):
 
 def args2ptype(args):
 	# Only one of these should be given
-	if args.arp + args.dhcp + args.icmp > 1:
-		log(STATUS, "You cannot combine --arp, --dhcp, or --icmp. Please only supply one of them.")
+	if args.arp + args.dhcp + args.icmp + args.ipv6 > 1:
+		log(STATUS, "You cannot combine --arp, --dhcp, --ipv6, or --icmp. Please only supply one of them.")
 		quit(1)
 
 	if args.arp: return REQ_ARP
 	if args.dhcp: return REQ_DHCP
 	if args.icmp: return REQ_ICMP
+	if args.ipv6: return REQ_ICMPv6_RA
 
 	return None
 
@@ -1498,6 +1515,8 @@ if __name__ == "__main__":
 	parser.add_argument('--arp', default=False, action='store_true', help="Override default request with ARP request.")
 	parser.add_argument('--dhcp', default=False, action='store_true', help="Override default request with DHCP discover.")
 	parser.add_argument('--icmp', default=False, action='store_true', help="Override default request with ICMP ping request.")
+	parser.add_argument('--ipv6', default=False, action='store_true', help="Override default request with ICMPv6 router advertisement.")
+	parser.add_argument('--no-dhcp', default=False, action='store_true', help="Do not reply to DHCP requests as an AP.")
 	parser.add_argument('--icmp-size', type=int, default=None, help="Second to wait after AfterAuth before triggering Connected event")
 	parser.add_argument('--padding', type=int, default=None, help="Add padding data to ARP/DHCP/ICMP requests.")
 	parser.add_argument('--rekey-request', default=False, action='store_true', help="Actively request PTK rekey as client.")
