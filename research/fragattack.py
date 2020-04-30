@@ -28,10 +28,6 @@ from tests_qca import *
 #   driver to send all frames using the transmission queue of priority zero,
 #   independent of the actual QoS priority value used in the frame.
 
-#MAC_STA2 = "d0:7e:35:d9:80:91"
-#MAC_STA2 = "20:16:b9:b2:73:7a"
-MAC_STA2 = "80:5a:04:d4:54:c4"
-
 # ----------------------------------- Utility Commands -----------------------------------
 
 def wpaspy_clear_messages(ctrl):
@@ -130,12 +126,21 @@ def freebsd_encap_eapolmsdu(p, src, dst, payload):
 #	  ignored ICMP and ARP packets.
 REQ_ARP, REQ_ICMP, REQ_DHCP = range(3)
 
-def generate_request(sta, ptype, prior=2, icmp_size=None, padding=None):
+def generate_request(sta, ptype, prior=2, icmp_size=None, padding=None, to_self=False):
 	header = sta.get_header(prior=prior)
+
+	# Test handle the client handles Ethernet frames with the same src and dst MAC address
+	to_ds = header.FCfield & Dot11(FCfield="to-DS").FCfield != 0
+	if to_self and to_ds:
+		log(ERROR, "Impossible test! Can't send frames to the AP where both Ethernet dst and src are the same.")
+	elif to_self:
+		header.addr3 = header.addr1
+
 	if ptype == REQ_ARP:
 		# Avoid using sta.get_peermac() because the correct MAC addresses may not
 		# always be known (due to difference between AP and router MAC addresses).
-		check = lambda p: ARP in p and p.hwdst == sta.mac and p.pdst == sta.ip and p.psrc == sta.peerip
+		check = lambda p: ARP in p and p.hwdst == sta.mac and p.pdst == sta.ip \
+				  and p.psrc == sta.peerip and p[ARP].op == 2
 		request = LLC()/SNAP()/ARP(op=1, hwsrc=sta.mac, psrc=sta.ip, pdst=sta.peerip)
 
 	elif ptype == REQ_ICMP:
@@ -144,12 +149,13 @@ def generate_request(sta, ptype, prior=2, icmp_size=None, padding=None):
 		if icmp_size == None: icmp_size = 0
 		payload = label + b"A" * max(0, icmp_size - len(label))
 
-		check = lambda p: ICMP in p and label in raw(p)
+		check = lambda p: ICMP in p and label in raw(p) and p[ICMP].type == 0
 		request = LLC()/SNAP()/IP(src=sta.ip, dst=sta.peerip)/ICMP()/Raw(payload)
 
 	elif ptype == REQ_DHCP:
 		xid = random.randint(0, 2**31)
-		check = lambda p: BOOTP in p and p[BOOTP].xid == xid
+
+		check = lambda p: BOOTP in p and p[BOOTP].xid == xid and p[BOOTP].op == 2
 
 		rawmac = bytes.fromhex(sta.mac.replace(':', ''))
 		request = LLC()/SNAP()/IP(src="0.0.0.0", dst="255.255.255.255")
@@ -309,6 +315,7 @@ class PingTest(Test):
 		self.as_msdu = False if opt == None else opt.as_msdu
 		self.icmp_size = None if opt == None else opt.icmp_size
 		self.padding = None if opt == None else opt.padding
+		self.to_self = False if opt == None else opt.to_self
 
 	def check(self, p):
 		if self.check_fn == None:
@@ -319,7 +326,7 @@ class PingTest(Test):
 		log(STATUS, "Generating ping test", color="green")
 
 		# Generate the header and payload
-		header, request, self.check_fn = generate_request(station, self.ptype, icmp_size=self.icmp_size, padding=self.padding)
+		header, request, self.check_fn = generate_request(station, self.ptype, icmp_size=self.icmp_size, padding=self.padding, to_self=self.to_self)
 
 		if self.as_msdu == 1:
 			# Set the A-MSDU frame type flag in the QoS header
@@ -375,7 +382,7 @@ class ForwardTest(Test):
 		super().__init__([
 			Action(Action.Connected, enc=True)
 		])
-		self.magic = b"reflected_data"
+		self.magic = b"forwarded_data"
 
 	def check(self, p):
 		return self.magic in raw(p)
@@ -383,7 +390,8 @@ class ForwardTest(Test):
 	def prepare(self, station):
 		# We assume we are targetting the AP
 		header = station.get_header(prior=2)
-		assert header.FCfield & Dot11(FCfield="to-DS").FCfield != 0
+		if header.FCfield & Dot11(FCfield="to-DS").FCfield == 0:
+			log(ERROR, "Impossible test! It makes to sense to test whether a client forwards frames.")
 
 		# Set final destination to be us, the client
 		header.addr3 = station.mac
@@ -563,10 +571,6 @@ class Station():
 		self.peermac = None
 		self.peerip = None
 
-		# To test frame forwarding to a 3rd party
-		self.othermac = None
-		self.otherip = None
-
 		# To trigger Connected event 1-2 seconds after Authentication
 		self.time_connected = None
 
@@ -579,8 +583,6 @@ class Station():
 		pass
 
 	def handle_eth(self, p):
-		repr(repr(p))
-
 		if self.test != None and self.test.check != None and self.test.check(p):
 			log(STATUS, "SUCCESSFULL INJECTION", color="green")
 			log(STATUS, "Received packet: " + repr(p))
@@ -627,10 +629,8 @@ class Station():
 		log(STATUS, "[Injecting] " + repr(p))
 		daemon.inject_mon(p)
 
-	def set_header(self, p, forward=False, prior=None):
+	def set_header(self, p, prior=None):
 		"""Set addresses to send frame to the peer or the 3rd party station."""
-		# Forward request only makes sense towards the DS/AP
-		assert (not forward) or ((p.FCfield & 1) == 0)
 		# Priority is only supported in data frames
 		assert (prior == None) or (p.type == 2)
 
@@ -649,7 +649,7 @@ class Station():
 		if p.FCfield & 1 != 0:
 			p.addr1 = self.bss
 			p.addr2 = self.mac
-			p.addr3 = self.get_peermac() if not forward else self.othermac
+			p.addr3 = self.get_peermac()
 		else:
 			p.addr1 = self.peermac
 			p.addr2 = self.mac
@@ -1508,6 +1508,7 @@ if __name__ == "__main__":
 	parser.add_argument('--pn-per-qos', default=False, action='store_true', help="Use separate Tx packet counter for each QoS TID.")
 	parser.add_argument('--freebsd-cache', default=False, action='store_true', help="Sent EAP(OL) frames as (malformed) broadcast EAPOL/A-MSDUs.")
 	parser.add_argument('--connected-delay', type=int, default=1, help="Second to wait after AfterAuth before triggering Connected event")
+	parser.add_argument('--to-self', default=False, action='store_true', help="Send ARP/DHCP/ICMP with same src and dst MAC address.")
 	options = parser.parse_args()
 
 	# Sanity check and convert some arguments to more usable form
