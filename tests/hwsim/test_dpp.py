@@ -5193,7 +5193,7 @@ def start_dpp_pfs_ap(apdev, pfs):
         raise HwsimSkip("DPP not supported")
     return hapd
 
-def run_dpp_pfs_sta(dev, pfs, fail=False):
+def run_dpp_pfs_sta(dev, pfs, fail=False, pfs_expected=None):
     dev.connect("dpp", key_mgmt="DPP", scan_freq="2412",
                 ieee80211w="2", dpp_pfs=str(pfs),
                 dpp_csign=params1_csign,
@@ -5210,6 +5210,11 @@ def run_dpp_pfs_sta(dev, pfs, fail=False):
                 raise Exception("Unexpected connection")
         dev.request("REMOVE_NETWORK all")
     else:
+        if pfs_expected is not None:
+            res = dev.get_status_field("dpp_pfs")
+            pfs_used = res == "1"
+            if pfs_expected != pfs_used:
+                raise Exception("Unexpected PFS negotiation result")
         dev.request("REMOVE_NETWORK all")
         dev.wait_disconnected()
     dev.dump_monitor()
@@ -5218,25 +5223,25 @@ def test_dpp_pfs_ap_0(dev, apdev):
     """DPP PFS AP default"""
     check_dpp_capab(dev[0])
     hapd = start_dpp_pfs_ap(apdev[0], 0)
-    run_dpp_pfs_sta(dev[0], 0)
-    run_dpp_pfs_sta(dev[0], 1)
-    run_dpp_pfs_sta(dev[0], 2)
+    run_dpp_pfs_sta(dev[0], 0, pfs_expected=True)
+    run_dpp_pfs_sta(dev[0], 1, pfs_expected=True)
+    run_dpp_pfs_sta(dev[0], 2, pfs_expected=False)
 
 def test_dpp_pfs_ap_1(dev, apdev):
     """DPP PFS AP required"""
     check_dpp_capab(dev[0])
     hapd = start_dpp_pfs_ap(apdev[0], 1)
-    run_dpp_pfs_sta(dev[0], 0)
-    run_dpp_pfs_sta(dev[0], 1)
+    run_dpp_pfs_sta(dev[0], 0, pfs_expected=True)
+    run_dpp_pfs_sta(dev[0], 1, pfs_expected=True)
     run_dpp_pfs_sta(dev[0], 2, fail=True)
 
 def test_dpp_pfs_ap_2(dev, apdev):
     """DPP PFS AP not allowed"""
     check_dpp_capab(dev[0])
     hapd = start_dpp_pfs_ap(apdev[0], 2)
-    run_dpp_pfs_sta(dev[0], 0)
+    run_dpp_pfs_sta(dev[0], 0, pfs_expected=False)
     run_dpp_pfs_sta(dev[0], 1, fail=True)
-    run_dpp_pfs_sta(dev[0], 2)
+    run_dpp_pfs_sta(dev[0], 2, pfs_expected=False)
 
 def test_dpp_reconfig_connector(dev, apdev):
     """DPP reconfiguration connector"""
