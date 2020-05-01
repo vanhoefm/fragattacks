@@ -107,6 +107,7 @@ enum wpa_sm_conf_params {
 	WPA_PARAM_EXT_KEY_ID,
 	WPA_PARAM_USE_EXT_KEY_ID,
 	WPA_PARAM_FT_RSNXE_USED,
+	WPA_PARAM_DPP_PFS,
 };
 
 struct rsn_supp_config {

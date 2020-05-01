@@ -1685,6 +1685,9 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 	} else if (wpa_s->key_mgmt == WPA_KEY_MGMT_DPP) {
 		/* Use PMK from DPP network introduction (PMKSA entry) */
 		wpa_sm_set_pmk_from_pmksa(wpa_s->wpa);
+#ifdef CONFIG_DPP2
+		wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_DPP_PFS, ssid->dpp_pfs);
+#endif /* CONFIG_DPP2 */
 #endif /* CONFIG_DPP */
 	} else if (wpa_key_mgmt_wpa_psk(ssid->key_mgmt)) {
 		int psk_set = 0;

@@ -737,7 +737,8 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 	kde_buf = os_malloc(kde_len +
 			    2 + RSN_SELECTOR_LEN + 3 +
 			    sm->assoc_rsnxe_len +
-			    2 + RSN_SELECTOR_LEN + 1);
+			    2 + RSN_SELECTOR_LEN + 1 +
+			    2 + RSN_SELECTOR_LEN + 2);
 	if (!kde_buf)
 		goto failed;
 	os_memcpy(kde_buf, kde, kde_len);
@@ -781,6 +782,27 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 		kde_len = pos - kde;
 	}
 #endif /* CONFIG_P2P */
+
+#ifdef CONFIG_DPP2
+	if (sm->key_mgmt == WPA_KEY_MGMT_DPP) {
+		u8 *pos;
+
+		wpa_printf(MSG_DEBUG, "DPP: Add DPP KDE into EAPOL-Key 2/4");
+		pos = kde + kde_len;
+		*pos++ = WLAN_EID_VENDOR_SPECIFIC;
+		*pos++ = RSN_SELECTOR_LEN + 2;
+		RSN_SELECTOR_PUT(pos, WFA_KEY_DATA_DPP);
+		pos += RSN_SELECTOR_LEN;
+		*pos++ = 2; /* Protocol Version */
+		*pos = 0; /* Flags */
+		if (sm->dpp_pfs == 0)
+			*pos |= DPP_KDE_PFS_ALLOWED;
+		else if (sm->dpp_pfs == 1)
+			*pos |= DPP_KDE_PFS_ALLOWED | DPP_KDE_PFS_REQUIRED;
+		pos++;
+		kde_len = pos - kde;
+	}
+#endif /* CONFIG_DPP2 */
 
 	if (wpa_supplicant_send_2_of_4(sm, sm->bssid, key, ver, sm->snonce,
 				       kde, kde_len, ptk) < 0)
@@ -3255,6 +3277,11 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 		sm->ft_rsnxe_used = value;
 		break;
 #endif /* CONFIG_TESTING_OPTIONS */
+#ifdef CONFIG_DPP2
+	case WPA_PARAM_DPP_PFS:
+		sm->dpp_pfs = value;
+		break;
+#endif /* CONFIG_DPP2 */
 	default:
 		break;
 	}
