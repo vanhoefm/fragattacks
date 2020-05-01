@@ -3365,7 +3365,8 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 		dpp_pfs_free(sta->dpp_pfs);
 		sta->dpp_pfs = NULL;
 
-		if ((hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_DPP) &&
+		if (DPP_VERSION > 1 &&
+		    (hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_DPP) &&
 		    hapd->conf->dpp_netaccesskey && sta->wpa_sm &&
 		    wpa_auth_sta_key_mgmt(sta->wpa_sm) == WPA_KEY_MGMT_DPP &&
 		    elems.owe_dh) {
@@ -3843,7 +3844,7 @@ rsnxe_done:
 #endif /* CONFIG_OWE */
 
 #ifdef CONFIG_DPP2
-	if ((hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_DPP) &&
+	if (DPP_VERSION > 1 && (hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_DPP) &&
 	    sta && sta->dpp_pfs && status_code == WLAN_STATUS_SUCCESS &&
 	    wpa_auth_sta_key_mgmt(sta->wpa_sm) == WPA_KEY_MGMT_DPP) {
 		os_memcpy(p, wpabuf_head(sta->dpp_pfs->ie),

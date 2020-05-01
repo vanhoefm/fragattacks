@@ -21,6 +21,7 @@
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
 #include "common/ocv.h"
+#include "common/dpp.h"
 #include "eap_common/eap_defs.h"
 #include "eapol_supp/eapol_supp_sm.h"
 #include "drivers/driver.h"
@@ -784,7 +785,7 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 #endif /* CONFIG_P2P */
 
 #ifdef CONFIG_DPP2
-	if (sm->key_mgmt == WPA_KEY_MGMT_DPP) {
+	if (DPP_VERSION > 1 && sm->key_mgmt == WPA_KEY_MGMT_DPP) {
 		u8 *pos;
 
 		wpa_printf(MSG_DEBUG, "DPP: Add DPP KDE into EAPOL-Key 2/4");
@@ -793,7 +794,7 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 		*pos++ = RSN_SELECTOR_LEN + 2;
 		RSN_SELECTOR_PUT(pos, WFA_KEY_DATA_DPP);
 		pos += RSN_SELECTOR_LEN;
-		*pos++ = 2; /* Protocol Version */
+		*pos++ = DPP_VERSION; /* Protocol Version */
 		*pos = 0; /* Flags */
 		if (sm->dpp_pfs == 0)
 			*pos |= DPP_KDE_PFS_ALLOWED;
@@ -1716,7 +1717,7 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 #endif /* CONFIG_OCV */
 
 #ifdef CONFIG_DPP2
-	if (ie.dpp_kde) {
+	if (DPP_VERSION > 1 && ie.dpp_kde) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: peer Protocol Version %u Flags 0x%x",
 			   ie.dpp_kde[0], ie.dpp_kde[1]);

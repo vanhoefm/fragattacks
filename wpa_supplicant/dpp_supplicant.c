@@ -2580,10 +2580,12 @@ skip_connector:
 #endif /* CONFIG_TESTING_OPTIONS */
 
 #ifdef CONFIG_DPP2
-	/* Protocol Version */
-	wpabuf_put_le16(msg, DPP_ATTR_PROTOCOL_VERSION);
-	wpabuf_put_le16(msg, 1);
-	wpabuf_put_u8(msg, 2);
+	if (DPP_VERSION > 1) {
+		/* Protocol Version */
+		wpabuf_put_le16(msg, DPP_ATTR_PROTOCOL_VERSION);
+		wpabuf_put_le16(msg, 1);
+		wpabuf_put_u8(msg, DPP_VERSION);
+	}
 #endif /* CONFIG_DPP2 */
 
 	/* TODO: Timeout on AP response */

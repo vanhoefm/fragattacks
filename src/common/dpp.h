@@ -21,6 +21,17 @@ struct crypto_ecdh;
 struct hostapd_ip_addr;
 struct dpp_global;
 
+#ifdef CONFIG_TESTING_OPTIONS
+#define DPP_VERSION (dpp_version_override)
+extern int dpp_version_override;
+#else /* CONFIG_TESTING_OPTIONS */
+#ifdef CONFIG_DPP2
+#define DPP_VERSION 2
+#else
+#define DPP_VERSION 1
+#endif
+#endif /* CONFIG_TESTING_OPTIONS */
+
 #define DPP_HDR_LEN (4 + 2) /* OUI, OUI Type, Crypto Suite, DPP frame type */
 #define DPP_TCP_PORT 7871
 

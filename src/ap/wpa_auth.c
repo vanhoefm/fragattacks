@@ -14,6 +14,7 @@
 #include "utils/bitfield.h"
 #include "common/ieee802_11_defs.h"
 #include "common/ocv.h"
+#include "common/dpp.h"
 #include "crypto/aes.h"
 #include "crypto/aes_wrap.h"
 #include "crypto/aes_siv.h"
@@ -3080,7 +3081,7 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 #endif /* CONFIG_P2P */
 
 #ifdef CONFIG_DPP2
-	if (kde.dpp_kde) {
+	if (DPP_VERSION > 1 && kde.dpp_kde) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: peer Protocol Version %u Flags 0x%x",
 			   kde.dpp_kde[0], kde.dpp_kde[1]);
@@ -3516,10 +3517,10 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 				  &conf->transition_disable, 1, NULL, 0);
 
 #ifdef CONFIG_DPP2
-	if (sm->wpa_key_mgmt == WPA_KEY_MGMT_DPP) {
+	if (DPP_VERSION > 1 && sm->wpa_key_mgmt == WPA_KEY_MGMT_DPP) {
 		u8 payload[2];
 
-		payload[0] = 2; /* Protocol Version */
+		payload[0] = DPP_VERSION; /* Protocol Version */
 		payload[1] = 0; /* Flags */
 		if (conf->dpp_pfs == 0)
 			payload[1] |= DPP_KDE_PFS_ALLOWED;

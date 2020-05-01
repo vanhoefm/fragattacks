@@ -1793,7 +1793,7 @@ void sme_associate(struct wpa_supplicant *wpa_s, enum wpas_mode mode,
 #endif /* CONFIG_OWE */
 
 #ifdef CONFIG_DPP2
-	if (wpa_s->key_mgmt == WPA_KEY_MGMT_DPP && ssid &&
+	if (DPP_VERSION > 1 && wpa_s->key_mgmt == WPA_KEY_MGMT_DPP && ssid &&
 	    ssid->dpp_netaccesskey && ssid->dpp_pfs != 2 &&
 	    !ssid->dpp_pfs_fallback) {
 		struct rsn_pmksa_cache_entry *pmksa;

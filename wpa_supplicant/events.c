@@ -2703,7 +2703,8 @@ static int wpa_supplicant_event_associnfo(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_DPP2
 	wpa_sm_set_dpp_z(wpa_s->wpa, NULL);
-	if (wpa_s->key_mgmt == WPA_KEY_MGMT_DPP && wpa_s->dpp_pfs) {
+	if (DPP_VERSION > 1 && wpa_s->key_mgmt == WPA_KEY_MGMT_DPP &&
+	    wpa_s->dpp_pfs) {
 		struct ieee802_11_elems elems;
 
 		if (ieee802_11_parse_elems(data->assoc_info.resp_ies,
@@ -4373,7 +4374,7 @@ static void wpas_event_assoc_reject(struct wpa_supplicant *wpa_s,
 	 * the status code defined in the DPP R2 tech spec.
 	 * WLAN_STATUS_AKMP_NOT_VALID is addressed in the same manner as an
 	 * interoperability workaround with older hostapd implementation. */
-	if (wpa_s->current_ssid &&
+	if (DPP_VERSION > 1 && wpa_s->current_ssid &&
 	    wpa_s->current_ssid->key_mgmt == WPA_KEY_MGMT_DPP &&
 	    wpa_s->current_ssid->dpp_pfs == 0 &&
 	    (data->assoc_reject.status_code ==

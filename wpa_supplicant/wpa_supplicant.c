@@ -3087,7 +3087,8 @@ static u8 * wpas_populate_assoc_ies(
 #endif /* CONFIG_OWE */
 
 #ifdef CONFIG_DPP2
-	if (wpa_sm_get_key_mgmt(wpa_s->wpa) == WPA_KEY_MGMT_DPP &&
+	if (DPP_VERSION > 1 &&
+	    wpa_sm_get_key_mgmt(wpa_s->wpa) == WPA_KEY_MGMT_DPP &&
 	    ssid->dpp_netaccesskey &&
 	    ssid->dpp_pfs != 2 && !ssid->dpp_pfs_fallback) {
 		struct rsn_pmksa_cache_entry *pmksa;

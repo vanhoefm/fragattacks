@@ -37,6 +37,11 @@
 static const char * dpp_netrole_str(enum dpp_netrole netrole);
 
 #ifdef CONFIG_TESTING_OPTIONS
+#ifdef CONFIG_DPP2
+int dpp_version_override = 2;
+#else
+int dpp_version_override = 1;
+#endif
 enum dpp_test_behavior dpp_test = DPP_TEST_DISABLED;
 u8 dpp_pkex_own_mac_override[ETH_ALEN] = { 0, 0, 0, 0, 0, 0 };
 u8 dpp_pkex_peer_mac_override[ETH_ALEN] = { 0, 0, 0, 0, 0, 0 };
@@ -1850,7 +1855,7 @@ static struct wpabuf * dpp_auth_build_req(struct dpp_authentication *auth,
 	/* Protocol Version */
 	wpabuf_put_le16(msg, DPP_ATTR_PROTOCOL_VERSION);
 	wpabuf_put_le16(msg, 1);
-	wpabuf_put_u8(msg, 2);
+	wpabuf_put_u8(msg, DPP_VERSION);
 #endif /* CONFIG_DPP2 */
 
 #ifdef CONFIG_TESTING_OPTIONS
@@ -2014,7 +2019,7 @@ static struct wpabuf * dpp_auth_build_resp(struct dpp_authentication *auth,
 	if (auth->peer_version >= 2) {
 		wpabuf_put_le16(msg, DPP_ATTR_PROTOCOL_VERSION);
 		wpabuf_put_le16(msg, 1);
-		wpabuf_put_u8(msg, 2);
+		wpabuf_put_u8(msg, DPP_VERSION);
 	}
 #endif /* CONFIG_DPP2 */
 
@@ -3352,7 +3357,7 @@ dpp_auth_req_rx(struct dpp_global *dpp, void *msg_ctx, u8 dpp_allowed_roles,
 #ifdef CONFIG_DPP2
 	version = dpp_get_attr(attr_start, attr_len, DPP_ATTR_PROTOCOL_VERSION,
 			       &version_len);
-	if (version) {
+	if (version && DPP_VERSION > 1) {
 		if (version_len < 1 || version[0] == 0) {
 			dpp_auth_fail(auth,
 				      "Invalid Protocol Version attribute");
@@ -3968,7 +3973,7 @@ dpp_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 #ifdef CONFIG_DPP2
 	version = dpp_get_attr(attr_start, attr_len, DPP_ATTR_PROTOCOL_VERSION,
 			       &version_len);
-	if (version) {
+	if (version && DPP_VERSION > 1) {
 		if (version_len < 1 || version[0] == 0) {
 			dpp_auth_fail(auth,
 				      "Invalid Protocol Version attribute");
