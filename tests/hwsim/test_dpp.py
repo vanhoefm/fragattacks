@@ -1770,7 +1770,36 @@ def test_dpp_auto_connect_2_connect_cmd(dev, apdev):
     finally:
         wpas.set("dpp_config_processing", "0", allow_fail=True)
 
-def run_dpp_auto_connect(dev, apdev, processing):
+def test_dpp_auto_connect_2_sta_ver1(dev, apdev):
+    """DPP and auto connect (2; STA using ver 1)"""
+    try:
+        run_dpp_auto_connect(dev, apdev, 2, sta_version=1)
+    finally:
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
+
+def test_dpp_auto_connect_2_ap_ver1(dev, apdev):
+    """DPP and auto connect (2; AP using ver 1)"""
+    try:
+        run_dpp_auto_connect(dev, apdev, 2, ap_version=1)
+    finally:
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
+
+def test_dpp_auto_connect_2_ver1(dev, apdev):
+    """DPP and auto connect (2; AP and STA using ver 1)"""
+    try:
+        run_dpp_auto_connect(dev, apdev, 2, ap_version=1, sta_version=1)
+    finally:
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
+
+def test_dpp_auto_connect_2_conf_ver1(dev, apdev):
+    """DPP and auto connect (2; Configurator using ver 1)"""
+    try:
+        run_dpp_auto_connect(dev, apdev, 2, sta1_version=1)
+    finally:
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
+
+def run_dpp_auto_connect(dev, apdev, processing, ap_version=0, sta_version=0,
+                         sta1_version=0):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
@@ -1789,9 +1818,15 @@ def run_dpp_auto_connect(dev, apdev, processing):
               "dpp_netaccesskey": ap_netaccesskey}
     try:
         hapd = hostapd.add_ap(apdev[0], params)
+        if ap_version:
+            hapd.set("dpp_version_override", str(ap_version))
     except:
         raise HwsimSkip("DPP not supported")
 
+    if sta_version:
+        dev[0].set("dpp_version_override", str(sta_version))
+    if sta1_version:
+        dev[1].set("dpp_version_override", str(sta1_version))
     conf_id = dev[1].dpp_configurator_add(key=csign)
     dev[0].set("dpp_config_processing", str(processing))
     id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
@@ -5252,6 +5287,13 @@ def test_dpp_pfs_connect_cmd(dev, apdev):
     run_dpp_pfs_sta(wpas, 0, pfs_expected=True)
     run_dpp_pfs_sta(wpas, 1, pfs_expected=True)
     run_dpp_pfs_sta(wpas, 2, pfs_expected=False)
+
+def test_dpp_pfs_ap_0_sta_ver1(dev, apdev):
+    """DPP PFS AP default with version 1 STA"""
+    check_dpp_capab(dev[0])
+    dev[0].set("dpp_version_override", "1")
+    hapd = start_dpp_pfs_ap(apdev[0], 0)
+    run_dpp_pfs_sta(dev[0], 0, pfs_expected=False)
 
 def test_dpp_reconfig_connector(dev, apdev):
     """DPP reconfiguration connector"""
