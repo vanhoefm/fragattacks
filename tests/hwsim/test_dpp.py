@@ -4642,8 +4642,8 @@ def test_dpp_controller_relay_chirp(dev, apdev, params):
         dev[1].request("DPP_CONTROLLER_STOP")
 
 def run_dpp_controller_relay(dev, apdev, params, chirp=False):
-    check_dpp_capab(dev[0])
-    check_dpp_capab(dev[1])
+    check_dpp_capab(dev[0], min_ver=2)
+    check_dpp_capab(dev[1], min_ver=2)
     prefix = "dpp_controller_relay"
     if chirp:
         prefix += "_chirp"
@@ -4653,9 +4653,8 @@ def run_dpp_controller_relay(dev, apdev, params, chirp=False):
 
     # Controller
     conf_id = dev[1].dpp_configurator_add()
-    if not chirp:
-        dev[1].set("dpp_configurator_params",
-                   " conf=sta-dpp configurator=%d" % conf_id)
+    dev[1].set("dpp_configurator_params",
+               "conf=sta-dpp configurator=%d" % conf_id)
     id_c = dev[1].dpp_bootstrap_gen()
     uri_c = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id_c)
     res = dev[1].request("DPP_BOOTSTRAP_INFO %d" % id_c)
@@ -4711,6 +4710,24 @@ def run_dpp_controller_relay(dev, apdev, params, chirp=False):
     wait_auth_success(dev[1], dev[0], configurator=dev[1], enrollee=dev[0],
                       allow_enrollee_failure=True,
                       allow_configurator_failure=True)
+    ev = dev[0].wait_event(["DPP-NETWORK-ID"], timeout=1)
+    if ev is None:
+        raise Exception("DPP network id not reported")
+    network = int(ev.split(' ')[1])
+    dev[0].wait_connected()
+    dev[0].dump_monitor()
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+
+    if "OK" not in dev[0].request("DPP_RECONFIG %s" % network):
+        raise Exception("Failed to start reconfiguration")
+    ev = dev[0].wait_event(["DPP-NETWORK-ID"], timeout=15)
+    if ev is None:
+        raise Exception("DPP network id not reported for reconfiguration")
+    network2 = int(ev.split(' ')[1])
+    if network == network2:
+        raise Exception("Network ID did not change")
     dev[0].wait_connected()
 
     time.sleep(0.5)
@@ -5335,6 +5352,7 @@ def run_dpp_reconfig_connector(dev, apdev):
 
     ssid = "reconfig"
     passphrase = "secret passphrase"
+    passphrase2 = "another secret passphrase"
     params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
     hapd = hostapd.add_ap(apdev[0], params)
 
@@ -5345,9 +5363,16 @@ def run_dpp_reconfig_connector(dev, apdev):
     configurator = dev[1].dpp_configurator_add()
     conf = 'sta-psk'
     dev[1].dpp_auth_init(uri=uri0, conf=conf, ssid=ssid,
-                         passphrase=passphrase, configurator=configurator)
+                         passphrase=passphrase, configurator=configurator,
+                         conn_status=True)
     res = wait_auth_success(dev[0], dev[1], configurator=dev[1],
                             enrollee=dev[0])
+    if 'wait_conn_status' not in res:
+        raise Exception("Configurator did not request connection status")
+    ev = dev[1].wait_event(["DPP-CONN-STATUS-RESULT"], timeout=20)
+    if ev is None:
+        raise Exception("No connection status reported")
+    dev[1].dump_monitor()
 
     ev = dev[0].wait_event(["DPP-CONFOBJ-SSID"], timeout=1)
     if ev is None:
@@ -5394,6 +5419,139 @@ def run_dpp_reconfig_connector(dev, apdev):
     if n_net_access_key.strip('"') != net_access_key:
         raise Exception("net_access_key mismatch: %s %s" % (n_net_access_key,
                                                             net_access_key))
+
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+
+    hapd.disable()
+    hapd.set("wpa_passphrase", passphrase2)
+    hapd.enable()
+
+    time.sleep(0.1)
+    dev[0].dump_monitor()
+    dev[1].dump_monitor()
+
+    dev[1].set("dpp_configurator_params",
+               "conf=sta-psk ssid=%s pass=%s conn_status=1" % (binascii.hexlify(ssid.encode()).decode(), binascii.hexlify(passphrase2.encode()).decode()))
+    dev[1].dpp_listen(2437)
+
+    if "OK" not in dev[0].request("DPP_RECONFIG %s" % id):
+        raise Exception("Failed to start reconfiguration")
+    ev = dev[0].wait_event(["DPP-TX "], timeout=10)
+    if ev is None or "type=14" not in ev:
+        raise Exception("Reconfig Announcement not sent")
+
+    ev = dev[1].wait_event(["DPP-RX"], timeout=5)
+    if ev is None:
+        raise Exception("DPP Reconfig Announcement not received")
+    if "freq=2437 type=14" not in ev:
+        raise Exception("Unexpected RX data for Reconfig Announcement: " + ev)
+
+    ev = dev[0].wait_event(["DPP-RX"], timeout=5)
+    if ev is None or "freq=2437 type=15" not in ev:
+        raise Exception("DPP Reconfig Authentication Request not received")
+
+    ev = dev[1].wait_event(["DPP-RX"], timeout=5)
+    if ev is None or "freq=2437 type=16" not in ev:
+        raise Exception("DPP Reconfig Authentication Response not received")
+
+    ev = dev[0].wait_event(["DPP-RX"], timeout=5)
+    if ev is None or "freq=2437 type=17" not in ev:
+        raise Exception("DPP Reconfig Authentication Confirm not received")
+
+    ev = dev[0].wait_event(["GAS-QUERY-START"], timeout=5)
+    if ev is None or "freq=2437" not in ev:
+        raise Exception("DPP Config Request (GAS) not transmitted")
+
+    ev = dev[1].wait_event(["DPP-CONF-REQ-RX"], timeout=5)
+    if ev is None:
+        raise Exception("DPP Config Request (GAS) not received")
+
+    ev = dev[0].wait_event(["GAS-QUERY-DONE"], timeout=5)
+    if ev is None or "freq=2437" not in ev:
+        raise Exception("DPP Config Response (GAS) not received")
+
+    ev = dev[1].wait_event(["DPP-RX"], timeout=5)
+    if ev is None or "freq=2437 type=11" not in ev:
+        raise Exception("DPP Config Result not received")
+
+    ev = dev[1].wait_event(["DPP-CONF-SENT"], timeout=5)
+    if ev is None:
+        raise Exception("DPP Config Response (GAS) not transmitted")
+
+    ev = dev[0].wait_event(["DPP-CONF-RECEIVED", "DPP-CONF-FAILED"], timeout=5)
+    if ev is None:
+        raise Exception("DPP config response reception result not indicated")
+    if "DPP-CONF-RECEIVED" not in ev:
+        raise Exception("Reconfiguration failed")
+
+    dev[0].wait_connected()
+
+    ev = dev[1].wait_event(["DPP-CONN-STATUS-RESULT"], timeout=20)
+    if ev is None:
+        raise Exception("No connection status reported")
+
+def test_dpp_reconfig_hostapd_configurator(dev, apdev):
+    """DPP reconfiguration with hostapd as configurator"""
+    try:
+        run_dpp_reconfig_hostapd_configurator(dev, apdev)
+    finally:
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
+
+def run_dpp_reconfig_hostapd_configurator(dev, apdev):
+    ssid = "reconfig-ap"
+    check_dpp_capab(dev[0], min_ver=2)
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured"})
+    check_dpp_capab(hapd, min_ver=2)
+    conf_id = hapd.dpp_configurator_add()
+
+    cmd = "DPP_CONFIGURATOR_SIGN conf=ap-dpp configurator=%d ssid=%s" % (conf_id, binascii.hexlify(ssid.encode()).decode())
+    res = hapd.request(cmd)
+    if "FAIL" in res:
+        raise Exception("Failed to generate own configuration")
+    hapd.set("dpp_configurator_connectivity", "1")
+    update_hapd_config(hapd)
+
+    id = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id)
+    dev[0].set("dpp_config_processing", "2")
+    dev[0].dpp_listen(2412)
+    hapd.dpp_auth_init(uri=uri, conf="sta-dpp", configurator=conf_id,
+                       extra="expiry=%d" % (time.time() + 10), ssid=ssid)
+    wait_auth_success(dev[0], hapd, configurator=hapd, enrollee=dev[0])
+    ev = dev[0].wait_event(["DPP-NETWORK-ID"], timeout=1)
+    if ev is None:
+        raise Exception("DPP network id not reported")
+    network = int(ev.split(' ')[1])
+    dev[0].wait_connected()
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+    time.sleep(10)
+    if "FAIL" in dev[0].request("PMKSA_FLUSH"):
+        raise Exception("PMKSA_FLUSH failed")
+    dev[0].request("RECONNECT")
+    ev = dev[0].wait_event(["DPP-MISSING-CONNECTOR", "CTRL-EVENT-CONNECTED"],
+                           timeout=15)
+    if ev is None or "DPP-MISSING-CONNECTOR" not in ev:
+        raise Exception("Missing Connector not reported")
+    if "netAccessKey expired" not in ev:
+        raise Exception("netAccessKey expiry not indicated")
+    dev[0].request("DISCONNECT")
+    dev[0].dump_monitor()
+
+    hapd.set("dpp_configurator_params",
+             "conf=sta-dpp configurator=%d ssid=%s" % (conf_id, binascii.hexlify(ssid.encode()).decode()))
+
+    if "OK" not in dev[0].request("DPP_RECONFIG %s" % network):
+        raise Exception("Failed to start reconfiguration")
+    ev = dev[0].wait_event(["DPP-NETWORK-ID"], timeout=15)
+    if ev is None:
+        raise Exception("DPP network id not reported for reconfiguration")
+    network2 = int(ev.split(' ')[1])
+    if network == network2:
+        raise Exception("Network ID did not change")
+    dev[0].wait_connected()
 
 def test_dpp_qr_code_auth_rand_mac_addr(dev, apdev):
     """DPP QR Code and authentication exchange (rand_mac_addr=1)"""
