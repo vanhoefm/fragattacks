@@ -5243,6 +5243,16 @@ def test_dpp_pfs_ap_2(dev, apdev):
     run_dpp_pfs_sta(dev[0], 1, fail=True)
     run_dpp_pfs_sta(dev[0], 2, pfs_expected=False)
 
+def test_dpp_pfs_connect_cmd(dev, apdev):
+    """DPP PFS and cfg80211 connect command"""
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
+    check_dpp_capab(wpas)
+    hapd = start_dpp_pfs_ap(apdev[0], 0)
+    run_dpp_pfs_sta(wpas, 0, pfs_expected=True)
+    run_dpp_pfs_sta(wpas, 1, pfs_expected=True)
+    run_dpp_pfs_sta(wpas, 2, pfs_expected=False)
+
 def test_dpp_reconfig_connector(dev, apdev):
     """DPP reconfiguration connector"""
     try:
