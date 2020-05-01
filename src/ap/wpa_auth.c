@@ -3397,6 +3397,11 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 	if (conf->transition_disable)
 		kde_len += 2 + RSN_SELECTOR_LEN + 1;
 
+#ifdef CONFIG_DPP2
+	if (sm->wpa_key_mgmt == WPA_KEY_MGMT_DPP)
+		kde_len += 2 + RSN_SELECTOR_LEN + 2;
+#endif /* CONFIG_DPP2 */
+
 	kde = os_malloc(kde_len);
 	if (!kde)
 		goto done;
@@ -3491,6 +3496,22 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 	if (conf->transition_disable)
 		pos = wpa_add_kde(pos, WFA_KEY_DATA_TRANSITION_DISABLE,
 				  &conf->transition_disable, 1, NULL, 0);
+
+#ifdef CONFIG_DPP2
+	if (sm->wpa_key_mgmt == WPA_KEY_MGMT_DPP) {
+		u8 payload[2];
+
+		payload[0] = 2; /* Protocol Version */
+		payload[1] = 0; /* Flags */
+		if (conf->dpp_pfs == 0)
+			payload[1] |= DPP_KDE_PFS_ALLOWED;
+		else if (conf->dpp_pfs == 1)
+			payload[1] |= DPP_KDE_PFS_ALLOWED |
+				DPP_KDE_PFS_REQUIRED;
+		pos = wpa_add_kde(pos, WFA_KEY_DATA_DPP,
+				  payload, sizeof(payload), NULL, 0);
+	}
+#endif /* CONFIG_DPP2 */
 
 	wpa_send_eapol(sm->wpa_auth, sm,
 		       (secure ? WPA_KEY_INFO_SECURE : 0) |
