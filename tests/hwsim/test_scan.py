@@ -1166,6 +1166,7 @@ def test_scan_fail(dev, apdev):
 
     hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
     with alloc_fail(dev[0], 1, "wpa_bss_add"):
+        dev[0].flush_scan_cache()
         dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412")
 
 def test_scan_fail_type_only(dev, apdev):
