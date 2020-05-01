@@ -1646,6 +1646,7 @@ void sme_associate(struct wpa_supplicant *wpa_s, enum wpas_mode mode,
 {
 	struct wpa_driver_associate_params params;
 	struct ieee802_11_elems elems;
+	struct wpa_ssid *ssid = wpa_s->current_ssid;
 #ifdef CONFIG_FILS
 	u8 nonces[2 * FILS_NONCE_LEN];
 #endif /* CONFIG_FILS */
@@ -1755,8 +1756,8 @@ void sme_associate(struct wpa_supplicant *wpa_s, enum wpas_mode mode,
 		struct wpabuf *owe_ie;
 		u16 group;
 
-		if (wpa_s->current_ssid && wpa_s->current_ssid->owe_group) {
-			group = wpa_s->current_ssid->owe_group;
+		if (ssid && ssid->owe_group) {
+			group = ssid->owe_group;
 		} else if (wpa_s->assoc_status_code ==
 			   WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED) {
 			if (wpa_s->last_owe_group == 19)
@@ -1792,12 +1793,9 @@ void sme_associate(struct wpa_supplicant *wpa_s, enum wpas_mode mode,
 #endif /* CONFIG_OWE */
 
 #ifdef CONFIG_DPP2
-	if (wpa_s->key_mgmt == WPA_KEY_MGMT_DPP && wpa_s->current_ssid &&
-	    wpa_s->current_ssid->dpp_netaccesskey &&
-	    wpa_s->current_ssid->dpp_pfs != 2 &&
-	    !wpa_s->current_ssid->dpp_pfs_fallback) {
-		struct wpa_ssid *ssid = wpa_s->current_ssid;
-
+	if (wpa_s->key_mgmt == WPA_KEY_MGMT_DPP && ssid &&
+	    ssid->dpp_netaccesskey && ssid->dpp_pfs != 2 &&
+	    !ssid->dpp_pfs_fallback) {
 		dpp_pfs_free(wpa_s->dpp_pfs);
 		wpa_s->dpp_pfs = dpp_pfs_init(ssid->dpp_netaccesskey,
 					      ssid->dpp_netaccesskey_len);
@@ -1823,7 +1821,7 @@ void sme_associate(struct wpa_supplicant *wpa_s, enum wpas_mode mode,
 pfs_fail:
 #endif /* CONFIG_DPP2 */
 
-	if (wpa_s->current_ssid && wpa_s->current_ssid->multi_ap_backhaul_sta) {
+	if (ssid && ssid->multi_ap_backhaul_sta) {
 		size_t multi_ap_ie_len;
 
 		multi_ap_ie_len = add_multi_ap_ie(
@@ -1843,8 +1841,7 @@ pfs_fail:
 	params.ssid = wpa_s->sme.ssid;
 	params.ssid_len = wpa_s->sme.ssid_len;
 	params.freq.freq = wpa_s->sme.freq;
-	params.bg_scan_period = wpa_s->current_ssid ?
-		wpa_s->current_ssid->bg_scan_period : -1;
+	params.bg_scan_period = ssid ? ssid->bg_scan_period : -1;
 	params.wpa_ie = wpa_s->sme.assoc_req_ie_len ?
 		wpa_s->sme.assoc_req_ie : NULL;
 	params.wpa_ie_len = wpa_s->sme.assoc_req_ie_len;
@@ -1860,17 +1857,17 @@ pfs_fail:
 	os_memset(&htcaps_mask, 0, sizeof(htcaps_mask));
 	params.htcaps = (u8 *) &htcaps;
 	params.htcaps_mask = (u8 *) &htcaps_mask;
-	wpa_supplicant_apply_ht_overrides(wpa_s, wpa_s->current_ssid, &params);
+	wpa_supplicant_apply_ht_overrides(wpa_s, ssid, &params);
 #endif /* CONFIG_HT_OVERRIDES */
 #ifdef CONFIG_VHT_OVERRIDES
 	os_memset(&vhtcaps, 0, sizeof(vhtcaps));
 	os_memset(&vhtcaps_mask, 0, sizeof(vhtcaps_mask));
 	params.vhtcaps = &vhtcaps;
 	params.vhtcaps_mask = &vhtcaps_mask;
-	wpa_supplicant_apply_vht_overrides(wpa_s, wpa_s->current_ssid, &params);
+	wpa_supplicant_apply_vht_overrides(wpa_s, ssid, &params);
 #endif /* CONFIG_VHT_OVERRIDES */
 #ifdef CONFIG_HE_OVERRIDES
-	wpa_supplicant_apply_he_overrides(wpa_s, wpa_s->current_ssid, &params);
+	wpa_supplicant_apply_he_overrides(wpa_s, ssid, &params);
 #endif /* CONFIG_HE_OVERRIDES */
 #ifdef CONFIG_IEEE80211R
 	if (auth_type == WLAN_AUTH_FT && wpa_s->sme.ft_ies &&
@@ -1992,7 +1989,7 @@ pfs_fail:
 				       elems.rsnxe_len + 2);
 	else
 		wpa_sm_set_assoc_rsnxe(wpa_s->wpa, NULL, 0);
-	if (wpa_s->current_ssid && wpa_s->current_ssid->p2p_group)
+	if (ssid && ssid->p2p_group)
 		params.p2p = 1;
 
 	if (wpa_s->p2pdev->set_sta_uapsd)
