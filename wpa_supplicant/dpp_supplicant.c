@@ -2474,6 +2474,7 @@ int wpas_dpp_check_connect(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 	unsigned int wait_time;
 	const u8 *rsn;
 	struct wpa_ie_data ied;
+	size_t len;
 
 	if (!(ssid->key_mgmt & WPA_KEY_MGMT_DPP) || !bss)
 		return 0; /* Not using DPP AKM - continue */
@@ -2507,8 +2508,11 @@ int wpas_dpp_check_connect(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 		   "DPP: Starting network introduction protocol to derive PMKSA for "
 		   MACSTR, MAC2STR(bss->bssid));
 
-	msg = dpp_alloc_msg(DPP_PA_PEER_DISCOVERY_REQ,
-			    5 + 4 + os_strlen(ssid->dpp_connector));
+	len = 5 + 4 + os_strlen(ssid->dpp_connector);
+#ifdef CONFIG_DPP2
+	len += 5;
+#endif /* CONFIG_DPP2 */
+	msg = dpp_alloc_msg(DPP_PA_PEER_DISCOVERY_REQ, len);
 	if (!msg)
 		return -1;
 
@@ -2562,6 +2566,13 @@ skip_trans_id:
 #ifdef CONFIG_TESTING_OPTIONS
 skip_connector:
 #endif /* CONFIG_TESTING_OPTIONS */
+
+#ifdef CONFIG_DPP2
+	/* Protocol Version */
+	wpabuf_put_le16(msg, DPP_ATTR_PROTOCOL_VERSION);
+	wpabuf_put_le16(msg, 1);
+	wpabuf_put_u8(msg, 2);
+#endif /* CONFIG_DPP2 */
 
 	/* TODO: Timeout on AP response */
 	wait_time = wpa_s->max_remain_on_chan;

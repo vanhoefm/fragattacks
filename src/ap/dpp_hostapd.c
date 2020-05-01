@@ -1206,9 +1206,13 @@ static void hostapd_dpp_send_peer_disc_resp(struct hostapd_data *hapd,
 					    enum dpp_status_error status)
 {
 	struct wpabuf *msg;
+	size_t len;
 
-	msg = dpp_alloc_msg(DPP_PA_PEER_DISCOVERY_RESP,
-			    5 + 5 + 4 + os_strlen(hapd->conf->dpp_connector));
+	len = 5 + 5 + 4 + os_strlen(hapd->conf->dpp_connector);
+#ifdef CONFIG_DPP2
+	len += 5;
+#endif /* CONFIG_DPP2 */
+	msg = dpp_alloc_msg(DPP_PA_PEER_DISCOVERY_RESP, len);
 	if (!msg)
 		return;
 
@@ -1280,6 +1284,13 @@ skip_status:
 #ifdef CONFIG_TESTING_OPTIONS
 skip_connector:
 #endif /* CONFIG_TESTING_OPTIONS */
+
+#ifdef CONFIG_DPP2
+	/* Protocol Version */
+	wpabuf_put_le16(msg, DPP_ATTR_PROTOCOL_VERSION);
+	wpabuf_put_le16(msg, 1);
+	wpabuf_put_u8(msg, 2);
+#endif /* CONFIG_DPP2 */
 
 	wpa_printf(MSG_DEBUG, "DPP: Send Peer Discovery Response to " MACSTR
 		   " status=%d", MAC2STR(src), status);
