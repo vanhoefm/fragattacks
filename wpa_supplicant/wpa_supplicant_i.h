@@ -1277,6 +1277,7 @@ struct wpa_supplicant {
 #ifdef CONFIG_DPP2
 	struct dpp_pfs *dpp_pfs;
 	int dpp_pfs_fallback;
+	struct wpabuf *dpp_reconfig_announcement;
 	struct wpabuf *dpp_presence_announcement;
 	struct dpp_bootstrap_info *dpp_chirp_bi;
 	int dpp_chirp_freq;
@@ -1285,6 +1286,8 @@ struct wpa_supplicant {
 	int dpp_chirp_round;
 	int dpp_chirp_scan_done;
 	int dpp_chirp_listen;
+	struct wpa_ssid *dpp_reconfig_ssid;
+	int dpp_reconfig_ssid_id;
 #endif /* CONFIG_DPP2 */
 #ifdef CONFIG_TESTING_OPTIONS
 	char *dpp_config_obj_override;

@@ -39,5 +39,6 @@ void wpas_dpp_send_conn_status_result(struct wpa_supplicant *wpa_s,
 				      enum dpp_status_error result);
 int wpas_dpp_chirp(struct wpa_supplicant *wpa_s, const char *cmd);
 void wpas_dpp_chirp_stop(struct wpa_supplicant *wpa_s);
+int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid);
 
 #endif /* DPP_SUPPLICANT_H */

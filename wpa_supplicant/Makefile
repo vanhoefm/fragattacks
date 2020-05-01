@@ -281,6 +281,7 @@ CFLAGS += -DCONFIG_DPP
 OBJS += ../src/common/dpp.o
 OBJS += ../src/common/dpp_crypto.o
 OBJS += ../src/common/dpp_pkex.o
+OBJS += ../src/common/dpp_reconfig.o
 OBJS += dpp_supplicant.o
 NEED_AES_SIV=y
 NEED_HMAC_SHA256_KDF=y

@@ -2878,15 +2878,24 @@ static void wpas_dpp_chirp_tx_status(struct wpa_supplicant *wpa_s,
 
 static void wpas_dpp_chirp_start(struct wpa_supplicant *wpa_s)
 {
+	struct wpabuf *msg;
+	int type;
+
+	msg = wpa_s->dpp_presence_announcement;
+	type = DPP_PA_PRESENCE_ANNOUNCEMENT;
+	if (!msg) {
+		msg = wpa_s->dpp_reconfig_announcement;
+		if (!msg)
+			return;
+		type = DPP_PA_RECONFIG_ANNOUNCEMENT;
+	}
 	wpa_printf(MSG_DEBUG, "DPP: Chirp on %d MHz", wpa_s->dpp_chirp_freq);
 	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_TX "dst=" MACSTR " freq=%u type=%d",
-		MAC2STR(broadcast), wpa_s->dpp_chirp_freq,
-		DPP_PA_PRESENCE_ANNOUNCEMENT);
+		MAC2STR(broadcast), wpa_s->dpp_chirp_freq, type);
 	if (offchannel_send_action(
 		    wpa_s, wpa_s->dpp_chirp_freq, broadcast,
 		    wpa_s->own_addr, broadcast,
-		    wpabuf_head(wpa_s->dpp_presence_announcement),
-		    wpabuf_len(wpa_s->dpp_presence_announcement),
+		    wpabuf_head(msg), wpabuf_len(msg),
 		    2000, wpas_dpp_chirp_tx_status, 0) < 0)
 		wpas_dpp_chirp_stop(wpa_s);
 }
@@ -2901,7 +2910,7 @@ static void wpas_dpp_chirp_scan_res_handler(struct wpa_supplicant *wpa_s,
 	int c;
 	struct wpa_bss *bss;
 
-	if (!bi)
+	if (!bi && !wpa_s->dpp_reconfig_announcement)
 		return;
 
 	wpa_s->dpp_chirp_scan_done = 1;
@@ -2910,8 +2919,11 @@ static void wpas_dpp_chirp_scan_res_handler(struct wpa_supplicant *wpa_s,
 	wpa_s->dpp_chirp_freqs = NULL;
 
 	/* Channels from own bootstrapping info */
-	for (i = 0; i < bi->num_freq; i++)
-		int_array_add_unique(&wpa_s->dpp_chirp_freqs, bi->freq[i]);
+	if (bi) {
+		for (i = 0; i < bi->num_freq; i++)
+			int_array_add_unique(&wpa_s->dpp_chirp_freqs,
+					     bi->freq[i]);
+	}
 
 	/* Preferred chirping channels */
 	int_array_add_unique(&wpa_s->dpp_chirp_freqs, 2437);
@@ -3085,13 +3097,16 @@ int wpas_dpp_chirp(struct wpa_supplicant *wpa_s, const char *cmd)
 
 void wpas_dpp_chirp_stop(struct wpa_supplicant *wpa_s)
 {
-	if (wpa_s->dpp_presence_announcement) {
+	if (wpa_s->dpp_presence_announcement ||
+	    wpa_s->dpp_reconfig_announcement) {
 		offchannel_send_action_done(wpa_s);
 		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CHIRP_STOPPED);
 	}
 	wpa_s->dpp_chirp_bi = NULL;
 	wpabuf_free(wpa_s->dpp_presence_announcement);
 	wpa_s->dpp_presence_announcement = NULL;
+	wpabuf_free(wpa_s->dpp_reconfig_announcement);
+	wpa_s->dpp_reconfig_announcement = NULL;
 	if (wpa_s->dpp_chirp_listen)
 		wpas_dpp_listen_stop(wpa_s);
 	wpa_s->dpp_chirp_listen = 0;
@@ -3104,6 +3119,31 @@ void wpas_dpp_chirp_stop(struct wpa_supplicant *wpa_s)
 		wpas_abort_ongoing_scan(wpa_s);
 		wpa_s->scan_res_handler = NULL;
 	}
+}
+
+
+int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
+{
+	if (!ssid->dpp_connector || !ssid->dpp_netaccesskey ||
+	    !ssid->dpp_csign)
+		return -1;
+
+	wpas_dpp_chirp_stop(wpa_s);
+	wpa_s->dpp_allowed_roles = DPP_CAPAB_ENROLLEE;
+	wpa_s->dpp_qr_mutual = 0;
+	wpa_s->dpp_reconfig_announcement =
+		dpp_build_reconfig_announcement(ssid->dpp_csign,
+						ssid->dpp_csign_len);
+	if (!wpa_s->dpp_reconfig_announcement)
+		return -1;
+	wpa_s->dpp_reconfig_ssid = ssid;
+	wpa_s->dpp_reconfig_ssid_id = ssid->id;
+	wpa_s->dpp_chirp_iter = 1;
+	wpa_s->dpp_chirp_round = 0;
+	wpa_s->dpp_chirp_scan_done = 0;
+	wpa_s->dpp_chirp_listen = 0;
+
+	return eloop_register_timeout(0, 0, wpas_dpp_chirp_next, wpa_s, NULL);
 }
 
 #endif /* CONFIG_DPP2 */

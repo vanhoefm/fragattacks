@@ -626,5 +626,10 @@ struct dpp_global * dpp_global_init(struct dpp_global_config *config);
 void dpp_global_clear(struct dpp_global *dpp);
 void dpp_global_deinit(struct dpp_global *dpp);
 
+/* dpp_reconfig.c */
+
+struct wpabuf * dpp_build_reconfig_announcement(const u8 *csign_key,
+						size_t csign_key_len);
+
 #endif /* CONFIG_DPP */
 #endif /* DPP_H */
