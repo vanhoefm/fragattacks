@@ -4672,9 +4672,12 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
     if ebtables:
         for chain in ['FORWARD', 'OUTPUT']:
             try:
-                subprocess.call(['ebtables', '-A', chain, '-p', 'ARP',
-                                 '-d', 'Broadcast', '-o', apdev[0]['ifname'],
-                                 '-j', 'DROP'])
+                err = subprocess.call(['ebtables', '-A', chain, '-p', 'ARP',
+                                       '-d', 'Broadcast',
+                                       '-o', apdev[0]['ifname'],
+                                       '-j', 'DROP'])
+                if err != 0:
+                    raise
             except:
                 raise HwsimSkip("No ebtables available")
 
@@ -4998,10 +5001,15 @@ def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
     if ebtables:
         for chain in ['FORWARD', 'OUTPUT']:
             try:
-                subprocess.call(['ebtables', '-A', chain, '-d', 'Multicast',
-                                 '-p', 'IPv6', '--ip6-protocol', 'ipv6-icmp',
-                                 '--ip6-icmp-type', 'neighbor-solicitation',
-                                 '-o', apdev[0]['ifname'], '-j', 'DROP'])
+                err = subprocess.call(['ebtables', '-A', chain,
+                                       '-d', 'Multicast',
+                                       '-p', 'IPv6',
+                                       '--ip6-protocol', 'ipv6-icmp',
+                                       '--ip6-icmp-type',
+                                       'neighbor-solicitation',
+                                       '-o', apdev[0]['ifname'], '-j', 'DROP'])
+                if err != 0:
+                    raise
                 subprocess.call(['ebtables', '-A', chain, '-d', 'Multicast',
                                  '-p', 'IPv6', '--ip6-protocol', 'ipv6-icmp',
                                  '--ip6-icmp-type', 'neighbor-advertisement',
