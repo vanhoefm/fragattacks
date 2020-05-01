@@ -1715,6 +1715,20 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 	}
 #endif /* CONFIG_OCV */
 
+#ifdef CONFIG_DPP2
+	if (ie.dpp_kde) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: peer Protocol Version %u Flags 0x%x",
+			   ie.dpp_kde[0], ie.dpp_kde[1]);
+		if (sm->key_mgmt == WPA_KEY_MGMT_DPP && sm->dpp_pfs != 2 &&
+		    (ie.dpp_kde[1] & DPP_KDE_PFS_ALLOWED) && !sm->dpp_z) {
+			wpa_printf(MSG_INFO,
+				   "DPP: Peer indicated it supports PFS and local configuration allows this, but PFS was not negotiated for the association");
+			goto failed;
+		}
+	}
+#endif /* CONFIG_DPP2 */
+
 	if (sm->use_ext_key_id &&
 	    wpa_supplicant_install_ptk(sm, key, KEY_FLAG_RX))
 		goto failed;
