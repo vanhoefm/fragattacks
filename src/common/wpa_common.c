@@ -2801,6 +2801,15 @@ static int wpa_parse_generic(const u8 *pos, struct wpa_eapol_ie_parse *ie)
 		return 0;
 	}
 
+	if (pos[1] >= RSN_SELECTOR_LEN + 2 &&
+	    RSN_SELECTOR_GET(pos + 2) == WFA_KEY_DATA_DPP) {
+		ie->dpp_kde = pos + 2 + RSN_SELECTOR_LEN;
+		ie->dpp_kde_len = pos[1] - RSN_SELECTOR_LEN;
+		wpa_hexdump(MSG_DEBUG, "WPA: DPP KDE in EAPOL-Key",
+			    pos, pos[1] + 2);
+		return 0;
+	}
+
 	return 2;
 }
 
