@@ -1420,7 +1420,7 @@ def run_dpp_akm(dev, apdev, pmk_len):
         raise HwsimSkip("DPP not supported")
 
     id = dev[0].connect("dpp", key_mgmt="DPP", ieee80211w="2", scan_freq="2412",
-                        wait_connect=False)
+                        dpp_pfs="2", wait_connect=False)
     ev = dev[0].wait_event(["CTRL-EVENT-NETWORK-NOT-FOUND"], timeout=2)
     if not ev:
         raise Exception("Network mismatch not reported")
