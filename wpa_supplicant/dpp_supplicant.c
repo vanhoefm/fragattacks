@@ -1779,6 +1779,47 @@ wpas_dpp_rx_presence_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
 	}
 }
 
+
+static void
+wpas_dpp_rx_reconfig_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
+				  const u8 *hdr, const u8 *buf, size_t len,
+				  unsigned int freq)
+{
+	const u8 *csign_hash;
+	u16 csign_hash_len;
+	struct dpp_configurator *conf;
+
+	if (!wpa_s->dpp)
+		return;
+
+	if (wpa_s->dpp_auth) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Ignore Reconfig Announcement during ongoing Authentication");
+		return;
+	}
+
+	wpa_printf(MSG_DEBUG, "DPP: Reconfig Announcement from " MACSTR,
+		   MAC2STR(src));
+
+	csign_hash = dpp_get_attr(buf, len, DPP_ATTR_C_SIGN_KEY_HASH,
+				  &csign_hash_len);
+	if (!csign_hash || csign_hash_len != SHA256_MAC_LEN) {
+		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_FAIL
+			"Missing or invalid required Configurator C-sign key Hash attribute");
+		return;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: Configurator C-sign key Hash (kid)",
+		    csign_hash, csign_hash_len);
+	conf = dpp_configurator_find_kid(wpa_s->dpp, csign_hash);
+	if (!conf) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No matching Configurator information found");
+		return;
+	}
+
+	/* TODO: Initiate Reconfig Authentication */
+}
+
 #endif /* CONFIG_DPP2 */
 
 
@@ -2338,6 +2379,10 @@ void wpas_dpp_rx_action(struct wpa_supplicant *wpa_s, const u8 *src,
 		break;
 	case DPP_PA_PRESENCE_ANNOUNCEMENT:
 		wpas_dpp_rx_presence_announcement(wpa_s, src, hdr, buf, len,
+						  freq);
+		break;
+	case DPP_PA_RECONFIG_ANNOUNCEMENT:
+		wpas_dpp_rx_reconfig_announcement(wpa_s, src, hdr, buf, len,
 						  freq);
 		break;
 #endif /* CONFIG_DPP2 */

@@ -317,6 +317,7 @@ struct dpp_configurator {
 	unsigned int id;
 	int own;
 	EVP_PKEY *csign;
+	u8 kid_hash[SHA256_MAC_LEN];
 	char *kid;
 	const struct dpp_curve_params *curve;
 };
@@ -601,6 +602,8 @@ int dpp_configurator_get_key_id(struct dpp_global *dpp, unsigned int id,
 				char *buf, size_t buflen);
 int dpp_configurator_from_backup(struct dpp_global *dpp,
 				 struct dpp_asymmetric_key *key);
+struct dpp_configurator * dpp_configurator_find_kid(struct dpp_global *dpp,
+						    const u8 *kid);
 int dpp_relay_add_controller(struct dpp_global *dpp,
 			     struct dpp_relay_config *config);
 int dpp_relay_rx_action(struct dpp_global *dpp, const u8 *src, const u8 *hdr,

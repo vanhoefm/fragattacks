@@ -6301,7 +6301,6 @@ int dpp_configurator_get_key(const struct dpp_configurator *conf, char *buf,
 static int dpp_configurator_gen_kid(struct dpp_configurator *conf)
 {
 	struct wpabuf *csign_pub = NULL;
-	u8 kid_hash[SHA256_MAC_LEN];
 	const u8 *addr[1];
 	size_t len[1];
 	int res;
@@ -6315,7 +6314,7 @@ static int dpp_configurator_gen_kid(struct dpp_configurator *conf)
 	/* kid = SHA256(ANSI X9.63 uncompressed C-sign-key) */
 	addr[0] = wpabuf_head(csign_pub);
 	len[0] = wpabuf_len(csign_pub);
-	res = sha256_vector(1, addr, len, kid_hash);
+	res = sha256_vector(1, addr, len, conf->kid_hash);
 	wpabuf_free(csign_pub);
 	if (res < 0) {
 		wpa_printf(MSG_DEBUG,
@@ -6323,7 +6322,8 @@ static int dpp_configurator_gen_kid(struct dpp_configurator *conf)
 		return -1;
 	}
 
-	conf->kid = base64_url_encode(kid_hash, sizeof(kid_hash), NULL);
+	conf->kid = base64_url_encode(conf->kid_hash, sizeof(conf->kid_hash),
+				      NULL);
 	return conf->kid ? 0 : -1;
 }
 
@@ -7164,6 +7164,23 @@ int dpp_configurator_from_backup(struct dpp_global *dpp,
 	conf->id = dpp_next_configurator_id(dpp);
 	dl_list_add(&dpp->configurator, &conf->list);
 	return conf->id;
+}
+
+
+struct dpp_configurator * dpp_configurator_find_kid(struct dpp_global *dpp,
+						    const u8 *kid)
+{
+	struct dpp_configurator *conf;
+
+	if (!dpp)
+		return NULL;
+
+	dl_list_for_each(conf, &dpp->configurator,
+			 struct dpp_configurator, list) {
+		if (os_memcmp(conf->kid_hash, kid, SHA256_MAC_LEN) == 0)
+			return conf;
+	}
+	return NULL;
 }
 
 
@@ -8010,6 +8027,44 @@ static int dpp_controller_rx_presence_announcement(struct dpp_connection *conn,
 }
 
 
+static int dpp_controller_rx_reconfig_announcement(struct dpp_connection *conn,
+						   const u8 *hdr, const u8 *buf,
+						   size_t len)
+{
+	const u8 *csign_hash;
+	u16 csign_hash_len;
+	struct dpp_configurator *conf;
+	struct dpp_global *dpp = conn->ctrl->global;
+
+	if (conn->auth) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Ignore Reconfig Announcement during ongoing Authentication");
+		return -1;
+	}
+
+	wpa_printf(MSG_DEBUG, "DPP: Reconfig Announcement");
+
+	csign_hash = dpp_get_attr(buf, len, DPP_ATTR_C_SIGN_KEY_HASH,
+				  &csign_hash_len);
+	if (!csign_hash || csign_hash_len != SHA256_MAC_LEN) {
+		wpa_msg(dpp->msg_ctx, MSG_INFO, DPP_EVENT_FAIL
+			"Missing or invalid required Configurator C-sign key Hash attribute");
+		return -1;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: Configurator C-sign key Hash (kid)",
+		    csign_hash, csign_hash_len);
+	conf = dpp_configurator_find_kid(dpp, csign_hash);
+	if (!conf) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No matching Configurator information found");
+		return -1;
+	}
+
+	/* TODO: Initiate Reconfig Authentication */
+	return -1;
+}
+
+
 static int dpp_controller_rx_action(struct dpp_connection *conn, const u8 *msg,
 				    size_t len)
 {
@@ -8062,6 +8117,9 @@ static int dpp_controller_rx_action(struct dpp_connection *conn, const u8 *msg,
 							    end - pos);
 	case DPP_PA_PRESENCE_ANNOUNCEMENT:
 		return dpp_controller_rx_presence_announcement(conn, msg, pos,
+							       end - pos);
+	case DPP_PA_RECONFIG_ANNOUNCEMENT:
+		return dpp_controller_rx_reconfig_announcement(conn, msg, pos,
 							       end - pos);
 	default:
 		/* TODO: missing messages types */
