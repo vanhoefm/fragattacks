@@ -3292,6 +3292,15 @@ int wpa_sm_get_status(struct wpa_sm *sm, char *buf, size_t buflen,
 		return pos - buf;
 	pos += ret;
 
+#ifdef CONFIG_DPP2
+	if (sm->key_mgmt == WPA_KEY_MGMT_DPP && sm->dpp_z) {
+		ret = os_snprintf(pos, end - pos, "dpp_pfs=1\n");
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+#endif /* CONFIG_DPP2 */
+
 	if (sm->mfp != NO_MGMT_FRAME_PROTECTION && sm->ap_rsn_ie) {
 		struct wpa_ie_data rsn;
 		if (wpa_parse_wpa_ie_rsn(sm->ap_rsn_ie, sm->ap_rsn_ie_len, &rsn)
