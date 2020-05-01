@@ -4401,9 +4401,9 @@ def run_sigma_dut_ap_channel(dev, apdev, params, channel, mode, scan_freq,
                              extra=None, check_signal=None, program=None):
     logdir = params['prefix'] + ".sigma-hostapd"
     with HWSimRadio() as (radio, iface):
-        subprocess.call(['iw', 'reg', 'set', 'US'])
         sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
         try:
+            subprocess.call(['iw', 'reg', 'set', 'US'])
             cmd = "ap_reset_default"
             if program:
                 cmd += ",program," + program
