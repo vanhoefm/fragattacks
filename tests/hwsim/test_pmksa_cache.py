@@ -663,6 +663,8 @@ def test_pmksa_cache_ap_expiration(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = apdev[0]['bssid']
 
+    dev[0].cmd_execute(['iw', 'dev', dev[0].ifname,
+                        'set', 'power_save', 'off'])
     dev[0].connect("test-pmksa-cache", proto="RSN", key_mgmt="WPA-EAP",
                    eap="GPSK", identity="gpsk-user-session-timeout",
                    password="abcdefghijklmnop0123456789abcdef",
