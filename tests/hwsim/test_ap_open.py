@@ -528,6 +528,11 @@ def run_ap_open_sta_ps(dev, hapd):
 
         if not ok:
             raise Exception("STA did not enter power save")
+
+        dev[0].dump_monitor()
+        hapd.dump_monitor()
+        hapd.request("DEAUTHENTICATE " + dev[0].own_addr())
+        dev[0].wait_disconnected()
     except FileNotFoundError:
         raise HwsimSkip("Kernel does not support inspecting HW PS state")
 
