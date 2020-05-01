@@ -3079,6 +3079,24 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 	}
 #endif /* CONFIG_P2P */
 
+#ifdef CONFIG_DPP2
+	if (kde.dpp_kde) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: peer Protocol Version %u Flags 0x%x",
+			   kde.dpp_kde[0], kde.dpp_kde[1]);
+		if (sm->wpa_key_mgmt == WPA_KEY_MGMT_DPP &&
+		    wpa_auth->conf.dpp_pfs != 2 &&
+		    (kde.dpp_kde[1] & DPP_KDE_PFS_ALLOWED) &&
+		    !sm->dpp_z) {
+			wpa_printf(MSG_INFO,
+				   "DPP: Peer indicated it supports PFS and local configuration allows this, but PFS was not negotiated for the association");
+			wpa_sta_disconnect(wpa_auth, sm->addr,
+					   WLAN_REASON_PREV_AUTH_NOT_VALID);
+			return;
+		}
+	}
+#endif /* CONFIG_DPP2 */
+
 #ifdef CONFIG_IEEE80211R_AP
 	if (sm->wpa == WPA_VERSION_WPA2 && wpa_key_mgmt_ft(sm->wpa_key_mgmt)) {
 		/*
