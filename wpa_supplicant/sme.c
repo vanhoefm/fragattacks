@@ -1796,6 +1796,12 @@ void sme_associate(struct wpa_supplicant *wpa_s, enum wpas_mode mode,
 	if (wpa_s->key_mgmt == WPA_KEY_MGMT_DPP && ssid &&
 	    ssid->dpp_netaccesskey && ssid->dpp_pfs != 2 &&
 	    !ssid->dpp_pfs_fallback) {
+		struct rsn_pmksa_cache_entry *pmksa;
+
+		pmksa = pmksa_cache_get_current(wpa_s->wpa);
+		if (!pmksa || !pmksa->dpp_pfs)
+			goto pfs_fail;
+
 		dpp_pfs_free(wpa_s->dpp_pfs);
 		wpa_s->dpp_pfs = dpp_pfs_init(ssid->dpp_netaccesskey,
 					      ssid->dpp_netaccesskey_len);

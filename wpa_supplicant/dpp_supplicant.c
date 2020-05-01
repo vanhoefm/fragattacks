@@ -1771,6 +1771,11 @@ static void wpas_dpp_rx_peer_disc_resp(struct wpa_supplicant *wpa_s,
 	struct wpa_ssid *ssid;
 	const u8 *connector, *trans_id, *status;
 	u16 connector_len, trans_id_len, status_len;
+#ifdef CONFIG_DPP2
+	const u8 *version;
+	u16 version_len;
+#endif /* CONFIG_DPP2 */
+	u8 peer_version = 1;
 	struct dpp_introduction intro;
 	struct rsn_pmksa_cache_entry *entry;
 	struct os_time now;
@@ -1871,6 +1876,13 @@ static void wpas_dpp_rx_peer_disc_resp(struct wpa_supplicant *wpa_s,
 	os_memcpy(entry->pmk, intro.pmk, intro.pmk_len);
 	entry->pmk_len = intro.pmk_len;
 	entry->akmp = WPA_KEY_MGMT_DPP;
+#ifdef CONFIG_DPP2
+	version = dpp_get_attr(buf, len, DPP_ATTR_PROTOCOL_VERSION,
+			       &version_len);
+	if (version && version_len >= 1)
+		peer_version = version[0];
+	entry->dpp_pfs = peer_version >= 2;
+#endif /* CONFIG_DPP2 */
 	if (expiry) {
 		os_get_time(&now);
 		seconds = expiry - now.sec;
@@ -1884,7 +1896,7 @@ static void wpas_dpp_rx_peer_disc_resp(struct wpa_supplicant *wpa_s,
 	wpa_sm_pmksa_cache_add_entry(wpa_s->wpa, entry);
 
 	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_INTRO "peer=" MACSTR
-		" status=%u", MAC2STR(src), status[0]);
+		" status=%u version=%u", MAC2STR(src), status[0], peer_version);
 
 	wpa_printf(MSG_DEBUG,
 		   "DPP: Try connection again after successful network introduction");
