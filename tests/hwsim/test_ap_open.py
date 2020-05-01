@@ -506,7 +506,7 @@ def test_ap_open_sta_ps(dev, apdev):
         run_ap_open_sta_ps(dev, hapd)
     finally:
         dev[0].cmd_execute(['iw', 'dev', dev[0].ifname,
-                            'set', 'power_save', 'on'])
+                            'set', 'power_save', 'off'])
 
 def run_ap_open_sta_ps(dev, hapd):
     hwsim_utils.test_connectivity(dev[0], hapd)
