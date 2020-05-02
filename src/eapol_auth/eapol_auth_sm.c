@@ -56,6 +56,7 @@ static void eapol_auth_logger(struct eapol_authenticator *eapol,
 }
 
 
+PRINTF_FORMAT(4, 5)
 static void eapol_auth_vlogger(struct eapol_authenticator *eapol,
 			       const u8 *addr, eapol_logger_level level,
 			       const char *fmt, ...)
