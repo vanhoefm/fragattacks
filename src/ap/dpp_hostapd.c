@@ -26,6 +26,10 @@ static void hostapd_dpp_reply_wait_timeout(void *eloop_ctx, void *timeout_ctx);
 static void hostapd_dpp_auth_success(struct hostapd_data *hapd, int initiator);
 static void hostapd_dpp_init_timeout(void *eloop_ctx, void *timeout_ctx);
 static int hostapd_dpp_auth_init_next(struct hostapd_data *hapd);
+#ifdef CONFIG_DPP2
+static void hostapd_dpp_reconfig_reply_wait_timeout(void *eloop_ctx,
+						    void *timeout_ctx);
+#endif /* CONFIG_DPP2 */
 
 static const u8 broadcast[ETH_ALEN] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
@@ -237,6 +241,10 @@ void hostapd_dpp_tx_status(struct hostapd_data *hapd, const u8 *dst,
 				     hapd, NULL);
 		eloop_cancel_timeout(hostapd_dpp_auth_resp_retry_timeout, hapd,
 				     NULL);
+#ifdef CONFIG_DPP2
+		eloop_cancel_timeout(hostapd_dpp_reconfig_reply_wait_timeout,
+				     hapd, NULL);
+#endif /* CONFIG_DPP2 */
 		hostapd_drv_send_action_cancel_wait(hapd);
 		dpp_auth_deinit(hapd->dpp_auth);
 		hapd->dpp_auth = NULL;
@@ -539,6 +547,10 @@ int hostapd_dpp_auth_init(struct hostapd_data *hapd, const char *cmd)
 				     hapd, NULL);
 		eloop_cancel_timeout(hostapd_dpp_auth_resp_retry_timeout, hapd,
 				     NULL);
+#ifdef CONFIG_DPP2
+		eloop_cancel_timeout(hostapd_dpp_reconfig_reply_wait_timeout,
+				     hapd, NULL);
+#endif /* CONFIG_DPP2 */
 		hostapd_drv_send_action_cancel_wait(hapd);
 		dpp_auth_deinit(hapd->dpp_auth);
 	}
@@ -1198,6 +1210,22 @@ hostapd_dpp_rx_presence_announcement(struct hostapd_data *hapd, const u8 *src,
 }
 
 
+static void hostapd_dpp_reconfig_reply_wait_timeout(void *eloop_ctx,
+						    void *timeout_ctx)
+{
+	struct hostapd_data *hapd = eloop_ctx;
+	struct dpp_authentication *auth = hapd->dpp_auth;
+
+	if (!auth)
+		return;
+
+	wpa_printf(MSG_DEBUG, "DPP: Reconfig Reply wait timeout");
+	hostapd_dpp_listen_stop(hapd);
+	dpp_auth_deinit(auth);
+	hapd->dpp_auth = NULL;
+}
+
+
 static void
 hostapd_dpp_rx_reconfig_announcement(struct hostapd_data *hapd, const u8 *src,
 				     const u8 *hdr, const u8 *buf, size_t len,
@@ -1206,6 +1234,8 @@ hostapd_dpp_rx_reconfig_announcement(struct hostapd_data *hapd, const u8 *src,
 	const u8 *csign_hash;
 	u16 csign_hash_len;
 	struct dpp_configurator *conf;
+	struct dpp_authentication *auth;
+	unsigned int wait_time, max_wait_time;
 
 	if (hapd->dpp_auth) {
 		wpa_printf(MSG_DEBUG,
@@ -1233,7 +1263,41 @@ hostapd_dpp_rx_reconfig_announcement(struct hostapd_data *hapd, const u8 *src,
 		return;
 	}
 
-	/* TODO: Initiate Reconfig Authentication */
+	auth = dpp_reconfig_init(hapd->iface->interfaces->dpp, hapd->msg_ctx,
+				 conf, freq);
+	if (!auth)
+		return;
+	hostapd_dpp_set_testing_options(hapd, auth);
+	if (dpp_set_configurator(auth, hapd->dpp_configurator_params) < 0) {
+		dpp_auth_deinit(auth);
+		return;
+	}
+
+	os_memcpy(auth->peer_mac_addr, src, ETH_ALEN);
+	hapd->dpp_auth = auth;
+
+	hapd->dpp_in_response_listen = 0;
+	hapd->dpp_auth_ok_on_ack = 0;
+	wait_time = 2000; /* TODO: hapd->max_remain_on_chan; */
+	max_wait_time = hapd->dpp_resp_wait_time ?
+		hapd->dpp_resp_wait_time : 2000;
+	if (wait_time > max_wait_time)
+		wait_time = max_wait_time;
+	wait_time += 10; /* give the driver some extra time to complete */
+	eloop_register_timeout(wait_time / 1000, (wait_time % 1000) * 1000,
+			       hostapd_dpp_reconfig_reply_wait_timeout,
+			       hapd, NULL);
+	wait_time -= 10;
+
+	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_TX "dst=" MACSTR
+		" freq=%u type=%d",
+		MAC2STR(src), freq, DPP_PA_RECONFIG_AUTH_REQ);
+	if (hostapd_drv_send_action(hapd, freq, wait_time, src,
+				    wpabuf_head(auth->reconfig_req_msg),
+				    wpabuf_len(auth->reconfig_req_msg)) < 0) {
+		dpp_auth_deinit(hapd->dpp_auth);
+		hapd->dpp_auth = NULL;
+	}
 }
 
 #endif /* CONFIG_DPP2 */
@@ -1771,6 +1835,8 @@ void hostapd_dpp_gas_status_handler(struct hostapd_data *hapd, int ok)
 	eloop_cancel_timeout(hostapd_dpp_reply_wait_timeout, hapd, NULL);
 	eloop_cancel_timeout(hostapd_dpp_auth_resp_retry_timeout, hapd, NULL);
 #ifdef CONFIG_DPP2
+		eloop_cancel_timeout(hostapd_dpp_reconfig_reply_wait_timeout,
+				     hapd, NULL);
 	if (ok && auth->peer_version >= 2 &&
 	    auth->conf_resp_status == DPP_STATUS_OK) {
 		wpa_printf(MSG_DEBUG, "DPP: Wait for Configuration Result");
@@ -2015,6 +2081,8 @@ void hostapd_dpp_deinit(struct hostapd_data *hapd)
 	eloop_cancel_timeout(hostapd_dpp_init_timeout, hapd, NULL);
 	eloop_cancel_timeout(hostapd_dpp_auth_resp_retry_timeout, hapd, NULL);
 #ifdef CONFIG_DPP2
+	eloop_cancel_timeout(hostapd_dpp_reconfig_reply_wait_timeout,
+			     hapd, NULL);
 	eloop_cancel_timeout(hostapd_dpp_config_result_wait_timeout, hapd,
 			     NULL);
 	eloop_cancel_timeout(hostapd_dpp_conn_status_result_wait_timeout, hapd,

@@ -235,6 +235,7 @@ struct dpp_authentication {
 	struct dpp_bootstrap_info *tmp_own_bi;
 	u8 waiting_pubkey_hash[SHA256_MAC_LEN];
 	int response_pending;
+	int reconfig;
 	enum dpp_status_error auth_resp_status;
 	enum dpp_status_error conf_resp_status;
 	u8 peer_mac_addr[ETH_ALEN];
@@ -247,6 +248,7 @@ struct dpp_authentication {
 	EVP_PKEY *peer_protocol_key;
 	struct wpabuf *req_msg;
 	struct wpabuf *resp_msg;
+	struct wpabuf *reconfig_req_msg;
 	/* Intersection of possible frequencies for initiating DPP
 	 * Authentication exchange */
 	unsigned int freq[DPP_BOOTSTRAP_MAX_FREQ];
@@ -304,6 +306,7 @@ struct dpp_authentication {
 	int conn_status_requested;
 	int akm_use_selector;
 	int configurator_set;
+	u8 transaction_id;
 #ifdef CONFIG_TESTING_OPTIONS
 	char *config_obj_override;
 	char *discovery_override;
@@ -320,6 +323,8 @@ struct dpp_configurator {
 	u8 kid_hash[SHA256_MAC_LEN];
 	char *kid;
 	const struct dpp_curve_params *curve;
+	char *connector; /* own Connector for reconfiguration */
+	EVP_PKEY *connector_key;
 };
 
 struct dpp_introduction {
@@ -633,6 +638,9 @@ void dpp_global_deinit(struct dpp_global *dpp);
 
 struct wpabuf * dpp_build_reconfig_announcement(const u8 *csign_key,
 						size_t csign_key_len);
+struct dpp_authentication *
+dpp_reconfig_init(struct dpp_global *dpp, void *msg_ctx,
+		  struct dpp_configurator *conf, unsigned int freq);
 
 #endif /* CONFIG_DPP */
 #endif /* DPP_H */

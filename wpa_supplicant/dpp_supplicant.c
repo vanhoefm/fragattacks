@@ -45,6 +45,10 @@ wpas_dpp_tx_pkex_status(struct wpa_supplicant *wpa_s,
 			const u8 *src, const u8 *bssid,
 			const u8 *data, size_t data_len,
 			enum offchannel_send_action_result result);
+#ifdef CONFIG_DPP2
+static void wpas_dpp_reconfig_reply_wait_timeout(void *eloop_ctx,
+						 void *timeout_ctx);
+#endif /* CONFIG_DPP2 */
 
 static const u8 broadcast[ETH_ALEN] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
@@ -246,6 +250,35 @@ static void wpas_dpp_try_to_connect(struct wpa_supplicant *wpa_s)
 
 #ifdef CONFIG_DPP2
 
+static void wpas_dpp_stop_listen_for_tx(struct wpa_supplicant *wpa_s,
+					unsigned int freq,
+					unsigned int wait_time)
+{
+	struct os_reltime now, res;
+	unsigned int remaining;
+
+	if (!wpa_s->dpp_listen_freq)
+		return;
+
+	os_get_reltime(&now);
+	if (os_reltime_before(&now, &wpa_s->dpp_listen_end)) {
+		os_reltime_sub(&wpa_s->dpp_listen_end, &now, &res);
+		remaining = res.sec * 1000 + res.usec / 1000;
+	} else {
+		remaining = 0;
+	}
+	if (wpa_s->dpp_listen_freq == freq && remaining > wait_time)
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Stop listen on %u MHz ending in %u ms to allow immediate TX on %u MHz for %u ms",
+		   wpa_s->dpp_listen_freq, remaining, freq, wait_time);
+	wpas_dpp_listen_stop(wpa_s);
+
+	/* TODO: Restart listen in some cases after TX? */
+}
+
+
 static void wpas_dpp_conn_status_result_timeout(void *eloop_ctx,
 						void *timeout_ctx)
 {
@@ -434,6 +467,10 @@ static void wpas_dpp_tx_status(struct wpa_supplicant *wpa_s,
 		eloop_cancel_timeout(wpas_dpp_reply_wait_timeout, wpa_s, NULL);
 		eloop_cancel_timeout(wpas_dpp_auth_resp_retry_timeout, wpa_s,
 				     NULL);
+#ifdef CONFIG_DPP2
+		eloop_cancel_timeout(wpas_dpp_reconfig_reply_wait_timeout,
+				     wpa_s, NULL);
+#endif /* CONFIG_DPP2 */
 		offchannel_send_action_done(wpa_s);
 		dpp_auth_deinit(wpa_s->dpp_auth);
 		wpa_s->dpp_auth = NULL;
@@ -766,6 +803,10 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 		eloop_cancel_timeout(wpas_dpp_reply_wait_timeout, wpa_s, NULL);
 		eloop_cancel_timeout(wpas_dpp_auth_resp_retry_timeout, wpa_s,
 				     NULL);
+#ifdef CONFIG_DPP2
+		eloop_cancel_timeout(wpas_dpp_reconfig_reply_wait_timeout,
+				     wpa_s, NULL);
+#endif /* CONFIG_DPP2 */
 		offchannel_send_action_done(wpa_s);
 		dpp_auth_deinit(wpa_s->dpp_auth);
 		wpa_s->dpp_auth = NULL;
@@ -1780,6 +1821,23 @@ wpas_dpp_rx_presence_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
 }
 
 
+static void wpas_dpp_reconfig_reply_wait_timeout(void *eloop_ctx,
+						 void *timeout_ctx)
+{
+	struct wpa_supplicant *wpa_s = eloop_ctx;
+	struct dpp_authentication *auth = wpa_s->dpp_auth;
+
+	if (!auth)
+		return;
+
+	wpa_printf(MSG_DEBUG, "DPP: Reconfig Reply wait timeout");
+	offchannel_send_action_done(wpa_s);
+	wpas_dpp_listen_stop(wpa_s);
+	dpp_auth_deinit(auth);
+	wpa_s->dpp_auth = NULL;
+}
+
+
 static void
 wpas_dpp_rx_reconfig_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
 				  const u8 *hdr, const u8 *buf, size_t len,
@@ -1788,6 +1846,8 @@ wpas_dpp_rx_reconfig_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
 	const u8 *csign_hash;
 	u16 csign_hash_len;
 	struct dpp_configurator *conf;
+	struct dpp_authentication *auth;
+	unsigned int wait_time, max_wait_time;
 
 	if (!wpa_s->dpp)
 		return;
@@ -1817,7 +1877,42 @@ wpas_dpp_rx_reconfig_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
 		return;
 	}
 
-	/* TODO: Initiate Reconfig Authentication */
+	auth = dpp_reconfig_init(wpa_s->dpp, wpa_s, conf, freq);
+	if (!auth)
+		return;
+	wpas_dpp_set_testing_options(wpa_s, auth);
+	if (dpp_set_configurator(auth, wpa_s->dpp_configurator_params) < 0) {
+		dpp_auth_deinit(auth);
+		return;
+	}
+
+	os_memcpy(auth->peer_mac_addr, src, ETH_ALEN);
+	wpa_s->dpp_auth = auth;
+
+	wpa_s->dpp_in_response_listen = 0;
+	wpa_s->dpp_auth_ok_on_ack = 0;
+	wait_time = wpa_s->max_remain_on_chan;
+	max_wait_time = wpa_s->dpp_resp_wait_time ?
+		wpa_s->dpp_resp_wait_time : 2000;
+	if (wait_time > max_wait_time)
+		wait_time = max_wait_time;
+	wait_time += 10; /* give the driver some extra time to complete */
+	eloop_register_timeout(wait_time / 1000, (wait_time % 1000) * 1000,
+			       wpas_dpp_reconfig_reply_wait_timeout,
+			       wpa_s, NULL);
+	wait_time -= 10;
+
+	wpas_dpp_stop_listen_for_tx(wpa_s, freq, wait_time);
+
+	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_TX "dst=" MACSTR " freq=%u type=%d",
+		MAC2STR(src), freq, DPP_PA_RECONFIG_AUTH_REQ);
+	if (offchannel_send_action(wpa_s, freq, src, wpa_s->own_addr, broadcast,
+				   wpabuf_head(auth->reconfig_req_msg),
+				   wpabuf_len(auth->reconfig_req_msg),
+				   wait_time, wpas_dpp_tx_status, 0) < 0) {
+		dpp_auth_deinit(wpa_s->dpp_auth);
+		wpa_s->dpp_auth = NULL;
+	}
 }
 
 #endif /* CONFIG_DPP2 */
@@ -2853,6 +2948,8 @@ void wpas_dpp_deinit(struct wpa_supplicant *wpa_s)
 	eloop_cancel_timeout(wpas_dpp_conn_status_result_wait_timeout,
 			     wpa_s, NULL);
 	eloop_cancel_timeout(wpas_dpp_conn_status_result_timeout, wpa_s, NULL);
+	eloop_cancel_timeout(wpas_dpp_reconfig_reply_wait_timeout,
+			     wpa_s, NULL);
 	dpp_pfs_free(wpa_s->dpp_pfs);
 	wpa_s->dpp_pfs = NULL;
 	wpas_dpp_chirp_stop(wpa_s);

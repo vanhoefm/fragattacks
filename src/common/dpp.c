@@ -989,10 +989,9 @@ static int dpp_channel_local_list(struct dpp_authentication *auth,
 }
 
 
-static int dpp_prepare_channel_list(struct dpp_authentication *auth,
-				    unsigned int neg_freq,
-				    struct hostapd_hw_modes *own_modes,
-				    u16 num_modes)
+int dpp_prepare_channel_list(struct dpp_authentication *auth,
+			     unsigned int neg_freq,
+			     struct hostapd_hw_modes *own_modes, u16 num_modes)
 {
 	int res;
 	char freqs[DPP_BOOTSTRAP_MAX_FREQ * 6 + 10], *pos, *end;
@@ -2339,7 +2338,7 @@ dpp_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
 
-	if (!auth->initiator || !auth->peer_bi) {
+	if (!auth->initiator || !auth->peer_bi || auth->reconfig) {
 		dpp_auth_fail(auth, "Unexpected Authentication Response");
 		return NULL;
 	}
@@ -2741,7 +2740,8 @@ int dpp_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
 
-	if (auth->initiator || !auth->own_bi || !auth->waiting_auth_conf) {
+	if (auth->initiator || !auth->own_bi || !auth->waiting_auth_conf ||
+	    auth->reconfig) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: initiator=%d own_bi=%d waiting_auth_conf=%d",
 			   auth->initiator, !!auth->own_bi,
@@ -3195,7 +3195,7 @@ int dpp_set_configurator(struct dpp_authentication *auth, const char *cmd)
 	wpa_printf(MSG_DEBUG, "DPP: Set configurator parameters: %s", cmd);
 
 	pos = os_strstr(cmd, " configurator=");
-	if (pos) {
+	if (!auth->conf && pos) {
 		pos += 14;
 		auth->conf = dpp_configurator_get_id(auth->global, atoi(pos));
 		if (!auth->conf) {
@@ -3258,6 +3258,7 @@ void dpp_auth_deinit(struct dpp_authentication *auth)
 	wpabuf_free(auth->req_msg);
 	wpabuf_free(auth->resp_msg);
 	wpabuf_free(auth->conf_req);
+	wpabuf_free(auth->reconfig_req_msg);
 	for (i = 0; i < auth->num_conf_obj; i++) {
 		struct dpp_config_obj *conf = &auth->conf_obj[i];
 
@@ -3324,8 +3325,8 @@ dpp_build_conf_start(struct dpp_authentication *auth,
 }
 
 
-static int dpp_build_jwk(struct wpabuf *buf, const char *name, EVP_PKEY *key,
-			 const char *kid, const struct dpp_curve_params *curve)
+int dpp_build_jwk(struct wpabuf *buf, const char *name, EVP_PKEY *key,
+		  const char *kid, const struct dpp_curve_params *curve)
 {
 	struct wpabuf *pub;
 	const u8 *pos;
@@ -6270,6 +6271,8 @@ void dpp_configurator_free(struct dpp_configurator *conf)
 		return;
 	EVP_PKEY_free(conf->csign);
 	os_free(conf->kid);
+	os_free(conf->connector);
+	EVP_PKEY_free(conf->connector_key);
 	os_free(conf);
 }
 

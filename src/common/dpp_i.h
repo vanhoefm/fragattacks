@@ -36,6 +36,11 @@ struct wpabuf * dpp_build_conn_status(enum dpp_status_error result,
 struct json_token * dpp_parse_own_connector(const char *own_connector);
 int dpp_connector_match_groups(struct json_token *own_root,
 			       struct json_token *peer_root, bool reconfig);
+int dpp_build_jwk(struct wpabuf *buf, const char *name, EVP_PKEY *key,
+		  const char *kid, const struct dpp_curve_params *curve);
+int dpp_prepare_channel_list(struct dpp_authentication *auth,
+			     unsigned int neg_freq,
+			     struct hostapd_hw_modes *own_modes, u16 num_modes);
 
 /* dpp_crypto.c */
 
