@@ -4948,17 +4948,38 @@ static const char * dpp_netrole_str(enum dpp_netrole netrole)
 }
 
 
-static struct wpabuf *
-dpp_build_conf_obj_dpp(struct dpp_authentication *auth,
-		       struct dpp_configuration *conf)
+static char *
+dpp_build_jws_prot_hdr(struct dpp_configurator *conf, size_t *signed1_len)
 {
-	struct wpabuf *buf = NULL;
-	char *signed1 = NULL, *signed2 = NULL, *signed3 = NULL;
-	size_t tailroom;
-	const struct dpp_curve_params *curve;
 	struct wpabuf *jws_prot_hdr;
-	size_t signed1_len, signed2_len, signed3_len;
-	struct wpabuf *dppcon = NULL;
+	char *signed1;
+
+	jws_prot_hdr = wpabuf_alloc(100);
+	if (!jws_prot_hdr)
+		return NULL;
+	json_start_object(jws_prot_hdr, NULL);
+	json_add_string(jws_prot_hdr, "typ", "dppCon");
+	json_value_sep(jws_prot_hdr);
+	json_add_string(jws_prot_hdr, "kid", conf->kid);
+	json_value_sep(jws_prot_hdr);
+	json_add_string(jws_prot_hdr, "alg", conf->curve->jws_alg);
+	json_end_object(jws_prot_hdr);
+	signed1 = base64_url_encode(wpabuf_head(jws_prot_hdr),
+				    wpabuf_len(jws_prot_hdr),
+				    signed1_len);
+	wpabuf_free(jws_prot_hdr);
+	return signed1;
+}
+
+
+static char *
+dpp_build_conn_signature(struct dpp_configurator *conf,
+			 const char *signed1, size_t signed1_len,
+			 const char *signed2, size_t signed2_len,
+			 size_t *signed3_len)
+{
+	const struct dpp_curve_params *curve;
+	char *signed3 = NULL;
 	unsigned char *signature = NULL;
 	const unsigned char *p;
 	size_t signature_len;
@@ -4967,6 +4988,121 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth,
 	char *dot = ".";
 	const EVP_MD *sign_md;
 	const BIGNUM *r, *s;
+
+	curve = conf->curve;
+	if (curve->hash_len == SHA256_MAC_LEN) {
+		sign_md = EVP_sha256();
+	} else if (curve->hash_len == SHA384_MAC_LEN) {
+		sign_md = EVP_sha384();
+	} else if (curve->hash_len == SHA512_MAC_LEN) {
+		sign_md = EVP_sha512();
+	} else {
+		wpa_printf(MSG_DEBUG, "DPP: Unknown signature algorithm");
+		goto fail;
+	}
+
+	md_ctx = EVP_MD_CTX_create();
+	if (!md_ctx)
+		goto fail;
+
+	ERR_clear_error();
+	if (EVP_DigestSignInit(md_ctx, NULL, sign_md, NULL, conf->csign) != 1) {
+		wpa_printf(MSG_DEBUG, "DPP: EVP_DigestSignInit failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+	if (EVP_DigestSignUpdate(md_ctx, signed1, signed1_len) != 1 ||
+	    EVP_DigestSignUpdate(md_ctx, dot, 1) != 1 ||
+	    EVP_DigestSignUpdate(md_ctx, signed2, signed2_len) != 1) {
+		wpa_printf(MSG_DEBUG, "DPP: EVP_DigestSignUpdate failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+	if (EVP_DigestSignFinal(md_ctx, NULL, &signature_len) != 1) {
+		wpa_printf(MSG_DEBUG, "DPP: EVP_DigestSignFinal failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+	signature = os_malloc(signature_len);
+	if (!signature)
+		goto fail;
+	if (EVP_DigestSignFinal(md_ctx, signature, &signature_len) != 1) {
+		wpa_printf(MSG_DEBUG, "DPP: EVP_DigestSignFinal failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+	wpa_hexdump(MSG_DEBUG, "DPP: signedConnector ECDSA signature (DER)",
+		    signature, signature_len);
+	/* Convert to raw coordinates r,s */
+	p = signature;
+	sig = d2i_ECDSA_SIG(NULL, &p, signature_len);
+	if (!sig)
+		goto fail;
+	ECDSA_SIG_get0(sig, &r, &s);
+	if (dpp_bn2bin_pad(r, signature, curve->prime_len) < 0 ||
+	    dpp_bn2bin_pad(s, signature + curve->prime_len,
+			   curve->prime_len) < 0)
+		goto fail;
+	signature_len = 2 * curve->prime_len;
+	wpa_hexdump(MSG_DEBUG, "DPP: signedConnector ECDSA signature (raw r,s)",
+		    signature, signature_len);
+	signed3 = base64_url_encode(signature, signature_len, signed3_len);
+fail:
+	EVP_MD_CTX_destroy(md_ctx);
+	ECDSA_SIG_free(sig);
+	os_free(signature);
+	return signed3;
+}
+
+static char *
+dpp_sign_connector(struct dpp_configurator *conf, const struct wpabuf *dppcon)
+{
+	char *signed1 = NULL, *signed2 = NULL, *signed3 = NULL;
+	char *signed_conn = NULL, *pos;
+	size_t signed1_len, signed2_len, signed3_len;
+
+	signed1 = dpp_build_jws_prot_hdr(conf, &signed1_len);
+	signed2 = base64_url_encode(wpabuf_head(dppcon), wpabuf_len(dppcon),
+				    &signed2_len);
+	if (!signed1 || !signed2)
+		goto fail;
+
+	signed3 = dpp_build_conn_signature(conf, signed1, signed1_len,
+					   signed2, signed2_len, &signed3_len);
+	if (!signed3)
+		goto fail;
+
+	signed_conn = os_malloc(signed1_len + signed2_len + signed3_len + 3);
+	if (!signed_conn)
+		goto fail;
+	pos = signed_conn;
+	os_memcpy(pos, signed1, signed1_len);
+	pos += signed1_len;
+	*pos++ = '.';
+	os_memcpy(pos, signed2, signed2_len);
+	pos += signed2_len;
+	*pos++ = '.';
+	os_memcpy(pos, signed3, signed3_len);
+	pos += signed3_len;
+	*pos = '\0';
+
+fail:
+	os_free(signed1);
+	os_free(signed2);
+	os_free(signed3);
+	return signed_conn;
+}
+
+
+static struct wpabuf *
+dpp_build_conf_obj_dpp(struct dpp_authentication *auth,
+		       struct dpp_configuration *conf)
+{
+	struct wpabuf *buf = NULL;
+	char *signed_conn = NULL;
+	size_t tailroom;
+	const struct dpp_curve_params *curve;
+	struct wpabuf *dppcon = NULL;
 	size_t extra_len = 1000;
 	int incl_legacy;
 	enum dpp_akm akm;
@@ -4978,16 +5114,6 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth,
 		goto fail;
 	}
 	curve = auth->conf->curve;
-	if (curve->hash_len == SHA256_MAC_LEN) {
-		sign_md = EVP_sha256();
-	} else if (curve->hash_len == SHA384_MAC_LEN) {
-		sign_md = EVP_sha384();
-	} else if (curve->hash_len == SHA512_MAC_LEN) {
-		sign_md = EVP_sha512();
-	} else {
-		wpa_printf(MSG_DEBUG, "DPP: Unknown signature algorithm");
-		goto fail;
-	}
 
 	akm = conf->akm;
 	if (dpp_akm_ver2(akm) && auth->peer_version < 2) {
@@ -5060,79 +5186,14 @@ skip_groups:
 	wpa_printf(MSG_DEBUG, "DPP: dppCon: %s",
 		   (const char *) wpabuf_head(dppcon));
 
-	jws_prot_hdr = wpabuf_alloc(100);
-	if (!jws_prot_hdr)
-		goto fail;
-	json_start_object(jws_prot_hdr, NULL);
-	json_add_string(jws_prot_hdr, "typ", "dppCon");
-	json_value_sep(jws_prot_hdr);
-	json_add_string(jws_prot_hdr, "kid", auth->conf->kid);
-	json_value_sep(jws_prot_hdr);
-	json_add_string(jws_prot_hdr, "alg", curve->jws_alg);
-	json_end_object(jws_prot_hdr);
-	signed1 = base64_url_encode(wpabuf_head(jws_prot_hdr),
-				    wpabuf_len(jws_prot_hdr),
-				    &signed1_len);
-	wpabuf_free(jws_prot_hdr);
-	signed2 = base64_url_encode(wpabuf_head(dppcon), wpabuf_len(dppcon),
-				    &signed2_len);
-	if (!signed1 || !signed2)
-		goto fail;
-
-	md_ctx = EVP_MD_CTX_create();
-	if (!md_ctx)
-		goto fail;
-
-	ERR_clear_error();
-	if (EVP_DigestSignInit(md_ctx, NULL, sign_md, NULL,
-			       auth->conf->csign) != 1) {
-		wpa_printf(MSG_DEBUG, "DPP: EVP_DigestSignInit failed: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
-		goto fail;
-	}
-	if (EVP_DigestSignUpdate(md_ctx, signed1, signed1_len) != 1 ||
-	    EVP_DigestSignUpdate(md_ctx, dot, 1) != 1 ||
-	    EVP_DigestSignUpdate(md_ctx, signed2, signed2_len) != 1) {
-		wpa_printf(MSG_DEBUG, "DPP: EVP_DigestSignUpdate failed: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
-		goto fail;
-	}
-	if (EVP_DigestSignFinal(md_ctx, NULL, &signature_len) != 1) {
-		wpa_printf(MSG_DEBUG, "DPP: EVP_DigestSignFinal failed: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
-		goto fail;
-	}
-	signature = os_malloc(signature_len);
-	if (!signature)
-		goto fail;
-	if (EVP_DigestSignFinal(md_ctx, signature, &signature_len) != 1) {
-		wpa_printf(MSG_DEBUG, "DPP: EVP_DigestSignFinal failed: %s",
-			   ERR_error_string(ERR_get_error(), NULL));
-		goto fail;
-	}
-	wpa_hexdump(MSG_DEBUG, "DPP: signedConnector ECDSA signature (DER)",
-		    signature, signature_len);
-	/* Convert to raw coordinates r,s */
-	p = signature;
-	sig = d2i_ECDSA_SIG(NULL, &p, signature_len);
-	if (!sig)
-		goto fail;
-	ECDSA_SIG_get0(sig, &r, &s);
-	if (dpp_bn2bin_pad(r, signature, curve->prime_len) < 0 ||
-	    dpp_bn2bin_pad(s, signature + curve->prime_len,
-			   curve->prime_len) < 0)
-		goto fail;
-	signature_len = 2 * curve->prime_len;
-	wpa_hexdump(MSG_DEBUG, "DPP: signedConnector ECDSA signature (raw r,s)",
-		    signature, signature_len);
-	signed3 = base64_url_encode(signature, signature_len, &signed3_len);
-	if (!signed3)
+	signed_conn = dpp_sign_connector(auth->conf, dppcon);
+	if (!signed_conn)
 		goto fail;
 
 	incl_legacy = dpp_akm_psk(akm) || dpp_akm_sae(akm);
 	tailroom = 1000;
 	tailroom += 2 * curve->prime_len * 4 / 3 + os_strlen(auth->conf->kid);
-	tailroom += signed1_len + signed2_len + signed3_len;
+	tailroom += os_strlen(signed_conn);
 	if (incl_legacy)
 		tailroom += 1000;
 	buf = dpp_build_conf_start(auth, conf, tailroom);
@@ -5151,11 +5212,7 @@ skip_groups:
 		json_value_sep(buf);
 	}
 	wpabuf_put_str(buf, "\"signedConnector\":\"");
-	wpabuf_put_str(buf, signed1);
-	wpabuf_put_u8(buf, '.');
-	wpabuf_put_str(buf, signed2);
-	wpabuf_put_u8(buf, '.');
-	wpabuf_put_str(buf, signed3);
+	wpabuf_put_str(buf, signed_conn);
 	wpabuf_put_str(buf, "\"");
 	json_value_sep(buf);
 	if (dpp_build_jwk(buf, "csign", auth->conf->csign, auth->conf->kid,
@@ -5171,12 +5228,7 @@ skip_groups:
 			      wpabuf_head(buf), wpabuf_len(buf));
 
 out:
-	EVP_MD_CTX_destroy(md_ctx);
-	ECDSA_SIG_free(sig);
-	os_free(signed1);
-	os_free(signed2);
-	os_free(signed3);
-	os_free(signature);
+	os_free(signed_conn);
 	wpabuf_free(dppcon);
 	return buf;
 fail:
