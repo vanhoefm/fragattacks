@@ -2731,7 +2731,7 @@ def test_ap_wpa2_eap_ttls_server_cert_hash(dev, apdev):
     """WPA2-Enterprise connection using EAP-TTLS and server certificate hash"""
     check_cert_probe_support(dev[0])
     skip_with_fips(dev[0])
-    srv_cert_hash = "f6b9d0b2bc3f106ff01542161647036992de889267005d93fac1c7274bfca5bb"
+    srv_cert_hash = "f75a953c1aa9967926525d4d860d1ff7e872f7088782f060768d12aecbd5f25e"
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="TTLS",
@@ -4175,7 +4175,7 @@ def ocsp_req(outfile):
            "-reqout", outfile,
            '-issuer', 'auth_serv/ca.pem',
            '-sha256',
-           '-serial', '0xD8D3E3A6CBE3CD1F',
+           '-serial', '0xD8D3E3A6CBE3CD5F',
            '-no_nonce']
     run_openssl(arg)
     if not os.path.exists(outfile):
