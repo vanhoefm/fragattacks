@@ -760,7 +760,7 @@ def test_radius_das_disconnect(dev, apdev):
 
 def add_message_auth_req(req):
     req.authenticator = req.CreateAuthenticator()
-    hmac_obj = hmac.new(req.secret)
+    hmac_obj = hmac.new(req.secret, digestmod=hashlib.md5)
     hmac_obj.update(struct.pack("B", req.code))
     hmac_obj.update(struct.pack("B", req.id))
 
@@ -1046,7 +1046,7 @@ def test_radius_protocol(dev, apdev):
                     pw = b"incorrect"
                 else:
                     pw = reply.secret
-                hmac_obj = hmac.new(pw)
+                hmac_obj = hmac.new(pw, digestmod=hashlib.md5)
                 hmac_obj.update(struct.pack("B", reply.code))
                 hmac_obj.update(struct.pack("B", reply.id))
 
@@ -1389,7 +1389,7 @@ def test_radius_auth_force_invalid_client_addr(dev, apdev):
 
 def add_message_auth(req):
     req.authenticator = req.CreateAuthenticator()
-    hmac_obj = hmac.new(req.secret)
+    hmac_obj = hmac.new(req.secret, digestmod=hashlib.md5)
     hmac_obj.update(struct.pack("B", req.code))
     hmac_obj.update(struct.pack("B", req.id))
 
