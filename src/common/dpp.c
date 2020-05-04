@@ -1853,9 +1853,11 @@ static struct wpabuf * dpp_auth_build_req(struct dpp_authentication *auth,
 
 #ifdef CONFIG_DPP2
 	/* Protocol Version */
-	wpabuf_put_le16(msg, DPP_ATTR_PROTOCOL_VERSION);
-	wpabuf_put_le16(msg, 1);
-	wpabuf_put_u8(msg, DPP_VERSION);
+	if (DPP_VERSION > 1) {
+		wpabuf_put_le16(msg, DPP_ATTR_PROTOCOL_VERSION);
+		wpabuf_put_le16(msg, 1);
+		wpabuf_put_u8(msg, DPP_VERSION);
+	}
 #endif /* CONFIG_DPP2 */
 
 #ifdef CONFIG_TESTING_OPTIONS
