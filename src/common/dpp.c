@@ -6081,23 +6081,48 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 	}
 
 	token = json_get_member(root, "mudurl");
-	if (token && token->type == JSON_STRING)
+	if (token && token->type == JSON_STRING) {
 		wpa_printf(MSG_DEBUG, "DPP: mudurl = '%s'", token->string);
+		wpa_msg(auth->msg_ctx, MSG_INFO, DPP_EVENT_MUD_URL "%s",
+			token->string);
+	}
 
 	token = json_get_member(root, "bandSupport");
 	if (token && token->type == JSON_ARRAY) {
+		int *opclass = NULL;
+		char txt[200], *pos, *end;
+		int i, res;
+
 		wpa_printf(MSG_DEBUG, "DPP: bandSupport");
 		token = token->child;
 		while (token) {
-			if (token->type != JSON_NUMBER)
+			if (token->type != JSON_NUMBER) {
 				wpa_printf(MSG_DEBUG,
 					   "DPP: Invalid bandSupport array member type");
-			else
+			} else {
 				wpa_printf(MSG_DEBUG,
 					   "DPP: Supported global operating class: %d",
 					   token->number);
+				int_array_add_unique(&opclass, token->number);
+			}
 			token = token->sibling;
 		}
+
+		txt[0] = '\0';
+		pos = txt;
+		end = txt + sizeof(txt);
+		for (i = 0; opclass && opclass[i]; i++) {
+			res = os_snprintf(pos, end - pos, "%s%d",
+					  pos == txt ? "" : ",", opclass[i]);
+			if (os_snprintf_error(end - pos, res)) {
+				*pos = '\0';
+				break;
+			}
+			pos += res;
+		}
+		os_free(opclass);
+		wpa_msg(auth->msg_ctx, MSG_INFO, DPP_EVENT_BAND_SUPPORT "%s",
+			txt);
 	}
 
 	resp = dpp_build_conf_resp(auth, e_nonce, e_nonce_len, netrole);
