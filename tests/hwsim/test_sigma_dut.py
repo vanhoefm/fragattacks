@@ -1716,13 +1716,20 @@ def test_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev):
     run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev,
                                                     extra="DPPAuthDirection,Mutual,")
 
-def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra=''):
+def test_sigma_dut_dpp_qr_mutual_init_enrollee_mud_url(dev, apdev):
+    """sigma_dut DPP/QR (mutual) initiator as Enrollee (MUD URL)"""
+    run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev,
+                                                    mud_url="https://example.com/mud")
+
+def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra='',
+                                                    mud_url=None):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     hapd = start_dpp_ap(apdev[0])
-    sigma = start_sigma_dut(dev[0].ifname)
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname)
     try:
-        dev[0].set("dpp_config_processing", "2")
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,DPP" % ifname)
 
         cmd = "DPP_CONFIGURATOR_ADD key=" + csign
         res = dev[1].request(cmd)
@@ -1752,9 +1759,20 @@ def run_sigma_dut_dpp_qr_mutual_init_enrollee_check(dev, apdev, extra=''):
         if "status,COMPLETE" not in res:
             raise Exception("dev_exec_action did not succeed: " + res)
 
-        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,%sDPPProvisioningRole,Enrollee,DPPBS,QR,DPPTimeout,6,DPPWaitForConnect,Yes" % extra, timeout=10)
+        cmd = "dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,%sDPPProvisioningRole,Enrollee,DPPBS,QR,DPPTimeout,6,DPPWaitForConnect,Yes" % extra
+        if mud_url:
+            cmd += ",MUDURL," + mud_url
+        res = sigma_dut_cmd_check(cmd, timeout=10)
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,DPP" % ifname)
         if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK,NetworkIntroResult,OK,NetworkConnectResult,OK" not in res:
             raise Exception("Unexpected result: " + res)
+
+        if mud_url:
+            ev = dev[1].wait_event(["DPP-MUD-URL"], timeout=1)
+            if ev is None:
+                raise Exception("DPP MUD URL not reported")
+            if ev.split(' ')[1] != mud_url:
+                raise Exception("Unexpected MUD URL value: " + ev)
     finally:
         dev[0].set("dpp_config_processing", "0")
         stop_sigma_dut(sigma)
