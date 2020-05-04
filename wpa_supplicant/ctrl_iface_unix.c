@@ -142,7 +142,7 @@ static void wpa_supplicant_ctrl_iface_receive(int sock, void *eloop_ctx,
 	buf = os_malloc(CTRL_IFACE_MAX_LEN + 1);
 	if (!buf)
 		return;
-	res = recvfrom(sock, buf, CTRL_IFACE_MAX_LEN, 0,
+	res = recvfrom(sock, buf, CTRL_IFACE_MAX_LEN + 1, 0,
 		       (struct sockaddr *) &from, &fromlen);
 	if (res < 0) {
 		wpa_printf(MSG_ERROR, "recvfrom(ctrl_iface): %s",
@@ -1066,7 +1066,7 @@ static void wpa_supplicant_global_ctrl_iface_receive(int sock, void *eloop_ctx,
 	buf = os_malloc(CTRL_IFACE_MAX_LEN + 1);
 	if (!buf)
 		return;
-	res = recvfrom(sock, buf, CTRL_IFACE_MAX_LEN, 0,
+	res = recvfrom(sock, buf, CTRL_IFACE_MAX_LEN + 1, 0,
 		       (struct sockaddr *) &from, &fromlen);
 	if (res < 0) {
 		wpa_printf(MSG_ERROR, "recvfrom(ctrl_iface): %s",
