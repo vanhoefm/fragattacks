@@ -2121,6 +2121,75 @@ def test_sigma_dut_dpp_incompatible_roles_resp(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
+def test_sigma_dut_dpp_qr_enrollee_chirp(dev, apdev):
+    """sigma_dut DPP/QR as chirping Enrollee"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    hapd = start_dpp_ap(apdev[0])
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname)
+    try:
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,DPP" % ifname)
+        cmd = "dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPCryptoIdentifier,P-256,DPPBS,QR"
+        res = sigma_dut_cmd_check(cmd)
+        if "status,COMPLETE" not in res:
+            raise Exception("dev_exec_action did not succeed: " + res)
+        hex = res.split(',')[3]
+        uri = from_hex(hex)
+        logger.info("URI from sigma_dut: " + uri)
+
+        conf_id = dev[1].dpp_configurator_add(key=csign)
+        idc = dev[1].dpp_qr_code(uri)
+        dev[1].dpp_bootstrap_set(idc, conf="sta-dpp", configurator=conf_id,
+                                 ssid="DPPNET01")
+        dev[1].dpp_listen(2437)
+
+        res = sigma_dut_cmd_check("dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Responder,DPPAuthDirection,Single,DPPProvisioningRole,Enrollee,DPPBS,QR,DPPTimeout,16,DPPWaitForConnect,Yes,DPPChirp,Enable", timeout=20)
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,DPP" % ifname)
+        if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK,NetworkIntroResult,OK,NetworkConnectResult,OK" not in res:
+            raise Exception("Unexpected result: " + res)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+        stop_sigma_dut(sigma)
+
+def dpp_enrollee_chirp(dev, id1):
+    logger.info("Starting chirping Enrollee in a thread")
+    time.sleep(0.1)
+    cmd = "DPP_CHIRP own=%d" % id1
+    if "OK" not in dev.request(cmd):
+        raise Exception("Failed to initiate DPP chirping")
+    ev = dev.wait_event(["DPP-CONF-RECEIVED"], timeout=15)
+    if ev is None:
+        raise Exception("DPP configuration not completed (Enrollee)")
+    logger.info("DPP enrollee done")
+
+def test_sigma_dut_dpp_qr_configurator_chirp(dev, apdev):
+    """sigma_dut DPP/QR as Configurator waiting for chirp"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname)
+    try:
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,DPP" % ifname)
+
+        id1 = dev[1].dpp_bootstrap_gen(chan="81/1")
+        uri = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
+
+        res = sigma_dut_cmd_check("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri))
+        if "status,COMPLETE" not in res:
+            raise Exception("dev_exec_action did not succeed: " + res)
+
+        t = threading.Thread(target=dpp_enrollee_chirp, args=(dev[1], id1))
+        t.start()
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,DPPAuthDirection,Single,DPPProvisioningRole,Configurator,DPPConfIndex,1,DPPConfEnrolleeRole,STA,DPPBS,QR,DPPTimeout,16,DPPChirp,Enable,DPPChirpChannel,6", timeout=20)
+        t.join()
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,DPP" % ifname)
+        if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK" not in res:
+            raise Exception("Unexpected result: " + res)
+    finally:
+        dev[0].set("dpp_config_processing", "0")
+        stop_sigma_dut(sigma)
+
 def test_sigma_dut_dpp_pkex_init_configurator(dev, apdev):
     """sigma_dut DPP/PKEX initiator as Configurator"""
     check_dpp_capab(dev[0])

@@ -1490,8 +1490,11 @@ class WpaSupplicant:
             raise Exception("Failed to generate bootstrapping info")
         return int(res)
 
-    def dpp_bootstrap_set(self, id, conf=None, configurator=None, extra=None):
+    def dpp_bootstrap_set(self, id, conf=None, configurator=None, ssid=None,
+                          extra=None):
         cmd = "DPP_BOOTSTRAP_SET %d" % id
+        if ssid:
+            cmd += " ssid=" + binascii.hexlify(ssid.encode()).decode()
         if extra:
             cmd += " " + extra
         if conf:
