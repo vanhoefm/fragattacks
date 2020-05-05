@@ -2302,6 +2302,61 @@ def run_sigma_dut_ap_dpp_qr(dev, apdev, params, ap_conf, sta_conf, extra=""):
             dev[1].set("dpp_config_processing", "0")
             stop_sigma_dut(sigma)
 
+def test_sigma_dut_ap_dpp_offchannel(dev, apdev, params):
+    """sigma_dut controlled AP doing DPP on offchannel"""
+    check_dpp_capab(dev[0])
+    logdir = params['prefix'] + ".sigma-hostapd"
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            sigma_dut_cmd_check("ap_reset_default,program,DPP")
+            sigma_dut_cmd_check("ap_preset_testparameters,Program,DPP,Oper_Chn,3")
+            res = sigma_dut_cmd_check("dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPCryptoIdentifier,P-256,DPPBS,QR")
+            hex = res.split(',')[3]
+            uri = from_hex(hex)
+            logger.info("URI from sigma_dut: " + uri)
+            if "C:81/3;" not in uri:
+                raise Exception("Unexpected channel in AP's URI: " + uri)
+
+            cmd = "DPP_CONFIGURATOR_ADD"
+            res = dev[0].request(cmd)
+            if "FAIL" in res:
+                raise Exception("Failed to add configurator")
+            conf_id = int(res)
+
+            id0 = dev[0].dpp_bootstrap_gen(chan="81/7", mac=True)
+            uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+            dev[0].set("dpp_configurator_params",
+                       "conf=ap-dpp ssid=%s configurator=%d" % (to_hex("DPPNET01"), conf_id))
+            dev[0].dpp_listen(2442)
+
+            res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri0))
+            if "status,COMPLETE" not in res:
+                raise Exception("dev_exec_action did not succeed: " + res)
+
+            res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,DPPAuthDirection,Single,DPPProvisioningRole,Enrollee,DPPBS,QR,DPPTimeout,6")
+            if "ConfResult,OK" not in res:
+                raise Exception("Unexpected result: " + res)
+
+            id1 = dev[1].dpp_bootstrap_gen(chan="81/1", mac=True)
+            uri1 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
+
+            id0b = dev[0].dpp_qr_code(uri1)
+
+            dev[1].set("dpp_config_processing", "2")
+            cmd = "DPP_LISTEN 2412"
+            if "OK" not in dev[1].request(cmd):
+                raise Exception("Failed to start listen operation")
+            cmd = "DPP_AUTH_INIT peer=%d conf=sta-dpp ssid=%s configurator=%d" % (id0b, to_hex("DPPNET01"), conf_id)
+            if "OK" not in dev[0].request(cmd):
+                raise Exception("Failed to initiate DPP Authentication")
+            dev[1].wait_connected()
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            dev[1].set("dpp_config_processing", "0")
+            stop_sigma_dut(sigma)
+
 def test_sigma_dut_ap_dpp_pkex_responder(dev, apdev, params):
     """sigma_dut controlled AP as DPP PKEX responder"""
     check_dpp_capab(dev[0])
