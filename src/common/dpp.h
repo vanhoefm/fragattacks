@@ -142,6 +142,7 @@ struct dpp_bootstrap_info {
 	char *pk;
 	unsigned int freq[DPP_BOOTSTRAP_MAX_FREQ];
 	unsigned int num_freq;
+	u8 version;
 	int own;
 	EVP_PKEY *pubkey;
 	u8 pubkey_hash[SHA256_MAC_LEN];

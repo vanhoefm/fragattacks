@@ -1042,6 +1042,26 @@ int dpp_parse_uri_info(struct dpp_bootstrap_info *bi, const char *info)
 }
 
 
+int dpp_parse_uri_version(struct dpp_bootstrap_info *bi, const char *version)
+{
+#ifdef CONFIG_DPP2
+	if (!version || DPP_VERSION < 2)
+		return 0;
+
+	if (*version == '1')
+		bi->version = 1;
+	else if (*version == '2')
+		bi->version = 2;
+	else
+		wpa_printf(MSG_DEBUG, "DPP: Unknown URI version");
+
+	wpa_printf(MSG_DEBUG, "DPP: URI version: %d", bi->version);
+#endif /* CONFIG_DPP2 */
+
+	return 0;
+}
+
+
 static const struct dpp_curve_params *
 dpp_get_curve_oid(const ASN1_OBJECT *poid)
 {
@@ -1239,6 +1259,7 @@ static struct dpp_bootstrap_info * dpp_parse_uri(const char *uri)
 	const char *pos = uri;
 	const char *end;
 	const char *chan_list = NULL, *mac = NULL, *info = NULL, *pk = NULL;
+	const char *version = NULL;
 	struct dpp_bootstrap_info *bi;
 
 	wpa_hexdump_ascii(MSG_DEBUG, "DPP: URI", uri, os_strlen(uri));
@@ -1269,6 +1290,8 @@ static struct dpp_bootstrap_info * dpp_parse_uri(const char *uri)
 			info = pos + 2;
 		else if (pos[0] == 'K' && pos[1] == ':' && !pk)
 			pk = pos + 2;
+		else if (pos[0] == 'V' && pos[1] == ':' && !version)
+			version = pos + 2;
 		else
 			wpa_hexdump_ascii(MSG_DEBUG,
 					  "DPP: Ignore unrecognized URI parameter",
@@ -1289,6 +1312,7 @@ static struct dpp_bootstrap_info * dpp_parse_uri(const char *uri)
 	    dpp_parse_uri_chan_list(bi, chan_list) < 0 ||
 	    dpp_parse_uri_mac(bi, mac) < 0 ||
 	    dpp_parse_uri_info(bi, info) < 0 ||
+	    dpp_parse_uri_version(bi, info) < 0 ||
 	    dpp_parse_uri_pk(bi, pk) < 0) {
 		dpp_bootstrap_info_free(bi);
 		bi = NULL;
@@ -2327,18 +2351,22 @@ static int dpp_gen_uri(struct dpp_bootstrap_info *bi)
 	len += os_strlen(macstr); /* M:...; */
 	if (bi->info)
 		len += 3 + os_strlen(bi->info); /* I:...; */
+#ifdef CONFIG_DPP2
+	len += 4; /* V:2; */
+#endif /* CONFIG_DPP2 */
 	len += 4 + os_strlen(bi->pk); /* K:...;; */
 
 	os_free(bi->uri);
 	bi->uri = os_malloc(len + 1);
 	if (!bi->uri)
 		return -1;
-	os_snprintf(bi->uri, len + 1, "DPP:%s%s%s%s%s%s%sK:%s;;",
+	os_snprintf(bi->uri, len + 1, "DPP:%s%s%s%s%s%s%s%sK:%s;;",
 		    bi->chan ? "C:" : "", bi->chan ? bi->chan : "",
 		    bi->chan ? ";" : "",
 		    macstr,
 		    bi->info ? "I:" : "", bi->info ? bi->info : "",
 		    bi->info ? ";" : "",
+		    DPP_VERSION == 2 ? "V:2;" : "",
 		    bi->pk);
 	return 0;
 }
@@ -10660,14 +10688,16 @@ int dpp_bootstrap_info(struct dpp_global *dpp, int id,
 			   "num_freq=%u\n"
 			   "use_freq=%u\n"
 			   "curve=%s\n"
-			   "pkhash=%s\n",
+			   "pkhash=%s\n"
+			   "version=%d\n",
 			   dpp_bootstrap_type_txt(bi->type),
 			   MAC2STR(bi->mac_addr),
 			   bi->info ? bi->info : "",
 			   bi->num_freq,
 			   bi->num_freq == 1 ? bi->freq[0] : 0,
 			   bi->curve->name,
-			   pkhash);
+			   pkhash,
+			   bi->version);
 }
 
 
