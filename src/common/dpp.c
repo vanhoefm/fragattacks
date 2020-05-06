@@ -1312,7 +1312,7 @@ static struct dpp_bootstrap_info * dpp_parse_uri(const char *uri)
 	    dpp_parse_uri_chan_list(bi, chan_list) < 0 ||
 	    dpp_parse_uri_mac(bi, mac) < 0 ||
 	    dpp_parse_uri_info(bi, info) < 0 ||
-	    dpp_parse_uri_version(bi, info) < 0 ||
+	    dpp_parse_uri_version(bi, version) < 0 ||
 	    dpp_parse_uri_pk(bi, pk) < 0) {
 		dpp_bootstrap_info_free(bi);
 		bi = NULL;
