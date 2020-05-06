@@ -110,6 +110,33 @@ def test_dpp_qr_code_parsing(dev, apdev):
 
     dev[0].dpp_qr_code(uri)
 
+def test_dpp_uri_version(dev, apdev):
+    """DPP URI version information"""
+    check_dpp_capab(dev[0], min_ver=2)
+
+    id0 = dev[0].dpp_bootstrap_gen()
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+    logger.info("Generated URI: " + uri)
+
+    id1 = dev[0].dpp_qr_code(uri)
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
+    info = dev[0].request("DPP_BOOTSTRAP_INFO %d" % id1)
+    logger.info("Parsed URI info:\n" + info)
+    if "version=2" not in info.splitlines():
+        raise Exception("Unexpected version information (v2)")
+
+    dev[0].set("dpp_version_override", "1")
+    id0 = dev[0].dpp_bootstrap_gen()
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+    logger.info("Generated URI: " + uri)
+
+    id1 = dev[0].dpp_qr_code(uri)
+    uri = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
+    info = dev[0].request("DPP_BOOTSTRAP_INFO %d" % id1)
+    logger.info("Parsed URI info:\n" + info)
+    if "version=0" not in info.splitlines():
+        raise Exception("Unexpected version information (without indication)")
+
 def test_dpp_qr_code_parsing_fail(dev, apdev):
     """DPP QR Code parsing local failure"""
     check_dpp_capab(dev[0])
