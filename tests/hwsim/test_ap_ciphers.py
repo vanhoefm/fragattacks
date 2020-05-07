@@ -663,24 +663,9 @@ def run_ap_cipher_replay_protection_sta(dev, apdev, cipher, keytype=KT_PTK):
         if replays < 1:
             raise Exception("Replays not reported")
 
+@disable_ipv6
 def test_ap_wpa2_delayed_m3_retransmission(dev, apdev):
     """Delayed M3 retransmission"""
-    require_under_vm()
-    try:
-        subprocess.call(['sysctl', '-w', 'net.ipv6.conf.all.disable_ipv6=1'],
-                        stdout=open('/dev/null', 'w'))
-        subprocess.call(['sysctl', '-w',
-                         'net.ipv6.conf.default.disable_ipv6=1'],
-                        stdout=open('/dev/null', 'w'))
-        run_ap_wpa2_delayed_m3_retransmission(dev, apdev)
-    finally:
-        subprocess.call(['sysctl', '-w', 'net.ipv6.conf.all.disable_ipv6=0'],
-                        stdout=open('/dev/null', 'w'))
-        subprocess.call(['sysctl', '-w',
-                         'net.ipv6.conf.default.disable_ipv6=0'],
-                        stdout=open('/dev/null', 'w'))
-
-def run_ap_wpa2_delayed_m3_retransmission(dev, apdev):
     params = hostapd.wpa2_params(ssid="test-wpa2-psk", passphrase="12345678")
     hapd = hostapd.add_ap(apdev[0], params)
 
@@ -726,39 +711,15 @@ def run_ap_wpa2_delayed_m3_retransmission(dev, apdev):
         if a < b:
             raise Exception("GTK RX counter decreased: idx=%d before=%d after=%d" % (i, b, a))
 
+@disable_ipv6
 def test_ap_wpa2_delayed_m1_m3_retransmission(dev, apdev):
     """Delayed M1+M3 retransmission"""
-    require_under_vm()
-    try:
-        subprocess.call(['sysctl', '-w', 'net.ipv6.conf.all.disable_ipv6=1'],
-                        stdout=open('/dev/null', 'w'))
-        subprocess.call(['sysctl', '-w',
-                         'net.ipv6.conf.default.disable_ipv6=1'],
-                        stdout=open('/dev/null', 'w'))
-        run_ap_wpa2_delayed_m1_m3_retransmission(dev, apdev)
-    finally:
-        subprocess.call(['sysctl', '-w', 'net.ipv6.conf.all.disable_ipv6=0'],
-                        stdout=open('/dev/null', 'w'))
-        subprocess.call(['sysctl', '-w',
-                         'net.ipv6.conf.default.disable_ipv6=0'],
-                        stdout=open('/dev/null', 'w'))
+    run_ap_wpa2_delayed_m1_m3_retransmission(dev, apdev, False)
 
+@disable_ipv6
 def test_ap_wpa2_delayed_m1_m3_retransmission2(dev, apdev):
     """Delayed M1+M3 retransmission (change M1 ANonce)"""
-    require_under_vm()
-    try:
-        subprocess.call(['sysctl', '-w', 'net.ipv6.conf.all.disable_ipv6=1'],
-                        stdout=open('/dev/null', 'w'))
-        subprocess.call(['sysctl', '-w',
-                         'net.ipv6.conf.default.disable_ipv6=1'],
-                        stdout=open('/dev/null', 'w'))
-        run_ap_wpa2_delayed_m1_m3_retransmission(dev, apdev, True)
-    finally:
-        subprocess.call(['sysctl', '-w', 'net.ipv6.conf.all.disable_ipv6=0'],
-                        stdout=open('/dev/null', 'w'))
-        subprocess.call(['sysctl', '-w',
-                         'net.ipv6.conf.default.disable_ipv6=0'],
-                        stdout=open('/dev/null', 'w'))
+    run_ap_wpa2_delayed_m1_m3_retransmission(dev, apdev, True)
 
 def run_ap_wpa2_delayed_m1_m3_retransmission(dev, apdev,
                                              change_m1_anonce=False):
@@ -812,24 +773,9 @@ def run_ap_wpa2_delayed_m1_m3_retransmission(dev, apdev,
         if a < b:
             raise Exception("GTK RX counter decreased: idx=%d before=%d after=%d" % (i, b, a))
 
+@disable_ipv6
 def test_ap_wpa2_delayed_group_m1_retransmission(dev, apdev):
     """Delayed group M1 retransmission"""
-    require_under_vm()
-    try:
-        subprocess.call(['sysctl', '-w', 'net.ipv6.conf.all.disable_ipv6=1'],
-                        stdout=open('/dev/null', 'w'))
-        subprocess.call(['sysctl', '-w',
-                         'net.ipv6.conf.default.disable_ipv6=1'],
-                        stdout=open('/dev/null', 'w'))
-        run_ap_wpa2_delayed_group_m1_retransmission(dev, apdev)
-    finally:
-        subprocess.call(['sysctl', '-w', 'net.ipv6.conf.all.disable_ipv6=0'],
-                        stdout=open('/dev/null', 'w'))
-        subprocess.call(['sysctl', '-w',
-                         'net.ipv6.conf.default.disable_ipv6=0'],
-                        stdout=open('/dev/null', 'w'))
-
-def run_ap_wpa2_delayed_group_m1_retransmission(dev, apdev):
     params = hostapd.wpa2_params(ssid="test-wpa2-psk", passphrase="12345678")
     hapd = hostapd.add_ap(apdev[0], params)
 
@@ -867,24 +813,9 @@ def run_ap_wpa2_delayed_group_m1_retransmission(dev, apdev):
         if a < b:
             raise Exception("RX counter decreased: idx=%d before=%d after=%d" % (i, b, a))
 
+@disable_ipv6
 def test_ap_wpa2_delayed_group_m1_retransmission_igtk(dev, apdev):
     """Delayed group M1 retransmission (check IGTK protection)"""
-    require_under_vm()
-    try:
-        subprocess.call(['sysctl', '-w', 'net.ipv6.conf.all.disable_ipv6=1'],
-                        stdout=open('/dev/null', 'w'))
-        subprocess.call(['sysctl', '-w',
-                         'net.ipv6.conf.default.disable_ipv6=1'],
-                        stdout=open('/dev/null', 'w'))
-        run_ap_wpa2_delayed_group_m1_retransmission_igtk(dev, apdev)
-    finally:
-        subprocess.call(['sysctl', '-w', 'net.ipv6.conf.all.disable_ipv6=0'],
-                        stdout=open('/dev/null', 'w'))
-        subprocess.call(['sysctl', '-w',
-                         'net.ipv6.conf.default.disable_ipv6=0'],
-                        stdout=open('/dev/null', 'w'))
-
-def run_ap_wpa2_delayed_group_m1_retransmission_igtk(dev, apdev):
     params = hostapd.wpa2_params(ssid="test-wpa2-psk", passphrase="12345678",
                                  ieee80211w="2")
     hapd = hostapd.add_ap(apdev[0], params)

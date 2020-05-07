@@ -254,3 +254,27 @@ def set_world_reg(apdev0=None, apdev1=None, dev0=None):
     if dev0:
         dev0.cmd_execute(['iw', 'reg', 'set', '00'])
     time.sleep(0.1)
+
+def sysctl_write(val):
+    subprocess.call(['sysctl', '-w', val], stdout=open('/dev/null', 'w'))
+
+def disable_ipv6(fn):
+    def wrapper(dev, apdev, params):
+        require_under_vm()
+        try:
+            sysctl_write('net.ipv6.conf.all.disable_ipv6=1')
+            sysctl_write('net.ipv6.conf.default.disable_ipv6=1')
+            if fn.__code__.co_argcount > 2:
+                return fn(dev, apdev, params)
+            elif fn.__code__.co_argcount > 1:
+                return fn(dev, apdev)
+            return fn(dev)
+        finally:
+            sysctl_write('net.ipv6.conf.all.disable_ipv6=0')
+            sysctl_write('net.ipv6.conf.default.disable_ipv6=0')
+    # we need the name set right for selecting / printing etc.
+    wrapper.__name__ = fn.__name__
+    wrapper.__doc__ = fn.__doc__
+    # reparent to the right module for module filtering
+    wrapper.__module__ = fn.__module__
+    return wrapper
