@@ -2135,6 +2135,18 @@ enum qca_wlan_vendor_attr_config {
 	 */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_PHY_MODE = 62,
 
+	/* 8-bit unsigned value to configure the maximum number of subframes of
+	 * TX MSDU for aggregation. Possible values are 0-31. When set to 0,
+	 * it is decided by the hardware.
+	 */
+	QCA_WLAN_VENDOR_ATTR_CONFIG_TX_MSDU_AGGREGATION = 65,
+
+	/* 8-bit unsigned value to configure the maximum number of subframes of
+	 * RX MSDU for aggregation. Possible values are 0-31. When set to 0,
+	 * it is decided by the hardware.
+	 */
+	QCA_WLAN_VENDOR_ATTR_CONFIG_RX_MSDU_AGGREGATION = 66,
+
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_CONFIG_MAX =
