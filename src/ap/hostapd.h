@@ -349,6 +349,11 @@ struct hostapd_data {
 	int last_igtk_key_idx;
 	u8 last_igtk[WPA_IGTK_MAX_LEN];
 	size_t last_igtk_len;
+
+	enum wpa_alg last_bigtk_alg;
+	int last_bigtk_key_idx;
+	u8 last_bigtk[WPA_BIGTK_MAX_LEN];
+	size_t last_bigtk_len;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 #ifdef CONFIG_MBO

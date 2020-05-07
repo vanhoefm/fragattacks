@@ -2165,6 +2165,32 @@ static int hostapd_ctrl_reset_pn(struct hostapd_data *hapd, const char *cmd)
 	if (hwaddr_aton(cmd, addr))
 		return -1;
 
+	if (is_broadcast_ether_addr(addr) && os_strstr(cmd, " BIGTK")) {
+		if (hapd->last_bigtk_alg == WPA_ALG_NONE)
+			return -1;
+
+		wpa_printf(MSG_INFO, "TESTING: Reset BIPN for BIGTK");
+
+		/* First, use a zero key to avoid any possible duplicate key
+		 * avoidance in the driver. */
+		if (hostapd_drv_set_key(hapd->conf->iface, hapd,
+					hapd->last_bigtk_alg,
+					broadcast_ether_addr,
+					hapd->last_bigtk_key_idx, 0, 1, NULL, 0,
+					zero, hapd->last_bigtk_len,
+					KEY_FLAG_GROUP_TX_DEFAULT) < 0)
+			return -1;
+
+		/* Set the previously configured key to reset its TSC */
+		return hostapd_drv_set_key(hapd->conf->iface, hapd,
+					   hapd->last_bigtk_alg,
+					   broadcast_ether_addr,
+					   hapd->last_bigtk_key_idx, 0, 1, NULL,
+					   0, hapd->last_bigtk,
+					   hapd->last_bigtk_len,
+					   KEY_FLAG_GROUP_TX_DEFAULT);
+	}
+
 	if (is_broadcast_ether_addr(addr) && os_strstr(cmd, "IGTK")) {
 		if (hapd->last_igtk_alg == WPA_ALG_NONE)
 			return -1;

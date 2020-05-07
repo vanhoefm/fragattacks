@@ -457,11 +457,19 @@ static int hostapd_wpa_auth_set_key(void *ctx, int vlan_id, enum wpa_alg alg,
 		   alg == WPA_ALG_BIP_GMAC_128 ||
 		   alg == WPA_ALG_BIP_GMAC_256 ||
 		   alg == WPA_ALG_BIP_CMAC_256) {
-		hapd->last_igtk_alg = alg;
-		hapd->last_igtk_key_idx = idx;
-		if (key)
-			os_memcpy(hapd->last_igtk, key, key_len);
-		hapd->last_igtk_len = key_len;
+		if (idx == 4 || idx == 5) {
+			hapd->last_igtk_alg = alg;
+			hapd->last_igtk_key_idx = idx;
+			if (key)
+				os_memcpy(hapd->last_igtk, key, key_len);
+			hapd->last_igtk_len = key_len;
+		} else if (idx == 6 || idx == 7) {
+			hapd->last_bigtk_alg = alg;
+			hapd->last_bigtk_key_idx = idx;
+			if (key)
+				os_memcpy(hapd->last_bigtk, key, key_len);
+			hapd->last_bigtk_len = key_len;
+		}
 	} else {
 		hapd->last_gtk_alg = alg;
 		hapd->last_gtk_key_idx = idx;
