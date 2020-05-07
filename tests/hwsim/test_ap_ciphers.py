@@ -853,7 +853,7 @@ def run_ap_wpa2_delayed_group_m1_retransmission(dev, apdev):
     time.sleep(0.1)
     after = get_rx_spec(phy, keytype=KT_GTK).splitlines()
 
-    if "OK" not in hapd.request("RESET_PN " + addr):
+    if "OK" not in hapd.request("RESET_PN ff:ff:ff:ff:ff:ff"):
         raise Exception("RESET_PN failed")
     time.sleep(0.1)
     hwsim_utils.test_connectivity(dev[0], hapd, timeout=1,
