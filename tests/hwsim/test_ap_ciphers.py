@@ -17,6 +17,8 @@ from utils import *
 from wlantest import Wlantest
 from wpasupplicant import WpaSupplicant
 
+KT_PTK, KT_GTK = range(2)
+
 def check_cipher(dev, ap, cipher, group_cipher=None):
     if cipher not in dev.get_capability("pairwise"):
         raise HwsimSkip("Cipher %s not supported" % cipher)
@@ -483,15 +485,15 @@ def test_ap_cipher_bip_req_mismatch(dev, apdev):
     dev[0].select_network(id)
     dev[0].wait_connected()
 
-def get_rx_spec(phy, gtk=False):
+def get_rx_spec(phy, keytype=KT_PTK):
     keys = "/sys/kernel/debug/ieee80211/%s/keys" % (phy)
     try:
         for key in os.listdir(keys):
             keydir = keys + "/" + key
             files = os.listdir(keydir)
-            if not gtk and "station" not in files:
+            if keytype == KT_PTK and "station" not in files:
                 continue
-            if gtk and "station" in files:
+            if keytype != KT_PTK and "station" in files:
                 continue
             with open(keydir + "/rx_spec") as f:
                 return f.read()
@@ -499,15 +501,15 @@ def get_rx_spec(phy, gtk=False):
         raise HwsimSkip("debugfs not supported in mac80211")
     return None
 
-def get_tk_replay_counter(phy, gtk=False):
+def get_tk_replay_counter(phy, keytype=KT_PTK):
     keys = "/sys/kernel/debug/ieee80211/%s/keys" % (phy)
     try:
         for key in os.listdir(keys):
             keydir = keys + "/" + key
             files = os.listdir(keydir)
-            if not gtk and "station" not in files:
+            if keytype == KT_PTK and "station" not in files:
                 continue
-            if gtk and "station" in files:
+            if keytype != KT_PTK and "station" in files:
                 continue
             with open(keydir + "/replays") as f:
                 return int(f.read())
@@ -589,20 +591,20 @@ def test_ap_cipher_replay_protection_sta_gcmp(dev, apdev):
 
 def test_ap_cipher_replay_protection_sta_gtk_ccmp(dev, apdev):
     """CCMP replay protection on STA (GTK)"""
-    run_ap_cipher_replay_protection_sta(dev, apdev, "CCMP", gtk=True)
+    run_ap_cipher_replay_protection_sta(dev, apdev, "CCMP", keytype=KT_GTK)
 
 def test_ap_cipher_replay_protection_sta_gtk_tkip(dev, apdev):
     """TKIP replay protection on STA (GTK)"""
     skip_without_tkip(dev[0])
-    run_ap_cipher_replay_protection_sta(dev, apdev, "TKIP", gtk=True)
+    run_ap_cipher_replay_protection_sta(dev, apdev, "TKIP", keytype=KT_GTK)
 
 def test_ap_cipher_replay_protection_sta_gtk_gcmp(dev, apdev):
     """GCMP replay protection on STA (GTK)"""
     if "GCMP" not in dev[0].get_capability("pairwise"):
         raise HwsimSkip("GCMP not supported")
-    run_ap_cipher_replay_protection_sta(dev, apdev, "GCMP", gtk=True)
+    run_ap_cipher_replay_protection_sta(dev, apdev, "GCMP", keytype=KT_GTK)
 
-def run_ap_cipher_replay_protection_sta(dev, apdev, cipher, gtk=False):
+def run_ap_cipher_replay_protection_sta(dev, apdev, cipher, keytype=KT_PTK):
     params = {"ssid": "test-wpa2-psk",
               "wpa_passphrase": "12345678",
               "wpa": "2",
@@ -621,7 +623,7 @@ def run_ap_cipher_replay_protection_sta(dev, apdev, cipher, gtk=False):
     hapd.wait_sta()
 
     if cipher != "TKIP":
-        replays = get_tk_replay_counter(phy, gtk)
+        replays = get_tk_replay_counter(phy, keytype)
         if replays != 0:
             raise Exception("Unexpected replay reported (1)")
 
@@ -629,11 +631,11 @@ def run_ap_cipher_replay_protection_sta(dev, apdev, cipher, gtk=False):
         hwsim_utils.test_connectivity(dev[0], hapd)
 
     if cipher != "TKIP":
-        replays = get_tk_replay_counter(phy, gtk)
+        replays = get_tk_replay_counter(phy, keytype)
         if replays != 0:
             raise Exception("Unexpected replay reported (2)")
 
-    addr = "ff:ff:ff:ff:ff:ff" if gtk else dev[0].own_addr()
+    addr = "ff:ff:ff:ff:ff:ff" if keytype != KT_PTK else dev[0].own_addr()
     if "OK" not in hapd.request("RESET_PN " + addr):
         raise Exception("RESET_PN failed")
     time.sleep(0.1)
@@ -641,7 +643,7 @@ def run_ap_cipher_replay_protection_sta(dev, apdev, cipher, gtk=False):
                                   success_expected=False)
 
     if cipher != "TKIP":
-        replays = get_tk_replay_counter(phy, gtk)
+        replays = get_tk_replay_counter(phy, keytype)
         if replays < 1:
             raise Exception("Replays not reported")
 
@@ -679,14 +681,14 @@ def run_ap_wpa2_delayed_m3_retransmission(dev, apdev):
         hwsim_utils.test_connectivity(dev[0], hapd)
 
     time.sleep(0.1)
-    before_tk = get_rx_spec(phy, gtk=False).splitlines()
-    before_gtk = get_rx_spec(phy, gtk=True).splitlines()
+    before_tk = get_rx_spec(phy, keytype=KT_PTK).splitlines()
+    before_gtk = get_rx_spec(phy, keytype=KT_GTK).splitlines()
     addr = dev[0].own_addr()
     if "OK" not in hapd.request("RESEND_M3 " + addr):
         raise Exception("RESEND_M3 failed")
     time.sleep(0.1)
-    after_tk = get_rx_spec(phy, gtk=False).splitlines()
-    after_gtk = get_rx_spec(phy, gtk=True).splitlines()
+    after_tk = get_rx_spec(phy, keytype=KT_PTK).splitlines()
+    after_gtk = get_rx_spec(phy, keytype=KT_GTK).splitlines()
 
     if "OK" not in hapd.request("RESET_PN " + addr):
         raise Exception("RESET_PN failed")
@@ -760,8 +762,8 @@ def run_ap_wpa2_delayed_m1_m3_retransmission(dev, apdev,
         hwsim_utils.test_connectivity(dev[0], hapd)
 
     time.sleep(0.1)
-    before_tk = get_rx_spec(phy, gtk=False).splitlines()
-    before_gtk = get_rx_spec(phy, gtk=True).splitlines()
+    before_tk = get_rx_spec(phy, keytype=KT_PTK).splitlines()
+    before_gtk = get_rx_spec(phy, keytype=KT_GTK).splitlines()
     addr = dev[0].own_addr()
     if change_m1_anonce:
         if "OK" not in hapd.request("RESEND_M1 " + addr + " change-anonce"):
@@ -771,8 +773,8 @@ def run_ap_wpa2_delayed_m1_m3_retransmission(dev, apdev,
     if "OK" not in hapd.request("RESEND_M3 " + addr):
         raise Exception("RESEND_M3 failed")
     time.sleep(0.1)
-    after_tk = get_rx_spec(phy, gtk=False).splitlines()
-    after_gtk = get_rx_spec(phy, gtk=True).splitlines()
+    after_tk = get_rx_spec(phy, keytype=KT_PTK).splitlines()
+    after_gtk = get_rx_spec(phy, keytype=KT_GTK).splitlines()
 
     if "OK" not in hapd.request("RESET_PN " + addr):
         raise Exception("RESET_PN failed")
@@ -828,12 +830,12 @@ def run_ap_wpa2_delayed_group_m1_retransmission(dev, apdev):
         hwsim_utils.test_connectivity(dev[0], hapd)
 
     time.sleep(0.1)
-    before = get_rx_spec(phy, gtk=True).splitlines()
+    before = get_rx_spec(phy, keytype=KT_GTK).splitlines()
     addr = dev[0].own_addr()
     if "OK" not in hapd.request("RESEND_GROUP_M1 " + addr):
         raise Exception("RESEND_GROUP_M1 failed")
     time.sleep(0.1)
-    after = get_rx_spec(phy, gtk=True).splitlines()
+    after = get_rx_spec(phy, keytype=KT_GTK).splitlines()
 
     if "OK" not in hapd.request("RESET_PN " + addr):
         raise Exception("RESET_PN failed")
