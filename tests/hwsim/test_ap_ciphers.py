@@ -17,7 +17,7 @@ from utils import *
 from wlantest import Wlantest
 from wpasupplicant import WpaSupplicant
 
-KT_PTK, KT_GTK = range(2)
+KT_PTK, KT_GTK, KT_IGTK, KT_BIGTK = range(4)
 
 def check_cipher(dev, ap, cipher, group_cipher=None):
     if cipher not in dev.get_capability("pairwise"):
@@ -490,6 +490,14 @@ def get_rx_spec(phy, keytype=KT_PTK):
     try:
         for key in os.listdir(keys):
             keydir = keys + "/" + key
+            with open(keydir + '/keyidx') as f:
+                keyid = int(f.read())
+            if keytype in (KT_PTK, KT_GTK) and keyid not in (0, 1, 2, 3):
+                continue
+            if keytype == KT_IGTK and keyid not in (4, 5):
+                continue
+            if keytype == KT_BIGTK and keyid not in (6, 7):
+                continue
             files = os.listdir(keydir)
             if keytype == KT_PTK and "station" not in files:
                 continue
@@ -506,6 +514,14 @@ def get_tk_replay_counter(phy, keytype=KT_PTK):
     try:
         for key in os.listdir(keys):
             keydir = keys + "/" + key
+            with open(keydir + '/keyidx') as f:
+                keyid = int(f.read())
+            if keytype in (KT_PTK, KT_GTK) and keyid not in (0, 1, 2, 3):
+                continue
+            if keytype == KT_IGTK and keyid not in (4, 5):
+                continue
+            if keytype == KT_BIGTK and keyid not in (6, 7):
+                continue
             files = os.listdir(keydir)
             if keytype == KT_PTK and "station" not in files:
                 continue
