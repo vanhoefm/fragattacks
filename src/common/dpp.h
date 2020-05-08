@@ -264,6 +264,7 @@ struct dpp_authentication {
 	u8 k1[DPP_MAX_HASH_LEN];
 	u8 k2[DPP_MAX_HASH_LEN];
 	u8 ke[DPP_MAX_HASH_LEN];
+	u8 bk[DPP_MAX_HASH_LEN];
 	int initiator;
 	int waiting_auth_resp;
 	int waiting_auth_conf;

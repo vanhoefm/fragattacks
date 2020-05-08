@@ -1713,13 +1713,12 @@ static int dpp_derive_k2(const u8 *Nx, size_t Nx_len, u8 *k2,
 }
 
 
-static int dpp_derive_ke(struct dpp_authentication *auth, u8 *ke,
-			 unsigned int hash_len)
+static int dpp_derive_bk_ke(struct dpp_authentication *auth)
 {
-	size_t nonce_len;
+	unsigned int hash_len = auth->curve->hash_len;
+	size_t nonce_len = auth->curve->nonce_len;
 	u8 nonces[2 * DPP_MAX_NONCE_LEN];
 	const char *info_ke = "DPP Key";
-	u8 prk[DPP_MAX_HASH_LEN];
 	int res;
 	const u8 *addr[3];
 	size_t len[3];
@@ -1731,10 +1730,7 @@ static int dpp_derive_ke(struct dpp_authentication *auth, u8 *ke,
 		return -1;
 	}
 
-	/* ke = HKDF(I-nonce | R-nonce, "DPP Key", M.x | N.x [| L.x]) */
-
-	/* HKDF-Extract(I-nonce | R-nonce, M.x | N.x [| L.x]) */
-	nonce_len = auth->curve->nonce_len;
+	/* bk = HKDF-Extract(I-nonce | R-nonce, M.x | N.x [| L.x]) */
 	os_memcpy(nonces, auth->i_nonce, nonce_len);
 	os_memcpy(&nonces[nonce_len], auth->r_nonce, nonce_len);
 	addr[num_elem] = auth->Mx;
@@ -1754,20 +1750,23 @@ static int dpp_derive_ke(struct dpp_authentication *auth, u8 *ke,
 		num_elem++;
 	}
 	res = dpp_hmac_vector(hash_len, nonces, 2 * nonce_len,
-			      num_elem, addr, len, prk);
+			      num_elem, addr, len, auth->bk);
 	if (res < 0)
 		return -1;
-	wpa_hexdump_key(MSG_DEBUG, "DPP: PRK = HKDF-Extract(<>, IKM)",
-			prk, hash_len);
+	wpa_hexdump_key(MSG_DEBUG,
+			"DPP: bk = HKDF-Extract(I-nonce | R-nonce, M.x | N.x [| L.x])",
+			auth->bk, hash_len);
 
-	/* HKDF-Expand(PRK, info, L) */
-	res = dpp_hkdf_expand(hash_len, prk, hash_len, info_ke, ke, hash_len);
-	os_memset(prk, 0, hash_len);
+	/* ke = HKDF-Expand(bkK, "DPP Key", length) */
+	res = dpp_hkdf_expand(hash_len, auth->bk, hash_len, info_ke, auth->ke,
+			      hash_len);
 	if (res < 0)
 		return -1;
 
-	wpa_hexdump_key(MSG_DEBUG, "DPP: ke = HKDF-Expand(PRK, info, L)",
-			ke, hash_len);
+	wpa_hexdump_key(MSG_DEBUG,
+			"DPP: ke = HKDF-Expand(bk, \"DPP Key\", length)",
+			auth->ke, hash_len);
+
 	return 0;
 }
 
@@ -3153,7 +3152,7 @@ static int dpp_auth_build_resp_ok(struct dpp_authentication *auth)
 			goto fail;
 	}
 
-	if (dpp_derive_ke(auth, auth->ke, auth->curve->hash_len) < 0)
+	if (dpp_derive_bk_ke(auth) < 0)
 		goto fail;
 
 	/* R-auth = H(I-nonce | R-nonce | PI.x | PR.x | [BI.x |] BR.x | 0) */
@@ -4160,7 +4159,7 @@ dpp_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 	wpa_hexdump(MSG_DEBUG, "DPP: AES-SIV ciphertext",
 		    wrapped2, wrapped2_len);
 
-	if (dpp_derive_ke(auth, auth->ke, auth->curve->hash_len) < 0)
+	if (dpp_derive_bk_ke(auth) < 0)
 		goto fail;
 
 	unwrapped2_len = wrapped2_len - AES_BLOCK_SIZE;
