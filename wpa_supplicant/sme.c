@@ -2573,6 +2573,16 @@ static void sme_send_sa_query_req(struct wpa_supplicant *wpa_s,
 			return;
 		}
 
+#ifdef CONFIG_TESTING_OPTIONS
+		if (wpa_s->oci_freq_override_saquery_req) {
+			wpa_printf(MSG_INFO,
+				   "TEST: Override SA Query Request OCI frequency %d -> %d MHz",
+				   ci.frequency,
+				   wpa_s->oci_freq_override_saquery_req);
+			ci.frequency = wpa_s->oci_freq_override_saquery_req;
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
+
 		if (ocv_insert_extended_oci(&ci, req + req_len) < 0)
 			return;
 
@@ -2726,6 +2736,16 @@ static void sme_process_sa_query_request(struct wpa_supplicant *wpa_s,
 				   "Failed to get channel info for OCI element in SA Query Response frame");
 			return;
 		}
+
+#ifdef CONFIG_TESTING_OPTIONS
+		if (wpa_s->oci_freq_override_saquery_resp) {
+			wpa_printf(MSG_INFO,
+				   "TEST: Override SA Query Response OCI frequency %d -> %d MHz",
+				   ci.frequency,
+				   wpa_s->oci_freq_override_saquery_resp);
+			ci.frequency = wpa_s->oci_freq_override_saquery_resp;
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 		if (ocv_insert_extended_oci(&ci, resp + resp_len) < 0)
 			return;

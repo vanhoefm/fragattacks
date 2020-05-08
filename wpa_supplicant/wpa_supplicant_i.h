@@ -1149,6 +1149,9 @@ struct wpa_supplicant {
 	struct wpabuf *rsnxe_override_assoc;
 	struct wpabuf *rsnxe_override_eapol;
 	struct dl_list drv_signal_override;
+	unsigned int oci_freq_override_eapol;
+	unsigned int oci_freq_override_saquery_req;
+	unsigned int oci_freq_override_saquery_resp;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 	struct wmm_ac_assoc_data *wmm_ac_assoc_info;

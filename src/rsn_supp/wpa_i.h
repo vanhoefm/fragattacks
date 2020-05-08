@@ -154,6 +154,7 @@ struct wpa_sm {
 #ifdef CONFIG_TESTING_OPTIONS
 	struct wpabuf *test_assoc_ie;
 	int ft_rsnxe_used;
+	unsigned int oci_freq_override_eapol;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 #ifdef CONFIG_FILS

@@ -756,6 +756,14 @@ static void wpa_supplicant_process_1_of_4(struct wpa_sm *sm,
 				   "Failed to get channel info for OCI element in EAPOL-Key 2/4");
 			goto failed;
 		}
+#ifdef CONFIG_TESTING_OPTIONS
+		if (sm->oci_freq_override_eapol) {
+			wpa_printf(MSG_INFO,
+				   "TEST: Override OCI KDE frequency %d -> %d MHz",
+				   ci.frequency, sm->oci_freq_override_eapol);
+			ci.frequency = sm->oci_freq_override_eapol;
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 		if (ocv_insert_oci_kde(&ci, &pos) < 0)
 			goto failed;
@@ -3290,6 +3298,9 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 #ifdef CONFIG_TESTING_OPTIONS
 	case WPA_PARAM_FT_RSNXE_USED:
 		sm->ft_rsnxe_used = value;
+		break;
+	case WPA_PARAM_OCI_FREQ_EAPOL:
+		sm->oci_freq_override_eapol = value;
 		break;
 #endif /* CONFIG_TESTING_OPTIONS */
 #ifdef CONFIG_DPP2

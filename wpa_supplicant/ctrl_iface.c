@@ -751,6 +751,12 @@ static int wpa_supplicant_ctrl_iface_set(struct wpa_supplicant *wpa_s,
 		}
 	} else if (os_strcasecmp(cmd, "ft_rsnxe_used") == 0) {
 		wpa_s->ft_rsnxe_used = atoi(value);
+	} else if (os_strcasecmp(cmd, "oci_freq_override_eapol") == 0) {
+		wpa_s->oci_freq_override_eapol = atoi(value);
+	} else if (os_strcasecmp(cmd, "oci_freq_override_saquery_req") == 0) {
+		wpa_s->oci_freq_override_saquery_req = atoi(value);
+	} else if (os_strcasecmp(cmd, "oci_freq_override_saquery_resp") == 0) {
+		wpa_s->oci_freq_override_saquery_resp = atoi(value);
 	} else if (os_strcasecmp(cmd, "rsne_override_eapol") == 0) {
 		wpabuf_free(wpa_s->rsne_override_eapol);
 		if (os_strcmp(value, "NULL") == 0)
@@ -8315,6 +8321,9 @@ static void wpa_supplicant_ctrl_iface_flush(struct wpa_supplicant *wpa_s)
 	wpabuf_free(wpa_s->rsnxe_override_eapol);
 	wpa_s->rsnxe_override_eapol = NULL;
 	wpas_clear_driver_signal_override(wpa_s);
+	wpa_s->oci_freq_override_eapol = 0;
+	wpa_s->oci_freq_override_saquery_req = 0;
+	wpa_s->oci_freq_override_saquery_resp = 0;
 #ifdef CONFIG_DPP
 	os_free(wpa_s->dpp_config_obj_override);
 	wpa_s->dpp_config_obj_override = NULL;

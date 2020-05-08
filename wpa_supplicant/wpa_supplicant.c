@@ -1642,6 +1642,8 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 #ifdef CONFIG_TESTING_OPTIONS
 	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_FT_RSNXE_USED,
 			 wpa_s->ft_rsnxe_used);
+	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_OCI_FREQ_EAPOL,
+			 wpa_s->oci_freq_override_eapol);
 #endif /* CONFIG_TESTING_OPTIONS */
 
 	/* Extended Key ID is only supported in infrastructure BSS so far */
