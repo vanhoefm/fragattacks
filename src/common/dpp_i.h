@@ -38,9 +38,12 @@ int dpp_connector_match_groups(struct json_token *own_root,
 			       struct json_token *peer_root, bool reconfig);
 int dpp_build_jwk(struct wpabuf *buf, const char *name, EVP_PKEY *key,
 		  const char *kid, const struct dpp_curve_params *curve);
+EVP_PKEY * dpp_parse_jwk(struct json_token *jwk,
+			 const struct dpp_curve_params **key_curve);
 int dpp_prepare_channel_list(struct dpp_authentication *auth,
 			     unsigned int neg_freq,
 			     struct hostapd_hw_modes *own_modes, u16 num_modes);
+void dpp_auth_fail(struct dpp_authentication *auth, const char *txt);
 
 /* dpp_crypto.c */
 
@@ -116,6 +119,10 @@ int dpp_pkex_derive_z(const u8 *mac_init, const u8 *mac_resp,
 		      const char *code,
 		      const u8 *Kx, size_t Kx_len,
 		      u8 *z, unsigned int hash_len);
+int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
+				     const u8 *net_access_key,
+				     size_t net_access_key_len,
+				     struct json_token *peer_net_access_key);
 char * dpp_sign_connector(struct dpp_configurator *conf,
 			  const struct wpabuf *dppcon);
 int dpp_test_gen_invalid_key(struct wpabuf *msg,

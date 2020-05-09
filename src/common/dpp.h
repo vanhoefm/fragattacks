@@ -20,6 +20,7 @@
 struct crypto_ecdh;
 struct hostapd_ip_addr;
 struct dpp_global;
+struct json_token;
 
 #ifdef CONFIG_TESTING_OPTIONS
 #define DPP_VERSION (dpp_version_override)
@@ -246,9 +247,11 @@ struct dpp_authentication {
 	u8 r_capab;
 	EVP_PKEY *own_protocol_key;
 	EVP_PKEY *peer_protocol_key;
+	EVP_PKEY *reconfig_old_protocol_key;
 	struct wpabuf *req_msg;
 	struct wpabuf *resp_msg;
 	struct wpabuf *reconfig_req_msg;
+	struct wpabuf *reconfig_resp_msg;
 	/* Intersection of possible frequencies for initiating DPP
 	 * Authentication exchange */
 	unsigned int freq[DPP_BOOTSTRAP_MAX_FREQ];
@@ -641,6 +644,13 @@ struct wpabuf * dpp_build_reconfig_announcement(const u8 *csign_key,
 struct dpp_authentication *
 dpp_reconfig_init(struct dpp_global *dpp, void *msg_ctx,
 		  struct dpp_configurator *conf, unsigned int freq);
+struct dpp_authentication *
+dpp_reconfig_auth_req_rx(struct dpp_global *dpp, void *msg_ctx,
+			 const char *own_connector,
+			 const u8 *net_access_key, size_t net_access_key_len,
+			 const u8 *csign_key, size_t csign_key_len,
+			 unsigned int freq, const u8 *hdr,
+			 const u8 *attr_start, size_t attr_len);
 
 #endif /* CONFIG_DPP */
 #endif /* DPP_H */

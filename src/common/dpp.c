@@ -108,7 +108,7 @@ struct dpp_controller {
 };
 
 
-static void dpp_auth_fail(struct dpp_authentication *auth, const char *txt)
+void dpp_auth_fail(struct dpp_authentication *auth, const char *txt)
 {
 	wpa_msg(auth->msg_ctx, MSG_INFO, DPP_EVENT_FAIL "%s", txt);
 }
@@ -1002,6 +1002,7 @@ int dpp_prepare_channel_list(struct dpp_authentication *auth,
 			return -1;
 		auth->num_freq = 1;
 		auth->freq[0] = neg_freq;
+		auth->curr_freq = neg_freq;
 		return 0;
 	}
 
@@ -3255,10 +3256,12 @@ void dpp_auth_deinit(struct dpp_authentication *auth)
 	dpp_configuration_free(auth->conf2_sta);
 	EVP_PKEY_free(auth->own_protocol_key);
 	EVP_PKEY_free(auth->peer_protocol_key);
+	EVP_PKEY_free(auth->reconfig_old_protocol_key);
 	wpabuf_free(auth->req_msg);
 	wpabuf_free(auth->resp_msg);
 	wpabuf_free(auth->conf_req);
 	wpabuf_free(auth->reconfig_req_msg);
+	wpabuf_free(auth->reconfig_resp_msg);
 	for (i = 0; i < auth->num_conf_obj; i++) {
 		struct dpp_config_obj *conf = &auth->conf_obj[i];
 
@@ -4477,8 +4480,8 @@ static int dpp_parse_cred_legacy(struct dpp_config_obj *conf,
 }
 
 
-static EVP_PKEY * dpp_parse_jwk(struct json_token *jwk,
-				const struct dpp_curve_params **key_curve)
+EVP_PKEY * dpp_parse_jwk(struct json_token *jwk,
+			 const struct dpp_curve_params **key_curve)
 {
 	struct json_token *token;
 	const struct dpp_curve_params *curve;

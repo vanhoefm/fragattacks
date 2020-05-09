@@ -2236,6 +2236,114 @@ int dpp_pkex_derive_z(const u8 *mac_init, const u8 *mac_resp,
 }
 
 
+int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
+				     const u8 *net_access_key,
+				     size_t net_access_key_len,
+				     struct json_token *peer_net_access_key)
+{
+	BN_CTX *bnctx = NULL;
+	EVP_PKEY *own_key = NULL, *peer_key = NULL;
+	BIGNUM *sum = NULL, *q = NULL, *mx = NULL;
+	EC_POINT *m = NULL;
+	const EC_KEY *cR, *pR;
+	const EC_GROUP *group;
+	const BIGNUM *cR_bn, *pR_bn;
+	const EC_POINT *CI_point;
+	const EC_KEY *CI;
+	u8 Mx[DPP_MAX_SHARED_SECRET_LEN];
+	u8 prk[DPP_MAX_HASH_LEN];
+	const struct dpp_curve_params *curve;
+	int res = -1;
+
+	own_key = dpp_set_keypair(&auth->curve, net_access_key,
+				  net_access_key_len);
+	if (!own_key) {
+		dpp_auth_fail(auth, "Failed to parse own netAccessKey");
+		goto fail;
+	}
+
+	peer_key = dpp_parse_jwk(peer_net_access_key, &curve);
+	if (!peer_key)
+		goto fail;
+	dpp_debug_print_key("DPP: Received netAccessKey", peer_key);
+
+	if (auth->curve != curve) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Mismatching netAccessKey curves (%s != %s)",
+			   auth->curve->name, curve->name);
+		goto fail;
+	}
+
+	auth->own_protocol_key = dpp_gen_keypair(curve);
+	if (!auth->own_protocol_key)
+		goto fail;
+
+	/* M = { cR + pR } * CI */
+	cR = EVP_PKEY_get0_EC_KEY(own_key);
+	pR = EVP_PKEY_get0_EC_KEY(auth->own_protocol_key);
+	group = EC_KEY_get0_group(pR);
+	bnctx = BN_CTX_new();
+	sum = BN_new();
+	mx = BN_new();
+	q = BN_new();
+	m = EC_POINT_new(group);
+	if (!cR || !pR || !bnctx || !sum || !mx || !q || !m)
+		goto fail;
+	cR_bn = EC_KEY_get0_private_key(cR);
+	pR_bn = EC_KEY_get0_private_key(pR);
+	if (!cR_bn || !pR_bn)
+		goto fail;
+	CI = EVP_PKEY_get0_EC_KEY(peer_key);
+	CI_point = EC_KEY_get0_public_key(CI);
+	if (EC_GROUP_get_order(group, q, bnctx) != 1 ||
+	    BN_mod_add(sum, cR_bn, pR_bn, q, bnctx) != 1 ||
+	    EC_POINT_mul(group, m, NULL, CI_point, sum, bnctx) != 1 ||
+	    EC_POINT_get_affine_coordinates_GFp(group, m, mx, NULL,
+						bnctx) != 1) {
+		wpa_printf(MSG_ERROR,
+			   "OpenSSL: failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+
+	if (dpp_bn2bin_pad(mx, Mx, curve->prime_len) < 0)
+		goto fail;
+	wpa_hexdump_key(MSG_DEBUG, "DPP: M.x", Mx, curve->prime_len);
+
+	/* ke = HKDF(I-nonce, "dpp reconfig key", M.x) */
+
+	/* HKDF-Extract(I-nonce, M.x) */
+	if (dpp_hmac(curve->hash_len, auth->i_nonce, curve->nonce_len,
+		     Mx, curve->prime_len, prk) < 0)
+		goto fail;
+	wpa_hexdump_key(MSG_DEBUG, "DPP: PRK", prk, curve->hash_len);
+
+	/* HKDF-Expand(PRK, "dpp reconfig key", L) */
+	if (dpp_hkdf_expand(curve->hash_len, prk, curve->hash_len,
+			    "dpp reconfig key", auth->ke, curve->hash_len) < 0)
+		goto fail;
+	wpa_hexdump_key(MSG_DEBUG,
+			"DPP: ke = HKDF(I-nonce, \"dpp reconfig key\", M.x)",
+			auth->ke, curve->hash_len);
+
+	res = 0;
+	EVP_PKEY_free(auth->reconfig_old_protocol_key);
+	auth->reconfig_old_protocol_key = own_key;
+	own_key = NULL;
+fail:
+	forced_memzero(prk, sizeof(prk));
+	forced_memzero(Mx, sizeof(Mx));
+	EC_POINT_clear_free(m);
+	BN_free(q);
+	BN_clear_free(mx);
+	BN_clear_free(sum);
+	EVP_PKEY_free(own_key);
+	EVP_PKEY_free(peer_key);
+	BN_CTX_free(bnctx);
+	return res;
+}
+
+
 static char *
 dpp_build_jws_prot_hdr(struct dpp_configurator *conf, size_t *signed1_len)
 {

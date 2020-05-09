@@ -1915,6 +1915,53 @@ wpas_dpp_rx_reconfig_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
 	}
 }
 
+
+static void
+wpas_dpp_rx_reconfig_auth_req(struct wpa_supplicant *wpa_s, const u8 *src,
+			      const u8 *hdr, const u8 *buf, size_t len,
+			      unsigned int freq)
+{
+	struct wpa_ssid *ssid;
+	struct dpp_authentication *auth;
+
+	wpa_printf(MSG_DEBUG, "DPP: Reconfig Authentication Request from "
+		   MACSTR, MAC2STR(src));
+
+	if (!wpa_s->dpp || wpa_s->dpp_auth ||
+	    !wpa_s->dpp_reconfig_announcement || !wpa_s->dpp_reconfig_ssid)
+		return;
+	for (ssid = wpa_s->conf->ssid; ssid; ssid = ssid->next) {
+		if (ssid == wpa_s->dpp_reconfig_ssid &&
+		    ssid->id == wpa_s->dpp_reconfig_ssid_id)
+			break;
+	}
+	if (!ssid || !ssid->dpp_connector || !ssid->dpp_netaccesskey ||
+	    !ssid->dpp_csign)
+		return;
+
+	auth = dpp_reconfig_auth_req_rx(wpa_s->dpp, wpa_s, ssid->dpp_connector,
+					ssid->dpp_netaccesskey,
+					ssid->dpp_netaccesskey_len,
+					ssid->dpp_csign, ssid->dpp_csign_len,
+					freq, hdr, buf, len);
+	if (!auth)
+		return;
+	os_memcpy(auth->peer_mac_addr, src, ETH_ALEN);
+	wpa_s->dpp_auth = auth;
+
+	wpas_dpp_chirp_stop(wpa_s);
+
+	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_TX "dst=" MACSTR " freq=%u type=%d",
+		MAC2STR(src), freq, DPP_PA_RECONFIG_AUTH_RESP);
+	if (offchannel_send_action(wpa_s, freq, src, wpa_s->own_addr, broadcast,
+				   wpabuf_head(auth->reconfig_resp_msg),
+				   wpabuf_len(auth->reconfig_resp_msg),
+				   500, wpas_dpp_tx_status, 0) < 0) {
+		dpp_auth_deinit(wpa_s->dpp_auth);
+		wpa_s->dpp_auth = NULL;
+	}
+}
+
 #endif /* CONFIG_DPP2 */
 
 
@@ -2479,6 +2526,9 @@ void wpas_dpp_rx_action(struct wpa_supplicant *wpa_s, const u8 *src,
 	case DPP_PA_RECONFIG_ANNOUNCEMENT:
 		wpas_dpp_rx_reconfig_announcement(wpa_s, src, hdr, buf, len,
 						  freq);
+		break;
+	case DPP_PA_RECONFIG_AUTH_REQ:
+		wpas_dpp_rx_reconfig_auth_req(wpa_s, src, hdr, buf, len, freq);
 		break;
 #endif /* CONFIG_DPP2 */
 	default:
