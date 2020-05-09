@@ -6165,6 +6165,36 @@ fail:
 }
 
 
+struct wpabuf * dpp_build_conn_status(enum dpp_status_error result,
+				      const u8 *ssid, size_t ssid_len,
+				      const char *channel_list)
+{
+	struct wpabuf *json;
+
+	json = wpabuf_alloc(1000);
+	if (!json)
+		return NULL;
+	json_start_object(json, NULL);
+	json_add_int(json, "result", result);
+	if (ssid) {
+		json_value_sep(json);
+		if (json_add_base64url(json, "ssid64", ssid, ssid_len) < 0) {
+			wpabuf_free(json);
+			return NULL;
+		}
+	}
+	if (channel_list) {
+		json_value_sep(json);
+		json_add_string(json, "channelList", channel_list);
+	}
+	json_end_object(json);
+	wpa_hexdump_ascii(MSG_DEBUG, "DPP: connStatus JSON",
+			  wpabuf_head(json), wpabuf_len(json));
+
+	return json;
+}
+
+
 struct wpabuf * dpp_build_conn_status_result(struct dpp_authentication *auth,
 					     enum dpp_status_error result,
 					     const u8 *ssid, size_t ssid_len,
@@ -6176,23 +6206,9 @@ struct wpabuf * dpp_build_conn_status_result(struct dpp_authentication *auth,
 	size_t len[2];
 	u8 *wrapped;
 
-	json = wpabuf_alloc(1000);
+	json = dpp_build_conn_status(result, ssid, ssid_len, channel_list);
 	if (!json)
 		return NULL;
-	json_start_object(json, NULL);
-	json_add_int(json, "result", result);
-	if (ssid) {
-		json_value_sep(json);
-		if (json_add_base64url(json, "ssid64", ssid, ssid_len) < 0)
-			goto fail;
-	}
-	if (channel_list) {
-		json_value_sep(json);
-		json_add_string(json, "channelList", channel_list);
-	}
-	json_end_object(json);
-	wpa_hexdump_ascii(MSG_DEBUG, "DPP: connStatus JSON",
-			  wpabuf_head(json), wpabuf_len(json));
 
 	nonce_len = auth->curve->nonce_len;
 	clear_len = 5 + 4 + nonce_len + 4 + wpabuf_len(json);
