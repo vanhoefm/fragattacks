@@ -6415,7 +6415,8 @@ static int dpp_compatible_netrole(const char *role1, const char *role2)
 
 static int dpp_connector_compatible_group(struct json_token *root,
 					  const char *group_id,
-					  const char *net_role)
+					  const char *net_role,
+					  bool reconfig)
 {
 	struct json_token *groups, *token;
 
@@ -6439,7 +6440,9 @@ static int dpp_connector_compatible_group(struct json_token *root,
 		    os_strcmp(id->string, group_id) != 0)
 			continue;
 
-		if (dpp_compatible_netrole(role->string, net_role))
+		if (reconfig && os_strcmp(net_role, "configurator") == 0)
+			return 1;
+		if (!reconfig && dpp_compatible_netrole(role->string, net_role))
 			return 1;
 	}
 
@@ -6447,8 +6450,8 @@ static int dpp_connector_compatible_group(struct json_token *root,
 }
 
 
-static int dpp_connector_match_groups(struct json_token *own_root,
-				      struct json_token *peer_root)
+int dpp_connector_match_groups(struct json_token *own_root,
+			       struct json_token *peer_root, bool reconfig)
 {
 	struct json_token *groups, *token;
 
@@ -6478,7 +6481,7 @@ static int dpp_connector_match_groups(struct json_token *own_root,
 			   "DPP: peer connector group: groupId='%s' netRole='%s'",
 			   id->string, role->string);
 		if (dpp_connector_compatible_group(own_root, id->string,
-						   role->string)) {
+						   role->string, reconfig)) {
 			wpa_printf(MSG_DEBUG,
 				   "DPP: Compatible group/netRole in own connector");
 			return 1;
@@ -6570,7 +6573,7 @@ dpp_peer_intro(struct dpp_introduction *intro, const char *own_connector,
 		goto fail;
 	}
 
-	if (!dpp_connector_match_groups(own_root, root)) {
+	if (!dpp_connector_match_groups(own_root, root, false)) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Peer connector does not include compatible group netrole with own connector");
 		ret = DPP_STATUS_NO_MATCH;

@@ -34,6 +34,8 @@ struct wpabuf * dpp_build_conn_status(enum dpp_status_error result,
 				      const u8 *ssid, size_t ssid_len,
 				      const char *channel_list);
 struct json_token * dpp_parse_own_connector(const char *own_connector);
+int dpp_connector_match_groups(struct json_token *own_root,
+			       struct json_token *peer_root, bool reconfig);
 
 /* dpp_crypto.c */
 
