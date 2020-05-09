@@ -30,6 +30,7 @@ struct dpp_global {
 
 void dpp_build_attr_status(struct wpabuf *msg, enum dpp_status_error status);
 unsigned int dpp_next_id(struct dpp_global *dpp);
+struct json_token * dpp_parse_own_connector(const char *own_connector);
 
 /* dpp_crypto.c */
 

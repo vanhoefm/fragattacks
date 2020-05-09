@@ -6473,6 +6473,40 @@ static int dpp_connector_match_groups(struct json_token *own_root,
 }
 
 
+struct json_token * dpp_parse_own_connector(const char *own_connector)
+{
+	unsigned char *own_conn;
+	size_t own_conn_len;
+	const char *pos, *end;
+	struct json_token *own_root;
+
+	pos = os_strchr(own_connector, '.');
+	if (!pos) {
+		wpa_printf(MSG_DEBUG, "DPP: Own connector is missing the first dot (.)");
+		return NULL;
+	}
+	pos++;
+	end = os_strchr(pos, '.');
+	if (!end) {
+		wpa_printf(MSG_DEBUG, "DPP: Own connector is missing the second dot (.)");
+		return NULL;
+	}
+	own_conn = base64_url_decode(pos, end - pos, &own_conn_len);
+	if (!own_conn) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Failed to base64url decode own signedConnector JWS Payload");
+		return NULL;
+	}
+
+	own_root = json_parse((const char *) own_conn, own_conn_len);
+	os_free(own_conn);
+	if (!own_root)
+		wpa_printf(MSG_DEBUG, "DPP: Failed to parse local connector");
+
+	return own_root;
+}
+
+
 enum dpp_status_error
 dpp_peer_intro(struct dpp_introduction *intro, const char *own_connector,
 	       const u8 *net_access_key, size_t net_access_key_len,
@@ -6490,9 +6524,6 @@ dpp_peer_intro(struct dpp_introduction *intro, const char *own_connector,
 	const unsigned char *p;
 	EVP_PKEY *csign = NULL;
 	char *signed_connector = NULL;
-	const char *pos, *end;
-	unsigned char *own_conn = NULL;
-	size_t own_conn_len;
 	size_t Nx_len;
 	u8 Nx[DPP_MAX_SHARED_SECRET_LEN];
 
@@ -6516,29 +6547,9 @@ dpp_peer_intro(struct dpp_introduction *intro, const char *own_connector,
 		goto fail;
 	}
 
-	pos = os_strchr(own_connector, '.');
-	if (!pos) {
-		wpa_printf(MSG_DEBUG, "DPP: Own connector is missing the first dot (.)");
+	own_root = dpp_parse_own_connector(own_connector);
+	if (!own_root)
 		goto fail;
-	}
-	pos++;
-	end = os_strchr(pos, '.');
-	if (!end) {
-		wpa_printf(MSG_DEBUG, "DPP: Own connector is missing the second dot (.)");
-		goto fail;
-	}
-	own_conn = base64_url_decode(pos, end - pos, &own_conn_len);
-	if (!own_conn) {
-		wpa_printf(MSG_DEBUG,
-			   "DPP: Failed to base64url decode own signedConnector JWS Payload");
-		goto fail;
-	}
-
-	own_root = json_parse((const char *) own_conn, own_conn_len);
-	if (!own_root) {
-		wpa_printf(MSG_DEBUG, "DPP: Failed to parse local connector");
-		goto fail;
-	}
 
 	wpa_hexdump_ascii(MSG_DEBUG, "DPP: Peer signedConnector",
 			  peer_connector, peer_connector_len);
@@ -6629,7 +6640,6 @@ fail:
 	if (ret != DPP_STATUS_OK)
 		os_memset(intro, 0, sizeof(*intro));
 	os_memset(Nx, 0, sizeof(Nx));
-	os_free(own_conn);
 	os_free(signed_connector);
 	os_free(info.payload);
 	EVP_PKEY_free(own_key);
