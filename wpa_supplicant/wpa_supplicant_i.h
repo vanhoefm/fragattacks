@@ -1249,6 +1249,7 @@ struct wpa_supplicant {
 	struct wpa_radio_work *dpp_listen_work;
 	unsigned int dpp_pending_listen_freq;
 	unsigned int dpp_listen_freq;
+	struct os_reltime dpp_listen_end;
 	u8 dpp_allowed_roles;
 	int dpp_qr_mutual;
 	int dpp_netrole;

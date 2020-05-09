@@ -938,6 +938,24 @@ void wpas_dpp_listen_stop(struct wpa_supplicant *wpa_s)
 }
 
 
+void wpas_dpp_remain_on_channel_cb(struct wpa_supplicant *wpa_s,
+				   unsigned int freq, unsigned int duration)
+{
+	if (wpa_s->dpp_listen_freq != freq)
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Remain-on-channel started for listen on %u MHz for %u ms",
+		   freq, duration);
+	os_get_reltime(&wpa_s->dpp_listen_end);
+	wpa_s->dpp_listen_end.usec += duration * 1000;
+	while (wpa_s->dpp_listen_end.usec >= 1000000) {
+		wpa_s->dpp_listen_end.sec++;
+		wpa_s->dpp_listen_end.usec -= 1000000;
+	}
+}
+
+
 void wpas_dpp_cancel_remain_on_channel_cb(struct wpa_supplicant *wpa_s,
 					  unsigned int freq)
 {
