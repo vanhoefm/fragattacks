@@ -21,6 +21,7 @@ OBJS += $(SRC)/crypto/sha384-kdf.o
 OBJS += $(SRC)/crypto/sha512-kdf.o
 OBJS += $(SRC)/tls/asn1.o
 OBJS += $(SRC)/common/dpp.o
+OBJS += $(SRC)/common/dpp_crypto.o
 
 dpp-uri: dpp-uri.o $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ -lcrypto

@@ -537,6 +537,7 @@ endif
 ifdef CONFIG_DPP
 L_CFLAGS += -DCONFIG_DPP
 OBJS += src/common/dpp.c
+OBJS += src/common/dpp_crypto.c
 OBJS += src/ap/dpp_hostapd.c
 OBJS += src/ap/gas_query_ap.c
 NEED_AES_SIV=y
