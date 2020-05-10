@@ -1370,6 +1370,39 @@ fail:
 }
 
 
+enum dpp_status_error
+dpp_check_signed_connector(struct dpp_signed_connector_info *info,
+			   const u8 *csign_key, size_t csign_key_len,
+			   const u8 *peer_connector, size_t peer_connector_len)
+{
+	const unsigned char *p;
+	EVP_PKEY *csign = NULL;
+	char *signed_connector = NULL;
+	enum dpp_status_error res = DPP_STATUS_INVALID_CONNECTOR;
+
+	p = csign_key;
+	csign = d2i_PUBKEY(NULL, &p, csign_key_len);
+	if (!csign) {
+		wpa_printf(MSG_ERROR,
+			   "DPP: Failed to parse local C-sign-key information");
+		goto fail;
+	}
+
+	wpa_hexdump_ascii(MSG_DEBUG, "DPP: Peer signedConnector",
+			  peer_connector, peer_connector_len);
+	signed_connector = os_malloc(peer_connector_len + 1);
+	if (!signed_connector)
+		goto fail;
+	os_memcpy(signed_connector, peer_connector, peer_connector_len);
+	signed_connector[peer_connector_len] = '\0';
+	res = dpp_process_signed_connector(info, csign, signed_connector);
+fail:
+	os_free(signed_connector);
+	EVP_PKEY_free(csign);
+	return res;
+}
+
+
 int dpp_gen_r_auth(struct dpp_authentication *auth, u8 *r_auth)
 {
 	struct wpabuf *pix, *prx, *bix, *brx;

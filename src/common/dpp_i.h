@@ -42,6 +42,10 @@ struct dpp_signed_connector_info {
 enum dpp_status_error
 dpp_process_signed_connector(struct dpp_signed_connector_info *info,
 			     EVP_PKEY *csign_pub, const char *connector);
+enum dpp_status_error
+dpp_check_signed_connector(struct dpp_signed_connector_info *info,
+			   const u8 *csign_key, size_t csign_key_len,
+			   const u8 *peer_connector, size_t peer_connector_len);
 const struct dpp_curve_params * dpp_get_curve_name(const char *name);
 const struct dpp_curve_params * dpp_get_curve_jwk_crv(const char *name);
 const struct dpp_curve_params * dpp_get_curve_oid(const ASN1_OBJECT *poid);

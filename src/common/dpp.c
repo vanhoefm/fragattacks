@@ -6521,9 +6521,6 @@ dpp_peer_intro(struct dpp_introduction *intro, const char *own_connector,
 	struct wpabuf *own_key_pub = NULL;
 	const struct dpp_curve_params *curve, *own_curve;
 	struct dpp_signed_connector_info info;
-	const unsigned char *p;
-	EVP_PKEY *csign = NULL;
-	char *signed_connector = NULL;
 	size_t Nx_len;
 	u8 Nx[DPP_MAX_SHARED_SECRET_LEN];
 
@@ -6531,14 +6528,6 @@ dpp_peer_intro(struct dpp_introduction *intro, const char *own_connector,
 	os_memset(&info, 0, sizeof(info));
 	if (expiry)
 		*expiry = 0;
-
-	p = csign_key;
-	csign = d2i_PUBKEY(NULL, &p, csign_key_len);
-	if (!csign) {
-		wpa_printf(MSG_ERROR,
-			   "DPP: Failed to parse local C-sign-key information");
-		goto fail;
-	}
 
 	own_key = dpp_set_keypair(&own_curve, net_access_key,
 				  net_access_key_len);
@@ -6551,15 +6540,8 @@ dpp_peer_intro(struct dpp_introduction *intro, const char *own_connector,
 	if (!own_root)
 		goto fail;
 
-	wpa_hexdump_ascii(MSG_DEBUG, "DPP: Peer signedConnector",
-			  peer_connector, peer_connector_len);
-	signed_connector = os_malloc(peer_connector_len + 1);
-	if (!signed_connector)
-		goto fail;
-	os_memcpy(signed_connector, peer_connector, peer_connector_len);
-	signed_connector[peer_connector_len] = '\0';
-
-	res = dpp_process_signed_connector(&info, csign, signed_connector);
+	res = dpp_check_signed_connector(&info, csign_key, csign_key_len,
+					 peer_connector, peer_connector_len);
 	if (res != DPP_STATUS_OK) {
 		ret = res;
 		goto fail;
@@ -6640,12 +6622,10 @@ fail:
 	if (ret != DPP_STATUS_OK)
 		os_memset(intro, 0, sizeof(*intro));
 	os_memset(Nx, 0, sizeof(Nx));
-	os_free(signed_connector);
 	os_free(info.payload);
 	EVP_PKEY_free(own_key);
 	wpabuf_free(own_key_pub);
 	EVP_PKEY_free(peer_key);
-	EVP_PKEY_free(csign);
 	json_free(root);
 	json_free(own_root);
 	return ret;
