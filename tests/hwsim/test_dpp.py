@@ -4214,7 +4214,7 @@ def test_dpp_peer_intro_local_failures(dev, apdev):
     tests = [(1, "base64_gen_decode;dpp_peer_intro"),
              (1, "json_parse;dpp_peer_intro"),
              (50, "json_parse;dpp_peer_intro"),
-             (1, "=dpp_peer_intro"),
+             (1, "=dpp_check_signed_connector;dpp_peer_intro"),
              (1, "dpp_parse_jwk")]
     for count, func in tests:
         with alloc_fail(dev[0], count, func):
