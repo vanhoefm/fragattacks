@@ -243,6 +243,7 @@ struct dpp_authentication {
 	u8 waiting_pubkey_hash[SHA256_MAC_LEN];
 	int response_pending;
 	int reconfig;
+	enum dpp_connector_key reconfig_connector_key;
 	enum dpp_status_error auth_resp_status;
 	enum dpp_status_error conf_resp_status;
 	u8 peer_mac_addr[ETH_ALEN];
@@ -661,6 +662,8 @@ dpp_reconfig_auth_req_rx(struct dpp_global *dpp, void *msg_ctx,
 struct wpabuf *
 dpp_reconfig_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 			  const u8 *attr_start, size_t attr_len);
+int dpp_reconfig_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
+			      const u8 *attr_start, size_t attr_len);
 
 #endif /* CONFIG_DPP */
 #endif /* DPP_H */

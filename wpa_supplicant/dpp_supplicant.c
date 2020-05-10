@@ -1374,7 +1374,8 @@ static void wpas_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 
 	wpa_s->dpp_gas_dialog_token = -1;
 
-	if (!auth || !auth->auth_success) {
+	if (!auth || (!auth->auth_success && !auth->reconfig_success) ||
+	    os_memcmp(addr, auth->peer_mac_addr, ETH_ALEN) != 0) {
 		wpa_printf(MSG_DEBUG, "DPP: No matching exchange in progress");
 		return;
 	}
@@ -2007,6 +2008,35 @@ wpas_dpp_rx_reconfig_auth_resp(struct wpa_supplicant *wpa_s, const u8 *src,
 	wpas_dpp_start_gas_server(wpa_s);
 }
 
+
+static void
+wpas_dpp_rx_reconfig_auth_conf(struct wpa_supplicant *wpa_s, const u8 *src,
+			       const u8 *hdr, const u8 *buf, size_t len,
+			       unsigned int freq)
+{
+	struct dpp_authentication *auth = wpa_s->dpp_auth;
+
+	wpa_printf(MSG_DEBUG, "DPP: Reconfig Authentication Confirm from "
+		   MACSTR, MAC2STR(src));
+
+	if (!auth || !auth->reconfig || auth->configurator) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No DPP Reconfig Authentication in progress - drop");
+		return;
+	}
+
+	if (os_memcmp(src, auth->peer_mac_addr, ETH_ALEN) != 0) {
+		wpa_printf(MSG_DEBUG, "DPP: MAC address mismatch (expected "
+			   MACSTR ") - drop", MAC2STR(auth->peer_mac_addr));
+		return;
+	}
+
+	if (dpp_reconfig_auth_conf_rx(auth, hdr, buf, len) < 0)
+		return;
+
+	wpas_dpp_start_gas_client(wpa_s);
+}
+
 #endif /* CONFIG_DPP2 */
 
 
@@ -2577,6 +2607,9 @@ void wpas_dpp_rx_action(struct wpa_supplicant *wpa_s, const u8 *src,
 		break;
 	case DPP_PA_RECONFIG_AUTH_RESP:
 		wpas_dpp_rx_reconfig_auth_resp(wpa_s, src, hdr, buf, len, freq);
+		break;
+	case DPP_PA_RECONFIG_AUTH_CONF:
+		wpas_dpp_rx_reconfig_auth_conf(wpa_s, src, hdr, buf, len, freq);
 		break;
 #endif /* CONFIG_DPP2 */
 	default:

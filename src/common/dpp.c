@@ -4756,8 +4756,15 @@ static void dpp_copy_netaccesskey(struct dpp_authentication *auth,
 	unsigned char *der = NULL;
 	int der_len;
 	EC_KEY *eckey;
+	EVP_PKEY *own_key;
 
-	eckey = EVP_PKEY_get1_EC_KEY(auth->own_protocol_key);
+	own_key = auth->own_protocol_key;
+#ifdef CONFIG_DPP2
+	if (auth->reconfig_connector_key == DPP_CONFIG_REUSEKEY &&
+	    auth->reconfig_old_protocol_key)
+		own_key = auth->reconfig_old_protocol_key;
+#endif /* CONFIG_DPP2 */
+	eckey = EVP_PKEY_get1_EC_KEY(own_key);
 	if (!eckey)
 		return;
 

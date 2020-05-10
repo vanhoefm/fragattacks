@@ -754,4 +754,128 @@ fail:
 	goto out;
 }
 
+
+int dpp_reconfig_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
+			      const u8 *attr_start, size_t attr_len)
+{
+	const u8 *trans_id, *version, *wrapped_data, *i_nonce, *r_nonce,
+		*reconfig_flags;
+	u16 trans_id_len, version_len, wrapped_data_len, i_nonce_len,
+		r_nonce_len, reconfig_flags_len;
+	const u8 *addr[2];
+	size_t len[2];
+	u8 *unwrapped = NULL;
+	size_t unwrapped_len = 0;
+	struct json_token *root = NULL, *token;
+	int res = -1;
+
+	if (!auth->reconfig || auth->configurator)
+		goto fail;
+
+	wrapped_data = dpp_get_attr(attr_start, attr_len, DPP_ATTR_WRAPPED_DATA,
+				    &wrapped_data_len);
+	if (!wrapped_data || wrapped_data_len < AES_BLOCK_SIZE) {
+		dpp_auth_fail(auth,
+			      "Missing or invalid required Wrapped Data attribute");
+		goto fail;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: Wrapped Data",
+		    wrapped_data, wrapped_data_len);
+
+	addr[0] = hdr;
+	len[0] = DPP_HDR_LEN;
+	addr[1] = attr_start;
+	len[1] = 0;
+	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[0]", addr[0], len[0]);
+	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[1]", addr[1], len[1]);
+	wpa_hexdump(MSG_DEBUG, "DPP: AES-SIV ciphertext",
+		    wrapped_data, wrapped_data_len);
+	unwrapped_len = wrapped_data_len - AES_BLOCK_SIZE;
+	unwrapped = os_malloc(unwrapped_len);
+	if (!unwrapped)
+		goto fail;
+	if (aes_siv_decrypt(auth->ke, auth->curve->hash_len,
+			    wrapped_data, wrapped_data_len,
+			    2, addr, len, unwrapped) < 0) {
+		dpp_auth_fail(auth, "AES-SIV decryption failed");
+		goto fail;
+	}
+	wpa_hexdump(MSG_DEBUG, "DPP: AES-SIV cleartext",
+		    unwrapped, unwrapped_len);
+
+	if (dpp_check_attrs(unwrapped, unwrapped_len) < 0) {
+		dpp_auth_fail(auth, "Invalid attribute in unwrapped data");
+		goto fail;
+	}
+
+	trans_id = dpp_get_attr(unwrapped, unwrapped_len,
+				DPP_ATTR_TRANSACTION_ID, &trans_id_len);
+	if (!trans_id || trans_id_len != 1 ||
+	    trans_id[0] != auth->transaction_id) {
+		dpp_auth_fail(auth,
+			      "Peer did not include valid Transaction ID");
+		goto fail;
+	}
+
+	version = dpp_get_attr(unwrapped, unwrapped_len,
+			       DPP_ATTR_PROTOCOL_VERSION, &version_len);
+	if (!version || version_len < 1 || version[0] != DPP_VERSION) {
+		dpp_auth_fail(auth,
+			      "Missing or invalid Protocol Version attribute");
+		goto fail;
+	}
+
+	i_nonce = dpp_get_attr(unwrapped, unwrapped_len, DPP_ATTR_I_NONCE,
+			       &i_nonce_len);
+	if (!i_nonce || i_nonce_len != auth->curve->nonce_len ||
+	    os_memcmp(i_nonce, auth->i_nonce, i_nonce_len) != 0) {
+		dpp_auth_fail(auth, "Missing or invalid I-nonce");
+		goto fail;
+	}
+	wpa_hexdump(MSG_DEBUG, "DPP: I-nonce", i_nonce, i_nonce_len);
+
+	r_nonce = dpp_get_attr(unwrapped, unwrapped_len, DPP_ATTR_R_NONCE,
+			       &r_nonce_len);
+	if (!r_nonce || r_nonce_len != auth->curve->nonce_len ||
+	    os_memcmp(r_nonce, auth->r_nonce, r_nonce_len) != 0) {
+		dpp_auth_fail(auth, "Missing or invalid R-nonce");
+		goto fail;
+	}
+	wpa_hexdump(MSG_DEBUG, "DPP: R-nonce", r_nonce, r_nonce_len);
+
+	reconfig_flags = dpp_get_attr(unwrapped, unwrapped_len,
+				      DPP_ATTR_RECONFIG_FLAGS,
+				      &reconfig_flags_len);
+	if (!reconfig_flags) {
+		dpp_auth_fail(auth, "Missing or invalid Reconfig-Flags");
+		goto fail;
+	}
+	wpa_hexdump_ascii(MSG_DEBUG, "DPP: Reconfig-Flags",
+			  reconfig_flags, reconfig_flags_len);
+	root = json_parse((const char *) reconfig_flags, reconfig_flags_len);
+	if (!root) {
+		dpp_auth_fail(auth, "Could not parse Reconfig-Flags");
+		goto fail;
+	}
+	token = json_get_member(root, "connectorKey");
+	if (!token || token->type != JSON_NUMBER) {
+		dpp_auth_fail(auth, "No connectorKey in Reconfig-Flags");
+		goto fail;
+	}
+	if (token->number != DPP_CONFIG_REUSEKEY &&
+	    token->number != DPP_CONFIG_REPLACEKEY) {
+		dpp_auth_fail(auth,
+			      "Unsupported connectorKey value in Reconfig-Flags");
+		goto fail;
+	}
+	auth->reconfig_connector_key = token->number;
+
+	auth->reconfig_success = true;
+	res = 0;
+fail:
+	json_free(root);
+	bin_clear_free(unwrapped, unwrapped_len);
+	return res;
+}
+
 #endif /* CONFIG_DPP2 */
