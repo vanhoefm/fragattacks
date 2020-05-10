@@ -79,14 +79,12 @@ static void ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **pr,
 }
 
 
-#ifdef CONFIG_DPP2
 static EC_KEY * EVP_PKEY_get0_EC_KEY(EVP_PKEY *pkey)
 {
 	if (pkey->type != EVP_PKEY_EC)
 		return NULL;
 	return pkey->pkey.ec;
 }
-#endif /* CONFIG_DPP2 */
 
 #endif
 
@@ -673,14 +671,14 @@ fail:
 static EVP_PKEY * dpp_set_pubkey_point(EVP_PKEY *group_key,
 				       const u8 *buf, size_t len)
 {
-	EC_KEY *eckey;
+	const EC_KEY *eckey;
 	const EC_GROUP *group;
 	EVP_PKEY *pkey = NULL;
 
 	if (len & 1)
 		return NULL;
 
-	eckey = EVP_PKEY_get1_EC_KEY(group_key);
+	eckey = EVP_PKEY_get0_EC_KEY(group_key);
 	if (!eckey) {
 		wpa_printf(MSG_ERROR,
 			   "DPP: Could not get EC_KEY from group_key");
@@ -694,7 +692,6 @@ static EVP_PKEY * dpp_set_pubkey_point(EVP_PKEY *group_key,
 	else
 		wpa_printf(MSG_ERROR, "DPP: Could not get EC group");
 
-	EC_KEY_free(eckey);
 	return pkey;
 }
 
@@ -1519,7 +1516,7 @@ static struct wpabuf * dpp_bootstrap_key_der(EVP_PKEY *key)
 {
 	unsigned char *der = NULL;
 	int der_len;
-	EC_KEY *eckey;
+	const EC_KEY *eckey;
 	struct wpabuf *ret = NULL;
 	size_t len;
 	const EC_GROUP *group;
@@ -1529,7 +1526,7 @@ static struct wpabuf * dpp_bootstrap_key_der(EVP_PKEY *key)
 	int nid;
 
 	ctx = BN_CTX_new();
-	eckey = EVP_PKEY_get1_EC_KEY(key);
+	eckey = EVP_PKEY_get0_EC_KEY(key);
 	if (!ctx || !eckey)
 		goto fail;
 
@@ -1576,7 +1573,6 @@ static struct wpabuf * dpp_bootstrap_key_der(EVP_PKEY *key)
 fail:
 	DPP_BOOTSTRAPPING_KEY_free(bootstrap);
 	OPENSSL_free(der);
-	EC_KEY_free(eckey);
 	BN_CTX_free(ctx);
 	return ret;
 }
@@ -2956,7 +2952,7 @@ static int dpp_auth_derive_l_responder(struct dpp_authentication *auth)
 {
 	const EC_GROUP *group;
 	EC_POINT *l = NULL;
-	EC_KEY *BI = NULL, *bR = NULL, *pR = NULL;
+	const EC_KEY *BI, *bR, *pR;
 	const EC_POINT *BI_point;
 	BN_CTX *bnctx;
 	BIGNUM *lx, *sum, *q;
@@ -2971,7 +2967,7 @@ static int dpp_auth_derive_l_responder(struct dpp_authentication *auth)
 	lx = BN_new();
 	if (!bnctx || !sum || !q || !lx)
 		goto fail;
-	BI = EVP_PKEY_get1_EC_KEY(auth->peer_bi->pubkey);
+	BI = EVP_PKEY_get0_EC_KEY(auth->peer_bi->pubkey);
 	if (!BI)
 		goto fail;
 	BI_point = EC_KEY_get0_public_key(BI);
@@ -2979,8 +2975,8 @@ static int dpp_auth_derive_l_responder(struct dpp_authentication *auth)
 	if (!group)
 		goto fail;
 
-	bR = EVP_PKEY_get1_EC_KEY(auth->own_bi->pubkey);
-	pR = EVP_PKEY_get1_EC_KEY(auth->own_protocol_key);
+	bR = EVP_PKEY_get0_EC_KEY(auth->own_bi->pubkey);
+	pR = EVP_PKEY_get0_EC_KEY(auth->own_protocol_key);
 	if (!bR || !pR)
 		goto fail;
 	bR_bn = EC_KEY_get0_private_key(bR);
@@ -3008,9 +3004,6 @@ static int dpp_auth_derive_l_responder(struct dpp_authentication *auth)
 	ret = 0;
 fail:
 	EC_POINT_clear_free(l);
-	EC_KEY_free(BI);
-	EC_KEY_free(bR);
-	EC_KEY_free(pR);
 	BN_clear_free(lx);
 	BN_clear_free(sum);
 	BN_free(q);
@@ -3023,7 +3016,7 @@ static int dpp_auth_derive_l_initiator(struct dpp_authentication *auth)
 {
 	const EC_GROUP *group;
 	EC_POINT *l = NULL, *sum = NULL;
-	EC_KEY *bI = NULL, *BR = NULL, *PR = NULL;
+	const EC_KEY *bI, *BR, *PR;
 	const EC_POINT *BR_point, *PR_point;
 	BN_CTX *bnctx;
 	BIGNUM *lx;
@@ -3036,14 +3029,14 @@ static int dpp_auth_derive_l_initiator(struct dpp_authentication *auth)
 	lx = BN_new();
 	if (!bnctx || !lx)
 		goto fail;
-	BR = EVP_PKEY_get1_EC_KEY(auth->peer_bi->pubkey);
-	PR = EVP_PKEY_get1_EC_KEY(auth->peer_protocol_key);
+	BR = EVP_PKEY_get0_EC_KEY(auth->peer_bi->pubkey);
+	PR = EVP_PKEY_get0_EC_KEY(auth->peer_protocol_key);
 	if (!BR || !PR)
 		goto fail;
 	BR_point = EC_KEY_get0_public_key(BR);
 	PR_point = EC_KEY_get0_public_key(PR);
 
-	bI = EVP_PKEY_get1_EC_KEY(auth->own_bi->pubkey);
+	bI = EVP_PKEY_get0_EC_KEY(auth->own_bi->pubkey);
 	if (!bI)
 		goto fail;
 	group = EC_KEY_get0_group(bI);
@@ -3071,9 +3064,6 @@ static int dpp_auth_derive_l_initiator(struct dpp_authentication *auth)
 fail:
 	EC_POINT_clear_free(l);
 	EC_POINT_clear_free(sum);
-	EC_KEY_free(bI);
-	EC_KEY_free(BR);
-	EC_KEY_free(PR);
 	BN_clear_free(lx);
 	BN_CTX_free(bnctx);
 	return ret;
@@ -6635,11 +6625,11 @@ dpp_process_signed_connector(struct dpp_signed_connector_info *info,
 	ECDSA_SIG *sig = NULL;
 	BIGNUM *r = NULL, *s = NULL;
 	const struct dpp_curve_params *curve;
-	EC_KEY *eckey;
+	const EC_KEY *eckey;
 	const EC_GROUP *group;
 	int nid;
 
-	eckey = EVP_PKEY_get1_EC_KEY(csign_pub);
+	eckey = EVP_PKEY_get0_EC_KEY(csign_pub);
 	if (!eckey)
 		goto fail;
 	group = EC_KEY_get0_group(eckey);
@@ -6768,7 +6758,6 @@ dpp_process_signed_connector(struct dpp_signed_connector_info *info,
 
 	ret = DPP_STATUS_OK;
 fail:
-	EC_KEY_free(eckey);
 	EVP_MD_CTX_destroy(md_ctx);
 	os_free(prot_hdr);
 	wpabuf_free(kid);
@@ -8788,7 +8777,7 @@ static EC_POINT * dpp_pkex_derive_Qi(const struct dpp_curve_params *curve,
 	unsigned int num_elem = 0;
 	EC_POINT *Qi = NULL;
 	EVP_PKEY *Pi = NULL;
-	EC_KEY *Pi_ec = NULL;
+	const EC_KEY *Pi_ec;
 	const EC_POINT *Pi_point;
 	BIGNUM *hash_bn = NULL;
 	const EC_GROUP *group = NULL;
@@ -8820,7 +8809,7 @@ static EC_POINT * dpp_pkex_derive_Qi(const struct dpp_curve_params *curve,
 	if (!Pi)
 		goto fail;
 	dpp_debug_print_key("DPP: Pi", Pi);
-	Pi_ec = EVP_PKEY_get1_EC_KEY(Pi);
+	Pi_ec = EVP_PKEY_get0_EC_KEY(Pi);
 	if (!Pi_ec)
 		goto fail;
 	Pi_point = EC_KEY_get0_public_key(Pi_ec);
@@ -8846,7 +8835,6 @@ static EC_POINT * dpp_pkex_derive_Qi(const struct dpp_curve_params *curve,
 	}
 	dpp_debug_print_point("DPP: Qi", group, Qi);
 out:
-	EC_KEY_free(Pi_ec);
 	EVP_PKEY_free(Pi);
 	BN_clear_free(hash_bn);
 	if (ret_group && Qi)
@@ -8872,7 +8860,7 @@ static EC_POINT * dpp_pkex_derive_Qr(const struct dpp_curve_params *curve,
 	unsigned int num_elem = 0;
 	EC_POINT *Qr = NULL;
 	EVP_PKEY *Pr = NULL;
-	EC_KEY *Pr_ec = NULL;
+	const EC_KEY *Pr_ec;
 	const EC_POINT *Pr_point;
 	BIGNUM *hash_bn = NULL;
 	const EC_GROUP *group = NULL;
@@ -8904,7 +8892,7 @@ static EC_POINT * dpp_pkex_derive_Qr(const struct dpp_curve_params *curve,
 	if (!Pr)
 		goto fail;
 	dpp_debug_print_key("DPP: Pr", Pr);
-	Pr_ec = EVP_PKEY_get1_EC_KEY(Pr);
+	Pr_ec = EVP_PKEY_get0_EC_KEY(Pr);
 	if (!Pr_ec)
 		goto fail;
 	Pr_point = EC_KEY_get0_public_key(Pr_ec);
@@ -8930,7 +8918,6 @@ static EC_POINT * dpp_pkex_derive_Qr(const struct dpp_curve_params *curve,
 	}
 	dpp_debug_print_point("DPP: Qr", group, Qr);
 out:
-	EC_KEY_free(Pr_ec);
 	EVP_PKEY_free(Pr);
 	BN_clear_free(hash_bn);
 	if (ret_group && Qr)
@@ -9014,7 +9001,7 @@ fail:
 
 static struct wpabuf * dpp_pkex_build_exchange_req(struct dpp_pkex *pkex)
 {
-	EC_KEY *X_ec = NULL;
+	const EC_KEY *X_ec;
 	const EC_POINT *X_point;
 	BN_CTX *bnctx = NULL;
 	EC_GROUP *group = NULL;
@@ -9056,7 +9043,7 @@ static struct wpabuf * dpp_pkex_build_exchange_req(struct dpp_pkex *pkex)
 		goto fail;
 
 	/* M = X + Qi */
-	X_ec = EVP_PKEY_get1_EC_KEY(pkex->x);
+	X_ec = EVP_PKEY_get0_EC_KEY(pkex->x);
 	if (!X_ec)
 		goto fail;
 	X_point = EC_KEY_get0_public_key(X_ec);
@@ -9133,7 +9120,6 @@ skip_finite_cyclic_group:
 
 out:
 	wpabuf_free(M_buf);
-	EC_KEY_free(X_ec);
 	EC_POINT_free(M);
 	EC_POINT_free(Qi);
 	BN_clear_free(Mx);
@@ -9386,7 +9372,8 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 	BN_CTX *bnctx = NULL;
 	EC_GROUP *group = NULL;
 	BIGNUM *Mx = NULL, *My = NULL;
-	EC_KEY *Y_ec = NULL, *X_ec = NULL;;
+	const EC_KEY *Y_ec;
+	EC_KEY *X_ec = NULL;
 	const EC_POINT *Y_point;
 	BIGNUM *Nx = NULL, *Ny = NULL;
 	u8 Kx[DPP_MAX_SHARED_SECRET_LEN];
@@ -9536,7 +9523,7 @@ struct dpp_pkex * dpp_pkex_rx_exchange_req(void *msg_ctx,
 		goto fail;
 
 	/* N = Y + Qr */
-	Y_ec = EVP_PKEY_get1_EC_KEY(pkex->y);
+	Y_ec = EVP_PKEY_get0_EC_KEY(pkex->y);
 	if (!Y_ec)
 		goto fail;
 	Y_point = EC_KEY_get0_public_key(Y_ec);
@@ -9588,7 +9575,6 @@ out:
 	EC_POINT_free(N);
 	EC_POINT_free(X);
 	EC_KEY_free(X_ec);
-	EC_KEY_free(Y_ec);
 	EC_GROUP_free(group);
 	return pkex;
 fail:
