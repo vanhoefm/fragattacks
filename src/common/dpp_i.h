@@ -29,6 +29,7 @@ struct dpp_global {
 /* dpp.c */
 
 void dpp_build_attr_status(struct wpabuf *msg, enum dpp_status_error status);
+void dpp_build_attr_r_bootstrap_key_hash(struct wpabuf *msg, const u8 *hash);
 unsigned int dpp_next_id(struct dpp_global *dpp);
 struct wpabuf * dpp_build_conn_status(enum dpp_status_error result,
 				      const u8 *ssid, size_t ssid_len,
@@ -44,6 +45,7 @@ int dpp_prepare_channel_list(struct dpp_authentication *auth,
 			     unsigned int neg_freq,
 			     struct hostapd_hw_modes *own_modes, u16 num_modes);
 void dpp_auth_fail(struct dpp_authentication *auth, const char *txt);
+int dpp_gen_uri(struct dpp_bootstrap_info *bi);
 
 /* dpp_crypto.c */
 

@@ -568,6 +568,7 @@ endif
 ifdef CONFIG_DPP
 CFLAGS += -DCONFIG_DPP
 OBJS += ../src/common/dpp.o
+OBJS += ../src/common/dpp_auth.o
 OBJS += ../src/common/dpp_crypto.o
 OBJS += ../src/common/dpp_pkex.o
 OBJS += ../src/common/dpp_reconfig.o
