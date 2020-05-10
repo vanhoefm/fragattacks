@@ -47,6 +47,13 @@ int dpp_prepare_channel_list(struct dpp_authentication *auth,
 void dpp_auth_fail(struct dpp_authentication *auth, const char *txt);
 int dpp_gen_uri(struct dpp_bootstrap_info *bi);
 
+/* dpp_backup.c */
+
+void dpp_free_asymmetric_key(struct dpp_asymmetric_key *key);
+struct wpabuf * dpp_build_enveloped_data(struct dpp_authentication *auth);
+int dpp_conf_resp_env_data(struct dpp_authentication *auth,
+			   const u8 *env_data, size_t env_data_len);
+
 /* dpp_crypto.c */
 
 struct dpp_signed_connector_info {

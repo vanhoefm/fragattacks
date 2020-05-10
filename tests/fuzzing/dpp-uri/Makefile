@@ -22,6 +22,7 @@ OBJS += $(SRC)/crypto/sha512-kdf.o
 OBJS += $(SRC)/tls/asn1.o
 OBJS += $(SRC)/common/dpp.o
 OBJS += $(SRC)/common/dpp_auth.o
+OBJS += $(SRC)/common/dpp_backup.o
 OBJS += $(SRC)/common/dpp_crypto.o
 OBJS += $(SRC)/common/dpp_pkex.o
 OBJS += $(SRC)/common/dpp_reconfig.o
