@@ -2344,6 +2344,97 @@ fail:
 }
 
 
+int dpp_reconfig_derive_ke_initiator(struct dpp_authentication *auth,
+				     const u8 *r_proto, u16 r_proto_len,
+				     struct json_token *net_access_key)
+{
+	BN_CTX *bnctx = NULL;
+	EVP_PKEY *pr = NULL, *peer_key = NULL;
+	EC_POINT *sum = NULL, *m = NULL;
+	BIGNUM *mx = NULL;
+	const EC_KEY *cI, *CR, *PR;
+	const EC_GROUP *group;
+	const EC_POINT *CR_point, *PR_point;
+	const BIGNUM *cI_bn;
+	u8 Mx[DPP_MAX_SHARED_SECRET_LEN];
+	u8 prk[DPP_MAX_HASH_LEN];
+	int res = -1;
+	const struct dpp_curve_params *curve;
+
+	pr = dpp_set_pubkey_point(auth->conf->connector_key,
+				  r_proto, r_proto_len);
+	if (!pr) {
+		dpp_auth_fail(auth, "Invalid Responder Protocol Key");
+		goto fail;
+	}
+	dpp_debug_print_key("Peer (Responder) Protocol Key", pr);
+	EVP_PKEY_free(auth->peer_protocol_key);
+	auth->peer_protocol_key = pr;
+	pr = NULL;
+
+	peer_key = dpp_parse_jwk(net_access_key, &curve);
+	if (!peer_key)
+		goto fail;
+	dpp_debug_print_key("DPP: Received netAccessKey", peer_key);
+	if (auth->curve != curve) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Mismatching netAccessKey curves (%s != %s)",
+			   auth->curve->name, curve->name);
+		goto fail;
+	}
+
+	/* M = cI * { CR + PR } */
+	cI = EVP_PKEY_get0_EC_KEY(auth->conf->connector_key);
+	cI_bn = EC_KEY_get0_private_key(cI);
+	group = EC_KEY_get0_group(cI);
+	bnctx = BN_CTX_new();
+	sum = EC_POINT_new(group);
+	m = EC_POINT_new(group);
+	mx = BN_new();
+	CR = EVP_PKEY_get0_EC_KEY(peer_key);
+	PR = EVP_PKEY_get0_EC_KEY(auth->peer_protocol_key);
+	CR_point = EC_KEY_get0_public_key(CR);
+	PR_point = EC_KEY_get0_public_key(PR);
+	if (!bnctx || !sum || !m || !mx ||
+	    EC_POINT_add(group, sum, CR_point, PR_point, bnctx) != 1 ||
+	    EC_POINT_mul(group, m, NULL, sum, cI_bn, bnctx) != 1 ||
+	    EC_POINT_get_affine_coordinates_GFp(group, m, mx, NULL,
+						bnctx) != 1 ||
+	    dpp_bn2bin_pad(mx, Mx, curve->prime_len) < 0)
+		goto fail;
+
+	wpa_hexdump_key(MSG_DEBUG, "DPP: M.x", Mx, curve->prime_len);
+
+	/* ke = HKDF(I-nonce, "dpp reconfig key", M.x) */
+
+	/* HKDF-Extract(I-nonce, M.x) */
+	if (dpp_hmac(curve->hash_len, auth->i_nonce, curve->nonce_len,
+		     Mx, curve->prime_len, prk) < 0)
+		goto fail;
+	wpa_hexdump_key(MSG_DEBUG, "DPP: PRK", prk, curve->hash_len);
+
+	/* HKDF-Expand(PRK, "dpp reconfig key", L) */
+	if (dpp_hkdf_expand(curve->hash_len, prk, curve->hash_len,
+			    "dpp reconfig key", auth->ke, curve->hash_len) < 0)
+		goto fail;
+	wpa_hexdump_key(MSG_DEBUG,
+			"DPP: ke = HKDF(I-nonce, \"dpp reconfig key\", M.x)",
+			auth->ke, curve->hash_len);
+
+	res = 0;
+fail:
+	forced_memzero(prk, sizeof(prk));
+	forced_memzero(Mx, sizeof(Mx));
+	EVP_PKEY_free(pr);
+	EVP_PKEY_free(peer_key);
+	EC_POINT_clear_free(sum);
+	EC_POINT_clear_free(m);
+	BN_clear_free(mx);
+	BN_CTX_free(bnctx);
+	return res;
+}
+
+
 static char *
 dpp_build_jws_prot_hdr(struct dpp_configurator *conf, size_t *signed1_len)
 {

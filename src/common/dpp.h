@@ -106,6 +106,12 @@ enum dpp_status_error {
 	DPP_STATUS_CSR_BAD = 13,
 };
 
+/* DPP Reconfig Flags object - connectorKey values */
+enum dpp_connector_key {
+	DPP_CONFIG_REUSEKEY = 0,
+	DPP_CONFIG_REPLACEKEY = 1,
+};
+
 #define DPP_CAPAB_ENROLLEE BIT(0)
 #define DPP_CAPAB_CONFIGURATOR BIT(1)
 #define DPP_CAPAB_ROLE_MASK (BIT(0) | BIT(1))
@@ -282,6 +288,7 @@ struct dpp_authentication {
 	int waiting_conf_result;
 	int waiting_conn_status_result;
 	int auth_success;
+	bool reconfig_success;
 	struct wpabuf *conf_req;
 	const struct wpabuf *conf_resp; /* owned by GAS server */
 	struct dpp_configuration *conf_ap;
@@ -651,6 +658,9 @@ dpp_reconfig_auth_req_rx(struct dpp_global *dpp, void *msg_ctx,
 			 const u8 *csign_key, size_t csign_key_len,
 			 unsigned int freq, const u8 *hdr,
 			 const u8 *attr_start, size_t attr_len);
+struct wpabuf *
+dpp_reconfig_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
+			  const u8 *attr_start, size_t attr_len);
 
 #endif /* CONFIG_DPP */
 #endif /* DPP_H */

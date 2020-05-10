@@ -3462,7 +3462,8 @@ dpp_build_conf_obj_dpp(struct dpp_authentication *auth,
 #ifdef CONFIG_TESTING_OPTIONS
 skip_groups:
 #endif /* CONFIG_TESTING_OPTIONS */
-	if (dpp_build_jwk(dppcon, "netAccessKey", auth->peer_protocol_key, NULL,
+	if (!auth->peer_protocol_key ||
+	    dpp_build_jwk(dppcon, "netAccessKey", auth->peer_protocol_key, NULL,
 			  auth->curve) < 0) {
 		wpa_printf(MSG_DEBUG, "DPP: Failed to build netAccessKey JWK");
 		goto fail;

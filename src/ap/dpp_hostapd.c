@@ -1300,6 +1300,50 @@ hostapd_dpp_rx_reconfig_announcement(struct hostapd_data *hapd, const u8 *src,
 	}
 }
 
+
+static void
+hostapd_dpp_rx_reconfig_auth_resp(struct hostapd_data *hapd, const u8 *src,
+				  const u8 *hdr, const u8 *buf, size_t len,
+				  unsigned int freq)
+{
+	struct dpp_authentication *auth = hapd->dpp_auth;
+	struct wpabuf *conf;
+
+	wpa_printf(MSG_DEBUG, "DPP: Reconfig Authentication Response from "
+		   MACSTR, MAC2STR(src));
+
+	if (!auth || !auth->reconfig || !auth->configurator) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No DPP Reconfig Authentication in progress - drop");
+		return;
+	}
+
+	if (os_memcmp(src, auth->peer_mac_addr, ETH_ALEN) != 0) {
+		wpa_printf(MSG_DEBUG, "DPP: MAC address mismatch (expected "
+			   MACSTR ") - drop", MAC2STR(auth->peer_mac_addr));
+		return;
+	}
+
+	conf = dpp_reconfig_auth_resp_rx(auth, hdr, buf, len);
+	if (!conf)
+		return;
+
+	eloop_cancel_timeout(hostapd_dpp_reconfig_reply_wait_timeout,
+			     hapd, NULL);
+
+	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_TX "dst=" MACSTR
+		" freq=%u type=%d",
+		MAC2STR(src), freq, DPP_PA_RECONFIG_AUTH_CONF);
+	if (hostapd_drv_send_action(hapd, freq, 500, src,
+				    wpabuf_head(conf), wpabuf_len(conf)) < 0) {
+		wpabuf_free(conf);
+		dpp_auth_deinit(hapd->dpp_auth);
+		hapd->dpp_auth = NULL;
+		return;
+	}
+	wpabuf_free(conf);
+}
+
 #endif /* CONFIG_DPP2 */
 
 
@@ -1770,6 +1814,10 @@ void hostapd_dpp_rx_action(struct hostapd_data *hapd, const u8 *src,
 		hostapd_dpp_rx_reconfig_announcement(hapd, src, hdr, buf, len,
 						     freq);
 		break;
+	case DPP_PA_RECONFIG_AUTH_RESP:
+		hostapd_dpp_rx_reconfig_auth_resp(hapd, src, hdr, buf, len,
+						  freq);
+		break;
 #endif /* CONFIG_DPP2 */
 	default:
 		wpa_printf(MSG_DEBUG,
@@ -1799,7 +1847,7 @@ hostapd_dpp_gas_req_handler(struct hostapd_data *hapd, const u8 *sa,
 	struct wpabuf *resp;
 
 	wpa_printf(MSG_DEBUG, "DPP: GAS request from " MACSTR, MAC2STR(sa));
-	if (!auth || !auth->auth_success ||
+	if (!auth || (!auth->auth_success && !auth->reconfig_success) ||
 	    os_memcmp(sa, auth->peer_mac_addr, ETH_ALEN) != 0) {
 #ifdef CONFIG_DPP2
 		if (dpp_relay_rx_gas_req(hapd->iface->interfaces->dpp, sa, data,

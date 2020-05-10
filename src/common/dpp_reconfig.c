@@ -461,4 +461,297 @@ fail:
 	goto out;
 }
 
+
+static struct wpabuf *
+dpp_build_reconfig_flags(enum dpp_connector_key connector_key)
+{
+	struct wpabuf *json;
+
+	json = wpabuf_alloc(100);
+	if (!json)
+		return NULL;
+	json_start_object(json, NULL);
+	json_add_int(json, "connectorKey", connector_key);
+	json_end_object(json);
+	wpa_hexdump_ascii(MSG_DEBUG, "DPP: Reconfig-Flags JSON",
+			  wpabuf_head(json), wpabuf_len(json));
+
+	return json;
+}
+
+
+struct wpabuf *
+dpp_reconfig_build_conf(struct dpp_authentication *auth)
+{
+	struct wpabuf *msg = NULL, *clear = NULL, *reconfig_flags;
+	u8 *attr_start, *attr_end;
+	size_t clear_len, attr_len, len[2];
+	const u8 *addr[2];
+	u8 *wrapped;
+
+	reconfig_flags = dpp_build_reconfig_flags(DPP_CONFIG_REPLACEKEY);
+	if (!reconfig_flags)
+		goto fail;
+
+	/* Build DPP Reconfig Authentication Confirm frame attributes */
+	clear_len = 4 + 1 + 4 + 1 + 2 * (4 + auth->curve->nonce_len) +
+		4 + wpabuf_len(reconfig_flags);
+	clear = wpabuf_alloc(clear_len);
+	if (!clear)
+		goto fail;
+
+	/* Transaction ID */
+	wpabuf_put_le16(clear, DPP_ATTR_TRANSACTION_ID);
+	wpabuf_put_le16(clear, 1);
+	wpabuf_put_u8(clear, auth->transaction_id);
+
+	/* Protocol Version */
+	wpabuf_put_le16(clear, DPP_ATTR_PROTOCOL_VERSION);
+	wpabuf_put_le16(clear, 1);
+	wpabuf_put_u8(clear, auth->peer_version);
+
+	/* I-nonce (wrapped) */
+	wpabuf_put_le16(clear, DPP_ATTR_I_NONCE);
+	wpabuf_put_le16(clear, auth->curve->nonce_len);
+	wpabuf_put_data(clear, auth->i_nonce, auth->curve->nonce_len);
+
+	/* R-nonce (wrapped) */
+	wpabuf_put_le16(clear, DPP_ATTR_R_NONCE);
+	wpabuf_put_le16(clear, auth->curve->nonce_len);
+	wpabuf_put_data(clear, auth->r_nonce, auth->curve->nonce_len);
+
+	/* Reconfig-Flags (wrapped) */
+	wpabuf_put_le16(clear, DPP_ATTR_RECONFIG_FLAGS);
+	wpabuf_put_le16(clear, wpabuf_len(reconfig_flags));
+	wpabuf_put_buf(clear, reconfig_flags);
+
+	attr_len = 4 + wpabuf_len(clear) + AES_BLOCK_SIZE;
+	msg = dpp_alloc_msg(DPP_PA_RECONFIG_AUTH_CONF, attr_len);
+	if (!msg)
+		goto fail;
+
+	attr_start = wpabuf_put(msg, 0);
+	attr_end = wpabuf_put(msg, 0);
+
+	/* OUI, OUI type, Crypto Suite, DPP frame type */
+	addr[0] = wpabuf_head_u8(msg) + 2;
+	len[0] = 3 + 1 + 1 + 1;
+	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[0]", addr[0], len[0]);
+
+	/* Attributes before Wrapped Data */
+	addr[1] = attr_start;
+	len[1] = attr_end - attr_start;
+	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[1]", addr[1], len[1]);
+
+	/* Wrapped Data */
+	wpabuf_put_le16(msg, DPP_ATTR_WRAPPED_DATA);
+	wpabuf_put_le16(msg, wpabuf_len(clear) + AES_BLOCK_SIZE);
+	wrapped = wpabuf_put(msg, wpabuf_len(clear) + AES_BLOCK_SIZE);
+
+	wpa_hexdump_buf(MSG_DEBUG, "DPP: AES-SIV cleartext", clear);
+	if (aes_siv_encrypt(auth->ke, auth->curve->hash_len,
+			    wpabuf_head(clear), wpabuf_len(clear),
+			    2, addr, len, wrapped) < 0)
+		goto fail;
+
+	wpa_hexdump_buf(MSG_DEBUG,
+			"DPP: Reconfig Authentication Confirm frame attributes",
+			msg);
+
+out:
+	wpabuf_free(reconfig_flags);
+	wpabuf_free(clear);
+	return msg;
+fail:
+	wpabuf_free(msg);
+	msg = NULL;
+	goto out;
+}
+
+
+struct wpabuf *
+dpp_reconfig_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
+			 const u8 *attr_start, size_t attr_len)
+{
+	const u8 *trans_id, *version, *r_connector, *r_proto, *wrapped_data,
+		*i_nonce, *r_nonce, *conn_status;
+	u16 trans_id_len, version_len, r_connector_len, r_proto_len,
+		wrapped_data_len, i_nonce_len, r_nonce_len, conn_status_len;
+	struct wpabuf *conf = NULL;
+	char *signed_connector = NULL;
+	struct dpp_signed_connector_info info;
+	enum dpp_status_error res;
+	struct json_token *root = NULL, *token, *conn_status_json = NULL;
+	const u8 *addr[2];
+	size_t len[2];
+	u8 *unwrapped = NULL;
+	size_t unwrapped_len = 0;
+
+	os_memset(&info, 0, sizeof(info));
+
+	if (!auth->reconfig || !auth->configurator)
+		goto fail;
+
+	wrapped_data = dpp_get_attr(attr_start, attr_len, DPP_ATTR_WRAPPED_DATA,
+				    &wrapped_data_len);
+	if (!wrapped_data || wrapped_data_len < AES_BLOCK_SIZE) {
+		dpp_auth_fail(auth,
+			      "Missing or invalid required Wrapped Data attribute");
+		goto fail;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: Wrapped Data",
+		    wrapped_data, wrapped_data_len);
+	attr_len = wrapped_data - 4 - attr_start;
+
+	trans_id = dpp_get_attr(attr_start, attr_len, DPP_ATTR_TRANSACTION_ID,
+			       &trans_id_len);
+	if (!trans_id || trans_id_len != 1) {
+		dpp_auth_fail(auth, "Peer did not include Transaction ID");
+		goto fail;
+	}
+	if (trans_id[0] != auth->transaction_id) {
+		dpp_auth_fail(auth, "Transaction ID mismatch");
+		goto fail;
+	}
+
+	version = dpp_get_attr(attr_start, attr_len, DPP_ATTR_PROTOCOL_VERSION,
+			       &version_len);
+	if (!version || version_len < 1 || version[0] < 2) {
+		dpp_auth_fail(auth,
+			      "Missing or invalid Protocol Version attribute");
+		goto fail;
+	}
+	auth->peer_version = version[0];
+	wpa_printf(MSG_DEBUG, "DPP: Peer protocol version %u",
+		   auth->peer_version);
+
+	r_connector = dpp_get_attr(attr_start, attr_len, DPP_ATTR_CONNECTOR,
+				   &r_connector_len);
+	if (!r_connector) {
+		dpp_auth_fail(auth, " Missing R-Connector attribute");
+		goto fail;
+	}
+	wpa_hexdump_ascii(MSG_DEBUG, "DPP: R-Connector",
+			  r_connector, r_connector_len);
+
+	r_proto = dpp_get_attr(attr_start, attr_len, DPP_ATTR_R_PROTOCOL_KEY,
+			       &r_proto_len);
+	if (!r_proto) {
+		dpp_auth_fail(auth,
+			      "Missing required Responder Protocol Key attribute");
+		goto fail;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: Responder Protocol Key",
+		    r_proto, r_proto_len);
+
+	signed_connector = os_malloc(r_connector_len + 1);
+	if (!signed_connector)
+		goto fail;
+	os_memcpy(signed_connector, r_connector, r_connector_len);
+	signed_connector[r_connector_len] = '\0';
+
+	res = dpp_process_signed_connector(&info, auth->conf->csign,
+					   signed_connector);
+	if (res != DPP_STATUS_OK) {
+		dpp_auth_fail(auth, "Invalid R-Connector");
+		goto fail;
+	}
+
+	root = json_parse((const char *) info.payload, info.payload_len);
+	if (!root) {
+		dpp_auth_fail(auth, "Invalid Connector payload");
+		goto fail;
+	}
+
+	/* Do not check netAccessKey expiration for reconfiguration to allow
+	 * expired Connector to be updated. */
+
+	token = json_get_member(root, "netAccessKey");
+	if (!token || token->type != JSON_OBJECT) {
+		dpp_auth_fail(auth, "No netAccessKey object found");
+		goto fail;
+	}
+
+	if (dpp_reconfig_derive_ke_initiator(auth, r_proto, r_proto_len,
+					     token) < 0)
+		goto fail;
+
+	addr[0] = hdr;
+	len[0] = DPP_HDR_LEN;
+	addr[1] = attr_start;
+	len[1] = attr_len;
+	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[0]", addr[0], len[0]);
+	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[1]", addr[1], len[1]);
+	wpa_hexdump(MSG_DEBUG, "DPP: AES-SIV ciphertext",
+		    wrapped_data, wrapped_data_len);
+	unwrapped_len = wrapped_data_len - AES_BLOCK_SIZE;
+	unwrapped = os_malloc(unwrapped_len);
+	if (!unwrapped)
+		goto fail;
+	if (aes_siv_decrypt(auth->ke, auth->curve->hash_len,
+			    wrapped_data, wrapped_data_len,
+			    2, addr, len, unwrapped) < 0) {
+		dpp_auth_fail(auth, "AES-SIV decryption failed");
+		goto fail;
+	}
+	wpa_hexdump(MSG_DEBUG, "DPP: AES-SIV cleartext",
+		    unwrapped, unwrapped_len);
+
+	if (dpp_check_attrs(unwrapped, unwrapped_len) < 0) {
+		dpp_auth_fail(auth, "Invalid attribute in unwrapped data");
+		goto fail;
+	}
+
+	i_nonce = dpp_get_attr(unwrapped, unwrapped_len, DPP_ATTR_I_NONCE,
+			       &i_nonce_len);
+	if (!i_nonce || i_nonce_len != auth->curve->nonce_len ||
+	    os_memcmp(i_nonce, auth->i_nonce, i_nonce_len) != 0) {
+		dpp_auth_fail(auth, "Missing or invalid I-nonce");
+		goto fail;
+	}
+	wpa_hexdump(MSG_DEBUG, "DPP: I-nonce", i_nonce, i_nonce_len);
+
+	r_nonce = dpp_get_attr(unwrapped, unwrapped_len, DPP_ATTR_R_NONCE,
+			       &r_nonce_len);
+	if (!r_nonce || r_nonce_len != auth->curve->nonce_len) {
+		dpp_auth_fail(auth, "Missing or invalid R-nonce");
+		goto fail;
+	}
+	wpa_hexdump(MSG_DEBUG, "DPP: R-nonce", r_nonce, r_nonce_len);
+	os_memcpy(auth->r_nonce, r_nonce, r_nonce_len);
+
+	conn_status = dpp_get_attr(unwrapped, unwrapped_len,
+				   DPP_ATTR_CONN_STATUS, &conn_status_len);
+	if (!conn_status) {
+		dpp_auth_fail(auth, "Missing Connection Status attribute");
+		goto fail;
+	}
+	wpa_hexdump_ascii(MSG_DEBUG, "DPP: connStatus",
+			  conn_status, conn_status_len);
+
+	conn_status_json = json_parse((const char *) conn_status,
+				      conn_status_len);
+	if (!conn_status_json) {
+		dpp_auth_fail(auth, "Could not parse connStatus");
+		goto fail;
+	}
+	/* TODO: use connStatus information */
+
+	conf = dpp_reconfig_build_conf(auth);
+	if (conf)
+		auth->reconfig_success = true;
+
+out:
+	json_free(root);
+	json_free(conn_status_json);
+	bin_clear_free(unwrapped, unwrapped_len);
+	os_free(info.payload);
+	os_free(signed_connector);
+	return conf;
+fail:
+	wpabuf_free(conf);
+	conf = NULL;
+	goto out;
+}
+
 #endif /* CONFIG_DPP2 */

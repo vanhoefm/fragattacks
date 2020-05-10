@@ -1962,6 +1962,51 @@ wpas_dpp_rx_reconfig_auth_req(struct wpa_supplicant *wpa_s, const u8 *src,
 	}
 }
 
+
+static void
+wpas_dpp_rx_reconfig_auth_resp(struct wpa_supplicant *wpa_s, const u8 *src,
+			       const u8 *hdr, const u8 *buf, size_t len,
+			       unsigned int freq)
+{
+	struct dpp_authentication *auth = wpa_s->dpp_auth;
+	struct wpabuf *conf;
+
+	wpa_printf(MSG_DEBUG, "DPP: Reconfig Authentication Response from "
+		   MACSTR, MAC2STR(src));
+
+	if (!auth || !auth->reconfig || !auth->configurator) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No DPP Reconfig Authentication in progress - drop");
+		return;
+	}
+
+	if (os_memcmp(src, auth->peer_mac_addr, ETH_ALEN) != 0) {
+		wpa_printf(MSG_DEBUG, "DPP: MAC address mismatch (expected "
+			   MACSTR ") - drop", MAC2STR(auth->peer_mac_addr));
+		return;
+	}
+
+	conf = dpp_reconfig_auth_resp_rx(auth, hdr, buf, len);
+	if (!conf)
+		return;
+
+	eloop_cancel_timeout(wpas_dpp_reconfig_reply_wait_timeout, wpa_s, NULL);
+
+	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_TX "dst=" MACSTR " freq=%u type=%d",
+		MAC2STR(src), freq, DPP_PA_RECONFIG_AUTH_CONF);
+	if (offchannel_send_action(wpa_s, freq, src, wpa_s->own_addr, broadcast,
+				   wpabuf_head(conf), wpabuf_len(conf),
+				   500, wpas_dpp_tx_status, 0) < 0) {
+		wpabuf_free(conf);
+		dpp_auth_deinit(wpa_s->dpp_auth);
+		wpa_s->dpp_auth = NULL;
+		return;
+	}
+	wpabuf_free(conf);
+
+	wpas_dpp_start_gas_server(wpa_s);
+}
+
 #endif /* CONFIG_DPP2 */
 
 
@@ -2530,6 +2575,9 @@ void wpas_dpp_rx_action(struct wpa_supplicant *wpa_s, const u8 *src,
 	case DPP_PA_RECONFIG_AUTH_REQ:
 		wpas_dpp_rx_reconfig_auth_req(wpa_s, src, hdr, buf, len, freq);
 		break;
+	case DPP_PA_RECONFIG_AUTH_RESP:
+		wpas_dpp_rx_reconfig_auth_resp(wpa_s, src, hdr, buf, len, freq);
+		break;
 #endif /* CONFIG_DPP2 */
 	default:
 		wpa_printf(MSG_DEBUG,
@@ -2560,7 +2608,7 @@ wpas_dpp_gas_req_handler(void *ctx, const u8 *sa, const u8 *query,
 
 	wpa_printf(MSG_DEBUG, "DPP: GAS request from " MACSTR,
 		   MAC2STR(sa));
-	if (!auth || !auth->auth_success ||
+	if (!auth || (!auth->auth_success && !auth->reconfig_success) ||
 	    os_memcmp(sa, auth->peer_mac_addr, ETH_ALEN) != 0) {
 		wpa_printf(MSG_DEBUG, "DPP: No matching exchange in progress");
 		return NULL;
