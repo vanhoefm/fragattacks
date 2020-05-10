@@ -1257,6 +1257,20 @@ static int wpas_dpp_process_config(struct wpa_supplicant *wpa_s,
 static void wpas_dpp_post_process_config(struct wpa_supplicant *wpa_s,
 					 struct dpp_authentication *auth)
 {
+#ifdef CONFIG_DPP2
+	if (auth->reconfig && wpa_s->dpp_reconfig_ssid &&
+	    wpa_config_get_network(wpa_s->conf, wpa_s->dpp_reconfig_ssid_id) ==
+	    wpa_s->dpp_reconfig_ssid) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Remove reconfigured network profile");
+		wpas_notify_network_removed(wpa_s, wpa_s->dpp_reconfig_ssid);
+		wpa_config_remove_network(wpa_s->conf,
+					  wpa_s->dpp_reconfig_ssid_id);
+		wpa_s->dpp_reconfig_ssid = NULL;
+		wpa_s->dpp_reconfig_ssid_id = -1;
+	}
+#endif /* CONFIG_DPP2 */
+
 	if (wpa_s->conf->dpp_config_processing < 2)
 		return;
 
