@@ -12,6 +12,25 @@
 
 #ifdef CONFIG_DPP
 
+struct dpp_global {
+	void *msg_ctx;
+	struct dl_list bootstrap; /* struct dpp_bootstrap_info */
+	struct dl_list configurator; /* struct dpp_configurator */
+#ifdef CONFIG_DPP2
+	struct dl_list controllers; /* struct dpp_relay_controller */
+	struct dpp_controller *controller;
+	struct dl_list tcp_init; /* struct dpp_connection */
+	void *cb_ctx;
+	int (*process_conf_obj)(void *ctx, struct dpp_authentication *auth);
+	void (*remove_bi)(void *ctx, struct dpp_bootstrap_info *bi);
+#endif /* CONFIG_DPP2 */
+};
+
+/* dpp.c */
+
+void dpp_build_attr_status(struct wpabuf *msg, enum dpp_status_error status);
+unsigned int dpp_next_id(struct dpp_global *dpp);
+
 /* dpp_crypto.c */
 
 struct dpp_signed_connector_info {

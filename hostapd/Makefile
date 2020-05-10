@@ -569,6 +569,7 @@ ifdef CONFIG_DPP
 CFLAGS += -DCONFIG_DPP
 OBJS += ../src/common/dpp.o
 OBJS += ../src/common/dpp_crypto.o
+OBJS += ../src/common/dpp_pkex.o
 OBJS += ../src/ap/dpp_hostapd.o
 OBJS += ../src/ap/gas_query_ap.o
 NEED_AES_SIV=y
