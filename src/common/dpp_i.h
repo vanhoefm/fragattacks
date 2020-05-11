@@ -46,6 +46,8 @@ int dpp_prepare_channel_list(struct dpp_authentication *auth,
 			     struct hostapd_hw_modes *own_modes, u16 num_modes);
 void dpp_auth_fail(struct dpp_authentication *auth, const char *txt);
 int dpp_gen_uri(struct dpp_bootstrap_info *bi);
+void dpp_write_adv_proto(struct wpabuf *buf);
+void dpp_write_gas_query(struct wpabuf *buf, struct wpabuf *query);
 
 /* dpp_backup.c */
 
@@ -139,6 +141,13 @@ char * dpp_sign_connector(struct dpp_configurator *conf,
 			  const struct wpabuf *dppcon);
 int dpp_test_gen_invalid_key(struct wpabuf *msg,
 			     const struct dpp_curve_params *curve);
+
+/* dpp_tcp.c */
+
+void dpp_controller_conn_status_result_wait_timeout(void *eloop_ctx,
+						    void *timeout_ctx);
+void dpp_tcp_init_flush(struct dpp_global *dpp);
+void dpp_relay_flush_controllers(struct dpp_global *dpp);
 
 #endif /* CONFIG_DPP */
 #endif /* DPP_I_H */

@@ -26,6 +26,7 @@ OBJS += $(SRC)/common/dpp_backup.o
 OBJS += $(SRC)/common/dpp_crypto.o
 OBJS += $(SRC)/common/dpp_pkex.o
 OBJS += $(SRC)/common/dpp_reconfig.o
+OBJS += $(SRC)/common/dpp_tcp.o
 
 dpp-uri: dpp-uri.o $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ -lcrypto

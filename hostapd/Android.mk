@@ -542,6 +542,7 @@ OBJS += src/common/dpp_backup.c
 OBJS += src/common/dpp_crypto.c
 OBJS += src/common/dpp_pkex.c
 OBJS += src/common/dpp_reconfig.c
+OBJS += src/common/dpp_tcp.c
 OBJS += src/ap/dpp_hostapd.c
 OBJS += src/ap/gas_query_ap.c
 NEED_AES_SIV=y

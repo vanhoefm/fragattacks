@@ -284,6 +284,7 @@ OBJS += ../src/common/dpp_backup.o
 OBJS += ../src/common/dpp_crypto.o
 OBJS += ../src/common/dpp_pkex.o
 OBJS += ../src/common/dpp_reconfig.o
+OBJS += ../src/common/dpp_tcp.o
 OBJS += dpp_supplicant.o
 NEED_AES_SIV=y
 NEED_HMAC_SHA256_KDF=y
