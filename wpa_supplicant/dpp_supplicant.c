@@ -3362,7 +3362,7 @@ int wpas_dpp_chirp(struct wpa_supplicant *wpa_s, const char *cmd)
 	pos = os_strstr(cmd, " listen=");
 	if (pos) {
 		listen_freq = atoi(pos + 8);
-		if (iter <= 0)
+		if (listen_freq <= 0)
 			return -1;
 	}
 
