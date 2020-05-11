@@ -119,6 +119,23 @@ def freebsd_encap_eapolmsdu(p, src, dst, payload):
 	p = p/freebsd_create_eapolmsdu(src, dst, payload)
 	return p
 
+def set_monitor_mode(iface):
+	# Some kernels (Debian jessie - 3.16.0-4-amd64) don't properly add the monitor interface. The following ugly
+	# sequence of commands assures the virtual interface is properly registered as a 802.11 monitor interface.
+	subprocess.check_output(["ifconfig", iface, "down"])
+	subprocess.check_output(["iw", iface, "set", "type", "monitor"])
+	time.sleep(0.5)
+	subprocess.check_output(["iw", iface, "set", "type", "monitor"])
+	subprocess.check_output(["ifconfig", iface, "up"])
+
+def get_channel(iface):
+	output = str(subprocess.check_output(["iw", iface, "info"]))
+	p = re.compile("channel (\d+)")
+	return int(p.search(output).group(1))
+
+def set_channel(iface, channel):
+	subprocess.check_output(["iw", iface, "set", "channel", str(channel)])
+
 # ----------------------------------- Tests -----------------------------------
 
 # XXX --- We should always first see how the DUT reactions to a normal packet.
@@ -866,9 +883,8 @@ class Daemon(metaclass=abc.ABCMeta):
 	def __init__(self, options):
 		self.options = options
 
-		# Note: some kernels don't support interface names of 15+ characters
-		self.nic_iface = options.iface
-		self.nic_mon = "mon" + self.nic_iface[:12]
+		self.nic_iface = None
+		self.nic_mon = None
 
 		self.process = None
 		self.sock_eth = None
@@ -911,33 +927,45 @@ class Daemon(metaclass=abc.ABCMeta):
 	def reconnect(self, station):
 		pass
 
-	# TODO: Might be good to put this into libwifi?
 	def configure_interfaces(self):
 		log(STATUS, "Note: disable Wi-Fi in your network manager so it doesn't interfere with this script")
 
-		# 0. Some users may forget this otherwise
 		subprocess.check_output(["rfkill", "unblock", "wifi"])
+		self.nic_iface = options.iface
 
-		# 1. Only create a new monitor interface if it does not yet exist
-		try:
-			scapy.arch.get_if_index(self.nic_mon)
-		except IOError:
-			subprocess.call(["iw", self.nic_mon, "del"], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-			subprocess.check_output(["iw", self.nic_iface, "interface", "add", self.nic_mon, "type", "monitor"])
+		# 1. Set or create the monitor mode interface
+		if self.options.inject:
+			# Use the provided interface to monitor/inject frames
+			self.nic_mon = self.options.inject
 
-		# 2. Configure monitor mode on interfaces
-		# Some kernels (Debian jessie - 3.16.0-4-amd64) don't properly add the monitor interface. The following ugly
-		# sequence of commands assures the virtual interface is properly registered as a 802.11 monitor interface.
-		subprocess.check_output(["iw", self.nic_mon, "set", "type", "monitor"])
-		time.sleep(0.5)
-		subprocess.check_output(["iw", self.nic_mon, "set", "type", "monitor"])
-		subprocess.check_output(["ifconfig", self.nic_mon, "up"])
+			# This should avoid the monitor interface from retransmitting frames? But it
+			# may also cause the monitor interface to ACK frames, while they may not have
+			# been received by the normal interface...
+			# TODO: Test this with the Intel/mvm and others. For the ath9k_htc this is not needed.
+			#subprocess.call(["ifconfig", self.nic_mon, "down"])
+			#subprocess.call(["macchanger", "-m", scapy.arch.get_if_hwaddr(self.nic_iface), self.nic_mon])
+
+		else:
+			# Create second virtual interface in monitor mode. Note: some kernels
+			# don't support interface names of 15+ characters.
+			self.nic_mon = "mon" + self.nic_iface[:12]
+
+			# Only create a new monitor interface if it does not yet exist
+			try:
+				scapy.arch.get_if_index(self.nic_mon)
+			except IOError:
+				subprocess.call(["iw", self.nic_mon, "del"], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+				subprocess.check_output(["iw", self.nic_iface, "interface", "add", self.nic_mon, "type", "monitor"])
+
+		# 2. Enable monitor mode
+		set_monitor_mode(self.nic_mon)
+		log(STATUS, f"Using interface {self.nic_mon} to inject frames.")
 
 		# 3. Remember whether to need to perform a workaround.
 		driver = get_device_driver(self.nic_iface)
 		if driver == None:
 			log(WARNING, "Unable to detect driver of interface!")
-			log(WARNING, "Injecting fragments may contains bugs.")
+			log(WARNING, "Injecting fragments may be unreliable.")
 		elif driver == "ath9k_htc":
 			options.inject_workaround = True
 			log(STATUS, "Detect ath9k_htc, using injection bug workarounds")
@@ -949,13 +977,13 @@ class Daemon(metaclass=abc.ABCMeta):
 		self.sock_eth.send(p)
 
 	def run(self):
+		self.configure_interfaces()
+
 		# Remove old occurrences of the control interface that didn't get cleaned properly
 		subprocess.call(["rm", "-f", "wpaspy_ctrl/" + self.nic_iface])
 
-		self.configure_interfaces()
-		self.start_daemon()
-
 		# Wait until daemon started
+		self.start_daemon()
 		while not os.path.exists("wpaspy_ctrl/" + self.nic_iface):
 			time.sleep(0.1)
 
@@ -1143,6 +1171,11 @@ class Authenticator(Daemon):
 		# TODO XXX: This is no longer correct due to --ip and --peerip parameters?
 		#log(STATUS, f"Will inject ARP packets using sender IP {self.arp_sender_ip}")
 
+		# When using a separate interface to inject, switch to correct channel
+		if self.options.inject:
+			channel = get_channel(self.nic_iface)
+			set_channel(self.nic_mon, channel)
+
 
 class Supplicant(Daemon):
 	def __init__(self, options):
@@ -1268,8 +1301,12 @@ class Supplicant(Daemon):
 			# This get's the current keys
 			self.station.handle_authenticated()
 
-		# Trying to authenticate with 38:2c:4a:c1:69:bc (SSID='backupnetwork2' freq=2462 MHz)
 		elif "Trying to authenticate with" in msg:
+			# When using a separate interface to inject, switch to correct channel
+			if self.options.inject:
+				channel = get_channel(self.nic_iface)
+				set_channel(self.nic_mon, channel)
+
 			p = re.compile("Trying to authenticate with (.*) \(SSID")
 			bss = p.search(msg).group(1)
 			self.station.handle_connecting(bss)
@@ -1504,6 +1541,7 @@ if __name__ == "__main__":
 	parser.add_argument('iface', help="Interface to use for the tests.")
 	parser.add_argument('testname', help="Name or identifier of the test to run.")
 	parser.add_argument('actions', nargs='?', help="Optional textual descriptions of actions")
+	parser.add_argument('--inject', default=None, help="Interface to use to inject frames.")
 	parser.add_argument('--ip', help="IP we as a sender should use.")
 	parser.add_argument('--peerip', help="IP of the device we will test.")
 	parser.add_argument('--ap', default=False, action='store_true', help="Act as an AP to test clients.")
