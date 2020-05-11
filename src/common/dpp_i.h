@@ -72,7 +72,6 @@ dpp_check_signed_connector(struct dpp_signed_connector_info *info,
 			   const u8 *peer_connector, size_t peer_connector_len);
 const struct dpp_curve_params * dpp_get_curve_name(const char *name);
 const struct dpp_curve_params * dpp_get_curve_jwk_crv(const char *name);
-const struct dpp_curve_params * dpp_get_curve_oid(const ASN1_OBJECT *poid);
 const struct dpp_curve_params * dpp_get_curve_nid(int nid);
 int dpp_bi_pubkey_hash(struct dpp_bootstrap_info *bi,
 		       const u8 *data, size_t data_len);
@@ -82,12 +81,8 @@ EVP_PKEY * dpp_set_pubkey_point_group(const EC_GROUP *group,
 				      size_t len);
 EVP_PKEY * dpp_set_pubkey_point(EVP_PKEY *group_key, const u8 *buf, size_t len);
 int dpp_bn2bin_pad(const BIGNUM *bn, u8 *pos, size_t len);
-int dpp_hash_vector(const struct dpp_curve_params *curve, size_t num_elem,
-		    const u8 *addr[], const size_t *len, u8 *mac);
 int dpp_hkdf_expand(size_t hash_len, const u8 *secret, size_t secret_len,
 		    const char *label, u8 *out, size_t outlen);
-int dpp_hmac(size_t hash_len, const u8 *key, size_t key_len,
-	     const u8 *data, size_t data_len, u8 *mac);
 int dpp_hmac_vector(size_t hash_len, const u8 *key, size_t key_len,
 		    size_t num_elem, const u8 *addr[], const size_t *len,
 		    u8 *mac);

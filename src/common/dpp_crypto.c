@@ -99,7 +99,8 @@ const struct dpp_curve_params * dpp_get_curve_jwk_crv(const char *name)
 }
 
 
-const struct dpp_curve_params * dpp_get_curve_oid(const ASN1_OBJECT *poid)
+static const struct dpp_curve_params *
+dpp_get_curve_oid(const ASN1_OBJECT *poid)
 {
 	ASN1_OBJECT *oid;
 	int i;
@@ -215,8 +216,9 @@ void dpp_debug_print_key(const char *title, EVP_PKEY *key)
 }
 
 
-int dpp_hash_vector(const struct dpp_curve_params *curve, size_t num_elem,
-		    const u8 *addr[], const size_t *len, u8 *mac)
+static int dpp_hash_vector(const struct dpp_curve_params *curve,
+			   size_t num_elem, const u8 *addr[], const size_t *len,
+			   u8 *mac)
 {
 	if (curve->hash_len == 32)
 		return sha256_vector(num_elem, addr, len, mac);
@@ -264,8 +266,8 @@ int dpp_hmac_vector(size_t hash_len, const u8 *key, size_t key_len,
 }
 
 
-int dpp_hmac(size_t hash_len, const u8 *key, size_t key_len,
-	     const u8 *data, size_t data_len, u8 *mac)
+static int dpp_hmac(size_t hash_len, const u8 *key, size_t key_len,
+		    const u8 *data, size_t data_len, u8 *mac)
 {
 	if (hash_len == 32)
 		return hmac_sha256(key, key_len, data, data_len, mac);
