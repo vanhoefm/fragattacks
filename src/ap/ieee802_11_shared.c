@@ -886,9 +886,9 @@ size_t hostapd_eid_dpp_cc_len(struct hostapd_data *hapd)
 
 u8 * hostapd_eid_dpp_cc(struct hostapd_data *hapd, u8 *eid, size_t len)
 {
-#ifdef CONFIG_DPP2
 	u8 *pos = eid;
 
+#ifdef CONFIG_DPP2
 	if (!hapd->conf->dpp_configurator_connectivity || len < 6)
 		return pos;
 
@@ -897,10 +897,9 @@ u8 * hostapd_eid_dpp_cc(struct hostapd_data *hapd, u8 *eid, size_t len)
 	WPA_PUT_BE24(pos, OUI_WFA);
 	pos += 3;
 	*pos++ = DPP_CC_OUI_TYPE;
+#endif /* CONFIG_DPP2 */
 
 	return pos;
-#endif /* CONFIG_DPP2 */
-	return eid;
 }
 
 
