@@ -804,8 +804,7 @@ static int dpp_controller_rx_presence_announcement(struct dpp_connection *conn,
 			     DPP_CAPAB_CONFIGURATOR, -1, NULL, 0);
 	if (!auth)
 		return -1;
-	if (dpp_set_configurator(conn->auth,
-				 conn->ctrl->configurator_params) < 0) {
+	if (dpp_set_configurator(auth, conn->ctrl->configurator_params) < 0) {
 		dpp_auth_deinit(auth);
 		dpp_connection_remove(conn);
 		return -1;
