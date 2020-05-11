@@ -255,18 +255,28 @@ def dpp_handover_client(llc):
             success_report("DPP handover reported successfully (initiator)")
             print("peer_id=" + res)
             peer_id = int(res)
-            # TODO: Single Configurator instance
             wpas = wpas_connect()
             if wpas is None:
                 break
-            res = wpas.request("DPP_CONFIGURATOR_ADD")
-            if "FAIL" in res:
-                print("Failed to initiate Configurator")
-                break
-            conf_id = int(res)
+
+            global enrollee_only
+            global config_params
+            if enrollee_only:
+                extra = " role=enrollee"
+            elif config_params:
+                extra = " role=configurator " + config_params
+            else:
+                # TODO: Single Configurator instance
+                res = wpas.request("DPP_CONFIGURATOR_ADD")
+                if "FAIL" in res:
+                    print("Failed to initiate Configurator")
+                    break
+                conf_id = int(res)
+                extra = " conf=sta-dpp configurator=%d" % conf_id
             global own_id
             print("Initiate DPP authentication")
-            cmd = "DPP_AUTH_INIT peer=%d own=%d conf=sta-dpp configurator=%d" % (peer_id, own_id, conf_id)
+            cmd = "DPP_AUTH_INIT peer=%d own=%d" % (peer_id, own_id)
+            cmd += extra
             res = wpas.request(cmd)
             if "FAIL" in res:
                 print("Failed to initiate DPP authentication")
@@ -356,7 +366,14 @@ class HandoverServer(nfc.handover.HandoverServer):
                 if freq is None:
                     print("No channel negotiated over NFC - use channel 1")
                     freq = 2412
-                res = wpas.request("DPP_LISTEN %d" % freq)
+                cmd = "DPP_LISTEN %d" % freq
+                global enrollee_only
+                global configurator_only
+                if enrollee_only:
+                    cmd += " role=enrollee"
+                elif configurator_only:
+                    cmd += " role=configurator"
+                res = wpas.request(cmd)
                 if "OK" not in res:
                     print("Failed to start DPP listen")
                     break
@@ -592,6 +609,12 @@ def main():
                         help='tag read only (do not allow connection handover)')
     parser.add_argument('--handover-only', action='store_true',
                         help='connection handover only (do not allow tag read)')
+    parser.add_argument('--enrollee', action='store_true',
+                        help='run as Enrollee-only')
+    parser.add_argument('--configurator', action='store_true',
+                        help='run as Configurator-only')
+    parser.add_argument('--config-params', default='',
+                        help='configurator parameters')
     parser.add_argument('--summary',
                         help='summary file for writing status updates')
     parser.add_argument('--success',
@@ -617,6 +640,15 @@ def main():
 
     global init_on_touch
     init_on_touch = args.init_on_touch
+
+    global enrollee_only
+    enrollee_only = args.enrollee
+
+    global configurator_only
+    configurator_only = args.configurator
+
+    global config_params
+    config_params = args.config_params
 
     if args.ifname:
         global ifname
