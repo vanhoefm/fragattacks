@@ -1258,6 +1258,10 @@ hostapd_dpp_rx_reconfig_announcement(struct hostapd_data *hapd, const u8 *src,
 	conf = dpp_configurator_find_kid(hapd->iface->interfaces->dpp,
 					 csign_hash);
 	if (!conf) {
+		if (dpp_relay_rx_action(hapd->iface->interfaces->dpp,
+					src, hdr, buf, len, freq, NULL,
+					NULL) == 0)
+			return;
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No matching Configurator information found");
 		return;
