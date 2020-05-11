@@ -824,6 +824,7 @@ static int dpp_controller_rx_reconfig_announcement(struct dpp_connection *conn,
 	u16 csign_hash_len;
 	struct dpp_configurator *conf;
 	struct dpp_global *dpp = conn->ctrl->global;
+	struct dpp_authentication *auth;
 
 	if (conn->auth) {
 		wpa_printf(MSG_DEBUG,
@@ -849,8 +850,42 @@ static int dpp_controller_rx_reconfig_announcement(struct dpp_connection *conn,
 		return -1;
 	}
 
-	/* TODO: Initiate Reconfig Authentication */
-	return -1;
+	auth = dpp_reconfig_init(dpp, dpp->msg_ctx, conf, 0);
+	if (!auth)
+		return -1;
+	if (dpp_set_configurator(auth, conn->ctrl->configurator_params) < 0) {
+		dpp_auth_deinit(auth);
+		return -1;
+	}
+
+	conn->auth = auth;
+	return dpp_tcp_send_msg(conn, auth->reconfig_req_msg);
+}
+
+
+static int dpp_controller_rx_reconfig_auth_resp(struct dpp_connection *conn,
+						const u8 *hdr, const u8 *buf,
+						size_t len)
+{
+	struct dpp_authentication *auth = conn->auth;
+	struct wpabuf *conf;
+	int res;
+
+	wpa_printf(MSG_DEBUG, "DPP: Reconfig Authentication Response");
+
+	if (!auth || !auth->reconfig || !auth->configurator) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No DPP Reconfig Authentication in progress - drop");
+		return -1;
+	}
+
+	conf = dpp_reconfig_auth_resp_rx(auth, hdr, buf, len);
+	if (!conf)
+		return -1;
+
+	res = dpp_tcp_send_msg(conn, conf);
+	wpabuf_free(conf);
+	return res;
 }
 
 
@@ -910,6 +945,9 @@ static int dpp_controller_rx_action(struct dpp_connection *conn, const u8 *msg,
 	case DPP_PA_RECONFIG_ANNOUNCEMENT:
 		return dpp_controller_rx_reconfig_announcement(conn, msg, pos,
 							       end - pos);
+	case DPP_PA_RECONFIG_AUTH_RESP:
+		return dpp_controller_rx_reconfig_auth_resp(conn, msg, pos,
+							    end - pos);
 	default:
 		/* TODO: missing messages types */
 		wpa_printf(MSG_DEBUG,
@@ -935,7 +973,8 @@ static int dpp_controller_rx_gas_req(struct dpp_connection *conn, const u8 *msg,
 	wpa_printf(MSG_DEBUG,
 		   "DPP: Received DPP Configuration Request over TCP");
 
-	if (!conn->ctrl || !auth || !auth->auth_success) {
+	if (!conn->ctrl || !auth ||
+	    (!auth->auth_success && !auth->reconfig_success)) {
 		wpa_printf(MSG_DEBUG, "DPP: No matching exchange in progress");
 		return -1;
 	}

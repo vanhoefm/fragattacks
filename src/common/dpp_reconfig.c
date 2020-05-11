@@ -188,7 +188,7 @@ dpp_reconfig_init(struct dpp_global *dpp, void *msg_ctx,
 	auth->configurator = 1;
 	auth->curve = conf->curve;
 	auth->transaction_id = 1;
-	if (dpp_prepare_channel_list(auth, freq, NULL, 0) < 0)
+	if (freq && dpp_prepare_channel_list(auth, freq, NULL, 0) < 0)
 		goto fail;
 
 	if (dpp_configurator_build_own_connector(conf) < 0)
