@@ -989,7 +989,9 @@ class Daemon(metaclass=abc.ABCMeta):
 			self.nic_iface, self.nic_hwsim = self.options.hwsim.split(",")
 			self.nic_mon = options.iface
 			set_macaddress(self.nic_iface, get_macaddress(self.nic_mon))
-			log(WARNING, f"Note: you must manually set {self.nic_mon} on the channel of the AP")
+
+			if not self.options.ap:
+				log(WARNING, f"Note: you must manually set {self.nic_mon} on the channel of the AP")
 
 		elif self.options.inject:
 			# Use the provided interface to monitor/inject frames
@@ -1277,6 +1279,13 @@ class Authenticator(Daemon):
 		if self.options.inject:
 			channel = get_channel(self.nic_iface)
 			set_channel(self.nic_mon, channel)
+			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
+		elif self.options.hwsim:
+			channel = get_channel(self.nic_iface)
+			set_channel(self.nic_hwsim, channel)
+			set_channel(self.nic_mon, channel)
+			log(STATUS, f"{self.nic_hwsim}: setting to channel {channel}")
+			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
 
 		self.injection_selftest()
 
@@ -1410,7 +1419,7 @@ class Supplicant(Daemon):
 			if self.options.inject:
 				channel = get_channel(self.nic_iface)
 				set_channel(self.nic_mon, channel)
-				log(STATUS, "{self.nic_mon}: setting to channel {channel}")
+				log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
 
 			elif self.options.hwsim:
 				# FIXME: There is some delay, causing the first authentication to fail
