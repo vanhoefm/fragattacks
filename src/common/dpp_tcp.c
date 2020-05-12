@@ -139,6 +139,7 @@ dpp_relay_controller_get(struct dpp_global *dpp, const u8 *pkhash)
 static void dpp_controller_gas_done(struct dpp_connection *conn)
 {
 	struct dpp_authentication *auth = conn->auth;
+	void *msg_ctx;
 
 	if (auth->peer_version >= 2 &&
 	    auth->conf_resp_status == DPP_STATUS_OK) {
@@ -147,7 +148,11 @@ static void dpp_controller_gas_done(struct dpp_connection *conn)
 		return;
 	}
 
-	wpa_msg(conn->ctrl->global->msg_ctx, MSG_INFO, DPP_EVENT_CONF_SENT);
+	if (conn->ctrl)
+		msg_ctx = conn->ctrl->global->msg_ctx;
+	else
+		msg_ctx = auth->msg_ctx;
+	wpa_msg(msg_ctx, MSG_INFO, DPP_EVENT_CONF_SENT);
 	dpp_connection_remove(conn);
 }
 
@@ -196,8 +201,8 @@ static int dpp_tcp_send(struct dpp_connection *conn)
 		conn->read_eloop = 1;
 	if (conn->on_tcp_tx_complete_remove) {
 		dpp_connection_remove(conn);
-	} else if (conn->ctrl && conn->on_tcp_tx_complete_gas_done &&
-		   conn->auth) {
+	} else if (conn->auth && (conn->ctrl || conn->auth->configurator) &&
+		   conn->on_tcp_tx_complete_gas_done) {
 		dpp_controller_gas_done(conn);
 	} else if (conn->on_tcp_tx_complete_auth_ok) {
 		conn->on_tcp_tx_complete_auth_ok = 0;
@@ -699,8 +704,9 @@ static int dpp_controller_rx_conf_result(struct dpp_connection *conn,
 {
 	struct dpp_authentication *auth = conn->auth;
 	enum dpp_status_error status;
+	void *msg_ctx;
 
-	if (!conn->ctrl)
+	if (!conn->ctrl && (!auth || !auth->configurator))
 		return 0;
 
 	wpa_printf(MSG_DEBUG, "DPP: Configuration Result");
@@ -710,10 +716,14 @@ static int dpp_controller_rx_conf_result(struct dpp_connection *conn,
 			   "DPP: No DPP Configuration waiting for result - drop");
 		return -1;
 	}
+	if (conn->ctrl)
+		msg_ctx = conn->ctrl->global->msg_ctx;
+	else
+		msg_ctx = auth->msg_ctx;
 
 	status = dpp_conf_result_rx(auth, hdr, buf, len);
 	if (status == DPP_STATUS_OK && auth->send_conn_status) {
-		wpa_msg(conn->ctrl->global->msg_ctx, MSG_INFO,
+		wpa_msg(msg_ctx, MSG_INFO,
 			DPP_EVENT_CONF_SENT "wait_conn_status=1");
 		wpa_printf(MSG_DEBUG, "DPP: Wait for Connection Status Result");
 		eloop_cancel_timeout(
@@ -725,11 +735,9 @@ static int dpp_controller_rx_conf_result(struct dpp_connection *conn,
 		return 0;
 	}
 	if (status == DPP_STATUS_OK)
-		wpa_msg(conn->ctrl->global->msg_ctx, MSG_INFO,
-			DPP_EVENT_CONF_SENT);
+		wpa_msg(msg_ctx, MSG_INFO, DPP_EVENT_CONF_SENT);
 	else
-		wpa_msg(conn->ctrl->global->msg_ctx, MSG_INFO,
-			DPP_EVENT_CONF_FAILED);
+		wpa_msg(msg_ctx, MSG_INFO, DPP_EVENT_CONF_FAILED);
 	return -1; /* to remove the completed connection */
 }
 
@@ -973,7 +981,7 @@ static int dpp_controller_rx_gas_req(struct dpp_connection *conn, const u8 *msg,
 	wpa_printf(MSG_DEBUG,
 		   "DPP: Received DPP Configuration Request over TCP");
 
-	if (!conn->ctrl || !auth ||
+	if (!auth || (!conn->ctrl && !auth->configurator) ||
 	    (!auth->auth_success && !auth->reconfig_success)) {
 		wpa_printf(MSG_DEBUG, "DPP: No matching exchange in progress");
 		return -1;
@@ -1049,7 +1057,10 @@ static int dpp_tcp_rx_gas_resp(struct dpp_connection *conn, struct wpabuf *resp)
 	wpa_printf(MSG_DEBUG,
 		   "DPP: Configuration Response for local stack from TCP");
 
-	res = dpp_conf_resp_rx(auth, resp);
+	if (auth)
+		res = dpp_conf_resp_rx(auth, resp);
+	else
+		res = -1;
 	wpabuf_free(resp);
 	if (res < 0) {
 		wpa_printf(MSG_DEBUG, "DPP: Configuration attempt failed");
@@ -1135,7 +1146,8 @@ static int dpp_rx_gas_resp(struct dpp_connection *conn, const u8 *msg,
 		return -1;
 	wpabuf_put_data(buf, pos, slen);
 
-	if (!conn->relay && !conn->ctrl)
+	if (!conn->relay &&
+	    (!conn->ctrl || (conn->ctrl->allowed_roles & DPP_CAPAB_ENROLLEE)))
 		return dpp_tcp_rx_gas_resp(conn, buf);
 
 	if (!conn->relay) {
@@ -1405,8 +1417,7 @@ int dpp_controller_start(struct dpp_global *dpp,
 		ctrl->configurator_params =
 			os_strdup(config->configurator_params);
 	dl_list_init(&ctrl->conn);
-	/* TODO: configure these somehow */
-	ctrl->allowed_roles = DPP_CAPAB_ENROLLEE | DPP_CAPAB_CONFIGURATOR;
+	ctrl->allowed_roles = config->allowed_roles;
 	ctrl->qr_mutual = 0;
 
 	ctrl->sock = socket(AF_INET, SOCK_STREAM, 0);

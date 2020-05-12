@@ -3117,11 +3117,26 @@ int wpas_dpp_controller_start(struct wpa_supplicant *wpa_s, const char *cmd)
 	const char *pos;
 
 	os_memset(&config, 0, sizeof(config));
+	config.allowed_roles = DPP_CAPAB_ENROLLEE | DPP_CAPAB_CONFIGURATOR;
 	if (cmd) {
 		pos = os_strstr(cmd, " tcp_port=");
 		if (pos) {
 			pos += 10;
 			config.tcp_port = atoi(pos);
+		}
+
+		pos = os_strstr(cmd, " role=");
+		if (pos) {
+			pos += 6;
+			if (os_strncmp(pos, "configurator", 12) == 0)
+				config.allowed_roles = DPP_CAPAB_CONFIGURATOR;
+			else if (os_strncmp(pos, "enrollee", 8) == 0)
+				config.allowed_roles = DPP_CAPAB_ENROLLEE;
+			else if (os_strncmp(pos, "either", 6) == 0)
+				config.allowed_roles = DPP_CAPAB_CONFIGURATOR |
+					DPP_CAPAB_ENROLLEE;
+			else
+				return -1;
 		}
 	}
 	config.configurator_params = wpa_s->dpp_configurator_params;

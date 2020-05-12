@@ -358,6 +358,7 @@ struct dpp_relay_config {
 struct dpp_controller_config {
 	const char *configurator_params;
 	int tcp_port;
+	u8 allowed_roles;
 };
 
 #ifdef CONFIG_TESTING_OPTIONS
