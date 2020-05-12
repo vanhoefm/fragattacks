@@ -4788,6 +4788,40 @@ def run_dpp_tcp(dev, apdev, cap_lo, port=None):
     time.sleep(0.5)
     wt.close()
 
+def test_dpp_tcp_conf_init(dev, apdev, params):
+    """DPP over TCP (Configurator initiates)"""
+    cap_lo = os.path.join(params['prefix'], ".lo.pcap")
+    try:
+        run_dpp_tcp_conf_init(dev, apdev, cap_lo)
+    finally:
+        dev[1].request("DPP_CONTROLLER_STOP")
+
+def run_dpp_tcp_conf_init(dev, apdev, cap_lo, port=None):
+    check_dpp_capab(dev[0], min_ver=2)
+    check_dpp_capab(dev[1], min_ver=2)
+
+    wt = WlantestCapture('lo', cap_lo)
+    time.sleep(1)
+
+    id_c = dev[1].dpp_bootstrap_gen()
+    uri_c = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id_c)
+    res = dev[1].request("DPP_BOOTSTRAP_INFO %d" % id_c)
+    req = "DPP_CONTROLLER_START role=enrollee"
+    if port:
+        req += " tcp_port=" + port
+    if "OK" not in dev[1].request(req):
+        raise Exception("Failed to start Controller")
+
+    conf_id = dev[0].dpp_configurator_add()
+    dev[0].dpp_auth_init(uri=uri_c, role="configurator", conf="sta-dpp",
+                         configurator=conf_id,
+                         tcp_addr="127.0.0.1", tcp_port=port)
+    wait_auth_success(dev[0], dev[1], configurator=dev[0], enrollee=dev[1],
+                      allow_enrollee_failure=True,
+                      allow_configurator_failure=True)
+    time.sleep(0.5)
+    wt.close()
+
 def test_dpp_tcp_controller_start_failure(dev, apdev, params):
     """DPP Controller startup failure"""
     check_dpp_capab(dev[0])
