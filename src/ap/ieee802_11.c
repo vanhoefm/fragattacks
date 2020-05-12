@@ -4927,12 +4927,15 @@ static void handle_auth_cb(struct hostapd_data *hapd,
 	auth_transaction = le_to_host16(mgmt->u.auth.auth_transaction);
 	status_code = le_to_host16(mgmt->u.auth.status_code);
 
+	// Ignore if frame wasn't ACK'ed (this is normal in our hwsim setup).
+#if 0
 	if (!ok) {
 		hostapd_logger(hapd, mgmt->da, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_NOTICE,
 			       "did not acknowledge authentication response");
 		goto fail;
 	}
+#endif
 
 	if (len < IEEE80211_HDRLEN + sizeof(mgmt->u.auth)) {
 		wpa_printf(MSG_INFO, "handle_auth_cb - too short payload (len=%lu)",
@@ -5015,6 +5018,8 @@ static void handle_assoc_cb(struct hostapd_data *hapd,
 	else
 		status = le_to_host16(mgmt->u.assoc_resp.status_code);
 
+	// Ignore if frame wasn't ACK'ed (this is normal in our hwsim setup).
+#if 0
 	if (!ok) {
 		hostapd_logger(hapd, mgmt->da, HOSTAPD_MODULE_IEEE80211,
 			       HOSTAPD_LEVEL_DEBUG,
@@ -5026,6 +5031,7 @@ static void handle_assoc_cb(struct hostapd_data *hapd,
 
 		return;
 	}
+#endif
 
 	if (status != WLAN_STATUS_SUCCESS)
 		return;
