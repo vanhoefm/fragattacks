@@ -3981,7 +3981,7 @@ static const struct cipher_info ciphers_group_mgmt[] = {
 };
 
 
-static int ctrl_iface_get_capability_pairwise(int res, char *strict,
+static int ctrl_iface_get_capability_pairwise(int res, bool strict,
 					      struct wpa_driver_capa *capa,
 					      char *buf, size_t buflen)
 {
@@ -4021,7 +4021,7 @@ static int ctrl_iface_get_capability_pairwise(int res, char *strict,
 }
 
 
-static int ctrl_iface_get_capability_group(int res, char *strict,
+static int ctrl_iface_get_capability_group(int res, bool strict,
 					   struct wpa_driver_capa *capa,
 					   char *buf, size_t buflen)
 {
@@ -4069,7 +4069,7 @@ static int ctrl_iface_get_capability_group(int res, char *strict,
 }
 
 
-static int ctrl_iface_get_capability_group_mgmt(int res, char *strict,
+static int ctrl_iface_get_capability_group_mgmt(int res, bool strict,
 						struct wpa_driver_capa *capa,
 						char *buf, size_t buflen)
 {
@@ -4134,7 +4134,7 @@ static int iftype_str_to_index(const char *iftype_str)
 }
 
 
-static int ctrl_iface_get_capability_key_mgmt(int res, char *strict,
+static int ctrl_iface_get_capability_key_mgmt(int res, bool strict,
 					      struct wpa_driver_capa *capa,
 					      const char *iftype_str,
 					      char *buf, size_t buflen)
@@ -4277,7 +4277,7 @@ static int ctrl_iface_get_capability_key_mgmt(int res, char *strict,
 }
 
 
-static int ctrl_iface_get_capability_proto(int res, char *strict,
+static int ctrl_iface_get_capability_proto(int res, bool strict,
 					   struct wpa_driver_capa *capa,
 					   char *buf, size_t buflen)
 {
@@ -4320,7 +4320,7 @@ static int ctrl_iface_get_capability_proto(int res, char *strict,
 
 
 static int ctrl_iface_get_capability_auth_alg(struct wpa_supplicant *wpa_s,
-					      int res, char *strict,
+					      int res, bool strict,
 					      struct wpa_driver_capa *capa,
 					      char *buf, size_t buflen)
 {
@@ -4398,7 +4398,7 @@ static int ctrl_iface_get_capability_auth_alg(struct wpa_supplicant *wpa_s,
 }
 
 
-static int ctrl_iface_get_capability_modes(int res, char *strict,
+static int ctrl_iface_get_capability_modes(int res, bool strict,
 					   struct wpa_driver_capa *capa,
 					   char *buf, size_t buflen)
 {
@@ -4561,7 +4561,8 @@ static int wpa_supplicant_ctrl_iface_get_capability(
 {
 	struct wpa_driver_capa capa;
 	int res;
-	char *next_param, *curr_param, *iftype = NULL, *strict = NULL;
+	char *next_param, *curr_param, *iftype = NULL;
+	bool strict = false;
 	char field[50];
 	size_t len;
 
@@ -4580,7 +4581,7 @@ static int wpa_supplicant_ctrl_iface_get_capability(
 			*next_param = '\0';
 
 		if (os_strcmp(curr_param, "strict") == 0)
-			strict = curr_param;
+			strict = true;
 		else if (os_strncmp(curr_param, "iftype=", 7) == 0)
 			iftype = curr_param + 7;
 		else
