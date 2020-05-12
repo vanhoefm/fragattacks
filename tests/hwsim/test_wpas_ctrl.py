@@ -987,6 +987,16 @@ def test_wpas_ctrl_get_capability(dev):
     if "WPA-PSK" not in res or "WPA-EAP" not in res:
         raise Exception("Unexpected GET_CAPABILITY key_mgmt response: " + str(res))
 
+    res = dev[0].get_capability("key_mgmt iftype=STATION")
+    if "WPA-PSK" not in res or "WPA-EAP" not in res:
+        raise Exception("Unexpected GET_CAPABILITY key_mgmt iftype=STATION response: " + str(res))
+
+    iftypes = [ "STATION", "AP_VLAN", "AP", "P2P_GO", "P2P_CLIENT",
+                "P2P_DEVICE", "MESH", "IBSS", "NAN", "UNKNOWN" ]
+    for i in iftypes:
+        res = dev[0].get_capability("key_mgmt iftype=" + i)
+        logger.info("GET_CAPABILITY key_mgmt iftype=%s: %s" % (i, res))
+
     res = dev[0].get_capability("proto")
     if "WPA" not in res or "RSN" not in res:
         raise Exception("Unexpected GET_CAPABILITY proto response: " + str(res))
