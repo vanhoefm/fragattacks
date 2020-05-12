@@ -7,6 +7,7 @@
  */
 
 #include "utils/includes.h"
+#include <openssl/opensslv.h>
 #include <openssl/err.h>
 
 #include "utils/common.h"
@@ -17,6 +18,21 @@
 #include "dpp_i.h"
 
 #ifdef CONFIG_DPP2
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || \
+	(defined(LIBRESSL_VERSION_NUMBER) && \
+	 LIBRESSL_VERSION_NUMBER < 0x20700000L)
+/* Compatibility wrappers for older versions. */
+
+static EC_KEY * EVP_PKEY_get0_EC_KEY(EVP_PKEY *pkey)
+{
+	if (pkey->type != EVP_PKEY_EC)
+		return NULL;
+	return pkey->pkey.ec;
+}
+
+#endif
+
 
 void dpp_free_asymmetric_key(struct dpp_asymmetric_key *key)
 {
