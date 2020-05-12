@@ -2968,6 +2968,56 @@ def run_sigma_dut_dpp_tcp_conf_resp(dev, status_query=False):
     finally:
         stop_sigma_dut(sigma)
 
+def dpp_init_tcp_configurator(dev, id1, conf_id):
+    logger.info("Starting DPP initiator/configurator (TCP) in a thread")
+    time.sleep(1)
+    cmd = "DPP_AUTH_INIT peer=%d role=configurator conf=sta-dpp configurator=%d tcp_addr=127.0.0.1" % (id1, conf_id)
+    if "OK" not in dev.request(cmd):
+        raise Exception("Failed to initiate DPP Authentication")
+    ev = dev.wait_event(["DPP-CONF-SENT"], timeout=5)
+    if ev is None:
+        raise Exception("DPP configuration not completed (Configurator)")
+    logger.info("DPP initiator/configurator done")
+
+def test_sigma_dut_dpp_tcp_enrollee_resp(dev, apdev):
+    """sigma_dut DPP TCP Enrollee (Controller) as responder"""
+    run_sigma_dut_dpp_tcp_enrollee_resp(dev)
+
+def run_sigma_dut_dpp_tcp_enrollee_resp(dev, status_query=False):
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+    sigma = start_sigma_dut(dev[0].ifname)
+    try:
+        cmd = "dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPCryptoIdentifier,P-256,DPPBS,QR"
+        res = sigma_dut_cmd(cmd)
+        if "status,COMPLETE" not in res:
+            raise Exception("dev_exec_action did not succeed: " + res)
+        hex = res.split(',')[3]
+        uri = from_hex(hex)
+        logger.info("URI from sigma_dut: " + uri)
+
+        cmd = "DPP_CONFIGURATOR_ADD"
+        res = dev[1].request(cmd)
+        if "FAIL" in res:
+            raise Exception("Failed to add configurator")
+        conf_id = int(res)
+
+        id1 = dev[1].dpp_qr_code(uri)
+
+        t = threading.Thread(target=dpp_init_tcp_configurator, args=(dev[1], id1, conf_id))
+        t.start()
+        cmd = "dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Responder,DPPAuthDirection,Single,DPPProvisioningRole,Enrollee,DPPSigningKeyECC,P-256,DPPBS,QR,DPPOverTCP,yes,DPPTimeout,6"
+        if status_query:
+            cmd += ",DPPStatusQuery,Yes"
+        res = sigma_dut_cmd(cmd, timeout=10)
+        t.join()
+        if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK" not in res:
+            raise Exception("Unexpected result: " + res)
+        if status_query and "StatusResult,0" not in res:
+            raise Exception("Status query did not succeed: " + res)
+    finally:
+        stop_sigma_dut(sigma)
+
 def test_sigma_dut_dpp_tcp_enrollee_init(dev, apdev):
     """sigma_dut DPP TCP Enrollee as initiator"""
     check_dpp_capab(dev[0])
@@ -2988,6 +3038,70 @@ def test_sigma_dut_dpp_tcp_enrollee_init(dev, apdev):
             raise Exception("dev_exec_action did not succeed: " + res)
 
         cmd = "dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,DPPAuthDirection,Single,DPPProvisioningRole,Enrollee,DPPConfEnrolleeRole,STA,DPPBS,QR,DPPOverTCP,127.0.0.1,DPPTimeout,6"
+        res = sigma_dut_cmd(cmd, timeout=10)
+        if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK" not in res:
+            raise Exception("Unexpected result: " + res)
+    finally:
+        stop_sigma_dut(sigma)
+        dev[1].request("DPP_CONTROLLER_STOP")
+
+def test_sigma_dut_dpp_tcp_enrollee_init_mutual(dev, apdev):
+    """sigma_dut DPP TCP Enrollee as initiator with mutual authentication"""
+    check_dpp_capab(dev[0], min_ver=2)
+    check_dpp_capab(dev[1], min_ver=2)
+    sigma = start_sigma_dut(dev[0].ifname)
+    try:
+        # Controller
+        conf_id = dev[1].dpp_configurator_add()
+        dev[1].set("dpp_configurator_params",
+                   "conf=sta-dpp configurator=%d" % conf_id)
+        id_c = dev[1].dpp_bootstrap_gen()
+        uri_c = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id_c)
+        if "OK" not in dev[1].request("DPP_CONTROLLER_START"):
+            raise Exception("Failed to start Controller")
+
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri_c))
+        if "status,COMPLETE" not in res:
+            raise Exception("dev_exec_action did not succeed: " + res)
+
+        cmd = "dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPCryptoIdentifier,P-256,DPPBS,QR"
+        res = sigma_dut_cmd_check(cmd)
+        hex = res.split(',')[3]
+        uri = from_hex(hex)
+        logger.info("URI from sigma_dut: " + uri)
+        id1 = dev[1].dpp_qr_code(uri)
+
+        cmd = "dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,DPPAuthDirection,Mutual,DPPProvisioningRole,Enrollee,DPPBS,QR,DPPOverTCP,127.0.0.1,DPPTimeout,6"
+        res = sigma_dut_cmd(cmd, timeout=10)
+        if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK" not in res:
+            raise Exception("Unexpected result: " + res)
+    finally:
+        stop_sigma_dut(sigma)
+        dev[1].request("DPP_CONTROLLER_STOP")
+
+def test_sigma_dut_dpp_tcp_configurator_init_mutual(dev, apdev):
+    """sigma_dut DPP TCP Configurator as initiator with mutual authentication"""
+    check_dpp_capab(dev[0], min_ver=2)
+    check_dpp_capab(dev[1], min_ver=2)
+    sigma = start_sigma_dut(dev[0].ifname)
+    try:
+        id_c = dev[1].dpp_bootstrap_gen()
+        uri_c = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id_c)
+        if "OK" not in dev[1].request("DPP_CONTROLLER_START role=enrollee"):
+            raise Exception("Failed to start Controller")
+
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,SetPeerBootstrap,DPPBootstrappingdata,%s,DPPBS,QR" % to_hex(uri_c))
+        if "status,COMPLETE" not in res:
+            raise Exception("dev_exec_action did not succeed: " + res)
+
+        cmd = "dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPCryptoIdentifier,P-256,DPPBS,QR"
+        res = sigma_dut_cmd_check(cmd)
+        hex = res.split(',')[3]
+        uri = from_hex(hex)
+        logger.info("URI from sigma_dut: " + uri)
+        id1 = dev[1].dpp_qr_code(uri)
+
+        cmd = "dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Initiator,DPPAuthDirection,Mutual,DPPProvisioningRole,Configurator,DPPConfIndex,1,DPPConfEnrolleeRole,STA,DPPBS,QR,DPPOverTCP,127.0.0.1,DPPTimeout,6"
         res = sigma_dut_cmd(cmd, timeout=10)
         if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK" not in res:
             raise Exception("Unexpected result: " + res)
