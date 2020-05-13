@@ -2208,6 +2208,46 @@ def test_sigma_dut_dpp_qr_configurator_chirp(dev, apdev):
         dev[0].set("dpp_config_processing", "0")
         stop_sigma_dut(sigma)
 
+def test_sigma_dut_ap_dpp_qr_enrollee_chirp(dev, apdev, params):
+    """sigma_dut DPP/QR AP as chirping Enrollee"""
+    check_dpp_capab(dev[0], min_ver=2)
+    check_dpp_capab(dev[1])
+    logdir = params['prefix'] + ".sigma-hostapd"
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            sigma_dut_cmd_check("ap_reset_default,program,DPP")
+            cmd = "dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPCryptoIdentifier,P-256,DPPBS,QR"
+            res = sigma_dut_cmd_check(cmd)
+            if "status,COMPLETE" not in res:
+                raise Exception("dev_exec_action did not succeed: " + res)
+            hex = res.split(',')[3]
+            uri = from_hex(hex)
+            logger.info("URI from sigma_dut: " + uri)
+
+            conf_id = dev[0].dpp_configurator_add(key=csign)
+            idc = dev[0].dpp_qr_code(uri)
+            dev[0].dpp_bootstrap_set(idc, conf="ap-dpp", configurator=conf_id,
+                                 ssid="DPPNET01")
+            dev[0].dpp_listen(2437)
+
+            res = sigma_dut_cmd_check("dev_exec_action,program,DPP,DPPActionType,AutomaticDPP,DPPAuthRole,Responder,DPPAuthDirection,Single,DPPProvisioningRole,Enrollee,DPPBS,QR,DPPTimeout,16,DPPChirp,Enable", timeout=20)
+            if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK" not in res:
+                raise Exception("Unexpected result: " + res)
+
+            dev[1].set("dpp_config_processing", "2")
+            id = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
+            uri = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id)
+            dev[1].dpp_listen(2437)
+            dev[0].dpp_auth_init(uri=uri, conf="sta-dpp", ssid="DPPNET01",
+                                 configurator=conf_id)
+            dev[1].wait_connected()
+
+            sigma_dut_cmd_check("ap_reset_default,program,DPP")
+        finally:
+            dev[1].set("dpp_config_processing", "0", allow_fail=True)
+            stop_sigma_dut(sigma)
+
 def test_sigma_dut_dpp_pkex_init_configurator(dev, apdev):
     """sigma_dut DPP/PKEX initiator as Configurator"""
     check_dpp_capab(dev[0])
