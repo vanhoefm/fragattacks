@@ -903,8 +903,11 @@ int main(int argc, char *argv[])
 			!!(interfaces.iface[i]->drv_flags &
 			   WPA_DRIVER_FLAGS_AP_TEARDOWN_SUPPORT);
 		hostapd_interface_deinit_free(interfaces.iface[i]);
+		interfaces.iface[i] = NULL;
 	}
 	os_free(interfaces.iface);
+	interfaces.iface = NULL;
+	interfaces.count = 0;
 
 #ifdef CONFIG_DPP
 	dpp_global_deinit(interfaces.dpp);

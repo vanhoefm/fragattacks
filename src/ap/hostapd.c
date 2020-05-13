@@ -76,6 +76,8 @@ int hostapd_for_each_interface(struct hapd_interfaces *interfaces,
 	int ret;
 
 	for (i = 0; i < interfaces->count; i++) {
+		if (!interfaces->iface[i])
+			continue;
 		ret = cb(interfaces->iface[i], ctx);
 		if (ret)
 			return ret;
