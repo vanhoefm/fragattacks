@@ -10,6 +10,8 @@
 #ifndef DPP_HOSTAPD_H
 #define DPP_HOSTAPD_H
 
+struct dpp_bootstrap_info;
+
 int hostapd_dpp_qr_code(struct hostapd_data *hapd, const char *cmd);
 int hostapd_dpp_nfc_uri(struct hostapd_data *hapd, const char *cmd);
 int hostapd_dpp_nfc_handover_req(struct hostapd_data *hapd, const char *cmd);
@@ -38,5 +40,9 @@ int hostapd_dpp_init(struct hostapd_data *hapd);
 void hostapd_dpp_deinit(struct hostapd_data *hapd);
 void hostapd_dpp_init_global(struct hapd_interfaces *ifaces);
 void hostapd_dpp_deinit_global(struct hapd_interfaces *ifaces);
+
+int hostapd_dpp_chirp(struct hostapd_data *hapd, const char *cmd);
+void hostapd_dpp_chirp_stop(struct hostapd_data *hapd);
+void hostapd_dpp_remove_bi(void *ctx, struct dpp_bootstrap_info *bi);
 
 #endif /* DPP_HOSTAPD_H */

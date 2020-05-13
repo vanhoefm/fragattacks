@@ -630,6 +630,10 @@ static void hostapd_dpp_rx_auth_req(struct hostapd_data *hapd, const u8 *src,
 	wpa_printf(MSG_DEBUG, "DPP: Authentication Request from " MACSTR,
 		   MAC2STR(src));
 
+#ifdef CONFIG_DPP2
+	hostapd_dpp_chirp_stop(hapd);
+#endif /* CONFIG_DPP2 */
+
 	r_bootstrap = dpp_get_attr(buf, len, DPP_ATTR_R_BOOTSTRAP_KEY_HASH,
 				   &r_bootstrap_len);
 	if (!r_bootstrap || r_bootstrap_len != SHA256_MAC_LEN) {
@@ -2139,6 +2143,7 @@ void hostapd_dpp_deinit(struct hostapd_data *hapd)
 			     NULL);
 	eloop_cancel_timeout(hostapd_dpp_conn_status_result_wait_timeout, hapd,
 			     NULL);
+	hostapd_dpp_chirp_stop(hapd);
 #endif /* CONFIG_DPP2 */
 	dpp_auth_deinit(hapd->dpp_auth);
 	hapd->dpp_auth = NULL;
@@ -2147,3 +2152,320 @@ void hostapd_dpp_deinit(struct hostapd_data *hapd)
 	os_free(hapd->dpp_configurator_params);
 	hapd->dpp_configurator_params = NULL;
 }
+
+
+#ifdef CONFIG_DPP2
+
+static void hostapd_dpp_chirp_next(void *eloop_ctx, void *timeout_ctx);
+
+static void hostapd_dpp_chirp_timeout(void *eloop_ctx, void *timeout_ctx)
+{
+	struct hostapd_data *hapd = eloop_ctx;
+
+	wpa_printf(MSG_DEBUG, "DPP: No chirp response received");
+	hostapd_drv_send_action_cancel_wait(hapd);
+	hostapd_dpp_chirp_next(hapd, NULL);
+}
+
+
+static void hostapd_dpp_chirp_start(struct hostapd_data *hapd)
+{
+	struct wpabuf *msg;
+	int type;
+
+	msg = hapd->dpp_presence_announcement;
+	type = DPP_PA_PRESENCE_ANNOUNCEMENT;
+	wpa_printf(MSG_DEBUG, "DPP: Chirp on %d MHz", hapd->dpp_chirp_freq);
+	wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_TX "dst=" MACSTR
+		" freq=%u type=%d",
+		MAC2STR(broadcast), hapd->dpp_chirp_freq, type);
+	if (hostapd_drv_send_action(
+		    hapd, hapd->dpp_chirp_freq, 2000, broadcast,
+		    wpabuf_head(msg), wpabuf_len(msg)) < 0 ||
+	    eloop_register_timeout(2, 0, hostapd_dpp_chirp_timeout,
+				   hapd, NULL) < 0)
+		hostapd_dpp_chirp_stop(hapd);
+}
+
+
+static struct hostapd_hw_modes *
+dpp_get_mode(struct hostapd_data *hapd,
+	     enum hostapd_hw_mode mode)
+{
+	struct hostapd_hw_modes *modes = hapd->iface->hw_features;
+	u16 num_modes = hapd->iface->num_hw_features;
+	u16 i;
+
+	for (i = 0; i < num_modes; i++) {
+		if (modes[i].mode != mode ||
+		    !modes[i].num_channels || !modes[i].channels)
+			continue;
+		return &modes[i];
+	}
+
+	return NULL;
+}
+
+
+static void
+hostapd_dpp_chirp_scan_res_handler(struct hostapd_iface *iface)
+{
+	struct hostapd_data *hapd = iface->bss[0];
+	struct wpa_scan_results *scan_res;
+	struct dpp_bootstrap_info *bi = hapd->dpp_chirp_bi;
+	unsigned int i;
+	struct hostapd_hw_modes *mode;
+	int c;
+
+	if (!bi)
+		return;
+
+	hapd->dpp_chirp_scan_done = 1;
+
+	scan_res = hostapd_driver_get_scan_results(hapd);
+
+	os_free(hapd->dpp_chirp_freqs);
+	hapd->dpp_chirp_freqs = NULL;
+
+	/* Channels from own bootstrapping info */
+	if (bi) {
+		for (i = 0; i < bi->num_freq; i++)
+			int_array_add_unique(&hapd->dpp_chirp_freqs,
+					     bi->freq[i]);
+	}
+
+	/* Preferred chirping channels */
+	int_array_add_unique(&hapd->dpp_chirp_freqs, 2437);
+
+	mode = dpp_get_mode(hapd, HOSTAPD_MODE_IEEE80211A);
+	if (mode) {
+		int chan44 = 0, chan149 = 0;
+
+		for (c = 0; c < mode->num_channels; c++) {
+			struct hostapd_channel_data *chan = &mode->channels[c];
+
+			if (chan->flag & (HOSTAPD_CHAN_DISABLED |
+					  HOSTAPD_CHAN_RADAR))
+				continue;
+			if (chan->freq == 5220)
+				chan44 = 1;
+			if (chan->freq == 5745)
+				chan149 = 1;
+		}
+		if (chan149)
+			int_array_add_unique(&hapd->dpp_chirp_freqs, 5745);
+		else if (chan44)
+			int_array_add_unique(&hapd->dpp_chirp_freqs, 5220);
+	}
+
+	mode = dpp_get_mode(hapd, HOSTAPD_MODE_IEEE80211AD);
+	if (mode) {
+		for (c = 0; c < mode->num_channels; c++) {
+			struct hostapd_channel_data *chan = &mode->channels[c];
+
+			if ((chan->flag & (HOSTAPD_CHAN_DISABLED |
+					   HOSTAPD_CHAN_RADAR)) ||
+			    chan->freq != 60480)
+				continue;
+			int_array_add_unique(&hapd->dpp_chirp_freqs, 60480);
+			break;
+		}
+	}
+
+	/* Add channels from scan results for APs that advertise Configurator
+	 * Connectivity element */
+	for (i = 0; scan_res && i < scan_res->num; i++) {
+		struct wpa_scan_res *bss = scan_res->res[i];
+		size_t ie_len = bss->ie_len;
+
+		if (!ie_len)
+			ie_len = bss->beacon_ie_len;
+		if (get_vendor_ie((const u8 *) (bss + 1), ie_len,
+				  DPP_CC_IE_VENDOR_TYPE))
+			int_array_add_unique(&hapd->dpp_chirp_freqs,
+					     bss->freq);
+	}
+
+	if (!hapd->dpp_chirp_freqs ||
+	    eloop_register_timeout(0, 0, hostapd_dpp_chirp_next,
+				   hapd, NULL) < 0)
+		hostapd_dpp_chirp_stop(hapd);
+
+	wpa_scan_results_free(scan_res);
+}
+
+
+static void hostapd_dpp_chirp_next(void *eloop_ctx, void *timeout_ctx)
+{
+	struct hostapd_data *hapd = eloop_ctx;
+	int i;
+
+	if (hapd->dpp_chirp_listen)
+		hostapd_dpp_listen_stop(hapd);
+
+	if (hapd->dpp_chirp_freq == 0) {
+		if (hapd->dpp_chirp_round % 4 == 0 &&
+		    !hapd->dpp_chirp_scan_done) {
+			struct wpa_driver_scan_params params;
+			int ret;
+
+			wpa_printf(MSG_DEBUG,
+				   "DPP: Update channel list for chirping");
+			os_memset(&params, 0, sizeof(params));
+			ret = hostapd_driver_scan(hapd, &params);
+			if (ret < 0) {
+				wpa_printf(MSG_DEBUG,
+					   "DPP: Failed to request a scan ret=%d (%s)",
+					   ret, strerror(-ret));
+				hostapd_dpp_chirp_scan_res_handler(hapd->iface);
+			} else {
+				hapd->iface->scan_cb =
+					hostapd_dpp_chirp_scan_res_handler;
+			}
+			return;
+		}
+		hapd->dpp_chirp_freq = hapd->dpp_chirp_freqs[0];
+		hapd->dpp_chirp_round++;
+		wpa_printf(MSG_DEBUG, "DPP: Start chirping round %d",
+			   hapd->dpp_chirp_round);
+	} else {
+		for (i = 0; hapd->dpp_chirp_freqs[i]; i++)
+			if (hapd->dpp_chirp_freqs[i] == hapd->dpp_chirp_freq)
+				break;
+		if (!hapd->dpp_chirp_freqs[i]) {
+			wpa_printf(MSG_DEBUG,
+				   "DPP: Previous chirp freq %d not found",
+				   hapd->dpp_chirp_freq);
+			return;
+		}
+		i++;
+		if (hapd->dpp_chirp_freqs[i]) {
+			hapd->dpp_chirp_freq = hapd->dpp_chirp_freqs[i];
+		} else {
+			hapd->dpp_chirp_iter--;
+			if (hapd->dpp_chirp_iter <= 0) {
+				wpa_printf(MSG_DEBUG,
+					   "DPP: Chirping iterations completed");
+				hostapd_dpp_chirp_stop(hapd);
+				return;
+			}
+			hapd->dpp_chirp_freq = 0;
+			hapd->dpp_chirp_scan_done = 0;
+			if (eloop_register_timeout(30, 0,
+						   hostapd_dpp_chirp_next,
+						   hapd, NULL) < 0) {
+				hostapd_dpp_chirp_stop(hapd);
+				return;
+			}
+			if (hapd->dpp_chirp_listen) {
+				wpa_printf(MSG_DEBUG,
+					   "DPP: Listen on %d MHz during chirp 30 second wait",
+					hapd->dpp_chirp_listen);
+				/* TODO: start listen on the channel */
+			} else {
+				wpa_printf(MSG_DEBUG,
+					   "DPP: Wait 30 seconds before starting the next chirping round");
+			}
+			return;
+		}
+	}
+
+	hostapd_dpp_chirp_start(hapd);
+}
+
+
+int hostapd_dpp_chirp(struct hostapd_data *hapd, const char *cmd)
+{
+	const char *pos;
+	int iter = 1, listen_freq = 0;
+	struct dpp_bootstrap_info *bi;
+
+	pos = os_strstr(cmd, " own=");
+	if (!pos)
+		return -1;
+	pos += 5;
+	bi = dpp_bootstrap_get_id(hapd->iface->interfaces->dpp, atoi(pos));
+	if (!bi) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Identified bootstrap info not found");
+		return -1;
+	}
+
+	pos = os_strstr(cmd, " iter=");
+	if (pos) {
+		iter = atoi(pos + 6);
+		if (iter <= 0)
+			return -1;
+	}
+
+	pos = os_strstr(cmd, " listen=");
+	if (pos) {
+		listen_freq = atoi(pos + 8);
+		if (listen_freq <= 0)
+			return -1;
+	}
+
+	hostapd_dpp_chirp_stop(hapd);
+	hapd->dpp_allowed_roles = DPP_CAPAB_ENROLLEE;
+	hapd->dpp_qr_mutual = 0;
+	hapd->dpp_chirp_bi = bi;
+	hapd->dpp_presence_announcement = dpp_build_presence_announcement(bi);
+	if (!hapd->dpp_presence_announcement)
+		return -1;
+	hapd->dpp_chirp_iter = iter;
+	hapd->dpp_chirp_round = 0;
+	hapd->dpp_chirp_scan_done = 0;
+	hapd->dpp_chirp_listen = listen_freq;
+
+	return eloop_register_timeout(0, 0, hostapd_dpp_chirp_next, hapd, NULL);
+}
+
+
+void hostapd_dpp_chirp_stop(struct hostapd_data *hapd)
+{
+	if (hapd->dpp_presence_announcement) {
+		hostapd_drv_send_action_cancel_wait(hapd);
+		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_CHIRP_STOPPED);
+	}
+	hapd->dpp_chirp_bi = NULL;
+	wpabuf_free(hapd->dpp_presence_announcement);
+	hapd->dpp_presence_announcement = NULL;
+	if (hapd->dpp_chirp_listen)
+		hostapd_dpp_listen_stop(hapd);
+	hapd->dpp_chirp_listen = 0;
+	hapd->dpp_chirp_freq = 0;
+	os_free(hapd->dpp_chirp_freqs);
+	hapd->dpp_chirp_freqs = NULL;
+	eloop_cancel_timeout(hostapd_dpp_chirp_next, hapd, NULL);
+	eloop_cancel_timeout(hostapd_dpp_chirp_timeout, hapd, NULL);
+	if (hapd->iface->scan_cb == hostapd_dpp_chirp_scan_res_handler) {
+		/* TODO: abort ongoing scan */
+		hapd->iface->scan_cb = NULL;
+	}
+}
+
+
+static int handle_dpp_remove_bi(struct hostapd_iface *iface, void *ctx)
+{
+	struct dpp_bootstrap_info *bi = ctx;
+	size_t i;
+
+	for (i = 0; i < iface->num_bss; i++) {
+		struct hostapd_data *hapd = iface->bss[i];
+
+		if (bi == hapd->dpp_chirp_bi)
+			hostapd_dpp_chirp_stop(hapd);
+	}
+
+	return 0;
+}
+
+
+void hostapd_dpp_remove_bi(void *ctx, struct dpp_bootstrap_info *bi)
+{
+	struct hapd_interfaces *interfaces = ctx;
+
+	hostapd_for_each_interface(interfaces, handle_dpp_remove_bi, bi);
+}
+
+#endif /* CONFIG_DPP2 */

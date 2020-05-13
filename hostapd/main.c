@@ -674,7 +674,11 @@ int main(int argc, char *argv[])
 #endif /* CONFIG_ETH_P_OUI */
 #ifdef CONFIG_DPP
 	os_memset(&dpp_conf, 0, sizeof(dpp_conf));
+	dpp_conf.cb_ctx = &interfaces;
 	/* TODO: dpp_conf.msg_ctx? */
+#ifdef CONFIG_DPP2
+	dpp_conf.remove_bi = hostapd_dpp_remove_bi;
+#endif /* CONFIG_DPP2 */
 	interfaces.dpp = dpp_global_init(&dpp_conf);
 	if (!interfaces.dpp)
 		return -1;
