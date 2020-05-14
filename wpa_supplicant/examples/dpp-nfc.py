@@ -144,7 +144,10 @@ def get_status_field(wpas, field, extra=None):
     return None
 
 def own_addr(wpas):
-    return get_status_field(wpas, "address")
+    addr = get_status_field(wpas, "address")
+    if addr is None:
+        addr = get_status_field(wpas, "bssid[0]")
+    return addr
 
 def dpp_bootstrap_gen(wpas, type="qrcode", chan=None, mac=None, info=None,
                       curve=None, key=None):
