@@ -623,6 +623,8 @@ def main():
                         help='run as Configurator-only')
     parser.add_argument('--config-params', default='',
                         help='configurator parameters')
+    parser.add_argument('--ctrl', default='/var/run/wpa_supplicant',
+                        help='wpa_supplicant/hostapd control interface')
     parser.add_argument('--summary',
                         help='summary file for writing status updates')
     parser.add_argument('--success',
@@ -662,6 +664,10 @@ def main():
         global ifname
         ifname = args.ifname
         print("Selected ifname " + ifname)
+
+    if args.ctrl:
+        global wpas_ctrl
+        wpas_ctrl = args.ctrl
 
     if args.summary:
         global summary_file
