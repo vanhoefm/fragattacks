@@ -18,7 +18,7 @@ import ndef
 
 import logging
 
-scriptsdir = os.path.dirname(os.path.realpath("dpp-nfc.py"))
+scriptsdir = os.path.dirname(os.path.realpath(sys.modules[__name__].__file__))
 sys.path.append(os.path.join(scriptsdir, '..', '..', 'wpaspy'))
 import wpaspy
 
