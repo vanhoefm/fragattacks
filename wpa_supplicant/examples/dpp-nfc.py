@@ -8,6 +8,7 @@
 # See README for more details.
 
 import os
+import struct
 import sys
 import time
 import threading
@@ -33,6 +34,8 @@ continue_loop = True
 terminate_now = False
 summary_file = None
 success_file = None
+my_crn = None
+peer_crn = None
 
 def summary(txt):
     print(txt)
@@ -209,11 +212,16 @@ def dpp_handover_client(llc):
     uri = ndef.UriRecord(uri)
     print("NFC URI record for DPP: " + str(uri))
     carrier = ndef.Record('application/vnd.wfa.dpp', 'A', uri.data)
-    hr = ndef.HandoverRequestRecord(version="1.4", crn=os.urandom(2))
+    crn = os.urandom(2)
+    hr = ndef.HandoverRequestRecord(version="1.4", crn=crn)
     hr.add_alternative_carrier('active', carrier.name)
     message = [hr, carrier]
     print("NFC Handover Request message for DPP: " + str(message))
 
+    global peer_crn
+    if peer_crn is not None:
+        print("NFC handover request from peer was already received - do not send own")
+        return
     client = nfc.handover.HandoverClient(llc)
     try:
         summary("Trying to initiate NFC connection handover")
@@ -228,12 +236,20 @@ def dpp_handover_client(llc):
         client.close()
         return
 
+    if peer_crn is not None:
+        print("NFC handover request from peer was already received - do not send own")
+        client.close()
+        return
+
     summary("Sending handover request")
 
     if not client.send_records(message):
         summary("Failed to send handover request")
         client.close()
         return
+
+    global my_crn
+    my_crn, = struct.unpack('>H', crn)
 
     summary("Receiving handover response")
     message = client.recv_records(timeout=3.0)
@@ -335,7 +351,32 @@ class HandoverServer(nfc.handover.HandoverServer):
         clear_raw_mode()
         print("\nHandoverServer - request received: " + str(records))
 
-        carrier = None
+        global my_crn, peer_crn
+
+        for carrier in records:
+            if not isinstance(carrier, ndef.HandoverRequestRecord):
+                continue
+            if carrier.collision_resolution_number:
+                peer_crn = carrier.collision_resolution_number
+                print("peer_crn:", peer_crn)
+
+        if my_crn is not None:
+            print("my_crn:", my_crn)
+
+        if my_crn is not None and peer_crn is not None:
+            if my_crn == peer_crn:
+                print("Same crn used - automatic collision resolution failed")
+                # TODO: Should generate a new Handover Request message
+                return ''
+            if ((my_crn & 1) == (peer_crn & 1) and my_crn > peer_crn) or \
+               ((my_crn & 1) != (peer_crn & 1) and my_crn < peer_crn):
+                print("I'm the Handover Selector Device")
+                pass
+            else:
+                print("Peer is the Handover Selector device")
+                print("Ignore the received request.")
+                return ''
+
         hs = ndef.HandoverSelectRecord('1.4')
         sel = [hs]
 
@@ -362,7 +403,6 @@ class HandoverServer(nfc.handover.HandoverServer):
                     continue
 
                 found = True
-                self.received_carrier = carrier
 
                 wpas = wpas_connect()
                 if wpas is None:
@@ -585,8 +625,10 @@ def llcp_startup(llc):
 
 def llcp_connected(llc):
     print("P2P LLCP connected")
-    global wait_connection
+    global wait_connection, my_crn, peer_crn
     wait_connection = False
+    my_crn = None
+    peer_crn = None
     global srv
     srv.start()
     if init_on_touch or not no_input:
