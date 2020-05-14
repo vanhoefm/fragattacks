@@ -154,7 +154,10 @@ def dpp_bootstrap_gen(wpas, type="qrcode", chan=None, mac=None, info=None,
     if mac:
         if mac is True:
             mac = own_addr(wpas)
-        cmd += " mac=" + mac.replace(':', '')
+        if mac is None:
+            print("Could not determine local MAC address for bootstrap info")
+        else:
+            cmd += " mac=" + mac.replace(':', '')
     if info:
         cmd += " info=" + info
     if curve:
@@ -197,6 +200,9 @@ def wpas_report_handover_sel(uri):
 
 def dpp_handover_client(llc):
     uri = wpas_get_nfc_uri(start_listen=False)
+    if uri is None:
+        print("Cannot start handover client - no bootstrap URI available")
+        return
     uri = ndef.UriRecord(uri)
     print("NFC URI record for DPP: " + str(uri))
     carrier = ndef.Record('application/vnd.wfa.dpp', 'A', uri.data)
