@@ -587,10 +587,8 @@ def llcp_connected(llc):
     print("P2P LLCP connected")
     global wait_connection
     wait_connection = False
-    global init_on_touch
-    if not init_on_touch:
-        global srv
-        srv.start()
+    global srv
+    srv.start()
     if init_on_touch or not no_input:
         threading.Thread(target=llcp_worker, args=(llc,)).start()
     return True
