@@ -80,8 +80,16 @@ def dpp_nfc_uri_process(uri):
         print("Could not parse DPP URI from NFC URI record")
         return False
     peer_id = int(peer_id)
-    print("peer_id=%d" % peer_id)
+    print("peer_id=%d for URI from NFC Tag: %s" % (peer_id, uri))
     cmd = "DPP_AUTH_INIT peer=%d" % peer_id
+    global enrollee_only, configurator_only, config_params
+    if enrollee_only:
+        cmd += " role=enrollee"
+    elif configurator_only:
+        cmd += " role=configurator"
+    if config_params:
+        cmd += " " + config_params
+    print("Initiate DPP authentication: " + cmd)
     res = wpas.request(cmd)
     if "OK" not in res:
         print("Failed to initiate DPP Authentication")
