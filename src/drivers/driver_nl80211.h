@@ -275,6 +275,8 @@ int process_bss_event(struct nl_msg *msg, void *arg);
 
 const char * nl80211_iftype_str(enum nl80211_iftype mode);
 
+void nl80211_restore_ap_mode(struct i802_bss *bss);
+
 #ifdef ANDROID
 int android_nl_socket_set_nonblocking(struct nl_sock *handle);
 int android_pno_start(struct i802_bss *bss,
