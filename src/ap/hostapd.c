@@ -1915,6 +1915,13 @@ static int hostapd_owe_iface_iter2(struct hostapd_iface *iface, void *ctx)
 
 		if (!bss->conf->owe_transition_ifname[0])
 			continue;
+		if (bss->iface->state != HAPD_IFACE_ENABLED) {
+			wpa_printf(MSG_DEBUG,
+				   "OWE: Interface %s state %s - defer beacon update",
+				   bss->conf->iface,
+				   hostapd_state_text(bss->iface->state));
+			continue;
+		}
 		res = hostapd_owe_trans_get_info(bss);
 		if (res == 0)
 			continue;
