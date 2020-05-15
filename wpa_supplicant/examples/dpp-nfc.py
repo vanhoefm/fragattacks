@@ -139,7 +139,7 @@ def get_status(wpas, extra=None):
         try:
             [name, value] = l.split('=', 1)
         except ValueError:
-            logger.info("Ignore unexpected status line: " + l)
+            summary("Ignore unexpected status line: %s" % l)
             continue
         vals[name] = value
     return vals
@@ -466,6 +466,11 @@ class HandoverServer(nfc.handover.HandoverServer):
                     summary("Negotiated channel: %d MHz" % freq)
                 if get_status_field(wpas, "bssid[0]"):
                     summary("Own AP freq: %s MHz" % str(get_status_field(wpas, "freq")))
+                    if get_status_field(wpas, "beacon_set", extra="DRIVER") is None:
+                        summary("Enable beaconing to have radio ready for RX")
+                        wpas.request("DISABLE")
+                        wpas.request("SET start_disabled 0")
+                        wpas.request("ENABLE")
                 cmd = "DPP_LISTEN %d" % freq
                 global enrollee_only
                 global configurator_only
