@@ -37,6 +37,7 @@ success_file = None
 my_crn_ready = False
 my_crn = None
 peer_crn = None
+hs_sent = False
 mutex = threading.Lock()
 
 def summary(txt):
@@ -257,7 +258,7 @@ def dpp_handover_client(llc):
 
     summary("Sending handover request")
 
-    global my_crn, my_crn_ready
+    global my_crn, my_crn_ready, hs_sent
     my_crn_ready = True
 
     if not client.send_records(message):
@@ -269,9 +270,20 @@ def dpp_handover_client(llc):
     my_crn, = struct.unpack('>H', crn)
 
     summary("Receiving handover response")
-    message = client.recv_records(timeout=3.0)
+    try:
+        message = client.recv_records(timeout=3.0)
+    except Exception as e:
+        # This is fine if we are the handover selector
+        if hs_sent:
+            summary("Client receive failed as expected since I'm the handover server: %s" % str(e))
+        else:
+            summary("Client receive failed: %s" % str(e))
+        message = None
     if message is None:
-        summary("No response received")
+        if hs_sent:
+            summary("No response received as expected since I'm the handover server")
+        else:
+            summary("No response received")
         client.close()
         return
     summary("Received message: " + str(message))
@@ -461,6 +473,7 @@ class HandoverServer(nfc.handover.HandoverServer):
                     cmd += " role=enrollee"
                 elif configurator_only:
                     cmd += " role=configurator"
+                summary(cmd)
                 res = wpas.request(cmd)
                 if "OK" not in res:
                     summary("Failed to start DPP listen")
@@ -477,6 +490,8 @@ class HandoverServer(nfc.handover.HandoverServer):
             self.success = True
         else:
             self.try_own = True
+        global hs_sent
+        hs_sent = True
         return sel
 
 def clear_raw_mode():
@@ -660,11 +675,12 @@ def llcp_startup(llc):
 
 def llcp_connected(llc):
     summary("P2P LLCP connected")
-    global wait_connection, my_crn, peer_crn, my_crn_ready
+    global wait_connection, my_crn, peer_crn, my_crn_ready, hs_sent
     wait_connection = False
     my_crn_ready = False
     my_crn = None
     peer_crn = None
+    hs_sent = False
     global srv
     srv.start()
     if init_on_touch or not no_input:
