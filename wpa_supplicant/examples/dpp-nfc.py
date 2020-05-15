@@ -178,12 +178,23 @@ def dpp_bootstrap_gen(wpas, type="qrcode", chan=None, mac=None, info=None,
         raise Exception("Failed to generate bootstrapping info")
     return int(res)
 
-def wpas_get_nfc_uri(start_listen=True):
+def wpas_get_nfc_uri(start_listen=True, pick_channel=False):
     wpas = wpas_connect()
     if wpas is None:
         return None
     global own_id, chanlist
-    own_id = dpp_bootstrap_gen(wpas, type="nfc-uri", chan=chanlist, mac=True)
+    chan = chanlist
+    if chan is None and get_status_field(wpas, "bssid[0]"):
+        freq = get_status_field(wpas, "freq")
+        if freq:
+            freq = int(freq)
+            if freq >= 2412 and freq <= 2462:
+                chan = "81/%d" % ((freq - 2407) / 5)
+                summary("Use current AP operating channel (%d MHz) as the URI channel list (%s)" % (freq, chan))
+    if chan is None and pick_channel:
+        chan = "81/6"
+        summary("Use channel 2437 MHz since no other preference provided")
+    own_id = dpp_bootstrap_gen(wpas, type="nfc-uri", chan=chan, mac=True)
     res = wpas.request("DPP_BOOTSTRAP_GET_URI %d" % own_id).rstrip()
     if "FAIL" in res:
         return None
@@ -410,7 +421,7 @@ class HandoverServer(nfc.handover.HandoverServer):
                 uri = carrier.data[1:].decode("utf-8")
                 summary("Received DPP URI: " + uri)
 
-                data = wpas_get_nfc_uri(start_listen=False)
+                data = wpas_get_nfc_uri(start_listen=False, pick_channel=True)
                 summary("Own URI (pre-processing): %s" % data)
 
                 res = wpas_report_handover_req(uri)
@@ -436,9 +447,13 @@ class HandoverServer(nfc.handover.HandoverServer):
                 for line in info.splitlines():
                     if line.startswith("use_freq="):
                         freq = int(line.split('=')[1])
-                if freq is None:
-                    summary("No channel negotiated over NFC - use channel 1")
-                    freq = 2412
+                if freq is None or freq == 0:
+                    summary("No channel negotiated over NFC - use channel 6")
+                    freq = 2437
+                else:
+                    summary("Negotiated channel: %d MHz" % freq)
+                if get_status_field(wpas, "bssid[0]"):
+                    summary("Own AP freq: %s MHz" % str(get_status_field(wpas, "freq")))
                 cmd = "DPP_LISTEN %d" % freq
                 global enrollee_only
                 global configurator_only
@@ -700,7 +715,7 @@ def main():
     parser.add_argument('--success',
                         help='success file for writing success update')
     parser.add_argument('--device', default='usb', help='NFC device to open')
-    parser.add_argument('--chan', default='81/1', help='channel list')
+    parser.add_argument('--chan', default=None, help='channel list')
     parser.add_argument('command', choices=['write-nfc-uri',
                                             'write-nfc-hs'],
                         nargs='?')
