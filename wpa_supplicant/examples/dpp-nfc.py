@@ -34,6 +34,7 @@ continue_loop = True
 terminate_now = False
 summary_file = None
 success_file = None
+my_crn_ready = False
 my_crn = None
 peer_crn = None
 mutex = threading.Lock()
@@ -245,12 +246,15 @@ def dpp_handover_client(llc):
 
     summary("Sending handover request")
 
+    global my_crn, my_crn_ready
+    my_crn_ready = True
+
     if not client.send_records(message):
+        my_crn_ready = False
         summary("Failed to send handover request")
         client.close()
         return
 
-    global my_crn
     my_crn, = struct.unpack('>H', crn)
 
     summary("Receiving handover response")
@@ -357,7 +361,7 @@ class HandoverServer(nfc.handover.HandoverServer):
             print("\n")
         summary("HandoverServer - request received: " + str(records))
 
-        global my_crn, peer_crn
+        global my_crn, peer_crn, my_crn_ready
 
         for carrier in records:
             if not isinstance(carrier, ndef.HandoverRequestRecord):
@@ -366,6 +370,12 @@ class HandoverServer(nfc.handover.HandoverServer):
                 peer_crn = carrier.collision_resolution_number
                 summary("peer_crn: %d" % peer_crn)
 
+        if my_crn is None and my_crn_ready:
+            summary("Still trying to send own handover request - wait a moment to see if that succeeds before checking crn values")
+            for i in range(10):
+                if my_crn is not None:
+                    break
+                time.sleep(0.01)
         if my_crn is not None:
             summary("my_crn: %d" % my_crn)
 
@@ -635,8 +645,9 @@ def llcp_startup(llc):
 
 def llcp_connected(llc):
     summary("P2P LLCP connected")
-    global wait_connection, my_crn, peer_crn
+    global wait_connection, my_crn, peer_crn, my_crn_ready
     wait_connection = False
+    my_crn_ready = False
     my_crn = None
     peer_crn = None
     global srv
