@@ -201,6 +201,14 @@ enum wpa_alg {
 	WPA_ALG_BIP_CMAC_256
 };
 
+static inline int wpa_alg_bip(enum wpa_alg alg)
+{
+	return alg == WPA_ALG_BIP_CMAC_128 ||
+		alg == WPA_ALG_BIP_GMAC_128 ||
+		alg == WPA_ALG_BIP_GMAC_256 ||
+		alg == WPA_ALG_BIP_CMAC_256;
+}
+
 /**
  * enum wpa_states - wpa_supplicant state
  *
