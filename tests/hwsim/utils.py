@@ -258,23 +258,37 @@ def set_world_reg(apdev0=None, apdev1=None, dev0=None):
 def sysctl_write(val):
     subprocess.call(['sysctl', '-w', val], stdout=open('/dev/null', 'w'))
 
-def disable_ipv6(fn):
-    def wrapper(dev, apdev, params):
-        require_under_vm()
-        try:
-            sysctl_write('net.ipv6.conf.all.disable_ipv6=1')
-            sysctl_write('net.ipv6.conf.default.disable_ipv6=1')
-            if fn.__code__.co_argcount > 2:
-                return fn(dev, apdev, params)
-            elif fn.__code__.co_argcount > 1:
-                return fn(dev, apdev)
-            return fn(dev)
-        finally:
-            sysctl_write('net.ipv6.conf.all.disable_ipv6=0')
-            sysctl_write('net.ipv6.conf.default.disable_ipv6=0')
+def var_arg_call(fn, dev, apdev, params):
+    if fn.__code__.co_argcount > 2:
+        return fn(dev, apdev, params)
+    elif fn.__code__.co_argcount > 1:
+        return fn(dev, apdev)
+    return fn(dev)
+
+def cloned_wrapper(wrapper, fn):
     # we need the name set right for selecting / printing etc.
     wrapper.__name__ = fn.__name__
     wrapper.__doc__ = fn.__doc__
     # reparent to the right module for module filtering
     wrapper.__module__ = fn.__module__
     return wrapper
+
+def disable_ipv6(fn):
+    def wrapper(dev, apdev, params):
+        require_under_vm()
+        try:
+            sysctl_write('net.ipv6.conf.all.disable_ipv6=1')
+            sysctl_write('net.ipv6.conf.default.disable_ipv6=1')
+            var_arg_call(fn, dev, apdev, params)
+        finally:
+            sysctl_write('net.ipv6.conf.all.disable_ipv6=0')
+            sysctl_write('net.ipv6.conf.default.disable_ipv6=0')
+    return cloned_wrapper(wrapper, fn)
+
+def reset_ignore_old_scan_res(fn):
+    def wrapper(dev, apdev, params):
+        try:
+            var_arg_call(fn, dev, apdev, params)
+        finally:
+            dev[0].set("ignore_old_scan_res", "0")
+    return cloned_wrapper(wrapper, fn)

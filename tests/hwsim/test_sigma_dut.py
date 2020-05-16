@@ -183,14 +183,9 @@ def test_sigma_dut_basic(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_open(dev, apdev):
     """sigma_dut controlled open network association"""
-    try:
-        run_sigma_dut_open(dev, apdev)
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
-
-def run_sigma_dut_open(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
@@ -208,14 +203,9 @@ def run_sigma_dut_open(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_psk_pmf(dev, apdev):
     """sigma_dut controlled PSK+PMF association"""
-    try:
-        run_sigma_dut_psk_pmf(dev, apdev)
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
-
-def run_sigma_dut_psk_pmf(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
@@ -238,41 +228,31 @@ def run_sigma_dut_psk_pmf(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_psk_pmf_bip_cmac_128(dev, apdev):
     """sigma_dut controlled PSK+PMF association with BIP-CMAC-128"""
-    try:
-        run_sigma_dut_psk_pmf_cipher(dev, apdev, "BIP-CMAC-128", "AES-128-CMAC")
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
+    run_sigma_dut_psk_pmf_cipher(dev, apdev, "BIP-CMAC-128", "AES-128-CMAC")
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_psk_pmf_bip_cmac_256(dev, apdev):
     """sigma_dut controlled PSK+PMF association with BIP-CMAC-256"""
-    try:
-        run_sigma_dut_psk_pmf_cipher(dev, apdev, "BIP-CMAC-256", "BIP-CMAC-256")
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
+    run_sigma_dut_psk_pmf_cipher(dev, apdev, "BIP-CMAC-256", "BIP-CMAC-256")
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_psk_pmf_bip_gmac_128(dev, apdev):
     """sigma_dut controlled PSK+PMF association with BIP-GMAC-128"""
-    try:
-        run_sigma_dut_psk_pmf_cipher(dev, apdev, "BIP-GMAC-128", "BIP-GMAC-128")
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
+    run_sigma_dut_psk_pmf_cipher(dev, apdev, "BIP-GMAC-128", "BIP-GMAC-128")
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_psk_pmf_bip_gmac_256(dev, apdev):
     """sigma_dut controlled PSK+PMF association with BIP-GMAC-256"""
-    try:
-        run_sigma_dut_psk_pmf_cipher(dev, apdev, "BIP-GMAC-256", "BIP-GMAC-256")
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
+    run_sigma_dut_psk_pmf_cipher(dev, apdev, "BIP-GMAC-256", "BIP-GMAC-256")
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_psk_pmf_bip_gmac_256_mismatch(dev, apdev):
     """sigma_dut controlled PSK+PMF association with BIP-GMAC-256 mismatch"""
-    try:
-        run_sigma_dut_psk_pmf_cipher(dev, apdev, "BIP-GMAC-256", "AES-128-CMAC",
-                                     failure=True)
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
+    run_sigma_dut_psk_pmf_cipher(dev, apdev, "BIP-GMAC-256", "AES-128-CMAC",
+                                 failure=True)
 
 def run_sigma_dut_psk_pmf_cipher(dev, apdev, sigma_cipher, hostapd_cipher,
                                  failure=False):
@@ -562,14 +542,9 @@ def run_sigma_dut_sae_pw_id_ft(dev, apdev, over_ds=False):
     finally:
         stop_sigma_dut(sigma)
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_sta_override_rsne(dev, apdev):
     """sigma_dut and RSNE override on STA"""
-    try:
-        run_sigma_dut_sta_override_rsne(dev, apdev)
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
-
-def run_sigma_dut_sta_override_rsne(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
@@ -1261,14 +1236,9 @@ def test_sigma_dut_ap_psk_sae_ft(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_owe(dev, apdev):
     """sigma_dut controlled OWE station"""
-    try:
-        run_sigma_dut_owe(dev, apdev)
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
-
-def run_sigma_dut_owe(dev, apdev):
     if "OWE" not in dev[0].get_capability("key_mgmt"):
         raise HwsimSkip("OWE not supported")
 
@@ -1332,6 +1302,7 @@ def run_sigma_dut_owe(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_owe_ptk_workaround(dev, apdev):
     """sigma_dut controlled OWE station with PTK workaround"""
     if "OWE" not in dev[0].get_capability("key_mgmt"):
@@ -1359,7 +1330,6 @@ def test_sigma_dut_owe_ptk_workaround(dev, apdev):
         sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
     finally:
         stop_sigma_dut(sigma)
-        dev[0].set("ignore_old_scan_res", "0")
 
 def test_sigma_dut_ap_owe(dev, apdev, params):
     """sigma_dut controlled AP with OWE"""
@@ -3305,14 +3275,9 @@ def test_sigma_dut_dpp_nfc_static_write_enrollee(dev, apdev):
         dev[0].set("dpp_config_processing", "0")
         stop_sigma_dut(sigma)
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_preconfigured_profile(dev, apdev):
     """sigma_dut controlled connection using preconfigured profile"""
-    try:
-        run_sigma_dut_preconfigured_profile(dev, apdev)
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
-
-def run_sigma_dut_preconfigured_profile(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
@@ -3332,14 +3297,9 @@ def run_sigma_dut_preconfigured_profile(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_wps_pbc(dev, apdev):
     """sigma_dut and WPS PBC Enrollee"""
-    try:
-        run_sigma_dut_wps_pbc(dev, apdev)
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
-
-def run_sigma_dut_wps_pbc(dev, apdev):
     ssid = "test-wps-conf"
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wps", "eap_server": "1", "wps_state": "2",
@@ -3612,14 +3572,9 @@ def test_sigma_dut_ap_ent_ft_eap(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_venue_url(dev, apdev):
     """sigma_dut controlled Venue URL fetch"""
-    try:
-        run_sigma_dut_venue_url(dev, apdev)
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
-
-def run_sigma_dut_venue_url(dev, apdev):
     ifname = dev[0].ifname
     sigma = start_sigma_dut(ifname)
 
@@ -4436,6 +4391,7 @@ def run_sigma_dut_ap_channel(dev, apdev, params, channel, mode, scan_freq,
             subprocess.call(['iw', 'reg', 'set', '00'])
             dev[0].flush_scan_cache()
 
+@reset_ignore_old_scan_res
 def test_sigma_dut_beacon_prot(dev, apdev):
     """sigma_dut controlled STA and beacon protection"""
     ssid = "test-pmf-required"
@@ -4467,7 +4423,6 @@ def test_sigma_dut_beacon_prot(dev, apdev):
         sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
     finally:
         stop_sigma_dut(sigma)
-        dev[0].set("ignore_old_scan_res", "0")
 
 def test_sigma_dut_ap_beacon_prot(dev, apdev, params):
     """sigma_dut controlled AP and beacon protection"""

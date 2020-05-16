@@ -1273,13 +1273,9 @@ def test_scan_chan_switch(dev, apdev):
     run_scan(dev[0], bssid, 2412)
     dev[0].dump_monitor()
 
+@reset_ignore_old_scan_res
 def test_scan_new_only(dev, apdev):
     """Scan and only_new=1 multiple times"""
-    try:
-        _test_scan_new_only(dev, apdev)
-    finally:
-        dev[0].set("ignore_old_scan_res", "0")
-def _test_scan_new_only(dev, apdev):
     dev[0].flush_scan_cache()
     hapd = hostapd.add_ap(apdev[0], {"ssid": "test-scan"})
     dev[0].set("ignore_old_scan_res", "1")
