@@ -104,9 +104,11 @@ def _test_ip4_gtk_drop(devs, apdevs, params, dst):
             pass
 
 def test_ip4_gtk_drop_bcast(devs, apdevs, params):
+    """Hotspot 2.0 frame filtering - IPv4 GTK drop broadcast"""
     _test_ip4_gtk_drop(devs, apdevs, params, dst='ffffffffffff')
 
 def test_ip4_gtk_drop_mcast(devs, apdevs, params):
+    """Hotspot 2.0 frame filtering - IPv4 GTK drop multicast"""
     _test_ip4_gtk_drop(devs, apdevs, params, dst='ff0000000000')
 
 def _test_ip6_gtk_drop(devs, apdevs, params, dst):
@@ -140,12 +142,15 @@ def _test_ip6_gtk_drop(devs, apdevs, params, dst):
             pass
 
 def test_ip6_gtk_drop_bcast(devs, apdevs, params):
+    """Hotspot 2.0 frame filtering - IPv6 GTK drop broadcast"""
     _test_ip6_gtk_drop(devs, apdevs, params, dst='ffffffffffff')
 
 def test_ip6_gtk_drop_mcast(devs, apdevs, params):
+    """Hotspot 2.0 frame filtering - IPv6 GTK drop multicast"""
     _test_ip6_gtk_drop(devs, apdevs, params, dst='ff0000000000')
 
 def test_ip4_drop_gratuitous_arp(devs, apdevs, params):
+    """Hotspot 2.0 frame filtering - IPv4 drop gratuitous ARP"""
     require_under_vm()
     procfile = '/proc/sys/net/ipv4/conf/%s/drop_gratuitous_arp' % devs[0].ifname
     if not os.path.exists(procfile):
@@ -173,6 +178,7 @@ def test_ip4_drop_gratuitous_arp(devs, apdevs, params):
             subprocess.call(['ip', 'neigh', 'del', '10.0.0.1', 'dev', dev.ifname])
 
 def test_ip6_drop_unsolicited_na(devs, apdevs, params):
+    """Hotspot 2.0 frame filtering - IPv6 drop unsolicited NA"""
     require_under_vm()
     procfile = '/proc/sys/net/ipv6/conf/%s/drop_unsolicited_na' % devs[0].ifname
     if not os.path.exists(procfile):

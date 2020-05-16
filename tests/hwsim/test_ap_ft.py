@@ -1530,6 +1530,7 @@ def test_ap_ft_eap_pull(dev, apdev):
     generic_ap_ft_eap_pull(dev, apdev)
 
 def test_ap_ft_eap_pull_vlan(dev, apdev):
+    """WPA2-EAP-FT AP (pull PMK) - with VLAN"""
     generic_ap_ft_eap_pull(dev, apdev, vlan=True)
 
 def test_ap_ft_eap_pull_wildcard(dev, apdev):

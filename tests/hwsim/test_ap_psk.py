@@ -2935,6 +2935,7 @@ def test_rsn_ie_proto_psk_sta(dev, apdev):
 
 @remote_compatible
 def test_ap_cli_order(dev, apdev):
+    """hostapd configuration parameter SET ordering"""
     ssid = "test-rsn-setup"
     passphrase = 'zzzzzzzz'
 
