@@ -2305,7 +2305,7 @@ enum wpa_alg wpa_cipher_to_alg(int cipher)
 	case WPA_CIPHER_TKIP:
 		return WPA_ALG_TKIP;
 	case WPA_CIPHER_AES_128_CMAC:
-		return WPA_ALG_IGTK;
+		return WPA_ALG_BIP_CMAC_128;
 	case WPA_CIPHER_BIP_GMAC_128:
 		return WPA_ALG_BIP_GMAC_128;
 	case WPA_CIPHER_BIP_GMAC_256:

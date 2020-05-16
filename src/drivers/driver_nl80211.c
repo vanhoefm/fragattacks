@@ -2927,7 +2927,7 @@ static u32 wpa_alg_to_cipher_suite(enum wpa_alg alg, size_t key_len)
 		return RSN_CIPHER_SUITE_CCMP_256;
 	case WPA_ALG_GCMP_256:
 		return RSN_CIPHER_SUITE_GCMP_256;
-	case WPA_ALG_IGTK:
+	case WPA_ALG_BIP_CMAC_128:
 		return RSN_CIPHER_SUITE_AES_128_CMAC;
 	case WPA_ALG_BIP_GMAC_128:
 		return RSN_CIPHER_SUITE_BIP_GMAC_128;
@@ -3284,7 +3284,7 @@ static int wpa_driver_nl80211_set_key(struct i802_bss *bss,
 		goto fail2;
 	if (!key_msg ||
 	    nla_put_u8(key_msg, NL80211_KEY_IDX, key_idx) ||
-	    nla_put_flag(key_msg, (alg == WPA_ALG_IGTK ||
+	    nla_put_flag(key_msg, (alg == WPA_ALG_BIP_CMAC_128 ||
 				   alg == WPA_ALG_BIP_GMAC_128 ||
 				   alg == WPA_ALG_BIP_GMAC_256 ||
 				   alg == WPA_ALG_BIP_CMAC_256) ?
@@ -3356,7 +3356,7 @@ static int nl_add_key(struct nl_msg *msg, enum wpa_alg alg,
 	if (!suite)
 		return -1;
 
-	if (defkey && alg == WPA_ALG_IGTK) {
+	if (defkey && alg == WPA_ALG_BIP_CMAC_128) {
 		if (nla_put_flag(msg, NL80211_KEY_DEFAULT_MGMT))
 			return -1;
 	} else if (defkey) {

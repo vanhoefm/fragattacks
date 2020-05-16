@@ -1553,8 +1553,9 @@ struct wpa_driver_set_key_params {
 	 * alg - Encryption algorithm
 	 *
 	 * (%WPA_ALG_NONE, %WPA_ALG_WEP, %WPA_ALG_TKIP, %WPA_ALG_CCMP,
-	 * %WPA_ALG_IGTK, %WPA_ALG_GCMP, %WPA_ALG_GCMP_256, %WPA_ALG_CCMP_256,
-	 * %WPA_ALG_BIP_GMAC_128, %WPA_ALG_BIP_GMAC_256, %WPA_ALG_BIP_CMAC_256);
+	 * %WPA_ALG_BIP_AES_CMAC_128, %WPA_ALG_GCMP, %WPA_ALG_GCMP_256,
+	 * %WPA_ALG_CCMP_256, %WPA_ALG_BIP_GMAC_128, %WPA_ALG_BIP_GMAC_256,
+	 * %WPA_ALG_BIP_CMAC_256);
 	 * %WPA_ALG_NONE clears the key. */
 	enum wpa_alg alg;
 

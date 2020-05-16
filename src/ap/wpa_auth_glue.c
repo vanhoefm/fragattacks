@@ -453,7 +453,7 @@ static int hostapd_wpa_auth_set_key(void *ctx, int vlan_id, enum wpa_alg alg,
 				os_memcpy(sta->last_tk, key, key_len);
 			sta->last_tk_len = key_len;
 		}
-	} else if (alg == WPA_ALG_IGTK ||
+	} else if (alg == WPA_ALG_BIP_CMAC_128 ||
 		   alg == WPA_ALG_BIP_GMAC_128 ||
 		   alg == WPA_ALG_BIP_GMAC_256 ||
 		   alg == WPA_ALG_BIP_CMAC_256) {

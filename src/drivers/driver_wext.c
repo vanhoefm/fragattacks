@@ -1773,7 +1773,7 @@ static int wpa_driver_wext_set_key_ext(void *priv, enum wpa_alg alg,
 		case WPA_ALG_CCMP:
 			ext->alg = IW_ENCODE_ALG_CCMP;
 			break;
-		case WPA_ALG_IGTK:
+		case WPA_ALG_BIP_CMAC_128:
 			ext->alg = IW_ENCODE_ALG_AES_CMAC;
 			break;
 		default:
