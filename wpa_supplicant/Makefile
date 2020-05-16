@@ -1077,7 +1077,7 @@ endif
 
 ifeq ($(CONFIG_TLS), wolfssl)
 ifdef TLS_FUNCS
-CFLAGS += -DWOLFSSL_DER_LOAD -I/usr/local/include/wolfssl
+CFLAGS += -DWOLFSSL_DER_LOAD
 OBJS += ../src/crypto/tls_wolfssl.o
 endif
 OBJS += ../src/crypto/crypto_wolfssl.o
