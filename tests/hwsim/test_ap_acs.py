@@ -573,3 +573,45 @@ def test_ap_acs_with_fallback_to_20(dev, apdev):
     logger.info("SIGNAL_POLL: " + str(sig))
     if "WIDTH=20 MHz" not in sig:
         raise Exception("Station did not report 20 MHz bandwidth")
+
+def test_ap_acs_rx_during(dev, apdev):
+    """Automatic channel selection and RX during ACS"""
+    force_prev_ap_on_24g(apdev[0])
+    params = hostapd.wpa2_params(ssid="test-acs", passphrase="12345678")
+    params['channel'] = '0'
+    params['chanlist'] = '1 6 11'
+    hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
+
+    time.sleep(0.1)
+    hapd.set("ext_mgmt_frame_handling", "1")
+    bssid = hapd.own_addr().replace(':', '')
+    addr = "020304050607"
+    broadcast = 6*"ff"
+
+    probereq = "40000000" + broadcast + addr + broadcast + "1000"
+    probereq += "0000" + "010802040b160c121824" + "32043048606c" + "030100"
+    if "OK" not in hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=%s" % probereq):
+        raise Exception("MGMT_RX_PROCESS failed")
+
+    probereq = "40000000" + broadcast + addr + broadcast + "1000"
+    probereq += "0000" + "010102"
+    if "OK" not in hapd.request("MGMT_RX_PROCESS freq=2437 datarate=0 ssi_signal=-30 frame=%s" % probereq):
+        raise Exception("MGMT_RX_PROCESS failed")
+
+    auth = "b0003a01" + bssid + addr + bssid + '1000000001000000'
+    if "OK" not in hapd.request("MGMT_RX_PROCESS freq=2412 datarate=0 ssi_signal=-30 frame=%s" % auth):
+        raise Exception("MGMT_RX_PROCESS failed")
+    hapd.set("ext_mgmt_frame_handling", "0")
+
+    time.sleep(0.2)
+    try:
+        for i in range(3):
+            dev[i].request("SCAN_INTERVAL 1")
+            dev[i].connect("test-acs", psk="12345678",
+                           scan_freq="2412 2437 2462", wait_connect=False)
+        wait_acs(hapd)
+        for i in range(3):
+            dev[i].wait_connected()
+    finally:
+        for i in range(3):
+            dev[i].request("SCAN_INTERVAL 5")
