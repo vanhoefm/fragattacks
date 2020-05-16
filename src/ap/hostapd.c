@@ -1182,7 +1182,8 @@ static int hostapd_setup_bss(struct hostapd_data *hapd, int first)
 	hostapd_set_privacy(hapd, 0);
 
 #ifdef CONFIG_WEP
-	hostapd_broadcast_wep_clear(hapd);
+	if (!hostapd_drv_nl80211(hapd))
+		hostapd_broadcast_wep_clear(hapd);
 	if (hostapd_setup_encryption(conf->iface, hapd))
 		return -1;
 #endif /* CONFIG_WEP */
