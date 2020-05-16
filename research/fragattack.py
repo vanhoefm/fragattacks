@@ -10,35 +10,6 @@ from scapy.arch.common import get_if_raw_hwaddr
 
 from tests_qca import *
 
-# Ath9k_htc dongle notes:
-# - The ath9k_htc devices by default overwrite the injected sequence number.
-#   However, this number is not incremented when the MoreFragments flag is set,
-#   meaning we can inject fragmented frames (albeit with a different sequence
-#   number than then one we use for injection this this script).
-# - The above trick does not work when we want to inject other frames between
-#   two fragmented frames (the chip will assign them difference sequence numbers).
-#   Even when the fragments use a unique QoS TID, sending frames between them
-#   will make the chip assign difference sequence numbers to both fragments.
-# - Overwriting the sequence can be avoided by patching `ath_tgt_tx_seqno_normal`
-#   and commenting out the two lines that modify `i_seq`.
-# - See also the comment in Station.perform_actions to avoid other bugs with
-#   ath9k_htc when injecting frames with the MF flag and while being in AP mode.
-# - The at9k_htc dongle, and likely other Wi-Fi devices, will reorder frames with
-#   different QoS priorities. This means injected frames with differen priorities
-#   may get reordered by the driver/chip. We avoided this by modifying the ath9k_htc
-#   driver to send all frames using the transmission queue of priority zero,
-#   independent of the actual QoS priority value used in the frame.
-
-# Intel 8265 / 8275 (rev 78)
-# - Had to patch driver to prevent sequence number and QoS TID to be overwritten.
-# - Unable to transmit any frames from a different transmitter address. This is
-#   because in ieee80211_monitor_start_xmit it cannot find a channel to transmit
-#   on (finding a valid chandef fails).
-# - Cannot inject frames using a TID that is used for the first time. There's no
-#   queue in the driver allocated for it yet it seems, and this causes issues.
-#   To prevent this, and prevent frame reordering, we inject all frames on the
-#   same queue in the driver.
-
 # ----------------------------------- Utility Commands -----------------------------------
 
 def wpaspy_clear_messages(ctrl):
@@ -47,6 +18,7 @@ def wpaspy_clear_messages(ctrl):
 	while ctrl.pending():
 		ctrl.recv()
 
+#TODO: Modify so we can ignore other messages over the command interface
 def wpaspy_command(ctrl, cmd):
 	wpaspy_clear_messages(ctrl)
 	rval = ctrl.request(cmd)
@@ -144,9 +116,13 @@ def set_monitor_mode(iface):
 # ----------------------------------- Injection Tests -----------------------------------
 
 def test_packet_injection(sout, sin, p, test_func):
+	log(WARNING, "Testing injection")
+
 	# Append unique label to recognize frame & inject it
 	label = b"AAAA" + struct.pack(">II", random.randint(0, 2**32), random.randint(0, 2**32))
 	sout.send(RadioTap()/p/Raw(label))
+
+	#TODO: Should we prevent ath9k_htc injection bug after injecting a fragment?
 
 	# 1. When using a 2nd interface: capture the actual packet that was injected in the air.
 	# 2. Not using 2nd interface: capture the "reflected" frame sent back by the kernel. This allows
@@ -167,15 +143,15 @@ def test_injection(iface_out, iface_in=None):
 	else:
 		sin = L2Socket(type=ETH_P_ALL, iface=iface_in)
 
-	p = Dot11(addr1="00:11:11:11:11:11", addr2="00:22:22:22:22:22", type=2, SC=33<<4)
+	p = Dot11(addr1="00:11:00:00:00:01", addr2="00:22:00:00:00:01", type=2, SC=33<<4)
 	if not test_packet_injection(sout, sin, p, lambda cap: cap.SC == p.SC):
 		raise IOError("Sequence number of injected frames is being overwritten!")
 
-	p = Dot11(addr1="00:11:11:11:11:11", addr2="00:22:22:22:22:22", type=2, SC=(33<<4)|1)
+	p = Dot11(addr1="00:11:00:00:00:02", addr2="00:22:00:00:00:02", type=2, SC=(33<<4)|1)
 	if not test_packet_injection(sout, sin, p, lambda cap: (cap.SC & 0xf) == 1):
 		raise IOError("Fragment number of injected frames is being overwritten!")
 
-	p = Dot11(addr1="00:11:11:11:11:11", addr2="00:22:22:22:22:22", type=2, subtype=8, SC=33)/Dot11QoS(TID=2)
+	p = Dot11(addr1="00:11:00:00:00:03", addr2="00:22:00:00:00:03", type=2, subtype=8, SC=33)/Dot11QoS(TID=2)
 	if not test_packet_injection(sout, sin, p, lambda cap: cap.TID == p.TID):
 		raise IOError("QoS TID of injected frames is being overwritten!")
 
@@ -702,8 +678,8 @@ class Station():
 			p = p/payload
 			if self.tk: p = self.encrypt(p)
 
-		log(STATUS, "[Injecting] " + repr(p))
 		daemon.inject_mon(p)
+		log(STATUS, "[Injected] " + repr(p))
 
 	def set_header(self, p, prior=None):
 		"""Set addresses to send frame to the peer or the 3rd party station."""
@@ -1064,7 +1040,7 @@ class Daemon(metaclass=abc.ABCMeta):
 		#   must be executed once we are trying to connect so the channel is "stable".
 		try: test_injection(self.nic_mon)
 		except IOError as ex:
-			log(WARNING, "IOError: " + ex.args[0])
+			log(WARNING, ex.args[0])
 			log(ERROR, "Injection self-test failed. Are you using the correct kernel/driver/device for injection?")
 			quit(1)
 
@@ -1429,11 +1405,15 @@ class Supplicant(Daemon):
 				log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
 				log(STATUS, f"{self.nic_hwsim}: setting to channel {channel}")
 
-			self.injection_selftest()
-
 			p = re.compile("Trying to authenticate with (.*) \(SSID")
 			bss = p.search(msg).group(1)
 			self.station.handle_connecting(bss)
+
+		elif "Trying to associate with" in msg:
+			# With the ath9k_htc, injection in mixed managed/monitor only works after
+			# sending the association request. So only perform injection test now.
+			# TODO: Only do a self-test when in mixed managed/monitor mode?
+			self.injection_selftest()
 
 		elif "EAPOL-TX" in msg:
 			cmd, srcaddr, payload = msg.split()
