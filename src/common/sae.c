@@ -169,7 +169,7 @@ static int sae_test_pwd_seed_ecc(struct sae_data *sae, const u8 *pwd_seed,
 	 * being smaller than prime. */
 	in_range = const_time_fill_msb((unsigned int) cmp_prime);
 	/* The algorithm description would skip the next steps if
-	 * cmp_prime >= 0 (reutnr 0 here), but go through them regardless to
+	 * cmp_prime >= 0 (return 0 here), but go through them regardless to
 	 * minimize externally observable differences in behavior. */
 
 	x_cand = crypto_bignum_init_set(pwd_value, sae->tmp->prime_len);
