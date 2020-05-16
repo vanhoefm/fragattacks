@@ -1104,19 +1104,21 @@ int crypto_bignum_rand(struct crypto_bignum *r, const struct crypto_bignum *m)
 {
 	int ret = 0;
 	WC_RNG rng;
+	size_t len;
+	u8 *buf;
 
 	if (TEST_FAIL())
 		return -1;
 	if (wc_InitRng(&rng) != 0)
 		return -1;
-	if (mp_rand_prime((mp_int *) r,
-			  (mp_count_bits((mp_int *) m) + 7) / 8 * 2,
-			  &rng, NULL) != 0)
-		ret = -1;
-	if (ret == 0 &&
+	len = (mp_count_bits((mp_int *) m) + 7) / 8;
+	buf = os_malloc(len);
+	if (!buf || wc_RNG_GenerateBlock(&rng, buf, len) != 0 ||
+	    mp_read_unsigned_bin((mp_int *) r, buf, len) != MP_OKAY ||
 	    mp_mod((mp_int *) r, (mp_int *) m, (mp_int *) r) != 0)
 		ret = -1;
 	wc_FreeRng(&rng);
+	bin_clear_free(buf, len);
 	return ret;
 }
 
