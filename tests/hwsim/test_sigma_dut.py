@@ -19,7 +19,7 @@ import threading
 import time
 
 import hostapd
-from utils import HwsimSkip
+from utils import *
 from hwsim import HWSimRadio
 import hwsim_utils
 from wlantest import Wlantest
@@ -3817,6 +3817,7 @@ def test_sigma_dut_eap_ttls_uosc_tod_tofu(dev, apdev, params):
     run_sigma_dut_eap_ttls_uosc_tod(dev, apdev, params, True)
 
 def run_sigma_dut_eap_ttls_uosc_tod(dev, apdev, params, tofu):
+    check_tls_tod(dev[0])
     logdir = params['logdir']
 
     name = "sigma_dut_eap_ttls_uosc_tod"
@@ -3895,6 +3896,7 @@ def test_sigma_dut_eap_ttls_uosc_initial_tod_tofu(dev, apdev, params):
     run_sigma_dut_eap_ttls_uosc_initial_tod(dev, apdev, params, True)
 
 def run_sigma_dut_eap_ttls_uosc_initial_tod(dev, apdev, params, tofu):
+    check_tls_tod(dev[0])
     logdir = params['logdir']
 
     name = "sigma_dut_eap_ttls_uosc_initial_tod"

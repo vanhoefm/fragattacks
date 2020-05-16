@@ -7250,6 +7250,7 @@ def run_openssl_systemwide_policy(iface, apdev, test_params):
 
 def test_ap_wpa2_eap_tls_tod(dev, apdev):
     """EAP-TLS server certificate validation and TOD-STRICT"""
+    check_tls_tod(dev[0])
     params = int_eap_server_params()
     params["server_cert"] = "auth_serv/server-certpol.pem"
     params["private_key"] = "auth_serv/server-certpol.key"
@@ -7279,6 +7280,7 @@ def test_ap_wpa2_eap_tls_tod(dev, apdev):
 
 def test_ap_wpa2_eap_tls_tod_tofu(dev, apdev):
     """EAP-TLS server certificate validation and TOD-TOFU"""
+    check_tls_tod(dev[0])
     params = int_eap_server_params()
     params["server_cert"] = "auth_serv/server-certpol2.pem"
     params["private_key"] = "auth_serv/server-certpol2.key"

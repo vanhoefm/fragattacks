@@ -113,6 +113,11 @@ def check_sae_capab(dev):
     if "SAE" not in dev.get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
 
+def check_tls_tod(dev):
+    tls = dev.request("GET tls_library")
+    if not tls.startswith("OpenSSL") and not tls.startswith("internal"):
+        raise HwsimSkip("TLS TOD-TOFU/STRICT not supported with this TLS library: " + tls)
+
 def vht_supported():
     cmd = subprocess.Popen(["iw", "reg", "get"], stdout=subprocess.PIPE)
     reg = cmd.stdout.read()
