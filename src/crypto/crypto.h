@@ -485,7 +485,7 @@ int rc4_skip(const u8 *key, size_t keylen, size_t skip,
 	     u8 *data, size_t data_len);
 
 /**
- * crypto_get_random - Generate cryptographically strong pseudy-random bytes
+ * crypto_get_random - Generate cryptographically strong pseudo-random bytes
  * @buf: Buffer for data
  * @len: Number of bytes to generate
  * Returns: 0 on success, -1 on failure
