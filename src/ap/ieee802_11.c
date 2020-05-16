@@ -4858,6 +4858,11 @@ int ieee802_11_mgmt(struct hostapd_data *hapd, const u8 *buf, size_t len,
 		return 0;
 	}
 
+	if (hapd->iface->state != HAPD_IFACE_ENABLED) {
+		wpa_printf(MSG_DEBUG, "MGMT: Ignore management frame while interface is not enabled (SA=" MACSTR " DA=" MACSTR " subtype=%u)",
+			   MAC2STR(mgmt->sa), MAC2STR(mgmt->da), stype);
+		return 1;
+	}
 
 	if (stype == WLAN_FC_STYPE_PROBE_REQ) {
 		handle_probe_req(hapd, mgmt, len, ssi_signal);
