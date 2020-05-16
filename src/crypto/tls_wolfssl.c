@@ -1741,7 +1741,7 @@ struct wpabuf * tls_connection_encrypt(void *tls_ctx,
 	if (!conn)
 		return NULL;
 
-	wpa_printf(MSG_DEBUG, "SSL: encrypt: %ld bytes", wpabuf_len(in_data));
+	wpa_printf(MSG_DEBUG, "SSL: encrypt: %zu bytes", wpabuf_len(in_data));
 
 	wolfssl_reset_out_data(&conn->output);
 
@@ -1792,7 +1792,7 @@ struct wpabuf * tls_connection_decrypt(void *tls_ctx,
 	}
 	wpabuf_put(buf, res);
 
-	wpa_printf(MSG_DEBUG, "SSL: decrypt: %ld bytes", wpabuf_len(buf));
+	wpa_printf(MSG_DEBUG, "SSL: decrypt: %zu bytes", wpabuf_len(buf));
 
 	return buf;
 }
