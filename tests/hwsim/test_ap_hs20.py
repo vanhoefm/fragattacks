@@ -3850,7 +3850,7 @@ def test_ap_hs20_remediation_sql(dev, apdev, params):
         import sqlite3
     except ImportError:
         raise HwsimSkip("No sqlite3 module available")
-    dbfile = os.path.join(params['logdir'], "eap-user.db")
+    dbfile = params['prefix'] + ".eap-user.db"
     try:
         os.remove(dbfile)
     except:
@@ -3914,7 +3914,7 @@ def test_ap_hs20_sim_provisioning(dev, apdev, params):
         import sqlite3
     except ImportError:
         raise HwsimSkip("No sqlite3 module available")
-    dbfile = os.path.join(params['logdir'], "ap_hs20_sim_provisioning-eap-user.db")
+    dbfile = params['prefix'] + ".eap-user.db"
     try:
         os.remove(dbfile)
     except:
@@ -4632,16 +4632,10 @@ def tshark_get_na(cap):
     return frames
 
 def _test_proxyarp_open(dev, apdev, params, ebtables=False):
-    prefix = "proxyarp_open"
-    if ebtables:
-        prefix += "_ebtables"
-    cap_br = os.path.join(params['logdir'], prefix + ".ap-br0.pcap")
-    cap_dev0 = os.path.join(params['logdir'],
-                            prefix + ".%s.pcap" % dev[0].ifname)
-    cap_dev1 = os.path.join(params['logdir'],
-                            prefix + ".%s.pcap" % dev[1].ifname)
-    cap_dev2 = os.path.join(params['logdir'],
-                            prefix + ".%s.pcap" % dev[2].ifname)
+    cap_br = params['prefix'] + ".ap-br0.pcap"
+    cap_dev0 = params['prefix'] + ".%s.pcap" % dev[0].ifname
+    cap_dev1 = params['prefix'] + ".%s.pcap" % dev[1].ifname
+    cap_dev2 = params['prefix'] + ".%s.pcap" % dev[2].ifname
 
     bssid = apdev[0]['bssid']
     params = {'ssid': 'open'}
@@ -4960,17 +4954,10 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
     #    raise Exception("br did not get ARP response for 192.168.1.123")
 
 def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
-    prefix = "proxyarp_open"
-    if ebtables:
-        prefix += "_ebtables"
-    prefix += "_ipv6"
-    cap_br = os.path.join(params['logdir'], prefix + ".ap-br0.pcap")
-    cap_dev0 = os.path.join(params['logdir'],
-                            prefix + ".%s.pcap" % dev[0].ifname)
-    cap_dev1 = os.path.join(params['logdir'],
-                            prefix + ".%s.pcap" % dev[1].ifname)
-    cap_dev2 = os.path.join(params['logdir'],
-                            prefix + ".%s.pcap" % dev[2].ifname)
+    cap_br = params['prefix'] + ".ap-br0.pcap"
+    cap_dev0 = params['prefix'] + ".%s.pcap" % dev[0].ifname
+    cap_dev1 = params['prefix'] + ".%s.pcap" % dev[1].ifname
+    cap_dev2 = params['prefix'] + ".%s.pcap" % dev[2].ifname
 
     bssid = apdev[0]['bssid']
     params = {'ssid': 'open'}
@@ -6182,7 +6169,7 @@ def run_ap_hs20_terms_and_conditions_sql(dev, apdev, params, url_template,
         import sqlite3
     except ImportError:
         raise HwsimSkip("No sqlite3 module available")
-    dbfile = os.path.join(params['logdir'], "eap-user.db")
+    dbfile = params['prefix'] + ".eap-user.db"
     try:
         os.remove(dbfile)
     except:

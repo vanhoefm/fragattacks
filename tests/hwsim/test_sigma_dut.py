@@ -3853,20 +3853,17 @@ def test_sigma_dut_eap_ttls_uosc_initial_tod_tofu(dev, apdev, params):
 def run_sigma_dut_eap_ttls_uosc_initial_tod(dev, apdev, params, tofu):
     check_tls_tod(dev[0])
     logdir = params['logdir']
-
-    name = "sigma_dut_eap_ttls_uosc_initial_tod"
-    if tofu:
-        name += "_tofu"
+    name = params['name']
     with open("auth_serv/rsa3072-ca.pem", "r") as f:
-        with open(os.path.join(logdir, name + ".ca.pem"), "w") as f2:
+        with open(params['prefix'] + ".ca.pem", "w") as f2:
             f2.write(f.read())
 
     if tofu:
         src = "auth_serv/server-certpol2.pem"
     else:
         src = "auth_serv/server-certpol.pem"
-    dst = os.path.join(logdir, name + ".server.der")
-    hashdst = os.path.join(logdir, name + ".server.pem.sha256")
+    dst = params['prefix'] + ".server.der"
+    hashdst = params['prefix'] + ".server.pem.sha256"
     subprocess.check_call(["openssl", "x509", "-in", src, "-out", dst,
                            "-outform", "DER"],
                           stderr=open('/dev/null', 'w'))

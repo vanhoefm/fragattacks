@@ -502,8 +502,8 @@ def test_ap_duplicate_bssid(dev, apdev):
 
 def test_ap_bss_config_file(dev, apdev, params):
     """hostapd BSS config file"""
-    pidfile = os.path.join(params['logdir'], "ap_bss_config_file-hostapd.pid")
-    logfile = os.path.join(params['logdir'], "ap_bss_config_file-hostapd-log")
+    pidfile = params['prefix'] + ".hostapd.pid"
+    logfile = params['prefix'] + ".hostapd-log"
     prg = os.path.join(params['logdir'], 'alt-hostapd/hostapd/hostapd')
     if not os.path.exists(prg):
         prg = '../../hostapd/hostapd'
