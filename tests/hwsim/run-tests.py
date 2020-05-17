@@ -537,7 +537,9 @@ def main():
                 if check_country_00:
                     for d in dev:
                         country = d.get_driver_status_field("country")
-                        if country != "00":
+                        if country is None:
+                            logger.info(d.ifname + ": Could not fetch country code after the test case run")
+                        elif country != "00":
                             d.dump_monitor()
                             logger.info(d.ifname + ": Country code not reset back to 00: is " + country)
                             print(d.ifname + ": Country code not reset back to 00: is " + country)
