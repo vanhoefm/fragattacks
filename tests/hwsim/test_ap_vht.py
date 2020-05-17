@@ -330,6 +330,7 @@ def test_ap_vht_40(devs, apdevs):
 def test_ap_vht_capab_not_supported(dev, apdev):
     """VHT configuration with driver not supporting all vht_capab entries"""
     try:
+        hapd = None
         params = {"ssid": "vht",
                   "country_code": "FI",
                   "hw_mode": "a",
@@ -1004,6 +1005,7 @@ def test_ap_vht_on_24ghz_2(dev, apdev):
 def test_prefer_vht40(dev, apdev):
     """Preference on VHT40 over HT40"""
     try:
+        hapd = None
         hapd2 = None
 
         params = {"ssid": "test",
