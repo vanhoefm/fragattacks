@@ -281,6 +281,27 @@ static unsigned int get_akm_suites_info(struct nlattr *tb)
 		case RSN_AUTH_KEY_MGMT_FT_PSK:
 			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FT_PSK;
 			break;
+		case RSN_AUTH_KEY_MGMT_802_1X_SHA256:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_802_1X_SHA256;
+			break;
+		case RSN_AUTH_KEY_MGMT_PSK_SHA256:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_PSK_SHA256;
+			break;
+		case RSN_AUTH_KEY_MGMT_TPK_HANDSHAKE:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_TPK_HANDSHAKE;
+			break;
+		case RSN_AUTH_KEY_MGMT_FT_SAE:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FT_SAE;
+			break;
+		case RSN_AUTH_KEY_MGMT_FT_802_1X_SHA384:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_FT_802_1X_SHA384;
+			break;
+		case RSN_AUTH_KEY_MGMT_CCKM:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_CCKM;
+			break;
+		case RSN_AUTH_KEY_MGMT_OSEN:
+			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_OSEN;
+			break;
 		case RSN_AUTH_KEY_MGMT_802_1X_SUITE_B:
 			key_mgmt |= WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B;
 			break;

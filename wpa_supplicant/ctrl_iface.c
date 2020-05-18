@@ -4221,6 +4221,27 @@ static int ctrl_iface_get_capability_key_mgmt(int res, bool strict,
 		pos += ret;
 	}
 
+	if (key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_WAPI_PSK) {
+		ret = os_snprintf(pos, end - pos, " WAPI-PSK");
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+
+	if (key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_TPK_HANDSHAKE) {
+		ret = os_snprintf(pos, end - pos, " TPK-HANDSHAKE");
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+
+	if (key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_CCKM) {
+		ret = os_snprintf(pos, end - pos, " CCKM");
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+
 #ifdef CONFIG_SUITEB
 	if (key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_SUITE_B) {
 		ret = os_snprintf(pos, end - pos, " WPA-EAP-SUITE-B");
@@ -4288,6 +4309,28 @@ static int ctrl_iface_get_capability_key_mgmt(int res, bool strict,
 			return pos - buf;
 		pos += ret;
 	}
+	if (key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_FT) {
+		ret = os_snprintf(pos, end - pos, " FT-EAP");
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+#ifdef CONFIG_SAE
+	if (key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_FT_SAE) {
+		ret = os_snprintf(pos, end - pos, " FT-SAE");
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+#endif /* CONFIG_SAE */
+#ifdef CONFIG_SHA384
+	if (key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_FT_802_1X_SHA384) {
+		ret = os_snprintf(pos, end - pos, " FT-EAP-SHA384");
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+#endif /* CONFIG_SHA384 */
 #endif /* CONFIG_IEEE80211R */
 #ifdef CONFIG_SAE
 	if (key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_SAE) {
@@ -4297,6 +4340,29 @@ static int ctrl_iface_get_capability_key_mgmt(int res, bool strict,
 		pos += ret;
 	}
 #endif /* CONFIG_SAE */
+#ifdef CONFIG_SHA256
+	if (key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_802_1X_SHA256) {
+		ret = os_snprintf(pos, end - pos, " WPA-EAP-SHA256");
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+
+	if (key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_PSK_SHA256) {
+		ret = os_snprintf(pos, end - pos, " WPA-PSK-SHA256");
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+#endif /* CONFIG_SHA256 */
+#ifdef CONFIG_HS20
+	if (key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_OSEN) {
+		ret = os_snprintf(pos, end - pos, " OSEN");
+		if (os_snprintf_error(end - pos, ret))
+			return pos - buf;
+		pos += ret;
+	}
+#endif /* CONFIG_HS20 */
 
 	return pos - buf;
 }
