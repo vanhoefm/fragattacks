@@ -5781,13 +5781,13 @@ static int nl80211_put_fils_connect_params(struct wpa_driver_nl80211_data *drv,
 			return -1;
 	}
 
-	wpa_printf(MSG_DEBUG, "  * FILS ERP next seq %u",
-		   params->fils_erp_next_seq_num);
-	if (nla_put_u16(msg, NL80211_ATTR_FILS_ERP_NEXT_SEQ_NUM,
-			params->fils_erp_next_seq_num))
-		return -1;
-
 	if (params->fils_erp_rrk_len) {
+		wpa_printf(MSG_DEBUG, "  * FILS ERP next seq %u",
+			   params->fils_erp_next_seq_num);
+		if (nla_put_u16(msg, NL80211_ATTR_FILS_ERP_NEXT_SEQ_NUM,
+				params->fils_erp_next_seq_num))
+			return -1;
+
 		wpa_printf(MSG_DEBUG, "  * FILS ERP rRK (len=%lu)",
 			   (unsigned long) params->fils_erp_rrk_len);
 		if (nla_put(msg, NL80211_ATTR_FILS_ERP_RRK,
