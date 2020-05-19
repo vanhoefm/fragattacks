@@ -2752,9 +2752,9 @@ static u8 * wpas_populate_assoc_ies(
 #ifdef CONFIG_MBO
 	const u8 *mbo_ie;
 #endif
-#ifdef CONFIG_SAE
-	int sae_pmksa_cached = 0;
-#endif /* CONFIG_SAE */
+#if defined(CONFIG_SAE) || defined(CONFIG_FILS)
+	int pmksa_cached = 0;
+#endif /* CONFIG_SAE || CONFIG_FILS */
 #ifdef CONFIG_FILS
 	const u8 *realm, *username, *rrk;
 	size_t realm_len, username_len, rrk_len;
@@ -2794,9 +2794,9 @@ static u8 * wpas_populate_assoc_ies(
 					    ssid, try_opportunistic,
 					    cache_id, 0) == 0) {
 			eapol_sm_notify_pmkid_attempt(wpa_s->eapol);
-#ifdef CONFIG_SAE
-			sae_pmksa_cached = 1;
-#endif /* CONFIG_SAE */
+#if defined(CONFIG_SAE) || defined(CONFIG_FILS)
+			pmksa_cached = 1;
+#endif /* CONFIG_SAE || CONFIG_FILS */
 		}
 		wpa_ie_len = max_wpa_ie_len;
 		if (wpa_supplicant_set_suites(wpa_s, bss, ssid,
@@ -2895,6 +2895,10 @@ static u8 * wpas_populate_assoc_ies(
 
 		if (mask)
 			*mask |= WPA_DRV_UPDATE_FILS_ERP_INFO;
+	} else if ((wpa_s->drv_flags & WPA_DRIVER_FLAGS_FILS_SK_OFFLOAD) &&
+		   ssid->eap.erp && wpa_key_mgmt_fils(wpa_s->key_mgmt) &&
+		   pmksa_cached) {
+		algs = WPA_AUTH_ALG_FILS;
 	}
 #endif /* CONFIG_FILS */
 #endif /* IEEE8021X_EAPOL */
@@ -2911,7 +2915,7 @@ static u8 * wpas_populate_assoc_ies(
 	}
 
 #ifdef CONFIG_SAE
-	if (sae_pmksa_cached && algs == WPA_AUTH_ALG_SAE) {
+	if (pmksa_cached && algs == WPA_AUTH_ALG_SAE) {
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"SAE: Use WPA_AUTH_ALG_OPEN for PMKSA caching attempt");
 		algs = WPA_AUTH_ALG_OPEN;
