@@ -46,8 +46,8 @@ class TestOptions():
 		self.peerip = None
 
 def log_level2switch():
-	if global_log_level == 1: return ["-d", "-K"]
-	elif global_log_level <= 0: return ["-dd", "-K"]
+	if options.debug >= 2: return ["-dd", "-K"]
+	elif options.debug >= 1: return ["-d", "-K"]
 	return ["-K"]
 
 #TODO: Move to libwifi?
@@ -101,62 +101,6 @@ def freebsd_encap_eapolmsdu(p, src, dst, payload):
 
 	p = p/freebsd_create_eapolmsdu(src, dst, payload)
 	return p
-
-def set_monitor_mode(iface):
-	# Some kernels (Debian jessie - 3.16.0-4-amd64) don't properly add the monitor interface. The following ugly
-	# sequence of commands assures the virtual interface is properly registered as a 802.11 monitor interface.
-	subprocess.check_output(["ifconfig", iface, "down"])
-	subprocess.check_output(["iw", iface, "set", "type", "monitor"])
-	time.sleep(0.5)
-	subprocess.check_output(["iw", iface, "set", "type", "monitor"])
-	subprocess.check_output(["ifconfig", iface, "up"])
-	subprocess.check_output(["ifconfig", iface, "mtu", "2200"])
-
-
-# ----------------------------------- Injection Tests -----------------------------------
-
-def test_packet_injection(sout, sin, p, test_func):
-	log(WARNING, "Testing injection")
-
-	# Append unique label to recognize frame & inject it
-	label = b"AAAA" + struct.pack(">II", random.randint(0, 2**32), random.randint(0, 2**32))
-	sout.send(RadioTap()/p/Raw(label))
-
-	#TODO: Should we prevent ath9k_htc injection bug after injecting a fragment?
-
-	# 1. When using a 2nd interface: capture the actual packet that was injected in the air.
-	# 2. Not using 2nd interface: capture the "reflected" frame sent back by the kernel. This allows
-	#    us to at least detect if the kernel (and perhaps driver) is overwriting fields. It generally
-	#    doesn't allow us to detect if the device/firmware itself is overwriting fields.
-	packets = sniff(opened_socket=sin, timeout=2, count=1, lfilter=lambda p: p != None and label in raw(p))
-	if len(packets) < 1:
-		raise IOError("Unable to inject test frame. Does your driver/device support monitor mode?")
-
-	# Property must hold for all frames
-	return all([test_func(cap) for cap in packets])
-
-def test_injection(iface_out, iface_in=None):
-	# We start monitoring iface_in already so injected frame won't be missed
-	sout = L2Socket(type=ETH_P_ALL, iface=iface_out)
-	if iface_in == None:
-		sin = sout
-	else:
-		sin = L2Socket(type=ETH_P_ALL, iface=iface_in)
-
-	p = Dot11(addr1="00:11:00:00:00:01", addr2="00:22:00:00:00:01", type=2, SC=33<<4)
-	if not test_packet_injection(sout, sin, p, lambda cap: cap.SC == p.SC):
-		raise IOError("Sequence number of injected frames is being overwritten!")
-
-	p = Dot11(addr1="00:11:00:00:00:02", addr2="00:22:00:00:00:02", type=2, SC=(33<<4)|1)
-	if not test_packet_injection(sout, sin, p, lambda cap: (cap.SC & 0xf) == 1):
-		raise IOError("Fragment number of injected frames is being overwritten!")
-
-	p = Dot11(addr1="00:11:00:00:00:03", addr2="00:22:00:00:00:03", type=2, subtype=8, SC=33)/Dot11QoS(TID=2)
-	if not test_packet_injection(sout, sin, p, lambda cap: cap.TID == p.TID):
-		raise IOError("QoS TID of injected frames is being overwritten!")
-
-	sout.close()
-	sin.close()
 
 
 # ----------------------------------- Vulnerability Tests -----------------------------------
@@ -647,6 +591,11 @@ class Station():
 		script was sending data *before* the key had been installed (or the port
 		authorized). This meant traffic was dropped. Use this function to manually
 		send frames over the monitor interface to ensure delivery and encryption.
+
+		By default we use a TID of 1. Since our tests by default use a TID of 2,
+		this reduces the chance the frames sent using this function (which most
+		are EAP or EAPOL frames) interfere with the reassembly of frames sent by
+		the tests.
 		"""
 
 		# If it contains an Ethernet header, strip it, and take addresses from that
@@ -909,7 +858,6 @@ class Daemon(metaclass=abc.ABCMeta):
 		self.nic_iface = None
 		self.nic_mon = None
 		self.nic_hwsim = None
-		self.performed_injection_selftest = False
 
 		self.process = None
 		self.sock_eth = None
@@ -973,11 +921,6 @@ class Daemon(metaclass=abc.ABCMeta):
 			# Use the provided interface to monitor/inject frames
 			self.nic_mon = self.options.inject
 
-			# Avoid the monitor interface from retransmitting frames? This was not needed for the
-			# ath9k_htc and intel/mvm device that I tested. Perhaps for others it might be needed.
-			#subprocess.call(["ifconfig", self.nic_mon, "down"])
-			#subprocess.call(["macchanger", "-m", get_macaddress(self.nic_iface), self.nic_mon])
-
 		else:
 			# Create second virtual interface in monitor mode. Note: some kernels
 			# don't support interface names of 15+ characters.
@@ -1007,6 +950,10 @@ class Daemon(metaclass=abc.ABCMeta):
 		if self.nic_hwsim:
 			set_monitor_mode(self.nic_hwsim)
 
+		# 3. Configure test interface if used
+		if self.options.inject_test:
+			set_monitor_mode(self.options.inject_test)
+
 	def inject_mon(self, p):
 		self.sock_mon.send(p)
 
@@ -1028,24 +975,36 @@ class Daemon(metaclass=abc.ABCMeta):
 			log(ERROR, "Did you disable Wi-Fi in the network manager? Otherwise it won't start properly.")
 			raise
 
-	def injection_selftest(self):
-		if self.performed_injection_selftest:
-			return
+	def follow_channel(self):
+		channel = get_channel(self.nic_iface)
+		if self.options.inject:
+			set_channel(self.nic_mon, channel)
+			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
+		elif self.options.hwsim:
+			set_channel(self.nic_hwsim, channel)
+			set_channel(self.nic_mon, channel)
+			log(STATUS, f"{self.nic_hwsim}: setting to channel {channel}")
+			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
 
-		# - When using a 2nd interface to inject frames, this self-test should trivially succeed.
-		# - This is mainly useful when using one interface as both client and monitor interface,
-		#   in which case a modified kernel/driver must be used.
-		# - With the Intel/mvm injection in this case only works if hostapd/wpa_supp started.
-		# - When in client mode, it seems the scanning operation interferes with this test. So it
-		#   must be executed once we are trying to connect so the channel is "stable".
-		try: test_injection(self.nic_mon)
+		if self.options.inject_test:
+			set_channel(self.options.inject_test, channel)
+			log(STATUS, f"{self.options.inject_test}: setting to channel {channel}")
+			# When explicitly testing we can afford a longer timeout. Otherwise we should avoid it.
+			time.sleep(0.5)
+
+	def injection_test(self, peermac):
+		# Only perform the test when explicitly requested
+		if self.options.inject_test == None: return
+
+		try:
+			test_injection(self.nic_mon, self.options.inject_test, peermac)
 		except IOError as ex:
 			log(WARNING, ex.args[0])
-			log(ERROR, "Injection self-test failed. Are you using the correct kernel/driver/device for injection?")
+			log(ERROR, "Unexpected error. Are you using the correct kernel/driver/device?")
 			quit(1)
 
 		log(DEBUG, f"Passed injection self-test on interface {self.nic_mon}.")
-		self.performed_injection_selftest = True
+		quit(1)
 
 	def forward_hwsim(self, p, s):
 		if p == None: return
@@ -1072,6 +1031,7 @@ class Daemon(metaclass=abc.ABCMeta):
 			self.sock_hwsim = MonitorSocket(type=ETH_P_ALL, iface=self.nic_hwsim)
 
 		# Post-startup configuration of the supplicant or AP
+		wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
 		self.configure_daemon()
 
 		# Monitor the virtual monitor interface of the client and perform the needed actions
@@ -1193,6 +1153,8 @@ class Authenticator(Daemon):
 				station.set_ip_addresses(self.options.ip, self.options.peerip)
 
 	def handle_wpaspy(self, msg):
+		log(DEBUG, "daemon: " + msg)
+
 		if "AP-STA-CONNECTING" in msg:
 			cmd, clientmac = msg.split()
 			self.add_station(clientmac)
@@ -1202,6 +1164,11 @@ class Authenticator(Daemon):
 			station.handle_connecting(self.apmac)
 			station.set_peermac(clientmac)
 
+			# When in client mode, the scanning operation might interferes with this test.
+			# So it must be executed once we are connecting so the channel is stable.
+			# TODO: Avoid client from disconnecting during test.
+			self.injection_test(clientmac)
+
 		elif "EAPOL-TX" in msg:
 			cmd, clientmac, payload = msg.split()
 			if not clientmac in self.stations:
@@ -1209,7 +1176,6 @@ class Authenticator(Daemon):
 				return
 			self.stations[clientmac].handle_eapol_tx(bytes.fromhex(payload))
 
-		# XXX WPA1: Take into account group key handshake on initial 4-way HS
 		elif "AP-STA-CONNECTED" in msg:
 			cmd, clientmac = msg.split()
 			if not clientmac in self.stations:
@@ -1231,9 +1197,6 @@ class Authenticator(Daemon):
 		self.apmac = get_macaddress(self.nic_iface)
 
 	def configure_daemon(self):
-		# Intercept EAPOL packets that the AP wants to send
-		wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
-
 		# Let scapy handle DHCP requests
 		self.dhcp = DHCP_sock(sock=self.sock_eth,
 						domain='mathyvanhoef.com',
@@ -1252,18 +1215,7 @@ class Authenticator(Daemon):
 		#log(STATUS, f"Will inject ARP packets using sender IP {self.arp_sender_ip}")
 
 		# When using a separate interface to inject, switch to correct channel
-		if self.options.inject:
-			channel = get_channel(self.nic_iface)
-			set_channel(self.nic_mon, channel)
-			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
-		elif self.options.hwsim:
-			channel = get_channel(self.nic_iface)
-			set_channel(self.nic_hwsim, channel)
-			set_channel(self.nic_mon, channel)
-			log(STATUS, f"{self.nic_hwsim}: setting to channel {channel}")
-			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
-
-		self.injection_selftest()
+		self.follow_channel()
 
 
 class Supplicant(Daemon):
@@ -1392,18 +1344,7 @@ class Supplicant(Daemon):
 
 		elif "Trying to authenticate with" in msg:
 			# When using a separate interface to inject, switch to correct channel
-			if self.options.inject:
-				channel = get_channel(self.nic_iface)
-				set_channel(self.nic_mon, channel)
-				log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
-
-			elif self.options.hwsim:
-				# FIXME: There is some delay, causing the first authentication to fail
-				channel = get_channel(self.nic_iface)
-				set_channel(self.nic_mon, channel)
-				set_channel(self.nic_hwsim, channel)
-				log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
-				log(STATUS, f"{self.nic_hwsim}: setting to channel {channel}")
+			self.follow_channel()
 
 			p = re.compile("Trying to authenticate with (.*) \(SSID")
 			bss = p.search(msg).group(1)
@@ -1412,8 +1353,7 @@ class Supplicant(Daemon):
 		elif "Trying to associate with" in msg:
 			# With the ath9k_htc, injection in mixed managed/monitor only works after
 			# sending the association request. So only perform injection test now.
-			# TODO: Only do a self-test when in mixed managed/monitor mode?
-			self.injection_selftest()
+			self.injection_test(self.station.bss)
 
 		elif "EAPOL-TX" in msg:
 			cmd, srcaddr, payload = msg.split()
@@ -1430,15 +1370,15 @@ class Supplicant(Daemon):
 
 	def reconnect(self, station):
 		log(STATUS, "Reconnecting to the AP.", color="green")
+
+		# Optimize reassoc-to-same-BSS by default. This makes the "REASSOCIATE" command skip
+		# the authentication phase (reducing the chance that packet queues are reset).
 		optim = "0" if self.options.full_reconnect else "1"
+
 		wpaspy_command(self.wpaspy_ctrl, f"SET reassoc_same_bss_optim {optim}")
 		wpaspy_command(self.wpaspy_ctrl, "REASSOCIATE")
 
 	def configure_daemon(self):
-		# Optimize reassoc-to-same-BSS. This makes the "REASSOCIATE" command skip the
-		# authentication phase (reducing the chance that packet queues are reset).
-		wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
-
 		# If the user already supplied IPs we can immediately perform tests
 		if self.options.ip and self.options.peerip:
 			self.initialize_ips(self.options.ip, self.options.peerip)
@@ -1645,7 +1585,7 @@ if __name__ == "__main__":
 	parser.add_argument('testname', help="Name or identifier of the test to run.")
 	parser.add_argument('actions', nargs='?', help="Optional textual descriptions of actions")
 	parser.add_argument('--inject', default=None, help="Interface to use to inject frames.")
-	parser.add_argument('--inject-test', default=None, help="Use main interface to test injection through this interface.")
+	parser.add_argument('--inject-test', default=None, help="Use given interface to test injection through monitor interface.")
 	parser.add_argument('--hwsim', default=None, help="Use provided interface in monitor mode, and simulate AP/client through hwsim.")
 	parser.add_argument('--ip', help="IP we as a sender should use.")
 	parser.add_argument('--peerip', help="IP of the device we will test.")
@@ -1676,24 +1616,18 @@ if __name__ == "__main__":
 	# Default value for options that should not be command line parameters
 	options.inject_workaround = False
 
-	# Perform test using a second interface if requested
-	if options.inject_test:
-		log(WARNING, "TODO: Perform proper injection tests (including with active AP/STA")
-		quit(1)
-
 	# Sanity check and convert some arguments to more usable form
 	options.ptype = args2ptype(options)
 	options.as_msdu = args2msdu(options)
 
 	# Construct the test
 	options.test = prepare_tests(options)
-
 	if options.test == None:
 		log(STATUS, f"Test name/id '{options.testname}' not recognized. Specify a valid test case.")
 		quit(1)
 
 	# Parse remaining options
-	global_log_level -= options.debug
+	change_log_level(-options.debug)
 
 	# Now start the tests --- TODO: Inject Deauths before connecting with client...
 	if options.ap:
