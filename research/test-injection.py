@@ -18,7 +18,7 @@ def main():
 		quit(1)
 
 	log(STATUS, "Performing injection tests ...")
-	test_injection(options.inject, options.monitor)
+	test_injection(options.inject, options.monitor, peermac="00:11:22:33:44:55")
 
 if __name__ == "__main__":
 	main()

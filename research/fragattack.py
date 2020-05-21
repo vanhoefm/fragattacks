@@ -904,7 +904,11 @@ class Daemon(metaclass=abc.ABCMeta):
 	def configure_interfaces(self):
 		log(STATUS, "Note: disable Wi-Fi in your network manager so it doesn't interfere with this script")
 
-		subprocess.check_output(["rfkill", "unblock", "wifi"])
+		try:
+			subprocess.check_output(["rfkill", "unblock", "wifi"])
+		except Exception as ex:
+			log(ERROR, "Are you running as root (and in a Python virtualenv)?")
+			quit(1)
 		self.nic_iface = options.iface
 
 		# 1. Assign/create interfaces according to provided options
@@ -994,7 +998,8 @@ class Daemon(metaclass=abc.ABCMeta):
 
 	def injection_test(self, peermac):
 		# Only perform the test when explicitly requested
-		if self.options.inject_test == None: return
+		if self.options.inject_test == None and not self.options.inject_selftest:
+			return
 
 		try:
 			test_injection(self.nic_mon, self.options.inject_test, peermac)
@@ -1586,6 +1591,7 @@ if __name__ == "__main__":
 	parser.add_argument('actions', nargs='?', help="Optional textual descriptions of actions")
 	parser.add_argument('--inject', default=None, help="Interface to use to inject frames.")
 	parser.add_argument('--inject-test', default=None, help="Use given interface to test injection through monitor interface.")
+	parser.add_argument('--inject-selftest', default=False, action='store_true', help="Partial injection test (checks kernel only).")
 	parser.add_argument('--hwsim', default=None, help="Use provided interface in monitor mode, and simulate AP/client through hwsim.")
 	parser.add_argument('--ip', help="IP we as a sender should use.")
 	parser.add_argument('--peerip', help="IP of the device we will test.")
