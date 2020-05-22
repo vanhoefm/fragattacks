@@ -786,23 +786,13 @@ class Station():
 				self.daemon.inject_mon(frame)
 				log(STATUS, "[Injected fragment] " + repr(frame))
 
+				if self.options.inject_mf_workaround and frame.FCfield & 0x4 != 0:
+					self.daemon.inject_mon(Dot11(addr1="ff:ff:ff:ff:ff:ff"))
+					log(DEBUG, "[Injected packet] Prevented bug after fragment injection")
+
+
 			# Stop processing actions if requested
 			if act.wait: break
-
-		# With ath9k_htc devices, there's a bug when injecting a frame with the
-		# More Fragments (MF) field *and* operating the interface in AP mode
-		# while the target is connected. For some reason, after injecting the
-		# frame, it halts the transmission of all other normal frames (this even
-		# includes beacons). Injecting a dummy packet like below avoid this,
-		# and assures packets keep being sent normally (when the last fragment
-		# had the MF flag set).
-		#
-		# Note: when the device is only operating in monitor mode, this does
-		#	not seem to be a problem.
-		#
-		if self.options.inject_mf_workaround and frame != None and frame.FCfield & 0x4 != 0:
-			self.daemon.inject_mon(Dot11(addr1="ff:ff:ff:ff:ff:ff"))
-			log(STATUS, "[Injected packet] Prevented ath9k_htc bug after fragment injection")
 
 		return result
 
@@ -928,24 +918,25 @@ class Daemon(metaclass=abc.ABCMeta):
 				subprocess.call(["iw", self.nic_mon, "del"], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
 				subprocess.check_output(["iw", self.nic_iface, "interface", "add", self.nic_mon, "type", "monitor"])
 
-			# Remember whether to need to perform a workaround.
-			driver = get_device_driver(self.nic_iface)
-			if driver == None:
-				log(WARNING, "Unable to detect driver of interface!")
-				log(WARNING, "Injecting fragments may be unreliable.")
-			elif driver in ["ath9k_htc", "iwlwifi"]:
-				options.inject_mf_workaround = True
-				log(STATUS, f"Detected {driver}, using injection bug workarounds")
-
 			log(WARNING, "Remember to use a modified backports and ath9k_htc firmware!")
 
-		# 2. Enable monitor mode
+		# 2. Remember whether to need to use injection workarounds.
+		driver = get_device_driver(self.nic_mon)
+		if driver == None:
+			log(WARNING, "Unable to detect driver of interface!")
+			log(WARNING, "Injecting fragments may be unreliable.")
+		elif driver in ["ath9k_htc", "iwlwifi"]:
+			# We use this workaround in more cases than required. See DEVICES.md for more info.
+			options.inject_mf_workaround = True
+			log(STATUS, f"Detected {driver}, using injection bug workarounds")
+
+		# 3. Enable monitor mode
 		set_monitor_mode(self.nic_mon)
 		log(STATUS, f"Using interface {self.nic_mon} to inject frames.")
 		if self.nic_hwsim:
 			set_monitor_mode(self.nic_hwsim)
 
-		# 3. Configure test interface if used
+		# 4. Configure test interface if used
 		if self.options.inject_test:
 			set_monitor_mode(self.options.inject_test)
 
