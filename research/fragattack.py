@@ -36,15 +36,6 @@ def argv_pop_argument(argument):
 	del sys.argv[idx]
 	return True
 
-class TestOptions():
-	def __init__(self):
-		# Workaround for ath9k_htc bugs
-		self.inject_workaround = False
-
-		self.interface = None
-		self.ip = None
-		self.peerip = None
-
 def log_level2switch():
 	if options.debug >= 2: return ["-dd", "-K"]
 	elif options.debug >= 1: return ["-d", "-K"]
@@ -809,7 +800,7 @@ class Station():
 		# Note: when the device is only operating in monitor mode, this does
 		#	not seem to be a problem.
 		#
-		if self.options.inject_workaround and frame != None and frame.FCfield & 0x4 != 0:
+		if self.options.inject_mf_workaround and frame != None and frame.FCfield & 0x4 != 0:
 			self.daemon.inject_mon(Dot11(addr1="ff:ff:ff:ff:ff:ff"))
 			log(STATUS, "[Injected packet] Prevented ath9k_htc bug after fragment injection")
 
@@ -942,9 +933,9 @@ class Daemon(metaclass=abc.ABCMeta):
 			if driver == None:
 				log(WARNING, "Unable to detect driver of interface!")
 				log(WARNING, "Injecting fragments may be unreliable.")
-			elif driver == "ath9k_htc":
-				options.inject_workaround = True
-				log(STATUS, "Detected ath9k_htc, using injection bug workarounds")
+			elif driver in ["ath9k_htc", "iwlwifi"]:
+				options.inject_mf_workaround = True
+				log(STATUS, f"Detected {driver}, using injection bug workarounds")
 
 			log(WARNING, "Remember to use a modified backports and ath9k_htc firmware!")
 
@@ -1620,7 +1611,7 @@ if __name__ == "__main__":
 	options = parser.parse_args()
 
 	# Default value for options that should not be command line parameters
-	options.inject_workaround = False
+	options.inject_mf_workaround = False
 
 	# Sanity check and convert some arguments to more usable form
 	options.ptype = args2ptype(options)
