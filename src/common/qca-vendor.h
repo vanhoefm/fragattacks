@@ -7283,6 +7283,37 @@ enum qca_wlan_vendor_attr_wifi_test_config {
 	 */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_DISASSOC_TX = 39,
 
+	/* 8-bit unsigned value to configure an override for the RSNXE Used
+	 * subfield in the MIC control field of the FTE in FT Reassociation
+	 * Request frame.
+	 * 0 - Default behavior, 1 - override with 1, 2 - override with 0.
+	 * This attribute is used to configure the testbed device.
+	 * This attribute can be configured when STA is in disconnected or
+	 * associated state and the configuration is valid until the next
+	 * disconnection.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_FT_REASSOCREQ_RSNXE_USED = 40,
+
+	/* 8-bit unsigned value to configure the driver to ignore CSA (Channel
+	 * Switch Announcement) when STA is in connected state.
+	 * 0 - Default behavior, 1 - Ignore CSA.
+	 * This attribute is used to configure the testbed device.
+	 * This attribute can be configured when STA is in disconnected or
+	 * associated state and the configuration is valid until the next
+	 * disconnection.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_IGNORE_CSA = 41,
+
+	/* Nested attribute values required to configure OCI (Operating Channel
+	 * Information). Attributes defined in enum
+	 * qca_wlan_vendor_attr_oci_override are nested within this attribute.
+	 * This attribute is used to configure the testbed device.
+	 * This attribute can be configured when STA is in disconnected or
+	 * associated state and the configuration is valid until the next
+	 * disconnection.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_OCI_OVERRIDE = 42,
+
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_MAX =
@@ -9169,6 +9200,46 @@ enum qca_wlan_vendor_attr_config_tspec {
 	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_MAX =
 	QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_AFTER_LAST - 1,
+};
+
+/**
+ * enum qca_wlan_vendor_oci_override_frame_type - OCI override frame type
+ * @QCA_WLAN_VENDOR_OCI_OVERRIDE_FRAME_SA_QUERY_REQ: SA Query Request frame
+ * @QCA_WLAN_VENDOR_OCI_OVERRIDE_FRAME_SA_QUERY_RESP: SA Query Response frame
+ * @QCA_WLAN_VENDOR_OCI_OVERRIDE_FRAME_FT_REASSOC_REQ: FT Reassociation Request
+ * frame
+ * @QCA_WLAN_VENDOR_OCI_OVERRIDE_FRAME_FILS_REASSOC_REQ: FILS Reassociation
+ * Request frame.
+ */
+enum qca_wlan_vendor_oci_override_frame_type {
+	QCA_WLAN_VENDOR_OCI_OVERRIDE_FRAME_SA_QUERY_REQ = 1,
+	QCA_WLAN_VENDOR_OCI_OVERRIDE_FRAME_SA_QUERY_RESP = 2,
+	QCA_WLAN_VENDOR_OCI_OVERRIDE_FRAME_FT_REASSOC_REQ = 3,
+	QCA_WLAN_VENDOR_OCI_OVERRIDE_FRAME_FILS_REASSOC_REQ = 4,
+};
+
+/**
+ * enum qca_wlan_vendor_attr_oci_override: Represents attributes for
+ * OCI override request. These attributes are used inside nested attribute
+ * %QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_OCI_OVERRIDE in QCA vendor command
+ * %QCA_NL80211_VENDOR_SUBCMD_WIFI_TEST_CONFIGURATION.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_OCI_OVERRIDE_FRAME_TYPE: Required attribute, u8.
+ * Values from enum qca_wlan_vendor_oci_override_frame_type used in this
+ * attribute to specify the frame type in which the OCI is to be overridden.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_OCI_OVERRIDE_FREQUENCY: Required (u32)
+ * OCI frequency (in MHz) to override in the specified frame type.
+ */
+enum qca_wlan_vendor_attr_oci_override {
+	QCA_WLAN_VENDOR_ATTR_OCI_OVERRIDE_INVALID = 0,
+	QCA_WLAN_VENDOR_ATTR_OCI_OVERRIDE_FRAME_TYPE = 1,
+	QCA_WLAN_VENDOR_ATTR_OCI_OVERRIDE_FREQUENCY = 2,
+
+	/* keep last */
+	QCA_WLAN_VENDOR_ATTR_OCI_OVERRIDE_AFTER_LAST,
+	QCA_WLAN_VENDOR_ATTR_OCI_OVERRIDE_MAX =
+	QCA_WLAN_VENDOR_ATTR_OCI_OVERRIDE_AFTER_LAST - 1,
 };
 
 #endif /* QCA_VENDOR_H */
