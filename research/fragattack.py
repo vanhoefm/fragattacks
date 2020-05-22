@@ -1011,6 +1011,9 @@ class Daemon(metaclass=abc.ABCMeta):
 			log(DEBUG, f"Cannot forward frame longer than MTU (length {len(p)}).")
 			return
 
+		# Due to very strange buy in Scapy, we cannot directly forward frames with a
+		# Dot11Encrypted layer. So we first convert them into a raw byte stream.
+		p = Raw(raw(p))
 		s.send(p)
 
 	def run(self):
