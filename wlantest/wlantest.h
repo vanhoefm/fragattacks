@@ -70,8 +70,10 @@ struct wlantest_sta {
 	int group_cipher;
 	int key_mgmt;
 	int rsn_capab;
-	u8 anonce[32]; /* ANonce from the previous EAPOL-Key msg 1/4 or 3/4 */
-	u8 snonce[32]; /* SNonce from the previous EAPOL-Key msg 2/4 */
+	/* ANonce from the previous EAPOL-Key msg 1/4 or 3/4 */
+	u8 anonce[WPA_NONCE_LEN];
+	/* SNonce from the previous EAPOL-Key msg 2/4 */
+	u8 snonce[WPA_NONCE_LEN];
 	u8 pmk_r0[PMK_LEN_MAX];
 	size_t pmk_r0_len;
 	u8 pmk_r0_name[WPA_PMK_NAME_LEN];
@@ -164,7 +166,7 @@ struct wlantest_bss {
 	int bigtk_idx;
 	u32 counters[NUM_WLANTEST_BSS_COUNTER];
 	struct dl_list tdls; /* struct wlantest_tdls */
-	u8 mdid[2];
+	u8 mdid[MOBILITY_DOMAIN_ID_LEN];
 	u8 r0kh_id[FT_R0KH_ID_MAX_LEN];
 	size_t r0kh_id_len;
 	u8 r1kh_id[FT_R1KH_ID_LEN];

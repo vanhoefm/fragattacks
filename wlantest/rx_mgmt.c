@@ -879,7 +879,179 @@ static void rx_mgmt_reassoc_req(struct wlantest *wt, const u8 *data,
 	sta->assocreq_seen = 1;
 	sta_update_assoc(sta, &elems);
 
-	/* TODO: FT protocol: verify FTE MIC and update GTK/IGTK for the BSS */
+	if (elems.ftie) {
+		struct wpa_ft_ies parse;
+		int use_sha384;
+		struct rsn_mdie *mde;
+		const u8 *anonce, *snonce, *fte_mic;
+		u8 fte_elem_count;
+		unsigned int count;
+		u8 mic[WPA_EAPOL_KEY_MIC_MAX_LEN];
+		size_t mic_len = 16;
+		const u8 *kck;
+		size_t kck_len;
+
+		use_sha384 = wpa_key_mgmt_sha384(sta->key_mgmt);
+
+		if (wpa_ft_parse_ies(ie, ie_len, &parse, use_sha384) < 0) {
+			add_note(wt, MSG_INFO, "FT: Failed to parse FT IEs");
+			return;
+		}
+
+		if (!parse.rsn) {
+			add_note(wt, MSG_INFO, "FT: No RSNE in Reassoc Req");
+			return;
+		}
+
+		if (!parse.rsn_pmkid) {
+			add_note(wt, MSG_INFO, "FT: No PMKID in RSNE");
+			return;
+		}
+
+		if (os_memcmp_const(parse.rsn_pmkid, sta->pmk_r1_name,
+				    WPA_PMK_NAME_LEN) != 0) {
+			add_note(wt, MSG_INFO,
+				 "FT: PMKID in Reassoc Req did not match PMKR1Name");
+			wpa_hexdump(MSG_DEBUG,
+				    "FT: Received RSNE[PMKR1Name]",
+				    parse.rsn_pmkid, WPA_PMK_NAME_LEN);
+			wpa_hexdump(MSG_DEBUG,
+				    "FT: Previously derived PMKR1Name",
+				    sta->pmk_r1_name, WPA_PMK_NAME_LEN);
+			return;
+		}
+
+		mde = (struct rsn_mdie *) parse.mdie;
+		if (!mde || parse.mdie_len < sizeof(*mde) ||
+		    os_memcmp(mde->mobility_domain, bss->mdid,
+			      MOBILITY_DOMAIN_ID_LEN) != 0) {
+			add_note(wt, MSG_INFO, "FT: Invalid MDE");
+		}
+
+		if (use_sha384) {
+			struct rsn_ftie_sha384 *fte;
+
+			fte = (struct rsn_ftie_sha384 *) parse.ftie;
+			if (!fte || parse.ftie_len < sizeof(*fte)) {
+				add_note(wt, MSG_INFO, "FT: Invalid FTE");
+				return;
+			}
+
+			anonce = fte->anonce;
+			snonce = fte->snonce;
+			fte_elem_count = fte->mic_control[1];
+			fte_mic = fte->mic;
+		} else {
+			struct rsn_ftie *fte;
+
+			fte = (struct rsn_ftie *) parse.ftie;
+			if (!fte || parse.ftie_len < sizeof(*fte)) {
+				add_note(wt, MSG_INFO, "FT: Invalid FTIE");
+				return;
+			}
+
+			anonce = fte->anonce;
+			snonce = fte->snonce;
+			fte_elem_count = fte->mic_control[1];
+			fte_mic = fte->mic;
+		}
+
+		if (os_memcmp(snonce, sta->snonce, WPA_NONCE_LEN) != 0) {
+			add_note(wt, MSG_INFO, "FT: SNonce mismatch in FTIE");
+			wpa_hexdump(MSG_DEBUG, "FT: Received SNonce",
+				    snonce, WPA_NONCE_LEN);
+			wpa_hexdump(MSG_DEBUG, "FT: Expected SNonce",
+				    sta->snonce, WPA_NONCE_LEN);
+			return;
+		}
+
+		if (os_memcmp(anonce, sta->anonce, WPA_NONCE_LEN) != 0) {
+			add_note(wt, MSG_INFO, "FT: ANonce mismatch in FTIE");
+			wpa_hexdump(MSG_DEBUG, "FT: Received ANonce",
+				    anonce, WPA_NONCE_LEN);
+			wpa_hexdump(MSG_DEBUG, "FT: Expected ANonce",
+				    sta->anonce, WPA_NONCE_LEN);
+			return;
+		}
+
+		if (!parse.r0kh_id) {
+			add_note(wt, MSG_INFO, "FT: No R0KH-ID subelem in FTE");
+			return;
+		}
+		os_memcpy(bss->r0kh_id, parse.r0kh_id, parse.r0kh_id_len);
+		bss->r0kh_id_len = parse.r0kh_id_len;
+
+		if (!parse.r1kh_id) {
+			add_note(wt, MSG_INFO, "FT: No R1KH-ID subelem in FTE");
+			return;
+		}
+
+		os_memcpy(bss->r1kh_id, parse.r1kh_id, FT_R1KH_ID_LEN);
+
+		if (!parse.rsn_pmkid ||
+		    os_memcmp_const(parse.rsn_pmkid, sta->pmk_r1_name,
+				    WPA_PMK_NAME_LEN)) {
+			add_note(wt, MSG_INFO,
+				 "FT: No matching PMKR1Name (PMKID) in RSNE (pmkid=%d)",
+				 !!parse.rsn_pmkid);
+			return;
+		}
+
+		count = 3;
+		if (parse.ric)
+			count += ieee802_11_ie_count(parse.ric, parse.ric_len);
+		if (parse.rsnxe)
+			count++;
+		if (fte_elem_count != count) {
+			add_note(wt, MSG_INFO,
+				 "FT: Unexpected IE count in MIC Control: received %u expected %u",
+				 fte_elem_count, count);
+			return;
+		}
+
+		if (wpa_key_mgmt_fils(sta->key_mgmt)) {
+			kck = sta->ptk.kck2;
+			kck_len = sta->ptk.kck2_len;
+		} else {
+			kck = sta->ptk.kck;
+			kck_len = sta->ptk.kck_len;
+		}
+		if (wpa_ft_mic(kck, kck_len, sta->addr, bss->bssid, 5,
+			       parse.mdie - 2, parse.mdie_len + 2,
+			       parse.ftie - 2, parse.ftie_len + 2,
+			       parse.rsn - 2, parse.rsn_len + 2,
+			       parse.ric, parse.ric_len,
+			       parse.rsnxe ? parse.rsnxe - 2 : NULL,
+			       parse.rsnxe ? parse.rsnxe_len + 2 : 0,
+			       mic) < 0) {
+			add_note(wt, MSG_INFO, "FT: Failed to calculate MIC");
+			return;
+		}
+
+		if (os_memcmp_const(mic, fte_mic, mic_len) != 0) {
+			add_note(wt, MSG_INFO, "FT: Invalid MIC in FTE");
+			wpa_printf(MSG_DEBUG,
+				   "FT: addr=" MACSTR " auth_addr=" MACSTR,
+				   MAC2STR(sta->addr),
+				   MAC2STR(bss->bssid));
+			wpa_hexdump(MSG_MSGDUMP, "FT: Received MIC",
+				    fte_mic, mic_len);
+			wpa_hexdump(MSG_MSGDUMP, "FT: Calculated MIC",
+				    mic, mic_len);
+			wpa_hexdump(MSG_MSGDUMP, "FT: MDE",
+				    parse.mdie - 2, parse.mdie_len + 2);
+			wpa_hexdump(MSG_MSGDUMP, "FT: FTE",
+				    parse.ftie - 2, parse.ftie_len + 2);
+			wpa_hexdump(MSG_MSGDUMP, "FT: RSN",
+				    parse.rsn - 2, parse.rsn_len + 2);
+			wpa_hexdump(MSG_MSGDUMP, "FT: RSNXE",
+				    parse.rsnxe ? parse.rsnxe - 2 : NULL,
+				    parse.rsnxe ? parse.rsnxe_len + 2 : 0);
+			return;
+		}
+
+		add_note(wt, MSG_INFO, "FT: Valid FTE MIC");
+	}
 }
 
 
@@ -1188,6 +1360,8 @@ static void rx_mgmt_action_ft_response(struct wlantest *wt,
 	new_sta->ptk_set = 1;
 	os_memset(new_sta->rsc_tods, 0, sizeof(new_sta->rsc_tods));
 	os_memset(new_sta->rsc_fromds, 0, sizeof(new_sta->rsc_fromds));
+	os_memcpy(new_sta->snonce, parse.fte_snonce, WPA_NONCE_LEN);
+	os_memcpy(new_sta->anonce, parse.fte_anonce, WPA_NONCE_LEN);
 }
 
 
