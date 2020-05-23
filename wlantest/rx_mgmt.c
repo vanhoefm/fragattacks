@@ -232,8 +232,6 @@ static void process_ft_auth(struct wlantest *wt, struct wlantest_bss *bss,
 {
 	u16 trans;
 	struct wpa_ft_ies parse;
-	u8 pmk_r1[PMK_LEN];
-	u8 pmk_r1_name[WPA_PMK_NAME_LEN];
 	struct wpa_ptk ptk;
 	u8 ptk_name[WPA_PMK_NAME_LEN];
 	struct wlantest_bss *old_bss;
@@ -283,14 +281,15 @@ static void process_ft_auth(struct wlantest *wt, struct wlantest_bss *bss,
 		os_memcpy(bss->r1kh_id, parse.r1kh_id, FT_R1KH_ID_LEN);
 
 	if (wpa_derive_pmk_r1(sta->pmk_r0, sta->pmk_r0_len, sta->pmk_r0_name,
-			      bss->r1kh_id, sta->addr, pmk_r1, pmk_r1_name) < 0)
+			      bss->r1kh_id, sta->addr, sta->pmk_r1,
+			      sta->pmk_r1_name) < 0)
 		return;
-	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", pmk_r1_name, WPA_PMK_NAME_LEN);
+	sta->pmk_r1_len = sta->pmk_r0_len;
 
 	if (!parse.fte_anonce || !parse.fte_snonce ||
-	    wpa_pmk_r1_to_ptk(pmk_r1, PMK_LEN, parse.fte_snonce,
+	    wpa_pmk_r1_to_ptk(sta->pmk_r1, sta->pmk_r1_len, parse.fte_snonce,
 			      parse.fte_anonce, sta->addr, bss->bssid,
-			      pmk_r1_name, &ptk, ptk_name, sta->key_mgmt,
+			      sta->pmk_r1_name, &ptk, ptk_name, sta->key_mgmt,
 			      sta->pairwise_cipher) < 0)
 		return;
 
@@ -1127,8 +1126,6 @@ static void rx_mgmt_action_ft_response(struct wlantest *wt,
 	const u8 *ies;
 	size_t ies_len;
 	struct wpa_ft_ies parse;
-	u8 pmk_r1[PMK_LEN];
-	u8 pmk_r1_name[WPA_PMK_NAME_LEN];
 	struct wpa_ptk ptk;
 	u8 ptk_name[WPA_PMK_NAME_LEN];
 
@@ -1163,9 +1160,10 @@ static void rx_mgmt_action_ft_response(struct wlantest *wt,
 		os_memcpy(bss->r1kh_id, parse.r1kh_id, FT_R1KH_ID_LEN);
 
 	if (wpa_derive_pmk_r1(sta->pmk_r0, sta->pmk_r0_len, sta->pmk_r0_name,
-			      bss->r1kh_id, sta->addr, pmk_r1, pmk_r1_name) < 0)
+			      bss->r1kh_id, sta->addr, sta->pmk_r1,
+			      sta->pmk_r1_name) < 0)
 		return;
-	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", pmk_r1_name, WPA_PMK_NAME_LEN);
+	sta->pmk_r1_len = sta->pmk_r0_len;
 
 	new_sta = sta_get(bss, sta->addr);
 	if (!new_sta)
@@ -1174,11 +1172,15 @@ static void rx_mgmt_action_ft_response(struct wlantest *wt,
 	new_sta->pmk_r0_len = sta->pmk_r0_len;
 	os_memcpy(new_sta->pmk_r0_name, sta->pmk_r0_name,
 		  sizeof(sta->pmk_r0_name));
+	os_memcpy(new_sta->pmk_r1, sta->pmk_r1, sta->pmk_r1_len);
+	new_sta->pmk_r1_len = sta->pmk_r1_len;
+	os_memcpy(new_sta->pmk_r1_name, sta->pmk_r1_name,
+		  sizeof(sta->pmk_r1_name));
 	if (!parse.fte_anonce || !parse.fte_snonce ||
-	    wpa_pmk_r1_to_ptk(pmk_r1, PMK_LEN, parse.fte_snonce,
+	    wpa_pmk_r1_to_ptk(sta->pmk_r1, sta->pmk_r1_len, parse.fte_snonce,
 			      parse.fte_anonce, new_sta->addr, bss->bssid,
-			      pmk_r1_name, &ptk, ptk_name, new_sta->key_mgmt,
-			      new_sta->pairwise_cipher) < 0)
+			      sta->pmk_r1_name, &ptk, ptk_name,
+			      new_sta->key_mgmt, new_sta->pairwise_cipher) < 0)
 		return;
 
 	add_note(wt, MSG_DEBUG, "Derived new PTK");
