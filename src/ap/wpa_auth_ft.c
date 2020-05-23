@@ -2128,8 +2128,6 @@ int wpa_auth_derive_ptk_ft(struct wpa_state_machine *sm, struct wpa_ptk *ptk)
 			      pmk_r0, pmk_r0_name,
 			      wpa_key_mgmt_sha384(sm->wpa_key_mgmt)) < 0)
 		return -1;
-	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R0", pmk_r0, pmk_r0_len);
-	wpa_hexdump(MSG_DEBUG, "FT: PMKR0Name", pmk_r0_name, WPA_PMK_NAME_LEN);
 	if (!psk_local || !wpa_key_mgmt_ft_psk(sm->wpa_key_mgmt))
 		wpa_ft_store_pmk_r0(sm->wpa_auth, sm->addr, pmk_r0, pmk_r0_len,
 				    pmk_r0_name,
@@ -2140,9 +2138,6 @@ int wpa_auth_derive_ptk_ft(struct wpa_state_machine *sm, struct wpa_ptk *ptk)
 	if (wpa_derive_pmk_r1(pmk_r0, pmk_r0_len, pmk_r0_name, r1kh, sm->addr,
 			      pmk_r1, sm->pmk_r1_name) < 0)
 		return -1;
-	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R1", pmk_r1, pmk_r1_len);
-	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", sm->pmk_r1_name,
-		    WPA_PMK_NAME_LEN);
 	if (!psk_local || !wpa_key_mgmt_ft_psk(sm->wpa_key_mgmt))
 		wpa_ft_store_pmk_r1(sm->wpa_auth, sm->addr, pmk_r1, pmk_r1_len,
 				    sm->pmk_r1_name, sm->pairwise, &vlan,
@@ -2961,8 +2956,6 @@ static int wpa_ft_local_derive_pmk_r1(struct wpa_authenticator *wpa_auth,
 			      conf->r1_key_holder,
 			      sm->addr, out_pmk_r1, pmk_r1_name) < 0)
 		return -1;
-	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R1", out_pmk_r1, r0->pmk_r0_len);
-	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", pmk_r1_name, WPA_PMK_NAME_LEN);
 
 	os_get_reltime(&now);
 	if (r0->expiration)
@@ -3091,8 +3084,6 @@ static int wpa_ft_process_auth_req(struct wpa_state_machine *sm,
 				   sm->wpa_auth->conf.r1_key_holder, sm->addr,
 				   pmk_r1_name, use_sha384) < 0)
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
-	wpa_hexdump(MSG_DEBUG, "FT: Derived requested PMKR1Name",
-		    pmk_r1_name, WPA_PMK_NAME_LEN);
 
 	if (conf->ft_psk_generate_local &&
 	    wpa_key_mgmt_ft_psk(sm->wpa_key_mgmt)) {
@@ -3699,14 +3690,11 @@ static int wpa_ft_rrb_build_r0(const u8 *key, const size_t key_len,
 		{ .type = FT_RRB_LAST_EMPTY, .len = 0, .data = NULL },
 	};
 
+	wpa_printf(MSG_DEBUG, "FT: Derive PMK-R1 for peer AP");
 	if (wpa_derive_pmk_r1(pmk_r0->pmk_r0, pmk_r0->pmk_r0_len,
 			      pmk_r0->pmk_r0_name, r1kh_id,
 			      s1kh_id, pmk_r1, pmk_r1_name) < 0)
 		return -1;
-	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R1 (for peer AP)",
-			pmk_r1, pmk_r1_len);
-	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name (for peer AP)",
-		    pmk_r1_name, WPA_PMK_NAME_LEN);
 	WPA_PUT_LE16(f_pairwise, pmk_r0->pairwise);
 
 	os_get_reltime(&now);

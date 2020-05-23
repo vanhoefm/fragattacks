@@ -1633,7 +1633,8 @@ int wpa_derive_pmk_r0(const u8 *xxkey, size_t xxkey_len,
 	if (!use_sha384 && sha256_vector(2, addr, len, hash) < 0)
 		return -1;
 	os_memcpy(pmk_r0_name, hash, WPA_PMK_NAME_LEN);
-	os_memset(r0_key_data, 0, sizeof(r0_key_data));
+	wpa_hexdump(MSG_DEBUG, "FT: PMKR0Name", pmk_r0_name, WPA_PMK_NAME_LEN);
+	forced_memzero(r0_key_data, sizeof(r0_key_data));
 	return 0;
 }
 
@@ -1670,6 +1671,7 @@ int wpa_derive_pmk_r1_name(const u8 *pmk_r0_name, const u8 *r1kh_id,
 	if (!use_sha384 && sha256_vector(4, addr, len, hash) < 0)
 		return -1;
 	os_memcpy(pmk_r1_name, hash, WPA_PMK_NAME_LEN);
+	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", pmk_r1_name, WPA_PMK_NAME_LEN);
 	return 0;
 }
 
@@ -1839,7 +1841,7 @@ int wpa_pmk_r1_to_ptk(const u8 *pmk_r1, size_t pmk_r1_len,
 	wpa_hexdump_key(MSG_DEBUG, "FT: TK", ptk->tk, ptk->tk_len);
 	wpa_hexdump(MSG_DEBUG, "FT: PTKName", ptk_name, WPA_PMK_NAME_LEN);
 
-	os_memset(tmp, 0, sizeof(tmp));
+	forced_memzero(tmp, sizeof(tmp));
 
 	return 0;
 }

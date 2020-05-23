@@ -4430,10 +4430,6 @@ static int fils_ft_build_assoc_req_rsne(struct wpa_sm *sm, struct wpabuf *buf)
 		return -1;
 	}
 	sm->pmk_r0_len = use_sha384 ? SHA384_MAC_LEN : PMK_LEN;
-	wpa_hexdump_key(MSG_DEBUG, "FILS+FT: PMK-R0",
-			sm->pmk_r0, sm->pmk_r0_len);
-	wpa_hexdump(MSG_DEBUG, "FILS+FT: PMKR0Name",
-		    sm->pmk_r0_name, WPA_PMK_NAME_LEN);
 	wpa_printf(MSG_DEBUG, "FILS+FT: R1KH-ID: " MACSTR,
 		   MAC2STR(sm->r1kh_id));
 	pos = wpabuf_put(buf, WPA_PMK_NAME_LEN);
@@ -4442,8 +4438,6 @@ static int fils_ft_build_assoc_req_rsne(struct wpa_sm *sm, struct wpabuf *buf)
 		wpa_printf(MSG_WARNING, "FILS+FT: Could not derive PMKR1Name");
 		return -1;
 	}
-	wpa_hexdump(MSG_DEBUG, "FILS+FT: PMKR1Name", sm->pmk_r1_name,
-		    WPA_PMK_NAME_LEN);
 	os_memcpy(pos, sm->pmk_r1_name, WPA_PMK_NAME_LEN);
 
 	if (sm->mgmt_group_cipher == WPA_CIPHER_AES_128_CMAC) {

@@ -50,17 +50,11 @@ int wpa_derive_ptk_ft(struct wpa_sm *sm, const unsigned char *src_addr,
 			      sm->r0kh_id, sm->r0kh_id_len, sm->own_addr,
 			      sm->pmk_r0, sm->pmk_r0_name, use_sha384) < 0)
 		return -1;
-	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R0", sm->pmk_r0, sm->pmk_r0_len);
-	wpa_hexdump(MSG_DEBUG, "FT: PMKR0Name",
-		    sm->pmk_r0_name, WPA_PMK_NAME_LEN);
 	sm->pmk_r1_len = sm->pmk_r0_len;
 	if (wpa_derive_pmk_r1(sm->pmk_r0, sm->pmk_r0_len, sm->pmk_r0_name,
 			      sm->r1kh_id, sm->own_addr, sm->pmk_r1,
 			      sm->pmk_r1_name) < 0)
 		return -1;
-	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R1", sm->pmk_r1, sm->pmk_r1_len);
-	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", sm->pmk_r1_name,
-		    WPA_PMK_NAME_LEN);
 	return wpa_pmk_r1_to_ptk(sm->pmk_r1, sm->pmk_r1_len, sm->snonce, anonce,
 				 sm->own_addr, sm->bssid, sm->pmk_r1_name, ptk,
 				 ptk_name, sm->key_mgmt, sm->pairwise_cipher);
@@ -641,9 +635,6 @@ int wpa_ft_process_response(struct wpa_sm *sm, const u8 *ies, size_t ies_len,
 			      sm->pmk_r1_name) < 0)
 		return -1;
 	sm->pmk_r1_len = sm->pmk_r0_len;
-	wpa_hexdump_key(MSG_DEBUG, "FT: PMK-R1", sm->pmk_r1, sm->pmk_r1_len);
-	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name",
-		    sm->pmk_r1_name, WPA_PMK_NAME_LEN);
 
 	bssid = target_ap;
 	if (wpa_pmk_r1_to_ptk(sm->pmk_r1, sm->pmk_r1_len, sm->snonce,
