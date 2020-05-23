@@ -1055,6 +1055,228 @@ static void rx_mgmt_reassoc_req(struct wlantest *wt, const u8 *data,
 }
 
 
+static void process_gtk_subelem(struct wlantest *wt, struct wlantest_bss *bss,
+				struct wlantest_sta *sta,
+				const u8 *kek, size_t kek_len,
+				const u8 *gtk_elem,
+				size_t gtk_elem_len)
+{
+	u8 gtk[32];
+	int keyidx;
+	enum wpa_alg alg;
+	size_t gtk_len, keylen;
+	const u8 *rsc;
+
+	if (!gtk_elem) {
+		add_note(wt, MSG_INFO, "FT: No GTK included in FTE");
+		return;
+	}
+
+	wpa_hexdump(MSG_DEBUG, "FT: Received GTK in Reassoc Resp",
+		    gtk_elem, gtk_elem_len);
+
+	if (gtk_elem_len < 11 + 24 || (gtk_elem_len - 11) % 8 ||
+	    gtk_elem_len - 19 > sizeof(gtk)) {
+		add_note(wt, MSG_INFO, "FT: Invalid GTK sub-elem length %zu",
+			 gtk_elem_len);
+		return;
+	}
+	gtk_len = gtk_elem_len - 19;
+	if (aes_unwrap(kek, kek_len, gtk_len / 8, gtk_elem + 11, gtk)) {
+		add_note(wt, MSG_INFO,
+			 "FT: AES unwrap failed - could not decrypt GTK");
+		return;
+	}
+
+	keylen = wpa_cipher_key_len(bss->group_cipher);
+	alg = wpa_cipher_to_alg(bss->group_cipher);
+	if (alg == WPA_ALG_NONE) {
+		add_note(wt, MSG_INFO, "FT: Unsupported Group Cipher %d",
+			 bss->group_cipher);
+		return;
+	}
+
+	if (gtk_len < keylen) {
+		add_note(wt, MSG_INFO, "FT: Too short GTK in FTE");
+		return;
+	}
+
+	/* Key Info[2] | Key Length[1] | RSC[8] | Key[5..32]. */
+
+	keyidx = WPA_GET_LE16(gtk_elem) & 0x03;
+
+	if (gtk_elem[2] != keylen) {
+		add_note(wt, MSG_INFO,
+			 "FT: GTK length mismatch: received %u negotiated %zu",
+			 gtk_elem[2], keylen);
+		return;
+	}
+
+	add_note(wt, MSG_DEBUG, "GTK KeyID=%u", keyidx);
+	wpa_hexdump(MSG_DEBUG, "FT: GTK from Reassoc Resp", gtk, keylen);
+	if (bss->group_cipher == WPA_CIPHER_TKIP) {
+		/* Swap Tx/Rx keys for Michael MIC */
+		u8 tmp[8];
+
+		os_memcpy(tmp, gtk + 16, 8);
+		os_memcpy(gtk + 16, gtk + 24, 8);
+		os_memcpy(gtk + 24, tmp, 8);
+	}
+
+	bss->gtk_len[keyidx] = gtk_len;
+	sta->gtk_len = gtk_len;
+	os_memcpy(bss->gtk[keyidx], gtk, gtk_len);
+	os_memcpy(sta->gtk, gtk, gtk_len);
+	rsc = gtk_elem + 2;
+	bss->rsc[keyidx][0] = rsc[5];
+	bss->rsc[keyidx][1] = rsc[4];
+	bss->rsc[keyidx][2] = rsc[3];
+	bss->rsc[keyidx][3] = rsc[2];
+	bss->rsc[keyidx][4] = rsc[1];
+	bss->rsc[keyidx][5] = rsc[0];
+	bss->gtk_idx = keyidx;
+	sta->gtk_idx = keyidx;
+	wpa_hexdump(MSG_DEBUG, "RSC", bss->rsc[keyidx], 6);
+}
+
+
+static void process_igtk_subelem(struct wlantest *wt, struct wlantest_bss *bss,
+				 struct wlantest_sta *sta,
+				 const u8 *kek, size_t kek_len,
+				 const u8 *igtk_elem, size_t igtk_elem_len)
+{
+	u8 igtk[WPA_IGTK_MAX_LEN];
+	size_t igtk_len;
+	u16 keyidx;
+	const u8 *ipn;
+
+	if (bss->mgmt_group_cipher != WPA_CIPHER_AES_128_CMAC &&
+	    bss->mgmt_group_cipher != WPA_CIPHER_BIP_GMAC_128 &&
+	    bss->mgmt_group_cipher != WPA_CIPHER_BIP_GMAC_256 &&
+	    bss->mgmt_group_cipher != WPA_CIPHER_BIP_CMAC_256)
+		return;
+
+	if (!igtk_elem) {
+		add_note(wt, MSG_INFO, "FT: No IGTK included in FTE");
+		return;
+	}
+
+	wpa_hexdump(MSG_DEBUG, "FT: Received IGTK in Reassoc Resp",
+		    igtk_elem, igtk_elem_len);
+
+	igtk_len = wpa_cipher_key_len(bss->mgmt_group_cipher);
+	if (igtk_elem_len != 2 + 6 + 1 + igtk_len + 8) {
+		add_note(wt, MSG_INFO, "FT: Invalid IGTK sub-elem length %zu",
+			 igtk_elem_len);
+		return;
+	}
+	if (igtk_elem[8] != igtk_len) {
+		add_note(wt, MSG_INFO,
+			 "FT: Invalid IGTK sub-elem Key Length %d",
+			 igtk_elem[8]);
+		return;
+	}
+
+	if (aes_unwrap(kek, kek_len, igtk_len / 8, igtk_elem + 9, igtk)) {
+		add_note(wt, MSG_INFO,
+			 "FT: AES unwrap failed - could not decrypt IGTK");
+		return;
+	}
+
+	/* KeyID[2] | IPN[6] | Key Length[1] | Key[16+8] */
+
+	keyidx = WPA_GET_LE16(igtk_elem);
+
+	wpa_hexdump(MSG_DEBUG, "FT: IGTK from Reassoc Resp", igtk, igtk_len);
+
+	if (keyidx < 4 || keyidx > 5) {
+		add_note(wt, MSG_INFO, "Unexpected IGTK KeyID %u", keyidx);
+		return;
+	}
+
+	add_note(wt, MSG_DEBUG, "IGTK KeyID %u", keyidx);
+	wpa_hexdump(MSG_DEBUG, "IPN", igtk_elem + 2, 6);
+	wpa_hexdump(MSG_DEBUG, "IGTK", igtk, igtk_len);
+	os_memcpy(bss->igtk[keyidx], igtk, igtk_len);
+	bss->igtk_len[keyidx] = igtk_len;
+	ipn = igtk_elem + 2;
+	bss->ipn[keyidx][0] = ipn[5];
+	bss->ipn[keyidx][1] = ipn[4];
+	bss->ipn[keyidx][2] = ipn[3];
+	bss->ipn[keyidx][3] = ipn[2];
+	bss->ipn[keyidx][4] = ipn[1];
+	bss->ipn[keyidx][5] = ipn[0];
+	bss->igtk_idx = keyidx;
+}
+
+
+static void process_bigtk_subelem(struct wlantest *wt, struct wlantest_bss *bss,
+				  struct wlantest_sta *sta,
+				  const u8 *kek, size_t kek_len,
+				  const u8 *bigtk_elem, size_t bigtk_elem_len)
+{
+	u8 bigtk[WPA_BIGTK_MAX_LEN];
+	size_t bigtk_len;
+	u16 keyidx;
+	const u8 *ipn;
+
+	if (!bigtk_elem ||
+	    (bss->mgmt_group_cipher != WPA_CIPHER_AES_128_CMAC &&
+	     bss->mgmt_group_cipher != WPA_CIPHER_BIP_GMAC_128 &&
+	     bss->mgmt_group_cipher != WPA_CIPHER_BIP_GMAC_256 &&
+	     bss->mgmt_group_cipher != WPA_CIPHER_BIP_CMAC_256))
+	    return;
+
+	wpa_hexdump_key(MSG_DEBUG, "FT: Received BIGTK in Reassoc Resp",
+			bigtk_elem, bigtk_elem_len);
+
+	bigtk_len = wpa_cipher_key_len(bss->mgmt_group_cipher);
+	if (bigtk_elem_len != 2 + 6 + 1 + bigtk_len + 8) {
+		add_note(wt, MSG_INFO,
+			 "FT: Invalid BIGTK sub-elem length %zu",
+			 bigtk_elem_len);
+		return;
+	}
+	if (bigtk_elem[8] != bigtk_len) {
+		add_note(wt, MSG_INFO,
+			 "FT: Invalid BIGTK sub-elem Key Length %d",
+			 bigtk_elem[8]);
+		return;
+	}
+
+	if (aes_unwrap(kek, kek_len, bigtk_len / 8, bigtk_elem + 9, bigtk)) {
+		add_note(wt, MSG_INFO,
+			 "FT: AES unwrap failed - could not decrypt BIGTK");
+		return;
+	}
+
+	/* KeyID[2] | IPN[6] | Key Length[1] | Key[16+8] */
+
+	keyidx = WPA_GET_LE16(bigtk_elem);
+
+	wpa_hexdump(MSG_DEBUG, "FT: BIGTK from Reassoc Resp", bigtk, bigtk_len);
+
+	if (keyidx < 6 || keyidx > 7) {
+		add_note(wt, MSG_INFO, "Unexpected BIGTK KeyID %u", keyidx);
+		return;
+	}
+
+	add_note(wt, MSG_DEBUG, "BIGTK KeyID %u", keyidx);
+	wpa_hexdump(MSG_DEBUG, "BIPN", bigtk_elem + 2, 6);
+	wpa_hexdump(MSG_DEBUG, "BIGTK", bigtk, bigtk_len);
+	os_memcpy(bss->igtk[keyidx], bigtk, bigtk_len);
+	bss->igtk_len[keyidx] = bigtk_len;
+	ipn = bigtk_elem + 2;
+	bss->ipn[keyidx][0] = ipn[5];
+	bss->ipn[keyidx][1] = ipn[4];
+	bss->ipn[keyidx][2] = ipn[3];
+	bss->ipn[keyidx][3] = ipn[2];
+	bss->ipn[keyidx][4] = ipn[1];
+	bss->ipn[keyidx][5] = ipn[0];
+	bss->bigtk_idx = keyidx;
+}
+
+
 static void rx_mgmt_reassoc_resp(struct wlantest *wt, const u8 *data,
 				 size_t len)
 {
@@ -1064,6 +1286,7 @@ static void rx_mgmt_reassoc_resp(struct wlantest *wt, const u8 *data,
 	u16 capab, status, aid;
 	const u8 *ies;
 	size_t ies_len;
+	struct ieee802_11_elems elems;
 
 	mgmt = (const struct ieee80211_mgmt *) data;
 	bss = bss_get(wt, mgmt->bssid);
@@ -1106,17 +1329,15 @@ static void rx_mgmt_reassoc_resp(struct wlantest *wt, const u8 *data,
 		}
 	}
 
-	if (status == WLAN_STATUS_ASSOC_REJECTED_TEMPORARILY) {
-		struct ieee802_11_elems elems;
+	if (ieee802_11_parse_elems(ies, ies_len, &elems, 0) == ParseFailed) {
+		add_note(wt, MSG_INFO,
+			 "Failed to parse IEs in ReassocResp from " MACSTR,
+			 MAC2STR(mgmt->sa));
+	}
 
-		if (ieee802_11_parse_elems(ies, ies_len, &elems, 0) ==
-		    ParseFailed) {
-			add_note(wt, MSG_INFO, "Failed to parse IEs in "
-				 "ReassocResp from " MACSTR,
-				 MAC2STR(mgmt->sa));
-		} else if (elems.timeout_int == NULL ||
-			   elems.timeout_int[0] !=
-			   WLAN_TIMEOUT_ASSOC_COMEBACK) {
+	if (status == WLAN_STATUS_ASSOC_REJECTED_TEMPORARILY) {
+		if (!elems.timeout_int ||
+		    elems.timeout_int[0] != WLAN_TIMEOUT_ASSOC_COMEBACK) {
 			add_note(wt, MSG_INFO, "No valid Timeout Interval IE "
 				 "with Assoc Comeback time in ReassocResp "
 				 "(status=30) from " MACSTR,
@@ -1148,6 +1369,212 @@ static void rx_mgmt_reassoc_resp(struct wlantest *wt, const u8 *data,
 			 " moved to State 3 with " MACSTR,
 			 MAC2STR(sta->addr), MAC2STR(bss->bssid));
 		sta->state = STATE3;
+	}
+
+	if (elems.ftie) {
+		struct wpa_ft_ies parse;
+		int use_sha384;
+		struct rsn_mdie *mde;
+		const u8 *anonce, *snonce, *fte_mic;
+		u8 fte_elem_count;
+		unsigned int count;
+		u8 mic[WPA_EAPOL_KEY_MIC_MAX_LEN];
+		size_t mic_len = 16;
+		const u8 *kck, *kek;
+		size_t kck_len, kek_len;
+
+		use_sha384 = wpa_key_mgmt_sha384(sta->key_mgmt);
+
+		if (wpa_ft_parse_ies(ies, ies_len, &parse, use_sha384) < 0) {
+			add_note(wt, MSG_INFO, "FT: Failed to parse FT IEs");
+			return;
+		}
+
+		if (!parse.rsn) {
+			add_note(wt, MSG_INFO, "FT: No RSNE in Reassoc Resp");
+			return;
+		}
+
+		if (!parse.rsn_pmkid) {
+			add_note(wt, MSG_INFO, "FT: No PMKID in RSNE");
+			return;
+		}
+
+		if (os_memcmp_const(parse.rsn_pmkid, sta->pmk_r1_name,
+				    WPA_PMK_NAME_LEN) != 0) {
+			add_note(wt, MSG_INFO,
+				 "FT: PMKID in Reassoc Resp did not match PMKR1Name");
+			wpa_hexdump(MSG_DEBUG,
+				    "FT: Received RSNE[PMKR1Name]",
+				    parse.rsn_pmkid, WPA_PMK_NAME_LEN);
+			wpa_hexdump(MSG_DEBUG,
+				    "FT: Previously derived PMKR1Name",
+				    sta->pmk_r1_name, WPA_PMK_NAME_LEN);
+			return;
+		}
+
+		mde = (struct rsn_mdie *) parse.mdie;
+		if (!mde || parse.mdie_len < sizeof(*mde) ||
+		    os_memcmp(mde->mobility_domain, bss->mdid,
+			      MOBILITY_DOMAIN_ID_LEN) != 0) {
+			add_note(wt, MSG_INFO, "FT: Invalid MDE");
+		}
+
+		if (use_sha384) {
+			struct rsn_ftie_sha384 *fte;
+
+			fte = (struct rsn_ftie_sha384 *) parse.ftie;
+			if (!fte || parse.ftie_len < sizeof(*fte)) {
+				add_note(wt, MSG_INFO, "FT: Invalid FTE");
+				return;
+			}
+
+			anonce = fte->anonce;
+			snonce = fte->snonce;
+			fte_elem_count = fte->mic_control[1];
+			fte_mic = fte->mic;
+		} else {
+			struct rsn_ftie *fte;
+
+			fte = (struct rsn_ftie *) parse.ftie;
+			if (!fte || parse.ftie_len < sizeof(*fte)) {
+				add_note(wt, MSG_INFO, "FT: Invalid FTIE");
+				return;
+			}
+
+			anonce = fte->anonce;
+			snonce = fte->snonce;
+			fte_elem_count = fte->mic_control[1];
+			fte_mic = fte->mic;
+		}
+
+		if (os_memcmp(snonce, sta->snonce, WPA_NONCE_LEN) != 0) {
+			add_note(wt, MSG_INFO, "FT: SNonce mismatch in FTIE");
+			wpa_hexdump(MSG_DEBUG, "FT: Received SNonce",
+				    snonce, WPA_NONCE_LEN);
+			wpa_hexdump(MSG_DEBUG, "FT: Expected SNonce",
+				    sta->snonce, WPA_NONCE_LEN);
+			return;
+		}
+
+		if (os_memcmp(anonce, sta->anonce, WPA_NONCE_LEN) != 0) {
+			add_note(wt, MSG_INFO, "FT: ANonce mismatch in FTIE");
+			wpa_hexdump(MSG_DEBUG, "FT: Received ANonce",
+				    anonce, WPA_NONCE_LEN);
+			wpa_hexdump(MSG_DEBUG, "FT: Expected ANonce",
+				    sta->anonce, WPA_NONCE_LEN);
+			return;
+		}
+
+		if (!parse.r0kh_id) {
+			add_note(wt, MSG_INFO, "FT: No R0KH-ID subelem in FTE");
+			return;
+		}
+
+		if (parse.r0kh_id_len != bss->r0kh_id_len ||
+		    os_memcmp_const(parse.r0kh_id, bss->r0kh_id,
+				    parse.r0kh_id_len) != 0) {
+			add_note(wt, MSG_INFO,
+				 "FT: R0KH-ID in FTE did not match the current R0KH-ID");
+			wpa_hexdump(MSG_DEBUG, "FT: R0KH-ID in FTIE",
+				    parse.r0kh_id, parse.r0kh_id_len);
+			wpa_hexdump(MSG_DEBUG, "FT: The current R0KH-ID",
+				    bss->r0kh_id, bss->r0kh_id_len);
+			os_memcpy(bss->r0kh_id, parse.r0kh_id,
+				  parse.r0kh_id_len);
+			bss->r0kh_id_len = parse.r0kh_id_len;
+		}
+
+		if (!parse.r1kh_id) {
+			add_note(wt, MSG_INFO, "FT: No R1KH-ID subelem in FTE");
+			return;
+		}
+
+		if (os_memcmp_const(parse.r1kh_id, bss->r1kh_id,
+				    FT_R1KH_ID_LEN) != 0) {
+			add_note(wt, MSG_INFO,
+				 "FT: Unknown R1KH-ID used in ReassocResp");
+			os_memcpy(bss->r1kh_id, parse.r1kh_id, FT_R1KH_ID_LEN);
+		}
+
+		count = 3;
+		if (parse.ric)
+			count += ieee802_11_ie_count(parse.ric, parse.ric_len);
+		if (parse.rsnxe)
+			count++;
+		if (fte_elem_count != count) {
+			add_note(wt, MSG_INFO,
+				 "FT: Unexpected IE count in MIC Control: received %u expected %u",
+				 fte_elem_count, count);
+			return;
+		}
+
+		if (wpa_key_mgmt_fils(sta->key_mgmt)) {
+			kck = sta->ptk.kck2;
+			kck_len = sta->ptk.kck2_len;
+			kek = sta->ptk.kek2;
+			kek_len = sta->ptk.kek2_len;
+		} else {
+			kck = sta->ptk.kck;
+			kck_len = sta->ptk.kck_len;
+			kek = sta->ptk.kek;
+			kek_len = sta->ptk.kek_len;
+		}
+		if (wpa_ft_mic(kck, kck_len, sta->addr, bss->bssid, 6,
+			       parse.mdie - 2, parse.mdie_len + 2,
+			       parse.ftie - 2, parse.ftie_len + 2,
+			       parse.rsn - 2, parse.rsn_len + 2,
+			       parse.ric, parse.ric_len,
+			       parse.rsnxe ? parse.rsnxe - 2 : NULL,
+			       parse.rsnxe ? parse.rsnxe_len + 2 : 0,
+			       mic) < 0) {
+			add_note(wt, MSG_INFO, "FT: Failed to calculate MIC");
+			return;
+		}
+
+		if (os_memcmp_const(mic, fte_mic, mic_len) != 0) {
+			add_note(wt, MSG_INFO, "FT: Invalid MIC in FTE");
+			wpa_printf(MSG_DEBUG,
+				   "FT: addr=" MACSTR " auth_addr=" MACSTR,
+				   MAC2STR(sta->addr),
+				   MAC2STR(bss->bssid));
+			wpa_hexdump(MSG_MSGDUMP, "FT: Received MIC",
+				    fte_mic, mic_len);
+			wpa_hexdump(MSG_MSGDUMP, "FT: Calculated MIC",
+				    mic, mic_len);
+			wpa_hexdump(MSG_MSGDUMP, "FT: MDE",
+				    parse.mdie - 2, parse.mdie_len + 2);
+			wpa_hexdump(MSG_MSGDUMP, "FT: FTE",
+				    parse.ftie - 2, parse.ftie_len + 2);
+			wpa_hexdump(MSG_MSGDUMP, "FT: RSN",
+				    parse.rsn - 2, parse.rsn_len + 2);
+			wpa_hexdump(MSG_MSGDUMP, "FT: RSNXE",
+				    parse.rsnxe ? parse.rsnxe - 2 : NULL,
+				    parse.rsnxe ? parse.rsnxe_len + 2 : 0);
+			return;
+		}
+
+		add_note(wt, MSG_INFO, "FT: Valid FTE MIC");
+
+		if (wpa_compare_rsn_ie(wpa_key_mgmt_ft(sta->key_mgmt),
+				       bss->rsnie, 2 + bss->rsnie[1],
+				       parse.rsn - 2, parse.rsn_len + 2)) {
+			add_note(wt, MSG_INFO,
+				 "FT: RSNE mismatch between Beacon/ProbeResp and FT protocol Reassociation Response frame");
+			wpa_hexdump(MSG_INFO, "RSNE in Beacon/ProbeResp",
+				    &bss->rsnie[2], bss->rsnie[1]);
+			wpa_hexdump(MSG_INFO,
+				    "RSNE in FT protocol Reassociation Response frame",
+				    parse.rsn ? parse.rsn - 2 : NULL,
+				    parse.rsn ? parse.rsn_len + 2 : 0);
+		}
+
+		process_gtk_subelem(wt, bss, sta, kek, kek_len,
+				    parse.gtk, parse.gtk_len);
+		process_igtk_subelem(wt, bss, sta, kek, kek_len,
+				     parse.igtk, parse.igtk_len);
+		process_bigtk_subelem(wt, bss, sta, kek, kek_len,
+				      parse.bigtk, parse.bigtk_len);
 	}
 }
 
