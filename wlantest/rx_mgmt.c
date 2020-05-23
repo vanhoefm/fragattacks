@@ -1,6 +1,6 @@
 /*
  * Received Management frame processing
- * Copyright (c) 2010-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2010-2020, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -965,7 +965,7 @@ static void rx_mgmt_reassoc_resp(struct wlantest *wt, const u8 *data,
 	}
 	sta->aid = aid & 0xc000;
 
-	if (sta->state < STATE2) {
+	if (sta->state < STATE2 && !sta->ft_over_ds) {
 		add_note(wt, MSG_DEBUG,
 			 "STA " MACSTR " was not in State 2 when "
 			 "getting associated", MAC2STR(sta->addr));
@@ -1110,6 +1110,7 @@ static void rx_mgmt_action_ft_request(struct wlantest *wt,
 	if (!sta)
 		return;
 
+	sta->ft_over_ds = true;
 	sta->key_mgmt = parse.key_mgmt;
 	sta->pairwise_cipher = parse.pairwise_cipher;
 }
