@@ -274,14 +274,15 @@ static void process_ft_auth(struct wlantest *wt, struct wlantest_bss *bss,
 	if (!old_sta)
 		return;
 
-	os_memcpy(sta->pmk_r0, old_sta->pmk_r0, sizeof(sta->pmk_r0));
+	os_memcpy(sta->pmk_r0, old_sta->pmk_r0, old_sta->pmk_r0_len);
+	sta->pmk_r0_len = old_sta->pmk_r0_len;
 	os_memcpy(sta->pmk_r0_name, old_sta->pmk_r0_name,
 		  sizeof(sta->pmk_r0_name));
 
 	if (parse.r1kh_id)
 		os_memcpy(bss->r1kh_id, parse.r1kh_id, FT_R1KH_ID_LEN);
 
-	if (wpa_derive_pmk_r1(sta->pmk_r0, PMK_LEN, sta->pmk_r0_name,
+	if (wpa_derive_pmk_r1(sta->pmk_r0, sta->pmk_r0_len, sta->pmk_r0_name,
 			      bss->r1kh_id, sta->addr, pmk_r1, pmk_r1_name) < 0)
 		return;
 	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", pmk_r1_name, WPA_PMK_NAME_LEN);
@@ -1161,7 +1162,7 @@ static void rx_mgmt_action_ft_response(struct wlantest *wt,
 	if (parse.r1kh_id)
 		os_memcpy(bss->r1kh_id, parse.r1kh_id, FT_R1KH_ID_LEN);
 
-	if (wpa_derive_pmk_r1(sta->pmk_r0, PMK_LEN, sta->pmk_r0_name,
+	if (wpa_derive_pmk_r1(sta->pmk_r0, sta->pmk_r0_len, sta->pmk_r0_name,
 			      bss->r1kh_id, sta->addr, pmk_r1, pmk_r1_name) < 0)
 		return;
 	wpa_hexdump(MSG_DEBUG, "FT: PMKR1Name", pmk_r1_name, WPA_PMK_NAME_LEN);
@@ -1169,7 +1170,8 @@ static void rx_mgmt_action_ft_response(struct wlantest *wt,
 	new_sta = sta_get(bss, sta->addr);
 	if (!new_sta)
 		return;
-	os_memcpy(new_sta->pmk_r0, sta->pmk_r0, sizeof(sta->pmk_r0));
+	os_memcpy(new_sta->pmk_r0, sta->pmk_r0, sta->pmk_r0_len);
+	new_sta->pmk_r0_len = sta->pmk_r0_len;
 	os_memcpy(new_sta->pmk_r0_name, sta->pmk_r0_name,
 		  sizeof(sta->pmk_r0_name));
 	if (!parse.fte_anonce || !parse.fte_snonce ||

@@ -1,6 +1,6 @@
 /*
  * Received Data frame processing for EAPOL messages
- * Copyright (c) 2010-2015, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2010-2020, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -103,17 +103,21 @@ static int try_pmk(struct wlantest *wt, struct wlantest_bss *bss,
 		u8 pmk_r1[PMK_LEN];
 		u8 pmk_r1_name[WPA_PMK_NAME_LEN];
 		u8 ptk_name[WPA_PMK_NAME_LEN];
+		int use_sha384 = wpa_key_mgmt_sha384(sta->key_mgmt);
 
-		if (wpa_derive_pmk_r0(pmk->pmk, PMK_LEN,
+		if (wpa_derive_pmk_r0(pmk->pmk, pmk->pmk_len,
 				      bss->ssid, bss->ssid_len, bss->mdid,
 				      bss->r0kh_id, bss->r0kh_id_len,
 				      sta->addr, sta->pmk_r0, sta->pmk_r0_name,
-				      0) < 0)
+				      use_sha384) < 0)
 			return -1;
-		wpa_hexdump(MSG_DEBUG, "FT: PMK-R0", sta->pmk_r0, PMK_LEN);
+		sta->pmk_r0_len = use_sha384 ? PMK_LEN_SUITE_B_192 : PMK_LEN;
+		wpa_hexdump(MSG_DEBUG, "FT: PMK-R0", sta->pmk_r0,
+			    sta->pmk_r0_len);
 		wpa_hexdump(MSG_DEBUG, "FT: PMKR0Name", sta->pmk_r0_name,
 			    WPA_PMK_NAME_LEN);
-		if (wpa_derive_pmk_r1(sta->pmk_r0, PMK_LEN, sta->pmk_r0_name,
+		if (wpa_derive_pmk_r1(sta->pmk_r0, sta->pmk_r0_len,
+				      sta->pmk_r0_name,
 				      bss->r1kh_id, sta->addr,
 				      pmk_r1, pmk_r1_name) < 0)
 			return -1;
