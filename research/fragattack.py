@@ -571,7 +571,7 @@ class Station():
 
 	def handle_eth(self, p):
 		if self.test != None and self.test.check != None and self.test.check(p):
-			log(STATUS, "SUCCESSFULL INJECTION", color="green")
+			log(STATUS, "!!!! TEST COMPLETED SUCCESSFULLY !!!!", color="green")
 			log(STATUS, "Received packet: " + repr(p))
 			self.test = None
 
@@ -696,8 +696,8 @@ class Station():
 
 	# TODO: Show a warning when unusual transitions are detected?
 	def trigger_eapol_events(self, eapol):
-		# Ignore EAP authentication handshakes
-		if EAP in eapol: return None
+		# Ignore everything apart the 4-way handshake
+		if not WPA_key in eapol: return None
 
 		# Track return value of possible trigger Action function
 		result = None
@@ -993,6 +993,8 @@ class Daemon(metaclass=abc.ABCMeta):
 		log(DEBUG, f"Passed injection self-test on interface {self.nic_mon}.")
 		quit(1)
 
+	# TODO: Authentication and association has strict timing requirements in the Linux kernel.
+	#       Can we make these lower somehow?
 	def forward_hwsim(self, p, s):
 		if p == None: return
 		if not Dot11 in p: return
@@ -1438,7 +1440,7 @@ def prepare_tests(opt):
 
 		test = PingTest(REQ_ICMP, actions, opt=opt)
 
-	elif opt.testname == "ping_frag_sep":
+	elif opt.testname == "ping-frag-sep":
 		# Check if we can send frames in between fragments. The seperator by default uses a different
 		# QoS TID. The second fragment must use an incremental PN compared to the first fragment.
 		# So this also tests if the receivers uses a per-QoS receive replay counter. By overriding
@@ -1451,7 +1453,7 @@ def prepare_tests(opt):
 				 Action(Action.Connected, enc=True, inc_pn=0)],
 				 separate_with=separator, opt=opt)
 
-	elif opt.testname == "wep_mixed_key":
+	elif opt.testname == "wep-mixed-key":
 		log(WARNING, "Cannot predict WEP key reotation. Fragment may time out, use very short key rotation!", color="orange")
 		test = PingTest(REQ_ICMP,
 				[Action(Action.Connected, action=Action.GetIp),
@@ -1460,7 +1462,7 @@ def prepare_tests(opt):
 				 Action(Action.AfterAuth, enc=True),
 				])
 
-	elif opt.testname == "cache_poison":
+	elif opt.testname == "cache-poison":
 		# Cache poison attack. Worked against Linux Hostapd and RT-AC51U.
 		test = PingTest(REQ_ICMP,
 				[Action(Action.Connected, enc=True),
@@ -1470,7 +1472,7 @@ def prepare_tests(opt):
 	elif opt.testname == "forward":
 		test = ForwardTest()
 
-	elif opt.testname == "eapol_msdu":
+	elif opt.testname == "eapol-msdu":
 		freebsd = False
 		if stractions != None:
 			# TODO: Clean up this parsing / specification
@@ -1489,7 +1491,7 @@ def prepare_tests(opt):
 
 		test = EapolMsduTest(REQ_ICMP, actions, freebsd)
 
-	elif opt.testname == "linux_plain":
+	elif opt.testname == "linux-plain":
 		decoy_tid = None if stractions == None else int(stractions)
 		test = LinuxTest(REQ_ICMP, decoy_tid)
 
@@ -1502,13 +1504,13 @@ def prepare_tests(opt):
 
 		test = MacOsTest(REQ_ICMP, actions)
 
-	elif opt.testname == "qca_test":
+	elif opt.testname == "qca-test":
 		test = QcaDriverTest()
 
-	elif opt.testname == "qca_split":
+	elif opt.testname == "qca-split":
 		test = QcaTestSplit()
 
-	elif opt.testname == "qca_rekey":
+	elif opt.testname == "qca-rekey":
 		test = QcaDriverRekey()
 
 	# No valid test ID/name was given
