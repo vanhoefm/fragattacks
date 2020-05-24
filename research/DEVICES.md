@@ -1,3 +1,31 @@
+# Device checklist
+
+1. Confirm that the device is working normally on Linux.
+
+2. Confirm that the device can be put in monitor mode:
+
+        ifconfig wlan0 down
+        iw wlan0 set type monitor
+        ifconfig wlan0 up
+
+2. Test normal injection using `aireplay-ng -9 wlan1` using the following command:
+
+	**Put in monitor mode using iw. Use airmong-ng as a backup method.**
+
+3. Test advanced injection using `test-injection.py`
+
+4. Test injection using `./fragattack.py wlan0 ping --ap --inject-test wlan1`
+
+5. Test injection using `./fragattack.py wlan0 ping --inject-test wlan1`
+
+6. Confirm that a normal ping works `./fragattack.py wlan0 ping I,E`.
+
+
+Troubleshooting:
+
+- If you cannot put the device in monitor mode, try executing `airmon-ng start wlan0` instead.
+
+
 # Monitor mode injectin
 
 Device that purely operate in monitor mode might overwrite certain fields of
@@ -20,19 +48,17 @@ Summary: this can be used without driver/firmware changes in pure monitor mode,
   1 to 0x27 as 32-bit numbers for some reason. This is a strange bug, but at
   least it is not caused by our driver modifications.
 
-- Had to patch driver to prevent sequence number and QoS TID to be overwritten
-  **TODO: Also in pure monitor?**
+- In mixed mode: had to patch driver to prevent sequence number and QoS TID to
+  be overwritten
 
-- Unable to transmit any frames from a different transmitter address. This is
-  because in `ieee80211_monitor_start_xmit` it cannot find a channel to transmit
-  on (finding a valid chandef fails).
-  **TODO: Also in pure monitor?**
+- In mixed mode: unable to transmit any frames from a different transmitter address.
+  This is because in `ieee80211_monitor_start_xmit` it cannot find a channel to transmit
+  on (finding a valid chandef fails). We patched mac80211 to fix this.
 
-- Cannot inject frames using a TID that is used for the first time. There's no
-  queue in the driver allocated for it yet it seems, and this causes issues.
+- In mixed mode: cannot inject frames using a TID that is used for the first time.
+  There's no queue in the driver allocated for it yet it seems, and this causes issues.
   To prevent this, and prevent frame reordering, we inject all frames on the
   same queue in the driver.
-  **TODO: Also in pure monitor?**
 
 - It ignores `IEEE80211_RADIOTAP_DATA_RETRIES` and retransmites frames 15 times
   both in purely monitor more and mixed managed/monitor mode (before and after
@@ -89,9 +115,13 @@ Summary: when using this device, you must use a modified driver/firmware.
 - In mixed AP/monitor mode, when injecting the first fragment of a frame, it will
   be injected properly, but afterards the chip won't second beacons for one second.
   This can be prevented by injected a dummy packet after the injected fragment.
+  In other modes this doesn't seem to be a problem.
 
-# TODOs
+# hwsim mode
 
-- When using the mac80211_hwsim trick with one monitor interface, there is
-  still the risk of frames with different QoS TIDs being reordered.
+- Linux clients need an authentication response _fast_ and we are too slow. Perhaps
+  by implementing the packet forwarding in C we can become fast enough.
+  
+- For some strange reason, the Intel/mvm cannot receive data frames from Android/iPhone/iPad
+  after 4-way HS. This is a very strange bug.
 
