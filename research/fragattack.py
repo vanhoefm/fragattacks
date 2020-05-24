@@ -513,7 +513,6 @@ class EapolMsduTest(Test):
 		self.actions[0].frame = auth
 		self.actions[1].frame = frames[0]
 
-
 # ----------------------------------- Abstract Station Class -----------------------------------
 
 class Station():
