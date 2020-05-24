@@ -227,6 +227,8 @@ class Test(metaclass=abc.ABCMeta):
 		self.generated = False
 		self.delay = None
 		self.inc_pn = None
+		self.check_fn = None
+		self.time_completed = None
 
 	def next_trigger_is(self, trigger):
 		if len(self.actions) == 0:
@@ -252,10 +254,23 @@ class Test(metaclass=abc.ABCMeta):
 
 		act = self.actions[0]
 		del self.actions[0]
+
+		# If this was the last action, record the time
+		if len(self.actions) == 0:
+			if self.check_fn != None:
+				self.time_completed = time.time()
+			else:
+				log(STATUS, "All frames sent. You must manually check if the test succeeded (see README).", color="green")
+
 		return act
 
 	def get_actions(self, action):
 		return [act for act in self.actions if act.action == action]
+
+	def timedout(self):
+		if self.time_completed == None:
+			return False
+		return self.time_completed + 5 < time.time()
 
 	@abc.abstractmethod
 	def prepare(self, station):
@@ -266,9 +281,10 @@ class Test(metaclass=abc.ABCMeta):
 		self.enforce_delay()
 		self.enforce_inc_pn()
 
-	@abc.abstractmethod
 	def check(self, p):
-		return False
+		if self.check_fn == None:
+			return False
+		return self.check_fn(p)
 
 	def set_general_options(self, delay=None, inc_pn=None):
 		self.delay = delay
@@ -295,18 +311,12 @@ class PingTest(Test):
 		super().__init__(fragments)
 		self.ptype = ptype
 		self.separate_with = separate_with
-		self.check_fn = None
 
 		self.bcast = False if opt == None else opt.bcast
 		self.as_msdu = False if opt == None else opt.as_msdu
 		self.icmp_size = None if opt == None else opt.icmp_size
 		self.padding = None if opt == None else opt.padding
 		self.to_self = False if opt == None else opt.to_self
-
-	def check(self, p):
-		if self.check_fn == None:
-			return False
-		return self.check_fn(p)
 
 	def prepare(self, station):
 		log(STATUS, "Generating ping test", color="green")
@@ -369,9 +379,7 @@ class ForwardTest(Test):
 			Action(Action.Connected, enc=True)
 		])
 		self.magic = b"forwarded_data"
-
-	def check(self, p):
-		return self.magic in raw(p)
+		self.check_fn = lambda p: self.magic in raw(p)
 
 	def prepare(self, station):
 		# We assume we are targetting the AP
@@ -394,13 +402,7 @@ class LinuxTest(Test):
 			Action(Action.Connected, enc=False)
 		])
 		self.ptype = ptype
-		self.check_fn = None
 		self.decoy_tid = decoy_tid
-
-	def check(self, p):
-		if self.check_fn == None:
-			return False
-		return self.check_fn(p)
 
 	def prepare(self, station):
 		header, request, self.check_fn = generate_request(station, self.ptype)
@@ -434,12 +436,6 @@ class MacOsTest(Test):
 	def __init__(self, ptype, actions):
 		super().__init__(actions)
 		self.ptype = ptype
-		self.check_fn = None
-
-	def check(self, p):
-		if self.check_fn == None:
-			return False
-		return self.check_fn(p)
 
 	def prepare(self, station):
 		# First fragment is the start of an EAPOL frame
@@ -451,7 +447,7 @@ class MacOsTest(Test):
 		# before authenticated because previous fragment was EAPOL.
 		# By sending to broadcast, this fragment will not be reassembled
 		# though, meaning it will be treated as a full frame (and not EAPOL).
-		_, request, self.check_fn = generate_request(station, self.ptype)
+		_, request, _ = generate_request(station, self.ptype)
 		frag2, = create_fragments(header, data=request, num_frags=1)
 		frag2.SC |= 1
 		frag2.addr1 = "ff:ff:ff:ff:ff:ff"
@@ -488,13 +484,7 @@ class EapolMsduTest(Test):
 	def __init__(self, ptype, actions, freebsd=False):
 		super().__init__(actions)
 		self.ptype = ptype
-		self.check_fn = None
 		self.freebsd = freebsd
-
-	def check(self, p):
-		if self.check_fn == None:
-			return False
-		return self.check_fn(p)
 
 	def prepare(self, station):
 		log(STATUS, "Generating ping test", color="green")
@@ -571,7 +561,7 @@ class Station():
 
 	def handle_eth(self, p):
 		if self.test != None and self.test.check != None and self.test.check(p):
-			log(STATUS, "!!!! TEST COMPLETED SUCCESSFULLY !!!!", color="green")
+			log(STATUS, ">>> TEST COMPLETED SUCCESSFULLY!!!!", color="green")
 			log(STATUS, "Received packet: " + repr(p))
 			self.test = None
 
@@ -829,6 +819,9 @@ class Station():
 		if self.time_connected != None and time.time() > self.time_connected:
 			self.time_connected = None
 			self.handle_connected()
+		elif self.test != None and self.test.timedout():
+			log(ERROR, ">>> Test timed out! Retry to be sure, or manually check result.")
+			self.test = None
 
 # ----------------------------------- Client and AP Daemons -----------------------------------
 
