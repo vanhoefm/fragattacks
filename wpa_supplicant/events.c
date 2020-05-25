@@ -356,6 +356,9 @@ static void wpa_find_assoc_pmkid(struct wpa_supplicant *wpa_s)
 	int pmksa_set = -1;
 	size_t i;
 
+	/* Start with assumption of no PMKSA cache entry match */
+	pmksa_cache_clear_current(wpa_s->wpa);
+
 	if (wpa_sm_parse_own_wpa_ie(wpa_s->wpa, &ie) < 0 ||
 	    ie.pmkid == NULL)
 		return;

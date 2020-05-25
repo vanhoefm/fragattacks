@@ -485,6 +485,9 @@ void pmksa_cache_clear_current(struct wpa_sm *sm)
 {
 	if (sm == NULL)
 		return;
+	if (sm->cur_pmksa)
+		wpa_printf(MSG_DEBUG,
+			   "RSN: Clear current PMKSA entry selection");
 	sm->cur_pmksa = NULL;
 }
 
