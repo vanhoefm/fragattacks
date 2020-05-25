@@ -59,24 +59,30 @@ def test_ap_pmf_required(dev, apdev):
                           dev[1].p2p_interface_addr()) < 1:
         raise Exception("STA did not reply to SA Query")
 
-@remote_compatible
-def test_ocv_sa_query(dev, apdev):
-    """Test SA Query with OCV"""
+def start_ocv_ap(apdev):
     ssid = "test-pmf-required"
     params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
     params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
     params["ieee80211w"] = "2"
     params["ocv"] = "1"
     try:
-        hapd = hostapd.add_ap(apdev[0], params)
+        hapd = hostapd.add_ap(apdev, params)
     except Exception as e:
         if "Failed to set hostapd parameter ocv" in str(e):
             raise HwsimSkip("OCV not supported")
         raise
+
     Wlantest.setup(hapd)
     wt = Wlantest()
     wt.flush()
     wt.add_passphrase("12345678")
+
+    return hapd, ssid, wt
+
+@remote_compatible
+def test_ocv_sa_query(dev, apdev):
+    """Test SA Query with OCV"""
+    hapd, ssid, wt = start_ocv_ap(apdev[0])
     dev[0].connect(ssid, psk="12345678", ieee80211w="1", ocv="1",
                    key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
                    scan_freq="2412")
@@ -99,21 +105,7 @@ def test_ocv_sa_query(dev, apdev):
 @remote_compatible
 def test_ocv_sa_query_csa(dev, apdev):
     """Test SA Query with OCV after channel switch"""
-    ssid = "test-pmf-required"
-    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
-    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
-    params["ieee80211w"] = "2"
-    params["ocv"] = "1"
-    try:
-        hapd = hostapd.add_ap(apdev[0], params)
-    except Exception as e:
-        if "Failed to set hostapd parameter ocv" in str(e):
-            raise HwsimSkip("OCV not supported")
-        raise
-    Wlantest.setup(hapd)
-    wt = Wlantest()
-    wt.flush()
-    wt.add_passphrase("12345678")
+    hapd, ssid, wt = start_ocv_ap(apdev[0])
     dev[0].connect(ssid, psk="12345678", ieee80211w="1", ocv="1",
                    key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
                    scan_freq="2412")
@@ -123,6 +115,44 @@ def test_ocv_sa_query_csa(dev, apdev):
     if wt.get_sta_counter("valid_saqueryreq_tx", apdev[0]['bssid'],
                           dev[0].own_addr()) < 1:
         raise Exception("STA did not start SA Query after channel switch")
+
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=16)
+    if ev is not None:
+        raise Exception("Unexpected disconnection")
+
+def test_ocv_sa_query_csa_no_resp(dev, apdev):
+    """Test SA Query with OCV after channel switch getting no response"""
+    hapd, ssid, wt = start_ocv_ap(apdev[0])
+    dev[0].connect(ssid, psk="12345678", ieee80211w="1", ocv="1",
+                   key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
+                   scan_freq="2412")
+
+    hapd.set("ext_mgmt_frame_handling", "1")
+    hapd.request("CHAN_SWITCH 5 2437")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=5)
+    if ev is None:
+        raise Exception("Disconnection after CSA not reported")
+    if "locally_generated=1" not in ev:
+        raise Exception("Unexpectedly disconnected by AP: " + ev)
+
+def test_ocv_sa_query_csa_missing(dev, apdev):
+    """Test SA Query with OCV missing after channel switch"""
+    hapd, ssid, wt = start_ocv_ap(apdev[0])
+    dev[0].connect(ssid, psk="12345678", ieee80211w="1", ocv="1",
+                   key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
+                   scan_freq="2412")
+
+    hapd.set("ext_mgmt_frame_handling", "1")
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    ev = hapd.wait_event(['MGMT-RX'], timeout=5)
+    if ev is None:
+        raise Exception("Deauthentication frame RX not reported")
+    hapd.set("ext_mgmt_frame_handling", "0")
+    hapd.request("CHAN_SWITCH 5 2437")
+    ev = hapd.wait_event(["AP-STA-DISCONNECTED"], timeout=20)
+    if ev is None:
+        raise Exception("No disconnection event received from hostapd")
 
 @remote_compatible
 def test_ap_pmf_optional(dev, apdev):
