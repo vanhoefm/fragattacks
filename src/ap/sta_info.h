@@ -122,6 +122,7 @@ struct sta_info {
 	unsigned int hs20_t_c_filtering:1;
 	unsigned int ft_over_ds:1;
 	unsigned int external_dh_updated:1;
+	unsigned int post_csa_sa_query:1;
 
 	u16 auth_alg;
 

@@ -632,6 +632,7 @@ hostapd_switch_channel_fallback(struct hostapd_iface *iface,
 void hostapd_cleanup_cs_params(struct hostapd_data *hapd);
 void hostapd_periodic_iface(struct hostapd_iface *iface);
 int hostapd_owe_trans_get_info(struct hostapd_data *hapd);
+void hostapd_ocv_check_csa_sa_query(void *eloop_ctx, void *timeout_ctx);
 
 /* utils.c */
 int hostapd_register_probereq_cb(struct hostapd_data *hapd,

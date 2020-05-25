@@ -844,8 +844,6 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 			     int offset, int width, int cf1, int cf2,
 			     int finished)
 {
-	/* TODO: If OCV is enabled deauth STAs that don't perform a SA Query */
-
 #ifdef NEED_AP_MLME
 	int channel, chwidth, is_dfs;
 	u8 seg0_idx = 0, seg1_idx = 0;
@@ -958,6 +956,29 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 
 	for (i = 0; i < hapd->iface->num_bss; i++)
 		hostapd_neighbor_set_own_report(hapd->iface->bss[i]);
+
+#ifdef CONFIG_OCV
+	if (hapd->conf->ocv) {
+		struct sta_info *sta;
+		bool check_sa_query = false;
+
+		for (sta = hapd->sta_list; sta; sta = sta->next) {
+			if (wpa_auth_uses_ocv(sta->wpa_sm) &&
+			    !(sta->flags & WLAN_STA_WNM_SLEEP_MODE)) {
+				sta->post_csa_sa_query = 1;
+				check_sa_query = true;
+			}
+		}
+
+		if (check_sa_query) {
+			wpa_printf(MSG_DEBUG,
+				   "OCV: Check post-CSA SA Query initiation in 15 seconds");
+			eloop_register_timeout(15, 0,
+					       hostapd_ocv_check_csa_sa_query,
+					       hapd, NULL);
+		}
+	}
+#endif /* CONFIG_OCV */
 #endif /* NEED_AP_MLME */
 }
 

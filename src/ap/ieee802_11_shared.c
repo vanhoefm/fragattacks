@@ -267,6 +267,8 @@ void ieee802_11_sa_query_action(struct hostapd_data *hapd,
 #endif /* CONFIG_OCV */
 
 	if (action_type == WLAN_SA_QUERY_REQUEST) {
+		if (sta)
+			sta->post_csa_sa_query = 0;
 		ieee802_11_send_sa_query_resp(hapd, sa, trans_id);
 		return;
 	}
