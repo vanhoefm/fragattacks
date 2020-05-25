@@ -628,6 +628,7 @@ static void rx_data_eapol_key_3_of_4(struct wlantest *wt, const u8 *dst,
 	const u8 *decrypted;
 	size_t decrypted_len = 0;
 	struct wpa_eapol_ie_parse ie;
+	struct wpa_ie_data rsn;
 
 	wpa_printf(MSG_DEBUG, "EAPOL-Key 3/4 " MACSTR " -> " MACSTR,
 		   MAC2STR(src), MAC2STR(dst));
@@ -781,7 +782,9 @@ static void rx_data_eapol_key_3_of_4(struct wlantest *wt, const u8 *dst,
 	}
 
 	if ((ie.rsn_ie &&
-	     os_memcmp(ie.rsn_ie, bss->rsnie, ie.rsn_ie_len) != 0) ||
+	     wpa_compare_rsn_ie(wpa_key_mgmt_ft(sta->key_mgmt),
+				ie.rsn_ie, ie.rsn_ie_len,
+				bss->rsnie, 2 + bss->rsnie[1])) ||
 	    (ie.rsn_ie == NULL && bss->rsnie[0])) {
 		add_note(wt, MSG_INFO, "Mismatch in RSN IE between EAPOL-Key "
 			 "3/4 and Beacon/Probe Response from " MACSTR,
@@ -792,6 +795,16 @@ static void rx_data_eapol_key_3_of_4(struct wlantest *wt, const u8 *dst,
 			    bss->rsnie,
 			    bss->rsnie[0] ? 2 + bss->rsnie[1] : 0);
 	}
+
+	if (wpa_key_mgmt_ft(sta->key_mgmt) &&
+	    (wpa_parse_wpa_ie_rsn(ie.rsn_ie, ie.rsn_ie_len, &rsn) < 0 ||
+	     rsn.num_pmkid != 1 || !rsn.pmkid ||
+	     os_memcmp_const(rsn.pmkid, sta->pmk_r1_name,
+			     WPA_PMK_NAME_LEN) != 0))
+		add_note(wt, MSG_INFO,
+			 "FT: No matching PMKR1Name in FT 4-way handshake message 3/4");
+
+	/* TODO: validate MDE and FTE match */
 
 	learn_kde_keys(wt, bss, sta, decrypted, decrypted_len, hdr->key_rsc);
 	os_free(decrypted_buf);
