@@ -255,7 +255,7 @@ void ieee802_11_sa_query_action(struct hostapd_data *hapd,
 
 		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
 					 tx_chanwidth, tx_seg1_idx) != 0) {
-			wpa_printf(MSG_WARNING, "%s", ocv_errorstr);
+			wpa_printf(MSG_WARNING, "OCV failed: %s", ocv_errorstr);
 			return;
 		}
 	}

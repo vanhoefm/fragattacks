@@ -3466,7 +3466,7 @@ int wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 
 		if (ocv_verify_tx_params(parse.oci, parse.oci_len, &ci,
 					 tx_chanwidth, tx_seg1_idx) != 0) {
-			wpa_printf(MSG_WARNING, "%s", ocv_errorstr);
+			wpa_printf(MSG_WARNING, "OCV failed: %s", ocv_errorstr);
 			return WLAN_STATUS_UNSPECIFIED_FAILURE;
 		}
 	}

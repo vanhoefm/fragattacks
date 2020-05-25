@@ -3509,7 +3509,8 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 
 		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
 					 tx_chanwidth, tx_seg1_idx) != 0) {
-			wpa_printf(MSG_WARNING, "FILS: %s", ocv_errorstr);
+			wpa_printf(MSG_WARNING, "FILS: OCV failed: %s",
+				   ocv_errorstr);
 			return WLAN_STATUS_UNSPECIFIED_FAILURE;
 		}
 	}

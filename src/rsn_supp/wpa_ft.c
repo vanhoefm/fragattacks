@@ -1159,7 +1159,7 @@ int wpa_ft_validate_reassoc_resp(struct wpa_sm *sm, const u8 *ies,
 		if (ocv_verify_tx_params(parse.oci, parse.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
 					 ci.seg1_idx) != 0) {
-			wpa_printf(MSG_WARNING, "%s", ocv_errorstr);
+			wpa_printf(MSG_WARNING, "OCV failed: %s", ocv_errorstr);
 			return -1;
 		}
 	}

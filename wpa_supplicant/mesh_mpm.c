@@ -1291,7 +1291,7 @@ void mesh_mpm_action_rx(struct wpa_supplicant *wpa_s,
 			if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
 						 tx_chanwidth, tx_seg1_idx) !=
 			    0) {
-				wpa_printf(MSG_WARNING, "MPM: %s",
+				wpa_printf(MSG_WARNING, "MPM: OCV failed: %s",
 					   ocv_errorstr);
 				return;
 			}
