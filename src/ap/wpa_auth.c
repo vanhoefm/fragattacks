@@ -15,6 +15,7 @@
 #include "common/ieee802_11_defs.h"
 #include "common/ocv.h"
 #include "common/dpp.h"
+#include "common/wpa_ctrl.h"
 #include "crypto/aes.h"
 #include "crypto/aes_wrap.h"
 #include "crypto/aes_siv.h"
@@ -3044,6 +3045,11 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 					 tx_chanwidth, tx_seg1_idx) != 0) {
 			wpa_auth_vlogger(wpa_auth, sm->addr, LOGGER_INFO,
 					 "OCV failed: %s", ocv_errorstr);
+			if (wpa_auth->conf.msg_ctx)
+				wpa_msg(wpa_auth->conf.msg_ctx, MSG_INFO,
+					OCV_FAILURE "addr=" MACSTR
+					" frame=eapol-key-m2 error=%s",
+					MAC2STR(sm->addr), ocv_errorstr);
 			return;
 		}
 	}
@@ -3868,7 +3874,7 @@ SM_STATE(WPA_PTK_GROUP, REKEYESTABLISHED)
 
 		if (wpa_channel_info(wpa_auth, &ci) != 0) {
 			wpa_auth_logger(wpa_auth, sm->addr, LOGGER_INFO,
-					"Failed to get channel info to validate received OCI in EAPOL-Key group 1/2");
+					"Failed to get channel info to validate received OCI in EAPOL-Key group 2/2");
 			return;
 		}
 
@@ -3882,6 +3888,11 @@ SM_STATE(WPA_PTK_GROUP, REKEYESTABLISHED)
 					 tx_chanwidth, tx_seg1_idx) != 0) {
 			wpa_auth_vlogger(wpa_auth, sm->addr, LOGGER_INFO,
 					 "OCV failed: %s", ocv_errorstr);
+			if (wpa_auth->conf.msg_ctx)
+				wpa_msg(wpa_auth->conf.msg_ctx, MSG_INFO,
+					OCV_FAILURE "addr=" MACSTR
+					" frame=eapol-key-g2 error=%s",
+					MAC2STR(sm->addr), ocv_errorstr);
 			return;
 		}
 	}

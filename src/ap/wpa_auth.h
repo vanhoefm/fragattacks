@@ -168,6 +168,7 @@ struct ft_remote_r1kh {
 
 
 struct wpa_auth_config {
+	void *msg_ctx;
 	int wpa;
 	int extended_key_id;
 	int wpa_key_mgmt;
