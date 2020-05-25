@@ -14,6 +14,7 @@
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
 #include "common/ocv.h"
+#include "common/wpa_ctrl.h"
 #include "drivers/driver.h"
 #include "crypto/aes.h"
 #include "crypto/aes_siv.h"
@@ -3467,6 +3468,11 @@ int wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 		if (ocv_verify_tx_params(parse.oci, parse.oci_len, &ci,
 					 tx_chanwidth, tx_seg1_idx) != 0) {
 			wpa_printf(MSG_WARNING, "OCV failed: %s", ocv_errorstr);
+			if (sm->wpa_auth->conf.msg_ctx)
+				wpa_msg(sm->wpa_auth->conf.msg_ctx, MSG_INFO,
+					OCV_FAILURE "addr=" MACSTR
+					" frame=ft-reassoc-req error=%s",
+					MAC2STR(sm->addr), ocv_errorstr);
 			return WLAN_STATUS_UNSPECIFIED_FAILURE;
 		}
 	}

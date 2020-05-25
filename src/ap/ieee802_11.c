@@ -24,6 +24,7 @@
 #include "common/dpp.h"
 #include "common/ocv.h"
 #include "common/wpa_common.h"
+#include "common/wpa_ctrl.h"
 #include "radius/radius.h"
 #include "radius/radius_client.h"
 #include "p2p/p2p.h"
@@ -3511,6 +3512,9 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 					 tx_chanwidth, tx_seg1_idx) != 0) {
 			wpa_printf(MSG_WARNING, "FILS: OCV failed: %s",
 				   ocv_errorstr);
+			wpa_msg(hapd->msg_ctx, MSG_INFO, OCV_FAILURE "addr="
+				MACSTR " frame=fils-reassoc-req error=%s",
+				MAC2STR(sta->addr), ocv_errorstr);
 			return WLAN_STATUS_UNSPECIFIED_FAILURE;
 		}
 	}
