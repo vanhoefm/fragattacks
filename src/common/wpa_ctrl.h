@@ -388,6 +388,10 @@ extern "C" {
 /* Transition mode disabled indication - followed by bitmap */
 #define TRANSITION_DISABLE "TRANSITION-DISABLE "
 
+/* OCV validation failure; parameters: addr=<src addr>
+ * frame=<saqueryreq/saqueryresp> error=<error string> */
+#define OCV_FAILURE "OCV-FAILURE "
+
 #ifndef BIT
 #define BIT(x) (1U << (x))
 #endif

@@ -11,6 +11,7 @@
 #include "utils/common.h"
 #include "common/ieee802_11_defs.h"
 #include "common/ocv.h"
+#include "common/wpa_ctrl.h"
 #include "hostapd.h"
 #include "sta_info.h"
 #include "ap_config.h"
@@ -255,7 +256,11 @@ void ieee802_11_sa_query_action(struct hostapd_data *hapd,
 
 		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
 					 tx_chanwidth, tx_seg1_idx) != 0) {
-			wpa_printf(MSG_WARNING, "OCV failed: %s", ocv_errorstr);
+			wpa_msg(hapd->msg_ctx, MSG_INFO, OCV_FAILURE "addr="
+				MACSTR " frame=saquery%s error=%s",
+				MAC2STR(sa),
+				action_type == WLAN_SA_QUERY_REQUEST ?
+				"req" : "resp", ocv_errorstr);
 			return;
 		}
 	}
