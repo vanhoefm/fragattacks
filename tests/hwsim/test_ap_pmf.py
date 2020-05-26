@@ -90,7 +90,9 @@ def test_ocv_sa_query(dev, apdev):
     # Test that client can handle SA Query with OCI element
     if "OK" not in hapd.request("SA_QUERY " + dev[0].own_addr()):
         raise Exception("SA_QUERY failed")
-    time.sleep(0.1)
+    ev = hapd.wait_event(["OCV-FAILURE"], timeout=0.1)
+    if ev:
+        raise Exception("Unexpected OCV failure reported")
     if wt.get_sta_counter("valid_saqueryresp_tx", apdev[0]['bssid'],
                           dev[0].own_addr()) < 1:
         raise Exception("STA did not reply to SA Query")

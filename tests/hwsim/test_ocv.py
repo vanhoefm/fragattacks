@@ -985,10 +985,4 @@ def test_wpa2_ocv_sta_override_sa_query_resp(dev, apdev):
     if "frame=saqueryresp" not in ev:
         raise Exception("Unexpected OCV failure frame: " + ev)
     if "error=primary channel mismatch" not in ev:
-        if "error=did not receive mandatory OCI" in ev:
-            # This is not correct, but do not report this as test failure for
-            # now since the issue seems to be in mac80211 not allowing
-            # wpa_supplicant to process the SA Query Request frame.
-            logger.info("Unexpected OCV failure error: " + ev)
-        else:
-            raise Exception("Unexpected OCV failure error: " + ev)
+        raise Exception("Unexpected OCV failure error: " + ev)
