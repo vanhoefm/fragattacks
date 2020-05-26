@@ -41,20 +41,6 @@ def log_level2switch():
 	elif options.debug >= 1: return ["-d", "-K"]
 	return ["-K"]
 
-#TODO: Move to libwifi?
-def add_msdu_frag(src, dst, payload):
-	length = len(payload)
-	p = Ether(dst=dst, src=src, type=length)
-
-	payload = raw(payload)
-
-	total_length = len(p) + len(payload)
-	padding = ""
-	if total_length % 4 != 0:
-		padding = b"\x00" * (4 - (total_length % 4))
-
-	return p / payload / Raw(padding)
-
 def freebsd_create_eapolmsdu(src, dst, payload):
 	"""
 	FreeBSD doesn't properly parse EAPOL/MSDU frames for some reason.
@@ -68,7 +54,7 @@ def freebsd_create_eapolmsdu(src, dst, payload):
 	prefix = raw(LLC()/SNAP()/EAPOL()) + b"\x00\x06" + rawmac
 
 	# Length followed by the payload
-	payload = add_msdu_frag(src, dst, payload)
+	payload = create_msdu_subframe(src, dst, payload)
 	payload = prefix + struct.pack(">I", len(payload)) + raw(payload)
 
 	# Put the destination MAC address in the "right" place
@@ -328,7 +314,7 @@ class PingTest(Test):
 			# Set the A-MSDU frame type flag in the QoS header
 			header.Reserved = 1
 			# Encapsulate the request in an A-MSDU payload
-			request = add_msdu_frag(station.mac, station.get_peermac(), request)
+			request = create_msdu_subframe(station.mac, station.get_peermac(), request)
 		elif self.as_msdu == 2:
 			# Set A-MSDU flag but include a normal payload (fake A-MSDU)
 			header.Reserved = 1
@@ -501,7 +487,7 @@ class EapolMsduTest(Test):
 			log(STATUS, "Creating malformed EAPOL/MSDU that FreeBSD treats as valid")
 			request = freebsd_create_eapolmsdu(station.mac, station.get_peermac(), request)
 		else:
-			request = LLC()/SNAP()/EAPOL()/Raw(b"\x00\x06AAAAAA") / add_msdu_frag(station.mac, station.get_peermac(), request)
+			request = LLC()/SNAP()/EAPOL()/Raw(b"\x00\x06AAAAAA") / create_msdu_subframe(station.mac, station.get_peermac(), request)
 
 		frames = create_fragments(header, request, 1)
 
