@@ -16,6 +16,7 @@ from wpasupplicant import WpaSupplicant
 import hwsim_utils
 from tshark import run_tshark
 from utils import HwsimSkip, fail_test, alloc_fail, wait_fail_trigger
+from test_ap_acs import wait_acs
 
 def test_owe(dev, apdev):
     """Opportunistic Wireless Encryption"""
@@ -207,6 +208,88 @@ def run_owe_transition_mode(dev, apdev):
     dev[0].select_network(id, 2412)
     dev[0].wait_connected()
     hwsim_utils.test_connectivity(dev[0], hapd)
+
+def test_owe_transition_mode_ifname(dev, apdev):
+    """Opportunistic Wireless Encryption transition mode (ifname)"""
+    if "OWE" not in dev[0].get_capability("key_mgmt"):
+        raise HwsimSkip("OWE not supported")
+    dev[0].flush_scan_cache()
+    params = {"ssid": "owe-random",
+              "wpa": "2",
+              "wpa_key_mgmt": "OWE",
+              "rsn_pairwise": "CCMP",
+              "ieee80211w": "2",
+              "owe_transition_ifname": apdev[1]['ifname'],
+              "ignore_broadcast_ssid": "1"}
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    params = {"ssid": "owe-test",
+              "owe_transition_ifname": apdev[0]['ifname']}
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    bssid2 = hapd2.own_addr()
+
+    dev[0].scan_for_bss(bssid, freq="2412")
+    dev[0].scan_for_bss(bssid2, freq="2412")
+
+    id = dev[0].connect("owe-test", key_mgmt="OWE", ieee80211w="2",
+                        scan_freq="2412")
+    val = dev[0].get_status_field("key_mgmt")
+    if val != "OWE":
+        raise Exception("Unexpected key_mgmt: " + val)
+
+def test_owe_transition_mode_ifname_acs(dev, apdev):
+    """Opportunistic Wireless Encryption transition mode (ifname, ACS)"""
+    run_owe_transition_mode_ifname_acs(dev, apdev, wait_first=False)
+
+def test_owe_transition_mode_ifname_acs2(dev, apdev):
+    """Opportunistic Wireless Encryption transition mode (ifname, ACS)"""
+    run_owe_transition_mode_ifname_acs(dev, apdev, wait_first=True)
+
+def run_owe_transition_mode_ifname_acs(dev, apdev, wait_first):
+    if "OWE" not in dev[0].get_capability("key_mgmt"):
+        raise HwsimSkip("OWE not supported")
+    dev[0].flush_scan_cache()
+    params = {"ssid": "owe-random",
+              "channel": "0",
+              "wpa": "2",
+              "wpa_key_mgmt": "OWE",
+              "rsn_pairwise": "CCMP",
+              "ieee80211w": "2",
+              "owe_transition_ifname": apdev[1]['ifname'],
+              "ignore_broadcast_ssid": "1"}
+    hapd = hostapd.add_ap(apdev[0], params, wait_enabled=False)
+    bssid = hapd.own_addr()
+
+    if wait_first:
+        wait_acs(hapd)
+
+    params = {"ssid": "owe-test",
+              "channel": "0",
+              "owe_transition_ifname": apdev[0]['ifname']}
+    hapd2 = hostapd.add_ap(apdev[1], params, wait_enabled=False)
+    bssid2 = hapd2.own_addr()
+
+    wait_acs(hapd2)
+    if not wait_first:
+        state = hapd.get_status_field("state")
+        if state == "ACS-STARTED":
+            time.sleep(5)
+            state = hapd.get_status_field("state")
+        if state != "ENABLED":
+            raise Exception("AP1 startup did not succeed")
+
+    freq = hapd.get_status_field("freq")
+    freq2 = hapd2.get_status_field("freq")
+
+    dev[0].scan_for_bss(bssid, freq=freq)
+    dev[0].scan_for_bss(bssid2, freq=freq2)
+
+    id = dev[0].connect("owe-test", key_mgmt="OWE", ieee80211w="2",
+                        scan_freq="%s %s" % (freq, freq2))
+    val = dev[0].get_status_field("key_mgmt")
+    if val != "OWE":
+        raise Exception("Unexpected key_mgmt: " + val)
 
 def test_owe_transition_mode_open_only_ap(dev, apdev):
     """Opportunistic Wireless Encryption transition mode connect to open-only AP"""

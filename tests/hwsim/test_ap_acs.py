@@ -37,7 +37,7 @@ def wait_acs(hapd, return_after_acs=False):
 
     state = hapd.get_status_field("state")
     if state != "ACS":
-        raise Exception("Unexpected interface state")
+        raise Exception("Unexpected interface state %s (expected ACS)" % state)
 
     ev = hapd.wait_event(["ACS-COMPLETED", "ACS-FAILED", "AP-ENABLED",
                           "AP-DISABLED"], timeout=20)
@@ -57,7 +57,7 @@ def wait_acs(hapd, return_after_acs=False):
 
     state = hapd.get_status_field("state")
     if state != "ENABLED":
-        raise Exception("Unexpected interface state")
+        raise Exception("Unexpected interface state %s (expected ENABLED)" % state)
 
 def test_ap_acs(dev, apdev):
     """Automatic channel selection"""
