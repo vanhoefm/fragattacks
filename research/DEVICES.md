@@ -12,7 +12,11 @@
 
 	**Put in monitor mode using iw. Use airmong-ng as a backup method.**
 
-3. Test advanced injection using `test-injection.py`
+3. Test advanced injection using `test-injection.py wan0 wlan1`
+
+   Note: it can be that `wlan0` is injecting frames properly, but that `wlan1`
+   is not receiving them properly. So when injection tests on `wlan0` failed,
+   try confirming it using a different `wlan1` device to monitor injection.
 
 4. Test injection using `./fragattack.py wlan0 ping --ap --inject-test wlan1`
 

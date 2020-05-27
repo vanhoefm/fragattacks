@@ -37,15 +37,11 @@ can search for [alternative devices] that have a high chance of also working.
 
 ## Prerequisites
 
-Our scripts were tested on Kali Linux, Ubuntu 18.04, Arch Linux, and Manjaro Linux. To install
-the required dependencies, execute:
+Our scripts were tested on Kali Linux and Ubuntu 20.04. To install the required dependencies, execute:
 
 	# Kali Linux and Ubuntu
 	apt-get update
-	apt-get install libnl-3-dev libnl-genl-3-dev pkg-config libssl-dev net-tools git
-
-	# Arch Linux and Manjaro Linux
-	pacman -S macchanger
+	apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libssl-dev libdbus-1-dev git pkg-config build-essential macchanger net-tools python3-venv
 
 Now clone this repository, build the tools, and configure a virtual python3 environment:
 
@@ -55,9 +51,29 @@ Now clone this repository, build the tools, and configure a virtual python3 envi
 	cd research
 	python3 -m venv venv
 	source venv/bin/activate
+	pip install wheel
 	pip install -r requirements.txt
 
 The above instructions only have to be executed once.
+
+## Patched Drivers
+
+Install patched drivers:
+
+	apt-get install bison flex linux-headers-$(uname -r)
+	git clone git@bitbucket.org:vanhoefm/fragattack-backports57.git
+	cd fragattack-backports57.git
+	make defconfig-experiments
+	make -j 4
+	sudo make install
+
+Install patched `ath9k_htc` firmware on Ubuntu:
+
+	cd research/ath9k-firmware/
+	cp htc_9271.fw /lib/firmware/ath9k_htc/htc_9271-1.4.0.fw
+	cp htc_7010.fw /lib/firmware/ath9k_htc/htc_7010-1.4.0.fw
+
+**TODO: How to install patched ath9k_htc drivers.**
 
 ## Before every usage
 
@@ -94,6 +110,13 @@ Here interface wlan0 will act as a legitimate client or AP, and wlan1 will be us
 frames. For wlan0, any card that supports normal client or AP mode on Linux can be used. For wlan1,
 a card must be used that supports injection mode according to [Supported Network Cards].
 
+In case the tests do not seem to be working, you can confirm that injection is properly working using:
+
+	./test-injection wlan1 wlan0
+
+This will script will inject frames using interface wlan1, and uses wlan0 to check if frames are
+properly injected. Note that both interfaces need to support monitor mode for this script to work.
+
 ### Mixed mode
 
 This mode requires only one device. This disadvantage is that this mode requires a patched driver and/or firmware,
@@ -101,7 +124,7 @@ and that only a small amount of devices are supported. Execute the script in thi
 
 	./fragattack wlan0 [--ap] $COMMAND
 
-Compile and install backports.
+**Reference how to compile and install backport drivers.**
 
 ### Hwsim mode (experimental)
 
@@ -254,4 +277,12 @@ to the peer IP address 192.168.100.1.
 
 - Release a known vulnerable linux image to test against? Essential to confirm the tests are working!
 
+
+## Live CD
+
+- Boot Ubuntu with exactly the same kernel as the live CD
+- Install the scripts
+- Buil the backport drivers
+- Run `depmod` manually
+- Continue
 
