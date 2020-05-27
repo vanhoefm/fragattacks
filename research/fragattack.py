@@ -8,7 +8,9 @@ from wpaspy import Ctrl
 from scapy.contrib.wpa_eapol import WPA_key
 from scapy.arch.common import get_if_raw_hwaddr
 
+# FIXME: Import here to avoid loops
 from tests_qca import *
+from tests_attacks import *
 
 # ----------------------------------- Utility Commands -----------------------------------
 
@@ -1490,6 +1492,9 @@ def prepare_tests(opt):
 
 	elif opt.testname == "qca-rekey":
 		test = QcaDriverRekey()
+
+	elif opt.testname == "amsdu-attack":
+		test = AmsduAttack(REQ_ICMP, stractions == "linux")
 
 	# No valid test ID/name was given
 	else: return None
