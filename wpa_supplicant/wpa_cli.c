@@ -3059,6 +3059,78 @@ static int wpa_cli_cmd_dpp_pkex_remove(struct wpa_ctrl *ctrl, int argc,
 #endif /* CONFIG_DPP */
 
 
+static int wpa_ctrl_command_bss(struct wpa_ctrl *ctrl, const char *cmd)
+{
+	char buf[512], *pos, *bssid, *freq, *level, *flags, *ssid;
+	size_t len;
+	int ret, id = -1;
+
+	if (!ctrl_conn)
+		return -1;
+	len = sizeof(buf) - 1;
+	ret = wpa_ctrl_request(ctrl, cmd, os_strlen(cmd), buf, &len,
+			       wpa_cli_msg_cb);
+	if (ret == -2) {
+		printf("'%s' command timed out.\n", cmd);
+		return -2;
+	} else if (ret < 0) {
+		printf("'%s' command failed.\n", cmd);
+		return -1;
+	}
+
+	buf[len] = '\0';
+	if (os_memcmp(buf, "FAIL", 4) == 0)
+		return -1;
+
+	pos = buf;
+	while (*pos != '\0') {
+		if (str_starts(pos, "id="))
+			id = atoi(pos + 3);
+		if (str_starts(pos, "bssid="))
+			bssid = pos + 6;
+		if (str_starts(pos, "freq="))
+			freq = pos + 5;
+		if (str_starts(pos, "level="))
+			level = pos + 6;
+		if (str_starts(pos, "flags="))
+			flags = pos + 6;
+		if (str_starts(pos, "ssid="))
+			ssid = pos + 5;
+
+		while (*pos != '\0' && *pos != '\n')
+			pos++;
+		*pos++ = '\0';
+	}
+	if (id != -1)
+		printf("%s\t%s\t%s\t%s\t%s\n", bssid, freq, level, flags, ssid);
+	return id;
+}
+
+
+static int wpa_cli_cmd_all_bss(struct wpa_ctrl *ctrl, int argc, char *argv[])
+{
+	char cmd[64];
+	int id = -1;
+	unsigned int mask;
+
+	printf("bssid / frequency / signal level / flags / ssid\n");
+
+	mask = WPA_BSS_MASK_ID | WPA_BSS_MASK_BSSID | WPA_BSS_MASK_FREQ |
+		WPA_BSS_MASK_LEVEL | WPA_BSS_MASK_FLAGS | WPA_BSS_MASK_SSID;
+	do {
+		if (id < 0)
+			os_snprintf(cmd, sizeof(cmd), "BSS FIRST MASK=0x%x",
+				    mask);
+		else
+			os_snprintf(cmd, sizeof(cmd), "BSS NEXT-%d MASK=0x%x",
+				    id, mask);
+		id = wpa_ctrl_command_bss(ctrl, cmd);
+	} while (id >= 0);
+
+	return 0;
+}
+
+
 enum wpa_cli_cmd_flags {
 	cli_cmd_flag_none		= 0x00,
 	cli_cmd_flag_sensitive		= 0x01
@@ -3718,6 +3790,8 @@ static const struct wpa_cli_cmd wpa_cli_commands[] = {
 	  cli_cmd_flag_none,
 	  "*|<id> = remove DPP pkex information" },
 #endif /* CONFIG_DPP */
+	{ "all_bss", wpa_cli_cmd_all_bss, NULL, cli_cmd_flag_none,
+	  "= list all BSS entries (scan results)" },
 	{ NULL, NULL, NULL, cli_cmd_flag_none, NULL }
 };
 
