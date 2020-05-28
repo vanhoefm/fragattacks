@@ -1,4 +1,4 @@
-from fragattack import *
+from fraginternals import *
 
 class AmsduAttack(Test):
 	"""
