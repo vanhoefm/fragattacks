@@ -2163,11 +2163,12 @@ static inline int wpa_auth_get_seqnum(struct wpa_authenticator *wpa_auth,
 static u8 * wpa_ft_gtk_subelem(struct wpa_state_machine *sm, size_t *len)
 {
 	u8 *subelem;
+	struct wpa_auth_config *conf = &sm->wpa_auth->conf;
 	struct wpa_group *gsm = sm->group;
 	size_t subelem_len, pad_len;
 	const u8 *key;
 	size_t key_len;
-	u8 keybuf[32];
+	u8 keybuf[WPA_GTK_MAX_LEN];
 	const u8 *kek;
 	size_t kek_len;
 
@@ -2194,12 +2195,30 @@ static u8 * wpa_ft_gtk_subelem(struct wpa_state_machine *sm, size_t *len)
 		pad_len += 8;
 	if (pad_len && key_len < sizeof(keybuf)) {
 		os_memcpy(keybuf, gsm->GTK[gsm->GN - 1], key_len);
+		if (conf->disable_gtk ||
+		    sm->wpa_key_mgmt == WPA_KEY_MGMT_OSEN) {
+			/*
+			 * Provide unique random GTK to each STA to prevent use
+			 * of GTK in the BSS.
+			 */
+			if (random_get_bytes(keybuf, key_len) < 0)
+				return NULL;
+		}
 		os_memset(keybuf + key_len, 0, pad_len);
 		keybuf[key_len] = 0xdd;
 		key_len += pad_len;
 		key = keybuf;
-	} else
+	} else if (conf->disable_gtk || sm->wpa_key_mgmt == WPA_KEY_MGMT_OSEN) {
+		/*
+		 * Provide unique random GTK to each STA to prevent use of GTK
+		 * in the BSS.
+		 */
+		if (random_get_bytes(keybuf, key_len) < 0)
+			return NULL;
+		key = keybuf;
+	} else {
 		key = gsm->GTK[gsm->GN - 1];
+	}
 
 	/*
 	 * Sub-elem ID[1] | Length[1] | Key Info[2] | Key Length[1] | RSC[8] |
@@ -2233,11 +2252,13 @@ static u8 * wpa_ft_gtk_subelem(struct wpa_state_machine *sm, size_t *len)
 static u8 * wpa_ft_igtk_subelem(struct wpa_state_machine *sm, size_t *len)
 {
 	u8 *subelem, *pos;
+	struct wpa_auth_config *conf = &sm->wpa_auth->conf;
 	struct wpa_group *gsm = sm->group;
 	size_t subelem_len;
-	const u8 *kek;
+	const u8 *kek, *igtk;
 	size_t kek_len;
 	size_t igtk_len;
+	u8 dummy_igtk[WPA_IGTK_MAX_LEN];
 
 	if (wpa_key_mgmt_fils(sm->wpa_key_mgmt)) {
 		kek = sm->PTK.kek2;
@@ -2264,8 +2285,19 @@ static u8 * wpa_ft_igtk_subelem(struct wpa_state_machine *sm, size_t *len)
 	wpa_auth_get_seqnum(sm->wpa_auth, NULL, gsm->GN_igtk, pos);
 	pos += 6;
 	*pos++ = igtk_len;
-	if (aes_wrap(kek, kek_len, igtk_len / 8,
-		     gsm->IGTK[gsm->GN_igtk - 4], pos)) {
+	igtk = gsm->IGTK[gsm->GN_igtk - 4];
+	if (conf->disable_gtk || sm->wpa_key_mgmt == WPA_KEY_MGMT_OSEN) {
+		/*
+		 * Provide unique random IGTK to each STA to prevent use of
+		 * IGTK in the BSS.
+		 */
+		if (random_get_bytes(dummy_igtk, igtk_len / 8) < 0) {
+			os_free(subelem);
+			return NULL;
+		}
+		igtk = dummy_igtk;
+	}
+	if (aes_wrap(kek, kek_len, igtk_len / 8, igtk, pos)) {
 		wpa_printf(MSG_DEBUG,
 			   "FT: IGTK subelem encryption failed: kek_len=%d",
 			   (int) kek_len);
