@@ -241,6 +241,10 @@ struct wpa_auth_config {
 	unsigned int igtk_rsc_override_set:1;
 	int ft_rsnxe_used;
 #endif /* CONFIG_TESTING_OPTIONS */
+	unsigned int oci_freq_override_eapol_m3;
+	unsigned int oci_freq_override_eapol_g1;
+	unsigned int oci_freq_override_ft_assoc;
+	unsigned int oci_freq_override_fils_assoc;
 #ifdef CONFIG_P2P
 	u8 ip_addr_go[4];
 	u8 ip_addr_mask[4];
@@ -525,5 +529,15 @@ int wpa_auth_resend_group_m1(struct wpa_state_machine *sm,
 int wpa_auth_rekey_gtk(struct wpa_authenticator *wpa_auth);
 void wpa_auth_set_ptk_rekey_timer(struct wpa_state_machine *sm);
 void wpa_auth_set_ft_rsnxe_used(struct wpa_authenticator *wpa_auth, int val);
+
+enum wpa_auth_ocv_override_frame {
+	WPA_AUTH_OCV_OVERRIDE_EAPOL_M3,
+	WPA_AUTH_OCV_OVERRIDE_EAPOL_G1,
+	WPA_AUTH_OCV_OVERRIDE_FT_ASSOC,
+	WPA_AUTH_OCV_OVERRIDE_FILS_ASSOC,
+};
+void wpa_auth_set_ocv_override_freq(struct wpa_authenticator *wpa_auth,
+				    enum wpa_auth_ocv_override_frame frame,
+				    unsigned int freq);
 
 #endif /* WPA_AUTH_H */

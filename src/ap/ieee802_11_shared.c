@@ -73,6 +73,16 @@ void ieee802_11_send_sa_query_req(struct hostapd_data *hapd,
 				   "Failed to get channel info for OCI element in SA Query Request");
 			return;
 		}
+#ifdef CONFIG_TESTING_OPTIONS
+		if (hapd->conf->oci_freq_override_saquery_req) {
+			wpa_printf(MSG_INFO,
+				   "TEST: Override OCI frequency %d -> %u MHz",
+				   ci.frequency,
+				   hapd->conf->oci_freq_override_saquery_req);
+			ci.frequency =
+				hapd->conf->oci_freq_override_saquery_req;
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 		oci_ie_len = OCV_OCI_EXTENDED_LEN;
 		oci_ie = os_zalloc(oci_ie_len);
@@ -152,6 +162,16 @@ static void ieee802_11_send_sa_query_resp(struct hostapd_data *hapd,
 				   "Failed to get channel info for OCI element in SA Query Response");
 			return;
 		}
+#ifdef CONFIG_TESTING_OPTIONS
+		if (hapd->conf->oci_freq_override_saquery_resp) {
+			wpa_printf(MSG_INFO,
+				   "TEST: Override OCI frequency %d -> %u MHz",
+				   ci.frequency,
+				   hapd->conf->oci_freq_override_saquery_resp);
+			ci.frequency =
+				hapd->conf->oci_freq_override_saquery_resp;
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 		oci_ie_len = OCV_OCI_EXTENDED_LEN;
 		oci_ie = os_zalloc(oci_ie_len);

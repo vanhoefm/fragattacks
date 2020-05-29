@@ -687,6 +687,13 @@ struct hostapd_bss_config {
 	int no_beacon_rsnxe;
 	int skip_prune_assoc;
 	int ft_rsnxe_used;
+	unsigned int oci_freq_override_eapol_m3;
+	unsigned int oci_freq_override_eapol_g1;
+	unsigned int oci_freq_override_saquery_req;
+	unsigned int oci_freq_override_saquery_resp;
+	unsigned int oci_freq_override_ft_assoc;
+	unsigned int oci_freq_override_fils_assoc;
+	unsigned int oci_freq_override_wnm_sleep;
 #endif /* CONFIG_TESTING_OPTIONS */
 
 #define MESH_ENABLED BIT(0)

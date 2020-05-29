@@ -2772,6 +2772,15 @@ static struct wpabuf * fils_prepare_plainbuf(struct wpa_state_machine *sm,
 			wpabuf_clear_free(plain);
 			return NULL;
 		}
+#ifdef CONFIG_TESTING_OPTIONS
+		if (conf->oci_freq_override_fils_assoc) {
+			wpa_printf(MSG_INFO,
+				   "TEST: Override OCI frequency %d -> %u MHz",
+				   ci.frequency,
+				   conf->oci_freq_override_fils_assoc);
+			ci.frequency = conf->oci_freq_override_fils_assoc;
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 		pos = wpabuf_put(plain, OCV_OCI_EXTENDED_LEN);
 		if (ocv_insert_extended_oci(&ci, pos) < 0) {
@@ -3237,7 +3246,9 @@ static int ocv_oci_len(struct wpa_state_machine *sm)
 	return 0;
 }
 
-static int ocv_oci_add(struct wpa_state_machine *sm, u8 **argpos)
+
+static int ocv_oci_add(struct wpa_state_machine *sm, u8 **argpos,
+		       unsigned int freq)
 {
 #ifdef CONFIG_OCV
 	struct wpa_channel_info ci;
@@ -3250,6 +3261,14 @@ static int ocv_oci_add(struct wpa_state_machine *sm, u8 **argpos)
 			   "Failed to get channel info for OCI element");
 		return -1;
 	}
+#ifdef CONFIG_TESTING_OPTIONS
+	if (freq) {
+		wpa_printf(MSG_INFO,
+			   "TEST: Override OCI KDE frequency %d -> %u MHz",
+			   ci.frequency, freq);
+		ci.frequency = freq;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 	return ocv_insert_oci_kde(&ci, argpos);
 #else /* CONFIG_OCV */
@@ -3466,7 +3485,7 @@ SM_STATE(WPA_PTK, PTKINITNEGOTIATING)
 				  gtk, gtk_len);
 	}
 	pos = ieee80211w_kde_add(sm, pos);
-	if (ocv_oci_add(sm, &pos) < 0)
+	if (ocv_oci_add(sm, &pos, conf->oci_freq_override_eapol_m3) < 0)
 		goto done;
 
 #ifdef CONFIG_IEEE80211R_AP
@@ -3816,7 +3835,8 @@ SM_STATE(WPA_PTK_GROUP, REKEYNEGOTIATING)
 		pos = wpa_add_kde(pos, RSN_KEY_DATA_GROUPKEY, hdr, 2,
 				  gtk, gsm->GTK_len);
 		pos = ieee80211w_kde_add(sm, pos);
-		if (ocv_oci_add(sm, &pos) < 0) {
+		if (ocv_oci_add(sm, &pos,
+				conf->oci_freq_override_eapol_g1) < 0) {
 			os_free(kde_buf);
 			return;
 		}
@@ -5299,6 +5319,7 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 	u8 rsc[WPA_KEY_RSC_LEN], *_rsc, *gtk, *kde, *pos;
 	u8 *opos;
 	size_t gtk_len, kde_len;
+	struct wpa_auth_config *conf = &sm->wpa_auth->conf;
 	struct wpa_group *gsm = sm->group;
 	u8 *wpa_ie;
 	int wpa_ie_len, secure, gtkidx, encr = 0;
@@ -5409,7 +5430,7 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 		opos += 2 + RSN_SELECTOR_LEN + 2;
 		os_memset(opos, 0, 6); /* clear PN */
 	}
-	if (ocv_oci_add(sm, &pos) < 0) {
+	if (ocv_oci_add(sm, &pos, conf->oci_freq_override_eapol_m3) < 0) {
 		os_free(kde);
 		return -1;
 	}
@@ -5417,9 +5438,7 @@ int wpa_auth_resend_m3(struct wpa_state_machine *sm,
 #ifdef CONFIG_IEEE80211R_AP
 	if (wpa_key_mgmt_ft(sm->wpa_key_mgmt)) {
 		int res;
-		struct wpa_auth_config *conf;
 
-		conf = &sm->wpa_auth->conf;
 		if (sm->assoc_resp_ftie &&
 		    kde + kde_len - pos >= 2 + sm->assoc_resp_ftie[1]) {
 			os_memcpy(pos, sm->assoc_resp_ftie,
@@ -5476,6 +5495,7 @@ int wpa_auth_resend_group_m1(struct wpa_state_machine *sm,
 			     void *ctx1, void *ctx2)
 {
 	u8 rsc[WPA_KEY_RSC_LEN];
+	struct wpa_auth_config *conf = &sm->wpa_auth->conf;
 	struct wpa_group *gsm = sm->group;
 	const u8 *kde;
 	u8 *kde_buf = NULL, *pos, hdr[2];
@@ -5510,7 +5530,8 @@ int wpa_auth_resend_group_m1(struct wpa_state_machine *sm,
 			opos += 2 + RSN_SELECTOR_LEN + 2;
 			os_memset(opos, 0, 6); /* clear PN */
 		}
-		if (ocv_oci_add(sm, &pos) < 0) {
+		if (ocv_oci_add(sm, &pos,
+				conf->oci_freq_override_eapol_g1) < 0) {
 			os_free(kde_buf);
 			return -1;
 		}
@@ -5550,6 +5571,29 @@ void wpa_auth_set_ft_rsnxe_used(struct wpa_authenticator *wpa_auth, int val)
 {
 	if (wpa_auth)
 		wpa_auth->conf.ft_rsnxe_used = val;
+}
+
+
+void wpa_auth_set_ocv_override_freq(struct wpa_authenticator *wpa_auth,
+				    enum wpa_auth_ocv_override_frame frame,
+				    unsigned int freq)
+{
+	if (!wpa_auth)
+		return;
+	switch (frame) {
+	case WPA_AUTH_OCV_OVERRIDE_EAPOL_M3:
+		wpa_auth->conf.oci_freq_override_eapol_m3 = freq;
+		break;
+	case WPA_AUTH_OCV_OVERRIDE_EAPOL_G1:
+		wpa_auth->conf.oci_freq_override_eapol_g1 = freq;
+		break;
+	case WPA_AUTH_OCV_OVERRIDE_FT_ASSOC:
+		wpa_auth->conf.oci_freq_override_ft_assoc = freq;
+		break;
+	case WPA_AUTH_OCV_OVERRIDE_FILS_ASSOC:
+		wpa_auth->conf.oci_freq_override_fils_assoc = freq;
+		break;
+	}
 }
 
 #endif /* CONFIG_TESTING_OPTIONS */

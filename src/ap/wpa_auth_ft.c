@@ -2661,6 +2661,15 @@ u8 * wpa_sm_write_assoc_resp_ies(struct wpa_state_machine *sm, u8 *pos,
 				os_free(subelem);
 				return NULL;
 			}
+#ifdef CONFIG_TESTING_OPTIONS
+			if (conf->oci_freq_override_ft_assoc) {
+				wpa_printf(MSG_INFO,
+					   "TEST: Override OCI frequency %d -> %u MHz",
+					   ci.frequency,
+					   conf->oci_freq_override_ft_assoc);
+				ci.frequency = conf->oci_freq_override_ft_assoc;
+			}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 			subelem_len += 2 + OCV_OCI_LEN;
 			nbuf = os_realloc(subelem, subelem_len);

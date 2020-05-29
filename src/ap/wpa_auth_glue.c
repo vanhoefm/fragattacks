@@ -175,6 +175,11 @@ static void hostapd_wpa_auth_conf(struct hostapd_bss_config *conf,
 		wconf->igtk_rsc_override_set = 1;
 	}
 	wconf->ft_rsnxe_used = conf->ft_rsnxe_used;
+	wconf->oci_freq_override_eapol_m3 = conf->oci_freq_override_eapol_m3;
+	wconf->oci_freq_override_eapol_g1 = conf->oci_freq_override_eapol_g1;
+	wconf->oci_freq_override_ft_assoc = conf->oci_freq_override_ft_assoc;
+	wconf->oci_freq_override_fils_assoc =
+		conf->oci_freq_override_fils_assoc;
 #endif /* CONFIG_TESTING_OPTIONS */
 #ifdef CONFIG_P2P
 	os_memcpy(wconf->ip_addr_go, conf->ip_addr_go, 4);
