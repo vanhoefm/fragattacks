@@ -855,7 +855,7 @@ int dpp_derive_bk_ke(struct dpp_authentication *auth)
 			"DPP: bk = HKDF-Extract(I-nonce | R-nonce, M.x | N.x [| L.x])",
 			auth->bk, hash_len);
 
-	/* ke = HKDF-Expand(bkK, "DPP Key", length) */
+	/* ke = HKDF-Expand(bk, "DPP Key", length) */
 	res = dpp_hkdf_expand(hash_len, auth->bk, hash_len, info_ke, auth->ke,
 			      hash_len);
 	if (res < 0)
