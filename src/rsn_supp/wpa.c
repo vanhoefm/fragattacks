@@ -22,6 +22,7 @@
 #include "common/ieee802_11_common.h"
 #include "common/ocv.h"
 #include "common/dpp.h"
+#include "common/wpa_ctrl.h"
 #include "eap_common/eap_defs.h"
 #include "eapol_supp/eapol_supp_sm.h"
 #include "drivers/driver.h"
@@ -1717,8 +1718,9 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 		if (ocv_verify_tx_params(ie.oci, ie.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
 					 ci.seg1_idx) != 0) {
-			wpa_msg(sm->ctx->msg_ctx, MSG_WARNING, "OCV failed: %s",
-				ocv_errorstr);
+			wpa_msg(sm->ctx->msg_ctx, MSG_INFO, OCV_FAILURE
+				"addr=" MACSTR " frame=eapol-key-m3 error=%s",
+				MAC2STR(sm->bssid), ocv_errorstr);
 			return;
 		}
 	}
@@ -1864,8 +1866,9 @@ static int wpa_supplicant_process_1_of_2_rsn(struct wpa_sm *sm,
 		if (ocv_verify_tx_params(ie.oci, ie.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
 					 ci.seg1_idx) != 0) {
-			wpa_msg(sm->ctx->msg_ctx, MSG_WARNING, "OCV failed: %s",
-				ocv_errorstr);
+			wpa_msg(sm->ctx->msg_ctx, MSG_INFO, OCV_FAILURE
+				"addr=" MACSTR " frame=eapol-key-g1 error=%s",
+				MAC2STR(sm->bssid), ocv_errorstr);
 			return -1;
 		}
 	}
@@ -4764,8 +4767,9 @@ int fils_process_assoc_resp(struct wpa_sm *sm, const u8 *resp, size_t len)
 		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
 					 ci.seg1_idx) != 0) {
-			wpa_printf(MSG_WARNING, "FILS: OCV failed: %s",
-				   ocv_errorstr);
+			wpa_msg(sm->ctx->msg_ctx, MSG_INFO, OCV_FAILURE
+				"addr=" MACSTR " frame=fils-assoc error=%s",
+				MAC2STR(sm->bssid), ocv_errorstr);
 			goto fail;
 		}
 	}

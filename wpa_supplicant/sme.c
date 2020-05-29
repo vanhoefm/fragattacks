@@ -2827,7 +2827,10 @@ void sme_sa_query_rx(struct wpa_supplicant *wpa_s, const u8 *sa,
 		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
 					 ci.seg1_idx) != 0) {
-			wpa_printf(MSG_WARNING, "OCV failed: %s", ocv_errorstr);
+			wpa_msg(wpa_s, MSG_INFO, OCV_FAILURE "addr=" MACSTR
+				" frame=saquery%s error=%s",
+				MAC2STR(sa), data[0] == WLAN_SA_QUERY_REQUEST ?
+				"req" : "resp", ocv_errorstr);
 			return;
 		}
 	}
