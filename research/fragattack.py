@@ -123,8 +123,8 @@ def prepare_tests(opt):
 	elif opt.testname == "qca-rekey":
 		test = QcaDriverRekey()
 
-	elif opt.testname == "amsdu-attack":
-		test = AmsduAttack(REQ_ICMP, stractions == "linux")
+	elif opt.testname == "amsdu-inject":
+		test = AmsduInject(REQ_ICMP, stractions)
 
 	# No valid test ID/name was given
 	else: return None
@@ -175,12 +175,12 @@ def args2ptype(args):
 
 def args2msdu(args):
 	# Only one of these should be given
-	if args.msdu + args.fake_msdu > 1:
-		log(STATUS, "You cannot combine --msdu and --fake_msdu. Please only supply one of them.")
+	if args.amsdu + args.fake_amsdu > 1:
+		log(STATUS, "You cannot combine --amsdu and --fake-amsdu. Please only supply one of them.")
 		quit(1)
 
-	if args.msdu: return 1
-	if args.fake_msdu: return 2
+	if args.amsdu: return 1
+	if args.fake_amsdu: return 2
 
 	return None
 
@@ -199,8 +199,8 @@ if __name__ == "__main__":
 	parser.add_argument('--debug', type=int, default=0, help="Debug output level.")
 	parser.add_argument('--delay', type=float, default=0, help="Delay between fragments in certain tests.")
 	parser.add_argument('--inc-pn', type=int, help="To test non-sequential packet number in fragments.")
-	parser.add_argument('--msdu', default=False, action='store_true', help="Encapsulate pings in an A-MSDU frame.")
-	parser.add_argument('--fake-msdu', default=False, action='store_true', help="Set A-MSDU flag but include normal payload.")
+	parser.add_argument('--amsdu', default=False, action='store_true', help="Encapsulate pings in an A-MSDU frame.")
+	parser.add_argument('--fake-amsdu', default=False, action='store_true', help="Set A-MSDU flag but include normal payload.")
 	parser.add_argument('--arp', default=False, action='store_true', help="Override default request with ARP request.")
 	parser.add_argument('--dhcp', default=False, action='store_true', help="Override default request with DHCP discover.")
 	parser.add_argument('--icmp', default=False, action='store_true', help="Override default request with ICMP ping request.")
