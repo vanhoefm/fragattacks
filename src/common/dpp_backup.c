@@ -275,18 +275,21 @@ dpp_build_pw_recipient_info(struct dpp_authentication *auth, size_t hash_len,
 	struct wpabuf *pwri = NULL, *enc_key = NULL, *key_der_alg = NULL,
 		*key_enc_alg = NULL, *salt;
 	u8 kek[DPP_MAX_HASH_LEN];
-	const u8 *key;
+	u8 key[DPP_MAX_HASH_LEN];
 	size_t key_len;
+	int res;
 
 	salt = wpabuf_alloc(64);
 	if (!salt || os_get_random(wpabuf_put(salt, 64), 64) < 0)
 		goto fail;
 	wpa_hexdump_buf(MSG_DEBUG, "DPP: PBKDF2 salt", salt);
 
-	/* TODO: For initial testing, use ke as the key. Replace this with a
-	 * new key once that has been defined. */
-	key = auth->ke;
 	key_len = auth->curve->hash_len;
+	/* password = HKDF-Expand(bk, "Enveloped Data Password", length) */
+	res = dpp_hkdf_expand(key_len, auth->bk, key_len,
+			      "Enveloped Data Password", key, key_len);
+	if (res < 0)
+		goto fail;
 	wpa_hexdump_key(MSG_DEBUG, "DPP: PBKDF2 key", key, key_len);
 
 	if (dpp_pbkdf2(hash_len, key, key_len, wpabuf_head(salt), 64, 1000,
@@ -1151,7 +1154,7 @@ dpp_parse_dpp_asymmetric_key_package(const u8 *key_pkg, size_t key_pkg_len)
 int dpp_conf_resp_env_data(struct dpp_authentication *auth,
 			   const u8 *env_data, size_t env_data_len)
 {
-	const u8 *key;
+	u8 key[DPP_MAX_HASH_LEN];
 	size_t key_len;
 	u8 kek[DPP_MAX_HASH_LEN];
 	u8 cont_encr_key[DPP_MAX_HASH_LEN];
@@ -1167,10 +1170,12 @@ int dpp_conf_resp_env_data(struct dpp_authentication *auth,
 	if (dpp_parse_enveloped_data(env_data, env_data_len, &data) < 0)
 		return -1;
 
-	/* TODO: For initial testing, use ke as the key. Replace this with a
-	 * new key once that has been defined. */
-	key = auth->ke;
 	key_len = auth->curve->hash_len;
+	/* password = HKDF-Expand(bk, "Enveloped Data Password", length) */
+	res = dpp_hkdf_expand(key_len, auth->bk, key_len,
+			      "Enveloped Data Password", key, key_len);
+	if (res < 0)
+		return -1;
 	wpa_hexdump_key(MSG_DEBUG, "DPP: PBKDF2 key", key, key_len);
 
 	if (dpp_pbkdf2(data.prf_hash_len, key, key_len, data.salt, 64, 1000,
