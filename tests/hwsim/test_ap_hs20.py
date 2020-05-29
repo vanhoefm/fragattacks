@@ -2547,6 +2547,41 @@ def test_ap_hs20_deauth_req_without_pmf(dev, apdev):
         if "FAIL" not in hapd.request("HS20_DEAUTH_REQ " + addr + " 1 120 http://example.com/"):
             raise Exception("HS20_DEAUTH_REQ accepted during OOM")
 
+def test_ap_hs20_deauth_req_pmf_htc(dev, apdev):
+    """Hotspot 2.0 connection and deauthentication request PMF misbehavior (+HTC)"""
+    try:
+        run_ap_hs20_deauth_req_pmf_htc(dev, apdev)
+    finally:
+        stop_monitor(apdev[1]["ifname"])
+
+def run_ap_hs20_deauth_req_pmf_htc(dev, apdev):
+    check_eap_capa(dev[0], "MSCHAPV2")
+    dev[0].request("SET pmf 0")
+    hapd = eap_test(dev[0], apdev[0], "21[3:26]", "TTLS", "user", release=1)
+    dev[0].dump_monitor()
+    addr = dev[0].own_addr()
+    hapd.wait_sta()
+
+    sock = start_monitor(apdev[1]["ifname"])
+    radiotap = radiotap_build()
+    bssid = hapd.own_addr().replace(':', '')
+    addr = dev[0].own_addr().replace(':', '')
+    payload = "0a1a0101dd1b506f9a0101780013687474703a2f2f6578616d706c652e636f6d2f"
+    # Claim there is a HT Control field, but then start the frame body from
+    # there and do not encrypt the Robust Action frame.
+    frame = binascii.unhexlify("d0803a01" + addr + 2 * bssid + "0000" + payload)
+    # Claim there is a HT Control field and start the frame body in the correct
+    # location, but do not encrypt the Robust Action frame. Make the first octet
+    # of HT Control field use a non-robust Action Category value.
+    frame2 = binascii.unhexlify("d0803a01" + addr + 2 * bssid + "0000" + "04000000" + payload)
+
+    sock.send(radiotap + frame)
+    sock.send(radiotap + frame2)
+
+    ev = dev[0].wait_event(["HS20-DEAUTH-IMMINENT-NOTICE"], timeout=1)
+    if ev is not None:
+        raise Exception("Deauth imminent notice without PMF accepted")
+
 def test_ap_hs20_remediation_required(dev, apdev):
     """Hotspot 2.0 connection and remediation required from RADIUS"""
     check_eap_capa(dev[0], "MSCHAPV2")
