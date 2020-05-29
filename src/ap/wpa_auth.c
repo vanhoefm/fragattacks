@@ -3212,6 +3212,14 @@ static u8 * ieee80211w_kde_add(struct wpa_state_machine *sm, u8 *pos)
 	else
 		os_memcpy(bigtk.pn, rsc, sizeof(bigtk.pn));
 	os_memcpy(bigtk.bigtk, gsm->BIGTK[gsm->GN_bigtk - 6], len);
+	if (sm->wpa_key_mgmt == WPA_KEY_MGMT_OSEN) {
+		/*
+		 * Provide unique random BIGTK to each OSEN STA to prevent use
+		 * of BIGTK in the BSS.
+		 */
+		if (random_get_bytes(bigtk.bigtk, len) < 0)
+			return pos;
+	}
 	pos = wpa_add_kde(pos, RSN_KEY_DATA_BIGTK,
 			  (const u8 *) &bigtk, WPA_BIGTK_KDE_PREFIX_LEN + len,
 			  NULL, 0);
@@ -4174,6 +4182,14 @@ int wpa_wnmsleep_bigtk_subelem(struct wpa_state_machine *sm, u8 *pos)
 	pos += 6;
 
 	os_memcpy(pos, gsm->BIGTK[gsm->GN_bigtk - 6], len);
+	if (sm->wpa_key_mgmt == WPA_KEY_MGMT_OSEN) {
+		/*
+		 * Provide unique random BIGTK to each STA to prevent use
+		 * of BIGTK in the BSS.
+		 */
+		if (random_get_bytes(pos, len) < 0)
+			return 0;
+	}
 	pos += len;
 
 	wpa_printf(MSG_DEBUG, "WNM: BIGTK Key ID %u in WNM-Sleep Mode exit",

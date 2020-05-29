@@ -2315,9 +2315,10 @@ static u8 * wpa_ft_bigtk_subelem(struct wpa_state_machine *sm, size_t *len)
 	u8 *subelem, *pos;
 	struct wpa_group *gsm = sm->group;
 	size_t subelem_len;
-	const u8 *kek;
+	const u8 *kek, *bigtk;
 	size_t kek_len;
 	size_t bigtk_len;
+	u8 dummy_bigtk[WPA_IGTK_MAX_LEN];
 
 	if (wpa_key_mgmt_fils(sm->wpa_key_mgmt)) {
 		kek = sm->PTK.kek2;
@@ -2344,8 +2345,19 @@ static u8 * wpa_ft_bigtk_subelem(struct wpa_state_machine *sm, size_t *len)
 	wpa_auth_get_seqnum(sm->wpa_auth, NULL, gsm->GN_bigtk, pos);
 	pos += 6;
 	*pos++ = bigtk_len;
-	if (aes_wrap(kek, kek_len, bigtk_len / 8,
-		     gsm->IGTK[gsm->GN_bigtk - 6], pos)) {
+	bigtk = gsm->IGTK[gsm->GN_bigtk - 6];
+	if (sm->wpa_key_mgmt == WPA_KEY_MGMT_OSEN) {
+		/*
+		 * Provide unique random BIGTK to each OSEN STA to prevent use
+		 * of BIGTK in the BSS.
+		 */
+		if (random_get_bytes(dummy_bigtk, bigtk_len / 8) < 0) {
+			os_free(subelem);
+			return NULL;
+		}
+		bigtk = dummy_bigtk;
+	}
+	if (aes_wrap(kek, kek_len, bigtk_len / 8, bigtk, pos)) {
 		wpa_printf(MSG_DEBUG,
 			   "FT: BIGTK subelem encryption failed: kek_len=%d",
 			   (int) kek_len);
