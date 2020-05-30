@@ -14,6 +14,7 @@
 #include "utils/common.h"
 #include "utils/uuid.h"
 #include "common/ieee802_11_defs.h"
+#include "common/sae.h"
 #include "crypto/sha256.h"
 #include "crypto/tls.h"
 #include "drivers/driver.h"
@@ -2290,6 +2291,35 @@ static int parse_sae_password(struct hostapd_bss_config *bss, const char *val)
 		pw->vlan_id = atoi(pos2);
 	}
 
+#ifdef CONFIG_SAE_PK
+	pos2 = os_strstr(pos, "|pk=");
+	if (pos2) {
+		const char *epos;
+		char *tmp;
+
+		if (!end)
+			end = pos2;
+		pos2 += 4;
+		epos = os_strchr(pos2, '|');
+		if (epos) {
+			tmp = os_malloc(epos - pos2 + 1);
+			if (!tmp)
+				goto fail;
+			os_memcpy(tmp, pos2, epos - pos2);
+			tmp[epos - pos2] = '\0';
+		} else {
+			tmp = os_strdup(pos2);
+			if (!tmp)
+				goto fail;
+		}
+
+		pw->pk = sae_parse_pk(tmp);
+		str_clear_free(tmp);
+		if (!pw->pk)
+			goto fail;
+	}
+#endif /* CONFIG_SAE_PK */
+
 	pos2 = os_strstr(pos, "|id=");
 	if (pos2) {
 		if (!end)
@@ -2312,6 +2342,14 @@ static int parse_sae_password(struct hostapd_bss_config *bss, const char *val)
 		pw->password[end - val] = '\0';
 	}
 
+#ifdef CONFIG_SAE_PK
+	if (pw->pk && !sae_pk_valid_password(pw->password)) {
+		wpa_printf(MSG_INFO,
+			   "Invalid SAE password for a SAE-PK sae_password entry");
+		goto fail;
+	}
+#endif /* CONFIG_SAE_PK */
+
 	pw->next = bss->sae_passwords;
 	bss->sae_passwords = pw;
 
@@ -2319,6 +2357,9 @@ static int parse_sae_password(struct hostapd_bss_config *bss, const char *val)
 fail:
 	str_clear_free(pw->password);
 	os_free(pw->identifier);
+#ifdef CONFIG_SAE_PK
+	sae_deinit_pk(pw->pk);
+#endif /* CONFIG_SAE_PK */
 	os_free(pw);
 	return -1;
 }

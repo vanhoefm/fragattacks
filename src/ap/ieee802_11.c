@@ -386,7 +386,8 @@ static int send_auth_reply(struct hostapd_data *hapd, struct sta_info *sta,
 	    auth_alg == WLAN_AUTH_SAE) {
 		if (auth_transaction == 1 && sta &&
 		    (resp == WLAN_STATUS_SUCCESS ||
-		     resp == WLAN_STATUS_SAE_HASH_TO_ELEMENT)) {
+		     resp == WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
+		     resp == WLAN_STATUS_SAE_PK)) {
 			wpa_printf(MSG_DEBUG,
 				   "TESTING: Postpone SAE Commit transmission until Confirm is ready");
 			os_free(sta->sae_postponed_commit);
@@ -478,17 +479,23 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 	const char *rx_id = NULL;
 	int use_pt = 0;
 	struct sae_pt *pt = NULL;
+	const struct sae_pk *pk = NULL;
 
 	if (sta->sae->tmp) {
 		rx_id = sta->sae->tmp->pw_id;
 		use_pt = sta->sae->tmp->h2e;
+#ifdef CONFIG_SAE_PK
+		os_memcpy(sta->sae->tmp->own_addr, hapd->own_addr, ETH_ALEN);
+		os_memcpy(sta->sae->tmp->peer_addr, sta->addr, ETH_ALEN);
+#endif /* CONFIG_SAE_PK */
 	}
 
 	if (rx_id && hapd->conf->sae_pwe != 3)
 		use_pt = 1;
 	else if (status_code == WLAN_STATUS_SUCCESS)
 		use_pt = 0;
-	else if (status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT)
+	else if (status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
+		 status_code == WLAN_STATUS_SAE_PK)
 		use_pt = 1;
 
 	for (pw = hapd->conf->sae_passwords; pw; pw = pw->next) {
@@ -502,6 +509,8 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 			continue;
 		password = pw->password;
 		pt = pw->pt;
+		if (!(hapd->conf->mesh & MESH_ENABLED))
+			pk = pw->pk;
 		break;
 	}
 	if (!password) {
@@ -515,7 +524,7 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 
 	if (update && use_pt &&
 	    sae_prepare_commit_pt(sta->sae, pt, hapd->own_addr, sta->addr,
-				  NULL, NULL) < 0)
+				  NULL, pk) < 0)
 		return NULL;
 
 	if (update && !use_pt &&
@@ -558,7 +567,10 @@ static struct wpabuf * auth_build_sae_confirm(struct hostapd_data *hapd,
 	if (buf == NULL)
 		return NULL;
 
-	sae_write_confirm(sta->sae, buf);
+	if (sae_write_confirm(sta->sae, buf) < 0) {
+		wpabuf_free(buf);
+		return NULL;
+	}
 
 	return buf;
 }
@@ -575,11 +587,19 @@ static int auth_sae_send_commit(struct hostapd_data *hapd,
 	data = auth_build_sae_commit(hapd, sta, update, status_code);
 	if (!data && sta->sae->tmp && sta->sae->tmp->pw_id)
 		return WLAN_STATUS_UNKNOWN_PASSWORD_IDENTIFIER;
+#ifdef CONFIG_SAE_PK
+	if (!data && sta->sae->tmp && sta->sae->tmp->reject_group)
+		return WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED;
+#endif /* CONFIG_SAE_PK */
 	if (data == NULL)
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
-	status = (sta->sae->tmp && sta->sae->tmp->h2e) ?
-		WLAN_STATUS_SAE_HASH_TO_ELEMENT : WLAN_STATUS_SUCCESS;
+	if (sta->sae->tmp && sta->sae->tmp->pk)
+		status = WLAN_STATUS_SAE_PK;
+	else if (sta->sae->tmp && sta->sae->tmp->h2e)
+		status = WLAN_STATUS_SAE_HASH_TO_ELEMENT;
+	else
+		status = WLAN_STATUS_SUCCESS;
 	reply_res = send_auth_reply(hapd, sta, sta->addr, bssid,
 				    WLAN_AUTH_SAE, 1,
 				    status, wpabuf_head(data),
@@ -900,9 +920,14 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 	switch (sta->sae->state) {
 	case SAE_NOTHING:
 		if (auth_transaction == 1) {
-			if (sta->sae->tmp)
-				sta->sae->tmp->h2e = status_code ==
-					WLAN_STATUS_SAE_HASH_TO_ELEMENT;
+			if (sta->sae->tmp) {
+				sta->sae->tmp->h2e =
+					(status_code ==
+					 WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
+					 status_code == WLAN_STATUS_SAE_PK);
+				sta->sae->tmp->pk =
+					status_code == WLAN_STATUS_SAE_PK;
+			}
 			ret = auth_sae_send_commit(hapd, sta, bssid,
 						   !allow_reuse, status_code);
 			if (ret)
@@ -1118,14 +1143,20 @@ static int sae_status_success(struct hostapd_data *hapd, u16 status_code)
 		sae_pwe = 1;
 	else if (id_in_use == 1 && sae_pwe == 0)
 		sae_pwe = 2;
+#ifdef CONFIG_SAE_PK
+	if (sae_pwe == 0 && hostapd_sae_pk_in_use(hapd->conf))
+		sae_pwe = 2;
+#endif /* CONFIG_SAE_PK */
 
 	return ((sae_pwe == 0 || sae_pwe == 3) &&
 		status_code == WLAN_STATUS_SUCCESS) ||
 		(sae_pwe == 1 &&
-		 status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT) ||
+		 (status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
+		  status_code == WLAN_STATUS_SAE_PK)) ||
 		(sae_pwe == 2 &&
 		 (status_code == WLAN_STATUS_SUCCESS ||
-		  status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT));
+		  status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
+		  status_code == WLAN_STATUS_SAE_PK));
 }
 
 
@@ -1148,11 +1179,15 @@ static int sae_is_group_enabled(struct hostapd_data *hapd, int group)
 
 
 static int check_sae_rejected_groups(struct hostapd_data *hapd,
-				     const struct wpabuf *groups)
+				     struct sae_data *sae, bool pk)
 {
+	const struct wpabuf *groups;
 	size_t i, count;
 	const u8 *pos;
 
+	if (!sae->tmp)
+		return 0;
+	groups = sae->tmp->peer_rejected_groups;
 	if (!groups)
 		return 0;
 
@@ -1165,8 +1200,29 @@ static int check_sae_rejected_groups(struct hostapd_data *hapd,
 		group = WPA_GET_LE16(pos);
 		pos += 2;
 		enabled = sae_is_group_enabled(hapd, group);
-		wpa_printf(MSG_DEBUG, "SAE: Rejected group %u is %s",
-			   group, enabled ? "enabled" : "disabled");
+
+#ifdef CONFIG_SAE_PK
+		/* TODO: Could check more explicitly against the matching
+		 * sae_password entry only for the somewhat theoretical case of
+		 * different passwords using different groups for SAE-PK K_AP
+		 * values. */
+		if (pk) {
+			struct sae_password_entry *pw;
+
+			enabled = false;
+			for (pw = hapd->conf->sae_passwords; pw;
+			     pw = pw->next) {
+				if (pw->pk && pw->pk->group == group) {
+					enabled = true;
+					break;
+				}
+			}
+		}
+#endif /* CONFIG_SAE_PK */
+
+		wpa_printf(MSG_DEBUG, "SAE: Rejected group %u is %s%s",
+			   group, enabled ? "enabled" : "disabled",
+			   pk ? " (PK)" : "");
 		if (enabled)
 			return 1;
 	}
@@ -1339,7 +1395,8 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 					((const u8 *) mgmt) + len -
 					mgmt->u.auth.variable, &token,
 					&token_len, groups, status_code ==
-					WLAN_STATUS_SAE_HASH_TO_ELEMENT);
+					WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
+					status_code == WLAN_STATUS_SAE_PK);
 		if (resp == SAE_SILENTLY_DISCARD) {
 			wpa_printf(MSG_DEBUG,
 				   "SAE: Drop commit message from " MACSTR " due to reflection attack",
@@ -1369,9 +1426,9 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 		if (resp != WLAN_STATUS_SUCCESS)
 			goto reply;
 
-		if (sta->sae->tmp &&
-		    check_sae_rejected_groups(
-			    hapd, sta->sae->tmp->peer_rejected_groups)) {
+		if (check_sae_rejected_groups(hapd, sta->sae,
+					      status_code ==
+					      WLAN_STATUS_SAE_PK)) {
 			resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
 			goto reply;
 		}
@@ -1384,7 +1441,8 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 				   MACSTR, MAC2STR(sta->addr));
 			if (sta->sae->tmp)
 				h2e = sta->sae->tmp->h2e;
-			if (status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT)
+			if (status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
+			    status_code == WLAN_STATUS_SAE_PK)
 				h2e = 1;
 			data = auth_build_token_req(hapd, sta->sae->group,
 						    sta->addr, h2e);

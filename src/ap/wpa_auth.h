@@ -256,6 +256,7 @@ struct wpa_auth_config {
 	u8 fils_cache_id[FILS_CACHE_ID_LEN];
 #endif /* CONFIG_FILS */
 	int sae_pwe;
+	bool sae_pk;
 	int owe_ptk_workaround;
 	u8 transition_disable;
 #ifdef CONFIG_DPP2

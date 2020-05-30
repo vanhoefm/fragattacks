@@ -461,7 +461,8 @@ int hostapd_setup_sae_pt(struct hostapd_bss_config *conf)
 	struct hostapd_ssid *ssid = &conf->ssid;
 	struct sae_password_entry *pw;
 
-	if ((conf->sae_pwe == 0 && !hostapd_sae_pw_id_in_use(conf)) ||
+	if ((conf->sae_pwe == 0 && !hostapd_sae_pw_id_in_use(conf) &&
+	     !hostapd_sae_pk_in_use(conf)) ||
 	    conf->sae_pwe == 3 ||
 	    !wpa_key_mgmt_sae(conf->wpa_key_mgmt))
 		return 0; /* PT not needed */
@@ -711,6 +712,9 @@ static void hostapd_config_free_sae_passwords(struct hostapd_bss_config *conf)
 #ifdef CONFIG_SAE
 		sae_deinit_pt(tmp->pt);
 #endif /* CONFIG_SAE */
+#ifdef CONFIG_SAE_PK
+		sae_deinit_pk(tmp->pk);
+#endif /* CONFIG_SAE_PK */
 		os_free(tmp);
 	}
 }
@@ -1111,6 +1115,25 @@ const u8 * hostapd_get_psk(const struct hostapd_bss_config *conf,
 }
 
 
+#ifdef CONFIG_SAE_PK
+static bool hostapd_sae_pk_password_without_pk(struct hostapd_bss_config *bss)
+{
+	struct sae_password_entry *pw;
+
+	if (bss->ssid.wpa_passphrase &&
+	    sae_pk_valid_password(bss->ssid.wpa_passphrase))
+		return true;
+
+	for (pw = bss->sae_passwords; pw; pw = pw->next) {
+		if (!pw->pk && sae_pk_valid_password(pw->password))
+			return true;
+	}
+
+	return false;
+}
+#endif /* CONFIG_SAE_PK */
+
+
 static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 				    struct hostapd_config *conf,
 				    int full_config)
@@ -1294,6 +1317,15 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 	}
 #endif /* CONFIG_OCV */
 
+#ifdef CONFIG_SAE_PK
+	if (full_config && hostapd_sae_pk_in_use(bss) &&
+	    hostapd_sae_pk_password_without_pk(bss)) {
+		wpa_printf(MSG_ERROR,
+			   "SAE-PK: SAE password uses SAE-PK style, but does not have PK configured");
+		return -1;
+	}
+#endif /* CONFIG_SAE_PK */
+
 	return 0;
 }
 
@@ -1473,3 +1505,38 @@ int hostapd_sae_pw_id_in_use(struct hostapd_bss_config *conf)
 		return 2;
 	return with_id;
 }
+
+
+bool hostapd_sae_pk_in_use(struct hostapd_bss_config *conf)
+{
+#ifdef CONFIG_SAE_PK
+	struct sae_password_entry *pw;
+
+	for (pw = conf->sae_passwords; pw; pw = pw->next) {
+		if (pw->pk)
+			return true;
+	}
+#endif /* CONFIG_SAE_PK */
+
+	return false;
+}
+
+
+#ifdef CONFIG_SAE_PK
+bool hostapd_sae_pk_exclusively(struct hostapd_bss_config *conf)
+{
+	bool with_pk = false;
+	struct sae_password_entry *pw;
+
+	if (conf->ssid.wpa_passphrase)
+		return false;
+
+	for (pw = conf->sae_passwords; pw; pw = pw->next) {
+		if (!pw->pk)
+			return false;
+		with_pk = true;
+	}
+
+	return with_pk;
+}
+#endif /* CONFIG_SAE_PK */
