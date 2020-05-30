@@ -113,6 +113,10 @@ def check_sae_capab(dev):
     if "SAE" not in dev.get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
 
+def check_sae_pk_capab(dev):
+    if "PK" not in dev.get_capability("sae"):
+        raise HwsimSkip("SAE-PK not supported")
+
 def check_tls_tod(dev):
     tls = dev.request("GET tls_library")
     if not tls.startswith("OpenSSL") and not tls.startswith("internal"):
