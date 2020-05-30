@@ -2061,7 +2061,9 @@ static void wpa_s_setup_sae_pt(struct wpa_config *conf, struct wpa_ssid *ssid)
 	if (!password)
 		password = ssid->passphrase;
 
-	if ((conf->sae_pwe == 0 && !ssid->sae_password_id) || !password ||
+	if (!password ||
+	    (conf->sae_pwe == 0 && !ssid->sae_password_id &&
+	     !sae_pk_valid_password(password)) ||
 	    conf->sae_pwe == 3) {
 		/* PT derivation not needed */
 		sae_deinit_pt(ssid->pt);
