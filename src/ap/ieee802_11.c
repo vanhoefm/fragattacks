@@ -515,7 +515,7 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 
 	if (update && use_pt &&
 	    sae_prepare_commit_pt(sta->sae, pt, hapd->own_addr, sta->addr,
-				  NULL) < 0)
+				  NULL, NULL) < 0)
 		return NULL;
 
 	if (update && !use_pt &&

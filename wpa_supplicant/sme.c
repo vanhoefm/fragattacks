@@ -157,7 +157,7 @@ static struct wpabuf * sme_auth_build_sae_commit(struct wpa_supplicant *wpa_s,
 	if (use_pt &&
 	    sae_prepare_commit_pt(&wpa_s->sme.sae, ssid->pt,
 				  wpa_s->own_addr, bssid,
-				  wpa_s->sme.sae_rejected_groups) < 0)
+				  wpa_s->sme.sae_rejected_groups, NULL) < 0)
 		return NULL;
 	if (!use_pt &&
 	    sae_prepare_commit(wpa_s->own_addr, bssid,

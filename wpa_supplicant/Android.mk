@@ -235,6 +235,10 @@ endif
 ifdef CONFIG_SAE
 L_CFLAGS += -DCONFIG_SAE
 OBJS += src/common/sae.c
+ifdef CONFIG_SAE_PK
+L_CFLAGS += -DCONFIG_SAE_PK
+OBJS += src/common/sae_pk.c
+endif
 NEED_ECC=y
 NEED_DH_GROUPS=y
 NEED_HMAC_SHA256_KDF=y
