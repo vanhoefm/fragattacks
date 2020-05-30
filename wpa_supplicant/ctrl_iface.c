@@ -4726,6 +4726,20 @@ static int wpa_supplicant_ctrl_iface_get_capability(
 	}
 #endif /* CONFIG_DPP */
 
+#ifdef CONFIG_SAE
+	if (os_strcmp(field, "sae") == 0 &&
+	    (wpa_s->drv_flags & WPA_DRIVER_FLAGS_SAE)) {
+#ifdef CONFIG_SAE_PK
+		res = os_snprintf(buf, buflen, "H2E PK");
+#else /* CONFIG_SAE_PK */
+		res = os_snprintf(buf, buflen, "H2E");
+#endif /* CONFIG_SAE_PK */
+		if (os_snprintf_error(buflen, res))
+			return -1;
+		return res;
+	}
+#endif /* CONFIG_SAE */
+
 	wpa_printf(MSG_DEBUG, "CTRL_IFACE: Unknown GET_CAPABILITY field '%s'",
 		   field);
 
