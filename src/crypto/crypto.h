@@ -918,4 +918,16 @@ struct wpabuf * crypto_ecdh_set_peerkey(struct crypto_ecdh *ecdh, int inc_y,
 void crypto_ecdh_deinit(struct crypto_ecdh *ecdh);
 size_t crypto_ecdh_prime_len(struct crypto_ecdh *ecdh);
 
+struct crypto_ec_key;
+
+struct crypto_ec_key * crypto_ec_key_parse_priv(const u8 *der, size_t der_len);
+struct crypto_ec_key * crypto_ec_key_parse_pub(const u8 *der, size_t der_len);
+void crypto_ec_key_deinit(struct crypto_ec_key *key);
+struct wpabuf * crypto_ec_key_get_subject_public_key(struct crypto_ec_key *key);
+struct wpabuf * crypto_ec_key_sign(struct crypto_ec_key *key, const u8 *data,
+				   size_t len);
+int crypto_ec_key_verify_signature(struct crypto_ec_key *key, const u8 *data,
+				   size_t len, const u8 *sig, size_t sig_len);
+int crypto_ec_key_group(struct crypto_ec_key *key);
+
 #endif /* CRYPTO_H */

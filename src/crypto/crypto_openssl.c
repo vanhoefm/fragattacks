@@ -21,6 +21,7 @@
 #endif /* CONFIG_OPENSSL_CMAC */
 #ifdef CONFIG_ECC
 #include <openssl/ec.h>
+#include <openssl/x509.h>
 #endif /* CONFIG_ECC */
 
 #include "common.h"
@@ -77,6 +78,14 @@ static void EVP_MD_CTX_free(EVP_MD_CTX *ctx)
 		return;
 	EVP_MD_CTX_cleanup(ctx);
 	bin_clear_free(ctx, sizeof(*ctx));
+}
+
+
+static EC_KEY * EVP_PKEY_get0_EC_KEY(EVP_PKEY *pkey)
+{
+	if (pkey->type != EVP_PKEY_EC)
+		return NULL;
+	return pkey->pkey.ec;
 }
 
 #endif /* OpenSSL version < 1.1.0 */
@@ -2172,6 +2181,161 @@ void crypto_ecdh_deinit(struct crypto_ecdh *ecdh)
 size_t crypto_ecdh_prime_len(struct crypto_ecdh *ecdh)
 {
 	return crypto_ec_prime_len(ecdh->ec);
+}
+
+
+struct crypto_ec_key {
+	EVP_PKEY *pkey;
+	EC_KEY *eckey;
+	BIGNUM *kinv;
+	BIGNUM *rp;
+};
+
+
+struct crypto_ec_key * crypto_ec_key_parse_priv(const u8 *der, size_t der_len)
+{
+	struct crypto_ec_key *key;
+
+	key = os_zalloc(sizeof(*key));
+	if (!key)
+		return NULL;
+
+	key->eckey = d2i_ECPrivateKey(NULL, &der, der_len);
+	if (!key->eckey) {
+		wpa_printf(MSG_INFO, "OpenSSL: d2i_ECPrivateKey() failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+	EC_KEY_set_conv_form(key->eckey, POINT_CONVERSION_COMPRESSED);
+
+	key->pkey = EVP_PKEY_new();
+	if (!key->pkey || EVP_PKEY_assign_EC_KEY(key->pkey, key->eckey) != 1) {
+		EC_KEY_free(key->eckey);
+		key->eckey = NULL;
+		goto fail;
+	}
+
+	if (ECDSA_sign_setup(key->eckey, NULL, &key->kinv, &key->rp) != 1)
+		goto fail;
+	return key;
+fail:
+	crypto_ec_key_deinit(key);
+	return NULL;
+}
+
+
+struct crypto_ec_key * crypto_ec_key_parse_pub(const u8 *der, size_t der_len)
+{
+	struct crypto_ec_key *key;
+
+	key = os_zalloc(sizeof(*key));
+	if (!key)
+		return NULL;
+
+	key->pkey = d2i_PUBKEY(NULL, &der, der_len);
+	if (!key->pkey) {
+		wpa_printf(MSG_INFO, "OpenSSL: d2i_PUBKEY() failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+
+	key->eckey = EVP_PKEY_get0_EC_KEY(key->pkey);
+	if (!key->eckey)
+		goto fail;
+	return key;
+fail:
+	crypto_ec_key_deinit(key);
+	return NULL;
+}
+
+
+void crypto_ec_key_deinit(struct crypto_ec_key *key)
+{
+	if (key) {
+		EVP_PKEY_free(key->pkey);
+		BN_clear_free(key->kinv);
+		BN_clear_free(key->rp);
+		os_free(key);
+	}
+}
+
+
+struct wpabuf * crypto_ec_key_get_subject_public_key(struct crypto_ec_key *key)
+{
+	unsigned char *der = NULL;
+	int der_len;
+	struct wpabuf *buf;
+
+	der_len = i2d_PUBKEY(key->pkey, &der);
+	if (der_len <= 0) {
+		wpa_printf(MSG_INFO, "OpenSSL: i2d_PUBKEY() failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		return NULL;
+	}
+
+	buf = wpabuf_alloc_copy(der, der_len);
+	OPENSSL_free(der);
+	return buf;
+}
+
+
+struct wpabuf * crypto_ec_key_sign(struct crypto_ec_key *key, const u8 *data,
+				   size_t len)
+{
+	struct wpabuf *sig_der;
+	int res;
+	unsigned int sig_len;
+
+	sig_len = ECDSA_size(key->eckey);
+	sig_der = wpabuf_alloc(sig_len);
+	if (!sig_der)
+		return NULL;
+	res = ECDSA_sign_ex(0, data, len, wpabuf_put(sig_der, 0), &sig_len,
+			    key->kinv, key->rp, key->eckey);
+	if (res != 1) {
+		wpabuf_free(sig_der);
+		return NULL;
+	}
+	wpabuf_put(sig_der, sig_len);
+
+	return sig_der;
+}
+
+
+int crypto_ec_key_verify_signature(struct crypto_ec_key *key, const u8 *data,
+				   size_t len, const u8 *sig, size_t sig_len)
+{
+	int ret;
+
+	ret = ECDSA_verify(0, data, len, sig, sig_len, key->eckey);
+	if (ret == 1)
+		return 1; /* signature ok */
+	if (ret == 0)
+		return 0; /* incorrect signature */
+	wpa_printf(MSG_INFO, "OpenSSL: ECDSA_verify() failed: %s",
+		   ERR_error_string(ERR_get_error(), NULL));
+	return -1;
+}
+
+
+int crypto_ec_key_group(struct crypto_ec_key *key)
+{
+	const EC_GROUP *group;
+	int nid;
+
+	group = EC_KEY_get0_group(key->eckey);
+	if (!group)
+		return -1;
+	nid = EC_GROUP_get_curve_name(group);
+	switch (nid) {
+	case NID_X9_62_prime256v1:
+		return 19;
+	case NID_secp384r1:
+		return 20;
+	case NID_secp521r1:
+		return 21;
+	}
+	return -1;
 }
 
 #endif /* CONFIG_ECC */
