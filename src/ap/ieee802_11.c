@@ -3230,6 +3230,13 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 		if (resp != WLAN_STATUS_SUCCESS)
 			return resp;
 		if (is_6ghz_op_class(hapd->iconf->op_class)) {
+			if (!(sta->flags & WLAN_STA_HE)) {
+				hostapd_logger(hapd, sta->addr,
+					       HOSTAPD_MODULE_IEEE80211,
+					       HOSTAPD_LEVEL_INFO,
+					       "Station does not support mandatory HE PHY - reject association");
+				return WLAN_STATUS_DENIED_HE_NOT_SUPPORTED;
+			}
 			resp = copy_sta_he_6ghz_capab(hapd, sta,
 						      elems.he_6ghz_band_cap);
 			if (resp != WLAN_STATUS_SUCCESS)
