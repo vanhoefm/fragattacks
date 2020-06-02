@@ -425,7 +425,9 @@ u8 * hostapd_eid_vendor_vht(struct hostapd_data *hapd, u8 *eid)
 {
 	u8 *pos = eid;
 
-	if (!hapd->iface->current_mode)
+	/* Vendor VHT is applicable only to 2.4 GHz */
+	if (!hapd->iface->current_mode ||
+	    hapd->iface->current_mode->mode != HOSTAPD_MODE_IEEE80211G)
 		return eid;
 
 	*pos++ = WLAN_EID_VENDOR_SPECIFIC;
