@@ -2173,23 +2173,30 @@ struct ieee80211_he_6ghz_band_cap {
 	 /* Minimum MPDU Start Spacing B0..B2
 	  * Maximum A-MPDU Length Exponent B3..B5
 	  * Maximum MPDU Length B6..B7 */
-	u8 a_mpdu_params; /* B0..B7 */
-	u8 info; /* B8..B15 */
+	le16 capab;
 } STRUCT_PACKED;
 
-#define HE_6GHZ_BAND_CAP_MIN_MPDU_START_SPACE_MASK		0x7
-#define HE_6GHZ_BAND_CAP_MAX_A_MPDU_LENGTH_EXPONENT_MASK	0x7
-#define HE_6GHZ_BAND_CAP_MAX_A_MPDU_LENGTH_EXPONENT_SHIFT	3
-#define HE_6GHZ_BAND_CAP_MAX_MPDU_LENGTH_MASK			0x3
-#define HE_6GHZ_BAND_CAP_MAX_MPDU_LENGTH_SHIFT			6
-
-#define HE_6GHZ_BAND_CAP_SMPS_MASK			  (BIT(1) | BIT(2))
-#define HE_6GHZ_BAND_CAP_SMPS_STATIC			  0
-#define HE_6GHZ_BAND_CAP_SMPS_DYNAMIC			  BIT(1)
-#define HE_6GHZ_BAND_CAP_SMPS_DISABLED			  (BIT(1) | BIT(2))
-#define HE_6GHZ_BAND_CAP_RD_RESPONDER			  BIT(3)
-#define HE_6GHZ_BAND_CAP_RX_ANTENNA_PATTERN		  BIT(4)
-#define HE_6GHZ_BAND_CAP_TX_ANTENNA_PATTERN		  BIT(5)
+#define HE_6GHZ_BAND_CAP_MIN_MPDU_START              (BIT(0) | BIT(1) | BIT(2))
+#define HE_6GHZ_BAND_CAP_MAX_AMPDU_LEN_EXP_16K       BIT(3)
+#define HE_6GHZ_BAND_CAP_MAX_AMPDU_LEN_EXP_32K       BIT(4)
+#define HE_6GHZ_BAND_CAP_MAX_AMPDU_LEN_EXP_64K       (BIT(3) | BIT(4))
+#define HE_6GHZ_BAND_CAP_MAX_AMPDU_LEN_EXP_128K      BIT(5)
+#define HE_6GHZ_BAND_CAP_MAX_AMPDU_LEN_EXP_256K      (BIT(3) | BIT(5))
+#define HE_6GHZ_BAND_CAP_MAX_AMPDU_LEN_EXP_512K      (BIT(4) | BIT(5))
+#define HE_6GHZ_BAND_CAP_MAX_AMPDU_LEN_EXP_1024K     (BIT(3) | BIT(4) | BIT(5))
+#define HE_6GHZ_BAND_CAP_MAX_AMPDU_LEN_EXP_MASK      (BIT(3) | BIT(4) | BIT(5))
+#define HE_6GHZ_BAND_CAP_MAX_AMPDU_LEN_EXP_SHIFT     3
+#define HE_6GHZ_BAND_CAP_MAX_MPDU_LEN_7991           BIT(6)
+#define HE_6GHZ_BAND_CAP_MAX_MPDU_LEN_11454          BIT(7)
+#define HE_6GHZ_BAND_CAP_MAX_MPDU_LEN_MASK           (BIT(6) | BIT(7))
+#define HE_6GHZ_BAND_CAP_MAX_MPDU_LEN_SHIFT	     6
+#define HE_6GHZ_BAND_CAP_SMPS_MASK                   (BIT(9) | BIT(10))
+#define HE_6GHZ_BAND_CAP_SMPS_STATIC                 0
+#define HE_6GHZ_BAND_CAP_SMPS_DYNAMIC                BIT(9)
+#define HE_6GHZ_BAND_CAP_SMPS_DISABLED               (BIT(9) | BIT(10))
+#define HE_6GHZ_BAND_CAP_RD_RESPONDER                BIT(11)
+#define HE_6GHZ_BAND_CAP_RX_ANTPAT_CONS              BIT(12)
+#define HE_6GHZ_BAND_CAP_TX_ANTPAT_CONS              BIT(13)
 
 /*
  * IEEE P802.11ax/D4.0, 9.4.2.246 Spatial Reuse Parameter Set element
