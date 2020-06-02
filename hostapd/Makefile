@@ -19,6 +19,9 @@ endif
 ifndef LIBS_n
 LIBS_n := $(LIBS)
 endif
+ifndef LIBS_s
+LIBS_s := $(LIBS)
+endif
 endif
 
 CFLAGS += $(EXTRA_CFLAGS)
@@ -122,6 +125,7 @@ LIBS += -lbfd -ldl -liberty -lz
 LIBS_c += -lbfd -ldl -liberty -lz
 LIBS_h += -lbfd -ldl -liberty -lz
 LIBS_n += -lbfd -ldl -liberty -lz
+LIBS_s += -lbfd -ldl -liberty -lz
 endif
 endif
 
@@ -704,6 +708,7 @@ LIBS += -lssl
 endif
 OBJS += ../src/crypto/crypto_openssl.o
 HOBJS += ../src/crypto/crypto_openssl.o
+SOBJS += ../src/crypto/crypto_openssl.o
 ifdef NEED_FIPS186_2_PRF
 OBJS += ../src/crypto/fips_prf_openssl.o
 endif
@@ -711,9 +716,11 @@ NEED_TLS_PRF_SHA256=y
 LIBS += -lcrypto
 LIBS_h += -lcrypto
 LIBS_n += -lcrypto
+LIBS_s += -lcrypto
 ifdef CONFIG_TLS_ADD_DL
 LIBS += -ldl
 LIBS_h += -ldl
+LIBS_s += -ldl
 endif
 ifndef CONFIG_TLS_DEFAULT_CIPHERS
 CONFIG_TLS_DEFAULT_CIPHERS = "DEFAULT:!EXP:!LOW"
@@ -1345,12 +1352,38 @@ ifeq ($(CONFIG_TLS), linux)
 HOBJS += ../src/crypto/crypto_linux.o
 endif
 
+SOBJS += sae_pk_gen.o
+SOBJS +=  ../src/utils/common.o
+SOBJS += ../src/utils/os_$(CONFIG_OS).o
+SOBJS += ../src/utils/base64.o
+SOBJS += ../src/utils/wpa_debug.o
+SOBJS += ../src/utils/wpabuf.o
+ifdef CONFIG_WPA_TRACE
+SOBJS += ../src/utils/trace.o
+endif
+SOBJS += ../src/common/ieee802_11_common.o
+SOBJS += ../src/common/sae.o
+SOBJS += ../src/common/sae_pk.o
+SOBJS += ../src/common/dragonfly.o
+SOBJS += $(AESOBJS)
+SOBJS += ../src/crypto/sha256-prf.o
+SOBJS += ../src/crypto/sha384-prf.o
+SOBJS += ../src/crypto/sha512-prf.o
+SOBJS += ../src/crypto/dh_groups.o
+SOBJS += ../src/crypto/sha256-kdf.o
+SOBJS += ../src/crypto/sha384-kdf.o
+SOBJS += ../src/crypto/sha512-kdf.o
+
 nt_password_hash: $(NOBJS)
 	$(Q)$(CC) $(LDFLAGS) -o nt_password_hash $(NOBJS) $(LIBS_n)
 	@$(E) "  LD " $@
 
 hlr_auc_gw: $(HOBJS)
 	$(Q)$(CC) $(LDFLAGS) -o hlr_auc_gw $(HOBJS) $(LIBS_h)
+	@$(E) "  LD " $@
+
+sae_pk_gen: $(SOBJS)
+	$(Q)$(CC) $(LDFLAGS) -o sae_pk_gen $(SOBJS) $(LIBS_s)
 	@$(E) "  LD " $@
 
 lcov-html:
@@ -1360,6 +1393,7 @@ lcov-html:
 clean:
 	$(MAKE) -C ../src clean
 	rm -f core *~ *.o hostapd hostapd_cli nt_password_hash hlr_auc_gw
+	rm -f sae_pk_gen
 	rm -f *.d *.gcno *.gcda *.gcov
 	rm -f lcov.info
 	rm -rf lcov-html
