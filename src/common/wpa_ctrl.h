@@ -97,6 +97,10 @@ extern "C" {
 	"CTRL-EVENT-SAE-UNKNOWN-PASSWORD-IDENTIFIER "
 /** Unprotected Beacon frame dropped */
 #define WPA_EVENT_UNPROT_BEACON "CTRL-EVENT-UNPROT-BEACON "
+/** Decision made to do a within-ESS roam */
+#define WPA_EVENT_DO_ROAM "CTRL-EVENT-DO-ROAM "
+/** Decision made to skip a within-ESS roam */
+#define WPA_EVENT_SKIP_ROAM "CTRL-EVENT-SKIP-ROAM "
 
 /** IP subnet status change notification
  *
