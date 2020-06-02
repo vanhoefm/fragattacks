@@ -1855,52 +1855,18 @@ wpas_get_est_throughput_from_bss_snr(const struct wpa_supplicant *wpa_s,
 	return wpas_get_est_tpt(wpa_s, ies, ie_len, rate, snr);
 }
 
-#endif /* CONFIG_NO_ROAMING */
 
-
-static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
-				       struct wpa_bss *selected,
-				       struct wpa_ssid *ssid)
+int wpa_supplicant_need_to_roam_within_ess(struct wpa_supplicant *wpa_s,
+					   struct wpa_bss *current_bss,
+					   struct wpa_bss *selected)
 {
-	struct wpa_bss *current_bss = NULL;
-#ifndef CONFIG_NO_ROAMING
 	int min_diff, diff;
 	int to_5ghz;
 	int cur_level;
 	unsigned int cur_est, sel_est;
 	struct wpa_signal_info si;
 	int cur_snr = 0;
-#endif /* CONFIG_NO_ROAMING */
 
-	if (wpa_s->reassociate)
-		return 1; /* explicit request to reassociate */
-	if (wpa_s->wpa_state < WPA_ASSOCIATED)
-		return 1; /* we are not associated; continue */
-	if (wpa_s->current_ssid == NULL)
-		return 1; /* unknown current SSID */
-	if (wpa_s->current_ssid != ssid)
-		return 1; /* different network block */
-
-	if (wpas_driver_bss_selection(wpa_s))
-		return 0; /* Driver-based roaming */
-
-	if (wpa_s->current_ssid->ssid)
-		current_bss = wpa_bss_get(wpa_s, wpa_s->bssid,
-					  wpa_s->current_ssid->ssid,
-					  wpa_s->current_ssid->ssid_len);
-	if (!current_bss)
-		current_bss = wpa_bss_get_bssid(wpa_s, wpa_s->bssid);
-
-	if (!current_bss)
-		return 1; /* current BSS not seen in scan results */
-
-	if (current_bss == selected)
-		return 0;
-
-	if (selected->last_update_idx > current_bss->last_update_idx)
-		return 1; /* current BSS not seen in the last scan */
-
-#ifndef CONFIG_NO_ROAMING
 	wpa_dbg(wpa_s, MSG_DEBUG, "Considering within-ESS reassociation");
 	wpa_dbg(wpa_s, MSG_DEBUG, "Current BSS: " MACSTR
 		" freq=%d level=%d snr=%d est_throughput=%u",
@@ -2026,6 +1992,48 @@ static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
 		"Allow reassociation due to difference in signal level (%d >= %d)",
 		diff, min_diff);
 	return 1;
+}
+
+#endif /* CONFIG_NO_ROAMING */
+
+
+static int wpa_supplicant_need_to_roam(struct wpa_supplicant *wpa_s,
+				       struct wpa_bss *selected,
+				       struct wpa_ssid *ssid)
+{
+	struct wpa_bss *current_bss = NULL;
+
+	if (wpa_s->reassociate)
+		return 1; /* explicit request to reassociate */
+	if (wpa_s->wpa_state < WPA_ASSOCIATED)
+		return 1; /* we are not associated; continue */
+	if (wpa_s->current_ssid == NULL)
+		return 1; /* unknown current SSID */
+	if (wpa_s->current_ssid != ssid)
+		return 1; /* different network block */
+
+	if (wpas_driver_bss_selection(wpa_s))
+		return 0; /* Driver-based roaming */
+
+	if (wpa_s->current_ssid->ssid)
+		current_bss = wpa_bss_get(wpa_s, wpa_s->bssid,
+					  wpa_s->current_ssid->ssid,
+					  wpa_s->current_ssid->ssid_len);
+	if (!current_bss)
+		current_bss = wpa_bss_get_bssid(wpa_s, wpa_s->bssid);
+
+	if (!current_bss)
+		return 1; /* current BSS not seen in scan results */
+
+	if (current_bss == selected)
+		return 0;
+
+	if (selected->last_update_idx > current_bss->last_update_idx)
+		return 1; /* current BSS not seen in the last scan */
+
+#ifndef CONFIG_NO_ROAMING
+	return wpa_supplicant_need_to_roam_within_ess(wpa_s, current_bss,
+						      selected);
 #else /* CONFIG_NO_ROAMING */
 	return 0;
 #endif /* CONFIG_NO_ROAMING */
