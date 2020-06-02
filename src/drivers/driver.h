@@ -197,6 +197,7 @@ struct he_capabilities {
 	u8 mac_cap[HE_MAX_MAC_CAPAB_SIZE];
 	u8 mcs[HE_MAX_MCS_CAPAB_SIZE];
 	u8 ppet[HE_MAX_PPET_CAPAB_SIZE];
+	u16 he_6ghz_capa;
 };
 
 #define HOSTAPD_MODE_FLAG_HT_INFO_KNOWN BIT(0)
