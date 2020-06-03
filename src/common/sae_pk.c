@@ -27,11 +27,12 @@ bool sae_pk_valid_password(const char *pw)
 {
 	int pos;
 
-	/* Minimum password length for SAE-PK is not defined, but the automatic
-	 * password style determination is more reliable if at least one hyphen
-	 * is forced to be present in the password. */
-	if (os_strlen(pw) < 6)
+	if (os_strlen(pw) < 9) {
+		 /* Not long enough to meet the minimum required resistance to
+		  * preimage attacks, so do not consider this valid for SAE-PK.
+		  */
 		return false;
+	}
 
 	for (pos = 0; pw[pos]; pos++) {
 		if (pos && pos % 5 == 4) {
