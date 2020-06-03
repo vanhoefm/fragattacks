@@ -36,7 +36,7 @@ def test_sae_pk(dev, apdev):
     m = "431ff8322f93b9dc50ded9f3d14ace22"
     pk = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
 
-    for i in range(6, len(pw) + 1):
+    for i in range(14, len(pw) + 1):
         p = pw[:i]
         if p.endswith('-'):
             continue
