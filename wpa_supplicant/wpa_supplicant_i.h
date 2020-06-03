@@ -1638,5 +1638,8 @@ void wpas_clear_driver_signal_override(struct wpa_supplicant *wpa_s);
 int wpas_send_mscs_req(struct wpa_supplicant *wpa_s);
 void wpas_populate_mscs_descriptor_ie(struct robust_av_data *robust_av,
 				      struct wpabuf *buf);
+void wpas_handle_robust_av_recv_action(struct wpa_supplicant *wpa_s,
+				       const u8 *src, const u8 *buf,
+				       size_t len);
 
 #endif /* WPA_SUPPLICANT_I_H */

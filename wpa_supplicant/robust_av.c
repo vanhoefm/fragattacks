@@ -96,3 +96,26 @@ int wpas_send_mscs_req(struct wpa_supplicant *wpa_s)
 	wpabuf_free(buf);
 	return ret;
 }
+
+
+void wpas_handle_robust_av_recv_action(struct wpa_supplicant *wpa_s,
+				       const u8 *src, const u8 *buf, size_t len)
+{
+	u8 dialog_token;
+	u16 status_code;
+
+	if (len < 3)
+		return;
+
+	dialog_token = *buf++;
+	if (dialog_token != wpa_s->robust_av.dialog_token) {
+		wpa_printf(MSG_INFO,
+			   "MSCS: Drop received frame due to dialog token mismatch: received:%u expected:%u",
+			   dialog_token, wpa_s->robust_av.dialog_token);
+		return;
+	}
+
+	status_code = *buf;
+	wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_MSCS_RESULT "bssid=" MACSTR
+		" status_code=%u", MAC2STR(src), status_code);
+}
