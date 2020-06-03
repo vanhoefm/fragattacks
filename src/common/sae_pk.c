@@ -182,6 +182,21 @@ int sae_pk_set_password(struct sae_data *sae, const char *password)
 }
 
 
+static size_t sae_group_2_hash_len(int group)
+{
+	switch (group) {
+	case 19:
+		return 32;
+	case 20:
+		return 48;
+	case 21:
+		return 64;
+	}
+
+	return 0;
+}
+
+
 void sae_deinit_pk(struct sae_pk *pk)
 {
 	if (pk) {
@@ -347,7 +362,7 @@ int sae_write_confirm_pk(struct sae_data *sae, struct wpabuf *buf)
 		return -1;
 	}
 
-	hash_len = sae_ecc_prime_len_2_hash_len(tmp->prime_len);
+	hash_len = sae_group_2_hash_len(pk->group);
 	if (sae_pk_hash_sig_data(sae, hash_len, true, wpabuf_head(pk->m),
 				 wpabuf_len(pk->m), wpabuf_head(pk->pubkey),
 				 wpabuf_len(pk->pubkey), hash) < 0)
@@ -414,7 +429,7 @@ fail:
 
 static bool sae_pk_valid_fingerprint(struct sae_data *sae,
 				     const u8 *m, size_t m_len,
-				     const u8 *k_ap, size_t k_ap_len)
+				     const u8 *k_ap, size_t k_ap_len, int group)
 {
 	struct sae_temporary_data *tmp = sae->tmp;
 	size_t sec, i;
@@ -431,7 +446,7 @@ static bool sae_pk_valid_fingerprint(struct sae_data *sae,
 
 	/* Fingerprint = L(Hash(SSID || M || K_AP), 0, 8*Sec + 5*Lambda - 2) */
 
-	hash_len = sae_ecc_prime_len_2_hash_len(tmp->prime_len);
+	hash_len = sae_group_2_hash_len(group);
 	hash_data_len = tmp->ssid_len + m_len + k_ap_len;
 	hash_data = os_malloc(hash_data_len);
 	if (!hash_data)
@@ -605,9 +620,6 @@ int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len)
 	/* TODO: Check against the public key, if one is stored in the network
 	 * profile */
 
-	if (!sae_pk_valid_fingerprint(sae, m, SAE_PK_M_LEN, k_ap, k_ap_len))
-		return -1;
-
 	key = crypto_ec_key_parse_pub(k_ap, k_ap_len);
 	if (!key) {
 		wpa_printf(MSG_INFO, "SAE-PK: Failed to parse K_AP");
@@ -615,6 +627,12 @@ int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len)
 	}
 
 	group = crypto_ec_key_group(key);
+	if (!sae_pk_valid_fingerprint(sae, m, SAE_PK_M_LEN, k_ap, k_ap_len,
+				      group)) {
+		crypto_ec_key_deinit(key);
+		return -1;
+	}
+
 	/* TODO: Could support alternative groups as long as the combination
 	 * meets the requirements. */
 	if (group != sae->group) {
@@ -628,7 +646,7 @@ int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len)
 	wpa_hexdump(MSG_DEBUG, "SAE-PK: Received KeyAuth",
 		    key_auth, key_auth_len);
 
-	hash_len = sae_ecc_prime_len_2_hash_len(tmp->prime_len);
+	hash_len = sae_group_2_hash_len(group);
 	if (sae_pk_hash_sig_data(sae, hash_len, false, m, SAE_PK_M_LEN,
 				 k_ap, k_ap_len, hash) < 0) {
 		crypto_ec_key_deinit(key);
