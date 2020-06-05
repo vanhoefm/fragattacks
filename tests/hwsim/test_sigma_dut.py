@@ -4675,3 +4675,65 @@ def test_sigma_dut_ap_ocv(dev, apdev, params):
             sigma_dut_cmd_check("ap_reset_default")
         finally:
             stop_sigma_dut(sigma)
+
+def test_sigma_dut_gtk_rekey(dev, apdev):
+    """sigma_dut controlled STA requesting GTK rekeying"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname)
+
+    try:
+        ssid = "test-sae"
+        params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+        params['wpa_key_mgmt'] = 'SAE'
+        params["ieee80211w"] = "2"
+        params['sae_groups'] = '19'
+        hapd = hostapd.add_ap(apdev[0], params)
+
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_wireless,interface,%s,program,WPA3,ocvc,1" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2" % (ifname, "test-sae", "12345678"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"),
+                            timeout=10)
+        sigma_dut_wait_connected(ifname)
+
+        dev[0].dump_monitor()
+        sigma_dut_cmd_check("dev_exec_action,interface,%s,program,WPA3,KeyRotation,1" % ifname)
+        ev = dev[0].wait_event(["WPA: Group rekeying completed"], timeout=5)
+        if ev is None:
+            raise Exception("GTK rekeying not seen")
+
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_gtk_rekey(dev, apdev, params):
+    """sigma_dut controlled AP and requested GTK rekeying"""
+    logdir = params['prefix'] + ".sigma-hostapd"
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-SAE,PSK,12345678")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+
+            dev[0].set("sae_groups", "")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", scan_freq="2412")
+            dev[0].dump_monitor()
+
+            sigma_dut_cmd_check("dev_exec_action,name,AP,interface,%s,program,WPA3,KeyRotation,1" % iface)
+
+            ev = dev[0].wait_event(["WPA: Group rekeying completed"], timeout=5)
+            if ev is None:
+                raise Exception("GTK rekeying not seen")
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
