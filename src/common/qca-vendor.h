@@ -2149,6 +2149,14 @@ enum qca_wlan_vendor_attr_config {
 	 */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_CHANNEL_WIDTH = 63,
 
+	/* 8-bit unsigned value to enable/disable dynamic bandwidth adjustment.
+	 * This attribute is only applicable for STA mode. When dynamic
+	 * bandwidth adjustment is disabled, STA will use static channel width
+	 * the value of which is negotiated during connection.
+	 * 1-enable (default), 0-disable
+	 */
+	QCA_WLAN_VENDOR_ATTR_CONFIG_DYNAMIC_BW = 64,
+
 	/* 8-bit unsigned value to configure the maximum number of subframes of
 	 * TX MSDU for aggregation. Possible values are 0-31. When set to 0,
 	 * it is decided by the hardware.
