@@ -4737,3 +4737,114 @@ def test_sigma_dut_ap_gtk_rekey(dev, apdev, params):
             sigma_dut_cmd_check("ap_reset_default")
         finally:
             stop_sigma_dut(sigma)
+
+def test_sigma_dut_sae_pk(dev, apdev):
+    """sigma_dut controlled STA using SAE-PK"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname)
+
+    ssid = "SAE-PK test"
+    pw = "dwxm-zv66-p5ue"
+    m = "431ff8322f93b9dc50ded9f3d14ace22"
+    pk = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
+
+    try:
+        params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+        params['wpa_key_mgmt'] = 'SAE'
+        params["ieee80211w"] = "2"
+        params['sae_groups'] = '19'
+        params['sae_password'] = ['%s|pk=%s:%s' % (pw, m, pk)]
+        hapd = hostapd.add_ap(apdev[0], params)
+
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_wireless,interface,%s,program,WPA3" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2,sae_pk,1" % (ifname, ssid, pw))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid),
+                            timeout=10)
+        sigma_dut_wait_connected(ifname)
+        dev[0].dump_monitor()
+
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
+
+def run_sigma_dut_ap_sae_pk(conffile, dev, ssid, pw, keypair, m, failure):
+    sigma_dut_cmd_check("ap_reset_default")
+    sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,%s,MODE,11ng" % ssid)
+    sigma_dut_cmd_check("ap_set_security,NAME,AP,AKMSuiteType,8,PairwiseCipher,AES-CCMP-128,GroupCipher,AES-CCMP-128,GroupMgntCipher,BIP-CMAC-128,PMF,Required,PSK,%s,sae_pk,1,Transition_Disable,1,Transition_Disable_Index,0,SAE_PK_KeyPair,%s,SAE_PK_Modifier,%s" % (pw, keypair, m))
+    sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+    bssid = sigma_dut_cmd_check("ap_get_mac_address,NAME,AP")
+    bssid = bssid.split(',')[3]
+
+    with open("/tmp/sigma_dut-ap.conf", "rb") as f:
+        with open(conffile, "ab") as f2:
+            f2.write(f.read())
+            f2.write('\n'.encode())
+
+    dev.set("sae_groups", "")
+    dev.connect(ssid, key_mgmt="SAE", sae_password=pw, ieee80211w="2",
+                scan_freq="2412", wait_connect=False)
+
+    ev = dev.wait_event(["CTRL-EVENT-CONNECTED",
+                         "CTRL-EVENT-SSID-TEMP-DISABLED"], timeout=15)
+    if ev is None:
+        raise Exception("No connection result reported")
+
+    bss = dev.get_bss(bssid)
+    if 'flags' not in bss:
+        raise Exception("Could not get BSS flags from BSS table")
+    if "[SAE-H2E]" not in bss['flags'] or "[SAE-PK]" not in bss['flags']:
+        raise Exception("Unexpected BSS flags: " + bss['flags'])
+
+    if failure:
+        if "CTRL-EVENT-CONNECTED" in ev:
+            raise Exception("Unexpected connection")
+        dev.request("REMOVE_NETWORK all")
+    else:
+        if "CTRL-EVENT-CONNECTED" not in ev:
+            raise Exception("Connection failed")
+        dev.request("REMOVE_NETWORK all")
+        dev.wait_disconnected()
+    dev.dump_monitor()
+
+    sigma_dut_cmd_check("ap_reset_default")
+
+def test_sigma_dut_ap_sae_pk(dev, apdev, params):
+    """sigma_dut controlled AP using SAE-PK"""
+    logdir = params['prefix'] + ".sigma-hostapd"
+    conffile = params['prefix'] + ".sigma-conf"
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    tests = [("SAEPK-4.7.1", "fb4c-zpqh-bhdc", "saepk.pem",
+              "2ec1f37b47b402252e9dc5001e81fd1c", False),
+             ("SAEPK-5.7.1.1", "amro-yjrs-zzda", "saepk1.pem",
+              "f42baa90420032486b3229ab0890878a", False),
+             ("SAEPK-5.7.1.2", "eh56-tjce-cnzg-ymhq", "saepk2.pem",
+              "efb8b7a87e0638a93b056cb4aadf4a71", False),
+             ("SAEPK-5.7.1.3", "knny-r45l-ww3w", "saepk3.pem",
+              "6502721b2c2dfea3c9aefc5324eee9c9", False),
+             ("SAEPK-5.7.2.1", "fvys-4brw-d67c", "saepk4.pem",
+              "b63662c6f0bdd12bf5a2075ccfd7e132", False),
+             ("SAEPK-5.7.2.2", "cnj6-khsf-dgzh", "saepk5.pem",
+              "126d37fae167a53d4ebb08a235cef1da", False),
+             ("SAEPK-5.7.2.3", "hr7j-3cdr-wtq6", "saepk6.pem",
+              "61a84a86ffb1b9e23f576a0275ddcc78", True),
+             ("SAEPK-5.7.2.4", "geoh-2rvn-ivwu", "saepk7.pem",
+              "61a84a86ffb1b9e23f576a0275ddcc78", False),
+             ("SAEPK-5.7.2.4", "geoh-2rvn-ivwu", "saepk8_sig.pem",
+              "61a84a86ffb1b9e23f576a0275ddcc78", True),
+             ("SAEPK-5.7.3", "hbhh-r4um-jzjs", "saepk9.pem",
+              "af9b55bce52040892634bb3e41d557ee", False)]
+
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            for ssid, pw, keypair, m, failure in tests:
+                run_sigma_dut_ap_sae_pk(conffile, dev[0], ssid, pw, keypair, m,
+                                        failure)
+        finally:
+            stop_sigma_dut(sigma)
