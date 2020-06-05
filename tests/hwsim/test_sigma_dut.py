@@ -28,6 +28,7 @@ from test_suite_b import check_suite_b_192_capa, suite_b_as_params, suite_b_192_
 from test_ap_eap import check_eap_capa, int_eap_server_params, check_domain_match, check_domain_suffix_match
 from test_ap_hs20 import hs20_ap_params
 from test_ap_pmf import check_mac80211_bigtk
+from test_ocv import check_ocv_failure
 
 def check_sigma_dut():
     if not os.path.exists("./sigma_dut"):
@@ -4632,3 +4633,45 @@ def test_sigma_dut_ocv(dev, apdev):
         sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
     finally:
         stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_ocv(dev, apdev, params):
+    """sigma_dut controlled AP using OCV"""
+    logdir = params['prefix'] + ".sigma-hostapd"
+    conffile = params['prefix'] + ".sigma-conf"
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,ocvc,1")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-SAE,PSK,12345678")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+            bssid = sigma_dut_cmd_check("ap_get_mac_address,NAME,AP")
+            bssid = bssid.split(',')[3]
+
+            with open("/tmp/sigma_dut-ap.conf", "rb") as f:
+                with open(conffile, "wb") as f2:
+                    f2.write(f.read())
+
+            dev[0].set("sae_groups", "")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", ocv="1", scan_freq="2412")
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].wait_disconnected()
+            dev[0].dump_monitor()
+
+            sigma_dut_cmd_check("ap_set_rfeature,NAME,AP,type,WPA3,OCIFrameType,eapolM3,OCIChannel,3")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", ocv="1", scan_freq="2412",
+                           wait_connect=False)
+            check_ocv_failure(dev[0], "EAPOL-Key msg 3/4", "eapol-key-m3",
+                              bssid)
+            dev[0].request("REMOVE_NETWORK all")
+            dev[0].wait_disconnected()
+            dev[0].dump_monitor()
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
