@@ -9029,7 +9029,7 @@ enum qca_wlan_tspec_direction {
 
 /**
  * enum qca_wlan_tspec_ack_policy - MAC acknowledgement policy in TSPEC
- * As what is defined in IEEE Std 802.11-201, Table 9-141.
+ * As what is defined in IEEE Std 802.11-2016, Table 9-141.
  *
  * Values for %QCA_WLAN_VENDOR_ATTR_CONFIG_TSPEC_ACK_POLICY.
  */
