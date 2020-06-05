@@ -4439,6 +4439,7 @@ def test_sigma_dut_ap_beacon_prot(dev, apdev, params):
             sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-PSK,PSK,12345678,PMF,Required,BeaconProtection,1")
             sigma_dut_cmd_check("ap_config_commit,NAME,AP")
             bssid = sigma_dut_cmd_check("ap_get_mac_address,NAME,AP")
+            bssid = bssid.split(',')[3]
 
             dev[0].connect("test-psk", key_mgmt="WPA-PSK-SHA256",
                            psk="12345678", scan_freq="2412",
@@ -4467,7 +4468,6 @@ def test_sigma_dut_ap_transition_disable(dev, apdev, params):
             sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
             sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-SAE,PSK,12345678,PMF,Required,Transition_Disable,1,Transition_Disable_Index,0")
             sigma_dut_cmd_check("ap_config_commit,NAME,AP")
-            bssid = sigma_dut_cmd_check("ap_get_mac_address,NAME,AP")
 
             dev[0].set("sae_groups", "")
             dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
