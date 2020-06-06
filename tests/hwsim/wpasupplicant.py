@@ -1110,6 +1110,15 @@ class WpaSupplicant:
             if field in kwargs and kwargs[field]:
                 self.set_network(id, field, kwargs[field])
 
+        known_args = {"raw_psk", "password_hex", "peerkey", "okc", "ocsp",
+                      "only_add_network", "wait_connect"}
+        unknown = set(kwargs.keys())
+        unknown -= set(quoted)
+        unknown -= set(not_quoted)
+        unknown -= known_args
+        if unknown:
+            raise Exception("Unknown WpaSupplicant::connect() arguments: " + str(unknown))
+
         if "raw_psk" in kwargs and kwargs['raw_psk']:
             self.set_network(id, "psk", kwargs['raw_psk'])
         if "password_hex" in kwargs and kwargs['password_hex']:
