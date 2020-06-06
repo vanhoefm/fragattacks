@@ -119,3 +119,56 @@ def test_sae_pk_group_20(dev, apdev):
         run_sae_pk(apdev[0], dev[0], ssid, pw, m, pk, ap_groups="20")
     finally:
         dev[0].set("sae_groups", "")
+
+def test_sae_pk_password_without_pk(dev, apdev):
+    """SAE-PK password but not SAE-PK on the AP"""
+    check_sae_pk_capab(dev[0])
+    dev[0].set("sae_groups", "")
+
+    ssid = "SAE-PK test"
+    pw = "dwxm-zv66-p5ue"
+
+    params = hostapd.wpa2_params(ssid=ssid)
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = pw
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect(ssid, sae_password=pw, key_mgmt="SAE", scan_freq="2412")
+
+def test_sae_pk_only(dev, apdev):
+    """SAE-PK only"""
+    check_sae_pk_capab(dev[0])
+    dev[0].set("sae_groups", "")
+
+    ssid = "SAE-PK test"
+    pw = "dwxm-zv66-p5ue"
+    m = "431ff8322f93b9dc50ded9f3d14ace22"
+    pk = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
+
+    params = hostapd.wpa2_params(ssid=ssid)
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = pw
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect(ssid, sae_password=pw, key_mgmt="SAE", sae_pk_only="1",
+                   scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-NETWORK-NOT-FOUND"], timeout=10)
+    if ev is None:
+        raise Exception("No result for the connection attempt")
+    if "CTRL-EVENT-CONNECTED" in ev:
+        raise Exception("Unexpected connection without SAE-PK")
+    dev[0].request("DISCONNECT")
+    dev[0].dump_monitor()
+
+    params = hostapd.wpa2_params(ssid=ssid)
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = ['%s|pk=%s:%s' % (pw, m, pk)]
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    bssid2 = hapd2.own_addr()
+
+    dev[0].scan_for_bss(bssid2, freq=2412, force_scan=True)
+    dev[0].request("RECONNECT")
+    ev = dev[0].wait_connected()
+    if bssid2 not in ev:
+        raise Exception("Unexpected connection BSSID")
