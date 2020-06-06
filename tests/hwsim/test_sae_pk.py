@@ -22,6 +22,10 @@ def run_sae_pk(apdev, dev, ssid, pw, m, pk, ap_groups=None):
         raise Exception("Could not get BSS flags from BSS table")
     if "[SAE-H2E]" not in bss['flags'] or "[SAE-PK]" not in bss['flags']:
         raise Exception("Unexpected BSS flags: " + bss['flags'])
+    status = dev.get_status()
+    if "sae_h2e" not in status or "sae_pk" not in status or \
+       status["sae_h2e"] != "1" or status["sae_pk"] != "1":
+        raise Exception("SAE-PK or H2E not indicated in STATUS")
     dev.request("REMOVE_NETWORK *")
     dev.wait_disconnected()
     hapd.disable()
@@ -134,6 +138,8 @@ def test_sae_pk_password_without_pk(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
 
     dev[0].connect(ssid, sae_password=pw, key_mgmt="SAE", scan_freq="2412")
+    if dev[0].get_status_field("sae_pk") != "0":
+        raise Exception("Unexpected sae_pk STATUS value")
 
 def test_sae_pk_only(dev, apdev):
     """SAE-PK only"""
@@ -172,3 +178,5 @@ def test_sae_pk_only(dev, apdev):
     ev = dev[0].wait_connected()
     if bssid2 not in ev:
         raise Exception("Unexpected connection BSSID")
+    if dev[0].get_status_field("sae_pk") != "1":
+        raise Exception("SAE-PK was not used")
