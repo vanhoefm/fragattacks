@@ -439,7 +439,7 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 #ifdef CONFIG_SAE
 		if (hapd->conf->sae_pwe == 2 &&
 		    sta->auth_alg == WLAN_AUTH_SAE &&
-		    sta->sae && sta->sae->tmp && !sta->sae->tmp->h2e &&
+		    sta->sae && !sta->sae->h2e &&
 		    elems.rsnxe && elems.rsnxe_len >= 1 &&
 		    (elems.rsnxe[0] & BIT(WLAN_RSNX_CAPAB_SAE_H2E))) {
 			wpa_printf(MSG_INFO, "SAE: " MACSTR

@@ -128,8 +128,8 @@ static struct wpabuf * sme_auth_build_sae_commit(struct wpa_supplicant *wpa_s,
 	    os_memcmp(bssid, wpa_s->sme.sae.tmp->bssid, ETH_ALEN) == 0) {
 		wpa_printf(MSG_DEBUG,
 			   "SAE: Reuse previously generated PWE on a retry with the same AP");
-		use_pt = wpa_s->sme.sae.tmp->h2e;
-		use_pk = wpa_s->sme.sae.tmp->pk;
+		use_pt = wpa_s->sme.sae.h2e;
+		use_pk = wpa_s->sme.sae.pk;
 		goto reuse_data;
 	}
 	if (sme_set_sae_group(wpa_s) < 0) {
@@ -190,7 +190,7 @@ static struct wpabuf * sme_auth_build_sae_commit(struct wpa_supplicant *wpa_s,
 	if (wpa_s->sme.sae.tmp) {
 		os_memcpy(wpa_s->sme.sae.tmp->bssid, bssid, ETH_ALEN);
 		if (use_pt && use_pk)
-			wpa_s->sme.sae.tmp->pk = 1;
+			wpa_s->sme.sae.pk = 1;
 #ifdef CONFIG_SAE_PK
 		os_memcpy(wpa_s->sme.sae.tmp->own_addr, wpa_s->own_addr,
 			  ETH_ALEN);
@@ -1266,8 +1266,7 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 		wpabuf_free(wpa_s->sme.sae_token);
 		token_pos = data + sizeof(le16);
 		token_len = len - sizeof(le16);
-		if (wpa_s->sme.sae.tmp)
-			h2e = wpa_s->sme.sae.tmp->h2e;
+		h2e = wpa_s->sme.sae.h2e;
 		if (h2e) {
 			if (token_len < 3) {
 				wpa_dbg(wpa_s, MSG_DEBUG,
@@ -1348,20 +1347,18 @@ static int sme_sae_auth(struct wpa_supplicant *wpa_s, u16 auth_transaction,
 				   "SAE: Ignore commit message while waiting for confirm");
 			return 0;
 		}
-		if (wpa_s->sme.sae.tmp && wpa_s->sme.sae.tmp->h2e &&
-		    status_code == WLAN_STATUS_SUCCESS) {
+		if (wpa_s->sme.sae.h2e && status_code == WLAN_STATUS_SUCCESS) {
 			wpa_printf(MSG_DEBUG,
 				   "SAE: Unexpected use of status code 0 in SAE commit when H2E was expected");
 			return -1;
 		}
-		if (wpa_s->sme.sae.tmp &&
-		    (!wpa_s->sme.sae.tmp->h2e || wpa_s->sme.sae.tmp->pk) &&
+		if ((!wpa_s->sme.sae.h2e || wpa_s->sme.sae.pk) &&
 		    status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT) {
 			wpa_printf(MSG_DEBUG,
 				   "SAE: Unexpected use of status code for H2E in SAE commit when H2E was not expected");
 			return -1;
 		}
-		if (wpa_s->sme.sae.tmp && !wpa_s->sme.sae.tmp->pk &&
+		if (!wpa_s->sme.sae.pk &&
 		    status_code == WLAN_STATUS_SAE_PK) {
 			wpa_printf(MSG_DEBUG,
 				   "SAE: Unexpected use of status code for PK in SAE commit when PK was not expected");

@@ -59,8 +59,6 @@ struct sae_temporary_data {
 	u8 bssid[ETH_ALEN];
 	struct wpabuf *own_rejected_groups;
 	struct wpabuf *peer_rejected_groups;
-	unsigned int h2e:1;
-	unsigned int pk:1;
 	unsigned int own_addr_higher:1;
 
 #ifdef CONFIG_SAE_PK
@@ -106,6 +104,8 @@ struct sae_data {
 	int group;
 	unsigned int sync; /* protocol instance variable: Sync */
 	u16 rc; /* protocol instance variable: Rc (received send-confirm) */
+	unsigned int h2e:1;
+	unsigned int pk:1;
 	struct sae_temporary_data *tmp;
 };
 

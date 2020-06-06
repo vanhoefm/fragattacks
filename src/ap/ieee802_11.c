@@ -483,7 +483,7 @@ static struct wpabuf * auth_build_sae_commit(struct hostapd_data *hapd,
 
 	if (sta->sae->tmp) {
 		rx_id = sta->sae->tmp->pw_id;
-		use_pt = sta->sae->tmp->h2e;
+		use_pt = sta->sae->h2e;
 #ifdef CONFIG_SAE_PK
 		os_memcpy(sta->sae->tmp->own_addr, hapd->own_addr, ETH_ALEN);
 		os_memcpy(sta->sae->tmp->peer_addr, sta->addr, ETH_ALEN);
@@ -594,9 +594,9 @@ static int auth_sae_send_commit(struct hostapd_data *hapd,
 	if (data == NULL)
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
-	if (sta->sae->tmp && sta->sae->tmp->pk)
+	if (sta->sae->tmp && sta->sae->pk)
 		status = WLAN_STATUS_SAE_PK;
-	else if (sta->sae->tmp && sta->sae->tmp->h2e)
+	else if (sta->sae->tmp && sta->sae->h2e)
 		status = WLAN_STATUS_SAE_HASH_TO_ELEMENT;
 	else
 		status = WLAN_STATUS_SUCCESS;
@@ -921,11 +921,11 @@ static int sae_sm_step(struct hostapd_data *hapd, struct sta_info *sta,
 	case SAE_NOTHING:
 		if (auth_transaction == 1) {
 			if (sta->sae->tmp) {
-				sta->sae->tmp->h2e =
+				sta->sae->h2e =
 					(status_code ==
 					 WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
 					 status_code == WLAN_STATUS_SAE_PK);
-				sta->sae->tmp->pk =
+				sta->sae->pk =
 					status_code == WLAN_STATUS_SAE_PK;
 			}
 			ret = auth_sae_send_commit(hapd, sta, bssid,
@@ -1440,7 +1440,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 				   "SAE: Request anti-clogging token from "
 				   MACSTR, MAC2STR(sta->addr));
 			if (sta->sae->tmp)
-				h2e = sta->sae->tmp->h2e;
+				h2e = sta->sae->h2e;
 			if (status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
 			    status_code == WLAN_STATUS_SAE_PK)
 				h2e = 1;
@@ -3405,7 +3405,7 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 
 		if (hapd->conf->sae_pwe == 2 &&
 		    sta->auth_alg == WLAN_AUTH_SAE &&
-		    sta->sae && sta->sae->tmp && !sta->sae->tmp->h2e &&
+		    sta->sae && !sta->sae->h2e &&
 		    elems.rsnxe && elems.rsnxe_len >= 1 &&
 		    (elems.rsnxe[0] & BIT(WLAN_RSNX_CAPAB_SAE_H2E))) {
 			wpa_printf(MSG_INFO, "SAE: " MACSTR

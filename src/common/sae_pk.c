@@ -528,7 +528,7 @@ int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len)
 
 	if (!tmp)
 		return -1;
-	if (!tmp->pk || tmp->ap_pk)
+	if (!sae->pk || tmp->ap_pk)
 		return 0;
 
 	if (tmp->kek_len != 32 && tmp->kek_len != 48 && tmp->kek_len != 64) {
