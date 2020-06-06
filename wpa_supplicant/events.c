@@ -1094,6 +1094,9 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 	const u8 *ie;
 	struct wpa_ssid *ssid;
 	int osen, rsn_osen = 0;
+#ifdef CONFIG_SAE
+	u8 rsnxe_capa = 0;
+#endif /* CONFIG_SAE */
 #ifdef CONFIG_MBO
 	const u8 *assoc_disallow;
 #endif /* CONFIG_MBO */
@@ -1112,6 +1115,12 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 
 	ie = wpa_bss_get_vendor_ie(bss, OSEN_IE_VENDOR_TYPE);
 	osen = ie != NULL;
+
+#ifdef CONFIG_SAE
+	ie = wpa_bss_get_ie(bss, WLAN_EID_RSNX);
+	if (ie && ie[1] >= 1)
+		rsnxe_capa = ie[2];
+#endif /* CONFIG_SAE */
 
 	if (debug_print) {
 		wpa_dbg(wpa_s, MSG_DEBUG, "%d: " MACSTR
@@ -1349,15 +1358,23 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 		if ((wpa_s->conf->sae_pwe == 1 || ssid->sae_password_id) &&
 		    wpa_s->conf->sae_pwe != 3 &&
 		    wpa_key_mgmt_sae(ssid->key_mgmt) &&
-		    (!(ie = wpa_bss_get_ie(bss, WLAN_EID_RSNX)) ||
-		     ie[1] < 1 ||
-		     !(ie[2] & BIT(WLAN_RSNX_CAPAB_SAE_H2E)))) {
+		    !(rsnxe_capa & BIT(WLAN_RSNX_CAPAB_SAE_H2E))) {
 			if (debug_print)
 				wpa_dbg(wpa_s, MSG_DEBUG,
 					"   skip - SAE H2E required, but not supported by the AP");
 			continue;
 		}
 #endif /* CONFIG_SAE */
+
+#ifdef CONFIG_SAE_PK
+		if (ssid->sae_pk_only &&
+		    !(rsnxe_capa & BIT(WLAN_RSNX_CAPAB_SAE_PK))) {
+			if (debug_print)
+				wpa_dbg(wpa_s, MSG_DEBUG,
+					"   skip - SAE-PK required, but not supported by the AP");
+			continue;
+		}
+#endif /* CONFIG_SAE_PK */
 
 #ifndef CONFIG_IBSS_RSN
 		if (ssid->mode == WPAS_MODE_IBSS &&

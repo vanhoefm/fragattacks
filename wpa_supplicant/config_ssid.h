@@ -1121,6 +1121,15 @@ struct wpa_ssid {
 	 *	OWE)
 	 */
 	u8 transition_disable;
+
+	/**
+	 * sae_pk_only - SAE-PK only mode (disable transition mode)
+	 *
+	 * 0 = enable transition mode (allow SAE authentication without SAE-PK)
+	 * 1 = disable transition mode (allow SAE authentication only with
+	 * SAE-PK)
+	 */
+	int sae_pk_only;
 };
 
 #endif /* CONFIG_SSID_H */
