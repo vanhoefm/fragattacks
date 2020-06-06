@@ -4255,6 +4255,8 @@ int wpa_config_remove_blob(struct wpa_config *config, const char *name)
 struct wpa_config * wpa_config_alloc_empty(const char *ctrl_interface,
 					   const char *driver_param)
 {
+#define ecw2cw(ecw) ((1 << (ecw)) - 1)
+
 	struct wpa_config *config;
 	const int aCWmin = 4, aCWmax = 10;
 	const struct hostapd_wmm_ac_params ac_bk =
@@ -4265,6 +4267,17 @@ struct wpa_config * wpa_config_alloc_empty(const char *ctrl_interface,
 		{ aCWmin - 1, aCWmin, 2, 3000 / 32, 0 };
 	const struct hostapd_wmm_ac_params ac_vo = /* voice traffic */
 		{ aCWmin - 2, aCWmin - 1, 2, 1500 / 32, 0 };
+	const struct hostapd_tx_queue_params txq_bk =
+		{ 7, ecw2cw(aCWmin), ecw2cw(aCWmax), 0 };
+	const struct hostapd_tx_queue_params txq_be =
+		{ 3, ecw2cw(aCWmin), 4 * (ecw2cw(aCWmin) + 1) - 1, 0 };
+	const struct hostapd_tx_queue_params txq_vi =
+		{ 1, (ecw2cw(aCWmin) + 1) / 2 - 1, ecw2cw(aCWmin), 30 };
+	const struct hostapd_tx_queue_params txq_vo =
+		{ 1, (ecw2cw(aCWmin) + 1) / 4 - 1,
+		  (ecw2cw(aCWmin) + 1) / 2 - 1, 15 };
+
+#undef ecw2cw
 
 	config = os_zalloc(sizeof(*config));
 	if (config == NULL)
@@ -4294,6 +4307,10 @@ struct wpa_config * wpa_config_alloc_empty(const char *ctrl_interface,
 	config->wmm_ac_params[1] = ac_bk;
 	config->wmm_ac_params[2] = ac_vi;
 	config->wmm_ac_params[3] = ac_vo;
+	config->tx_queue[0] = txq_vo;
+	config->tx_queue[1] = txq_vi;
+	config->tx_queue[2] = txq_be;
+	config->tx_queue[3] = txq_bk;
 	config->p2p_search_delay = DEFAULT_P2P_SEARCH_DELAY;
 	config->rand_addr_lifetime = DEFAULT_RAND_ADDR_LIFETIME;
 	config->key_mgmt_offload = DEFAULT_KEY_MGMT_OFFLOAD;
@@ -5165,6 +5182,26 @@ int wpa_config_process_global(struct wpa_config *config, char *pos, int line)
 	}
 	if (i == NUM_GLOBAL_FIELDS) {
 #ifdef CONFIG_AP
+		if (os_strncmp(pos, "tx_queue_", 9) == 0) {
+			char *tmp = os_strchr(pos, '=');
+
+			if (!tmp) {
+				if (line < 0)
+					wpa_printf(MSG_ERROR,
+						   "Line %d: invalid line %s",
+						   line, pos);
+				return -1;
+			}
+			*tmp++ = '\0';
+			if (hostapd_config_tx_queue(config->tx_queue, pos,
+						    tmp)) {
+				wpa_printf(MSG_ERROR,
+					   "Line %d: invalid TX queue item",
+					   line);
+				return -1;
+			}
+		}
+
 		if (os_strncmp(pos, "wmm_ac_", 7) == 0) {
 			char *tmp = os_strchr(pos, '=');
 			if (tmp == NULL) {

@@ -858,6 +858,9 @@ int wpa_supplicant_create_ap(struct wpa_supplicant *wpa_s,
 		  wpa_s->conf->wmm_ac_params,
 		  sizeof(wpa_s->conf->wmm_ac_params));
 
+	os_memcpy(wpa_s->ap_iface->conf->tx_queue, wpa_s->conf->tx_queue,
+		  sizeof(wpa_s->conf->tx_queue));
+
 	if (params.uapsd > 0) {
 		conf->bss[0]->wmm_enabled = 1;
 		conf->bss[0]->wmm_uapsd = 1;

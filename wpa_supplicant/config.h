@@ -1058,6 +1058,7 @@ struct wpa_config {
 	int p2p_go_max_inactivity;
 
 	struct hostapd_wmm_ac_params wmm_ac_params[4];
+	struct hostapd_tx_queue_params tx_queue[4];
 
 	/**
 	 * auto_interworking - Whether to use network selection automatically
