@@ -2283,8 +2283,12 @@ static int wpa_supplicant_ctrl_iface_status(struct wpa_supplicant *wpa_s,
 	    !wpa_s->ap_iface &&
 #endif /* CONFIG_AP */
 	    wpa_s->sme.sae.state == SAE_ACCEPTED) {
-		ret = os_snprintf(pos, end - pos, "sae_group=%d\n",
-				  wpa_s->sme.sae.group);
+		ret = os_snprintf(pos, end - pos, "sae_group=%d\n"
+				  "sae_h2e=%d\n"
+				  "sae_pk=%d\n",
+				  wpa_s->sme.sae.group,
+				  wpa_s->sme.sae.h2e,
+				  wpa_s->sme.sae.pk);
 		if (os_snprintf_error(end - pos, ret))
 			return pos - buf;
 		pos += ret;
