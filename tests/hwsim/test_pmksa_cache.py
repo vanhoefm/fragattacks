@@ -1098,6 +1098,66 @@ def test_pmksa_cache_ctrl_ext(dev, apdev):
     if "CTRL-EVENT-EAP-STARTED" in ev:
         raise Exception("Unexpected EAP exchange after external PMKSA cache restore")
 
+def test_pmksa_cache_ctrl_ext_ft(dev, apdev):
+    """PMKSA cache control interface for external management (FT)"""
+    params = hostapd.wpa2_eap_params(ssid="test-pmksa-cache")
+    params['wpa_key_mgmt'] = "FT-EAP"
+    params['nas_identifier'] = "nas.w1.fi"
+    params['r1_key_holder'] = "000102030406"
+    params["mobility_domain"] = "a1b2"
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = apdev[0]['bssid']
+
+    id = dev[0].connect("test-pmksa-cache", proto="RSN", key_mgmt="FT-EAP",
+                        eap="GPSK", identity="gpsk user",
+                        password="abcdefghijklmnop0123456789abcdef",
+                        scan_freq="2412")
+
+    res1 = dev[0].request("PMKSA_GET %d" % id)
+    logger.info("PMKSA_GET: " + res1)
+    if "UNKNOWN COMMAND" in res1:
+        raise HwsimSkip("PMKSA_GET not supported in the build")
+    if bssid not in res1:
+        raise Exception("PMKSA cache entry missing")
+
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+    dev[0].request("PMKSA_FLUSH")
+
+    id = dev[0].connect("test-pmksa-cache", proto="RSN", key_mgmt="FT-EAP",
+                        eap="GPSK", identity="gpsk user",
+                        password="abcdefghijklmnop0123456789abcdef",
+                        ft_eap_pmksa_caching="1",
+                        scan_freq="2412", only_add_network=True)
+    res3 = dev[0].request("PMKSA_GET %d" % id)
+    if res3 != '':
+        raise Exception("Unexpected PMKSA cache entry remains: " + res3)
+
+    for entry in res1.splitlines():
+        if "OK" not in dev[0].request("PMKSA_ADD %d %s" % (id, entry)):
+            raise Exception("Failed to add PMKSA entry")
+
+    dev[0].select_network(id)
+    ev = dev[0].wait_event(["CTRL-EVENT-EAP-STARTED",
+                            "CTRL-EVENT-CONNECTED"], timeout=15)
+    if ev is None:
+        raise Exception("Connection with the AP timed out")
+    if "CTRL-EVENT-EAP-STARTED" in ev:
+        raise Exception("Unexpected EAP exchange after external PMKSA cache restore")
+
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+    dev[0].request("PMKSA_FLUSH")
+    # Add a PMKSA cache entry for FT-EAP with PMKSA caching disabled to confirm
+    # that the PMKID is not configured to the driver (this part requires manual
+    # check of the debug log currently).
+    dev[0].set_network(id, "ft_eap_pmksa_caching", "0")
+    for entry in res1.splitlines():
+        if "OK" not in dev[0].request("PMKSA_ADD %d %s" % (id, entry)):
+            raise Exception("Failed to add PMKSA entry")
+
 def test_rsn_preauth_processing(dev, apdev):
     """RSN pre-authentication processing on AP"""
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
