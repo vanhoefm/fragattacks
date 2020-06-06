@@ -180,3 +180,30 @@ def test_sae_pk_only(dev, apdev):
         raise Exception("Unexpected connection BSSID")
     if dev[0].get_status_field("sae_pk") != "1":
         raise Exception("SAE-PK was not used")
+
+def test_sae_pk_transition_disable(dev, apdev):
+    """SAE-PK transition disable indication"""
+    check_sae_pk_capab(dev[0])
+    dev[0].set("sae_groups", "")
+
+    ssid = "SAE-PK test"
+    pw = "dwxm-zv66-p5ue"
+    m = "431ff8322f93b9dc50ded9f3d14ace22"
+    pk = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
+
+    params = hostapd.wpa2_params(ssid=ssid)
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = ['%s|pk=%s:%s' % (pw, m, pk)]
+    params['transition_disable'] = '0x02'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    id = dev[0].connect(ssid, sae_password=pw, key_mgmt="SAE", scan_freq="2412")
+    ev = dev[0].wait_event(["TRANSITION-DISABLE"], timeout=1)
+    if ev is None:
+        raise Exception("Transition disable not indicated")
+    if ev.split(' ')[1] != "02":
+        raise Exception("Unexpected transition disable bitmap: " + ev)
+
+    val = dev[0].get_network(id, "sae_pk_only")
+    if val != "1":
+        raise Exception("Unexpected sae_pk_only value: " + str(val))
