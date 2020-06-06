@@ -268,12 +268,12 @@ static inline int wpa_sm_add_pmkid(struct wpa_sm *sm, void *network_ctx,
 				   const u8 *bssid, const u8 *pmkid,
 				   const u8 *cache_id, const u8 *pmk,
 				   size_t pmk_len, u32 pmk_lifetime,
-				   u8 pmk_reauth_threshold)
+				   u8 pmk_reauth_threshold, int akmp)
 {
 	WPA_ASSERT(sm->ctx->add_pmkid);
 	return sm->ctx->add_pmkid(sm->ctx->ctx, network_ctx, bssid, pmkid,
 				  cache_id, pmk, pmk_len, pmk_lifetime,
-				  pmk_reauth_threshold);
+				  pmk_reauth_threshold, akmp);
 }
 
 static inline int wpa_sm_remove_pmkid(struct wpa_sm *sm, void *network_ctx,

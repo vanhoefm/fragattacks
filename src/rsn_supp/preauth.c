@@ -349,7 +349,8 @@ void rsn_preauth_candidate_process(struct wpa_sm *sm)
 		 * PMKIDs again, so report the existing data now. */
 		if (p) {
 			wpa_sm_add_pmkid(sm, NULL, candidate->bssid, p->pmkid,
-					 NULL, p->pmk, p->pmk_len, 0, 0);
+					 NULL, p->pmk, p->pmk_len, 0, 0,
+					 p->akmp);
 		}
 
 		dl_list_del(&candidate->list);

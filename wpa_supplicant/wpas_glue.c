@@ -575,7 +575,8 @@ static int wpa_supplicant_add_pmkid(void *_wpa_s, void *network_ctx,
 				    const u8 *bssid, const u8 *pmkid,
 				    const u8 *fils_cache_id,
 				    const u8 *pmk, size_t pmk_len,
-				    u32 pmk_lifetime, u8 pmk_reauth_threshold)
+				    u32 pmk_lifetime, u8 pmk_reauth_threshold,
+				    int akmp)
 {
 	struct wpa_supplicant *wpa_s = _wpa_s;
 	struct wpa_ssid *ssid;
@@ -583,9 +584,22 @@ static int wpa_supplicant_add_pmkid(void *_wpa_s, void *network_ctx,
 
 	os_memset(&params, 0, sizeof(params));
 	ssid = wpas_get_network_ctx(wpa_s, network_ctx);
-	if (ssid)
+	if (ssid) {
 		wpa_msg(wpa_s, MSG_INFO, PMKSA_CACHE_ADDED MACSTR " %d",
 			MAC2STR(bssid), ssid->id);
+		if ((akmp == WPA_KEY_MGMT_FT_IEEE8021X ||
+		     akmp == WPA_KEY_MGMT_FT_IEEE8021X_SHA384) &&
+		    !ssid->ft_eap_pmksa_caching) {
+			/* Since we will not be using PMKSA caching for FT-EAP
+			 * within wpa_supplicant to avoid known interop issues
+			 * with APs, do not add this PMKID to the driver either
+			 * so that we won't be hitting those interop issues
+			 * with driver-based RSNE generation. */
+			wpa_printf(MSG_DEBUG,
+				   "FT: Do not add PMKID entry to the driver since FT-EAP PMKSA caching is not enabled in configuration");
+			return 0;
+		}
+	}
 	if (ssid && fils_cache_id) {
 		params.ssid = ssid->ssid;
 		params.ssid_len = ssid->ssid_len;
