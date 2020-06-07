@@ -4482,6 +4482,40 @@ def test_sigma_dut_ap_transition_disable(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
 
+def test_sigma_dut_ap_transition_disable_change(dev, apdev, params):
+    """sigma_dut controlled AP and transition disabled indication change"""
+    logdir = params['prefix'] + ".sigma-hostapd"
+
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            sigma_dut_cmd_check("ap_reset_default")
+            sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,test-sae,MODE,11ng")
+            sigma_dut_cmd_check("ap_set_security,NAME,AP,KEYMGNT,WPA2-SAE,PSK,12345678,PMF,Required")
+            sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+            dev[0].set("sae_groups", "")
+            dev[0].connect("test-sae", key_mgmt="SAE", psk="12345678",
+                           ieee80211w="2", scan_freq="2412")
+            ev = dev[0].wait_event(["TRANSITION-DISABLE"], timeout=1)
+            if ev is not None:
+                raise Exception("Unexpected transition disable indication")
+            dev[0].request("DISCONNECT")
+            dev[0].wait_disconnected()
+            dev[0].dump_monitor()
+
+            sigma_dut_cmd_check("ap_set_rfeature,NAME,AP,Transition_Disable,1,Transition_Disable_Index,0")
+            dev[0].request("RECONNECT")
+            dev[0].wait_connected()
+            ev = dev[0].wait_event(["TRANSITION-DISABLE"], timeout=1)
+            if ev is None:
+                raise Exception("Transition disable not indicated")
+            if ev.split(' ')[1] != "01":
+                raise Exception("Unexpected transition disable bitmap: " + ev)
+
+            sigma_dut_cmd_check("ap_reset_default")
+        finally:
+            stop_sigma_dut(sigma)
+
 def test_sigma_dut_ft_rsnxe_used_mismatch(dev, apdev):
     """sigma_dut controlled FT protocol with RSNXE Used mismatch"""
     if "SAE" not in dev[0].get_capability("auth_alg"):
