@@ -7,6 +7,12 @@
 import hostapd
 from utils import *
 
+SAE_PK_SEC2_SSID = "SAE-PK test"
+SAE_PK_SEC2_PW = "dwxm-zv66-p5ue"
+SAE_PK_SEC2_PW_FULL = "dwxm-zv66-p5ue-fotp-owjy-lfby-2xpg-vmwq-chtz-hilu-m3t2-qleg"
+SAE_PK_SEC2_M = "431ff8322f93b9dc50ded9f3d14ace22"
+SAE_PK_SEC2_PK = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
+
 def run_sae_pk(apdev, dev, ssid, pw, m, pk, ap_groups=None):
     params = hostapd.wpa2_params(ssid=ssid)
     params['wpa_key_mgmt'] = 'SAE'
@@ -35,29 +41,21 @@ def test_sae_pk(dev, apdev):
     check_sae_pk_capab(dev[0])
     dev[0].set("sae_groups", "")
 
-    ssid = "SAE-PK test"
-    pw = "dwxm-zv66-p5ue-fotp-owjy-lfby-2xpg-vmwq-chtz-hilu-m3t2-qleg"
-    m = "431ff8322f93b9dc50ded9f3d14ace22"
-    pk = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
-
-    for i in range(14, len(pw) + 1):
-        p = pw[:i]
+    for i in range(14, len(SAE_PK_SEC2_PW_FULL) + 1):
+        p = SAE_PK_SEC2_PW_FULL[:i]
         if p.endswith('-'):
             continue
-        run_sae_pk(apdev[0], dev[0], ssid, p, m, pk)
+        run_sae_pk(apdev[0], dev[0], SAE_PK_SEC2_SSID, p, SAE_PK_SEC2_M,
+                   SAE_PK_SEC2_PK)
 
 def test_sae_pk_group_negotiation(dev, apdev):
     """SAE-PK"""
     check_sae_pk_capab(dev[0])
     dev[0].set("sae_groups", "20 19")
 
-    ssid = "SAE-PK test"
-    pw = "dwxm-zv66-p5ue-fotp-owjy-lfby-2xpg-vmwq-chtz-hilu-m3t2-qleg"
-    m = "431ff8322f93b9dc50ded9f3d14ace22"
-    pk = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
-
     try:
-        run_sae_pk(apdev[0], dev[0], ssid, pw, m, pk, ap_groups="19 20")
+        run_sae_pk(apdev[0], dev[0], SAE_PK_SEC2_SSID, SAE_PK_SEC2_PW,
+                   SAE_PK_SEC2_M, SAE_PK_SEC2_PK, ap_groups="19 20")
     finally:
         dev[0].set("sae_groups", "")
 
@@ -66,12 +64,8 @@ def test_sae_pk_sec_2(dev, apdev):
     check_sae_pk_capab(dev[0])
     dev[0].set("sae_groups", "")
 
-    ssid = "SAE-PK test"
-    pw = "dwxm-zv66-p5ue"
-    m = "431ff8322f93b9dc50ded9f3d14ace22"
-    pk = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
-
-    run_sae_pk(apdev[0], dev[0], ssid, pw, m, pk)
+    run_sae_pk(apdev[0], dev[0], SAE_PK_SEC2_SSID, SAE_PK_SEC2_PW,
+               SAE_PK_SEC2_M, SAE_PK_SEC2_PK)
 
 def test_sae_pk_sec_3(dev, apdev):
     """SAE-PK with Sec 3"""
@@ -129,15 +123,13 @@ def test_sae_pk_password_without_pk(dev, apdev):
     check_sae_pk_capab(dev[0])
     dev[0].set("sae_groups", "")
 
-    ssid = "SAE-PK test"
-    pw = "dwxm-zv66-p5ue"
-
-    params = hostapd.wpa2_params(ssid=ssid)
+    params = hostapd.wpa2_params(ssid=SAE_PK_SEC2_SSID)
     params['wpa_key_mgmt'] = 'SAE'
-    params['sae_password'] = pw
+    params['sae_password'] = SAE_PK_SEC2_PW
     hapd = hostapd.add_ap(apdev[0], params)
 
-    dev[0].connect(ssid, sae_password=pw, key_mgmt="SAE", scan_freq="2412")
+    dev[0].connect(SAE_PK_SEC2_SSID, sae_password=SAE_PK_SEC2_PW,
+                   key_mgmt="SAE", scan_freq="2412")
     if dev[0].get_status_field("sae_pk") != "0":
         raise Exception("Unexpected sae_pk STATUS value")
 
@@ -146,17 +138,13 @@ def test_sae_pk_only(dev, apdev):
     check_sae_pk_capab(dev[0])
     dev[0].set("sae_groups", "")
 
-    ssid = "SAE-PK test"
-    pw = "dwxm-zv66-p5ue"
-    m = "431ff8322f93b9dc50ded9f3d14ace22"
-    pk = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
-
-    params = hostapd.wpa2_params(ssid=ssid)
+    params = hostapd.wpa2_params(ssid=SAE_PK_SEC2_SSID)
     params['wpa_key_mgmt'] = 'SAE'
-    params['sae_password'] = pw
+    params['sae_password'] = SAE_PK_SEC2_PW
     hapd = hostapd.add_ap(apdev[0], params)
 
-    dev[0].connect(ssid, sae_password=pw, key_mgmt="SAE", sae_pk="1",
+    dev[0].connect(SAE_PK_SEC2_SSID, sae_password=SAE_PK_SEC2_PW,
+                   key_mgmt="SAE", sae_pk="1",
                    scan_freq="2412", wait_connect=False)
     ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
                             "CTRL-EVENT-NETWORK-NOT-FOUND"], timeout=10)
@@ -167,9 +155,10 @@ def test_sae_pk_only(dev, apdev):
     dev[0].request("DISCONNECT")
     dev[0].dump_monitor()
 
-    params = hostapd.wpa2_params(ssid=ssid)
+    params = hostapd.wpa2_params(ssid=SAE_PK_SEC2_SSID)
     params['wpa_key_mgmt'] = 'SAE'
-    params['sae_password'] = ['%s|pk=%s:%s' % (pw, m, pk)]
+    params['sae_password'] = ['%s|pk=%s:%s' % (SAE_PK_SEC2_PW, SAE_PK_SEC2_M,
+                                               SAE_PK_SEC2_PK)]
     hapd2 = hostapd.add_ap(apdev[1], params)
     bssid2 = hapd2.own_addr()
 
@@ -186,21 +175,18 @@ def test_sae_pk_modes(dev, apdev):
     check_sae_pk_capab(dev[0])
     dev[0].set("sae_groups", "")
 
-    ssid = "SAE-PK test"
-    pw = "dwxm-zv66-p5ue"
-    m = "431ff8322f93b9dc50ded9f3d14ace22"
-    pk = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
-
-    params = hostapd.wpa2_params(ssid=ssid)
+    params = hostapd.wpa2_params(ssid=SAE_PK_SEC2_SSID)
     params['wpa_key_mgmt'] = 'SAE'
     params["ieee80211w"] = "2"
-    params['sae_password'] = ['%s|pk=%s:%s' % (pw, m, pk)]
+    params['sae_password'] = ['%s|pk=%s:%s' % (SAE_PK_SEC2_PW, SAE_PK_SEC2_M,
+                                               SAE_PK_SEC2_PK)]
     hapd = hostapd.add_ap(apdev[0], params)
 
     tests = [(2, 0), (1, 1), (0, 1)]
     for sae_pk, expected in tests:
-        dev[0].connect(ssid, sae_password=pw, key_mgmt="SAE",
-                       sae_pk=str(sae_pk), ieee80211w="2", scan_freq="2412")
+        dev[0].connect(SAE_PK_SEC2_SSID, sae_password=SAE_PK_SEC2_PW,
+                       key_mgmt="SAE", sae_pk=str(sae_pk), ieee80211w="2",
+                       scan_freq="2412")
         val = dev[0].get_status_field("sae_pk")
         if val != str(expected):
             raise Exception("Unexpected sae_pk=%d result %s" % (sae_pk, val))
@@ -213,18 +199,15 @@ def test_sae_pk_transition_disable(dev, apdev):
     check_sae_pk_capab(dev[0])
     dev[0].set("sae_groups", "")
 
-    ssid = "SAE-PK test"
-    pw = "dwxm-zv66-p5ue"
-    m = "431ff8322f93b9dc50ded9f3d14ace22"
-    pk = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
-
-    params = hostapd.wpa2_params(ssid=ssid)
+    params = hostapd.wpa2_params(ssid=SAE_PK_SEC2_SSID)
     params['wpa_key_mgmt'] = 'SAE'
-    params['sae_password'] = ['%s|pk=%s:%s' % (pw, m, pk)]
+    params['sae_password'] = ['%s|pk=%s:%s' % (SAE_PK_SEC2_PW, SAE_PK_SEC2_M,
+                                               SAE_PK_SEC2_PK)]
     params['transition_disable'] = '0x02'
     hapd = hostapd.add_ap(apdev[0], params)
 
-    id = dev[0].connect(ssid, sae_password=pw, key_mgmt="SAE", scan_freq="2412")
+    id = dev[0].connect(SAE_PK_SEC2_SSID, sae_password=SAE_PK_SEC2_PW,
+                        key_mgmt="SAE", scan_freq="2412")
     ev = dev[0].wait_event(["TRANSITION-DISABLE"], timeout=1)
     if ev is None:
         raise Exception("Transition disable not indicated")
