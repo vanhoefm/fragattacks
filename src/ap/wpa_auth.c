@@ -5288,6 +5288,14 @@ void wpa_auth_set_dpp_z(struct wpa_state_machine *sm, const struct wpabuf *z)
 #endif /* CONFIG_DPP2 */
 
 
+void wpa_auth_set_transition_disable(struct wpa_authenticator *wpa_auth,
+				     u8 val)
+{
+	if (wpa_auth)
+		wpa_auth->conf.transition_disable = val;
+}
+
+
 #ifdef CONFIG_TESTING_OPTIONS
 
 int wpa_auth_resend_m1(struct wpa_state_machine *sm, int change_anonce,
