@@ -190,12 +190,12 @@ and the other tests are useful to understand the behaviour of the device under t
 |                        | ping I,P                       | Send a plaintext ping.
 |                        | ping I,P,P                     | Send a fragmented ping: both fragments are sent in plaintext.
 | **Linux Plain/Enc**    | linux-plain                    | Mixed plaintext/encrypted fragmentation attack specific to Linux.
-| **EAPOL A-MSDU**       | eapol-msdu BB                  | Send A-MSDU frame disguised as EAPOL frame. Run tcpdump on target to check if vulnerable.
-|                        | eapol-msdu I,CC                | Same as above, except the frame is injected after being connected and obtaining an IP.
-|                        | eapol-msdu M,BB                | Send a malformed A-MSDU frame disguised as EAPOL frame. Use tcpdump to check if vulnerable.
-|                        | eapol-msdu M,I,CC              | Same as above, except the frame is injected after being connected and obtaining an IP.
+| **EAPOL A-MSDU**       | eapol-amsdu BB                 | Send A-MSDU frame disguised as EAPOL frame. Run tcpdump on target to check if vulnerable.
+|                        | eapol-amsdu I,CC               | Same as above, except the frame is injected after being connected and obtaining an IP.
+|                        | eapol-amsdu M,BB               | Send a malformed A-MSDU frame disguised as EAPOL frame. Use tcpdump to check if vulnerable.
+|                        | eapol-amsdu M,I,CC             | Same as above, except the frame is injected after being connected and obtaining an IP.
 | **MacOS Plain Inject** | macos BB                       | Fragmented EAPOL attack (notably works against MacOS). Run tcpdump on target to check if vulnerable.
-| **Broadcast ping**     | ping I,D,P --bcast             | Send ping inside the second plaintext fragment of a broadcast Wi-Fi frame (no 1st fragment is sent).
+| **Broadcast ping**     | ping I,D,P --bcast-ra          | Send ping inside the second plaintext fragment of a broadcast Wi-Fi frame (no 1st fragment is sent).
 
 Optionally you can also run more advanced tests. These have a lower chance of uncovering vulnerabilities,
 but against more exotic implementations that might work (while the above tests could fail).
@@ -209,11 +209,13 @@ but against more exotic implementations that might work (while the above tests c
 |                        | ping I,R,BE,AE --freebsd        | Mixed key attack against FreeBSD
 | **Mixed Plain/Enc**    | ping I,E,P,E                    | Send a fragmented ping: first fragment encrypted, second plaintext, third encrypted.
 |                        | linux-plain 3                   | Mixed plaintext/encrypted fragmentation attack, decoy fragment is sent using QoS TID 3.
-| **EAPOL A-MSDU**       | eapol-msdu SS                   |
-|                        | eapol-msdu AA                   |
+| **EAPOL A-MSDU**       | eapol-amsdu [M,]BB --bcast-dst  | Same as "eapol-amsdu [M,]BB" but ping is broadcasted. To test AP, check if a 2nd client receives the ping.
+|                        | eapol-amsdu [M,]I,CC --bcast-dst| Same as "eapol-amsdu [M,]I,CC" but ping is broadcasted. To test AP, check if a 2nd client receives the ping.
+|                        | eapol-amsdu SS                  |
+|                        | eapol-amsdu AA                  |
 | **MacOS Plain Inject** | macos CC                        | Fragmented EAPOL attack (notably works against MacOS). Run tcpdump on target to check if vulnerable.
-| **Broadcast ping**     | ping I,P,P --bcast              | Send ping inside two plaintext fragments of a broadcast Wi-Fi frame.
-|                        | ping I,P --bcast                | Send ping inside a plaintext broadcast Wi-Fi frame.
+| **Broadcast ping**     | ping I,P,P --bcast-ra           | Send ping inside two plaintext fragments of a broadcast Wi-Fi frame.
+|                        | ping I,P --bcast-ra             | Send ping inside a plaintext broadcast Wi-Fi frame.
 
 Details remarks:
 

