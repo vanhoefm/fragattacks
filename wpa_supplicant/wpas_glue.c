@@ -1301,13 +1301,13 @@ static void wpa_supplicant_transition_disable(void *_wpa_s, u8 bitmap)
 	    wpa_s->sme.sae.pk &&
 #endif /* CONFIG_SME */
 	    (ssid->key_mgmt & (WPA_KEY_MGMT_SAE | WPA_KEY_MGMT_FT_SAE)) &&
-	    (!ssid->sae_pk_only ||
+	    (ssid->sae_pk != SAE_PK_MODE_ONLY ||
 	     ssid->ieee80211w != MGMT_FRAME_PROTECTION_REQUIRED ||
 	     (ssid->group_cipher & WPA_CIPHER_TKIP))) {
 		wpa_printf(MSG_DEBUG,
 			   "SAE-PK: SAE authentication without PK disabled based on AP notification");
 		disable_wpa_wpa2(ssid);
-		ssid->sae_pk_only = 1;
+		ssid->sae_pk = SAE_PK_MODE_ONLY;
 		changed = 1;
 	}
 #endif /* CONFIG_SAE */

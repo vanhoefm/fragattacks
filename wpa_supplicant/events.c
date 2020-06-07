@@ -1367,7 +1367,7 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 #endif /* CONFIG_SAE */
 
 #ifdef CONFIG_SAE_PK
-		if (ssid->sae_pk_only &&
+		if (ssid->sae_pk == SAE_PK_MODE_ONLY &&
 		    !(rsnxe_capa & BIT(WLAN_RSNX_CAPAB_SAE_PK))) {
 			if (debug_print)
 				wpa_dbg(wpa_s, MSG_DEBUG,

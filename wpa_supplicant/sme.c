@@ -150,12 +150,13 @@ static struct wpabuf * sme_auth_build_sae_commit(struct wpa_supplicant *wpa_s,
 		use_pt = 1;
 #ifdef CONFIG_SAE_PK
 	if ((rsnxe_capa & BIT(WLAN_RSNX_CAPAB_SAE_PK)) &&
+	    ssid->sae_pk != SAE_PK_MODE_DISABLED &&
 	    ssid->sae_password && sae_pk_valid_password(ssid->sae_password)) {
 		use_pt = 1;
 		use_pk = true;
 	}
 
-	if (ssid->sae_pk_only && !use_pk) {
+	if (ssid->sae_pk == SAE_PK_MODE_ONLY && !use_pk) {
 		wpa_printf(MSG_DEBUG,
 			   "SAE: Cannot use PK with the selected AP");
 		return NULL;

@@ -2582,7 +2582,7 @@ static const struct parse_data ssid_fields[] = {
 	{ INT_RANGE(ft_eap_pmksa_caching, 0, 1) },
 	{ INT_RANGE(beacon_prot, 0, 1) },
 	{ INT_RANGE(transition_disable, 0, 255) },
-	{ INT_RANGE(sae_pk_only, 0, 1) },
+	{ INT_RANGE(sae_pk, 0, 2) },
 };
 
 #undef OFFSET
