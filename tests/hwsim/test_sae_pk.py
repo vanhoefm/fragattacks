@@ -232,3 +232,35 @@ def test_sae_pk_transition_disable(dev, apdev):
     val = dev[0].get_network(id, "sae_pk")
     if val != "1":
         raise Exception("Unexpected sae_pk value: " + str(val))
+
+def test_sae_pk_mixed(dev, apdev):
+    """SAE-PK mixed deployment"""
+    check_sae_pk_capab(dev[0])
+    dev[0].set("sae_groups", "")
+
+    params = hostapd.wpa2_params(ssid=SAE_PK_SEC2_SSID)
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = SAE_PK_SEC2_PW
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    params = hostapd.wpa2_params(ssid=SAE_PK_SEC2_SSID)
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = ['%s|pk=%s:%s' % (SAE_PK_SEC2_PW, SAE_PK_SEC2_M,
+                                               SAE_PK_SEC2_PK)]
+    # Disable HT from the SAE-PK BSS to make the station prefer the other BSS
+    # by default.
+    params['ieee80211n'] = '0'
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    bssid2 = hapd2.own_addr()
+
+    dev[0].scan_for_bss(bssid, freq=2412)
+    dev[0].scan_for_bss(bssid2, freq=2412)
+
+    dev[0].connect(SAE_PK_SEC2_SSID, sae_password=SAE_PK_SEC2_PW,
+                   key_mgmt="SAE", scan_freq="2412")
+
+    if dev[0].get_status_field("sae_pk") != "1":
+        raise Exception("SAE-PK was not used")
+    if dev[0].get_status_field("bssid") != bssid2:
+        raise Exception("Unexpected BSSID selected")
