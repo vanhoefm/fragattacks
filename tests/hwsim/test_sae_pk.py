@@ -194,6 +194,21 @@ def test_sae_pk_modes(dev, apdev):
         dev[0].wait_disconnected()
         dev[0].dump_monitor()
 
+def test_sae_pk_not_on_ap(dev, apdev):
+    """SAE-PK password, but no PK on AP"""
+    check_sae_pk_capab(dev[0])
+    dev[0].set("sae_groups", "")
+
+    params = hostapd.wpa2_params(ssid=SAE_PK_SEC2_SSID)
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = SAE_PK_SEC2_PW
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect(SAE_PK_SEC2_SSID, sae_password=SAE_PK_SEC2_PW,
+                   key_mgmt="SAE", scan_freq="2412")
+    if dev[0].get_status_field("sae_pk") == "1":
+        raise Exception("SAE-PK was claimed to be used")
+
 def test_sae_pk_transition_disable(dev, apdev):
     """SAE-PK transition disable indication"""
     check_sae_pk_capab(dev[0])
