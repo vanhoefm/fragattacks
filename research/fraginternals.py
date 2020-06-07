@@ -213,6 +213,7 @@ class Test(metaclass=abc.ABCMeta):
 		self.inc_pn = None
 		self.check_fn = None
 		self.time_completed = None
+		self.done = False
 
 	def next_trigger_is(self, trigger):
 		if len(self.actions) == 0:
@@ -238,6 +239,11 @@ class Test(metaclass=abc.ABCMeta):
 
 		act = self.actions[0]
 		del self.actions[0]
+		return act
+
+	def check_finished(self):
+		if self.done:
+			return
 
 		# If this was the last action, record the time
 		if len(self.actions) == 0:
@@ -245,8 +251,7 @@ class Test(metaclass=abc.ABCMeta):
 				self.time_completed = time.time()
 			else:
 				log(STATUS, "All frames sent. You must manually check if the test succeeded (see README).", color="green")
-
-		return act
+			self.done = True
 
 	def get_actions(self, action):
 		return [act for act in self.actions if act.action == action]
@@ -560,6 +565,7 @@ class Station():
 			# Stop processing actions if requested
 			if act.wait: break
 
+		self.test.check_finished()
 		return result
 
 	def update_keys(self):
