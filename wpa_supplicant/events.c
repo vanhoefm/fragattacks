@@ -1086,6 +1086,51 @@ static int disabled_freq(struct wpa_supplicant *wpa_s, int freq)
 static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 			    const u8 *match_ssid, size_t match_ssid_len,
 			    struct wpa_bss *bss, struct wpa_blacklist *e,
+			    bool debug_print);
+
+
+#ifdef CONFIG_SAE_PK
+static bool sae_pk_acceptable_bss_with_pk(struct wpa_supplicant *wpa_s,
+					  struct wpa_bss *orig_bss,
+					  struct wpa_ssid *ssid,
+					  const u8 *match_ssid,
+					  size_t match_ssid_len)
+{
+	struct wpa_bss *bss;
+
+	dl_list_for_each(bss, &wpa_s->bss, struct wpa_bss, list) {
+		struct wpa_blacklist *e;
+		const u8 *ie;
+		u8 rsnxe_capa = 0;
+
+		if (bss == orig_bss)
+			continue;
+		ie = wpa_bss_get_ie(bss, WLAN_EID_RSNX);
+		if (ie && ie[1] >= 1)
+			rsnxe_capa = ie[2];
+		if (!(rsnxe_capa & BIT(WLAN_RSNX_CAPAB_SAE_PK)))
+			continue;
+
+		/* TODO: Could be more thorough in checking what kind of
+		 * signal strength or throughput estimate would be acceptable
+		 * compared to the originally selected BSS. */
+		if (bss->est_throughput < 2000)
+			return false;
+
+		e = wpa_blacklist_get(wpa_s, bss->bssid);
+		if (wpa_scan_res_ok(wpa_s, ssid, match_ssid, match_ssid_len,
+				    bss, e, 0))
+			return true;
+	}
+
+	return false;
+}
+#endif /* CONFIG_SAE_PK */
+
+
+static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
+			    const u8 *match_ssid, size_t match_ssid_len,
+			    struct wpa_bss *bss, struct wpa_blacklist *e,
 			    bool debug_print)
 {
 	int res;
@@ -1391,6 +1436,20 @@ skip_assoc_disallow:
 		return false;
 	}
 #endif /* CONFIG_DPP */
+
+#ifdef CONFIG_SAE_PK
+	if (ssid->sae_pk == SAE_PK_MODE_AUTOMATIC &&
+	    wpa_key_mgmt_sae(ssid->key_mgmt) &&
+	    ssid->sae_password && sae_pk_valid_password(ssid->sae_password) &&
+	    !(rsnxe_capa & BIT(WLAN_RSNX_CAPAB_SAE_PK)) &&
+	    sae_pk_acceptable_bss_with_pk(wpa_s, bss, ssid, match_ssid,
+					  match_ssid_len)) {
+		if (debug_print)
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"   skip - another acceptable BSS with SAE-PK in the same ESS");
+		return false;
+	}
+#endif /* CONFIG_SAE_PK */
 
 	/* Matching configuration found */
 	return true;
