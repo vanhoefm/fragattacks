@@ -264,3 +264,65 @@ def test_sae_pk_mixed(dev, apdev):
         raise Exception("SAE-PK was not used")
     if dev[0].get_status_field("bssid") != bssid2:
         raise Exception("Unexpected BSSID selected")
+
+def check_sae_pk_sta_connect_failure(dev):
+    dev.connect(SAE_PK_SEC2_SSID, sae_password=SAE_PK_SEC2_PW,
+                key_mgmt="SAE", scan_freq="2412", wait_connect=False)
+    ev = dev.wait_event(["CTRL-EVENT-CONNECTED",
+                         "CTRL-EVENT-SSID-TEMP-DISABLED"], timeout=10)
+    if ev is None:
+        raise Exception("No result for the connection attempt")
+    if "CTRL-EVENT-CONNECTED" in ev:
+        raise Exception("Unexpected connection")
+
+def test_sae_pk_missing_ie(dev, apdev):
+    """SAE-PK and missing SAE-PK IE in confirm"""
+    check_sae_pk_capab(dev[0])
+    dev[0].set("sae_groups", "")
+
+    params = hostapd.wpa2_params(ssid=SAE_PK_SEC2_SSID)
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = ['%s|pk=%s:%s' % (SAE_PK_SEC2_PW, SAE_PK_SEC2_M,
+                                               SAE_PK_SEC2_PK)]
+    params['sae_pk_omit'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+    check_sae_pk_sta_connect_failure(dev[0])
+
+def test_sae_pk_unexpected_status(dev, apdev):
+    """SAE-PK and unexpected status code in commit"""
+    check_sae_pk_capab(dev[0])
+    dev[0].set("sae_groups", "")
+
+    params = hostapd.wpa2_params(ssid=SAE_PK_SEC2_SSID)
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = ['%s|pk=%s:%s' % (SAE_PK_SEC2_PW, SAE_PK_SEC2_M,
+                                               SAE_PK_SEC2_PK)]
+    params['sae_commit_status'] = '126'
+    hapd = hostapd.add_ap(apdev[0], params)
+    check_sae_pk_sta_connect_failure(dev[0])
+
+def test_sae_pk_invalid_signature(dev, apdev):
+    """SAE-PK and invalid signature"""
+    check_sae_pk_capab(dev[0])
+    dev[0].set("sae_groups", "")
+
+    other = "MHcCAQEEILw+nTjFzRyhVea0G6KbwZu18oWrfhzppxj+MceUO3YLoAoGCCqGSM49AwEHoUQDQgAELdou6LuTDNiMVlMB65KsWhQFbPXR9url0EA6luWzUfAuGoDXYJUBTVz6Nv3mz6oQcDrSiDmz/LejndJ0YHGgfQ=="
+    params = hostapd.wpa2_params(ssid=SAE_PK_SEC2_SSID)
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = ['%s|pk=%s:%s:%s' % (SAE_PK_SEC2_PW, SAE_PK_SEC2_M,
+                                                  SAE_PK_SEC2_PK, other)]
+    hapd = hostapd.add_ap(apdev[0], params)
+    check_sae_pk_sta_connect_failure(dev[0])
+
+def test_sae_pk_invalid_fingerprint(dev, apdev):
+    """SAE-PK and invalid fingerprint"""
+    check_sae_pk_capab(dev[0])
+    dev[0].set("sae_groups", "")
+
+    other = "431ff8322f93b9dc50ded9f3d14ace21"
+    params = hostapd.wpa2_params(ssid=SAE_PK_SEC2_SSID)
+    params['wpa_key_mgmt'] = 'SAE'
+    params['sae_password'] = ['%s|pk=%s:%s' % (SAE_PK_SEC2_PW, other,
+                                                  SAE_PK_SEC2_PK)]
+    hapd = hostapd.add_ap(apdev[0], params)
+    check_sae_pk_sta_connect_failure(dev[0])
