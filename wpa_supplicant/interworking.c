@@ -959,7 +959,9 @@ static int interworking_set_hs20_params(struct wpa_supplicant *wpa_s,
 			"WPA-EAP WPA-EAP-SHA256" : "WPA-EAP";
 	if (wpa_config_set(ssid, "key_mgmt", key_mgmt, 0) < 0 ||
 	    wpa_config_set(ssid, "proto", "RSN", 0) < 0 ||
-	    wpa_config_set(ssid, "ieee80211w", "1", 0) < 0 ||
+	    wpa_config_set(ssid, "ieee80211w",
+			   wpa_s->conf->pmf == MGMT_FRAME_PROTECTION_REQUIRED ?
+			   "2" : "1", 0) < 0 ||
 	    wpa_config_set(ssid, "pairwise", "CCMP", 0) < 0)
 		return -1;
 	return 0;
