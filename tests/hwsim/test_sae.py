@@ -1788,8 +1788,10 @@ def build_sae_commit(bssid, addr, group=21, token=None):
 
 def sae_rx_commit_token_req(sock, radiotap, send_two=False):
     msg = sock.recv(1500)
-    ver, pad, len, present = struct.unpack('<BBHL', msg[0:8])
-    frame = msg[len:]
+    ver, pad, length, present = struct.unpack('<BBHL', msg[0:8])
+    frame = msg[length:]
+    if len(frame) < 4:
+        return False
     fc, duration = struct.unpack('<HH', frame[0:4])
     if fc != 0xb0:
         return False
