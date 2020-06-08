@@ -1451,6 +1451,13 @@ skip_assoc_disallow:
 	}
 #endif /* CONFIG_SAE_PK */
 
+	if (bss->ssid_len == 0) {
+		if (debug_print)
+			wpa_dbg(wpa_s, MSG_DEBUG,
+				"   skip - no SSID known for the BSS");
+		return false;
+	}
+
 	/* Matching configuration found */
 	return true;
 }
