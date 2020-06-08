@@ -1029,9 +1029,9 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 		return HOSTAPD_MODE_IEEE80211A;
 	}
 
-	if (freq > 5940 && freq <= 7105) {
+	if (freq > 5950 && freq <= 7115) {
 		int bw;
-		u8 idx = (freq - 5940) / 5;
+		u8 idx = (freq - 5950) / 5;
 
 		bw = center_idx_to_bw_6ghz(idx);
 		if (bw < 0)
@@ -1039,6 +1039,12 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 
 		*channel = idx;
 		*op_class = 131 + bw;
+		return HOSTAPD_MODE_IEEE80211A;
+	}
+
+	if (freq == 5935) {
+		*op_class = 136;
+		*channel = (freq - 5925) / 5;
 		return HOSTAPD_MODE_IEEE80211A;
 	}
 
@@ -1418,7 +1424,11 @@ static int ieee80211_chan_to_freq_global(u8 op_class, u8 chan)
 	case 135: /* UHB channels, 80+80 MHz: 7, 23, 39.. */
 		if (chan < 1 || chan > 233)
 			return -1;
-		return 5940 + chan * 5;
+		return 5950 + chan * 5;
+	case 136: /* UHB channels, 20 MHz: 2 */
+		if (chan == 2)
+			return 5935;
+		return -1;
 	case 180: /* 60 GHz band, channels 1..8 */
 		if (chan < 1 || chan > 8)
 			return -1;
@@ -2208,10 +2218,13 @@ int center_idx_to_bw_6ghz(u8 idx)
 
 int is_6ghz_freq(int freq)
 {
-	if (freq < 5940 || freq > 7105)
+	if (freq < 5935 || freq > 7115)
 		return 0;
 
-	if (center_idx_to_bw_6ghz((freq - 5940) / 5) < 0)
+	if (freq == 5935)
+		return 1;
+
+	if (center_idx_to_bw_6ghz((freq - 5950) / 5) < 0)
 		return 0;
 
 	return 1;
@@ -2220,7 +2233,7 @@ int is_6ghz_freq(int freq)
 
 int is_6ghz_op_class(u8 op_class)
 {
-	return op_class >= 131 && op_class <= 135;
+	return op_class >= 131 && op_class <= 136;
 }
 
 
@@ -2228,14 +2241,14 @@ int is_6ghz_psc_frequency(int freq)
 {
 	int i;
 
-	if (!is_6ghz_freq(freq))
+	if (!is_6ghz_freq(freq) || freq == 5935)
 		return 0;
-	if ((((freq - 5940) / 5) & 0x3) != 0x1)
+	if ((((freq - 5950) / 5) & 0x3) != 0x1)
 		return 0;
 
-	i = (freq - 5940 + 55) % 80;
+	i = (freq - 5950 + 55) % 80;
 	if (i == 0)
-		i = (freq - 5940 + 55) / 80;
+		i = (freq - 5950 + 55) / 80;
 
 	if (i >= 1 && i <= 15)
 		return 1;
@@ -2471,6 +2484,8 @@ int op_class_to_bandwidth(u8 op_class)
 	case 134: /* UHB channels, 160 MHz: 15, 47, 79.. */
 	case 135: /* UHB channels, 80+80 MHz: 7, 23, 39.. */
 		return 160;
+	case 136: /* UHB channels, 20 MHz: 2 */
+		return 20;
 	case 180: /* 60 GHz band, channels 1..8 */
 		return 2160;
 	case 181: /* 60 GHz band, EDMG CB2, channels 9..15 */
@@ -2531,6 +2546,8 @@ int op_class_to_ch_width(u8 op_class)
 		return CHANWIDTH_160MHZ;
 	case 135: /* UHB channels, 80+80 MHz: 7, 23, 39.. */
 		return CHANWIDTH_80P80MHZ;
+	case 136: /* UHB channels, 20 MHz: 2 */
+		return CHANWIDTH_USE_HT;
 	case 180: /* 60 GHz band, channels 1..8 */
 		return CHANWIDTH_2160MHZ;
 	case 181: /* 60 GHz band, EDMG CB2, channels 9..15 */
