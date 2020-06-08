@@ -149,23 +149,38 @@ def test_owe_transition_mode_connect_cmd(dev, apdev):
     wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
     run_owe_transition_mode([wpas], apdev)
 
-def run_owe_transition_mode(dev, apdev):
+def test_owe_transition_mode_mismatch1(dev, apdev):
+    """Opportunistic Wireless Encryption transition mode (mismatch 1)"""
+    run_owe_transition_mode(dev, apdev, adv_bssid0="02:11:22:33:44:55")
+
+def test_owe_transition_mode_mismatch2(dev, apdev):
+    """Opportunistic Wireless Encryption transition mode (mismatch 2)"""
+    run_owe_transition_mode(dev, apdev, adv_bssid1="02:11:22:33:44:66")
+
+def test_owe_transition_mode_mismatch3(dev, apdev):
+    """Opportunistic Wireless Encryption transition mode (mismatch 3)"""
+    run_owe_transition_mode(dev, apdev, adv_bssid0="02:11:22:33:44:55",
+                            adv_bssid1="02:11:22:33:44:66")
+
+def run_owe_transition_mode(dev, apdev, adv_bssid0=None, adv_bssid1=None):
     if "OWE" not in dev[0].get_capability("key_mgmt"):
         raise HwsimSkip("OWE not supported")
     dev[0].flush_scan_cache()
+    adv_bssid = adv_bssid0 if adv_bssid0 else apdev[1]['bssid']
     params = {"ssid": "owe-random",
               "wpa": "2",
               "wpa_key_mgmt": "OWE",
               "rsn_pairwise": "CCMP",
               "ieee80211w": "2",
-              "owe_transition_bssid": apdev[1]['bssid'],
+              "owe_transition_bssid": adv_bssid,
               "owe_transition_ssid": '"owe-test"',
               "ignore_broadcast_ssid": "1"}
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = hapd.own_addr()
 
+    adv_bssid = adv_bssid1 if adv_bssid1 else apdev[0]['bssid']
     params = {"ssid": "owe-test",
-              "owe_transition_bssid": apdev[0]['bssid'],
+              "owe_transition_bssid": adv_bssid,
               "owe_transition_ssid": '"owe-random"'}
     hapd2 = hostapd.add_ap(apdev[1], params)
     bssid2 = hapd2.own_addr()
