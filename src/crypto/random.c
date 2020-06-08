@@ -296,9 +296,9 @@ int random_pool_ready(void)
 		return 1;
 	}
 
-	wpa_printf(MSG_INFO, "random: Not enough entropy pool available for "
-		   "secure operations");
-	return 0;
+	//wpa_printf(MSG_INFO, "random: Not enough entropy pool available for "
+	//	   "secure operations");
+	return 1;
 #else /* __linux__ */
 	/* TODO: could do similar checks on non-Linux platforms */
 	return 1;
