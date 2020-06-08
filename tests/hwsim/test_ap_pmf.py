@@ -1133,3 +1133,44 @@ def run_ap_pmf_beacon_protection_mismatch(dev, apdev, clear):
     ev = hapd.wait_event(["CTRL-EVENT-UNPROT-BEACON"], timeout=5)
     if ev is None:
         raise Exception("WNM-Notification Request frame not reported")
+
+def test_ap_pmf_sta_global_require(dev, apdev):
+    """WPA2-PSK AP with PMF optional and wpa_supplicant pmf=2"""
+    ssid = "test-pmf-optional"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK"
+    params["ieee80211w"] = "1"
+    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        dev[0].set("pmf", "2")
+        dev[0].connect(ssid, psk="12345678",
+                       key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
+                       scan_freq="2412")
+        pmf = dev[0].get_status_field("pmf")
+        if pmf != "1":
+            raise Exception("Unexpected PMF state: " + str(pmf))
+    finally:
+        dev[0].set("pmf", "0")
+
+def test_ap_pmf_sta_global_require2(dev, apdev):
+    """WPA2-PSK AP with PMF optional and wpa_supplicant pmf=2 (2)"""
+    ssid = "test-pmf-optional"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK"
+    params["ieee80211w"] = "0"
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+    try:
+        dev[0].scan_for_bss(bssid, freq=2412)
+        dev[0].set("pmf", "2")
+        dev[0].connect(ssid, psk="12345678",
+                       key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
+                       scan_freq="2412", wait_connect=False)
+        ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                "CTRL-EVENT-NETWORK-NOT-FOUND"], timeout=10)
+        if ev is None:
+            raise Exception("Connection result not reported")
+        if "CTRL-EVENT-CONNECTED" in ev:
+            raise Exception("Unexpected connection")
+    finally:
+        dev[0].set("pmf", "0")

@@ -727,6 +727,61 @@ def test_ap_hs20_auto_interworking(dev, apdev):
     if status['hs20'] != "3":
         raise Exception("Unexpected HS 2.0 support indication")
 
+def test_ap_hs20_auto_interworking_global_pmf(dev, apdev):
+    """Hotspot 2.0 connection with auto_interworking=1 and pmf=2"""
+    check_eap_capa(dev[0], "MSCHAPV2")
+    bssid = apdev[0]['bssid']
+    params = hs20_ap_params()
+    params['hessid'] = bssid
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].hs20_enable(auto_interworking=True)
+    id = dev[0].add_cred_values({'realm': "example.com",
+                                 'username': "hs20-test",
+                                 'password': "password",
+                                 'ca_cert': "auth_serv/ca.pem",
+                                 'domain': "example.com",
+                                 'update_identifier': "1234"})
+    try:
+        dev[0].set("pmf", "2")
+        dev[0].request("REASSOCIATE")
+        dev[0].wait_connected(timeout=15)
+        pmf = dev[0].get_status_field("pmf")
+        if pmf != "1":
+            raise Exception("Unexpected PMF state: " + str(pmf))
+    finally:
+        dev[0].set("pmf", "0")
+
+def test_ap_hs20_auto_interworking_global_pmf_fail(dev, apdev):
+    """Hotspot 2.0 connection with auto_interworking=1 and pmf=2 failure"""
+    check_eap_capa(dev[0], "MSCHAPV2")
+    bssid = apdev[0]['bssid']
+    params = hs20_ap_params()
+    params['ieee80211w'] = "0"
+    params['hessid'] = bssid
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].hs20_enable(auto_interworking=True)
+    id = dev[0].add_cred_values({'realm': "example.com",
+                                 'username': "hs20-test",
+                                 'password': "password",
+                                 'ca_cert': "auth_serv/ca.pem",
+                                 'domain': "example.com",
+                                 'update_identifier': "1234"})
+    try:
+        dev[0].set("pmf", "2")
+        dev[0].request("REASSOCIATE")
+        for i in range(2):
+            ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                    "INTERWORKING-SELECTED"], timeout=15)
+            if ev is None:
+                raise Exception("Connection result not reported")
+            if "CTRL-EVENT-CONNECTED" in ev:
+                raise Exception("Unexpected connection")
+        dev[0].request("DISCONNECT")
+    finally:
+        dev[0].set("pmf", "0")
+
 @remote_compatible
 def test_ap_hs20_auto_interworking_no_match(dev, apdev):
     """Hotspot 2.0 connection with auto_interworking=1 and no matching network"""
