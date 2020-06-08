@@ -444,7 +444,7 @@ int sae_write_confirm_pk(struct sae_data *sae, struct wpabuf *buf)
 	wpabuf_put_u8(elem, WLAN_EID_EXTENSION);
 	wpabuf_put_u8(elem, 2 + wpabuf_len(pk->pubkey));
 	wpabuf_put_u8(elem, WLAN_EID_EXT_FILS_PUBLIC_KEY);
-	wpabuf_put_u8(elem, 3); /* Key Type: ECDSA public key */
+	wpabuf_put_u8(elem, 2); /* Key Type: ECDSA public key */
 	wpabuf_put_buf(elem, pk->pubkey);
 
 	/* FILS Key Confirmation element (KeyAuth) */
@@ -629,7 +629,7 @@ int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len)
 			   "SAE-PK: No FILS Public Key element in SAE-PK element");
 		return -1;
 	}
-	if (pos[3] != 3) {
+	if (pos[3] != 2) {
 		wpa_printf(MSG_INFO, "SAE-PK: Unsupported public key type %u",
 			   pos[3]);
 		return -1;
