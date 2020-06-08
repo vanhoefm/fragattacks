@@ -4806,10 +4806,20 @@ def test_sigma_dut_sae_pk(dev, apdev):
     finally:
         stop_sigma_dut(sigma)
 
-def run_sigma_dut_ap_sae_pk(conffile, dev, ssid, pw, keypair, m, failure):
+def run_sigma_dut_ap_sae_pk(conffile, dev, ssid, pw, keypair, m, failure,
+                            status=None, omit=False, immediate=False, sig=None):
     sigma_dut_cmd_check("ap_reset_default")
     sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,%s,MODE,11ng" % ssid)
-    sigma_dut_cmd_check("ap_set_security,NAME,AP,AKMSuiteType,8,PairwiseCipher,AES-CCMP-128,GroupCipher,AES-CCMP-128,GroupMgntCipher,BIP-CMAC-128,PMF,Required,PSK,%s,sae_pk,1,Transition_Disable,1,Transition_Disable_Index,0,SAE_PK_KeyPair,%s,SAE_PK_Modifier,%s" % (pw, keypair, m))
+    cmd = "ap_set_security,NAME,AP,AKMSuiteType,8,PairwiseCipher,AES-CCMP-128,GroupCipher,AES-CCMP-128,GroupMgntCipher,BIP-CMAC-128,PMF,Required,PSK,%s,sae_pk,1,Transition_Disable,1,Transition_Disable_Index,0,SAE_PK_KeyPair,%s,SAE_PK_Modifier,%s" % (pw, keypair, m)
+    if status is not None:
+        cmd += ",SAE_Commit_StatusCode,%d" % status
+    if omit:
+        cmd += ",SAE_PK_Omit,1"
+    if immediate:
+        cmd += ",SAE_Confirm_Immediate,1"
+    if sig:
+        cmd += ",SAE_PK_KeyPairSigOverride," + sig
+    sigma_dut_cmd_check(cmd)
     sigma_dut_cmd_check("ap_config_commit,NAME,AP")
     bssid = sigma_dut_cmd_check("ap_get_mac_address,NAME,AP")
     bssid = bssid.split(',')[3]
@@ -4880,5 +4890,30 @@ def test_sigma_dut_ap_sae_pk(dev, apdev, params):
             for ssid, pw, keypair, m, failure in tests:
                 run_sigma_dut_ap_sae_pk(conffile, dev[0], ssid, pw, keypair, m,
                                         failure)
+        finally:
+            stop_sigma_dut(sigma)
+
+def test_sigma_dut_ap_sae_pk_misbehavior(dev, apdev, params):
+    """sigma_dut controlled AP using SAE-PK misbehavior"""
+    logdir = params['prefix'] + ".sigma-hostapd"
+    conffile = params['prefix'] + ".sigma-conf"
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    ssid = "SAEPK-4.7.1"
+    pw = "fb4c-zpqh-bhdc"
+    keypair = "saepk.pem"
+    m = "2ec1f37b47b402252e9dc5001e81fd1c"
+
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            run_sigma_dut_ap_sae_pk(conffile, dev[0], ssid, pw, keypair, m,
+                                    True, status=126)
+            run_sigma_dut_ap_sae_pk(conffile, dev[0], ssid, pw, keypair, m,
+                                    True, omit=True)
+            run_sigma_dut_ap_sae_pk(conffile, dev[0], ssid, pw, keypair, m,
+                                    True, status=126, omit=True, immediate=True)
+            run_sigma_dut_ap_sae_pk(conffile, dev[0], ssid, pw, keypair, m,
+                                    True, sig="saepk8_sig.pem")
         finally:
             stop_sigma_dut(sigma)
