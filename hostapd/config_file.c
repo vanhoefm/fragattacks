@@ -4231,6 +4231,10 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		bss->own_ie_override = tmp;
 	} else if (os_strcmp(buf, "sae_reflection_attack") == 0) {
 		bss->sae_reflection_attack = atoi(pos);
+	} else if (os_strcmp(buf, "sae_commit_status") == 0) {
+		bss->sae_commit_status = atoi(pos);
+	} else if (os_strcmp(buf, "sae_pk_omit") == 0) {
+		bss->sae_pk_omit = atoi(pos);
 	} else if (os_strcmp(buf, "sae_commit_override") == 0) {
 		wpabuf_free(bss->sae_commit_override);
 		bss->sae_commit_override = wpabuf_parse_bin(pos);

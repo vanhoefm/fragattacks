@@ -31,6 +31,9 @@ struct sae_pk {
 	struct crypto_ec_key *key;
 	int group;
 	struct wpabuf *pubkey; /* DER encoded subjectPublicKey */
+#ifdef CONFIG_TESTING_OPTIONS
+	struct crypto_ec_key *sign_key_override;
+#endif /* CONFIG_TESTING_OPTIONS */
 };
 
 
@@ -73,6 +76,9 @@ struct sae_temporary_data {
 	u8 ssid[32];
 	size_t ssid_len;
 	bool reject_group;
+#ifdef CONFIG_TESTING_OPTIONS
+	bool omit_pk_elem;
+#endif /* CONFIG_TESTING_OPTIONS */
 #endif /* CONFIG_SAE_PK */
 };
 

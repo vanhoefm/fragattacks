@@ -567,6 +567,13 @@ static struct wpabuf * auth_build_sae_confirm(struct hostapd_data *hapd,
 	if (buf == NULL)
 		return NULL;
 
+#ifdef CONFIG_SAE_PK
+#ifdef CONFIG_TESTING_OPTIONS
+	if (sta->sae->tmp)
+		sta->sae->tmp->omit_pk_elem = hapd->conf->sae_pk_omit;
+#endif /* CONFIG_TESTING_OPTIONS */
+#endif /* CONFIG_SAE_PK */
+
 	if (sae_write_confirm(sta->sae, buf) < 0) {
 		wpabuf_free(buf);
 		return NULL;
@@ -600,6 +607,15 @@ static int auth_sae_send_commit(struct hostapd_data *hapd,
 		status = WLAN_STATUS_SAE_HASH_TO_ELEMENT;
 	else
 		status = WLAN_STATUS_SUCCESS;
+#ifdef CONFIG_TESTING_OPTIONS
+	if (hapd->conf->sae_commit_status >= 0 &&
+	    hapd->conf->sae_commit_status != status) {
+		wpa_printf(MSG_INFO,
+			   "TESTING: Override SAE commit status code %u --> %d",
+			   status, hapd->conf->sae_commit_status);
+		status = hapd->conf->sae_commit_status;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 	reply_res = send_auth_reply(hapd, sta, sta->addr, bssid,
 				    WLAN_AUTH_SAE, 1,
 				    status, wpabuf_head(data),

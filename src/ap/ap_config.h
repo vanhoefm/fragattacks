@@ -678,6 +678,8 @@ struct hostapd_bss_config {
 	u8 bss_load_test_set;
 	struct wpabuf *own_ie_override;
 	int sae_reflection_attack;
+	int sae_commit_status;
+	int sae_pk_omit;
 	struct wpabuf *sae_commit_override;
 	struct wpabuf *rsne_override_eapol;
 	struct wpabuf *rsnxe_override_eapol;

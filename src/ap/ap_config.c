@@ -160,6 +160,10 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 
 	/* Default to strict CRL checking. */
 	bss->check_crl_strict = 1;
+
+#ifdef CONFIG_TESTING_OPTIONS
+	bss->sae_commit_status = -1;
+#endif /* CONFIG_TESTING_OPTIONS */
 }
 
 

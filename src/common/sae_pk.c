@@ -203,6 +203,9 @@ void sae_deinit_pk(struct sae_pk *pk)
 	if (pk) {
 		wpabuf_free(pk->m);
 		crypto_ec_key_deinit(pk->key);
+#ifdef CONFIG_TESTING_OPTIONS
+		crypto_ec_key_deinit(pk->sign_key_override);
+#endif /* CONFIG_TESTING_OPTIONS */
 		wpabuf_free(pk->pubkey);
 		os_free(pk);
 	}
@@ -213,9 +216,12 @@ struct sae_pk * sae_parse_pk(const char *val)
 {
 	struct sae_pk *pk;
 	const char *pos;
+#ifdef CONFIG_TESTING_OPTIONS
+	const char *pos2;
+#endif /* CONFIG_TESTING_OPTIONS */
 	size_t len;
 	unsigned char *der;
-	size_t der_len;
+	size_t der_len, b_len;
 
 	/* <m-as-hexdump>:<base64-encoded-DER-encoded-key> */
 
@@ -239,7 +245,15 @@ struct sae_pk * sae_parse_pk(const char *val)
 	}
 
 	pos++;
-	der = base64_decode(pos, os_strlen(pos), &der_len);
+	b_len = os_strlen(pos);
+#ifdef CONFIG_TESTING_OPTIONS
+	pos2 = os_strchr(pos, ':');
+	if (pos2) {
+		b_len = pos2 - pos;
+		pos2++;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
+	der = base64_decode(pos, b_len, &der_len);
 	if (!der) {
 		wpa_printf(MSG_INFO, "SAE: Failed to base64 decode PK key");
 		goto fail;
@@ -253,6 +267,22 @@ struct sae_pk * sae_parse_pk(const char *val)
 	pk->pubkey = crypto_ec_key_get_subject_public_key(pk->key);
 	if (!pk->pubkey)
 		goto fail;
+
+#ifdef CONFIG_TESTING_OPTIONS
+	if (pos2) {
+		der = base64_decode(pos2, os_strlen(pos2), &der_len);
+		if (!der) {
+			wpa_printf(MSG_INFO,
+				   "SAE: Failed to base64 decode PK key");
+			goto fail;
+		}
+
+		pk->sign_key_override = crypto_ec_key_parse_priv(der, der_len);
+		bin_clear_free(der, der_len);
+		if (!pk->sign_key_override)
+			goto fail;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 	return pk;
 fail:
@@ -342,6 +372,7 @@ int sae_write_confirm_pk(struct sae_data *sae, struct wpabuf *buf)
 	const struct sae_pk *pk;
 	u8 hash[SAE_MAX_HASH_LEN];
 	size_t hash_len;
+	struct crypto_ec_key *key;
 
 	if (!tmp)
 		return -1;
@@ -349,6 +380,16 @@ int sae_write_confirm_pk(struct sae_data *sae, struct wpabuf *buf)
 	pk = tmp->ap_pk;
 	if (!pk)
 		return 0;
+
+	key = pk->key;
+#ifdef CONFIG_TESTING_OPTIONS
+	if (tmp->omit_pk_elem)
+		return 0;
+	if (pk->sign_key_override) {
+		wpa_printf(MSG_INFO, "TESTING: Override SAE-PK signing key");
+		key = pk->sign_key_override;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 	if (tmp->kek_len != 32 && tmp->kek_len != 48 && tmp->kek_len != 64) {
 		wpa_printf(MSG_INFO, "SAE-PK: No KEK available for confirm");
@@ -368,7 +409,7 @@ int sae_write_confirm_pk(struct sae_data *sae, struct wpabuf *buf)
 				 wpabuf_len(pk->m), wpabuf_head(pk->pubkey),
 				 wpabuf_len(pk->pubkey), hash) < 0)
 		goto fail;
-	sig = crypto_ec_key_sign(pk->key, hash, hash_len);
+	sig = crypto_ec_key_sign(key, hash, hash_len);
 	if (!sig)
 		goto fail;
 	wpa_hexdump_buf(MSG_DEBUG, "SAE-PK: KeyAuth = Sig_AP()", sig);
