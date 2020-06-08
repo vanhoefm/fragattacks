@@ -39,6 +39,7 @@ def run_sae_pk(apdev, dev, ssid, pw, m, pk, ap_groups=None):
 def test_sae_pk(dev, apdev):
     """SAE-PK"""
     check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
     dev[0].set("sae_groups", "")
 
     for i in range(14, len(SAE_PK_SEC2_PW_FULL) + 1):
@@ -51,6 +52,7 @@ def test_sae_pk(dev, apdev):
 def test_sae_pk_group_negotiation(dev, apdev):
     """SAE-PK"""
     check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
     dev[0].set("sae_groups", "20 19")
 
     try:
@@ -62,6 +64,7 @@ def test_sae_pk_group_negotiation(dev, apdev):
 def test_sae_pk_sec_2(dev, apdev):
     """SAE-PK with Sec 2"""
     check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
     dev[0].set("sae_groups", "")
 
     run_sae_pk(apdev[0], dev[0], SAE_PK_SEC2_SSID, SAE_PK_SEC2_PW,
@@ -70,6 +73,7 @@ def test_sae_pk_sec_2(dev, apdev):
 def test_sae_pk_sec_3(dev, apdev):
     """SAE-PK with Sec 3"""
     check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
     dev[0].set("sae_groups", "")
 
     ssid = "SAE-PK test"
@@ -82,6 +86,7 @@ def test_sae_pk_sec_3(dev, apdev):
 def test_sae_pk_sec_4(dev, apdev):
     """SAE-PK with Sec 4"""
     check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
     dev[0].set("sae_groups", "")
 
     ssid = "SAE-PK test"
@@ -94,6 +99,7 @@ def test_sae_pk_sec_4(dev, apdev):
 def test_sae_pk_sec_5(dev, apdev):
     """SAE-PK with Sec 5"""
     check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
     dev[0].set("sae_groups", "")
 
     ssid = "SAE-PK test"
@@ -106,6 +112,7 @@ def test_sae_pk_sec_5(dev, apdev):
 def test_sae_pk_group_20(dev, apdev):
     """SAE-PK with group 20"""
     check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
     dev[0].set("sae_groups", "20")
 
     ssid = "SAE-PK test"
