@@ -25,14 +25,25 @@ static const char *sae_pk_base32_table = "abcdefghijklmnopqrstuvwxyz234567";
 
 bool sae_pk_valid_password(const char *pw)
 {
-	int pos;
+	int pos, sec;
+	const char *idx;
+	size_t pw_len = os_strlen(pw);
 
-	if (os_strlen(pw) < 9) {
-		 /* Not long enough to meet the minimum required resistance to
-		  * preimage attacks, so do not consider this valid for SAE-PK.
-		  */
+	/* Check whether the password is long enough to meet the minimum
+	 * required resistance to preimage attacks. This makes it less likely to
+	 * recognize non-SAE-PK passwords as suitable for SAE-PK. */
+	if (pw_len < 1)
 		return false;
-	}
+	/* Fetch Sec from the two MSBs */
+	idx = os_strchr(sae_pk_base32_table, pw[0]);
+	if (!idx)
+		return false;
+	sec = ((u8) ((idx - sae_pk_base32_table) & 0x1f)) >> 3;
+	if ((sec == 2 && pw_len < 14) ||
+	    (sec == 3 && pw_len < 13) ||
+	    (sec == 4 && pw_len < 11) ||
+	    (sec == 5 && pw_len < 9))
+		return false; /* too short password */
 
 	for (pos = 0; pw[pos]; pos++) {
 		if (pos && pos % 5 == 4) {
