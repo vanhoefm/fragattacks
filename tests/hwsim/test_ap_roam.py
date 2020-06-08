@@ -26,6 +26,35 @@ def test_ap_roam_open(dev, apdev):
     dev[0].roam(apdev[0]['bssid'])
     hwsim_utils.test_connectivity(dev[0], hapd0)
 
+def test_ap_blacklist_all(dev, apdev, params):
+    """Ensure we clear the blacklist if all visible APs reject"""
+    hapd0 = hostapd.add_ap(apdev[0], {"ssid": "test-open", "max_num_sta": "0"})
+    hapd1 = hostapd.add_ap(apdev[1], {"ssid": "test-open", "max_num_sta": "0"})
+    bss0 = hapd0.own_addr()
+    bss1 = hapd1.own_addr()
+
+    dev[0].connect("test-open", key_mgmt="NONE", scan_freq="2412",
+                   wait_connect=False, bssid=bss0)
+    if not dev[0].wait_event(["CTRL-EVENT-AUTH-REJECT"], timeout=10):
+        raise Exception("AP 0 didn't reject us")
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].dump_monitor()
+    dev[0].connect("test-open", key_mgmt="NONE", scan_freq="2412",
+                   wait_connect=False, bssid=bss1)
+    if not dev[0].wait_event(["CTRL-EVENT-AUTH-REJECT"], timeout=10):
+        raise Exception("AP 1 didn't reject us")
+    blacklist = get_blacklist(dev[0])
+    if len(blacklist) != 2:
+        raise Exception("Unexpected blacklist: %s" % blacklist)
+    dev[0].request("REMOVE_NETWORK all")
+    dev[0].dump_monitor()
+
+    hapd0.set("max_num_sta", "1")
+    # All visible APs were blacklisted; we should clear the blacklist and find
+    # the AP that now accepts us.
+    dev[0].scan_for_bss(bss0, freq=2412)
+    dev[0].connect("test-open", key_mgmt="NONE", scan_freq="2412", bssid=bss0)
+
 @remote_compatible
 def test_ap_roam_open_failed(dev, apdev):
     """Roam failure due to rejected authentication"""
