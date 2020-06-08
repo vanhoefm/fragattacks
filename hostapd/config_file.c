@@ -943,14 +943,6 @@ static int hostapd_config_bss(struct hostapd_config *conf, const char *ifname)
 }
 
 
-enum {
-	IEEE80211_TX_QUEUE_DATA0 = 0, /* used for EDCA AC_VO data */
-	IEEE80211_TX_QUEUE_DATA1 = 1, /* used for EDCA AC_VI data */
-	IEEE80211_TX_QUEUE_DATA2 = 2, /* used for EDCA AC_BE data */
-	IEEE80211_TX_QUEUE_DATA3 = 3 /* used for EDCA AC_BK data */
-};
-
-
 #ifdef CONFIG_IEEE80211R_AP
 
 static int rkh_derive_key(const char *pos, u8 *key, size_t key_len)
