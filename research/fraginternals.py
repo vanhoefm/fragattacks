@@ -870,10 +870,10 @@ class Authenticator(Daemon):
 		# Reconnects only after a few seconds: MacOS (same with other reasons and with deauthentication)
 		# Takes a few seconds, and then does a full new connection: Security Camera
 		if self.options.full_reconnect:
-			log(STATUS, "Deauthentication station to make it reconnect")
+			log(STATUS, "Deauthentication station to make it reconnect", color="green")
 			cmd = f"DEAUTHENTICATE {station.get_peermac()} reason={WLAN_REASON_CLASS2_FRAME_FROM_NONAUTH_STA}"
 		else:
-			log(STATUS, "Disassociating station to make it reconnect")
+			log(STATUS, "Disassociating station to make it reconnect", color="green")
 			cmd = f"DISASSOCIATE {station.get_peermac()} reason={WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA}"
 		wpaspy_command(self.wpaspy_ctrl, cmd)
 
