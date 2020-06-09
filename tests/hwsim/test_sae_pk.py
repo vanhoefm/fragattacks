@@ -18,6 +18,10 @@ SAE_PK_20_PW = "f3bh-5un3-wz7o-al3p"
 SAE_PK_20_M = "50bf37ba0033ed110a74e3a7aa52f4e9"
 SAE_PK_20_PK = "MIGkAgEBBDA4wpA6w/fK0g3a2V6QmcoxNoFCVuQPyzWvKYimJkgXsVsXt2ERXQ7dGOVXeycM5DqgBwYFK4EEACKhZANiAARTdszGBNe2PGCnc8Wvs+IDvdVEf4PPBrty0meRZf6UTbGouquTHpy6KKTq5sxrulYzsQFimg4op0UJBGxAzqo0EtTgMlLiBvY0I3Nl3N69MhWo8nvnmguvGGN32AAPXpQ="
 
+SAE_PK_21_PW = "a5rp-4rgd-ewum-v4qr-v5jy"
+SAE_PK_21_M = "2bf0a143b158b967a435cf75b07fc9e6"
+SAE_PK_21_PK = "MIHcAgEBBEIBcch+ygKv1uL5344C+8Rt5h8cTYHG++L3/8/hH6I2J3pWboB0jtzTf/zdZVGqkEIi+zZ2O+5g65cS8my1B44n0g+gBwYFK4EEACOhgYkDgYYABAA49TXDQfBgQWuwGrvYSkw9yuLRTn7WKyWcfSqSFfJYY6piGRE0wdKsNsGbuqHsfjn3Jb3LhmPdcnaDXd5z7fhdgAGFaiL+ZtBJCw5LqjW71rb54oy1NookDiNILdZ9i1dwBzE3fpfOWVvfjnXj9weZKUWHLB+2RF2X1qB0mY/G5NuRXA=="
+
 def run_sae_pk(apdev, dev, ssid, pw, m, pk, ap_groups=None):
     params = hostapd.wpa2_params(ssid=ssid)
     params['wpa_key_mgmt'] = 'SAE'
@@ -114,6 +118,18 @@ def test_sae_pk_group_20(dev, apdev):
     try:
         run_sae_pk(apdev[0], dev[0], SAE_PK_SSID, SAE_PK_20_PW,
                    SAE_PK_20_M, SAE_PK_20_PK, ap_groups="20")
+    finally:
+        dev[0].set("sae_groups", "")
+
+def test_sae_pk_group_21(dev, apdev):
+    """SAE-PK with group 21"""
+    check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
+    dev[0].set("sae_groups", "21")
+
+    try:
+        run_sae_pk(apdev[0], dev[0], SAE_PK_SSID, SAE_PK_21_PW,
+                   SAE_PK_21_M, SAE_PK_21_PK, ap_groups="21")
     finally:
         dev[0].set("sae_groups", "")
 
