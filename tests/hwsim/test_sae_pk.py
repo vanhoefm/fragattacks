@@ -13,6 +13,10 @@ SAE_PK_SEC2_PW_FULL = "dwxm-zv66-p5ue-fotp-owjy-lfby-2xpg-vmwq-chtz-hilu-m3t2-ql
 SAE_PK_SEC2_M = "431ff8322f93b9dc50ded9f3d14ace22"
 SAE_PK_SEC2_PK = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
 
+SAE_PK_20_PW = "f3bh-5un3-wz7o-al3p"
+SAE_PK_20_M = "50bf37ba0033ed110a74e3a7aa52f4e9"
+SAE_PK_20_PK = "MIGkAgEBBDA4wpA6w/fK0g3a2V6QmcoxNoFCVuQPyzWvKYimJkgXsVsXt2ERXQ7dGOVXeycM5DqgBwYFK4EEACKhZANiAARTdszGBNe2PGCnc8Wvs+IDvdVEf4PPBrty0meRZf6UTbGouquTHpy6KKTq5sxrulYzsQFimg4op0UJBGxAzqo0EtTgMlLiBvY0I3Nl3N69MhWo8nvnmguvGGN32AAPXpQ="
+
 def run_sae_pk(apdev, dev, ssid, pw, m, pk, ap_groups=None):
     params = hostapd.wpa2_params(ssid=ssid)
     params['wpa_key_mgmt'] = 'SAE'
@@ -115,13 +119,42 @@ def test_sae_pk_group_20(dev, apdev):
     dev[0].flush_scan_cache()
     dev[0].set("sae_groups", "20")
 
-    ssid = "SAE-PK test"
-    pw = "f3bh-5un3-wz7o-al3p"
-    m = "50bf37ba0033ed110a74e3a7aa52f4e9"
-    pk = "MIGkAgEBBDA4wpA6w/fK0g3a2V6QmcoxNoFCVuQPyzWvKYimJkgXsVsXt2ERXQ7dGOVXeycM5DqgBwYFK4EEACKhZANiAARTdszGBNe2PGCnc8Wvs+IDvdVEf4PPBrty0meRZf6UTbGouquTHpy6KKTq5sxrulYzsQFimg4op0UJBGxAzqo0EtTgMlLiBvY0I3Nl3N69MhWo8nvnmguvGGN32AAPXpQ="
-
     try:
-        run_sae_pk(apdev[0], dev[0], ssid, pw, m, pk, ap_groups="20")
+        run_sae_pk(apdev[0], dev[0], SAE_PK_SEC2_SSID, SAE_PK_20_PW,
+                   SAE_PK_20_M, SAE_PK_20_PK, ap_groups="20")
+    finally:
+        dev[0].set("sae_groups", "")
+
+def test_sae_pk_group_20_sae_group_19(dev, apdev):
+    """SAE-PK with group 20 with SAE group 19"""
+    check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
+    dev[0].set("sae_groups", "19")
+    try:
+        run_sae_pk(apdev[0], dev[0], SAE_PK_SEC2_SSID, SAE_PK_20_PW,
+                   SAE_PK_20_M, SAE_PK_20_PK, ap_groups="19")
+    finally:
+        dev[0].set("sae_groups", "")
+
+def test_sae_pk_group_20_sae_group_21(dev, apdev):
+    """SAE-PK with group 20 with SAE group 21"""
+    check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
+    dev[0].set("sae_groups", "21")
+    try:
+        run_sae_pk(apdev[0], dev[0], SAE_PK_SEC2_SSID, SAE_PK_20_PW,
+                   SAE_PK_20_M, SAE_PK_20_PK, ap_groups="21")
+    finally:
+        dev[0].set("sae_groups", "")
+
+def test_sae_pk_group_19_sae_group_20(dev, apdev):
+    """SAE-PK with group 19 with SAE group 20"""
+    check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
+    dev[0].set("sae_groups", "20")
+    try:
+        run_sae_pk(apdev[0], dev[0], SAE_PK_SEC2_SSID, SAE_PK_SEC2_PW,
+                   SAE_PK_SEC2_M, SAE_PK_SEC2_PK, ap_groups="20")
     finally:
         dev[0].set("sae_groups", "")
 
