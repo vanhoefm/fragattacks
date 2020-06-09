@@ -4264,9 +4264,9 @@ struct wpa_config * wpa_config_alloc_empty(const char *ctrl_interface,
 	const struct hostapd_wmm_ac_params ac_be =
 		{ aCWmin, aCWmax, 3, 0, 0 }; /* best effort traffic */
 	const struct hostapd_wmm_ac_params ac_vi = /* video traffic */
-		{ aCWmin - 1, aCWmin, 2, 3000 / 32, 0 };
+		{ aCWmin - 1, aCWmin, 2, 3008 / 32, 0 };
 	const struct hostapd_wmm_ac_params ac_vo = /* voice traffic */
-		{ aCWmin - 2, aCWmin - 1, 2, 1500 / 32, 0 };
+		{ aCWmin - 2, aCWmin - 1, 2, 1504 / 32, 0 };
 	const struct hostapd_tx_queue_params txq_bk =
 		{ 7, ecw2cw(aCWmin), ecw2cw(aCWmax), 0 };
 	const struct hostapd_tx_queue_params txq_be =
