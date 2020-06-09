@@ -375,8 +375,8 @@ fail:
 int sae_write_confirm_pk(struct sae_data *sae, struct wpabuf *buf)
 {
 	struct sae_temporary_data *tmp = sae->tmp;
-	struct wpabuf *elem = NULL, *sig = NULL;
-	size_t extra;
+	struct wpabuf *sig = NULL;
+	size_t need;
 	int ret = -1;
 	u8 *encr_mod;
 	size_t encr_mod_len;
@@ -425,14 +425,41 @@ int sae_write_confirm_pk(struct sae_data *sae, struct wpabuf *buf)
 		goto fail;
 	wpa_hexdump_buf(MSG_DEBUG, "SAE-PK: KeyAuth = Sig_AP()", sig);
 
-	elem = wpabuf_alloc(1500 + wpabuf_len(sig));
-	if (!elem)
-		goto fail;
+	/* TODO: fragmentation if any of the elements needs it for a group
+	 * using sufficiently large primes (none of the currently supported
+	 * ones do) */
 
-	/* EncryptedModifier = AES-SIV-Q(M); no AAD */
 	encr_mod_len = wpabuf_len(pk->m) + AES_BLOCK_SIZE;
-	wpabuf_put_u8(elem, encr_mod_len);
-	encr_mod = wpabuf_put(elem, encr_mod_len);
+	need = 4 + wpabuf_len(pk->pubkey) + 3 + wpabuf_len(sig) +
+		6 + encr_mod_len;
+	if (wpabuf_tailroom(buf) < need) {
+		wpa_printf(MSG_INFO,
+			   "SAE-PK: No room in message buffer for SAE-PK elements (%zu < %zu)",
+			   wpabuf_tailroom(buf), need);
+		goto fail;
+	}
+
+	/* FILS Public Key element */
+	wpabuf_put_u8(buf, WLAN_EID_EXTENSION);
+	wpabuf_put_u8(buf, 2 + wpabuf_len(pk->pubkey));
+	wpabuf_put_u8(buf, WLAN_EID_EXT_FILS_PUBLIC_KEY);
+	wpabuf_put_u8(buf, 2); /* Key Type: ECDSA public key */
+	wpabuf_put_buf(buf, pk->pubkey);
+
+	/* FILS Key Confirmation element (KeyAuth) */
+	wpabuf_put_u8(buf, WLAN_EID_EXTENSION);
+	wpabuf_put_u8(buf, 1 + wpabuf_len(sig));
+	wpabuf_put_u8(buf, WLAN_EID_EXT_FILS_KEY_CONFIRM);
+	/* KeyAuth = Sig_AP(eleAP || eleSTA || scaAP || scaSTA || M || K_AP ||
+	 *                  AP-BSSID || STA-MAC) */
+	wpabuf_put_buf(buf, sig);
+
+	/* SAE-PK element */
+	wpabuf_put_u8(buf, WLAN_EID_VENDOR_SPECIFIC);
+	wpabuf_put_u8(buf, 4 + encr_mod_len);
+	wpabuf_put_be32(buf, SAE_PK_IE_VENDOR_TYPE);
+	/* EncryptedModifier = AES-SIV-Q(M); no AAD */
+	encr_mod = wpabuf_put(buf, encr_mod_len);
 	if (aes_siv_encrypt(tmp->kek, tmp->kek_len,
 			    wpabuf_head(pk->m), wpabuf_len(pk->m),
 			    0, NULL, NULL, encr_mod) < 0)
@@ -440,40 +467,8 @@ int sae_write_confirm_pk(struct sae_data *sae, struct wpabuf *buf)
 	wpa_hexdump(MSG_DEBUG, "SAE-PK: EncryptedModifier",
 		    encr_mod, encr_mod_len);
 
-	/* FILS Public Key element */
-	wpabuf_put_u8(elem, WLAN_EID_EXTENSION);
-	wpabuf_put_u8(elem, 2 + wpabuf_len(pk->pubkey));
-	wpabuf_put_u8(elem, WLAN_EID_EXT_FILS_PUBLIC_KEY);
-	wpabuf_put_u8(elem, 2); /* Key Type: ECDSA public key */
-	wpabuf_put_buf(elem, pk->pubkey);
-
-	/* FILS Key Confirmation element (KeyAuth) */
-	wpabuf_put_u8(elem, WLAN_EID_EXTENSION);
-	wpabuf_put_u8(elem, 1 + wpabuf_len(sig));
-	wpabuf_put_u8(elem, WLAN_EID_EXT_FILS_KEY_CONFIRM);
-	/* KeyAuth = Sig_AP(eleAP || eleSTA || scaAP || scaSTA || M || K_AP ||
-	 *                  AP-BSSID || STA-MAC) */
-	wpabuf_put_buf(elem, sig);
-
-	/* TODO: fragmentation */
-	extra = 6; /* Vendor specific element header */
-
-	if (wpabuf_tailroom(elem) < extra + wpabuf_len(buf)) {
-		wpa_printf(MSG_INFO,
-			   "SAE-PK: No room in message buffer for SAE-PK element (%zu < %zu)",
-			   wpabuf_tailroom(buf), extra + wpabuf_len(buf));
-		goto fail;
-	}
-
-	/* SAE-PK element */
-	wpabuf_put_u8(buf, WLAN_EID_VENDOR_SPECIFIC);
-	wpabuf_put_u8(buf, 4 + wpabuf_len(elem));
-	wpabuf_put_be32(buf, SAE_PK_IE_VENDOR_TYPE);
-	wpabuf_put_buf(buf, elem);
-
 	ret = 0;
 fail:
-	wpabuf_free(elem);
 	wpabuf_free(sig);
 	return ret;
 
@@ -569,14 +564,15 @@ static bool sae_pk_valid_fingerprint(struct sae_data *sae,
 int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len)
 {
 	struct sae_temporary_data *tmp = sae->tmp;
-	const u8 *sae_pk, *pos, *end, *encr_mod, *k_ap, *key_auth;
+	const u8 *k_ap;
 	u8 m[SAE_PK_M_LEN];
-	size_t k_ap_len, key_auth_len;
+	size_t k_ap_len;
 	struct crypto_ec_key *key;
 	int res;
 	u8 hash[SAE_MAX_HASH_LEN];
 	size_t hash_len;
 	int group;
+	struct ieee802_11_elems elems;
 
 	if (!tmp)
 		return -1;
@@ -597,71 +593,29 @@ int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len)
 	}
 
 	wpa_hexdump(MSG_DEBUG, "SAE-PK: Received confirm IEs", ies, ies_len);
-	sae_pk = get_vendor_ie(ies, ies_len, SAE_PK_IE_VENDOR_TYPE);
-	if (!sae_pk) {
-		wpa_printf(MSG_INFO, "SAE-PK: No SAE-PK element included");
+	if (ieee802_11_parse_elems(ies, ies_len, &elems, 1) == ParseFailed) {
+		wpa_printf(MSG_INFO, "SAE-PK: Failed to parse confirm IEs");
 		return -1;
 	}
-	/* TODO: Fragment reassembly */
-	pos = sae_pk + 2;
-	end = pos + sae_pk[1];
+	if (!elems.fils_pk || !elems.fils_key_confirm || !elems.sae_pk) {
+		wpa_printf(MSG_INFO,
+			   "SAE-PK: Not all mandatory IEs included in confirm");
+		return -1;
+	}
 
-	if (end - pos < 4 + 1 + SAE_PK_M_LEN + AES_BLOCK_SIZE) {
+	/* TODO: Fragment reassembly */
+
+	if (elems.sae_pk_len < SAE_PK_M_LEN + AES_BLOCK_SIZE) {
 		wpa_printf(MSG_INFO,
 			   "SAE-PK: No room for EncryptedModifier in SAE-PK element");
 		return -1;
 	}
-	pos += 4;
-	if (*pos != SAE_PK_M_LEN + AES_BLOCK_SIZE) {
-		wpa_printf(MSG_INFO,
-			   "SAE-PK: Unexpected EncryptedModifier length %u",
-			   *pos);
-		return -1;
-	}
-	pos++;
-	encr_mod = pos;
-	pos += SAE_PK_M_LEN + AES_BLOCK_SIZE;
-
-	if (end - pos < 4 || pos[0] != WLAN_EID_EXTENSION || pos[1] < 2 ||
-	    pos[1] > end - pos - 2 ||
-	    pos[2] != WLAN_EID_EXT_FILS_PUBLIC_KEY) {
-		wpa_printf(MSG_INFO,
-			   "SAE-PK: No FILS Public Key element in SAE-PK element");
-		return -1;
-	}
-	if (pos[3] != 2) {
-		wpa_printf(MSG_INFO, "SAE-PK: Unsupported public key type %u",
-			   pos[3]);
-		return -1;
-	}
-	k_ap_len = pos[1] - 2;
-	pos += 4;
-	k_ap = pos;
-	pos += k_ap_len;
-
-	if (end - pos < 4 || pos[0] != WLAN_EID_EXTENSION || pos[1] < 1 ||
-	    pos[1] > end - pos - 2 ||
-	    pos[2] != WLAN_EID_EXT_FILS_KEY_CONFIRM) {
-		wpa_printf(MSG_INFO,
-			   "SAE-PK: No FILS Key Confirm element in SAE-PK element");
-		return -1;
-	}
-	key_auth_len = pos[1] - 1;
-	pos += 3;
-	key_auth = pos;
-	pos += key_auth_len;
-
-	if (pos < end) {
-		wpa_hexdump(MSG_DEBUG,
-			    "SAE-PK: Extra data at the end of SAE-PK element",
-			    pos, end - pos);
-	}
 
 	wpa_hexdump(MSG_DEBUG, "SAE-PK: EncryptedModifier",
-		    encr_mod, SAE_PK_M_LEN + AES_BLOCK_SIZE);
+		    elems.sae_pk, SAE_PK_M_LEN + AES_BLOCK_SIZE);
 
 	if (aes_siv_decrypt(tmp->kek, tmp->kek_len,
-			    encr_mod, SAE_PK_M_LEN + AES_BLOCK_SIZE,
+			    elems.sae_pk, SAE_PK_M_LEN + AES_BLOCK_SIZE,
 			    0, NULL, NULL, m) < 0) {
 		wpa_printf(MSG_INFO,
 			   "SAE-PK: Failed to decrypt EncryptedModifier");
@@ -669,6 +623,13 @@ int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len)
 	}
 	wpa_hexdump_key(MSG_DEBUG, "SAE-PK: Modifier M", m, SAE_PK_M_LEN);
 
+	if (elems.fils_pk[0] != 2) {
+		wpa_printf(MSG_INFO, "SAE-PK: Unsupported public key type %u",
+			   elems.fils_pk[0]);
+		return -1;
+	}
+	k_ap_len = elems.fils_pk_len - 1;
+	k_ap = elems.fils_pk + 1;
 	wpa_hexdump(MSG_DEBUG, "SAE-PK: Received K_AP", k_ap, k_ap_len);
 	/* TODO: Check against the public key, if one is stored in the network
 	 * profile */
@@ -687,7 +648,7 @@ int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len)
 	}
 
 	wpa_hexdump(MSG_DEBUG, "SAE-PK: Received KeyAuth",
-		    key_auth, key_auth_len);
+		    elems.fils_key_confirm, elems.fils_key_confirm_len);
 
 	hash_len = sae_group_2_hash_len(group);
 	if (sae_pk_hash_sig_data(sae, hash_len, false, m, SAE_PK_M_LEN,
@@ -697,7 +658,8 @@ int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len)
 	}
 
 	res = crypto_ec_key_verify_signature(key, hash, hash_len,
-					     key_auth, key_auth_len);
+					     elems.fils_key_confirm,
+					     elems.fils_key_confirm_len);
 	crypto_ec_key_deinit(key);
 
 	if (res != 1) {

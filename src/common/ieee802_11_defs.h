@@ -1323,6 +1323,7 @@ struct ieee80211_ampe_ie {
 #define DPP_CC_IE_VENDOR_TYPE 0x506f9a1e
 #define DPP_CC_OUI_TYPE 0x1e
 #define SAE_PK_IE_VENDOR_TYPE 0x506f9a1f
+#define SAE_PK_OUI_TYPE 0x1f
 
 #define MULTI_AP_SUB_ELEM_TYPE 0x06
 #define MULTI_AP_TEAR_DOWN BIT(4)

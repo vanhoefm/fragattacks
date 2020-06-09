@@ -114,6 +114,7 @@ struct ieee802_11_elems {
 	const u8 *he_operation;
 	const u8 *short_ssid_list;
 	const u8 *he_6ghz_band_cap;
+	const u8 *sae_pk;
 
 	u8 ssid_len;
 	u8 supp_rates_len;
@@ -166,6 +167,7 @@ struct ieee802_11_elems {
 	u8 he_capabilities_len;
 	u8 he_operation_len;
 	u8 short_ssid_list_len;
+	u8 sae_pk_len;
 
 	struct mb_ies_info mb_ies;
 	struct frag_ies_info frag_ies;
