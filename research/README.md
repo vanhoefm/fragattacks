@@ -207,6 +207,7 @@ but against more exotic implementations that might work (while the above tests c
 |                        | ping I,E,R,AE --rekey-request --rekey-plaintext | Mixed key attack against MediaTek
 |                        | ping I,E,R,AE --rekey-early-install | **TODO**
 |                        | ping I,R,BE,AE --freebsd        | Mixed key attack against FreeBSD
+|                        | ping I,R,BE,E                    | **If the new key is installed late (observed with AWUS036ACH on Kali). Other variants?**
 | **Mixed Plain/Enc**    | ping I,E,P,E                    | Send a fragmented ping: first fragment encrypted, second plaintext, third encrypted.
 |                        | linux-plain 3                   | Mixed plaintext/encrypted fragmentation attack, decoy fragment is sent using QoS TID 3.
 | **EAPOL A-MSDU**       | eapol-amsdu [M,]BB --bcast-dst  | Same as "eapol-amsdu [M,]BB" but ping is broadcasted. To test AP, check if a 2nd client receives the ping.
