@@ -951,7 +951,7 @@ int get_netif_info(const char *net_if, unsigned *ip_addr, char **ip_addr_text,
 				   errno, strerror(errno));
 			goto fail;
 		}
-		addr = (struct sockaddr_in *) &req.ifr_netmask;
+		addr = (struct sockaddr_in *) &req.ifr_addr;
 		netmask->s_addr = addr->sin_addr.s_addr;
 	}
 
