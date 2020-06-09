@@ -148,10 +148,15 @@ class MacOsTest(Test):
 		# before authenticated because previous fragment was EAPOL.
 		# By sending to broadcast, this fragment will not be reassembled
 		# though, meaning it will be treated as a full frame (and not EAPOL).
-		_, request, _ = generate_request(station, self.ptype)
+		_, request, check_fn = generate_request(station, self.ptype)
 		frag2, = create_fragments(header, data=request, num_frags=1)
 		frag2.SC |= 1
 		frag2.addr1 = "ff:ff:ff:ff:ff:ff"
+
+		# We can automatically detect result if the last fragment was
+		# sent after the authentication
+		if self.actions[-1].trigger >= Action.AfterAuth:
+			self.check_fn = check_fn
 
 		# Practically all APs will not process frames with a broadcast receiver address, unless
 		# they are operating in client mode. But to test APs without tcpdump anyway, allow the
@@ -198,11 +203,16 @@ class EapolAmsduTest(Test):
 		log(STATUS, "Generating ping test", color="green")
 
 		# Generate the single frame
-		header, request, self.check_fn = generate_request(station, self.ptype)
+		header, request, check_fn = generate_request(station, self.ptype)
 		# Set the A-MSDU frame type flag in the QoS header
 		header.Reserved = 1
 		# Testing
 		#header.addr2 = "00:11:22:33:44:55"
+
+		# We can automatically detect result if the last fragment was
+		# sent after the authentication
+		if self.actions[-1].trigger >= Action.AfterAuth:
+			self.check_fn = check_fn
 
 		mac_src = station.mac
 		mac_dst = station.get_peermac()
