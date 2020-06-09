@@ -686,16 +686,6 @@ int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len)
 		return -1;
 	}
 
-	/* TODO: Could support alternative groups as long as the combination
-	 * meets the requirements. */
-	if (group != sae->group) {
-		wpa_printf(MSG_INFO,
-			   "SAE-PK: K_AP group %d does not match SAE group %d",
-			   group, sae->group);
-		crypto_ec_key_deinit(key);
-		return -1;
-	}
-
 	wpa_hexdump(MSG_DEBUG, "SAE-PK: Received KeyAuth",
 		    key_auth, key_auth_len);
 

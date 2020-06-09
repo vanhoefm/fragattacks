@@ -1392,15 +1392,6 @@ int sae_prepare_commit_pt(struct sae_data *sae, const struct sae_pt *pt,
 	os_memcpy(sae->tmp->ssid, pt->ssid, pt->ssid_len);
 	sae->tmp->ssid_len = pt->ssid_len;
 	sae->tmp->ap_pk = pk;
-	/* TODO: Could support alternative groups as long as the combination
-	 * meets the requirements. */
-	if (pk && pk->group != sae->group) {
-		wpa_printf(MSG_DEBUG,
-			   "SAE-PK: Reject attempt to use group %d since K_AP use group %d",
-			   sae->group, pk->group);
-		sae->tmp->reject_group = true;
-		return -1;
-	}
 #endif /* CONFIG_SAE_PK */
 	sae->tmp->own_addr_higher = os_memcmp(addr1, addr2, ETH_ALEN) > 0;
 	wpabuf_free(sae->tmp->own_rejected_groups);

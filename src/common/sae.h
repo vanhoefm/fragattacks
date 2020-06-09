@@ -75,7 +75,6 @@ struct sae_temporary_data {
 	size_t lambda;
 	u8 ssid[32];
 	size_t ssid_len;
-	bool reject_group;
 #ifdef CONFIG_TESTING_OPTIONS
 	bool omit_pk_elem;
 #endif /* CONFIG_TESTING_OPTIONS */

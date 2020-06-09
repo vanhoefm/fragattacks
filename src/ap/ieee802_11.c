@@ -594,10 +594,6 @@ static int auth_sae_send_commit(struct hostapd_data *hapd,
 	data = auth_build_sae_commit(hapd, sta, update, status_code);
 	if (!data && sta->sae->tmp && sta->sae->tmp->pw_id)
 		return WLAN_STATUS_UNKNOWN_PASSWORD_IDENTIFIER;
-#ifdef CONFIG_SAE_PK
-	if (!data && sta->sae->tmp && sta->sae->tmp->reject_group)
-		return WLAN_STATUS_FINITE_CYCLIC_GROUP_NOT_SUPPORTED;
-#endif /* CONFIG_SAE_PK */
 	if (data == NULL)
 		return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
@@ -1195,7 +1191,7 @@ static int sae_is_group_enabled(struct hostapd_data *hapd, int group)
 
 
 static int check_sae_rejected_groups(struct hostapd_data *hapd,
-				     struct sae_data *sae, bool pk)
+				     struct sae_data *sae)
 {
 	const struct wpabuf *groups;
 	size_t i, count;
@@ -1216,29 +1212,8 @@ static int check_sae_rejected_groups(struct hostapd_data *hapd,
 		group = WPA_GET_LE16(pos);
 		pos += 2;
 		enabled = sae_is_group_enabled(hapd, group);
-
-#ifdef CONFIG_SAE_PK
-		/* TODO: Could check more explicitly against the matching
-		 * sae_password entry only for the somewhat theoretical case of
-		 * different passwords using different groups for SAE-PK K_AP
-		 * values. */
-		if (pk) {
-			struct sae_password_entry *pw;
-
-			enabled = false;
-			for (pw = hapd->conf->sae_passwords; pw;
-			     pw = pw->next) {
-				if (pw->pk && pw->pk->group == group) {
-					enabled = true;
-					break;
-				}
-			}
-		}
-#endif /* CONFIG_SAE_PK */
-
-		wpa_printf(MSG_DEBUG, "SAE: Rejected group %u is %s%s",
-			   group, enabled ? "enabled" : "disabled",
-			   pk ? " (PK)" : "");
+		wpa_printf(MSG_DEBUG, "SAE: Rejected group %u is %s",
+			   group, enabled ? "enabled" : "disabled");
 		if (enabled)
 			return 1;
 	}
@@ -1442,9 +1417,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 		if (resp != WLAN_STATUS_SUCCESS)
 			goto reply;
 
-		if (check_sae_rejected_groups(hapd, sta->sae,
-					      status_code ==
-					      WLAN_STATUS_SAE_PK)) {
+		if (check_sae_rejected_groups(hapd, sta->sae)) {
 			resp = WLAN_STATUS_UNSPECIFIED_FAILURE;
 			goto reply;
 		}
