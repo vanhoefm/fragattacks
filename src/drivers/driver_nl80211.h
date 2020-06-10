@@ -231,7 +231,9 @@ struct nl_msg * nl80211_drv_msg(struct wpa_driver_nl80211_data *drv, int flags,
 struct nl_msg * nl80211_bss_msg(struct i802_bss *bss, int flags, uint8_t cmd);
 int send_and_recv_msgs(struct wpa_driver_nl80211_data *drv, struct nl_msg *msg,
 		       int (*valid_handler)(struct nl_msg *, void *),
-		       void *valid_data);
+		       void *valid_data,
+		       int (*ack_handler_custom)(struct nl_msg *, void *),
+		       void *ack_data);
 struct nl_sock * get_connect_handle(struct i802_bss *bss);
 int nl80211_create_iface(struct wpa_driver_nl80211_data *drv,
 			 const char *ifname, enum nl80211_iftype iftype,
