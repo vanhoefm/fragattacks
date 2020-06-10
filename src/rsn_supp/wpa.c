@@ -3289,6 +3289,9 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 	case WPA_PARAM_SAE_PWE:
 		sm->sae_pwe = value;
 		break;
+	case WPA_PARAM_SAE_PK:
+		sm->sae_pk = value;
+		break;
 	case WPA_PARAM_DENY_PTK0_REKEY:
 		sm->wpa_deny_ptk0_rekey = value;
 		break;

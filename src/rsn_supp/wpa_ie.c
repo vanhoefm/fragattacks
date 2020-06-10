@@ -357,7 +357,7 @@ int wpa_gen_rsnxe(struct wpa_sm *sm, u8 *rsnxe, size_t rsnxe_len)
 
 	if (!wpa_key_mgmt_sae(sm->key_mgmt))
 		return 0; /* SAE not in use */
-	if (sm->sae_pwe != 1 && sm->sae_pwe != 2)
+	if (sm->sae_pwe != 1 && sm->sae_pwe != 2 && !sm->sae_pk)
 		return 0; /* no supported extended RSN capabilities */
 
 	if (rsnxe_len < 3)
@@ -367,7 +367,12 @@ int wpa_gen_rsnxe(struct wpa_sm *sm, u8 *rsnxe, size_t rsnxe_len)
 	*pos++ = 1;
 	/* bits 0-3 = 0 since only one octet of Extended RSN Capabilities is
 	 * used for now */
-	*pos++ = BIT(WLAN_RSNX_CAPAB_SAE_H2E);
+	*pos = BIT(WLAN_RSNX_CAPAB_SAE_H2E);
+#ifdef CONFIG_SAE_PK
+	if (sm->sae_pk)
+		*pos |= BIT(WLAN_RSNX_CAPAB_SAE_PK);
+#endif /* CONFIG_SAE_PK */
+	pos++;
 
 	return pos - rsnxe;
 }
