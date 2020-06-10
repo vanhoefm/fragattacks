@@ -7,7 +7,10 @@ class AmsduInject(Test):
 	"""
 
 	def __init__(self, ptype, target=False):
-		super().__init__([Action(Action.Connected, Action.Inject, enc=True)])
+		super().__init__([
+			Action(Action.Connected, Action.GetIp, enc=True),
+			Action(Action.Connected, Action.Inject, enc=True)]
+		)
 		self.ptype = ptype
 		self.target = target
 		if not self.target in [None, "linux"]:
