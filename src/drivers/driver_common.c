@@ -328,6 +328,7 @@ const char * driver_flag2_to_string(u64 flag2)
 #define DF2S(x) case WPA_DRIVER_FLAGS2_ ## x: return #x
 	switch (flag2) {
 	DF2S(CONTROL_PORT_RX);
+	DF2S(CONTROL_PORT_TX_STATUS);
 	}
 	return "UNKNOWN";
 #undef DF2S

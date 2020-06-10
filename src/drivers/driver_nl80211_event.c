@@ -138,6 +138,8 @@ static const char * nl80211_command_to_string(enum nl80211_commands cmd)
 	C2S(NL80211_CMD_CONTROL_PORT_FRAME)
 	C2S(NL80211_CMD_UPDATE_OWE_INFO)
 	C2S(NL80211_CMD_UNPROT_BEACON)
+	C2S(NL80211_CMD_CONTROL_PORT_FRAME_TX_STATUS)
+
 	default:
 		return "NL80211_CMD_UNKNOWN";
 	}
@@ -2557,6 +2559,37 @@ static void nl80211_control_port_frame(struct wpa_driver_nl80211_data *drv,
 }
 
 
+static void
+nl80211_control_port_frame_tx_status(struct wpa_driver_nl80211_data *drv,
+				     struct nlattr **tb)
+{
+	bool acked = tb[NL80211_ATTR_ACK];
+	union wpa_event_data event;
+	const u8 *frame;
+	size_t frame_len;
+
+	if (!tb[NL80211_ATTR_FRAME] || !tb[NL80211_ATTR_COOKIE])
+		return;
+
+	frame = nla_data(tb[NL80211_ATTR_FRAME]);
+	frame_len = nla_len(tb[NL80211_ATTR_FRAME]);
+	if (frame_len < ETH_HLEN)
+		return;
+
+	wpa_printf(MSG_DEBUG,
+		   "nl80211: Control port TX status (ack=%d), cookie=%llu",
+		   acked, (long long unsigned int)
+		   nla_get_u64(tb[NL80211_ATTR_COOKIE]));
+
+	os_memset(&event, 0, sizeof(event));
+	event.eapol_tx_status.dst = frame;
+	event.eapol_tx_status.data = frame + ETH_HLEN;
+	event.eapol_tx_status.data_len = frame_len - ETH_HLEN;
+	event.eapol_tx_status.ack = acked;
+	wpa_supplicant_event(drv->ctx, EVENT_EAPOL_TX_STATUS, &event);
+}
+
+
 static void do_process_drv_event(struct i802_bss *bss, int cmd,
 				 struct nlattr **tb)
 {
@@ -2774,6 +2807,9 @@ static void do_process_drv_event(struct i802_bss *bss, int cmd,
 		if (frame)
 			mlme_event_unprot_beacon(drv, nla_data(frame),
 						 nla_len(frame));
+		break;
+	case NL80211_CMD_CONTROL_PORT_FRAME_TX_STATUS:
+		nl80211_control_port_frame_tx_status(drv, tb);
 		break;
 	default:
 		wpa_dbg(drv->ctx, MSG_DEBUG, "nl80211: Ignored unknown event "
