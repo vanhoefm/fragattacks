@@ -26,6 +26,13 @@ struct wpa_blacklist * wpa_blacklist_get(struct wpa_supplicant *wpa_s,
 	if (wpa_s == NULL || bssid == NULL)
 		return NULL;
 
+	if (wpa_s->current_ssid &&
+	    wpa_s->current_ssid->was_recently_reconfigured) {
+		wpa_blacklist_clear(wpa_s);
+		wpa_s->current_ssid->was_recently_reconfigured = false;
+		return NULL;
+	}
+
 	wpa_blacklist_update(wpa_s);
 
 	e = wpa_s->blacklist;

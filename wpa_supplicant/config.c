@@ -3142,6 +3142,7 @@ int wpa_config_set(struct wpa_ssid *ssid, const char *var, const char *value,
 		}
 		ret = -1;
 	}
+	ssid->was_recently_reconfigured = true;
 
 	return ret;
 }

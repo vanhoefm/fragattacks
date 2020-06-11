@@ -1137,6 +1137,15 @@ struct wpa_ssid {
 	 * 2 = disable SAE-PK (allow SAE authentication only without SAE-PK)
 	 */
 	enum sae_pk_mode sae_pk;
+
+	/**
+	 * was_recently_reconfigured - Whether this SSID config has been changed
+	 * recently
+	 *
+	 * This is an internally used variable, i.e., not used in external
+	 * configuration.
+	 */
+	bool was_recently_reconfigured;
 };
 
 #endif /* CONFIG_SSID_H */
