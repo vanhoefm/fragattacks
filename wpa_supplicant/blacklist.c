@@ -26,6 +26,8 @@ struct wpa_blacklist * wpa_blacklist_get(struct wpa_supplicant *wpa_s,
 	if (wpa_s == NULL || bssid == NULL)
 		return NULL;
 
+	wpa_blacklist_update(wpa_s);
+
 	e = wpa_s->blacklist;
 	while (e) {
 		if (os_memcmp(e->bssid, bssid, ETH_ALEN) == 0)
@@ -169,5 +171,44 @@ void wpa_blacklist_clear(struct wpa_supplicant *wpa_s)
 		wpa_printf(MSG_DEBUG, "Removed BSSID " MACSTR " from "
 			   "blacklist (clear)", MAC2STR(prev->bssid));
 		os_free(prev);
+	}
+}
+
+
+/**
+ * wpa_blacklist_update - Update the entries in the blacklist,
+ * deleting entries that have been expired for over an hour.
+ * @wpa_s: Pointer to wpa_supplicant data
+ */
+void wpa_blacklist_update(struct wpa_supplicant *wpa_s)
+{
+	struct wpa_blacklist *e, *prev = NULL;
+	struct os_reltime now;
+
+	if (!wpa_s)
+		return;
+
+	e = wpa_s->blacklist;
+	os_get_reltime(&now);
+	while (e) {
+		if (os_reltime_expired(&now, &e->blacklist_start,
+				       e->timeout_secs + 3600)) {
+			struct wpa_blacklist *to_delete = e;
+
+			if (prev) {
+				prev->next = e->next;
+				e = prev->next;
+			} else {
+				wpa_s->blacklist = e->next;
+				e = wpa_s->blacklist;
+			}
+			wpa_printf(MSG_INFO, "Removed BSSID " MACSTR
+				   " from blacklist (expired)",
+				   MAC2STR(to_delete->bssid));
+			os_free(to_delete);
+		} else {
+			prev = e;
+			e = e->next;
+		}
 	}
 }

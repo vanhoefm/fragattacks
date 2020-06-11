@@ -28,5 +28,6 @@ int wpa_blacklist_add(struct wpa_supplicant *wpa_s, const u8 *bssid);
 int wpa_blacklist_del(struct wpa_supplicant *wpa_s, const u8 *bssid);
 int wpa_blacklist_is_blacklisted(struct wpa_supplicant *wpa_s, const u8 *bssid);
 void wpa_blacklist_clear(struct wpa_supplicant *wpa_s);
+void wpa_blacklist_update(struct wpa_supplicant *wpa_s);
 
 #endif /* BLACKLIST_H */
