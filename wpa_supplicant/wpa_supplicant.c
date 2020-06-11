@@ -985,7 +985,7 @@ void wpa_supplicant_set_state(struct wpa_supplicant *wpa_s,
 #endif /* CONFIG_CTRL_IFACE || !CONFIG_NO_STDOUT_DEBUG */
 		wpas_clear_temp_disabled(wpa_s, ssid, 1);
 		wpa_blacklist_clear(wpa_s);
-		wpa_s->extra_blacklist_count = 0;
+		wpa_s->consecutive_conn_failures = 0;
 		wpa_s->new_connection = 0;
 		wpa_drv_set_operstate(wpa_s, 1);
 #ifndef IEEE8021X_EAPOL
@@ -7373,10 +7373,6 @@ void wpas_connection_failed(struct wpa_supplicant *wpa_s, const u8 *bssid)
 	/*
 	 * Add the failed BSSID into the blacklist and speed up next scan
 	 * attempt if there could be other APs that could accept association.
-	 * The current blacklist count indicates how many times we have tried
-	 * connecting to this AP and multiple attempts mean that other APs are
-	 * either not available or has already been tried, so that we can start
-	 * increasing the delay here to avoid constant scanning.
 	 */
 	count = wpa_blacklist_add(wpa_s, bssid);
 	if (count == 1 && wpa_s->current_bss) {
@@ -7401,19 +7397,19 @@ void wpas_connection_failed(struct wpa_supplicant *wpa_s, const u8 *bssid)
 		}
 	}
 
-	/*
-	 * Add previous failure count in case the temporary blacklist was
-	 * cleared due to no other BSSes being available.
-	 */
-	count += wpa_s->extra_blacklist_count;
+	wpa_s->consecutive_conn_failures++;
 
-	if (count > 3 && wpa_s->current_ssid) {
+	if (wpa_s->consecutive_conn_failures > 3 && wpa_s->current_ssid) {
 		wpa_printf(MSG_DEBUG, "Continuous association failures - "
 			   "consider temporary network disabling");
 		wpas_auth_failed(wpa_s, "CONN_FAILED");
 	}
-
-	switch (count) {
+	/*
+	 * Multiple consecutive connection failures mean that other APs are
+	 * either not available or have already been tried, so we can start
+	 * increasing the delay here to avoid constant scanning.
+	 */
+	switch (wpa_s->consecutive_conn_failures) {
 	case 1:
 		timeout = 100;
 		break;
@@ -7431,8 +7427,9 @@ void wpas_connection_failed(struct wpa_supplicant *wpa_s, const u8 *bssid)
 		break;
 	}
 
-	wpa_dbg(wpa_s, MSG_DEBUG, "Blacklist count %d --> request scan in %d "
-		"ms", count, timeout);
+	wpa_dbg(wpa_s, MSG_DEBUG,
+		"Consecutive connection failures: %d --> request scan in %d ms",
+		wpa_s->consecutive_conn_failures, timeout);
 
 	/*
 	 * TODO: if more than one possible AP is available in scan results,
@@ -7796,7 +7793,6 @@ void wpas_request_connection(struct wpa_supplicant *wpa_s)
 	wpa_s->normal_scans = 0;
 	wpa_s->scan_req = NORMAL_SCAN_REQ;
 	wpa_supplicant_reinit_autoscan(wpa_s);
-	wpa_s->extra_blacklist_count = 0;
 	wpa_s->disconnected = 0;
 	wpa_s->reassociate = 1;
 	wpa_s->last_owe_group = 0;

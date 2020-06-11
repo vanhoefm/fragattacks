@@ -8418,9 +8418,10 @@ static void wpa_supplicant_ctrl_iface_flush(struct wpa_supplicant *wpa_s)
 	wpa_s->set_sta_uapsd = 0;
 	wpa_s->sta_uapsd = 0;
 
+	wpa_s->consecutive_conn_failures = 0;
+
 	wpa_drv_radio_disable(wpa_s, 0);
 	wpa_blacklist_clear(wpa_s);
-	wpa_s->extra_blacklist_count = 0;
 	wpa_supplicant_ctrl_iface_remove_network(wpa_s, "all");
 	wpa_supplicant_ctrl_iface_remove_cred(wpa_s, "all");
 	wpa_config_flush_blobs(wpa_s->conf);
