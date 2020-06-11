@@ -4839,9 +4839,9 @@ enum qca_wlan_vendor_channel_prop_flags_ext {
 	QCA_WLAN_VENDOR_CHANNEL_PROP_FLAG_EXT_DISALLOW_ADHOC  = 1 << 6,
 	/* Station only channel */
 	QCA_WLAN_VENDOR_CHANNEL_PROP_FLAG_EXT_DISALLOW_HOSTAP = 1 << 7,
-	/* DFS radar history for slave device (STA mode) */
+	/* DFS radar history for client device (STA mode) */
 	QCA_WLAN_VENDOR_CHANNEL_PROP_FLAG_EXT_HISTORY_RADAR   = 1 << 8,
-	/* DFS CAC valid for slave device (STA mode) */
+	/* DFS CAC valid for client device (STA mode) */
 	QCA_WLAN_VENDOR_CHANNEL_PROP_FLAG_EXT_CAC_VALID       = 1 << 9,
 };
 
