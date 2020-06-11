@@ -105,6 +105,8 @@ def prepare_tests(opt):
 		decoy_tid = None if stractions == None else int(stractions)
 		test = LinuxTest(REQ_ICMP, decoy_tid)
 
+	# TODO: - Rename test
+	# TODO: - Allow "I,CC" to first get an IP address and test black-box
 	elif opt.testname == "macos":
 		if stractions != None:
 			actions = [Action(char2trigger(t), enc=False) for t in stractions]
