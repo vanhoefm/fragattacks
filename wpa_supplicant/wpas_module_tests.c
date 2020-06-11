@@ -59,6 +59,23 @@ static int wpas_blacklist_module_tests(void)
 	    wpa_blacklist_add(&wpa_s, (u8 *) "333333") < 0)
 		goto fail;
 
+	wpa_blacklist_clear(&wpa_s);
+
+	if (wpa_blacklist_add(&wpa_s, (u8 *) "111111") < 0 ||
+	    wpa_blacklist_add(&wpa_s, (u8 *) "222222") < 0 ||
+	    wpa_blacklist_add(&wpa_s, (u8 *) "333333") < 0 ||
+	    wpa_blacklist_add(&wpa_s, (u8 *) "444444") < 0 ||
+	    !wpa_blacklist_is_blacklisted(&wpa_s, (u8 *) "111111") ||
+	    wpa_blacklist_del(&wpa_s, (u8 *) "111111") < 0 ||
+	    wpa_blacklist_is_blacklisted(&wpa_s, (u8 *) "111111") ||
+	    wpa_blacklist_add(&wpa_s, (u8 *) "111111") < 0)
+		goto fail;
+
+	wpa_blacklist_update(&wpa_s);
+
+	if (!wpa_blacklist_is_blacklisted(&wpa_s, (u8 *) "111111"))
+		goto fail;
+
 	ret = 0;
 fail:
 	wpa_blacklist_clear(&wpa_s);
