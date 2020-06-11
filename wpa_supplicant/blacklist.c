@@ -56,16 +56,29 @@ struct wpa_blacklist * wpa_blacklist_get(struct wpa_supplicant *wpa_s,
 int wpa_blacklist_add(struct wpa_supplicant *wpa_s, const u8 *bssid)
 {
 	struct wpa_blacklist *e;
+	struct os_reltime now;
 
 	if (wpa_s == NULL || bssid == NULL)
 		return -1;
 
 	e = wpa_blacklist_get(wpa_s, bssid);
+	os_get_reltime(&now);
 	if (e) {
+		e->blacklist_start = now;
 		e->count++;
-		wpa_printf(MSG_DEBUG, "BSSID " MACSTR " blacklist count "
-			   "incremented to %d",
-			   MAC2STR(bssid), e->count);
+		if (e->count > 5)
+			e->timeout_secs = 1800;
+		else if (e->count == 5)
+			e->timeout_secs = 600;
+		else if (e->count == 4)
+			e->timeout_secs = 120;
+		else if (e->count == 3)
+			e->timeout_secs = 60;
+		else
+			e->timeout_secs = 10;
+		wpa_printf(MSG_INFO, "BSSID " MACSTR
+			   " blacklist count incremented to %d, blacklisting for %d seconds",
+			   MAC2STR(bssid), e->count, e->timeout_secs);
 		return e->count;
 	}
 
@@ -74,10 +87,13 @@ int wpa_blacklist_add(struct wpa_supplicant *wpa_s, const u8 *bssid)
 		return -1;
 	os_memcpy(e->bssid, bssid, ETH_ALEN);
 	e->count = 1;
+	e->timeout_secs = 10;
+	e->blacklist_start = now;
 	e->next = wpa_s->blacklist;
 	wpa_s->blacklist = e;
-	wpa_printf(MSG_DEBUG, "Added BSSID " MACSTR " into blacklist",
-		   MAC2STR(bssid));
+	wpa_printf(MSG_DEBUG, "Added BSSID " MACSTR
+		   " into blacklist, blacklisting for %d seconds",
+		   MAC2STR(bssid), e->timeout_secs);
 
 	return e->count;
 }
@@ -113,6 +129,27 @@ int wpa_blacklist_del(struct wpa_supplicant *wpa_s, const u8 *bssid)
 		e = e->next;
 	}
 	return -1;
+}
+
+
+/**
+ * wpa_blacklist_is_blacklisted - Check the blacklist status of a BSS
+ * @wpa_s: Pointer to wpa_supplicant data
+ * @bssid: BSSID to be checked
+ * Returns: count if BSS is currently considered to be blacklisted, 0 otherwise
+ */
+int wpa_blacklist_is_blacklisted(struct wpa_supplicant *wpa_s, const u8 *bssid)
+{
+	struct wpa_blacklist *e;
+	struct os_reltime now;
+
+	e = wpa_blacklist_get(wpa_s, bssid);
+	if (!e)
+		return 0;
+	os_get_reltime(&now);
+	if (os_reltime_expired(&now, &e->blacklist_start, e->timeout_secs))
+		return 0;
+	return e->count;
 }
 
 

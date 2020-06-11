@@ -984,7 +984,6 @@ void wpa_supplicant_set_state(struct wpa_supplicant *wpa_s,
 			fils_hlp_sent ? " FILS_HLP_SENT" : "");
 #endif /* CONFIG_CTRL_IFACE || !CONFIG_NO_STDOUT_DEBUG */
 		wpas_clear_temp_disabled(wpa_s, ssid, 1);
-		wpa_blacklist_clear(wpa_s);
 		wpa_s->consecutive_conn_failures = 0;
 		wpa_s->new_connection = 0;
 		wpa_drv_set_operstate(wpa_s, 1);
@@ -7324,7 +7323,7 @@ static int * get_bss_freqs_in_ess(struct wpa_supplicant *wpa_s)
 			continue;
 		if (bss->ssid_len == cbss->ssid_len &&
 		    os_memcmp(bss->ssid, cbss->ssid, bss->ssid_len) == 0 &&
-		    wpa_blacklist_get(wpa_s, bss->bssid) == NULL) {
+		    !wpa_blacklist_is_blacklisted(wpa_s, bss->bssid)) {
 			add_freq(freqs, &num_freqs, bss->freq);
 			if (num_freqs == max_freqs)
 				break;

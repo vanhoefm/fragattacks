@@ -1085,7 +1085,7 @@ static int disabled_freq(struct wpa_supplicant *wpa_s, int freq)
 
 static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 			    const u8 *match_ssid, size_t match_ssid_len,
-			    struct wpa_bss *bss, struct wpa_blacklist *e,
+			    struct wpa_bss *bss, int blacklist_count,
 			    bool debug_print);
 
 
@@ -1099,7 +1099,7 @@ static bool sae_pk_acceptable_bss_with_pk(struct wpa_supplicant *wpa_s,
 	struct wpa_bss *bss;
 
 	dl_list_for_each(bss, &wpa_s->bss, struct wpa_bss, list) {
-		struct wpa_blacklist *e;
+		int count;
 		const u8 *ie;
 		u8 rsnxe_capa = 0;
 
@@ -1117,9 +1117,9 @@ static bool sae_pk_acceptable_bss_with_pk(struct wpa_supplicant *wpa_s,
 		if (bss->est_throughput < 2000)
 			return false;
 
-		e = wpa_blacklist_get(wpa_s, bss->bssid);
+		count = wpa_blacklist_is_blacklisted(wpa_s, bss->bssid);
 		if (wpa_scan_res_ok(wpa_s, ssid, match_ssid, match_ssid_len,
-				    bss, e, 0))
+				    bss, count, 0))
 			return true;
 	}
 
@@ -1130,7 +1130,7 @@ static bool sae_pk_acceptable_bss_with_pk(struct wpa_supplicant *wpa_s,
 
 static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 			    const u8 *match_ssid, size_t match_ssid_len,
-			    struct wpa_bss *bss, struct wpa_blacklist *e,
+			    struct wpa_bss *bss, int blacklist_count,
 			    bool debug_print)
 {
 	int res;
@@ -1178,7 +1178,7 @@ static bool wpa_scan_res_ok(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid,
 	}
 
 #ifdef CONFIG_WPS
-	if ((ssid->key_mgmt & WPA_KEY_MGMT_WPS) && e && e->count > 0) {
+	if ((ssid->key_mgmt & WPA_KEY_MGMT_WPS) && blacklist_count) {
 		if (debug_print)
 			wpa_dbg(wpa_s, MSG_DEBUG,
 				"   skip - blacklisted (WPS)");
@@ -1472,12 +1472,12 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 				     int only_first_ssid, int debug_print)
 {
 	u8 wpa_ie_len, rsn_ie_len;
-	struct wpa_blacklist *e;
 	const u8 *ie;
 	struct wpa_ssid *ssid;
 	int osen;
 	const u8 *match_ssid;
 	size_t match_ssid_len;
+	int blacklist_count;
 
 	ie = wpa_bss_get_vendor_ie(bss, WPA_IE_VENDOR_TYPE);
 	wpa_ie_len = ie ? ie[1] : 0;
@@ -1503,8 +1503,8 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 			osen ? " osen=1" : "");
 	}
 
-	e = wpa_blacklist_get(wpa_s, bss->bssid);
-	if (e) {
+	blacklist_count = wpa_blacklist_is_blacklisted(wpa_s, bss->bssid);
+	if (blacklist_count) {
 		int limit = 1;
 		if (wpa_supplicant_enabled_networks(wpa_s) == 1) {
 			/*
@@ -1517,11 +1517,11 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 			 */
 			limit = 0;
 		}
-		if (e->count > limit) {
+		if (blacklist_count > limit) {
 			if (debug_print) {
 				wpa_dbg(wpa_s, MSG_DEBUG,
 					"   skip - blacklisted (count=%d limit=%d)",
-					e->count, limit);
+					blacklist_count, limit);
 			}
 			return NULL;
 		}
@@ -1557,7 +1557,7 @@ struct wpa_ssid * wpa_scan_res_match(struct wpa_supplicant *wpa_s,
 
 	for (ssid = group; ssid; ssid = only_first_ssid ? NULL : ssid->pnext) {
 		if (wpa_scan_res_ok(wpa_s, ssid, match_ssid, match_ssid_len,
-				    bss, e, debug_print))
+				    bss, blacklist_count, debug_print))
 			return ssid;
 	}
 
