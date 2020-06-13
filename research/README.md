@@ -35,6 +35,10 @@ requires the use of a patched driver and firmware, but since it's a USB dongle t
 configured inside a virtual machine. If you are unable to find one of the above devices, you
 can search for [alternative devices] that have a high chance of also working.
 
+Although the AWUS036ACM is a USB dongle, we were unable to reliably use it in a virtual machine.
+We only recommend this device when you can natively run Linux. Our live CD can be used for this.
+**TODO: On live USB kali it only worked in a USB2 slot. Can we force that in the host/VM?**
+
 ## Prerequisites
 
 Our scripts were tested on Kali Linux and Ubuntu 20.04. To install the required dependencies, execute:
