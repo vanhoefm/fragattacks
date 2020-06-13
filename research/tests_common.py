@@ -14,6 +14,20 @@ class PingTest(Test):
 		self.padding = None if opt == None else opt.padding
 		self.to_self = False if opt == None else opt.to_self
 
+		self.parse_meta_actions()
+
+	def parse_meta_actions(self):
+		# Create list of fragment numbers to be used
+		self.fragnums = []
+		next_fragnum = 0
+		for act in self.actions:
+			if act.is_meta(Action.MetaDrop):
+				next_fragnum += 1
+			elif act.action == Action.Inject:
+				self.fragnums.append(next_fragnum)
+				next_fragnum += 1
+		self.actions = list(filter(lambda act: not act.is_meta(Action.MetaDrop), self.actions))
+
 	def prepare(self, station):
 		log(STATUS, "Generating ping test", color="green")
 
@@ -28,17 +42,6 @@ class PingTest(Test):
 		elif self.as_msdu == 2:
 			# Set A-MSDU flag but include a normal payload (fake A-MSDU)
 			header.Reserved = 1
-
-		# Create list of fragment numbers to be used
-		fragnums = []
-		next_fragnum = 0
-		for act in self.actions:
-			if act.is_meta(Action.MetaDrop):
-				next_fragnum += 1
-			elif act.action == Action.Inject:
-				fragnums.append(next_fragnum)
-				next_fragnum += 1
-		self.actions = list(filter(lambda act: not act.is_meta(Action.MetaDrop), self.actions))
 
 		# Generate all the individual (fragmented) frames
 		num_frags = len(self.get_actions(Action.Inject))
@@ -55,7 +58,7 @@ class PingTest(Test):
 					frame.addr1 = "ff:ff:ff:ff:ff:ff"
 
 			# Assign fragment numbers according to MetaDrop rules
-			frame.SC = (frame.SC & 0xfff0) | fragnums.pop(0)
+			frame.SC = (frame.SC & 0xfff0) | self.fragnums.pop(0)
 
 			frag.frame = frame
 
