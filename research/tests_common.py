@@ -1,4 +1,5 @@
 from fraginternals import *
+import copy
 
 class PingTest(Test):
 	def __init__(self, ptype, fragments, separate_with=None, opt=None):
@@ -74,23 +75,46 @@ class PingTest(Test):
 				self.actions.insert(i, sep_frag)
 
 class ForwardTest(Test):
-	def __init__(self):
-		super().__init__([
-			Action(Action.Connected, enc=True)
-		])
+	def __init__(self, eapol=False, dst=None, large=False):
+		actions = [Action(Action.Connected, enc=True)]
+		if eapol:
+			actions = [Action(Action.StartAuth, enc=False)]
+		if large:
+			actions += copy.deepcopy(actions)
+
+		super().__init__(actions)
+		self.eapol = eapol
+		self.dst = dst
+		self.large = large
 		self.magic = b"forwarded_data"
-		self.check_fn = lambda p: self.magic in raw(p)
 
 	def prepare(self, station):
-		# We assume we are targetting the AP
+		# Construct the header of the frame
 		header = station.get_header(prior=2)
 		if header.FCfield & Dot11(FCfield="to-DS").FCfield == 0:
-			log(ERROR, "Impossible test! It makes to sense to test whether a client forwards frames.")
+			log(ERROR, "It makes no sense to test whether a client forwards frames??")
 
-		# Set final destination to be us, the client
-		header.addr3 = station.mac
+		if self.dst == None:
+			header.addr3 = station.mac
+			self.check_fn = lambda p: self.magic in raw(p)
+		else:
+			header.addr3 = self.dst
 
-		self.actions[0].frame = header/LLC()/SNAP()/IP()/Raw(self.magic)
+		# Determine the type of data to send
+		if self.eapol:
+			request = LLC()/SNAP()/EAPOL()/Raw(self.magic)
+		else:
+			request = LLC()/SNAP()/IP()/Raw(self.magic)
+
+		# Wether to send large requests
+		if self.large:
+			request = request/Raw(b"A" * 1500)
+
+		# Create the actual frame(s)
+		frames = create_fragments(header, request, len(self.actions))
+		for frag, frame in zip(self.get_actions(Action.Inject), frames):
+			frag.frame = frame
+
 
 class LinuxTest(Test):
 	def __init__(self, ptype, decoy_tid=None):

@@ -35,6 +35,7 @@ def stract2action(stract):
 	elif c == 'E':
 		return Action(trigger, enc=True)
 	elif c == 'D':
+		# Note: the trigger condition of MetaDrop is ignored
 		return Action(meta_action=Action.MetaDrop)
 
 	raise Exception("Unrecognized action")
@@ -80,7 +81,13 @@ def prepare_tests(opt):
 				 Action(Action.AfterAuth, enc=True)])
 
 	elif opt.testname == "forward":
-		test = ForwardTest()
+		test = ForwardTest(eapol=False, dst=stractions)
+
+	elif opt.testname == "eapol-inject":
+		large = False
+		if stractions != None and stractions.startswith("L,"):
+			large, stractions = True, stractions[2:]
+		test = ForwardTest(eapol=True, dst=stractions, large=large)
 
 	elif opt.testname == "eapol-amsdu":
 		freebsd = False
