@@ -127,7 +127,7 @@ class QcaTestSplit(Test):
 		if False:
 			self.actions[2].frame = station.get_header(seqnum=11, prior=4)/LLC()/SNAP()/IP()
 		else:
-			header, request, self.check_fn = generate_request(station, self.ptype, prior=2)
+			header, request, self.check_fn = generate_request(station, REQ_ICMP, prior=2)
 			header.SC = 11 << 4
 			self.actions[2].frame = header/request/Raw(b"3")
 
