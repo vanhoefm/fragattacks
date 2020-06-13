@@ -194,8 +194,8 @@ and the other tests are useful to understand the behaviour of the device under t
 |                        | eapol-amsdu I,CC               | Same as above, except the frame is injected after being connected and obtaining an IP.
 |                        | eapol-amsdu M,BB               | Send a malformed A-MSDU frame disguised as EAPOL frame. Use tcpdump to check if vulnerable.
 |                        | eapol-amsdu M,I,CC             | Same as above, except the frame is injected after being connected and obtaining an IP.
-| **MacOS Plain Inject** | macos BB                       | Fragmented EAPOL attack (notably works against MacOS). Run tcpdump on target to check if vulnerable.
 | **Broadcast ping**     | ping I,D,P --bcast-ra          | Send ping inside the second plaintext fragment of a broadcast Wi-Fi frame (no 1st fragment is sent).
+| **EAPOL Injection**    | eapol-inject 00:11:22:33:44:55 | **TODO**
 
 Optionally you can also run more advanced tests. These have a lower chance of uncovering vulnerabilities,
 but against more exotic implementations that might work (while the above tests could fail).
@@ -214,9 +214,13 @@ but against more exotic implementations that might work (while the above tests c
 |                        | eapol-amsdu [M,]I,CC --bcast-dst| Same as "eapol-amsdu [M,]I,CC" but ping is broadcasted. To test AP, check if a 2nd client receives the ping.
 |                        | eapol-amsdu SS                  |
 |                        | eapol-amsdu AA                  |
-| **MacOS Plain Inject** | macos CC                        | Fragmented EAPOL attack (notably works against MacOS). Run tcpdump on target to check if vulnerable.
-| **Broadcast ping**     | ping I,P,P --bcast-ra           | Send ping inside two plaintext fragments of a broadcast Wi-Fi frame.
+| **MacOS Plain Inject** | macos CC                        | **TODO: Still usefull?** Fragmented EAPOL attack (notably works against MacOS). Run tcpdump on target to check if vulnerable.
+|                        | macos BB                        | Fragmented EAPOL attack (notably works against MacOS). Run tcpdump on target to check if vulnerable.
+| **Broadcast ping**     | ping D,SP --bcast-ra            | Send ping inside two plaintext fragments of a broadcast Wi-Fi frame. Use tcpdump to check if vulnerable.
+|                        | ping D,BP --bcast-ra            | Send ping inside two plaintext fragments of a broadcast Wi-Fi frame. Use tcpdump to check if vulnerable.
 |                        | ping I,P --bcast-ra             | Send ping inside a plaintext broadcast Wi-Fi frame.
+| **EAPOL Injection**    | eapol-inject L,00:11:22:33:44:55 | **TODO: Can we force fragmentation?**
+
 
 Details remarks:
 
