@@ -1529,7 +1529,8 @@ class WpaSupplicant:
                       extra=None, own=None, role=None, neg_freq=None,
                       ssid=None, passphrase=None, expect_fail=False,
                       tcp_addr=None, tcp_port=None, conn_status=False,
-                      ssid_charset=None, nfc_uri=None, netrole=None):
+                      ssid_charset=None, nfc_uri=None, netrole=None,
+                      csrattrs=None):
         cmd = "DPP_AUTH_INIT"
         if peer is None:
             if nfc_uri:
@@ -1563,6 +1564,8 @@ class WpaSupplicant:
             cmd += " conn_status=1"
         if netrole:
             cmd += " netrole=" + netrole
+        if csrattrs:
+            cmd += " csrattrs=" + csrattrs
         res = self.request(cmd)
         if expect_fail:
             if "FAIL" not in res:
@@ -1570,6 +1573,7 @@ class WpaSupplicant:
             return
         if "OK" not in res:
             raise Exception("Failed to initiate DPP Authentication")
+        return int(peer)
 
     def dpp_pkex_init(self, identifier, code, role=None, key=None, curve=None,
                       extra=None, use_id=None, allow_fail=False):
