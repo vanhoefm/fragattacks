@@ -196,6 +196,7 @@ enum dpp_akm {
 	DPP_AKM_PSK_SAE,
 	DPP_AKM_SAE_DPP,
 	DPP_AKM_PSK_SAE_DPP,
+	DPP_AKM_DOT1X,
 };
 
 enum dpp_netrole {

@@ -916,6 +916,8 @@ struct dpp_configuration * dpp_configuration_alloc(const char *type)
 		conf->akm = DPP_AKM_PSK_SAE_DPP;
 	else if (bin_str_eq(type, len, "dpp"))
 		conf->akm = DPP_AKM_DPP;
+	else if (bin_str_eq(type, len, "dot1x"))
+		conf->akm = DPP_AKM_DOT1X;
 	else
 		goto fail;
 
@@ -2371,6 +2373,8 @@ const char * dpp_akm_str(enum dpp_akm akm)
 		return "dpp+sae";
 	case DPP_AKM_PSK_SAE_DPP:
 		return "dpp+psk+sae";
+	case DPP_AKM_DOT1X:
+		return "dot1x";
 	default:
 		return "??";
 	}
@@ -2392,6 +2396,8 @@ const char * dpp_akm_selector_str(enum dpp_akm akm)
 		return "506F9A02+000FAC08";
 	case DPP_AKM_PSK_SAE_DPP:
 		return "506F9A02+000FAC08+000FAC02+000FAC06";
+	case DPP_AKM_DOT1X:
+		return "000FAC01+000FAC05";
 	default:
 		return "??";
 	}
@@ -2401,7 +2407,7 @@ const char * dpp_akm_selector_str(enum dpp_akm akm)
 static enum dpp_akm dpp_akm_from_str(const char *akm)
 {
 	const char *pos;
-	int dpp = 0, psk = 0, sae = 0;
+	int dpp = 0, psk = 0, sae = 0, dot1x = 0;
 
 	if (os_strcmp(akm, "psk") == 0)
 		return DPP_AKM_PSK;
@@ -2415,6 +2421,8 @@ static enum dpp_akm dpp_akm_from_str(const char *akm)
 		return DPP_AKM_SAE_DPP;
 	if (os_strcmp(akm, "dpp+psk+sae") == 0)
 		return DPP_AKM_PSK_SAE_DPP;
+	if (os_strcmp(akm, "dot1x") == 0)
+		return DPP_AKM_DOT1X;
 
 	pos = akm;
 	while (*pos) {
@@ -2428,6 +2436,10 @@ static enum dpp_akm dpp_akm_from_str(const char *akm)
 			psk = 1;
 		else if (os_strncasecmp(pos, "000FAC08", 8) == 0)
 			sae = 1;
+		else if (os_strncasecmp(pos, "000FAC01", 8) == 0)
+			dot1x = 1;
+		else if (os_strncasecmp(pos, "000FAC05", 8) == 0)
+			dot1x = 1;
 		pos += 8;
 		if (*pos != '+')
 			break;
@@ -2446,6 +2458,8 @@ static enum dpp_akm dpp_akm_from_str(const char *akm)
 		return DPP_AKM_SAE;
 	if (psk)
 		return DPP_AKM_PSK;
+	if (dot1x)
+		return DPP_AKM_DOT1X;
 
 	return DPP_AKM_UNKNOWN;
 }
