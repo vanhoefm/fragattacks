@@ -2647,8 +2647,8 @@ void wpas_dpp_rx_action(struct wpa_supplicant *wpa_s, const u8 *src,
 
 
 static struct wpabuf *
-wpas_dpp_gas_req_handler(void *ctx, const u8 *sa, const u8 *query,
-			 size_t query_len)
+wpas_dpp_gas_req_handler(void *ctx, void *resp_ctx, const u8 *sa,
+			 const u8 *query, size_t query_len, u16 *comeback_delay)
 {
 	struct wpa_supplicant *wpa_s = ctx;
 	struct dpp_authentication *auth = wpa_s->dpp_auth;
