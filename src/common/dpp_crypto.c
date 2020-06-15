@@ -12,6 +12,7 @@
 #include <openssl/err.h>
 #include <openssl/asn1.h>
 #include <openssl/asn1t.h>
+#include <openssl/pem.h>
 
 #include "utils/common.h"
 #include "utils/base64.h"
@@ -2662,6 +2663,161 @@ void dpp_pfs_free(struct dpp_pfs *pfs)
 	wpabuf_free(pfs->ie);
 	wpabuf_clear_free(pfs->secret);
 	os_free(pfs);
+}
+
+
+struct wpabuf * dpp_build_csr(struct dpp_authentication *auth)
+{
+	X509_REQ *req = NULL;
+	struct wpabuf *buf = NULL;
+	unsigned char *der;
+	int der_len;
+	EVP_PKEY *key;
+	const EVP_MD *sign_md;
+	unsigned int hash_len = auth->curve->hash_len;
+	EC_KEY *eckey;
+	BIO *out = NULL;
+
+	/* TODO: use auth->csrattrs */
+
+	/* TODO: support generation of a new private key if csrAttrs requests
+	 * a specific group to be used */
+	key = auth->own_protocol_key;
+
+	eckey = EVP_PKEY_get1_EC_KEY(key);
+	if (!eckey)
+		goto fail;
+	der = NULL;
+	der_len = i2d_ECPrivateKey(eckey, &der);
+	if (der_len <= 0)
+		goto fail;
+	wpabuf_free(auth->priv_key);
+	auth->priv_key = wpabuf_alloc_copy(der, der_len);
+	OPENSSL_free(der);
+	if (!auth->priv_key)
+		goto fail;
+
+	req = X509_REQ_new();
+	if (!req || !X509_REQ_set_pubkey(req, key))
+		goto fail;
+
+	/* TODO */
+
+	/* TODO: hash func selection based on csrAttrs */
+	if (hash_len == SHA256_MAC_LEN) {
+		sign_md = EVP_sha256();
+	} else if (hash_len == SHA384_MAC_LEN) {
+		sign_md = EVP_sha384();
+	} else if (hash_len == SHA512_MAC_LEN) {
+		sign_md = EVP_sha512();
+	} else {
+		wpa_printf(MSG_DEBUG, "DPP: Unknown signature algorithm");
+		goto fail;
+	}
+
+	if (!X509_REQ_sign(req, key, sign_md))
+		goto fail;
+
+	der = NULL;
+	der_len = i2d_X509_REQ(req, &der);
+	if (der_len < 0)
+		goto fail;
+	buf = wpabuf_alloc_copy(der, der_len);
+	OPENSSL_free(der);
+
+	wpa_hexdump_buf(MSG_DEBUG, "DPP: CSR", buf);
+
+fail:
+	BIO_free_all(out);
+	X509_REQ_free(req);
+	return buf;
+}
+
+
+struct wpabuf * dpp_pkcs7_certs(const struct wpabuf *pkcs7)
+{
+#ifdef OPENSSL_IS_BORINGSSL
+	CBS pkcs7_cbs;
+#else /* OPENSSL_IS_BORINGSSL */
+	PKCS7 *p7 = NULL;
+	const unsigned char *p = wpabuf_head(pkcs7);
+#endif /* OPENSSL_IS_BORINGSSL */
+	STACK_OF(X509) *certs;
+	int i, num;
+	BIO *out = NULL;
+	size_t rlen;
+	struct wpabuf *pem = NULL;
+	int res;
+
+#ifdef OPENSSL_IS_BORINGSSL
+	certs = sk_X509_new_null();
+	if (!certs)
+		goto fail;
+	CBS_init(&pkcs7_cbs, wpabuf_head(pkcs7), wpabuf_len(pkcs7));
+	if (!PKCS7_get_certificates(certs, &pkcs7_cbs)) {
+		wpa_printf(MSG_INFO, "DPP: Could not parse PKCS#7 object: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+#else /* OPENSSL_IS_BORINGSSL */
+	p7 = d2i_PKCS7(NULL, &p, wpabuf_len(pkcs7));
+	if (!p7) {
+		wpa_printf(MSG_INFO, "DPP: Could not parse PKCS#7 object: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+
+	switch (OBJ_obj2nid(p7->type)) {
+	case NID_pkcs7_signed:
+		certs = p7->d.sign->cert;
+		break;
+	case NID_pkcs7_signedAndEnveloped:
+		certs = p7->d.signed_and_enveloped->cert;
+		break;
+	default:
+		certs = NULL;
+		break;
+	}
+#endif /* OPENSSL_IS_BORINGSSL */
+
+	if (!certs || ((num = sk_X509_num(certs)) == 0)) {
+		wpa_printf(MSG_INFO,
+			   "DPP: No certificates found in PKCS#7 object");
+		goto fail;
+	}
+
+	out = BIO_new(BIO_s_mem());
+	if (!out)
+		goto fail;
+
+	for (i = 0; i < num; i++) {
+		X509 *cert = sk_X509_value(certs, i);
+
+		PEM_write_bio_X509(out, cert);
+	}
+
+	rlen = BIO_ctrl_pending(out);
+	pem = wpabuf_alloc(rlen);
+	if (!pem)
+		goto fail;
+	res = BIO_read(out, wpabuf_put(pem, 0), rlen);
+	if (res <= 0) {
+		wpabuf_free(pem);
+		goto fail;
+	}
+	wpabuf_put(pem, res);
+
+fail:
+#ifdef OPENSSL_IS_BORINGSSL
+	if (certs)
+		sk_X509_pop_free(certs, X509_free);
+#else /* OPENSSL_IS_BORINGSSL */
+	PKCS7_free(p7);
+#endif /* OPENSSL_IS_BORINGSSL */
+	if (out)
+		BIO_free_all(out);
+
+	return pem;
 }
 
 #endif /* CONFIG_DPP2 */

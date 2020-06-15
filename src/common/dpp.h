@@ -312,6 +312,10 @@ struct dpp_authentication {
 		int psk_set;
 		enum dpp_akm akm;
 		struct wpabuf *c_sign_key;
+		struct wpabuf *certbag;
+		struct wpabuf *certs;
+		struct wpabuf *cacert;
+		char *server_name;
 	} conf_obj[DPP_MAX_CONF_OBJ];
 	unsigned int num_conf_obj;
 	struct dpp_asymmetric_key *conf_key_pkg;
@@ -322,7 +326,11 @@ struct dpp_authentication {
 	int akm_use_selector;
 	int configurator_set;
 	u8 transaction_id;
+	u8 *csrattrs;
+	size_t csrattrs_len;
 	bool waiting_csr;
+	struct wpabuf *csr;
+	struct wpabuf *priv_key; /* DER-encoded private key used for csr */
 	bool waiting_cert;
 	char *trusted_eap_server_name;
 	struct wpabuf *cacert;
@@ -605,6 +613,9 @@ struct dpp_pfs * dpp_pfs_init(const u8 *net_access_key,
 			      size_t net_access_key_len);
 int dpp_pfs_process(struct dpp_pfs *pfs, const u8 *peer_ie, size_t peer_ie_len);
 void dpp_pfs_free(struct dpp_pfs *pfs);
+
+struct wpabuf * dpp_build_csr(struct dpp_authentication *auth);
+struct wpabuf * dpp_pkcs7_certs(const struct wpabuf *pkcs7);
 
 struct dpp_bootstrap_info * dpp_add_qr_code(struct dpp_global *dpp,
 					    const char *uri);
