@@ -12,6 +12,7 @@
 #include "utils/common.h"
 #include "utils/eloop.h"
 #include "utils/ip_addr.h"
+#include "utils/base64.h"
 #include "common/dpp.h"
 #include "common/gas.h"
 #include "common/gas_server.h"
@@ -2679,6 +2680,16 @@ wpas_dpp_gas_req_handler(void *ctx, void *resp_ctx, const u8 *sa,
 	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONF_REQ_RX "src=" MACSTR,
 		MAC2STR(sa));
 	resp = dpp_conf_req_rx(auth, query, query_len);
+
+#ifdef CONFIG_DPP2
+	if (!resp && auth->waiting_cert) {
+		wpa_printf(MSG_DEBUG, "DPP: Certificate not yet ready");
+		auth->cert_resp_ctx = resp_ctx;
+		*comeback_delay = 500;
+		return NULL;
+	}
+#endif /* CONFIG_DPP2 */
+
 	if (!resp)
 		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONF_FAILED);
 	auth->conf_resp = resp;
@@ -2703,6 +2714,14 @@ wpas_dpp_gas_status_handler(void *ctx, struct wpabuf *resp, int ok)
 		wpabuf_free(resp);
 		return;
 	}
+
+#ifdef CONFIG_DPP2
+	if (auth->waiting_csr && ok) {
+		wpa_printf(MSG_DEBUG, "DPP: Waiting for CSR");
+		wpabuf_free(resp);
+		return;
+	}
+#endif /* CONFIG_DPP2 */
 
 	wpa_printf(MSG_DEBUG, "DPP: Configuration exchange completed (ok=%d)",
 		   ok);
@@ -3447,6 +3466,86 @@ int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 	wpa_s->dpp_chirp_listen = 0;
 
 	return eloop_register_timeout(0, 0, wpas_dpp_chirp_next, wpa_s, NULL);
+}
+
+
+int wpas_dpp_ca_set(struct wpa_supplicant *wpa_s, const char *cmd)
+{
+	int peer;
+	const char *pos, *value;
+	struct dpp_authentication *auth = wpa_s->dpp_auth;
+	u8 *bin;
+	size_t bin_len;
+	struct wpabuf *buf;
+
+	if (!auth || !auth->waiting_cert) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: No authentication exchange waiting for certificate information");
+		return -1;
+	}
+
+	pos = os_strstr(cmd, " peer=");
+	if (pos) {
+		peer = atoi(pos + 6);
+		if (!auth->peer_bi ||
+		    (unsigned int) peer != auth->peer_bi->id) {
+			wpa_printf(MSG_DEBUG, "DPP: Peer mismatch");
+			return -1;
+		}
+	}
+
+	pos = os_strstr(cmd, " value=");
+	if (!pos)
+		return -1;
+	value = pos + 7;
+
+	pos = os_strstr(cmd, " name=");
+	if (!pos)
+		return -1;
+	pos += 6;
+
+	if (os_strncmp(pos, "trustedEapServerName ", 21) == 0) {
+		os_free(auth->trusted_eap_server_name);
+		auth->trusted_eap_server_name = os_strdup(value);
+		return auth->trusted_eap_server_name ? 0 : -1;
+	}
+
+	bin = base64_decode(value, os_strlen(value), &bin_len);
+	if (!bin)
+		return -1;
+	buf = wpabuf_alloc_copy(bin, bin_len);
+	os_free(bin);
+
+	if (os_strncmp(pos, "caCert ", 7) == 0) {
+		wpabuf_free(auth->cacert);
+		auth->cacert = buf;
+		return 0;
+	}
+
+	if (os_strncmp(pos, "certBag ", 8) == 0) {
+		struct wpabuf *resp;
+
+		wpabuf_free(auth->certbag);
+		auth->certbag = buf;
+
+		resp = dpp_build_conf_resp(auth, auth->e_nonce,
+					   auth->curve->nonce_len,
+					   auth->e_netrole, true);
+		if (!resp)
+			return -1;
+		if (gas_server_set_resp(wpa_s->gas_server, auth->cert_resp_ctx,
+					resp) < 0) {
+			wpa_printf(MSG_DEBUG,
+				   "DPP: Could not find pending GAS response");
+			wpabuf_free(resp);
+			return -1;
+		}
+		auth->conf_resp = resp;
+		return 0;
+	}
+
+	wpabuf_free(buf);
+	return -1;
 }
 
 #endif /* CONFIG_DPP2 */

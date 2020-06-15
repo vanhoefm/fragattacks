@@ -11204,6 +11204,9 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 		ssid = wpa_config_get_network(wpa_s->conf, atoi(buf + 13));
 		if (!ssid || wpas_dpp_reconfig(wpa_s, ssid) < 0)
 			reply_len = -1;
+	} else if (os_strncmp(buf, "DPP_CA_SET ", 11) == 0) {
+		if (wpas_dpp_ca_set(wpa_s, buf + 10) < 0)
+			reply_len = -1;
 #endif /* CONFIG_DPP2 */
 #endif /* CONFIG_DPP */
 	} else {

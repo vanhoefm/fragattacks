@@ -17,6 +17,7 @@
 #include "common/ieee802_11_common.h"
 #include "common/wpa_ctrl.h"
 #include "common/gas.h"
+#include "eap_common/eap_defs.h"
 #include "crypto/crypto.h"
 #include "crypto/random.h"
 #include "crypto/aes.h"
@@ -980,6 +981,7 @@ void dpp_configuration_free(struct dpp_configuration *conf)
 		return;
 	str_clear_free(conf->passphrase);
 	os_free(conf->group_id);
+	os_free(conf->csrattrs);
 	bin_clear_free(conf, sizeof(*conf));
 }
 
@@ -990,6 +992,7 @@ static int dpp_configuration_parse_helper(struct dpp_authentication *auth,
 	const char *pos, *end;
 	struct dpp_configuration *conf_sta = NULL, *conf_ap = NULL;
 	struct dpp_configuration *conf = NULL;
+	size_t len;
 
 	pos = os_strstr(cmd, " conf=sta-");
 	if (pos) {
@@ -1092,6 +1095,17 @@ static int dpp_configuration_parse_helper(struct dpp_authentication *auth,
 		if (val <= 0)
 			goto fail;
 		conf->netaccesskey_expiry = val;
+	}
+
+	pos = os_strstr(cmd, " csrattrs=");
+	if (pos) {
+		pos += 10;
+		end = os_strchr(pos, ' ');
+		len = end ? (size_t) (end - pos) : os_strlen(pos);
+		conf->csrattrs = os_zalloc(len + 1);
+		if (!conf->csrattrs)
+			goto fail;
+		os_memcpy(conf->csrattrs, pos, len);
 	}
 
 	if (!dpp_configuration_valid(conf))
@@ -1482,6 +1496,15 @@ skip_groups:
 	tailroom += os_strlen(signed_conn);
 	if (incl_legacy)
 		tailroom += 1000;
+	if (akm == DPP_AKM_DOT1X) {
+		if (auth->certbag)
+			tailroom += 2 * wpabuf_len(auth->certbag);
+		if (auth->cacert)
+			tailroom += 2 * wpabuf_len(auth->cacert);
+		if (auth->trusted_eap_server_name)
+			tailroom += os_strlen(auth->trusted_eap_server_name);
+		tailroom += 1000;
+	}
 	buf = dpp_build_conf_start(auth, conf, tailroom);
 	if (!buf)
 		goto fail;
@@ -1495,6 +1518,30 @@ skip_groups:
 	json_value_sep(buf);
 	if (incl_legacy) {
 		dpp_build_legacy_cred_params(buf, conf);
+		json_value_sep(buf);
+	}
+	if (akm == DPP_AKM_DOT1X) {
+		json_start_object(buf, "entCreds");
+		if (!auth->certbag)
+			goto fail;
+		json_add_base64(buf, "certBag", wpabuf_head(auth->certbag),
+				wpabuf_len(auth->certbag));
+		if (auth->cacert) {
+			json_value_sep(buf);
+			json_add_base64(buf, "caCert",
+					wpabuf_head(auth->cacert),
+					wpabuf_len(auth->cacert));
+		}
+		if (auth->trusted_eap_server_name) {
+			json_value_sep(buf);
+			json_add_string(buf, "trustedEapServerName",
+					auth->trusted_eap_server_name);
+		}
+		json_value_sep(buf);
+		json_start_array(buf, "eapMethods");
+		wpabuf_printf(buf, "%d", EAP_TYPE_TLS);
+		json_end_array(buf);
+		json_end_object(buf);
 		json_value_sep(buf);
 	}
 	wpabuf_put_str(buf, "\"signedConnector\":\"");
@@ -1556,7 +1603,7 @@ dpp_build_conf_obj_legacy(struct dpp_authentication *auth,
 
 static struct wpabuf *
 dpp_build_conf_obj(struct dpp_authentication *auth, enum dpp_netrole netrole,
-		   int idx)
+		   int idx, bool cert_req)
 {
 	struct dpp_configuration *conf = NULL;
 
@@ -1589,15 +1636,28 @@ dpp_build_conf_obj(struct dpp_authentication *auth, enum dpp_netrole netrole,
 		return NULL;
 	}
 
+	if (conf->akm == DPP_AKM_DOT1X) {
+		if (!auth->conf) {
+			wpa_printf(MSG_DEBUG,
+				   "DPP: No Configurator data available");
+			return NULL;
+		}
+		if (!cert_req && !auth->certbag) {
+			wpa_printf(MSG_DEBUG,
+				   "DPP: No certificate data available for dot1x configuration");
+			return NULL;
+		}
+		return dpp_build_conf_obj_dpp(auth, conf);
+	}
 	if (dpp_akm_dpp(conf->akm) || (auth->peer_version >= 2 && auth->conf))
 		return dpp_build_conf_obj_dpp(auth, conf);
 	return dpp_build_conf_obj_legacy(auth, conf);
 }
 
 
-static struct wpabuf *
+struct wpabuf *
 dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
-		    u16 e_nonce_len, enum dpp_netrole netrole)
+		    u16 e_nonce_len, enum dpp_netrole netrole, bool cert_req)
 {
 	struct wpabuf *conf = NULL, *conf2 = NULL, *env_data = NULL;
 	size_t clear_len, attr_len;
@@ -1612,16 +1672,22 @@ dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 		env_data = dpp_build_enveloped_data(auth);
 #endif /* CONFIG_DPP2 */
 	} else {
-		conf = dpp_build_conf_obj(auth, netrole, 0);
+		conf = dpp_build_conf_obj(auth, netrole, 0, cert_req);
 		if (conf) {
 			wpa_hexdump_ascii(MSG_DEBUG,
 					  "DPP: configurationObject JSON",
 					  wpabuf_head(conf), wpabuf_len(conf));
-			conf2 = dpp_build_conf_obj(auth, netrole, 1);
+			conf2 = dpp_build_conf_obj(auth, netrole, 1, cert_req);
 		}
 	}
-	status = (conf || env_data) ? DPP_STATUS_OK :
-		DPP_STATUS_CONFIGURE_FAILURE;
+
+	if (conf || env_data)
+		status = DPP_STATUS_OK;
+	else if (!cert_req && netrole == DPP_NETROLE_STA && auth->conf_sta &&
+		 auth->conf_sta->akm == DPP_AKM_DOT1X && !auth->waiting_csr)
+		status = DPP_STATUS_CSR_NEEDED;
+	else
+		status = DPP_STATUS_CONFIGURE_FAILURE;
 	auth->conf_resp_status = status;
 
 	/* { E-nonce, configurationObject[, sendConnStatus]}ke */
@@ -1635,6 +1701,9 @@ dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 	if (auth->peer_version >= 2 && auth->send_conn_status &&
 	    netrole == DPP_NETROLE_STA)
 		clear_len += 4;
+	if (status == DPP_STATUS_CSR_NEEDED && auth->conf_sta &&
+	    auth->conf_sta->csrattrs)
+		clear_len += 4 + os_strlen(auth->conf_sta->csrattrs);
 	clear = wpabuf_alloc(clear_len);
 	attr_len = 4 + 1 + 4 + clear_len + AES_BLOCK_SIZE;
 #ifdef CONFIG_TESTING_OPTIONS
@@ -1697,10 +1766,19 @@ skip_e_nonce:
 	}
 
 	if (auth->peer_version >= 2 && auth->send_conn_status &&
-	    netrole == DPP_NETROLE_STA) {
+	    netrole == DPP_NETROLE_STA && status == DPP_STATUS_OK) {
 		wpa_printf(MSG_DEBUG, "DPP: sendConnStatus");
 		wpabuf_put_le16(clear, DPP_ATTR_SEND_CONN_STATUS);
 		wpabuf_put_le16(clear, 0);
+	}
+
+	if (status == DPP_STATUS_CSR_NEEDED && auth->conf_sta &&
+	    auth->conf_sta->csrattrs) {
+		auth->waiting_csr = true;
+		wpa_printf(MSG_DEBUG, "DPP: CSR Attributes Request");
+		wpabuf_put_le16(clear, DPP_ATTR_CSR_ATTR_REQ);
+		wpabuf_put_le16(clear, os_strlen(auth->conf_sta->csrattrs));
+		wpabuf_put_str(clear, auth->conf_sta->csrattrs);
 	}
 
 #ifdef CONFIG_TESTING_OPTIONS
@@ -1773,6 +1851,7 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 	struct wpabuf *resp = NULL;
 	struct json_token *root = NULL, *token;
 	enum dpp_netrole netrole;
+	struct wpabuf *cert_req = NULL;
 
 #ifdef CONFIG_TESTING_OPTIONS
 	if (dpp_test == DPP_TEST_STOP_AT_CONF_REQ) {
@@ -1881,6 +1960,7 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 		dpp_auth_fail(auth, "Unsupported netRole");
 		goto fail;
 	}
+	auth->e_netrole = netrole;
 
 	token = json_get_member(root, "mudurl");
 	if (token && token->type == JSON_STRING) {
@@ -1927,9 +2007,30 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 			txt);
 	}
 
-	resp = dpp_build_conf_resp(auth, e_nonce, e_nonce_len, netrole);
+#ifdef CONFIG_DPP2
+	cert_req = json_get_member_base64(root, "pkcs10");
+	if (cert_req) {
+		char *txt;
+
+		wpa_hexdump_buf(MSG_DEBUG, "DPP: CertificateRequest", cert_req);
+		txt = base64_encode_no_lf(wpabuf_head(cert_req),
+					  wpabuf_len(cert_req), NULL);
+		if (!txt)
+			goto fail;
+		wpa_msg(auth->msg_ctx, MSG_INFO, DPP_EVENT_CSR "peer=%d csr=%s",
+			auth->peer_bi ? (int) auth->peer_bi->id : -1, txt);
+		os_free(txt);
+		auth->waiting_csr = false;
+		auth->waiting_cert = true;
+		goto fail;
+	}
+#endif /* CONFIG_DPP2 */
+
+	resp = dpp_build_conf_resp(auth, e_nonce, e_nonce_len, netrole,
+				   cert_req);
 
 fail:
+	wpabuf_free(cert_req);
 	json_free(root);
 	os_free(unwrapped);
 	return resp;
@@ -3216,7 +3317,7 @@ int dpp_configurator_own_config(struct dpp_authentication *auth,
 	auth->peer_protocol_key = auth->own_protocol_key;
 	dpp_copy_csign(&auth->conf_obj[0], auth->conf->csign);
 
-	conf_obj = dpp_build_conf_obj(auth, ap, 0);
+	conf_obj = dpp_build_conf_obj(auth, ap, 0, NULL);
 	if (!conf_obj) {
 		wpabuf_free(auth->conf_obj[0].c_sign_key);
 		auth->conf_obj[0].c_sign_key = NULL;

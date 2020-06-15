@@ -222,6 +222,8 @@ struct dpp_configuration {
 	char *passphrase;
 	u8 psk[32];
 	int psk_set;
+
+	char *csrattrs;
 };
 
 struct dpp_asymmetric_key {
@@ -253,6 +255,7 @@ struct dpp_authentication {
 	u8 e_nonce[DPP_MAX_NONCE_LEN];
 	u8 i_capab;
 	u8 r_capab;
+	enum dpp_netrole e_netrole;
 	EVP_PKEY *own_protocol_key;
 	EVP_PKEY *peer_protocol_key;
 	EVP_PKEY *reconfig_old_protocol_key;
@@ -319,6 +322,12 @@ struct dpp_authentication {
 	int akm_use_selector;
 	int configurator_set;
 	u8 transaction_id;
+	bool waiting_csr;
+	bool waiting_cert;
+	char *trusted_eap_server_name;
+	struct wpabuf *cacert;
+	struct wpabuf *certbag;
+	void *cert_resp_ctx;
 #ifdef CONFIG_TESTING_OPTIONS
 	char *config_obj_override;
 	char *discovery_override;
@@ -516,6 +525,10 @@ int dpp_configuration_valid(const struct dpp_configuration *conf);
 void dpp_configuration_free(struct dpp_configuration *conf);
 int dpp_set_configurator(struct dpp_authentication *auth, const char *cmd);
 void dpp_auth_deinit(struct dpp_authentication *auth);
+struct wpabuf *
+dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
+		    u16 e_nonce_len, enum dpp_netrole netrole,
+		    bool cert_req);
 struct wpabuf *
 dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 		size_t attr_len);
