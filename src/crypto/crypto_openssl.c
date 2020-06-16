@@ -2187,8 +2187,6 @@ size_t crypto_ecdh_prime_len(struct crypto_ecdh *ecdh)
 struct crypto_ec_key {
 	EVP_PKEY *pkey;
 	EC_KEY *eckey;
-	BIGNUM *kinv;
-	BIGNUM *rp;
 };
 
 
@@ -2215,8 +2213,6 @@ struct crypto_ec_key * crypto_ec_key_parse_priv(const u8 *der, size_t der_len)
 		goto fail;
 	}
 
-	if (ECDSA_sign_setup(key->eckey, NULL, &key->kinv, &key->rp) != 1)
-		goto fail;
 	return key;
 fail:
 	crypto_ec_key_deinit(key);
@@ -2253,8 +2249,6 @@ void crypto_ec_key_deinit(struct crypto_ec_key *key)
 {
 	if (key) {
 		EVP_PKEY_free(key->pkey);
-		BN_clear_free(key->kinv);
-		BN_clear_free(key->rp);
 		os_free(key);
 	}
 }
@@ -2282,22 +2276,27 @@ struct wpabuf * crypto_ec_key_get_subject_public_key(struct crypto_ec_key *key)
 struct wpabuf * crypto_ec_key_sign(struct crypto_ec_key *key, const u8 *data,
 				   size_t len)
 {
+	EVP_PKEY_CTX *pkctx;
 	struct wpabuf *sig_der;
-	int res;
-	unsigned int sig_len;
+	size_t sig_len;
 
-	sig_len = ECDSA_size(key->eckey);
+	sig_len = EVP_PKEY_size(key->pkey);
 	sig_der = wpabuf_alloc(sig_len);
 	if (!sig_der)
 		return NULL;
-	res = ECDSA_sign_ex(0, data, len, wpabuf_put(sig_der, 0), &sig_len,
-			    key->kinv, key->rp, key->eckey);
-	if (res != 1) {
-		wpabuf_free(sig_der);
-		return NULL;
-	}
-	wpabuf_put(sig_der, sig_len);
 
+	pkctx = EVP_PKEY_CTX_new(key->pkey, NULL);
+	if (!pkctx ||
+	    EVP_PKEY_sign_init(pkctx) <= 0 ||
+	    EVP_PKEY_sign(pkctx, wpabuf_put(sig_der, 0), &sig_len,
+			  data, len) <= 0) {
+		wpabuf_free(sig_der);
+		sig_der = NULL;
+	} else {
+		wpabuf_put(sig_der, sig_len);
+	}
+
+	EVP_PKEY_CTX_free(pkctx);
 	return sig_der;
 }
 
@@ -2305,15 +2304,21 @@ struct wpabuf * crypto_ec_key_sign(struct crypto_ec_key *key, const u8 *data,
 int crypto_ec_key_verify_signature(struct crypto_ec_key *key, const u8 *data,
 				   size_t len, const u8 *sig, size_t sig_len)
 {
+	EVP_PKEY_CTX *pkctx;
 	int ret;
 
-	ret = ECDSA_verify(0, data, len, sig, sig_len, key->eckey);
+	pkctx = EVP_PKEY_CTX_new(key->pkey, NULL);
+	if (!pkctx || EVP_PKEY_verify_init(pkctx) <= 0) {
+		EVP_PKEY_CTX_free(pkctx);
+		return -1;
+	}
+
+	ret = EVP_PKEY_verify(pkctx, sig, sig_len, data, len);
+	EVP_PKEY_CTX_free(pkctx);
 	if (ret == 1)
 		return 1; /* signature ok */
 	if (ret == 0)
 		return 0; /* incorrect signature */
-	wpa_printf(MSG_INFO, "OpenSSL: ECDSA_verify() failed: %s",
-		   ERR_error_string(ERR_get_error(), NULL));
 	return -1;
 }
 
