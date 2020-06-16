@@ -2216,6 +2216,10 @@ enum qca_wlan_vendor_attr_config {
 	 * higher value configuration shall be returned with a failure.
 	 */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_NSS = 70,
+	/* 8-bit unsigned value to trigger Optimized Power Management:
+	 * 1-Enable, 0-Disable
+	 */
+	QCA_WLAN_VENDOR_ATTR_CONFIG_OPTIMIZED_POWER_MANAGEMENT = 71,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_AFTER_LAST,
