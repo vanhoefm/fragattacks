@@ -3772,6 +3772,17 @@ static int tls_connection_private_key(struct tls_data *data,
 			break;
 		}
 
+#ifndef OPENSSL_NO_EC
+		if (SSL_use_PrivateKey_ASN1(EVP_PKEY_EC, conn->ssl,
+					    (u8 *) private_key_blob,
+					    private_key_blob_len) == 1) {
+			wpa_printf(MSG_DEBUG,
+				   "OpenSSL: SSL_use_PrivateKey_ASN1(EVP_PKEY_EC) --> OK");
+			ok = 1;
+			break;
+		}
+#endif /* OPENSSL_NO_EC */
+
 		if (SSL_use_RSAPrivateKey_ASN1(conn->ssl,
 					       (u8 *) private_key_blob,
 					       private_key_blob_len) == 1) {
