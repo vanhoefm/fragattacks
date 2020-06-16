@@ -1880,6 +1880,42 @@ void sme_associate(struct wpa_supplicant *wpa_s, enum wpas_mode mode,
 pfs_fail:
 #endif /* CONFIG_DPP2 */
 
+	if (wpa_s->current_bss && wpa_s->robust_av.valid_config) {
+		struct wpabuf *mscs_ie;
+		size_t mscs_ie_len, buf_len, *wpa_ie_len, max_ie_len;
+
+		if (!wpa_bss_ext_capab(wpa_s->current_bss, WLAN_EXT_CAPAB_MSCS))
+			goto mscs_fail;
+
+		buf_len = 3 +	/* MSCS descriptor IE header */
+			  1 +	/* Request type */
+			  2 +	/* User priority control */
+			  4 +	/* Stream timeout */
+			  3 +	/* TCLAS Mask IE header */
+			  wpa_s->robust_av.frame_classifier_len;
+		mscs_ie = wpabuf_alloc(buf_len);
+		if (!mscs_ie) {
+			wpa_printf(MSG_INFO,
+				   "MSCS: Failed to allocate MSCS IE");
+			goto mscs_fail;
+		}
+
+		wpa_ie_len = &wpa_s->sme.assoc_req_ie_len;
+		max_ie_len = sizeof(wpa_s->sme.assoc_req_ie);
+		wpas_populate_mscs_descriptor_ie(&wpa_s->robust_av, mscs_ie);
+		if ((*wpa_ie_len + wpabuf_len(mscs_ie)) <= max_ie_len) {
+			wpa_hexdump_buf(MSG_MSGDUMP, "MSCS IE",
+					wpabuf_head(mscs_ie));
+			mscs_ie_len = wpabuf_len(mscs_ie);
+			os_memcpy(wpa_s->sme.assoc_req_ie + *wpa_ie_len,
+				  wpabuf_head(mscs_ie), mscs_ie_len);
+			*wpa_ie_len += mscs_ie_len;
+		}
+
+		wpabuf_free(mscs_ie);
+	}
+mscs_fail:
+
 	if (ssid && ssid->multi_ap_backhaul_sta) {
 		size_t multi_ap_ie_len;
 
