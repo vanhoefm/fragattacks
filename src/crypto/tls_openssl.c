@@ -3241,8 +3241,31 @@ static int tls_connection_client_cert(struct tls_connection *conn,
 			   "OK");
 		return 0;
 	} else if (client_cert_blob) {
+		BIO *bio;
+		X509 *x509;
+
 		tls_show_errors(MSG_DEBUG, __func__,
 				"SSL_use_certificate_ASN1 failed");
+		bio = BIO_new(BIO_s_mem());
+		if (!bio)
+			return -1;
+		BIO_write(bio, client_cert_blob, client_cert_blob_len);
+		x509 = PEM_read_bio_X509(bio, NULL, NULL, NULL);
+		if (!x509 || SSL_use_certificate(conn->ssl, x509) != 1) {
+			X509_free(x509);
+			BIO_free(bio);
+			return -1;
+		}
+		X509_free(x509);
+		wpa_printf(MSG_DEBUG,
+			   "OpenSSL: Found PEM encoded certificate from blob");
+		while ((x509 = PEM_read_bio_X509(bio, NULL, NULL, NULL))) {
+			wpa_printf(MSG_DEBUG,
+				   "OpenSSL: Added an additional certificate into the chain");
+			SSL_add0_chain_cert(conn->ssl, x509);
+		}
+		BIO_free(bio);
+		return 0;
 	}
 
 	if (client_cert == NULL)
