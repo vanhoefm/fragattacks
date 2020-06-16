@@ -415,7 +415,7 @@ int hostapd_set_freq_params(struct hostapd_freq_params *data,
 			return -1;
 		}
 
-		if (center_idx_to_bw_6ghz(channel) != 0) {
+		if (center_idx_to_bw_6ghz(channel) < 0) {
 			wpa_printf(MSG_ERROR,
 				   "Invalid control channel for 6 GHz band");
 			return -1;
