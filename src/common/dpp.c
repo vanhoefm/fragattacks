@@ -1694,6 +1694,11 @@ dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 	size_t len[1];
 	enum dpp_status_error status;
 
+	if (auth->force_conf_resp_status != DPP_STATUS_OK) {
+		status = auth->force_conf_resp_status;
+		goto forced_status;
+	}
+
 	if (netrole == DPP_NETROLE_CONFIGURATOR) {
 #ifdef CONFIG_DPP2
 		env_data = dpp_build_enveloped_data(auth);
@@ -1715,6 +1720,7 @@ dpp_build_conf_resp(struct dpp_authentication *auth, const u8 *e_nonce,
 		status = DPP_STATUS_CSR_NEEDED;
 	else
 		status = DPP_STATUS_CONFIGURE_FAILURE;
+forced_status:
 	auth->conf_resp_status = status;
 
 	/* { E-nonce, configurationObject[, sendConnStatus]}ke */
@@ -2040,6 +2046,12 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 		char *txt;
 
 		wpa_hexdump_buf(MSG_DEBUG, "DPP: CertificateRequest", cert_req);
+		if (dpp_validate_csr(auth, cert_req) < 0) {
+			wpa_printf(MSG_DEBUG, "DPP: CSR is not valid");
+			auth->force_conf_resp_status = DPP_STATUS_CSR_BAD;
+			goto cont;
+		}
+		wpa_printf(MSG_DEBUG, "DPP: CSR is valid - forward to CA/RA");
 		txt = base64_encode_no_lf(wpabuf_head(cert_req),
 					  wpabuf_len(cert_req), NULL);
 		if (!txt)
@@ -2051,6 +2063,7 @@ dpp_conf_req_rx(struct dpp_authentication *auth, const u8 *attr_start,
 		auth->waiting_cert = true;
 		goto fail;
 	}
+cont:
 #endif /* CONFIG_DPP2 */
 
 	resp = dpp_build_conf_resp(auth, e_nonce, e_nonce_len, netrole,

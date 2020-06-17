@@ -250,6 +250,7 @@ struct dpp_authentication {
 	enum dpp_connector_key reconfig_connector_key;
 	enum dpp_status_error auth_resp_status;
 	enum dpp_status_error conf_resp_status;
+	enum dpp_status_error force_conf_resp_status;
 	u8 peer_mac_addr[ETH_ALEN];
 	u8 i_nonce[DPP_MAX_NONCE_LEN];
 	u8 r_nonce[DPP_MAX_NONCE_LEN];
@@ -617,6 +618,7 @@ void dpp_pfs_free(struct dpp_pfs *pfs);
 
 struct wpabuf * dpp_build_csr(struct dpp_authentication *auth);
 struct wpabuf * dpp_pkcs7_certs(const struct wpabuf *pkcs7);
+int dpp_validate_csr(struct dpp_authentication *auth, const struct wpabuf *csr);
 
 struct dpp_bootstrap_info * dpp_add_qr_code(struct dpp_global *dpp,
 					    const char *uri);

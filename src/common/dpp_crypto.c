@@ -2844,6 +2844,125 @@ fail:
 	return pem;
 }
 
+
+int dpp_validate_csr(struct dpp_authentication *auth, const struct wpabuf *csr)
+{
+	X509_REQ *req;
+	const unsigned char *pos;
+	EVP_PKEY *pkey;
+	int res, loc, ret = -1;
+	X509_ATTRIBUTE *attr;
+	ASN1_TYPE *type;
+	ASN1_STRING *str;
+	unsigned char *utf8 = NULL;
+	unsigned char *cp = NULL;
+	size_t cp_len;
+	u8 exp_cp[DPP_CP_LEN];
+	unsigned int hash_len = auth->curve->hash_len;
+
+	pos = wpabuf_head(csr);
+	req = d2i_X509_REQ(NULL, &pos, wpabuf_len(csr));
+	if (!req) {
+		wpa_printf(MSG_DEBUG, "DPP: Failed to parse CSR");
+		return -1;
+	}
+
+	pkey = X509_REQ_get_pubkey(req);
+	if (!pkey) {
+		wpa_printf(MSG_DEBUG, "DPP: Failed to get public key from CSR");
+		goto fail;
+	}
+
+	res = X509_REQ_verify(req, pkey);
+	EVP_PKEY_free(pkey);
+	if (res != 1) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: CSR does not have a valid signature");
+		goto fail;
+	}
+
+	loc = X509_REQ_get_attr_by_NID(req, NID_pkcs9_challengePassword, -1);
+	if (loc < 0) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: CSR does not include challengePassword");
+		goto fail;
+	}
+
+	attr = X509_REQ_get_attr(req, loc);
+	if (!attr) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Could not get challengePassword attribute");
+		goto fail;
+	}
+
+	type = X509_ATTRIBUTE_get0_type(attr, 0);
+	if (!type) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Could not get challengePassword attribute type");
+		goto fail;
+	}
+
+	res = ASN1_TYPE_get(type);
+	/* This is supposed to be UTF8String, but allow other strings as well
+	 * since challengePassword is using ASCII (base64 encoded). */
+	if (res != V_ASN1_UTF8STRING && res != V_ASN1_PRINTABLESTRING &&
+	    res != V_ASN1_IA5STRING) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Unexpected challengePassword attribute type %d",
+			   res);
+		goto fail;
+	}
+
+	str = X509_ATTRIBUTE_get0_data(attr, 0, res, NULL);
+	if (!str) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Could not get ASN.1 string for challengePassword");
+		goto fail;
+	}
+
+	res = ASN1_STRING_to_UTF8(&utf8, str);
+	if (res < 0) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Could not get UTF8 version of challengePassword");
+		goto fail;
+	}
+
+	cp = base64_decode((const char *) utf8, res, &cp_len);
+	OPENSSL_free(utf8);
+	if (!cp) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Could not base64 decode challengePassword");
+		goto fail;
+	}
+	if (cp_len != DPP_CP_LEN) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Unexpected cp length (%zu) in CSR challengePassword",
+			   cp_len);
+		goto fail;
+	}
+	wpa_hexdump_key(MSG_DEBUG, "DPP: cp from CSR challengePassword",
+			cp, cp_len);
+
+	/* cp = HKDF-Expand(bk, "CSR challengePassword", 64) */
+	if (dpp_hkdf_expand(hash_len, auth->bk, hash_len,
+			    "CSR challengePassword", exp_cp, DPP_CP_LEN) < 0)
+		goto fail;
+	wpa_hexdump_key(MSG_DEBUG,
+			"DPP: cp = HKDF-Expand(bk, \"CSR challengePassword\", 64)",
+			exp_cp, DPP_CP_LEN);
+	if (os_memcmp_const(cp, exp_cp, DPP_CP_LEN) != 0) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: CSR challengePassword does not match calculated cp");
+		goto fail;
+	}
+
+	ret = 0;
+fail:
+	os_free(cp);
+	X509_REQ_free(req);
+	return ret;
+}
+
 #endif /* CONFIG_DPP2 */
 
 
