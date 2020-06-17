@@ -3628,6 +3628,27 @@ int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 }
 
 
+static int wpas_dpp_build_conf_resp(struct wpa_supplicant *wpa_s,
+				    struct dpp_authentication *auth)
+{
+	struct wpabuf *resp;
+
+	resp = dpp_build_conf_resp(auth, auth->e_nonce, auth->curve->nonce_len,
+				   auth->e_netrole, true);
+	if (!resp)
+		return -1;
+	if (gas_server_set_resp(wpa_s->gas_server, auth->cert_resp_ctx,
+				resp) < 0) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Could not find pending GAS response");
+		wpabuf_free(resp);
+		return -1;
+	}
+	auth->conf_resp = resp;
+	return 0;
+}
+
+
 int wpas_dpp_ca_set(struct wpa_supplicant *wpa_s, const char *cmd)
 {
 	int peer;
@@ -3663,6 +3684,11 @@ int wpas_dpp_ca_set(struct wpa_supplicant *wpa_s, const char *cmd)
 		return -1;
 	pos += 6;
 
+	if (os_strncmp(pos, "status ", 7) == 0) {
+		auth->force_conf_resp_status = atoi(value);
+		return wpas_dpp_build_conf_resp(wpa_s, auth);
+	}
+
 	if (os_strncmp(pos, "trustedEapServerName ", 21) == 0) {
 		os_free(auth->trusted_eap_server_name);
 		auth->trusted_eap_server_name = os_strdup(value);
@@ -3682,25 +3708,9 @@ int wpas_dpp_ca_set(struct wpa_supplicant *wpa_s, const char *cmd)
 	}
 
 	if (os_strncmp(pos, "certBag ", 8) == 0) {
-		struct wpabuf *resp;
-
 		wpabuf_free(auth->certbag);
 		auth->certbag = buf;
-
-		resp = dpp_build_conf_resp(auth, auth->e_nonce,
-					   auth->curve->nonce_len,
-					   auth->e_netrole, true);
-		if (!resp)
-			return -1;
-		if (gas_server_set_resp(wpa_s->gas_server, auth->cert_resp_ctx,
-					resp) < 0) {
-			wpa_printf(MSG_DEBUG,
-				   "DPP: Could not find pending GAS response");
-			wpabuf_free(resp);
-			return -1;
-		}
-		auth->conf_resp = resp;
-		return 0;
+		return wpas_dpp_build_conf_resp(wpa_s, auth);
 	}
 
 	wpabuf_free(buf);
