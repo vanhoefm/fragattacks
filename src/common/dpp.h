@@ -120,6 +120,7 @@ enum dpp_connector_key {
 #define DPP_MAX_NONCE_LEN 32
 #define DPP_MAX_HASH_LEN 64
 #define DPP_MAX_SHARED_SECRET_LEN 66
+#define DPP_CP_LEN 64
 
 struct dpp_curve_params {
 	const char *name;

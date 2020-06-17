@@ -2677,6 +2677,10 @@ struct wpabuf * dpp_build_csr(struct dpp_authentication *auth)
 	unsigned int hash_len = auth->curve->hash_len;
 	EC_KEY *eckey;
 	BIO *out = NULL;
+	u8 cp[DPP_CP_LEN];
+	char *password;
+	size_t password_len;
+	int res;
 
 	/* TODO: use auth->csrattrs */
 
@@ -2699,6 +2703,26 @@ struct wpabuf * dpp_build_csr(struct dpp_authentication *auth)
 
 	req = X509_REQ_new();
 	if (!req || !X509_REQ_set_pubkey(req, key))
+		goto fail;
+
+	/* cp = HKDF-Expand(bk, "CSR challengePassword", 64) */
+	if (dpp_hkdf_expand(hash_len, auth->bk, hash_len,
+			    "CSR challengePassword", cp, DPP_CP_LEN) < 0)
+		goto fail;
+	wpa_hexdump_key(MSG_DEBUG,
+			"DPP: cp = HKDF-Expand(bk, \"CSR challengePassword\", 64)",
+			cp, DPP_CP_LEN);
+	password = base64_encode_no_lf(cp, DPP_CP_LEN, &password_len);
+	forced_memzero(cp, DPP_CP_LEN);
+	if (!password)
+		goto fail;
+
+	res = X509_REQ_add1_attr_by_NID(req, NID_pkcs9_challengePassword,
+					V_ASN1_UTF8STRING,
+					(const unsigned char *) password,
+					password_len);
+	bin_clear_free(password, password_len);
+	if (!res)
 		goto fail;
 
 	/* TODO */
