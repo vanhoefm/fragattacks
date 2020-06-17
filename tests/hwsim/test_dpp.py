@@ -5765,3 +5765,37 @@ def run_dpp_enterprise(dev, apdev, params):
     id = ev.split(' ')[1]
 
     dev[0].wait_connected()
+
+def test_dpp_enterprise_reject(dev, apdev, params):
+    """DPP and enterprise EAP-TLS provisioning and CSR getting rejected"""
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    conf_id = dev[1].dpp_configurator_add()
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+    dev[0].dpp_listen(2412)
+    csrattrs = "MAsGCSqGSIb3DQEJBw=="
+    id1 = dev[1].dpp_auth_init(uri=uri0, configurator=conf_id, conf="sta-dot1x",
+                               csrattrs=csrattrs, ssid="dpp-ent")
+
+    ev = dev[1].wait_event(["DPP-CSR"], timeout=10)
+    if ev is None:
+        raise Exception("Configurator did not receive CSR")
+
+    res = dev[1].request("DPP_CA_SET peer=%d name=status value=5" % id1)
+    if "OK" not in res:
+        raise Exception("Failed to set status")
+
+    ev = dev[1].wait_event(["DPP-CONF-SENT", "DPP-CONF-FAILED"], timeout=5)
+    if ev is None:
+        raise Exception("DPP configuration not completed (Configurator)")
+    if "DPP-CONF-FAILED" in ev:
+        raise Exception("DPP configuration did not succeed (Configurator)")
+
+    ev = dev[0].wait_event(["DPP-CONF-RECEIVED", "DPP-CONF-FAILED"],
+                           timeout=1)
+    if ev is None:
+        raise Exception("DPP configuration not completed (Enrollee)")
+    if "DPP-CONF-FAILED" not in ev:
+        raise Exception("DPP configuration did not fail (Enrollee)")
