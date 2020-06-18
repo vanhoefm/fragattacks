@@ -237,6 +237,10 @@ static void wpas_trigger_scan_cb(struct wpa_radio_work *work, int deinit)
 		if (wpa_s->disconnected)
 			retry = 0;
 
+		/* do not retry if operation is not supported */
+		if (ret == -EOPNOTSUPP)
+			retry = 0;
+
 		wpa_supplicant_notify_scanning(wpa_s, 0);
 		wpas_notify_scan_done(wpa_s, 0);
 		if (wpa_s->wpa_state == WPA_SCANNING)
