@@ -1239,8 +1239,6 @@ static struct wpa_ssid * wpas_dpp_add_network(struct wpa_supplicant *wpa_s,
 		}
 
 		if (conf->certs) {
-			wpa_hexdump_buf(MSG_INFO, "JKM:certs",
-					conf->certs);
 			for (i = 0; ; i++) {
 				os_snprintf(name, sizeof(name), "dpp-certs-%d",
 					    i);
@@ -1283,8 +1281,6 @@ static struct wpa_ssid * wpas_dpp_add_network(struct wpa_supplicant *wpa_s,
 					break;
 			}
 
-			wpa_hexdump_buf(MSG_INFO, "JKM:privkey",
-					auth->priv_key);
 			blob = os_zalloc(sizeof(*blob));
 			if (!blob)
 				goto fail;
