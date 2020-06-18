@@ -68,6 +68,7 @@ static void dpp_controller_rx(int sd, void *eloop_ctx, void *sock_ctx);
 static void dpp_conn_tx_ready(int sock, void *eloop_ctx, void *sock_ctx);
 static void dpp_controller_auth_success(struct dpp_connection *conn,
 					int initiator);
+static void dpp_tcp_build_csr(void *eloop_ctx, void *timeout_ctx);
 
 
 static void dpp_connection_free(struct dpp_connection *conn)
@@ -81,6 +82,7 @@ static void dpp_connection_free(struct dpp_connection *conn)
 	}
 	eloop_cancel_timeout(dpp_controller_conn_status_result_wait_timeout,
 			     conn, NULL);
+	eloop_cancel_timeout(dpp_tcp_build_csr, conn, NULL);
 	wpabuf_free(conn->msg);
 	wpabuf_free(conn->msg_out);
 	dpp_auth_deinit(conn->auth);
@@ -1047,6 +1049,27 @@ static int dpp_controller_rx_gas_req(struct dpp_connection *conn, const u8 *msg,
 }
 
 
+static void dpp_tcp_build_csr(void *eloop_ctx, void *timeout_ctx)
+{
+	struct dpp_connection *conn = eloop_ctx;
+	struct dpp_authentication *auth = conn->auth;
+
+	if (!auth || !auth->csrattrs)
+		return;
+
+	wpa_printf(MSG_DEBUG, "DPP: Build CSR");
+	wpabuf_free(auth->csr);
+	/* TODO: Additional information needed for CSR based on csrAttrs */
+	auth->csr = dpp_build_csr(auth);
+	if (!auth->csr) {
+		dpp_connection_remove(conn);
+		return;
+	}
+
+	dpp_controller_start_gas_client(conn);
+}
+
+
 static int dpp_tcp_rx_gas_resp(struct dpp_connection *conn, struct wpabuf *resp)
 {
 	struct dpp_authentication *auth = conn->auth;
@@ -1062,6 +1085,11 @@ static int dpp_tcp_rx_gas_resp(struct dpp_connection *conn, struct wpabuf *resp)
 	else
 		res = -1;
 	wpabuf_free(resp);
+	if (res == -2) {
+		wpa_printf(MSG_DEBUG, "DPP: CSR needed");
+		eloop_register_timeout(0, 0, dpp_tcp_build_csr, conn, NULL);
+		return 0;
+	}
 	if (res < 0) {
 		wpa_printf(MSG_DEBUG, "DPP: Configuration attempt failed");
 		return -1;
