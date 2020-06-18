@@ -38,6 +38,7 @@ struct dpp_connection {
 	unsigned int on_tcp_tx_complete_gas_done:1;
 	unsigned int on_tcp_tx_complete_remove:1;
 	unsigned int on_tcp_tx_complete_auth_ok:1;
+	u8 gas_dialog_token;
 };
 
 /* Remote Controller */
@@ -69,6 +70,7 @@ static void dpp_conn_tx_ready(int sock, void *eloop_ctx, void *sock_ctx);
 static void dpp_controller_auth_success(struct dpp_connection *conn,
 					int initiator);
 static void dpp_tcp_build_csr(void *eloop_ctx, void *timeout_ctx);
+static void dpp_tcp_gas_query_comeback(void *eloop_ctx, void *timeout_ctx);
 
 
 static void dpp_connection_free(struct dpp_connection *conn)
@@ -83,6 +85,7 @@ static void dpp_connection_free(struct dpp_connection *conn)
 	eloop_cancel_timeout(dpp_controller_conn_status_result_wait_timeout,
 			     conn, NULL);
 	eloop_cancel_timeout(dpp_tcp_build_csr, conn, NULL);
+	eloop_cancel_timeout(dpp_tcp_gas_query_comeback, conn, NULL);
 	wpabuf_free(conn->msg);
 	wpabuf_free(conn->msg_out);
 	dpp_auth_deinit(conn->auth);
@@ -1150,13 +1153,38 @@ static int dpp_tcp_rx_gas_resp(struct dpp_connection *conn, struct wpabuf *resp)
 }
 
 
+static void dpp_tcp_gas_query_comeback(void *eloop_ctx, void *timeout_ctx)
+{
+	struct dpp_connection *conn = eloop_ctx;
+	struct dpp_authentication *auth = conn->auth;
+	struct wpabuf *msg;
+
+	if (!auth)
+		return;
+
+	wpa_printf(MSG_DEBUG, "DPP: Send GAS Comeback Request");
+	msg = wpabuf_alloc(4 + 2);
+	if (!msg)
+		return;
+	wpabuf_put_be32(msg, 2);
+	wpabuf_put_u8(msg, WLAN_PA_GAS_COMEBACK_REQ);
+	wpabuf_put_u8(msg, conn->gas_dialog_token);
+	wpa_hexdump_buf(MSG_MSGDUMP, "DPP: Outgoing TCP message", msg);
+
+	wpabuf_free(conn->msg_out);
+	conn->msg_out_pos = 0;
+	conn->msg_out = msg;
+	dpp_tcp_send(conn);
+}
+
+
 static int dpp_rx_gas_resp(struct dpp_connection *conn, const u8 *msg,
 			   size_t len)
 {
 	struct wpabuf *buf;
 	u8 dialog_token;
 	const u8 *pos, *end, *next, *adv_proto;
-	u16 status, slen;
+	u16 status, slen, comeback_delay;
 
 	if (len < 5 + 2)
 		return -1;
@@ -1174,7 +1202,8 @@ static int dpp_rx_gas_resp(struct dpp_connection *conn, const u8 *msg,
 		return -1;
 	}
 	pos += 2;
-	pos += 2; /* ignore GAS Comeback Delay */
+	comeback_delay = WPA_GET_LE16(pos);
+	pos += 2;
 
 	adv_proto = pos++;
 	slen = *pos++;
@@ -1198,6 +1227,20 @@ static int dpp_rx_gas_resp(struct dpp_connection *conn, const u8 *msg,
 	pos += 2;
 	if (slen > end - pos)
 		return -1;
+
+	if (comeback_delay) {
+		unsigned int secs, usecs;
+
+		conn->gas_dialog_token = dialog_token;
+		secs = (comeback_delay * 1024) / 1000000;
+		usecs = comeback_delay * 1024 - secs * 1000000;
+		wpa_printf(MSG_DEBUG, "DPP: Comeback delay: %u",
+			   comeback_delay);
+		eloop_cancel_timeout(dpp_tcp_gas_query_comeback, conn, NULL);
+		eloop_register_timeout(secs, usecs, dpp_tcp_gas_query_comeback,
+				       conn, NULL);
+		return 0;
+	}
 
 	buf = wpabuf_alloc(slen);
 	if (!buf)
