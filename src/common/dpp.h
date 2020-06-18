@@ -616,7 +616,8 @@ struct dpp_pfs * dpp_pfs_init(const u8 *net_access_key,
 int dpp_pfs_process(struct dpp_pfs *pfs, const u8 *peer_ie, size_t peer_ie_len);
 void dpp_pfs_free(struct dpp_pfs *pfs);
 
-struct wpabuf * dpp_build_csr(struct dpp_authentication *auth);
+struct wpabuf * dpp_build_csr(struct dpp_authentication *auth,
+			      const char *name);
 struct wpabuf * dpp_pkcs7_certs(const struct wpabuf *pkcs7);
 int dpp_validate_csr(struct dpp_authentication *auth, const struct wpabuf *csr);
 
@@ -660,7 +661,8 @@ int dpp_controller_start(struct dpp_global *dpp,
 			 struct dpp_controller_config *config);
 void dpp_controller_stop(struct dpp_global *dpp);
 int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
-		 const struct hostapd_ip_addr *addr, int port);
+		 const struct hostapd_ip_addr *addr, int port,
+		 const char *name);
 struct wpabuf * dpp_build_presence_announcement(struct dpp_bootstrap_info *bi);
 
 struct dpp_global_config {

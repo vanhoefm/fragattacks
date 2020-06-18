@@ -2666,7 +2666,7 @@ void dpp_pfs_free(struct dpp_pfs *pfs)
 }
 
 
-struct wpabuf * dpp_build_csr(struct dpp_authentication *auth)
+struct wpabuf * dpp_build_csr(struct dpp_authentication *auth, const char *name)
 {
 	X509_REQ *req = NULL;
 	struct wpabuf *buf = NULL;
@@ -2704,6 +2704,19 @@ struct wpabuf * dpp_build_csr(struct dpp_authentication *auth)
 	req = X509_REQ_new();
 	if (!req || !X509_REQ_set_pubkey(req, key))
 		goto fail;
+
+	if (name) {
+		X509_NAME *n;
+
+		n = X509_REQ_get_subject_name(req);
+		if (!n)
+			goto fail;
+
+		if (X509_NAME_add_entry_by_txt(
+			    n, "CN", MBSTRING_UTF8,
+			    (const unsigned char *) name, -1, -1, 0) != 1)
+			goto fail;
+	}
 
 	/* cp = HKDF-Expand(bk, "CSR challengePassword", 64) */
 	if (dpp_hkdf_expand(hash_len, auth->bk, hash_len,

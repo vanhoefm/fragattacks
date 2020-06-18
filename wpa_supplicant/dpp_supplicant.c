@@ -831,7 +831,8 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 
 #ifdef CONFIG_DPP2
 	if (tcp)
-		return dpp_tcp_init(wpa_s->dpp, auth, &ipaddr, tcp_port);
+		return dpp_tcp_init(wpa_s->dpp, auth, &ipaddr, tcp_port,
+				    wpa_s->conf->dpp_name);
 #endif /* CONFIG_DPP2 */
 
 	wpa_s->dpp_auth = auth;
@@ -1515,7 +1516,8 @@ static void wpas_dpp_build_csr(void *eloop_ctx, void *timeout_ctx)
 	wpa_printf(MSG_DEBUG, "DPP: Build CSR");
 	wpabuf_free(auth->csr);
 	/* TODO: Additional information needed for CSR based on csrAttrs */
-	auth->csr = dpp_build_csr(auth);
+	auth->csr = dpp_build_csr(auth, wpa_s->conf->dpp_name ?
+				  wpa_s->conf->dpp_name : "Test");
 	if (!auth->csr) {
 		dpp_auth_deinit(wpa_s->dpp_auth);
 		wpa_s->dpp_auth = NULL;

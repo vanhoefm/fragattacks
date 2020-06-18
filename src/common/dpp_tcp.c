@@ -41,6 +41,7 @@ struct dpp_connection {
 	unsigned int gas_comeback_in_progress:1;
 	u8 gas_dialog_token;
 	struct wpabuf *gas_resp;
+	char *name;
 };
 
 /* Remote Controller */
@@ -92,6 +93,7 @@ static void dpp_connection_free(struct dpp_connection *conn)
 	wpabuf_free(conn->msg_out);
 	wpabuf_free(conn->gas_resp);
 	dpp_auth_deinit(conn->auth);
+	os_free(conn->name);
 	os_free(conn);
 }
 
@@ -258,8 +260,10 @@ static void dpp_controller_start_gas_client(struct dpp_connection *conn)
 	struct dpp_authentication *auth = conn->auth;
 	struct wpabuf *buf;
 	int netrole_ap = 0; /* TODO: make this configurable */
+	const char *dpp_name;
 
-	buf = dpp_build_conf_req_helper(auth, "Test", netrole_ap, NULL, NULL);
+	dpp_name = conn->name ? conn->name : "Test";
+	buf = dpp_build_conf_req_helper(auth, dpp_name, netrole_ap, NULL, NULL);
 	if (!buf) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No configuration request data available");
@@ -1169,7 +1173,7 @@ static void dpp_tcp_build_csr(void *eloop_ctx, void *timeout_ctx)
 	wpa_printf(MSG_DEBUG, "DPP: Build CSR");
 	wpabuf_free(auth->csr);
 	/* TODO: Additional information needed for CSR based on csrAttrs */
-	auth->csr = dpp_build_csr(auth);
+	auth->csr = dpp_build_csr(auth, conn->name ? conn->name : "Test");
 	if (!auth->csr) {
 		dpp_connection_remove(conn);
 		return;
@@ -1513,7 +1517,7 @@ fail:
 
 
 int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
-		 const struct hostapd_ip_addr *addr, int port)
+		 const struct hostapd_ip_addr *addr, int port, const char *name)
 {
 	struct dpp_connection *conn;
 	struct sockaddr_storage saddr;
@@ -1535,6 +1539,7 @@ int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
 		return -1;
 	}
 
+	conn->name = os_strdup(name ? name : "Test");
 	conn->global = dpp;
 	conn->auth = auth;
 	conn->sock = socket(AF_INET, SOCK_STREAM, 0);
