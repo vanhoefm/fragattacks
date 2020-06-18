@@ -5628,8 +5628,7 @@ def dpp_sign_cert(cacert, cakey, csr_der):
     cert.gmtime_adj_notBefore(-10)
     cert.gmtime_adj_notAfter(100000)
     cert.set_pubkey(csr.get_pubkey())
-    dn = cert.get_subject()
-    dn.CN = "dpp-tls-test"
+    dn = csr.get_subject()
     cert.set_subject(dn)
     cert.set_version(2)
     cert.add_extensions([
