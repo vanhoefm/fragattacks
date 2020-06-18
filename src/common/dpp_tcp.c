@@ -1023,6 +1023,30 @@ static int dpp_controller_rx_gas_req(struct dpp_connection *conn, const u8 *msg,
 		return -1;
 
 	resp = dpp_conf_req_rx(auth, pos, slen);
+	if (!resp && auth->waiting_cert) {
+		wpa_printf(MSG_DEBUG, "DPP: Certificate not yet ready");
+		buf = wpabuf_alloc(4 + 18);
+		if (!buf)
+			return -1;
+
+		wpabuf_put_be32(buf, 18);
+
+		wpabuf_put_u8(buf, WLAN_PA_GAS_INITIAL_RESP);
+		wpabuf_put_u8(buf, dialog_token);
+		wpabuf_put_le16(buf, WLAN_STATUS_SUCCESS);
+		wpabuf_put_le16(buf, 500); /* GAS Comeback Delay */
+
+		dpp_write_adv_proto(buf);
+		wpabuf_put_le16(buf, 0); /* Query Response Length */
+
+		/* Send Config Response over TCP */
+		wpa_hexdump_buf(MSG_MSGDUMP, "DPP: Outgoing TCP message", buf);
+		wpabuf_free(conn->msg_out);
+		conn->msg_out_pos = 0;
+		conn->msg_out = buf;
+		dpp_tcp_send(conn);
+		return 0;
+	}
 	if (!resp)
 		return -1;
 
