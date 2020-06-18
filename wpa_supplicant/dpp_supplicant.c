@@ -3632,7 +3632,7 @@ int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 
 
 static int wpas_dpp_build_conf_resp(struct wpa_supplicant *wpa_s,
-				    struct dpp_authentication *auth)
+				    struct dpp_authentication *auth, bool tcp)
 {
 	struct wpabuf *resp;
 
@@ -3640,6 +3640,12 @@ static int wpas_dpp_build_conf_resp(struct wpa_supplicant *wpa_s,
 				   auth->e_netrole, true);
 	if (!resp)
 		return -1;
+
+	if (tcp) {
+		auth->conf_resp_tcp = resp;
+		return 0;
+	}
+
 	if (gas_server_set_resp(wpa_s->gas_server, auth->cert_resp_ctx,
 				resp) < 0) {
 		wpa_printf(MSG_DEBUG,
@@ -3654,12 +3660,23 @@ static int wpas_dpp_build_conf_resp(struct wpa_supplicant *wpa_s,
 
 int wpas_dpp_ca_set(struct wpa_supplicant *wpa_s, const char *cmd)
 {
-	int peer;
+	int peer = -1;
 	const char *pos, *value;
 	struct dpp_authentication *auth = wpa_s->dpp_auth;
 	u8 *bin;
 	size_t bin_len;
 	struct wpabuf *buf;
+	bool tcp = false;
+
+	pos = os_strstr(cmd, " peer=");
+	if (pos) {
+		peer = atoi(pos + 6);
+		if (!auth || !auth->waiting_cert ||
+		    (unsigned int) peer != auth->peer_bi->id) {
+			auth = dpp_controller_get_auth(wpa_s->dpp, peer);
+			tcp = true;
+		}
+	}
 
 	if (!auth || !auth->waiting_cert) {
 		wpa_printf(MSG_DEBUG,
@@ -3667,14 +3684,13 @@ int wpas_dpp_ca_set(struct wpa_supplicant *wpa_s, const char *cmd)
 		return -1;
 	}
 
-	pos = os_strstr(cmd, " peer=");
-	if (pos) {
-		peer = atoi(pos + 6);
-		if (!auth->peer_bi ||
-		    (unsigned int) peer != auth->peer_bi->id) {
-			wpa_printf(MSG_DEBUG, "DPP: Peer mismatch");
-			return -1;
-		}
+	if (peer >= 0 &&
+	    (!auth->peer_bi ||
+	     (unsigned int) peer != auth->peer_bi->id) &&
+	    (!auth->tmp_peer_bi ||
+	     (unsigned int) peer != auth->tmp_peer_bi->id)) {
+		wpa_printf(MSG_DEBUG, "DPP: Peer mismatch");
+		return -1;
 	}
 
 	pos = os_strstr(cmd, " value=");
@@ -3689,7 +3705,7 @@ int wpas_dpp_ca_set(struct wpa_supplicant *wpa_s, const char *cmd)
 
 	if (os_strncmp(pos, "status ", 7) == 0) {
 		auth->force_conf_resp_status = atoi(value);
-		return wpas_dpp_build_conf_resp(wpa_s, auth);
+		return wpas_dpp_build_conf_resp(wpa_s, auth, tcp);
 	}
 
 	if (os_strncmp(pos, "trustedEapServerName ", 21) == 0) {
@@ -3713,7 +3729,7 @@ int wpas_dpp_ca_set(struct wpa_supplicant *wpa_s, const char *cmd)
 	if (os_strncmp(pos, "certBag ", 8) == 0) {
 		wpabuf_free(auth->certbag);
 		auth->certbag = buf;
-		return wpas_dpp_build_conf_resp(wpa_s, auth);
+		return wpas_dpp_build_conf_resp(wpa_s, auth, tcp);
 	}
 
 	wpabuf_free(buf);

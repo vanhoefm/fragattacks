@@ -40,7 +40,6 @@ struct dpp_connection {
 	unsigned int on_tcp_tx_complete_auth_ok:1;
 	unsigned int gas_comeback_in_progress:1;
 	u8 gas_dialog_token;
-	struct wpabuf *gas_resp;
 	char *name;
 };
 
@@ -91,7 +90,6 @@ static void dpp_connection_free(struct dpp_connection *conn)
 	eloop_cancel_timeout(dpp_tcp_gas_query_comeback, conn, NULL);
 	wpabuf_free(conn->msg);
 	wpabuf_free(conn->msg_out);
-	wpabuf_free(conn->gas_resp);
 	dpp_auth_deinit(conn->auth);
 	os_free(conn->name);
 	os_free(conn);
@@ -1148,7 +1146,7 @@ static int dpp_controller_rx_gas_comeback_req(struct dpp_connection *conn,
 		return -1;
 	}
 
-	if (!conn->gas_resp) {
+	if (!auth->conf_resp_tcp) {
 		wpa_printf(MSG_DEBUG, "DPP: Certificate not yet ready");
 		return dpp_tcp_send_comeback_delay(conn,
 						   WLAN_PA_GAS_COMEBACK_RESP);
@@ -1156,8 +1154,8 @@ static int dpp_controller_rx_gas_comeback_req(struct dpp_connection *conn,
 
 	wpa_printf(MSG_DEBUG,
 		   "DPP: Configuration response is ready to be sent out");
-	resp = conn->gas_resp;
-	conn->gas_resp = NULL;
+	resp = auth->conf_resp_tcp;
+	auth->conf_resp_tcp = NULL;
 	return dpp_tcp_send_gas_resp(conn, WLAN_PA_GAS_COMEBACK_RESP, resp);
 }
 
@@ -1662,6 +1660,28 @@ void dpp_controller_stop(struct dpp_global *dpp)
 		dpp_controller_free(dpp->controller);
 		dpp->controller = NULL;
 	}
+}
+
+
+struct dpp_authentication * dpp_controller_get_auth(struct dpp_global *dpp,
+						    unsigned int id)
+{
+	struct dpp_controller *ctrl = dpp->controller;
+	struct dpp_connection *conn;
+
+	if (!ctrl)
+		return NULL;
+
+	dl_list_for_each(conn, &ctrl->conn, struct dpp_connection, list) {
+		struct dpp_authentication *auth = conn->auth;
+
+		if (auth &&
+		    ((auth->peer_bi && auth->peer_bi->id == id) ||
+		     (auth->tmp_peer_bi && auth->tmp_peer_bi->id == id)))
+			return auth;
+	}
+
+	return NULL;
 }
 
 

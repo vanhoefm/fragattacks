@@ -244,6 +244,7 @@ struct dpp_authentication {
 	struct dpp_bootstrap_info *peer_bi;
 	struct dpp_bootstrap_info *own_bi;
 	struct dpp_bootstrap_info *tmp_own_bi;
+	struct dpp_bootstrap_info *tmp_peer_bi;
 	u8 waiting_pubkey_hash[SHA256_MAC_LEN];
 	int response_pending;
 	int reconfig;
@@ -298,6 +299,7 @@ struct dpp_authentication {
 	bool reconfig_success;
 	struct wpabuf *conf_req;
 	const struct wpabuf *conf_resp; /* owned by GAS server */
+	struct wpabuf *conf_resp_tcp;
 	struct dpp_configuration *conf_ap;
 	struct dpp_configuration *conf2_ap;
 	struct dpp_configuration *conf_sta;
@@ -660,6 +662,8 @@ int dpp_relay_rx_gas_req(struct dpp_global *dpp, const u8 *src, const u8 *data,
 int dpp_controller_start(struct dpp_global *dpp,
 			 struct dpp_controller_config *config);
 void dpp_controller_stop(struct dpp_global *dpp);
+struct dpp_authentication * dpp_controller_get_auth(struct dpp_global *dpp,
+						    unsigned int id);
 int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
 		 const struct hostapd_ip_addr *addr, int port,
 		 const char *name);
