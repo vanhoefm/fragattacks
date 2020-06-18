@@ -5799,3 +5799,87 @@ def test_dpp_enterprise_reject(dev, apdev, params):
         raise Exception("DPP configuration not completed (Enrollee)")
     if "DPP-CONF-FAILED" not in ev:
         raise Exception("DPP configuration did not fail (Enrollee)")
+
+def test_dpp_enterprise_tcp(dev, apdev, params):
+    """DPP over TCP for enterprise provisioning"""
+    try:
+        run_dpp_enterprise_tcp(dev, apdev, params)
+    finally:
+        dev[1].request("DPP_CONTROLLER_STOP")
+
+def run_dpp_enterprise_tcp(dev, apdev, params):
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    cap_lo = params['prefix'] + ".lo.pcap"
+    cert_file = params['prefix'] + ".cert.pem"
+    pkcs7_file = params['prefix'] + ".pkcs7.der"
+
+    with open("auth_serv/ec-ca.pem", "rb") as f:
+        res = f.read()
+        cacert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
+                                                 res)
+
+    with open("auth_serv/ec-ca.key", "rb") as f:
+        res = f.read()
+        cakey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, res)
+
+    wt = WlantestCapture('lo', cap_lo)
+    time.sleep(1)
+
+    # Controller
+    conf_id = dev[1].dpp_configurator_add()
+    csrattrs = "MAsGCSqGSIb3DQEJBw=="
+    dev[1].set("dpp_configurator_params",
+               "conf=sta-dot1x configurator=%d csrattrs=%s" % (conf_id, csrattrs))
+    id_c = dev[1].dpp_bootstrap_gen()
+    uri_c = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id_c)
+    res = dev[1].request("DPP_BOOTSTRAP_INFO %d" % id_c)
+    req = "DPP_CONTROLLER_START"
+    if "OK" not in dev[1].request(req):
+        raise Exception("Failed to start Controller")
+
+    dev[0].dpp_auth_init(uri=uri_c, role="enrollee", tcp_addr="127.0.0.1")
+
+    ev = dev[1].wait_event(["DPP-CSR"], timeout=10)
+    if ev is None:
+        raise Exception("Configurator did not receive CSR")
+    id1_csr = int(ev.split(' ')[1].split('=')[1])
+    csr = ev.split(' ')[2]
+    if not csr.startswith("csr="):
+        raise Exception("Could not parse CSR event: " + ev)
+    csr = csr[4:]
+    csr = base64.b64decode(csr.encode())
+    logger.info("CSR: " + binascii.hexlify(csr).decode())
+
+    cert = dpp_sign_cert(cacert, cakey, csr)
+    with open(cert_file, 'wb') as f:
+        f.write(OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM,
+                                                cert))
+    subprocess.check_call(['openssl', 'crl2pkcs7', '-nocrl',
+                           '-certfile', cert_file,
+                           '-certfile', 'auth_serv/ec-ca.pem',
+                           '-outform', 'DER', '-out', pkcs7_file])
+
+    with open(pkcs7_file, 'rb') as f:
+        pkcs7_der = f.read()
+        certbag = base64.b64encode(pkcs7_der).decode()
+    res = dev[1].request("DPP_CA_SET peer=%d name=certBag value=%s" % (id1_csr, certbag))
+    if "OK" not in res:
+        raise Exception("Failed to set certBag")
+
+    ev = dev[1].wait_event(["DPP-CONF-SENT", "DPP-CONF-FAILED"], timeout=5)
+    if ev is None:
+        raise Exception("DPP configuration not completed (Configurator)")
+    if "DPP-CONF-FAILED" in ev:
+        raise Exception("DPP configuration did not succeed (Configurator)")
+
+    ev = dev[0].wait_event(["DPP-CONF-RECEIVED", "DPP-CONF-FAILED"],
+                           timeout=1)
+    if ev is None:
+        raise Exception("DPP configuration not completed (Enrollee)")
+    if "DPP-CONF-RECEIVED" not in ev:
+        raise Exception("DPP configuration did not succeed (Enrollee)")
+
+    time.sleep(0.5)
+    wt.close()
