@@ -143,6 +143,12 @@ static void dpp_controller_gas_done(struct dpp_connection *conn)
 	struct dpp_authentication *auth = conn->auth;
 	void *msg_ctx;
 
+	if (auth->waiting_csr) {
+		wpa_printf(MSG_DEBUG, "DPP: Waiting for CSR");
+		conn->on_tcp_tx_complete_gas_done = 0;
+		return;
+	}
+
 	if (auth->peer_version >= 2 &&
 	    auth->conf_resp_status == DPP_STATUS_OK) {
 		wpa_printf(MSG_DEBUG, "DPP: Wait for Configuration Result");
