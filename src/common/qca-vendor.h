@@ -174,6 +174,22 @@ enum qca_radiotap_vendor_ids {
  *	to notify the connected station's status. The attributes for this
  *	command are defined in enum qca_wlan_vendor_attr_link_properties.
  *
+ * @QCA_NL80211_VENDOR_SUBCMD_SETBAND: Command to configure the enabled band(s)
+ *	to the driver. This command sets the band(s) through either the
+ *	attribute QCA_WLAN_VENDOR_ATTR_SETBAND_VALUE or
+ *	QCA_WLAN_VENDOR_ATTR_SETBAND_MASK (or both).
+ *	QCA_WLAN_VENDOR_ATTR_SETBAND_VALUE refers enum qca_set_band as unsigned
+ *	integer values and QCA_WLAN_VENDOR_ATTR_SETBAND_MASK refers it as 32
+ *	bit unsigned bitmask values. The allowed values for
+ *	QCA_WLAN_VENDOR_ATTR_SETBAND_VALUE are limited to QCA_SETBAND_AUTO,
+ *	QCA_SETBAND_5G, and QCA_SETBAND_2G. Other values/bitmasks are valid for
+ *	QCA_WLAN_VENDOR_ATTR_SETBAND_MASK. The attribute
+ *	QCA_WLAN_VENDOR_ATTR_SETBAND_VALUE is deprecated and the recommendation
+ *	is to use the QCA_WLAN_VENDOR_ATTR_SETBAND_MASK. If the	both attributes
+ *	are included for backwards compatibility, the configurations through
+ *	QCA_WLAN_VENDOR_ATTR_SETBAND_MASK will take the precedence with drivers
+ *	that support both attributes.
+ *
  * @QCA_NL80211_VENDOR_SUBCMD_ACS_POLICY: This command is used to configure
  *	DFS policy and channel hint for ACS operation. This command uses the
  *	attributes defined in enum qca_wlan_vendor_attr_acs_config and
@@ -862,7 +878,11 @@ enum qca_wlan_vendor_attr {
 	QCA_WLAN_VENDOR_ATTR_MAX_CONCURRENT_CHANNELS_2_4_BAND = 10,
 	/* Unsigned 32-bit value */
 	QCA_WLAN_VENDOR_ATTR_MAX_CONCURRENT_CHANNELS_5_0_BAND = 11,
-	/* Unsigned 32-bit value from enum qca_set_band. */
+	/* Unsigned 32-bit value from enum qca_set_band. The allowed values for
+	 * this attribute are limited to QCA_SETBAND_AUTO, QCA_SETBAND_5G, and
+	 * QCA_SETBAND_2G. This attribute is deprecated. Recommendation is to
+	 * use QCA_WLAN_VENDOR_ATTR_SETBAND_MASK instead.
+	 */
 	QCA_WLAN_VENDOR_ATTR_SETBAND_VALUE = 12,
 	/* Dummy (NOP) attribute for 64 bit padding */
 	QCA_WLAN_VENDOR_ATTR_PAD = 13,
@@ -1024,6 +1044,15 @@ enum qca_wlan_vendor_attr {
 	 * one of the values in enum qca_wlan_vendor_attr_fw_state.
 	 */
 	QCA_WLAN_VENDOR_ATTR_FW_STATE = 42,
+
+	/* Unsigned 32-bitmask value from enum qca_set_band. Substitutes the
+	 * attribute QCA_WLAN_VENDOR_ATTR_SETBAND_VALUE for which only a subset
+	 * of single values from enum qca_set_band are valid. This attribute
+	 * uses bitmask combinations to define the respective allowed band
+	 * combinations and this attributes takes precedence over
+	 * QCA_WLAN_VENDOR_ATTR_SETBAND_VALUE if both attributes are included.
+	 */
+	QCA_WLAN_VENDOR_ATTR_SETBAND_MASK = 43,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_AFTER_LAST,
@@ -1572,9 +1601,10 @@ enum qca_iface_type {
 };
 
 enum qca_set_band {
-	QCA_SETBAND_AUTO,
-	QCA_SETBAND_5G,
-	QCA_SETBAND_2G,
+	QCA_SETBAND_AUTO = 0,
+	QCA_SETBAND_5G = BIT(0),
+	QCA_SETBAND_2G = BIT(1),
+	QCA_SETBAND_6G = BIT(2),
 };
 
 /**
