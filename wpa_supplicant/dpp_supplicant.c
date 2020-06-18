@@ -1519,6 +1519,7 @@ static void wpas_dpp_build_csr(void *eloop_ctx, void *timeout_ctx)
 	if (!auth->csr) {
 		dpp_auth_deinit(wpa_s->dpp_auth);
 		wpa_s->dpp_auth = NULL;
+		return;
 	}
 
 	wpas_dpp_start_gas_client(wpa_s);
