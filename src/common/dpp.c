@@ -2562,7 +2562,7 @@ static int dpp_parse_cred_dot1x(struct dpp_authentication *auth,
 			      "Invalid trustedEapServerName type in JSON");
 		return -1;
 	}
-	if (name->string) {
+	if (name && name->string) {
 		wpa_printf(MSG_DEBUG, "DPP: Received trustedEapServerName: %s",
 			   name->string);
 		conf->server_name = os_strdup(name->string);
