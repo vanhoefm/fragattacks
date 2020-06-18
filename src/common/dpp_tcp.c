@@ -1255,14 +1255,14 @@ static void dpp_tcp_gas_query_comeback(void *eloop_ctx, void *timeout_ctx)
 
 
 static int dpp_rx_gas_resp(struct dpp_connection *conn, const u8 *msg,
-			   size_t len)
+			   size_t len, bool comeback)
 {
 	struct wpabuf *buf;
 	u8 dialog_token;
 	const u8 *pos, *end, *next, *adv_proto;
 	u16 status, slen, comeback_delay;
 
-	if (len < 5 + 2)
+	if (len < 5 + 2 + (comeback ? 1 : 0))
 		return -1;
 
 	wpa_printf(MSG_DEBUG,
@@ -1278,6 +1278,8 @@ static int dpp_rx_gas_resp(struct dpp_connection *conn, const u8 *msg,
 		return -1;
 	}
 	pos += 2;
+	if (comeback)
+		pos++; /* ignore Fragment ID */
 	comeback_delay = WPA_GET_LE16(pos);
 	pos += 2;
 
@@ -1441,8 +1443,10 @@ static void dpp_controller_rx(int sd, void *eloop_ctx, void *sock_ctx)
 			dpp_connection_remove(conn);
 		break;
 	case WLAN_PA_GAS_INITIAL_RESP:
+	case WLAN_PA_GAS_COMEBACK_RESP:
 		if (dpp_rx_gas_resp(conn, pos + 1,
-				    wpabuf_len(conn->msg) - 1) < 0)
+				    wpabuf_len(conn->msg) - 1,
+				    *pos == WLAN_PA_GAS_COMEBACK_RESP) < 0)
 			dpp_connection_remove(conn);
 		break;
 	case WLAN_PA_GAS_COMEBACK_REQ:
