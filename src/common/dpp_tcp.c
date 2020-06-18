@@ -38,7 +38,9 @@ struct dpp_connection {
 	unsigned int on_tcp_tx_complete_gas_done:1;
 	unsigned int on_tcp_tx_complete_remove:1;
 	unsigned int on_tcp_tx_complete_auth_ok:1;
+	unsigned int gas_comeback_in_progress:1;
 	u8 gas_dialog_token;
+	struct wpabuf *gas_resp;
 };
 
 /* Remote Controller */
@@ -88,6 +90,7 @@ static void dpp_connection_free(struct dpp_connection *conn)
 	eloop_cancel_timeout(dpp_tcp_gas_query_comeback, conn, NULL);
 	wpabuf_free(conn->msg);
 	wpabuf_free(conn->msg_out);
+	wpabuf_free(conn->gas_resp);
 	dpp_auth_deinit(conn->auth);
 	os_free(conn);
 }
@@ -976,14 +979,91 @@ static int dpp_controller_rx_action(struct dpp_connection *conn, const u8 *msg,
 }
 
 
+static int dpp_tcp_send_comeback_delay(struct dpp_connection *conn, u8 action)
+{
+	struct wpabuf *buf;
+	size_t len = 18;
+
+	if (action == WLAN_PA_GAS_COMEBACK_RESP)
+		len++;
+
+	buf = wpabuf_alloc(4 + len);
+	if (!buf)
+		return -1;
+
+	wpabuf_put_be32(buf, len);
+
+	wpabuf_put_u8(buf, action);
+	wpabuf_put_u8(buf, conn->gas_dialog_token);
+	wpabuf_put_le16(buf, WLAN_STATUS_SUCCESS);
+	if (action == WLAN_PA_GAS_COMEBACK_RESP)
+		wpabuf_put_u8(buf, 0);
+	wpabuf_put_le16(buf, 500); /* GAS Comeback Delay */
+
+	dpp_write_adv_proto(buf);
+	wpabuf_put_le16(buf, 0); /* Query Response Length */
+
+	/* Send Config Response over TCP */
+	wpa_hexdump_buf(MSG_MSGDUMP, "DPP: Outgoing TCP message", buf);
+	wpabuf_free(conn->msg_out);
+	conn->msg_out_pos = 0;
+	conn->msg_out = buf;
+	dpp_tcp_send(conn);
+	return 0;
+}
+
+
+static int dpp_tcp_send_gas_resp(struct dpp_connection *conn, u8 action,
+				 struct wpabuf *resp)
+{
+	struct wpabuf *buf;
+	size_t len;
+
+	if (!resp)
+		return -1;
+
+	len = 18 + wpabuf_len(resp);
+	if (action == WLAN_PA_GAS_COMEBACK_RESP)
+		len++;
+
+	buf = wpabuf_alloc(4 + len);
+	if (!buf) {
+		wpabuf_free(resp);
+		return -1;
+	}
+
+	wpabuf_put_be32(buf, len);
+
+	wpabuf_put_u8(buf, action);
+	wpabuf_put_u8(buf, conn->gas_dialog_token);
+	wpabuf_put_le16(buf, WLAN_STATUS_SUCCESS);
+	if (action == WLAN_PA_GAS_COMEBACK_RESP)
+		wpabuf_put_u8(buf, 0);
+	wpabuf_put_le16(buf, 0); /* GAS Comeback Delay */
+
+	dpp_write_adv_proto(buf);
+	dpp_write_gas_query(buf, resp);
+	wpabuf_free(resp);
+
+	/* Send Config Response over TCP; GAS fragmentation is taken care of by
+	 * the Relay */
+	wpa_hexdump_buf(MSG_MSGDUMP, "DPP: Outgoing TCP message", buf);
+	wpabuf_free(conn->msg_out);
+	conn->msg_out_pos = 0;
+	conn->msg_out = buf;
+	conn->on_tcp_tx_complete_gas_done = 1;
+	dpp_tcp_send(conn);
+	return 0;
+}
+
+
 static int dpp_controller_rx_gas_req(struct dpp_connection *conn, const u8 *msg,
 				     size_t len)
 {
 	const u8 *pos, *end, *next;
-	u8 dialog_token;
 	const u8 *adv_proto;
 	u16 slen;
-	struct wpabuf *resp, *buf;
+	struct wpabuf *resp;
 	struct dpp_authentication *auth = conn->auth;
 
 	if (len < 1 + 2)
@@ -1001,7 +1081,7 @@ static int dpp_controller_rx_gas_req(struct dpp_connection *conn, const u8 *msg,
 	pos = msg;
 	end = msg + len;
 
-	dialog_token = *pos++;
+	conn->gas_dialog_token = *pos++;
 	adv_proto = pos++;
 	slen = *pos++;
 	if (*adv_proto != WLAN_EID_ADV_PROTO ||
@@ -1028,57 +1108,53 @@ static int dpp_controller_rx_gas_req(struct dpp_connection *conn, const u8 *msg,
 	resp = dpp_conf_req_rx(auth, pos, slen);
 	if (!resp && auth->waiting_cert) {
 		wpa_printf(MSG_DEBUG, "DPP: Certificate not yet ready");
-		buf = wpabuf_alloc(4 + 18);
-		if (!buf)
-			return -1;
-
-		wpabuf_put_be32(buf, 18);
-
-		wpabuf_put_u8(buf, WLAN_PA_GAS_INITIAL_RESP);
-		wpabuf_put_u8(buf, dialog_token);
-		wpabuf_put_le16(buf, WLAN_STATUS_SUCCESS);
-		wpabuf_put_le16(buf, 500); /* GAS Comeback Delay */
-
-		dpp_write_adv_proto(buf);
-		wpabuf_put_le16(buf, 0); /* Query Response Length */
-
-		/* Send Config Response over TCP */
-		wpa_hexdump_buf(MSG_MSGDUMP, "DPP: Outgoing TCP message", buf);
-		wpabuf_free(conn->msg_out);
-		conn->msg_out_pos = 0;
-		conn->msg_out = buf;
-		dpp_tcp_send(conn);
-		return 0;
+		conn->gas_comeback_in_progress = 1;
+		return dpp_tcp_send_comeback_delay(conn,
+						   WLAN_PA_GAS_INITIAL_RESP);
 	}
-	if (!resp)
+
+	return dpp_tcp_send_gas_resp(conn, WLAN_PA_GAS_INITIAL_RESP, resp);
+}
+
+
+static int dpp_controller_rx_gas_comeback_req(struct dpp_connection *conn,
+					      const u8 *msg, size_t len)
+{
+	u8 dialog_token;
+	struct dpp_authentication *auth = conn->auth;
+	struct wpabuf *resp;
+
+	if (len < 1)
 		return -1;
 
-	buf = wpabuf_alloc(4 + 18 + wpabuf_len(resp));
-	if (!buf) {
-		wpabuf_free(resp);
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Received DPP Configuration Request over TCP (comeback)");
+
+	if (!auth || (!conn->ctrl && !auth->configurator) ||
+	    (!auth->auth_success && !auth->reconfig_success) ||
+	    !conn->gas_comeback_in_progress) {
+		wpa_printf(MSG_DEBUG, "DPP: No matching exchange in progress");
 		return -1;
 	}
 
-	wpabuf_put_be32(buf, 18 + wpabuf_len(resp));
+	dialog_token = msg[0];
+	if (dialog_token != conn->gas_dialog_token) {
+		wpa_printf(MSG_DEBUG, "DPP: Dialog token mismatch (%u != %u)",
+			   dialog_token, conn->gas_dialog_token);
+		return -1;
+	}
 
-	wpabuf_put_u8(buf, WLAN_PA_GAS_INITIAL_RESP);
-	wpabuf_put_u8(buf, dialog_token);
-	wpabuf_put_le16(buf, WLAN_STATUS_SUCCESS);
-	wpabuf_put_le16(buf, 0); /* GAS Comeback Delay */
+	if (!conn->gas_resp) {
+		wpa_printf(MSG_DEBUG, "DPP: Certificate not yet ready");
+		return dpp_tcp_send_comeback_delay(conn,
+						   WLAN_PA_GAS_COMEBACK_RESP);
+	}
 
-	dpp_write_adv_proto(buf);
-	dpp_write_gas_query(buf, resp);
-	wpabuf_free(resp);
-
-	/* Send Config Response over TCP; GAS fragmentation is taken care of by
-	 * the Relay */
-	wpa_hexdump_buf(MSG_MSGDUMP, "DPP: Outgoing TCP message", buf);
-	wpabuf_free(conn->msg_out);
-	conn->msg_out_pos = 0;
-	conn->msg_out = buf;
-	conn->on_tcp_tx_complete_gas_done = 1;
-	dpp_tcp_send(conn);
-	return 0;
+	wpa_printf(MSG_DEBUG,
+		   "DPP: Configuration response is ready to be sent out");
+	resp = conn->gas_resp;
+	conn->gas_resp = NULL;
+	return dpp_tcp_send_gas_resp(conn, WLAN_PA_GAS_COMEBACK_RESP, resp);
 }
 
 
@@ -1367,6 +1443,11 @@ static void dpp_controller_rx(int sd, void *eloop_ctx, void *sock_ctx)
 	case WLAN_PA_GAS_INITIAL_RESP:
 		if (dpp_rx_gas_resp(conn, pos + 1,
 				    wpabuf_len(conn->msg) - 1) < 0)
+			dpp_connection_remove(conn);
+		break;
+	case WLAN_PA_GAS_COMEBACK_REQ:
+		if (dpp_controller_rx_gas_comeback_req(
+			    conn, pos + 1, wpabuf_len(conn->msg) - 1) < 0)
 			dpp_connection_remove(conn);
 		break;
 	default:
