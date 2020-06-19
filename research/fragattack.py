@@ -4,6 +4,10 @@ from tests_common import *
 from tests_qca import *
 from tests_attacks import *
 
+#TODO: Check that modified drivers are used using debugfs
+#TODO: Check that atheros is using patched firmware using debugfs
+# ==> Both have caused me issues!!! Checking this automatically is *ESSENTIAL*.
+
 # ----------------------------------- Main Function -----------------------------------
 
 def cleanup():
