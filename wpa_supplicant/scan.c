@@ -2249,7 +2249,7 @@ static unsigned int interpolate_rate(int snr, int snr0, int snr1,
 
 
 static unsigned int max_rate(const struct minsnr_bitrate_entry table[],
-			     int snr, int vht)
+			     int snr, bool vht)
 {
 	const struct minsnr_bitrate_entry *prev, *entry = table;
 
@@ -2267,13 +2267,13 @@ static unsigned int max_rate(const struct minsnr_bitrate_entry table[],
 }
 
 
-static unsigned int max_ht20_rate(int snr, int vht)
+static unsigned int max_ht20_rate(int snr, bool vht)
 {
 	return max_rate(vht20_table, snr, vht);
 }
 
 
-static unsigned int max_ht40_rate(int snr, int vht)
+static unsigned int max_ht40_rate(int snr, bool vht)
 {
 	return max_rate(vht40_table, snr, vht);
 }
@@ -2337,7 +2337,7 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 	if (capab == CAPAB_HT || capab == CAPAB_HT40 || capab == CAPAB_VHT) {
 		ie = get_ie(ies, ies_len, WLAN_EID_HT_CAP);
 		if (ie) {
-			tmp = max_ht20_rate(snr, 0);
+			tmp = max_ht20_rate(snr, false);
 			if (tmp > est)
 				est = tmp;
 		}
@@ -2347,7 +2347,7 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 		ie = get_ie(ies, ies_len, WLAN_EID_HT_OPERATION);
 		if (ie && ie[1] >= 2 &&
 		    (ie[3] & HT_INFO_HT_PARAM_SECONDARY_CHNL_OFF_MASK)) {
-			tmp = max_ht40_rate(snr, 0);
+			tmp = max_ht40_rate(snr, false);
 			if (tmp > est)
 				est = tmp;
 		}
@@ -2357,7 +2357,7 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 		/* Use +1 to assume VHT is always faster than HT */
 		ie = get_ie(ies, ies_len, WLAN_EID_VHT_CAP);
 		if (ie) {
-			tmp = max_ht20_rate(snr, 1) + 1;
+			tmp = max_ht20_rate(snr, true) + 1;
 			if (tmp > est)
 				est = tmp;
 
@@ -2365,7 +2365,7 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 			if (ie && ie[1] >= 2 &&
 			    (ie[3] &
 			     HT_INFO_HT_PARAM_SECONDARY_CHNL_OFF_MASK)) {
-				tmp = max_ht40_rate(snr, 1) + 1;
+				tmp = max_ht40_rate(snr, true) + 1;
 				if (tmp > est)
 					est = tmp;
 			}
