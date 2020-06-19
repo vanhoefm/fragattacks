@@ -13,6 +13,7 @@ class PingTest(Test):
 		self.icmp_size = None if opt == None else opt.icmp_size
 		self.padding = None if opt == None else opt.padding
 		self.to_self = False if opt == None else opt.to_self
+		self.bad_mic = False if opt == None else opt.bad_mic
 
 		self.parse_meta_actions()
 
@@ -59,8 +60,10 @@ class PingTest(Test):
 
 			# Assign fragment numbers according to MetaDrop rules
 			frame.SC = (frame.SC & 0xfff0) | self.fragnums.pop(0)
-
 			frag.frame = frame
+
+			# Take into account encryption options
+			frag.bad_mic = self.bad_mic
 
 		# Put the separator after each fragment if requested.
 		if self.separate_with != None:
@@ -109,7 +112,7 @@ class ForwardTest(Test):
 		else:
 			request = LLC()/SNAP()/IP()/Raw(self.magic)
 
-		# Wether to send large requests
+		# Wether to send large requests --- TODO FIXME ath9k_htc cannot reliably send large frames...
 		if self.large:
 			request = request/Raw(b"A" * 1500)
 

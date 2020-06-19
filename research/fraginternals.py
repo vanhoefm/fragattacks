@@ -159,7 +159,7 @@ class Action():
 	# Drop: when fragmenting frames, skip the next fragment number. Used in PingTest.
 	MetaDrop = range(0)
 
-	def __init__(self, trigger=Connected, action=Inject, meta_action=None, func=None, enc=False, frame=None, inc_pn=1, delay=None, wait=None, key=None):
+	def __init__(self, trigger=Connected, action=Inject, meta_action=None, func=None, enc=False, frame=None, inc_pn=1, bad_mic=False, delay=None, wait=None, key=None):
 		self.trigger = trigger
 		self.action = action
 
@@ -182,6 +182,7 @@ class Action():
 		# Specific to fragment injection
 		self.encrypted = enc
 		self.inc_pn = inc_pn
+		self.bad_mic = bad_mic
 		self.delay = delay
 		self.frame = frame
 		self.key = key
@@ -433,6 +434,8 @@ class Station():
 		return header
 
 	def encrypt(self, frame, inc_pn=1, force_key=None):
+		# TODO: Add argument to force a bad authenticity check
+
 		idx = dot11_get_priority(frame) if self.options.pn_per_qos else 0
 		self.pn[idx] += inc_pn
 
@@ -441,7 +444,10 @@ class Station():
 			log(STATUS, "Encrypting with all-zero key")
 			key = b"\x00" * len(key)
 
-		if len(key) == 16:
+		if len(key) == 32:
+			# TODO: Implement and test this function
+			encrypted = encrypt_tkip(frame, key, self.pn[idx], keyid)
+		elif len(key) == 16:
 			encrypted = encrypt_ccmp(frame, key, self.pn[idx], keyid)
 		else:
 			encrypted = encrypt_wep(frame, key, self.pn[idx], keyid)

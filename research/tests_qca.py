@@ -62,7 +62,9 @@ class QcaTestSplit(Test):
 	controller that will perform the actual defragmentation. Essential remarks:
 
 	- Sending [Encrypted, Plaintext] and [Plaintext, Encrypted] failed. It is
-	  not clear why this is the case.
+	  not clear why this is the case. It could be that the second Plaintext fragment
+	  might be overwriting the first Encrypted fragment. And it depends on whether
+	  the controller rejects plaintext fragments.
 
 	- You must send [Plaintext, Encrypted2] and [Encrypted1, Plaintext]. Note that
 	  we first inject Encrypted2, which has a *higher* packet number than Encrypted1.
