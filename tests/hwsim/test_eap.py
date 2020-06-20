@@ -574,3 +574,29 @@ def test_eap_teap_eap_vendor(dev, apdev):
                 anonymous_identity="TEAP",
                 ca_cert="auth_serv/ca.pem", phase2="auth=VENDOR-TEST",
                 pac_file="blob://teap_pac")
+
+def test_eap_teap_client_cert(dev, apdev):
+    """EAP-TEAP with client certificate in Phase 1"""
+    check_eap_capa(dev[0], "TEAP")
+    params = int_teap_server_params(eap_teap_auth="2")
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    # verify server accept a client with certificate, but no Phase 2
+    # configuration
+    eap_connect(dev[0], hapd, "TEAP", "user",
+                anonymous_identity="TEAP",
+                phase1="teap_provisioning=2",
+                client_cert="auth_serv/user.pem",
+                private_key="auth_serv/user.key",
+                ca_cert="auth_serv/ca.pem",
+                pac_file="blob://teap_pac")
+    dev[0].dump_monitor()
+    res = eap_reauth(dev[0], "TEAP")
+    if res['tls_session_reused'] != '1':
+        raise Exception("EAP-TEAP could not use PAC session ticket")
+
+    # verify server accepts a client without certificate
+    eap_connect(dev[1], hapd, "TEAP", "user",
+                anonymous_identity="TEAP", password="password",
+                ca_cert="auth_serv/ca.pem", phase2="auth=MSCHAPV2",
+                pac_file="blob://teap_pac")
