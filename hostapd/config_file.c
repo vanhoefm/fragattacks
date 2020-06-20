@@ -2555,7 +2555,7 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 	} else if (os_strcmp(buf, "eap_teap_auth") == 0) {
 		int val = atoi(pos);
 
-		if (val < 0 || val > 1) {
+		if (val < 0 || val > 2) {
 			wpa_printf(MSG_ERROR,
 				   "Line %d: Invalid eap_teap_auth value",
 				   line);
