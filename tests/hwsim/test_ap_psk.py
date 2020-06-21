@@ -3362,10 +3362,17 @@ def test_ap_wpa2_psk_no_control_port(dev, apdev):
 
 def test_ap_wpa2_psk_ap_control_port(dev, apdev):
     """WPA2-PSK AP with nl80211 control port in AP mode"""
+    run_ap_wpa2_psk_ap_control_port(dev, apdev, ctrl_val=1)
+
+def test_ap_wpa2_psk_ap_control_port_disabled(dev, apdev):
+    """WPA2-PSK AP with nl80211 control port in AP mode disabled"""
+    run_ap_wpa2_psk_ap_control_port(dev, apdev, ctrl_val=0)
+
+def run_ap_wpa2_psk_ap_control_port(dev, apdev, ctrl_val):
     ssid = "test-wpa2-psk"
     passphrase = 'qwertyuiop'
     params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
-    params['driver_params'] = "control_port_ap=1"
+    params['driver_params'] = "control_port_ap=%d" % ctrl_val
     hapd = hostapd.add_ap(apdev[0], params)
 
     flags = hapd.request("DRIVER_FLAGS").splitlines()[1:]
