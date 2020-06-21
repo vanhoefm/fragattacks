@@ -5363,14 +5363,18 @@ static int nl80211_tx_control_port(void *priv, const u8 *dest,
 	ext_arg.ext_data = &cookie;
 	ret = send_and_recv_msgs(bss->drv, msg, NULL, NULL,
 				 ack_handler_cookie, &ext_arg);
-	if (ret)
+	if (ret) {
 		wpa_printf(MSG_DEBUG,
 			   "nl80211: tx_control_port failed: ret=%d (%s)",
 			   ret, strerror(-ret));
-	else
+	} else {
+		struct wpa_driver_nl80211_data *drv = bss->drv;
+
 		wpa_printf(MSG_DEBUG,
 			   "nl80211: tx_control_port cookie=0x%llx",
 			   (long long unsigned int) cookie);
+		drv->eapol_tx_cookie = cookie;
+	}
 
 	return ret;
 }

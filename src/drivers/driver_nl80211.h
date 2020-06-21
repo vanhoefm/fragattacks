@@ -181,6 +181,7 @@ struct wpa_driver_nl80211_data {
 #define MAX_SEND_FRAME_COOKIES 20
 	u64 send_frame_cookies[MAX_SEND_FRAME_COOKIES];
 	unsigned int num_send_frame_cookies;
+	u64 eapol_tx_cookie;
 
 	unsigned int last_mgmt_freq;
 

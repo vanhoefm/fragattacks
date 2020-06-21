@@ -20,6 +20,12 @@
 #include "driver_nl80211.h"
 
 
+static void
+nl80211_control_port_frame_tx_status(struct wpa_driver_nl80211_data *drv,
+				     const u8 *frame, size_t len,
+				     struct nlattr *ack, struct nlattr *cookie);
+
+
 static const char * nl80211_command_to_string(enum nl80211_commands cmd)
 {
 #define C2S(x) case x: return #x;
@@ -699,6 +705,16 @@ static void mlme_event_mgmt_tx_status(struct wpa_driver_nl80211_data *drv,
 		   WLAN_FC_GET_TYPE(fc) != WLAN_FC_TYPE_MGMT ? "not-mgmt " : "",
 		   WLAN_FC_GET_STYPE(fc), (long long unsigned int) cookie_val,
 		   cookie ? "" : "(N/A)", ack != NULL);
+
+	if (cookie_val && cookie_val == drv->eapol_tx_cookie &&
+	    len >= ETH_HLEN &&
+	    WPA_GET_BE16(frame + 2 * ETH_ALEN) == ETH_P_PAE) {
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: Work around misdelivered control port TX status for EAPOL");
+		nl80211_control_port_frame_tx_status(drv, frame, len, ack,
+						     cookie);
+		return;
+	}
 
 	if (WLAN_FC_GET_TYPE(fc) != WLAN_FC_TYPE_MGMT)
 		return;
@@ -2561,31 +2577,23 @@ static void nl80211_control_port_frame(struct wpa_driver_nl80211_data *drv,
 
 static void
 nl80211_control_port_frame_tx_status(struct wpa_driver_nl80211_data *drv,
-				     struct nlattr **tb)
+				     const u8 *frame, size_t len,
+				     struct nlattr *ack, struct nlattr *cookie)
 {
-	bool acked = tb[NL80211_ATTR_ACK];
 	union wpa_event_data event;
-	const u8 *frame;
-	size_t frame_len;
 
-	if (!tb[NL80211_ATTR_FRAME] || !tb[NL80211_ATTR_COOKIE])
-		return;
-
-	frame = nla_data(tb[NL80211_ATTR_FRAME]);
-	frame_len = nla_len(tb[NL80211_ATTR_FRAME]);
-	if (frame_len < ETH_HLEN)
+	if (!cookie || len < ETH_HLEN)
 		return;
 
 	wpa_printf(MSG_DEBUG,
 		   "nl80211: Control port TX status (ack=%d), cookie=%llu",
-		   acked, (long long unsigned int)
-		   nla_get_u64(tb[NL80211_ATTR_COOKIE]));
+		   ack != NULL, (long long unsigned int) nla_get_u64(cookie));
 
 	os_memset(&event, 0, sizeof(event));
 	event.eapol_tx_status.dst = frame;
 	event.eapol_tx_status.data = frame + ETH_HLEN;
-	event.eapol_tx_status.data_len = frame_len - ETH_HLEN;
-	event.eapol_tx_status.ack = acked;
+	event.eapol_tx_status.data_len = len - ETH_HLEN;
+	event.eapol_tx_status.ack = ack != NULL;
 	wpa_supplicant_event(drv->ctx, EVENT_EAPOL_TX_STATUS, &event);
 }
 
@@ -2809,7 +2817,13 @@ static void do_process_drv_event(struct i802_bss *bss, int cmd,
 						 nla_len(frame));
 		break;
 	case NL80211_CMD_CONTROL_PORT_FRAME_TX_STATUS:
-		nl80211_control_port_frame_tx_status(drv, tb);
+		if (!frame)
+			break;
+		nl80211_control_port_frame_tx_status(drv,
+						     nla_data(frame),
+						     nla_len(frame),
+						     tb[NL80211_ATTR_ACK],
+						     tb[NL80211_ATTR_COOKIE]);
 		break;
 	default:
 		wpa_dbg(drv->ctx, MSG_DEBUG, "nl80211: Ignored unknown event "
