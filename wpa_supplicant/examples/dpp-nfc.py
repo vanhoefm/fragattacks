@@ -810,7 +810,10 @@ def main():
             clear_raw_mode()
             if was_in_raw_mode:
                 print("\r")
-            summary("Waiting for a tag or peer to be touched")
+            if args.tag_read_only:
+                summary("Waiting for a tag to be touched")
+            else:
+                summary("Waiting for a tag or peer to be touched")
             wait_connection = True
             try:
                 if args.tag_read_only:
