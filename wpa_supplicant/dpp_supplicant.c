@@ -3260,7 +3260,6 @@ void wpas_dpp_deinit(struct wpa_supplicant *wpa_s)
 #endif /* CONFIG_TESTING_OPTIONS */
 	if (!wpa_s->dpp)
 		return;
-	dpp_global_clear(wpa_s->dpp);
 	eloop_cancel_timeout(wpas_dpp_pkex_retry_timeout, wpa_s, NULL);
 	eloop_cancel_timeout(wpas_dpp_reply_wait_timeout, wpa_s, NULL);
 	eloop_cancel_timeout(wpas_dpp_init_timeout, wpa_s, NULL);
@@ -3284,6 +3283,7 @@ void wpas_dpp_deinit(struct wpa_supplicant *wpa_s)
 	os_memset(wpa_s->dpp_intro_bssid, 0, ETH_ALEN);
 	os_free(wpa_s->dpp_configurator_params);
 	wpa_s->dpp_configurator_params = NULL;
+	dpp_global_clear(wpa_s->dpp);
 }
 
 
