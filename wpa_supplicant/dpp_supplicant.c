@@ -3668,7 +3668,8 @@ int wpas_dpp_ca_set(struct wpa_supplicant *wpa_s, const char *cmd)
 	if (pos) {
 		peer = atoi(pos + 6);
 		if (!auth || !auth->waiting_cert ||
-		    (unsigned int) peer != auth->peer_bi->id) {
+		    (auth->peer_bi &&
+		     (unsigned int) peer != auth->peer_bi->id)) {
 			auth = dpp_controller_get_auth(wpa_s->dpp, peer);
 			tcp = true;
 		}
