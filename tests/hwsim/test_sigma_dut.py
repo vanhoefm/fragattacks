@@ -3393,6 +3393,15 @@ def test_sigma_dut_sta_scan_short_ssid(dev, apdev):
     if not found:
         raise Exception("AP not found in scan results")
 
+def test_sigma_dut_sta_scan_wait_completion(dev, apdev):
+    """sigma_dut sta_scan WaitCompletion,1"""
+    sigma = start_sigma_dut(dev[0].ifname)
+    try:
+        cmd = "sta_scan,Interface,%s,ChnlFreq,2412,WaitCompletion,1" % dev[0].ifname
+        res = sigma_dut_cmd(cmd, timeout=10)
+    finally:
+        stop_sigma_dut(sigma)
+
 def test_sigma_dut_ap_osen(dev, apdev, params):
     """sigma_dut controlled AP with OSEN"""
     logdir = os.path.join(params['logdir'],
