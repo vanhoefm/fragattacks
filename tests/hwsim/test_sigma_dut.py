@@ -1530,6 +1530,21 @@ def test_sigma_dut_dpp_qr_resp_10(dev, apdev):
     """sigma_dut DPP/QR responder (conf index 10)"""
     run_sigma_dut_dpp_qr_resp(dev, apdev, 10)
 
+def test_sigma_dut_dpp_qr_resp_11(dev, apdev, params):
+    """sigma_dut DPP/QR responder (conf index 11)"""
+    logdir = params['logdir']
+    with open("auth_serv/ec-ca.pem", "rb") as f:
+        res = f.read()
+    with open(os.path.join(logdir, "dpp-ca.pem"), "wb") as f:
+        f.write(res)
+    with open("auth_serv/ec-ca.key", "rb") as f:
+        res = f.read()
+    with open(os.path.join(logdir, "dpp-ca.key"), "wb") as f:
+        f.write(res)
+    with open(os.path.join(logdir, "dpp-ca-csrattrs"), "wb") as f:
+        f.write(b'MAsGCSqGSIb3DQEJBw==')
+    run_sigma_dut_dpp_qr_resp(dev, apdev, 11, cert_path=logdir)
+
 def test_sigma_dut_dpp_qr_resp_chan_list(dev, apdev):
     """sigma_dut DPP/QR responder (channel list override)"""
     run_sigma_dut_dpp_qr_resp(dev, apdev, 1, chan_list='81/2 81/6 81/1',
@@ -1554,10 +1569,10 @@ def test_sigma_dut_dpp_qr_resp_configurator(dev, apdev):
 
 def run_sigma_dut_dpp_qr_resp(dev, apdev, conf_idx, chan_list=None,
                               listen_chan=None, status_query=False,
-                              enrollee_role="STA"):
+                              enrollee_role="STA", cert_path=None):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
-    sigma = start_sigma_dut(dev[0].ifname)
+    sigma = start_sigma_dut(dev[0].ifname, cert_path=cert_path)
     try:
         cmd = "dev_exec_action,program,DPP,DPPActionType,GetLocalBootstrap,DPPCryptoIdentifier,P-256,DPPBS,QR"
         if chan_list:
