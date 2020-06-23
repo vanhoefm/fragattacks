@@ -117,6 +117,9 @@ DBusMessage * wpas_dbus_handler_select_network(DBusMessage *message,
 DBusMessage * wpas_dbus_handler_network_reply(DBusMessage *message,
 					      struct wpa_supplicant *wpa_s);
 
+DBusMessage * wpas_dbus_handler_roam(DBusMessage *message,
+				     struct wpa_supplicant *wpa_s);
+
 DBusMessage * wpas_dbus_handler_add_blob(DBusMessage *message,
 					 struct wpa_supplicant *wpa_s);
 

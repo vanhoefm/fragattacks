@@ -323,6 +323,24 @@ fi.w1.wpa_supplicant1.CreateInterface.
       </li>
 
       <li>
+	<h3>Roam ( s : addr ) --> nothing</h3>
+	<p>Initiate a roam to another BSS within the current ESS.</p>
+	<h4>Possible errors</h4>
+	<dl>
+	  <dt>fi.w1.wpa_supplicant1.InvalidArgs</dt>
+	  <dd>Missing address argument.</dd>
+	  <dt>fi.w1.wpa_supplicant1.InvalidArgs</dt>
+	  <dd>Invalid hardware address format.</dd>
+	  <dt>fi.w1.wpa_supplicant1.InvalidArgs</dt>
+	  <dd>Target BSS not found.</dd>
+	  <dt>fi.w1.wpa_supplicant1.NotConnected</dt>
+	  <dd>Interface is not connected to any network.</dd>
+	  <dt>fi.w1.wpa_supplicant1.UnknownError</dt>
+	  <dd>Scan processing was not included in the build.</dd>
+	</dl>
+      </li>
+
+      <li>
 	<h3>AddBlob ( s : name, ay : data ) --> nothing</h3>
 	<p>Adds a blob to the interface.</p>
 	<h4>Arguments</h4>

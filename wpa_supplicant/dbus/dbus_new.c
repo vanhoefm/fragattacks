@@ -3212,6 +3212,14 @@ static const struct wpa_dbus_method_desc wpas_dbus_interface_methods[] = {
 		  END_ARGS
 	  }
 	},
+	{ "Roam", WPAS_DBUS_NEW_IFACE_INTERFACE,
+	  (WPADBusMethodHandler) wpas_dbus_handler_roam,
+	  {
+		  { "addr", "s", ARG_IN },
+		  END_ARGS
+	  }
+	},
+
 #ifndef CONFIG_NO_CONFIG_BLOBS
 	{ "AddBlob", WPAS_DBUS_NEW_IFACE_INTERFACE,
 	  (WPADBusMethodHandler) wpas_dbus_handler_add_blob,
