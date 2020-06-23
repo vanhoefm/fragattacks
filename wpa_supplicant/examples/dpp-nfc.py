@@ -179,12 +179,15 @@ def dpp_bootstrap_gen(wpas, type="qrcode", chan=None, mac=None, info=None,
         raise Exception("Failed to generate bootstrapping info")
     return int(res)
 
-def wpas_get_nfc_uri(start_listen=True, pick_channel=False):
+def wpas_get_nfc_uri(start_listen=True, pick_channel=False, chan_override=None):
     wpas = wpas_connect()
     if wpas is None:
         return None
     global own_id, chanlist
-    chan = chanlist
+    if chan_override:
+        chan = chan_override
+    else:
+        chan = chanlist
     if chan is None and get_status_field(wpas, "bssid[0]"):
         freq = get_status_field(wpas, "freq")
         if freq:
@@ -219,8 +222,12 @@ def wpas_report_handover_sel(uri):
     cmd = "DPP_NFC_HANDOVER_SEL own=%d uri=%s" % (own_id, uri)
     return wpas.request(cmd)
 
-def dpp_handover_client(llc):
-    uri = wpas_get_nfc_uri(start_listen=False)
+def dpp_handover_client(llc, alt=False):
+    chan_override = None
+    if alt:
+        global altchanlist
+        chan_override = altchanlist
+    uri = wpas_get_nfc_uri(start_listen=False, chan_override=chan_override)
     if uri is None:
         summary("Cannot start handover client - no bootstrap URI available")
         return
@@ -346,6 +353,10 @@ def dpp_handover_client(llc):
 
     if not dpp_found:
         summary("DPP carrier not seen in response - allow peer to initiate a new handover with different parameters")
+        my_crn_ready = False
+        my_crn = None
+        peer_crn = None
+        hs_sent = False
         client.close()
         summary("Returning from dpp_handover_client")
         return
@@ -374,6 +385,7 @@ class HandoverServer(nfc.handover.HandoverServer):
         self.ho_server_processing = False
         self.success = False
         self.try_own = False
+        self.llc = llc
 
     def process_handover_request_message(self, records):
         self.ho_server_processing = True
@@ -439,6 +451,11 @@ class HandoverServer(nfc.handover.HandoverServer):
                 res = wpas_report_handover_req(uri)
                 if res is None or "FAIL" in res:
                     summary("DPP handover request processing failed")
+                    global altchanlist
+                    if altchanlist:
+                        data = wpas_get_nfc_uri(start_listen=False,
+                                                chan_override=altchanlist)
+                        summary("Own URI (try another channel list): %s" % data)
                     continue
 
                 found = True
@@ -492,9 +509,14 @@ class HandoverServer(nfc.handover.HandoverServer):
 
         summary("Sending handover select: " + str(sel))
         if found:
+            summary("Handover completed successfully")
             self.success = True
         else:
+            summary("Try to initiate with alternative parameters")
             self.try_own = True
+            if not init_on_touch and no_input:
+                # Need to start client thread now
+                threading.Thread(target=llcp_worker, args=(self.llc,)).start()
         global hs_sent
         hs_sent = True
         return sel
@@ -648,7 +670,12 @@ def llcp_worker(llc):
         if srv.try_own:
             srv.try_own = False
             summary("Try to initiate another handover with own parameters")
-            dpp_handover_client(llc)
+            global peer_crn, my_crn, my_crn_ready, hs_sent
+            my_crn_ready = False
+            my_crn = None
+            peer_crn = None
+            hs_sent = False
+            dpp_handover_client(llc, alt=True)
             summary("Exiting llcp_worker thread (retry with own parameters)")
             return
         if srv.ho_server_processing:
@@ -737,6 +764,7 @@ def main():
                         help='success file for writing success update')
     parser.add_argument('--device', default='usb', help='NFC device to open')
     parser.add_argument('--chan', default=None, help='channel list')
+    parser.add_argument('--altchan', default=None, help='alternative channel list')
     parser.add_argument('command', choices=['write-nfc-uri',
                                             'write-nfc-hs'],
                         nargs='?')
@@ -749,8 +777,9 @@ def main():
     global no_wait
     no_wait = args.no_wait
 
-    global chanlist
+    global chanlist, altchanlist
     chanlist = args.chan
+    altchanlist = args.altchan
 
     logging.basicConfig(level=args.loglevel)
 
