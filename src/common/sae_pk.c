@@ -38,7 +38,7 @@ bool sae_pk_valid_password(const char *pw)
 	idx = os_strchr(sae_pk_base32_table, pw[0]);
 	if (!idx)
 		return false;
-	sec = ((u8) ((idx - sae_pk_base32_table) & 0x1f)) >> 3;
+	sec = (((u8) ((idx - sae_pk_base32_table) & 0x1f)) >> 3) + 2;
 	if ((sec == 2 && pw_len < 14) ||
 	    (sec == 3 && pw_len < 13) ||
 	    (sec == 4 && pw_len < 11) ||
