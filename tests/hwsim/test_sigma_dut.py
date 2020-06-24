@@ -4906,7 +4906,13 @@ def test_sigma_dut_ap_sae_pk(dev, apdev, params):
              ("SAEPK-5.7.2.4", "geoh-2rvn-ivwu", "saepk8_sig.pem",
               "61a84a86ffb1b9e23f576a0275ddcc78", True),
              ("SAEPK-5.7.3", "hbhh-r4um-jzjs", "saepk9.pem",
-              "af9b55bce52040892634bb3e41d557ee", False)]
+              "af9b55bce52040892634bb3e41d557ee", False),
+             ("SAE-PK-5.7.1.13", "dop4-pi5w-72g2", "saepk13.pem",
+              "c269116268faaa6728fccd27fa5e9003", False),
+             ("SAE-PK test", "ssko-2lmu-7", "saepk5.7.1Run4thru12.pem",
+              "a5e38c7251ea310cc348fbcdadfa8bcb", False),
+             ("SAE-PK test", "3qqu-f4xq", "saepk5.7.1Run4thru12.pem",
+              "d2e5fa27d1be8897f987f2d480d2af6b", False)]
 
     with HWSimRadio() as (radio, iface):
         sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
