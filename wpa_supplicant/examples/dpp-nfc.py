@@ -241,7 +241,7 @@ def dpp_handover_client(llc, alt=False):
     summary("NFC Handover Request message for DPP: " + str(message))
 
     global peer_crn
-    if peer_crn is not None:
+    if peer_crn is not None and not alt:
         summary("NFC handover request from peer was already received - do not send own")
         return
     client = nfc.handover.HandoverClient(llc)
@@ -258,7 +258,7 @@ def dpp_handover_client(llc, alt=False):
         client.close()
         return
 
-    if peer_crn is not None:
+    if peer_crn is not None and not alt:
         summary("NFC handover request from peer was already received - do not send own")
         client.close()
         return
@@ -507,18 +507,17 @@ class HandoverServer(nfc.handover.HandoverServer):
                 sel = [hs, carrier]
                 break
 
+        global hs_sent
         summary("Sending handover select: " + str(sel))
         if found:
             summary("Handover completed successfully")
             self.success = True
+            hs_sent = True
         else:
             summary("Try to initiate with alternative parameters")
             self.try_own = True
-            if not init_on_touch and no_input:
-                # Need to start client thread now
-                threading.Thread(target=llcp_worker, args=(self.llc,)).start()
-        global hs_sent
-        hs_sent = True
+            hs_sent = False
+            threading.Thread(target=llcp_worker, args=(self.llc, True)).start()
         return sel
 
 def clear_raw_mode():
@@ -651,12 +650,18 @@ def rdwr_connected(tag):
 
     return not no_wait
 
-def llcp_worker(llc):
+def llcp_worker(llc, try_alt):
+    print("Start of llcp_worker()")
+    if try_alt:
+        summary("Starting handover client (try_alt)")
+        dpp_handover_client(llc, alt=True)
+        summary("Exiting llcp_worker thread (try_alt)")
+        return
     global init_on_touch
     if init_on_touch:
-        summary("Starting handover client")
+        summary("Starting handover client (init_on_touch)")
         dpp_handover_client(llc)
-        summary("Exiting llcp_worker thread (init_in_touch)")
+        summary("Exiting llcp_worker thread (init_on_touch)")
         return
 
     global no_input
@@ -716,7 +721,7 @@ def llcp_connected(llc):
     global srv
     srv.start()
     if init_on_touch or not no_input:
-        threading.Thread(target=llcp_worker, args=(llc,)).start()
+        threading.Thread(target=llcp_worker, args=(llc, False)).start()
     return True
 
 def llcp_release(llc):
