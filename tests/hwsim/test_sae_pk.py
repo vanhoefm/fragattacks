@@ -374,3 +374,30 @@ def test_sae_pk_invalid_fingerprint(dev, apdev):
                                                SAE_PK_19_PK)]
     hapd = hostapd.add_ap(apdev[0], params)
     check_sae_pk_sta_connect_failure(dev[0])
+
+def test_sae_pk_password_min_len(dev, apdev):
+    """SAE-PK password minimum length"""
+    check_sae_pk_capab(dev[0])
+    ssid = SAE_PK_SSID
+    pk = SAE_PK_19_PK
+    tests = [("dwxm-zv66-p5u", "431ff8322f93b9dc50ded9f3d14ace22", False),
+             ("dwxm-zv66-p5ue", "431ff8322f93b9dc50ded9f3d14ace22", True),
+             ("iian-qey6-pu", "128e51ddb5e2e24388f9ed14b687e2eb", False),
+             ("iian-qey6-pu5", "128e51ddb5e2e24388f9ed14b687e2eb", True),
+             ("ssko-2lmu", "a5e38c7251ea310cc348fbcdadfa8bcb", False),
+             ("ssko-2lmu-7", "a5e38c7251ea310cc348fbcdadfa8bcb", True),
+             ("3qqu-f4x", "d2e5fa27d1be8897f987f2d480d2af6b", False),
+             ("3qqu-f4xq", "d2e5fa27d1be8897f987f2d480d2af6b", True)]
+    for pw, m, success in tests:
+        params = hostapd.wpa2_params(ssid=ssid)
+        params['wpa_key_mgmt'] = 'SAE'
+        params['sae_password'] = ['%s|pk=%s:%s' % (pw, m, pk)]
+        try:
+            hapd = hostapd.add_ap(apdev[0], params, no_enable=True)
+            if not success:
+                raise Exception("Unexpected success with password %s" % pw)
+        except Exception as e:
+            if str(e).startswith("Unexpected success with password"):
+                raise
+            if success:
+                raise Exception("Unexpected failure with password %s" % pw)
