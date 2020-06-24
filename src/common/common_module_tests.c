@@ -557,12 +557,9 @@ static int sae_pk_tests(void)
 		const u8 *val;
 	} valid[] = {
 		{ "a2bc-de3f-ghi4", (u8 *) "\x06\x82\x21\x93\x65\x31\xd1\xc0" },
-		{ "ci2f-m6e2", (u8 *) "\x12\x34\x56\x78\x9a" },
 		{ "aaaa-aaaa-aaaa-a",
 		  (u8 *) "\x00\x00\x00\x00\x00\x00\x00\x00\x00" },
 		{ "aaaa-aaaa-aaaa", (u8 *) "\x00\x00\x00\x00\x00\x00\x00\x00" },
-		{ "aaaa-aaaa-aa", (u8 *) "\x00\x00\x00\x00\x00\x00\x00" },
-		{ "aaaa-aaaa", (u8 *) "\x00\x00\x00\x00\x00" },
 		{ "7777-7777-777", (u8 *) "\xff\xff\xff\xff\xff\xff\xfe" },
 		{ "7777-7777-7777", (u8 *) "\xff\xff\xff\xff\xff\xff\xff\xf0" },
 		{ "7777-7777-7777-7",
