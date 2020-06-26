@@ -2959,6 +2959,10 @@ static void wpa_supplicant_event_assoc(struct wpa_supplicant *wpa_s,
 	wpa_s->sme.last_unprot_disconnect.sec = 0;
 #endif /* CONFIG_SME */
 
+#ifdef CONFIG_TESTING_OPTIONS
+	wpa_msg_ctrl(wpa_s, MSG_INFO, "Associated with " MACSTR
+			" successfully", MAC2STR(bssid));
+#endif /* CONFIG_TESTING_OPTIONS */
 	wpa_msg(wpa_s, MSG_INFO, "Associated with " MACSTR, MAC2STR(bssid));
 	if (wpa_s->current_ssid) {
 		/* When using scanning (ap_scan=1), SIM PC/SC interface can be

@@ -928,7 +928,7 @@ class Authenticator(Daemon):
 	def handle_wpaspy(self, msg):
 		log(DEBUG, "daemon: " + msg)
 
-		if "AP-STA-CONNECTING" in msg:
+		if "AP-STA-NEW" in msg:
 			cmd, clientmac = msg.split()
 			self.add_station(clientmac)
 
@@ -1111,29 +1111,26 @@ class Supplicant(Daemon):
 	def handle_wpaspy(self, msg):
 		log(DEBUG, "daemon: " + msg)
 
-		if "WPA: Key negotiation completed with" in msg:
-			# This get's the current keys
-			self.station.handle_authenticated()
-
-		elif "Trying to authenticate with" in msg:
+		if "Associated with" in msg:
 			# When using a separate interface to inject, switch to correct channel
 			self.follow_channel()
 
-			p = re.compile("Trying to authenticate with (.*) \(SSID")
-			bss = p.search(msg).group(1)
-			self.station.handle_connecting(bss)
-
-		elif "Trying to associate with" in msg:
 			# With the ath9k_htc, injection in mixed managed/monitor only works after
 			# sending the association request. So only perform injection test now.
 			self.injection_test(self.station.bss)
+
+			p = re.compile("Associated with (.*) successfully")
+			bss = p.search(msg).group(1)
+			self.station.handle_connecting(bss)
 
 		elif "EAPOL-TX" in msg:
 			cmd, srcaddr, payload = msg.split()
 			self.station.handle_eapol_tx(bytes.fromhex(payload))
 
-		# This event only occurs with WEP
-		elif "WPA: EAPOL processing complete" in msg:
+		# The "EAPOL processing" event only occurs with WEP
+		if "WPA: Key negotiation completed with" in msg or \
+		   "WPA: EAPOL processing complete" in msg:
+			# This get's the current keys
 			self.station.handle_authenticated()
 
 	def roam(self, station):

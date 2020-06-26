@@ -725,6 +725,11 @@ struct sta_info * ap_sta_add(struct hostapd_data *hapd, const u8 *addr)
 	sta->last_seq_ctrl = WLAN_INVALID_MGMT_SEQ;
 	dl_list_init(&sta->ip6addr);
 
+#ifdef CONFIG_TESTING_OPTIONS
+	wpa_msg(hapd->msg_ctx, MSG_INFO, "AP-STA-NEW " MACSTR,
+		 MAC2STR(sta->addr));
+#endif /* CONFIG_TESTING_OPTIONS */
+
 #ifdef CONFIG_TAXONOMY
 	sta_track_claim_taxonomy_info(hapd->iface, addr,
 				      &sta->probe_ie_taxonomy);
