@@ -1,5 +1,16 @@
 # Fragment and Forge: Breaking Wi-Fi Through Frame Aggregation and Fragmentation
 
+## Introduction
+
+Our attacks affect all Wi-Fi networks. Note that the recent WPA3 specification only introduced
+a new authentication method, but its encryption ciphers (CCMP and GCMP) are identical to WPA2.
+Because of this, our attack is identical against WPA2 and WPA3 networks.
+
+Older WPA networks by default use TKIP for encryption, and the applicability of our attacks
+against this cipher is discussed in the paper. Out of completeness, and to illustrate that Wi-Fi
+has been vulnerable since its creation, the paper also briefly discusses the applicability of
+our results against WEP.
+
 ## Supported Network Cards
 
 Only specific wireless network cards are supported. This is because some network cards may overwrite the
@@ -7,17 +18,20 @@ sequence number of injected frames, may overwrite the fragment number, or reorde
 and this interferes with our scripts (i.e. our script might incorrectly say a device is secure although it's not).
 We have confirmed that the following network cards work properly with our scripts:
 
-|      Network Card      | USB |      injection mode     |        mixed mode       | hwsim mode (experimental) |
+|      Network Card      | USB |        mixed mode       |      injection mode     | hwsim mode (experimental) |
 | ---------------------- | --- | ----------------------- | ----------------------- | ------------------------- |
-| Intel AX200            | No  | _under development_     | _under development_     | _under development_       |
-| Intel Wireless-AC 8265 | No  | yes                     | patched driver          | as client                 |
-| Intel Wireless-AC 3160 | No  | yes                     | patched driver/firmware | as client                 |
+| Intel Wireless-AC 8265 | No  | patched driver          | yes                     | as client                 |
+| Intel Wireless-AC 3160 | No  | patched driver          | yes                     | as client                 |
 | Technoethical N150 HGA | Yes | patched driver/firmware | patched driver/firmware | patched driver/firmware   |
 | TP-Link TL-WN722N v1.x | Yes | patched driver/firmware | patched driver/firmware | patched driver/firmware   |
 | Alfa AWUS036NHA        | Yes | patched driver/firmware | patched driver/firmware | patched driver/firmware   |
-| Alfa AWUS036ACM        | Yes | _under development_     | _under development_     | _under development_       |
-| Alfa AWUS036ACH        | Yes | _under development_     | _under development_     | _under development_       |
-| Netgear WN111v2        | Yes | yes                     | patched driver          | yes                       |
+| Alfa AWUS036ACM        | Yes | yes                     | yes                     | **yes?**                  |
+| Alfa AWUS036ACH        | Yes | no                      | patched driver          | _under development_       |
+| Netgear WN111v2        | Yes | patched driver          | yes                     | yes                       |
+
+**TODO: No longer recommend Virtual Machine, but instead show whether it supports 5GHz?**
+
+**TODO: AWUS036ACM `iw set wlanX monitor active` in injection mode (but in mixed mode that crashes)**
 
 The three last colums signify:
 
@@ -28,30 +42,39 @@ The three last colums signify:
 3. Hwsim mode: whether the network card can be used in [hwsim mode](#Hwsim-mode).
 
 _Yes_ indicates the card works out-of-the-box in the given mode. _Patched driver/firmware_
-means that the card is compatible when used in combination with patched drivers (and firmware).
+means that the card is compatible when used in combination with patched drivers (and/or firmware).
 _As client_ means the mode only works when the test script is acting as a client (i.e. you
-when are testing an AP).
+when are testing an AP). _No_ means this mode is not supported.
 
-We recommend the use of the Technoethical N150 HGA in either injection mode or mixed mode. It
+We recommend the use of the Technoethical N150 HGA in either injection mode or mixed mode. This deivce
 requires the use of a patched driver and firmware, but since it's a USB dongle this can be
-configured inside a virtual machine. If you are unable to find one of the above network cards,
-you can search for [alternative network cards](#Alternative-network-cards) that have a high
-chance of also working.
+configured inside a virtual machine. When using Virtual Box, we recommend to configure the VM to
+use a USB2.0 (OHCI + ECHI) controller, because we found the USB3.0 controller to be unreliable.
 
-During our own tests, the AWUS036ACM dongle only worked properly on Linux when using an USB2.0
-port (both natively and in a virtual machine). So if this network card is not working or being
-unreliable, try connecting it to a USB2.0 port.
+During our own tests, the AWUS036ACM dongle is supported by Linux, but at times was not correctly
+recognized during our experiments. It may be necessairy to use a recent Linux kernel, and manually
+executing `modprobe mt76x2u` to load the driver. This devices then works out-of-the-box without
+patched drives. However, we seek feedback from the community on its reliability before recommending
+this device.
 
-If you want to use a network card that is not explicitly support, we strongly recommend to first
-run the [injection tests](#Network-card-injection-test). 
+The AWUS036ACH was tested on Kali Linux after installing the driver using `sudo apt install realtek-rtl88xxau-dkms`.
+This device is generally not supported by default in most Linux distributions and requires manual
+installation of drivers.
+
+We tested the Intel AX200 as well and found that it is _not_ compatible with our tool: its firmware
+crashes after sending a fragmented frame.
+
+If you are unable to find one of the above network cards, you can search for [alternative network cards](#Alternative-network-cards)
+that have a high chance of also working. When using a network card that is not explicitly support,
+we strongly recommend to first run the [injection tests](#Network-card-injection-test).
 
 ## Prerequisites
 
 Our scripts were tested on Kali Linux and Ubuntu 20.04. To install the required dependencies, execute:
 
 	# Kali Linux and Ubuntu
-	apt-get update
-	apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libssl-dev libdbus-1-dev git pkg-config build-essential macchanger net-tools python3-venv
+	sudo apt-get update
+	sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libssl-dev libdbus-1-dev git pkg-config build-essential macchanger net-tools python3-venv
 
 Now clone this repository, build the tools, and configure a virtual python3 environment:
 
@@ -71,9 +94,9 @@ The above instructions only have to be executed once.
 
 Install patched drivers:
 
-	apt-get install bison flex linux-headers-$(uname -r)
+	sudo apt-get install bison flex linux-headers-$(uname -r)
 	# **Self note: replace with real HTTP unauthenticated link on release instead of separate directory**
-	cd fragattack-backports57.git
+	cd driver-backports-5.7-rc3-1
 	make defconfig-experiments
 	make -j 4
 	sudo make install
@@ -81,19 +104,21 @@ Install patched drivers:
 Install patched `ath9k_htc` firmware on Ubuntu:
 
 	cd research/ath9k-firmware/
-	cp htc_9271.fw /lib/firmware/ath9k_htc/htc_9271-1.4.0.fw
-	cp htc_7010.fw /lib/firmware/ath9k_htc/htc_7010-1.4.0.fw
+	sudo cp htc_9271.fw /lib/firmware/ath9k_htc/htc_9271-1.4.0.fw
+	sudo cp htc_7010.fw /lib/firmware/ath9k_htc/htc_7010-1.4.0.fw
+	# Now reboot the system
 
 Note that the above directories depend on the specific Linux distribution you are running.
-After installing the patched drivers you must reboot your system. The above instructions
-have to be executed again if your Linix kernel got updated.
+If you Wi-Fi donle already is plugged in, unplug it. After installing the patched drivers
+and firmware you must reboot your system. The above instructions have to be executed again
+if your Linix kernel ever gets updated.
 
 ## Before every usage
 
 Every time you want to use the script, you first have to load the virtual python environment
 as root. This can be done using:
 
-	cd fragattack-scripts/research
+	cd research
 	sudo su
 	source venv/bin/activate
 
@@ -129,6 +154,8 @@ In case the tests do not seem to be working, you can confirm that injection is p
 
 This will script will inject frames using interface wlan1, and uses wlan0 to check if frames are
 properly injected. Note that both interfaces need to support monitor mode for this script to work.
+
+**TODO: First test a normal ping. Frames may not arrive because the target is sleeping!**
 
 ### Mixed mode
 
@@ -236,6 +263,8 @@ but against more exotic implementations these might reveal flaws that the normal
 
 |              Command               | Short description
 | ---------------------------------- | ---------------------------------
+| <div align="center">*A-MSDU attacks (Section 3)*</div>
+| `ping I,E --fake-amsdu`            | If this test succeeds, the A-MSDU flag is ignored (Section 3.5).
 | <div align="center">*Mixed key attacks (Section 4)*</div>
 | `ping I,E,R,AE`                    | In case the delay between fragments must be small.
 | `ping I,E,R,AE --rekey-plaintext`  | If the device performs the rekey handshake in plaintext.
@@ -248,6 +277,9 @@ but against more exotic implementations these might reveal flaws that the normal
 | `linux-plain 3`                    | Same as linux-plain but decoy fragment is sent using QoS priority 3.
 | <div align="center">*EAPOL forwarding (Section 6.4)*</div>
 | `eapol-inject L,00:11:22:33:44:55` | Try to make the AP send fragmented frames by EAPOL injection.
+| <div align="center">*No fragmentation support (Section 6.6)*</div>
+| `ping I,E,D`                       | Send ping inside an encrypted first fragment (no 2nd fragment).
+| `ping I,D,E`                       | Send ping inside an encrypted second fragment (no 1st fragment).
 | <div align="center">*Broadcast fragments (Section 6.7)*</div>
 | `ping D,SP --bcast-ra`             | Ping in a 2nd plaintext broadcasted fragment before 4-way handshake.
 | `ping D,BP --bcast-ra`             | Ping in a 2nd plaintext broadcasted fragment during 4-way handshake.
@@ -342,6 +374,18 @@ that the script should use. For example:
 Here the testing script will use address 192.168.100.10, and it will inject a ping request
 to the peer IP address 192.168.100.1.
 
+### Alternative network cards
+
+In case you cannot get access to one of the recommended wireless network cards, a second option
+is to get a network card that uses the same drivers on Linux. In particular, you can try:
+
+- Network cards that use [ath9k_htc](https://wikidevi.wi-cat.ru/Ath9k_htc)
+
+- Network cards that use [iwlmvm](https://wireless.wiki.kernel.org/en/users/drivers/iwlwifi)
+
+We recommend cards based on `ath9khtc`. Not all cards that use `iwlmvm` will be compatible. When
+using an alternative network card, we strongly recommend to first run the [injection tests](#Network-card-injection-test)
+to confirm that the network card is compatible.
 
 ## TODOs
 
@@ -351,8 +395,6 @@ to the peer IP address 192.168.100.1.
 
 - TODO: Is it important to disable encryption? I don't think it is. Otherwise we need sysfsutils as a dependency too.
 
-- Include references to sections in the paper for the command overview table.
-
 - Create an example pcap and debug output of all tests.
 
 - Release a known vulnerable linux image to test against? Essential to confirm the tests are working!
@@ -360,4 +402,6 @@ to the peer IP address 192.168.100.1.
 - sudo iw wlan0 set monitor otherbss. Does airmon-ng handle this better? Move to general section?
 
 - Describe AP mode in hwsim mode?
+
+- Support non-20MHz channels?
 
