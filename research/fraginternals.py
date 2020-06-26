@@ -743,7 +743,9 @@ class Daemon(metaclass=abc.ABCMeta):
 			raise
 
 	def follow_channel(self):
-		channel = get_channel(self.nic_iface)
+		# We use GET_CHANNEL of wpa_s/hostapd because it's more reliable than get_channel,
+		# which can fail on certain devices such as the AWUS036ACH.
+		channel = int(wpaspy_command(self.wpaspy_ctrl, "GET_CHANNEL"))
 		if self.options.inject:
 			set_channel(self.nic_mon, channel)
 			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
