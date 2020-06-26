@@ -1418,10 +1418,17 @@ int ap_switch_channel(struct wpa_supplicant *wpa_s,
 		      struct csa_settings *settings)
 {
 #ifdef NEED_AP_MLME
-	if (!wpa_s->ap_iface || !wpa_s->ap_iface->bss[0])
+	struct hostapd_iface *iface = NULL;
+
+	if (wpa_s->ap_iface)
+		iface = wpa_s->ap_iface;
+	else if (wpa_s->ifmsh)
+		iface = wpa_s->ifmsh;
+
+	if (!iface || !iface->bss[0])
 		return -1;
 
-	return hostapd_switch_channel(wpa_s->ap_iface->bss[0], settings);
+	return hostapd_switch_channel(iface->bss[0], settings);
 #else /* NEED_AP_MLME */
 	return -1;
 #endif /* NEED_AP_MLME */
