@@ -23,6 +23,7 @@ from utils import *
 from hwsim import HWSimRadio
 import hwsim_utils
 from wlantest import Wlantest
+from tshark import run_tshark
 from test_dpp import check_dpp_capab, update_hapd_config, wait_auth_success
 from test_suite_b import check_suite_b_192_capa, suite_b_as_params, suite_b_192_rsa_ap_params
 from test_ap_eap import check_eap_capa, int_eap_server_params, check_domain_match, check_domain_suffix_match
@@ -5059,3 +5060,43 @@ def test_sigma_dut_ap_sae_pk_misbehavior(dev, apdev, params):
                                     True, sig="saepk8_sig.pem")
         finally:
             stop_sigma_dut(sigma)
+
+def test_sigma_dut_client_privacy(dev, apdev, params):
+    """sigma_dut client privacy"""
+    logdir = params['logdir']
+
+    ssid = "test"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    ifname = dev[0].ifname
+    addr = dev[0].own_addr()
+    sigma = start_sigma_dut(ifname)
+    try:
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+        sigma_dut_cmd_check("sta_set_wireless,interface,%s,program,WPA3,ClientPrivacy,1" % ifname)
+        cmd = "sta_scan,Interface,%s,ChnlFreq,2412,WaitCompletion,1" % dev[0].ifname
+        sigma_dut_cmd_check(cmd, timeout=10)
+        time.sleep(2)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_psk,interface,%s,ssid,%s,passphrase,%s,encpType,aes-ccmp,keymgmttype,wpa2" % (ifname, ssid, "12345678"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, ssid),
+                            timeout=10)
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd_check("sta_get_ip_config,interface," + ifname)
+        sigma_dut_cmd_check("sta_disconnect,interface," + ifname)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
+        dev[1].set("mac_addr", "0", allow_fail=True)
+        dev[1].set("rand_addr_lifetime", "60", allow_fail=True)
+        dev[1].set("preassoc_mac_addr", "0", allow_fail=True)
+        dev[1].set("gas_rand_mac_addr", "0", allow_fail=True)
+        dev[1].set("gas_rand_addr_lifetime", "60", allow_fail=True)
+
+    out = run_tshark(os.path.join(logdir, "hwsim0.pcapng"),
+                     "wlan.addr == " + addr,
+                     display=["wlan.ta"])
+    res = out.splitlines()
+    if len(res) > 0:
+        raise Exception("Permanent address used unexpectedly")
