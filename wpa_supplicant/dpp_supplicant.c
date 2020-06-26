@@ -2101,17 +2101,29 @@ wpas_dpp_rx_reconfig_auth_req(struct wpa_supplicant *wpa_s, const u8 *src,
 	wpa_printf(MSG_DEBUG, "DPP: Reconfig Authentication Request from "
 		   MACSTR, MAC2STR(src));
 
-	if (!wpa_s->dpp || wpa_s->dpp_auth ||
-	    !wpa_s->dpp_reconfig_announcement || !wpa_s->dpp_reconfig_ssid)
+	if (!wpa_s->dpp)
 		return;
+	if (wpa_s->dpp_auth) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Not ready for reconfiguration - pending authentication exchange in progress");
+		return;
+	}
+	if (!wpa_s->dpp_reconfig_announcement || !wpa_s->dpp_reconfig_ssid) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Not ready for reconfiguration - not requested");
+		return;
+	}
 	for (ssid = wpa_s->conf->ssid; ssid; ssid = ssid->next) {
 		if (ssid == wpa_s->dpp_reconfig_ssid &&
 		    ssid->id == wpa_s->dpp_reconfig_ssid_id)
 			break;
 	}
 	if (!ssid || !ssid->dpp_connector || !ssid->dpp_netaccesskey ||
-	    !ssid->dpp_csign)
+	    !ssid->dpp_csign) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Not ready for reconfiguration - no matching network profile with Connector found");
 		return;
+	}
 
 	auth = dpp_reconfig_auth_req_rx(wpa_s->dpp, wpa_s, ssid->dpp_connector,
 					ssid->dpp_netaccesskey,
