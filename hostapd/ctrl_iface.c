@@ -2476,6 +2476,25 @@ static int hostapd_get_gtk(struct hostapd_data *hapd,  char *buf, size_t buflen)
 	return pos;
 }
 
+
+static int hostapd_get_channel(struct hostapd_data *hapd,  char *buf, size_t buflen)
+{
+	struct wpa_channel_info ci;
+	u8 op_class, channel;
+
+	if (hostapd_drv_channel_info(hapd, &ci) != 0 ||
+	    ieee80211_chaninfo_to_channel(ci.frequency, ci.chanwidth,
+					  ci.sec_channel, &op_class,
+					  &channel) < 0) {
+		wpa_printf(MSG_WARNING, "Failed to get channel info from drive, falling "
+					"back to channel provided in the current config.");
+		channel = hapd->iconf->channel;
+	}
+
+	return os_snprintf(buf, buflen, "%d\n", channel);
+}
+
+
 #endif /* CONFIG_TESTING_OPTIONS */
 
 
@@ -3354,6 +3373,8 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 		reply_len = hostapd_get_tk(hapd, buf + 7, reply, reply_size);
 	} else if (os_strcmp(buf, "GET_GTK") == 0) {
 		reply_len = hostapd_get_gtk(hapd, reply, reply_size);
+	} else if (os_strcmp(buf, "GET_CHANNEL") == 0) {
+		reply_len = hostapd_get_channel(hapd, reply, reply_size);
 #endif /* CONFIG_TESTING_OPTIONS */
 	} else if (os_strncmp(buf, "CHAN_SWITCH ", 12) == 0) {
 		if (hostapd_ctrl_iface_chan_switch(hapd->iface, buf + 12))

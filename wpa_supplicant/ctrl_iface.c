@@ -9445,6 +9445,27 @@ static int wpa_supplicant_ctrl_iface_get_gtk(struct wpa_supplicant *wpa_s,
 }
 
 
+static int wpa_supplicant_ctrl_iface_get_channel(struct wpa_supplicant *wpa_s,
+						 char *buf, size_t buflen)
+{
+	struct wpa_channel_info ci;
+	u8 op_class, channel;
+
+	if (wpa_drv_channel_info(wpa_s, &ci) != 0 ||
+	    ieee80211_chaninfo_to_channel(ci.frequency, ci.chanwidth,
+					  ci.sec_channel, &op_class,
+					  &channel) < 0) {
+		wpa_printf(MSG_WARNING, "Failed to get channel info from drive, falling "
+					"back to channel provided in the current config. assoc_freq=%d", wpa_s->assoc_freq);
+		if (ieee80211_chaninfo_to_channel(wpa_s->assoc_freq, CHAN_WIDTH_20, 0,
+						  &op_class, &channel) < 0)
+			return -1;
+	}
+
+	return os_snprintf(buf, buflen, "%d\n", channel);
+}
+
+
 static int wpas_ctrl_get_assoc_resp_ies(struct wpa_supplicant *wpa_s,
 					char *buf, size_t buflen)
 {
@@ -10833,6 +10854,8 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 			WLAN_REASON_CLASS2_FRAME_FROM_NONAUTH_STA);
 	} else if (os_strcmp(buf, "GET_GTK") == 0) {
 		reply_len = wpa_supplicant_ctrl_iface_get_gtk(wpa_s, reply, reply_size);
+	} else if (os_strcmp(buf, "GET_CHANNEL") == 0) {
+		reply_len = wpa_supplicant_ctrl_iface_get_channel(wpa_s, reply, reply_size);
 	} else if (os_strcmp(buf, "GET_ASSOC_RESP_IES") == 0) {
 		reply_len = wpas_ctrl_get_assoc_resp_ies(wpa_s, reply, reply_size);
 	} else if (os_strncmp(buf, "SET_ASSOC_RESP_IES ", 19) == 0) {
