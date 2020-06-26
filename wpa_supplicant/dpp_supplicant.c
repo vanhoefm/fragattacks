@@ -3620,6 +3620,12 @@ int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 	    !ssid->dpp_csign)
 		return -1;
 
+	if (wpa_s->dpp_auth) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Not ready to start reconfiguration - pending authentication exchange in progress");
+		return -1;
+	}
+
 	wpas_dpp_chirp_stop(wpa_s);
 	wpa_s->dpp_allowed_roles = DPP_CAPAB_ENROLLEE;
 	wpa_s->dpp_qr_mutual = 0;
