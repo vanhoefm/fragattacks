@@ -757,6 +757,20 @@ static int wpa_supplicant_ctrl_iface_set(struct wpa_supplicant *wpa_s,
 		wpa_s->oci_freq_override_saquery_req = atoi(value);
 	} else if (os_strcasecmp(cmd, "oci_freq_override_saquery_resp") == 0) {
 		wpa_s->oci_freq_override_saquery_resp = atoi(value);
+	} else if (os_strcasecmp(cmd, "oci_freq_override_eapol_g2") == 0) {
+		wpa_s->oci_freq_override_eapol_g2 = atoi(value);
+		/* Populate value to wpa_sm if already associated. */
+		wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_OCI_FREQ_EAPOL_G2,
+				 wpa_s->oci_freq_override_eapol_g2);
+	} else if (os_strcasecmp(cmd, "oci_freq_override_ft_assoc") == 0) {
+		wpa_s->oci_freq_override_ft_assoc = atoi(value);
+		/* Populate value to wpa_sm if already associated. */
+		wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_OCI_FREQ_FT_ASSOC,
+				 wpa_s->oci_freq_override_ft_assoc);
+	} else if (os_strcasecmp(cmd, "oci_freq_override_fils_assoc") == 0) {
+		wpa_s->oci_freq_override_fils_assoc = atoi(value);
+	} else if (os_strcasecmp(cmd, "oci_freq_override_wnm_sleep") == 0) {
+		wpa_s->oci_freq_override_wnm_sleep = atoi(value);
 	} else if (os_strcasecmp(cmd, "rsne_override_eapol") == 0) {
 		wpabuf_free(wpa_s->rsne_override_eapol);
 		if (os_strcmp(value, "NULL") == 0)
@@ -8438,6 +8452,10 @@ static void wpa_supplicant_ctrl_iface_flush(struct wpa_supplicant *wpa_s)
 	wpa_s->oci_freq_override_eapol = 0;
 	wpa_s->oci_freq_override_saquery_req = 0;
 	wpa_s->oci_freq_override_saquery_resp = 0;
+	wpa_s->oci_freq_override_eapol_g2 = 0;
+	wpa_s->oci_freq_override_ft_assoc = 0;
+	wpa_s->oci_freq_override_fils_assoc = 0;
+	wpa_s->oci_freq_override_wnm_sleep = 0;
 #ifdef CONFIG_DPP
 	os_free(wpa_s->dpp_config_obj_override);
 	wpa_s->dpp_config_obj_override = NULL;

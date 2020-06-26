@@ -2039,6 +2039,15 @@ static int wpa_supplicant_send_2_of_2(struct wpa_sm *sm,
 			os_free(rbuf);
 			return -1;
 		}
+#ifdef CONFIG_TESTING_OPTIONS
+		if (sm->oci_freq_override_eapol_g2) {
+			wpa_printf(MSG_INFO,
+				   "TEST: Override OCI KDE frequency %d -> %d MHz",
+				   ci.frequency,
+				   sm->oci_freq_override_eapol_g2);
+			ci.frequency = sm->oci_freq_override_eapol_g2;
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 		pos = key_mic + mic_len + 2; /* Key Data */
 		if (ocv_insert_oci_kde(&ci, &pos) < 0) {
@@ -3308,6 +3317,15 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 	case WPA_PARAM_OCI_FREQ_EAPOL:
 		sm->oci_freq_override_eapol = value;
 		break;
+	case WPA_PARAM_OCI_FREQ_EAPOL_G2:
+		sm->oci_freq_override_eapol_g2 = value;
+		break;
+	case WPA_PARAM_OCI_FREQ_FT_ASSOC:
+		sm->oci_freq_override_ft_assoc = value;
+		break;
+	case WPA_PARAM_OCI_FREQ_FILS_ASSOC:
+		sm->oci_freq_override_fils_assoc = value;
+		break;
 #endif /* CONFIG_TESTING_OPTIONS */
 #ifdef CONFIG_DPP2
 	case WPA_PARAM_DPP_PFS:
@@ -4565,6 +4583,15 @@ struct wpabuf * fils_build_assoc_req(struct wpa_sm *sm, const u8 **kek,
 			wpabuf_free(buf);
 			return NULL;
 		}
+#ifdef CONFIG_TESTING_OPTIONS
+		if (sm->oci_freq_override_fils_assoc) {
+			wpa_printf(MSG_INFO,
+				   "TEST: Override OCI KDE frequency %d -> %d MHz",
+				   ci.frequency,
+				   sm->oci_freq_override_fils_assoc);
+			ci.frequency = sm->oci_freq_override_fils_assoc;
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 		pos = wpabuf_put(buf, OCV_OCI_EXTENDED_LEN);
 		if (ocv_insert_extended_oci(&ci, pos) < 0) {

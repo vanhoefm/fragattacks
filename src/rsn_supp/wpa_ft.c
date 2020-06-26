@@ -353,6 +353,14 @@ static u8 * wpa_ft_gen_req_ies(struct wpa_sm *sm, size_t *len,
 			os_free(buf);
 			return NULL;
 		}
+#ifdef CONFIG_TESTING_OPTIONS
+		if (sm->oci_freq_override_ft_assoc) {
+			wpa_printf(MSG_INFO,
+				   "TEST: Override OCI KDE frequency %d -> %d MHz",
+				   ci.frequency, sm->oci_freq_override_ft_assoc);
+			ci.frequency = sm->oci_freq_override_ft_assoc;
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 		*pos++ = FTIE_SUBELEM_OCI;
 		*pos++ = OCV_OCI_LEN;
