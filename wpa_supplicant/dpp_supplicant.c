@@ -1625,6 +1625,8 @@ fail:
 		wpabuf_free(msg);
 
 		/* This exchange will be terminated in the TX status handler */
+		if (wpa_s->conf->dpp_config_processing < 2)
+			auth->remove_on_tx_status = 1;
 		return;
 	}
 fail2:
