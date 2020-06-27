@@ -10,6 +10,8 @@ def main():
 
 	peermac = "00:11:22:33:44:55"
 
+	# TODO: Add a --debug parameter similar to fragattack
+
 	subprocess.check_output(["rfkill", "unblock", "wifi"])
 
 	set_monitor_mode(options.inject)

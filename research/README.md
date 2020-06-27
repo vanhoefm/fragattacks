@@ -18,16 +18,18 @@ sequence number of injected frames, may overwrite the fragment number, or reorde
 and this interferes with our scripts (i.e. our script might incorrectly say a device is secure although it's not).
 We have confirmed that the following network cards work properly with our scripts:
 
-|      Network Card      | USB |        mixed mode       |      injection mode     | hwsim mode (experimental) |
-| ---------------------- | --- | ----------------------- | ----------------------- | ------------------------- |
-| Intel Wireless-AC 8265 | No  | patched driver          | yes                     | as client                 |
-| Intel Wireless-AC 3160 | No  | patched driver          | yes                     | as client                 |
-| Technoethical N150 HGA | Yes | patched driver/firmware | patched driver/firmware | patched driver/firmware   |
-| TP-Link TL-WN722N v1.x | Yes | patched driver/firmware | patched driver/firmware | patched driver/firmware   |
-| Alfa AWUS036NHA        | Yes | patched driver/firmware | patched driver/firmware | patched driver/firmware   |
-| Alfa AWUS036ACM        | Yes | yes                     | yes                     | **yes?**                  |
-| Alfa AWUS036ACH        | Yes | no                      | patched driver          | _under development_       |
-| Netgear WN111v2        | Yes | patched driver          | yes                     | yes                       |
+|      Network Card      | USB | 5GHz |        mixed mode       |      injection mode     | hwsim mode (experimental) |
+| ---------------------- | --- | ---- | ----------------------- | ----------------------- | ------------------------- |
+| Intel Wireless-AC 8265 | No  | Yes  | patched driver          | yes                     | as client                 |
+| Intel Wireless-AC 3160 | No  | Yes  | patched driver          | yes                     | as client                 |
+| Technoethical N150 HGA | Yes | No   | patched driver/firmware | patched driver/firmware | patched driver/firmware   |
+| TP-Link TL-WN722N v1.x | Yes | No   | patched driver/firmware | patched driver/firmware | patched driver/firmware   |
+| Alfa AWUS036NHA        | Yes | No   | patched driver/firmware | patched driver/firmware | patched driver/firmware   |
+| Alfa AWUS036ACM        | Yes | Yes  | patched driver????      | yes                     | **yes?**                  |
+| Alfa AWUS036ACH        | Yes | Yes  | no                      | patched driver          | _under development_       |
+| Netgear WN111v2        | Yes | No   | patched driver          | yes                     | yes                       |
+
+**TODO: Verify 5 GHz and test it in practice.**
 
 **TODO: No longer recommend Virtual Machine, but instead show whether it supports 5GHz?**
 
@@ -53,13 +55,13 @@ use a USB2.0 (OHCI + ECHI) controller, because we found the USB3.0 controller to
 
 During our own tests, the AWUS036ACM dongle is supported by Linux, but at times was not correctly
 recognized during our experiments. It may be necessairy to use a recent Linux kernel, and manually
-executing `modprobe mt76x2u` to load the driver. This devices then works out-of-the-box without
-patched drives. However, we seek feedback from the community on its reliability before recommending
-this device.
+executing `sudo modprobe mt76x2u` to load the driver. This devices then works out-of-the-box without
+patched drives. We also found it to be unreliable when used inside VirtualBox.
 
 The AWUS036ACH was tested on Kali Linux after installing the driver using `sudo apt install realtek-rtl88xxau-dkms`.
 This device is generally not supported by default in most Linux distributions and requires manual
 installation of drivers.
+**modprobe 88XXau rtw_monitor_retransmit=1**
 
 We tested the Intel AX200 as well and found that it is _not_ compatible with our tool: its firmware
 crashes after sending a fragmented frame.
@@ -243,18 +245,20 @@ Notable remarks:
 
 In case the script doesn't appear to be working, check the following:
 
-1. Check that you are using modified drivers if needed for your wireless network card.
+1. Check that no other process is using the network card (e.g. kill your network manager).
 
-2. Check that you are using modified firmware if needed for your wireless network card.
+2. Check that you are using modified drivers if needed for your wireless network card.
 
-3. Run the [injection tests](#Network-card-injection-test) to make sure injection is working properly.
+3. Check that you are using modified firmware if needed for your wireless network card.
 
-4. Check that you machine isn't generating background traffic that interferes with the tests. In
+4. Run the [injection tests](#Network-card-injection-test) to make sure injection is working properly.
+
+5. Check that you machine isn't generating background traffic that interferes with the tests. In
    particular, disable networking in your OS, manually kill your DHCP client/server, etc.
 
-5. Confirm that you are connecting to the correct network. Double-check `client.conf`.
+6. Confirm that you are connecting to the correct network. Double-check `client.conf`.
 
-6. Make sure the network is using (AES-)CCMP as the encryption algorithm.
+7. Make sure the network is using (AES-)CCMP as the encryption algorithm.
 
 ## Extended Vulnerability Tests
 
@@ -386,6 +390,54 @@ is to get a network card that uses the same drivers on Linux. In particular, you
 We recommend cards based on `ath9khtc`. Not all cards that use `iwlmvm` will be compatible. When
 using an alternative network card, we strongly recommend to first run the [injection tests](#Network-card-injection-test)
 to confirm that the network card is compatible.
+
+### Notes on device support
+
+#### ath9k_htc
+
+There is a known problem with the `ath9k_htc` driver, used by the Technoethical N150 HGA, TP-Link
+TL-WN722N v1.x, and Alfa AWUS036NHA, causing it not to work on kernel 5.7.3 and above. Downgrading
+to kernel `5.7.2` fixes this issue for now. More details are available at:
+
+- https://bugzilla.kernel.org/show_bug.cgi?id=208251
+
+- https://bugzilla.redhat.com/show_bug.cgi?id=1848631
+
+- https://lore.kernel.org/lkml/CAEJqkgjV8p6LtBV8YUGbNb0vYzKOQt4-AMAvYw5mzFr3eicyTg@mail.gmail.com/
+
+#### AWUS036ACM
+
+The reliability of our `AWUS036ACM` device, which uses the mt76x2u driver, varied depending on how
+it was used. We found that:
+
+- On kernel 5.5.0 this device didn't work properly when connected to a USB3.0 port. In particular,
+  it kept showing `error: mt7602u_mcu_wait_resp failed with -108` when testing on Kali Linux. The
+  device did work properly when connected to a USB2.0 port.
+
+  Frame injection in the 2.4 GHz band was also working properly in the above setup. Frame injection
+  was also working in the 5 GHz band (tested by running the `test-injection,py` script on channel 40
+  and capturing the frame using an Intel 3160).
+
+  Strangely, this device refuses to inject frames when: (1) it's a data frame; (2) the destination
+  MAC address is not all-zeros; and (3) the to-DS and from-DS are both not set. This was independent
+  of the sender MAC address. Such frames are generally never sent anyway, so this has no practical
+  impact, but it required us to tweak the `test-injection.py` script to always set the to-DS or
+  from-DS flags.
+
+  In mixed mode frames using the MAC address of the AP or client as sender MAC address were only
+  being injected when injected _after_ authentication. Before authenticating, these frames were
+  dropped. In mixed client/monitor mode, the sequence counter of injected frames was being overwritten.
+  In mixed AP/monitor mode, we were unable to inject frames towards the client when using the MAC
+  address of the AP as the sender MAC address _correctly_ (without the sequence counter being
+  overwritten - we confirmed this with a fragmented ping against a client).
+
+  **TODO: test mixed mode with patched drivers**
+
+  **Note: with an ath9k_htc we cannot inject frames with spoofed MAC addresses before and after**
+  **authenticating in AP/monitor mode? It does inject frames (incorrectly) in client/monitor mode.**
+
+- On kernel **X.Y.Z**
+
 
 ## TODOs
 

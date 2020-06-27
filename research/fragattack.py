@@ -204,7 +204,7 @@ if __name__ == "__main__":
 	parser.add_argument('actions', nargs='?', help="Optional textual descriptions of actions")
 	parser.add_argument('--inject', default=None, help="Interface to use to inject frames.")
 	parser.add_argument('--inject-test', default=None, help="Use given interface to test injection through monitor interface.")
-	parser.add_argument('--inject-selftest', default=False, action='store_true', help="Partial injection test (checks kernel only).")
+	parser.add_argument('--inject-test-postauth', default=None, help="Same as --inject-test but run the test after authenticating.")
 	parser.add_argument('--hwsim', default=None, help="Use provided interface in monitor mode, and simulate AP/client through hwsim.")
 	parser.add_argument('--ip', help="IP we as a sender should use.")
 	parser.add_argument('--peerip', help="IP of the device we will test.")
@@ -241,6 +241,14 @@ if __name__ == "__main__":
 	# Sanity check and convert some arguments to more usable form
 	options.ptype = args2ptype(options)
 	options.as_msdu = args2msdu(options)
+
+	# Make the --inject-test-postauth flags easier to check
+	if options.inject_test_postauth != None:
+		options.inject_test = options.inject_test_postauth
+		options.inject_test_postauth = True
+
+	else:
+		options.inject_test_postauth = False
 
 	# Construct the test
 	options.test = prepare_tests(options)

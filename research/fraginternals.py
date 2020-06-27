@@ -713,12 +713,12 @@ class Daemon(metaclass=abc.ABCMeta):
 
 		# 3. Enable monitor mode
 		set_monitor_mode(self.nic_mon)
-		log(STATUS, f"Using interface {self.nic_mon} to inject frames.")
+		log(STATUS, f"Using interface {self.nic_mon} ({get_device_driver(self.nic_mon)}) to inject frames.")
 		if self.nic_hwsim:
 			set_monitor_mode(self.nic_hwsim)
 
 		# 4. Configure test interface if used
-		if self.options.inject_test:
+		if self.options.inject_test != None and self.options.inject_test != "self":
 			set_monitor_mode(self.options.inject_test)
 
 	def inject_mon(self, p):
@@ -755,19 +755,25 @@ class Daemon(metaclass=abc.ABCMeta):
 			log(STATUS, f"{self.nic_hwsim}: setting to channel {channel}")
 			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
 
-		if self.options.inject_test:
+		if self.options.inject_test != None and self.options.inject_test != "self":
 			set_channel(self.options.inject_test, channel)
 			log(STATUS, f"{self.options.inject_test}: setting to channel {channel}")
 			# When explicitly testing we can afford a longer timeout. Otherwise we should avoid it.
 			time.sleep(0.5)
 
-	def injection_test(self, peermac):
+	def injection_test(self, peermac, ownmac, is_postauth):
 		# Only perform the test when explicitly requested
-		if self.options.inject_test == None and not self.options.inject_selftest:
+		if self.options.inject_test == None:
+			return
+
+		# If requested perform the test after authentication
+		print(self.options.inject_test_postauth, is_postauth)
+		if self.options.inject_test_postauth != is_postauth:
 			return
 
 		try:
-			test_injection(self.nic_mon, self.options.inject_test, peermac)
+			test_iface = None if self.options.inject_test == "self" else self.options.inject_test
+			test_injection(self.nic_mon, test_iface, peermac, ownmac)
 		except IOError as ex:
 			log(WARNING, ex.args[0])
 			log(ERROR, "Unexpected error. Are you using the correct kernel/driver/device?")
@@ -941,8 +947,7 @@ class Authenticator(Daemon):
 
 			# When in client mode, the scanning operation might interferes with this test.
 			# So it must be executed once we are connecting so the channel is stable.
-			# TODO: Avoid client from disconnecting during test.
-			self.injection_test(clientmac)
+			self.injection_test(clientmac, self.apmac, False)
 
 		elif "EAPOL-TX" in msg:
 			cmd, clientmac, payload = msg.split()
@@ -957,6 +962,8 @@ class Authenticator(Daemon):
 				log(WARNING, f"Unknown client {clientmac} finished authenticating.")
 				return
 			self.stations[clientmac].handle_authenticated()
+
+			self.injection_test(clientmac, self.apmac, True)
 
 	def start_daemon(self):
 		cmd = ["../hostapd/hostapd", "-i", self.nic_iface, "hostapd.conf"] + log_level2switch(self.options)
@@ -1119,7 +1126,7 @@ class Supplicant(Daemon):
 
 			# With the ath9k_htc, injection in mixed managed/monitor only works after
 			# sending the association request. So only perform injection test now.
-			self.injection_test(self.station.bss)
+			self.injection_test(self.station.bss, self.station.mac, False)
 
 			p = re.compile("Associated with (.*) successfully")
 			bss = p.search(msg).group(1)
@@ -1134,6 +1141,8 @@ class Supplicant(Daemon):
 		   "WPA: EAPOL processing complete" in msg:
 			# This get's the current keys
 			self.station.handle_authenticated()
+
+			self.injection_test(self.station.bss, self.station.mac, True)
 
 	def roam(self, station):
 		log(STATUS, "Roaming to the current AP.", color="green")
