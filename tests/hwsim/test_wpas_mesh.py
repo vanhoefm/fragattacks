@@ -988,7 +988,7 @@ def test_wpas_mesh_open_ht40(dev, apdev):
         dev[0].request("MESH_GROUP_REMOVE " + dev[0].ifname)
         dev[1].request("MESH_GROUP_REMOVE " + dev[1].ifname)
         dev[2].request("MESH_GROUP_REMOVE " + dev[2].ifname)
-        subprocess.call(['iw', 'reg', 'set', '00'])
+        clear_regdom_dev(dev)
         dev[0].flush_scan_cache()
         dev[1].flush_scan_cache()
         dev[2].flush_scan_cache()
