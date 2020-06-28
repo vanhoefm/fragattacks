@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
+import glob, importlib
 from fraginternals import *
-from tests_common import *
-from tests_qca import *
-from tests_attacks import *
 
 #TODO: Check that modified drivers are used using debugfs
 #TODO: Check that atheros is using patched firmware using debugfs
@@ -249,6 +247,15 @@ if __name__ == "__main__":
 
 	else:
 		options.inject_test_postauth = False
+
+	# Dynamically import tests depending on their availability in the directory
+	for test in glob("tests_*.py"):
+		module = importlib.import_module(test[:-3])
+		globals().update(
+			{n: getattr(module, n) for n in module.__all__} if hasattr(module, '__all__') 
+			else
+			{k: v for (k, v) in module.__dict__.items() if not k.startswith('_')
+		})
 
 	# Construct the test
 	options.test = prepare_tests(options)
