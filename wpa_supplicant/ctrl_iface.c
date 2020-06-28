@@ -10141,6 +10141,14 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 	char *reply;
 	const int reply_size = 4096;
 	int reply_len;
+	int console = 0;
+
+#ifdef CONFIG_TESTING_OPTIONS
+	if (os_strncmp(buf, "> ", 2) == 0) {
+		console = 1;
+		buf += 2;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 	if (os_strncmp(buf, WPA_CTRL_RSP, os_strlen(WPA_CTRL_RSP)) == 0 ||
 	    os_strncmp(buf, "SET_NETWORK ", 12) == 0 ||
@@ -11026,6 +11034,18 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 		os_memcpy(reply, "FAIL\n", 5);
 		reply_len = 5;
 	}
+
+#ifdef CONFIG_TESTING_OPTIONS
+	if (console) {
+		if (reply_len + 2 >= reply_size)
+			reply = os_realloc(reply, reply_size + 2);
+
+		memmove(reply + 2, reply, reply_len);
+		reply[0] = '>';
+		reply[1] = ' ';
+		reply_len += 2;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 	*resp_len = reply_len;
 	return reply;

@@ -19,14 +19,20 @@ def wpaspy_clear_messages(ctrl):
 #TODO: Modify so we can ignore other messages over the command interface
 def wpaspy_command(ctrl, cmd):
 	wpaspy_clear_messages(ctrl)
-	rval = ctrl.request(cmd)
+
+	# Include console prefix so we can ignore other messages sent over the control interface
+	rval = ctrl.request("> " + cmd)
+	while not rval.startswith("> "):
+		rval = ctrl.recv()
+
 	if "UNKNOWN COMMAND" in rval:
 		log(ERROR, "wpa_supplicant did not recognize the command %s. Did you (re)compile wpa_supplicant?" % cmd.split()[0])
 		quit(1)
 	elif "FAIL" in rval:
 		log(ERROR, f"Failed to execute command {cmd}")
 		quit(1)
-	return rval
+
+	return rval[2:]
 
 def argv_pop_argument(argument):
 	if not argument in sys.argv: return False

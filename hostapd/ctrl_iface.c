@@ -3118,6 +3118,14 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 					      socklen_t fromlen)
 {
 	int reply_len, res;
+	int console = 0;
+
+#ifdef CONFIG_TESTING_OPTIONS
+	if (os_strncmp(buf, "> ", 2) == 0) {
+		console = 1;
+		buf += 2;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 	os_memcpy(reply, "OK\n", 3);
 	reply_len = 3;
@@ -3599,6 +3607,18 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 		os_memcpy(reply, "FAIL\n", 5);
 		reply_len = 5;
 	}
+
+#ifdef CONFIG_TESTING_OPTIONS
+	if (console) {
+		if (reply_len + 2 >= reply_size)
+			reply = os_realloc(reply, reply_size + 2);
+
+		memmove(reply + 2, reply, reply_len);
+		reply[0] = '>';
+		reply[1] = ' ';
+		reply_len += 2;
+	}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 	return reply_len;
 }
