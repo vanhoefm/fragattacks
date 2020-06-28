@@ -778,7 +778,6 @@ class Daemon(metaclass=abc.ABCMeta):
 			return
 
 		# If requested perform the test after authentication
-		print(self.options.inject_test_postauth, is_postauth)
 		if self.options.inject_test_postauth != is_postauth:
 			return
 
