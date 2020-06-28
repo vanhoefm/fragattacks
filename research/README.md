@@ -35,6 +35,8 @@ We have confirmed that the following network cards work properly with our script
 
 **TODO: AWUS036ACM `iw set wlanX monitor active` in injection mode (but in mixed mode that crashes)**
 
+**TODO: Always recommend running our backported drivers to assure there are not unexpected regressions?**
+
 The three last colums signify:
 
 1. Injection mode: whether the network card can be used as a second interface to inject frames in [injection mode](#Injection-mode).
@@ -243,22 +245,30 @@ Notable remarks:
   Certain clients install the key too early during a pairwise session rekey. To test these devices,
   add the `--rekey-early-install` parameter and retry the test.
 
+### Checklist
+
 In case the script doesn't appear to be working, check the following:
 
 1. Check that no other process is using the network card (e.g. kill your network manager).
 
 2. Check that you are using modified drivers if needed for your wireless network card.
+   If you updated your kernel, you will need to recompile and reinstall the drivers.
 
 3. Check that you are using modified firmware if needed for your wireless network card.
 
-4. Run the [injection tests](#Network-card-injection-test) to make sure injection is working properly.
+4. Assure the device you are testing doesn't enter sleep mode (causing it to miss injected frames).
+   **Or use a compatible device in mixed mode?**
 
-5. Check that you machine isn't generating background traffic that interferes with the tests. In
+5. Run the [injection tests](#Network-card-injection-test) to make sure injection is working properly.
+
+6. Check that you machine isn't generating background traffic that interferes with the tests. In
    particular, disable networking in your OS, manually kill your DHCP client/server, etc.
 
-6. Confirm that you are connecting to the correct network. Double-check `client.conf`.
+7. Confirm that you are connecting to the correct network. Double-check `client.conf`.
 
-7. Make sure the network is using (AES-)CCMP as the encryption algorithm.
+8. Make sure the AP being tested is using (AES-)CCMP as the encryption algorithm.
+
+9. If your Wi-Fi dongle is unreliable, use it from a live CD or USB. A virtual machine can be unreliable.
 
 ## Extended Vulnerability Tests
 
@@ -306,7 +316,12 @@ using _injection mode_:
 	./test-injection.py wlan0 wlan1
 
 Here we test if network card `wlan0` properly injects frames and we use network card `wlan1`
-to monitor whether frames are properly injected. In case you do not have a second network
+to monitor whether frames are properly injected.
+
+**TODO: Testing the TP-Link against the Intel 3160 was very unreliable: many frames were not**
+**received although they in fact were sent by the device.**
+
+In case you do not have a second network
 card, you can execute a partial injection test using:
 
 	./test-injection.py wlan0
@@ -393,6 +408,8 @@ to confirm that the network card is compatible.
 
 ### Notes on device support
 
+**TODO: Reference or include the DEVICES.md file**
+
 #### ath9k_htc
 
 There is a known problem with the `ath9k_htc` driver, used by the Technoethical N150 HGA, TP-Link
@@ -435,9 +452,16 @@ it was used. We found that:
 
   **Note: with an ath9k_htc we cannot inject frames with spoofed MAC addresses before and after**
   **authenticating in AP/monitor mode? It does inject frames (incorrectly) in client/monitor mode.**
+  _This was likely because capturing with the Intel 3160 was very unreliable._
 
-- On kernel **X.Y.Z**
+- On kernel 5.6.13 on Arch Linux, client mode didn't work properly when using an USB3.0 port. But
+  AP mode did work properly on a USB3.0 port.
 
+  In mixed mode, non-EAPOL data frames were not sent when injected before authentication. After
+  authentication, these were transmitted. **Is that patchable?**
+
+  **Note: with an ath9k_htc we can inject frames with spoofed MAC addresses before and after**
+  **authenticating in client/monitor mode. Same thing in AP/monitor mode. But capturing is unreliable.**
 
 ## TODOs
 

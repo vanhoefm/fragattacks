@@ -11,13 +11,14 @@ def main():
 	parser = argparse.ArgumentParser(description="Test packet injection properties of a device.")
 	parser.add_argument('inject', help="Interface to use to inject frames.")
 	parser.add_argument('monitor', nargs='?', help="Interface to use to monitor for frames.")
+	parser.add_argument('--debug', type=int, default=0, help="Debug output level.")
 	options = parser.parse_args()
 
 	peermac = "00:11:22:33:44:55"
-
-	# TODO: Add a --debug parameter similar to fragattack
-
 	subprocess.check_output(["rfkill", "unblock", "wifi"])
+
+	# Parse remaining options
+	change_log_level(-options.debug)
 
 	set_monitor_mode(options.inject)
 	if options.monitor:
@@ -30,12 +31,8 @@ def main():
 			log(ERROR, "Both devices are not on the same channel")
 			quit(1)
 		peermac = get_mac_address(options.monitor)
-	else:
-		log(WARNING, "Only performing selftest. This can detect only injection issues caused by")
-		log(WARNING, "the kernel. Many other issues cannot be detected in this self-test, so you")
-		log(WARNING, "should not trust the output of the tests unless you know what you're doing.")
 
-	log(STATUS, "Performing injection tests ...")
+	log(STATUS, "Performing injection tests")
 	try:
 		test_injection(options.inject, options.monitor, peermac)
 	except OSError as ex:

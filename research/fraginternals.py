@@ -718,7 +718,7 @@ class Daemon(metaclass=abc.ABCMeta):
 			log(WARNING, "Unable to detect driver of interface!")
 			log(WARNING, "Injecting fragments may be unreliable.")
 		elif driver in ["ath9k_htc", "iwlwifi"]:
-			# We use this workaround in more cases than required. See DEVICES.md for more info.
+			# Assure that fragmented frames are reliably injected on certain iwlwifi and ath9k_htc devices
 			self.options.inject_mf_workaround = True
 			log(STATUS, f"Detected {driver}, using injection bug workarounds")
 

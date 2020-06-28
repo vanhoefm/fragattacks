@@ -97,8 +97,15 @@ Summary: when using this device, you must use a modified driver/firmware.
   and commenting out the two lines that modify `i_seq`. Note that these changes
   are in the firmware of the device.
 
-- See also the comment in Station.perform_actions to avoid other bugs with
-  ath9k_htc when injecting frames with the MF flag and while being in AP mode.
+- After injecting a _fragmented_ frame with a valid sender MAC
+  address, it will not properly inject other frames with a valid sender MAC
+  address. This was not tested in other orders (i.e. it might be possible that
+  using a spoofed MAC address to inject a fragmented frame, injecting frames
+  afterwards with the same spoofed MAC address might also fail).
+
+- In mixed AP/monitor mode, when injecting the first fragment of a frame, it will
+  be injected properly, but afterards the chip won't second beacons for one second.
+  This can be prevented by injected a dummy packet after the injected fragment.
 
 - The at9k_htc dongle, like other Wi-Fi devices, will reorder frames with
   different QoS priorities. This means injected frames with differen priorities
@@ -115,11 +122,6 @@ Summary: when using this device, you must use a modified driver/firmware.
   but not being controlled by wpa_supplicant (but unknown which channel will be
   used). When connecting using wpa_supplicant, it seems we can only inject frames
   after the association request has been sent.
-
-- In mixed AP/monitor mode, when injecting the first fragment of a frame, it will
-  be injected properly, but afterards the chip won't second beacons for one second.
-  This can be prevented by injected a dummy packet after the injected fragment.
-  In other modes this doesn't seem to be a problem.
 
 # hwsim mode
 
