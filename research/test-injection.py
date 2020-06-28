@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) 2020, Mathy Vanhoef <mathy.vanhoef@nyu.edu>
+#
+# This code may be distributed under the terms of the BSD license.
+# See README for more details.
+
 from libwifi import *
 import argparse, time
 
