@@ -1033,11 +1033,7 @@ def test_wpas_mesh_open_vht40(dev, apdev):
     try:
         _test_wpas_mesh_open_vht40(dev, apdev)
     finally:
-        dev[0].request("MESH_GROUP_REMOVE " + dev[0].ifname)
-        dev[1].request("MESH_GROUP_REMOVE " + dev[1].ifname)
-        subprocess.call(['iw', 'reg', 'set', '00'])
-        dev[0].flush_scan_cache()
-        dev[1].flush_scan_cache()
+        clear_reg_setting(dev)
 
 def _test_wpas_mesh_open_vht40(dev, apdev):
     check_mesh_support(dev[0])
