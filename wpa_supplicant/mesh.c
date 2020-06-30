@@ -301,6 +301,7 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 	    frequency == freq->freq + freq->sec_channel_offset * 20) {
 		wpa_printf(MSG_DEBUG, "mesh: pri/sec channels switched");
 		frequency = freq->freq;
+		ssid->frequency = frequency;
 	}
 	wpa_s->assoc_freq = frequency;
 	wpa_s->current_ssid = ssid;
