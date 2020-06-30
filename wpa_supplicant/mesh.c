@@ -363,6 +363,31 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 		conf->basic_rates[rate_len] = -1;
 	}
 
+	/* While it can enhance performance to switch the primary channel, which
+	 * is also the secondary channel of another network at the same time),
+	 * to the other primary channel, problems exist with this in mesh
+	 * networks.
+	 *
+	 * Example with problems:
+	 *     - 3 mesh nodes M1-M3, freq (5200, 5180)
+	 *     - other node O1, e.g. AP mode, freq (5180, 5200),
+	 * Locations: O1 M1      M2      M3
+	 *
+	 * M3 can only send frames to M1 over M2, no direct connection is
+	 * possible
+	 * Start O1, M1 and M3 first, M1 or O1 will switch channels to align
+	 * with* each other. M3 does not swap, because M1 or O1 cannot be
+	 * reached. M2 is started afterwards and can either connect to M3 or M1
+	 * because of this primary secondary channel switch.
+	 *
+	 * Solutions: (1) central coordination -> not always possible
+	 *            (2) disable pri/sec channel switch in mesh networks
+	 *
+	 * In AP mode, when all nodes can work independently, this poses of
+	 * course no problem, therefore disable it only in mesh mode. */
+	conf->no_pri_sec_switch = 1;
+	wpa_supplicant_conf_ap_ht(wpa_s, ssid, conf);
+
 	if (wpa_drv_init_mesh(wpa_s)) {
 		wpa_msg(wpa_s, MSG_ERROR, "Failed to init mesh in driver");
 		return -1;
@@ -373,8 +398,6 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 			   "Failed to initialize hostapd interface for mesh");
 		return -1;
 	}
-
-	wpa_supplicant_conf_ap_ht(wpa_s, ssid, conf);
 
 	return 0;
 out_free:
