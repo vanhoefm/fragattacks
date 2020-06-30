@@ -10247,6 +10247,9 @@ static int nl80211_join_mesh(struct i802_bss *bss,
 
 	wpa_printf(MSG_DEBUG, "  * flags=%08X", params->flags);
 
+	if (params->handle_dfs && nla_put_flag(msg, NL80211_ATTR_HANDLE_DFS))
+		goto fail;
+
 	container = nla_nest_start(msg, NL80211_ATTR_MESH_SETUP);
 	if (!container)
 		goto fail;

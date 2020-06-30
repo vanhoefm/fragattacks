@@ -361,6 +361,7 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 		conf->country[0] = wpa_s->conf->country[0];
 		conf->country[1] = wpa_s->conf->country[1];
 		conf->country[2] = ' ';
+		wpa_s->mesh_params->handle_dfs = true;
 	}
 
 	bss->iconf = conf;
