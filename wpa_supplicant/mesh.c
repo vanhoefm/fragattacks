@@ -30,20 +30,20 @@
 
 static void wpa_supplicant_mesh_deinit(struct wpa_supplicant *wpa_s)
 {
-	wpa_supplicant_mesh_iface_deinit(wpa_s, wpa_s->ifmsh);
+	wpa_supplicant_mesh_iface_deinit(wpa_s, wpa_s->ifmsh, true);
 	wpa_s->ifmsh = NULL;
 	wpa_s->current_ssid = NULL;
 	os_free(wpa_s->mesh_rsn);
 	wpa_s->mesh_rsn = NULL;
 	os_free(wpa_s->mesh_params);
 	wpa_s->mesh_params = NULL;
-	/* TODO: leave mesh (stop beacon). This will happen on link down
-	 * anyway, so it's not urgent */
+	wpa_supplicant_leave_mesh(wpa_s, false);
 }
 
 
 void wpa_supplicant_mesh_iface_deinit(struct wpa_supplicant *wpa_s,
-				      struct hostapd_iface *ifmsh)
+				      struct hostapd_iface *ifmsh,
+				      bool also_clear_hostapd)
 {
 	if (!ifmsh)
 		return;
@@ -64,8 +64,10 @@ void wpa_supplicant_mesh_iface_deinit(struct wpa_supplicant *wpa_s,
 	}
 
 	/* take care of shared data */
-	hostapd_interface_deinit(ifmsh);
-	hostapd_interface_free(ifmsh);
+	if (also_clear_hostapd) {
+		hostapd_interface_deinit(ifmsh);
+		hostapd_interface_free(ifmsh);
+	}
 }
 
 
@@ -249,8 +251,7 @@ static int wpas_mesh_complete(struct wpa_supplicant *wpa_s)
 	    wpas_mesh_init_rsn(wpa_s)) {
 		wpa_printf(MSG_ERROR,
 			   "mesh: RSN initialization failed - deinit mesh");
-		wpa_supplicant_mesh_deinit(wpa_s);
-		wpa_drv_leave_mesh(wpa_s);
+		wpa_supplicant_mesh_iface_deinit(wpa_s, wpa_s->ifmsh, false);
 		return -1;
 	}
 
@@ -275,8 +276,14 @@ static int wpas_mesh_complete(struct wpa_supplicant *wpa_s)
 	/* hostapd sets the interface down until we associate */
 	wpa_drv_set_operstate(wpa_s, 1);
 
-	if (!ret)
+	if (!ret) {
 		wpa_supplicant_set_state(wpa_s, WPA_COMPLETED);
+
+		wpa_msg(wpa_s, MSG_INFO, MESH_GROUP_STARTED "ssid=\"%s\" id=%d",
+			wpa_ssid_txt(ssid->ssid, ssid->ssid_len),
+			ssid->id);
+		wpas_notify_mesh_group_started(wpa_s, ssid);
+	}
 
 	return ret;
 }
@@ -571,7 +578,7 @@ int wpa_supplicant_join_mesh(struct wpa_supplicant *wpa_s,
 	wpa_s->mesh_params = params;
 	if (wpa_supplicant_mesh_init(wpa_s, ssid, &params->freq)) {
 		wpa_msg(wpa_s, MSG_ERROR, "Failed to init mesh");
-		wpa_drv_leave_mesh(wpa_s);
+		wpa_supplicant_leave_mesh(wpa_s, true);
 		ret = -1;
 		goto out;
 	}
@@ -581,14 +588,15 @@ out:
 }
 
 
-int wpa_supplicant_leave_mesh(struct wpa_supplicant *wpa_s)
+int wpa_supplicant_leave_mesh(struct wpa_supplicant *wpa_s, bool need_deinit)
 {
 	int ret = 0;
 
 	wpa_msg(wpa_s, MSG_INFO, "leaving mesh");
 
 	/* Need to send peering close messages first */
-	wpa_supplicant_mesh_deinit(wpa_s);
+	if (need_deinit)
+		wpa_supplicant_mesh_deinit(wpa_s);
 
 	ret = wpa_drv_leave_mesh(wpa_s);
 	if (ret)

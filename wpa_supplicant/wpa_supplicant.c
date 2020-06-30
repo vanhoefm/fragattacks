@@ -2249,10 +2249,6 @@ void wpa_supplicant_associate(struct wpa_supplicant *wpa_s,
 			return;
 		}
 		wpa_s->current_bss = bss;
-		wpa_msg(wpa_s, MSG_INFO, MESH_GROUP_STARTED "ssid=\"%s\" id=%d",
-			wpa_ssid_txt(ssid->ssid, ssid->ssid_len),
-			ssid->id);
-		wpas_notify_mesh_group_started(wpa_s, ssid);
 #else /* CONFIG_MESH */
 		wpa_msg(wpa_s, MSG_ERROR,
 			"mesh mode support not included in the build");
@@ -3990,7 +3986,7 @@ void wpa_supplicant_deauthenticate(struct wpa_supplicant *wpa_s,
 			wpa_s->ifname);
 		wpas_notify_mesh_group_removed(wpa_s, mconf->meshid,
 					       mconf->meshid_len, reason_code);
-		wpa_supplicant_leave_mesh(wpa_s);
+		wpa_supplicant_leave_mesh(wpa_s, true);
 	}
 #endif /* CONFIG_MESH */
 
@@ -6717,7 +6713,7 @@ static void wpa_supplicant_deinit_iface(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_MESH
 	if (wpa_s->ifmsh) {
-		wpa_supplicant_mesh_iface_deinit(wpa_s, wpa_s->ifmsh);
+		wpa_supplicant_mesh_iface_deinit(wpa_s, wpa_s->ifmsh, true);
 		wpa_s->ifmsh = NULL;
 	}
 #endif /* CONFIG_MESH */
