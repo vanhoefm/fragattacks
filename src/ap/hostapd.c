@@ -434,6 +434,8 @@ static void hostapd_free_hapd_data(struct hostapd_data *hapd)
 #ifdef CONFIG_MESH
 	wpabuf_free(hapd->mesh_pending_auth);
 	hapd->mesh_pending_auth = NULL;
+	/* handling setup failure is already done */
+	hapd->setup_complete_cb = NULL;
 #endif /* CONFIG_MESH */
 
 	hostapd_clean_rrm(hapd);
@@ -2156,6 +2158,13 @@ dfs_offload:
 	if (hapd->setup_complete_cb)
 		hapd->setup_complete_cb(hapd->setup_complete_cb_ctx);
 
+#ifdef CONFIG_MESH
+	if (delay_apply_cfg && !iface->mconf) {
+		wpa_printf(MSG_ERROR, "Error while completing mesh init");
+		goto fail;
+	}
+#endif /* CONFIG_MESH */
+
 	wpa_printf(MSG_DEBUG, "%s: Setup of interface done.",
 		   iface->bss[0]->conf->iface);
 	if (iface->interfaces && iface->interfaces->terminate_on_error > 0)
@@ -2299,7 +2308,7 @@ int hostapd_setup_interface(struct hostapd_iface *iface)
 	ret = setup_interface(iface);
 	if (ret) {
 		wpa_printf(MSG_ERROR, "%s: Unable to setup interface.",
-			   iface->bss[0]->conf->iface);
+			   iface->conf ? iface->conf->bss[0]->iface : "N/A");
 		return -1;
 	}
 
