@@ -955,10 +955,13 @@ dfs_downgrade_bandwidth(struct hostapd_iface *iface, int *secondary_channel,
 		if (*skip_radar) {
 			*skip_radar = 0;
 		} else {
-			if (iface->conf->vht_oper_chwidth == CHANWIDTH_USE_HT)
+			int oper_chwidth;
+
+			oper_chwidth = hostapd_get_oper_chwidth(iface->conf);
+			if (oper_chwidth == CHANWIDTH_USE_HT)
 				break;
 			*skip_radar = 1;
-			iface->conf->vht_oper_chwidth--;
+			hostapd_set_oper_chwidth(iface->conf, oper_chwidth - 1);
 		}
 	}
 
