@@ -80,8 +80,24 @@ def check_mesh_scan(dev, params, other_started=False, beacon_int=0):
     if '[MESH]' not in bss['flags']:
         raise Exception("BSS output did not include MESH flag")
 
-def check_mesh_group_added(dev):
-    ev = dev.wait_event(["MESH-GROUP-STARTED"])
+def check_dfs_started(dev, timeout=10):
+    ev = dev.wait_event(["DFS-CAC-START"], timeout=timeout)
+    if ev is None:
+        raise Exception("Test exception: CAC did not start")
+
+def check_dfs_finished(dev, timeout=70):
+    ev = dev.wait_event(["DFS-CAC-COMPLETED"], timeout=timeout)
+    if ev is None:
+        raise Exception("Test exception: CAC did not finish")
+
+def check_mesh_radar_handling_finished(dev, timeout=75):
+    ev = dev.wait_event(["CTRL-EVENT-CHANNEL-SWITCH", "MESH-GROUP-STARTED"],
+                        timeout=timeout)
+    if ev is None:
+        raise Exception("Test exception: Couldn't join mesh")
+
+def check_mesh_group_added(dev, timeout=10):
+    ev = dev.wait_event(["MESH-GROUP-STARTED"], timeout=timeout)
     if ev is None:
         raise Exception("Test exception: Couldn't join mesh")
 
@@ -91,6 +107,10 @@ def check_mesh_group_removed(dev):
     if ev is None:
         raise Exception("Test exception: Couldn't leave mesh")
 
+def check_regdom_change(dev, timeout=10):
+    ev = dev.wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=timeout)
+    if ev is None:
+        raise Exception("Test exception: No regdom change happened.")
 
 def check_mesh_peer_connected(dev, timeout=10):
     ev = dev.wait_event(["MESH-PEER-CONNECTED"], timeout=timeout)
@@ -166,6 +186,39 @@ def test_wpas_mesh_group_remove(dev):
     # Check for MESH-GROUP-REMOVED event
     check_mesh_group_removed(dev[0])
     dev[0].mesh_group_remove()
+
+def dfs_simulate_radar(dev):
+    logger.info("Trigger a simulated radar event")
+    phyname = dev.get_driver_status_field("phyname")
+    radar_file = '/sys/kernel/debug/ieee80211/' + phyname + '/hwsim/dfs_simulate_radar'
+    with open(radar_file, 'w') as f:
+        f.write('1')
+
+@long_duration_test
+def test_mesh_peer_connected_dfs(dev):
+    """Mesh peer connected (DFS)"""
+    dev[0].set("country", "DE")
+    dev[1].set("country", "DE")
+
+    check_regdom_change(dev[0])
+    check_regdom_change(dev[1])
+
+    check_mesh_support(dev[0])
+    add_open_mesh_network(dev[0], freq="5500", beacon_int=160)
+    add_open_mesh_network(dev[1], freq="5500", beacon_int=160)
+    check_dfs_started(dev[0])
+    check_dfs_finished(dev[0])
+    check_mesh_joined_connected(dev, timeout0=10)
+
+    dfs_simulate_radar(dev[0])
+
+    check_mesh_radar_handling_finished(dev[0], timeout=75)
+
+    dev[0].set("country", "00")
+    dev[1].set("country", "00")
+
+    check_regdom_change(dev[0])
+    check_regdom_change(dev[1])
 
 def test_wpas_mesh_peer_connected(dev):
     """wpa_supplicant MESH peer connected"""
