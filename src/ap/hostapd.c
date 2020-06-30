@@ -354,7 +354,7 @@ static int hostapd_broadcast_wep_set(struct hostapd_data *hapd)
 #endif /* CONFIG_WEP */
 
 
-static void hostapd_free_hapd_data(struct hostapd_data *hapd)
+void hostapd_free_hapd_data(struct hostapd_data *hapd)
 {
 	os_free(hapd->probereq_cb);
 	hapd->probereq_cb = NULL;
@@ -498,7 +498,7 @@ static void sta_track_deinit(struct hostapd_iface *iface)
 }
 
 
-static void hostapd_cleanup_iface_partial(struct hostapd_iface *iface)
+void hostapd_cleanup_iface_partial(struct hostapd_iface *iface)
 {
 	wpa_printf(MSG_DEBUG, "%s(%p)", __func__, iface);
 #ifdef NEED_AP_MLME
@@ -626,7 +626,7 @@ static int hostapd_flush_old_stations(struct hostapd_data *hapd, u16 reason)
 }
 
 
-static void hostapd_bss_deinit_no_free(struct hostapd_data *hapd)
+void hostapd_bss_deinit_no_free(struct hostapd_data *hapd)
 {
 	hostapd_free_stas(hapd);
 	hostapd_flush_old_stations(hapd, WLAN_REASON_DEAUTH_LEAVING);
@@ -2690,6 +2690,12 @@ int hostapd_enable_iface(struct hostapd_iface *hapd_iface)
 {
 	size_t j;
 
+	if (!hapd_iface)
+		return -1;
+
+	if (hapd_iface->enable_iface_cb)
+		return hapd_iface->enable_iface_cb(hapd_iface);
+
 	if (hapd_iface->bss[0]->drv_priv != NULL) {
 		wpa_printf(MSG_ERROR, "Interface %s already enabled",
 			   hapd_iface->conf->bss[0]->iface);
@@ -2750,6 +2756,9 @@ int hostapd_disable_iface(struct hostapd_iface *hapd_iface)
 
 	if (hapd_iface == NULL)
 		return -1;
+
+	if (hapd_iface->disable_iface_cb)
+		return hapd_iface->disable_iface_cb(hapd_iface);
 
 	if (hapd_iface->bss[0]->drv_priv == NULL) {
 		wpa_printf(MSG_INFO, "Interface %s already disabled",

@@ -589,6 +589,9 @@ struct hostapd_iface {
 
 	/* Previous WMM element information */
 	struct hostapd_wmm_ac_params prev_wmm[WMM_AC_NUM];
+
+	int (*enable_iface_cb)(struct hostapd_iface *iface);
+	int (*disable_iface_cb)(struct hostapd_iface *iface);
 };
 
 /* hostapd.c */
@@ -617,6 +620,9 @@ void hostapd_interface_deinit_free(struct hostapd_iface *iface);
 int hostapd_enable_iface(struct hostapd_iface *hapd_iface);
 int hostapd_reload_iface(struct hostapd_iface *hapd_iface);
 int hostapd_disable_iface(struct hostapd_iface *hapd_iface);
+void hostapd_bss_deinit_no_free(struct hostapd_data *hapd);
+void hostapd_free_hapd_data(struct hostapd_data *hapd);
+void hostapd_cleanup_iface_partial(struct hostapd_iface *iface);
 int hostapd_add_iface(struct hapd_interfaces *ifaces, char *buf);
 int hostapd_remove_iface(struct hapd_interfaces *ifaces, char *buf);
 void hostapd_channel_list_updated(struct hostapd_iface *iface, int initiator);

@@ -28,15 +28,22 @@
 #include "mesh.h"
 
 
-static void wpa_supplicant_mesh_deinit(struct wpa_supplicant *wpa_s)
+static void wpa_supplicant_mesh_deinit(struct wpa_supplicant *wpa_s,
+				       bool also_clear_hostapd)
 {
-	wpa_supplicant_mesh_iface_deinit(wpa_s, wpa_s->ifmsh, true);
-	wpa_s->ifmsh = NULL;
-	wpa_s->current_ssid = NULL;
+	wpa_supplicant_mesh_iface_deinit(wpa_s, wpa_s->ifmsh,
+					 also_clear_hostapd);
+
+	if (also_clear_hostapd) {
+		wpa_s->ifmsh = NULL;
+		wpa_s->current_ssid = NULL;
+		os_free(wpa_s->mesh_params);
+		wpa_s->mesh_params = NULL;
+	}
+
 	os_free(wpa_s->mesh_rsn);
 	wpa_s->mesh_rsn = NULL;
-	os_free(wpa_s->mesh_params);
-	wpa_s->mesh_params = NULL;
+
 	wpa_supplicant_leave_mesh(wpa_s, false);
 }
 
@@ -242,7 +249,7 @@ static int wpas_mesh_complete(struct wpa_supplicant *wpa_s)
 			    he_capab)) {
 			wpa_printf(MSG_ERROR,
 				   "Error updating mesh frequency params");
-			wpa_supplicant_mesh_deinit(wpa_s);
+			wpa_supplicant_mesh_deinit(wpa_s, true);
 			return -1;
 		}
 	}
@@ -251,7 +258,7 @@ static int wpas_mesh_complete(struct wpa_supplicant *wpa_s)
 	    wpas_mesh_init_rsn(wpa_s)) {
 		wpa_printf(MSG_ERROR,
 			   "mesh: RSN initialization failed - deinit mesh");
-		wpa_supplicant_mesh_iface_deinit(wpa_s, wpa_s->ifmsh, false);
+		wpa_supplicant_mesh_deinit(wpa_s, false);
 		return -1;
 	}
 
@@ -297,6 +304,69 @@ static void wpas_mesh_complete_cb(void *arg)
 }
 
 
+static int wpa_supplicant_mesh_enable_iface_cb(struct hostapd_iface *ifmsh)
+{
+	struct wpa_supplicant *wpa_s = ifmsh->owner;
+	struct hostapd_data *bss;
+
+	ifmsh->mconf = mesh_config_create(wpa_s, wpa_s->current_ssid);
+
+	bss = ifmsh->bss[0];
+	bss->msg_ctx = wpa_s;
+	os_memcpy(bss->own_addr, wpa_s->own_addr, ETH_ALEN);
+	bss->driver = wpa_s->driver;
+	bss->drv_priv = wpa_s->drv_priv;
+	bss->iface = ifmsh;
+	bss->mesh_sta_free_cb = mesh_mpm_free_sta;
+	bss->setup_complete_cb = wpas_mesh_complete_cb;
+	bss->setup_complete_cb_ctx = wpa_s;
+
+	bss->conf->start_disabled = 1;
+	bss->conf->mesh = MESH_ENABLED;
+	bss->conf->ap_max_inactivity = wpa_s->conf->mesh_max_inactivity;
+
+	if (wpa_drv_init_mesh(wpa_s)) {
+		wpa_msg(wpa_s, MSG_ERROR, "Failed to init mesh in driver");
+		return -1;
+	}
+
+	if (hostapd_setup_interface(ifmsh)) {
+		wpa_printf(MSG_ERROR,
+			   "Failed to initialize hostapd interface for mesh");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static int wpa_supplicant_mesh_disable_iface_cb(struct hostapd_iface *ifmsh)
+{
+	struct wpa_supplicant *wpa_s = ifmsh->owner;
+	size_t j;
+
+	wpa_supplicant_mesh_deinit(wpa_s, false);
+
+#ifdef NEED_AP_MLME
+	for (j = 0; j < ifmsh->num_bss; j++)
+		hostapd_cleanup_cs_params(ifmsh->bss[j]);
+#endif /* NEED_AP_MLME */
+
+	/* Same as hostapd_interface_deinit() without deinitializing control
+	 * interface */
+	for (j = 0; j < ifmsh->num_bss; j++) {
+		struct hostapd_data *hapd = ifmsh->bss[j];
+
+		hostapd_bss_deinit_no_free(hapd);
+		hostapd_free_hapd_data(hapd);
+	}
+
+	hostapd_cleanup_iface_partial(ifmsh);
+
+	return 0;
+}
+
+
 static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 				    struct wpa_ssid *ssid,
 				    struct hostapd_freq_params *freq)
@@ -324,6 +394,8 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 	ifmsh->drv_flags = wpa_s->drv_flags;
 	ifmsh->drv_flags2 = wpa_s->drv_flags2;
 	ifmsh->num_bss = 1;
+	ifmsh->enable_iface_cb = wpa_supplicant_mesh_enable_iface_cb;
+	ifmsh->disable_iface_cb = wpa_supplicant_mesh_disable_iface_cb;
 	ifmsh->bss = os_calloc(wpa_s->ifmsh->num_bss,
 			       sizeof(struct hostapd_data *));
 	if (!ifmsh->bss)
@@ -459,7 +531,7 @@ static int wpa_supplicant_mesh_init(struct wpa_supplicant *wpa_s,
 
 	return 0;
 out_free:
-	wpa_supplicant_mesh_deinit(wpa_s);
+	wpa_supplicant_mesh_deinit(wpa_s, true);
 	return -ENOMEM;
 }
 
@@ -507,7 +579,7 @@ int wpa_supplicant_join_mesh(struct wpa_supplicant *wpa_s,
 		goto out;
 	}
 
-	wpa_supplicant_mesh_deinit(wpa_s);
+	wpa_supplicant_mesh_deinit(wpa_s, true);
 
 	wpa_s->pairwise_cipher = WPA_CIPHER_NONE;
 	wpa_s->group_cipher = WPA_CIPHER_NONE;
@@ -596,7 +668,7 @@ int wpa_supplicant_leave_mesh(struct wpa_supplicant *wpa_s, bool need_deinit)
 
 	/* Need to send peering close messages first */
 	if (need_deinit)
-		wpa_supplicant_mesh_deinit(wpa_s);
+		wpa_supplicant_mesh_deinit(wpa_s, true);
 
 	ret = wpa_drv_leave_mesh(wpa_s);
 	if (ret)
