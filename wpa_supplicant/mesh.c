@@ -13,6 +13,7 @@
 #include "utils/uuid.h"
 #include "common/ieee802_11_defs.h"
 #include "common/wpa_ctrl.h"
+#include "common/hw_features_common.h"
 #include "ap/sta_info.h"
 #include "ap/hostapd.h"
 #include "ap/ieee802_11.h"
@@ -205,6 +206,43 @@ static int wpas_mesh_complete(struct wpa_supplicant *wpa_s)
 		wpa_printf(MSG_ERROR, "mesh: %s called without active mesh",
 			   __func__);
 		return -1;
+	}
+
+	/*
+	 * Update channel configuration if the channel has changed since the
+	 * initial setting, i.e., due to DFS radar detection during CAC.
+	 */
+	if (ifmsh->freq != params->freq.freq) {
+		struct he_capabilities *he_capab = NULL;
+
+		wpa_s->assoc_freq = ifmsh->freq;
+		ssid->frequency = ifmsh->freq;
+
+		if (ifmsh->current_mode)
+			he_capab = &ifmsh->current_mode->he_capab[
+				IEEE80211_MODE_MESH];
+
+		if (hostapd_set_freq_params(
+			    &params->freq,
+			    ifmsh->conf->hw_mode,
+			    ifmsh->freq,
+			    ifmsh->conf->channel,
+			    ifmsh->conf->enable_edmg,
+			    ifmsh->conf->edmg_channel,
+			    ifmsh->conf->ieee80211n,
+			    ifmsh->conf->ieee80211ac,
+			    ifmsh->conf->ieee80211ax,
+			    ifmsh->conf->secondary_channel,
+			    hostapd_get_oper_chwidth(ifmsh->conf),
+			    hostapd_get_oper_centr_freq_seg0_idx(ifmsh->conf),
+			    hostapd_get_oper_centr_freq_seg1_idx(ifmsh->conf),
+			    ifmsh->conf->vht_capab,
+			    he_capab)) {
+			wpa_printf(MSG_ERROR,
+				   "Error updating mesh frequency params");
+			wpa_supplicant_mesh_deinit(wpa_s);
+			return -1;
+		}
 	}
 
 	if (ifmsh->mconf->security != MESH_CONF_SEC_NONE &&
