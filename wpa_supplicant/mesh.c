@@ -212,7 +212,7 @@ static int wpas_mesh_complete(struct wpa_supplicant *wpa_s)
 	 * Update channel configuration if the channel has changed since the
 	 * initial setting, i.e., due to DFS radar detection during CAC.
 	 */
-	if (ifmsh->freq != params->freq.freq) {
+	if (ifmsh->freq > 0 && ifmsh->freq != params->freq.freq) {
 		struct he_capabilities *he_capab = NULL;
 
 		wpa_s->assoc_freq = ifmsh->freq;
