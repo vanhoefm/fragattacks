@@ -876,9 +876,10 @@ static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
 	write_int(f, "proactive_key_caching", ssid->proactive_key_caching, -1);
 	INT(disabled);
 	INT(mixed_cell);
-	INT(vht);
+	INT_DEF(vht, 1);
 	INT_DEF(ht, 1);
 	INT(ht40);
+	INT_DEF(he, 1);
 	INT_DEF(max_oper_chwidth, DEFAULT_MAX_OPER_CHWIDTH);
 	INT(vht_center_freq1);
 	INT(vht_center_freq2);

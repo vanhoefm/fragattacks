@@ -3038,6 +3038,8 @@ void wpa_config_set_network_defaults(struct wpa_ssid *ssid)
 	ssid->wpa_deny_ptk0_rekey = PTK0_REKEY_ALLOW_ALWAYS;
 	ssid->bg_scan_period = DEFAULT_BG_SCAN_PERIOD;
 	ssid->ht = 1;
+	ssid->vht = 1;
+	ssid->he = 1;
 #ifdef IEEE8021X_EAPOL
 	ssid->eapol_flags = DEFAULT_EAPOL_FLAGS;
 	ssid->eap_workaround = DEFAULT_EAP_WORKAROUND;
