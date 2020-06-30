@@ -458,7 +458,7 @@ static u8 * hostapd_gen_probe_resp(struct hostapd_data *hapd,
 	}
 
 #ifdef CONFIG_IEEE80211AX
-	if (hapd->iconf->ieee80211ax) {
+	if (hapd->iconf->ieee80211ax && !hapd->conf->disable_11ax) {
 		buflen += 3 + sizeof(struct ieee80211_he_capabilities) +
 			3 + sizeof(struct ieee80211_he_operation) +
 			3 + sizeof(struct ieee80211_he_mu_edca_parameter_set) +
@@ -564,14 +564,14 @@ static u8 * hostapd_gen_probe_resp(struct hostapd_data *hapd,
 #endif /* CONFIG_IEEE80211AC */
 
 	if ((hapd->iconf->ieee80211ac && !hapd->conf->disable_11ac) ||
-	    hapd->iconf->ieee80211ax)
+	    (hapd->iconf->ieee80211ax && !hapd->conf->disable_11ax))
 		pos = hostapd_eid_wb_chsw_wrapper(hapd, pos);
 
 	pos = hostapd_eid_fils_indic(hapd, pos, 0);
 	pos = hostapd_get_rsnxe(hapd, pos, epos - pos);
 
 #ifdef CONFIG_IEEE80211AX
-	if (hapd->iconf->ieee80211ax) {
+	if (hapd->iconf->ieee80211ax && !hapd->conf->disable_11ax) {
 		pos = hostapd_eid_he_capab(hapd, pos, IEEE80211_MODE_AP);
 		pos = hostapd_eid_he_operation(hapd, pos);
 		pos = hostapd_eid_spatial_reuse(hapd, pos);
@@ -1163,7 +1163,7 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 #endif /* CONFIG_IEEE80211AC */
 
 #ifdef CONFIG_IEEE80211AX
-	if (hapd->iconf->ieee80211ax) {
+	if (hapd->iconf->ieee80211ax && !hapd->conf->disable_11ax) {
 		tail_len += 3 + sizeof(struct ieee80211_he_capabilities) +
 			3 + sizeof(struct ieee80211_he_operation) +
 			3 + sizeof(struct ieee80211_he_mu_edca_parameter_set) +
@@ -1288,14 +1288,14 @@ int ieee802_11_build_ap_params(struct hostapd_data *hapd,
 #endif /* CONFIG_IEEE80211AC */
 
 	if ((hapd->iconf->ieee80211ac && !hapd->conf->disable_11ac) ||
-	     hapd->iconf->ieee80211ax)
+	    (hapd->iconf->ieee80211ax && !hapd->conf->disable_11ax))
 		tailpos = hostapd_eid_wb_chsw_wrapper(hapd, tailpos);
 
 	tailpos = hostapd_eid_fils_indic(hapd, tailpos, 0);
 	tailpos = hostapd_get_rsnxe(hapd, tailpos, tailend - tailpos);
 
 #ifdef CONFIG_IEEE80211AX
-	if (hapd->iconf->ieee80211ax) {
+	if (hapd->iconf->ieee80211ax && !hapd->conf->disable_11ax) {
 		tailpos = hostapd_eid_he_capab(hapd, tailpos,
 					       IEEE80211_MODE_AP);
 		tailpos = hostapd_eid_he_operation(hapd, tailpos);

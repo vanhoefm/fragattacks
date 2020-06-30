@@ -1229,7 +1229,7 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 
 	if (full_config && conf->ieee80211n &&
 	    conf->hw_mode == HOSTAPD_MODE_IEEE80211B) {
-		bss->disable_11n = 1;
+		bss->disable_11n = true;
 		wpa_printf(MSG_ERROR, "HT (IEEE 802.11n) in 11b mode is not "
 			   "allowed, disabling HT capabilities");
 	}
@@ -1237,7 +1237,7 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 #ifdef CONFIG_WEP
 	if (full_config && conf->ieee80211n &&
 	    bss->ssid.security_policy == SECURITY_STATIC_WEP) {
-		bss->disable_11n = 1;
+		bss->disable_11n = true;
 		wpa_printf(MSG_ERROR, "HT (IEEE 802.11n) with WEP is not "
 			   "allowed, disabling HT capabilities");
 	}
@@ -1248,7 +1248,7 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 	    !(bss->rsn_pairwise & (WPA_CIPHER_CCMP | WPA_CIPHER_GCMP |
 				   WPA_CIPHER_CCMP_256 | WPA_CIPHER_GCMP_256)))
 	{
-		bss->disable_11n = 1;
+		bss->disable_11n = true;
 		wpa_printf(MSG_ERROR, "HT (IEEE 802.11n) with WPA/WPA2 "
 			   "requires CCMP/GCMP to be enabled, disabling HT "
 			   "capabilities");
@@ -1258,7 +1258,7 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 #ifdef CONFIG_WEP
 	if (full_config && conf->ieee80211ac &&
 	    bss->ssid.security_policy == SECURITY_STATIC_WEP) {
-		bss->disable_11ac = 1;
+		bss->disable_11ac = true;
 		wpa_printf(MSG_ERROR,
 			   "VHT (IEEE 802.11ac) with WEP is not allowed, disabling VHT capabilities");
 	}
@@ -1269,7 +1269,7 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 	    !(bss->rsn_pairwise & (WPA_CIPHER_CCMP | WPA_CIPHER_GCMP |
 				   WPA_CIPHER_CCMP_256 | WPA_CIPHER_GCMP_256)))
 	{
-		bss->disable_11ac = 1;
+		bss->disable_11ac = true;
 		wpa_printf(MSG_ERROR,
 			   "VHT (IEEE 802.11ac) with WPA/WPA2 requires CCMP/GCMP to be enabled, disabling VHT capabilities");
 	}

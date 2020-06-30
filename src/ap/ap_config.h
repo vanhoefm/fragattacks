@@ -531,8 +531,9 @@ struct hostapd_bss_config {
 #define TDLS_PROHIBIT BIT(0)
 #define TDLS_PROHIBIT_CHAN_SWITCH BIT(1)
 	int tdls;
-	int disable_11n;
-	int disable_11ac;
+	bool disable_11n;
+	bool disable_11ac;
+	bool disable_11ax;
 
 	/* IEEE 802.11v */
 	int time_advertisement;
