@@ -204,6 +204,40 @@ static int wpas_mesh_init_rsn(struct wpa_supplicant *wpa_s)
 }
 
 
+static int wpas_mesh_update_freq_params(struct wpa_supplicant *wpa_s)
+{
+	struct wpa_driver_mesh_join_params *params = wpa_s->mesh_params;
+	struct hostapd_iface *ifmsh = wpa_s->ifmsh;
+	struct he_capabilities *he_capab = NULL;
+
+	if (ifmsh->current_mode)
+		he_capab = &ifmsh->current_mode->he_capab[IEEE80211_MODE_MESH];
+
+	if (hostapd_set_freq_params(
+		    &params->freq,
+		    ifmsh->conf->hw_mode,
+		    ifmsh->freq,
+		    ifmsh->conf->channel,
+		    ifmsh->conf->enable_edmg,
+		    ifmsh->conf->edmg_channel,
+		    ifmsh->conf->ieee80211n,
+		    ifmsh->conf->ieee80211ac,
+		    ifmsh->conf->ieee80211ax,
+		    ifmsh->conf->secondary_channel,
+		    hostapd_get_oper_chwidth(ifmsh->conf),
+		    hostapd_get_oper_centr_freq_seg0_idx(ifmsh->conf),
+		    hostapd_get_oper_centr_freq_seg1_idx(ifmsh->conf),
+		    ifmsh->conf->vht_capab,
+		    he_capab)) {
+		wpa_printf(MSG_ERROR, "Error updating mesh frequency params");
+		wpa_supplicant_mesh_deinit(wpa_s, true);
+		return -1;
+	}
+
+	return 0;
+}
+
+
 static int wpas_mesh_complete(struct wpa_supplicant *wpa_s)
 {
 	struct hostapd_iface *ifmsh = wpa_s->ifmsh;
@@ -222,36 +256,10 @@ static int wpas_mesh_complete(struct wpa_supplicant *wpa_s)
 	 * initial setting, i.e., due to DFS radar detection during CAC.
 	 */
 	if (ifmsh->freq > 0 && ifmsh->freq != params->freq.freq) {
-		struct he_capabilities *he_capab = NULL;
-
 		wpa_s->assoc_freq = ifmsh->freq;
 		ssid->frequency = ifmsh->freq;
-
-		if (ifmsh->current_mode)
-			he_capab = &ifmsh->current_mode->he_capab[
-				IEEE80211_MODE_MESH];
-
-		if (hostapd_set_freq_params(
-			    &params->freq,
-			    ifmsh->conf->hw_mode,
-			    ifmsh->freq,
-			    ifmsh->conf->channel,
-			    ifmsh->conf->enable_edmg,
-			    ifmsh->conf->edmg_channel,
-			    ifmsh->conf->ieee80211n,
-			    ifmsh->conf->ieee80211ac,
-			    ifmsh->conf->ieee80211ax,
-			    ifmsh->conf->secondary_channel,
-			    hostapd_get_oper_chwidth(ifmsh->conf),
-			    hostapd_get_oper_centr_freq_seg0_idx(ifmsh->conf),
-			    hostapd_get_oper_centr_freq_seg1_idx(ifmsh->conf),
-			    ifmsh->conf->vht_capab,
-			    he_capab)) {
-			wpa_printf(MSG_ERROR,
-				   "Error updating mesh frequency params");
-			wpa_supplicant_mesh_deinit(wpa_s, true);
+		if (wpas_mesh_update_freq_params(wpa_s) < 0)
 			return -1;
-		}
 	}
 
 	if (ifmsh->mconf->security != MESH_CONF_SEC_NONE &&
