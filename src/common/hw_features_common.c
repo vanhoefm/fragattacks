@@ -540,13 +540,20 @@ int hostapd_set_freq_params(struct hostapd_freq_params *data,
 		if (center_segment1 ||
 		    (center_segment0 != 0 &&
 		     5000 + center_segment0 * 5 != data->center_freq1 &&
-		     2407 + center_segment0 * 5 != data->center_freq1))
+		     2407 + center_segment0 * 5 != data->center_freq1)) {
+			wpa_printf(MSG_ERROR,
+				   "20/40 MHz: center segment 0 (=%d) and center freq 1 (=%d) not in sync",
+				   center_segment0, data->center_freq1);
 			return -1;
+		}
 		break;
 	case CHANWIDTH_80P80MHZ:
 		if (center_segment1 == center_segment0 + 4 ||
-		    center_segment1 == center_segment0 - 4)
+		    center_segment1 == center_segment0 - 4) {
+			wpa_printf(MSG_ERROR,
+				   "80+80 MHz: center segment 1 only 20 MHz apart");
 			return -1;
+		}
 		data->center_freq2 = 5000 + center_segment1 * 5;
 		/* fall through */
 	case CHANWIDTH_80MHZ:
@@ -555,8 +562,11 @@ int hostapd_set_freq_params(struct hostapd_freq_params *data,
 		     center_segment1) ||
 		    (oper_chwidth == CHANWIDTH_80P80MHZ &&
 		     !center_segment1) ||
-		    !sec_channel_offset)
+		    !sec_channel_offset) {
+			wpa_printf(MSG_ERROR,
+				   "80/80+80 MHz: center segment 1 wrong or no second channel offset");
 			return -1;
+		}
 		if (!center_segment0) {
 			if (channel <= 48)
 				center_segment0 = 42;
@@ -582,16 +592,25 @@ int hostapd_set_freq_params(struct hostapd_freq_params *data,
 			    center_segment0 == channel - 2 ||
 			    center_segment0 == channel - 6)
 				data->center_freq1 = 5000 + center_segment0 * 5;
-			else
+			else {
+				wpa_printf(MSG_ERROR,
+					   "Wrong coupling between HT and VHT/HE channel setting");
 				return -1;
+			}
 		}
 		break;
 	case CHANWIDTH_160MHZ:
 		data->bandwidth = 160;
-		if (center_segment1)
+		if (center_segment1) {
+			wpa_printf(MSG_ERROR,
+				   "160 MHz: center segment 1 should not be set");
 			return -1;
-		if (!sec_channel_offset)
+		}
+		if (!sec_channel_offset) {
+			wpa_printf(MSG_ERROR,
+				   "160 MHz: second channel offset not set");
 			return -1;
+		}
 		/*
 		 * Note: HT/VHT config and params are coupled. Check if
 		 * HT40 channel band is in VHT160 channel band configuration.
@@ -605,8 +624,11 @@ int hostapd_set_freq_params(struct hostapd_freq_params *data,
 		    center_segment0 == channel - 10 ||
 		    center_segment0 == channel - 14)
 			data->center_freq1 = 5000 + center_segment0 * 5;
-		else
+		else {
+			wpa_printf(MSG_ERROR,
+				   "160 MHz: HT40 channel band is not in 160 MHz band");
 			return -1;
+		}
 		break;
 	}
 
