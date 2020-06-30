@@ -7950,6 +7950,28 @@ static int wpa_driver_nl80211_send_action(struct i802_bss *bss,
 		os_memset(bss->rand_addr, 0, ETH_ALEN);
 	}
 
+#ifdef CONFIG_MESH
+	if (is_mesh_interface(drv->nlmode)) {
+		struct hostapd_hw_modes *modes;
+		u16 num_modes, flags;
+		u8 dfs_domain;
+		int i;
+
+		modes = nl80211_get_hw_feature_data(bss, &num_modes,
+						    &flags, &dfs_domain);
+		if (dfs_domain != HOSTAPD_DFS_REGION_ETSI &&
+		    ieee80211_is_dfs(bss->freq, modes, num_modes))
+			offchanok = 0;
+		if (modes) {
+			for (i = 0; i < num_modes; i++) {
+				os_free(modes[i].channels);
+				os_free(modes[i].rates);
+			}
+			os_free(modes);
+		}
+	}
+#endif /* CONFIG_MESH */
+
 	if (is_ap_interface(drv->nlmode) &&
 	    (!(drv->capa.flags & WPA_DRIVER_FLAGS_OFFCHANNEL_TX) ||
 	     (int) freq == bss->freq || drv->device_ap_sme ||
