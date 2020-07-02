@@ -712,6 +712,9 @@ static int macsec_drv_set_receive_lowest_pn(void *priv, struct receive_sa *sa)
 	if (!msg)
 		return ret;
 
+	if (nla_put_rxsc_config(msg, mka_sci_u64(&sa->sc->sci)))
+		goto nla_put_failure;
+
 	nest = nla_nest_start(msg, MACSEC_ATTR_SA_CONFIG);
 	if (!nest)
 		goto nla_put_failure;
