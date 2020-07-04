@@ -1070,8 +1070,16 @@ static int hostapd_dfs_start_channel_switch(struct hostapd_iface *iface)
 						  &oper_centr_freq_seg0_idx,
 						  &oper_centr_freq_seg1_idx,
 						  &skip_radar);
-		if (!channel)
-			return err;
+		if (!channel) {
+			/*
+			 * Toggle interface state to enter DFS state
+			 * until NOP is finished.
+			 */
+			hostapd_disable_iface(iface);
+			hostapd_enable_iface(iface);
+			return 0;
+		}
+
 		if (!skip_radar) {
 			iface->freq = channel->freq;
 			iface->conf->channel = channel->chan;
