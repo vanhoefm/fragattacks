@@ -533,6 +533,8 @@ static int mesh_mpm_plink_close(struct hostapd_data *hapd, struct sta_info *sta,
 	int reason = WLAN_REASON_MESH_PEERING_CANCELLED;
 
 	if (sta) {
+		if (sta->plink_state == PLINK_ESTAB)
+			hapd->num_plinks--;
 		wpa_mesh_set_plink_state(wpa_s, sta, PLINK_HOLDING);
 		mesh_mpm_send_plink_action(wpa_s, sta, PLINK_CLOSE, reason);
 		wpa_printf(MSG_DEBUG, "MPM closing plink sta=" MACSTR,
