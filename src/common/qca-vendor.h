@@ -679,6 +679,10 @@ enum qca_radiotap_vendor_ids {
  * @QCA_NL80211_VENDOR_SUBCMD_MEDIUM_ASSESS: Vendor subcommand/event for medium
  *	assessment.
  *	Uses attributes defined in enum qca_wlan_vendor_attr_medium_assess.
+ *
+ * @QCA_NL80211_VENDOR_SUBCMD_UPDATE_SSID: This acts as a vendor event and is
+ *	used to update SSID information in hostapd when it is updated in the
+ *	driver. Uses the attribute NL80211_ATTR_SSID.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -862,6 +866,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_CONFIG_TWT = 191,
 	QCA_NL80211_VENDOR_SUBCMD_GETBAND = 192,
 	QCA_NL80211_VENDOR_SUBCMD_MEDIUM_ASSESS = 193,
+	QCA_NL80211_VENDOR_SUBCMD_UPDATE_SSID = 194,
 };
 
 enum qca_wlan_vendor_attr {
