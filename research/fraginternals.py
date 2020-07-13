@@ -1134,13 +1134,13 @@ class Supplicant(Daemon):
 			# When using a separate interface to inject, switch to correct channel
 			self.follow_channel()
 
-			# With the ath9k_htc, injection in mixed managed/monitor only works after
-			# sending the association request. So only perform injection test now.
-			self.injection_test(self.station.bss, self.station.mac, False)
-
 			p = re.compile("Associated with (.*) successfully")
 			bss = p.search(msg).group(1)
 			self.station.handle_connecting(bss)
+
+			# With the ath9k_htc, injection in mixed managed/monitor only works after
+			# sending the association request. So only perform injection test now.
+			self.injection_test(self.station.bss, self.station.mac, False)
 
 		elif "EAPOL-TX" in msg:
 			cmd, srcaddr, payload = msg.split()
