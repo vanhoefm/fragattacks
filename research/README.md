@@ -57,8 +57,8 @@ use a USB2.0 (OHCI + ECHI) controller, because we found the USB3.0 controller to
 
 During our own tests, the AWUS036ACM dongle is supported by Linux, but at times was not correctly
 recognized during our experiments. It may be necessairy to use a recent Linux kernel, and manually
-executing `sudo modprobe mt76x2u` to load the driver. This devices then works out-of-the-box without
-patched drives. We also found it to be unreliable when used inside VirtualBox.
+executing `sudo modprobe mt76x2u` to load the driver.
+**Unstable when used on a USB3.0 port. Otherwise works fine.**
 
 The AWUS036ACH was tested on Kali Linux after installing the driver using `sudo apt install realtek-rtl88xxau-dkms`.
 This device is generally not supported by default in most Linux distributions and requires manual
@@ -78,7 +78,7 @@ Our scripts were tested on Kali Linux and Ubuntu 20.04. To install the required 
 
 	# Kali Linux and Ubuntu
 	sudo apt-get update
-	sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libssl-dev libdbus-1-dev git pkg-config build-essential macchanger net-tools python3-venv
+	sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libssl-dev libdbus-1-dev git pkg-config build-essential macchanger net-tools python3-venv airmon-ng
 
 Now clone this repository, build the tools, and configure a virtual python3 environment:
 
@@ -127,6 +127,9 @@ as root. This can be done using:
 	source venv/bin/activate
 
 You should now disable Wi-Fi in your network manager so it will not interfere with our scripts.
+Also make sure no other network services are causing outgoing traffic. You can assure this by
+using iptables rules by executing `./droptraffic.sh` (you can revert this by rebooting). Optionally
+check using `sudo airmon-ng check` to see which other processing might interfere.
 
 Our script can test both clients and APs:
 
@@ -204,7 +207,7 @@ the paper in which section the vulnerability is explained.
 | `ping I,R,BE,AE`                 | Inject two fragments encrypted under a different key.
 | `ping I,R,BE,AE --pn-per-qos`    | Same as above, but also works if the target only accepts consecutive fragments.
 | <div align="center">*Cache attacks (Section 5)*</div> | 
-| `ping I,E,C,AE`                  | Inject a fragment, reconnect or as client _reassociate_, then inject second fragment.
+| `ping I,E,C,AE`                  | Inject a fragment then reconnect (as client _reassociate_) and inject second fragment.
 | `ping I,E,C,E`                   | Same as above, but with a longer delay before sending the second fragment.
 | `ping I,E,C,AE --full-reconnect` | Inject a fragment, reconnect, then inject second fragment.
 | `ping I,E,C,E --full-reconnect`  | Same as above, but with a longer delay before sending the second fragment.
@@ -262,13 +265,17 @@ In case the script doesn't appear to be working, check the following:
 5. Run the [injection tests](#Network-card-injection-test) to make sure injection is working properly.
 
 6. Check that you machine isn't generating background traffic that interferes with the tests. In
-   particular, disable networking in your OS, manually kill your DHCP client/server, etc.
+   particular, disable networking in your OS, manually kill your DHCP client/server, etc. See
+   also [Before every usage](#before-every-usage).
 
 7. Confirm that you are connecting to the correct network. Double-check `client.conf`.
 
 8. Make sure the AP being tested is using (AES-)CCMP as the encryption algorithm.
 
 9. If your Wi-Fi dongle is unreliable, use it from a live CD or USB. A virtual machine can be unreliable.
+
+10. Confirm using a second monitor interface that no other frames are sent in between fragments.
+    For instance, we found that our Intel device sometimes sends Block Ack Response Action frames between fragments.
 
 ## Extended Vulnerability Tests
 
@@ -318,8 +325,14 @@ using _injection mode_:
 Here we test if network card `wlan0` properly injects frames and we use network card `wlan1`
 to monitor whether frames are properly injected.
 
+**TODO: In case tests are not working, try to first unplug USB dongles and reboot the device(s).**
+**If the tests still fail, try to use a different network card to monitor whether frames are**
+**injected properly.**
+
 **TODO: Testing the TP-Link against the Intel 3160 was very unreliable: many frames were not**
 **received although they in fact were sent by the device.**
+
+**Ack behaviour is best tested postauth so the client will not disconnected.**
 
 In case you do not have a second network
 card, you can execute a partial injection test using:
@@ -406,6 +419,21 @@ We recommend cards based on `ath9khtc`. Not all cards that use `iwlmvm` will be 
 using an alternative network card, we strongly recommend to first run the [injection tests](#Network-card-injection-test)
 to confirm that the network card is compatible.
 
+### 5 GHz support
+
+In order to use our script on 5 GHz channels the network card being used must allow the injection
+of frames in the 5 GHz channel. Unfortunately, this is not always possible due to regulatory
+constraints. To see on which channels you can inject frames you can execute `iw list` and look under
+Frequencies for channels that are _not_ marked as disabled, no IR, or radar detection. Note that these
+conditions may depend on your network card, the current configured country, and the AP you are
+connected to. For more information see, for example, the [Arch Linux documentation](https://wiki.archlinux.org/index.php/Network_configuration/Wireless#Respecting_the_regulatory_domain).
+
+Note that in mixed mode the Linux kernel may not allow the injection of frames even though it is
+allowed to send normal frames. This is because in `ieee80211_monitor_start_xmit` the kernel refuses
+to inject frames when `cfg80211_reg_can_beacon` returns false. As a result, Linux may refuse to
+inject frames even though this is actually allowed. Making `cfg80211_reg_can_beacon` return true
+under the correct conditions prevents this bug.
+
 ### Notes on device support
 
 **TODO: Reference or include the DEVICES.md file**
@@ -415,6 +443,8 @@ to confirm that the network card is compatible.
 There is a known problem with the `ath9k_htc` driver, used by the Technoethical N150 HGA, TP-Link
 TL-WN722N v1.x, and Alfa AWUS036NHA, causing it not to work on kernel 5.7.3 and above. Downgrading
 to kernel `5.7.2` fixes this issue for now. More details are available at:
+
+- **Patch that might fix it:** https://www.spinics.net/lists/linux-wireless/msg200825.html
 
 - https://bugzilla.kernel.org/show_bug.cgi?id=208251
 
