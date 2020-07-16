@@ -898,6 +898,8 @@ static int wpa_supplicant_ctrl_iface_set(struct wpa_supplicant *wpa_s,
 		ret = wpa_config_process_global(wpa_s->conf, cmd, -1);
 		if (ret == 0)
 			wpa_supplicant_update_config(wpa_s);
+		else if (ret == 1)
+			ret = 0;
 	}
 
 	return ret;
