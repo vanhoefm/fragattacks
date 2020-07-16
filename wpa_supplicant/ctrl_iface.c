@@ -3547,6 +3547,20 @@ static int wpa_supplicant_ctrl_iface_update_network(
 	if (ret == 1)
 		return 0; /* No change to the previously configured value */
 
+#ifdef CONFIG_BGSCAN
+	if (os_strcmp(name, "bgscan") == 0) {
+		/*
+		 * Reset the bgscan parameters for the current network and
+		 * return. There's no need to flush caches for bgscan parameter
+		 * changes.
+		 */
+		if (wpa_s->current_ssid == ssid &&
+		    wpa_s->wpa_state == WPA_COMPLETED)
+			wpa_supplicant_reset_bgscan(wpa_s);
+		return 0;
+	}
+#endif /* CONFIG_BGSCAN */
+
 	if (os_strcmp(name, "bssid") != 0 &&
 	    os_strcmp(name, "bssid_hint") != 0 &&
 	    os_strcmp(name, "priority") != 0) {

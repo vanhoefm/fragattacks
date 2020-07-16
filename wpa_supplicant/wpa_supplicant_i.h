@@ -1465,6 +1465,7 @@ int wpas_beacon_rep_scan_process(struct wpa_supplicant *wpa_s,
 void wpas_clear_beacon_rep_data(struct wpa_supplicant *wpa_s);
 void wpas_flush_fils_hlp_req(struct wpa_supplicant *wpa_s);
 void wpas_clear_disabled_interface(void *eloop_ctx, void *timeout_ctx);
+void wpa_supplicant_reset_bgscan(struct wpa_supplicant *wpa_s);
 
 
 /* MBO functions */

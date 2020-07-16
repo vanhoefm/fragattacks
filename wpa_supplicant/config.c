@@ -4963,7 +4963,7 @@ static const struct global_parse_data global_fields[] = {
 	{ INT_RANGE(eapol_version, 1, 2), 0 },
 #endif /* CONFIG_MACSEC */
 	{ INT(ap_scan), 0 },
-	{ FUNC(bgscan), 0 },
+	{ FUNC(bgscan), CFG_CHANGED_BGSCAN },
 #ifdef CONFIG_MESH
 	{ INT(user_mpm), 0 },
 	{ INT_RANGE(max_peer_links, 0, 255), 0 },

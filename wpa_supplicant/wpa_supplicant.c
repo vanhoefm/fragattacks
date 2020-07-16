@@ -803,7 +803,22 @@ const char * wpa_supplicant_state_txt(enum wpa_states state)
 
 #ifdef CONFIG_BGSCAN
 
-static void wpa_supplicant_start_bgscan(struct wpa_supplicant *wpa_s)
+static void wpa_supplicant_stop_bgscan(struct wpa_supplicant *wpa_s)
+{
+	if (wpa_s->bgscan_ssid) {
+		bgscan_deinit(wpa_s);
+		wpa_s->bgscan_ssid = NULL;
+	}
+}
+
+
+/**
+ * wpa_supplicant_reset_bgscan - Reset the bgscan for the current SSID.
+ * @wpa_s: Pointer to the wpa_supplicant data
+ *
+ * Stop, start, or reconfigure the scan parameters depending on the method.
+ */
+void wpa_supplicant_reset_bgscan(struct wpa_supplicant *wpa_s)
 {
 	const char *name;
 
@@ -811,11 +826,11 @@ static void wpa_supplicant_start_bgscan(struct wpa_supplicant *wpa_s)
 		name = wpa_s->current_ssid->bgscan;
 	else
 		name = wpa_s->conf->bgscan;
-	if (name == NULL || name[0] == '\0')
+	if (!name || name[0] == '\0') {
+		wpa_supplicant_stop_bgscan(wpa_s);
 		return;
+	}
 	if (wpas_driver_bss_selection(wpa_s))
-		return;
-	if (wpa_s->current_ssid == wpa_s->bgscan_ssid)
 		return;
 #ifdef CONFIG_P2P
 	if (wpa_s->p2p_group_interface != NOT_P2P_GROUP_INTERFACE)
@@ -844,15 +859,6 @@ static void wpa_supplicant_start_bgscan(struct wpa_supplicant *wpa_s)
 		}
 	} else
 		wpa_s->bgscan_ssid = NULL;
-}
-
-
-static void wpa_supplicant_stop_bgscan(struct wpa_supplicant *wpa_s)
-{
-	if (wpa_s->bgscan_ssid != NULL) {
-		bgscan_deinit(wpa_s);
-		wpa_s->bgscan_ssid = NULL;
-	}
 }
 
 #endif /* CONFIG_BGSCAN */
@@ -1011,8 +1017,8 @@ void wpa_supplicant_set_state(struct wpa_supplicant *wpa_s,
 	wpa_s->wpa_state = state;
 
 #ifdef CONFIG_BGSCAN
-	if (state == WPA_COMPLETED)
-		wpa_supplicant_start_bgscan(wpa_s);
+	if (state == WPA_COMPLETED && wpa_s->current_ssid != wpa_s->bgscan_ssid)
+		wpa_supplicant_reset_bgscan(wpa_s);
 	else if (state < WPA_ASSOCIATED)
 		wpa_supplicant_stop_bgscan(wpa_s);
 #endif /* CONFIG_BGSCAN */
@@ -7254,6 +7260,18 @@ void wpa_supplicant_update_config(struct wpa_supplicant *wpa_s)
 
 	if (wpa_s->conf->changed_parameters & CFG_CHANGED_DISABLE_BTM)
 		wpa_supplicant_set_default_scan_ies(wpa_s);
+
+#ifdef CONFIG_BGSCAN
+	/*
+	 * We default to global bgscan parameters only when per-network bgscan
+	 * parameters aren't set. Only bother resetting bgscan parameters if
+	 * this is the case.
+	 */
+	if ((wpa_s->conf->changed_parameters & CFG_CHANGED_BGSCAN) &&
+	    wpa_s->current_ssid && !wpa_s->current_ssid->bgscan &&
+	    wpa_s->wpa_state == WPA_COMPLETED)
+		wpa_supplicant_reset_bgscan(wpa_s);
+#endif /* CONFIG_BGSCAN */
 
 #ifdef CONFIG_WPS
 	wpas_wps_update_config(wpa_s);
