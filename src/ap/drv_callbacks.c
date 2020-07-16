@@ -893,9 +893,18 @@ void hostapd_event_ch_switch(struct hostapd_data *hapd, int freq, int ht,
 
 	switch (hapd->iface->current_mode->mode) {
 	case HOSTAPD_MODE_IEEE80211A:
-		if (cf1 > 5000)
+		if (cf1 == 5935)
+			seg0_idx = (cf1 - 5925) / 5;
+		else if (cf1 > 5950)
+			seg0_idx = (cf1 - 5950) / 5;
+		else if (cf1 > 5000)
 			seg0_idx = (cf1 - 5000) / 5;
-		if (cf2 > 5000)
+
+		if (cf2 == 5935)
+			seg1_idx = (cf2 - 5925) / 5;
+		else if (cf2 > 5950)
+			seg1_idx = (cf2 - 5950) / 5;
+		else if (cf2 > 5000)
 			seg1_idx = (cf2 - 5000) / 5;
 		break;
 	default:
