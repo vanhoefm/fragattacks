@@ -4148,7 +4148,7 @@ static void handle_assoc(struct hostapd_data *hapd,
 {
 	u16 capab_info, listen_interval, seq_ctrl, fc;
 	int resp = WLAN_STATUS_SUCCESS;
-	u16 reply_res;
+	u16 reply_res = WLAN_STATUS_UNSPECIFIED_FAILURE;
 	const u8 *pos;
 	int left, i;
 	struct sta_info *sta;
