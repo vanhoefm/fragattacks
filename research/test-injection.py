@@ -5,7 +5,7 @@
 # See README for more details.
 
 from libwifi import *
-import argparse, time
+import argparse, time, subprocess
 
 def main():
 	parser = argparse.ArgumentParser(description="Test packet injection properties of a device.")
