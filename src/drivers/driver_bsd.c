@@ -137,7 +137,9 @@ bsd_get80211(void *priv, struct ieee80211req *ireq, int op, void *arg,
 	ireq->i_data = arg;
 
 	if (ioctl(drv->global->sock, SIOCG80211, ireq) < 0) {
-		wpa_printf(MSG_ERROR, "ioctl[SIOCG80211, op=%u, "
+		int level = drv->if_removed ? MSG_DEBUG : MSG_ERROR;
+
+		wpa_printf(level, "ioctl[SIOCG80211, op=%u, "
 			   "arg_len=%u]: %s", op, arg_len, strerror(errno));
 		return -1;
 	}
@@ -1468,6 +1470,9 @@ wpa_driver_bsd_init(void *ctx, const char *ifname, void *priv)
 	drv->global = priv;
 	os_strlcpy(drv->ifname, ifname, sizeof(drv->ifname));
 
+	/* Set the interface as removed until proven to work. */
+	drv->if_removed = 1;
+
 	if (!GETPARAM(drv, IEEE80211_IOC_ROAMING, drv->prev_roaming)) {
 		wpa_printf(MSG_DEBUG, "%s: failed to get roaming state: %s",
 			__func__, strerror(errno));
@@ -1494,6 +1499,9 @@ wpa_driver_bsd_init(void *ctx, const char *ifname, void *priv)
 	/* Down interface during setup. */
 	if (bsd_get_iface_flags(drv) < 0)
 		goto fail;
+
+	/* Proven to work, lets go! */
+	drv->if_removed = 0;
 
 	drv->opmode = get80211opmode(drv);
 	dl_list_add(&drv->global->ifaces, &drv->list);
