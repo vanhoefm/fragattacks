@@ -5472,8 +5472,6 @@ void wpa_supplicant_event_global(void *ctx, enum wpa_event_type event,
 			return;
 		wpa_s = wpa_supplicant_add_iface(ctx, wpa_i, NULL);
 		os_free(wpa_i);
-		if (wpa_s)
-			wpa_s->matched = 1;
 	}
 #endif /* CONFIG_MATCH_IFACE */
 

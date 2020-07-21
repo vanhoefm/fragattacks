@@ -6154,6 +6154,8 @@ next_driver:
 	wpa_s->drv_priv = wpa_drv_init(wpa_s, wpa_s->ifname);
 	if (wpa_s->drv_priv == NULL) {
 		const char *pos;
+		int level = MSG_ERROR;
+
 		pos = driver ? os_strchr(driver, ',') : NULL;
 		if (pos) {
 			wpa_dbg(wpa_s, MSG_DEBUG, "Failed to initialize "
@@ -6161,8 +6163,12 @@ next_driver:
 			driver = pos + 1;
 			goto next_driver;
 		}
-		wpa_msg(wpa_s, MSG_ERROR, "Failed to initialize driver "
-			"interface");
+
+#ifdef CONFIG_MATCH_IFACE
+		if (wpa_s->matched == WPA_IFACE_MATCHED_NULL)
+			level = MSG_DEBUG;
+#endif /* CONFIG_MATCH_IFACE */
+		wpa_msg(wpa_s, level, "Failed to initialize driver interface");
 		return -1;
 	}
 	if (wpa_drv_set_param(wpa_s, wpa_s->conf->driver_param) < 0) {
@@ -6307,6 +6313,9 @@ static int wpa_supplicant_init_iface(struct wpa_supplicant *wpa_s,
 		return -1;
 	}
 	os_strlcpy(wpa_s->ifname, iface->ifname, sizeof(wpa_s->ifname));
+#ifdef CONFIG_MATCH_IFACE
+	wpa_s->matched = iface->matched;
+#endif /* CONFIG_MATCH_IFACE */
 
 	if (iface->bridge_ifname) {
 		if (os_strlen(iface->bridge_ifname) >=
@@ -6698,6 +6707,10 @@ struct wpa_interface * wpa_supplicant_match_iface(struct wpa_global *global,
 			if (!iface)
 				return NULL;
 			*iface = *miface;
+			if (!miface->ifname)
+				iface->matched = WPA_IFACE_MATCHED_NULL;
+			else
+				iface->matched = WPA_IFACE_MATCHED;
 			iface->ifname = ifname;
 			return iface;
 		}
@@ -6732,8 +6745,6 @@ static int wpa_supplicant_match_existing(struct wpa_global *global)
 		if (iface) {
 			wpa_s = wpa_supplicant_add_iface(global, iface, NULL);
 			os_free(iface);
-			if (wpa_s)
-				wpa_s->matched = 1;
 		}
 	}
 
