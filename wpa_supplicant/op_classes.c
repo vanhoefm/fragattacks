@@ -412,9 +412,13 @@ size_t wpas_supp_op_class_ie(struct wpa_supplicant *wpa_s,
 	}
 
 	*ie_len = wpabuf_len(buf) - 2;
-	if (*ie_len < 2 || wpabuf_len(buf) > len) {
+	if (*ie_len < 2) {
+		wpa_printf(MSG_DEBUG,
+			   "No supported operating classes IE to add");
+		res = 0;
+	} else if (wpabuf_len(buf) > len) {
 		wpa_printf(MSG_ERROR,
-			   "Failed to add supported operating classes IE");
+			   "Supported operating classes IE exceeds maximum buffer length");
 		res = 0;
 	} else {
 		os_memcpy(pos, wpabuf_head(buf), wpabuf_len(buf));
