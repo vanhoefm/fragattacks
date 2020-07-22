@@ -38,6 +38,7 @@ my_crn_ready = False
 my_crn = None
 peer_crn = None
 hs_sent = False
+netrole = None
 mutex = threading.Lock()
 
 def summary(txt):
@@ -180,6 +181,7 @@ def dpp_bootstrap_gen(wpas, type="qrcode", chan=None, mac=None, info=None,
     return int(res)
 
 def wpas_get_nfc_uri(start_listen=True, pick_channel=False, chan_override=None):
+    listen_freq = 2412
     wpas = wpas_connect()
     if wpas is None:
         return None
@@ -195,15 +197,23 @@ def wpas_get_nfc_uri(start_listen=True, pick_channel=False, chan_override=None):
             if freq >= 2412 and freq <= 2462:
                 chan = "81/%d" % ((freq - 2407) / 5)
                 summary("Use current AP operating channel (%d MHz) as the URI channel list (%s)" % (freq, chan))
+                listen_freq = freq
     if chan is None and pick_channel:
         chan = "81/6"
         summary("Use channel 2437 MHz since no other preference provided")
+        listen_freq = 2437
     own_id = dpp_bootstrap_gen(wpas, type="nfc-uri", chan=chan, mac=True)
     res = wpas.request("DPP_BOOTSTRAP_GET_URI %d" % own_id).rstrip()
     if "FAIL" in res:
         return None
     if start_listen:
-        wpas.request("DPP_LISTEN 2412 netrole=configurator")
+        cmd = "DPP_LISTEN %d" % listen_freq
+        global netrole
+        if netrole:
+            cmd += " netrole=" + netrole
+        res = wpas.request(cmd)
+        if "OK" not in res:
+            raise Exception("Failed to start listen operation (%s)" % cmd)
     return res
 
 def wpas_report_handover_req(uri):
@@ -770,6 +780,7 @@ def main():
     parser.add_argument('--device', default='usb', help='NFC device to open')
     parser.add_argument('--chan', default=None, help='channel list')
     parser.add_argument('--altchan', default=None, help='alternative channel list')
+    parser.add_argument('--netrole', default=None, help='netrole for Enrollee')
     parser.add_argument('command', choices=['write-nfc-uri',
                                             'write-nfc-hs'],
                         nargs='?')
@@ -782,9 +793,10 @@ def main():
     global no_wait
     no_wait = args.no_wait
 
-    global chanlist, altchanlist
+    global chanlist, altchanlist, netrole
     chanlist = args.chan
     altchanlist = args.altchan
+    netrole = args.netrole
 
     logging.basicConfig(level=args.loglevel)
 
