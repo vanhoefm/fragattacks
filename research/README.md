@@ -20,14 +20,22 @@ We have confirmed that the following network cards work properly with our script
 
 |      Network Card      | USB | 5GHz |        mixed mode       |      injection mode     | hwsim mode (experimental) |
 | ---------------------- | --- | ---- | ----------------------- | ----------------------- | ------------------------- |
-| Intel Wireless-AC 8265 | No  | Yes  | patched driver          | yes                     | as client                 |
-| Intel Wireless-AC 3160 | No  | Yes  | patched driver          | yes                     | as client                 |
-| Technoethical N150 HGA | Yes | No   | patched driver/firmware | patched driver/firmware | patched driver/firmware   |
-| TP-Link TL-WN722N v1.x | Yes | No   | patched driver/firmware | patched driver/firmware | patched driver/firmware   |
-| Alfa AWUS036NHA        | Yes | No   | patched driver/firmware | patched driver/firmware | patched driver/firmware   |
-| Alfa AWUS036ACM        | Yes | Yes  | patched driver????      | yes                     | **yes?**                  |
-| Alfa AWUS036ACH        | Yes | Yes  | no                      | patched driver          | _under development_       |
-| Netgear WN111v2        | Yes | No   | patched driver          | yes                     | yes                       |
+| Intel Wireless-AC 8265 | No  | Yes  | patched driver          | yes                     | _under development_       |
+| Intel Wireless-AC 3160 | No  | Yes  | patched driver          | yes                     | _under development_       |
+| Technoethical N150 HGA | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_       |
+| TP-Link TL-WN722N v1.x | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_       |
+| Alfa AWUS036NHA        | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_       |
+| Alfa AWUS036ACM        | Yes | Yes  | patched driver          | yes                     | _under development_       |
+| Alfa AWUS036ACH        | Yes | Yes  | **TODO**                | **TODO**                | _under development_       |
+| Netgear WN111v2        | Yes | No   | patched driver          | yes                     | _under development_       |
+
+With patched drivers:
+
+1. Test mixed mode in client and AP
+2. Test injection mode
+3. Test hwsim mode against as client and AP
+
+Without patched drivers: perform exactly the same steps.
 
 **TODO: Verify 5 GHz and test it in practice.**
 
@@ -58,12 +66,14 @@ use a USB2.0 (OHCI + ECHI) controller, because we found the USB3.0 controller to
 During our own tests, the AWUS036ACM dongle is supported by Linux, but at times was not correctly
 recognized during our experiments. It may be necessairy to use a recent Linux kernel, and manually
 executing `sudo modprobe mt76x2u` to load the driver.
-**Unstable when used on a USB3.0 port. Otherwise works fine.**
+**Unstable when used on a USB3.0 port. Otherwise works fine. VM must also use USB2.0 port.**
 
-The AWUS036ACH was tested on Kali Linux after installing the driver using `sudo apt install realtek-rtl88xxau-dkms`.
-This device is generally not supported by default in most Linux distributions and requires manual
-installation of drivers.
-**modprobe 88XXau rtw_monitor_retransmit=1**
+The AWUS036ACH was tested on Kali Linux after installing the driver using the instructions on
+[https://github.com/aircrack-ng/rtl8812au](GitHub). Before pluggin in the device, you must
+execute `modprobe 88XXau rtw_monitor_retransmit=1`. Once our changes have been accepted
+upstream you can instead simply install the driver using `sudo apt install realtek-rtl88xxau-dkms`.
+Note that this device is generally not supported by default in most Linux distributions and
+requires manual installation of drivers.
 
 We tested the Intel AX200 as well and found that it is _not_ compatible with our tool: its firmware
 crashes after sending a fragmented frame.
@@ -78,7 +88,9 @@ Our scripts were tested on Kali Linux and Ubuntu 20.04. To install the required 
 
 	# Kali Linux and Ubuntu
 	sudo apt-get update
-	sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libssl-dev libdbus-1-dev git pkg-config build-essential macchanger net-tools python3-venv airmon-ng
+	sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libssl-dev \
+		libdbus-1-dev git pkg-config build-essential macchanger net-tools python3-venv \
+		aircrack-ng firmware-ath9k-htc rfkill
 
 Now clone this repository, build the tools, and configure a virtual python3 environment:
 
@@ -92,7 +104,8 @@ Now clone this repository, build the tools, and configure a virtual python3 envi
 	pip install wheel
 	pip install -r requirements.txt
 
-The above instructions only have to be executed once.
+By default the above instructions only have to be executed once. You have to execute
+**`./build.sh` again after pulling in new code using git**.
 
 ## Patched Drivers
 
@@ -105,14 +118,16 @@ Install patched drivers:
 	make -j 4
 	sudo make install
 
-Install patched `ath9k_htc` firmware on Ubuntu:
+Install patched `ath9k_htc` firmware:
 
 	cd research/ath9k-firmware/
-	sudo cp htc_9271.fw /lib/firmware/ath9k_htc/htc_9271-1.4.0.fw
-	sudo cp htc_7010.fw /lib/firmware/ath9k_htc/htc_7010-1.4.0.fw
-	# Now reboot the system
+	./install.sh
+	# Now reboot
 
-Note that the above directories depend on the specific Linux distribution you are running.
+The `./install.sh` script assumes the `ath9k_htc` firmware images are located in the
+directory `/lib/firmware/ath9k_htc`. If this is not the case on your system you have
+to manually copy the `htc_7010.fw` and `htc_9271.fw` to the appropriate directory.
+
 If you Wi-Fi donle already is plugged in, unplug it. After installing the patched drivers
 and firmware you must reboot your system. The above instructions have to be executed again
 if your Linix kernel ever gets updated.
@@ -274,8 +289,11 @@ In case the script doesn't appear to be working, check the following:
 
 9. If your Wi-Fi dongle is unreliable, use it from a live CD or USB. A virtual machine can be unreliable.
 
-10. Confirm using a second monitor interface that no other frames are sent in between fragments.
-    For instance, we found that our Intel device sometimes sends Block Ack Response Action frames between fragments.
+10. If updated the code using git, did you execute `./build.sh` again (see [Prerequisites](#prerequisites))?
+
+11. Confirm using a second monitor interface that no other frames are sent in between fragments.
+    For instance, we found that our Intel device sometimes sends Block Ack Response Action frames
+    between fragments, and this interfered with the defragmentation process of the device under test.
 
 ## Extended Vulnerability Tests
 
@@ -332,9 +350,7 @@ to monitor whether frames are properly injected.
 **TODO: Testing the TP-Link against the Intel 3160 was very unreliable: many frames were not**
 **received although they in fact were sent by the device.**
 
-**Ack behaviour is best tested postauth so the client will not disconnected.**
-
-In case you do not have a second network
+ case you do not have a second network
 card, you can execute a partial injection test using:
 
 	./test-injection.py wlan0
@@ -347,6 +363,8 @@ following two commands:
 
 	./fragattack wlan0 ping --inject-test wlan1
 	./fragattack wlan0 ping --inject-test wlan1 --ap
+
+**Ack behaviour is best tested postauth so the client will not disconnected.**
 
 Here we test whether `wlan0` properly injects frames by monitor the injected frames using the
 second network card `wlan1`. The first command tests if frames are properly injected when using
@@ -371,7 +389,7 @@ This mode requires only one network card. The disadvantage is that this mode is 
   or association.
 
 - When injeting frames, they may be retransmitted even though an acknowledgement was recieved.
-  This will further slightly slowdown the handling of frames.
+  This slightly slows the handling of frames.
 
 - Frames are not properly acknowledged depending on the wireless network card, which causes some
   tested clients or APs to disconnect during authentication or association.
@@ -382,19 +400,34 @@ using this mode, create two virtual network cards:
 
 	./hwsim.sh
 
-This will output the two created virtual "hwsim" interfaces, for example wlan1 and wlan2. Then
-search for the channel of the AP you want to test, and put the real network card on this channel:
+This will output the two created virtual "hwsim" interfaces, for example wlan1 and wlan2. When testing
+an AP in this mode, you must first search for the channel of the AP, and put the real network card on
+this channel:
 
 	./scan.sh wlan0
+	ifconfig wlan0 down
 	iw wlan0 set type monitor
 	ifconfig wlan0 up
+	# Pick the channel that the AP is on (in this example 11)
 	iw wlan0 set channel 11
 
+Here wlan0 refers to the _real_ network card (not an interface created by `hwsim.sh`).
 You can now start the script as follows:
 
 	./fragattack wlan0 --hwsim wlan1,wlan2 [--ap] $COMMAND
 
-After the script executed, you can directly run it again with a new command.
+After the script executed, you can directly run it again with a new command. When testing a client, do
+do not first have to configure the channel (it is taken from `hostapd.conf`).
+
+**TODOs:**
+
+- Due to commit 1672c0e31917 ("mac80211: start auth/assoc timeout on frame status") authentication
+  as a client will instantly timeout. We need to have a method to bypass this:
+
+  1. We can patch the kernel
+
+  2. Maybe configure wpa_supplicant to send auth frames using a monitor interface?
+
 
 ### Static IP Configuration
 
@@ -428,6 +461,11 @@ Frequencies for channels that are _not_ marked as disabled, no IR, or radar dete
 conditions may depend on your network card, the current configured country, and the AP you are
 connected to. For more information see, for example, the [Arch Linux documentation](https://wiki.archlinux.org/index.php/Network_configuration/Wireless#Respecting_the_regulatory_domain).
 
+Although we have not yet encountered a device that behaved differently in the 2.4 GHz band compared
+to the 5 GHz band, this may occur in practice if different drivers are used to handle both bands.
+If you encounter such a case please let us know. Since we have not yet observed such differences
+between the 2.4 and 5 GHz band we believe that it is sufficient to only test one of these bands.
+
 Note that in mixed mode the Linux kernel may not allow the injection of frames even though it is
 allowed to send normal frames. This is because in `ieee80211_monitor_start_xmit` the kernel refuses
 to inject frames when `cfg80211_reg_can_beacon` returns false. As a result, Linux may refuse to
@@ -440,16 +478,14 @@ under the correct conditions prevents this bug.
 
 #### ath9k_htc
 
-There is a known problem with the `ath9k_htc` driver, used by the Technoethical N150 HGA, TP-Link
-TL-WN722N v1.x, and Alfa AWUS036NHA, causing it not to work on kernel 5.7.3 and above. Downgrading
-to kernel `5.7.2` fixes this issue for now. More details are available at:
+With kernel 5.7.3+ and 5.8.x there is a known problem problem with the `ath9k_htc` driver, used by
+the Technoethical N150 HGA, TP-Link TL-WN722N v1.x, and Alfa AWUS036NHA, causing it not to work.
+Downgrading to kernel `5.7.2` fixes this issue. In the meantime a patch has also been submitted
+to fix this problem on new kernels: https://www.spinics.net/lists/linux-wireless/msg200825.html
 
-- **Patch that might fix it:** https://www.spinics.net/lists/linux-wireless/msg200825.html
-
+Older threads on this bug:
 - https://bugzilla.kernel.org/show_bug.cgi?id=208251
-
 - https://bugzilla.redhat.com/show_bug.cgi?id=1848631
-
 - https://lore.kernel.org/lkml/CAEJqkgjV8p6LtBV8YUGbNb0vYzKOQt4-AMAvYw5mzFr3eicyTg@mail.gmail.com/
 
 #### AWUS036ACM
