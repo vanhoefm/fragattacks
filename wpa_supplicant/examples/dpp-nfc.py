@@ -39,6 +39,7 @@ my_crn = None
 peer_crn = None
 hs_sent = False
 netrole = None
+operation_success = False
 mutex = threading.Lock()
 
 C_NORMAL = '\033[0m'
@@ -613,7 +614,8 @@ def rdwr_connected_write_tag(tag):
         return
     success_report("Tag write succeeded")
     summary("Tag writing completed - remove tag", color=C_GREEN)
-    global only_one
+    global only_one, operation_success
+    operation_success = True
     if only_one:
         global continue_loop
         continue_loop = False
@@ -858,14 +860,18 @@ def main():
     try:
         if not clf.open(args.device):
             summary("Could not open connection with an NFC device", color=C_RED)
-            raise SystemExit
+            raise SystemExit(1)
 
         if args.command == "write-nfc-uri":
             write_nfc_uri(clf, wait_remove=not args.no_wait)
+            if not operation_success:
+                raise SystemExit(1)
             raise SystemExit
 
         if args.command == "write-nfc-hs":
             write_nfc_hs(clf, wait_remove=not args.no_wait)
+            if not operation_success:
+                raise SystemExit(1)
             raise SystemExit
 
         global continue_loop
