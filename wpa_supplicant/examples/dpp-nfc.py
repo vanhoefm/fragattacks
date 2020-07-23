@@ -41,6 +41,7 @@ hs_sent = False
 netrole = None
 operation_success = False
 mutex = threading.Lock()
+no_alt_proposal = False
 
 C_NORMAL = '\033[0m'
 C_RED = '\033[91m'
@@ -388,7 +389,10 @@ def dpp_handover_client(llc, alt=False):
                 summary("Failed to initiate DPP authentication", color=C_RED)
             break
 
-    if not dpp_found:
+    global no_alt_proposal
+    if not dpp_found and no_alt_proposal:
+        summary("DPP carrier not seen in response - do not allow alternative proposal anymore")
+    elif not dpp_found:
         summary("DPP carrier not seen in response - allow peer to initiate a new handover with different parameters")
         my_crn_ready = False
         my_crn = None
@@ -561,16 +565,21 @@ class HandoverServer(nfc.handover.HandoverServer):
                 sel = [hs, carrier]
                 break
 
-        global hs_sent
+        global hs_sent, no_alt_proposal
         summary("Sending handover select: " + str(sel))
         if found:
             summary("Handover completed successfully")
             self.success = True
             hs_sent = True
+        elif no_alt_proposal:
+            summary("Do not try alternative proposal anymore - handover failed",
+                    color=C_RED)
+            hs_sent = True
         else:
             summary("Try to initiate with alternative parameters")
             self.try_own = True
             hs_sent = False
+            no_alt_proposal = True
             threading.Thread(target=llcp_worker, args=(self.llc, True)).start()
         return sel
 
@@ -775,11 +784,13 @@ def llcp_startup(llc):
 def llcp_connected(llc):
     summary("P2P LLCP connected")
     global wait_connection, my_crn, peer_crn, my_crn_ready, hs_sent
+    global no_alt_proposal
     wait_connection = False
     my_crn_ready = False
     my_crn = None
     peer_crn = None
     hs_sent = False
+    no_alt_proposal = False
     global srv
     srv.start()
     if init_on_touch or not no_input:
