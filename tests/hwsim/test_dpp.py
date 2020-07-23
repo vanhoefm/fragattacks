@@ -303,6 +303,34 @@ def test_dpp_configurator_enrollee_brainpoolP512r1(dev, apdev):
     """DPP Configurator enrolling (brainpoolP512r1)"""
     run_dpp_configurator_enrollee(dev, apdev, conf_curve="brainpoolP512r1")
 
+def test_dpp_configurator_enroll_conf(dev, apdev):
+    """DPP Configurator enrolling followed by use of the new Configurator"""
+    try:
+        dev[0].set("dpp_config_processing", "2")
+        run_dpp_configurator_enroll_conf(dev, apdev)
+    finally:
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
+
+def run_dpp_configurator_enroll_conf(dev, apdev):
+    run_dpp_qr_code_auth_unicast(dev, apdev, None, netrole="configurator",
+                                 configurator=True, conf="configurator",
+                                 qr="mutual", stop_responder=False)
+    ev = dev[0].wait_event(["DPP-CONFIGURATOR-ID"], timeout=2)
+    if ev is None:
+        raise Exception("No Configurator instance added")
+    dev[1].reset()
+    dev[0].dump_monitor()
+
+    ssid = "test-network"
+    passphrase = "test-passphrase"
+    dev[0].set("dpp_configurator_params",
+               "conf=sta-psk ssid=%s pass=%s" % (binascii.hexlify(ssid.encode()).decode(), binascii.hexlify(passphrase.encode()).decode()))
+    dev[0].dpp_listen(2412, role="configurator")
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1")
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+    dev[1].dpp_auth_init(uri=uri0, role="enrollee")
+    wait_auth_success(dev[0], dev[1], configurator=dev[0], enrollee=dev[1])
+
 def test_dpp_qr_code_curve_prime256v1(dev, apdev):
     """DPP QR Code and curve prime256v1"""
     run_dpp_qr_code_auth_unicast(dev, apdev, "prime256v1")
@@ -335,7 +363,7 @@ def run_dpp_qr_code_auth_unicast(dev, apdev, curve, netrole=None, key=None,
                                  require_conf_success=False, init_extra=None,
                                  require_conf_failure=False,
                                  configurator=False, conf_curve=None,
-                                 conf=None):
+                                 conf=None, qr=None, stop_responder=True):
     check_dpp_capab(dev[0], curve and "brainpool" in curve)
     check_dpp_capab(dev[1], curve and "brainpool" in curve)
     if configurator:
@@ -343,19 +371,27 @@ def run_dpp_qr_code_auth_unicast(dev, apdev, curve, netrole=None, key=None,
     else:
         conf_id = None
 
+    if qr == "mutual":
+        logger.info("dev1 displays QR Code and dev0 scans it")
+        id1 = dev[1].dpp_bootstrap_gen(chan="81/1", mac=True, curve=curve)
+        uri1 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id1)
+        id1c = dev[0].dpp_qr_code(uri1)
+    else:
+        id1 = None
+
     logger.info("dev0 displays QR Code")
     id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True, curve=curve, key=key)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
     logger.info("dev1 scans QR Code and initiates DPP Authentication")
-    dev[0].dpp_listen(2412, netrole=netrole)
+    dev[0].dpp_listen(2412, netrole=netrole, qr=qr)
     dev[1].dpp_auth_init(uri=uri0, extra=init_extra, configurator=conf_id,
-                         conf=conf)
+                         conf=conf, own=id1)
     wait_auth_success(dev[0], dev[1], configurator=dev[1], enrollee=dev[0],
                       allow_enrollee_failure=True,
                       allow_configurator_failure=not require_conf_success,
                       require_configurator_failure=require_conf_failure,
-                      stop_responder=True)
+                      stop_responder=stop_responder)
 
 def test_dpp_qr_code_auth_mutual(dev, apdev):
     """DPP QR Code and authentication exchange (mutual)"""
