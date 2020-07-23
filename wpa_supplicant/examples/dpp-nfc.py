@@ -248,7 +248,12 @@ def dpp_handover_client(llc, alt=False):
     if alt:
         global altchanlist
         chan_override = altchanlist
-    uri = wpas_get_nfc_uri(start_listen=False, chan_override=chan_override)
+    global test_uri, test_alt_uri
+    if test_uri:
+        summary("TEST MODE: Using specified URI (alt=%s)" % str(alt))
+        uri = test_alt_uri if alt else test_uri
+    else:
+        uri = wpas_get_nfc_uri(start_listen=False, chan_override=chan_override)
     if uri is None:
         summary("Cannot start handover client - no bootstrap URI available",
                 color=C_RED)
@@ -256,7 +261,14 @@ def dpp_handover_client(llc, alt=False):
     uri = ndef.UriRecord(uri)
     summary("NFC URI record for DPP: " + str(uri))
     carrier = ndef.Record('application/vnd.wfa.dpp', 'A', uri.data)
-    crn = os.urandom(2)
+    global test_crn
+    if test_crn:
+        prev, = struct.unpack('>H', test_crn)
+        summary("TEST MODE: Use specified crn %d" % prev)
+        crn = test_crn
+        test_crn = struct.pack('>H', prev + 0x10)
+    else:
+        crn = os.urandom(2)
     hr = ndef.HandoverRequestRecord(version="1.4", crn=crn)
     hr.add_alternative_carrier('active', carrier.name)
     message = [hr, carrier]
@@ -338,6 +350,9 @@ def dpp_handover_client(llc, alt=False):
             dpp_found = True
             uri = carrier.data[1:].decode("utf-8")
             summary("DPP URI: " + uri)
+            if test_uri:
+                summary("TEST MODE: Fake processing")
+                break
             res = wpas_report_handover_sel(uri)
             if res is None or "FAIL" in res:
                 summary("DPP handover report rejected", color=C_RED)
@@ -467,10 +482,20 @@ class HandoverServer(nfc.handover.HandoverServer):
                 uri = carrier.data[1:].decode("utf-8")
                 summary("Received DPP URI: " + uri)
 
-                data = wpas_get_nfc_uri(start_listen=False, pick_channel=True)
+                global test_uri, test_alt_uri
+                if test_uri:
+                    summary("TEST MODE: Using specified URI")
+                    data = test_sel_uri if test_sel_uri else test_uri
+                else:
+                    data = wpas_get_nfc_uri(start_listen=False,
+                                            pick_channel=True)
                 summary("Own URI (pre-processing): %s" % data)
 
-                res = wpas_report_handover_req(uri)
+                if test_uri:
+                    summary("TEST MODE: Fake processing")
+                    res = "OK"
+                else:
+                    res = wpas_report_handover_req(uri)
                 if res is None or "FAIL" in res:
                     summary("DPP handover request processing failed",
                             color=C_RED)
@@ -481,48 +506,54 @@ class HandoverServer(nfc.handover.HandoverServer):
                         summary("Own URI (try another channel list): %s" % data)
                     continue
 
+                if test_alt_uri:
+                    summary("TEST MODE: Reject initial proposal")
+                    continue
+
                 found = True
 
-                wpas = wpas_connect()
-                if wpas is None:
-                    continue
-                global own_id
-                data = wpas.request("DPP_BOOTSTRAP_GET_URI %d" % own_id).rstrip()
-                if "FAIL" in data:
-                    continue
+                if not test_uri:
+                    wpas = wpas_connect()
+                    if wpas is None:
+                        continue
+                    global own_id
+                    data = wpas.request("DPP_BOOTSTRAP_GET_URI %d" % own_id).rstrip()
+                    if "FAIL" in data:
+                        continue
                 summary("Own URI (post-processing): %s" % data)
                 uri = ndef.UriRecord(data)
                 summary("Own bootstrapping NFC URI record: " + str(uri))
 
-                info = wpas.request("DPP_BOOTSTRAP_INFO %d" % own_id)
-                freq = None
-                for line in info.splitlines():
-                    if line.startswith("use_freq="):
-                        freq = int(line.split('=')[1])
-                if freq is None or freq == 0:
-                    summary("No channel negotiated over NFC - use channel 6")
-                    freq = 2437
-                else:
-                    summary("Negotiated channel: %d MHz" % freq)
-                if get_status_field(wpas, "bssid[0]"):
-                    summary("Own AP freq: %s MHz" % str(get_status_field(wpas, "freq")))
-                    if get_status_field(wpas, "beacon_set", extra="DRIVER") is None:
-                        summary("Enable beaconing to have radio ready for RX")
-                        wpas.request("DISABLE")
-                        wpas.request("SET start_disabled 0")
-                        wpas.request("ENABLE")
-                cmd = "DPP_LISTEN %d" % freq
-                global enrollee_only
-                global configurator_only
-                if enrollee_only:
-                    cmd += " role=enrollee"
-                elif configurator_only:
-                    cmd += " role=configurator"
-                summary(cmd)
-                res = wpas.request(cmd)
-                if "OK" not in res:
-                    summary("Failed to start DPP listen", color=C_RED)
-                    break
+                if not test_uri:
+                    info = wpas.request("DPP_BOOTSTRAP_INFO %d" % own_id)
+                    freq = None
+                    for line in info.splitlines():
+                        if line.startswith("use_freq="):
+                            freq = int(line.split('=')[1])
+                    if freq is None or freq == 0:
+                        summary("No channel negotiated over NFC - use channel 6")
+                        freq = 2437
+                    else:
+                        summary("Negotiated channel: %d MHz" % freq)
+                    if get_status_field(wpas, "bssid[0]"):
+                        summary("Own AP freq: %s MHz" % str(get_status_field(wpas, "freq")))
+                        if get_status_field(wpas, "beacon_set", extra="DRIVER") is None:
+                            summary("Enable beaconing to have radio ready for RX")
+                            wpas.request("DISABLE")
+                            wpas.request("SET start_disabled 0")
+                            wpas.request("ENABLE")
+                    cmd = "DPP_LISTEN %d" % freq
+                    global enrollee_only
+                    global configurator_only
+                    if enrollee_only:
+                        cmd += " role=enrollee"
+                    elif configurator_only:
+                        cmd += " role=configurator"
+                    summary(cmd)
+                    res = wpas.request(cmd)
+                    if "OK" not in res:
+                        summary("Failed to start DPP listen", color=C_RED)
+                        break
 
                 carrier = ndef.Record('application/vnd.wfa.dpp', 'A', uri.data)
                 summary("Own DPP carrier record: " + str(carrier))
@@ -802,6 +833,14 @@ def main():
     parser.add_argument('--chan', default=None, help='channel list')
     parser.add_argument('--altchan', default=None, help='alternative channel list')
     parser.add_argument('--netrole', default=None, help='netrole for Enrollee')
+    parser.add_argument('--test-uri', default=None,
+                        help='test mode: initial URI')
+    parser.add_argument('--test-alt-uri', default=None,
+                        help='test mode: alternative URI')
+    parser.add_argument('--test-sel-uri', default=None,
+                        help='test mode: handover select URI')
+    parser.add_argument('--test-crn', default=None,
+                        help='test mode: hardcoded crn')
     parser.add_argument('command', choices=['write-nfc-uri',
                                             'write-nfc-hs'],
                         nargs='?')
@@ -814,10 +853,18 @@ def main():
     global no_wait
     no_wait = args.no_wait
 
-    global chanlist, altchanlist, netrole
+    global chanlist, altchanlist, netrole, test_uri, test_alt_uri, test_sel_uri
+    global test_crn
     chanlist = args.chan
     altchanlist = args.altchan
     netrole = args.netrole
+    test_uri = args.test_uri
+    test_alt_uri = args.test_alt_uri
+    test_sel_uri = args.test_sel_uri
+    if args.test_crn:
+        test_crn = struct.pack('>H', int(args.test_crn))
+    else:
+        test_crn = None
 
     logging.basicConfig(level=args.loglevel)
 
