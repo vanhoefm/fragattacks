@@ -1201,7 +1201,12 @@ ssid_list_set:
 	wpa_setband_scan_freqs(wpa_s, &params);
 
 	/* See if user specified frequencies. If so, scan only those. */
-	if (wpa_s->conf->freq_list && !params.freqs) {
+	if (wpa_s->last_scan_req == INITIAL_SCAN_REQ &&
+	    wpa_s->conf->initial_freq_list && !params.freqs) {
+		wpa_dbg(wpa_s, MSG_DEBUG,
+			"Optimize scan based on conf->initial_freq_list");
+		int_array_concat(&params.freqs, wpa_s->conf->initial_freq_list);
+	} else if (wpa_s->conf->freq_list && !params.freqs) {
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"Optimize scan based on conf->freq_list");
 		int_array_concat(&params.freqs, wpa_s->conf->freq_list);

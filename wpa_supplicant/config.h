@@ -917,6 +917,19 @@ struct wpa_config {
 	int *freq_list;
 
 	/**
+	 * initial_freq_list - like freq_list but for initial scan
+	 *
+	 * This is an optional zero-terminated array of frequencies in
+	 * megahertz (MHz) to allow for narrowing scanning range when
+	 * the application is started.
+	 *
+	 * This can be used to speed up initial connection time if the
+	 * channel is known ahead of time, without limiting the scanned
+	 * frequencies during normal use.
+	 */
+	int *initial_freq_list;
+
+	/**
 	 * scan_cur_freq - Whether to scan only the current channel
 	 *
 	 * If true, attempt to scan only the current channel if any other

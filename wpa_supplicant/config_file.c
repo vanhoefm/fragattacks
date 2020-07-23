@@ -1475,6 +1475,15 @@ static void wpa_config_write_global(FILE *f, struct wpa_config *config)
 		}
 		fprintf(f, "\n");
 	}
+	if (config->initial_freq_list && config->initial_freq_list[0]) {
+		int i;
+		fprintf(f, "initial_freq_list=");
+		for (i = 0; config->initial_freq_list[i]; i++) {
+			fprintf(f, "%s%d", i > 0 ? " " : "",
+				config->initial_freq_list[i]);
+		}
+		fprintf(f, "\n");
+	}
 	if (config->scan_cur_freq != DEFAULT_SCAN_CUR_FREQ)
 		fprintf(f, "scan_cur_freq=%d\n", config->scan_cur_freq);
 

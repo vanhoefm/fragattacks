@@ -2890,6 +2890,7 @@ void wpa_config_free(struct wpa_config *config)
 	os_free(config->p2p_no_go_freq.range);
 	os_free(config->autoscan);
 	os_free(config->freq_list);
+	os_free(config->initial_freq_list);
 	wpabuf_free(config->wps_nfc_dh_pubkey);
 	wpabuf_free(config->wps_nfc_dh_privkey);
 	wpabuf_free(config->wps_nfc_dev_pw);
@@ -4547,6 +4548,26 @@ static int wpa_config_process_freq_list(const struct global_parse_data *data,
 }
 
 
+static int
+wpa_config_process_initial_freq_list(const struct global_parse_data *data,
+				     struct wpa_config *config, int line,
+				     const char *value)
+{
+	int *freqs;
+
+	freqs = wpa_config_parse_int_array(value);
+	if (!freqs)
+		return -1;
+	if (freqs[0] == 0) {
+		os_free(freqs);
+		freqs = NULL;
+	}
+	os_free(config->initial_freq_list);
+	config->initial_freq_list = freqs;
+	return 0;
+}
+
+
 #ifdef CONFIG_P2P
 static int wpa_global_config_parse_ipv4(const struct global_parse_data *data,
 					struct wpa_config *config, int line,
@@ -5082,6 +5103,7 @@ static const struct global_parse_data global_fields[] = {
 	{ FUNC(ap_vendor_elements), 0 },
 	{ INT_RANGE(ignore_old_scan_res, 0, 1), 0 },
 	{ FUNC(freq_list), 0 },
+	{ FUNC(initial_freq_list), 0},
 	{ INT(scan_cur_freq), 0 },
 	{ INT(sched_scan_interval), 0 },
 	{ INT(sched_scan_start_delay), 0 },
