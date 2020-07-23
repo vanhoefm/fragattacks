@@ -1277,6 +1277,7 @@ struct wpa_supplicant {
 	unsigned int dpp_resp_retry_time;
 	u8 dpp_last_ssid[SSID_MAX_LEN];
 	size_t dpp_last_ssid_len;
+	bool dpp_conf_backup_received;
 #ifdef CONFIG_DPP2
 	struct dpp_pfs *dpp_pfs;
 	int dpp_pfs_fallback;

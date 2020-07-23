@@ -1485,6 +1485,7 @@ static int wpas_dpp_handle_key_pkg(struct wpa_supplicant *wpa_s,
 
 	wpa_printf(MSG_DEBUG, "DPP: Received Configurator backup");
 	wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CONF_RECEIVED);
+	wpa_s->dpp_conf_backup_received = true;
 
 	while (key) {
 		res = dpp_configurator_from_backup(wpa_s->dpp, key);
@@ -1582,6 +1583,7 @@ static void wpas_dpp_gas_resp_cb(void *ctx, const u8 *addr, u8 dialog_token,
 		goto fail;
 	}
 
+	wpa_s->dpp_conf_backup_received = false;
 	for (i = 0; i < auth->num_conf_obj; i++) {
 		res = wpas_dpp_handle_config_obj(wpa_s, auth,
 						 &auth->conf_obj[i]);
@@ -1625,7 +1627,8 @@ fail:
 		wpabuf_free(msg);
 
 		/* This exchange will be terminated in the TX status handler */
-		if (wpa_s->conf->dpp_config_processing < 2)
+		if (wpa_s->conf->dpp_config_processing < 2 ||
+		    wpa_s->dpp_conf_backup_received)
 			auth->remove_on_tx_status = 1;
 		return;
 	}
