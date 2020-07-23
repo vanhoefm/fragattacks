@@ -584,6 +584,9 @@ def dpp_tag_read(tag):
 
 def rdwr_connected_write_tag(tag):
     summary("Tag found - writing - " + str(tag))
+    if not tag.ndef:
+        summary("Not a formatted NDEF tag")
+        return
     if not tag.ndef.is_writeable:
         summary("Not a writable tag")
         return
