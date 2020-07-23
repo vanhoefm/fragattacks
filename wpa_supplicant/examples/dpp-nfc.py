@@ -211,8 +211,8 @@ def wpas_get_nfc_uri(start_listen=True, pick_channel=False, chan_override=None):
         global netrole
         if netrole:
             cmd += " netrole=" + netrole
-        res = wpas.request(cmd)
-        if "OK" not in res:
+        res2 = wpas.request(cmd)
+        if "OK" not in res2:
             raise Exception("Failed to start listen operation (%s)" % cmd)
     return res
 
