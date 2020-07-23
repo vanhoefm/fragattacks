@@ -41,9 +41,19 @@ hs_sent = False
 netrole = None
 mutex = threading.Lock()
 
-def summary(txt):
+C_NORMAL = '\033[0m'
+C_RED = '\033[91m'
+C_GREEN = '\033[92m'
+C_BLUE = '\033[94m'
+C_MAGENTA = '\033[95m'
+C_CYAN = '\033[96m'
+
+def summary(txt, color=None):
     with mutex:
-        print(txt)
+        if color:
+            print(color + txt + C_NORMAL)
+        else:
+            print(txt)
         if summary_file:
             with open(summary_file, 'a') as f:
                 f.write(txt + "\n")
@@ -85,7 +95,7 @@ def dpp_nfc_uri_process(uri):
         return False
     peer_id = wpas.request("DPP_NFC_URI " + uri)
     if "FAIL" in peer_id:
-        summary("Could not parse DPP URI from NFC URI record")
+        summary("Could not parse DPP URI from NFC URI record", color=C_RED)
         return False
     peer_id = int(peer_id)
     summary("peer_id=%d for URI from NFC Tag: %s" % (peer_id, uri))
@@ -100,7 +110,7 @@ def dpp_nfc_uri_process(uri):
     summary("Initiate DPP authentication: " + cmd)
     res = wpas.request(cmd)
     if "OK" not in res:
-        summary("Failed to initiate DPP Authentication")
+        summary("Failed to initiate DPP Authentication", color=C_RED)
         return False
     summary("DPP Authentication initiated")
     return True
@@ -111,20 +121,20 @@ def dpp_hs_tag_read(record):
         return False
     summary(record)
     if len(record.data) < 5:
-        summary("Too short DPP HS")
+        summary("Too short DPP HS", color=C_RED)
         return False
     if record.data[0] != 0:
-        summary("Unexpected URI Identifier Code")
+        summary("Unexpected URI Identifier Code", color=C_RED)
         return False
     uribuf = record.data[1:]
     try:
         uri = uribuf.decode()
     except:
-        summary("Invalid URI payload")
+        summary("Invalid URI payload", color=C_RED)
         return False
     summary("URI: " + uri)
     if not uri.startswith("DPP:"):
-        summary("Not a DPP URI")
+        summary("Not a DPP URI", color=C_RED)
         return False
     return dpp_nfc_uri_process(uri)
 
@@ -239,7 +249,8 @@ def dpp_handover_client(llc, alt=False):
         chan_override = altchanlist
     uri = wpas_get_nfc_uri(start_listen=False, chan_override=chan_override)
     if uri is None:
-        summary("Cannot start handover client - no bootstrap URI available")
+        summary("Cannot start handover client - no bootstrap URI available",
+                color=C_RED)
         return
     uri = ndef.UriRecord(uri)
     summary("NFC URI record for DPP: " + str(uri))
@@ -280,7 +291,7 @@ def dpp_handover_client(llc, alt=False):
 
     if not client.send_records(message):
         my_crn_ready = False
-        summary("Failed to send handover request")
+        summary("Failed to send handover request", color=C_RED)
         client.close()
         return
 
@@ -294,13 +305,13 @@ def dpp_handover_client(llc, alt=False):
         if hs_sent:
             summary("Client receive failed as expected since I'm the handover server: %s" % str(e))
         else:
-            summary("Client receive failed: %s" % str(e))
+            summary("Client receive failed: %s" % str(e), color=C_RED)
         message = None
     if message is None:
         if hs_sent:
             summary("No response received as expected since I'm the handover server")
         else:
-            summary("No response received")
+            summary("No response received", color=C_RED)
         client.close()
         return
     summary("Received message: " + str(message))
@@ -320,7 +331,7 @@ def dpp_handover_client(llc, alt=False):
         summary("Remote carrier type: " + carrier.type)
         if carrier.type == "application/vnd.wfa.dpp":
             if len(carrier.data) == 0 or carrier.data[0] != 0:
-                summary("URI Identifier Code 'None' not seen")
+                summary("URI Identifier Code 'None' not seen", color=C_RED)
                 continue
             summary("DPP carrier type match - send to wpa_supplicant")
             dpp_found = True
@@ -328,7 +339,7 @@ def dpp_handover_client(llc, alt=False):
             summary("DPP URI: " + uri)
             res = wpas_report_handover_sel(uri)
             if res is None or "FAIL" in res:
-                summary("DPP handover report rejected")
+                summary("DPP handover report rejected", color=C_RED)
                 break
 
             success_report("DPP handover reported successfully (initiator)")
@@ -348,7 +359,7 @@ def dpp_handover_client(llc, alt=False):
                 # TODO: Single Configurator instance
                 res = wpas.request("DPP_CONFIGURATOR_ADD")
                 if "FAIL" in res:
-                    summary("Failed to initiate Configurator")
+                    summary("Failed to initiate Configurator", color=C_RED)
                     break
                 conf_id = int(res)
                 extra = " conf=sta-dpp configurator=%d" % conf_id
@@ -358,7 +369,7 @@ def dpp_handover_client(llc, alt=False):
             cmd += extra
             res = wpas.request(cmd)
             if "FAIL" in res:
-                summary("Failed to initiate DPP authentication")
+                summary("Failed to initiate DPP authentication", color=C_RED)
             break
 
     if not dpp_found:
@@ -450,7 +461,7 @@ class HandoverServer(nfc.handover.HandoverServer):
             if carrier.type == "application/vnd.wfa.dpp":
                 summary("DPP carrier type match - add DPP carrier record")
                 if len(carrier.data) == 0 or carrier.data[0] != 0:
-                    summary("URI Identifier Code 'None' not seen")
+                    summary("URI Identifier Code 'None' not seen", color=C_RED)
                     continue
                 uri = carrier.data[1:].decode("utf-8")
                 summary("Received DPP URI: " + uri)
@@ -460,7 +471,8 @@ class HandoverServer(nfc.handover.HandoverServer):
 
                 res = wpas_report_handover_req(uri)
                 if res is None or "FAIL" in res:
-                    summary("DPP handover request processing failed")
+                    summary("DPP handover request processing failed",
+                            color=C_RED)
                     global altchanlist
                     if altchanlist:
                         data = wpas_get_nfc_uri(start_listen=False,
@@ -508,7 +520,7 @@ class HandoverServer(nfc.handover.HandoverServer):
                 summary(cmd)
                 res = wpas.request(cmd)
                 if "OK" not in res:
-                    summary("Failed to start DPP listen")
+                    summary("Failed to start DPP listen", color=C_RED)
                     break
 
                 carrier = ndef.Record('application/vnd.wfa.dpp', 'A', uri.data)
@@ -585,18 +597,22 @@ def dpp_tag_read(tag):
 def rdwr_connected_write_tag(tag):
     summary("Tag found - writing - " + str(tag))
     if not tag.ndef:
-        summary("Not a formatted NDEF tag")
+        summary("Not a formatted NDEF tag", color=C_RED)
         return
     if not tag.ndef.is_writeable:
-        summary("Not a writable tag")
+        summary("Not a writable tag", color=C_RED)
         return
     global dpp_tag_data
     if tag.ndef.capacity < len(dpp_tag_data):
         summary("Not enough room for the message")
         return
-    tag.ndef.records = dpp_tag_data
+    try:
+        tag.ndef.records = dpp_tag_data
+    except ValueError as e:
+        summary("Writing the tag failed: %s" % str(e), color=C_RED)
+        return
     success_report("Tag write succeeded")
-    summary("Done - remove tag")
+    summary("Tag writing completed - remove tag", color=C_GREEN)
     global only_one
     if only_one:
         global continue_loop
@@ -608,7 +624,7 @@ def write_nfc_uri(clf, wait_remove=True):
     summary("Write NFC URI record")
     data = wpas_get_nfc_uri()
     if data is None:
-        summary("Could not get NFC URI from wpa_supplicant")
+        summary("Could not get NFC URI from wpa_supplicant", color=C_RED)
         return
 
     global dpp_sel_wait_remove
@@ -617,7 +633,7 @@ def write_nfc_uri(clf, wait_remove=True):
     uri = ndef.UriRecord(data)
     summary(uri)
 
-    summary("Touch an NFC tag")
+    summary("Touch an NFC tag to write URI record", color=C_CYAN)
     global dpp_tag_data
     dpp_tag_data = [uri]
     clf.connect(rdwr={'on-connect': rdwr_connected_write_tag})
@@ -626,7 +642,7 @@ def write_nfc_hs(clf, wait_remove=True):
     summary("Write NFC Handover Select record on a tag")
     data = wpas_get_nfc_uri()
     if data is None:
-        summary("Could not get NFC URI from wpa_supplicant")
+        summary("Could not get NFC URI from wpa_supplicant", color=C_RED)
         return
 
     global dpp_sel_wait_remove
@@ -640,7 +656,7 @@ def write_nfc_hs(clf, wait_remove=True):
     summary(hs)
     summary(carrier)
 
-    summary("Touch an NFC tag")
+    summary("Touch an NFC tag to write HS record", color=C_CYAN)
     global dpp_tag_data
     dpp_tag_data = [hs, carrier]
     summary(dpp_tag_data)
@@ -658,7 +674,7 @@ def rdwr_connected(tag):
             global continue_loop
             continue_loop = False
     else:
-        summary("Not an NDEF tag - remove tag")
+        summary("Not an NDEF tag - remove tag", color=C_RED)
         return True
 
     return not no_wait
@@ -841,7 +857,7 @@ def main():
 
     try:
         if not clf.open(args.device):
-            summary("Could not open connection with an NFC device")
+            summary("Could not open connection with an NFC device", color=C_RED)
             raise SystemExit
 
         if args.command == "write-nfc-uri":
@@ -859,10 +875,13 @@ def main():
             clear_raw_mode()
             if was_in_raw_mode:
                 print("\r")
-            if args.tag_read_only:
-                summary("Waiting for a tag to be touched")
+            if args.handover_only:
+                summary("Waiting a peer to be touched", color=C_MAGENTA)
+            elif args.tag_read_only:
+                summary("Waiting for a tag to be touched", color=C_BLUE)
             else:
-                summary("Waiting for a tag or peer to be touched")
+                summary("Waiting for a tag or peer to be touched",
+                        color=C_GREEN)
             wait_connection = True
             try:
                 if args.tag_read_only:
