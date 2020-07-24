@@ -1,7 +1,7 @@
 /*
  * Qualcomm Atheros OUI and vendor specific assignments
  * Copyright (c) 2014-2017, Qualcomm Atheros, Inc.
- * Copyright (c) 2018-2019, The Linux Foundation
+ * Copyright (c) 2018-2020, The Linux Foundation
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -1741,6 +1741,8 @@ enum qca_vendor_attr_wisa_cmd {
  *	(not including the Element ID Extension field). Please note that the
  *	draft is still work in progress and this element payload is subject to
  *	change.
+ *
+ *  @QCA_VENDOR_ELEM_ALLPLAY: Allplay element
  */
 enum qca_vendor_element_id {
 	QCA_VENDOR_ELEM_P2P_PREF_CHAN_LIST = 0,
@@ -1749,6 +1751,7 @@ enum qca_vendor_element_id {
 	QCA_VENDOR_ELEM_RAPS = 3,
 	QCA_VENDOR_ELEM_MU_EDCA_PARAMS = 4,
 	QCA_VENDOR_ELEM_BSS_COLOR_CHANGE = 5,
+	QCA_VENDOR_ELEM_ALLPLAY = 6,
 };
 
 /**
