@@ -246,9 +246,11 @@ def wpas_report_handover_sel(uri):
 
 def dpp_handover_client(llc, alt=False):
     chan_override = None
+    global alt_proposal_used
     if alt:
         global altchanlist
         chan_override = altchanlist
+        alt_proposal_used = True
     global test_uri, test_alt_uri
     if test_uri:
         summary("TEST MODE: Using specified URI (alt=%s)" % str(alt))
@@ -318,12 +320,16 @@ def dpp_handover_client(llc, alt=False):
         # This is fine if we are the handover selector
         if hs_sent:
             summary("Client receive failed as expected since I'm the handover server: %s" % str(e))
+        elif alt_proposal_used and not alt:
+            summary("Client received failed for initial proposal as expected since alternative proposal was also used: %s" % str(e))
         else:
             summary("Client receive failed: %s" % str(e), color=C_RED)
         message = None
     if message is None:
         if hs_sent:
             summary("No response received as expected since I'm the handover server")
+        elif alt_proposal_used and not alt:
+            summary("No response received for initial proposal as expected since alternative proposal was also used")
         else:
             summary("No response received", color=C_RED)
         client.close()
@@ -337,6 +343,11 @@ def dpp_handover_client(llc, alt=False):
 
     summary("Received handover select message")
     summary("alternative carriers: " + str(message[0].alternative_carriers))
+
+    if alt_proposal_used and not alt:
+        summary("Ignore received handover select for the initial proposal since alternative proposal was sent")
+        client.close()
+        return
 
     dpp_found = False
     for carrier in message:
@@ -784,13 +795,14 @@ def llcp_startup(llc):
 def llcp_connected(llc):
     summary("P2P LLCP connected")
     global wait_connection, my_crn, peer_crn, my_crn_ready, hs_sent
-    global no_alt_proposal
+    global no_alt_proposal, alt_proposal_used
     wait_connection = False
     my_crn_ready = False
     my_crn = None
     peer_crn = None
     hs_sent = False
     no_alt_proposal = False
+    alt_proposal_used = False
     global srv
     srv.start()
     if init_on_touch or not no_input:
