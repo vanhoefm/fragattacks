@@ -1898,7 +1898,7 @@ static void wpa_ft_block_r0kh(struct wpa_authenticator *wpa_auth,
 		return;
 	}
 
-	wpa_hexdump(MSG_DEBUG, "FT: Blacklist R0KH-ID",
+	wpa_hexdump(MSG_DEBUG, "FT: Temporarily block R0KH-ID",
 		    f_r0kh_id, f_r0kh_id_len);
 
 	if (r0kh) {
@@ -1986,7 +1986,7 @@ static int wpa_ft_pull_pmk_r1(struct wpa_state_machine *sm,
 		return -1;
 	}
 	if (is_zero_ether_addr(r0kh->addr)) {
-		wpa_hexdump(MSG_DEBUG, "FT: R0KH-ID is blacklisted",
+		wpa_hexdump(MSG_DEBUG, "FT: R0KH-ID is temporarily blocked",
 			    sm->r0kh_id, sm->r0kh_id_len);
 		return -1;
 	}
