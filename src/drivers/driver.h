@@ -4387,13 +4387,13 @@ struct wpa_driver_ops {
 	int (*ignore_assoc_disallow)(void *priv, int ignore_disallow);
 
 	/**
-	 * set_bssid_blacklist - Set blacklist of BSSIDs to the driver
+	 * set_bssid_tmp_disallow - Set disallowed BSSIDs to the driver
 	 * @priv: Private driver interface data
-	 * @num_bssid: Number of blacklist BSSIDs
-	 * @bssids: List of blacklisted BSSIDs
+	 * @num_bssid: Number of temporarily disallowed BSSIDs
+	 * @bssids: List of temporarily disallowed BSSIDs
 	 */
-	int (*set_bssid_blacklist)(void *priv, unsigned int num_bssid,
-				   const u8 *bssid);
+	int (*set_bssid_tmp_disallow)(void *priv, unsigned int num_bssid,
+				      const u8 *bssid);
 
 	/**
 	 * update_connect_params - Update the connection parameters

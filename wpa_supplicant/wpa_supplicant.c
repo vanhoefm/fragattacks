@@ -7929,7 +7929,7 @@ static int wpa_set_driver_tmp_disallow_list(struct wpa_supplicant *wpa_s)
 			  ETH_ALEN);
 		num_bssid++;
 	}
-	ret = wpa_drv_set_bssid_blacklist(wpa_s, num_bssid, bssids);
+	ret = wpa_drv_set_bssid_tmp_disallow(wpa_s, num_bssid, bssids);
 	os_free(bssids);
 	return ret;
 }
