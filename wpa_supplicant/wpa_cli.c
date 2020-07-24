@@ -3063,6 +3063,23 @@ static int wpa_cli_cmd_dpp_pkex_remove(struct wpa_ctrl *ctrl, int argc,
 	return wpa_cli_cmd(ctrl, "DPP_PKEX_REMOVE", 1, argc, argv);
 }
 
+
+#ifdef CONFIG_DPP2
+
+static int wpa_cli_cmd_dpp_chirp(struct wpa_ctrl *ctrl, int argc,
+				 char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "DPP_CHIRP", 1, argc, argv);
+}
+
+
+static int wpa_cli_cmd_dpp_stop_chirp(struct wpa_ctrl *ctrl, int argc,
+				      char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "DPP_STOP_CHIRP");
+}
+
+#endif /* CONFIG_DPP2 */
 #endif /* CONFIG_DPP */
 
 
@@ -3799,6 +3816,14 @@ static const struct wpa_cli_cmd wpa_cli_commands[] = {
 	{ "dpp_pkex_remove", wpa_cli_cmd_dpp_pkex_remove, NULL,
 	  cli_cmd_flag_none,
 	  "*|<id> = remove DPP pkex information" },
+#ifdef CONFIG_DPP2
+	{ "dpp_chirp", wpa_cli_cmd_dpp_chirp, NULL,
+	  cli_cmd_flag_none,
+	  "own=<BI ID> iter=<count> = start DPP chirp" },
+	{ "dpp_stop_chirp", wpa_cli_cmd_dpp_stop_chirp, NULL,
+	  cli_cmd_flag_none,
+	  "= stop DPP chirp" },
+#endif /* CONFIG_DPP2 */
 #endif /* CONFIG_DPP */
 	{ "all_bss", wpa_cli_cmd_all_bss, NULL, cli_cmd_flag_none,
 	  "= list all BSS entries (scan results)" },

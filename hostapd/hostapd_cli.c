@@ -1471,6 +1471,23 @@ static int hostapd_cli_cmd_dpp_pkex_remove(struct wpa_ctrl *ctrl, int argc,
 	return hostapd_cli_cmd(ctrl, "DPP_PKEX_REMOVE", 1, argc, argv);
 }
 
+
+#ifdef CONFIG_DPP2
+
+static int hostapd_cli_cmd_dpp_chirp(struct wpa_ctrl *ctrl, int argc,
+				     char *argv[])
+{
+	return hostapd_cli_cmd(ctrl, "DPP_CHIRP", 1, argc, argv);
+}
+
+
+static int hostapd_cli_cmd_dpp_stop_chirp(struct wpa_ctrl *ctrl, int argc,
+					  char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "DPP_STOP_CHIRP");
+}
+
+#endif /* CONFIG_DPP2 */
 #endif /* CONFIG_DPP */
 
 
@@ -1679,6 +1696,12 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
 	  "add PKEX code" },
 	{ "dpp_pkex_remove", hostapd_cli_cmd_dpp_pkex_remove, NULL,
 	  "*|<id> = remove DPP pkex information" },
+#ifdef CONFIG_DPP2
+	{ "dpp_chirp", hostapd_cli_cmd_dpp_chirp, NULL,
+	  "own=<BI ID> iter=<count> = start DPP chirp" },
+	{ "dpp_stop_chirp", hostapd_cli_cmd_dpp_stop_chirp, NULL,
+	  "= stop DPP chirp" },
+#endif /* CONFIG_DPP2 */
 #endif /* CONFIG_DPP */
 	{ "accept_acl", hostapd_cli_cmd_accept_macacl, NULL,
 	  "=Add/Delete/Show/Clear accept MAC ACL" },
