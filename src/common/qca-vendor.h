@@ -4078,7 +4078,7 @@ enum qca_vendor_attr_roam_control {
  *	Represents the Request ID for the specific set of commands.
  *	This also helps to map specific set of commands to the respective
  *	ID / client. e.g., helps to identify the user entity configuring the
- *	Blacklist BSSID and accordingly clear the respective ones with the
+ *	ignored BSSIDs and accordingly clear the respective ones with the
  *	matching ID.
  *
  * @QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_WHITE_LIST_SSID_NUM_NETWORKS: Unsigned
@@ -4145,17 +4145,18 @@ enum qca_vendor_attr_roam_control {
  *	the BSSID for the purpose of comparing it with other roam candidate.
  *
  * @QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS: Nested attribute,
- *	represents the BSSIDs to get blacklisted for roaming.
+ *	represents the BSSIDs to get ignored for roaming.
  *
  * @QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS_NUM_BSSID: Unsigned
- *	32-bit value, represents the number of blacklisted BSSIDs.
+ *	32-bit value, represents the number of ignored BSSIDs.
  *
  * @QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS_BSSID: 6-byte MAC
- *	address representing the Blacklisted BSSID.
+ *	address representing the ignored BSSID.
  *
  * @QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS_HINT: Flag attribute,
- *	indicates this BSSID blacklist as a hint to the driver. The driver can
- *	select this BSSID in the worst case (when no other BSSIDs are better).
+ *	indicates this request to ignore the BSSID as a hint to the driver. The
+ *	driver can select this BSSID in the worst case (when no other BSSIDs are
+ *	better).
  *
  * @QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_CONTROL: Nested attribute to
  *	set/get/clear the roam control config as
@@ -4190,11 +4191,11 @@ enum qca_wlan_vendor_attr_roaming_config_params {
 	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_LAZY_ROAM_BSSID = 16,
 	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_LAZY_ROAM_RSSI_MODIFIER = 17,
 
-	/* Attribute for set_blacklist bssid params */
+	/* Attribute for setting ignored BSSID parameters */
 	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS = 18,
 	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS_NUM_BSSID = 19,
 	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS_BSSID = 20,
-	/* Flag attribute indicates this BSSID blacklist as a hint */
+	/* Flag attribute indicates this entry as a hint */
 	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS_HINT = 21,
 
 	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_CONTROL = 22,
@@ -4230,9 +4231,9 @@ enum qca_wlan_vendor_attr_roaming_config_params {
  *	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PREFS to set the BSSID
  *	preference.
  *
- * @QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BLACKLIST_BSSID: Sets the Blacklist
- *	BSSIDs. Refers QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS to
- *	set the same.
+ * @QCA_WLAN_VENDOR_ROAMING_SUBCMD_SET_BLACKLIST_BSSID: Sets the list of BSSIDs
+ *	to ignore in roaming decision. Uses
+ *	QCA_WLAN_VENDOR_ATTR_ROAMING_PARAM_SET_BSSID_PARAMS to set the list.
  *
  * @QCA_WLAN_VENDOR_ROAMING_SUBCMD_CONTROL_SET: Command to set the
  *	roam control config to the driver with the attribute
