@@ -783,7 +783,7 @@ class Daemon(metaclass=abc.ABCMeta):
 
 		try:
 			test_iface = None if self.options.inject_test == "self" else self.options.inject_test
-			test_injection(self.nic_mon, test_iface, peermac, ownmac)
+			test_injection(self.nic_mon, test_iface, peermac, ownmac, testack=is_postauth)
 		except IOError as ex:
 			log(WARNING, ex.args[0])
 			log(ERROR, "Unexpected error. Are you using the correct kernel/driver/device?")
