@@ -21,16 +21,16 @@ sequence of fragment number of injected frames, or may reorder frames of differe
 interferes with the test tool (i.e. the tool might incorrectly say a device is secure although it's not).
 I have confirmed that the following network cards work properly:
 
-|      Network Card      | USB | 5GHz |        mixed mode       |      injection mode     | hwsim mode (experimental) |
-| ---------------------- | --- | ---- | ----------------------- | ----------------------- | ------------------------- |
-| Intel Wireless-AC 8265 | No  | Yes  | patched driver          | yes                     | _under development_       |
-| Intel Wireless-AC 3160 | No  | Yes  | patched driver          | yes                     | _under development_       |
-| Technoethical N150 HGA | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_       |
-| TP-Link TL-WN722N v1.x | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_       |
-| Alfa AWUS036NHA        | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_       |
-| Alfa AWUS036ACM        | Yes | Yes  | patched driver          | yes                     | _under development_       |
-| Alfa AWUS036ACH        | Yes | Yes  | **TODO**                | **TODO**                | _under development_       |
-| Netgear WN111v2        | Yes | No   | patched driver          | yes                     | _under development_       |
+|      Network Card      | USB | 5GHz |        mixed mode       |      injection mode     |      hwsim mode      |
+| ---------------------- | --- | ---- | ----------------------- | ----------------------- | -------------------- |
+| Intel Wireless-AC 8265 | No  | Yes  | patched driver          | yes                     | _under development_  |
+| Intel Wireless-AC 3160 | No  | Yes  | patched driver          | yes                     | _under development_  |
+| Technoethical N150 HGA | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_  |
+| TP-Link TL-WN722N v1.x | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_  |
+| Alfa AWUS036NHA        | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_  |
+| Alfa AWUS036ACM        | Yes | Yes  | patched driver          | yes                     | _under development_  |
+| Alfa AWUS036ACH        | Yes | Yes  | **TODO**                | **TODO**                | _under development_  |
+| Netgear WN111v2        | Yes | No   | patched driver          | yes                     | _under development_  |
 
 The three last colums signify:
 
@@ -207,35 +207,35 @@ basic defragmentation behaviour of a device and are further discussed below.
 | <div align="center">*Sanity checks*</div>
 | `ping I,E`                       | Send a normal ping
 | `ping I,E,E`                     | Send a normal fragmented ping
-| <div align="center">*Basic defragmentation behaviour*</div>
+| <div align="center">*Basic device behaviour*</div>
 | `ping I,E,E --delay 5`           | Send a normal fragmented ping with a 5 second delay between fragments
 | `ping-frag-sep`                  | Send a normal fragmented ping with fragments separated by another frame
-| <div align="center">*A-MSDU attacks (Section 3)*</div>
+| <div align="center">*A-MSDU attacks (§3)*</div>
 | `ping I,E --amsdu`               | Send a normal ping encapsulated in a normal A-MSDU frame.
 | `ping I,E,E --amsdu`             | Send a normal ping an a fragmented A-MSDU frame.
 | `amsdu-inject`                   | Send a valid A-MSDU frame whose start is also a valid LLC/SNAP header.
 | `amsdu-inject linux`             | Same as above, but works against targets that incorrectly parse the frame.
-| <div align="center">*Mixed key attacks (Section 4)*</div> | 
+| <div align="center">*Mixed key attacks (§4)*</div>
 | `ping I,R,BE,AE`                 | Inject two fragments encrypted under a different key.
 | `ping I,R,BE,AE --pn-per-qos`    | Same as above, but also works if the target only accepts consecutive fragments.
-| <div align="center">*Cache attacks (Section 5)*</div> | 
+| <div align="center">*Cache attacks (§5)*</div>
 | `ping I,E,C,AE`                  | Inject a fragment then reconnect (as client _reassociate_) and inject second fragment.
 | `ping I,E,C,E`                   | Same as above, but with a longer delay before sending the second fragment.
 | `ping I,E,C,AE --full-reconnect` | Inject a fragment, reconnect, then inject second fragment.
 | `ping I,E,C,E --full-reconnect`  | Same as above, but with a longer delay before sending the second fragment.
-| <div align="center">*Non-consecutive Packet Numbers (PNs) (Section 6.2)*</div> | 
+| <div align="center">*Nonconsecutive PNs attack (§6.2)*</div>
 | `ping I,E,E --inc-pn 2`          | Send a fragmented ping with non-consecutive packet numbers.
-| <div align="center">*Mixed plaintext/encrypted fragments (Section 6.3)*</div> | 
+| <div align="center">*Mixed plain/encrypt attack (§6.3)*</div>
 | `ping I,E,P`                     | Send a fragmented ping: first fragment encrypted, second fragment in plaintext.
 | `ping I,P,E`                     | Send a fragmented ping: first fragment in plaintext, send fragment encrypted.
 | `ping I,P`                       | Send a plaintext ping.
 | `ping I,P,P`                     | Send a fragmented ping: both fragments are sent in plaintext.
 | `linux-plain`                    | Mixed plaintext/encrypted fragmentation attack specific to Linux.
-| <div align="center">*EAPOL forwarding (Section 6.4)*</div> | 
+| <div align="center">*EAPOL forwarding attack (§6.4)*</div>
 | `eapol-inject 00:11:22:33:44:55` | Test if the AP forwards EAPOL frames before being connected.
-| <div align="center">*Broadcast fragments (Section 6.7)*</div> | 
+| <div align="center">*Broadcast fragment attack (§6.7)*</div>
 | `ping I,D,P --bcast-ra`          | Send ping in a 2nd plaintext broadcasted fragment.
-| <div align="center">*A-MSDUs disguised as EAPOL frames (Section 6.8)*</div> | 
+| <div align="center">*A-MSDUs EAPOL attack (§6.8)*</div>
 | `eapol-amsdu BB`                 | Send A-MSDU frame disguised as EAPOL frame. Use tcpdump to check if vulnerable.
 | `eapol-amsdu I,CC`               | Same as above, except the frame is injected after obtaining an IP.
 | `eapol-amsdu M,BB`               | Send a malformed A-MSDU disguised as EAPOL. Use tcpdump to check if vulnerable.
@@ -315,30 +315,30 @@ but against more exotic implementations these might reveal attack variants that 
 
 |              Command               | Short description
 | ---------------------------------- | ---------------------------------
-| <div align="center">*A-MSDU attacks (Section 3)*</div>
+| <div align="center">*A-MSDU attacks (§3)*</div>
 | `ping I,E --fake-amsdu`            | If this test succeeds, the A-MSDU flag is ignored (Section 3.5).
-| <div align="center">*Mixed key attacks (Section 4)*</div>
+| <div align="center">*Mixed key attacks (§4)*</div>
 | `ping I,E,R,AE`                    | In case the delay between fragments must be small.
 | `ping I,E,R,AE --rekey-plaintext`  | If the device performs the rekey handshake in plaintext.
 | `ping I,E,R,AE --rekey-req --rekey-plain`| Same as above, and actively request a rekey as client.
 | `ping I,E,R,AE --rekey-early-install`| Install the new key before sending message 4 as an AP.
 | `ping I,R,BE,AE --freebsd`         | Mixed key attack against FreeBSD.
 | `ping I,R,BE,E`                    | In case the new key is installed relatively late.
-| <div align="center">*Mixed plain/enc (Section 6.3)*</div>
+| <div align="center">*Mixed plain/encrypt attack (§6.3)*</div>
 | `ping I,E,P,E`                     | Ping with first frag. encrypted, second plaintext, third encrypted.
 | `linux-plain 3`                    | Same as linux-plain but decoy fragment is sent using QoS priority 3.
-| <div align="center">*EAPOL forwarding (Section 6.4)*</div>
+| <div align="center">*EAPOL forwarding attack (§6.4)*</div>
 | `eapol-inject L,00:11:22:33:44:55` | Try to make the AP send fragmented frames by EAPOL injection.
-| <div align="center">*No fragmentation support (Section 6.6)*</div>
+| <div align="center">*No fragmentation support attack (§6.6)*</div>
 | `ping I,E,D`                       | Send ping inside an encrypted first fragment (no 2nd fragment).
 | `ping I,D,E`                       | Send ping inside an encrypted second fragment (no 1st fragment).
-| <div align="center">*Broadcast fragments (Section 6.7)*</div>
+| <div align="center">*Broadcast fragment attack (§6.7)*</div>
 | `ping D,SP --bcast-ra`             | Ping in a 2nd plaintext broadcasted fragment before 4-way handshake.
 | `ping D,BP --bcast-ra`             | Ping in a 2nd plaintext broadcasted fragment during 4-way handshake.
 | `ping I,P --bcast-ra`              | Ping in a plaintext broadcast Wi-Fi frame after 4-way handshake.
 | `macos CC`                         | Experimental attack against macos.
 | `macos BB`                         | Same as above, but inject during 4-way handshake.
-| <div align="center">*EAPOL A-MSDUs (Section 6.8)*</div>
+| <div align="center">*A-MSDUs EAPOL attack (§6.8)*</div>
 | `eapol-amsdu [M,]BB --bcast-dst`   | Same as "eapol-amsdu [M,]BB" but ping is broadcasted.
 | `eapol-amsdu [M,]I,CC --bcast-dst` | Same as "eapol-amsdu [M,]I,CC" but ping is broadcasted.
 | `eapol-amsdu SS`                   | Same as "eapol-amsd BB" but inject frame before 4-way handshake.
@@ -348,15 +348,6 @@ but against more exotic implementations these might reveal attack variants that 
 
 ### Network card injection test
 
----
-**In case the tests do not seem to be working, you can confirm that injection is properly working using:**
-
-	./test-injection wlan1 wlan0
-
-**This will inject frames using interface wlan1, and uses wlan0 to check if frames are properly**
-**injected. Note that both interfaces need to support monitor mode for the test tool to work.**
----
-
 #### Injection and hwsim mode
 
 The script `test-injection.py` can be used to test whether frames are properly injected when
@@ -365,17 +356,10 @@ using _injection mode_:
 	./test-injection.py wlan0 wlan1
 
 Here we test if network card `wlan0` properly injects frames and we use network card `wlan1`
-to monitor whether frames are properly injected.
+to monitor whether frames are properly injected. Note that both interfaces need to support
+monitor mode for this test script to work.
 
-**TODO: In case tests are not working, try to first unplug USB dongles and reboot the device(s).**
-**If the tests still fail, try to use a different network card to monitor whether frames are**
-**injected properly.**
-
-**TODO: Testing the TP-Link against the Intel 3160 was very unreliable: many frames were not**
-**received although they in fact were sent by the device.**
-
- case you do not have a second network
-card, you can execute a partial injection test using:
+In case you do not have a second network card, you can execute a partial injection test using:
 
 	./test-injection.py wlan0
 
@@ -390,14 +374,19 @@ following two commands:
 	./fragattack wlan0 ping --inject-test wlan1
 	./fragattack wlan0 ping --inject-test wlan1 --ap
 
-**Ack behaviour is best tested postauth so the client will not disconnected.**
-
-Here we test whether `wlan0` properly injects frames by monitor the injected frames using the
+Here we test whether `wlan0` properly injects frames by monitoring the injected frames using the
 second network card `wlan1`. The first command tests if frames are properly injected when using
-mixed mode as a client, and the second when using mixed mode as a client. In order to start the
-test, the client must be able to connect to a network, and the AP waits until a client is
-connecting. In case you do not have a second network card, you can execute a partial mixed mode
-test using:
+mixed mode while acting as a client, and the second command when using mixed mode while acting
+as an AP. In order to start the test, the client must be able to connect to a network, and the
+AP waits until a client is connecting before starting the injection tests.
+
+If you also want to test the retransmission behaviour of `wlan0` in mixed mode you can execute:
+
+	./fragattack wlan0 ping --inject-test-postauth wlan1
+	./fragattack wlan0 ping --inject-test-postauth wlan1 --ap
+
+In case you do not have a second network card, you can execute a partial mixed mode injection test
+using:
 
 	./fragattack wlan0 ping --inject-selftest
 	./fragattack wlan0 ping --inject-selftest --ap
@@ -405,74 +394,43 @@ test using:
 Unfortunately, the above tests can only test if the kernel overwrites fields of injected frames,
 it cannot test whether the firmware or wireless chip itself overwrites fields.
 
-### Hwsim mode details
+#### Interpreting test results
 
-**Warning**: *this is currently an experimental mode, only use it for research purposes.*
+In case the injection tests are not working, try to first unplug your Wi-Fi dongles and reboot your computer.
+If the tests still fail, try to use a different network card to monitor whether frames are injected properly.
+I observed that sometimes frames are in fact properly injected, but the second network card (`wlan1`
+in the above examples) did not recieve most injected frames. What also helps is running the tests and
+experiments in an environment (and on a channel) with little background noise.
 
-This mode requires only one network card. The disadvantage is that this mode is the least reliable:
-
-- Frames are handled slower, possibly causing the tested client/AP to timeout during authentication
-  or association.
-
-- When injeting frames, they may be retransmitted even though an acknowledgement was recieved.
-  This slightly slows the handling of frames.
-
-- Frames are not properly acknowledged depending on the wireless network card, which causes some
-  tested clients or APs to disconnect during authentication or association.
-
-Nevertheless, the advantage is that is mode requires only one wirelss network card and can,
-depending on the network card, be used without patches to the driver and/or firmware. Before
-using this mode, create two virtual network cards:
-
-	./hwsim.sh
-
-This will output the two created virtual "hwsim" interfaces, for example wlan1 and wlan2. When testing
-an AP in this mode, you must first search for the channel of the AP, and put the real network card on
-this channel:
-
-	./scan.sh wlan0
-	ifconfig wlan0 down
-	iw wlan0 set type monitor
-	ifconfig wlan0 up
-	# Pick the channel that the AP is on (in this example 11)
-	iw wlan0 set channel 11
-
-Here wlan0 refers to the _real_ network card (not an interface created by `hwsim.sh`).
-You can now start the test tool as follows:
-
-	./fragattack wlan0 --hwsim wlan1,wlan2 [--ap] $COMMAND
-
-After the tool executed, you can directly run it again with a new command. When testing a client, do
-do not first have to configure the channel (it is taken from `hostapd.conf`).
-
-**TODOs:**
-
-- Due to commit 1672c0e31917 ("mac80211: start auth/assoc timeout on frame status") authentication
-  as a client will instantly timeout. We need to have a method to bypass this:
-
-  1. We can patch the kernel
-
-  2. Maybe configure wpa_supplicant to send auth frames using a monitor interface?
-
+The test script will give detailed output on which tests succeeded or failed, and will conclude by outputting
+either "==> The most important tests have been passed successfully" or a message indicating that either important
+tests failed or that it couldn't capture certain inject frames. When certain injected frames could not be captures,
+this by either be because of background noise, or because the network card being tested is unable to properly
+inject certain frames (e.g. the firmware of the Intel AX200 crashes when injecting fragmented frames).
 
 ### Static IP Configuration
 
 In case the device you are testing doesn't support DHCP, you can manually specify the IP addresses
 that the test tool should use. For example:
 
-	./fragattack.py wlan0 ping --inject wlan1 --ip 192.168.100.10 --peerip 192.168.100.1
+	./fragattack.py wlan0 ping --inject wlan1 [--ap] --ip 192.168.100.10 --peerip 192.168.100.1
 
-Here the test tool will use address 192.168.100.10, and it will inject a ping request
+Here the test tool will use IP address 192.168.100.10, and it will inject a ping request
 to the peer IP address 192.168.100.1.
+
+**Using static IP address also enables the test tool to inject frames _before_ the device being tested has requested**
+**an IP address, which is required in certain tests.**
 
 ### Alternative network cards
 
 In case you cannot get access to one of the recommended wireless network cards, a second option
 is to get a network card that uses the same drivers on Linux. In particular, you can try:
 
-- Network cards that use [ath9k_htc](https://wikidevi.wi-cat.ru/Ath9k_htc)
+1. Network cards that use [ath9k_htc](https://wikidevi.wi-cat.ru/Ath9k_htc)
 
-- Network cards that use [iwlmvm](https://wireless.wiki.kernel.org/en/users/drivers/iwlwifi)
+2. Network cards that use [carl9170](https://wikidevi.wi-cat.ru/carl9170)
+
+3. Network cards that use [iwlmvm](https://wireless.wiki.kernel.org/en/users/drivers/iwlwifi).
 
 I recommend cards based on `ath9khtc`. Not all cards that use `iwlmvm` will be compatible. When
 using an alternative network card, I strongly recommend to first run the [injection tests](#Network-card-injection-test)
@@ -500,98 +458,87 @@ under the correct conditions prevents this bug.
 
 ### Notes on device support
 
-**TODO: Reference or include the DEVICES.md file**
+This contains some practical notes related to the network cards that we tested. For detailed and more
+technical (research) details see [DEVICES.md](DEVICES.md).
 
 #### ath9k_htc
 
-**Technoethical N150 HGA:, but since it's a USB dongle this can be**
-**configured inside a virtual machine. When using Virtual Box, I recommend to configure the VM to**
-**use a USB2.0 (OHCI + ECHI) controller, because I found the USB3.0 controller to be unreliable.**
+The Technoethical N150 HGA, TP-Link TL-WN722N v1.x, and Alfa AWUS036NHA, all use the `ath9k_htc` driver.
 
-With kernel 5.7.3+ and 5.8.x there is a known problem problem with the `ath9k_htc` driver, used by
-the Technoethical N150 HGA, TP-Link TL-WN722N v1.x, and Alfa AWUS036NHA, causing it not to work.
-Downgrading to kernel `5.7.2` fixes this issue. In the meantime a patch has also been submitted
-to fix this problem on new kernels: https://www.spinics.net/lists/linux-wireless/msg200825.html
+For me these devices worked fairly well in a virtual machine, although like with all devices they are
+more reliably when used natively. When using a VM, I recommend to configure the VM to use a USB2.0
+controller, since that appeared more stable (at least with VirtualBox).
 
-Older threads on this bug:
-- https://bugzilla.kernel.org/show_bug.cgi?id=208251
-- https://bugzilla.redhat.com/show_bug.cgi?id=1848631
-- https://lore.kernel.org/lkml/CAEJqkgjV8p6LtBV8YUGbNb0vYzKOQt4-AMAvYw5mzFr3eicyTg@mail.gmail.com/
+In recent kernels there was a (now fixed) regression with the `ath9k_htc` driver causing it not te work.
+Simply use an up-to-date kernel to avoid this issue. The patch that fixed this regression is:
+https://www.spinics.net/lists/linux-wireless/msg200825.html
 
 #### AWUS036ACM
 
-**AWUS036ACM: but at times was not correctly recognized during our experiments. It may be necessairy to use a recent Linux kernel, and manually executing `sudo modprobe mt76x2u` to load the driver.**
-
-**TODO: AWUS036ACM `iw set wlanX monitor active` in injection mode? (but in mixed mode that crashes)**
-
-The reliability of my `AWUS036ACM` device, which uses the mt76x2u driver, varied depending on how
-it was used. I found that:
-
-- On kernel 5.5.0 this device didn't work properly when connected to a USB3.0 port. In particular,
-  it kept showing `error: mt7602u_mcu_wait_resp failed with -108` when testing on Kali Linux. The
-  device did work properly when connected to a USB2.0 port.
-
-  Frame injection in the 2.4 GHz band was also working properly in the above setup. Frame injection
-  was also working in the 5 GHz band (tested by running the `test-injection,py` script on channel 40
-  and capturing the frame using an Intel 3160).
-
-  Strangely, this device refuses to inject frames when: (1) it's a data frame; (2) the destination
-  MAC address is not all-zeros; and (3) the to-DS and from-DS are both not set. This was independent
-  of the sender MAC address. Such frames are generally never sent anyway, so this has no practical
-  impact, but it required us to tweak the `test-injection.py` script to always set the to-DS or
-  from-DS flags.
-
-  In mixed mode frames using the MAC address of the AP or client as sender MAC address were only
-  being injected when injected _after_ authentication. Before authenticating, these frames were
-  dropped. In mixed client/monitor mode, the sequence counter of injected frames was being overwritten.
-  In mixed AP/monitor mode, I was unable to inject frames towards the client when using the MAC
-  address of the AP as the sender MAC address _correctly_ (without the sequence counter being
-  overwritten - I confirmed this with a fragmented ping against a client).
-
-  **TODO: test mixed mode with patched drivers**
-
-  **Note: with an ath9k_htc I cannot inject frames with spoofed MAC addresses before and after**
-  **authenticating in AP/monitor mode? It does inject frames (incorrectly) in client/monitor mode.**
-  _This was likely because capturing with the Intel 3160 was very unreliable._
-
-- On kernel 5.6.13 on Arch Linux, client mode didn't work properly when using an USB3.0 port. But
-  AP mode did work properly on a USB3.0 port.
-
-  In mixed mode, non-EAPOL data frames were not sent when injected before authentication. After
-  authentication, these were transmitted. **Is that patchable?**
-
-  **Note: with an ath9k_htc I can inject frames with spoofed MAC addresses before and after**
-  **authenticating in client/monitor mode. Same thing in AP/monitor mode. But capturing is unreliable.**
+If for some reason Linux does not automatically recognize this device, execute `sudo modprobe mt76x2u`
+to manually load the driver. I found that, at least on my devices, this dongle was unstable when connected
+to a USB3.0 ports. Others seems to have reported [similar issues](https://www.spinics.net/lists/linux-wireless/msg200453.html)
+with this dongle. When connected to a USB2.0 port I found this dongle to be reliable.
 
 #### AWUS036ACH
 
-The AWUS036ACH was tested on Kali Linux after installing the driver using the instructions on
-[https://github.com/aircrack-ng/rtl8812au](GitHub). Before pluggin in the device, you must
-execute `modprobe 88XXau rtw_monitor_retransmit=1`. Once my changes have been accepted
-upstream you can instead simply install the driver using `sudo apt install realtek-rtl88xxau-dkms`.
-Note that this device is generally not supported by default in most Linux distributions and
-requires manual installation of drivers.
+This device is generally not supported by default in most Linux distributions and requires manual
+installation of drivers. I tested it on Kali Linux after installing the driver using the instructions
+on [https://github.com/aircrack-ng/rtl8812au](GitHub). Before plugging in the device, you must
+execute `modprobe 88XXau rtw_monitor_retransmit=1`. Once my patches have reached upstream repositories
+on Kali Linux you can simply install the driver using `sudo apt install realtek-rtl88xxau-dkms`, but
+for now you must manually install the driver from GitHub.
 
 #### Intel AX200
 
 I tested the Intel AX200 as well and found that it is _not_ compatible with the test tool: its firmware
-crashes after sending a fragmented frame.
+crashes after sending a fragmented frame. If an Intel developer is reading this, please update the firmware
+and make it possible to inject fragmented frames.
 
-## TODOs
+### Hwsim mode details
 
-- Confirm each device can detect all vulnerabilities in the recommended modes.
+**Warning**: *this is currently an experimental mode, only use it for research purposes.*
 
-- Test the attacks against PEAP-MSchap for eduroam tests (basic test was working).
+This mode requires only one network card that supports monitor mode, and in contrast to mixed mode, the
+network card does not have to support virtual interfaces. The disadvantage is that in this mode frames
+are handled a bit slower, and it is not reliable when the network card does not acknowledge frames:
 
-- TODO: Is it important to disable encryption? I don't think it is. Otherwise we need sysfsutils as a dependency too.
+- Due to commit 1672c0e31917 ("mac80211: start auth/assoc timeout on frame status") authentication
+  as a client will instantly timeout, meaning we cannot use hwsim mode as a client currently.
+  _TODO: We need to patch the kernel to avoid this timeout._
 
-- Create an example pcap and debug output of all tests.
+- If we test a client that uses commit 1672c0e31917 ("mac80211: start auth/assoc timeout on frame status")
+  we (as an AP) must acknowledge frames sent towards us. Otherwise the client being tested will be
+  unable to connected.
+  _TODO: Test which devices acknowledge frames in monitor mode, and test `iw set wlanX monitor active`._
 
-- Release a known vulnerable linux image to test against? Essential to confirm the tests are working!
+- Certain APs will also require that authentication and association frames are acknowlegded by the client.
+  This that that we (as a client) must again acknowledge frames sent towards us.
+  _TODO: Test which devices acknowledge frames in monitor mode, and test `iw set wlanX monitor active`._
 
-- sudo iw wlan0 set monitor otherbss. Does airmon-ng handle this better? Move to general section?
+- For some strange reason, the Intel/mvm cannot receive data frames from Android/iPhone/iPad
+  after 4-way HS? This is a very strange bug. _TODO: Investigate this further._
 
-- Describe AP mode in hwsim mode?
+Before using this mode, create two virtual network cards:
 
-- Support non-20MHz channels?
+	./hwsim.sh
+
+This will output the two created virtual "hwsim" interfaces, for example wlan1 and wlan2. When testing
+an AP in this mode, you must first search for the channel of the AP, and put the real network card on
+this channel:
+
+	./scan.sh wlan0
+	ifconfig wlan0 down
+	iw wlan0 set type monitor
+	ifconfig wlan0 up
+	# Pick the channel that the AP is on (in this example 11)
+	iw wlan0 set channel 11
+
+Here wlan0 refers to the _real_ network card (not an interface created by `hwsim.sh`). hen testing a
+client, do do not first have to configure the channel (it is taken from `hostapd.conf`). You can now
+start the test tool as follows:
+
+	./fragattack wlan0 --hwsim wlan1,wlan2 [--ap] $COMMAND
+
+After the tool executed, you can directly run it again with a new `$COMMAND`.
 
