@@ -4,6 +4,7 @@
 # This code may be distributed under the terms of the BSD license.
 # See README for more details.
 
+# Note that tests_*.py files are imported automatically
 import glob, importlib
 from fraginternals import *
 
