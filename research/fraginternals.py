@@ -89,9 +89,6 @@ def freebsd_encap_eapolmsdu(p, src, dst, payload):
 
 # ----------------------------------- Vulnerability Tests -----------------------------------
 
-# XXX --- We should always first see how the DUT reactions to a normal packet.
-#	  For example, Aruba only responded to DHCP after reconnecting, and
-#	  ignored ICMP and ARP packets.
 REQ_ARP, REQ_ICMP, REQ_ICMPv6_RA, REQ_DHCP = range(4)
 
 def generate_request(sta, ptype, prior=2, icmp_size=None, padding=None, to_self=False):
@@ -679,7 +676,7 @@ class Daemon(metaclass=abc.ABCMeta):
 			quit(1)
 		self.nic_iface = self.options.iface
 
-		# TODO: Check if the interfaces exist
+		# TODO: Check if the interfaces exists
 
 		# 0. Verify whether patched drivers are being used
 		if not self.options.no_drivercheck:
@@ -807,8 +804,6 @@ class Daemon(metaclass=abc.ABCMeta):
 		log(DEBUG, f"Passed injection self-test on interface {self.nic_mon}.")
 		quit(1)
 
-	# TODO: Authentication and association has strict timing requirements in the Linux kernel.
-	#       Can we make these lower somehow?
 	def forward_hwsim(self, p, s):
 		if p == None: return
 		if not Dot11 in p: return

@@ -8,9 +8,6 @@
 import glob, importlib
 from fraginternals import *
 
-#TODO: Check that atheros is using patched firmware using debugfs
-# ==> Both have caused me issues!!! Checking this automatically is *ESSENTIAL*.
-
 # ----------------------------------- Main Function -----------------------------------
 
 def cleanup():
