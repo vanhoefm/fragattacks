@@ -458,9 +458,6 @@ under the correct conditions prevents this bug.
 
 ### Notes on device support
 
-This contains some practical notes related to the network cards that we tested. For detailed and more
-technical (research) details see [DEVICES.md](DEVICES.md).
-
 #### ath9k_htc
 
 The Technoethical N150 HGA, TP-Link TL-WN722N v1.x, and Alfa AWUS036NHA, all use the `ath9k_htc` driver.
