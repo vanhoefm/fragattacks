@@ -4,7 +4,6 @@
 # This code may be distributed under the terms of the BSD license.
 # See README for more details.
 
-# TODO: Other traffic on the interface might interfere with attacks. How to prevent?
 from libwifi import *
 import abc, sys, socket, struct, time, subprocess, atexit, select, copy
 import argparse
@@ -21,7 +20,6 @@ def wpaspy_clear_messages(ctrl):
 	while ctrl.pending():
 		ctrl.recv()
 
-#TODO: Modify so we can ignore other messages over the command interface
 def wpaspy_command(ctrl, cmd):
 	wpaspy_clear_messages(ctrl)
 
@@ -482,7 +480,6 @@ class Station():
 			return self.bss
 		return self.peermac
 
-	# TODO: Show a warning when unusual transitions are detected?
 	def trigger_eapol_events(self, eapol):
 		# Ignore everything apart the 4-way handshake
 		if not WPA_key in eapol: return None
@@ -675,14 +672,23 @@ class Daemon(metaclass=abc.ABCMeta):
 		pass
 
 	def configure_interfaces(self):
-		log(STATUS, "Note: disable Wi-Fi in your network manager so it doesn't interfere with this script")
-
 		try:
 			subprocess.check_output(["rfkill", "unblock", "wifi"])
 		except Exception as ex:
 			log(ERROR, "Are you running as root (and in a Python virtualenv)?")
 			quit(1)
 		self.nic_iface = self.options.iface
+
+		# TODO: Check if the interfaces exist
+
+		# 0. Verify whether patched drivers are being used
+		if not self.options.no_drivercheck:
+			if not os.path.exists("/sys/module/mac80211/parameters/"):
+				log(WARNING, "WARNING: Unable to check whether you are using patched drivers.")
+			elif not os.path.exists("/sys/module/mac80211/parameters/fragattack_version"):
+				log(ERROR, "You are not running patched drivers, meaning this tool may give incorrect results!")
+				log(STATUS, "To ignore this warning add the parameter --no-drivercheck")
+				time.sleep(5)
 
 		# 1. Assign/create interfaces according to provided options
 		if self.options.hwsim:
@@ -710,9 +716,7 @@ class Daemon(metaclass=abc.ABCMeta):
 				subprocess.call(["iw", self.nic_mon, "del"], stdout=subprocess.PIPE, stdin=subprocess.PIPE)
 				subprocess.check_output(["iw", self.nic_iface, "interface", "add", self.nic_mon, "type", "monitor"])
 
-			log(WARNING, "Remember to use a modified backports and ath9k_htc firmware!")
-
-		# 2. Remember whether to need to use injection workarounds.
+		# 2.A Remember whether to need to use injection workarounds.
 		driver = get_device_driver(self.nic_mon)
 		if driver == None:
 			log(WARNING, "Unable to detect driver of interface!")
@@ -721,6 +725,17 @@ class Daemon(metaclass=abc.ABCMeta):
 			# Assure that fragmented frames are reliably injected on certain iwlwifi and ath9k_htc devices
 			self.options.inject_mf_workaround = True
 			log(STATUS, f"Detected {driver}, using injection bug workarounds")
+
+		# 2.B Check if ath9k_htc is using patched firmware
+		if not self.options.no_drivercheck and driver == "ath9k_htc":
+			try:
+				with open("/sys/module/ath9k_htc/parameters/fragattack_fw") as fp:
+					if not int(fp.read()) == 1:
+						log(ERROR, "WARNING: It seems the ath9k_htc device is not using patched firmware!")
+						log(STATUS, "To ignore this warning add the parameter --no-drivercheck")
+						time.sleep(5)
+			except:
+				log(WARNING, "WARNING: Unable to check if the ath9k_htc device is using patched firmware!")
 
 		# 3. Enable monitor mode
 		set_monitor_mode(self.nic_mon)

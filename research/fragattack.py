@@ -8,7 +8,6 @@
 import glob, importlib
 from fraginternals import *
 
-#TODO: Check that modified drivers are used using debugfs
 #TODO: Check that atheros is using patched firmware using debugfs
 # ==> Both have caused me issues!!! Checking this automatically is *ESSENTIAL*.
 
@@ -146,25 +145,6 @@ def prepare_tests(opt):
 	# No valid test ID/name was given
 	else: return None
 
-	# -----------------------------------------------------------------------------------------
-
-	# XXX TODO : Hardware decrypts it using old key, software using new key?
-	#	     So right after rekey we inject first with old key, second with new key?
-
-	# XXX TODO : What about extended functionality where we can have
-	#	     two simultaneously pairwise keys?!?!
-
-	# TODO:
-	# - Test case to check if the receiver supports interleaved priority
-	#   reception. It seems Windows 10 / Intel might not support this.
-	# - Test case with a very lage aggregated frame (which is normally not
-	#   allowed but some may accept it). And a variation to check how APs
-	#   will forward such overly large frame (e.g. force fragmentation).
-	# - [TKIP] Encrpted, Encrypted, no global MIC
-	# - Plain/Enc tests but first plaintext sent before installing key
-	# - Test fragmentation of management frames
-	# - Test fragmentation of group frames (STA mode of RT-AC51u?)
-
 	# If requested, override delay and inc_pn parameters in the test.
 	test.set_general_options(opt.delay, opt.inc_pn)
 
@@ -237,6 +217,7 @@ if __name__ == "__main__":
 	parser.add_argument('--freebsd-cache', default=False, action='store_true', help="Sent EAP(OL) frames as (malformed) broadcast EAPOL/A-MSDUs.")
 	parser.add_argument('--connected-delay', type=float, default=1, help="Second to wait after AfterAuth before triggering Connected event")
 	parser.add_argument('--to-self', default=False, action='store_true', help="Send ARP/DHCP/ICMP with same src and dst MAC address.")
+	parser.add_argument('--no-drivercheck', default=False, action='store_true', help="Don't check if patched drivers are being used.")
 	options = parser.parse_args()
 
 	# Default value for options that should not be command line parameters
