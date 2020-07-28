@@ -2021,9 +2021,14 @@ def test_sigma_dut_dpp_qr_init_configurator_neg_freq(dev, apdev):
     """sigma_dut DPP/QR initiator as Configurator (neg_freq)"""
     run_sigma_dut_dpp_qr_init_configurator(dev, apdev, 1, extra='DPPSubsequentChannel,81/11')
 
+def test_sigma_dut_dpp_qr_init_configurator_mud_url(dev, apdev):
+    """sigma_dut DPP/QR initiator as Configurator (MUD URL)"""
+    run_sigma_dut_dpp_qr_init_configurator(dev, apdev, 1,
+                                           mud_url="https://example.com/mud")
+
 def run_sigma_dut_dpp_qr_init_configurator(dev, apdev, conf_idx,
                                            prov_role="Configurator",
-                                           extra=None):
+                                           extra=None, mud_url=None):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
     sigma = start_sigma_dut(dev[0].ifname)
@@ -2031,6 +2036,8 @@ def run_sigma_dut_dpp_qr_init_configurator(dev, apdev, conf_idx,
         id0 = dev[1].dpp_bootstrap_gen(chan="81/6", mac=True)
         uri0 = dev[1].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
 
+        if mud_url:
+            dev[1].set("dpp_mud_url", mud_url)
         cmd = "DPP_LISTEN 2437 role=enrollee"
         if "OK" not in dev[1].request(cmd):
             raise Exception("Failed to start listen operation")
@@ -2045,7 +2052,10 @@ def run_sigma_dut_dpp_qr_init_configurator(dev, apdev, conf_idx,
         res = sigma_dut_cmd(cmd)
         if "BootstrapResult,OK,AuthResult,OK,ConfResult,OK" not in res:
             raise Exception("Unexpected result: " + res)
+        if mud_url and ",MUDURL," + mud_url not in res:
+            raise Exception("Unexpected result (missing MUD URL): " + res)
     finally:
+        dev[1].set("dpp_mud_url", "")
         stop_sigma_dut(sigma)
 
 def test_sigma_dut_dpp_incompatible_roles_init(dev, apdev):
