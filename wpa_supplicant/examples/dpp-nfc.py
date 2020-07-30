@@ -8,6 +8,7 @@
 # See README for more details.
 
 import binascii
+import errno
 import os
 import struct
 import sys
@@ -493,6 +494,48 @@ class HandoverServer(nfc.handover.HandoverServer):
         self.llc = llc
         self.handover = handover
 
+    def serve(self, socket):
+        peer_sap = socket.getpeername()
+        summary("Serving handover client on remote sap {0}".format(peer_sap))
+        send_miu = socket.getsockopt(nfc.llcp.SO_SNDMIU)
+        try:
+            while socket.poll("recv"):
+                req = bytearray()
+                while socket.poll("recv"):
+                    r = socket.recv()
+                    if r is None:
+                        return None
+                    summary("Received %d octets" % len(r))
+                    req += r
+                    if len(req) == 0:
+                        continue
+                    try:
+                        list(ndef.message_decoder(req, 'strict', {}))
+                    except ndef.DecodeError:
+                        continue
+                    summary("Full message received")
+                    resp = self._process_request_data(req)
+                    if resp is None or len(resp) == 0:
+                        summary("No handover select to send out - wait for a possible alternative handover request")
+                        req = bytearray()
+                        continue
+
+                    for offset in range(0, len(resp), send_miu):
+                        if not socket.send(resp[offset:offset + send_miu]):
+                            summary("Failed to send handover select - connection closed")
+                            return
+                    summary("Sent out full handover select")
+                    if handover.terminate_on_hs_send_completion:
+                        handover.delayed_exit()
+
+        except nfc.llcp.Error as e:
+            global terminate_now
+            summary("HandoverServer exception: %s" % e,
+                    color=None if e.errno == errno.EPIPE or terminate_now else C_RED)
+        finally:
+            socket.close()
+            summary("Handover serve thread exiting")
+
     def process_handover_request_message(self, records):
         handover = self.handover
         self.ho_server_processing = True
@@ -634,6 +677,7 @@ class HandoverServer(nfc.handover.HandoverServer):
         summary("Sending handover select: " + str(sel))
         if found:
             summary("Handover completed successfully")
+            handover.terminate_on_hs_send_completion = True
             self.success = True
             handover.hs_sent = True
         elif handover.no_alt_proposal:
@@ -848,6 +892,7 @@ class ConnectionHandover():
         self.client = None
         self.client_thread = None
         self.reset()
+        self.exit_thread = None
 
     def reset(self):
         self.wait_connection = False
@@ -859,6 +904,7 @@ class ConnectionHandover():
         self.alt_proposal_used = False
         self.i_m_selector = False
         self.start_client_alt = False
+        self.terminate_on_hs_send_completion = False
 
     def start_handover_server(self, llc):
         summary("Start handover server")
@@ -869,6 +915,19 @@ class ConnectionHandover():
         if self.client:
             self.client.close()
             self.client = None
+
+    def run_delayed_exit(self):
+        summary("Trying to exit (delayed)..")
+        time.sleep(0.25)
+        summary("Trying to exit (after wait)..")
+        global terminate_now
+        terminate_now = True
+
+    def delayed_exit(self):
+        global only_one
+        if only_one:
+            self.exit_thread = threading.Thread(target=self.run_delayed_exit)
+            self.exit_thread.start()
 
 def llcp_startup(llc):
     global handover
