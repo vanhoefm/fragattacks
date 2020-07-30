@@ -476,8 +476,8 @@ def run_dpp_handover_client(handover, alt=False):
         continue_loop = False
 
     global no_wait
-    if no_wait:
-        print("Trying to exit..")
+    if no_wait or only_one:
+        summary("Trying to exit..")
         global terminate_now
         terminate_now = True
 
