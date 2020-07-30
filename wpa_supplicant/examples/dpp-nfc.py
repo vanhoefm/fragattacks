@@ -42,6 +42,7 @@ mutex = threading.Lock()
 C_NORMAL = '\033[0m'
 C_RED = '\033[91m'
 C_GREEN = '\033[92m'
+C_YELLOW = '\033[93m'
 C_BLUE = '\033[94m'
 C_MAGENTA = '\033[95m'
 C_CYAN = '\033[96m'
@@ -311,6 +312,7 @@ def run_dpp_handover_client(handover, alt=False):
         summary("Cannot start handover client - no bootstrap URI available",
                 color=C_RED)
         return
+    handover.my_uri = uri
     uri = ndef.UriRecord(uri)
     summary("NFC URI record for DPP: " + str(uri))
     carrier = ndef.Record('application/vnd.wfa.dpp', 'A', uri.data)
@@ -420,6 +422,7 @@ def run_dpp_handover_client(handover, alt=False):
             dpp_found = True
             uri = carrier.data[1:].decode("utf-8")
             summary("DPP URI: " + uri)
+            handover.peer_uri = uri
             if test_uri:
                 summary("TEST MODE: Fake processing")
                 break
@@ -635,6 +638,8 @@ class HandoverServer(nfc.handover.HandoverServer):
                     if "FAIL" in data:
                         continue
                 summary("Own URI (post-processing): %s" % data)
+                handover.my_uri = data
+                handover.peer_uri = uri
                 uri = ndef.UriRecord(data)
                 summary("Own bootstrapping NFC URI record: " + str(uri))
 
@@ -681,6 +686,7 @@ class HandoverServer(nfc.handover.HandoverServer):
             handover.terminate_on_hs_send_completion = True
             self.success = True
             handover.hs_sent = True
+            handover.i_m_selector = True
         elif handover.no_alt_proposal:
             summary("Do not try alternative proposal anymore - handover failed",
                     color=C_RED)
@@ -907,6 +913,8 @@ class ConnectionHandover():
         self.start_client_alt = False
         self.terminate_on_hs_send_completion = False
         self.try_own = False
+        self.my_uri = None
+        self.peer_uri = None
         self.connected = False
 
     def start_handover_server(self, llc):
@@ -1132,6 +1140,16 @@ def main():
                 break
 
             if only_one and handover.connected:
+                role = "selector" if handover.i_m_selector else "requestor"
+                summary("Connection handover result: I'm the %s" % role,
+                        color=C_YELLOW)
+                if handover.peer_uri:
+                    summary("Peer URI: " + handover.peer_uri, color=C_YELLOW)
+                if handover.my_uri:
+                    summary("My URI: " + handover.my_uri, color=C_YELLOW)
+                if not (handover.peer_uri and handover.my_uri):
+                    summary("Negotiated connection handover failed",
+                            color=C_YELLOW)
                 break
 
     except KeyboardInterrupt:
