@@ -195,6 +195,11 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 	}
 	sta->flags &= ~(WLAN_STA_WPS | WLAN_STA_MAYBE_WPS | WLAN_STA_WPS2);
 
+#ifdef CONFIG_TESTING_OPTIONS
+	wpa_msg(hapd->msg_ctx, MSG_INFO, "AP-STA-ASSOCIATING " MACSTR " hostapd_notif_assoc",
+		 MAC2STR(sta->addr));
+#endif /* CONFIG_TESTING_OPTIONS */
+
 	/*
 	 * ACL configurations to the drivers (implementing AP SME and ACL
 	 * offload) without hostapd's knowledge, can result in a disconnection

@@ -4376,6 +4376,11 @@ static void handle_assoc(struct hostapd_data *hapd,
 	}
 #endif /* CONFIG_FILS */
 
+#ifdef CONFIG_TESTING_OPTIONS
+	wpa_msg(hapd->msg_ctx, MSG_INFO, "AP-STA-ASSOCIATING " MACSTR " handle_assoc",
+		 MAC2STR(sta->addr));
+#endif /* CONFIG_TESTING_OPTIONS */
+
  fail:
 
 	/*
