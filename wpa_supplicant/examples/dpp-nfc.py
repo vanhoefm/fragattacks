@@ -80,15 +80,18 @@ def wpas_connect():
         return None
 
     for ctrl in ifaces:
-        if ifname:
-            if ifname not in ctrl:
-                continue
+        if ifname and ifname not in ctrl:
+            continue
+        if os.path.basename(ctrl).startswith("p2p-dev-"):
+            # skip P2P management interface
+            continue
         try:
             summary("Trying to use control interface " + ctrl)
             wpas = wpaspy.Ctrl(ctrl)
             return wpas
         except Exception as e:
             pass
+    summary("Could not connect to wpa_supplicant")
     return None
 
 def dpp_nfc_uri_process(uri):
