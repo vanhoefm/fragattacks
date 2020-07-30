@@ -956,13 +956,9 @@ class Authenticator(Daemon):
 	def handle_wpaspy(self, msg):
 		log(DEBUG, "daemon: " + msg)
 
-		# This is not called after deauth or reassociation
-		#if "AP-STA-NEW" in msg:
-			#cmd, clientmac = msg.split()
 		if "AP-STA-ASSOCIATING" in msg:
 			cmd, clientmac, source = msg.split()
 			self.add_station(clientmac)
-			log(ERROR, source)
 
 			log(STATUS, f"Client {clientmac} is connecting")
 			station = self.stations[clientmac]
