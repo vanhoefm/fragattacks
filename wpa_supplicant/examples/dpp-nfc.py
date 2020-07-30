@@ -893,6 +893,14 @@ def main():
         test_crn = None
 
     logging.basicConfig(level=args.loglevel)
+    for l in ['nfc.clf.rcs380',
+              'nfc.clf.transport',
+              'nfc.clf.device',
+              'nfc.clf.__init__',
+              'nfc.llcp',
+              'nfc.handover']:
+        log = logging.getLogger(l)
+        log.setLevel(args.loglevel)
 
     global init_on_touch
     init_on_touch = args.init_on_touch
