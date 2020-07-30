@@ -89,9 +89,9 @@ def freebsd_encap_eapolmsdu(p, src, dst, payload):
 
 # ----------------------------------- Vulnerability Tests -----------------------------------
 
-REQ_ARP, REQ_ICMP, REQ_ICMPv6_RA, REQ_DHCP = range(4)
+REQ_ARP, REQ_ICMP, REQ_ICMPv6_RA, REQ_DHCP, REQ_UDP = range(5)
 
-def generate_request(sta, ptype, prior=2, icmp_size=None, padding=None, to_self=False):
+def generate_request(sta, ptype, prior=2, icmp_size=None, padding=None, to_self=False, dport=None):
 	header = sta.get_header(prior=prior)
 
 	# Test handle the client handles Ethernet frames with the same src and dst MAC address
@@ -140,6 +140,15 @@ def generate_request(sta, ptype, prior=2, icmp_size=None, padding=None, to_self=
 
 		# We assume DHCP discover is sent towards the AP.
 		header.addr3 = "ff:ff:ff:ff:ff:ff"
+
+	elif ptype == REQ_UDP:
+		port = random.randint(2000, 2**16)
+
+		# We cannot chekc UDP automatically
+		check = None
+
+		request = LLC()/SNAP()/IP(src=sta.ip, dst=sta.peerip)
+		request = request/UDP(sport=port, dport=dport)/Raw(b"AAAA")
 
 	if padding != None and padding >= 1:
 		request = raw(request) + b"\x00" + b"A" * (padding - 1)
@@ -397,7 +406,7 @@ class Station():
 			if self.tk: p = self.encrypt(p)
 
 		self.daemon.inject_mon(p)
-		log(STATUS, "[Injected] " + repr(p))
+		log(STATUS, "[Injected packet] " + repr(p))
 
 	def set_header(self, p, prior=None):
 		"""Set addresses to send frame to the peer or the 3rd party station."""
@@ -566,11 +575,11 @@ class Station():
 					frame = act.frame
 
 				self.daemon.inject_mon(frame)
-				log(STATUS, "[Injected fragment] " + repr(frame))
+				log(STATUS, "[Injected] " + repr(frame))
 
 				if self.options.inject_mf_workaround and frame.FCfield & 0x4 != 0:
 					self.daemon.inject_mon(Dot11(addr1="ff:ff:ff:ff:ff:ff"))
-					log(DEBUG, "[Injected packet] Prevented bug after fragment injection")
+					log(DEBUG, "[Injected] Prevent bug after fragment injection")
 
 
 			# Stop processing actions if requested

@@ -152,6 +152,7 @@ def args2ptype(args):
 	if args.dhcp: return REQ_DHCP
 	if args.icmp: return REQ_ICMP
 	if args.ipv6: return REQ_ICMPv6_RA
+	if args.udp: return REQ_UDP
 
 	return None
 
@@ -187,6 +188,8 @@ if __name__ == "__main__":
 	parser.add_argument('--dhcp', default=False, action='store_true', help="Override default request with DHCP discover.")
 	parser.add_argument('--icmp', default=False, action='store_true', help="Override default request with ICMP ping request.")
 	parser.add_argument('--ipv6', default=False, action='store_true', help="Override default request with ICMPv6 router advertisement.")
+	# TODO: Test the --udp option more
+	parser.add_argument('--udp', type=int, default=None, help="Override default request with UDP packet to the given port.")
 	parser.add_argument('--no-dhcp', default=False, action='store_true', help="Do not reply to DHCP requests as an AP.")
 	parser.add_argument('--icmp-size', type=int, default=None, help="Second to wait after AfterAuth before triggering Connected event")
 	parser.add_argument('--padding', type=int, default=None, help="Add padding data to ARP/DHCP/ICMP requests.")

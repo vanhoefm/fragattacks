@@ -19,6 +19,7 @@ class PingTest(Test):
 		self.padding = None if opt == None else opt.padding
 		self.to_self = False if opt == None else opt.to_self
 		self.bad_mic = False if opt == None else opt.bad_mic
+		self.dport = None if opt == None else opt.udp
 
 		self.parse_meta_actions()
 
@@ -37,8 +38,11 @@ class PingTest(Test):
 	def prepare(self, station):
 		log(STATUS, "Generating ping test", color="green")
 
+		# TODO: We can only automatically check result if the last action happens while being connected...????
+
 		# Generate the header and payload
-		header, request, self.check_fn = generate_request(station, self.ptype, icmp_size=self.icmp_size, padding=self.padding, to_self=self.to_self)
+		header, request, self.check_fn = generate_request(station, self.ptype, icmp_size=self.icmp_size, \
+							padding=self.padding, to_self=self.to_self, dport=self.dport)
 
 		if self.as_msdu == 1:
 			# Set the A-MSDU frame type flag in the QoS header
@@ -212,7 +216,7 @@ class EapolAmsduTest(Test):
 		log(STATUS, "Generating ping test", color="green")
 
 		# Generate the single frame
-		header, request, check_fn = generate_request(station, self.ptype)
+		header, request, check_fn = generate_request(station, self.ptype, dport=self.dport)
 		# Set the A-MSDU frame type flag in the QoS header
 		header.Reserved = 1
 
