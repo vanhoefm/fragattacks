@@ -383,6 +383,8 @@ def run_dpp_handover_client(handover, alt=False):
             summary("No response received as expected since I'm the handover server")
         elif handover.alt_proposal_used and not alt:
             summary("No response received for initial proposal as expected since alternative proposal was also used")
+        elif handover.try_own and not alt:
+            summary("No response received for initial proposal as expected since alternative proposal will also be sent")
         else:
             summary("No response received", color=C_RED)
         run_client_alt(handover, alt)
@@ -490,7 +492,6 @@ class HandoverServer(nfc.handover.HandoverServer):
         self.sent_carrier = None
         self.ho_server_processing = False
         self.success = False
-        self.try_own = False
         self.llc = llc
         self.handover = handover
 
@@ -686,7 +687,7 @@ class HandoverServer(nfc.handover.HandoverServer):
             handover.hs_sent = True
         else:
             summary("Try to initiate with alternative parameters")
-            self.try_own = True
+            handover.try_own = True
             handover.hs_sent = False
             handover.no_alt_proposal = True
             if handover.client_thread:
@@ -856,8 +857,8 @@ def llcp_worker(llc, try_alt):
     else:
         print("Wait for handover to complete - press 'i' to initiate")
     while not handover.wait_connection and handover.srv.sent_carrier is None:
-        if handover.srv.try_own:
-            handover.srv.try_own = False
+        if handover.try_own:
+            handover.try_own = False
             summary("Try to initiate another handover with own parameters")
             handover.my_crn_ready = False
             handover.my_crn = None
@@ -905,6 +906,7 @@ class ConnectionHandover():
         self.i_m_selector = False
         self.start_client_alt = False
         self.terminate_on_hs_send_completion = False
+        self.try_own = False
 
     def start_handover_server(self, llc):
         summary("Start handover server")
