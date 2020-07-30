@@ -512,6 +512,7 @@ class HandoverServer(nfc.handover.HandoverServer):
                 if test_uri:
                     summary("TEST MODE: Fake processing")
                     res = "OK"
+                    data += " [%s]" % uri
                 else:
                     res = wpas_report_handover_req(uri)
                 if res is None or "FAIL" in res:
