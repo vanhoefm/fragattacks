@@ -7,6 +7,7 @@
 # This software may be distributed under the terms of the BSD license.
 # See README for more details.
 
+import binascii
 import os
 import struct
 import sys
@@ -254,6 +255,46 @@ def run_client_alt(handover, alt):
         summary("Try to send alternative handover request")
         dpp_handover_client(handover, alt=True)
 
+class HandoverClient(nfc.handover.HandoverClient):
+    def __init__(self, handover, llc):
+        super(HandoverClient, self).__init__(llc)
+        self.handover = handover
+
+    def recv_records(self, timeout=None):
+        msg = self.recv_octets(timeout)
+        if msg is None:
+            return None
+        records = list(ndef.message_decoder(msg, 'relax'))
+        if records and records[0].type == 'urn:nfc:wkt:Hs':
+            summary("Handover client received message '{0}'".format(records[0].type))
+            return list(ndef.message_decoder(msg, 'relax'))
+        summary("Handover client received invalid message: %s" + binascii.hexlify(msg))
+        return None
+
+    def recv_octets(self, timeout=None):
+        start = time.time()
+        msg = bytearray()
+        poll_timeout = 0.1 if timeout is None or timeout > 0.1 else timeout
+        while self.socket.poll('recv', poll_timeout):
+            try:
+                r = self.socket.recv()
+                if r is None:
+                    return None
+                msg += r
+            except TypeError:
+                return b''
+            try:
+                list(ndef.message_decoder(msg, 'strict', {}))
+                return bytes(msg)
+            except ndef.DecodeError:
+                if timeout:
+                    timeout -= time.time() - start
+                    if timeout <= 0:
+                        return None
+                    start = time.time()
+                continue
+        return None
+
 def run_dpp_handover_client(handover, alt=False):
     chan_override = None
     if alt:
@@ -293,7 +334,7 @@ def run_dpp_handover_client(handover, alt=False):
         client = handover.client
     else:
         summary("Start handover client")
-        client = nfc.handover.HandoverClient(handover.llc)
+        client = HandoverClient(handover, handover.llc)
         try:
             summary("Trying to initiate NFC connection handover")
             client.connect()
