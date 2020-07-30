@@ -21,6 +21,8 @@ def char2trigger(c):
 	else: raise Exception("Unknown trigger character " + c)
 
 def stract2action(stract):
+	"""Parse a single trigger and action pair"""
+
 	if len(stract) == 1:
 		trigger = Action.Connected
 		c = stract[0]
@@ -30,9 +32,9 @@ def stract2action(stract):
 
 	if c == 'I':
 		return Action(trigger, action=Action.GetIp)
-	elif c == 'R':
+	elif c == 'F':
 		return Action(trigger, action=Action.Rekey)
-	elif c == 'C':
+	elif c == 'R':
 		return Action(trigger, action=Action.Reconnect)
 	elif c == 'P':
 		return Action(trigger, enc=False)
@@ -44,15 +46,19 @@ def stract2action(stract):
 
 	raise Exception("Unrecognized action")
 
+def str2actions(stractions, default):
+	"""Parse a list of trigger and action pairs"""
+	if stractions != None:
+		return [stract2action(stract) for stract in stractions.split(",")]
+	else:
+		return default
+
 def prepare_tests(opt):
 	stractions = opt.actions
 	if opt.testname == "ping":
-		if stractions != None:
-			actions = [stract2action(stract) for stract in stractions.split(",")]
-		else:
-			actions = [Action(Action.Connected, action=Action.GetIp),
-				   Action(Action.Connected, enc=True)]
-
+		actions = str2actions(stractions,
+				[Action(Action.Connected, action=Action.GetIp),
+				 Action(Action.Connected, enc=True)])
 		test = PingTest(REQ_ICMP, actions, opt=opt)
 
 	elif opt.testname == "ping-frag-sep":
@@ -87,45 +93,26 @@ def prepare_tests(opt):
 	elif opt.testname == "forward":
 		test = ForwardTest(eapol=False, dst=stractions)
 
-	elif opt.testname == "eapol-inject":
-		large = False
-		if stractions != None and stractions.startswith("L,"):
-			large, stractions = True, stractions[2:]
+	elif opt.testname in ["eapol-inject", "eapol-inject-large"]:
+		large = opt.testname.endswith("-large")
 		test = ForwardTest(eapol=True, dst=stractions, large=large)
 
-	elif opt.testname == "eapol-amsdu":
-		freebsd = False
-		if stractions != None:
-			# TODO: Clean up this parsing / specification
-			stractions = stractions
-			if stractions.startswith("M,"):
-				freebsd = True
-				stractions = stractions[2:]
-			prefix, specific = stractions[:-3], stractions[-2:]
-			actions = []
-			if len(prefix) > 0:
-				actions = [stract2action(stract) for stract in prefix.split(",")]
-			actions += [Action(char2trigger(t), enc=False) for t in specific]
-		else:
-			actions = [Action(Action.StartAuth, enc=False),
-				   Action(Action.StartAuth, enc=False)]
-
+	elif opt.testname in ["eapol-amsdu", "eapol-amsdu-bad"]:
+		freebsd = opt.testname.endswith("-bad")
+		actions = str2actions(stractions,
+				[Action(Action.StartAuth, enc=False),
+				 Action(Action.StartAuth, enc=False)])
 		test = EapolAmsduTest(REQ_ICMP, actions, freebsd, opt)
 
 	elif opt.testname == "linux-plain":
 		decoy_tid = None if stractions == None else int(stractions)
 		test = LinuxTest(REQ_ICMP, decoy_tid)
 
-	# TODO: - Rename test
-	# TODO: - Allow "I,CC" to first get an IP address and test black-box
-	elif opt.testname == "macos":
-		if stractions != None:
-			actions = [Action(char2trigger(t), enc=False) for t in stractions]
-		else:
-			actions = [Action(Action.StartAuth, enc=False),
-				   Action(Action.StartAuth, enc=False)]
-
-		test = MacOsTest(REQ_ICMP, actions, opt.bcast_dst)
+	elif opt.testname == "eapfrag":
+		actions = str2actions(stractions,
+				[Action(Action.StartAuth, enc=False),
+				 Action(Action.StartAuth, enc=False)])
+		test = BcastEapFragTest(REQ_ICMP, actions, opt.bcast_dst)
 
 	elif opt.testname == "qca-test":
 		test = QcaDriverTest()
@@ -136,8 +123,9 @@ def prepare_tests(opt):
 	elif opt.testname == "qca-rekey":
 		test = QcaDriverRekey()
 
-	elif opt.testname == "amsdu-inject":
-		test = AmsduInject(REQ_ICMP, stractions)
+	elif opt.testname in ["amsdu-inject", "amsdu-inject-bad"]:
+		malformed = opt.testname.endswith("-bad")
+		test = AmsduInject(REQ_ICMP, malformed)
 
 	# No valid test ID/name was given
 	else: return None

