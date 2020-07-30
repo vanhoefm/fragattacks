@@ -36,7 +36,6 @@ success_file = None
 netrole = None
 operation_success = False
 mutex = threading.Lock()
-client_mutex = threading.Lock()
 
 C_NORMAL = '\033[0m'
 C_RED = '\033[91m'
@@ -245,13 +244,15 @@ def wpas_report_handover_sel(uri):
 def dpp_handover_client(handover, alt=False):
     summary("About to start run_dpp_handover_client (alt=%s)" % str(alt))
     if alt:
-        handover.need_client = True
-    with client_mutex:
-        summary("Start run_dpp_handover_client (client_mutex held; alt=%s))" % str(alt))
-        if alt:
-            handover.i_m_selector = False
-        run_dpp_handover_client(handover, alt)
-        summary("Done run_dpp_handover_client (alt=%s)" % str(alt))
+        handover.i_m_selector = False
+    run_dpp_handover_client(handover, alt)
+    summary("Done run_dpp_handover_client (alt=%s)" % str(alt))
+
+def run_client_alt(handover, alt):
+    if handover.start_client_alt and not alt:
+        handover.start_client_alt = False
+        summary("Try to send alternative handover request")
+        dpp_handover_client(handover, alt=True)
 
 def run_dpp_handover_client(handover, alt=False):
     chan_override = None
@@ -318,6 +319,7 @@ def run_dpp_handover_client(handover, alt=False):
     if not client.send_records(message):
         handover.my_crn_ready = False
         summary("Failed to send handover request", color=C_RED)
+        run_client_alt(handover, alt)
         return
 
     handover.my_crn, = struct.unpack('>H', crn)
@@ -339,10 +341,9 @@ def run_dpp_handover_client(handover, alt=False):
             summary("No response received as expected since I'm the handover server")
         elif handover.alt_proposal_used and not alt:
             summary("No response received for initial proposal as expected since alternative proposal was also used")
-        elif handover.need_client:
-            summary("No response received, but handover client is still needed")
         else:
             summary("No response received", color=C_RED)
+        run_client_alt(handover, alt)
         return
     summary("Received message: " + str(message))
     if len(message) < 1 or \
@@ -354,6 +355,7 @@ def run_dpp_handover_client(handover, alt=False):
     summary("alternative carriers: " + str(message[0].alternative_carriers))
     if handover.i_m_selector:
         summary("Ignore the received select since I'm the handover selector")
+        run_client_alt(handover, alt)
         return
 
     if handover.alt_proposal_used and not alt:
@@ -602,7 +604,12 @@ class HandoverServer(nfc.handover.HandoverServer):
             self.try_own = True
             handover.hs_sent = False
             handover.no_alt_proposal = True
-            threading.Thread(target=llcp_worker, args=(self.llc, True)).start()
+            if handover.client_thread:
+                handover.start_client_alt = True
+            else:
+                handover.client_thread = threading.Thread(target=llcp_worker,
+                                                          args=(self.llc, True))
+                handover.client_thread.start()
         return sel
 
 def clear_raw_mode():
@@ -798,6 +805,7 @@ def llcp_worker(llc, try_alt):
 class ConnectionHandover():
     def __init__(self):
         self.client = None
+        self.client_thread = None
         self.reset()
 
     def reset(self):
@@ -808,8 +816,8 @@ class ConnectionHandover():
         self.hs_sent = False
         self.no_alt_proposal = False
         self.alt_proposal_used = False
-        self.need_client = False
         self.i_m_selector = False
+        self.start_client_alt = False
 
     def start_handover_server(self, llc):
         summary("Start handover server")
@@ -831,7 +839,9 @@ def llcp_connected(llc):
     global handover
     handover.srv.start()
     if init_on_touch or not no_input:
-        threading.Thread(target=llcp_worker, args=(llc, False)).start()
+        handover.client_thread = threading.Thread(target=llcp_worker,
+                                                  args=(llc, False))
+        handover.client_thread.start()
     return True
 
 def llcp_release(llc):
