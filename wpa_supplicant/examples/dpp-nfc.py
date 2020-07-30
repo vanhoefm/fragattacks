@@ -907,6 +907,7 @@ class ConnectionHandover():
         self.start_client_alt = False
         self.terminate_on_hs_send_completion = False
         self.try_own = False
+        self.connected = False
 
     def start_handover_server(self, llc):
         summary("Start handover server")
@@ -939,6 +940,7 @@ def llcp_startup(llc):
 def llcp_connected(llc):
     summary("P2P LLCP connected")
     global handover
+    handover.connected = True
     handover.srv.start()
     if init_on_touch or not no_input:
         handover.client_thread = threading.Thread(target=llcp_worker,
@@ -1129,8 +1131,8 @@ def main():
                 summary("clf.connect failed: " + str(e))
                 break
 
-            if only_one and handover.srv and handover.srv.success:
-                raise SystemExit
+            if only_one and handover.connected:
+                break
 
     except KeyboardInterrupt:
         raise SystemExit
