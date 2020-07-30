@@ -30,6 +30,8 @@ in_raw_mode = False
 prev_tcgetattr = 0
 no_input = False
 srv = None
+hs_client = None
+need_client = False
 continue_loop = True
 terminate_now = False
 summary_file = None
@@ -41,7 +43,9 @@ hs_sent = False
 netrole = None
 operation_success = False
 mutex = threading.Lock()
+client_mutex = threading.Lock()
 no_alt_proposal = False
+i_m_selector = False
 
 C_NORMAL = '\033[0m'
 C_RED = '\033[91m'
@@ -248,6 +252,19 @@ def wpas_report_handover_sel(uri):
     return wpas.request(cmd)
 
 def dpp_handover_client(llc, alt=False):
+    summary("About to start run_dpp_handover_client (alt=%s)" % str(alt))
+    if alt:
+        global need_client
+        need_client = True
+    with client_mutex:
+        summary("Start run_dpp_handover_client (client_mutex held; alt=%s))" % str(alt))
+        if alt:
+            global i_m_selector
+            i_m_selector = False
+        run_dpp_handover_client(llc, alt)
+        summary("Done run_dpp_handover_client (alt=%s)" % str(alt))
+
+def run_dpp_handover_client(llc, alt=False):
     chan_override = None
     global alt_proposal_used
     if alt:
@@ -284,33 +301,40 @@ def dpp_handover_client(llc, alt=False):
     if peer_crn is not None and not alt:
         summary("NFC handover request from peer was already received - do not send own")
         return
-    client = nfc.handover.HandoverClient(llc)
-    try:
-        summary("Trying to initiate NFC connection handover")
-        client.connect()
-        summary("Connected for handover")
-    except nfc.llcp.ConnectRefused:
-        summary("Handover connection refused")
-        client.close()
-        return
-    except Exception as e:
-        summary("Other exception: " + str(e))
-        client.close()
-        return
+    global hs_client
+    if hs_client:
+        summary("Use already started handover client")
+        client = hs_client
+    else:
+        summary("Start handover client")
+        client = nfc.handover.HandoverClient(llc)
+        try:
+            summary("Trying to initiate NFC connection handover")
+            client.connect()
+            summary("Connected for handover")
+        except nfc.llcp.ConnectRefused:
+            summary("Handover connection refused")
+            client.close()
+            return
+        except Exception as e:
+            summary("Other exception: " + str(e))
+            client.close()
+            return
+        hs_client = client;
 
     if peer_crn is not None and not alt:
         summary("NFC handover request from peer was already received - do not send own")
-        client.close()
         return
 
     summary("Sending handover request")
 
-    global my_crn, my_crn_ready, hs_sent
+    global my_crn, my_crn_ready, hs_sent, need_client
     my_crn_ready = True
 
     if not client.send_records(message):
         my_crn_ready = False
         summary("Failed to send handover request", color=C_RED)
+        hs_client = None
         client.close()
         return
 
@@ -333,19 +357,27 @@ def dpp_handover_client(llc, alt=False):
             summary("No response received as expected since I'm the handover server")
         elif alt_proposal_used and not alt:
             summary("No response received for initial proposal as expected since alternative proposal was also used")
+        elif need_client:
+            summary("No response received, but handover client is still needed")
         else:
             summary("No response received", color=C_RED)
-        client.close()
+            hs_client = None
+            client.close()
         return
     summary("Received message: " + str(message))
     if len(message) < 1 or \
        not isinstance(message[0], ndef.HandoverSelectRecord):
         summary("Response was not Hs - received: " + message.type)
+        hs_client = None
         client.close()
         return
 
     summary("Received handover select message")
     summary("alternative carriers: " + str(message[0].alternative_carriers))
+    global i_m_selector
+    if i_m_selector:
+        summary("Ignore the received select since I'm the handover selector")
+        return
 
     if alt_proposal_used and not alt:
         summary("Ignore received handover select for the initial proposal since alternative proposal was sent")
@@ -412,11 +444,13 @@ def dpp_handover_client(llc, alt=False):
         my_crn = None
         peer_crn = None
         hs_sent = False
+        hs_client = None
         client.close()
         summary("Returning from dpp_handover_client")
         return
 
     summary("Remove peer")
+    hs_client = None
     client.close()
     summary("Done with handover")
     global only_one
@@ -477,7 +511,8 @@ class HandoverServer(nfc.handover.HandoverServer):
             if ((my_crn & 1) == (peer_crn & 1) and my_crn > peer_crn) or \
                ((my_crn & 1) != (peer_crn & 1) and my_crn < peer_crn):
                 summary("I'm the Handover Selector Device")
-                pass
+                global i_m_selector
+                i_m_selector = True
             else:
                 summary("Peer is the Handover Selector device")
                 summary("Ignore the received request.")
@@ -799,7 +834,7 @@ def llcp_startup(llc):
 def llcp_connected(llc):
     summary("P2P LLCP connected")
     global wait_connection, my_crn, peer_crn, my_crn_ready, hs_sent
-    global no_alt_proposal, alt_proposal_used
+    global no_alt_proposal, alt_proposal_used, need_client, i_m_selector
     wait_connection = False
     my_crn_ready = False
     my_crn = None
@@ -807,6 +842,8 @@ def llcp_connected(llc):
     hs_sent = False
     no_alt_proposal = False
     alt_proposal_used = False
+    need_client = False
+    i_m_selector = False
     global srv
     srv.start()
     if init_on_touch or not no_input:
@@ -815,6 +852,10 @@ def llcp_connected(llc):
 
 def llcp_release(llc):
     summary("LLCP release")
+    global hs_client
+    if hs_client:
+        hs_client.close()
+        hs_client = None
     return True
 
 def terminate_loop():
