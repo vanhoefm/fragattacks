@@ -22,12 +22,15 @@ SAE_PK_21_PW = "a5rp-4rgd-ewum-v4qr-v5jy"
 SAE_PK_21_M = "2bf0a143b158b967a435cf75b07fc9e6"
 SAE_PK_21_PK = "MIHcAgEBBEIBcch+ygKv1uL5344C+8Rt5h8cTYHG++L3/8/hH6I2J3pWboB0jtzTf/zdZVGqkEIi+zZ2O+5g65cS8my1B44n0g+gBwYFK4EEACOhgYkDgYYABAA49TXDQfBgQWuwGrvYSkw9yuLRTn7WKyWcfSqSFfJYY6piGRE0wdKsNsGbuqHsfjn3Jb3LhmPdcnaDXd5z7fhdgAGFaiL+ZtBJCw5LqjW71rb54oy1NookDiNILdZ9i1dwBzE3fpfOWVvfjnXj9weZKUWHLB+2RF2X1qB0mY/G5NuRXA=="
 
-def run_sae_pk(apdev, dev, ssid, pw, m, pk, ap_groups=None):
+def run_sae_pk(apdev, dev, ssid, pw, m, pk, ap_groups=None,
+               confirm_immediate=False):
     params = hostapd.wpa2_params(ssid=ssid)
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_password'] = ['%s|pk=%s:%s' % (pw, m, pk)]
     if ap_groups:
         params['sae_groups'] = ap_groups
+    if confirm_immediate:
+        params['sae_confirm_immediate'] = '1'
     hapd = hostapd.add_ap(apdev, params)
     bssid = hapd.own_addr()
 
@@ -283,12 +286,21 @@ def test_sae_pk_transition_disable(dev, apdev):
 
 def test_sae_pk_mixed(dev, apdev):
     """SAE-PK mixed deployment"""
+    run_sae_pk_mixed(dev, apdev)
+
+def test_sae_pk_mixed_immediate_confirm(dev, apdev):
+    """SAE-PK mixed deployment with immediate confirm on AP"""
+    run_sae_pk_mixed(dev, apdev, confirm_immediate=True)
+
+def run_sae_pk_mixed(dev, apdev, confirm_immediate=False):
     check_sae_pk_capab(dev[0])
     dev[0].set("sae_groups", "")
 
     params = hostapd.wpa2_params(ssid=SAE_PK_SSID)
     params['wpa_key_mgmt'] = 'SAE'
     params['sae_password'] = SAE_PK_SEC2_PW
+    if confirm_immediate:
+        params['sae_confirm_immediate'] = '1'
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = hapd.own_addr()
 
@@ -401,3 +413,12 @@ def test_sae_pk_password_min_len(dev, apdev):
                 raise
             if success:
                 raise Exception("Unexpected failure with password %s" % pw)
+
+def test_sae_pk_confirm_immediate(dev, apdev):
+    """SAE-PK with immediate confirm on AP"""
+    check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
+    dev[0].set("sae_groups", "")
+
+    run_sae_pk(apdev[0], dev[0], SAE_PK_SSID, SAE_PK_SEC2_PW,
+               SAE_PK_SEC2_M, SAE_PK_19_PK, confirm_immediate=True)
