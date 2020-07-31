@@ -1533,6 +1533,8 @@ def test_sigma_dut_dpp_qr_resp_10(dev, apdev):
 
 def test_sigma_dut_dpp_qr_resp_11(dev, apdev, params):
     """sigma_dut DPP/QR responder (conf index 11)"""
+    if not os.path.exists("./dpp-ca.py"):
+        raise HwsimSkip("dpp-ca.py not available")
     logdir = params['logdir']
     with open("auth_serv/ec-ca.pem", "rb") as f:
         res = f.read()
