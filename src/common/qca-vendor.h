@@ -2267,8 +2267,9 @@ enum qca_wlan_vendor_attr_config {
 	 * DSCP value configured in the frame with the intention to only upgrade
 	 * the access category. That said, it is not intended to downgrade the
 	 * access category for the frames.
-	 * Set the value to 0 (corresponding to BE) if the QoS upgrade needs
-	 * to be disabled.
+	 * Set the value to QCA_WLAN_AC_BK if the QoS upgrade needs to be
+	 * disabled, as BK is of the lowest priority and an upgrade to it does
+	 * not result in any changes for the frames.
 	 */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_UDP_QOS_UPGRADE = 72,
 
