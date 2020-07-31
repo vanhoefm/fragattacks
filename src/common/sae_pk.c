@@ -389,7 +389,7 @@ int sae_write_confirm_pk(struct sae_data *sae, struct wpabuf *buf)
 		return -1;
 
 	pk = tmp->ap_pk;
-	if (!pk)
+	if (!sae->pk || !pk)
 		return 0;
 
 	key = pk->key;
