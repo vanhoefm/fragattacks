@@ -403,7 +403,8 @@ int sae_write_confirm_pk(struct sae_data *sae, struct wpabuf *buf)
 #endif /* CONFIG_TESTING_OPTIONS */
 
 	if (tmp->kek_len != 32 && tmp->kek_len != 48 && tmp->kek_len != 64) {
-		wpa_printf(MSG_INFO, "SAE-PK: No KEK available for confirm");
+		wpa_printf(MSG_INFO,
+			   "SAE-PK: No KEK available for writing confirm");
 		return -1;
 	}
 
@@ -580,7 +581,8 @@ int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len)
 		return 0;
 
 	if (tmp->kek_len != 32 && tmp->kek_len != 48 && tmp->kek_len != 64) {
-		wpa_printf(MSG_INFO, "SAE-PK: No KEK available for confirm");
+		wpa_printf(MSG_INFO,
+			   "SAE-PK: No KEK available for checking confirm");
 		return -1;
 	}
 
