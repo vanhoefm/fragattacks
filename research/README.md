@@ -258,7 +258,7 @@ and are further discussed below the table.
 ## 7.1. Sanity and implementation checks
 
 - `ping I,E,E`: This test should only fail if the tested device doesn't support fragmentation. In case
-  you encounter this, it is recommended to run also run this test against a device that _does_ support
+  you encounter this, it is recommended to also run this test against a device that _does_ support
   fragmentation to assure the test tool is properly injecting fragmented frames.
 
 - `ping I,E,E --delay 5`: This test is used to check the maximum accepted delay between two fragments.
@@ -522,6 +522,10 @@ it cannot test whether the firmware or wireless chip itself overwrites fields.
 
 ### Interpreting test results
 
+First, the injection scripts only test the most important behaviour. The best way to confirm that injection
+is properly working is to **perform the vulnerability tests against devices that are known to be vulnerable**,
+and confirming that the tool correctly identifies the device(s) as vulnerable.
+
 In case the injection tests are not working, try to first unplug your Wi-Fi dongles and reboot your computer.
 If the tests still fail, try to use a different network card to monitor whether frames are injected properly.
 I observed that sometimes frames are in fact properly injected, but the second network card (`wlan1`
@@ -533,6 +537,15 @@ either "==> The most important tests have been passed successfully" or a message
 tests failed or that it couldn't capture certain inject frames. When certain injected frames could not be captures,
 this by either be because of background noise, or because the network card being tested is unable to properly
 inject certain frames (e.g. the firmware of the Intel AX200 crashes when injecting fragmented frames).
+
+### Manual checks notes
+
+When using wireshark to inspect the injection behaviour of a device it is recommended to use a second
+device in monitor mode to see how frames are injected. In case you open the interface used to inject
+frames then you should see injected frames twice: (1) first you see the frame as injected by whatever
+tool is sending it, and then (2) a second time by how the frame was injected by the driver. These two
+frames may slightly differ if the kernel overwrote certain fields. If you only see an injected frame once
+it may have been dropped by the kernel.
 
 ## 9.2. Static IP Configuration
 
