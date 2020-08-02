@@ -4945,7 +4945,9 @@ void wpa_supplicant_event(void *ctx, enum wpa_event_type event,
 		}
 #endif /* CONFIG_AP */
 
-		sme_event_ch_switch(wpa_s);
+		if (wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME)
+			sme_event_ch_switch(wpa_s);
+
 		wpas_p2p_update_channel_list(wpa_s, WPAS_P2P_CHANNEL_UPDATE_CS);
 		wnm_clear_coloc_intf_reporting(wpa_s);
 		break;
