@@ -340,7 +340,7 @@ class Station():
 			self.test = None
 
 	# FIXME: EAPOL should not be send to peer_mac() always??
-	def send_mon(self, data, prior=1):
+	def send_mon(self, data, prior=1, plaintext=False):
 		"""
 		Right after completing the handshake, it occurred several times that our
 		script was sending data *before* the key had been installed (or the port
@@ -380,7 +380,7 @@ class Station():
 		# Normal case only need to check for encryption
 		else:
 			p = p/payload
-			if self.tk: p = self.encrypt(p)
+			if self.tk and not plaintext: p = self.encrypt(p)
 
 		self.daemon.inject_mon(p)
 		log(STATUS, "[Injected packet] " + repr(p))
@@ -505,7 +505,8 @@ class Station():
 			#   yet request the key from this script).
 			# - Send with high priority, otherwise Action.AfterAuth might be send before
 			#   the EAPOL frame by the Wi-Fi chip.
-			self.send_mon(eapol)
+			# - Some routers such as the RT-AC51U do the 4-way rekey HS in plaintext.
+			self.send_mon(eapol, plaintext=self.options.rekey_plaintext)
 
 	def perform_actions(self, trigger, **kwargs):
 		result = None
@@ -1070,12 +1071,6 @@ class Supplicant(Daemon):
 		if self.options.rekey_request:
 			log(STATUS, "Actively requesting PTK rekey", color="green")
 			self.wpaspy_command("KEY_REQUEST 0 1")
-
-			# The RT-AC51U does the 4-way rekey HS in plaintext. So in some cases we must
-			# remove the keys so our script will send the EAPOL frames in plaintext.
-			if self.options.rekey_plaintext:
-				log(STATUS, "Removing keys to perform rekey using plaintext EAPOL frames")
-				self.station.reset_keys()
 		else:
 			log(STATUS, "Client cannot force rekey. Waiting on AP to start PTK rekey.", color="orange")
 
