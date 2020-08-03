@@ -2605,3 +2605,68 @@ def test_sae_pmf_roam(dev, apdev):
 
     dev[0].roam(bssid)
     dev[0].dump_monitor()
+
+def test_sae_ocv_pmk(dev, apdev):
+    """SAE with OCV and fetching PMK (successful 4-way handshake)"""
+    check_sae_capab(dev[0])
+    params = hostapd.wpa2_params(ssid="test-sae",
+                                 passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['ieee80211w'] = '2'
+    params['ocv'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].set("sae_groups", "")
+    id = dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE", ocv="1",
+                        ieee80211w="2", scan_freq="2412")
+    hapd.wait_sta()
+
+    pmk_h = hapd.request("GET_PMK " + dev[0].own_addr())
+    if "FAIL" in pmk_h or len(pmk_h) == 0:
+        raise Exception("Failed to fetch PMK from hostapd during a successful authentication")
+
+    pmk_w = dev[0].get_pmk(id)
+    if pmk_h != pmk_w:
+        raise Exception("Fetched PMK does not match: hostapd %s, wpa_supplicant %s" % (pmk_h, pmk_w))
+
+def test_sae_ocv_pmk_failure(dev, apdev):
+    """SAE with OCV and fetching PMK (failed 4-way handshake)"""
+    check_sae_capab(dev[0])
+    params = hostapd.wpa2_params(ssid="test-sae",
+                                 passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params['ieee80211w'] = '2'
+    params['ocv'] = '1'
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].set("sae_groups", "")
+    dev[0].set("oci_freq_override_eapol", "2462")
+    id = dev[0].connect("test-sae", psk="12345678", key_mgmt="SAE", ocv="1",
+                        ieee80211w="2", scan_freq="2412", wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-DISCONNECTED"], timeout=15)
+    if ev is None:
+        raise Exception("No connection result reported")
+    if "CTRL-EVENT-CONNECTED" in ev:
+        raise Exception("Unexpected connection")
+
+    pmk_h = hapd.request("GET_PMK " + dev[0].own_addr())
+    if "FAIL" in pmk_h or len(pmk_h) == 0:
+        raise Exception("Failed to fetch PMK from hostapd during a successful authentication")
+
+    res = dev[0].request("PMKSA_GET %d" % id)
+    if not res.startswith(hapd.own_addr()):
+        raise Exception("PMKSA from wpa_supplicant does not have matching BSSID")
+    pmk_w = res.split(' ')[2]
+    if pmk_h != pmk_w:
+        raise Exception("Fetched PMK does not match: hostapd %s, wpa_supplicant %s" % (pmk_h, pmk_w))
+
+    dev[0].request("DISCONNECT")
+    time.sleep(0.1)
+    pmk_h2 = hapd.request("GET_PMK " + dev[0].own_addr())
+    res = dev[0].request("PMKSA_GET %d" % id)
+    pmk_w2 = res.split(' ')[2]
+    if pmk_h2 != pmk_h:
+        raise Exception("hostapd did not report correct PMK after disconnection")
+    if pmk_w2 != pmk_w:
+        raise Exception("wpa_supplicant did not report correct PMK after disconnection")
