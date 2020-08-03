@@ -3529,6 +3529,17 @@ enum qca_wlan_vendor_attr_ll_stats_results {
 	 */
 	QCA_WLAN_VENDOR_ATTR_LL_STATS_WMM_AC_PENDING_MSDU = 83,
 
+	/* u32 value representing total time in milliseconds for which the radio
+	 * is transmitting on this channel. This attribute will be nested
+	 * within QCA_WLAN_VENDOR_ATTR_LL_STATS_CH_INFO.
+	 */
+	QCA_WLAN_VENDOR_ATTR_LL_STATS_CHANNEL_TX_TIME = 84,
+	/* u32 value representing total time in milliseconds for which the radio
+	 * is receiving all 802.11 frames intended for this device on this
+	 * channel. This attribute will be nested within
+	 * QCA_WLAN_VENDOR_ATTR_LL_STATS_CH_INFO.
+	 */
+	QCA_WLAN_VENDOR_ATTR_LL_STATS_CHANNEL_RX_TIME = 85,
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_LL_STATS_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_LL_STATS_MAX =
