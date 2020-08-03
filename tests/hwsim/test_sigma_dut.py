@@ -5112,3 +5112,35 @@ def test_sigma_dut_client_privacy(dev, apdev, params):
     res = out.splitlines()
     if len(res) > 0:
         raise Exception("Permanent address used unexpectedly")
+
+def test_sigma_dut_wpa3_inject_frame(dev, apdev):
+    """sigma_dut and WPA3 frame inject"""
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+
+    ifname = dev[0].ifname
+    sigma = start_sigma_dut(ifname)
+
+    try:
+        ssid = "test-sae"
+        params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+        params['wpa_key_mgmt'] = 'SAE'
+        params["ieee80211w"] = "2"
+        params["ocv"] = "1"
+        params['sae_groups'] = '19 20 21'
+        hapd = hostapd.add_ap(apdev[0], params)
+
+        sigma_dut_cmd_check("sta_reset_default,interface,%s,prog,WPA3" % ifname)
+        sigma_dut_cmd_check("sta_set_ip_config,interface,%s,dhcp,0,ip,127.0.0.11,mask,255.255.255.0" % ifname)
+        sigma_dut_cmd_check("sta_set_wireless,interface,%s,program,WPA3,ocvc,1" % ifname)
+        sigma_dut_cmd_check("sta_set_security,interface,%s,ssid,%s,passphrase,%s,type,SAE,encpType,aes-ccmp,keymgmttype,wpa2" % (ifname, "test-sae", "12345678"))
+        sigma_dut_cmd_check("sta_associate,interface,%s,ssid,%s,channel,1" % (ifname, "test-sae"),
+                            timeout=10)
+        sigma_dut_wait_connected(ifname)
+        sigma_dut_cmd("dev_send_frame,interface,%s,program,WPA3,framename,SAQueryReq,OCIChannel,2" % ifname)
+        sigma_dut_cmd("dev_send_frame,interface,%s,program,WPA3,framename,SAQueryReq,OCIChannel,1" % ifname)
+        sigma_dut_cmd("dev_send_frame,interface,%s,program,WPA3,framename,ReassocReq" % ifname)
+        hwsim_utils.test_connectivity(dev[0], hapd)
+        sigma_dut_cmd_check("sta_reset_default,interface," + ifname)
+    finally:
+        stop_sigma_dut(sigma)
