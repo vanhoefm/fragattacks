@@ -335,7 +335,7 @@ class Station():
 
 	def handle_eth(self, p):
 		if self.test != None and self.test.check != None and self.test.check(p):
-			log(STATUS, ">>> TEST COMPLETED SUCCESSFULLY!!!!", color="green")
+			log(STATUS, ">>> TEST COMPLETED SUCCESSFULLY", color="green")
 			log(STATUS, "Received packet: " + repr(p))
 			self.test = None
 
