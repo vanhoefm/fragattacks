@@ -14,29 +14,6 @@ from scapy.arch.common import get_if_raw_hwaddr
 
 # ----------------------------------- Utility Commands -----------------------------------
 
-def wpaspy_clear_messages(ctrl):
-	# Clear old replies and messages from the hostapd control interface. This is not
-	# perfect and there may be new unrelated messages after executing this code.
-	while ctrl.pending():
-		ctrl.recv()
-
-def wpaspy_command(ctrl, cmd):
-	wpaspy_clear_messages(ctrl)
-
-	# Include console prefix so we can ignore other messages sent over the control interface
-	rval = ctrl.request("> " + cmd)
-	while not rval.startswith("> "):
-		rval = ctrl.recv()
-
-	if "UNKNOWN COMMAND" in rval:
-		log(ERROR, "wpa_supplicant did not recognize the command %s. Did you (re)compile wpa_supplicant?" % cmd.split()[0])
-		quit(1)
-	elif "FAIL" in rval:
-		log(ERROR, f"Failed to execute command {cmd}")
-		quit(1)
-
-	return rval[2:]
-
 def argv_pop_argument(argument):
 	if not argument in sys.argv: return False
 	idx = sys.argv.index(argument)
@@ -640,6 +617,8 @@ class Daemon(metaclass=abc.ABCMeta):
 		self.sock_mon = None
 		self.sock_hwsim = None
 
+		self.wpaspy_pending = []
+
 	@abc.abstractmethod
 	def start_daemon(self):
 		pass
@@ -662,7 +641,7 @@ class Daemon(metaclass=abc.ABCMeta):
 		pass
 
 	def get_gtk(self):
-		gtk, idx = wpaspy_command(self.wpaspy_ctrl, "GET_GTK").split()
+		gtk, idx = self.wpaspy_command("GET_GTK").split()
 		return bytes.fromhex(gtk), int(idx)
 
 	@abc.abstractmethod
@@ -676,6 +655,29 @@ class Daemon(metaclass=abc.ABCMeta):
 	@abc.abstractmethod
 	def reconnect(self, station):
 		pass
+
+	def wpaspy_clear_messages(self):
+		while self.wpaspy_ctrl.pending():
+			self.wpaspy_ctrl.recv()
+
+	def wpaspy_command(self, cmd):
+		#self.wpaspy_clear_messages(ctrl)
+
+		# Include console prefix so we can ignore other messages sent over the control interface
+		response = self.wpaspy_ctrl.request("> " + cmd)
+		while not response.startswith("> "):
+			self.wpaspy_pending.append(response)
+			log(DEBUG, "<appending> " + response)
+			response = self.wpaspy_ctrl.recv()
+
+		if "UNKNOWN COMMAND" in response:
+			log(ERROR, "wpa_supplicant did not recognize the command %s. Did you (re)compile wpa_supplicant?" % cmd.split()[0])
+			quit(1)
+		elif "FAIL" in response:
+			log(ERROR, f"Failed to execute command {cmd}")
+			quit(1)
+
+		return response[2:]
 
 	def configure_interfaces(self):
 		try:
@@ -777,7 +779,7 @@ class Daemon(metaclass=abc.ABCMeta):
 	def follow_channel(self):
 		# We use GET_CHANNEL of wpa_s/hostapd because it's more reliable than get_channel,
 		# which can fail on certain devices such as the AWUS036ACH.
-		channel = int(wpaspy_command(self.wpaspy_ctrl, "GET_CHANNEL"))
+		channel = int(self.wpaspy_command("GET_CHANNEL"))
 		if self.options.inject:
 			set_channel(self.nic_mon, channel)
 			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
@@ -841,13 +843,16 @@ class Daemon(metaclass=abc.ABCMeta):
 			self.sock_hwsim = MonitorSocket(type=ETH_P_ALL, iface=self.nic_hwsim)
 
 		# Post-startup configuration of the supplicant or AP
-		wpaspy_command(self.wpaspy_ctrl, "SET ext_eapol_frame_io 1")
+		self.wpaspy_command("SET ext_eapol_frame_io 1")
 		self.configure_daemon()
 
 		# Monitor the virtual monitor interface of the client and perform the needed actions
 		sockets = [self.sock_mon, self.sock_eth, self.wpaspy_ctrl.s]
 		if self.sock_hwsim: sockets.append(self.sock_hwsim)
 		while True:
+			while len(self.wpaspy_pending) > 0:
+				self.handle_wpaspy(self.wpaspy_pending.pop())
+
 			sel = select.select(sockets, [], [], 0.5)
 			if self.sock_hwsim in sel[0]:
 				p = self.sock_hwsim.recv()
@@ -890,7 +895,7 @@ class Authenticator(Daemon):
 		self.stations = dict()
 
 	def get_tk(self, station):
-		tk = wpaspy_command(self.wpaspy_ctrl, "GET_TK " + station.get_peermac())
+		tk = self.wpaspy_command("GET_TK " + station.get_peermac())
 		return bytes.fromhex(tk)
 
 	def time_tick(self):
@@ -906,7 +911,7 @@ class Authenticator(Daemon):
 		if self.options.rekey_early_install:
 			log(STATUS, "Will install PTK during rekey after sending Msg4")
 			cmd += " early-install"
-		wpaspy_command(self.wpaspy_ctrl, cmd)
+		self.wpaspy_command(cmd)
 
 	def reconnect(self, station):
 		# Confirmed to *instantly* reconnect: Arch Linux, Windows 10 with Intel WiFi chip, iPad Pro 13.3.1
@@ -918,7 +923,7 @@ class Authenticator(Daemon):
 		else:
 			log(STATUS, "Disassociating station to make it reconnect", color="green")
 			cmd = f"DISASSOCIATE {station.get_peermac()} reason={WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA}"
-		wpaspy_command(self.wpaspy_ctrl, cmd)
+		self.wpaspy_command(cmd)
 
 	def handle_eth_dhcp(self, p, station):
 		if not DHCP in p or not station.get_peermac() in self.dhcp.leases: return
@@ -1039,7 +1044,7 @@ class Supplicant(Daemon):
 		self.time_retrans_dhcp = None
 
 	def get_tk(self, station):
-		tk = wpaspy_command(self.wpaspy_ctrl, "GET tk")
+		tk = self.wpaspy_command("GET tk")
 		if tk == "none":
 			raise Exception("Couldn't retrieve session key of client")
 		else:
@@ -1064,7 +1069,7 @@ class Supplicant(Daemon):
 		#     untill the AP starts a rekey.
 		if self.options.rekey_request:
 			log(STATUS, "Actively requesting PTK rekey", color="green")
-			wpaspy_command(self.wpaspy_ctrl, "KEY_REQUEST 0 1")
+			self.wpaspy_command("KEY_REQUEST 0 1")
 
 			# The RT-AC51U does the 4-way rekey HS in plaintext. So in some cases we must
 			# remove the keys so our script will send the EAPOL frames in plaintext.
@@ -1153,7 +1158,7 @@ class Supplicant(Daemon):
 			# When using a separate interface to inject, switch to correct channel
 			self.follow_channel()
 
-			p = re.compile("Associated with (.*) successfully")
+			p = re.compile("Associated with (.*)")
 			bss = p.search(msg).group(1)
 			self.station.handle_connecting(bss)
 
@@ -1175,8 +1180,8 @@ class Supplicant(Daemon):
 
 	def roam(self, station):
 		log(STATUS, "Roaming to the current AP.", color="green")
-		wpaspy_command(self.wpaspy_ctrl, "SET reassoc_same_bss_optim 0")
-		wpaspy_command(self.wpaspy_ctrl, "ROAM " + station.bss)
+		self.wpaspy_command("SET reassoc_same_bss_optim 0")
+		self.wpaspy_command("ROAM " + station.bss)
 
 	def reconnect(self, station):
 		log(STATUS, "Reconnecting to the AP.", color="green")
@@ -1185,15 +1190,15 @@ class Supplicant(Daemon):
 		# the authentication phase (reducing the chance that packet queues are reset).
 		optim = "0" if self.options.full_reconnect else "1"
 
-		wpaspy_command(self.wpaspy_ctrl, f"SET reassoc_same_bss_optim {optim}")
-		wpaspy_command(self.wpaspy_ctrl, "REASSOCIATE")
+		self.wpaspy_command(f"SET reassoc_same_bss_optim {optim}")
+		self.wpaspy_command("REASSOCIATE")
 
 	def configure_daemon(self):
 		# If the user already supplied IPs we can immediately perform tests
 		if self.options.ip and self.options.peerip:
 			self.initialize_ips(self.options.ip, self.options.peerip)
 
-		wpaspy_command(self.wpaspy_ctrl, "ENABLE_NETWORK all")
+		self.wpaspy_command("ENABLE_NETWORK all")
 
 	def start_daemon(self):
 		cmd = ["../wpa_supplicant/wpa_supplicant", "-Dnl80211", "-i", self.nic_iface,
@@ -1207,7 +1212,7 @@ class Supplicant(Daemon):
 			raise
 
 		self.connect_wpaspy()
-		wpaspy_command(self.wpaspy_ctrl, "DISABLE_NETWORK all")
+		self.wpaspy_command("DISABLE_NETWORK all")
 
 		clientmac = scapy.arch.get_if_hwaddr(self.nic_iface)
 		self.station = Station(self, clientmac, "to-DS")
