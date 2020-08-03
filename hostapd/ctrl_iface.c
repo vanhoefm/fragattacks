@@ -47,6 +47,7 @@
 #include "ap/ap_config.h"
 #include "ap/ieee802_1x.h"
 #include "ap/wpa_auth.h"
+#include "ap/pmksa_cache_auth.h"
 #include "ap/ieee802_11.h"
 #include "ap/sta_info.h"
 #include "ap/wps_hostapd.h"
@@ -2456,6 +2457,19 @@ static int hostapd_ctrl_resend_group_m1(struct hostapd_data *hapd,
 }
 
 
+static int hostapd_ctrl_get_pmksa_pmk(struct hostapd_data *hapd, const u8 *addr,
+				      char *buf, size_t buflen)
+{
+	struct rsn_pmksa_cache_entry *pmksa;
+
+	pmksa = wpa_auth_pmksa_get(hapd->wpa_auth, addr, NULL);
+	if (!pmksa)
+		return -1;
+
+	return wpa_snprintf_hex(buf, buflen, pmksa->pmk, pmksa->pmk_len);
+}
+
+
 static int hostapd_ctrl_get_pmk(struct hostapd_data *hapd, const char *cmd,
 				char *buf, size_t buflen)
 {
@@ -2471,13 +2485,13 @@ static int hostapd_ctrl_get_pmk(struct hostapd_data *hapd, const char *cmd,
 	if (!sta || !sta->wpa_sm) {
 		wpa_printf(MSG_DEBUG, "No STA WPA state machine for " MACSTR,
 			   MAC2STR(addr));
-		return -1;
+		return hostapd_ctrl_get_pmksa_pmk(hapd, addr, buf, buflen);
 	}
 	pmk = wpa_auth_get_pmk(sta->wpa_sm, &pmk_len);
-	if (!pmk) {
+	if (!pmk || !pmk_len) {
 		wpa_printf(MSG_DEBUG, "No PMK stored for " MACSTR,
 			   MAC2STR(addr));
-		return -1;
+		return hostapd_ctrl_get_pmksa_pmk(hapd, addr, buf, buflen);
 	}
 
 	return wpa_snprintf_hex(buf, buflen, pmk, pmk_len);
