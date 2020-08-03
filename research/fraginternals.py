@@ -14,6 +14,12 @@ from scapy.arch.common import get_if_raw_hwaddr
 
 # ----------------------------------- Utility Commands -----------------------------------
 
+def croprepr(p, length=175):
+	string = repr(p)
+	if len(string) > length:
+		return string[:length - 3] + "..."
+	return string
+
 def argv_pop_argument(argument):
 	if not argument in sys.argv: return False
 	idx = sys.argv.index(argument)
@@ -335,8 +341,8 @@ class Station():
 
 	def handle_eth(self, p):
 		if self.test != None and self.test.check != None and self.test.check(p):
-			log(STATUS, ">>> TEST COMPLETED SUCCESSFULLY", color="green")
 			log(STATUS, "Received packet: " + repr(p))
+			log(STATUS, ">>> TEST COMPLETED SUCCESSFULLY", color="green")
 			self.test = None
 
 	# FIXME: EAPOL should not be send to peer_mac() always??
@@ -383,7 +389,7 @@ class Station():
 			if self.tk and not plaintext: p = self.encrypt(p)
 
 		self.daemon.inject_mon(p)
-		log(STATUS, "[Injected packet] " + repr(p))
+		log(STATUS, "[Injected packet] " + croprepr(p))
 
 	def set_header(self, p, prior=None):
 		"""Set addresses to send frame to the peer or the 3rd party station."""
@@ -551,7 +557,7 @@ class Station():
 
 				if act.encrypted:
 					assert self.tk != None and self.gtk != None
-					log(STATUS, "Encrypting with key " + self.tk.hex() + " " + repr(act.frame))
+					log(STATUS, "Using key " + self.tk.hex() + " to encrypt " + repr(act.frame))
 					frame = self.encrypt(act.frame, inc_pn=act.inc_pn, force_key=act.key)
 				else:
 					frame = act.frame
@@ -571,9 +577,9 @@ class Station():
 		return result
 
 	def update_keys(self):
-		log(STATUS, "Requesting keys from wpa_supplicant")
 		self.tk = self.daemon.get_tk(self)
 		self.gtk, self.gtk_idx = self.daemon.get_gtk()
+		log(STATUS, "Obtained encryption keys from daemon")
 
 	def handle_authenticated(self):
 		"""Called after completion of the 4-way handshake or similar"""
