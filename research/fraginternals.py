@@ -476,15 +476,16 @@ class Station():
 		# Track return value of possible trigger Action function
 		result = None
 
-		key_type   = eapol.key_info & 0x0008
-		key_ack    = eapol.key_info & 0x0080
-		key_mic    = eapol.key_info & 0x0100
-		key_secure = eapol.key_info & 0x0200
+		key_type    = eapol.key_info & 0x0008
+		key_ack     = eapol.key_info & 0x0080
+		key_mic     = eapol.key_info & 0x0100
+		key_secure  = eapol.key_info & 0x0200
+		key_request = eapol.key_info & 0x0800
 		# Detect Msg3/4 assumig WPA2 is used --- XXX support WPA1 as well
 		is_msg3_or_4 = key_secure != 0
 
-		# Ignore group key handshake
-		if key_type == 0:
+		# Ignore group key handshake and key requests
+		if key_type == 0 or key_request != 0:
 			return None
 
 		# Inject any fragments before authenticating
