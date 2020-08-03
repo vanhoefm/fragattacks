@@ -477,6 +477,10 @@ class Station():
 		# Detect Msg3/4 assumig WPA2 is used --- XXX support WPA1 as well
 		is_msg3_or_4 = key_secure != 0
 
+		# Ignore group key handshake
+		if key_type == 0:
+			return None
+
 		# Inject any fragments before authenticating
 		if not self.txed_before_auth:
 			log(STATUS, "Action.StartAuth", color="green")
