@@ -478,6 +478,8 @@
 #define WLAN_EID_EXT_HE_6GHZ_BAND_CAP 59
 #define WLAN_EID_EXT_EDMG_CAPABILITIES 61
 #define WLAN_EID_EXT_EDMG_OPERATION 62
+#define WLAN_EID_EXT_MSCS_DESCRIPTOR 88
+#define WLAN_EID_EXT_TCLAS_MASK 89
 #define WLAN_EID_EXT_REJECTED_GROUPS 92
 #define WLAN_EID_EXT_ANTI_CLOGGING_TOKEN 93
 
@@ -562,6 +564,7 @@
 #define WLAN_EXT_CAPAB_SAE_PW_ID 81
 #define WLAN_EXT_CAPAB_SAE_PW_ID_EXCLUSIVELY 82
 #define WLAN_EXT_CAPAB_BEACON_PROTECTION 84
+#define WLAN_EXT_CAPAB_MSCS 85
 #define WLAN_EXT_CAPAB_SAE_PK_EXCLUSIVELY 88
 
 /* Extended RSN Capabilities */
@@ -2339,5 +2342,21 @@ enum edmg_bw_config {
 
 /* DPP Public Action frame identifiers - OUI_WFA */
 #define DPP_OUI_TYPE 0x1A
+
+/* Robust AV streaming Action field values */
+enum robust_av_streaming_action {
+	ROBUST_AV_SCS_REQ = 0,
+	ROBUST_AV_SCS_RESP = 1,
+	ROBUST_AV_GROUP_MEMBERSHIP_REQ = 2,
+	ROBUST_AV_GROUP_MEMBERSHIP_RESP = 3,
+	ROBUST_AV_MSCS_REQ = 4,
+	ROBUST_AV_MSCS_RESP = 5,
+};
+
+enum scs_request_type {
+	SCS_REQ_ADD = 0,
+	SCS_REQ_REMOVE = 1,
+	SCS_REQ_CHANGE = 2,
+};
 
 #endif /* IEEE802_11_DEFS_H */

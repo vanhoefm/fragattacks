@@ -1899,6 +1899,9 @@ static void wpas_ext_capab_byte(struct wpa_supplicant *wpa_s, u8 *pos, int idx)
 			*pos |= 0x01;
 #endif /* CONFIG_FILS */
 		break;
+	case 10: /* Bits 80-87 */
+		*pos |= 0x20; /* Bit 85 - Mirrored SCS */
+		break;
 	}
 }
 
@@ -1906,7 +1909,7 @@ static void wpas_ext_capab_byte(struct wpa_supplicant *wpa_s, u8 *pos, int idx)
 int wpas_build_ext_capab(struct wpa_supplicant *wpa_s, u8 *buf, size_t buflen)
 {
 	u8 *pos = buf;
-	u8 len = 10, i;
+	u8 len = 11, i;
 
 	if (len < wpa_s->extended_capa_len)
 		len = wpa_s->extended_capa_len;
