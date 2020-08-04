@@ -65,6 +65,13 @@ int wpas_send_mscs_req(struct wpa_supplicant *wpa_s)
 		return -1;
 	}
 
+	if (!wpa_s->mscs_setup_done &&
+	    wpa_s->robust_av.request_type != SCS_REQ_ADD) {
+		wpa_msg(wpa_s, MSG_INFO,
+			"MSCS: Failed to send MSCS Request: request type invalid");
+		return -1;
+	}
+
 	buf_len = 3 +	/* Action frame header */
 		  3 +	/* MSCS descriptor IE header */
 		  1 +	/* Request type */
@@ -119,6 +126,7 @@ void wpas_handle_robust_av_recv_action(struct wpa_supplicant *wpa_s,
 	status_code = *buf;
 	wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_MSCS_RESULT "bssid=" MACSTR
 		" status_code=%u", MAC2STR(src), status_code);
+	wpa_s->mscs_setup_done = status_code == WLAN_STATUS_SUCCESS;
 }
 
 
@@ -145,4 +153,5 @@ void wpas_handle_assoc_resp_mscs(struct wpa_supplicant *wpa_s, const u8 *bssid,
 	status = WPA_GET_LE16(mscs_status + 2);
 	wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_MSCS_RESULT "bssid=" MACSTR
 		" status_code=%u", MAC2STR(bssid), status);
+	wpa_s->mscs_setup_done = status == WLAN_STATUS_SUCCESS;
 }

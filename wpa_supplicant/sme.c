@@ -1880,6 +1880,7 @@ void sme_associate(struct wpa_supplicant *wpa_s, enum wpas_mode mode,
 pfs_fail:
 #endif /* CONFIG_DPP2 */
 
+	wpa_s->mscs_setup_done = false;
 	if (wpa_s->current_bss && wpa_s->robust_av.valid_config) {
 		struct wpabuf *mscs_ie;
 		size_t mscs_ie_len, buf_len, *wpa_ie_len, max_ie_len;

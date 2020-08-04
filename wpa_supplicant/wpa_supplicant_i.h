@@ -1327,6 +1327,7 @@ struct wpa_supplicant {
 	unsigned int multi_ap_backhaul:1;
 	unsigned int multi_ap_fronthaul:1;
 	struct robust_av_data robust_av;
+	bool mscs_setup_done;
 };
 
 
