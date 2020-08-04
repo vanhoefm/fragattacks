@@ -249,7 +249,7 @@ class Test(metaclass=abc.ABCMeta):
 			if self.check_fn != None:
 				self.time_completed = time.time()
 			else:
-				log(STATUS, "All frames sent. You must manually check if the test succeeded (see README).", color="green")
+				log(STATUS, ">>> All frames sent. You must manually check if the test succeeded (see README).", color="green")
 			self.done = True
 
 	def get_actions(self, action):

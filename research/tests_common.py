@@ -38,11 +38,14 @@ class PingTest(Test):
 	def prepare(self, station):
 		log(STATUS, "Generating ping test", color="green")
 
-		# TODO: We can only automatically check result if the last action happens while being connected...????
-
 		# Generate the header and payload
-		header, request, self.check_fn = generate_request(station, self.ptype, icmp_size=self.icmp_size, \
-							padding=self.padding, to_self=self.to_self, dport=self.dport)
+		header, request, check_fn = generate_request(station, self.ptype, icmp_size=self.icmp_size, \
+						padding=self.padding, to_self=self.to_self, dport=self.dport)
+
+		# We can automatically detect the result if the last fragment was sent after a connected event.
+		# Note we might get a reply during a rekey handshake, and this will be handled properly.
+		if any([act.trigger >= Action.AfterAuth for act in self.actions]):
+			self.check_fn = check_fn
 
 		if self.as_msdu == 1:
 			# Set the A-MSDU frame type flag in the QoS header
@@ -220,9 +223,9 @@ class EapolAmsduTest(Test):
 		# Set the A-MSDU frame type flag in the QoS header
 		header.Reserved = 1
 
-		# We can automatically detect result if the last fragment was
-		# sent after the authentication
-		if self.actions[-1].trigger >= Action.AfterAuth:
+		# We can automatically detect the result if the last fragment was sent after a connected event.
+		# Note we might get a reply during a rekey handshake, and this will be handled properly.
+		if any([act.trigger >= Action.AfterAuth for act in self.actions]):
 			self.check_fn = check_fn
 
 		mac_src = station.mac
