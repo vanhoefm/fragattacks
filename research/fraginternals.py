@@ -297,12 +297,14 @@ class Test(metaclass=abc.ABCMeta):
 # ----------------------------------- Abstract Station Class -----------------------------------
 
 class Station():
+	# Basic state machine to track execution of 4-way handshake
+	HsInit, HsGotM12, HsGotM34, HsDone = range(4)
+
 	def __init__(self, daemon, mac, ds_status):
 		self.daemon = daemon
 		self.options = daemon.options
 		self.test = daemon.options.test
-		self.txed_before_auth = False
-		self.txed_before_auth_done = False
+		self.hs_state = Station.HsInit
 		self.obtained_ip = False
 		self.waiting_on_ip = False
 
@@ -488,21 +490,20 @@ class Station():
 		if key_type == 0 or key_request != 0:
 			return None
 
-		# Inject any fragments before authenticating
-		if not self.txed_before_auth:
+		# Fire the StartAuth event on the 1st or 2nd message
+		if not is_msg3_or_4 and self.hs_state in [Station.HsInit, Station.HsGotM34, Station.HsDone]:
 			log(STATUS, "Action.StartAuth", color="green")
 			result = self.perform_actions(Action.StartAuth, eapol=eapol)
-			self.txed_before_auth = True
-			self.txed_before_auth_done = False
+			self.hs_state = Station.HsGotM12
+
+			self.time_connected = None
 
 		# Inject any fragments when almost done authenticating
-		elif is_msg3_or_4 and not self.txed_before_auth_done:
+		elif is_msg3_or_4 and self.hs_state == Station.HsGotM12:
 			log(STATUS, "Action.BeforeAuth", color="green")
 			result = self.perform_actions(Action.BeforeAuth, eapol=eapol)
-			self.txed_before_auth_done = True
-			self.txed_before_auth = False
+			self.hs_state = Station.HsGotM34
 
-		self.time_connected = None
 		return result
 
 	def handle_eapol_tx(self, eapol):
@@ -532,6 +533,7 @@ class Station():
 			if act.action == Action.GetIp and not self.obtained_ip:
 				self.waiting_on_ip = True
 				self.daemon.get_ip(self)
+				log(DEBUG, "Waiting with next action until we have an IP")
 				break
 
 			elif act.action == Action.Func:
@@ -586,10 +588,15 @@ class Station():
 		"""Called after completion of the 4-way handshake or similar"""
 		self.update_keys()
 
-		# Note that self.time_connect may get changed in perform_actions
-		log(STATUS, "Action.AfterAuth", color="green")
-		self.time_connected = time.time() + self.options.connected_delay
-		self.perform_actions(Action.AfterAuth)
+		if self.hs_state == Station.HsGotM34:
+			# Note that self.time_connect may get changed in perform_actions
+			log(STATUS, "Action.AfterAuth", color="green")
+			self.time_connected = time.time() + self.options.connected_delay
+			self.perform_actions(Action.AfterAuth)
+			self.hs_state = Station.HsDone
+
+		elif self.hs_state in [Station.HsInit, Station.HsGotM12]:
+			log(WARNING, "Unexpected completion of authentication")
 
 	def handle_connected(self):
 		"""This is called ~1 second after completing the handshake"""
