@@ -2678,11 +2678,11 @@ static int wpa_supplicant_event_associnfo(struct wpa_supplicant *wpa_s,
 {
 	int l, len, found = 0, found_x = 0, wpa_found, rsn_found;
 	const u8 *p;
-#if defined(CONFIG_IEEE80211R) || defined(CONFIG_OWE)
 	u8 bssid[ETH_ALEN];
-#endif /* CONFIG_IEEE80211R || CONFIG_OWE */
+	bool bssid_known;
 
 	wpa_dbg(wpa_s, MSG_DEBUG, "Association info event");
+	bssid_known = wpa_drv_get_bssid(wpa_s, bssid) == 0;
 	if (data->assoc_info.req_ies)
 		wpa_hexdump(MSG_DEBUG, "req_ies", data->assoc_info.req_ies,
 			    data->assoc_info.req_ies_len);
@@ -2799,7 +2799,7 @@ static int wpa_supplicant_event_associnfo(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_OWE
 	if (wpa_s->key_mgmt == WPA_KEY_MGMT_OWE &&
-	    (wpa_drv_get_bssid(wpa_s, bssid) < 0 ||
+	    (!bssid_known ||
 	     owe_process_assoc_resp(wpa_s->wpa, bssid,
 				    data->assoc_info.resp_ies,
 				    data->assoc_info.resp_ies_len) < 0)) {
@@ -2834,7 +2834,7 @@ no_pfs:
 #ifdef CONFIG_IEEE80211R
 #ifdef CONFIG_SME
 	if (wpa_s->sme.auth_alg == WPA_AUTH_ALG_FT) {
-		if (wpa_drv_get_bssid(wpa_s, bssid) < 0 ||
+		if (!bssid_known ||
 		    wpa_ft_validate_reassoc_resp(wpa_s->wpa,
 						 data->assoc_info.resp_ies,
 						 data->assoc_info.resp_ies_len,
@@ -2894,7 +2894,7 @@ no_pfs:
 	/* Process FT when SME is in the driver */
 	if (!(wpa_s->drv_flags & WPA_DRIVER_FLAGS_SME) &&
 	    wpa_ft_is_completed(wpa_s->wpa)) {
-		if (wpa_drv_get_bssid(wpa_s, bssid) < 0 ||
+		if (!bssid_known ||
 		    wpa_ft_validate_reassoc_resp(wpa_s->wpa,
 						 data->assoc_info.resp_ies,
 						 data->assoc_info.resp_ies_len,
@@ -2911,6 +2911,11 @@ no_pfs:
 	wpa_sm_set_ft_params(wpa_s->wpa, data->assoc_info.resp_ies,
 			     data->assoc_info.resp_ies_len);
 #endif /* CONFIG_IEEE80211R */
+
+	if (bssid_known)
+		wpas_handle_assoc_resp_mscs(wpa_s, bssid,
+					    data->assoc_info.resp_ies,
+					    data->assoc_info.resp_ies_len);
 
 	/* WPA/RSN IE from Beacon/ProbeResp */
 	p = data->assoc_info.beacon_ies;

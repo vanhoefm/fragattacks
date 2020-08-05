@@ -9,6 +9,7 @@
 #include "utils/includes.h"
 #include "utils/common.h"
 #include "common/wpa_ctrl.h"
+#include "common/ieee802_11_common.h"
 #include "wpa_supplicant_i.h"
 #include "driver_i.h"
 #include "bss.h"
@@ -118,4 +119,30 @@ void wpas_handle_robust_av_recv_action(struct wpa_supplicant *wpa_s,
 	status_code = *buf;
 	wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_MSCS_RESULT "bssid=" MACSTR
 		" status_code=%u", MAC2STR(src), status_code);
+}
+
+
+void wpas_handle_assoc_resp_mscs(struct wpa_supplicant *wpa_s, const u8 *bssid,
+				 const u8 *ies, size_t ies_len)
+{
+	const u8 *mscs_desc_ie, *mscs_status;
+	u16 status;
+
+	/* Process optional MSCS Status subelement when MSCS IE is in
+	 * (Re)Association Response frame */
+	if (!ies || ies_len == 0 || !wpa_s->robust_av.valid_config)
+		return;
+
+	mscs_desc_ie = get_ie_ext(ies, ies_len, WLAN_EID_EXT_MSCS_DESCRIPTOR);
+	if (!mscs_desc_ie || mscs_desc_ie[1] < 1)
+		return;
+
+	mscs_status = get_ie(mscs_desc_ie, mscs_desc_ie[1],
+			     MCSC_SUBELEM_STATUS);
+	if (!mscs_status || mscs_status[1] < 2)
+		return;
+
+	status = WPA_GET_LE16(mscs_status + 2);
+	wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_MSCS_RESULT "bssid=" MACSTR
+		" status_code=%u", MAC2STR(bssid), status);
 }

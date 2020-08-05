@@ -2359,4 +2359,9 @@ enum scs_request_type {
 	SCS_REQ_CHANGE = 2,
 };
 
+/* Optional subelement IDs for MSCS Descriptor element */
+enum mscs_description_subelem {
+	MCSC_SUBELEM_STATUS = 1,
+};
+
 #endif /* IEEE802_11_DEFS_H */
