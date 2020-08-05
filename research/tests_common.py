@@ -155,7 +155,7 @@ class LinuxTest(Test):
 
 		# Fragment 2: make Linux update latest used crypto Packet Number. Use a dummy packet
 		# that can't accidently aggregate with the first fragment in a corrrect packet.
-		p = station.get_header(prior=2)/LLC()/SNAP()/IP()/Raw(b"linux_plain decoy fragment")
+		p = station.get_header(prior=2)/LLC()/SNAP()/IP()/Raw(b"linux-plain decoy fragment")
 		p.SC = frag2.SC ^ (1 << 4)
 
 		# - In the attack against Linux, the decoy frame must have the same QoS TID.

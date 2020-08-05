@@ -158,12 +158,12 @@ def args2ptype(args):
 
 def args2msdu(args):
 	# Only one of these should be given
-	if args.amsdu + args.fake_amsdu > 1:
-		log(STATUS, "You cannot combine --amsdu and --fake-amsdu. Please only supply one of them.")
+	if args.amsdu + args.amsdu_fake > 1:
+		log(STATUS, "You cannot combine --amsdu and --amsdu-fake. Please only supply one of them.")
 		quit(1)
 
 	if args.amsdu: return 1
-	if args.fake_amsdu: return 2
+	if args.amsdu_fake: return 2
 
 	return None
 
@@ -183,7 +183,8 @@ if __name__ == "__main__":
 	parser.add_argument('--delay', type=float, default=0, help="Delay between fragments in certain tests.")
 	parser.add_argument('--inc-pn', type=int, help="To test non-sequential packet number in fragments.")
 	parser.add_argument('--amsdu', default=False, action='store_true', help="Encapsulate pings in an A-MSDU frame.")
-	parser.add_argument('--fake-amsdu', default=False, action='store_true', help="Set A-MSDU flag but include normal payload.")
+	parser.add_argument('--amsdu-fake', default=False, action='store_true', help="Set A-MSDU flag but include normal payload.")
+	parser.add_argument('--amsdu-ssp', default=False, action='store_true', help="Force authentication of QoS A-MSDU flag.")
 	parser.add_argument('--arp', default=False, action='store_true', help="Override default request with ARP request.")
 	parser.add_argument('--dhcp', default=False, action='store_true', help="Override default request with DHCP discover.")
 	parser.add_argument('--icmp', default=False, action='store_true', help="Override default request with ICMP ping request.")
