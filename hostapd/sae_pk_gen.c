@@ -25,11 +25,15 @@ int main(int argc, char *argv[])
 	char *b64 = NULL, *pw = NULL, *pos, *src;
 	int sec, j;
 	int ret = -1;
-	u8 hash[SAE_MAX_HASH_LEN], fingerprint[SAE_MAX_HASH_LEN];
+	u8 hash[SAE_MAX_HASH_LEN];
+	char hash_hex[2 * SAE_MAX_HASH_LEN + 1];
+	u8 pw_base_bin[SAE_MAX_HASH_LEN];
+	u8 *dst;
 	int group;
 	size_t hash_len;
 	unsigned long long i, expected;
 	char m_hex[2 * SAE_PK_M_LEN + 1];
+	u32 sec_1b, val20;
 
 	wpa_debug_level = MSG_INFO;
 	if (os_program_init() < 0)
@@ -37,15 +41,17 @@ int main(int argc, char *argv[])
 
 	if (argc != 4) {
 		fprintf(stderr,
-			"usage: sae_pk_gen <DER ECPrivateKey file> <Sec:2..5> <SSID>\n");
+			"usage: sae_pk_gen <DER ECPrivateKey file> <Sec:3|5> <SSID>\n");
 		goto fail;
 	}
 
 	sec = atoi(argv[2]);
-	if (sec < 2 || sec > 5) {
-		fprintf(stderr, "Invalid Sec value (allowed range: 2..5)\n");
+	if (sec != 3 && sec != 5) {
+		fprintf(stderr,
+			"Invalid Sec value (allowed values: 3 and 5)\n");
 		goto fail;
 	}
+	sec_1b = sec == 3;
 	expected = 1;
 	for (j = 0; j < sec; j++)
 		expected *= 256;
@@ -106,7 +112,7 @@ int main(int argc, char *argv[])
 			goto fail;
 		}
 		if (hash[0] == 0 && hash[1] == 0) {
-			if (sec == 2 || (hash[2] & 0xf0) == 0)
+			if ((hash[2] & 0xf0) == 0)
 				fprintf(stderr, "\r%3.2f%%",
 					100.0 * (double) i / (double) expected);
 			for (j = 2; j < sec; j++) {
@@ -119,18 +125,14 @@ int main(int argc, char *argv[])
 		inc_byte_array(m, SAE_PK_M_LEN);
 	}
 
-	fprintf(stderr, "\nFound a valid hash in %llu iterations\n", i);
-	wpa_hexdump(MSG_DEBUG, "Valid hash", hash, hash_len);
-	fingerprint[0] = (sec - 2) << 6 | hash[sec] >> 2;
-	for (i = 1; i < hash_len - sec; i++)
-		fingerprint[i] = hash[sec + i - 1] << 6 | hash[sec + i] >> 2;
-	wpa_hexdump(MSG_DEBUG, "Fingerprint part for password",
-		    fingerprint, hash_len - sec);
+	if (wpa_snprintf_hex(m_hex, sizeof(m_hex), m, SAE_PK_M_LEN) < 0 ||
+	    wpa_snprintf_hex(hash_hex, sizeof(hash_hex), hash, hash_len) < 0)
+		goto fail;
+	fprintf(stderr, "\nFound a valid hash in %llu iterations: %s\n",
+		i + 1, hash_hex);
 
 	b64 = base64_encode(der, der_len, NULL);
-	pw = sae_pk_base32_encode(fingerprint, (hash_len - sec) * 8 - 2);
-	if (!b64 || !pw ||
-	    wpa_snprintf_hex(m_hex, sizeof(m_hex), m, SAE_PK_M_LEN) < 0)
+	if (!b64)
 		goto fail;
 	src = pos = b64;
 	while (*src) {
@@ -140,10 +142,44 @@ int main(int argc, char *argv[])
 	}
 	*pos = '\0';
 
+	/* Skip 8*Sec bits and add Sec_1b as the every 20th bit starting with
+	 * one. */
+	os_memset(pw_base_bin, 0, sizeof(pw_base_bin));
+	dst = pw_base_bin;
+	for (j = 0; j < 8 * (int) hash_len / 20; j++) {
+		val20 = sae_pk_get_be19(hash + sec);
+		val20 |= sec_1b << 19;
+		sae_pk_buf_shift_left_19(hash + sec, hash_len - sec);
+
+		if (j & 1) {
+			*dst |= (val20 >> 16) & 0x0f;
+			dst++;
+			*dst++ = (val20 >> 8) & 0xff;
+			*dst++ = val20 & 0xff;
+		} else {
+			*dst++ = (val20 >> 12) & 0xff;
+			*dst++ = (val20 >> 4) & 0xff;
+			*dst = (val20 << 4) & 0xf0;
+		}
+	}
+	if (wpa_snprintf_hex(hash_hex, sizeof(hash_hex),
+			     pw_base_bin, hash_len - sec) >= 0)
+		fprintf(stderr, "PasswordBase binary data for base32: %s",
+			hash_hex);
+
+	pw = sae_pk_base32_encode(pw_base_bin, 20 * 3 - 5);
+	if (!pw)
+		goto fail;
+
 	printf("# SAE-PK password/M/private key for Sec=%d.\n", sec);
-	printf("# The password can be truncated from right to improve\n");
-	printf("# usability at the cost of security.\n");
 	printf("sae_password=%s|pk=%s:%s\n", pw, m_hex, b64);
+	printf("# Longer passwords can be used for improved security at the cost of usability:\n");
+	for (j = 4; j <= ((int) hash_len * 8 + 5 - 8 * sec) / 19; j++) {
+		os_free(pw);
+		pw = sae_pk_base32_encode(pw_base_bin, 20 * j - 5);
+		if (pw)
+			printf("# %s\n", pw);
+	}
 
 	ret = 0;
 fail:

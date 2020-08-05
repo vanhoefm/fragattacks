@@ -4930,8 +4930,8 @@ def test_sigma_dut_sae_pk(dev, apdev):
     sigma = start_sigma_dut(ifname)
 
     ssid = "SAE-PK test"
-    pw = "dwxm-zv66-p5ue"
-    m = "431ff8322f93b9dc50ded9f3d14ace22"
+    pw = "hbbi-f4xq-b45g"
+    m = "d2e5fa27d1be8897f987f2d480d2af6b"
     pk = "MHcCAQEEIAJIGlfnteonDb7rQyP/SGQjwzrZAnfrXIm4280VWajYoAoGCCqGSM49AwEHoUQDQgAEeRkstKQV+FSAMqBayqFknn2nAQsdsh/MhdX6tiHOTAFin/sUMFRMyspPtIu7YvlKdsexhI0jPVhaYZn1jKWhZg=="
 
     try:
@@ -5012,32 +5012,50 @@ def test_sigma_dut_ap_sae_pk(dev, apdev, params):
     conffile = params['prefix'] + ".sigma-conf"
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
-    tests = [("SAEPK-4.7.1", "fb4c-zpqh-bhdc", "saepk.pem",
-              "2ec1f37b47b402252e9dc5001e81fd1c", False),
-             ("SAEPK-5.7.1.1", "amro-yjrs-zzda", "saepk1.pem",
-              "f42baa90420032486b3229ab0890878a", False),
-             ("SAEPK-5.7.1.2", "eh56-tjce-cnzg-ymhq", "saepk2.pem",
-              "efb8b7a87e0638a93b056cb4aadf4a71", False),
-             ("SAEPK-5.7.1.3", "knny-r45l-ww3w", "saepk3.pem",
-              "6502721b2c2dfea3c9aefc5324eee9c9", False),
-             ("SAEPK-5.7.2.1", "fvys-4brw-d67c", "saepk4.pem",
-              "b63662c6f0bdd12bf5a2075ccfd7e132", False),
-             ("SAEPK-5.7.2.2", "cnj6-khsf-dgzh", "saepk5.pem",
-              "126d37fae167a53d4ebb08a235cef1da", False),
-             ("SAEPK-5.7.2.3", "hr7j-3cdr-wtq6", "saepk6.pem",
-              "61a84a86ffb1b9e23f576a0275ddcc78", True),
-             ("SAEPK-5.7.2.4", "geoh-2rvn-ivwu", "saepk7.pem",
-              "61a84a86ffb1b9e23f576a0275ddcc78", False),
-             ("SAEPK-5.7.2.4", "geoh-2rvn-ivwu", "saepk8_sig.pem",
-              "61a84a86ffb1b9e23f576a0275ddcc78", True),
-             ("SAEPK-5.7.3", "hbhh-r4um-jzjs", "saepk9.pem",
-              "af9b55bce52040892634bb3e41d557ee", False),
-             ("SAE-PK-5.7.1.13", "dop4-pi5w-72g2", "saepk13.pem",
-              "c269116268faaa6728fccd27fa5e9003", False),
-             ("SAE-PK test", "ssko-2lmu-7", "saepk5.7.1Run4thru12.pem",
-              "a5e38c7251ea310cc348fbcdadfa8bcb", False),
-             ("SAE-PK test", "3qqu-f4xq", "saepk5.7.1Run4thru12.pem",
-              "d2e5fa27d1be8897f987f2d480d2af6b", False)]
+    tests = [("SAEPK-4.7.1.1", "ya3o-zvm2-r4so", "saepk1.pem",
+              "faa1ef5094bdb4cb2836332ca2c09839", False),
+             ("SAEPK-4.7.1.2", "xcc2-qwru-yg23", "saepk1.pem",
+              "b1b30107eb74de2f25afd079bb4196c1", False),
+             ("SAEPK-4.7.1.3", "skqz-6scq-zcqv", "saepk1.pem",
+              "4c0ff61465e0f298510254ff54916c71", False),
+             ("SAEPK-4.7.1.4", "r6em-rya4-tqfa", "saepkP384.pem",
+              "fb811655209e9edf347a675ddd3e9c82", False),
+             ("SAEPK-4.7.1.5", "6kjo-umvi-7x3w", "saepkP521.pem",
+              "cccb76bc0f113ab754826ba9538d66f5", False),
+             ("SAEPK-5.7.1.1", "sw4h-re63-wgqg", "saepk1.pem",
+              "0d126f302d85ac809a6a4229dbbe3c75", False),
+             ("SAEPK-5.7.1.2", "wewq-r4kg-4ioz-xb2p", "saepk1.pem",
+              "d6b1d8924b1a462677e67b3bbfe73977", False),
+             ("SAEPK-5.7.1.3", "vb3v-5skk-5eft-v4hu-w2c5", "saepk1.pem",
+              "41f8cfceb96ebc5c8af9677d22749fad", False),
+             ("SAEPK-5.7.1.4", "2qsw-6tgy-xnwa-s7lo-75tq-qggr", "saepk1.pem",
+              "089e8d4a3a79ec637c54dd7bd61972f2", False),
+             ("SAE-PK test", "hbbi-f4xq-b45g", "saepkP256.pem",
+              "d2e5fa27d1be8897f987f2d480d2af6b", False),
+             ("SAE-PK test", "hbbi-f4xq-b457-jje4", "saepkP256.pem",
+              "d2e5fa27d1be8897f987f2d480d2af6b", False),
+             ("SAE-PK test", "hbbi-f4xq-b457-jjew-muei", "saepkP256.pem",
+              "d2e5fa27d1be8897f987f2d480d2af6b", False),
+             ("SAE-PK test", "hbbi-f4xq-b457-jjew-muey-fod3", "saepkP256.pem",
+              "d2e5fa27d1be8897f987f2d480d2af6b", False),
+             ("SAEPK-5.7.1.1", "sw4h-re63-wgqg", "saepk1.pem",
+              "0d126f302d85ac809a6a4229dbbe3c75", False),
+             ("SAEPK-5.7.1.10", "tkor-7nb3-r7tv", "saepkP384.pem",
+              "af1a3df913fc0103f65f105ed1472277", False),
+             ("SAEPK-5.7.1.11", "yjl3-vfvu-w6r3", "saepkP521.pem",
+              "24dadf9d253c4169c9647a21cb54fc57", False),
+             ("SAEPK-5.7.2.1", "rntm-tkrp-xgke", "saepk1.pem",
+              "cd38ccce3baff627d09bee7b9530d6ce", False),
+             ("SAEPK-5.7.2.2", "7lt7-7dqt-6abk", "saepk1.pem",
+              "a22fc8489932597c9e83de62dec02b21", False),
+             ("SAEPK-5.7.2.3", "sw4h-re63-wgqg", "saepk2.pem",
+              "1f4a4c7d290d97e0b6ab0cbbbfa0726d", True),
+             ("SAEPK-5.7.2.4", "rmj3-ya7b-42k4", "saepk1.pem",
+              "5f65e2bc37f8494de7a605ff615c8b6a", False),
+             ("SAEPK-5.7.2.4", "rmj3-ya7b-42k4", "saepk2.pem",
+              "5f65e2bc37f8494de7a605ff615c8b6a", True),
+             ("SAEPK-5.7.3", "4322-ufus-4bhm", "saepk1.pem",
+              "21ede99abc46679646693cafe4677d4e", False)]
 
     with HWSimRadio() as (radio, iface):
         sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
@@ -5054,10 +5072,10 @@ def test_sigma_dut_ap_sae_pk_misbehavior(dev, apdev, params):
     conffile = params['prefix'] + ".sigma-conf"
     if "SAE" not in dev[0].get_capability("auth_alg"):
         raise HwsimSkip("SAE not supported")
-    ssid = "SAEPK-4.7.1"
-    pw = "fb4c-zpqh-bhdc"
-    keypair = "saepk.pem"
-    m = "2ec1f37b47b402252e9dc5001e81fd1c"
+    ssid = "SAEPK-4.7.1.1"
+    pw = "rmj3-ya7b-42k4"
+    keypair = "saepk1.pem"
+    m = "faa1ef5094bdb4cb2836332ca2c09839"
 
     with HWSimRadio() as (radio, iface):
         sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
@@ -5069,7 +5087,7 @@ def test_sigma_dut_ap_sae_pk_misbehavior(dev, apdev, params):
             run_sigma_dut_ap_sae_pk(conffile, dev[0], ssid, pw, keypair, m,
                                     True, status=126, omit=True, immediate=True)
             run_sigma_dut_ap_sae_pk(conffile, dev[0], ssid, pw, keypair, m,
-                                    True, sig="saepk8_sig.pem")
+                                    True, sig="saepk2.pem")
         finally:
             stop_sigma_dut(sigma)
 

@@ -551,19 +551,14 @@ fail:
 static int sae_pk_tests(void)
 {
 #ifdef CONFIG_SAE_PK
-	const char *invalid[] = { "a2bc-de3f-ghi4-", "a2bcde3fghi4", "", NULL };
+	const char *invalid[] = { "a2bc-de3f-ghim-", "a2bcde3fghim", "", NULL };
 	struct {
 		const char *pw;
 		const u8 *val;
 	} valid[] = {
-		{ "a2bc-de3f-ghi4", (u8 *) "\x06\x82\x21\x93\x65\x31\xd1\xc0" },
-		{ "aaaa-aaaa-aaaa-a",
-		  (u8 *) "\x00\x00\x00\x00\x00\x00\x00\x00\x00" },
-		{ "aaaa-aaaa-aaaa", (u8 *) "\x00\x00\x00\x00\x00\x00\x00\x00" },
-		{ "7777-7777-777", (u8 *) "\xff\xff\xff\xff\xff\xff\xfe" },
-		{ "7777-7777-7777", (u8 *) "\xff\xff\xff\xff\xff\xff\xff\xf0" },
-		{ "7777-7777-7777-7",
-		  (u8 *) "\xff\xff\xff\xff\xff\xff\xff\xff\x80" },
+		{ "a2bc-de3f-ghim", (u8 *) "\x06\x82\x21\x93\x65\x31\xd0\xc0" },
+		{ "aaaa-aaaa-aaaj", (u8 *) "\x00\x00\x00\x00\x00\x00\x00\x90" },
+		{ "7777-7777-777f", (u8 *) "\xff\xff\xff\xff\xff\xff\xfe\x50" },
 		{ NULL, NULL }
 	};
 	int i;
@@ -617,7 +612,7 @@ static int sae_pk_tests(void)
 		}
 		os_free(res);
 
-		b32 = sae_pk_base32_encode(val, bits);
+		b32 = sae_pk_base32_encode(val, bits - 5);
 		if (!b32) {
 			wpa_printf(MSG_ERROR,
 				   "SAE-PK: Failed to encode password '%s'",

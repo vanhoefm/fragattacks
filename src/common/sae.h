@@ -70,9 +70,11 @@ struct sae_temporary_data {
 	const struct sae_pk *ap_pk;
 	u8 own_addr[ETH_ALEN];
 	u8 peer_addr[ETH_ALEN];
-	u8 *pw;
-	size_t pw_len;
+	u8 fingerprint[SAE_MAX_HASH_LEN];
+	size_t fingerprint_bytes;
+	size_t fingerprint_bits;
 	size_t lambda;
+	unsigned int sec;
 	u8 ssid[32];
 	size_t ssid_len;
 #ifdef CONFIG_TESTING_OPTIONS
@@ -164,5 +166,7 @@ struct sae_pk * sae_parse_pk(const char *val);
 int sae_write_confirm_pk(struct sae_data *sae, struct wpabuf *buf);
 int sae_check_confirm_pk(struct sae_data *sae, const u8 *ies, size_t ies_len);
 int sae_hash(size_t hash_len, const u8 *data, size_t len, u8 *hash);
+u32 sae_pk_get_be19(const u8 *buf);
+void sae_pk_buf_shift_left_19(u8 *buf, size_t len);
 
 #endif /* SAE_H */
