@@ -209,7 +209,7 @@ the device is not vulnerable. Most attacks have several slight variants represen
 `$COMMAND` values, and verifying the result of some tests requires running tcpdump or wireshark
 on the targeted device (both points are further clarified below the table).
 
-To verify your test setup, the first command in the table below performs a normal ping that must
+To **verify your test setup**, the first command in the table below performs a normal ping that must
 succeed. The second command sends the ping as two fragmented Wi-Fi frames, and should only fail
 in the rare case that the tested device doesn't support fragmentation. In case one of these tests
 is not working, follow the instructions in [network card injection test](#network-card-injection-test)
@@ -221,15 +221,13 @@ and are further discussed below the table.
 |             Command              | Short description
 | -------------------------------- | ---------------------------------
 | <div align="center">*Sanity checks*</div>
-| `ping I,E`                       | Send a normal ping.
+| `ping`                           | Send a normal ping.
 | `ping I,E,E`                     | Send a normal fragmented ping.
 | <div align="center">*Basic device behaviour*</div>
 | `ping I,E,E --delay 5`           | Send a normal fragmented ping with a 5 second delay between fragments.
 | `ping-frag-sep`                  | Send a normal fragmented ping with fragments separated by another frame.
 | <div align="center">*A-MSDU attacks (§3)*</div>
 | `ping I,E --amsdu`               | Send a ping encapsulated in a normal (non SSP protected) A-MSDU frame.
-| `amsdu-inject`                   | Send a valid A-MSDU frame whose start is also a valid rfc1042 header.
-| `amsdu-inject-bad`               | Same as above, but works against targets that incorrectly parse the frame.
 | <div align="center">*Mixed key attacks (§4)*</div>
 | `ping I,F,BE,AE`                 | Inject two fragments encrypted under a different key.
 | `ping I,F,BE,AE --pn-per-qos`    | Same as above, but also works if the target only accepts consecutive PNs.
@@ -269,30 +267,38 @@ and are further discussed below the table.
   though it actually is.
 
 - `ping-frag-sep`: This tests sends a fragmented Wi-Fi frame that is seperated by an unrelated frame.
-  That is, it sends the first fragment, then a full unrelated Wi-Fi frame, and finally the second fragment.
-  In case this test fails, the mixed key attack and cache attack will likely also fail. The only purpose
-  of this test is to better understand the behaviour of a device and learn why other tests are failing.
+  That is, it sends the first fragment, then a (normal) unrelated Wi-Fi frame, and finally the second fragment.
+  In case this test fails, the mixed key attack and cache attack will likely also fail (since they require
+  sending other frames between two fragments). The only purpose of this test is to better understand the
+  behaviour of a device and learn why other tests are failing.
 
 ## 7.2. A-MSDU attack tests (§3)
 
-Any implementation that supports A-MSDUs is currently vulnerable to attacks. To prevent attacks, the network
-must mandate the usage of SSP A-MSDUs (and drop all non-SSP A-MSDUs). It's currently unclear how to prevent
-this attack in a backward-compatible manner. See Section 3 of the paper for details.
+The test `ping I,E --amsdu` checks if an implementation supports A-MSDUs, in which case it is vulnerable to
+attacks. To prevent attacks, the network must mandate the usage of SSP A-MSDUs (and drop all non-SSP A-MSDUs).
+It's currently unclear how to prevent this attack in a backward-compatible manner. See Section 3 of the paper
+for details.
 
 ## 7.3. Mixed key attack tests (§4)
 
 - When running the mixed key test against an AP, the AP must be configured to regularly renew the session
-  key (PTK) by executing a new 4-way handshake (e.g. every 30 seconds or minute). The tool will display
+  key (PTK) by executing a new 4-way handshake (e.g. every minute). The tool will display
   `Client cannot force rekey. Waiting on AP to start PTK rekey` when waiting for this PTK rekey handshake.
-  Against a low number of APs, the client can also request the AP to renew the PTK, meaning there is no
+  Against a low number of APs, the client can also request to renew the PTK, meaning there is no
   need to configure the AP to periodically renew the key. In this case you can let the test tool request
-  the AP to renew the PTK by adding the `--rekey-request` parameter.
-  
-- Home routers with a MediaTek driver will perform the rekey handshake in plaintext. To test these or
-  similar devices, you must add the `--rekey-plaintext` parameter (see examples in [extended vulnerability tests](#extended-vulnerability-tests)).
-  
-- Certain clients install the key too early during a pairwise session rekey. To test these devices,
-  add the `--rekey-early-install` parameter and retry the test (see examples in [extended vulnerability tests](#extended-vulnerability-tests)).
+  to renew the PTK by adding the `--rekey-req` parameter.
+
+- Some APs cannot be configured to regularly renew the session key (PTK). Against these APs you can instead
+  try to run a cache attack test. In case the AP is vulnerable to cache attacks then it is also vulnerable
+  to mixed key attacks. If the AP isn't vulnerable to cache attacks then we cannot say anything about its
+  susceptibility to mixed key attacks, and in that case I recommend performing a code audit instead.
+
+- The `--pn-per-qos` parameter assures that both injected fragments have consecutive packet numbers, which
+  is required for the attack to succeed against certain devices (e.g. against Linux).
+
+- Several devices implement the 4-way handshake differently and this will impact whether these tests will
+  succeed or not. In case the tests fail, it is highly recommended to also perform the mixed key attack
+  tests listed in [Extended Vulnerability Tests](#8.-Extended-Vulnerability-Tests).
 
 ## 7.4. Cache attack tests (§5)
 
@@ -303,33 +309,51 @@ this attack in a backward-compatible manner. See Section 3 of the paper for deta
 - When testing a client, the tools sends a first fragment, _disassociates_ the client, and once the client
   has reconnected will send the second fragment. Ideally the client will immediately reconnect after sending
   the disassociation frame. This may require disabling all other networks in the client being tested. We also
-  found that some client don't seem to properly handle the disassocation, and in that case you can add the
+  found that some clients don't seem to properly handle the disassocation, and in that case you can add the
   `--full-reconnect` option as shown in the table to send a deauthentication frame instead.
 
-## 7.5. Broadcast fragment attack tests (§6.7)
+## 7.5. Mixed plain/encrypt attack (§6.3)
 
-- So far we only found that clients are vulnerable to this attack. Several clients are only vulnerable
-  while they are connecting to the network (and executing the 4-way handshake).
+- `ping I,E,P` and `linux-plain`: if this test succeeds the resulting attacks are described in Section 6.3
+  of the paper. Summarized, in combintation with the A-MSDU or cache vulnerability it can be exploited to
+  inject packets. When not combined with any other vulnerabilities the impact is implementation-specific.
+
+- `ping I,P,E`: if this test succeeds it is trivial to inject plaintext frames towards the device _if_
+  fragmentation is being used by the network.
+
+- `ping I,P,P` and `ping I,P`: if this test succeeds it is trivial to inject plaintext frames towards the
+  device independent of the network configuration.
+
+## 7.6. Broadcast fragment attack tests (§6.7)
+
+- So far we only found that clients are vulnerable to this attack. Moreover, several clients were only
+  vulnerable while they are connecting to the network (i.e. during the execution of the 4-way handshake).
 
 - `ping D,BP --bcast-ra`: to confirm the result of this test you have to run wireshark or tcpdump on
-  the victim, and monitor whether the injected ping request is received by the victim. In wireshark
-  you can use the filter `frame contains "test_ping_icmp"` to more easily detect this ping request.
+  the victim, and monitor whether the injected ping request is received by the victim. In tcpdump you can
+  use the filter `icmp` and in wireshark you can also use the filter `frame contains "test_ping_icmp"`
+  to more easily detect this ping request.
 
-## 7.6. A-MSDUs EAPOL attack tests (§6.8)
+- Because these tests send broadcast frames, which are not automatically retransmitted, it is recommended
+  to execute this test several times. This is because background noise may prevent the tested devices from
+  receiving the injected broadcast frame.
+
+## 7.7. A-MSDUs EAPOL attack tests (§6.8)
 
 - Several clients and APs are only vulnerable to this attack while the client is connecting to the network
-  (and the 4-way handshake is being executed).
+  (i.e. during the execution of the 4-way handshake).
 
 - Several implementations incorrectly process A-MSDU frames that start with a valid EAPOL header. To test
   these implementations, you have to use the `eapol-amsdu-bad` test variant. Note that if this tests succeeds,
-  the impact of the attack is practically identical to implementations that correctly parse such frames (see
-  the paper for details).
+  the impact of the attack is identical to implementations that correctly parse such frames (for details see
+  Section 3.6 and 6.8 in the paper).
 
 - `eapol-amsdu BP` and `eapol-amsdu-bad BP`: to confirm the result of this test you have to run wireshark
   or tcpdump on the victim, and monitor whether the injected ping request is received by the victim. In
-  wireshark you can use the filter `frame contains "test_ping_icmp"` to more easily detect this ping request.
+  tcpdump you can use the filter `icmp` and in wireshark you can also use the filter `frame contains "test_ping_icmp"`
+  to more easily detect this ping request.
 
-## 7.7. Troubleshooting checklist
+## 7.8. Troubleshooting checklist
 
 In case the test tool doesn't appear to be working, check the following:
 
@@ -365,29 +389,34 @@ In case the test tool doesn't appear to be working, check the following:
 
 # 8. Extended Vulnerability Tests
 
-If time permits, we also recommend the following more advanced tests. These have a lower chance of
-uncovering new vulnerabilities, but might reveal attack variants or particular device behaviour that
-the normal tests can't detect.
+Due to implementation variations it can be difficult to confirm/exploit certain vulnerabilities, in particular
+the mixed key and cache attack. Therefore, we recommend to only consider a device secure if there are explicit
+checks in the code to prevent these attacks. Additionally, if time permits, we also recommend the following more
+advanced tests. These have a lower chance of uncovering new vulnerabilities, but might reveal attack variants
+or particular device behaviour that the normal tests can't detect.
 
-If the normal vulnerability tests have already determined that a certain attack is possible, there
-is no need to test the other attack variants. To better understand when it may be worth to test certain
-attack variants I recommend reading the paper and also auditing the code of the devices under test.
+If the normal tests in [Testing for Vulnerabilities](#Testing-for-Vulnerabilities) have already confirmed the
+presence of a certain vulnerability class, there is no need to test the other attack variants of that vulnerability.
 
 |                Command                 | Short description
 | -------------------------------------- | ---------------------------------
 | <div align="center">*A-MSDU attacks (§3)*</div>
-| `ping I,E,E --amsdu`                   | Send a normal ping an a fragmented A-MSDU frame.
-| `ping I,E --fake-amsdu`                | If this test succeeds, the A-MSDU flag is ignored (Section 3.5).
+| `ping I,E --amsdu-fake`                | If this test succeeds, the A-MSDU flag is ignored (§3.5).
+| `ping I,E --amsdu-fake --amsdu-ssp`    | Check if the A-MSDU flag is authenticated but then ignored (§3.5).
+| `amsdu-inject`                         | Send A-MSDU frame whose start is also a valid rfc1042 header (§3.2).
+| `amsdu-inject-bad`                     | Same as above, but against targets that incorrectly parse the frame.
 | <div align="center">*Mixed key attacks (§4)*</div>
-| `ping I,E,F,AE`                        | If no data frames are accepted during rekey handshake.
+| `ping I,E,F,AE`                        | If no (encrypted) data frames are accepted during the rekey handshake.
 | `ping I,F,BE,E`                        | In case the new key is installed relatively late.
-| `ping I,E,F,AE --rekey-plaintext`      | If the device performs the rekey handshake in plaintext.
+| `ping I,E,F,AE --rekey-plain`          | If the device performs the rekey handshake in plaintext.
 | `ping I,E,F,AE --rekey-req --rekey-plain`| Same as above, and actively request a rekey as client.
-| `ping I,E,F,AE --rekey-early-install`  | Install the new key before sending message 4 as an AP.
+| `ping I,E,F,AE --rekey-early-install`  | Install the new key before sending message 4 as an AP. **TODO: Test again against Windows.**
 | `ping I,F,BE,AE --freebsd`             | Mixed key attack against FreeBSD.
 | <div align="center">*Cache attacks (§5)*</div>
-| `ping I,E,R,AE --freebsd –full-reconnect` | Cache attack specific to FreeBSD implementations.
+| `ping I,E,R,AE --freebsd [--full-reconnect]` | Cache attack specific to FreeBSD implementations.
+| `ping I,E,R,AP --freebsd [--full-reconnect]` | Cache attack specific to FreeBSD implementations.
 | <div align="center">*Mixed plain/encrypt attack (§6.3)*</div>
+| `ping I,E,E --amsdu`                   | Send a normal ping as a fragmented A-MSDU frame.
 | `ping I,E,P,E`                         | Ping with first frag. encrypted, second plaintext, third encrypted.
 | `linux-plain 3`                        | Same as linux-plain but decoy fragment is sent using QoS priority 3.
 | <div align="center">*AP forwards EAPOL attack (§6.4)*</div>
@@ -405,53 +434,100 @@ attack variants I recommend reading the paper and also auditing the code of the 
 
 ## 8.1. A-MSDU attack tests (§3)
 
-- `ping I,E,E --amsdu`: This test sends a fragmented A-MSDU frame, which not all devices can properly receive.
-  This test is useful to determine the practical exploitability of the "Mixed plain/encrypt attack".
-  Summarized, if this tests succeeds, it is easier to attack the device if the second fragment can be sent
-  in plaintext (command `ping I,E,P`). See Section 6.3 of the paper for details.
+It is only useful to execute the first two tests if the main test `ping I,E --amsdu` fails and you want to better
+understand how the tested device handles A-MSDU frames:
 
-- `ping I,E --fake-amsdu`: If this tests succeeds, the receiver treats all devices as normal frames (meaning it
-  does not support A-MSDU frames). This behaviour is not ideal, although it is unlikely that an attacker can
-  abuse this in practice (see Section 3.5 in the paper).
+- `ping I,E --amsdu-fake`: If this tests succeeds, the receiver treats all frames as normal frames (meaning it doesn't
+  support A-MSDU frames). This behaviour is not ideal, although it is unlikely that an attacker can abuse this in
+  practice (see Section 3.5 in the paper).
+
+- `ping I,E --amsdu-fake --amsdu-ssp`: If this tests succeeds, the receiver authenticates the QoS A-MSDU flag of every
+  received frame (i.e. it will not mask it to zero on reception) but then treats all received frames as normal frames
+  (meaning it does not support the reception of real A-MSDU frames). This behaviour is not ideal, although it is unlikely
+  that an attacker can abuse this in practice (see Section 3.5 in the paper).
+
+The last two tests are used to simulate our A-MSDU injection attack:
+
+- `amsdu-inject`: This test simulates the A-MSDU injection attack described in Section 3.2 of the paper. In particular,
+  it sends an A-MSDU frame whose starts is also a valid rfc1042 header (since this is also what happens in our reference
+  attack).
+  
+- `amsdu-inject-bad`: Some devices incorrectly parse A-MSDU frames that start with a valid rfc1042 header causing the
+  above test to fail. In that case try `amsdu-inject-bad` instead (see Section 3.6 in the paper). Note that if this tests
+  succeeds, the impact of the attack is effectively identical to implementations that correctly parse such frames.
 
 ## 8.2. Mixed key attack tests (§4)
 
 Most devices we tested are vulnerable to mixed key attacks. In case the normal mixed key attack tests indicate
 that a device is not vulnerable, but the test `ping-frag-sep` does succeed, it is highly recommended to try
-these alternative mixed key attack tests.
+these alternative mixed key attack tests. Some remarks:
+
+- Home routers with a MediaTek driver will perform the rekey handshake in plaintext. To test these or similar
+  devices, you must add the `--rekey-plain` parameter. When testing an AP this can be combined with the
+  `--rekey-req` parameter to actively request a rekey.
+
+- Certain clients install the key too early during a pairwise session rekey. To test these devices, add the
+  `--rekey-early-install` parameter and retry the test.
+
+Finally, in case the test `ping-frag-sep` doesn't succeed, you can try the following test:
+
+- `ping I,F,BE,AE --freebsd`: this essentially performs the rekey handshake against a FreeBSD implementation or
+  driver without affecting the defragmentation process of data frames. See Appendix F in the paper for details.
 
 ## 8.3. Cache attack tests (§5)
 
-The test `ping I,E,R,AE --freebsd –full-reconnect` can be used to check if a FreeBSD AP, or an implementation
-based on FreeBSD drivers, is vulnerable to a cache attack. On our cased it worked when a FreeBSD ap was using
-a TL-WN725N v1 dongle.
+- The test `ping I,E,R,AE --freebsd --full-reconnect` can be used to check if a FreeBSD AP, or an implementation
+  based on FreeBSD drivers, is vulnerable to a cache attack. See Appendix F in the paper for details on how this
+  test works. You should also try this test without the `--full-reconnect` parameter.
 
-## 8.4. AP forwards EAPOL attack tests (§6.4)
+- The test `ping I,E,R,AP --freebsd --full-reconnect` is a variant against FreeBSD APs, or an implementation based
+  on FreeBSD drivers, where the second fragment is sent in plaintext after reconnecting with the AP. Against some
+  dongles on FreeBSD this test was more reliable and still proves that old fragments remain in the AP's memory after
+  reconnecting. You should also try this test without the `--full-reconnect` parameter.
 
-- This test is only meaningfull against APs. To perform this test you have to connect to the network using a second
-  device and replace the MAC address `00:11:22:33:44:55` with the MAC address of this second device. The test will
-  try to send an EAPOL frame to this second device (before being authenticated). If the AP forwards the EAPOL frame
-  to the second device, the AP is considered vulnerable. To confirm if the AP forwards the EAPOL frame you must run
-  tcpdump or wireshark on the second device. You can use the wireshark filter `frame contains "forwarded_data"` when
-  monitoring decrypted traffic on the wireless interface of the second device (or `EAPOL` to monitor all EAPOL frames).
+## 8.4. Mixed plain/encrypt attack (§6.3)
 
-- In case the tests `eapol-inject` works, you can also try `eapol-inject-large` to see if this vulnerability can be
-  abused to force the transmission of encrypted fragments. You again have to use tcpdump or wireshark to check this.
-  Use the wireshark filter `(wlan.fc.frag == 1) || (wlan.frag > 0)` to detect fragmented frames.
+- `ping I,E,E --amsdu`: This test sends a fragmented A-MSDU frame, which not all devices can properly receive.
+  This test is useful to determine the practical exploitability of the "Mixed plain/encrypt attack".
+  Summarized, if this tests succeeds, it is easier to attack the device if the second fragment can be sent
+  in plaintext (test `ping I,E,P`). See Section 6.3 of the paper for details.
 
-## 8.5. Abusing no fragmentation support (§6.6)
+- `ping I,E,P,E` and `linux-plain 3`: You can try these two mixed plain/encrypt attack test if all the other ones
+  in [Testing for Vulnerabilities](#Testing-for-Vulnerabilities) didn't succeed.
+
+## 8.5. AP forwards EAPOL attack tests (§6.4)
+
+- `eapol-inject 00:11:22:33:44:55`: This test is only meaningfull against APs. To perform this test you have to connect
+  to the network using a second device and replace the MAC address `00:11:22:33:44:55` with the MAC address of this second
+  device. The test will try to send an EAPOL frame to this second device (before being authenticated). If the AP forwards
+  the EAPOL frame to the second device, the AP is considered vulnerable. To confirm if the AP forwards the EAPOL frame you
+  must run tcpdump or wireshark on the second device. You can use the wireshark filter `frame contains "forwarded_data"`
+  when monitoring decrypted traffic on the wireless interface of the second device (or the tcpdump filter `ether proto 0x888e`
+  to monitor all EAPOL frames). See Section 6.4 of the paper for the details and impact if this test succeeds.
+
+- `eapol-inject-lage 00:11:22:33:44:55`: In case the above `eapol-inject` works, you can also try `eapol-inject-large` to see
+  if this vulnerability can be abused to force the transmission of encrypted fragments. You again have to use tcpdump or wireshark
+  to check this. Use the wireshark or tshark filter `(wlan.fc.frag == 1) || (wlan.frag > 0)` to detect fragmented frames. It is
+  rare for this attack to work.
+
+## 8.6. Abusing no fragmentation support (§6.6)
 
 If one of these tests works, the device doesn't support (de)fragmentation, but is still vulnerable to attacks. The
 problem is that the receiver treats fragmented frames as full frames (see Section 6.6 in the paper).
 
-## 8.6. Broadcast fragment attack tests (§6.7)
+## 8.7. Broadcast fragment attack tests (§6.7)
+
+- Because all these tests send broadcast frames, which are not automatically retransmitted, it is recommended to
+  execute them tests several times. This is because background noise may prevent the tested devices from receiving
+  the injected broadcast frame. Additionally, we only expect that clients might be vulnerable to these attacks.
 
 - `ping I,P --bcast-ra`: this sends a unicast ICMP ping request inside a plaintext broadcast Wi-Fi frame. This test
   only makes sense against a client.
 
 - `ping BP --bcast-ra`: similar to the above test `ping I,P --bcast-ra`, but the ping is sent before the client has
-  authenticated with the network. You must run tcpdump or wireshark to check if the client accepts the frame. You can
-  use the wireshark filter `frame contains "test_ping_icmp"` on the victim to determine this.
+  authenticated with the network. You must run tcpdump or wireshark to check if the client accepts the frame. In
+  tcpdump you can use the filter `icmp` and in wireshark you can also use the filter `frame contains "test_ping_icmp"`
+  to more easily detect this ping request.
 
 - `eapfrag BP,BP`: this is a specialization of the above two tests that is performed before the client has authenticated.
   It is a _very experimental_ attack based on the analysis of leaked code. It first sends a plaintext fragment that starts
@@ -459,16 +535,16 @@ problem is that the receiver treats fragmented frames as full frames (see Sectio
   broadcast fragment with the same sequence number. Based on the analysis of leaked code some devices may now accept
   this fragment (because the previous fragment was allowed), but the subsequent code will process it as a normal frame
   (because the fragment is broadcasted). You must use tcpdump or wireshark on the victim to determine whether the frame
-  is properly received, for example using the filter `frame contains "test_ping_icmp"`. An alternative variant is
-  `eapfrag BP,AE` in case the normal variant doesn't work.
+  is properly received, for example using the filter `icmp` or `frame contains "test_ping_icmp"`. An alternative variant
+  is `eapfrag BP,AE` in case the normal variant doesn't work.
 
-## 8.7. A-MSDU EAPOL attack tests (§6.8)
+## 8.8. A-MSDU EAPOL attack tests (§6.8)
 
-If you cannot run tcpdump or wireshark on an AP, the extra parameter in the command `eapol-amsdu[-bad] BP --bcast-dst`
-allows you to still verify the result of A-MSDU EAPOL attacks before authenticating with the AP. This test is
-only meaningfull against APs. If the AP is vulnerable it will to broadcast the ping request to all connected clients.
-In other words, to check if an AP is vulnerable, execute this command, and listen for broadcast Wi-Fi frames on a
-second device that is connected to the AP by using the filter `frame contains "test_ping_icmp"`.
+This test can be used in case you want to execute the `eapol-amsdu[-bad] BP` tests but cannot run tcpdump or wireshark on
+the AP. This means this test is only meaningfull against APs. In particular, the command `eapol-amsdu[-bad] BP --bcast-dst`
+will cause a vulnerable AP to broadcast the ping request to all connected clients. In other words, to check if an AP is
+vulnerable, execute this command, and listen for broadcast Wi-Fi frames on a second device that is connected to the AP by
+using the filter `icmp` or `frame contains "test_ping_icmp"`.
 
 # 9. Advanced Usage
 
@@ -561,7 +637,11 @@ When a test sends IP packets before obtaining IP addresses using DHCP, it will u
 address 127.0.0.1. To use different (default) IP addresses, you can also use the `--ip` and `-peerip`
 parameters.
 
-## 9.3. Alternative network cards
+## 9.3. No ICMP Support
+
+**TODO: Alternatives --arp and --dhcp if the tested device doesn't reply to pings.**
+
+## 9.4. Alternative network cards
 
 In case you cannot get access to one of the recommended wireless network cards, a second option
 is to get a network card that uses the same drivers on Linux. In particular, you can try:
@@ -576,7 +656,7 @@ I recommend cards based on `ath9khtc`. Not all cards that use `iwlmvm` will be c
 using an alternative network card, I strongly recommend to first run the [injection tests](#Network-card-injection-test)
 to confirm that the network card is compatible.
 
-## 9.4. 5 GHz support
+## 9.5. 5 GHz support
 
 In order to use the test tool on 5 GHz channels the network card being used must allow the injection
 of frames in the 5 GHz channel. Unfortunately, this is not always possible due to regulatory
@@ -596,7 +676,7 @@ to inject frames when `cfg80211_reg_can_beacon` returns false. As a result, Linu
 inject frames even though this is actually allowed. Making `cfg80211_reg_can_beacon` return true
 under the correct conditions prevents this bug.
 
-## 9.5. Notes on device support
+## 9.6. Notes on device support
 
 ### ath9k_htc
 
@@ -636,7 +716,7 @@ and make it possible to inject fragmented frames.
 
 **TODO: Device that were tested as being an AP while using another one to inject? Broadcom of macOS, Intel AX200?**
 
-## 9.6. Hwsim mode details
+## 9.7. Hwsim mode details
 
 **Warning**: *this is currently an experimental mode, only use it for research purposes.*
 
