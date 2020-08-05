@@ -94,10 +94,13 @@ class PingTest(Test):
 
 class ForwardTest(Test):
 	def __init__(self, eapol=False, dst=None, large=False):
-		actions = [Action(Action.Connected, enc=True)]
 		if eapol:
 			actions = [Action(Action.StartAuth, enc=False)]
+		else:
+			actions = [Action(Action.Connected, enc=True)]
+
 		if large:
+			actions += copy.deepcopy(actions)
 			actions += copy.deepcopy(actions)
 
 		super().__init__(actions)
@@ -124,9 +127,9 @@ class ForwardTest(Test):
 		else:
 			request = LLC()/SNAP()/IP()/Raw(self.magic)
 
-		# Wether to send large requests --- TODO FIXME ath9k_htc cannot reliably send large frames...
+		# Wether to send large requests
 		if self.large:
-			request = request/Raw(b"A" * 1500)
+			request = request/Raw(b"A" * 3000)
 
 		# Create the actual frame(s)
 		frames = create_fragments(header, request, len(self.actions))
