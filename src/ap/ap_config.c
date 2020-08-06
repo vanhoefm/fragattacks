@@ -1123,17 +1123,21 @@ const u8 * hostapd_get_psk(const struct hostapd_bss_config *conf,
 static bool hostapd_sae_pk_password_without_pk(struct hostapd_bss_config *bss)
 {
 	struct sae_password_entry *pw;
+	bool res = false;
 
 	if (bss->ssid.wpa_passphrase &&
 	    sae_pk_valid_password(bss->ssid.wpa_passphrase))
-		return true;
+		res = true;
 
 	for (pw = bss->sae_passwords; pw; pw = pw->next) {
 		if (!pw->pk && sae_pk_valid_password(pw->password))
 			return true;
+		if (bss->ssid.wpa_passphrase && res && pw->pk &&
+		    os_strcmp(bss->ssid.wpa_passphrase, pw->password) == 0)
+			res = false;
 	}
 
-	return false;
+	return res;
 }
 #endif /* CONFIG_SAE_PK */
 
