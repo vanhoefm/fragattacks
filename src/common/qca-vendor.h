@@ -7428,15 +7428,17 @@ enum qca_wlan_vendor_attr_wifi_test_config {
  * obtained through QCA_WLAN_VENDOR_ATTR_CONFIG_TWT_PARAMS. Refers the enum
  * qca_wlan_vendor_attr_twt_setup.
  *
- * @QCA_WLAN_TWT_TERMINATE: Terminate the TWT session. Does not carry any
- * parameters. Valid only after the TWT session is setup.
+ * @QCA_WLAN_TWT_TERMINATE: Terminate the TWT session. Required parameters are
+ * obtained through QCA_WLAN_VENDOR_ATTR_CONFIG_TWT_PARAMS. Refers the enum
+ * qca_wlan_vendor_attr_twt_setup. Valid only after the TWT session is setup.
  *
- * @QCA_WLAN_TWT_SUSPEND: Terminate the TWT session. Does not carry any
- * parameters. Valid only after the TWT session is setup.
+ * @QCA_WLAN_TWT_SUSPEND: Suspend the TWT session. Required parameters are
+ * obtained through QCA_WLAN_VENDOR_ATTR_CONFIG_TWT_PARAMS. Refers the enum
+ * qca_wlan_vendor_attr_twt_setup. Valid only after the TWT session is setup.
  *
  * @QCA_WLAN_TWT_RESUME: Resume the TWT session. Required parameters are
  * configured through QCA_WLAN_VENDOR_ATTR_CONFIG_TWT_PARAMS. Refers the enum
- * qca_wlan_vendor_attr_twt_resume.
+ * qca_wlan_vendor_attr_twt_resume. Valid only after the TWT session is setup.
  */
 enum qca_wlan_twt_operation {
 	QCA_WLAN_TWT_SET = 0,
@@ -7633,10 +7635,13 @@ enum qca_wlan_vendor_attr_nan_params {
  * STA and AP.
  * Broadcast means the session is across multiple STAs and an AP. The
  * configuration parameters are announced in Beacon frames by the AP.
+ * This is used in
+ * 1. TWT SET Request and Response
+ * 2. TWT GET Response
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_REQ_TYPE: Required (u8).
  * Unsigned 8-bit qca_wlan_vendor_twt_setup_req_type to
- * specify the TWT request type
+ * specify the TWT request type. This is used in TWT SET operation.
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_TRIGGER: Flag attribute
  * Enable (flag attribute present) - TWT with trigger support.
@@ -7644,62 +7649,113 @@ enum qca_wlan_vendor_attr_nan_params {
  * Trigger means the AP will send the trigger frame to allow STA to send data.
  * Without trigger, the STA will wait for the MU EDCA timer before
  * transmitting the data.
+ * This is used in
+ * 1. TWT SET Request and Response
+ * 2. TWT GET Response
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_FLOW_TYPE: Required (u8)
  * 0 - Announced TWT - In this mode, STA may skip few service periods to
  * save more power. If STA wants to wake up, it will send a PS-POLL/QoS
  * NULL frame to AP.
  * 1 - Unannounced TWT - The STA will wakeup during every SP.
+ * This is a required parameter for
+ * 1. TWT SET Request and Response
+ * 2. TWT GET Response
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_FLOW_ID: Optional (u8)
  * Flow ID is the unique identifier for each TWT session.
- * Currently this is not required and dialog ID will be set to zero.
+ * If not provided then dialog ID will be set to zero.
+ * This is an optional parameter for
+ * 1. TWT SET Request and Response
+ * 2. TWT GET Request and Response
+ * 3. TWT TERMINATE Request and Response
+ * 4. TWT SUSPEND Request and Response
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_WAKE_INTVL_EXP: Required (u8)
  * This attribute (exp) is used along with the mantissa to derive the
  * wake interval using the following formula:
  * pow(2,exp) = wake_intvl_us/wake_intvl_mantis
  * Wake interval is the interval between 2 successive SP.
+ * This is a required parameter for
+ * 1. TWT SET Request and Response
+ * 2. TWT GET Response
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_PROTECTION: Flag attribute
  * Enable (flag attribute present) - Protection required.
  * Disable (flag attribute not present) - Protection not required.
  * If protection is enabled, then the AP will use protection
  * mechanism using RTS/CTS to self to reserve the airtime.
+ * This is used in
+ * 1. TWT SET Request and Response
+ * 2. TWT GET Response
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_WAKE_TIME: Optional (u32)
  * This attribute is used as the SP offset which is the offset from
  * TSF after which the wake happens. The units are in microseconds. If
  * this attribute is not provided, then the value will be set to zero.
+ * This is an optional parameter for
+ * 1. TWT SET Request and Response
+ * 2. TWT GET Response
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_WAKE_DURATION: Required (u32)
- * This is the duration of the service period. The units are in TU.
+ * This is the duration of the service period. This is specified as
+ * multiples of 256 microseconds. Valid values are 0x1 to 0xFF.
+ * This is a required parameter for
+ * 1. TWT SET Request and Response
+ * 2. TWT GET Response
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_WAKE_INTVL_MANTISSA: Required (u32)
  * This attribute is used to configure wake interval mantissa.
  * The units are in TU.
+ * This is a required parameter for
+ * 1. TWT SET Request and Response
+ * 2. TWT GET Response
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_STATUS: Required (u8)
  * This field is applicable for TWT response only.
  * This contains status values in enum qca_wlan_vendor_twt_status
- * and is passed to the userspace.
+ * and is passed to the userspace. This is used in TWT SET operation.
+ * This is a required parameter for
+ * 1. TWT SET Response
+ * 2. TWT TERMINATE Response
+ * 3. TWT SUSPEND Response
+ * 4. TWT RESUME Response
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_RESP_TYPE: Required (u8)
  * This field is applicable for TWT response only.
  * This field contains response type from the TWT responder and is
  * passed to the userspace. The values for this field are defined in
- * enum qca_wlan_vendor_twt_setup_resp_type.
+ * enum qca_wlan_vendor_twt_setup_resp_type. This is used in TWT SET
+ * response.
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_WAKE_TIME_TSF: Required (u64)
  * This field is applicable for TWT response only.
  * This field contains absolute TSF value of the wake time received
  * from the TWT responder and is passed to the userspace.
+ * This is a required parameter for
+ * 1. TWT SET Response
+ * 2. TWT GET Response
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_TWT_INFO_ENABLED: Flag attribute.
  * Enable (flag attribute present) - Indicates that the TWT responder
  * supports reception of TWT information frame from the TWT requestor.
  * Disable (flag attribute not present) - Indicates that the responder
  * doesn't support reception of TWT information frame from requestor.
+ * This is used in
+ * 1. TWT SET Response
+ * 2. TWT GET Response
+ *
+ * @QCA_WLAN_VENDOR_ATTR_TWT_SETUP_MAC_ADDR: 6-byte MAC address
+ * Represents the MAC address of the peer for which the TWT session
+ * is being configured. This is used in AP mode to represent the respective
+ * client. In AP mode, this is an optional parameter for response and is
+ * a required parameter for
+ * 1. TWT SET Request
+ * 2. TWT GET Request
+ * 3. TWT TERMINATE Request
+ * 4. TWT SUSPEND Request
+ * In STA mode, this is an optional parameter in request and response for
+ * the above four TWT operations.
  */
 enum qca_wlan_vendor_attr_twt_setup {
 	QCA_WLAN_VENDOR_ATTR_TWT_SETUP_INVALID = 0,
@@ -7719,6 +7775,8 @@ enum qca_wlan_vendor_attr_twt_setup {
 	QCA_WLAN_VENDOR_ATTR_TWT_SETUP_RESP_TYPE = 12,
 	QCA_WLAN_VENDOR_ATTR_TWT_SETUP_WAKE_TIME_TSF = 13,
 	QCA_WLAN_VENDOR_ATTR_TWT_SETUP_TWT_INFO_ENABLED = 14,
+
+	QCA_WLAN_VENDOR_ATTR_TWT_SETUP_MAC_ADDR = 15,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_TWT_SETUP_AFTER_LAST,
@@ -7771,23 +7829,36 @@ enum qca_wlan_vendor_twt_status {
  * attributes through %QCA_NL80211_VENDOR_SUBCMD_CONFIG_TWT.
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_RESUME_NEXT_TWT: Optional (u8)
- * This attribute is used as the SP offset which is the offset from
- * TSF after which the wake happens. The units are in microseconds.
- * If this attribute is not provided, then the value will be set to
- * zero.
+ * @QCA_WLAN_VENDOR_ATTR_TWT_RESUME_NEXT2_TWT: Optional (u32)
+ * These attributes are used as the SP offset which is the offset from TSF after
+ * which the wake happens. The units are in microseconds. Please note that
+ * _NEXT_TWT is limited to u8 whereas _NEXT2_TWT takes the u32 data.
+ * _NEXT2_TWT takes the precedence over _NEXT_TWT and thus the recommendation
+ * is to use _NEXT2_TWT. If neither of these attributes is provided, the value
+ * will be set to zero.
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_RESUME_NEXT_TWT_SIZE: Required (u32)
  * This attribute represents the next TWT subfield size.
+ * Value 0 represents 0 bits, 1 represents 32 bits, 2 for 48 bits,
+ * and 4 for 64 bits.
  *
  * @QCA_WLAN_VENDOR_ATTR_TWT_RESUME_FLOW_ID: Required (u8).
  * Flow ID is the unique identifier for each TWT session. This attribute
  * represents the respective TWT session to resume.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_TWT_RESUME_MAC_ADDR: 6-byte MAC address
+ * Represents the MAC address of the peer to which TWT Resume is
+ * being sent. This is used in AP mode to represent the respective
+ * client and is a required parameter. In STA mode, this is an optional
+ * parameter
  */
 enum qca_wlan_vendor_attr_twt_resume {
 	QCA_WLAN_VENDOR_ATTR_TWT_RESUME_INVALID = 0,
 	QCA_WLAN_VENDOR_ATTR_TWT_RESUME_NEXT_TWT = 1,
 	QCA_WLAN_VENDOR_ATTR_TWT_RESUME_NEXT_TWT_SIZE = 2,
 	QCA_WLAN_VENDOR_ATTR_TWT_RESUME_FLOW_ID = 3,
+	QCA_WLAN_VENDOR_ATTR_TWT_RESUME_NEXT2_TWT = 4,
+	QCA_WLAN_VENDOR_ATTR_TWT_RESUME_MAC_ADDR = 5,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_TWT_RESUME_AFTER_LAST,
