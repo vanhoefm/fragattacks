@@ -151,7 +151,10 @@ static struct wpabuf * sme_auth_build_sae_commit(struct wpa_supplicant *wpa_s,
 #ifdef CONFIG_SAE_PK
 	if ((rsnxe_capa & BIT(WLAN_RSNX_CAPAB_SAE_PK)) &&
 	    ssid->sae_pk != SAE_PK_MODE_DISABLED &&
-	    ssid->sae_password && sae_pk_valid_password(ssid->sae_password)) {
+	    ((ssid->sae_password &&
+	      sae_pk_valid_password(ssid->sae_password)) ||
+	     (!ssid->sae_password && ssid->passphrase &&
+	      sae_pk_valid_password(ssid->passphrase)))) {
 		use_pt = 1;
 		use_pk = true;
 	}

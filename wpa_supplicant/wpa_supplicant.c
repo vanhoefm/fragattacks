@@ -1643,8 +1643,10 @@ int wpa_supplicant_set_suites(struct wpa_supplicant *wpa_s,
 	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_SAE_PK,
 			 wpa_key_mgmt_sae(ssid->key_mgmt) &&
 			 ssid->sae_pk != SAE_PK_MODE_DISABLED &&
-			 ssid->sae_password &&
-			 sae_pk_valid_password(ssid->sae_password));
+			 ((ssid->sae_password &&
+			   sae_pk_valid_password(ssid->sae_password)) ||
+			  (!ssid->sae_password && ssid->passphrase &&
+			   sae_pk_valid_password(ssid->passphrase))));
 #endif /* CONFIG_SAE_PK */
 #ifdef CONFIG_TESTING_OPTIONS
 	wpa_sm_set_param(wpa_s->wpa, WPA_PARAM_FT_RSNXE_USED,
