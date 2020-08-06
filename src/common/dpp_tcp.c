@@ -844,8 +844,8 @@ static int dpp_controller_rx_reconfig_announcement(struct dpp_connection *conn,
 						   const u8 *hdr, const u8 *buf,
 						   size_t len)
 {
-	const u8 *csign_hash, *fcgroup;
-	u16 csign_hash_len, fcgroup_len;
+	const u8 *csign_hash, *fcgroup, *a_nonce, *e_id;
+	u16 csign_hash_len, fcgroup_len, a_nonce_len, e_id_len;
 	struct dpp_configurator *conf;
 	struct dpp_global *dpp = conn->ctrl->global;
 	struct dpp_authentication *auth;
@@ -885,7 +885,11 @@ static int dpp_controller_rx_reconfig_announcement(struct dpp_connection *conn,
 	group = WPA_GET_LE16(fcgroup);
 	wpa_printf(MSG_DEBUG, "DPP: Enrollee finite cyclic group: %u", group);
 
-	auth = dpp_reconfig_init(dpp, dpp->msg_ctx, conf, 0, group);
+	a_nonce = dpp_get_attr(buf, len, DPP_ATTR_A_NONCE, &a_nonce_len);
+	e_id = dpp_get_attr(buf, len, DPP_ATTR_E_PRIME_ID, &e_id_len);
+
+	auth = dpp_reconfig_init(dpp, dpp->msg_ctx, conf, 0, group,
+				 a_nonce, a_nonce_len, e_id, e_id_len);
 	if (!auth)
 		return -1;
 	if (dpp_set_configurator(auth, conn->ctrl->configurator_params) < 0) {

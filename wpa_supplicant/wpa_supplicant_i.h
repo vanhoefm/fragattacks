@@ -1296,6 +1296,7 @@ struct wpa_supplicant {
 	int dpp_chirp_listen;
 	struct wpa_ssid *dpp_reconfig_ssid;
 	int dpp_reconfig_ssid_id;
+	struct dpp_reconfig_id *dpp_reconfig_id;
 #endif /* CONFIG_DPP2 */
 #ifdef CONFIG_TESTING_OPTIONS
 	char *dpp_config_obj_override;

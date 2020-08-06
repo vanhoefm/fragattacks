@@ -2022,8 +2022,8 @@ wpas_dpp_rx_reconfig_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
 				  const u8 *hdr, const u8 *buf, size_t len,
 				  unsigned int freq)
 {
-	const u8 *csign_hash, *fcgroup;
-	u16 csign_hash_len, fcgroup_len;
+	const u8 *csign_hash, *fcgroup, *a_nonce, *e_id;
+	u16 csign_hash_len, fcgroup_len, a_nonce_len, e_id_len;
 	struct dpp_configurator *conf;
 	struct dpp_authentication *auth;
 	unsigned int wait_time, max_wait_time;
@@ -2067,7 +2067,11 @@ wpas_dpp_rx_reconfig_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
 	group = WPA_GET_LE16(fcgroup);
 	wpa_printf(MSG_DEBUG, "DPP: Enrollee finite cyclic group: %u", group);
 
-	auth = dpp_reconfig_init(wpa_s->dpp, wpa_s, conf, freq, group);
+	a_nonce = dpp_get_attr(buf, len, DPP_ATTR_A_NONCE, &a_nonce_len);
+	e_id = dpp_get_attr(buf, len, DPP_ATTR_E_PRIME_ID, &e_id_len);
+
+	auth = dpp_reconfig_init(wpa_s->dpp, wpa_s, conf, freq, group,
+				 a_nonce, a_nonce_len, e_id, e_id_len);
 	if (!auth)
 		return;
 	wpas_dpp_set_testing_options(wpa_s, auth);
@@ -3303,6 +3307,8 @@ void wpas_dpp_deinit(struct wpa_supplicant *wpa_s)
 	dpp_pfs_free(wpa_s->dpp_pfs);
 	wpa_s->dpp_pfs = NULL;
 	wpas_dpp_chirp_stop(wpa_s);
+	dpp_free_reconfig_id(wpa_s->dpp_reconfig_id);
+	wpa_s->dpp_reconfig_id = NULL;
 #endif /* CONFIG_DPP2 */
 	offchannel_send_action_done(wpa_s);
 	wpas_dpp_listen_stop(wpa_s);
@@ -3642,14 +3648,25 @@ int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 		return -1;
 	}
 
+	dpp_free_reconfig_id(wpa_s->dpp_reconfig_id);
+	wpa_s->dpp_reconfig_id = dpp_gen_reconfig_id(ssid->dpp_csign,
+						     ssid->dpp_csign_len);
+	if (!wpa_s->dpp_reconfig_id) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Failed to generate E-id for reconfiguration");
+		return -1;
+	}
 	wpas_dpp_chirp_stop(wpa_s);
 	wpa_s->dpp_allowed_roles = DPP_CAPAB_ENROLLEE;
 	wpa_s->dpp_qr_mutual = 0;
+	/* TODO: regenerate Reconfig Announcement frame to update A-NONCE/E'-id
+	 * for each retransmission */
 	wpa_s->dpp_reconfig_announcement =
 		dpp_build_reconfig_announcement(ssid->dpp_csign,
 						ssid->dpp_csign_len,
 						ssid->dpp_netaccesskey,
-						ssid->dpp_netaccesskey_len);
+						ssid->dpp_netaccesskey_len,
+						wpa_s->dpp_reconfig_id);
 	if (!wpa_s->dpp_reconfig_announcement)
 		return -1;
 	wpa_s->dpp_reconfig_ssid = ssid;

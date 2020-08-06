@@ -21,6 +21,7 @@ struct crypto_ecdh;
 struct hostapd_ip_addr;
 struct dpp_global;
 struct json_token;
+struct dpp_reconfig_id;
 
 #ifdef CONFIG_TESTING_OPTIONS
 #define DPP_VERSION (dpp_version_override)
@@ -87,6 +88,8 @@ enum dpp_attribute_id {
 	DPP_ATTR_RECONFIG_FLAGS = 0x101D,
 	DPP_ATTR_C_SIGN_KEY_HASH = 0x101E,
 	DPP_ATTR_CSR_ATTR_REQ = 0x101F,
+	DPP_ATTR_A_NONCE = 0x1020,
+	DPP_ATTR_E_PRIME_ID = 0x1021,
 };
 
 enum dpp_status_error {
@@ -685,10 +688,13 @@ void dpp_global_deinit(struct dpp_global *dpp);
 struct wpabuf * dpp_build_reconfig_announcement(const u8 *csign_key,
 						size_t csign_key_len,
 						const u8 *net_access_key,
-						size_t net_access_key_len);
+						size_t net_access_key_len,
+						struct dpp_reconfig_id *id);
 struct dpp_authentication *
 dpp_reconfig_init(struct dpp_global *dpp, void *msg_ctx,
-		  struct dpp_configurator *conf, unsigned int freq, u16 group);
+		  struct dpp_configurator *conf, unsigned int freq, u16 group,
+		  const u8 *a_nonce_attr, size_t a_nonce_len,
+		  const u8 *e_id_attr, size_t e_id_len);
 struct dpp_authentication *
 dpp_reconfig_auth_req_rx(struct dpp_global *dpp, void *msg_ctx,
 			 const char *own_connector,
@@ -701,6 +707,11 @@ dpp_reconfig_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 			  const u8 *attr_start, size_t attr_len);
 int dpp_reconfig_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 			      const u8 *attr_start, size_t attr_len);
+
+struct dpp_reconfig_id * dpp_gen_reconfig_id(const u8 *csign_key,
+					     size_t csign_key_len);
+int dpp_update_reconfig_id(struct dpp_reconfig_id *id);
+void dpp_free_reconfig_id(struct dpp_reconfig_id *id);
 
 #endif /* CONFIG_DPP */
 #endif /* DPP_H */

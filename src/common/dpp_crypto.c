@@ -2988,6 +2988,193 @@ fail:
 	return ret;
 }
 
+
+struct dpp_reconfig_id * dpp_gen_reconfig_id(const u8 *csign_key,
+					     size_t csign_key_len)
+{
+	const unsigned char *p;
+	EVP_PKEY *csign = NULL;
+	struct dpp_reconfig_id *id = NULL;
+	BN_CTX *ctx = NULL;
+	BIGNUM *bn = NULL, *q = NULL;
+	const EC_KEY *eckey;
+	const EC_GROUP *group;
+	EC_POINT *e_id = NULL;
+
+	p = csign_key;
+	csign = d2i_PUBKEY(NULL, &p, csign_key_len);
+	if (!csign)
+		goto fail;
+
+	eckey = EVP_PKEY_get0_EC_KEY(csign);
+	if (!eckey)
+		goto fail;
+	group = EC_KEY_get0_group(eckey);
+	if (!group)
+		goto fail;
+
+	e_id = EC_POINT_new(group);
+	ctx = BN_CTX_new();
+	bn = BN_new();
+	q = BN_new();
+	if (!e_id || !ctx || !bn || !q ||
+	    !EC_GROUP_get_order(group, q, ctx) ||
+	    !BN_rand_range(bn, q) ||
+	    !EC_POINT_mul(group, e_id, bn, NULL, NULL, ctx))
+		goto fail;
+
+	dpp_debug_print_point("DPP: Generated random point E-id", group, e_id);
+
+	id = os_zalloc(sizeof(*id));
+	if (!id)
+		goto fail;
+	id->group = group;
+	id->e_id = e_id;
+	e_id = NULL;
+	id->csign = csign;
+	csign = NULL;
+fail:
+	EC_POINT_free(e_id);
+	EVP_PKEY_free(csign);
+	BN_clear_free(bn);
+	BN_CTX_free(ctx);
+	return id;
+}
+
+
+static EVP_PKEY * dpp_pkey_from_point(const EC_GROUP *group,
+				      const EC_POINT *point)
+{
+	EC_KEY *eckey;
+	EVP_PKEY *pkey = NULL;
+
+	eckey = EC_KEY_new();
+	if (!eckey ||
+	    EC_KEY_set_group(eckey, group) != 1 ||
+	    EC_KEY_set_public_key(eckey, point) != 1) {
+		wpa_printf(MSG_ERROR,
+			   "DPP: Failed to set EC_KEY: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+	EC_KEY_set_asn1_flag(eckey, OPENSSL_EC_NAMED_CURVE);
+
+	pkey = EVP_PKEY_new();
+	if (!pkey || EVP_PKEY_set1_EC_KEY(pkey, eckey) != 1) {
+		wpa_printf(MSG_ERROR, "DPP: Could not create EVP_PKEY");
+		EVP_PKEY_free(pkey);
+		pkey = NULL;
+		goto fail;
+	}
+
+fail:
+	EC_KEY_free(eckey);
+	return pkey;
+}
+
+
+int dpp_update_reconfig_id(struct dpp_reconfig_id *id)
+{
+	BN_CTX *ctx = NULL;
+	BIGNUM *bn = NULL, *q = NULL;
+	EC_POINT *e_prime_id = NULL, *a_nonce = NULL;
+	int ret = -1;
+	const EC_KEY *csign;
+	const EC_POINT *csign_point;
+
+	csign = EVP_PKEY_get0_EC_KEY(id->csign);
+	if (!csign)
+		goto fail;
+	csign_point = EC_KEY_get0_public_key(csign);
+	e_prime_id = EC_POINT_new(id->group);
+	a_nonce = EC_POINT_new(id->group);
+	ctx = BN_CTX_new();
+	bn = BN_new();
+	q = BN_new();
+	/* Generate random 0 <= a-nonce < q
+	 * A-NONCE = a-nonce * G
+	 * E'-id = E-id + a-nonce * S_C */
+	if (!csign_point || !e_prime_id || !a_nonce || !ctx || !bn || !q ||
+	    !EC_GROUP_get_order(id->group, q, ctx) ||
+	    !BN_rand_range(bn, q) || /* bn = a-nonce */
+	    !EC_POINT_mul(id->group, a_nonce, bn, NULL, NULL, ctx) ||
+	    !EC_POINT_mul(id->group, e_prime_id, NULL, csign_point, bn, ctx) ||
+	    !EC_POINT_add(id->group, e_prime_id, id->e_id, e_prime_id, ctx))
+		goto fail;
+
+	dpp_debug_print_point("DPP: Generated A-NONCE", id->group, a_nonce);
+	dpp_debug_print_point("DPP: Encrypted E-id to E'-id",
+			      id->group, e_prime_id);
+
+	EVP_PKEY_free(id->a_nonce);
+	EVP_PKEY_free(id->e_prime_id);
+	id->a_nonce = dpp_pkey_from_point(id->group, a_nonce);
+	id->e_prime_id = dpp_pkey_from_point(id->group, e_prime_id);
+	if (!id->a_nonce || !id->e_prime_id)
+		goto fail;
+
+	ret = 0;
+
+fail:
+	EC_POINT_free(e_prime_id);
+	EC_POINT_free(a_nonce);
+	BN_clear_free(bn);
+	BN_CTX_free(ctx);
+	return ret;
+}
+
+
+void dpp_free_reconfig_id(struct dpp_reconfig_id *id)
+{
+	if (id) {
+		EC_POINT_clear_free(id->e_id);
+		EVP_PKEY_free(id->csign);
+		EVP_PKEY_free(id->a_nonce);
+		EVP_PKEY_free(id->e_prime_id);
+		os_free(id);
+	}
+}
+
+
+EC_POINT * dpp_decrypt_e_id(EVP_PKEY *csign, EVP_PKEY *a_nonce,
+			    EVP_PKEY *e_prime_id)
+{
+	const EC_KEY *csign_ec, *a_nonce_ec, *e_prime_id_ec;
+	const BIGNUM *csign_bn;
+	const EC_GROUP *group;
+	EC_POINT *e_id = NULL;
+	const EC_POINT *a_nonce_point, *e_prime_id_point;
+	BN_CTX *ctx = NULL;
+
+	/* E-id = E'-id - s_C * A-NONCE */
+	csign_ec = EVP_PKEY_get0_EC_KEY(csign);
+	a_nonce_ec = EVP_PKEY_get0_EC_KEY(a_nonce);
+	e_prime_id_ec = EVP_PKEY_get0_EC_KEY(e_prime_id);
+	if (!csign_ec || !a_nonce_ec || !e_prime_id_ec)
+		return NULL;
+	csign_bn = EC_KEY_get0_private_key(csign_ec);
+	group = EC_KEY_get0_group(csign_ec);
+	a_nonce_point = EC_KEY_get0_public_key(a_nonce_ec);
+	e_prime_id_point = EC_KEY_get0_public_key(e_prime_id_ec);
+	ctx = BN_CTX_new();
+	if (!csign_bn || !group || !a_nonce_point || !e_prime_id_point || !ctx)
+		goto fail;
+	e_id = EC_POINT_new(group);
+	if (!e_id ||
+	    !EC_POINT_mul(group, e_id, NULL, a_nonce_point, csign_bn, ctx) ||
+	    !EC_POINT_invert(group, e_id, ctx) ||
+	    !EC_POINT_add(group, e_id, e_prime_id_point, e_id, ctx)) {
+		EC_POINT_clear_free(e_id);
+		goto fail;
+	}
+
+	dpp_debug_print_point("DPP: Decrypted E-id", group, e_id);
+
+fail:
+	BN_CTX_free(ctx);
+	return e_id;
+}
+
 #endif /* CONFIG_DPP2 */
 
 

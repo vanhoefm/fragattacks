@@ -1235,8 +1235,8 @@ hostapd_dpp_rx_reconfig_announcement(struct hostapd_data *hapd, const u8 *src,
 				     const u8 *hdr, const u8 *buf, size_t len,
 				     unsigned int freq)
 {
-	const u8 *csign_hash, *fcgroup;
-	u16 csign_hash_len, fcgroup_len;
+	const u8 *csign_hash, *fcgroup, *a_nonce, *e_id;
+	u16 csign_hash_len, fcgroup_len, a_nonce_len, e_id_len;
 	struct dpp_configurator *conf;
 	struct dpp_authentication *auth;
 	unsigned int wait_time, max_wait_time;
@@ -1282,8 +1282,12 @@ hostapd_dpp_rx_reconfig_announcement(struct hostapd_data *hapd, const u8 *src,
 	group = WPA_GET_LE16(fcgroup);
 	wpa_printf(MSG_DEBUG, "DPP: Enrollee finite cyclic group: %u", group);
 
+	a_nonce = dpp_get_attr(buf, len, DPP_ATTR_A_NONCE, &a_nonce_len);
+	e_id = dpp_get_attr(buf, len, DPP_ATTR_E_PRIME_ID, &e_id_len);
+
 	auth = dpp_reconfig_init(hapd->iface->interfaces->dpp, hapd->msg_ctx,
-				 conf, freq, group);
+				 conf, freq, group, a_nonce, a_nonce_len,
+				 e_id, e_id_len);
 	if (!auth)
 		return;
 	hostapd_dpp_set_testing_options(hapd, auth);

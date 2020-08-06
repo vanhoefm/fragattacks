@@ -36,7 +36,8 @@ static void dpp_build_attr_csign_key_hash(struct wpabuf *msg, const u8 *hash)
 struct wpabuf * dpp_build_reconfig_announcement(const u8 *csign_key,
 						size_t csign_key_len,
 						const u8 *net_access_key,
-						size_t net_access_key_len)
+						size_t net_access_key_len,
+						struct dpp_reconfig_id *id)
 {
 	struct wpabuf *msg = NULL;
 	EVP_PKEY *csign = NULL;
@@ -49,6 +50,7 @@ struct wpabuf * dpp_build_reconfig_announcement(const u8 *csign_key,
 	size_t attr_len;
 	const struct dpp_curve_params *own_curve;
 	EVP_PKEY *own_key;
+	struct wpabuf *a_nonce = NULL, *e_id = NULL;
 
 	wpa_printf(MSG_DEBUG, "DPP: Build Reconfig Announcement frame");
 
@@ -81,8 +83,20 @@ struct wpabuf * dpp_build_reconfig_announcement(const u8 *csign_key,
 	wpa_hexdump(MSG_DEBUG, "DPP: kid = SHA256(uncompressed C-sign key)",
 		    hash, SHA256_MAC_LEN);
 
+	if (dpp_update_reconfig_id(id) < 0) {
+		wpa_printf(MSG_ERROR, "DPP: Failed to generate E'-id");
+		goto fail;
+	}
+
+	a_nonce = dpp_get_pubkey_point(id->a_nonce, 0);
+	e_id = dpp_get_pubkey_point(id->e_prime_id, 0);
+	if (!a_nonce || !e_id)
+		goto fail;
+
 	attr_len = 4 + SHA256_MAC_LEN;
 	attr_len += 4 + 2;
+	attr_len += 4 + wpabuf_len(a_nonce);
+	attr_len += 4 + wpabuf_len(e_id);
 	msg = dpp_alloc_msg(DPP_PA_RECONFIG_ANNOUNCEMENT, attr_len);
 	if (!msg)
 		goto fail;
@@ -97,9 +111,21 @@ struct wpabuf * dpp_build_reconfig_announcement(const u8 *csign_key,
 	wpabuf_put_le16(msg, 2);
 	wpabuf_put_le16(msg, own_curve->ike_group);
 
+	/* A-NONCE */
+	wpabuf_put_le16(msg, DPP_ATTR_A_NONCE);
+	wpabuf_put_le16(msg, wpabuf_len(a_nonce));
+	wpabuf_put_buf(msg, a_nonce);
+
+	/* E'-id */
+	wpabuf_put_le16(msg, DPP_ATTR_E_PRIME_ID);
+	wpabuf_put_le16(msg, wpabuf_len(e_id));
+	wpabuf_put_buf(msg, e_id);
+
 	wpa_hexdump_buf(MSG_DEBUG,
 			"DPP: Reconfig Announcement frame attributes", msg);
 fail:
+	wpabuf_free(a_nonce);
+	wpabuf_free(e_id);
 	EVP_PKEY_free(own_key);
 	return msg;
 }
@@ -198,10 +224,14 @@ fail:
 
 struct dpp_authentication *
 dpp_reconfig_init(struct dpp_global *dpp, void *msg_ctx,
-		  struct dpp_configurator *conf, unsigned int freq, u16 group)
+		  struct dpp_configurator *conf, unsigned int freq, u16 group,
+		  const u8 *a_nonce_attr, size_t a_nonce_len,
+		  const u8 *e_id_attr, size_t e_id_len)
 {
 	struct dpp_authentication *auth;
 	const struct dpp_curve_params *curve;
+	EVP_PKEY *a_nonce, *e_prime_id;
+	EC_POINT *e_id;
 
 	curve = dpp_get_curve_ike_group(group);
 	if (!curve) {
@@ -210,6 +240,42 @@ dpp_reconfig_init(struct dpp_global *dpp, void *msg_ctx,
 			   group);
 		return NULL;
 	}
+
+	if (!a_nonce_attr) {
+		wpa_printf(MSG_INFO, "DPP: Missing required A-NONCE attribute");
+		return NULL;
+	}
+	wpa_hexdump(MSG_MSGDUMP, "DPP: A-NONCE", a_nonce_attr, a_nonce_len);
+	a_nonce = dpp_set_pubkey_point(conf->csign, a_nonce_attr, a_nonce_len);
+	if (!a_nonce) {
+		wpa_printf(MSG_INFO, "DPP: Invalid A-NONCE");
+		return NULL;
+	}
+	dpp_debug_print_key("A-NONCE", a_nonce);
+
+	if (!e_id_attr) {
+		wpa_printf(MSG_INFO, "DPP: Missing required E'-id attribute");
+		return NULL;
+	}
+	e_prime_id = dpp_set_pubkey_point(conf->csign, e_id_attr, e_id_len);
+	if (!e_prime_id) {
+		wpa_printf(MSG_INFO, "DPP: Invalid E'-id");
+		EVP_PKEY_free(a_nonce);
+		return NULL;
+	}
+	dpp_debug_print_key("E'-id", e_prime_id);
+	e_id = dpp_decrypt_e_id(conf->csign, a_nonce, e_prime_id);
+	EVP_PKEY_free(a_nonce);
+	EVP_PKEY_free(e_prime_id);
+	if (!e_id) {
+		wpa_printf(MSG_INFO, "DPP: Could not decrypt E'-id");
+		return NULL;
+	}
+	/* TODO: could use E-id to determine whether reconfiguration with this
+	 * Enrollee has already been started and is waiting for updated
+	 * configuration instead of replying again before such configuration
+	 * becomes available */
+	EC_POINT_clear_free(e_id);
 
 	auth = dpp_alloc_auth(dpp, msg_ctx);
 	if (!auth)
