@@ -1235,11 +1235,12 @@ hostapd_dpp_rx_reconfig_announcement(struct hostapd_data *hapd, const u8 *src,
 				     const u8 *hdr, const u8 *buf, size_t len,
 				     unsigned int freq)
 {
-	const u8 *csign_hash;
-	u16 csign_hash_len;
+	const u8 *csign_hash, *fcgroup;
+	u16 csign_hash_len, fcgroup_len;
 	struct dpp_configurator *conf;
 	struct dpp_authentication *auth;
 	unsigned int wait_time, max_wait_time;
+	u16 group;
 
 	if (hapd->dpp_auth) {
 		wpa_printf(MSG_DEBUG,
@@ -1271,8 +1272,18 @@ hostapd_dpp_rx_reconfig_announcement(struct hostapd_data *hapd, const u8 *src,
 		return;
 	}
 
+	fcgroup = dpp_get_attr(buf, len, DPP_ATTR_FINITE_CYCLIC_GROUP,
+			       &fcgroup_len);
+	if (!fcgroup || fcgroup_len != 2) {
+		wpa_msg(hapd->msg_ctx, MSG_INFO, DPP_EVENT_FAIL
+			"Missing or invalid required Finite Cyclic Group attribute");
+		return;
+	}
+	group = WPA_GET_LE16(fcgroup);
+	wpa_printf(MSG_DEBUG, "DPP: Enrollee finite cyclic group: %u", group);
+
 	auth = dpp_reconfig_init(hapd->iface->interfaces->dpp, hapd->msg_ctx,
-				 conf, freq);
+				 conf, freq, group);
 	if (!auth)
 		return;
 	hostapd_dpp_set_testing_options(hapd, auth);

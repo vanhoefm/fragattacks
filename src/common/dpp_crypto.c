@@ -130,6 +130,18 @@ const struct dpp_curve_params * dpp_get_curve_nid(int nid)
 }
 
 
+const struct dpp_curve_params * dpp_get_curve_ike_group(u16 group)
+{
+	int i;
+
+	for (i = 0; dpp_curves[i].name; i++) {
+		if (dpp_curves[i].ike_group == group)
+			return &dpp_curves[i];
+	}
+	return NULL;
+}
+
+
 void dpp_debug_print_point(const char *title, const EC_GROUP *group,
 			   const EC_POINT *point)
 {
@@ -2272,7 +2284,7 @@ int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
 
 	if (auth->curve != curve) {
 		wpa_printf(MSG_DEBUG,
-			   "DPP: Mismatching netAccessKey curves (%s != %s)",
+			   "DPP: Mismatching netAccessKey curves (own=%s != peer=%s)",
 			   auth->curve->name, curve->name);
 		goto fail;
 	}
@@ -2381,7 +2393,7 @@ int dpp_reconfig_derive_ke_initiator(struct dpp_authentication *auth,
 	dpp_debug_print_key("DPP: Received netAccessKey", peer_key);
 	if (auth->curve != curve) {
 		wpa_printf(MSG_DEBUG,
-			   "DPP: Mismatching netAccessKey curves (%s != %s)",
+			   "DPP: Mismatching netAccessKey curves (own=%s != peer=%s)",
 			   auth->curve->name, curve->name);
 		goto fail;
 	}

@@ -73,6 +73,7 @@ dpp_check_signed_connector(struct dpp_signed_connector_info *info,
 const struct dpp_curve_params * dpp_get_curve_name(const char *name);
 const struct dpp_curve_params * dpp_get_curve_jwk_crv(const char *name);
 const struct dpp_curve_params * dpp_get_curve_nid(int nid);
+const struct dpp_curve_params * dpp_get_curve_ike_group(u16 group);
 int dpp_bi_pubkey_hash(struct dpp_bootstrap_info *bi,
 		       const u8 *data, size_t data_len);
 struct wpabuf * dpp_get_pubkey_point(EVP_PKEY *pkey, int prefix);

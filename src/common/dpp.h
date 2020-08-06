@@ -683,10 +683,12 @@ void dpp_global_deinit(struct dpp_global *dpp);
 /* dpp_reconfig.c */
 
 struct wpabuf * dpp_build_reconfig_announcement(const u8 *csign_key,
-						size_t csign_key_len);
+						size_t csign_key_len,
+						const u8 *net_access_key,
+						size_t net_access_key_len);
 struct dpp_authentication *
 dpp_reconfig_init(struct dpp_global *dpp, void *msg_ctx,
-		  struct dpp_configurator *conf, unsigned int freq);
+		  struct dpp_configurator *conf, unsigned int freq, u16 group);
 struct dpp_authentication *
 dpp_reconfig_auth_req_rx(struct dpp_global *dpp, void *msg_ctx,
 			 const char *own_connector,

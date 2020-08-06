@@ -2022,11 +2022,12 @@ wpas_dpp_rx_reconfig_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
 				  const u8 *hdr, const u8 *buf, size_t len,
 				  unsigned int freq)
 {
-	const u8 *csign_hash;
-	u16 csign_hash_len;
+	const u8 *csign_hash, *fcgroup;
+	u16 csign_hash_len, fcgroup_len;
 	struct dpp_configurator *conf;
 	struct dpp_authentication *auth;
 	unsigned int wait_time, max_wait_time;
+	u16 group;
 
 	if (!wpa_s->dpp)
 		return;
@@ -2056,7 +2057,17 @@ wpas_dpp_rx_reconfig_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
 		return;
 	}
 
-	auth = dpp_reconfig_init(wpa_s->dpp, wpa_s, conf, freq);
+	fcgroup = dpp_get_attr(buf, len, DPP_ATTR_FINITE_CYCLIC_GROUP,
+			       &fcgroup_len);
+	if (!fcgroup || fcgroup_len != 2) {
+		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_FAIL
+			"Missing or invalid required Finite Cyclic Group attribute");
+		return;
+	}
+	group = WPA_GET_LE16(fcgroup);
+	wpa_printf(MSG_DEBUG, "DPP: Enrollee finite cyclic group: %u", group);
+
+	auth = dpp_reconfig_init(wpa_s->dpp, wpa_s, conf, freq, group);
 	if (!auth)
 		return;
 	wpas_dpp_set_testing_options(wpa_s, auth);
@@ -3636,7 +3647,9 @@ int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 	wpa_s->dpp_qr_mutual = 0;
 	wpa_s->dpp_reconfig_announcement =
 		dpp_build_reconfig_announcement(ssid->dpp_csign,
-						ssid->dpp_csign_len);
+						ssid->dpp_csign_len,
+						ssid->dpp_netaccesskey,
+						ssid->dpp_netaccesskey_len);
 	if (!wpa_s->dpp_reconfig_announcement)
 		return -1;
 	wpa_s->dpp_reconfig_ssid = ssid;

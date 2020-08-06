@@ -844,11 +844,12 @@ static int dpp_controller_rx_reconfig_announcement(struct dpp_connection *conn,
 						   const u8 *hdr, const u8 *buf,
 						   size_t len)
 {
-	const u8 *csign_hash;
-	u16 csign_hash_len;
+	const u8 *csign_hash, *fcgroup;
+	u16 csign_hash_len, fcgroup_len;
 	struct dpp_configurator *conf;
 	struct dpp_global *dpp = conn->ctrl->global;
 	struct dpp_authentication *auth;
+	u16 group;
 
 	if (conn->auth) {
 		wpa_printf(MSG_DEBUG,
@@ -874,7 +875,17 @@ static int dpp_controller_rx_reconfig_announcement(struct dpp_connection *conn,
 		return -1;
 	}
 
-	auth = dpp_reconfig_init(dpp, dpp->msg_ctx, conf, 0);
+	fcgroup = dpp_get_attr(buf, len, DPP_ATTR_FINITE_CYCLIC_GROUP,
+			       &fcgroup_len);
+	if (!fcgroup || fcgroup_len != 2) {
+		wpa_msg(dpp->msg_ctx, MSG_INFO, DPP_EVENT_FAIL
+			"Missing or invalid required Finite Cyclic Group attribute");
+		return -1;
+	}
+	group = WPA_GET_LE16(fcgroup);
+	wpa_printf(MSG_DEBUG, "DPP: Enrollee finite cyclic group: %u", group);
+
+	auth = dpp_reconfig_init(dpp, dpp->msg_ctx, conf, 0, group);
 	if (!auth)
 		return -1;
 	if (dpp_set_configurator(auth, conn->ctrl->configurator_params) < 0) {

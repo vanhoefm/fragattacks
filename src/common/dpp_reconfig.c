@@ -34,9 +34,11 @@ static void dpp_build_attr_csign_key_hash(struct wpabuf *msg, const u8 *hash)
 
 
 struct wpabuf * dpp_build_reconfig_announcement(const u8 *csign_key,
-						size_t csign_key_len)
+						size_t csign_key_len,
+						const u8 *net_access_key,
+						size_t net_access_key_len)
 {
-	struct wpabuf *msg;
+	struct wpabuf *msg = NULL;
 	EVP_PKEY *csign = NULL;
 	const unsigned char *p;
 	struct wpabuf *uncomp;
@@ -44,39 +46,61 @@ struct wpabuf * dpp_build_reconfig_announcement(const u8 *csign_key,
 	const u8 *addr[1];
 	size_t len[1];
 	int res;
+	size_t attr_len;
+	const struct dpp_curve_params *own_curve;
+	EVP_PKEY *own_key;
 
 	wpa_printf(MSG_DEBUG, "DPP: Build Reconfig Announcement frame");
+
+	own_key = dpp_set_keypair(&own_curve, net_access_key,
+				  net_access_key_len);
+	if (!own_key) {
+		wpa_printf(MSG_ERROR, "DPP: Failed to parse own netAccessKey");
+		goto fail;
+	}
 
 	p = csign_key;
 	csign = d2i_PUBKEY(NULL, &p, csign_key_len);
 	if (!csign) {
 		wpa_printf(MSG_ERROR,
 			   "DPP: Failed to parse local C-sign-key information");
-		return NULL;
+		goto fail;
 	}
 
 	uncomp = dpp_get_pubkey_point(csign, 1);
 	EVP_PKEY_free(csign);
 	if (!uncomp)
-		return NULL;
+		goto fail;
 	addr[0] = wpabuf_head(uncomp);
 	len[0] = wpabuf_len(uncomp);
 	wpa_hexdump(MSG_DEBUG, "DPP: Uncompressed C-sign key", addr[0], len[0]);
 	res = sha256_vector(1, addr, len, hash);
 	wpabuf_free(uncomp);
 	if (res < 0)
-		return NULL;
+		goto fail;
 	wpa_hexdump(MSG_DEBUG, "DPP: kid = SHA256(uncompressed C-sign key)",
 		    hash, SHA256_MAC_LEN);
 
-	msg = dpp_alloc_msg(DPP_PA_RECONFIG_ANNOUNCEMENT, 4 + SHA256_MAC_LEN);
+	attr_len = 4 + SHA256_MAC_LEN;
+	attr_len += 4 + 2;
+	msg = dpp_alloc_msg(DPP_PA_RECONFIG_ANNOUNCEMENT, attr_len);
 	if (!msg)
-		return NULL;
+		goto fail;
 
 	/* Configurator C-sign key Hash */
 	dpp_build_attr_csign_key_hash(msg, hash);
+
+	/* Finite Cyclic Group attribute */
+	wpa_printf(MSG_DEBUG, "DPP: Finite Cyclic Group: %u",
+		   own_curve->ike_group);
+	wpabuf_put_le16(msg, DPP_ATTR_FINITE_CYCLIC_GROUP);
+	wpabuf_put_le16(msg, 2);
+	wpabuf_put_le16(msg, own_curve->ike_group);
+
 	wpa_hexdump_buf(MSG_DEBUG,
 			"DPP: Reconfig Announcement frame attributes", msg);
+fail:
+	EVP_PKEY_free(own_key);
 	return msg;
 }
 
@@ -121,7 +145,9 @@ static struct wpabuf * dpp_reconfig_build_req(struct dpp_authentication *auth)
 }
 
 
-static int dpp_configurator_build_own_connector(struct dpp_configurator *conf)
+static int
+dpp_configurator_build_own_connector(struct dpp_configurator *conf,
+				     const struct dpp_curve_params *curve)
 {
 	struct wpabuf *dppcon = NULL;
 	int ret = -1;
@@ -132,12 +158,12 @@ static int dpp_configurator_build_own_connector(struct dpp_configurator *conf)
 	wpa_printf(MSG_DEBUG,
 		   "DPP: Sign own Configurator Connector for reconfiguration with curve %s",
 		   conf->curve->name);
-	conf->connector_key = dpp_gen_keypair(conf->curve);
+	conf->connector_key = dpp_gen_keypair(curve);
 	if (!conf->connector_key)
 		goto fail;
 
 	/* Connector (JSON dppCon object) */
-	dppcon = wpabuf_alloc(1000 + 2 * conf->curve->prime_len * 4 / 3);
+	dppcon = wpabuf_alloc(1000 + 2 * curve->prime_len * 4 / 3);
 	if (!dppcon)
 		goto fail;
 	json_start_object(dppcon, NULL);
@@ -150,7 +176,7 @@ static int dpp_configurator_build_own_connector(struct dpp_configurator *conf)
 	json_end_array(dppcon);
 	json_value_sep(dppcon);
 	if (dpp_build_jwk(dppcon, "netAccessKey", conf->connector_key, NULL,
-			  conf->curve) < 0) {
+			  curve) < 0) {
 		wpa_printf(MSG_DEBUG, "DPP: Failed to build netAccessKey JWK");
 		goto fail;
 	}
@@ -172,9 +198,18 @@ fail:
 
 struct dpp_authentication *
 dpp_reconfig_init(struct dpp_global *dpp, void *msg_ctx,
-		  struct dpp_configurator *conf, unsigned int freq)
+		  struct dpp_configurator *conf, unsigned int freq, u16 group)
 {
 	struct dpp_authentication *auth;
+	const struct dpp_curve_params *curve;
+
+	curve = dpp_get_curve_ike_group(group);
+	if (!curve) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Unsupported group %u - cannot reconfigure",
+			   group);
+		return NULL;
+	}
 
 	auth = dpp_alloc_auth(dpp, msg_ctx);
 	if (!auth)
@@ -186,12 +221,12 @@ dpp_reconfig_init(struct dpp_global *dpp, void *msg_ctx,
 	auth->waiting_auth_resp = 1;
 	auth->allowed_roles = DPP_CAPAB_CONFIGURATOR;
 	auth->configurator = 1;
-	auth->curve = conf->curve;
+	auth->curve = curve;
 	auth->transaction_id = 1;
 	if (freq && dpp_prepare_channel_list(auth, freq, NULL, 0) < 0)
 		goto fail;
 
-	if (dpp_configurator_build_own_connector(conf) < 0)
+	if (dpp_configurator_build_own_connector(conf, curve) < 0)
 		goto fail;
 
 	if (random_get_bytes(auth->i_nonce, auth->curve->nonce_len)) {
