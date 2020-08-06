@@ -413,3 +413,19 @@ def test_sae_pk_and_psk(dev, apdev):
     if "sae_h2e" not in status or "sae_pk" not in status or \
        status["sae_h2e"] != "1" or status["sae_pk"] != "1":
         raise Exception("SAE-PK or H2E not indicated in STATUS")
+
+def test_sae_pk_and_psk_invalid_password(dev, apdev):
+    """SAE-PK and PSK using invalid password combination"""
+    check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
+
+    params = hostapd.wpa2_params(ssid=SAE_PK_SSID)
+    params['wpa_key_mgmt'] = 'SAE WPA-PSK'
+    params['sae_password'] = ['%s|pk=%s:%s' % (SAE_PK_SEC3_PW,
+                                               SAE_PK_SEC3_M,
+                                               SAE_PK_19_PK)]
+    params['wpa_passphrase'] = SAE_PK_20_PW
+    hapd = hostapd.add_ap(apdev[0], params, no_enable=True)
+    res = hapd.request("ENABLE")
+    if "FAIL" not in res:
+        raise Exception("Invalid configuration accepted")
