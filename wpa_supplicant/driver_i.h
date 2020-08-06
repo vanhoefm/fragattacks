@@ -954,11 +954,11 @@ static inline int wpa_drv_disable_transmit_sa(struct wpa_supplicant *wpa_s,
 #endif /* CONFIG_MACSEC */
 
 static inline int wpa_drv_setband(struct wpa_supplicant *wpa_s,
-				  enum set_band band)
+				  u32 band_mask)
 {
 	if (!wpa_s->driver->set_band)
 		return -1;
-	return wpa_s->driver->set_band(wpa_s->drv_priv, band);
+	return wpa_s->driver->set_band(wpa_s->drv_priv, band_mask);
 }
 
 static inline int wpa_drv_get_pref_freq_list(struct wpa_supplicant *wpa_s,

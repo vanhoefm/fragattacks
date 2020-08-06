@@ -713,12 +713,15 @@ static void wpa_setband_scan_freqs(struct wpa_supplicant *wpa_s,
 	if (params->freqs)
 		return; /* already using a limited channel set */
 
-	if (wpa_s->setband == WPA_SETBAND_5G)
+	if (wpa_s->setband_mask & WPA_SETBAND_5G)
 		wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211A, params,
 					0);
-	else if (wpa_s->setband == WPA_SETBAND_2G)
+	if (wpa_s->setband_mask & WPA_SETBAND_2G)
 		wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211G, params,
 					0);
+	if (wpa_s->setband_mask & WPA_SETBAND_6G)
+		wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211A, params,
+					1);
 }
 
 

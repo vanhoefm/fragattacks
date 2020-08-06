@@ -594,7 +594,7 @@ struct wpa_supplicant {
 	struct wpa_ssid_value *disallow_aps_ssid;
 	size_t disallow_aps_ssid_count;
 
-	enum set_band setband;
+	u32 setband_mask;
 
 	/* Preferred network for the next connection attempt */
 	struct wpa_ssid *next_ssid;

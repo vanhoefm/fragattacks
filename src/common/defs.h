@@ -388,9 +388,10 @@ enum mesh_plink_state {
 };
 
 enum set_band {
-	WPA_SETBAND_AUTO,
-	WPA_SETBAND_5G,
-	WPA_SETBAND_2G
+	WPA_SETBAND_AUTO = 0,
+	WPA_SETBAND_5G = BIT(0),
+	WPA_SETBAND_2G = BIT(1),
+	WPA_SETBAND_6G = BIT(2),
 };
 
 enum wpa_radio_work_band {

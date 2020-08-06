@@ -385,11 +385,11 @@ hostapd_drv_send_external_auth_status(struct hostapd_data *hapd,
 }
 
 static inline int
-hostapd_drv_set_band(struct hostapd_data *hapd, enum set_band band)
+hostapd_drv_set_band(struct hostapd_data *hapd, u32 band_mask)
 {
 	if (!hapd->driver || !hapd->drv_priv || !hapd->driver->set_band)
 		return -1;
-	return hapd->driver->set_band(hapd->drv_priv, band);
+	return hapd->driver->set_band(hapd->drv_priv, band_mask);
 }
 
 #endif /* AP_DRV_OPS */

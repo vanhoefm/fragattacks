@@ -4277,12 +4277,12 @@ struct wpa_driver_ops {
 	int (*do_acs)(void *priv, struct drv_acs_params *params);
 
 	/**
-	 * set_band - Notify driver of band selection
+	 * set_band - Notify driver of band(s) selection
 	 * @priv: Private driver interface data
-	 * @band: The selected band(s)
+	 * @band_mask: The selected band(s) bit mask (from enum set_band)
 	 * Returns 0 on success, -1 on failure
 	 */
-	int (*set_band)(void *priv, enum set_band band);
+	int (*set_band)(void *priv, u32 band_mask);
 
 	/**
 	 * get_pref_freq_list - Get preferred frequency list for an interface
