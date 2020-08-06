@@ -381,3 +381,35 @@ def test_sae_pk_confirm_immediate(dev, apdev):
 
     run_sae_pk(apdev[0], dev[0], SAE_PK_SSID, SAE_PK_SEC3_PW,
                SAE_PK_SEC3_M, SAE_PK_19_PK, confirm_immediate=True)
+
+def test_sae_pk_and_psk(dev, apdev):
+    """SAE-PK and PSK"""
+    check_sae_pk_capab(dev[0])
+    dev[0].flush_scan_cache()
+    dev[0].set("sae_groups", "")
+    dev[2].set("sae_groups", "")
+
+    params = hostapd.wpa2_params(ssid=SAE_PK_SSID)
+    params['wpa_key_mgmt'] = 'SAE WPA-PSK'
+    params['sae_password'] = ['%s|pk=%s:%s' % (SAE_PK_SEC3_PW,
+                                               SAE_PK_SEC3_M,
+                                               SAE_PK_19_PK)]
+    params['wpa_passphrase'] = SAE_PK_SEC3_PW
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+
+    dev[0].connect(SAE_PK_SSID, sae_password=SAE_PK_SEC3_PW, key_mgmt="SAE",
+                   scan_freq="2412")
+    dev[1].connect(SAE_PK_SSID, psk=SAE_PK_SEC3_PW, key_mgmt="WPA-PSK",
+                   scan_freq="2412")
+    dev[2].connect(SAE_PK_SSID, sae_password=SAE_PK_SEC3_PW, key_mgmt="SAE",
+                   sae_pk="2", scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK *")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+    dev[0].connect(SAE_PK_SSID, psk=SAE_PK_SEC3_PW, key_mgmt="SAE",
+                   scan_freq="2412")
+    status = dev[0].get_status()
+    if "sae_h2e" not in status or "sae_pk" not in status or \
+       status["sae_h2e"] != "1" or status["sae_pk"] != "1":
+        raise Exception("SAE-PK or H2E not indicated in STATUS")
