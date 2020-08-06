@@ -5091,6 +5091,49 @@ def test_sigma_dut_ap_sae_pk_misbehavior(dev, apdev, params):
         finally:
             stop_sigma_dut(sigma)
 
+def run_sigma_dut_ap_sae_pk_mixed(conffile, dev, ssid, pw, keypair, m, failure):
+    sigma_dut_cmd_check("ap_reset_default")
+    sigma_dut_cmd_check("ap_set_wireless,NAME,AP,CHANNEL,1,SSID,%s,MODE,11ng" % ssid)
+    cmd = "ap_set_security,NAME,AP,AKMSuiteType,2;8,PairwiseCipher,AES-CCMP-128,GroupCipher,AES-CCMP-128,GroupMgntCipher,BIP-CMAC-128,PMF,Required,PSK,%s,sae_pk,0,Transition_Disable,0" % (pw)
+    sigma_dut_cmd_check(cmd)
+    sigma_dut_cmd_check("ap_config_commit,NAME,AP")
+    bssid = sigma_dut_cmd_check("ap_get_mac_address,NAME,AP")
+    bssid = bssid.split(',')[3]
+
+    with open("/tmp/sigma_dut-ap.conf", "rb") as f:
+        with open(conffile, "ab") as f2:
+            f2.write(f.read())
+            f2.write('\n'.encode())
+
+    sigma_dut_cmd_check("ap_set_rfeature,NAME,AP,type,WPA3,Transition_Disable,1,Transition_Disable_Index,0")
+
+    dev[0].set("sae_groups", "")
+    dev[0].connect(ssid, key_mgmt="SAE", sae_password=pw, ieee80211w="2",
+                   scan_freq="2412")
+    dev[1].connect(ssid, key_mgmt="WPA-PSK", psk=pw, ieee80211w="2",
+                   scan_freq="2412")
+
+    sigma_dut_cmd_check("ap_reset_default")
+
+def test_sigma_dut_ap_sae_pk_mixed(dev, apdev, params):
+    """sigma_dut controlled AP using SAE-PK(disabled) and PSK"""
+    logdir = params['prefix'] + ".sigma-hostapd"
+    conffile = params['prefix'] + ".sigma-conf"
+    if "SAE" not in dev[0].get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    ssid = "SAEPK-5.7.3"
+    pw = "4322-ufus-4bhm"
+    keypair = "saepk1.pem"
+    m = "21ede99abc46679646693cafe4677d4e"
+
+    with HWSimRadio() as (radio, iface):
+        sigma = start_sigma_dut(iface, hostapd_logdir=logdir)
+        try:
+            run_sigma_dut_ap_sae_pk_mixed(conffile, dev, ssid, pw, keypair,
+                                          m, False)
+        finally:
+            stop_sigma_dut(sigma)
+
 def test_sigma_dut_client_privacy(dev, apdev, params):
     """sigma_dut client privacy"""
     logdir = params['logdir']
