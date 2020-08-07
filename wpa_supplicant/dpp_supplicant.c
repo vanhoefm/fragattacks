@@ -3636,11 +3636,26 @@ void wpas_dpp_chirp_stop(struct wpa_supplicant *wpa_s)
 }
 
 
-int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
+int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, const char *cmd)
 {
-	if (!ssid->dpp_connector || !ssid->dpp_netaccesskey ||
-	    !ssid->dpp_csign)
+	struct wpa_ssid *ssid;
+	int iter = 1;
+	const char *pos;
+
+	ssid = wpa_config_get_network(wpa_s->conf, atoi(cmd));
+	if (!ssid || !ssid->dpp_connector || !ssid->dpp_netaccesskey ||
+	    !ssid->dpp_csign) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Not a valid network profile for reconfiguration");
 		return -1;
+	}
+
+	pos = os_strstr(cmd, " iter=");
+	if (pos) {
+		iter = atoi(pos + 6);
+		if (iter <= 0)
+			return -1;
+	}
 
 	if (wpa_s->dpp_auth) {
 		wpa_printf(MSG_DEBUG,
@@ -3671,7 +3686,7 @@ int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, struct wpa_ssid *ssid)
 		return -1;
 	wpa_s->dpp_reconfig_ssid = ssid;
 	wpa_s->dpp_reconfig_ssid_id = ssid->id;
-	wpa_s->dpp_chirp_iter = 1;
+	wpa_s->dpp_chirp_iter = iter;
 	wpa_s->dpp_chirp_round = 0;
 	wpa_s->dpp_chirp_scan_done = 0;
 	wpa_s->dpp_chirp_listen = 0;
