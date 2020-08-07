@@ -109,6 +109,8 @@ Install patched drivers:
 	make -j 4
 	sudo make install
 
+**TODO: Address any warnings during make install**
+
 This compiles the drivers for all network cards supported by Linux. If you only want to compile
 the drivers for network cards we explicitly tested, use `make defconfig-experiments` instead.
 
@@ -213,7 +215,8 @@ To **verify your test setup**, the first command in the table below performs a n
 succeed. The second command sends the ping as two fragmented Wi-Fi frames, and should only fail
 in the rare case that the tested device doesn't support fragmentation. In case one of these tests
 is not working, follow the instructions in [network card injection test](#network-card-injection-test)
-to assure your network card is properly injecting frames.
+to assure your network card is properly injecting frames. If the devices being tested might enter
+sleep mode, also see [Handling sleep mode](#Handling-sleep-mode).
 
 The third and fourth commands are not attacks but verify basic defragmentation behaviour of a device
 and are further discussed below the table.
@@ -375,6 +378,7 @@ In case the test tool doesn't appear to be working, check the following:
    algorithms such as TKIP or GCMP are not supported.
 
 7. If you updated the code using git, execute `./build.sh` again (see [Prerequisites](#prerequisites)).
+   It might also help to recreate the python virtualenv environment.
 
 8. If your Wi-Fi dongle is unreliable, use it from a live CD or USB. A virtual machine can be unreliable.
 
@@ -386,6 +390,9 @@ In case the test tool doesn't appear to be working, check the following:
     If you updated your kernel, you will need to recompile and reinstall the drivers.
 
 11. Check that you are using modified firmware if needed for your wireless network card.
+
+12. Check that the tested device doesn't block ICMP ping requests. In case it doesn't reply to pings you
+    can run tcpdump or wireshark on the device, or you can try any of the other methods listed in [No ICMP Support](#9.3-No-ICMP-Support).
 
 # 8. Extended Vulnerability Tests
 
@@ -430,7 +437,7 @@ presence of a certain vulnerability class, there is no need to test the other at
 | `ping BP --bcast-ra`                   | Ping in a plaintext broadcast Wi-Fi frame before 4-way HS (use tcpdump).
 | `eapfrag BP,BP`                        | Specalization of broadcast fragment attack (experimental, use tcpdump).
 | <div align="center">*A-MSDUs EAPOL attack (§6.8)*</div>
-| `eapol-amsdu[-bad] BP --bcast-dst`     | Same as "eapol-amsdu BP" but easier to verify against APs (with tcpdump).
+| `eapol-amsdu[-bad] BP --bcast-dst`     | Same as `eapol-amsdu BP` but easier to verify against APs (with tcpdump).
 
 ## 8.1. A-MSDU attack tests (§3)
 
@@ -598,21 +605,23 @@ it cannot test whether the firmware or wireless chip itself overwrites fields.
 
 ### Interpreting test results
 
-First, the injection scripts only test the most important behaviour. The best way to confirm that injection
+The test script will give detailed output on which tests succeeded or failed, and will conclude by outputting
+either "==> The most important tests have been passed successfully" or a message indicating that either important
+tests failed or that it couldn't capture certain injected frames.
+
+Note that the injection scripts only test the most important behaviour. The best way to confirm that injection
 is properly working is to **perform the vulnerability tests against devices that are known to be vulnerable**,
 and confirming that the tool correctly identifies the device(s) as vulnerable.
 
-In case the injection tests are not working, try to first unplug your Wi-Fi dongles and reboot your computer.
-If the tests still fail, try to use a different network card to monitor whether frames are injected properly.
-I observed that sometimes frames are in fact properly injected, but the second network card (`wlan1`
-in the above examples) did not recieve most injected frames. What also helps is running the tests and
-experiments in an environment (and on a channel) with little background noise.
+When certain injected frames could not be captured, this may either be because of background noise, or because the
+network card being tested is unable to properly inject certain frames (e.g. the firmware of the Intel AX200 crashes
+when injecting fragmented frames). It could also be that frames are in fact properly injected, but that the network
+card used to monitor whether frames are injected properly (`wlan1` in the above examples) is not reliable and is,
+for example, missing most frames due to background noise. Try running the tests on a different channel as well.
 
-The test script will give detailed output on which tests succeeded or failed, and will conclude by outputting
-either "==> The most important tests have been passed successfully" or a message indicating that either important
-tests failed or that it couldn't capture certain inject frames. When certain injected frames could not be captures,
-this by either be because of background noise, or because the network card being tested is unable to properly
-inject certain frames (e.g. the firmware of the Intel AX200 crashes when injecting fragmented frames).
+When the injection tests are working, but you have problems reliably performing the attack tests, this may be
+because the devices you are testing is entering sleep mode. See [Handling sleep mode](#Handling-sleep-mode) for
+additional notes on this problem.
 
 ### Manual checks notes
 
@@ -639,7 +648,12 @@ parameters.
 
 ## 9.3. No ICMP Support
 
-**TODO: Alternatives --arp and --dhcp if the tested device doesn't reply to pings.**
+Most attack tests work by sending ICMP ping requests in special manners, and seeing wether we receive
+an ICMP ping response. In case the device being tested does not support ICMP pings you can instead
+using ARP requests by adding the `--arp` parameter to all tests. **TODO: Explain in detial for which**
+**tests this parameter has an effect.**.
+
+**TODO: When acting as a client we can also inject DHCP requests intead.**
 
 ## 9.4. Alternative network cards
 
@@ -676,7 +690,26 @@ to inject frames when `cfg80211_reg_can_beacon` returns false. As a result, Linu
 inject frames even though this is actually allowed. Making `cfg80211_reg_can_beacon` return true
 under the correct conditions prevents this bug.
 
-## 9.6. Notes on device support
+## 9.6. Handling sleep mode
+
+Devices such as mobile phones or IoT gadgets may put their Wi-Fi radio in sleep mode to reduce energy usage.
+When in sleep mode, these devices are unable to receive Wi-Fi frames, which may interfere with our tests. There
+are some options to try to mitigate this problem:
+
+1. Try to disable sleep mode on the device being tested. This is the most reliable solution, but unfortunately
+   not always possible.
+
+2. Run the test tool in mixed mode. Most network cards will then queue injected frames until the device being
+   tested is awake again.
+
+3. Try a different network card to perform the tests. I found that different network cards will inject frames
+   at (slightly) different times, and this may be the difference between the frame arriving while the tested
+   device is awake or asleep.
+
+4. Perform the tests using ARP instead of ICMP tests, see [No ICMP support](#No-ICMP-support) for details. This
+   can be more reliable because fewer frames have to be properly injected when using ARP injection.
+
+## 9.7. Notes on device support
 
 ### ath9k_htc
 
@@ -716,7 +749,7 @@ and make it possible to inject fragmented frames.
 
 **TODO: Device that were tested as being an AP while using another one to inject? Broadcom of macOS, Intel AX200?**
 
-## 9.7. Hwsim mode details
+## 9.8. Hwsim mode details
 
 **Warning**: *this is currently an experimental mode, only use it for research purposes.*
 
