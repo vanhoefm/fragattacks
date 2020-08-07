@@ -109,10 +109,11 @@ Install patched drivers:
 	make -j 4
 	sudo make install
 
-**TODO: Address any warnings during make install**
-
 This compiles the drivers for all network cards supported by Linux. If you only want to compile
 the drivers for network cards we explicitly tested, use `make defconfig-experiments` instead.
+During the install command you may get several warnings containing `needs unknown symbol`. You can
+ignore these warning as long they do not contain the `/lib/modules/*/updates/` directory and the
+compiled drivers are working.
 
 Now install patched `ath9k_htc` firmware:
 
@@ -417,7 +418,7 @@ presence of a certain vulnerability class, there is no need to test the other at
 | `ping I,F,BE,E`                        | In case the new key is installed relatively late.
 | `ping I,E,F,AE --rekey-plain`          | If the device performs the rekey handshake in plaintext.
 | `ping I,E,F,AE --rekey-req --rekey-plain`| Same as above, and actively request a rekey as client.
-| `ping I,E,F,AE --rekey-early-install`  | Install the new key before sending message 4 as an AP. **TODO: Test again against Windows.**
+| `ping I,E,F,AE --rekey-early-install`  | Install the new key before sending message 4 as an AP.
 | `ping I,F,BE,AE --freebsd`             | Mixed key attack against FreeBSD.
 | <div align="center">*Cache attacks (§5)*</div>
 | `ping I,E,R,AE --freebsd [--full-reconnect]` | Cache attack specific to FreeBSD implementations.
@@ -744,10 +745,6 @@ for now you must manually install the driver from GitHub.
 I tested the Intel AX200 as well and found that it is _not_ compatible with the test tool: its firmware
 crashes after sending a fragmented frame. If an Intel developer is reading this, please update the firmware
 and make it possible to inject fragmented frames.
-
-### Injection mode
-
-**TODO: Device that were tested as being an AP while using another one to inject? Broadcom of macOS, Intel AX200?**
 
 ## 9.8. Hwsim mode details
 
