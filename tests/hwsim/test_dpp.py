@@ -5444,7 +5444,21 @@ def test_dpp_reconfig_connector_different_groups(dev, apdev):
     finally:
         dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
-def run_dpp_reconfig_connector(dev, apdev, conf_curve=None):
+@long_duration_test
+def test_dpp_reconfig_retries(dev, apdev):
+    """DPP reconfiguration retries"""
+    try:
+        run_dpp_reconfig_connector(dev, apdev, test_retries=True)
+        for i in range(4):
+            ev = dev[0].wait_event(["DPP-TX "], timeout=120)
+            if ev is None or "type=14" not in ev:
+                raise Exception("Reconfig Announcement not sent")
+        dev[0].request("DPP_STOP_LISTEN")
+    finally:
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
+
+def run_dpp_reconfig_connector(dev, apdev, conf_curve=None,
+                               test_retries=False):
     check_dpp_capab(dev[0], min_ver=2)
     check_dpp_capab(dev[1], min_ver=2)
 
@@ -5528,6 +5542,12 @@ def run_dpp_reconfig_connector(dev, apdev, conf_curve=None):
     time.sleep(0.1)
     dev[0].dump_monitor()
     dev[1].dump_monitor()
+
+    if test_retries:
+        dev[1].request("DPP_STOP_LISTEN")
+        if "OK" not in dev[0].request("DPP_RECONFIG %s iter=10" % id):
+            raise Exception("Failed to start reconfiguration")
+        return
 
     dev[1].set("dpp_configurator_params",
                "conf=sta-psk ssid=%s pass=%s conn_status=1" % (binascii.hexlify(ssid.encode()).decode(), binascii.hexlify(passphrase2.encode()).decode()))
