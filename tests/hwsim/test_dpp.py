@@ -5437,7 +5437,14 @@ def test_dpp_reconfig_connector(dev, apdev):
     finally:
         dev[0].set("dpp_config_processing", "0", allow_fail=True)
 
-def run_dpp_reconfig_connector(dev, apdev):
+def test_dpp_reconfig_connector_different_groups(dev, apdev):
+    """DPP reconfiguration connector with different groups"""
+    try:
+        run_dpp_reconfig_connector(dev, apdev, conf_curve="secp384r1")
+    finally:
+        dev[0].set("dpp_config_processing", "0", allow_fail=True)
+
+def run_dpp_reconfig_connector(dev, apdev, conf_curve=None):
     check_dpp_capab(dev[0], min_ver=2)
     check_dpp_capab(dev[1], min_ver=2)
 
@@ -5451,7 +5458,7 @@ def run_dpp_reconfig_connector(dev, apdev):
     id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
     uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
     dev[0].dpp_listen(2412)
-    configurator = dev[1].dpp_configurator_add()
+    configurator = dev[1].dpp_configurator_add(curve=conf_curve)
     conf = 'sta-psk'
     dev[1].dpp_auth_init(uri=uri0, conf=conf, ssid=ssid,
                          passphrase=passphrase, configurator=configurator,
