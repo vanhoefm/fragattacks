@@ -2128,7 +2128,7 @@ wpas_dpp_rx_reconfig_auth_req(struct wpa_supplicant *wpa_s, const u8 *src,
 			   "DPP: Not ready for reconfiguration - pending authentication exchange in progress");
 		return;
 	}
-	if (!wpa_s->dpp_reconfig_announcement || !wpa_s->dpp_reconfig_ssid) {
+	if (!wpa_s->dpp_reconfig_ssid) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Not ready for reconfiguration - not requested");
 		return;
@@ -3392,13 +3392,26 @@ static void wpas_dpp_chirp_tx_status(struct wpa_supplicant *wpa_s,
 
 static void wpas_dpp_chirp_start(struct wpa_supplicant *wpa_s)
 {
-	struct wpabuf *msg;
+	struct wpabuf *msg, *announce = NULL;
 	int type;
 
 	msg = wpa_s->dpp_presence_announcement;
 	type = DPP_PA_PRESENCE_ANNOUNCEMENT;
 	if (!msg) {
-		msg = wpa_s->dpp_reconfig_announcement;
+		struct wpa_ssid *ssid = wpa_s->dpp_reconfig_ssid;
+
+		if (ssid && wpa_s->dpp_reconfig_id &&
+		    wpa_config_get_network(wpa_s->conf,
+					   wpa_s->dpp_reconfig_ssid_id) ==
+		    ssid) {
+			announce = dpp_build_reconfig_announcement(
+				ssid->dpp_csign,
+				ssid->dpp_csign_len,
+				ssid->dpp_netaccesskey,
+				ssid->dpp_netaccesskey_len,
+				wpa_s->dpp_reconfig_id);
+			msg = announce;
+		}
 		if (!msg)
 			return;
 		type = DPP_PA_RECONFIG_ANNOUNCEMENT;
@@ -3412,6 +3425,8 @@ static void wpas_dpp_chirp_start(struct wpa_supplicant *wpa_s)
 		    wpabuf_head(msg), wpabuf_len(msg),
 		    2000, wpas_dpp_chirp_tx_status, 0) < 0)
 		wpas_dpp_chirp_stop(wpa_s);
+
+	wpabuf_free(announce);
 }
 
 
@@ -3424,7 +3439,7 @@ static void wpas_dpp_chirp_scan_res_handler(struct wpa_supplicant *wpa_s,
 	int c;
 	struct wpa_bss *bss;
 
-	if (!bi && !wpa_s->dpp_reconfig_announcement)
+	if (!bi && !wpa_s->dpp_reconfig_ssid)
 		return;
 
 	wpa_s->dpp_chirp_scan_done = 1;
@@ -3612,15 +3627,13 @@ int wpas_dpp_chirp(struct wpa_supplicant *wpa_s, const char *cmd)
 void wpas_dpp_chirp_stop(struct wpa_supplicant *wpa_s)
 {
 	if (wpa_s->dpp_presence_announcement ||
-	    wpa_s->dpp_reconfig_announcement) {
+	    wpa_s->dpp_reconfig_ssid) {
 		offchannel_send_action_done(wpa_s);
 		wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_CHIRP_STOPPED);
 	}
 	wpa_s->dpp_chirp_bi = NULL;
 	wpabuf_free(wpa_s->dpp_presence_announcement);
 	wpa_s->dpp_presence_announcement = NULL;
-	wpabuf_free(wpa_s->dpp_reconfig_announcement);
-	wpa_s->dpp_reconfig_announcement = NULL;
 	if (wpa_s->dpp_chirp_listen)
 		wpas_dpp_listen_stop(wpa_s);
 	wpa_s->dpp_chirp_listen = 0;
@@ -3674,16 +3687,6 @@ int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, const char *cmd)
 	wpas_dpp_chirp_stop(wpa_s);
 	wpa_s->dpp_allowed_roles = DPP_CAPAB_ENROLLEE;
 	wpa_s->dpp_qr_mutual = 0;
-	/* TODO: regenerate Reconfig Announcement frame to update A-NONCE/E'-id
-	 * for each retransmission */
-	wpa_s->dpp_reconfig_announcement =
-		dpp_build_reconfig_announcement(ssid->dpp_csign,
-						ssid->dpp_csign_len,
-						ssid->dpp_netaccesskey,
-						ssid->dpp_netaccesskey_len,
-						wpa_s->dpp_reconfig_id);
-	if (!wpa_s->dpp_reconfig_announcement)
-		return -1;
 	wpa_s->dpp_reconfig_ssid = ssid;
 	wpa_s->dpp_reconfig_ssid_id = ssid->id;
 	wpa_s->dpp_chirp_iter = iter;
