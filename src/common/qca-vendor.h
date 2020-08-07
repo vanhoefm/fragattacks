@@ -3467,7 +3467,7 @@ enum qca_wlan_vendor_attr_ll_stats_results {
 	QCA_WLAN_VENDOR_ATTR_LL_STATS_NUM_RADIOS = 66,
 
 	/* Signifies the nested list of channel attributes
-	 * QCA_WLAN_VENDOR_ATTR_LL_STATS_CHANNEL_INFO_*
+	 * QCA_WLAN_VENDOR_ATTR_LL_STATS_CHANNEL_*
 	 */
 	QCA_WLAN_VENDOR_ATTR_LL_STATS_CH_INFO = 67,
 
