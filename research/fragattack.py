@@ -236,7 +236,7 @@ if __name__ == "__main__":
 	# Construct the test
 	options.test = prepare_tests(options)
 	if options.test == None:
-		log(STATUS, f"Test name/id '{options.testname}' not recognized. Specify a valid test case.")
+		log(STATUS, f"Test name '{options.testname}' not recognized. Specify a valid test case.")
 		quit(1)
 
 	# Parse remaining options
