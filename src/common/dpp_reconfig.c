@@ -627,11 +627,16 @@ dpp_reconfig_build_conf(struct dpp_authentication *auth)
 	wpabuf_put_buf(clear, reconfig_flags);
 
 	attr_len = 4 + wpabuf_len(clear) + AES_BLOCK_SIZE;
+	attr_len += 4 + 1;
 	msg = dpp_alloc_msg(DPP_PA_RECONFIG_AUTH_CONF, attr_len);
 	if (!msg)
 		goto fail;
 
 	attr_start = wpabuf_put(msg, 0);
+
+	/* DPP Status */
+	dpp_build_attr_status(msg, DPP_STATUS_OK);
+
 	attr_end = wpabuf_put(msg, 0);
 
 	/* OUI, OUI type, Crypto Suite, DPP frame type */
@@ -860,9 +865,9 @@ int dpp_reconfig_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 			      const u8 *attr_start, size_t attr_len)
 {
 	const u8 *trans_id, *version, *wrapped_data, *i_nonce, *r_nonce,
-		*reconfig_flags;
+		*reconfig_flags, *status;
 	u16 trans_id_len, version_len, wrapped_data_len, i_nonce_len,
-		r_nonce_len, reconfig_flags_len;
+		r_nonce_len, reconfig_flags_len, status_len;
 	const u8 *addr[2];
 	size_t len[2];
 	u8 *unwrapped = NULL;
@@ -882,11 +887,26 @@ int dpp_reconfig_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 	}
 	wpa_hexdump(MSG_MSGDUMP, "DPP: Wrapped Data",
 		    wrapped_data, wrapped_data_len);
+	attr_len = wrapped_data - 4 - attr_start;
+
+	status = dpp_get_attr(attr_start, attr_len, DPP_ATTR_STATUS,
+			      &status_len);
+	if (!status || status_len < 1) {
+		dpp_auth_fail(auth,
+			      "Missing or invalid required DPP Status attribute");
+		goto fail;
+	}
+	wpa_printf(MSG_DEBUG, "DPP: Status %u", status[0]);
+	if (status[0] != DPP_STATUS_OK) {
+		dpp_auth_fail(auth,
+			      "Reconfiguration did not complete successfully");
+		goto fail;
+	}
 
 	addr[0] = hdr;
 	len[0] = DPP_HDR_LEN;
 	addr[1] = attr_start;
-	len[1] = 0;
+	len[1] = attr_len;
 	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[0]", addr[0], len[0]);
 	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[1]", addr[1], len[1]);
 	wpa_hexdump(MSG_DEBUG, "DPP: AES-SIV ciphertext",
