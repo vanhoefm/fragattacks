@@ -74,19 +74,22 @@ and using the tool against a known-vulnerable implementation to confirm the tool
 
 The test tool was tested on Kali Linux and Ubuntu 20.04. To install the required dependencies, execute:
 
-	# Kali Linux and Ubuntu
+	# Kali Linux and Ubuntu:
 	sudo apt-get update
 	sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libssl-dev \
 		libdbus-1-dev git pkg-config build-essential macchanger net-tools python3-venv \
-		aircrack-ng firmware-ath9k-htc rfkill
+		aircrack-ng rfkill
+	# Kali Linux:
+	sudo apt-get install firmware-atheros
+	# Ubuntu/Debian:
+	sudo apt-get install firmware-ath9k-htc
 
 Now clone this repository, build the tools, and configure a virtual python3 environment:
 
 	# **TODO: replace with real HTTP unauthenticated link on release**
 	git clone https://gitlab.com/aconf/wifi.git fragattack --recursive
-	cd fragattack
+	cd fragattack/research
 	./build.sh
-	cd research
 	python3 -m venv venv
 	source venv/bin/activate
 	pip install wheel
@@ -621,8 +624,8 @@ If you also want to test the retransmission behaviour of `wlan0` in mixed mode y
 In case you do not have a second network card, you can execute a partial mixed mode injection test
 using:
 
-	./fragattack wlan0 ping --inject-selftest
-	./fragattack wlan0 ping --inject-selftest --ap
+	./fragattack wlan0 ping --inject-test[-postauth] self
+	./fragattack wlan0 ping --inject-test[-postauth] self --ap
 
 Unfortunately, the above tests can only test if the kernel overwrites fields of injected frames,
 it cannot test whether the firmware or wireless chip itself overwrites fields.
