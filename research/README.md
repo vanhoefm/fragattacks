@@ -2,9 +2,8 @@
 
 # 1. Introduction
 
-The discovered attacks affect all Wi-Fi networks. The attacks are identical against WPA2 and WPA3, 
-because WPA3 only introduced a new authentication method meaning its encryption ciphers (CCMP and GCMP)
-are identical to WPA2.
+The discovered vulnerabilities affect all Wi-Fi networks. The resulting attacks are identical against WPA2 and WPA3
+because their CCMP and GCMP encryption ciphers are identical.
 
 Older WPA networks by default use TKIP for encryption, and the applicability of the attacks against
 this cipher are discussed in the paper. To illustrate that Wi-Fi has been vulnerable since its creation,
@@ -15,25 +14,23 @@ in the `research` directory. This repository has been updated after the paper su
 usability improvements (but no new research). You can inspect the code at the time of submission
 by executing `git checkout db75c47`.
 
-**A summary of the discoveries can be found in [SUMMARY.md](SUMMARY.md).**
-
 # 2. Supported Network Cards
 
 Only specific wireless network cards are supported. This is because some network cards may overwrite the
-sequence of fragment number of injected frames, or may reorder frames of different priority, and this
-interferes with the test tool (i.e. the tool might incorrectly say a device is secure although it's not).
+sequence or fragment number of injected frames, or may reorder frames of different priority, and this
+interferes with the test tool (i.e. the tool might say a device is secure although it's not).
 I have confirmed that the following network cards work properly:
 
 |      Network Card      | USB | 5GHz |        mixed mode       |      injection mode     |      hwsim mode      |
 | ---------------------- | --- | ---- | ----------------------- | ----------------------- | -------------------- |
-| Intel Wireless-AC 8265 | No  | Yes  | patched driver          | yes                     | _under development_  |
-| Intel Wireless-AC 3160 | No  | Yes  | patched driver          | yes                     | _under development_  |
 | Technoethical N150 HGA | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_  |
 | TP-Link TL-WN722N v1.x | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_  |
 | Alfa AWUS036NHA        | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_  |
+| Intel Wireless-AC 8265 | No  | Yes  | patched driver          | yes                     | _under development_  |
+| Intel Wireless-AC 3160 | No  | Yes  | patched driver          | yes                     | _under development_  |
 | Alfa AWUS036ACM        | Yes | Yes  | patched driver          | yes                     | _under development_  |
-| Alfa AWUS036ACH        | Yes | Yes  | **TODO**                | **TODO**                | _under development_  |
 | Netgear WN111v2        | Yes | No   | patched driver          | yes                     | _under development_  |
+| Alfa AWUS036ACH        | Yes | Yes  | **TODO**                | **TODO**                | _under development_  |
 
 The three last colums signify:
 
@@ -44,7 +41,7 @@ The three last colums signify:
 3. Hwsim mode: whether the network card can be used in the experimental [hwsim mode](#Hwsim-mode).
 
 _Yes_ indicates the card works out-of-the-box in the given mode. _Patched driver/firmware_
-means that the card is compatible when used in combination with patched drivers and/or firmware.
+means that the card is compatible when used with patched drivers and/or firmware.
 _No_ means this mode is not supported by the network card.
 
 Note that USB devices can be used inside a virtual machine, and the modified drivers and/or firmware
@@ -52,17 +49,16 @@ can be installed in this virtual machine. However, I found that the usage of vir
 make network cards less reliable, and I instead recommend the usage of a live CD if you cannot install
 the modified drivers/firmware natively.
 
-More details on my experience with the above devices can be found [here](#9.5.-notes-on-device-support).
-Summarized:
+My experience with the above network cards can be found [here](#9.5.-notes-on-device-support). Summarized:
 
-- I recommend the use of the Technoethical N150 HGA in either injection mode or mixed mode. This deivce
-  requires the use of a patched driver and firmware.
-
-- During my tests the AWUS036ACM dongle was unreliable when connected to a USB3.0 port, but worked
-  well when connected to a USB2.0 port. This behaviour may depend on your computer.
+- I recommend the Technoethical N150 HGA in mixed mode. This device is identical to the TP-Link TL-WN722N v1.x
+  and requires the usage of patched drivers and firmware.
 
 - The Intel 3160 and 8265 are supported and extensively tested. Sometimes their firmware crashed but
   a reboot makes the network card usable again. The Intel AX200 is not compatible with the test tool.
+
+- During my tests the AWUS036ACM dongle was unreliable when connected to a USB3.0 port, but worked
+  well when connected to a USB2.0 port. This behaviour may depend on your computer.
 
 - The WN111v2 seems to work well, although I did not test it extensively.
 
@@ -71,7 +67,8 @@ Summarized:
 
 If you are unable to find one of the above network cards, you can search for [alternative network cards](#Alternative-network-cards)
 that have a high chance of also working. When using a network card that is not explicitly supported
-I strongly recommend to first run the [injection tests](#Network-card-injection-test) before using it.
+I strongly recommend to first run the [injection tests](#Network-card-injection-test) before using it,
+and using the tool against a known-vulnerable implementation to confirm the tool works properly.
 
 # 3. Prerequisites
 
@@ -95,12 +92,12 @@ Now clone this repository, build the tools, and configure a virtual python3 envi
 	pip install wheel
 	pip install -r requirements.txt
 
-By default the above instructions only have to be executed once. However, you do have to
-execute `./build.sh` again after pulling in new code using git.
+The above instructions only have to be executed once. After pulling in new code using git you do
+have to execute `./build.sh` again.
 
 # 4. Patched Drivers
 
-Install patched drivers:
+Install patched drivers using:
 
 	sudo apt-get install bison flex linux-headers-$(uname -r)
 	# **TODO: replace with real HTTP unauthenticated link on release instead of separate directory?**
@@ -109,10 +106,10 @@ Install patched drivers:
 	make -j 4
 	sudo make install
 
-This compiles the drivers for all network cards supported by Linux. If you only want to compile
-the drivers for network cards we explicitly tested, use `make defconfig-experiments` instead.
-During the install command you may get several warnings containing `needs unknown symbol`. You can
-ignore these warning as long they do not contain the `/lib/modules/*/updates/` directory and the
+This compiles the drivers for most network cards supported by Linux. If you only want to compile
+the drivers for network cards I explicitly tested, use `make defconfig-experiments` instead.
+During the install command you may get several warnings containing `.. needs unknown symbol ..`. You can
+ignore these warning as long they do not contain the directory `/lib/modules/*/updates/` and the
 compiled drivers are working.
 
 Now install patched `ath9k_htc` firmware:
@@ -127,7 +124,7 @@ to manually copy `htc_7010.fw` and `htc_9271.fw` to the appropriate directory.
 
 After installing the patched drivers and firmware you must unplug your Wi-Fi dongles
 and **reboot your system**. The above instructions have to be executed again if your
-Linux kernel gets updated.
+Linux kernel gets updated or if the driver patches get updated.
 
 Note that even when your device works out of the box, I still recommend to install the modified
 drivers, as this assures there are no unexpected regressions in kernel and driver code.
@@ -149,7 +146,8 @@ as root. This can be done using:
 You should now disable Wi-Fi in your network manager so it will not interfere with the test tool.
 Also make sure no other network services are causing outgoing traffic. You can assure this by
 using iptables to block traffic by executing `./droptraffic.sh` (you can revert this by rebooting).
-Optionally check using `sudo airmon-ng check` to see which other processing might interfere.
+Optionally check using `sudo airmon-ng check` to see which other processes might be using the
+wireless network card and might interfere with our tool.
 
 The test tool can test both clients and APs:
 
@@ -168,17 +166,18 @@ The test tool can test both clients and APs:
 ## 6.1. Mixed mode
 
 This mode requires only one wireless network card, but generally requires a patched driver and/or
-firmware and only specific network cards are supported. See [Patched Drivers](#Patched-Drivers) on
-how to install patched drivers/firmware, and [Supported Network Cards](#Supported-Network-Cards)
-for compatible network cards. Execute the test tool in this mode using:
+firmware. See [Patched Drivers](#Patched-Drivers) on how to install patched drivers/firmware, and
+[Supported Network Cards](#Supported-Network-Cards) for compatible network cards. Execute the test
+tool in this mode using:
 
 	./fragattack wlan0 [--ap] $COMMAND
 
 Possible values of `$COMMAND` are listed in [testing for vulnerabilities](#testing-for-vulnerabilities)
 and [extended vulnerability tests](#extended-vulnerability-tests).
 
-One advantage of this mode is that it works well when testing clients that may enter a sleep state.
-Nevertheless, if possible, I recommend disabling sleep functionality of the client being tested.
+One advantage of this mode is that it works fairly well when testing clients that may enter a sleep state.
+Nevertheless, if possible, I recommend disabling sleep functionality of the client being tested,
+see [Handling sleep mode](#Handling-sleep-mode).
 
 ## 6.2. Injection mode
 
@@ -209,15 +208,15 @@ request an IP using DHCP (if this is not the case see [static IP configuration](
 The tool outputs `TEST COMPLETED SUCCESSFULLY` if the device is vulnerable to the attack corresponding
 to the given `$COMMAND`, and outputs `Test timed out! Retry to be sure, or manually check result` if
 the device is not vulnerable. Most attacks have several slight variants represented by different
-`$COMMAND` values, and verifying the result of some tests requires running tcpdump or wireshark
-on the targeted device (both points are further clarified below the table).
+`$COMMAND` values. Verifying the result of some tests requires running tcpdump or wireshark on the
+targeted device (this is further clarified below the table).
 
 To **verify your test setup**, the first command in the table below performs a normal ping that must
 succeed. The second command sends the ping as two fragmented Wi-Fi frames, and should only fail
 in the rare case that the tested device doesn't support fragmentation. In case one of these tests
 is not working, follow the instructions in [network card injection test](#network-card-injection-test)
-to assure your network card is properly injecting frames. If the devices being tested might enter
-sleep mode, also see [Handling sleep mode](#Handling-sleep-mode).
+to assure your network card is properly injecting frames. If the client being tested might enter
+sleep mode, see [Handling sleep mode](#Handling-sleep-mode).
 
 The third and fourth commands are not attacks but verify basic defragmentation behaviour of a device
 and are further discussed below the table.
@@ -236,9 +235,9 @@ and are further discussed below the table.
 | `ping I,F,BE,AE`                 | Inject two fragments encrypted under a different key.
 | `ping I,F,BE,AE --pn-per-qos`    | Same as above, but also works if the target only accepts consecutive PNs.
 | <div align="center">*Cache attacks (§5)*</div>
-| `ping I,E,R,AE`                  | Inject a fragment, try triggering a reassociation, and inject second fragment.
+| `ping I,E,R,AE`                  | Inject a fragment, try triggering a _reassociation_, and inject second fragment.
 | `ping I,E,R,E`                   | Same as above, but with a longer delay before sending the second fragment.
-| `ping I,E,R,AE --full-reconnect` | Inject a fragment, deauthenticate and reconnect, then inject second fragment.
+| `ping I,E,R,AE --full-reconnect` | Inject a fragment, _deauthenticate_ and reconnect, then inject second fragment.
 | `ping I,E,R,E --full-reconnect`  | Same as above, but with a longer delay before sending the second fragment.
 | <div align="center">*Non-consecutive PNs attack (§6.2)*</div>
 | `ping I,E,E --inc-pn 2`          | Send a fragmented ping with non-consecutive packet numbers.
@@ -249,8 +248,8 @@ and are further discussed below the table.
 | `ping I,P,P`                     | Send a fragmented ping: both fragments are sent in plaintext.
 | `linux-plain`                    | Mixed plaintext/encrypted fragmentation attack specific to Linux.
 | <div align="center">*Broadcast fragment attack (§6.7)*</div>
-| `ping I,D,P --bcast-ra`          | Send ping request in 2nd plaintext broadcasted fragment after connecting.
-| `ping D,BP --bcast-ra`           | Ping in 2nd plaintext broadcasted fragment during 4-way HS (check with tcpdump).
+| `ping I,D,P --bcast-ra`          | Send a ping request in plaintext broadcasted 2nd fragment after connecting.
+| `ping D,BP --bcast-ra`           | Same as above, but the ping is inject during the handshake (check with tcpdump).
 | <div align="center">*A-MSDUs EAPOL attack (§6.8)*</div>
 | `eapol-amsdu BP`                 | Send A-MSDU disguised as EAPOL during handshake (check result with tcpdump).
 | `eapol-amsdu I,P`                | Same as above, except the frame is injected after obtaining an IP.
@@ -265,16 +264,16 @@ and are further discussed below the table.
 
 - `ping I,E,E --delay 5`: This test is used to check the maximum accepted delay between two fragments.
   If this test doesn't work, try it again with `--delay 1.5` or lower. For instance, Linux removes fragments
-  after 2 seconds, meaning a delay of 1.8 will work while 2.2 will result in no reply. In case the maximum
+  from memory after 2 seconds, meaning a delay of 1.8 will work while 2.2 will result in no reply. In case the maximum
   accepted delay is low, all fragments sent in other tests must be sent within this maximum accepted delay.
-  Otherwise tests will trivially fail and you might conclude a device isn't vulnerable to an attack even
+  Otherwise, tests will trivially fail and you might conclude a device isn't vulnerable to an attack even
   though it actually is.
 
 - `ping-frag-sep`: This tests sends a fragmented Wi-Fi frame that is seperated by an unrelated frame.
   That is, it sends the first fragment, then a (normal) unrelated Wi-Fi frame, and finally the second fragment.
   In case this test fails, the mixed key attack and cache attack will likely also fail (since they require
   sending other frames between two fragments). The only purpose of this test is to better understand the
-  behaviour of a device and learn why other tests are failing.
+  behaviour of a device and to learn why other tests might be failing.
 
 ## 7.2. A-MSDU attack tests (§3)
 
@@ -285,41 +284,49 @@ for details.
 
 ## 7.3. Mixed key attack tests (§4)
 
-- When running the mixed key test against an AP, the AP must be configured to regularly renew the session
-  key (PTK) by executing a new 4-way handshake (e.g. every minute). The tool will display
+- When running the mixed key test against an AP, the AP must be configured to regularly  (e.g. every minute)
+  renew the session key (PTK) by executing a new 4-way handshake. The tool will display
   `Client cannot force rekey. Waiting on AP to start PTK rekey` when waiting for this PTK rekey handshake.
-  Against a low number of APs, the client can also request to renew the PTK, meaning there is no
-  need to configure the AP to periodically renew the key. In this case you can let the test tool request
-  to renew the PTK by adding the `--rekey-req` parameter.
+  Against a low number of APs, the test tool can also request to renew the PTK by adding the `--rekey-req`
+  parameter, meaning there is no need to configure the AP to periodically renew the key.
 
 - Some APs cannot be configured to regularly renew the session key (PTK). Against these APs you can instead
-  try to run a cache attack test. In case the AP is vulnerable to cache attacks then it is also vulnerable
-  to mixed key attacks. If the AP isn't vulnerable to cache attacks then we cannot say anything about its
+  try to run a cache attack test. In case the AP is vulnerable to cache attacks, then it is also vulnerable
+  to mixed key attacks. If the AP isn't vulnerable to cache attacks, then we cannot say anything about its
   susceptibility to mixed key attacks, and in that case I recommend performing a code audit instead.
 
-- The `--pn-per-qos` parameter assures that both injected fragments have consecutive packet numbers, which
-  is required for the attack to succeed against certain devices (e.g. against Linux).
+- `ping I,F,BE,AE --pn-per-qos`: The extra `--pn-per-qos` parameter assures that both injected fragments have
+  consecutive packet numbers, which is required for the mixed key attack to succeed against certain devices
+  (e.g. against Linux).
 
 - Several devices implement the 4-way handshake differently and this will impact whether these tests will
-  succeed or not. In case the tests fail, it is highly recommended to also perform the mixed key attack
+  succeed or not. In case the tests fail, it is recommended to also perform the mixed key attack
   tests listed in [Extended Vulnerability Tests](#8.-Extended-Vulnerability-Tests).
 
 ## 7.4. Cache attack tests (§5)
 
 - When testing an AP, the tool sends a first fragment, then tries to _reassociate_ with the AP, and finally
-  sends the second fragment. We found that not all APs properly support the reassociation process. In that
-  case, add the `--full-reconnect` option as shown in the table.
+  sends the second fragment. However, not all APs properly support the reassociation process. In that case,
+  add the `--full-reconnect` option as shown in the table, which makes the test tool to _deauthenticate_
+  after sending the first fragment.
 
 - When testing a client, the tools sends a first fragment, _disassociates_ the client, and once the client
   has reconnected will send the second fragment. Ideally the client will immediately reconnect after sending
-  the disassociation frame. This may require disabling all other networks in the client being tested. We also
+  the disassociation frame. This may require disabling all other networks in the client being tested. I also
   found that some clients don't seem to properly handle the disassocation, and in that case you can add the
   `--full-reconnect` option as shown in the table to send a deauthentication frame instead.
+
+- `ping I,E,R,AE [--full-reconnect]`: Here the second fragment is sent immediately after reconnecting with the
+  AP, which is important in case the device under test clears fragments from memory after a short time.
+
+- `ping I,E,R,E [--full-reconnect]`: Here the second fragment is sent 1 second after reconnecting with the AP,
+  which can be useful in case there is a small delay between completion of the handshake and installing the
+  negotiated key.
 
 ## 7.5. Mixed plain/encrypt attack (§6.3)
 
 - `ping I,E,P` and `linux-plain`: if this test succeeds the resulting attacks are described in Section 6.3
-  of the paper. Summarized, in combintation with the A-MSDU or cache vulnerability it can be exploited to
+  of the paper. Summarized, in combintation with the A-MSDU or cache vulnerability, it can be exploited to
   inject packets. When not combined with any other vulnerabilities the impact is implementation-specific.
 
 - `ping I,P,E`: if this test succeeds it is trivial to inject plaintext frames towards the device _if_
@@ -330,32 +337,31 @@ for details.
 
 ## 7.6. Broadcast fragment attack tests (§6.7)
 
-- So far we only found that clients are vulnerable to this attack. Moreover, several clients were only
-  vulnerable while they are connecting to the network (i.e. during the execution of the 4-way handshake).
+- Because all these tests send broadcast frames, which are not automatically retransmitted, it is recommended
+  to **execute these tests several times**. This is because background noise may prevent the tested devices
+  from receiving the injected broadcast frame. So far only clients were affected by these attacks. Additionally,
+  most clients are only vulnerble while connecting to the network (i.e. during the execution of the 4-way handshake).
 
-- `ping D,BP --bcast-ra`: to confirm the result of this test you have to run wireshark or tcpdump on
+- `ping I,D,P --bcast-ra`: Variant of the attack whose result can be checked automatically by the test tool.
+
+- `ping D,BP --bcast-ra`: To confirm the result of this test you have to run wireshark or tcpdump on
   the victim, and monitor whether the injected ping request is received by the victim. In tcpdump you can
   use the filter `icmp` and in wireshark you can also use the filter `frame contains "test_ping_icmp"`
   to more easily detect this ping request.
 
-- Because these tests send broadcast frames, which are not automatically retransmitted, it is recommended
-  to execute this test several times. This is because background noise may prevent the tested devices from
-  receiving the injected broadcast frame.
-
 ## 7.7. A-MSDUs EAPOL attack tests (§6.8)
 
-- Several clients and APs are only vulnerable to this attack while the client is connecting to the network
-  (i.e. during the execution of the 4-way handshake).
+- `eapol-amsdu[-bad] BP`: These two tests inject the malicious frame while the client is still connecting
+  to the network (i.e. during the execution of the 4-way handshake). This is important because several
+  clients and APs are only vulnerable before completing the 4-way handshake. To confirm the result of this
+  test you have to run wireshark or tcpdump on the victim, and monitor whether the injected ping request
+  is received by the victim. In tcpdump you can use the filter `icmp` and in wireshark you can also use the
+  filter `frame contains "test_ping_icmp"` to more easily detect this ping request.
 
-- Several implementations incorrectly process A-MSDU frames that start with a valid EAPOL header. To test
-  these implementations, you have to use the `eapol-amsdu-bad` test variant. Note that if this tests succeeds,
-  the impact of the attack is identical to implementations that correctly parse such frames (for details see
-  Section 3.6 and 6.8 in the paper).
-
-- `eapol-amsdu BP` and `eapol-amsdu-bad BP`: to confirm the result of this test you have to run wireshark
-  or tcpdump on the victim, and monitor whether the injected ping request is received by the victim. In
-  tcpdump you can use the filter `icmp` and in wireshark you can also use the filter `frame contains "test_ping_icmp"`
-  to more easily detect this ping request.
+- `eapol-amsdu-bad BP` and `eapol-amsdu-bad I,P`: Several implementations incorrectly process A-MSDU frames
+  that start with a valid EAPOL header. To test these implementations, you have to use the `eapol-amsdu-bad`
+  test variant. Note that if this tests succeeds, the impact of the attack is identical to implementations
+  that correctly parse such frames (for details see Section 3.6 and 6.8 in the paper).
 
 ## 7.8. Troubleshooting checklist
 
@@ -379,9 +385,9 @@ In case the test tool doesn't appear to be working, check the following:
    algorithms such as TKIP or GCMP are not supported.
 
 7. If you updated the code using git, execute `./build.sh` again (see [Prerequisites](#prerequisites)).
-   It might also help to recreate the python virtualenv environment.
+   In case the patched drivers got updated, remember to recompile them as well.
 
-8. If your Wi-Fi dongle is unreliable, use it from a live CD or USB. A virtual machine can be unreliable.
+8. If you are using a virtual machine, try to run the test tool from a live CD or USB instead.
 
 9. Confirm using a second monitor interface that no other frames are sent in between fragments.
     For instance, I found that my Intel device sometimes sends Block Ack Response Action frames
@@ -392,16 +398,19 @@ In case the test tool doesn't appear to be working, check the following:
 
 11. Check that you are using modified firmware if needed for your wireless network card.
 
-12. Check that the tested device doesn't block ICMP ping requests. In case it doesn't reply to pings you
+12. Check that the tested device doesn't block ICMP ping requests. In case it doesn't reply to pings, you
     can run tcpdump or wireshark on the device, or you can try any of the other methods listed in [No ICMP Support](#9.3-No-ICMP-Support).
+
+13. Run the tool with the extra parameter `--debug 2` to get extra debug output from wpa_supplicant or
+    hostapd and from the test tool itself.
 
 # 8. Extended Vulnerability Tests
 
 Due to implementation variations it can be difficult to confirm/exploit certain vulnerabilities, in particular
-the mixed key and cache attack. Therefore, we recommend to only consider a device secure if there are explicit
-checks in the code to prevent these attacks. Additionally, if time permits, we also recommend the following more
-advanced tests. These have a lower chance of uncovering new vulnerabilities, but might reveal attack variants
-or particular device behaviour that the normal tests can't detect.
+the mixed key and cache attack can be non-trivial to confirm in practice. Therefore, I recommend to only consider
+a device secure if there are explicit checks in the code to prevent these attacks. Additionally, if time permits,
+I also recommend the following more advanced tests. These have a lower chance of uncovering new vulnerabilities,
+but might reveal attack variants or particular device behaviour that the normal tests can't detect.
 
 If the normal tests in [Testing for Vulnerabilities](#Testing-for-Vulnerabilities) have already confirmed the
 presence of a certain vulnerability class, there is no need to test the other attack variants of that vulnerability.
@@ -414,12 +423,12 @@ presence of a certain vulnerability class, there is no need to test the other at
 | `amsdu-inject`                         | Send A-MSDU frame whose start is also a valid rfc1042 header (§3.2).
 | `amsdu-inject-bad`                     | Same as above, but against targets that incorrectly parse the frame.
 | <div align="center">*Mixed key attacks (§4)*</div>
-| `ping I,E,F,AE`                        | If no (encrypted) data frames are accepted during the rekey handshake.
 | `ping I,F,BE,E`                        | In case the new key is installed relatively late.
+| `ping I,E,F,AE`                        | Variant if no data frames are accepted during the rekey handshake.
 | `ping I,E,F,AE --rekey-plain`          | If the device performs the rekey handshake in plaintext.
-| `ping I,E,F,AE --rekey-req --rekey-plain`| Same as above, and actively request a rekey as client.
-| `ping I,E,F,AE --rekey-early-install`  | Install the new key before sending message 4 as an AP.
-| `ping I,F,BE,AE --freebsd`             | Mixed key attack against FreeBSD.
+| `ping I,E,F,AE --rekey-plain --rekey-req` | Same as above, and actively request a rekey as client.
+| `ping I,E,F,AE --rekey-early-install`  | Install the new key before receiving/sending message 4.
+| `ping I,F,BE,AE --freebsd`             | Mixed key attack against FreeBSD or similar implementations.
 | <div align="center">*Cache attacks (§5)*</div>
 | `ping I,E,R,AE --freebsd [--full-reconnect]` | Cache attack specific to FreeBSD implementations.
 | `ping I,E,R,AP --freebsd [--full-reconnect]` | Cache attack specific to FreeBSD implementations.
@@ -434,11 +443,11 @@ presence of a certain vulnerability class, there is no need to test the other at
 | `ping I,E,D`                           | Send ping inside an encrypted first fragment (no 2nd fragment).
 | `ping I,D,E`                           | Send ping inside an encrypted second fragment (no 1st fragment).
 | <div align="center">*Broadcast fragment attack (§6.7)*</div>
-| `ping I,P --bcast-ra`                  | Ping in a plaintext broadcast Wi-Fi frame after 4-way HS.
-| `ping BP --bcast-ra`                   | Ping in a plaintext broadcast Wi-Fi frame before 4-way HS (use tcpdump).
-| `eapfrag BP,BP`                        | Specalization of broadcast fragment attack (experimental, use tcpdump).
+| `ping I,P --bcast-ra`                  | Ping in a plaintext broadcast frame after 4-way HS.
+| `ping BP --bcast-ra`                   | Ping in plaintext broadcast frame during 4-way HS (use tcpdump).
+| `eapfrag BP,BP`                        | Experimental broadcast fragment attack (use tcpdump).
 | <div align="center">*A-MSDUs EAPOL attack (§6.8)*</div>
-| `eapol-amsdu[-bad] BP --bcast-dst`     | Same as `eapol-amsdu BP` but easier to verify against APs (with tcpdump).
+| `eapol-amsdu[-bad] BP --bcast-dst`     | Same as `eapol-amsdu BP` but easier to verify against APs (use tcpdump).
 
 ## 8.1. A-MSDU attack tests (§3)
 
@@ -466,29 +475,38 @@ The last two tests are used to simulate our A-MSDU injection attack:
 
 ## 8.2. Mixed key attack tests (§4)
 
-Most devices we tested are vulnerable to mixed key attacks. In case the normal mixed key attack tests indicate
+Most devices I tested are vulnerable to mixed key attacks. In case the normal mixed key attack tests indicate
 that a device is not vulnerable, but the test `ping-frag-sep` does succeed, it is highly recommended to try
 these alternative mixed key attack tests. Some remarks:
 
-- Home routers with a MediaTek driver will perform the rekey handshake in plaintext. To test these or similar
-  devices, you must add the `--rekey-plain` parameter. When testing an AP this can be combined with the
-  `--rekey-req` parameter to actively request a rekey.
+- `--rekey-req`: When testing an AP, you can add the `--rekey-req` parameter to any of the mixed key attack tests to
+  actively request a rekey handshake. A low number of APs will then perform the rekey handshake. Most APs will ignore
+  this request though, and have to be explicitly configured to regularly renew the session key (PTK).
 
-- Certain clients install the key too early during a pairwise session rekey. To test these devices, add the
-  `--rekey-early-install` parameter and retry the test.
+- `ping I,E,F,AE` and `ping I,F,BE,E`: These are fairly straightforward mixed key attack tests where both fragments are
+  injected at different times.
 
-Finally, in case the test `ping-frag-sep` doesn't succeed, you can try the following test:
+- `ping I,E,F,AE --rekey-plain`: Some drivers (e.g. MediaTek) will perform the rekey handshake in plaintext. To test
+  devices that use such a driver you must add the `--rekey-plain` parameter.
 
-- `ping I,F,BE,AE --freebsd`: this essentially performs the rekey handshake against a FreeBSD implementation or
+- `ping I,E,F,AE --rekey-plain --rekey-req`: This particular combination is useful to test routers that use a MediaTek
+  driver. These routers perform the rekey handshake in plaintext, and the client can actively request a rekey handshake.
+
+- `ping I,E,F,AE --rekey-early-install`: A low number of clients and APs (incorrectly) install the key too early during
+  a pairwise session rekey. To reliably test these devices, add the `--rekey-early-install` parameter.
+
+Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the following mixed key attack test:
+
+- `ping I,F,BE,AE --freebsd`: This essentially performs the rekey handshake against a FreeBSD implementation or
   driver without affecting the defragmentation process of data frames. See Appendix F in the paper for details.
 
 ## 8.3. Cache attack tests (§5)
 
-- The test `ping I,E,R,AE --freebsd --full-reconnect` can be used to check if a FreeBSD AP, or an implementation
+- `ping I,E,R,AE --freebsd --full-reconnect`: This test can be used to check if a FreeBSD AP, or an implementation
   based on FreeBSD drivers, is vulnerable to a cache attack. See Appendix F in the paper for details on how this
   test works. You should also try this test without the `--full-reconnect` parameter.
 
-- The test `ping I,E,R,AP --freebsd --full-reconnect` is a variant against FreeBSD APs, or an implementation based
+- `ping I,E,R,AP --freebsd --full-reconnect`: This test is a variant against FreeBSD APs, or an implementation based
   on FreeBSD drivers, where the second fragment is sent in plaintext after reconnecting with the AP. Against some
   dongles on FreeBSD this test was more reliable and still proves that old fragments remain in the AP's memory after
   reconnecting. You should also try this test without the `--full-reconnect` parameter.
@@ -500,42 +518,47 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you can try the follo
   Summarized, if this tests succeeds, it is easier to attack the device if the second fragment can be sent
   in plaintext (test `ping I,E,P`). See Section 6.3 of the paper for details.
 
-- `ping I,E,P,E` and `linux-plain 3`: You can try these two mixed plain/encrypt attack test if all the other ones
-  in [Testing for Vulnerabilities](#Testing-for-Vulnerabilities) didn't succeed.
+- `ping I,E,P,E` and `linux-plain 3`: If all the other mixed plain/encrypt attack tests in didn't succeed, you
+  can try these two extra tests as well. I think it's quite unlikely this will uncover a new vulnerability.
 
 ## 8.5. AP forwards EAPOL attack tests (§6.4)
 
 - `eapol-inject 00:11:22:33:44:55`: This test is only meaningfull against APs. To perform this test you have to connect
   to the network using a second device and replace the MAC address `00:11:22:33:44:55` with the MAC address of this second
-  device. The test will try to send an EAPOL frame to this second device (before being authenticated). If the AP forwards
-  the EAPOL frame to the second device, the AP is considered vulnerable. To confirm if the AP forwards the EAPOL frame you
-  must run tcpdump or wireshark on the second device. You can use the wireshark filter `frame contains "forwarded_data"`
+  device. _Before_ being authenticated, the test tool will send an EAPOL frame to the AP with as final destination this second
+  device. If the AP forwards the EAPOL frame to the second device, the AP is considered vulnerable. To confirm if the AP forwards
+  the EAPOL frame you must run tcpdump or wireshark on the second device. You can use the wireshark filter `frame contains "forwarded_data"`
   when monitoring decrypted traffic on the wireless interface of the second device (or the tcpdump filter `ether proto 0x888e`
-  to monitor all EAPOL frames). See Section 6.4 of the paper for the details and impact if this test succeeds.
+  to monitor all EAPOL frames). See Section 6.4 of the paper for the details and impact of this.
 
-- `eapol-inject-lage 00:11:22:33:44:55`: In case the above `eapol-inject` works, you can also try `eapol-inject-large` to see
+- `eapol-inject-lage 00:11:22:33:44:55`: In case the above `eapol-inject` test succeeds, you can also try `eapol-inject-large` to see
   if this vulnerability can be abused to force the transmission of encrypted fragments. You again have to use tcpdump or wireshark
-  to check this. Use the wireshark or tshark filter `(wlan.fc.frag == 1) || (wlan.frag > 0)` to detect fragmented frames. It is
-  rare for this attack to work.
+  to check this. Use the wireshark or tshark filter `(wlan.fc.frag == 1) || (wlan.frag > 0)` to detect fragmented frames. I found it
+  very rare for this attack to work.
 
 ## 8.6. Abusing no fragmentation support (§6.6)
 
-If one of these tests works, the device doesn't support (de)fragmentation, but is still vulnerable to attacks. The
-problem is that the receiver treats fragmented frames as full frames (see Section 6.6 in the paper).
+- `ping I,D,E`: If this test succeeds, the device doesn't support (de)fragmentation, but is still vulnerable to attacks. The
+  problem is that the receiver treats the _last_ fragment as a full frame. See Section 6.6 in the paper for details and how this
+  can be exploited.
+
+- `ping I,E,D`: If this test succeeds, then the devices treats the _first_ fragment as a full frame. Although this behaviour is
+  not ideal, it's currently unknown whether this, on its own, can be exploited in practice.
 
 ## 8.7. Broadcast fragment attack tests (§6.7)
 
-- Because all these tests send broadcast frames, which are not automatically retransmitted, it is recommended to
-  execute them tests several times. This is because background noise may prevent the tested devices from receiving
-  the injected broadcast frame. Additionally, we only expect that clients might be vulnerable to these attacks.
+- Because all these tests send broadcast frames, which are not automatically retransmitted, it is recommended
+  to **execute these tests several times**. This is because background noise may prevent the tested devices
+  from receiving the injected broadcast frame. So far only clients were affected by these attacks. Additionally,
+  most clients are only vulnerble while connecting to the network (i.e. during the execution of the 4-way handshake).
 
 - `ping I,P --bcast-ra`: this sends a unicast ICMP ping request inside a plaintext broadcast Wi-Fi frame. This test
   only makes sense against a client.
 
 - `ping BP --bcast-ra`: similar to the above test `ping I,P --bcast-ra`, but the ping is sent before the client has
-  authenticated with the network. You must run tcpdump or wireshark to check if the client accepts the frame. In
-  tcpdump you can use the filter `icmp` and in wireshark you can also use the filter `frame contains "test_ping_icmp"`
-  to more easily detect this ping request.
+  authenticated with the network (i.e. during the execution of the 4-way handshake). You must run tcpdump or wireshark
+  to check if the client accepts the frame. In tcpdump you can use the filter `icmp` and in wireshark you can also use
+  the filter `frame contains "test_ping_icmp"` to more easily detect this ping request.
 
 - `eapfrag BP,BP`: this is a specialization of the above two tests that is performed before the client has authenticated.
   It is a _very experimental_ attack based on the analysis of leaked code. It first sends a plaintext fragment that starts
@@ -558,14 +581,14 @@ using the filter `icmp` or `frame contains "test_ping_icmp"`.
 
 ## 9.1. Network card injection test
 
-### Injection and hwsim mode
+### Injection mode
 
 The script `test-injection.py` can be used to test whether frames are properly injected when
 using _injection mode_:
 
 	./test-injection.py wlan0 wlan1
 
-Here we test if network card `wlan0` properly injects frames and we use network card `wlan1`
+Here we test if the network card `wlan0` properly injects frames and we use network card `wlan1`
 to monitor whether frames are properly injected. Note that both interfaces need to support
 monitor mode for this test script to work.
 
@@ -607,7 +630,7 @@ it cannot test whether the firmware or wireless chip itself overwrites fields.
 ### Interpreting test results
 
 The test script will give detailed output on which tests succeeded or failed, and will conclude by outputting
-either "==> The most important tests have been passed successfully" or a message indicating that either important
+either `==> The most important tests have been passed successfully` or a message indicating that either important
 tests failed or that it couldn't capture certain injected frames.
 
 Note that the injection scripts only test the most important behaviour. The best way to confirm that injection
@@ -621,17 +644,18 @@ card used to monitor whether frames are injected properly (`wlan1` in the above 
 for example, missing most frames due to background noise. Try running the tests on a different channel as well.
 
 When the injection tests are working, but you have problems reliably performing the attack tests, this may be
-because the devices you are testing is entering sleep mode. See [Handling sleep mode](#Handling-sleep-mode) for
+because the devices you are testing are entering sleep mode. See [Handling sleep mode](#Handling-sleep-mode) for
 additional notes on this problem.
 
 ### Manual checks notes
 
 When using wireshark to inspect the injection behaviour of a device it is recommended to use a second
-device in monitor mode to see how frames are injected. In case you open the interface used to inject
-frames then you should see injected frames twice: (1) first you see the frame as injected by whatever
-tool is sending it, and then (2) a second time by how the frame was injected by the driver. These two
-frames may slightly differ if the kernel overwrote certain fields. If you only see an injected frame once
-it may have been dropped by the kernel.
+device in monitor mode to see how frames are injected.
+
+In case you open the interface used to inject frames then you should see injected frames twice: (1) first
+you see the frame as injected by whatever tool is sending it, and then (2) a second time by how the frame
+was injected by the driver. These two frames may slightly differ if the kernel overwrote certain fields.
+If you only see an injected frame once it may have been dropped by the kernel.
 
 ## 9.2. Static IP Configuration
 
@@ -667,7 +691,7 @@ is to get a network card that uses the same drivers on Linux. In particular, you
 
 3. Network cards that use [iwlmvm](https://wireless.wiki.kernel.org/en/users/drivers/iwlwifi).
 
-I recommend cards based on `ath9khtc`. Not all cards that use `iwlmvm` will be compatible. When
+I recommend cards based on `ath9k_htc`. Not all cards that use `iwlmvm` will be compatible. When
 using an alternative network card, I strongly recommend to first run the [injection tests](#Network-card-injection-test)
 to confirm that the network card is compatible.
 
@@ -683,10 +707,10 @@ connected to. For more information see, for example, the [Arch Linux documentati
 Although I have not yet encountered a device that behaved differently in the 2.4 GHz band compared
 to the 5 GHz band, this may occur in practice if different drivers are used to handle both bands.
 If you encounter such a case please let us know. Since I have not yet observed such differences
-between the 2.4 and 5 GHz band I believe that it is sufficient to only test only one of these bands.
+between the 2.4 and 5 GHz band I believe that it is sufficient to only test one of these bands.
 
 Note that in mixed mode the Linux kernel may not allow the injection of frames even though it is
-allowed to send normal frames. This is because in `ieee80211_monitor_start_xmit` the kernel refuses
+allowed to send normal frames. This is because in the function `ieee80211_monitor_start_xmit` the kernel refuses
 to inject frames when `cfg80211_reg_can_beacon` returns false. As a result, Linux may refuse to
 inject frames even though this is actually allowed. Making `cfg80211_reg_can_beacon` return true
 under the correct conditions prevents this bug.
@@ -704,8 +728,8 @@ are some options to try to mitigate this problem:
    tested is awake again.
 
 3. Try a different network card to perform the tests. I found that different network cards will inject frames
-   at (slightly) different times, and this may be the difference between the frame arriving while the tested
-   device is awake or asleep.
+   at (slightly) different times, and this may be the difference between injected frame properly arriving or
+   being missed.
 
 4. Perform the tests using ARP instead of ICMP tests, see [No ICMP support](#No-ICMP-support) for details. This
    can be more reliable because fewer frames have to be properly injected when using ARP injection.
@@ -720,15 +744,15 @@ For me these devices worked fairly well in a virtual machine, although like with
 more reliably when used natively. When using a VM, I recommend to configure the VM to use a USB2.0
 controller, since that appeared more stable (at least with VirtualBox).
 
-In recent kernels there was a (now fixed) regression with the `ath9k_htc` driver causing it not te work.
-Simply use an up-to-date kernel to avoid this issue. The patch that fixed this regression is:
-https://www.spinics.net/lists/linux-wireless/msg200825.html
+In recent kernels there was a ([now fixed](https://www.spinics.net/lists/linux-wireless/msg200825.html))
+regression with the `ath9k_htc` driver causing it not te work. Simply use an up-to-date kernel or our patched
+drivers to avoid this issue.
 
 ### AWUS036ACM
 
 If for some reason Linux does not automatically recognize this device, execute `sudo modprobe mt76x2u`
 to manually load the driver. I found that, at least on my devices, this dongle was unstable when connected
-to a USB3.0 ports. Others seems to have reported [similar issues](https://www.spinics.net/lists/linux-wireless/msg200453.html)
+to a USB3.0 port. Others seems to have reported [similar issues](https://www.spinics.net/lists/linux-wireless/msg200453.html)
 with this dongle. When connected to a USB2.0 port I found this dongle to be reliable.
 
 #### AWUS036ACH
@@ -742,9 +766,9 @@ for now you must manually install the driver from GitHub.
 
 ### Intel AX200
 
-I tested the Intel AX200 as well and found that it is _not_ compatible with the test tool: its firmware
-crashes after sending a fragmented frame. If an Intel developer is reading this, please update the firmware
-and make it possible to inject fragmented frames.
+I tested the Intel AX200 and found that it is _not_ compatible with the test tool: its firmware crashes
+after injecting a frame with the More Fragments flag set. If an Intel developer is reading this, please
+update the firmware and make it possible to inject fragmented frames.
 
 ## 9.8. Hwsim mode details
 
@@ -764,7 +788,7 @@ are handled a bit slower, and it is not reliable when the network card does not 
   _TODO: Test which devices acknowledge frames in monitor mode, and test `iw set wlanX monitor active`._
 
 - Certain APs will also require that authentication and association frames are acknowlegded by the client.
-  This that that we (as a client) must again acknowledge frames sent towards us.
+  This means that we (as a client) must again acknowledge frames sent towards us.
   _TODO: Test which devices acknowledge frames in monitor mode, and test `iw set wlanX monitor active`._
 
 - For some strange reason, the Intel/mvm cannot receive data frames from Android/iPhone/iPad
