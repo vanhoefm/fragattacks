@@ -14,6 +14,7 @@ in the `research` directory. This repository has been updated after the paper su
 usability improvements (but no new research). You can inspect the code at the time of submission
 by executing `git checkout db75c47`.
 
+<a id="id-supported-cards"></a>
 # 2. Supported Network Cards
 
 Only specific wireless network cards are supported. This is because some network cards may overwrite the
@@ -34,11 +35,11 @@ I have confirmed that the following network cards work properly:
 
 The three last colums signify:
 
-1. Mixed mode: whether the network card can be used in [mixed mode](#Mixed-mode).
+1. Mixed mode: whether the network card can be used in [mixed mode](#id-mixed-mode).
 
-2. Injection mode: whether the network card can be used as a second interface to inject frames in [injection mode](#Injection-mode).
+2. Injection mode: whether the network card can be used as a second interface to inject frames in [injection mode](#id-injection-mode).
 
-3. Hwsim mode: whether the network card can be used in the experimental [hwsim mode](#Hwsim-mode).
+3. Hwsim mode: whether the network card can be used in the experimental [hwsim mode](#id-hwsim-mode).
 
 _Yes_ indicates the card works out-of-the-box in the given mode. _Patched driver/firmware_
 means that the card is compatible when used with patched drivers and/or firmware.
@@ -49,7 +50,7 @@ can be installed in this virtual machine. However, I found that the usage of vir
 make network cards less reliable, and I instead recommend the usage of a live CD if you cannot install
 the modified drivers/firmware natively.
 
-My experience with the above network cards can be found [here](#9.5.-notes-on-device-support). Summarized:
+My experience with the above network cards can be found [here](#id-notes-device-support). Summarized:
 
 - I recommend the Technoethical N150 HGA in mixed mode. This device is identical to the TP-Link TL-WN722N v1.x
   and requires the usage of patched drivers and firmware.
@@ -65,11 +66,12 @@ My experience with the above network cards can be found [here](#9.5.-notes-on-de
 - The driver for the AWUS036ACH is not part of the Linux kernel and requires the installation of a separate
   driver. On some Linux distributions such as Kali you can install this driver through the package manager.
 
-If you are unable to find one of the above network cards, you can search for [alternative network cards](#Alternative-network-cards)
+If you are unable to find one of the above network cards, you can search for [alternative network cards](#id-alternative-cards)
 that have a high chance of also working. When using a network card that is not explicitly supported
-I strongly recommend to first run the [injection tests](#Network-card-injection-test) before using it,
+I strongly recommend to first run the [injection tests](#id-injection-tests) before using it,
 and using the tool against a known-vulnerable implementation to confirm the tool works properly.
 
+<a id="id-prerequisites"></a>
 # 3. Prerequisites
 
 The test tool was tested on Kali Linux and Ubuntu 20.04. To install the required dependencies, execute:
@@ -98,6 +100,7 @@ Now clone this repository, build the tools, and configure a virtual python3 envi
 The above instructions only have to be executed once. After pulling in new code using git you do
 have to execute `./build.sh` again.
 
+<a id="id-patched-drivers"></a>
 # 4. Patched Drivers
 
 Install patched drivers using:
@@ -137,6 +140,7 @@ In case you cannot install the modified drivers/firmware natively, you can downl
 Alternatively, you can use a virtual machine with USB network cards, although I found that
 using a virtual machine is less reliable in pratice.
 
+<a id="id-before-every-usage"></a>
 # 5. Before every usage
 
 Every time you want to use the test tool, you first have to load the virtual python environment
@@ -164,24 +168,27 @@ The test tool can test both clients and APs:
   using DHCP. To edit properties of the created AP, such as the channel it's created on, you
   can edit `research/hostapd.conf`.
 
+<a id="id-interface-modes"></a>
 # 6. Interface Modes
 
+<a id="id-mixed-mode"></a>
 ## 6.1. Mixed mode
 
 This mode requires only one wireless network card, but generally requires a patched driver and/or
-firmware. See [Patched Drivers](#Patched-Drivers) on how to install patched drivers/firmware, and
-[Supported Network Cards](#Supported-Network-Cards) for compatible network cards. Execute the test
+firmware. See [Patched Drivers](#id-patched-drivers) on how to install patched drivers/firmware, and
+[Supported Network Cards](#id-supported-cards) for compatible network cards. Execute the test
 tool in this mode using:
 
 	./fragattack wlan0 [--ap] $COMMAND
 
-Possible values of `$COMMAND` are listed in [testing for vulnerabilities](#testing-for-vulnerabilities)
-and [extended vulnerability tests](#extended-vulnerability-tests).
+Possible values of `$COMMAND` are listed in [testing for vulnerabilities](#id-testing-for-flaws)
+and [extended vulnerability tests](#id-extended-tests).
 
 One advantage of this mode is that it works fairly well when testing clients that may enter a sleep state.
 Nevertheless, if possible, I recommend disabling sleep functionality of the client being tested,
-see [Handling sleep mode](#Handling-sleep-mode).
+see [Handling sleep mode](#id-handling-sleep).
 
+<a id="id-injection-mode"></a>
 ## 6.2. Injection mode
 
 This mode requires two wireless network cards: one will act as an AP or the client, and the other
@@ -191,22 +198,23 @@ one will be used to inject frames. Execute the test tool in this mode using:
 
 Here interface wlan0 will act as a legitimate client or AP, and wlan1 will be used to inject
 frames. For wlan0, any card that supports normal client or AP mode on Linux can be used. For
-wlan1, a card must be used that supports injection mode according to [Supported Network Cards](#Supported-Network-Cards).
+wlan1, a card must be used that supports injection mode according to [Supported Network Cards](#id-supported-cards).
 
 When testing clients in this mode, injected frames may be sent when the client is in a sleep state.
 This causes attacks to fail, so you must make sure the client will not enter a sleep state.
 
+<a id="id-hwsim-mode"></a>
 ## 6.3. Hwsim mode
 
-This mode is experimental and only for research purposes. See [hwsim mode details](#Hwsim-mode-details)
+This mode is experimental and only for research purposes. See [hwsim mode details](#id-hwsim-details)
 for more information.
 
-
+<a id="id-testing-for-flaws"></a>
 # 7. Testing for Vulnerabilities
 
-You can test devices by running the test tool as discussed in [interface modes](#interface-modes)
+You can test devices by running the test tool as discussed in [interface modes](#id-interface-modes)
 and replacing `$COMMAND` with one of the commands in the table blow. We assume that clients will
-request an IP using DHCP (if this is not the case see [static IP configuration](#9.2.-Static-IP-Configuration)).
+request an IP using DHCP (if this is not the case see [static IP configuration](#id-static-ip-config)).
 
 The tool outputs `TEST COMPLETED SUCCESSFULLY` if the device is vulnerable to the attack corresponding
 to the given `$COMMAND`, and outputs `Test timed out! Retry to be sure, or manually check result` if
@@ -217,9 +225,9 @@ targeted device (this is further clarified below the table).
 To **verify your test setup**, the first command in the table below performs a normal ping that must
 succeed. The second command sends the ping as two fragmented Wi-Fi frames, and should only fail
 in the rare case that the tested device doesn't support fragmentation. In case one of these tests
-is not working, follow the instructions in [network card injection test](#network-card-injection-test)
+is not working, follow the instructions in [network card injection test](#id-injection-tests)
 to assure your network card is properly injecting frames. If the client being tested might enter
-sleep mode, see [Handling sleep mode](#Handling-sleep-mode).
+sleep mode, see [Handling sleep mode](#id-handling-sleep).
 
 The third and fourth commands are not attacks but verify basic defragmentation behaviour of a device
 and are further discussed below the table.
@@ -304,7 +312,7 @@ for details.
 
 - Several devices implement the 4-way handshake differently and this will impact whether these tests will
   succeed or not. In case the tests fail, it is recommended to also perform the mixed key attack
-  tests listed in [Extended Vulnerability Tests](#8.-Extended-Vulnerability-Tests).
+  tests listed in [Extended Vulnerability Tests](#id-extended-tests).
 
 ## 7.4. Cache attack tests (§5)
 
@@ -373,21 +381,21 @@ In case the test tool doesn't appear to be working, check the following:
 1. Check that no other process is using the network card (e.g. kill your network manager).
 
 2. Assure the device you are testing doesn't enter a sleep state (causing it to miss injected frames).
-   I recommend running the test tool in [mixed mode](#mixed-mode) since this better handles clients
+   I recommend running the test tool in [mixed mode](#id-mixed-mode) since this better handles clients
    that may go into a sleep state.
 
-3. Run the [injection tests](#Network-card-injection-test) to make sure injection is working properly.
+3. Run the [injection tests](#id-injection-tests) to make sure injection is working properly.
 
 4. Check that you machine isn't generating background traffic that interferes with the tests. In
    particular, disable networking in your OS, manually kill your DHCP client/server, etc. See
-   also [Before every usage](#before-every-usage).
+   also [Before every usage](#id-before-every-usage).
 
 5. Confirm that you are connecting to the correct network. Double-check `client.conf`.
 
 6. Make sure the AP being tested is using (AES-)CCMP as the encryption algorithm. Other encryption
    algorithms such as TKIP or GCMP are not supported.
 
-7. If you updated the code using git, execute `./build.sh` again (see [Prerequisites](#prerequisites)).
+7. If you updated the code using git, execute `./build.sh` again (see [Prerequisites](#id-prerequisites)).
    In case the patched drivers got updated, remember to recompile them as well.
 
 8. If you are using a virtual machine, try to run the test tool from a live CD or USB instead.
@@ -402,11 +410,12 @@ In case the test tool doesn't appear to be working, check the following:
 11. Check that you are using modified firmware if needed for your wireless network card.
 
 12. Check that the tested device doesn't block ICMP ping requests. In case it doesn't reply to pings, you
-    can run tcpdump or wireshark on the device, or you can try any of the other methods listed in [No ICMP Support](#9.3-No-ICMP-Support).
+    can run tcpdump or wireshark on the device, or you can try any of the other methods listed in [No ICMP Support](#id-no-icmp).
 
 13. Run the tool with the extra parameter `--debug 2` to get extra debug output from wpa_supplicant or
     hostapd and from the test tool itself.
 
+<a id="id-extended-tests"></a>
 # 8. Extended Vulnerability Tests
 
 Due to implementation variations it can be difficult to confirm/exploit certain vulnerabilities, in particular
@@ -415,7 +424,7 @@ a device secure if there are explicit checks in the code to prevent these attack
 I also recommend the following more advanced tests. These have a lower chance of uncovering new vulnerabilities,
 but might reveal attack variants or particular device behaviour that the normal tests can't detect.
 
-If the normal tests in [Testing for Vulnerabilities](#Testing-for-Vulnerabilities) have already confirmed the
+If the normal tests in [Testing for Vulnerabilities](#id-testing-for-flaws) have already confirmed the
 presence of a certain vulnerability class, there is no need to test the other attack variants of that vulnerability.
 
 |                Command                 | Short description
@@ -582,7 +591,8 @@ using the filter `icmp` or `frame contains "test_ping_icmp"`.
 
 # 9. Advanced Usage
 
-## 9.1. Network card injection test
+<a id="id-injection-tests"></a>
+## 9.1. Network card injection tests
 
 ### Injection mode
 
@@ -647,7 +657,7 @@ card used to monitor whether frames are injected properly (`wlan1` in the above 
 for example, missing most frames due to background noise. Try running the tests on a different channel as well.
 
 When the injection tests are working, but you have problems reliably performing the attack tests, this may be
-because the devices you are testing are entering sleep mode. See [Handling sleep mode](#Handling-sleep-mode) for
+because the devices you are testing are entering sleep mode. See [Handling sleep mode](#id-handling-sleep) for
 additional notes on this problem.
 
 ### Manual checks notes
@@ -660,6 +670,7 @@ you see the frame as injected by whatever tool is sending it, and then (2) a sec
 was injected by the driver. These two frames may slightly differ if the kernel overwrote certain fields.
 If you only see an injected frame once it may have been dropped by the kernel.
 
+<a id="id-static-ip-config"></a>
 ## 9.2. Static IP Configuration
 
 In case the device you are testing doesn't support DHCP, you can manually specify the IP addresses
@@ -674,6 +685,7 @@ When a test sends IP packets before obtaining IP addresses using DHCP, it will u
 address 127.0.0.1. To use different (default) IP addresses, you can also use the `--ip` and `-peerip`
 parameters.
 
+<a id="id-no-icmp"></a>
 ## 9.3. No ICMP Support
 
 Most attack tests work by sending ICMP ping requests in special manners, and seeing wether we receive
@@ -683,6 +695,7 @@ using ARP requests by adding the `--arp` parameter to all tests. **TODO: Explain
 
 **TODO: When acting as a client we can also inject DHCP requests intead.**
 
+<a id="id-alternative-cards"><a/>
 ## 9.4. Alternative network cards
 
 In case you cannot get access to one of the recommended wireless network cards, a second option
@@ -695,7 +708,7 @@ is to get a network card that uses the same drivers on Linux. In particular, you
 3. Network cards that use [iwlmvm](https://wireless.wiki.kernel.org/en/users/drivers/iwlwifi).
 
 I recommend cards based on `ath9k_htc`. Not all cards that use `iwlmvm` will be compatible. When
-using an alternative network card, I strongly recommend to first run the [injection tests](#Network-card-injection-test)
+using an alternative network card, I strongly recommend to first run the [injection tests](#id-injection-tests)
 to confirm that the network card is compatible.
 
 ## 9.5. 5 GHz support
@@ -718,6 +731,7 @@ to inject frames when `cfg80211_reg_can_beacon` returns false. As a result, Linu
 inject frames even though this is actually allowed. Making `cfg80211_reg_can_beacon` return true
 under the correct conditions prevents this bug.
 
+<a id="id-handling-sleep"></a>
 ## 9.6. Handling sleep mode
 
 Devices such as mobile phones or IoT gadgets may put their Wi-Fi radio in sleep mode to reduce energy usage.
@@ -734,9 +748,10 @@ are some options to try to mitigate this problem:
    at (slightly) different times, and this may be the difference between injected frame properly arriving or
    being missed.
 
-4. Perform the tests using ARP instead of ICMP tests, see [No ICMP support](#No-ICMP-support) for details. This
+4. Perform the tests using ARP instead of ICMP tests, see [No ICMP support](#id-no-icmp) for details. This
    can be more reliable because fewer frames have to be properly injected when using ARP injection.
 
+<a id="id-notes-device-support"></a>
 ## 9.7. Notes on device support
 
 ### ath9k_htc
@@ -773,6 +788,7 @@ I tested the Intel AX200 and found that it is _not_ compatible with the test too
 after injecting a frame with the More Fragments flag set. If an Intel developer is reading this, please
 update the firmware and make it possible to inject fragmented frames.
 
+<a id="id-hwsim-details"></a>
 ## 9.8. Hwsim mode details
 
 **Warning**: *this is currently an experimental mode, only use it for research purposes.*
