@@ -1440,7 +1440,10 @@ skip_assoc_disallow:
 #ifdef CONFIG_SAE_PK
 	if (ssid->sae_pk == SAE_PK_MODE_AUTOMATIC &&
 	    wpa_key_mgmt_sae(ssid->key_mgmt) &&
-	    ssid->sae_password && sae_pk_valid_password(ssid->sae_password) &&
+	    ((ssid->sae_password &&
+	      sae_pk_valid_password(ssid->sae_password)) ||
+	     (!ssid->sae_password && ssid->passphrase &&
+	      sae_pk_valid_password(ssid->passphrase))) &&
 	    !(rsnxe_capa & BIT(WLAN_RSNX_CAPAB_SAE_PK)) &&
 	    sae_pk_acceptable_bss_with_pk(wpa_s, bss, ssid, match_ssid,
 					  match_ssid_len)) {
