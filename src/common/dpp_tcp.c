@@ -1678,6 +1678,29 @@ void dpp_controller_stop(struct dpp_global *dpp)
 }
 
 
+static bool dpp_tcp_peer_id_match(struct dpp_authentication *auth,
+				  unsigned int id)
+{
+	return auth &&
+		((auth->peer_bi && auth->peer_bi->id == id) ||
+		 (auth->tmp_peer_bi && auth->tmp_peer_bi->id == id));
+}
+
+
+static struct dpp_authentication * dpp_tcp_get_auth(struct dpp_global *dpp,
+						    unsigned int id)
+{
+	struct dpp_connection *conn;
+
+	dl_list_for_each(conn, &dpp->tcp_init, struct dpp_connection, list) {
+		if (dpp_tcp_peer_id_match(conn->auth, id))
+			return conn->auth;
+	}
+
+	return NULL;
+}
+
+
 struct dpp_authentication * dpp_controller_get_auth(struct dpp_global *dpp,
 						    unsigned int id)
 {
@@ -1685,18 +1708,14 @@ struct dpp_authentication * dpp_controller_get_auth(struct dpp_global *dpp,
 	struct dpp_connection *conn;
 
 	if (!ctrl)
-		return NULL;
+		return dpp_tcp_get_auth(dpp, id);
 
 	dl_list_for_each(conn, &ctrl->conn, struct dpp_connection, list) {
-		struct dpp_authentication *auth = conn->auth;
-
-		if (auth &&
-		    ((auth->peer_bi && auth->peer_bi->id == id) ||
-		     (auth->tmp_peer_bi && auth->tmp_peer_bi->id == id)))
-			return auth;
+		if (dpp_tcp_peer_id_match(conn->auth, id))
+			return conn->auth;
 	}
 
-	return NULL;
+	return dpp_tcp_get_auth(dpp, id);
 }
 
 
