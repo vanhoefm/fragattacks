@@ -694,7 +694,7 @@ static void gas_query_start_cb(struct wpa_radio_work *work, int deinit)
 		return;
 	}
 
-	if (!query->maintain_addr &&
+	if (!query->maintain_addr && !wpa_s->conf->gas_rand_mac_addr &&
 	    wpas_update_random_addr_disassoc(wpa_s) < 0) {
 		wpa_msg(wpa_s, MSG_INFO,
 			"Failed to assign random MAC address for GAS");
