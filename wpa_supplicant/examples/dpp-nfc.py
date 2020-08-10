@@ -202,6 +202,8 @@ def wpas_get_nfc_uri(start_listen=True, pick_channel=False, chan_override=None):
         chan = chan_override
     else:
         chan = chanlist
+    if chan and chan.startswith("81/"):
+        listen_freq = int(chan[3:].split(',')[0]) * 5 + 2407
     if chan is None and get_status_field(wpas, "bssid[0]"):
         freq = get_status_field(wpas, "freq")
         if freq:
