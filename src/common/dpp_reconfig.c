@@ -563,40 +563,19 @@ fail:
 }
 
 
-static struct wpabuf *
-dpp_build_reconfig_flags(enum dpp_connector_key connector_key)
-{
-	struct wpabuf *json;
-
-	json = wpabuf_alloc(100);
-	if (!json)
-		return NULL;
-	json_start_object(json, NULL);
-	json_add_int(json, "connectorKey", connector_key);
-	json_end_object(json);
-	wpa_hexdump_ascii(MSG_DEBUG, "DPP: Reconfig-Flags JSON",
-			  wpabuf_head(json), wpabuf_len(json));
-
-	return json;
-}
-
-
 struct wpabuf *
 dpp_reconfig_build_conf(struct dpp_authentication *auth)
 {
-	struct wpabuf *msg = NULL, *clear = NULL, *reconfig_flags;
+	struct wpabuf *msg = NULL, *clear;
 	u8 *attr_start, *attr_end;
 	size_t clear_len, attr_len, len[2];
 	const u8 *addr[2];
 	u8 *wrapped;
-
-	reconfig_flags = dpp_build_reconfig_flags(DPP_CONFIG_REPLACEKEY);
-	if (!reconfig_flags)
-		goto fail;
+	u8 flags;
 
 	/* Build DPP Reconfig Authentication Confirm frame attributes */
 	clear_len = 4 + 1 + 4 + 1 + 2 * (4 + auth->curve->nonce_len) +
-		4 + wpabuf_len(reconfig_flags);
+		4 + 1;
 	clear = wpabuf_alloc(clear_len);
 	if (!clear)
 		goto fail;
@@ -622,9 +601,10 @@ dpp_reconfig_build_conf(struct dpp_authentication *auth)
 	wpabuf_put_data(clear, auth->r_nonce, auth->curve->nonce_len);
 
 	/* Reconfig-Flags (wrapped) */
+	flags = DPP_CONFIG_REPLACEKEY;
 	wpabuf_put_le16(clear, DPP_ATTR_RECONFIG_FLAGS);
-	wpabuf_put_le16(clear, wpabuf_len(reconfig_flags));
-	wpabuf_put_buf(clear, reconfig_flags);
+	wpabuf_put_le16(clear, 1);
+	wpabuf_put_u8(clear, flags);
 
 	attr_len = 4 + wpabuf_len(clear) + AES_BLOCK_SIZE;
 	attr_len += 4 + 1;
@@ -665,7 +645,6 @@ dpp_reconfig_build_conf(struct dpp_authentication *auth)
 			msg);
 
 out:
-	wpabuf_free(reconfig_flags);
 	wpabuf_free(clear);
 	return msg;
 fail:
@@ -872,8 +851,8 @@ int dpp_reconfig_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 	size_t len[2];
 	u8 *unwrapped = NULL;
 	size_t unwrapped_len = 0;
-	struct json_token *root = NULL, *token;
 	int res = -1;
+	u8 flags;
 
 	if (!auth->reconfig || auth->configurator)
 		goto fail;
@@ -967,34 +946,17 @@ int dpp_reconfig_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 	reconfig_flags = dpp_get_attr(unwrapped, unwrapped_len,
 				      DPP_ATTR_RECONFIG_FLAGS,
 				      &reconfig_flags_len);
-	if (!reconfig_flags) {
+	if (!reconfig_flags || reconfig_flags_len < 1) {
 		dpp_auth_fail(auth, "Missing or invalid Reconfig-Flags");
 		goto fail;
 	}
-	wpa_hexdump_ascii(MSG_DEBUG, "DPP: Reconfig-Flags",
-			  reconfig_flags, reconfig_flags_len);
-	root = json_parse((const char *) reconfig_flags, reconfig_flags_len);
-	if (!root) {
-		dpp_auth_fail(auth, "Could not parse Reconfig-Flags");
-		goto fail;
-	}
-	token = json_get_member(root, "connectorKey");
-	if (!token || token->type != JSON_NUMBER) {
-		dpp_auth_fail(auth, "No connectorKey in Reconfig-Flags");
-		goto fail;
-	}
-	if (token->number != DPP_CONFIG_REUSEKEY &&
-	    token->number != DPP_CONFIG_REPLACEKEY) {
-		dpp_auth_fail(auth,
-			      "Unsupported connectorKey value in Reconfig-Flags");
-		goto fail;
-	}
-	auth->reconfig_connector_key = token->number;
+	flags = reconfig_flags[0] & BIT(0);
+	wpa_printf(MSG_DEBUG, "DPP: Reconfig Flags connectorKey=%u", flags);
+	auth->reconfig_connector_key = flags;
 
 	auth->reconfig_success = true;
 	res = 0;
 fail:
-	json_free(root);
 	bin_clear_free(unwrapped, unwrapped_len);
 	return res;
 }
