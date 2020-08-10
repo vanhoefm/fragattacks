@@ -5874,17 +5874,6 @@ def run_dpp_enterprise_tcp(dev, apdev, params):
     check_dpp_capab(dev[1])
 
     cap_lo = params['prefix'] + ".lo.pcap"
-    cert_file = params['prefix'] + ".cert.pem"
-    pkcs7_file = params['prefix'] + ".pkcs7.der"
-
-    with open("auth_serv/ec-ca.pem", "rb") as f:
-        res = f.read()
-        cacert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
-                                                 res)
-
-    with open("auth_serv/ec-ca.key", "rb") as f:
-        res = f.read()
-        cakey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, res)
 
     wt = WlantestCapture('lo', cap_lo)
     time.sleep(1)
@@ -5902,6 +5891,20 @@ def run_dpp_enterprise_tcp(dev, apdev, params):
         raise Exception("Failed to start Controller")
 
     dev[0].dpp_auth_init(uri=uri_c, role="enrollee", tcp_addr="127.0.0.1")
+    run_dpp_enterprise_tcp_end(params, dev, wt)
+
+def run_dpp_enterprise_tcp_end(params, dev, wt):
+    cert_file = params['prefix'] + ".cert.pem"
+    pkcs7_file = params['prefix'] + ".pkcs7.der"
+
+    with open("auth_serv/ec-ca.pem", "rb") as f:
+        res = f.read()
+        cacert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
+                                                 res)
+
+    with open("auth_serv/ec-ca.key", "rb") as f:
+        res = f.read()
+        cakey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, res)
 
     ev = dev[1].wait_event(["DPP-CSR"], timeout=10)
     if ev is None:
@@ -5945,3 +5948,47 @@ def run_dpp_enterprise_tcp(dev, apdev, params):
 
     time.sleep(0.5)
     wt.close()
+
+def test_dpp_enterprise_tcp2(dev, apdev, params):
+    """DPP over TCP for enterprise provisioning (Controller initiating)"""
+    try:
+        run_dpp_enterprise_tcp2(dev, apdev, params)
+    finally:
+        dev[0].request("DPP_CONTROLLER_STOP")
+        dev[1].request("DPP_CONTROLLER_STOP")
+
+def run_dpp_enterprise_tcp2(dev, apdev, params):
+    check_dpp_capab(dev[0])
+    check_dpp_capab(dev[1])
+
+    cap_lo = params['prefix'] + ".lo.pcap"
+    cert_file = params['prefix'] + ".cert.pem"
+    pkcs7_file = params['prefix'] + ".pkcs7.der"
+
+    with open("auth_serv/ec-ca.pem", "rb") as f:
+        res = f.read()
+        cacert = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
+                                                 res)
+
+    with open("auth_serv/ec-ca.key", "rb") as f:
+        res = f.read()
+        cakey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, res)
+
+    wt = WlantestCapture('lo', cap_lo)
+    time.sleep(1)
+
+    # Client/Enrollee/Responder
+    id_e = dev[0].dpp_bootstrap_gen()
+    uri_e = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id_e)
+    req = "DPP_CONTROLLER_START"
+    if "OK" not in dev[0].request(req):
+        raise Exception("Failed to start Client/Enrollee")
+
+    # Controller/Configurator/Initiator
+    conf_id = dev[1].dpp_configurator_add()
+    csrattrs = "MAsGCSqGSIb3DQEJBw=="
+    dev[1].dpp_auth_init(uri=uri_e, role="configurator", configurator=conf_id,
+                         conf="sta-dot1x", csrattrs=csrattrs,
+                         tcp_addr="127.0.0.1")
+
+    run_dpp_enterprise_tcp_end(params, dev, wt)
