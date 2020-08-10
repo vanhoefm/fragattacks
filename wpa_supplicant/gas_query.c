@@ -694,13 +694,15 @@ static void gas_query_start_cb(struct wpa_radio_work *work, int deinit)
 		return;
 	}
 
-	if (!query->maintain_addr && !wpa_s->conf->gas_rand_mac_addr &&
-	    wpas_update_random_addr_disassoc(wpa_s) < 0) {
-		wpa_msg(wpa_s, MSG_INFO,
-			"Failed to assign random MAC address for GAS");
-		gas_query_free(query, 1);
-		radio_work_done(work);
-		return;
+	if (!query->maintain_addr && !wpa_s->conf->gas_rand_mac_addr) {
+		if (wpas_update_random_addr_disassoc(wpa_s) < 0) {
+			wpa_msg(wpa_s, MSG_INFO,
+				"Failed to assign random MAC address for GAS");
+			gas_query_free(query, 1);
+			radio_work_done(work);
+			return;
+		}
+		os_memcpy(query->sa, wpa_s->own_addr, ETH_ALEN);
 	}
 
 	gas->work = work;
