@@ -9,11 +9,6 @@ Older WPA networks by default use TKIP for encryption, and the applicability of 
 this cipher are discussed in the paper. To illustrate that Wi-Fi has been vulnerable since its creation,
 the paper also briefly discusses the applicability of the attacks against WEP.
 
-__USENIX Reviewers__: Our tool is based on the hostap daemon. Most of the research code is located
-in the `research` directory. This repository has been updated after the paper submission with major
-usability improvements (but no new research). You can inspect the code at the time of submission
-by executing `git checkout db75c47`.
-
 <a id="id-supported-cards"></a>
 # 2. Supported Network Cards
 
@@ -44,6 +39,7 @@ The three last colums signify:
 _Yes_ indicates the card works out-of-the-box in the given mode. _Patched driver/firmware_
 means that the card is compatible when used with patched drivers and/or firmware.
 _No_ means this mode is not supported by the network card.
+**I recommend using the test tool in mixed mode.**
 
 Note that USB devices can be used inside a virtual machine, and the modified drivers and/or firmware
 can be installed in this virtual machine. However, I found that the usage of virtual machines can
@@ -218,9 +214,10 @@ request an IP using DHCP (if this is not the case see [static IP configuration](
 
 The tool outputs `TEST COMPLETED SUCCESSFULLY` if the device is vulnerable to the attack corresponding
 to the given `$COMMAND`, and outputs `Test timed out! Retry to be sure, or manually check result` if
-the device is not vulnerable. Most attacks have several slight variants represented by different
-`$COMMAND` values. Verifying the result of some tests requires running tcpdump or wireshark on the
-targeted device (this is further clarified below the table).
+the device is not vulnerable. After the test completed you can close the test tool using `CTRL+C`.
+Most attacks have several slight variants represented by different `$COMMAND` values. Verifying the
+result of some tests requires running tcpdump or wireshark on the targeted device (this is further
+clarified below the table).
 
 To **verify your test setup**, the first command in the table below performs a normal ping that must
 succeed. The second command sends the ping as two fragmented Wi-Fi frames, and should only fail
@@ -326,6 +323,10 @@ for details.
   the disassociation frame. This may require disabling all other networks in the client being tested. I also
   found that some clients don't seem to properly handle the disassocation, and in that case you can add the
   `--full-reconnect` option as shown in the table to send a deauthentication frame instead.
+
+- I have found that it's best to execute each cache attack test several times. Sometimes a cache attack test
+  might fail although the implementation _is_ vulnerable. This can be due to background noise, other devices
+  sending frames to the tested device, etc.
 
 - `ping I,E,R,AE [--full-reconnect]`: Here the second fragment is sent immediately after reconnecting with the
   AP, which is important in case the device under test clears fragments from memory after a short time.
@@ -444,6 +445,7 @@ presence of a certain vulnerability class, there is no need to test the other at
 | <div align="center">*Cache attacks (§5)*</div>
 | `ping I,E,R,AE --freebsd [--full-reconnect]` | Cache attack specific to FreeBSD implementations.
 | `ping I,E,R,AP --freebsd [--full-reconnect]` | Cache attack specific to FreeBSD implementations.
+| `ping I,E,R,AP [--full-reconnect]`     | Cache attack test where 2nd fragment is sent in plaintext.
 | <div align="center">*Mixed plain/encrypt attack (§6.3)*</div>
 | `ping I,E,E --amsdu`                   | Send a normal ping as a fragmented A-MSDU frame.
 | `ping I,E,P,E`                         | Ping with first frag. encrypted, second plaintext, third encrypted.
@@ -522,6 +524,11 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
   on FreeBSD drivers, where the second fragment is sent in plaintext after reconnecting with the AP. Against some
   dongles on FreeBSD this test was more reliable and still proves that old fragments remain in the AP's memory after
   reconnecting. You should also try this test without the `--full-reconnect` parameter.
+
+- `ping I,E,R,AP [--full-reconnect]`: In this test the second fragment is sent in plaintext. This can be useful if
+  the device being tested doesn't immediately install the key after the 4-way handshake. If this tests succeeds, it
+  shows that the device keeps fragments in memory after (re)connecting to a network, meaning its vulnerable to cache
+  attacks.
 
 ## 8.4. Mixed plain/encrypt attack (§6.3)
 
