@@ -467,6 +467,7 @@ def run_dpp_handover_client(handover, alt=False):
         summary("DPP carrier not seen in response - do not allow alternative proposal anymore")
     elif not dpp_found:
         summary("DPP carrier not seen in response - allow peer to initiate a new handover with different parameters")
+        handover.alt_proposal = True
         handover.my_crn_ready = False
         handover.my_crn = None
         handover.peer_crn = None
@@ -523,6 +524,7 @@ class HandoverServer(nfc.handover.HandoverServer):
                     resp = self._process_request_data(req)
                     if resp is None or len(resp) == 0:
                         summary("No handover select to send out - wait for a possible alternative handover request")
+                        handover.alt_proposal = True
                         req = bytearray()
                         continue
 
@@ -605,6 +607,11 @@ class HandoverServer(nfc.handover.HandoverServer):
                 if test_uri:
                     summary("TEST MODE: Using specified URI")
                     data = test_sel_uri if test_sel_uri else test_uri
+                elif handover.alt_proposal and handover.altchanlist:
+                    summary("Use alternative channel list while processing alternative proposal from peer")
+                    data = wpas_get_nfc_uri(start_listen=False,
+                                            chan_override=handover.altchanlist,
+                                            pick_channel=True)
                 else:
                     data = wpas_get_nfc_uri(start_listen=False,
                                             pick_channel=True)
@@ -918,6 +925,7 @@ class ConnectionHandover():
         self.my_uri = None
         self.peer_uri = None
         self.connected = False
+        self.alt_proposal = False
 
     def start_handover_server(self, llc):
         summary("Start handover server")
