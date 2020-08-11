@@ -2,8 +2,9 @@
 
 # 1. Introduction
 
-The discovered vulnerabilities affect all Wi-Fi networks. The resulting attacks are identical against WPA2 and WPA3
-because their CCMP and GCMP encryption ciphers are identical.
+The discovered vulnerabilities affect all Wi-Fi networks. A short summary of all vulnerabilities can be
+found [here](SUMMARY.md), although we also recommend reading the [paper](fragattacks.pdf). The resulting
+attacks are identical against WPA2 and WPA3 because their CCMP and GCMP encryption ciphers are identical.
 
 Older WPA networks by default use TKIP for encryption, and the applicability of the attacks against
 this cipher are discussed in the paper. To illustrate that Wi-Fi has been vulnerable since its creation,
