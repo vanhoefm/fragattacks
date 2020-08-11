@@ -7466,7 +7466,7 @@ static int ctrl_interworking_connect(struct wpa_supplicant *wpa_s, char *dst,
 static int get_anqp(struct wpa_supplicant *wpa_s, char *dst)
 {
 	u8 dst_addr[ETH_ALEN];
-	int used;
+	int used, freq = 0;
 	char *pos;
 #define MAX_ANQP_INFO_ID 100
 	u16 id[MAX_ANQP_INFO_ID];
@@ -7480,6 +7480,15 @@ static int get_anqp(struct wpa_supplicant *wpa_s, char *dst)
 	pos = dst + used;
 	if (*pos == ' ')
 		pos++;
+
+	if (os_strncmp(pos, "freq=", 5) == 0) {
+		freq = atoi(pos + 5);
+		pos = os_strchr(pos, ' ');
+		if (!pos)
+			return -1;
+		pos++;
+	}
+
 	while (num_id < MAX_ANQP_INFO_ID) {
 		if (os_strncmp(pos, "hs20:", 5) == 0) {
 #ifdef CONFIG_HS20
@@ -7514,7 +7523,7 @@ static int get_anqp(struct wpa_supplicant *wpa_s, char *dst)
 	if (num_id == 0 && !subtypes && !mbo_subtypes)
 		return -1;
 
-	return anqp_send_req(wpa_s, dst_addr, id, num_id, subtypes,
+	return anqp_send_req(wpa_s, dst_addr, freq, id, num_id, subtypes,
 			     mbo_subtypes);
 }
 
