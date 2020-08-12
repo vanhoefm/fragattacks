@@ -661,7 +661,7 @@ static int dpp_controller_rx_auth_resp(struct dpp_connection *conn,
 		if (auth->auth_resp_status == DPP_STATUS_RESPONSE_PENDING) {
 			wpa_printf(MSG_DEBUG,
 				   "DPP: Start wait for full response");
-			return -1;
+			return 0;
 		}
 		wpa_printf(MSG_DEBUG, "DPP: No confirm generated");
 		dpp_connection_remove(conn);
