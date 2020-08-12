@@ -1,3 +1,14 @@
+fragattacks
+-----------
+
+Copyright of portions of this project are held by Jouni Malinen and
+contributors (see below). Copyright of project fragsattacks are held by
+Mathy Vanhoef <mathy.vanhoef@nyu.edu> and contributors.
+
+Software of project krackattacks is licensed under the 2-clause BSD
+license (the license below with the 3rd clause removed).
+
+
 wpa_supplicant and hostapd
 --------------------------
 
