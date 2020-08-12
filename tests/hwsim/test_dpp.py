@@ -4787,7 +4787,15 @@ def test_dpp_tcp_port(dev, apdev, params):
     finally:
         dev[1].request("DPP_CONTROLLER_STOP")
 
-def run_dpp_tcp(dev, apdev, cap_lo, port=None):
+def test_dpp_tcp_mutual(dev, apdev, params):
+    """DPP over TCP (mutual)"""
+    cap_lo = os.path.join(params['prefix'], ".lo.pcap")
+    try:
+        run_dpp_tcp(dev, apdev, cap_lo, mutual=True)
+    finally:
+        dev[1].request("DPP_CONTROLLER_STOP")
+
+def run_dpp_tcp(dev, apdev, cap_lo, port=None, mutual=False):
     check_dpp_capab(dev[0])
     check_dpp_capab(dev[1])
 
@@ -4812,12 +4820,36 @@ def run_dpp_tcp(dev, apdev, cap_lo, port=None):
     req = "DPP_CONTROLLER_START"
     if port:
         req += " tcp_port=" + port
+    if mutual:
+        req += " qr=mutual"
+        id0 = dev[0].dpp_bootstrap_gen()
+        uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+        own = id0
+    else:
+        own = None
     if "OK" not in dev[1].request(req):
         raise Exception("Failed to start Controller")
 
     # Initiate from Enrollee with broadcast DPP Authentication Request
-    dev[0].dpp_auth_init(uri=uri_c, role="enrollee", tcp_addr="127.0.0.1",
-                         tcp_port=port)
+    dev[0].dpp_auth_init(uri=uri_c, own=own, role="enrollee",
+                         tcp_addr="127.0.0.1", tcp_port=port)
+
+    if mutual:
+        ev = dev[0].wait_event(["DPP-RESPONSE-PENDING"], timeout=5)
+        if ev is None:
+            raise Exception("Pending response not reported")
+        ev = dev[1].wait_event(["DPP-SCAN-PEER-QR-CODE"], timeout=5)
+        if ev is None:
+            raise Exception("QR Code scan for mutual authentication not requested")
+
+        id1 = dev[1].dpp_qr_code(uri0)
+
+        ev = dev[0].wait_event(["DPP-AUTH-DIRECTION"], timeout=5)
+        if ev is None:
+            raise Exception("DPP authentication direction not indicated (Initiator)")
+        if "mutual=1" not in ev:
+            raise Exception("Mutual authentication not used")
+
     wait_auth_success(dev[1], dev[0], configurator=dev[1], enrollee=dev[0],
                       allow_enrollee_failure=True,
                       allow_configurator_failure=True)
