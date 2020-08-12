@@ -90,6 +90,10 @@ int wpas_dpp_qr_code(struct wpa_supplicant *wpa_s, const char *cmd)
 				       500, wpas_dpp_tx_status, 0);
 	}
 
+#ifdef CONFIG_DPP2
+	dpp_controller_new_qr_code(wpa_s->dpp, bi);
+#endif /* CONFIG_DPP2 */
+
 	return bi->id;
 }
 

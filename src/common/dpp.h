@@ -668,6 +668,8 @@ int dpp_controller_start(struct dpp_global *dpp,
 void dpp_controller_stop(struct dpp_global *dpp);
 struct dpp_authentication * dpp_controller_get_auth(struct dpp_global *dpp,
 						    unsigned int id);
+void dpp_controller_new_qr_code(struct dpp_global *dpp,
+				struct dpp_bootstrap_info *bi);
 int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
 		 const struct hostapd_ip_addr *addr, int port,
 		 const char *name);

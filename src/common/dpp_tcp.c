@@ -1719,6 +1719,28 @@ struct dpp_authentication * dpp_controller_get_auth(struct dpp_global *dpp,
 }
 
 
+void dpp_controller_new_qr_code(struct dpp_global *dpp,
+				struct dpp_bootstrap_info *bi)
+{
+	struct dpp_controller *ctrl = dpp->controller;
+	struct dpp_connection *conn;
+
+	if (!ctrl)
+		return;
+
+	dl_list_for_each(conn, &ctrl->conn, struct dpp_connection, list) {
+		struct dpp_authentication *auth = conn->auth;
+
+		if (!auth->response_pending ||
+		    dpp_notify_new_qr_code(auth, bi) != 1)
+			continue;
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Sending out pending authentication response");
+		dpp_tcp_send_msg(conn, conn->auth->resp_msg);
+	}
+}
+
+
 void dpp_tcp_init_flush(struct dpp_global *dpp)
 {
 	struct dpp_connection *conn, *tmp;
