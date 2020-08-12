@@ -54,6 +54,8 @@ def str2actions(stractions, default):
 		return default
 
 def prepare_tests(opt):
+	# --------------- Main Tests ---------------
+
 	stractions = opt.actions
 	if opt.testname == "ping":
 		actions = str2actions(stractions,
@@ -74,25 +76,6 @@ def prepare_tests(opt):
 				 Action(Action.Connected, enc=True, inc_pn=0)],
 				 separate_with=separator, opt=opt)
 
-	elif opt.testname == "wep-mixed-key":
-		log(WARNING, "Cannot predict WEP key reotation. Fragment may time out, use very short key rotation!", color="orange")
-		test = PingTest(REQ_ICMP,
-				[Action(Action.Connected, action=Action.GetIp),
-				 Action(Action.Connected, enc=True),
-				 # On a WEP key rotation we get a Connected event. So wait for that.
-				 Action(Action.AfterAuth, enc=True),
-				])
-
-	elif opt.testname == "cache-poison":
-		# Cache poison attack. Worked against Linux Hostapd and RT-AC51U.
-		test = PingTest(REQ_ICMP,
-				[Action(Action.Connected, enc=True),
-				 Action(Action.Connected, action=Action.Reconnect),
-				 Action(Action.AfterAuth, enc=True)])
-
-	elif opt.testname == "forward":
-		test = ForwardTest(eapol=False, dst=stractions)
-
 	elif opt.testname in ["eapol-inject", "eapol-inject-large"]:
 		large = opt.testname.endswith("-large")
 		test = ForwardTest(eapol=True, dst=stractions, large=large)
@@ -108,11 +91,29 @@ def prepare_tests(opt):
 		decoy_tid = None if stractions == None else int(stractions)
 		test = LinuxTest(REQ_ICMP, decoy_tid)
 
+	elif opt.testname in ["amsdu-inject", "amsdu-inject-bad"]:
+		malformed = opt.testname.endswith("-bad")
+		test = AmsduInject(REQ_ICMP, malformed)
+
 	elif opt.testname == "eapfrag":
 		actions = str2actions(stractions,
 				[Action(Action.StartAuth, enc=False),
 				 Action(Action.StartAuth, enc=False)])
 		test = BcastEapFragTest(REQ_ICMP, actions, opt.bcast_dst)
+
+	elif opt.testname == "wep-mixed-key":
+		log(WARNING, "Cannot predict WEP key reotation. Fragment may time out, use very short key rotation!", color="orange")
+		test = PingTest(REQ_ICMP,
+				[Action(Action.Connected, action=Action.GetIp),
+				 Action(Action.Connected, enc=True),
+				 # On a WEP key rotation we get a Connected event. So wait for that.
+				 Action(Action.AfterAuth, enc=True),
+				])
+
+	# --------------- Research Tests ---------------
+
+	elif opt.testname == "forward":
+		test = ForwardTest(eapol=False, dst=stractions)
 
 	elif opt.testname == "qca-test":
 		test = QcaDriverTest()
@@ -122,10 +123,6 @@ def prepare_tests(opt):
 
 	elif opt.testname == "qca-rekey":
 		test = QcaDriverRekey()
-
-	elif opt.testname in ["amsdu-inject", "amsdu-inject-bad"]:
-		malformed = opt.testname.endswith("-bad")
-		test = AmsduInject(REQ_ICMP, malformed)
 
 	# No valid test ID/name was given
 	else: return None
