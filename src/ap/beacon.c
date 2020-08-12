@@ -818,6 +818,10 @@ void handle_probe_req(struct hostapd_data *hapd,
 	size_t csa_offs_len;
 	struct radius_sta rad_info;
 
+	if (hapd->iconf->rssi_ignore_probe_request && ssi_signal &&
+	    ssi_signal < hapd->iconf->rssi_ignore_probe_request)
+		return;
+
 	if (len < IEEE80211_HDRLEN)
 		return;
 	ie = ((const u8 *) mgmt) + IEEE80211_HDRLEN;

@@ -1039,6 +1039,7 @@ struct hostapd_config {
 
 	int rssi_reject_assoc_rssi;
 	int rssi_reject_assoc_timeout;
+	int rssi_ignore_probe_request;
 
 #ifdef CONFIG_AIRTIME_POLICY
 	enum {

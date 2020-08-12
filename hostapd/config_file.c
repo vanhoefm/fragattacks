@@ -4450,6 +4450,8 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		conf->rssi_reject_assoc_rssi = atoi(pos);
 	} else if (os_strcmp(buf, "rssi_reject_assoc_timeout") == 0) {
 		conf->rssi_reject_assoc_timeout = atoi(pos);
+	} else if (os_strcmp(buf, "rssi_ignore_probe_request") == 0) {
+		conf->rssi_ignore_probe_request = atoi(pos);
 	} else if (os_strcmp(buf, "pbss") == 0) {
 		bss->pbss = atoi(pos);
 	} else if (os_strcmp(buf, "transition_disable") == 0) {
