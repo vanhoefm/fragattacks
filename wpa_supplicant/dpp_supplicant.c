@@ -3350,6 +3350,8 @@ int wpas_dpp_controller_start(struct wpa_supplicant *wpa_s, const char *cmd)
 			else
 				return -1;
 		}
+
+		config.qr_mutual = os_strstr(cmd, " qr=mutual") != NULL;
 	}
 	config.configurator_params = wpa_s->dpp_configurator_params;
 	return dpp_controller_start(wpa_s->dpp, &config);

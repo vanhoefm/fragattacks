@@ -384,6 +384,7 @@ struct dpp_controller_config {
 	const char *configurator_params;
 	int tcp_port;
 	u8 allowed_roles;
+	int qr_mutual;
 };
 
 #ifdef CONFIG_TESTING_OPTIONS

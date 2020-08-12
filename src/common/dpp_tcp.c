@@ -1622,7 +1622,7 @@ int dpp_controller_start(struct dpp_global *dpp,
 			os_strdup(config->configurator_params);
 	dl_list_init(&ctrl->conn);
 	ctrl->allowed_roles = config->allowed_roles;
-	ctrl->qr_mutual = 0;
+	ctrl->qr_mutual = config->qr_mutual;
 
 	ctrl->sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (ctrl->sock < 0)
