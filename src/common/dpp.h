@@ -153,6 +153,7 @@ struct dpp_bootstrap_info {
 	char *pk;
 	unsigned int freq[DPP_BOOTSTRAP_MAX_FREQ];
 	unsigned int num_freq;
+	bool channels_listed;
 	u8 version;
 	int own;
 	EVP_PKEY *pubkey;

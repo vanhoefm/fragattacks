@@ -245,6 +245,7 @@ int dpp_parse_uri_chan_list(struct dpp_bootstrap_info *bi,
 		wpa_printf(MSG_DEBUG,
 			   "DPP: URI channel-list: opclass=%d channel=%d ==> freq=%d",
 			   opclass, channel, freq);
+		bi->channels_listed = true;
 		if (freq < 0) {
 			wpa_printf(MSG_DEBUG,
 				   "DPP: Ignore unknown URI channel-list channel (opclass=%d channel=%d)",
@@ -4030,11 +4031,11 @@ static int dpp_nfc_update_bi_channel(struct dpp_bootstrap_info *own_bi,
 	u8 op_class, channel;
 	char chan[20];
 
-	if (peer_bi->num_freq == 0)
+	if (peer_bi->num_freq == 0 && !peer_bi->channels_listed)
 		return 0; /* no channel preference/constraint */
 
 	for (i = 0; i < peer_bi->num_freq; i++) {
-		if (own_bi->num_freq == 0 ||
+		if ((own_bi->num_freq == 0 && !own_bi->channels_listed) ||
 		    freq_included(own_bi->freq, own_bi->num_freq,
 				  peer_bi->freq[i])) {
 			freq = peer_bi->freq[i];
