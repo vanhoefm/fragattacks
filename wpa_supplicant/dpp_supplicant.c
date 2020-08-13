@@ -3690,6 +3690,12 @@ int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, const char *cmd)
 			   "DPP: Failed to generate E-id for reconfiguration");
 		return -1;
 	}
+	if (wpa_s->wpa_state >= WPA_AUTHENTICATING) {
+		wpa_printf(MSG_DEBUG, "DPP: Disconnect for reconfiguration");
+		wpa_s->own_disconnect_req = 1;
+		wpa_supplicant_deauthenticate(
+			wpa_s, WLAN_REASON_DEAUTH_LEAVING);
+	}
 	wpas_dpp_chirp_stop(wpa_s);
 	wpa_s->dpp_allowed_roles = DPP_CAPAB_ENROLLEE;
 	wpa_s->dpp_qr_mutual = 0;
