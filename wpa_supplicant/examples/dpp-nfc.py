@@ -278,8 +278,15 @@ class HandoverClient(nfc.handover.HandoverClient):
     def recv_octets(self, timeout=None):
         start = time.time()
         msg = bytearray()
-        poll_timeout = 0.1 if timeout is None or timeout > 0.1 else timeout
-        while self.socket.poll('recv', poll_timeout):
+        while True:
+            poll_timeout = 0.1 if timeout is None or timeout > 0.1 else timeout
+            if self.socket.poll('recv', poll_timeout) is None:
+                if timeout:
+                    timeout -= time.time() - start
+                    if timeout <= 0:
+                        return None
+                    start = time.time()
+                continue
             try:
                 r = self.socket.recv()
                 if r is None:
@@ -372,7 +379,10 @@ def run_dpp_handover_client(handover, alt=False):
 
     summary("Receiving handover response")
     try:
+        start = time.time()
         message = client.recv_records(timeout=3.0)
+        end = time.time()
+        summary("Received {} record(s) in {} seconds".format(len(message) if message is not None else -1, end - start))
     except Exception as e:
         # This is fine if we are the handover selector
         if handover.hs_sent:
