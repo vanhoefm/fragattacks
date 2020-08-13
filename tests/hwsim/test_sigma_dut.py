@@ -3361,6 +3361,28 @@ def test_sigma_dut_dpp_reconfig_enrollee(dev, apdev):
             raise Exception("DPP Config Response (reconfig) not transmitted")
 
         dev[0].wait_connected()
+        ev = dev[1].wait_event(["DPP-CONN-STATUS-RESULT"], timeout=20)
+        if ev is None:
+            raise Exception("No connection status reported")
+        if "result=0" not in ev:
+            raise Exception("Connection status did not report success: " + ev)
+
+        time.sleep(1)
+        cmd = "DPP_LISTEN 2437 role=configurator"
+        if "OK" not in dev[1].request(cmd):
+            raise Exception("Failed to start listen operation")
+        dev[0].dump_monitor()
+        dev[1].dump_monitor()
+
+        res = sigma_dut_cmd("dev_exec_action,program,DPP,DPPActionType,DPPReconfigure,DPPTimeout,6,DPPWaitForConnect,Yes", timeout=30)
+        if "status,COMPLETE,ReconfigAuthResult,OK,ConfResult,OK,NetworkConnectResult,OK" not in res:
+            raise Exception("Unexpected reconfiguration [2] result: " + res)
+
+        ev = dev[1].wait_event(["DPP-CONF-SENT"], timeout=5)
+        if ev is None:
+            raise Exception("DPP Config Response (reconfig) not transmitted [2]")
+
+        dev[0].wait_connected()
     finally:
         dev[0].set("dpp_config_processing", "0")
         stop_sigma_dut(sigma)
