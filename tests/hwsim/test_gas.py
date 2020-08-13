@@ -487,6 +487,25 @@ def test_gas_anqp_get(dev, apdev):
         if "FAIL" not in dev[0].request("HS20_ANQP_GET " + cmd):
             raise Exception("Invalid HS20_ANQP_GET accepted")
 
+def test_gas_anqp_get_no_scan(dev, apdev):
+    """GAS/ANQP query without scan"""
+    hapd = start_ap(apdev[0])
+    bssid = apdev[0]['bssid']
+    if "OK" not in dev[0].request("ANQP_GET " + bssid + " freq=2412 258"):
+        raise Exception("ANQP_GET command failed")
+    ev = dev[0].wait_event(["ANQP-QUERY-DONE"], timeout=10)
+    if ev is None:
+        raise Exception("ANQP query timed out")
+    dev[0].dump_monitor()
+
+    if "OK" not in dev[0].request("ANQP_GET 02:11:22:33:44:55 freq=2417 258"):
+        raise Exception("ANQP_GET command failed")
+    ev = dev[0].wait_event(["ANQP-QUERY-DONE"], timeout=10)
+    if ev is None:
+        raise Exception("ANQP query timed out [2]")
+    if "result=FAILURE" not in ev:
+        raise Exception("Unexpected result: " + ev)
+
 def test_gas_anqp_get_oom(dev, apdev):
     """GAS/ANQP query OOM"""
     hapd = start_ap(apdev[0])
