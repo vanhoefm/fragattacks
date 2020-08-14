@@ -29,6 +29,9 @@ static int hostapd_dpp_auth_init_next(struct hostapd_data *hapd);
 #ifdef CONFIG_DPP2
 static void hostapd_dpp_reconfig_reply_wait_timeout(void *eloop_ctx,
 						    void *timeout_ctx);
+static void hostapd_dpp_handle_config_obj(struct hostapd_data *hapd,
+					  struct dpp_authentication *auth,
+					  struct dpp_config_obj *conf);
 #endif /* CONFIG_DPP2 */
 
 static const u8 broadcast[ETH_ALEN] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -486,6 +489,22 @@ static int hostapd_dpp_auth_init_next(struct hostapd_data *hapd)
 }
 
 
+#ifdef CONFIG_DPP2
+static int hostapd_dpp_process_conf_obj(void *ctx,
+				     struct dpp_authentication *auth)
+{
+	struct hostapd_data *hapd = ctx;
+	unsigned int i;
+
+	for (i = 0; i < auth->num_conf_obj; i++)
+		hostapd_dpp_handle_config_obj(hapd, auth,
+					      &auth->conf_obj[i]);
+
+	return 0;
+}
+#endif /* CONFIG_DPP2 */
+
+
 int hostapd_dpp_auth_init(struct hostapd_data *hapd, const char *cmd)
 {
 	const char *pos;
@@ -602,7 +621,8 @@ int hostapd_dpp_auth_init(struct hostapd_data *hapd, const char *cmd)
 	if (tcp)
 		return dpp_tcp_init(hapd->iface->interfaces->dpp, auth,
 				    &ipaddr, tcp_port, hapd->conf->dpp_name,
-				    DPP_NETROLE_AP, hapd->msg_ctx);
+				    DPP_NETROLE_AP, hapd->msg_ctx, hapd,
+				    hostapd_dpp_process_conf_obj);
 #endif /* CONFIG_DPP2 */
 
 	hapd->dpp_auth = auth;

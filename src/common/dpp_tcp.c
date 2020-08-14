@@ -26,6 +26,8 @@ struct dpp_connection {
 	struct dpp_global *global;
 	struct dpp_authentication *auth;
 	void *msg_ctx;
+	void *cb_ctx;
+	int (*process_conf_obj)(void *ctx, struct dpp_authentication *auth);
 	int sock;
 	u8 mac_addr[ETH_ALEN];
 	unsigned int freq;
@@ -370,6 +372,8 @@ dpp_relay_new_conn(struct dpp_relay_controller *ctrl, const u8 *src,
 	conn->global = ctrl->global;
 	conn->relay = ctrl;
 	conn->msg_ctx = ctrl->global->msg_ctx;
+	conn->cb_ctx = ctrl->global->cb_ctx;
+	conn->process_conf_obj = ctrl->global->process_conf_obj;
 	os_memcpy(conn->mac_addr, src, ETH_ALEN);
 	conn->freq = freq;
 
@@ -1213,9 +1217,8 @@ static int dpp_tcp_rx_gas_resp(struct dpp_connection *conn, struct wpabuf *resp)
 		return -1;
 	}
 
-	if (conn->global->process_conf_obj)
-		res = conn->global->process_conf_obj(conn->global->cb_ctx,
-						     auth);
+	if (conn->process_conf_obj)
+		res = conn->process_conf_obj(conn->cb_ctx, auth);
 	else
 		res = 0;
 
@@ -1498,6 +1501,8 @@ static void dpp_controller_tcp_cb(int sd, void *eloop_ctx, void *sock_ctx)
 	conn->global = ctrl->global;
 	conn->ctrl = ctrl;
 	conn->msg_ctx = ctrl->global->msg_ctx;
+	conn->cb_ctx = ctrl->global->cb_ctx;
+	conn->process_conf_obj = ctrl->global->process_conf_obj;
 	conn->sock = fd;
 
 	if (fcntl(conn->sock, F_SETFL, O_NONBLOCK) != 0) {
@@ -1524,7 +1529,9 @@ fail:
 
 int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
 		 const struct hostapd_ip_addr *addr, int port, const char *name,
-		 enum dpp_netrole netrole, void *msg_ctx)
+		 enum dpp_netrole netrole, void *msg_ctx, void *cb_ctx,
+		 int (*process_conf_obj)(void *ctx,
+					 struct dpp_authentication *auth))
 {
 	struct dpp_connection *conn;
 	struct sockaddr_storage saddr;
@@ -1547,6 +1554,8 @@ int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
 	}
 
 	conn->msg_ctx = msg_ctx;
+	conn->cb_ctx = cb_ctx;
+	conn->process_conf_obj = process_conf_obj;
 	conn->name = os_strdup(name ? name : "Test");
 	conn->netrole = netrole;
 	conn->global = dpp;

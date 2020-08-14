@@ -673,7 +673,11 @@ void dpp_controller_new_qr_code(struct dpp_global *dpp,
 				struct dpp_bootstrap_info *bi);
 int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
 		 const struct hostapd_ip_addr *addr, int port,
-		 const char *name, enum dpp_netrole netrole, void *msg_ctx);
+		 const char *name, enum dpp_netrole netrole, void *msg_ctx,
+		 void *cb_ctx,
+		 int (*process_conf_obj)(void *ctx,
+					 struct dpp_authentication *auth));
+
 struct wpabuf * dpp_build_presence_announcement(struct dpp_bootstrap_info *bi);
 
 struct dpp_global_config {

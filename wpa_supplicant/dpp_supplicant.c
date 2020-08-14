@@ -50,6 +50,8 @@ wpas_dpp_tx_pkex_status(struct wpa_supplicant *wpa_s,
 static void wpas_dpp_reconfig_reply_wait_timeout(void *eloop_ctx,
 						 void *timeout_ctx);
 static void wpas_dpp_start_gas_client(struct wpa_supplicant *wpa_s);
+static int wpas_dpp_process_conf_obj(void *ctx,
+				     struct dpp_authentication *auth);
 #endif /* CONFIG_DPP2 */
 
 static const u8 broadcast[ETH_ALEN] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -837,7 +839,7 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 	if (tcp)
 		return dpp_tcp_init(wpa_s->dpp, auth, &ipaddr, tcp_port,
 				    wpa_s->conf->dpp_name, DPP_NETROLE_STA,
-				    wpa_s);
+				    wpa_s, wpa_s, wpas_dpp_process_conf_obj);
 #endif /* CONFIG_DPP2 */
 
 	wpa_s->dpp_auth = auth;
