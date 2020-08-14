@@ -490,8 +490,15 @@ int hostapd_dpp_auth_init(struct hostapd_data *hapd, const char *cmd)
 {
 	const char *pos;
 	struct dpp_bootstrap_info *peer_bi, *own_bi = NULL;
+	struct dpp_authentication *auth;
 	u8 allowed_roles = DPP_CAPAB_CONFIGURATOR;
 	unsigned int neg_freq = 0;
+	int tcp = 0;
+#ifdef CONFIG_DPP2
+	int tcp_port = DPP_TCP_PORT;
+	struct hostapd_ip_addr ipaddr;
+	char *addr;
+#endif /* CONFIG_DPP2 */
 
 	pos = os_strstr(cmd, " peer=");
 	if (!pos)
@@ -503,6 +510,25 @@ int hostapd_dpp_auth_init(struct hostapd_data *hapd, const char *cmd)
 			   "DPP: Could not find bootstrapping info for the identified peer");
 		return -1;
 	}
+
+#ifdef CONFIG_DPP2
+	pos = os_strstr(cmd, " tcp_port=");
+	if (pos) {
+		pos += 10;
+		tcp_port = atoi(pos);
+	}
+
+	addr = get_param(cmd, " tcp_addr=");
+	if (addr) {
+		int res;
+
+		res = hostapd_parse_ip_addr(addr, &ipaddr);
+		os_free(addr);
+		if (res)
+			return -1;
+		tcp = 1;
+	}
+#endif /* CONFIG_DPP2 */
 
 	pos = os_strstr(cmd, " own=");
 	if (pos) {
@@ -541,7 +567,7 @@ int hostapd_dpp_auth_init(struct hostapd_data *hapd, const char *cmd)
 	if (pos)
 		neg_freq = atoi(pos + 10);
 
-	if (hapd->dpp_auth) {
+	if (!tcp && hapd->dpp_auth) {
 		eloop_cancel_timeout(hostapd_dpp_init_timeout, hapd, NULL);
 		eloop_cancel_timeout(hostapd_dpp_reply_wait_timeout,
 				     hapd, NULL);
@@ -555,26 +581,31 @@ int hostapd_dpp_auth_init(struct hostapd_data *hapd, const char *cmd)
 		dpp_auth_deinit(hapd->dpp_auth);
 	}
 
-	hapd->dpp_auth = dpp_auth_init(hapd->iface->interfaces->dpp,
-				       hapd->msg_ctx, peer_bi, own_bi,
-				       allowed_roles, neg_freq,
-				       hapd->iface->hw_features,
-				       hapd->iface->num_hw_features);
-	if (!hapd->dpp_auth)
+	auth = dpp_auth_init(hapd->iface->interfaces->dpp, hapd->msg_ctx,
+			     peer_bi, own_bi, allowed_roles, neg_freq,
+			     hapd->iface->hw_features,
+			     hapd->iface->num_hw_features);
+	if (!auth)
 		goto fail;
-	hostapd_dpp_set_testing_options(hapd, hapd->dpp_auth);
-	if (dpp_set_configurator(hapd->dpp_auth, cmd) < 0) {
-		dpp_auth_deinit(hapd->dpp_auth);
-		hapd->dpp_auth = NULL;
+	hostapd_dpp_set_testing_options(hapd, auth);
+	if (dpp_set_configurator(auth, cmd) < 0) {
+		dpp_auth_deinit(auth);
 		goto fail;
 	}
 
-	hapd->dpp_auth->neg_freq = neg_freq;
+	auth->neg_freq = neg_freq;
 
 	if (!is_zero_ether_addr(peer_bi->mac_addr))
-		os_memcpy(hapd->dpp_auth->peer_mac_addr, peer_bi->mac_addr,
-			  ETH_ALEN);
+		os_memcpy(auth->peer_mac_addr, peer_bi->mac_addr, ETH_ALEN);
 
+#ifdef CONFIG_DPP2
+	if (tcp)
+		return dpp_tcp_init(hapd->iface->interfaces->dpp, auth,
+				    &ipaddr, tcp_port, hapd->conf->dpp_name,
+				    DPP_NETROLE_AP);
+#endif /* CONFIG_DPP2 */
+
+	hapd->dpp_auth = auth;
 	return hostapd_dpp_auth_init_next(hapd);
 fail:
 	return -1;

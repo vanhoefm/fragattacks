@@ -41,6 +41,7 @@ struct dpp_connection {
 	unsigned int gas_comeback_in_progress:1;
 	u8 gas_dialog_token;
 	char *name;
+	enum dpp_netrole netrole;
 };
 
 /* Remote Controller */
@@ -257,11 +258,11 @@ static void dpp_controller_start_gas_client(struct dpp_connection *conn)
 {
 	struct dpp_authentication *auth = conn->auth;
 	struct wpabuf *buf;
-	int netrole_ap = 0; /* TODO: make this configurable */
 	const char *dpp_name;
 
 	dpp_name = conn->name ? conn->name : "Test";
-	buf = dpp_build_conf_req_helper(auth, dpp_name, netrole_ap, NULL, NULL);
+	buf = dpp_build_conf_req_helper(auth, dpp_name, conn->netrole, NULL,
+					NULL);
 	if (!buf) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No configuration request data available");
@@ -1530,7 +1531,8 @@ fail:
 
 
 int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
-		 const struct hostapd_ip_addr *addr, int port, const char *name)
+		 const struct hostapd_ip_addr *addr, int port, const char *name,
+		 enum dpp_netrole netrole)
 {
 	struct dpp_connection *conn;
 	struct sockaddr_storage saddr;
@@ -1553,6 +1555,7 @@ int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
 	}
 
 	conn->name = os_strdup(name ? name : "Test");
+	conn->netrole = netrole;
 	conn->global = dpp;
 	conn->auth = auth;
 	conn->sock = socket(AF_INET, SOCK_STREAM, 0);
