@@ -7408,9 +7408,8 @@ enum qca_wlan_vendor_attr_wifi_test_config {
 	 * Request frame.
 	 * 0 - Default behavior, 1 - override with 1, 2 - override with 0.
 	 * This attribute is used to configure the testbed device.
-	 * This attribute can be configured when STA is in disconnected or
-	 * associated state and the configuration is valid until the next
-	 * disconnection.
+	 * This attribute can be configured only when STA is in associated state
+	 * and the configuration is valid until the disconnection.
 	 */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_FT_REASSOCREQ_RSNXE_USED = 40,
 
@@ -7418,9 +7417,8 @@ enum qca_wlan_vendor_attr_wifi_test_config {
 	 * Switch Announcement) when STA is in connected state.
 	 * 0 - Default behavior, 1 - Ignore CSA.
 	 * This attribute is used to configure the testbed device.
-	 * This attribute can be configured when STA is in disconnected or
-	 * associated state and the configuration is valid until the next
-	 * disconnection.
+	 * This attribute can be configured only when STA is in associated state
+	 * and the configuration is valid until the disconnection.
 	 */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_IGNORE_CSA = 41,
 
@@ -7428,9 +7426,8 @@ enum qca_wlan_vendor_attr_wifi_test_config {
 	 * Information). Attributes defined in enum
 	 * qca_wlan_vendor_attr_oci_override are nested within this attribute.
 	 * This attribute is used to configure the testbed device.
-	 * This attribute can be configured when STA is in disconnected or
-	 * associated state and the configuration is valid until the next
-	 * disconnection.
+	 * This attribute can be configured only when STA is in associated state
+	 * and the configuration is valid until the disconnection.
 	 */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_OCI_OVERRIDE = 42,
 
