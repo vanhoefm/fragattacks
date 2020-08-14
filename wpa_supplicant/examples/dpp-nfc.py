@@ -280,7 +280,7 @@ class HandoverClient(nfc.handover.HandoverClient):
         msg = bytearray()
         while True:
             poll_timeout = 0.1 if timeout is None or timeout > 0.1 else timeout
-            if self.socket.poll('recv', poll_timeout) is None:
+            if not self.socket.poll('recv', poll_timeout):
                 if timeout:
                     timeout -= time.time() - start
                     if timeout <= 0:
