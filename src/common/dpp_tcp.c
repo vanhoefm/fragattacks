@@ -25,6 +25,7 @@ struct dpp_connection {
 	struct dpp_relay_controller *relay;
 	struct dpp_global *global;
 	struct dpp_authentication *auth;
+	void *msg_ctx;
 	int sock;
 	u8 mac_addr[ETH_ALEN];
 	unsigned int freq;
@@ -148,7 +149,6 @@ dpp_relay_controller_get(struct dpp_global *dpp, const u8 *pkhash)
 static void dpp_controller_gas_done(struct dpp_connection *conn)
 {
 	struct dpp_authentication *auth = conn->auth;
-	void *msg_ctx;
 
 	if (auth->waiting_csr) {
 		wpa_printf(MSG_DEBUG, "DPP: Waiting for CSR");
@@ -163,11 +163,7 @@ static void dpp_controller_gas_done(struct dpp_connection *conn)
 		return;
 	}
 
-	if (conn->ctrl)
-		msg_ctx = conn->ctrl->global->msg_ctx;
-	else
-		msg_ctx = auth->msg_ctx;
-	wpa_msg(msg_ctx, MSG_INFO, DPP_EVENT_CONF_SENT);
+	wpa_msg(conn->msg_ctx, MSG_INFO, DPP_EVENT_CONF_SENT);
 	dpp_connection_remove(conn);
 }
 
@@ -283,7 +279,7 @@ static void dpp_controller_auth_success(struct dpp_connection *conn,
 		return;
 
 	wpa_printf(MSG_DEBUG, "DPP: Authentication succeeded");
-	wpa_msg(conn->global->msg_ctx, MSG_INFO,
+	wpa_msg(conn->msg_ctx, MSG_INFO,
 		DPP_EVENT_AUTH_SUCCESS "init=%d", initiator);
 #ifdef CONFIG_TESTING_OPTIONS
 	if (dpp_test == DPP_TEST_STOP_AT_AUTH_CONF) {
@@ -373,6 +369,7 @@ dpp_relay_new_conn(struct dpp_relay_controller *ctrl, const u8 *src,
 
 	conn->global = ctrl->global;
 	conn->relay = ctrl;
+	conn->msg_ctx = ctrl->global->msg_ctx;
 	os_memcpy(conn->mac_addr, src, ETH_ALEN);
 	conn->freq = freq;
 
@@ -625,8 +622,7 @@ static int dpp_controller_rx_auth_req(struct dpp_connection *conn,
 		return 0;
 	}
 
-	conn->auth = dpp_auth_req_rx(conn->ctrl->global,
-				     conn->ctrl->global->msg_ctx,
+	conn->auth = dpp_auth_req_rx(conn->ctrl->global, conn->msg_ctx,
 				     conn->ctrl->allowed_roles,
 				     conn->ctrl->qr_mutual,
 				     peer_bi, own_bi, -1, hdr, buf, len);
@@ -709,7 +705,7 @@ void dpp_controller_conn_status_result_wait_timeout(void *eloop_ctx,
 
 	wpa_printf(MSG_DEBUG,
 		   "DPP: Timeout while waiting for Connection Status Result");
-	wpa_msg(conn->ctrl->global->msg_ctx, MSG_INFO,
+	wpa_msg(conn->msg_ctx, MSG_INFO,
 		DPP_EVENT_CONN_STATUS_RESULT "timeout");
 	dpp_connection_remove(conn);
 }
@@ -721,7 +717,7 @@ static int dpp_controller_rx_conf_result(struct dpp_connection *conn,
 {
 	struct dpp_authentication *auth = conn->auth;
 	enum dpp_status_error status;
-	void *msg_ctx;
+	void *msg_ctx = conn->msg_ctx;
 
 	if (!conn->ctrl && (!auth || !auth->configurator))
 		return 0;
@@ -733,10 +729,6 @@ static int dpp_controller_rx_conf_result(struct dpp_connection *conn,
 			   "DPP: No DPP Configuration waiting for result - drop");
 		return -1;
 	}
-	if (conn->ctrl)
-		msg_ctx = conn->ctrl->global->msg_ctx;
-	else
-		msg_ctx = auth->msg_ctx;
 
 	status = dpp_conf_result_rx(auth, hdr, buf, len);
 	if (status == DPP_STATUS_OK && auth->send_conn_status) {
@@ -782,8 +774,7 @@ static int dpp_controller_rx_conn_status_result(struct dpp_connection *conn,
 
 	status = dpp_conn_status_result_rx(auth, hdr, buf, len,
 					   ssid, &ssid_len, &channel_list);
-	wpa_msg(conn->ctrl->global->msg_ctx, MSG_INFO,
-		DPP_EVENT_CONN_STATUS_RESULT
+	wpa_msg(conn->msg_ctx, MSG_INFO, DPP_EVENT_CONN_STATUS_RESULT
 		"result=%d ssid=%s channel_list=%s",
 		status, wpa_ssid_txt(ssid, ssid_len),
 		channel_list ? channel_list : "N/A");
@@ -813,7 +804,7 @@ static int dpp_controller_rx_presence_announcement(struct dpp_connection *conn,
 	r_bootstrap = dpp_get_attr(buf, len, DPP_ATTR_R_BOOTSTRAP_KEY_HASH,
 				   &r_bootstrap_len);
 	if (!r_bootstrap || r_bootstrap_len != SHA256_MAC_LEN) {
-		wpa_msg(dpp->msg_ctx, MSG_INFO, DPP_EVENT_FAIL
+		wpa_msg(conn->msg_ctx, MSG_INFO, DPP_EVENT_FAIL
 			"Missing or invalid required Responder Bootstrapping Key Hash attribute");
 		return -1;
 	}
@@ -826,7 +817,7 @@ static int dpp_controller_rx_presence_announcement(struct dpp_connection *conn,
 		return -1;
 	}
 
-	auth = dpp_auth_init(dpp, dpp->msg_ctx, peer_bi, NULL,
+	auth = dpp_auth_init(dpp, conn->msg_ctx, peer_bi, NULL,
 			     DPP_CAPAB_CONFIGURATOR, -1, NULL, 0);
 	if (!auth)
 		return -1;
@@ -863,7 +854,7 @@ static int dpp_controller_rx_reconfig_announcement(struct dpp_connection *conn,
 	csign_hash = dpp_get_attr(buf, len, DPP_ATTR_C_SIGN_KEY_HASH,
 				  &csign_hash_len);
 	if (!csign_hash || csign_hash_len != SHA256_MAC_LEN) {
-		wpa_msg(dpp->msg_ctx, MSG_INFO, DPP_EVENT_FAIL
+		wpa_msg(conn->msg_ctx, MSG_INFO, DPP_EVENT_FAIL
 			"Missing or invalid required Configurator C-sign key Hash attribute");
 		return -1;
 	}
@@ -879,7 +870,7 @@ static int dpp_controller_rx_reconfig_announcement(struct dpp_connection *conn,
 	fcgroup = dpp_get_attr(buf, len, DPP_ATTR_FINITE_CYCLIC_GROUP,
 			       &fcgroup_len);
 	if (!fcgroup || fcgroup_len != 2) {
-		wpa_msg(dpp->msg_ctx, MSG_INFO, DPP_EVENT_FAIL
+		wpa_msg(conn->msg_ctx, MSG_INFO, DPP_EVENT_FAIL
 			"Missing or invalid required Finite Cyclic Group attribute");
 		return -1;
 	}
@@ -889,7 +880,7 @@ static int dpp_controller_rx_reconfig_announcement(struct dpp_connection *conn,
 	a_nonce = dpp_get_attr(buf, len, DPP_ATTR_A_NONCE, &a_nonce_len);
 	e_id = dpp_get_attr(buf, len, DPP_ATTR_E_PRIME_ID, &e_id_len);
 
-	auth = dpp_reconfig_init(dpp, dpp->msg_ctx, conf, 0, group,
+	auth = dpp_reconfig_init(dpp, conn->msg_ctx, conf, 0, group,
 				 a_nonce, a_nonce_len, e_id, e_id_len);
 	if (!auth)
 		return -1;
@@ -1506,6 +1497,7 @@ static void dpp_controller_tcp_cb(int sd, void *eloop_ctx, void *sock_ctx)
 
 	conn->global = ctrl->global;
 	conn->ctrl = ctrl;
+	conn->msg_ctx = ctrl->global->msg_ctx;
 	conn->sock = fd;
 
 	if (fcntl(conn->sock, F_SETFL, O_NONBLOCK) != 0) {
@@ -1532,7 +1524,7 @@ fail:
 
 int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
 		 const struct hostapd_ip_addr *addr, int port, const char *name,
-		 enum dpp_netrole netrole)
+		 enum dpp_netrole netrole, void *msg_ctx)
 {
 	struct dpp_connection *conn;
 	struct sockaddr_storage saddr;
@@ -1554,6 +1546,7 @@ int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
 		return -1;
 	}
 
+	conn->msg_ctx = msg_ctx;
 	conn->name = os_strdup(name ? name : "Test");
 	conn->netrole = netrole;
 	conn->global = dpp;

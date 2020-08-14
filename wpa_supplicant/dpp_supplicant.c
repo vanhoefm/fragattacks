@@ -836,7 +836,8 @@ int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd)
 #ifdef CONFIG_DPP2
 	if (tcp)
 		return dpp_tcp_init(wpa_s->dpp, auth, &ipaddr, tcp_port,
-				    wpa_s->conf->dpp_name, DPP_NETROLE_STA);
+				    wpa_s->conf->dpp_name, DPP_NETROLE_STA,
+				    wpa_s);
 #endif /* CONFIG_DPP2 */
 
 	wpa_s->dpp_auth = auth;

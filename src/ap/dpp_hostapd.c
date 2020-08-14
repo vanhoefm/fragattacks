@@ -602,7 +602,7 @@ int hostapd_dpp_auth_init(struct hostapd_data *hapd, const char *cmd)
 	if (tcp)
 		return dpp_tcp_init(hapd->iface->interfaces->dpp, auth,
 				    &ipaddr, tcp_port, hapd->conf->dpp_name,
-				    DPP_NETROLE_AP);
+				    DPP_NETROLE_AP, hapd->msg_ctx);
 #endif /* CONFIG_DPP2 */
 
 	hapd->dpp_auth = auth;
