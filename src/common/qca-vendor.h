@@ -7431,6 +7431,17 @@ enum qca_wlan_vendor_attr_wifi_test_config {
 	 */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_OCI_OVERRIDE = 42,
 
+	/* 8-bit unsigned value to configure the driver/firmware to ignore SA
+	 * Query timeout. If this configuration is enabled STA shall not send
+	 * Deauthentication frmae when SA Query times out (mainly, after a
+	 * channel switch when OCV is enabled).
+	 * 0 - Default behavior, 1 - Ignore SA Query timeout.
+	 * This attribute is used to configure the testbed device.
+	 * This attribute can be configured only when STA is in associated state
+	 * and the configuration is valid until the disconnection.
+	 */
+	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_IGNORE_SA_QUERY_TIMEOUT = 43,
+
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_WIFI_TEST_CONFIG_MAX =
