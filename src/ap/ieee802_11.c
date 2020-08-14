@@ -3328,13 +3328,15 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 		resp = wpa_res_to_status_code(res);
 		if (resp != WLAN_STATUS_SUCCESS)
 			return resp;
-		if ((sta->flags & (WLAN_STA_ASSOC | WLAN_STA_MFP)) ==
-		    (WLAN_STA_ASSOC | WLAN_STA_MFP) &&
+		if ((sta->flags &
+		    (WLAN_STA_ASSOC | WLAN_STA_MFP | WLAN_STA_AUTHORIZED)) ==
+		    (WLAN_STA_ASSOC | WLAN_STA_MFP | WLAN_STA_AUTHORIZED) &&
 		    !sta->sa_query_timed_out &&
 		    sta->sa_query_count > 0)
 			ap_check_sa_query_timeout(hapd, sta);
-		if ((sta->flags & (WLAN_STA_ASSOC | WLAN_STA_MFP)) ==
-		    (WLAN_STA_ASSOC | WLAN_STA_MFP) &&
+		if ((sta->flags &
+		    (WLAN_STA_ASSOC | WLAN_STA_MFP | WLAN_STA_AUTHORIZED)) ==
+		    (WLAN_STA_ASSOC | WLAN_STA_MFP | WLAN_STA_AUTHORIZED) &&
 		    !sta->sa_query_timed_out &&
 		    (!reassoc || sta->auth_alg != WLAN_AUTH_FT)) {
 			/*

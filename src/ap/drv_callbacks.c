@@ -388,13 +388,15 @@ int hostapd_notif_assoc(struct hostapd_data *hapd, const u8 *addr,
 			goto fail;
 		}
 
-		if ((sta->flags & (WLAN_STA_ASSOC | WLAN_STA_MFP)) ==
-		    (WLAN_STA_ASSOC | WLAN_STA_MFP) &&
+		if ((sta->flags &
+		    (WLAN_STA_ASSOC | WLAN_STA_MFP | WLAN_STA_AUTHORIZED)) ==
+		    (WLAN_STA_ASSOC | WLAN_STA_MFP | WLAN_STA_AUTHORIZED) &&
 		    !sta->sa_query_timed_out &&
 		    sta->sa_query_count > 0)
 			ap_check_sa_query_timeout(hapd, sta);
-		if ((sta->flags & (WLAN_STA_ASSOC | WLAN_STA_MFP)) ==
-		    (WLAN_STA_ASSOC | WLAN_STA_MFP) &&
+		if ((sta->flags &
+		    (WLAN_STA_ASSOC | WLAN_STA_MFP | WLAN_STA_AUTHORIZED)) ==
+		    (WLAN_STA_ASSOC | WLAN_STA_MFP | WLAN_STA_AUTHORIZED) &&
 		    !sta->sa_query_timed_out &&
 		    (sta->auth_alg != WLAN_AUTH_FT)) {
 			/*
