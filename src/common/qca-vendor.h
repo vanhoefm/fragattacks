@@ -683,6 +683,17 @@ enum qca_radiotap_vendor_ids {
  * @QCA_NL80211_VENDOR_SUBCMD_UPDATE_SSID: This acts as a vendor event and is
  *	used to update SSID information in hostapd when it is updated in the
  *	driver. Uses the attribute NL80211_ATTR_SSID.
+ *
+ * @QCA_NL80211_VENDOR_SUBCMD_WIFI_FW_STATS: This vendor subcommand is used by
+ *	the driver to send opaque data from the firmware to userspace. The
+ *	driver sends an event to userspace whenever such data is received from
+ *	the firmware.
+ *
+ *	QCA_WLAN_VENDOR_ATTR_CONFIG_GENERIC_DATA is used as the attribute to
+ *	send this opaque data for this event.
+ *
+ *	The format of the opaque data is specific to the particular firmware
+ *	version and there is no guarantee of the format remaining same.
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -867,6 +878,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_GETBAND = 192,
 	QCA_NL80211_VENDOR_SUBCMD_MEDIUM_ASSESS = 193,
 	QCA_NL80211_VENDOR_SUBCMD_UPDATE_SSID = 194,
+	QCA_NL80211_VENDOR_SUBCMD_WIFI_FW_STATS = 195,
 };
 
 enum qca_wlan_vendor_attr {
