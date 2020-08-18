@@ -3737,6 +3737,13 @@ static int wpas_p2p_setup_channels(struct wpa_supplicant *wpa_s,
 			wpa_s->global->p2p_24ghz_social_channels = 1;
 		for (ch = o->min_chan; ch <= o->max_chan; ch += o->inc) {
 			enum chan_allowed res;
+
+			/* Check for non-continuous jump in channel index
+			 * incrementation */
+			if ((o->op_class == 128 || o->op_class == 130) &&
+			    ch < 149 && ch + o->inc > 149)
+				ch = 149;
+
 			res = wpas_p2p_verify_channel(wpa_s, mode, ch, o->bw);
 			if (res == ALLOWED) {
 				if (reg == NULL) {
