@@ -6,7 +6,7 @@ This document contains a summary of the discovered vulnerabilities. Every bullet
 
 - **Accepting non-SSP A-MSDU frames**: The 802.11 standard doesn't mandate that the A-MSDU flag in the plaintext QoS field is authenticated. Against devices that support receiving non-SSP A-MSDU frames, an adversary can abuse this to inject arbitrary network packets. The attack applies to all protected Wi-Fi networks, including WEP, WPA, WPA2, and WPA3.
 
-- **Accepting short A-MSDU frames in non-DMG networks**: The 802.11 standard doesn't mandate that the short A-MSDU flag in the plaintext QoS field is authenticated in non-DMG networks. Against devices that support receiving short A-MSDU frames, an adversary can abuse this to spoof short A-MSDU frames. The attack applies to all protected Wi-Fi networks, including WEP, WPA, WPA2, and WPA3. The practical impact of this vulnerability in practice is unclear.
+- **Accepting short A-MSDU frames in non-DMG networks**: The 802.11 standard doesn't mandate that the short A-MSDU flag in the plaintext QoS field is authenticated in non-DMG networks. Against devices that support receiving short A-MSDU frames, an adversary can abuse this to spoof short A-MSDU frames. The attack applies to all protected Wi-Fi networks, including WEP, WPA, WPA2, and WPA3. I haven't yet found a device that supports short A-MSDUs, so currently this appears to be a theoretical issue.
 
 - **Reassembling fragments encrypted under different keys**: The 802.11 standard doesn't mandate that all fragments of a frame are encryted using the same key. An adversary can abuse this to decrypt selected fragments. The attack works against the WEP, CCMP, and GCMP encryption protocol, meaning it works against WPA2 and WPA3 networks as well. A WPA network is unaffected if the TKIP encryption cipher is being used.
 
@@ -24,11 +24,13 @@ This document contains a summary of the discovered vulnerabilities. Every bullet
 
 ## Other Implementation Vulnerabilities
 
-- **Accepting plaintext data frames when connected to an encrypted network**: Vulnerable implementations accept plaintext (fragmented) frames when connected to an encrypted network. An adversary can abuse this to inject arbitrary packets independent of the network configuration.
+- **Accepting plaintext data frames when connected to an encrypted network**: Vulnerable implementations accept plaintext frames when connected to an encrypted network. An adversary can abuse this to inject arbitrary packets independent of the network configuration.
+
+- **Accepting plaintext fragmented data frames when connected to an encrypted network**: Vulnerable implementations accept plaintext fragmented frames when connected to an encrypted network. An adversary can abuse this to inject arbitrary packets independent of the network configuration.
 
 - **Forwarding EAPOL frames even though the sender is not yet authenticated**: Vulnerable APs will forward EAPOL frames to other clients even though the sender has not yet successfully authenticated to the AP. On its own this cannot be abused to attack the AP, but it does make it easier to exploit certain vulnerabilities in connected clients.
 
-- **Not verifying the TKIP MIC of (fragmented) frames**: Vulnerable implementations do not verify the Message Integrity Check, i.e., authenticity, of (fragmented) TKIP frames. An adversary can abuse this to inject and possibly decrypt packets.
+- **Not verifying the TKIP MIC of fragmented frames**: Vulnerable implementations do not verify the Message Integrity Check, i.e., authenticity, of fragmented TKIP frames. An adversary can abuse this to inject and possibly decrypt packets.
 
 - **Processing fragmented frames as full frames**: Vulnerable implementations treat fragmented frames as full frames. An adversary can abuse this to inject arbitrary packets, independent of the network configuration.
 
