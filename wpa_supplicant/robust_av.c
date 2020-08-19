@@ -94,7 +94,7 @@ int wpas_send_mscs_req(struct wpa_supplicant *wpa_s)
 	/* MSCS descriptor element */
 	wpas_populate_mscs_descriptor_ie(&wpa_s->robust_av, buf);
 
-	wpa_hexdump_buf(MSG_MSGDUMP, "MSCS Request", wpabuf_head(buf));
+	wpa_hexdump_buf(MSG_MSGDUMP, "MSCS Request", buf);
 	ret = wpa_drv_send_action(wpa_s, wpa_s->assoc_freq, 0, wpa_s->bssid,
 				  wpa_s->own_addr, wpa_s->bssid,
 				  wpabuf_head(buf), wpabuf_len(buf), 0);

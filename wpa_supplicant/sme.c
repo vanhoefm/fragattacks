@@ -1905,8 +1905,7 @@ pfs_fail:
 		max_ie_len = sizeof(wpa_s->sme.assoc_req_ie);
 		wpas_populate_mscs_descriptor_ie(&wpa_s->robust_av, mscs_ie);
 		if ((*wpa_ie_len + wpabuf_len(mscs_ie)) <= max_ie_len) {
-			wpa_hexdump_buf(MSG_MSGDUMP, "MSCS IE",
-					wpabuf_head(mscs_ie));
+			wpa_hexdump_buf(MSG_MSGDUMP, "MSCS IE", mscs_ie);
 			mscs_ie_len = wpabuf_len(mscs_ie);
 			os_memcpy(wpa_s->sme.assoc_req_ie + *wpa_ie_len,
 				  wpabuf_head(mscs_ie), mscs_ie_len);
