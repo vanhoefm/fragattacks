@@ -3890,7 +3890,8 @@ rsnxe_done:
 #ifdef CONFIG_OWE
 	if ((hapd->conf->wpa_key_mgmt & WPA_KEY_MGMT_OWE) &&
 	    sta && sta->owe_ecdh && status_code == WLAN_STATUS_SUCCESS &&
-	    wpa_auth_sta_key_mgmt(sta->wpa_sm) == WPA_KEY_MGMT_OWE) {
+	    wpa_auth_sta_key_mgmt(sta->wpa_sm) == WPA_KEY_MGMT_OWE &&
+	    !wpa_auth_sta_get_pmksa(sta->wpa_sm)) {
 		struct wpabuf *pub;
 
 		pub = crypto_ecdh_get_pubkey(sta->owe_ecdh, 0);
