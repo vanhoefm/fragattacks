@@ -1380,6 +1380,106 @@ def test_dbus_connect(dev, apdev):
         if not t.success():
             raise Exception("Expected signals not seen")
 
+def test_dbus_remove_connected(dev, apdev):
+    """D-Bus RemoveAllNetworks while connected"""
+    (bus, wpas_obj, path, if_obj) = prepare_dbus(dev[0])
+    iface = dbus.Interface(if_obj, WPAS_DBUS_IFACE)
+
+    ssid = "test-open"
+    hapd = hostapd.add_ap(apdev[0], {"ssid": ssid})
+
+    class TestDbusConnect(TestDbus):
+        def __init__(self, bus):
+            TestDbus.__init__(self, bus)
+            self.network_added = False
+            self.network_selected = False
+            self.network_removed = False
+            self.state = 0
+
+        def __enter__(self):
+            gobject.timeout_add(1, self.run_connect)
+            gobject.timeout_add(15000, self.timeout)
+            self.add_signal(self.networkAdded, WPAS_DBUS_IFACE, "NetworkAdded")
+            self.add_signal(self.networkRemoved, WPAS_DBUS_IFACE,
+                            "NetworkRemoved")
+            self.add_signal(self.networkSelected, WPAS_DBUS_IFACE,
+                            "NetworkSelected")
+            self.add_signal(self.propertiesChanged, WPAS_DBUS_IFACE,
+                            "PropertiesChanged")
+            self.loop.run()
+            return self
+
+        def networkAdded(self, network, properties):
+            logger.debug("networkAdded: %s" % str(network))
+            logger.debug(str(properties))
+            self.network_added = True
+
+        def networkRemoved(self, network):
+            logger.debug("networkRemoved: %s" % str(network))
+            self.network_removed = True
+
+        def networkSelected(self, network):
+            logger.debug("networkSelected: %s" % str(network))
+            self.network_selected = True
+
+        def propertiesChanged(self, properties):
+            logger.debug("propertiesChanged: %s" % str(properties))
+            if 'State' in properties and properties['State'] == "completed":
+                if self.state == 0:
+                    self.state = 1
+                    iface.Disconnect()
+                elif self.state == 2:
+                    self.state = 3
+                    iface.Disconnect()
+                elif self.state == 4:
+                    self.state = 5
+                    iface.Reattach()
+                elif self.state == 5:
+                    self.state = 6
+                    iface.Disconnect()
+                elif self.state == 7:
+                    self.state = 8
+                    res = iface.SignalPoll()
+                    logger.debug("SignalPoll: " + str(res))
+                    if 'frequency' not in res or res['frequency'] != 2412:
+                        self.state = -1
+                        logger.info("Unexpected SignalPoll result")
+                    iface.RemoveAllNetworks()
+            if 'State' in properties and properties['State'] == "disconnected":
+                if self.state == 1:
+                    self.state = 2
+                    iface.SelectNetwork(self.netw)
+                elif self.state == 3:
+                    self.state = 4
+                    iface.Reassociate()
+                elif self.state == 6:
+                    self.state = 7
+                    iface.Reconnect()
+                elif self.state == 8:
+                    self.state = 9
+                    self.loop.quit()
+
+        def run_connect(self, *args):
+            logger.debug("run_connect")
+            args = dbus.Dictionary({'ssid': ssid,
+                                    'key_mgmt': 'NONE',
+                                    'scan_freq': 2412},
+                                   signature='sv')
+            self.netw = iface.AddNetwork(args)
+            iface.SelectNetwork(self.netw)
+            return False
+
+        def success(self):
+            if not self.network_added or \
+               not self.network_removed or \
+               not self.network_selected:
+                return False
+            return self.state == 9
+
+    with TestDbusConnect(bus) as t:
+        if not t.success():
+            raise Exception("Expected signals not seen")
+
 def test_dbus_connect_psk_mem(dev, apdev):
     """D-Bus AddNetwork and connect with memory-only PSK"""
     (bus, wpas_obj, path, if_obj) = prepare_dbus(dev[0])
