@@ -3480,38 +3480,12 @@ static int wpa_supplicant_ctrl_iface_remove_network(
 	struct wpa_supplicant *wpa_s, char *cmd)
 {
 	int id;
-	struct wpa_ssid *ssid;
 	int result;
 
 	/* cmd: "<network id>" or "all" */
 	if (os_strcmp(cmd, "all") == 0) {
 		wpa_printf(MSG_DEBUG, "CTRL_IFACE: REMOVE_NETWORK all");
-		if (wpa_s->sched_scanning)
-			wpa_supplicant_cancel_sched_scan(wpa_s);
-
-		eapol_sm_invalidate_cached_session(wpa_s->eapol);
-		if (wpa_s->current_ssid) {
-#ifdef CONFIG_SME
-			wpa_s->sme.prev_bssid_set = 0;
-#endif /* CONFIG_SME */
-			wpa_sm_set_config(wpa_s->wpa, NULL);
-			eapol_sm_notify_config(wpa_s->eapol, NULL, NULL);
-			if (wpa_s->wpa_state >= WPA_AUTHENTICATING)
-				wpa_s->own_disconnect_req = 1;
-			wpa_supplicant_deauthenticate(
-				wpa_s, WLAN_REASON_DEAUTH_LEAVING);
-		}
-		ssid = wpa_s->conf->ssid;
-		while (ssid) {
-			struct wpa_ssid *remove_ssid = ssid;
-			id = ssid->id;
-			ssid = ssid->next;
-			if (wpa_s->last_ssid == remove_ssid)
-				wpa_s->last_ssid = NULL;
-			wpas_notify_network_removed(wpa_s, remove_ssid);
-			wpa_config_remove_network(wpa_s->conf, id);
-		}
-		return 0;
+		return wpa_supplicant_remove_all_networks(wpa_s);
 	}
 
 	id = atoi(cmd);

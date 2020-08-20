@@ -4123,6 +4123,52 @@ int wpa_supplicant_remove_network(struct wpa_supplicant *wpa_s, int id)
 
 
 /**
+ * wpa_supplicant_remove_all_networks - Remove all configured networks
+ * @wpa_s: wpa_supplicant structure for a network interface
+ * Returns: 0 on success (errors are currently ignored)
+ *
+ * This function performs the following operations:
+ * 1. Remove all networks.
+ * 2. Send network removal notifications.
+ * 3. Update internal state machines.
+ * 4. Stop any running sched scans.
+ */
+int wpa_supplicant_remove_all_networks(struct wpa_supplicant *wpa_s)
+{
+	struct wpa_ssid *ssid;
+
+	if (wpa_s->sched_scanning)
+		wpa_supplicant_cancel_sched_scan(wpa_s);
+
+	eapol_sm_invalidate_cached_session(wpa_s->eapol);
+	if (wpa_s->current_ssid) {
+#ifdef CONFIG_SME
+		wpa_s->sme.prev_bssid_set = 0;
+#endif /* CONFIG_SME */
+		wpa_sm_set_config(wpa_s->wpa, NULL);
+		eapol_sm_notify_config(wpa_s->eapol, NULL, NULL);
+		if (wpa_s->wpa_state >= WPA_AUTHENTICATING)
+			wpa_s->own_disconnect_req = 1;
+		wpa_supplicant_deauthenticate(
+			wpa_s, WLAN_REASON_DEAUTH_LEAVING);
+	}
+	ssid = wpa_s->conf->ssid;
+	while (ssid) {
+		struct wpa_ssid *remove_ssid = ssid;
+		int id;
+
+		id = ssid->id;
+		ssid = ssid->next;
+		if (wpa_s->last_ssid == remove_ssid)
+			wpa_s->last_ssid = NULL;
+		wpas_notify_network_removed(wpa_s, remove_ssid);
+		wpa_config_remove_network(wpa_s->conf, id);
+	}
+	return 0;
+}
+
+
+/**
  * wpa_supplicant_enable_network - Mark a configured network as enabled
  * @wpa_s: wpa_supplicant structure for a network interface
  * @ssid: wpa_ssid structure for a configured network or %NULL

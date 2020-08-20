@@ -1817,25 +1817,6 @@ out:
 }
 
 
-static void remove_network(void *arg, struct wpa_ssid *ssid)
-{
-	struct wpa_supplicant *wpa_s = arg;
-
-	wpas_notify_network_removed(wpa_s, ssid);
-
-	if (wpa_config_remove_network(wpa_s->conf, ssid->id) < 0) {
-		wpa_printf(MSG_ERROR,
-			   "%s[dbus]: error occurred when removing network %d",
-			   __func__, ssid->id);
-		return;
-	}
-
-	if (ssid == wpa_s->current_ssid)
-		wpa_supplicant_deauthenticate(wpa_s,
-					      WLAN_REASON_DEAUTH_LEAVING);
-}
-
-
 /**
  * wpas_dbus_handler_remove_all_networks - Remove all configured networks
  * @message: Pointer to incoming dbus message
@@ -1847,11 +1828,8 @@ static void remove_network(void *arg, struct wpa_ssid *ssid)
 DBusMessage * wpas_dbus_handler_remove_all_networks(
 	DBusMessage *message, struct wpa_supplicant *wpa_s)
 {
-	if (wpa_s->sched_scanning)
-		wpa_supplicant_cancel_sched_scan(wpa_s);
-
 	/* NB: could check for failure and return an error */
-	wpa_config_foreach_network(wpa_s->conf, remove_network, wpa_s);
+	wpa_supplicant_remove_all_networks(wpa_s);
 	return NULL;
 }
 
