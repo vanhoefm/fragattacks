@@ -4,13 +4,11 @@ This document contains a summary of the discovered vulnerabilities.
 
 ## Design Flaws
 
-- **Accepting non-SSP A-MSDU frames**: The 802.11 standard doesn't mandate that the A-MSDU flag in the plaintext QoS header field is authenticated. Against devices that support receiving non-SSP A-MSDU frames, which is mantadory as part of 802.11n, an adversary can abuse this to inject arbitrary network packets. The attack applies to all protected Wi-Fi networks, including WEP, WPA, WPA2, and WPA3.
+- **Accepting non-SSP A-MSDU frames**: The 802.11 standard that underpins Wi-Fi Protected Access (WPA, WPA2, and WPA3) and Wired Equivalent Privacy (WEP) doesn't require that the A-MSDU flag in the plaintext QoS header field is authenticated. Against devices that support receiving non-SSP A-MSDU frames, which is mandatory as part of 802.11n, an adversary can abuse this to inject arbitrary network packets.
 
-- **Accepting short A-MSDU frames in non-DMG networks**: The 802.11 standard doesn't mandate that the short A-MSDU flag in the plaintext QoS header field is authenticated in non-DMG networks. This is currently a theoretical issue: I haven't yet found a device that supports receiving short A-MSDUs, and it's unclear whether this would be exploitable.
+- **Reassembling fragments encrypted under different keys**: The 802.11 standard that underpins Wi-Fi Protected Access (WPA, WPA2, and WPA3) and Wired Equivalent Privacy (WEP) doesn't require that all fragments of a frame are encrypted under the same key. An adversary can abuse this to decrypt selected fragments when another device sends fragmented frames and the WEP, CCMP, or GCMP encryption key is periodically renewed.
 
-- **Reassembling fragments encrypted under different keys**: The 802.11 standard doesn't mandate that all fragments of a frame are encryted using the same key. An adversary can abuse this to decrypt selected fragments. This vulnerability is exploitable when another device sends fragmented frames and the WEP, CCMP, or GCMP encryption cipher is used (e.g. all WPA2 and WPA3 networks use CCMP or GCMP).
-
-- **Not clearing fragments from memory when (re)connecting to a network:** The 802.11 standard doesn't mandate that received fragments must be cleared from memory after (re)connecting to a network. Under the right circumstances an adversary can abuse this to inject arbitrary network packets and/or decrypt user data. The attack works when the WEP, CCMP, or GCMP encryption cipher is used (e.g. all WPA2 and WPA3 networks use CCMP or GCMP).
+- **Not clearing fragments from memory when (re)connecting to a network:** The 802.11 standard that underpins Wi-Fi Protected Access (WPA, WPA2, and WPA3) and Wired Equivalent Privacy (WEP) doesn't require that received fragments must be cleared from memory after (re)connecting to a network. Under the right circumstances, when another device sends fragmented frames encrypted using WEP, CCMP, or GCMP, this can be abused to inject arbitrary network packets and/or decrypt user data.
 
 ## Common Implementation Vulnerabilities
 
