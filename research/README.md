@@ -284,14 +284,14 @@ and are further discussed below the table.
   sending other frames between two fragments). The only purpose of this test is to better understand the
   behaviour of a device and to learn why other tests might be failing.
 
-## 7.2. A-MSDU attack tests (§3)
+## 7.2. A-MSDU attack tests (§3 -- CVE-2020-24588)
 
 The test `ping I,E --amsdu` checks if an implementation supports A-MSDUs, in which case it is vulnerable to
 attacks. To prevent attacks, the network must mandate the usage of SSP A-MSDUs (and drop all non-SSP A-MSDUs).
 It's currently unclear how to prevent this attack in a backward-compatible manner. See Section 3 of the paper
 for details.
 
-## 7.3. Mixed key attack tests (§4)
+## 7.3. Mixed key attack tests (§4 -- CVE-2020-24587)
 
 - When running the mixed key test against an AP, the AP must be configured to regularly  (e.g. every minute)
   renew the session key (PTK) by executing a new 4-way handshake. The tool will display
@@ -312,7 +312,7 @@ for details.
   succeed or not. In case the tests fail, it is recommended to also perform the mixed key attack
   tests listed in [Extended Vulnerability Tests](#id-extended-tests).
 
-## 7.4. Cache attack tests (§5)
+## 7.4. Cache attack tests (§5 -- CVE-2020-24586)
 
 - When testing an AP, the tool sends a first fragment, then tries to _reassociate_ with the AP, and finally
   sends the second fragment. However, not all APs properly support the reassociation process. In that case,
@@ -464,7 +464,7 @@ presence of a certain vulnerability class, there is no need to test the other at
 | <div align="center">*A-MSDUs EAPOL attack (§6.8)*</div>
 | `eapol-amsdu[-bad] BP --bcast-dst`     | Same as `eapol-amsdu BP` but easier to verify against APs (use tcpdump).
 
-## 8.1. A-MSDU attack tests (§3)
+## 8.1. A-MSDU attack tests (§3 -- CVE-2020-24588)
 
 It is only useful to execute the first two tests if the main test `ping I,E --amsdu` fails and you want to better
 understand how the tested device handles A-MSDU frames:
@@ -488,7 +488,7 @@ The last two tests are used to simulate our A-MSDU injection attack:
   above test to fail. In that case try `amsdu-inject-bad` instead (see Section 3.6 in the paper). Note that if this tests
   succeeds, the impact of the attack is effectively identical to implementations that correctly parse such frames.
 
-## 8.2. Mixed key attack tests (§4)
+## 8.2. Mixed key attack tests (§4 -- CVE-2020-24587)
 
 Most devices I tested are vulnerable to mixed key attacks. In case the normal mixed key attack tests indicate
 that a device is not vulnerable, but the test `ping-frag-sep` does succeed, it is highly recommended to try
@@ -515,7 +515,7 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
 - `ping I,F,BE,AE --freebsd`: This essentially performs the rekey handshake against a FreeBSD implementation or
   driver without affecting the defragmentation process of data frames. See Appendix F in the paper for details.
 
-## 8.3. Cache attack tests (§5)
+## 8.3. Cache attack tests (§5 -- CVE-2020-24586)
 
 - `ping I,E,R,AE --freebsd --full-reconnect`: This test can be used to check if a FreeBSD AP, or an implementation
   based on FreeBSD drivers, is vulnerable to a cache attack. See Appendix F in the paper for details on how this
