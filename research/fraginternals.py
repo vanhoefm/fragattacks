@@ -20,12 +20,6 @@ def croprepr(p, length=175):
 		return string[:length - 3] + "..."
 	return string
 
-def argv_pop_argument(argument):
-	if not argument in sys.argv: return False
-	idx = sys.argv.index(argument)
-	del sys.argv[idx]
-	return True
-
 def log_level2switch(options):
 	if options.debug >= 2: return ["-dd", "-K"]
 	elif options.debug >= 1: return ["-d", "-K"]
