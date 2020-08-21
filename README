@@ -1,6 +1,9 @@
 fragattacks
 -----------
 
+See research/README.md for documentation on how to test implementations
+for aggregation and fragmentation attacks.
+
 Copyright of portions of this project are held by Jouni Malinen and
 contributors (see below). Copyright of project fragsattacks are held by
 Mathy Vanhoef <mathy.vanhoef@nyu.edu> and contributors.
