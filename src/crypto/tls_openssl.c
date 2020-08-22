@@ -3252,6 +3252,10 @@ static int tls_connection_client_cert(struct tls_connection *conn,
 			   "OK");
 		return 0;
 	} else if (client_cert_blob) {
+#if defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x20901000L
+		tls_show_errors(MSG_DEBUG, __func__,
+				"SSL_use_certificate_ASN1 failed");
+#else
 		BIO *bio;
 		X509 *x509;
 
@@ -3277,6 +3281,7 @@ static int tls_connection_client_cert(struct tls_connection *conn,
 		}
 		BIO_free(bio);
 		return 0;
+#endif
 	}
 
 	if (client_cert == NULL)
