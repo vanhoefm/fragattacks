@@ -1227,7 +1227,7 @@ static struct wpa_ssid * wpas_dpp_add_network(struct wpa_supplicant *wpa_s,
 		}
 	}
 
-#ifdef CONFIG_DPP2
+#if defined(CONFIG_DPP2) && defined(IEEE8021X_EAPOL)
 	if (conf->akm == DPP_AKM_DOT1X) {
 		int i;
 		char name[100], blobname[128];
@@ -1321,7 +1321,7 @@ static struct wpa_ssid * wpas_dpp_add_network(struct wpa_supplicant *wpa_s,
 		if (wpa_config_set(ssid, "eap", "TLS", 0) < 0)
 			goto fail;
 	}
-#endif /* CONFIG_DPP2 */
+#endif /* CONFIG_DPP2 && IEEE8021X_EAPOL */
 
 	os_memcpy(wpa_s->dpp_last_ssid, conf->ssid, conf->ssid_len);
 	wpa_s->dpp_last_ssid_len = conf->ssid_len;
