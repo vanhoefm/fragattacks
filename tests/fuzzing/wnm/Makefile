@@ -32,6 +32,7 @@ OBJS += $(WPAS_SRC)/interworking.o
 OBJS += $(WPAS_SRC)/notify.o
 OBJS += $(WPAS_SRC)/offchannel.o
 OBJS += $(WPAS_SRC)/op_classes.o
+OBJS += $(WPAS_SRC)/robust_av.o
 OBJS += $(WPAS_SRC)/rrm.o
 OBJS += $(WPAS_SRC)/scan.o
 OBJS += $(WPAS_SRC)/wmm_ac.o
