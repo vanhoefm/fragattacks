@@ -96,8 +96,10 @@ gas_server_send_resp(struct gas_server *gas, struct gas_server_handler *handler,
 	size_t resp_frag_len;
 	struct wpabuf *resp;
 
-	if (comeback_delay == 0 && !query_resp)
+	if (comeback_delay == 0 && !query_resp) {
+		gas_server_free_response(response);
 		return;
+	}
 
 	response->freq = freq;
 	response->handler = handler;
