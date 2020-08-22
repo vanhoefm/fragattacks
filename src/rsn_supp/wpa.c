@@ -2451,13 +2451,16 @@ int wpa_sm_rx_eapol(struct wpa_sm *sm, const u8 *src_addr,
 	u8 *tmp = NULL;
 	int ret = -1;
 	u8 *mic, *key_data;
-	size_t mic_len, keyhdrlen;
+	size_t mic_len, keyhdrlen, pmk_len;
 
 #ifdef CONFIG_IEEE80211R
 	sm->ft_completed = 0;
 #endif /* CONFIG_IEEE80211R */
 
-	mic_len = wpa_mic_len(sm->key_mgmt, sm->pmk_len);
+	pmk_len = sm->pmk_len;
+	if (!pmk_len && sm->cur_pmksa)
+		pmk_len = sm->cur_pmksa->pmk_len;
+	mic_len = wpa_mic_len(sm->key_mgmt, pmk_len);
 	keyhdrlen = sizeof(*key) + mic_len + 2;
 
 	if (len < sizeof(*hdr) + keyhdrlen) {
