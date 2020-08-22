@@ -67,13 +67,19 @@ def test_owe_groups(dev, apdev):
 
 def test_owe_pmksa_caching(dev, apdev):
     """Opportunistic Wireless Encryption and PMKSA caching"""
-    run_owe_pmksa_caching(dev, apdev)
+    try:
+        run_owe_pmksa_caching(dev, apdev)
+    finally:
+        dev[0].set("reassoc_same_bss_optim", "0")
 
 def test_owe_pmksa_caching_connect_cmd(dev, apdev):
     """Opportunistic Wireless Encryption and PMKSA caching using cfg80211 connect command"""
     wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
     wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
-    run_owe_pmksa_caching([wpas], apdev)
+    try:
+        run_owe_pmksa_caching([wpas], apdev)
+    finally:
+        wpas.set("reassoc_same_bss_optim", "0")
 
 def run_owe_pmksa_caching(dev, apdev):
     if "OWE" not in dev[0].get_capability("key_mgmt"):
@@ -85,8 +91,10 @@ def run_owe_pmksa_caching(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], params)
     bssid = hapd.own_addr()
 
+    dev[0].set("reassoc_same_bss_optim", "1")
     dev[0].scan_for_bss(bssid, freq="2412")
     id = dev[0].connect("owe", key_mgmt="OWE")
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev[0], hapd)
     pmksa = dev[0].get_pmksa(bssid)
     dev[0].request("DISCONNECT")
@@ -95,6 +103,7 @@ def run_owe_pmksa_caching(dev, apdev):
 
     dev[0].select_network(id, 2412)
     dev[0].wait_connected()
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev[0], hapd)
     pmksa2 = dev[0].get_pmksa(bssid)
     dev[0].request("DISCONNECT")
@@ -106,11 +115,9 @@ def run_owe_pmksa_caching(dev, apdev):
 
     dev[0].select_network(id, 2412)
     dev[0].wait_connected()
+    hapd.wait_sta()
     hwsim_utils.test_connectivity(dev[0], hapd)
     pmksa3 = dev[0].get_pmksa(bssid)
-    dev[0].request("DISCONNECT")
-    dev[0].wait_disconnected()
-    dev[0].dump_monitor()
 
     if pmksa is None or pmksa2 is None or pmksa3 is None:
         raise Exception("PMKSA entry missing")
@@ -118,6 +125,12 @@ def run_owe_pmksa_caching(dev, apdev):
         raise Exception("Unexpected PMKID change when using PMKSA caching")
     if pmksa['pmkid'] == pmksa3['pmkid']:
         raise Exception("PMKID did not change after PMKSA cache flush")
+
+    dev[0].request("REASSOCIATE")
+    dev[0].wait_connected()
+    pmksa4 = dev[0].get_pmksa(bssid)
+    if pmksa3['pmkid'] != pmksa4['pmkid']:
+        raise Exception("Unexpected PMKID change when using PMKSA caching [2]")
 
 def test_owe_and_psk(dev, apdev):
     """Opportunistic Wireless Encryption and WPA2-PSK enabled"""
