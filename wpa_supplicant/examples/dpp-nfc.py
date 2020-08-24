@@ -192,6 +192,31 @@ def dpp_bootstrap_gen(wpas, type="qrcode", chan=None, mac=None, info=None,
         raise Exception("Failed to generate bootstrapping info")
     return int(res)
 
+def dpp_start_listen(wpas, freq):
+    if get_status_field(wpas, "bssid[0]"):
+        summary("Own AP freq: %s MHz" % str(get_status_field(wpas, "freq")))
+        if get_status_field(wpas, "beacon_set", extra="DRIVER") is None:
+            summary("Enable beaconing to have radio ready for RX")
+            wpas.request("DISABLE")
+            wpas.request("SET start_disabled 0")
+            wpas.request("ENABLE")
+    cmd = "DPP_LISTEN %d" % freq
+    global enrollee_only
+    global configurator_only
+    if enrollee_only:
+        cmd += " role=enrollee"
+    elif configurator_only:
+        cmd += " role=configurator"
+    global netrole
+    if netrole:
+        cmd += " netrole=" + netrole
+    summary(cmd)
+    res = wpas.request(cmd)
+    if "OK" not in res:
+        summary("Failed to start DPP listen", color=C_RED)
+        return False
+    return True
+
 def wpas_get_nfc_uri(start_listen=True, pick_channel=False, chan_override=None):
     listen_freq = 2412
     wpas = wpas_connect()
@@ -221,13 +246,8 @@ def wpas_get_nfc_uri(start_listen=True, pick_channel=False, chan_override=None):
     if "FAIL" in res:
         return None
     if start_listen:
-        cmd = "DPP_LISTEN %d" % listen_freq
-        global netrole
-        if netrole:
-            cmd += " netrole=" + netrole
-        res2 = wpas.request(cmd)
-        if "OK" not in res2:
-            raise Exception("Failed to start listen operation (%s)" % cmd)
+        if not dpp_start_listen(wpas, listen_freq):
+            raise Exception("Failed to start listen operation on %d MHz" % listen_freq)
     return res
 
 def wpas_report_handover_req(uri):
@@ -673,24 +693,7 @@ class HandoverServer(nfc.handover.HandoverServer):
                         freq = 2437
                     else:
                         summary("Negotiated channel: %d MHz" % freq)
-                    if get_status_field(wpas, "bssid[0]"):
-                        summary("Own AP freq: %s MHz" % str(get_status_field(wpas, "freq")))
-                        if get_status_field(wpas, "beacon_set", extra="DRIVER") is None:
-                            summary("Enable beaconing to have radio ready for RX")
-                            wpas.request("DISABLE")
-                            wpas.request("SET start_disabled 0")
-                            wpas.request("ENABLE")
-                    cmd = "DPP_LISTEN %d" % freq
-                    global enrollee_only
-                    global configurator_only
-                    if enrollee_only:
-                        cmd += " role=enrollee"
-                    elif configurator_only:
-                        cmd += " role=configurator"
-                    summary(cmd)
-                    res = wpas.request(cmd)
-                    if "OK" not in res:
-                        summary("Failed to start DPP listen", color=C_RED)
+                    if not dpp_start_listen(wpas, freq):
                         break
 
                 carrier = ndef.Record('application/vnd.wfa.dpp', 'A', uri.data)
