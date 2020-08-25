@@ -66,6 +66,10 @@ int hostapd_dpp_qr_code(struct hostapd_data *hapd, const char *cmd)
 					wpabuf_len(hapd->dpp_auth->resp_msg));
 	}
 
+#ifdef CONFIG_DPP2
+	dpp_controller_new_qr_code(hapd->iface->interfaces->dpp, bi);
+#endif /* CONFIG_DPP2 */
+
 	return bi->id;
 }
 
