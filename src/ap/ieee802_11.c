@@ -1241,6 +1241,7 @@ static void handle_auth_sae(struct hostapd_data *hapd, struct sta_info *sta,
 		wpa_printf(MSG_DEBUG, "SAE: TESTING - reflection attack");
 		pos = mgmt->u.auth.variable;
 		end = ((const u8 *) mgmt) + len;
+		resp = status_code;
 		send_auth_reply(hapd, sta, mgmt->sa, mgmt->bssid, WLAN_AUTH_SAE,
 				auth_transaction, resp, pos, end - pos,
 				"auth-sae-reflection-attack");
