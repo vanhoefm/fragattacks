@@ -53,6 +53,7 @@ struct dpp_relay_controller {
 	struct dpp_global *global;
 	u8 pkhash[SHA256_MAC_LEN];
 	struct hostapd_ip_addr ipaddr;
+	void *msg_ctx;
 	void *cb_ctx;
 	void (*tx)(void *ctx, const u8 *addr, unsigned int freq, const u8 *msg,
 		   size_t len);
@@ -126,6 +127,7 @@ int dpp_relay_add_controller(struct dpp_global *dpp,
 	ctrl->global = dpp;
 	os_memcpy(&ctrl->ipaddr, config->ipaddr, sizeof(*config->ipaddr));
 	os_memcpy(ctrl->pkhash, config->pkhash, SHA256_MAC_LEN);
+	ctrl->msg_ctx = config->msg_ctx;
 	ctrl->cb_ctx = config->cb_ctx;
 	ctrl->tx = config->tx;
 	ctrl->gas_resp_tx = config->gas_resp_tx;
@@ -375,9 +377,8 @@ dpp_relay_new_conn(struct dpp_relay_controller *ctrl, const u8 *src,
 
 	conn->global = ctrl->global;
 	conn->relay = ctrl;
-	conn->msg_ctx = ctrl->global->msg_ctx;
+	conn->msg_ctx = ctrl->msg_ctx;
 	conn->cb_ctx = ctrl->global->cb_ctx;
-	conn->process_conf_obj = ctrl->global->process_conf_obj;
 	os_memcpy(conn->mac_addr, src, ETH_ALEN);
 	conn->freq = freq;
 

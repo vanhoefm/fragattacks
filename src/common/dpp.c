@@ -4278,10 +4278,8 @@ struct dpp_global * dpp_global_init(struct dpp_global_config *config)
 	dpp = os_zalloc(sizeof(*dpp));
 	if (!dpp)
 		return NULL;
-	dpp->msg_ctx = config->msg_ctx;
 #ifdef CONFIG_DPP2
 	dpp->cb_ctx = config->cb_ctx;
-	dpp->process_conf_obj = config->process_conf_obj;
 	dpp->remove_bi = config->remove_bi;
 #endif /* CONFIG_DPP2 */
 

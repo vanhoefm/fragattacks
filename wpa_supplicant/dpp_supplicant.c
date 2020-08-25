@@ -3275,10 +3275,8 @@ int wpas_dpp_init(struct wpa_supplicant *wpa_s)
 		return -1;
 
 	os_memset(&config, 0, sizeof(config));
-	config.msg_ctx = wpa_s;
 	config.cb_ctx = wpa_s;
 #ifdef CONFIG_DPP2
-	config.process_conf_obj = wpas_dpp_process_conf_obj;
 	config.remove_bi = wpas_dpp_remove_bi;
 #endif /* CONFIG_DPP2 */
 	wpa_s->dpp = dpp_global_init(&config);
