@@ -3337,6 +3337,10 @@ int wpas_dpp_controller_start(struct wpa_supplicant *wpa_s, const char *cmd)
 
 	os_memset(&config, 0, sizeof(config));
 	config.allowed_roles = DPP_CAPAB_ENROLLEE | DPP_CAPAB_CONFIGURATOR;
+	config.netrole = DPP_NETROLE_STA;
+	config.msg_ctx = wpa_s;
+	config.cb_ctx = wpa_s;
+	config.process_conf_obj = wpas_dpp_process_conf_obj;
 	if (cmd) {
 		pos = os_strstr(cmd, " tcp_port=");
 		if (pos) {

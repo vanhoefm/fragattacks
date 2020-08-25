@@ -2222,6 +2222,45 @@ void hostapd_dpp_deinit(struct hostapd_data *hapd)
 
 #ifdef CONFIG_DPP2
 
+int hostapd_dpp_controller_start(struct hostapd_data *hapd, const char *cmd)
+{
+	struct dpp_controller_config config;
+	const char *pos;
+
+	os_memset(&config, 0, sizeof(config));
+	config.allowed_roles = DPP_CAPAB_ENROLLEE | DPP_CAPAB_CONFIGURATOR;
+	config.netrole = DPP_NETROLE_AP;
+	config.msg_ctx = hapd->msg_ctx;
+	config.cb_ctx = hapd;
+	config.process_conf_obj = hostapd_dpp_process_conf_obj;
+	if (cmd) {
+		pos = os_strstr(cmd, " tcp_port=");
+		if (pos) {
+			pos += 10;
+			config.tcp_port = atoi(pos);
+		}
+
+		pos = os_strstr(cmd, " role=");
+		if (pos) {
+			pos += 6;
+			if (os_strncmp(pos, "configurator", 12) == 0)
+				config.allowed_roles = DPP_CAPAB_CONFIGURATOR;
+			else if (os_strncmp(pos, "enrollee", 8) == 0)
+				config.allowed_roles = DPP_CAPAB_ENROLLEE;
+			else if (os_strncmp(pos, "either", 6) == 0)
+				config.allowed_roles = DPP_CAPAB_CONFIGURATOR |
+					DPP_CAPAB_ENROLLEE;
+			else
+				return -1;
+		}
+
+		config.qr_mutual = os_strstr(cmd, " qr=mutual") != NULL;
+	}
+	config.configurator_params = hapd->dpp_configurator_params;
+	return dpp_controller_start(hapd->iface->interfaces->dpp, &config);
+}
+
+
 static void hostapd_dpp_chirp_next(void *eloop_ctx, void *timeout_ctx);
 
 static void hostapd_dpp_chirp_timeout(void *eloop_ctx, void *timeout_ctx)

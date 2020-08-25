@@ -69,6 +69,10 @@ struct dpp_controller {
 	int sock;
 	struct dl_list conn; /* struct dpp_connection */
 	char *configurator_params;
+	enum dpp_netrole netrole;
+	void *msg_ctx;
+	void *cb_ctx;
+	int (*process_conf_obj)(void *ctx, struct dpp_authentication *auth);
 };
 
 static void dpp_controller_rx(int sd, void *eloop_ctx, void *sock_ctx);
@@ -1500,10 +1504,11 @@ static void dpp_controller_tcp_cb(int sd, void *eloop_ctx, void *sock_ctx)
 
 	conn->global = ctrl->global;
 	conn->ctrl = ctrl;
-	conn->msg_ctx = ctrl->global->msg_ctx;
-	conn->cb_ctx = ctrl->global->cb_ctx;
-	conn->process_conf_obj = ctrl->global->process_conf_obj;
+	conn->msg_ctx = ctrl->msg_ctx;
+	conn->cb_ctx = ctrl->cb_ctx;
+	conn->process_conf_obj = ctrl->process_conf_obj;
 	conn->sock = fd;
+	conn->netrole = ctrl->netrole;
 
 	if (fcntl(conn->sock, F_SETFL, O_NONBLOCK) != 0) {
 		wpa_printf(MSG_DEBUG, "DPP: fnctl(O_NONBLOCK) failed: %s",
@@ -1628,6 +1633,10 @@ int dpp_controller_start(struct dpp_global *dpp,
 	dl_list_init(&ctrl->conn);
 	ctrl->allowed_roles = config->allowed_roles;
 	ctrl->qr_mutual = config->qr_mutual;
+	ctrl->netrole = config->netrole;
+	ctrl->msg_ctx = config->msg_ctx;
+	ctrl->cb_ctx = config->cb_ctx;
+	ctrl->process_conf_obj = config->process_conf_obj;
 
 	ctrl->sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (ctrl->sock < 0)

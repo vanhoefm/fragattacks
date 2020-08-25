@@ -386,6 +386,10 @@ struct dpp_controller_config {
 	int tcp_port;
 	u8 allowed_roles;
 	int qr_mutual;
+	enum dpp_netrole netrole;
+	void *msg_ctx;
+	void *cb_ctx;
+	int (*process_conf_obj)(void *ctx, struct dpp_authentication *auth);
 };
 
 #ifdef CONFIG_TESTING_OPTIONS

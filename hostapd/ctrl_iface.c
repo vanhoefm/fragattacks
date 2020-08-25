@@ -3768,6 +3768,14 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 		if (hostapd_dpp_pkex_remove(hapd, buf + 16) < 0)
 			reply_len = -1;
 #ifdef CONFIG_DPP2
+	} else if (os_strncmp(buf, "DPP_CONTROLLER_START ", 21) == 0) {
+		if (hostapd_dpp_controller_start(hapd, buf + 20) < 0)
+			reply_len = -1;
+	} else if (os_strcmp(buf, "DPP_CONTROLLER_START") == 0) {
+		if (hostapd_dpp_controller_start(hapd, NULL) < 0)
+			reply_len = -1;
+	} else if (os_strcmp(buf, "DPP_CONTROLLER_STOP") == 0) {
+		dpp_controller_stop(hapd->iface->interfaces->dpp);
 	} else if (os_strncmp(buf, "DPP_CHIRP ", 10) == 0) {
 		if (hostapd_dpp_chirp(hapd, buf + 9) < 0)
 			reply_len = -1;

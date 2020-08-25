@@ -41,6 +41,7 @@ void hostapd_dpp_deinit(struct hostapd_data *hapd);
 void hostapd_dpp_init_global(struct hapd_interfaces *ifaces);
 void hostapd_dpp_deinit_global(struct hapd_interfaces *ifaces);
 
+int hostapd_dpp_controller_start(struct hostapd_data *hapd, const char *cmd);
 int hostapd_dpp_chirp(struct hostapd_data *hapd, const char *cmd);
 void hostapd_dpp_chirp_stop(struct hostapd_data *hapd);
 void hostapd_dpp_remove_bi(void *ctx, struct dpp_bootstrap_info *bi);
