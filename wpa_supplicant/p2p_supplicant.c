@@ -3984,6 +3984,10 @@ int wpas_p2p_add_p2pdev_interface(struct wpa_supplicant *wpa_s,
 			  wpa_s->ifname);
 	if (os_snprintf_error(sizeof(ifname), ret))
 		return -1;
+	/* Cut length at the maximum size. Note that we don't need to ensure
+	 * collision free names here as the created interface is not a netdev.
+	 */
+	ifname[IFNAMSIZ - 1] = '\0';
 	force_name[0] = '\0';
 	wpa_s->pending_interface_type = WPA_IF_P2P_DEVICE;
 	ret = wpa_drv_if_add(wpa_s, WPA_IF_P2P_DEVICE, ifname, NULL, NULL,
