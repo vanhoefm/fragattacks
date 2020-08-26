@@ -9463,6 +9463,8 @@ static void wpas_p2p_move_go_no_csa(struct wpa_supplicant *wpa_s)
 {
 	struct p2p_go_neg_results params;
 	struct wpa_ssid *current_ssid = wpa_s->current_ssid;
+	void (*ap_configured_cb)(void *ctx, void *data);
+	void *ap_configured_cb_ctx, *ap_configured_cb_data;
 
 	wpa_msg_global(wpa_s, MSG_INFO, P2P_EVENT_REMOVE_AND_REFORM_GROUP);
 
@@ -9472,6 +9474,13 @@ static void wpas_p2p_move_go_no_csa(struct wpa_supplicant *wpa_s)
 	/* Stop the AP functionality */
 	/* TODO: Should do this in a way that does not indicated to possible
 	 * P2P Clients in the group that the group is terminated. */
+	/* If this action occurs before a group is started, the callback should
+	 * be preserved, or GROUP-STARTED event would be lost. If this action
+	 * occurs after a group is started, these pointers are all NULL and
+	 * harmless. */
+	ap_configured_cb = wpa_s->ap_configured_cb;
+	ap_configured_cb_ctx = wpa_s->ap_configured_cb_ctx;
+	ap_configured_cb_data = wpa_s->ap_configured_cb_data;
 	wpa_supplicant_ap_deinit(wpa_s);
 
 	/* Reselect the GO frequency */
@@ -9494,6 +9503,11 @@ static void wpas_p2p_move_go_no_csa(struct wpa_supplicant *wpa_s)
 				      P2P_GROUP_REMOVAL_GO_LEAVE_CHANNEL);
 		return;
 	}
+
+	/* Restore preserved callback parameters */
+	wpa_s->ap_configured_cb = ap_configured_cb;
+	wpa_s->ap_configured_cb_ctx = ap_configured_cb_ctx;
+	wpa_s->ap_configured_cb_data = ap_configured_cb_data;
 
 	/* Update the frequency */
 	current_ssid->frequency = params.freq;
