@@ -1946,7 +1946,10 @@ wpa_driver_nl80211_postprocess_modes(struct hostapd_hw_modes *modes,
 	for (m = 0; m < *num_modes; m++) {
 		if (!modes[m].num_channels)
 			continue;
-		if (modes[m].channels[0].freq < 4000) {
+		if (modes[m].channels[0].freq < 2000) {
+			modes[m].num_channels = 0;
+			continue;
+		} else if (modes[m].channels[0].freq < 4000) {
 			modes[m].mode = HOSTAPD_MODE_IEEE80211B;
 			for (i = 0; i < modes[m].num_rates; i++) {
 				if (modes[m].rates[i] > 200) {
