@@ -2384,24 +2384,126 @@ enum qca_wlan_vendor_attr_sap_conditional_chan_switch {
 
 /**
  * enum qca_wlan_gpio_attr - Parameters for GPIO configuration
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_COMMAND: Required (u32)
+ * value to specify the GPIO command. Please refer to enum qca_gpio_cmd_type
+ * for the available values.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_PINNUM: Required (u32)
+ * value to specify the GPIO number.
+ * This is required, when %QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_COMMAND is
+ * %QCA_WLAN_VENDOR_GPIO_CONFIG or %QCA_WLAN_VENDOR_GPIO_OUTPUT.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_VALUE: Required (u32)
+ * value to specify the GPIO output level. Please refer to enum qca_gpio_value
+ * for the available values.
+ * This is required, when %QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_COMMAND is
+ * %QCA_WLAN_VENDOR_GPIO_OUTPUT.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_PULL_TYPE: Required (u32)
+ * value to specify the GPIO pull type. Please refer to enum qca_gpio_pull_type
+ * for the available values.
+ * This is required, when %QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_COMMAND is
+ * %QCA_WLAN_VENDOR_GPIO_CONFIG.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_INTR_MODE: Required (u32)
+ * value to specify the GPIO interrupt mode. Please refer to enum
+ * qca_gpio_interrupt_mode for the available values.
+ * This is required, when %QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_COMMAND is
+ * %QCA_WLAN_VENDOR_GPIO_CONFIG.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_DIR: Required (u32)
+ * value to specify the GPIO direction. Please refer to enum qca_gpio_direction
+ * for the available values.
+ * This is required, when %QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_COMMAND is
+ * %QCA_WLAN_VENDOR_GPIO_CONFIG.
  */
 enum qca_wlan_gpio_attr {
 	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_INVALID = 0,
 	/* Unsigned 32-bit attribute for GPIO command */
-	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_COMMAND,
+	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_COMMAND = 1,
 	/* Unsigned 32-bit attribute for GPIO PIN number to configure */
-	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_PINNUM,
+	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_PINNUM = 2,
 	/* Unsigned 32-bit attribute for GPIO value to configure */
-	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_VALUE,
+	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_VALUE = 3,
 	/* Unsigned 32-bit attribute for GPIO pull type */
-	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_PULL_TYPE,
+	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_PULL_TYPE = 4,
 	/* Unsigned 32-bit attribute for GPIO interrupt mode */
-	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_INTR_MODE,
+	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_INTR_MODE = 5,
+	/* Unsigned 32-bit attribute for GPIO direction to configure */
+	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_DIR = 6,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_LAST,
 	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_MAX =
 	QCA_WLAN_VENDOR_ATTR_GPIO_PARAM_LAST - 1
+};
+
+/**
+ * enum gpio_cmd_type - GPIO configuration command type
+ * @QCA_WLAN_VENDOR_GPIO_CONFIG: Set GPIO configuration info
+ * @QCA_WLAN_VENDOR_GPIO_OUTPUT: Set GPIO output level
+ */
+enum qca_gpio_cmd_type {
+	QCA_WLAN_VENDOR_GPIO_CONFIG = 0,
+	QCA_WLAN_VENDOR_GPIO_OUTPUT = 1,
+};
+
+/**
+ * enum qca_gpio_pull_type - GPIO pull type
+ * @QCA_WLAN_GPIO_PULL_NONE: Set GPIO pull type to none
+ * @QCA_WLAN_GPIO_PULL_UP: Set GPIO pull up
+ * @QCA_WLAN_GPIO_PULL_DOWN: Set GPIO pull down
+ */
+enum qca_gpio_pull_type {
+	QCA_WLAN_GPIO_PULL_NONE = 0,
+	QCA_WLAN_GPIO_PULL_UP = 1,
+	QCA_WLAN_GPIO_PULL_DOWN = 2,
+	QCA_WLAN_GPIO_PULL_MAX,
+};
+
+/**
+ * enum qca_gpio_direction - GPIO direction
+ * @QCA_WLAN_GPIO_INPUT: Set GPIO as input mode
+ * @QCA_WLAN_GPIO_OUTPUT: Set GPIO as output mode
+ * @QCA_WLAN_GPIO_VALUE_MAX: Invalid value
+ */
+enum qca_gpio_direction {
+	QCA_WLAN_GPIO_INPUT = 0,
+	QCA_WLAN_GPIO_OUTPUT = 1,
+	QCA_WLAN_GPIO_DIR_MAX,
+};
+
+/**
+ * enum qca_gpio_value - GPIO Value
+ * @QCA_WLAN_GPIO_LEVEL_LOW: set gpio output level to low
+ * @QCA_WLAN_GPIO_LEVEL_HIGH: set gpio output level to high
+ * @QCA_WLAN_GPIO_LEVEL_MAX: Invalid value
+ */
+enum qca_gpio_value {
+	QCA_WLAN_GPIO_LEVEL_LOW = 0,
+	QCA_WLAN_GPIO_LEVEL_HIGH = 1,
+	QCA_WLAN_GPIO_LEVEL_MAX,
+};
+
+/**
+ * enum gpio_interrupt_mode - GPIO interrupt mode
+ * @QCA_WLAN_GPIO_INTMODE_DISABLE: Disable interrupt trigger
+ * @QCA_WLAN_GPIO_INTMODE_RISING_EDGE: Interrupt with GPIO rising edge trigger
+ * @QCA_WLAN_GPIO_INTMODE_FALLING_EDGE: Interrupt with GPIO falling edge trigger
+ * @QCA_WLAN_GPIO_INTMODE_BOTH_EDGE: Interrupt with GPIO both edge trigger
+ * @QCA_WLAN_GPIO_INTMODE_LEVEL_LOW: Interrupt with GPIO level low trigger
+ * @QCA_WLAN_GPIO_INTMODE_LEVEL_HIGH: Interrupt with GPIO level high trigger
+ * @QCA_WLAN_GPIO_INTMODE_MAX: Invalid value
+ */
+enum qca_gpio_interrupt_mode {
+	QCA_WLAN_GPIO_INTMODE_DISABLE = 0,
+	QCA_WLAN_GPIO_INTMODE_RISING_EDGE = 1,
+	QCA_WLAN_GPIO_INTMODE_FALLING_EDGE = 2,
+	QCA_WLAN_GPIO_INTMODE_BOTH_EDGE = 3,
+	QCA_WLAN_GPIO_INTMODE_LEVEL_LOW = 4,
+	QCA_WLAN_GPIO_INTMODE_LEVEL_HIGH = 5,
+	QCA_WLAN_GPIO_INTMODE_MAX,
 };
 
 /**
