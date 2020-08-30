@@ -694,6 +694,12 @@ enum qca_radiotap_vendor_ids {
  *
  *	The format of the opaque data is specific to the particular firmware
  *	version and there is no guarantee of the format remaining same.
+ *
+ * @QCA_NL80211_VENDOR_SUBCMD_MBSSID_TX_VDEV_STATUS: This acts as an event.
+ *	The host driver selects Tx VDEV, and notifies user. The attributes
+ *	used with this event are defined in enum
+ *	qca_wlan_vendor_attr_mbssid_tx_vdev_status.
+ *
  */
 enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_UNSPEC = 0,
@@ -879,6 +885,7 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_MEDIUM_ASSESS = 193,
 	QCA_NL80211_VENDOR_SUBCMD_UPDATE_SSID = 194,
 	QCA_NL80211_VENDOR_SUBCMD_WIFI_FW_STATS = 195,
+	QCA_NL80211_VENDOR_SUBCMD_MBSSID_TX_VDEV_STATUS = 196,
 };
 
 enum qca_wlan_vendor_attr {
@@ -9840,6 +9847,25 @@ enum qca_wlan_vendor_attr_medium_assess {
 	QCA_WLAN_VENDOR_ATTR_MEDIUM_ASSESS_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_MEDIUM_ASSESS_MAX =
 	QCA_WLAN_VENDOR_ATTR_MEDIUM_ASSESS_AFTER_LAST - 1,
+};
+
+/**
+ * enum qca_wlan_vendor_attr_mbssid_tx_vdev_status - Defines attributes
+ * used by QCA_NL80211_VENDOR_SUBCMD_MBSSID_TX_VDEV_STATUS vendor command.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_MBSSID_TX_VDEV_STATUS_VAL:
+ * u8 attribute. Notify the TX VDEV status. Possible values 0, 1
+ * belonging to MBSSID/EMA_AP configuration. 0 means Non-Tx VDEV,
+ * 1 means Tx VDEV. Mandatory attribute for all MBSSID VDEV status events.
+ */
+enum qca_wlan_vendor_attr_mbssid_tx_vdev_status {
+	QCA_WLAN_VENDOR_ATTR_MBSSID_TX_VDEV_STATUS_INVALID = 0,
+	QCA_WLAN_VENDOR_ATTR_MBSSID_TX_VDEV_STATUS_VAL = 1,
+
+	/* keep last */
+	QCA_WLAN_VENDOR_ATTR_MBSSID_TX_VDEV_STATUS_AFTER_LAST,
+	QCA_WLAN_VENDOR_ATTR_MBSSID_TX_VDEV_STATUS_MAX =
+	QCA_WLAN_VENDOR_ATTR_MBSSID_TX_VDEV_STATUS_AFTER_LAST - 1,
 };
 
 #endif /* QCA_VENDOR_H */
