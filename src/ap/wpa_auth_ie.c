@@ -808,7 +808,7 @@ wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 #endif /* CONFIG_SAE */
 
 #ifdef CONFIG_OCV
-	if ((data.capabilities & WPA_CAPABILITY_OCVC) &&
+	if (wpa_auth->conf.ocv && (data.capabilities & WPA_CAPABILITY_OCVC) &&
 	    !(data.capabilities & WPA_CAPABILITY_MFPC)) {
 		wpa_printf(MSG_DEBUG,
 			   "Management frame protection required with OCV, but client did not enable it");
