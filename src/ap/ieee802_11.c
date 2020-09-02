@@ -3563,7 +3563,8 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 			return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
 		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
-					 tx_chanwidth, tx_seg1_idx) != 0) {
+					 tx_chanwidth, tx_seg1_idx) !=
+		    OCI_SUCCESS) {
 			wpa_printf(MSG_WARNING, "FILS: OCV failed: %s",
 				   ocv_errorstr);
 			wpa_msg(hapd->msg_ctx, MSG_INFO, OCV_FAILURE "addr="

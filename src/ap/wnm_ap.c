@@ -326,7 +326,7 @@ static void ieee802_11_rx_wnmsleep_req(struct hostapd_data *hapd,
 
 		if (ocv_verify_tx_params(oci_ie, oci_ie_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
-					 ci.seg1_idx) != 0) {
+					 ci.seg1_idx) != OCI_SUCCESS) {
 			wpa_msg(hapd, MSG_WARNING, "WNM: OCV failed: %s",
 				ocv_errorstr);
 			return;

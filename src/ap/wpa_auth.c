@@ -3051,7 +3051,8 @@ SM_STATE(WPA_PTK, PTKCALCNEGOTIATING)
 			return;
 
 		if (ocv_verify_tx_params(kde.oci, kde.oci_len, &ci,
-					 tx_chanwidth, tx_seg1_idx) != 0) {
+					 tx_chanwidth, tx_seg1_idx) !=
+		    OCI_SUCCESS) {
 			wpa_auth_vlogger(wpa_auth, sm->addr, LOGGER_INFO,
 					 "OCV failed: %s", ocv_errorstr);
 			if (wpa_auth->conf.msg_ctx)
@@ -3913,7 +3914,8 @@ SM_STATE(WPA_PTK_GROUP, REKEYESTABLISHED)
 			return;
 
 		if (ocv_verify_tx_params(kde.oci, kde.oci_len, &ci,
-					 tx_chanwidth, tx_seg1_idx) != 0) {
+					 tx_chanwidth, tx_seg1_idx) !=
+		    OCI_SUCCESS) {
 			wpa_auth_vlogger(wpa_auth, sm->addr, LOGGER_INFO,
 					 "OCV failed: %s", ocv_errorstr);
 			if (wpa_auth->conf.msg_ctx)

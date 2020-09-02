@@ -1717,7 +1717,7 @@ static void wpa_supplicant_process_3_of_4(struct wpa_sm *sm,
 
 		if (ocv_verify_tx_params(ie.oci, ie.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
-					 ci.seg1_idx) != 0) {
+					 ci.seg1_idx) != OCI_SUCCESS) {
 			wpa_msg(sm->ctx->msg_ctx, MSG_INFO, OCV_FAILURE
 				"addr=" MACSTR " frame=eapol-key-m3 error=%s",
 				MAC2STR(sm->bssid), ocv_errorstr);
@@ -1865,7 +1865,7 @@ static int wpa_supplicant_process_1_of_2_rsn(struct wpa_sm *sm,
 
 		if (ocv_verify_tx_params(ie.oci, ie.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
-					 ci.seg1_idx) != 0) {
+					 ci.seg1_idx) != OCI_SUCCESS) {
 			wpa_msg(sm->ctx->msg_ctx, MSG_INFO, OCV_FAILURE
 				"addr=" MACSTR " frame=eapol-key-g1 error=%s",
 				MAC2STR(sm->bssid), ocv_errorstr);
@@ -4799,7 +4799,7 @@ int fils_process_assoc_resp(struct wpa_sm *sm, const u8 *resp, size_t len)
 
 		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
-					 ci.seg1_idx) != 0) {
+					 ci.seg1_idx) != OCI_SUCCESS) {
 			wpa_msg(sm->ctx->msg_ctx, MSG_INFO, OCV_FAILURE
 				"addr=" MACSTR " frame=fils-assoc error=%s",
 				MAC2STR(sm->bssid), ocv_errorstr);
