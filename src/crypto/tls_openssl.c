@@ -2995,16 +2995,12 @@ static int tls_set_conn_flags(struct tls_connection *conn, unsigned int flags,
 
 		/* Explicit request to enable TLS versions even if needing to
 		 * override systemwide policies. */
-		if (flags & TLS_CONN_ENABLE_TLSv1_0) {
+		if (flags & TLS_CONN_ENABLE_TLSv1_0)
 			version = TLS1_VERSION;
-		} else if (flags & TLS_CONN_ENABLE_TLSv1_1) {
-			if (!(flags & TLS_CONN_DISABLE_TLSv1_0))
-				version = TLS1_1_VERSION;
-		} else if (flags & TLS_CONN_ENABLE_TLSv1_2) {
-			if (!(flags & (TLS_CONN_DISABLE_TLSv1_0 |
-				       TLS_CONN_DISABLE_TLSv1_1)))
-				version = TLS1_2_VERSION;
-		}
+		else if (flags & TLS_CONN_ENABLE_TLSv1_1)
+			version = TLS1_1_VERSION;
+		else if (flags & TLS_CONN_ENABLE_TLSv1_2)
+			version = TLS1_2_VERSION;
 		if (!version) {
 			wpa_printf(MSG_DEBUG,
 				   "OpenSSL: Invalid TLS version configuration");
@@ -3018,6 +3014,18 @@ static int tls_set_conn_flags(struct tls_connection *conn, unsigned int flags,
 		}
 	}
 #endif /* >= 1.1.0 */
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L && \
+	!defined(LIBRESSL_VERSION_NUMBER) && \
+	!defined(OPENSSL_IS_BORINGSSL)
+	if ((flags & (TLS_CONN_ENABLE_TLSv1_0 | TLS_CONN_ENABLE_TLSv1_1)) &&
+	    SSL_get_security_level(ssl) >= 2) {
+		/*
+		 * Need to drop to security level 1 to allow TLS versions older
+		 * than 1.2 to be used when explicitly enabled in configuration.
+		 */
+		SSL_set_security_level(conn->ssl, 1);
+	}
+#endif
 
 #ifdef CONFIG_SUITEB
 #ifdef OPENSSL_IS_BORINGSSL
