@@ -1126,12 +1126,20 @@ static bool hostapd_sae_pk_password_without_pk(struct hostapd_bss_config *bss)
 	bool res = false;
 
 	if (bss->ssid.wpa_passphrase &&
+#ifdef CONFIG_TESTING_OPTIONS
+	    !bss->sae_pk_password_check_skip &&
+#endif /* CONFIG_TESTING_OPTIONS */
 	    sae_pk_valid_password(bss->ssid.wpa_passphrase))
 		res = true;
 
 	for (pw = bss->sae_passwords; pw; pw = pw->next) {
-		if (!pw->pk && sae_pk_valid_password(pw->password))
+		if (!pw->pk &&
+#ifdef CONFIG_TESTING_OPTIONS
+		    !bss->sae_pk_password_check_skip &&
+#endif /* CONFIG_TESTING_OPTIONS */
+		    sae_pk_valid_password(pw->password))
 			return true;
+
 		if (bss->ssid.wpa_passphrase && res && pw->pk &&
 		    os_strcmp(bss->ssid.wpa_passphrase, pw->password) == 0)
 			res = false;

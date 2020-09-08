@@ -2245,7 +2245,11 @@ static int parse_sae_password(struct hostapd_bss_config *bss, const char *val)
 	}
 
 #ifdef CONFIG_SAE_PK
-	if (pw->pk && !sae_pk_valid_password(pw->password)) {
+	if (pw->pk &&
+#ifdef CONFIG_TESTING_OPTIONS
+	    !bss->sae_pk_password_check_skip &&
+#endif /* CONFIG_TESTING_OPTIONS */
+	    !sae_pk_valid_password(pw->password)) {
 		wpa_printf(MSG_INFO,
 			   "Invalid SAE password for a SAE-PK sae_password entry");
 		goto fail;
@@ -4137,6 +4141,8 @@ static int hostapd_config_fill(struct hostapd_config *conf,
 		bss->sae_commit_status = atoi(pos);
 	} else if (os_strcmp(buf, "sae_pk_omit") == 0) {
 		bss->sae_pk_omit = atoi(pos);
+	} else if (os_strcmp(buf, "sae_pk_password_check_skip") == 0) {
+		bss->sae_pk_password_check_skip = atoi(pos);
 	} else if (os_strcmp(buf, "sae_commit_override") == 0) {
 		wpabuf_free(bss->sae_commit_override);
 		bss->sae_commit_override = wpabuf_parse_bin(pos);
