@@ -5839,7 +5839,17 @@ def check_tls_ver(dev, hapd, phase1, expected):
 
 def test_ap_wpa2_eap_tls_versions(dev, apdev):
     """EAP-TLS and TLS version configuration"""
-    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    params = {"ssid": "test-wpa2-eap",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP",
+              "rsn_pairwise": "CCMP",
+              "ieee8021x": "1",
+              "eap_server": "1",
+              "tls_flags": "[ENABLE-TLSv1.0][ENABLE-TLSv1.1][ENABLE-TLSv1.2][ENABLE-TLSv1.3]",
+              "eap_user_file": "auth_serv/eap_user.conf",
+              "ca_cert": "auth_serv/ca.pem",
+              "server_cert": "auth_serv/server.pem",
+              "private_key": "auth_serv/server.key"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     tls = dev[0].request("GET tls_library")
@@ -5858,9 +5868,9 @@ def test_ap_wpa2_eap_tls_versions(dev, apdev):
         check_tls_ver(dev[0], hapd,
                       "tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=1", "TLSv1.2")
     check_tls_ver(dev[1], hapd,
-                  "tls_disable_tlsv1_0=1 tls_disable_tlsv1_2=1", "TLSv1.1")
+                  "tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=0 tls_disable_tlsv1_2=1", "TLSv1.1")
     check_tls_ver(dev[2], hapd,
-                  "tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1", "TLSv1")
+                  "tls_disable_tlsv1_0=0 tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1", "TLSv1")
     if "run=OpenSSL 1.1.1" in tls:
         check_tls_ver(dev[0], hapd,
                       "tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1 tls_disable_tlsv1_3=0", "TLSv1.3")
@@ -5886,7 +5896,7 @@ def test_ap_wpa2_eap_tls_versions_server(dev, apdev):
         hapd.disable()
         hapd.set("tls_flags", flags)
         hapd.enable()
-        check_tls_ver(dev[0], hapd, "", exp)
+        check_tls_ver(dev[0], hapd, "tls_disable_tlsv1_0=0 tls_disable_tlsv1_1=0 tls_disable_tlsv1_2=0 tls_disable_tlsv1_3=0", exp)
 
 def test_ap_wpa2_eap_tls_13(dev, apdev):
     """EAP-TLS and TLS 1.3"""
