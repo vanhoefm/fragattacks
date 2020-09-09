@@ -533,13 +533,6 @@ dpp_reconfig_auth_req_rx(struct dpp_global *dpp, void *msg_ctx,
 		goto fail;
 	}
 
-	if (random_get_bytes(auth->e_nonce, auth->curve->nonce_len)) {
-		wpa_printf(MSG_ERROR, "DPP: Failed to generate E-nonce");
-		goto fail;
-	}
-	wpa_hexdump_key(MSG_DEBUG, "DPP: E-nonce",
-			auth->e_nonce, auth->curve->nonce_len);
-
 	/* Build Connection Status object */
 	/* TODO: Get appropriate result value */
 	/* TODO: ssid64 and channelList */

@@ -19,6 +19,7 @@
 #include "utils/json.h"
 #include "common/ieee802_11_defs.h"
 #include "crypto/crypto.h"
+#include "crypto/random.h"
 #include "crypto/sha384.h"
 #include "crypto/sha512.h"
 #include "dpp.h"
@@ -2269,6 +2270,7 @@ int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
 	u8 prk[DPP_MAX_HASH_LEN];
 	const struct dpp_curve_params *curve;
 	int res = -1;
+	u8 nonces[2 * DPP_MAX_NONCE_LEN];
 
 	own_key = dpp_set_keypair(&auth->curve, net_access_key,
 				  net_access_key_len);
@@ -2292,6 +2294,13 @@ int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
 	auth->own_protocol_key = dpp_gen_keypair(curve);
 	if (!auth->own_protocol_key)
 		goto fail;
+
+	if (random_get_bytes(auth->e_nonce, auth->curve->nonce_len)) {
+		wpa_printf(MSG_ERROR, "DPP: Failed to generate E-nonce");
+		goto fail;
+	}
+	wpa_hexdump_key(MSG_DEBUG, "DPP: E-nonce",
+			auth->e_nonce, auth->curve->nonce_len);
 
 	/* M = { cR + pR } * CI */
 	cR = EVP_PKEY_get0_EC_KEY(own_key);
@@ -2325,10 +2334,12 @@ int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
 		goto fail;
 	wpa_hexdump_key(MSG_DEBUG, "DPP: M.x", Mx, curve->prime_len);
 
-	/* ke = HKDF(C-nonce, "dpp reconfig key", M.x) */
+	/* ke = HKDF(C-nonce | E-nonce, "dpp reconfig key", M.x) */
 
-	/* HKDF-Extract(C-nonce, M.x) */
-	if (dpp_hmac(curve->hash_len, auth->c_nonce, curve->nonce_len,
+	/* HKDF-Extract(C-nonce | E-nonce, M.x) */
+	os_memcpy(nonces, auth->c_nonce, curve->nonce_len);
+	os_memcpy(&nonces[curve->nonce_len], auth->e_nonce, curve->nonce_len);
+	if (dpp_hmac(curve->hash_len, nonces, 2 * curve->nonce_len,
 		     Mx, curve->prime_len, prk) < 0)
 		goto fail;
 	wpa_hexdump_key(MSG_DEBUG, "DPP: PRK", prk, curve->hash_len);
@@ -2338,7 +2349,7 @@ int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
 			    "dpp reconfig key", auth->ke, curve->hash_len) < 0)
 		goto fail;
 	wpa_hexdump_key(MSG_DEBUG,
-			"DPP: ke = HKDF(C-nonce, \"dpp reconfig key\", M.x)",
+			"DPP: ke = HKDF(C-nonce | E-nonce, \"dpp reconfig key\", M.x)",
 			auth->ke, curve->hash_len);
 
 	res = 0;
@@ -2375,6 +2386,7 @@ int dpp_reconfig_derive_ke_initiator(struct dpp_authentication *auth,
 	u8 prk[DPP_MAX_HASH_LEN];
 	int res = -1;
 	const struct dpp_curve_params *curve;
+	u8 nonces[2 * DPP_MAX_NONCE_LEN];
 
 	pr = dpp_set_pubkey_point(auth->conf->connector_key,
 				  r_proto, r_proto_len);
@@ -2420,10 +2432,12 @@ int dpp_reconfig_derive_ke_initiator(struct dpp_authentication *auth,
 
 	wpa_hexdump_key(MSG_DEBUG, "DPP: M.x", Mx, curve->prime_len);
 
-	/* ke = HKDF(C-nonce, "dpp reconfig key", M.x) */
+	/* ke = HKDF(C-nonce | E-nonce, "dpp reconfig key", M.x) */
 
-	/* HKDF-Extract(C-nonce, M.x) */
-	if (dpp_hmac(curve->hash_len, auth->c_nonce, curve->nonce_len,
+	/* HKDF-Extract(C-nonce | E-nonce, M.x) */
+	os_memcpy(nonces, auth->c_nonce, curve->nonce_len);
+	os_memcpy(&nonces[curve->nonce_len], auth->e_nonce, curve->nonce_len);
+	if (dpp_hmac(curve->hash_len, nonces, 2 * curve->nonce_len,
 		     Mx, curve->prime_len, prk) < 0)
 		goto fail;
 	wpa_hexdump_key(MSG_DEBUG, "DPP: PRK", prk, curve->hash_len);
@@ -2433,7 +2447,7 @@ int dpp_reconfig_derive_ke_initiator(struct dpp_authentication *auth,
 			    "dpp reconfig key", auth->ke, curve->hash_len) < 0)
 		goto fail;
 	wpa_hexdump_key(MSG_DEBUG,
-			"DPP: ke = HKDF(C-nonce, \"dpp reconfig key\", M.x)",
+			"DPP: ke = HKDF(C-nonce | E-nonce, \"dpp reconfig key\", M.x)",
 			auth->ke, curve->hash_len);
 
 	res = 0;
