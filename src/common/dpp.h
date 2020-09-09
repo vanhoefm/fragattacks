@@ -90,6 +90,7 @@ enum dpp_attribute_id {
 	DPP_ATTR_CSR_ATTR_REQ = 0x101F,
 	DPP_ATTR_A_NONCE = 0x1020,
 	DPP_ATTR_E_PRIME_ID = 0x1021,
+	DPP_ATTR_CONFIGURATOR_NONCE = 0x1022,
 };
 
 enum dpp_status_error {
@@ -260,6 +261,7 @@ struct dpp_authentication {
 	u8 i_nonce[DPP_MAX_NONCE_LEN];
 	u8 r_nonce[DPP_MAX_NONCE_LEN];
 	u8 e_nonce[DPP_MAX_NONCE_LEN];
+	u8 c_nonce[DPP_MAX_NONCE_LEN];
 	u8 i_capab;
 	u8 r_capab;
 	enum dpp_netrole e_netrole;

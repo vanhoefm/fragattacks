@@ -158,10 +158,10 @@ static struct wpabuf * dpp_reconfig_build_req(struct dpp_authentication *auth)
 	wpabuf_put_le16(msg, os_strlen(auth->conf->connector));
 	wpabuf_put_str(msg, auth->conf->connector);
 
-	/* I-nonce */
-	wpabuf_put_le16(msg, DPP_ATTR_I_NONCE);
+	/* C-nonce */
+	wpabuf_put_le16(msg, DPP_ATTR_CONFIGURATOR_NONCE);
 	wpabuf_put_le16(msg, auth->curve->nonce_len);
-	wpabuf_put_data(msg, auth->i_nonce, auth->curve->nonce_len);
+	wpabuf_put_data(msg, auth->c_nonce, auth->curve->nonce_len);
 
 	wpa_hexdump_buf(MSG_DEBUG,
 			"DPP: Reconfig Authentication Request frame attributes",
@@ -295,8 +295,8 @@ dpp_reconfig_init(struct dpp_global *dpp, void *msg_ctx,
 	if (dpp_configurator_build_own_connector(conf, curve) < 0)
 		goto fail;
 
-	if (random_get_bytes(auth->i_nonce, auth->curve->nonce_len)) {
-		wpa_printf(MSG_ERROR, "DPP: Failed to generate I-nonce");
+	if (random_get_bytes(auth->c_nonce, auth->curve->nonce_len)) {
+		wpa_printf(MSG_ERROR, "DPP: Failed to generate C-nonce");
 		goto fail;
 	}
 
@@ -331,15 +331,15 @@ static int dpp_reconfig_build_resp(struct dpp_authentication *auth,
 	if (!clear)
 		goto fail;
 
-	/* I-nonce (wrapped) */
-	wpabuf_put_le16(clear, DPP_ATTR_I_NONCE);
+	/* C-nonce (wrapped) */
+	wpabuf_put_le16(clear, DPP_ATTR_CONFIGURATOR_NONCE);
 	wpabuf_put_le16(clear, auth->curve->nonce_len);
-	wpabuf_put_data(clear, auth->i_nonce, auth->curve->nonce_len);
+	wpabuf_put_data(clear, auth->c_nonce, auth->curve->nonce_len);
 
-	/* R-nonce (wrapped) */
-	wpabuf_put_le16(clear, DPP_ATTR_R_NONCE);
+	/* E-nonce (wrapped) */
+	wpabuf_put_le16(clear, DPP_ATTR_ENROLLEE_NONCE);
 	wpabuf_put_le16(clear, auth->curve->nonce_len);
-	wpabuf_put_data(clear, auth->r_nonce, auth->curve->nonce_len);
+	wpabuf_put_data(clear, auth->e_nonce, auth->curve->nonce_len);
 
 	/* Connection Status (wrapped) */
 	wpabuf_put_le16(clear, DPP_ATTR_CONN_STATUS);
@@ -392,7 +392,7 @@ static int dpp_reconfig_build_resp(struct dpp_authentication *auth,
 	len[1] = attr_end - attr_start;
 	wpa_hexdump(MSG_DEBUG, "DDP: AES-SIV AD[1]", addr[1], len[1]);
 
-	/* Wrapped Data: {I-nonce, R-nonce, Connection Status}ke */
+	/* Wrapped Data: {C-nonce, E-nonce, Connection Status}ke */
 	wpabuf_put_le16(msg, DPP_ATTR_WRAPPED_DATA);
 	wpabuf_put_le16(msg, wpabuf_len(clear) + AES_BLOCK_SIZE);
 	wrapped = wpabuf_put(msg, wpabuf_len(clear) + AES_BLOCK_SIZE);
@@ -430,8 +430,8 @@ dpp_reconfig_auth_req_rx(struct dpp_global *dpp, void *msg_ctx,
 			 const u8 *attr_start, size_t attr_len)
 {
 	struct dpp_authentication *auth = NULL;
-	const u8 *trans_id, *version, *i_connector, *i_nonce;
-	u16 trans_id_len, version_len, i_connector_len, i_nonce_len;
+	const u8 *trans_id, *version, *i_connector, *c_nonce;
+	u16 trans_id_len, version_len, i_connector_len, c_nonce_len;
 	struct dpp_signed_connector_info info;
 	enum dpp_status_error res;
 	struct json_token *root = NULL, *own_root = NULL, *token;
@@ -465,14 +465,14 @@ dpp_reconfig_auth_req_rx(struct dpp_global *dpp, void *msg_ctx,
 	wpa_hexdump_ascii(MSG_DEBUG, "DPP: I-Connector",
 			  i_connector, i_connector_len);
 
-	i_nonce = dpp_get_attr(attr_start, attr_len, DPP_ATTR_I_NONCE,
-			       &i_nonce_len);
-	if (!i_nonce || i_nonce_len > DPP_MAX_NONCE_LEN) {
+	c_nonce = dpp_get_attr(attr_start, attr_len,
+			       DPP_ATTR_CONFIGURATOR_NONCE, &c_nonce_len);
+	if (!c_nonce || c_nonce_len > DPP_MAX_NONCE_LEN) {
 		wpa_printf(MSG_DEBUG,
-			   "DPP: Missing or invalid I-Nonce attribute");
+			   "DPP: Missing or invalid C-nonce attribute");
 		goto fail;
 	}
-	wpa_hexdump(MSG_DEBUG, "DPP: I-Nonce", i_nonce, i_nonce_len);
+	wpa_hexdump(MSG_DEBUG, "DPP: C-nonce", c_nonce, c_nonce_len);
 
 	res = dpp_check_signed_connector(&info, csign_key, csign_key_len,
 					 i_connector, i_connector_len);
@@ -519,25 +519,25 @@ dpp_reconfig_auth_req_rx(struct dpp_global *dpp, void *msg_ctx,
 	wpa_printf(MSG_DEBUG, "DPP: Peer protocol version %u",
 		   auth->peer_version);
 
-	os_memcpy(auth->i_nonce, i_nonce, i_nonce_len);
+	os_memcpy(auth->c_nonce, c_nonce, c_nonce_len);
 
 	if (dpp_reconfig_derive_ke_responder(auth, net_access_key,
 					     net_access_key_len, token) < 0)
 		goto fail;
 
-	if (i_nonce_len != auth->curve->nonce_len) {
+	if (c_nonce_len != auth->curve->nonce_len) {
 		wpa_printf(MSG_DEBUG,
-			   "DPP: Unexpected I-nonce length %u (curve nonce len %zu)",
-			   i_nonce_len, auth->curve->nonce_len);
+			   "DPP: Unexpected C-nonce length %u (curve nonce len %zu)",
+			   c_nonce_len, auth->curve->nonce_len);
 		goto fail;
 	}
 
-	if (random_get_bytes(auth->r_nonce, auth->curve->nonce_len)) {
-		wpa_printf(MSG_ERROR, "DPP: Failed to generate R-nonce");
+	if (random_get_bytes(auth->e_nonce, auth->curve->nonce_len)) {
+		wpa_printf(MSG_ERROR, "DPP: Failed to generate E-nonce");
 		goto fail;
 	}
-	wpa_hexdump_key(MSG_DEBUG, "DPP: R-nonce",
-			auth->r_nonce, auth->curve->nonce_len);
+	wpa_hexdump_key(MSG_DEBUG, "DPP: E-nonce",
+			auth->e_nonce, auth->curve->nonce_len);
 
 	/* Build Connection Status object */
 	/* TODO: Get appropriate result value */
@@ -590,15 +590,15 @@ dpp_reconfig_build_conf(struct dpp_authentication *auth)
 	wpabuf_put_le16(clear, 1);
 	wpabuf_put_u8(clear, auth->peer_version);
 
-	/* I-nonce (wrapped) */
-	wpabuf_put_le16(clear, DPP_ATTR_I_NONCE);
+	/* C-nonce (wrapped) */
+	wpabuf_put_le16(clear, DPP_ATTR_CONFIGURATOR_NONCE);
 	wpabuf_put_le16(clear, auth->curve->nonce_len);
-	wpabuf_put_data(clear, auth->i_nonce, auth->curve->nonce_len);
+	wpabuf_put_data(clear, auth->c_nonce, auth->curve->nonce_len);
 
-	/* R-nonce (wrapped) */
-	wpabuf_put_le16(clear, DPP_ATTR_R_NONCE);
+	/* E-nonce (wrapped) */
+	wpabuf_put_le16(clear, DPP_ATTR_ENROLLEE_NONCE);
 	wpabuf_put_le16(clear, auth->curve->nonce_len);
-	wpabuf_put_data(clear, auth->r_nonce, auth->curve->nonce_len);
+	wpabuf_put_data(clear, auth->e_nonce, auth->curve->nonce_len);
 
 	/* Reconfig-Flags (wrapped) */
 	flags = DPP_CONFIG_REPLACEKEY;
@@ -659,9 +659,9 @@ dpp_reconfig_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 			 const u8 *attr_start, size_t attr_len)
 {
 	const u8 *trans_id, *version, *r_connector, *r_proto, *wrapped_data,
-		*i_nonce, *r_nonce, *conn_status;
+		*c_nonce, *e_nonce, *conn_status;
 	u16 trans_id_len, version_len, r_connector_len, r_proto_len,
-		wrapped_data_len, i_nonce_len, r_nonce_len, conn_status_len;
+		wrapped_data_len, c_nonce_len, e_nonce_len, conn_status_len;
 	struct wpabuf *conf = NULL;
 	char *signed_connector = NULL;
 	struct dpp_signed_connector_info info;
@@ -787,23 +787,23 @@ dpp_reconfig_auth_resp_rx(struct dpp_authentication *auth, const u8 *hdr,
 		goto fail;
 	}
 
-	i_nonce = dpp_get_attr(unwrapped, unwrapped_len, DPP_ATTR_I_NONCE,
-			       &i_nonce_len);
-	if (!i_nonce || i_nonce_len != auth->curve->nonce_len ||
-	    os_memcmp(i_nonce, auth->i_nonce, i_nonce_len) != 0) {
-		dpp_auth_fail(auth, "Missing or invalid I-nonce");
+	c_nonce = dpp_get_attr(unwrapped, unwrapped_len,
+			       DPP_ATTR_CONFIGURATOR_NONCE, &c_nonce_len);
+	if (!c_nonce || c_nonce_len != auth->curve->nonce_len ||
+	    os_memcmp(c_nonce, auth->c_nonce, c_nonce_len) != 0) {
+		dpp_auth_fail(auth, "Missing or invalid C-nonce");
 		goto fail;
 	}
-	wpa_hexdump(MSG_DEBUG, "DPP: I-nonce", i_nonce, i_nonce_len);
+	wpa_hexdump(MSG_DEBUG, "DPP: C-nonce", c_nonce, c_nonce_len);
 
-	r_nonce = dpp_get_attr(unwrapped, unwrapped_len, DPP_ATTR_R_NONCE,
-			       &r_nonce_len);
-	if (!r_nonce || r_nonce_len != auth->curve->nonce_len) {
-		dpp_auth_fail(auth, "Missing or invalid R-nonce");
+	e_nonce = dpp_get_attr(unwrapped, unwrapped_len,
+			       DPP_ATTR_ENROLLEE_NONCE, &e_nonce_len);
+	if (!e_nonce || e_nonce_len != auth->curve->nonce_len) {
+		dpp_auth_fail(auth, "Missing or invalid E-nonce");
 		goto fail;
 	}
-	wpa_hexdump(MSG_DEBUG, "DPP: R-nonce", r_nonce, r_nonce_len);
-	os_memcpy(auth->r_nonce, r_nonce, r_nonce_len);
+	wpa_hexdump(MSG_DEBUG, "DPP: E-nonce", e_nonce, e_nonce_len);
+	os_memcpy(auth->e_nonce, e_nonce, e_nonce_len);
 
 	conn_status = dpp_get_attr(unwrapped, unwrapped_len,
 				   DPP_ATTR_CONN_STATUS, &conn_status_len);
@@ -843,10 +843,10 @@ fail:
 int dpp_reconfig_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 			      const u8 *attr_start, size_t attr_len)
 {
-	const u8 *trans_id, *version, *wrapped_data, *i_nonce, *r_nonce,
+	const u8 *trans_id, *version, *wrapped_data, *c_nonce, *e_nonce,
 		*reconfig_flags, *status;
-	u16 trans_id_len, version_len, wrapped_data_len, i_nonce_len,
-		r_nonce_len, reconfig_flags_len, status_len;
+	u16 trans_id_len, version_len, wrapped_data_len, c_nonce_len,
+		e_nonce_len, reconfig_flags_len, status_len;
 	const u8 *addr[2];
 	size_t len[2];
 	u8 *unwrapped = NULL;
@@ -925,23 +925,23 @@ int dpp_reconfig_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 		goto fail;
 	}
 
-	i_nonce = dpp_get_attr(unwrapped, unwrapped_len, DPP_ATTR_I_NONCE,
-			       &i_nonce_len);
-	if (!i_nonce || i_nonce_len != auth->curve->nonce_len ||
-	    os_memcmp(i_nonce, auth->i_nonce, i_nonce_len) != 0) {
-		dpp_auth_fail(auth, "Missing or invalid I-nonce");
+	c_nonce = dpp_get_attr(unwrapped, unwrapped_len,
+			       DPP_ATTR_CONFIGURATOR_NONCE, &c_nonce_len);
+	if (!c_nonce || c_nonce_len != auth->curve->nonce_len ||
+	    os_memcmp(c_nonce, auth->c_nonce, c_nonce_len) != 0) {
+		dpp_auth_fail(auth, "Missing or invalid C-nonce");
 		goto fail;
 	}
-	wpa_hexdump(MSG_DEBUG, "DPP: I-nonce", i_nonce, i_nonce_len);
+	wpa_hexdump(MSG_DEBUG, "DPP: C-nonce", c_nonce, c_nonce_len);
 
-	r_nonce = dpp_get_attr(unwrapped, unwrapped_len, DPP_ATTR_R_NONCE,
-			       &r_nonce_len);
-	if (!r_nonce || r_nonce_len != auth->curve->nonce_len ||
-	    os_memcmp(r_nonce, auth->r_nonce, r_nonce_len) != 0) {
-		dpp_auth_fail(auth, "Missing or invalid R-nonce");
+	e_nonce = dpp_get_attr(unwrapped, unwrapped_len,
+			       DPP_ATTR_ENROLLEE_NONCE, &e_nonce_len);
+	if (!e_nonce || e_nonce_len != auth->curve->nonce_len ||
+	    os_memcmp(e_nonce, auth->e_nonce, e_nonce_len) != 0) {
+		dpp_auth_fail(auth, "Missing or invalid E-nonce");
 		goto fail;
 	}
-	wpa_hexdump(MSG_DEBUG, "DPP: R-nonce", r_nonce, r_nonce_len);
+	wpa_hexdump(MSG_DEBUG, "DPP: E-nonce", e_nonce, e_nonce_len);
 
 	reconfig_flags = dpp_get_attr(unwrapped, unwrapped_len,
 				      DPP_ATTR_RECONFIG_FLAGS,
