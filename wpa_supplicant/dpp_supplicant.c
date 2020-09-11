@@ -3449,6 +3449,7 @@ static void wpas_dpp_chirp_scan_res_handler(struct wpa_supplicant *wpa_s,
 	struct hostapd_hw_modes *mode;
 	int c;
 	struct wpa_bss *bss;
+	bool chan6;
 
 	if (!bi && !wpa_s->dpp_reconfig_ssid)
 		return;
@@ -3466,7 +3467,22 @@ static void wpas_dpp_chirp_scan_res_handler(struct wpa_supplicant *wpa_s,
 	}
 
 	/* Preferred chirping channels */
-	int_array_add_unique(&wpa_s->dpp_chirp_freqs, 2437);
+	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes,
+			HOSTAPD_MODE_IEEE80211G, 0);
+	chan6 = mode == NULL;
+	if (mode) {
+		for (c = 0; c < mode->num_channels; c++) {
+			struct hostapd_channel_data *chan = &mode->channels[c];
+
+			if ((chan->flag & HOSTAPD_CHAN_DISABLED) ||
+			    chan->freq != 2437)
+				continue;
+			chan6 = true;
+			break;
+		}
+	}
+	if (chan6)
+		int_array_add_unique(&wpa_s->dpp_chirp_freqs, 2437);
 
 	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes,
 			HOSTAPD_MODE_IEEE80211A, 0);
