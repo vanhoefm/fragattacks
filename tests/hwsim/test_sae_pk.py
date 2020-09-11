@@ -429,3 +429,34 @@ def test_sae_pk_and_psk_invalid_password(dev, apdev):
     res = hapd.request("ENABLE")
     if "FAIL" not in res:
         raise Exception("Invalid configuration accepted")
+
+def test_sae_pk_invalid_pw(dev, apdev):
+    """SAE-PK with invalid password on AP"""
+    check_sae_pk_capab(dev[0])
+    dev[0].set("sae_groups", "")
+
+    params = hostapd.wpa2_params(ssid=SAE_PK_SSID)
+    params['wpa_key_mgmt'] = 'SAE'
+    params["ieee80211w"] = "2"
+    params["sae_pk_password_check_skip"] = "1"
+    invalid_pw = "r6cr+6ksa+56og"
+    params['sae_password'] = ['%s|pk=%s:%s' % (invalid_pw, SAE_PK_SEC3_M,
+                                               SAE_PK_19_PK)]
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect(SAE_PK_SSID, sae_password=invalid_pw,
+                   key_mgmt="SAE", ieee80211w="2", scan_freq="2412")
+    dev[0].request("REMOVE_NETWORK *")
+    dev[0].wait_disconnected()
+    dev[0].dump_monitor()
+
+    dev[0].connect(SAE_PK_SSID, sae_password=SAE_PK_SEC3_PW,
+                   key_mgmt="SAE", ieee80211w="2", scan_freq="2412",
+                   wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-SSID-TEMP-DISABLED"], timeout=10)
+    if ev is None:
+        raise Exception("No result for the connection attempt")
+    if "CTRL-EVENT-CONNECTED" in ev:
+        raise Exception("Unexpected connection with invalid SAE-PK password")
+    dev[0].request("DISCONNECT")
