@@ -1872,7 +1872,6 @@ const struct oper_class_map global_op_class[] = {
 	 */
 	{ HOSTAPD_MODE_IEEE80211A, 128, 36, 161, 4, BW80, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211A, 129, 50, 114, 16, BW160, P2P_SUPP },
-	{ HOSTAPD_MODE_IEEE80211A, 130, 36, 161, 4, BW80P80, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211A, 131, 1, 233, 4, BW20, P2P_SUPP },
 
 	/*
@@ -1884,6 +1883,12 @@ const struct oper_class_map global_op_class[] = {
 	{ HOSTAPD_MODE_IEEE80211AD, 181, 9, 13, 1, BW4320, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211AD, 182, 17, 20, 1, BW6480, P2P_SUPP },
 	{ HOSTAPD_MODE_IEEE80211AD, 183, 25, 27, 1, BW8640, P2P_SUPP },
+
+	/* Keep the operating class 130 as the last entry as a workaround for
+	 * the OneHundredAndThirty Delimiter value used in the Supported
+	 * Operating Classes element to indicate the end of the Operating
+	 * Classes field. */
+	{ HOSTAPD_MODE_IEEE80211A, 130, 36, 161, 4, BW80P80, P2P_SUPP },
 	{ -1, 0, 0, 0, 0, BW20, NO_P2P_SUPP }
 };
 
