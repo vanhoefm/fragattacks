@@ -2994,6 +2994,13 @@ static int wpa_cli_cmd_dpp_bootstrap_info(struct wpa_ctrl *ctrl, int argc,
 }
 
 
+static int wpa_cli_cmd_dpp_bootstrap_set(struct wpa_ctrl *ctrl, int argc,
+					 char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "DPP_BOOTSTRAP_SET", 1, argc, argv);
+}
+
+
 static int wpa_cli_cmd_dpp_auth_init(struct wpa_ctrl *ctrl, int argc,
 				     char *argv[])
 {
@@ -3764,6 +3771,9 @@ static const struct wpa_cli_cmd wpa_cli_commands[] = {
 	{ "dpp_bootstrap_info", wpa_cli_cmd_dpp_bootstrap_info, NULL,
 	  cli_cmd_flag_none,
 	  "<id> = show DPP bootstrap information" },
+	{ "dpp_bootstrap_set", wpa_cli_cmd_dpp_bootstrap_set, NULL,
+	  cli_cmd_flag_none,
+	  "<id> [conf=..] [ssid=<SSID>] [ssid_charset=#] [psk=<PSK>] [pass=<passphrase>] [configurator=<id>] [conn_status=#] [akm_use_selector=<0|1>] [group_id=..] [expiry=#] [csrattrs=..] = set DPP configurator parameters" },
 	{ "dpp_auth_init", wpa_cli_cmd_dpp_auth_init, NULL, cli_cmd_flag_none,
 	  "peer=<id> [own=<id>] = initiate DPP bootstrapping" },
 	{ "dpp_listen", wpa_cli_cmd_dpp_listen, NULL, cli_cmd_flag_none,
