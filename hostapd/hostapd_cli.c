@@ -1402,6 +1402,13 @@ static int hostapd_cli_cmd_dpp_bootstrap_info(struct wpa_ctrl *ctrl, int argc,
 }
 
 
+static int hostapd_cli_cmd_dpp_bootstrap_set(struct wpa_ctrl *ctrl, int argc,
+					     char *argv[])
+{
+	return hostapd_cli_cmd(ctrl, "DPP_BOOTSTRAP_SET", 1, argc, argv);
+}
+
+
 static int hostapd_cli_cmd_dpp_auth_init(struct wpa_ctrl *ctrl, int argc,
 					 char *argv[])
 {
@@ -1650,6 +1657,8 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
 	  "<id> = get DPP bootstrap URI" },
 	{ "dpp_bootstrap_info", hostapd_cli_cmd_dpp_bootstrap_info, NULL,
 	  "<id> = show DPP bootstrap information" },
+	{ "dpp_bootstrap_set", hostapd_cli_cmd_dpp_bootstrap_set, NULL,
+	  "<id> [conf=..] [ssid=<SSID>] [ssid_charset=#] [psk=<PSK>] [pass=<passphrase>] [configurator=<id>] [conn_status=#] [akm_use_selector=<0|1>] [group_id=..] [expiry=#] [csrattrs=..] = set DPP configurator parameters" },
 	{ "dpp_auth_init", hostapd_cli_cmd_dpp_auth_init, NULL,
 	  "peer=<id> [own=<id>] = initiate DPP bootstrapping" },
 	{ "dpp_listen", hostapd_cli_cmd_dpp_listen, NULL,
