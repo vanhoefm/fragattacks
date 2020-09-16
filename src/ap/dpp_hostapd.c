@@ -1249,8 +1249,8 @@ hostapd_dpp_rx_presence_announcement(struct hostapd_data *hapd, const u8 *src,
 			     0);
 	if (!auth)
 		return;
-	hostapd_dpp_set_testing_options(hapd, hapd->dpp_auth);
-	if (dpp_set_configurator(hapd->dpp_auth,
+	hostapd_dpp_set_testing_options(hapd, auth);
+	if (dpp_set_configurator(auth,
 				 hapd->dpp_configurator_params) < 0) {
 		dpp_auth_deinit(auth);
 		return;
