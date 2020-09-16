@@ -1030,15 +1030,28 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 	}
 
 	if (freq > 5950 && freq <= 7115) {
-		int bw;
-		u8 idx = (freq - 5950) / 5;
-
-		bw = center_idx_to_bw_6ghz(idx);
-		if (bw < 0)
+		if ((freq - 5950) % 5)
 			return NUM_HOSTAPD_MODES;
 
-		*channel = idx;
-		*op_class = 131 + bw;
+		switch (chanwidth) {
+		case CHANWIDTH_80MHZ:
+			*op_class = 133;
+			break;
+		case CHANWIDTH_160MHZ:
+			*op_class = 134;
+			break;
+		case CHANWIDTH_80P80MHZ:
+			*op_class = 135;
+			break;
+		default:
+			if (sec_channel)
+				*op_class = 132;
+			else
+				*op_class = 131;
+			break;
+		}
+
+		*channel = (freq - 5950) / 5;
 		return HOSTAPD_MODE_IEEE80211A;
 	}
 
