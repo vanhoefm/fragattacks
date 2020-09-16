@@ -556,23 +556,32 @@ static int * wpas_add_channels(const struct oper_class_map *op,
 static int * wpas_op_class_freqs(const struct oper_class_map *op,
 				 struct hostapd_hw_modes *mode, int active)
 {
-	u8 channels_80mhz[] = { 42, 58, 106, 122, 138, 155 };
-	u8 channels_160mhz[] = { 50, 114 };
+	u8 channels_80mhz_5ghz[] = { 42, 58, 106, 122, 138, 155 };
+	u8 channels_160mhz_5ghz[] = { 50, 114 };
+	u8 channels_80mhz_6ghz[] = { 7, 23, 39, 55, 71, 87, 103, 119, 135, 151,
+				     167, 183, 199, 215 };
+	u8 channels_160mhz_6ghz[] = { 15, 47, 79, 111, 143, 175, 207 };
+	const u8 *channels = NULL;
+	size_t num_chan = 0;
+	int is_6ghz = is_6ghz_op_class(op->op_class);
 
 	/*
 	 * When adding all channels in the operating class, 80 + 80 MHz
 	 * operating classes are like 80 MHz channels because we add all valid
 	 * channels anyway.
 	 */
-	if (op->bw == BW80 || op->bw == BW80P80)
-		return wpas_add_channels(op, mode, active, channels_80mhz,
-					 ARRAY_SIZE(channels_80mhz));
+	if (op->bw == BW80 || op->bw == BW80P80) {
+		channels = is_6ghz ? channels_80mhz_6ghz : channels_80mhz_5ghz;
+		num_chan = is_6ghz ? ARRAY_SIZE(channels_80mhz_6ghz) :
+			ARRAY_SIZE(channels_80mhz_5ghz);
+	} else if (op->bw == BW160) {
+		channels = is_6ghz ? channels_160mhz_6ghz :
+			channels_160mhz_5ghz;
+		num_chan =  is_6ghz ? ARRAY_SIZE(channels_160mhz_6ghz) :
+			ARRAY_SIZE(channels_160mhz_5ghz);
+	}
 
-	if (op->bw == BW160)
-		return wpas_add_channels(op, mode, active, channels_160mhz,
-					 ARRAY_SIZE(channels_160mhz));
-
-	return wpas_add_channels(op, mode, active, NULL, 0);
+	return wpas_add_channels(op, mode, active, channels, num_chan);
 }
 
 

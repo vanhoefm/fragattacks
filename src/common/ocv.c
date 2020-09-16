@@ -45,6 +45,8 @@ int ocv_derive_all_parameters(struct oci_info *oci)
 		oci->sec_channel = 1;
 	else if (op_class_map->bw == BW40MINUS)
 		oci->sec_channel = -1;
+	else if (op_class_map->bw == BW40)
+		oci->sec_channel = (((oci->channel - 1) / 4) % 2) ? -1 : 1;
 
 	return 0;
 }

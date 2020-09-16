@@ -47,15 +47,15 @@ static enum chan_allowed allow_channel(struct hostapd_hw_modes *mode,
 }
 
 
-static int get_center_80mhz(struct hostapd_hw_modes *mode, u8 channel)
+static int get_center_80mhz(struct hostapd_hw_modes *mode, u8 channel,
+			    const u8 *center_channels, size_t num_chan)
 {
-	u8 center_channels[] = { 42, 58, 106, 122, 138, 155 };
 	size_t i;
 
 	if (mode->mode != HOSTAPD_MODE_IEEE80211A)
 		return 0;
 
-	for (i = 0; i < ARRAY_SIZE(center_channels); i++) {
+	for (i = 0; i < num_chan; i++) {
 		/*
 		 * In 80 MHz, the bandwidth "spans" 12 channels (e.g., 36-48),
 		 * so the center channel is 6 channels away from the start/end.
@@ -75,8 +75,22 @@ static enum chan_allowed verify_80mhz(struct hostapd_hw_modes *mode,
 	u8 center_chan;
 	unsigned int i;
 	unsigned int no_ir = 0;
+	const u8 *center_channels;
+	size_t num_chan;
+	const u8 center_channels_5ghz[] = { 42, 58, 106, 122, 138, 155 };
+	const u8 center_channels_6ghz[] = { 7, 23, 39, 55, 71, 87, 103, 119,
+					    135, 151, 167, 183, 199, 215 };
 
-	center_chan = get_center_80mhz(mode, channel);
+	if (is_6ghz_op_class(op_class)) {
+		center_channels = center_channels_6ghz;
+		num_chan = ARRAY_SIZE(center_channels_6ghz);
+	} else {
+		center_channels = center_channels_5ghz;
+		num_chan = ARRAY_SIZE(center_channels_5ghz);
+	}
+
+	center_chan = get_center_80mhz(mode, channel, center_channels,
+				       num_chan);
 	if (!center_chan)
 		return NOT_ALLOWED;
 
@@ -106,15 +120,15 @@ static enum chan_allowed verify_80mhz(struct hostapd_hw_modes *mode,
 }
 
 
-static int get_center_160mhz(struct hostapd_hw_modes *mode, u8 channel)
+static int get_center_160mhz(struct hostapd_hw_modes *mode, u8 channel,
+			     const u8 *center_channels, size_t num_chan)
 {
-	u8 center_channels[] = { 50, 114 };
 	unsigned int i;
 
 	if (mode->mode != HOSTAPD_MODE_IEEE80211A)
 		return 0;
 
-	for (i = 0; i < ARRAY_SIZE(center_channels); i++) {
+	for (i = 0; i < num_chan; i++) {
 		/*
 		 * In 160 MHz, the bandwidth "spans" 28 channels (e.g., 36-64),
 		 * so the center channel is 14 channels away from the start/end.
@@ -134,8 +148,21 @@ static enum chan_allowed verify_160mhz(struct hostapd_hw_modes *mode,
 	u8 center_chan;
 	unsigned int i;
 	unsigned int no_ir = 0;
+	const u8 *center_channels;
+	size_t num_chan;
+	const u8 center_channels_5ghz[] = { 50, 114 };
+	const u8 center_channels_6ghz[] = { 15, 47, 79, 111, 143, 175, 207 };
 
-	center_chan = get_center_160mhz(mode, channel);
+	if (is_6ghz_op_class(op_class)) {
+		center_channels = center_channels_6ghz;
+		num_chan = ARRAY_SIZE(center_channels_6ghz);
+	} else {
+		center_channels = center_channels_5ghz;
+		num_chan = ARRAY_SIZE(center_channels_5ghz);
+	}
+
+	center_chan = get_center_160mhz(mode, channel, center_channels,
+					num_chan);
 	if (!center_chan)
 		return NOT_ALLOWED;
 
@@ -176,11 +203,12 @@ enum chan_allowed verify_channel(struct hostapd_hw_modes *mode, u8 op_class,
 	enum chan_allowed res, res2;
 
 	res2 = res = allow_channel(mode, op_class, channel, &flag);
-	if (bw == BW40MINUS) {
+	if (bw == BW40MINUS || (bw == BW40 && (((channel - 1) / 4) % 2))) {
 		if (!(flag & HOSTAPD_CHAN_HT40MINUS))
 			return NOT_ALLOWED;
 		res2 = allow_channel(mode, op_class, channel - 4, NULL);
-	} else if (bw == BW40PLUS) {
+	} else if (bw == BW40PLUS ||
+		   (bw == BW40 && !(((channel - 1) / 4) % 2))) {
 		if (!(flag & HOSTAPD_CHAN_HT40PLUS))
 			return NOT_ALLOWED;
 		res2 = allow_channel(mode, op_class, channel + 4, NULL);
@@ -339,6 +367,41 @@ static int wpas_op_class_supported(struct wpa_supplicant *wpa_s,
 
 		if (found >= 2)
 			return 1;
+
+		return 0;
+	}
+
+	if (op_class->op_class == 135) {
+		/* Need at least two 80 MHz segments which do not fall under the
+		 * same 160 MHz segment to support 80+80 in 6 GHz.
+		 */
+		int first_seg = 0;
+		int curr_seg = 0;
+
+		for (chan = op_class->min_chan; chan <= op_class->max_chan;
+		     chan += op_class->inc) {
+			curr_seg++;
+			if (verify_channel(mode, op_class->op_class, chan,
+					   op_class->bw) != NOT_ALLOWED) {
+				if (!first_seg) {
+					first_seg = curr_seg;
+					continue;
+				}
+
+				/* Supported if at least two non-consecutive 80
+				 * MHz segments allowed.
+				 */
+				if ((curr_seg - first_seg) > 1)
+					return 1;
+
+				/* Supported even if the 80 MHz segments are
+				 * consecutive when they do not fall under the
+				 * same 160 MHz segment.
+				 */
+				if ((first_seg % 2) == 0)
+					return 1;
+			}
+		}
 
 		return 0;
 	}
