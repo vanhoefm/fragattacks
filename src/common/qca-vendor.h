@@ -6808,8 +6808,9 @@ enum qca_wlan_vendor_attr_wake_stats {
 
 /**
  * enum qca_wlan_vendor_thermal_level - Defines various thermal levels
- * configured by userspace to the driver/firmware. The values will be
- * encapsulated in QCA_WLAN_VENDOR_ATTR_THERMAL_LEVEL attribute.
+ * configured by userspace to the driver/firmware.
+ * The values can be encapsulated in QCA_WLAN_VENDOR_ATTR_THERMAL_LEVEL or
+ * QCA_WLAN_VENDOR_ATTR_THERMAL_EVENT_LEVEL attribute.
  * The driver/firmware takes actions requested by userspace such as throttling
  * wifi TX etc. in order to mitigate high temperature.
  *
@@ -6843,8 +6844,9 @@ enum qca_wlan_vendor_attr_thermal_cmd {
 	 */
 	QCA_WLAN_VENDOR_ATTR_THERMAL_CMD_VALUE = 1,
 	/* Userspace uses this attribute to configure thermal level to the
-	 * driver/firmware. Used in request, u32 attribute, possible values
-	 * are defined in enum qca_wlan_vendor_thermal_level.
+	 * driver/firmware, or get thermal level from the driver/firmware.
+	 * Used in request or response, u32 attribute,
+	 * possible values are defined in enum qca_wlan_vendor_thermal_level.
 	 */
 	QCA_WLAN_VENDOR_ATTR_THERMAL_LEVEL = 2,
 	/* Userspace uses this attribute to configure the time in which the
@@ -6882,6 +6884,9 @@ enum qca_wlan_vendor_attr_thermal_cmd {
  * resume action.
  * @QCA_WLAN_VENDOR_ATTR_THERMAL_CMD_TYPE_SET_LEVEL: Configure thermal level to
  * the driver/firmware.
+ * @QCA_WLAN_VENDOR_ATTR_THERMAL_CMD_TYPE_GET_LEVEL: Request to get the current
+ * thermal level from the driver/firmware. The driver should respond with a
+ * thermal level defined in enum qca_wlan_vendor_thermal_level.
  */
 enum qca_wlan_vendor_attr_thermal_cmd_type {
 	QCA_WLAN_VENDOR_ATTR_THERMAL_CMD_TYPE_GET_PARAMS,
@@ -6889,6 +6894,7 @@ enum qca_wlan_vendor_attr_thermal_cmd_type {
 	QCA_WLAN_VENDOR_ATTR_THERMAL_CMD_TYPE_SUSPEND,
 	QCA_WLAN_VENDOR_ATTR_THERMAL_CMD_TYPE_RESUME,
 	QCA_WLAN_VENDOR_ATTR_THERMAL_CMD_TYPE_SET_LEVEL,
+	QCA_WLAN_VENDOR_ATTR_THERMAL_CMD_TYPE_GET_LEVEL,
 };
 
 /**
@@ -6971,6 +6977,11 @@ enum qca_wlan_vendor_attr_thermal_event {
 	 * NLA_FLAG attribute.
 	 */
 	QCA_WLAN_VENDOR_ATTR_THERMAL_EVENT_RESUME_COMPLETE,
+	/* Thermal level from the driver.
+	 * u32 attribute. Possible values are defined in
+	 * enum qca_wlan_vendor_thermal_level.
+	 */
+	QCA_WLAN_VENDOR_ATTR_THERMAL_EVENT_LEVEL = 3,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_THERMAL_EVENT_AFTER_LAST,
