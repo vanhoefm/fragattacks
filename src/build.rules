@@ -76,10 +76,10 @@ _DIRS := $(BUILDDIR)/$(PROJ)
 _make_dirs:
 	@mkdir -p $(_DIRS)
 
-$(BUILDDIR)/$(PROJ)/src/%.o: $(ROOTDIR)src/%.c | _make_dirs
+$(BUILDDIR)/$(PROJ)/src/%.o: $(ROOTDIR)src/%.c $(CONFIG_FILE) | _make_dirs
 	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
 	@$(E) "  CC " $<
-$(BUILDDIR)/$(PROJ)/%.o: %.c | _make_dirs
+$(BUILDDIR)/$(PROJ)/%.o: %.c $(CONFIG_FILE) | _make_dirs
 	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
 	@$(E) "  CC " $<
 
