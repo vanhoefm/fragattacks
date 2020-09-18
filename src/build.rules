@@ -1,6 +1,9 @@
 .PHONY: all
 all: $(VERIFY) $(ALL) $(EXTRA_TARGETS)
 
+# disable built-in rules
+.SUFFIXES:
+
 ifndef CC
 CC=gcc
 endif
