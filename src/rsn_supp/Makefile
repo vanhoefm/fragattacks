@@ -1,12 +1,10 @@
-all: librsn_supp.a
+ALL=librsn_supp.a
 
-clean:
-	rm -f *~ *.o *.d *.gcno *.gcda *.gcov librsn_supp.a
+include ../lib.rules
 
 install:
 	@echo Nothing to be made.
 
-include ../lib.rules
 
 CFLAGS += -DCONFIG_IEEE80211R
 CFLAGS += -DCONFIG_TDLS

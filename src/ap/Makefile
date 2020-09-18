@@ -1,12 +1,10 @@
-all: libap.a
+ALL=libap.a
 
-clean:
-	rm -f *~ *.o *.d *.gcno *.gcda *.gcov libap.a
+include ../lib.rules
 
 install:
 	@echo Nothing to be made.
 
-include ../lib.rules
 
 CFLAGS += -DHOSTAPD
 CFLAGS += -DNEED_AP_MLME

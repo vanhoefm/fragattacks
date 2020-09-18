@@ -1,12 +1,10 @@
-all: libeap_common.a
+ALL=libeap_common.a
 
-clean:
-	rm -f *~ *.o *.d *.gcno *.gcda *.gcov libeap_common.a
+include ../lib.rules
 
 install:
 	@echo Nothing to be made.
 
-include ../lib.rules
 
 LIB_OBJS= \
 	chap.o \

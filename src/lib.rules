@@ -1,10 +1,5 @@
-ifndef CC
-CC=gcc
-endif
-
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
-endif
+LIB_RULES := $(lastword $(MAKEFILE_LIST))
+include $(dir $(LIB_RULES))build.rules
 
 ifdef TEST_FUZZ
 CFLAGS += -DCONFIG_NO_RANDOM_POOL
@@ -14,18 +9,5 @@ endif
 CFLAGS += $(FUZZ_CFLAGS)
 CFLAGS += -I.. -I../utils
 
-
-Q=@
-E=echo
-ifeq ($(V), 1)
-Q=
-E=true
-endif
-ifeq ($(QUIET), 1)
-Q=@
-E=true
-endif
-
-%.o: %.c
-	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
-	@$(E) "  CC " $<
+clean:
+	$(Q)rm -f *~ *.o *.d *.gcno *.gcda *.gcov $(ALL)

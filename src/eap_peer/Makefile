@@ -1,7 +1,6 @@
-all: libeap_peer.a
+ALL=libeap_peer.a
 
-clean:
-	rm -f *~ *.o *.so *.d *.gcno *.gcda *.gcov libeap_peer.a
+include ../lib.rules
 
 install:
 	if ls *.so >/dev/null 2>&1; then \
@@ -9,7 +8,6 @@ install:
 		cp *.so $(DESTDIR)$(LIBDIR)/wpa_supplicant \
 	; fi
 
-include ../lib.rules
 
 CFLAGS += -DIEEE8021X_EAPOL
 

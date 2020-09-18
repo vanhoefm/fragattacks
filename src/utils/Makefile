@@ -1,13 +1,10 @@
-all: libutils.a
+ALL=libutils.a
 
-clean:
-	rm -f *~ *.o *.d *.gcno *.gcda *.gcov libutils.a
+include ../lib.rules
 
 install:
 	@echo Nothing to be made.
 
-
-include ../lib.rules
 
 #CFLAGS += -DWPA_TRACE
 CFLAGS += -DCONFIG_IPV6

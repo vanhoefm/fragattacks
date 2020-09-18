@@ -1,12 +1,10 @@
-all: libeapol_auth.a
+ALL=libeapol_auth.a
 
-clean:
-	rm -f *~ *.o *.d *.gcno *.gcda *.gcov libeapol_auth.a
+include ../lib.rules
 
 install:
 	@echo Nothing to be made.
 
-include ../lib.rules
 
 LIB_OBJS = eapol_auth_sm.o eapol_auth_dump.o
 

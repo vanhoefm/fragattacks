@@ -1,12 +1,10 @@
-all: libp2p.a
+ALL=libp2p.a
 
-clean:
-	rm -f *~ *.o *.d *.gcno *.gcda *.gcov libp2p.a
+include ../lib.rules
 
 install:
 	@echo Nothing to be made.
 
-include ../lib.rules
 
 CFLAGS += -DCONFIG_WIFI_DISPLAY
 CFLAGS += -DCONFIG_WPS_NFC

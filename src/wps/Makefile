@@ -1,12 +1,10 @@
-all: libwps.a
+ALL=libwps.a
 
-clean:
-	rm -f *~ *.o *.d *.gcno *.gcda *.gcov libwps.a
+include ../lib.rules
 
 install:
 	@echo Nothing to be made.
 
-include ../lib.rules
 
 CFLAGS += -DCONFIG_P2P
 CFLAGS += -DCONFIG_WPS_OOB

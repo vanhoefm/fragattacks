@@ -1,13 +1,10 @@
-all: libtls.a
+ALL=libtls.a
 
-clean:
-	rm -f *~ *.o *.d libtls.a
+include ../lib.rules
 
 install:
 	@echo Nothing to be made.
 
-
-include ../lib.rules
 
 CFLAGS += -DCONFIG_INTERNAL_LIBTOMMATH
 CFLAGS += -DCONFIG_CRYPTO_INTERNAL

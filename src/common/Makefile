@@ -1,12 +1,10 @@
-all: libcommon.a
+ALL=libcommon.a
 
-clean:
-	rm -f *~ *.o *.d *.gcno *.gcda *.gcov libcommon.a
+include ../lib.rules
 
 install:
 	@echo Nothing to be made.
 
-include ../lib.rules
 
 CFLAGS += -DCONFIG_IEEE80211R
 CFLAGS += -DCONFIG_HS20

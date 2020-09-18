@@ -1,12 +1,10 @@
-all: libeap_server.a
+ALL=libeap_server.a
 
-clean:
-	rm -f *~ *.o *.d *.gcno *.gcda *.gcov libeap_server.a
+include ../lib.rules
 
 install:
 	@echo Nothing to be made.
 
-include ../lib.rules
 
 CFLAGS += -DCONFIG_HS20
 

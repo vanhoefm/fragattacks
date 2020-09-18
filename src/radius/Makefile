@@ -1,13 +1,10 @@
-all: libradius.a
+ALL=libradius.a
 
-clean:
-	rm -f *~ *.o *.d *.gcno *.gcda *.gcov libradius.a
+include ../lib.rules
 
 install:
 	@echo Nothing to be made.
 
-
-include ../lib.rules
 
 CFLAGS += -DCONFIG_IPV6
 
