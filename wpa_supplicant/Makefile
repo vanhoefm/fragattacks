@@ -14,9 +14,9 @@ ifdef CONFIG_BUILD_WPA_CLIENT_SO
 ALL += libwpa_client.so
 endif
 
-VERIFY=verify_config
 EXTRA_TARGETS=dynamic_eap_methods
 
+CONFIG_FILE=.config
 include ../src/build.rules
 
 ifdef LIBS
@@ -39,8 +39,6 @@ CFLAGS += $(EXTRA_CFLAGS)
 CFLAGS += -I$(abspath ../src)
 CFLAGS += -I$(abspath ../src/utils)
 
--include .config
-
 ifndef CONFIG_NO_GITVER
 # Add VERSION_STR postfix for builds from a git repository
 ifeq ($(wildcard ../.git),../.git)
@@ -56,15 +54,6 @@ CFLAGS += -DCONFIG_TESTING_OPTIONS
 CONFIG_WPS_TESTING=y
 CONFIG_TDLS_TESTING=y
 endif
-
-verify_config:
-	@if [ ! -r .config ]; then \
-		echo 'Building wpa_supplicant requires a configuration file'; \
-		echo '(.config). See README for more instructions. You can'; \
-		echo 'run "cp defconfig .config" to create an example'; \
-		echo 'configuration.'; \
-		exit 1; \
-	fi
 
 mkconfig:
 	@if [ -f .config ]; then \

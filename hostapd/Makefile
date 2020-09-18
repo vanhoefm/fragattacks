@@ -1,5 +1,5 @@
 ALL=hostapd hostapd_cli
-VERIFY=verify_config
+CONFIG_FILE = .config
 
 include ../src/build.rules
 
@@ -26,8 +26,6 @@ CFLAGS += -I$(abspath ../src)
 CFLAGS += -I$(abspath ../src/utils)
 
 export BINDIR ?= /usr/local/bin/
-
--include .config
 
 ifndef CONFIG_NO_GITVER
 # Add VERSION_STR postfix for builds from a git repository
@@ -1260,15 +1258,6 @@ endif
 ifdef CONFIG_NO_TKIP
 CFLAGS += -DCONFIG_NO_TKIP
 endif
-
-verify_config:
-	@if [ ! -r .config ]; then \
-		echo 'Building hostapd requires a configuration file'; \
-		echo '(.config). See README for more instructions. You can'; \
-		echo 'run "cp defconfig .config" to create an example'; \
-		echo 'configuration.'; \
-		exit 1; \
-	fi
 
 $(DESTDIR)$(BINDIR)/%: %
 	install -D $(<) $(@)

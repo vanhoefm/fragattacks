@@ -1,5 +1,5 @@
 .PHONY: all
-all: $(VERIFY) $(ALL) $(EXTRA_TARGETS)
+all: _all
 
 # disable built-in rules
 .SUFFIXES:
@@ -22,6 +22,27 @@ endif
 ifndef CFLAGS
 CFLAGS = -MMD -O2 -Wall -g
 endif
+
+ifneq ($(CONFIG_FILE),)
+-include $(CONFIG_FILE)
+
+.PHONY: verify_config
+verify_config:
+	@if [ ! -r $(CONFIG_FILE) ]; then \
+		echo 'Building $(firstword $(ALL)) requires a configuration file'; \
+		echo '(.config). See README for more instructions. You can'; \
+		echo 'run "cp defconfig .config" to create an example'; \
+		echo 'configuration.'; \
+		exit 1; \
+	fi
+VERIFY := verify_config
+else
+VERIFY :=
+endif
+
+# default target
+.PHONY: _all
+_all: $(VERIFY) $(ALL) $(EXTRA_TARGETS)
 
 Q=@
 E=echo
