@@ -27,8 +27,7 @@ OBJS_ex = radius_example.o
 radius_example: $(OBJS_ex) $(LIBS)
 	$(LDO) $(LDFLAGS) -o radius_example $(OBJS_ex) $(LIBS) $(LLIBS)
 
-clean:
-	$(MAKE) -C ../src clean
-	rm -f core *~ *.o *.d $(ALL)
+clean: common-clean
+	rm -f core *~ *.o *.d
 
 -include $(OBJS:%.o=%.d)

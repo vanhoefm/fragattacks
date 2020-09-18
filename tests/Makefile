@@ -151,9 +151,8 @@ run-tests: $(ALL)
 	@echo
 	@echo All tests completed successfully.
 
-clean:
-	$(MAKE) -C ../src clean
-	rm -f $(ALL) *~ *.o *.d
+clean: common-clean
+	rm -f *~ *.o *.d
 	rm -f test-eapol
 	rm -f test-https
 	rm -f test-json

@@ -2004,11 +2004,11 @@ lcov-html: wpa_supplicant.gcda
 	lcov -c -d .. > lcov.info
 	genhtml lcov.info --output-directory lcov-html
 
-clean:
+clean: common-clean
 	$(MAKE) -C ../src clean
 	$(MAKE) -C dbus clean
 	rm -f core *~ *.o *.d *.gcno *.gcda *.gcov
-	rm -f eap_*.so $(ALL) $(WINALL) eapol_test preauth_test
+	rm -f eap_*.so $(WINALL) eapol_test preauth_test
 	rm -f wpa_priv
 	rm -f nfc_pw_token
 	rm -f lcov.info

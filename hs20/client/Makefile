@@ -75,8 +75,8 @@ hs20-osu-client: $(OBJS)
 	$(Q)$(LDO) $(LDFLAGS) -o hs20-osu-client $(OBJS) $(LIBS)
 	@$(E) "  LD " $@
 
-clean:
-	rm -f core *~ *.o *.d hs20-osu-client
+clean: common-clean
+	rm -f core *~ *.o *.d
 	rm -f ../../src/utils/*.o
 	rm -f ../../src/utils/*.d
 	rm -f ../../src/common/*.o

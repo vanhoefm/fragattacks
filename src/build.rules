@@ -4,6 +4,9 @@ all: $(VERIFY) $(ALL) $(EXTRA_TARGETS)
 # disable built-in rules
 .SUFFIXES:
 
+ROOTDIR := $(dir $(lastword $(MAKEFILE_LIST)))
+ROOTDIR := $(dir $(ROOTDIR:%/=%))
+
 ifndef CC
 CC=gcc
 endif
@@ -44,3 +47,8 @@ else
 	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
 	@$(E) "  CC " $<
 endif
+
+.PHONY: common-clean
+common-clean:
+	$(Q)$(MAKE) -C $(ROOTDIR)/src clean
+	$(Q)rm -f $(ALL)

@@ -81,8 +81,7 @@ wlantest_cli: $(OBJS_cli) $(OWN_LIBS)
 test_vectors: $(TOBJS) $(OWN_LIBS)
 	$(LDO) $(LDFLAGS) -o test_vectors $(TOBJS) $(OWN_LIBS) $(LIBS)
 
-clean:
-	$(MAKE) -C ../src clean
-	rm -f core *~ *.o *.d $(ALL)
+clean: common-clean
+	rm -f core *~ *.o *.d
 
 -include $(OBJS:%.o=%.d)

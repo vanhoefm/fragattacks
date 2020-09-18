@@ -1362,9 +1362,8 @@ lcov-html:
 	lcov -c -d .. > lcov.info
 	genhtml lcov.info --output-directory lcov-html
 
-clean:
-	$(MAKE) -C ../src clean
-	rm -f core *~ *.o hostapd hostapd_cli nt_password_hash hlr_auc_gw
+clean: common-clean
+	rm -f core *~ *.o nt_password_hash hlr_auc_gw
 	rm -f sae_pk_gen
 	rm -f *.d *.gcno *.gcda *.gcov
 	rm -f lcov.info

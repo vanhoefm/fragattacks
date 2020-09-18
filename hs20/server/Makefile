@@ -36,8 +36,8 @@ OBJS += ../../src/utils/xml_libxml2.o
 hs20_spp_server: $(OBJS)
 	$(LDO) $(LDFLAGS) -o hs20_spp_server $(OBJS) $(LIBS)
 
-clean:
-	rm -f core *~ *.o *.d hs20_spp_server
+clean: common-clean
+	rm -f core *~ *.o *.d
 	rm -f ../../src/utils/*.o
 	rm -f ../../src/utils/*.d
 	rm -f ../../src/crypto/*.o

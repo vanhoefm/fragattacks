@@ -116,8 +116,7 @@ endif
 eap_example: $(OBJS_ex) $(LIBEAP)
 	$(LDO) $(LDFLAGS) -o eap_example $(OBJS_ex) -L. -leap $(LIBS)
 
-clean:
-	$(MAKE) -C ../src clean
-	rm -f core *~ *.o *.d libeap.a libeap.so $(ALL)
+clean: common-clean
+	rm -f core *~ *.o *.d libeap.a libeap.so
 
 -include $(OBJS:%.o=%.d)
