@@ -23,7 +23,7 @@ LIB_OBJS= \
 	eap_wsc_common.o \
 	ikev2_common.o
 
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
 libeap_common.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)

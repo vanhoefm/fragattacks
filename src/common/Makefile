@@ -19,7 +19,7 @@ LIB_OBJS= \
 	sae.o \
 	wpa_common.o
 
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
 libcommon.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)

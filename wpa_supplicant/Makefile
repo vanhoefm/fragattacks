@@ -1860,28 +1860,40 @@ dynamic_eap_methods: $(EAPDYN)
 
 BCHECK=../src/drivers/build.wpa_supplicant
 
+_OBJS_VAR := OBJS_priv
+include ../src/objs.mk
 wpa_priv: $(BCHECK) $(OBJS_priv)
 	$(Q)$(LDO) $(LDFLAGS) -o wpa_priv $(OBJS_priv) $(LIBS)
 	@$(E) "  LD " $@
 
 $(OBJS_c) $(OBJS_t) $(OBJS_t2) $(OBJS) $(BCHECK) $(EXTRA_progs): .config
 
+_OBJS_VAR := OBJS
+include ../src/objs.mk
 wpa_supplicant: $(BCHECK) $(OBJS) $(EXTRA_progs)
 	$(Q)$(LDO) $(LDFLAGS) -o wpa_supplicant $(OBJS) $(LIBS) $(EXTRALIBS)
 	@$(E) "  LD " $@
 
+_OBJS_VAR := OBJS_t
+include ../src/objs.mk
 eapol_test: $(OBJS_t)
 	$(Q)$(LDO) $(LDFLAGS) -o eapol_test $(OBJS_t) $(LIBS)
 	@$(E) "  LD " $@
 
+_OBJS_VAR := OBJS_t2
+include ../src/objs.mk
 preauth_test: $(OBJS_t2)
 	$(Q)$(LDO) $(LDFLAGS) -o preauth_test $(OBJS_t2) $(LIBS)
 	@$(E) "  LD " $@
 
+_OBJS_VAR := OBJS_p
+include ../src/objs.mk
 wpa_passphrase: $(OBJS_p)
 	$(Q)$(LDO) $(LDFLAGS) -o wpa_passphrase $(OBJS_p) $(LIBS_p) $(LIBS)
 	@$(E) "  LD " $@
 
+_OBJS_VAR := OBJS_c
+include ../src/objs.mk
 wpa_cli: $(OBJS_c)
 	$(Q)$(LDO) $(LDFLAGS) -o wpa_cli $(OBJS_c) $(LIBS_c)
 	@$(E) "  LD " $@
@@ -1895,6 +1907,8 @@ LIBCTRLSO += ../src/utils/os_$(CONFIG_OS).c
 LIBCTRLSO += ../src/utils/common.c
 LIBCTRLSO += ../src/utils/wpa_debug.c
 
+_OBJS_VAR := LIBCTRL
+include ../src/objs.mk
 libwpa_client.a: $(LIBCTRL)
 	$(Q)rm -f $@
 	$(Q)$(AR) crs $@ $?
@@ -1904,14 +1918,19 @@ libwpa_client.so: $(LIBCTRLSO)
 	@$(E) "  CC  $@ ($^)"
 	$(Q)$(CC) $(LDFLAGS) -o $@ $(CFLAGS) -shared -fPIC $^
 
-libwpa_test1: libwpa_test.o libwpa_client.a
-	$(Q)$(LDO) $(LDFLAGS) -o libwpa_test1 libwpa_test.o libwpa_client.a $(LIBS_c)
+OBJS_wpatest := libwpa_test.o
+_OBJS_VAR := OBJS_wpatest
+include ../src/objs.mk
+libwpa_test1: $(OBJS_wpatest) libwpa_client.a
+	$(Q)$(LDO) $(LDFLAGS) -o libwpa_test1 $(OBJS_wpatest) libwpa_client.a $(LIBS_c)
 	@$(E) "  LD " $@
 
-libwpa_test2: libwpa_test.o libwpa_client.so
-	$(Q)$(LDO) $(LDFLAGS) -o libwpa_test2 libwpa_test.o -L. -lwpa_client $(LIBS_c)
+libwpa_test2: $(OBJS_wpatest) libwpa_client.so
+	$(Q)$(LDO) $(LDFLAGS) -o libwpa_test2 $(OBJS_wpatest) -L. -lwpa_client $(LIBS_c)
 	@$(E) "  LD " $@
 
+_OBJS_VAR := OBJS_nfc
+include ../src/objs.mk
 nfc_pw_token: $(OBJS_nfc)
 	$(Q)$(LDO) $(LDFLAGS) -o nfc_pw_token $(OBJS_nfc) $(LIBS)
 	@$(E) "  LD " $@
@@ -1989,8 +2008,9 @@ FIPSLD=$(FIPSDIR)/bin/fipsld
 fips:
 	$(MAKE) CC=$(FIPSLD) FIPSLD_CC="$(CC)"
 
-lcov-html: wpa_supplicant.gcda
-	lcov -c -d .. > lcov.info
+.PHONY: lcov-html
+lcov-html: $(call BUILDOBJ,wpa_supplicant.gcda)
+	lcov -c -d $(BUILDDIR) > lcov.info
 	genhtml lcov.info --output-directory lcov-html
 
 clean: common-clean
@@ -2005,5 +2025,3 @@ clean: common-clean
 	rm -f libwpa_client.a
 	rm -f libwpa_client.so
 	rm -f libwpa_test1 libwpa_test2
-
--include $(OBJS:%.o=%.d)

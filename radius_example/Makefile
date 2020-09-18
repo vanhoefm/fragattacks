@@ -24,10 +24,11 @@ LLIBS = -lrt
 
 OBJS_ex = radius_example.o
 
+_OBJS_VAR := OBJS_ex
+include ../src/objs.mk
+
 radius_example: $(OBJS_ex) $(LIBS)
 	$(LDO) $(LDFLAGS) -o radius_example $(OBJS_ex) $(LIBS) $(LLIBS)
 
 clean: common-clean
 	rm -f core *~ *.o *.d
-
--include $(OBJS:%.o=%.d)

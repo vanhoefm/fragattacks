@@ -19,7 +19,7 @@ LIB_OBJS= \
 	wpa.o \
 	wpa_ie.o
 
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
 librsn_supp.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)

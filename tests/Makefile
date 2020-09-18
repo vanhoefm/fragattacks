@@ -5,6 +5,13 @@ ALL=test-base64 test-md4 test-milenage \
 
 include ../src/build.rules
 
+# for now, keep building in this folder, otherwise we need to
+# put each object for each test into a separate variable and
+# then do the objs.mk dance for it ...
+%.o: %.c
+	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
+	@$(E) "  CC " $<
+
 ifdef LIBFUZZER
 CC=clang
 CFLAGS = -MMD -O2 -Wall -g

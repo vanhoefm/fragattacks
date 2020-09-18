@@ -66,7 +66,7 @@ LIB_OBJS += random.o
 endif
 
 
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
 libcrypto.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)

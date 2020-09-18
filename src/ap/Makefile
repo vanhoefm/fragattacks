@@ -65,7 +65,7 @@ LIB_OBJS= \
 	wps_hostapd.o \
 	x_snoop.o
 
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
 libap.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)

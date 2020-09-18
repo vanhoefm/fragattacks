@@ -33,7 +33,7 @@ LIB_OBJS= \
 	wps_upnp_ssdp.o \
 	wps_upnp_web.o
 
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
 libwps.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)

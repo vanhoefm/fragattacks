@@ -71,6 +71,12 @@ TOBJS += gcmp.o
 
 OBJS_cli = wlantest_cli.o
 
+_OBJS_VAR := OBJS
+include ../src/objs.mk
+_OBJS_VAR := TOBJS
+include ../src/objs.mk
+_OBJS_VAR := OBJS_cli
+include ../src/objs.mk
 
 wlantest: $(OBJS) $(OWN_LIBS)
 	$(LDO) $(LDFLAGS) -o wlantest $(OBJS) $(OWN_LIBS) $(LIBS)
@@ -82,6 +88,4 @@ test_vectors: $(TOBJS) $(OWN_LIBS)
 	$(LDO) $(LDFLAGS) -o test_vectors $(TOBJS) $(OWN_LIBS) $(LIBS)
 
 clean: common-clean
-	rm -f core *~ *.o *.d
-
--include $(OBJS:%.o=%.d)
+	rm -f core *~

@@ -21,7 +21,7 @@ LIB_OBJS= \
 	p2p_sd.o \
 	p2p_utils.o
 
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
 libp2p.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)

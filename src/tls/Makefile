@@ -31,7 +31,7 @@ LIB_OBJS= \
 	x509v3.o
 
 
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
 libtls.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)

@@ -15,7 +15,7 @@ LIB_OBJS= \
 	eap.o \
 	eap_methods.o
 
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
 libeap_peer.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)

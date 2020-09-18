@@ -4,8 +4,13 @@ all: _all
 # disable built-in rules
 .SUFFIXES:
 
+# setup some variables
 ROOTDIR := $(dir $(lastword $(MAKEFILE_LIST)))
-ROOTDIR := $(dir $(ROOTDIR:%/=%))
+ROOTDIR := $(dir $(ROOTDIR:%../src/=%))../
+BUILDDIR := $(ROOTDIR)build
+_PROJ := $(abspath $(dir $(firstword $(MAKEFILE_LIST))))
+ABSROOT := $(abspath $(ROOTDIR))
+_PROJ := $(_PROJ:$(ABSROOT)/%=%)
 
 ifndef CC
 CC=gcc
@@ -26,6 +31,9 @@ endif
 ifneq ($(CONFIG_FILE),)
 -include $(CONFIG_FILE)
 
+# export for sub-makefiles
+export CONFIG_CODE_COVERAGE
+
 .PHONY: verify_config
 verify_config:
 	@if [ ! -r $(CONFIG_FILE) ]; then \
@@ -44,6 +52,10 @@ endif
 .PHONY: _all
 _all: $(VERIFY) $(ALL) $(EXTRA_TARGETS)
 
+# continue setup
+COVSUFFIX := $(if $(CONFIG_CODE_COVERAGE),-cov,)
+PROJ := $(_PROJ)$(COVSUFFIX)
+
 Q=@
 E=echo
 ifeq ($(V), 1)
@@ -59,17 +71,21 @@ ifeq ($(Q),@)
 MAKEFLAGS += --no-print-directory
 endif
 
-ifdef CONFIG_CODE_COVERAGE
-%.o: %.c
-	@$(E) "  CC " $<
-	$(Q)cd $(dir $@); $(CC) -c -o $(notdir $@) $(CFLAGS) $(notdir $<)
-else
-%.o: %.c
+_DIRS := $(BUILDDIR)/$(PROJ)
+.PHONY: _make_dirs
+_make_dirs:
+	@mkdir -p $(_DIRS)
+
+$(BUILDDIR)/$(PROJ)/src/%.o: $(ROOTDIR)src/%.c | _make_dirs
 	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
 	@$(E) "  CC " $<
-endif
+$(BUILDDIR)/$(PROJ)/%.o: %.c | _make_dirs
+	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
+	@$(E) "  CC " $<
+
+BUILDOBJ = $(patsubst %,$(BUILDDIR)/$(PROJ)/%,$(patsubst $(ROOTDIR)%,%,$(1)))
 
 .PHONY: common-clean
 common-clean:
 	$(Q)$(MAKE) -C $(ROOTDIR)/src clean
-	$(Q)rm -f $(ALL)
+	$(Q)rm -rf $(ALL) $(BUILDDIR)/$(PROJ)

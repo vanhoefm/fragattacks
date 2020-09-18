@@ -10,7 +10,7 @@ CFLAGS += -DIEEE8021X_EAPOL
 
 LIB_OBJS = eapol_supp_sm.o
 
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
 libeapol_supp.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)

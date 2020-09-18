@@ -14,7 +14,7 @@ LIB_OBJS= \
 	radius_das.o \
 	radius_server.o
 
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
 libradius.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)

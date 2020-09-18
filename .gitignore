@@ -34,3 +34,4 @@ wlantest/wlantest
 wlantest/wlantest_cli
 **/parallel-vm.log
 tags
+build/

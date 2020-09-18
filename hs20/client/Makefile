@@ -71,19 +71,11 @@ CFLAGS += -DEAP_TLS_OPENSSL
 OBJS += ../../src/crypto/tls_openssl_ocsp.o
 LIBS += -lssl -lcrypto
 
+_OBJS_VAR := OBJS
+include ../../src/objs.mk
 hs20-osu-client: $(OBJS)
 	$(Q)$(LDO) $(LDFLAGS) -o hs20-osu-client $(OBJS) $(LIBS)
 	@$(E) "  LD " $@
 
 clean: common-clean
-	rm -f core *~ *.o *.d
-	rm -f ../../src/utils/*.o
-	rm -f ../../src/utils/*.d
-	rm -f ../../src/common/*.o
-	rm -f ../../src/common/*.d
-	rm -f ../../src/crypto/*.o
-	rm -f ../../src/crypto/*.d
-	rm -f ../../src/wps/*.o
-	rm -f ../../src/wps/*.d
-
--include $(OBJS:%.o=%.d)
+	rm -f core *~

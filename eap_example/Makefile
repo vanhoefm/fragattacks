@@ -7,9 +7,9 @@ CFLAGS += -I../src
 CFLAGS += -I../src/utils
 
 
-OBJS_both += ../src/utils/libutils.a
-OBJS_both += ../src/crypto/libcrypto.a
-OBJS_both += ../src/tls/libtls.a
+EAP_LIBS += ../src/utils/libutils.a
+EAP_LIBS += ../src/crypto/libcrypto.a
+EAP_LIBS += ../src/tls/libtls.a
 
 OBJS_both += ../src/eap_common/eap_peap_common.o
 OBJS_both += ../src/eap_common/eap_psk_common.o
@@ -83,8 +83,12 @@ CFLAGS += -DEAP_SERVER
 
 
 OBJS_lib=$(OBJS_both) $(OBJS_peer) $(OBJS_server)
+_OBJS_VAR := OBJS_lib
+include ../src/objs.mk
 
 OBJS_ex = eap_example.o eap_example_peer.o eap_example_server.o
+_OBJS_VAR := OBJS_ex
+include ../src/objs.mk
 
 
 ../src/utils/libutils.a:
@@ -99,8 +103,8 @@ OBJS_ex = eap_example.o eap_example_peer.o eap_example_server.o
 
 ifneq ($(CONFIG_SOLIB), yes)
 LIBEAP = libeap.a
-libeap.a: $(OBJS_lib)
-	$(AR) crT libeap.a $(OBJS_lib)
+libeap.a: $(EAP_LIBS) $(OBJS_lib)
+	$(AR) crT libeap.a $^
 	$(RANLIB) libeap.a
 
 else
@@ -108,8 +112,8 @@ CFLAGS  += -fPIC -DPIC
 LDFLAGS += -shared
 
 LIBEAP  = libeap.so
-libeap.so: $(OBJS_lib)
-	$(LDO) $(LDFLAGS) $(OBJS_lib) -o $(LIBEAP)
+libeap.so: $(EAP_LIBS) $(OBJS_lib)
+	$(LDO) $(LDFLAGS) $^ -o $(LIBEAP)
 
 endif
 

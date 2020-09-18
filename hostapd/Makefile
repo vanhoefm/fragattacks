@@ -1272,6 +1272,9 @@ install: $(addprefix $(DESTDIR)$(BINDIR)/,$(ALL))
 
 BCHECK=../src/drivers/build.hostapd
 
+_OBJS_VAR := OBJS
+include ../src/objs.mk
+
 hostapd: $(BCHECK) $(OBJS)
 	$(Q)$(CC) $(LDFLAGS) -o hostapd $(OBJS) $(LIBS)
 	@$(E) "  LD " $@
@@ -1279,6 +1282,10 @@ hostapd: $(BCHECK) $(OBJS)
 ifdef CONFIG_WPA_TRACE
 OBJS_c += ../src/utils/trace.o
 endif
+
+_OBJS_VAR := OBJS_c
+include ../src/objs.mk
+
 hostapd_cli: $(OBJS_c)
 	$(Q)$(CC) $(LDFLAGS) -o hostapd_cli $(OBJS_c) $(LIBS_c)
 	@$(E) "  LD " $@
@@ -1335,6 +1342,13 @@ SOBJS += ../src/crypto/sha256-kdf.o
 SOBJS += ../src/crypto/sha384-kdf.o
 SOBJS += ../src/crypto/sha512-kdf.o
 
+_OBJS_VAR := NOBJS
+include ../src/objs.mk
+_OBJS_VAR := HOBJS
+include ../src/objs.mk
+_OBJS_VAR := SOBJS
+include ../src/objs.mk
+
 nt_password_hash: $(NOBJS)
 	$(Q)$(CC) $(LDFLAGS) -o nt_password_hash $(NOBJS) $(LIBS_n)
 	@$(E) "  LD " $@
@@ -1347,15 +1361,13 @@ sae_pk_gen: $(SOBJS)
 	$(Q)$(CC) $(LDFLAGS) -o sae_pk_gen $(SOBJS) $(LIBS_s)
 	@$(E) "  LD " $@
 
+.PHONY: lcov-html
 lcov-html:
-	lcov -c -d .. > lcov.info
+	lcov -c -d $(BUILDDIR) > lcov.info
 	genhtml lcov.info --output-directory lcov-html
 
 clean: common-clean
-	rm -f core *~ *.o nt_password_hash hlr_auc_gw
+	rm -f core *~ nt_password_hash hlr_auc_gw
 	rm -f sae_pk_gen
-	rm -f *.d *.gcno *.gcda *.gcov
 	rm -f lcov.info
 	rm -rf lcov-html
-
--include $(OBJS:%.o=%.d)

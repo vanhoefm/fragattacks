@@ -34,7 +34,7 @@ LIB_OBJS += edit.o
 
 #LIB_OBJS += pcsc_funcs.o
 
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
 libutils.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)
