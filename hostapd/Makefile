@@ -1264,18 +1264,10 @@ $(DESTDIR)$(BINDIR)/%: %
 
 install: $(addprefix $(DESTDIR)$(BINDIR)/,$(ALL))
 
-../src/drivers/build.hostapd:
-	@if [ -f ../src/drivers/build.wpa_supplicant ]; then \
-		$(MAKE) -C ../src/drivers clean; \
-	fi
-	@touch ../src/drivers/build.hostapd
-
-BCHECK=../src/drivers/build.hostapd
-
 _OBJS_VAR := OBJS
 include ../src/objs.mk
 
-hostapd: $(BCHECK) $(OBJS)
+hostapd: $(OBJS)
 	$(Q)$(CC) $(LDFLAGS) -o hostapd $(OBJS) $(LIBS)
 	@$(E) "  LD " $@
 

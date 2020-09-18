@@ -1852,14 +1852,6 @@ endif
 
 dynamic_eap_methods: $(EAPDYN)
 
-../src/drivers/build.wpa_supplicant:
-	@if [ -f ../src/drivers/build.hostapd ]; then \
-		$(MAKE) -C ../src/drivers clean; \
-	fi
-	@touch ../src/drivers/build.wpa_supplicant
-
-BCHECK=../src/drivers/build.wpa_supplicant
-
 _OBJS_VAR := OBJS_priv
 include ../src/objs.mk
 wpa_priv: $(BCHECK) $(OBJS_priv)
