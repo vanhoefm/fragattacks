@@ -5,13 +5,6 @@ ALL=test-base64 test-md4 test-milenage \
 
 include ../src/build.rules
 
-# for now, keep building in this folder, otherwise we need to
-# put each object for each test into a separate variable and
-# then do the objs.mk dance for it ...
-%.o: %.c
-	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
-	@$(E) "  CC " $<
-
 ifdef LIBFUZZER
 CC=clang
 CFLAGS = -MMD -O2 -Wall -g
@@ -98,52 +91,52 @@ LLIBS += -lrt
 	$(MAKE) -C ../src/rsn_supp
 
 
-test-aes: test-aes.o $(LIBS)
+test-aes: $(call BUILDOBJ,test-aes.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
-test-asn1: test-asn1.o $(LIBS)
+test-asn1: $(call BUILDOBJ,test-asn1.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
-test-base64: test-base64.o $(LIBS)
+test-base64: $(call BUILDOBJ,test-base64.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
-test-eapol: test-eapol.o $(LIBS)
+test-eapol: $(call BUILDOBJ,test-eapol.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
-test-https: test-https.o $(LIBS)
+test-https: $(call BUILDOBJ,test-https.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
-test-https_server: test-https_server.o $(LIBS)
+test-https_server: $(call BUILDOBJ,test-https_server.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
-test-json: test-json.o $(LIBS)
+test-json: $(call BUILDOBJ,test-json.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
-test-list: test-list.o $(LIBS)
+test-list: $(call BUILDOBJ,test-list.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
-test-md4: test-md4.o $(LIBS)
+test-md4: $(call BUILDOBJ,test-md4.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
-test-milenage: test-milenage.o $(LIBS)
+test-milenage: $(call BUILDOBJ,test-milenage.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
-test-rc4: test-rc4.o $(LIBS)
+test-rc4: $(call BUILDOBJ,test-rc4.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
-test-rsa-sig-ver: test-rsa-sig-ver.o $(LIBS)
+test-rsa-sig-ver: $(call BUILDOBJ,test-rsa-sig-ver.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
-test-sha1: test-sha1.o $(LIBS)
+test-sha1: $(call BUILDOBJ,test-sha1.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
-test-sha256: test-sha256.o $(LIBS)
+test-sha256: $(call BUILDOBJ,test-sha256.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
-test-tls: test-tls.o $(LIBS)
+test-tls: $(call BUILDOBJ,test-tls.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
-test-x509v3: test-x509v3.o $(LIBS)
+test-x509v3: $(call BUILDOBJ,test-x509v3.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
 
@@ -159,12 +152,10 @@ run-tests: $(ALL)
 	@echo All tests completed successfully.
 
 clean: common-clean
-	rm -f *~ *.o *.d
+	rm -f *~
 	rm -f test-eapol
 	rm -f test-https
 	rm -f test-json
 	rm -f test-tls
 	rm -f test_x509v3_nist.out.*
 	rm -f test_x509v3_nist2.out.*
-
--include $(OBJS:%.o=%.d)
