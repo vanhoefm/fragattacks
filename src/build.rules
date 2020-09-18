@@ -1,0 +1,43 @@
+.PHONY: all
+all: $(VERIFY) $(ALL) $(EXTRA_TARGETS)
+
+ifndef CC
+CC=gcc
+endif
+
+ifndef RANLIB
+RANLIB=ranlib
+endif
+
+ifndef LDO
+LDO=$(CC)
+endif
+
+ifndef CFLAGS
+CFLAGS = -MMD -O2 -Wall -g
+endif
+
+Q=@
+E=echo
+ifeq ($(V), 1)
+Q=
+E=true
+endif
+ifeq ($(QUIET), 1)
+Q=@
+E=true
+endif
+
+ifeq ($(Q),@)
+MAKEFLAGS += --no-print-directory
+endif
+
+ifdef CONFIG_CODE_COVERAGE
+%.o: %.c
+	@$(E) "  CC " $<
+	$(Q)cd $(dir $@); $(CC) -c -o $(notdir $@) $(CFLAGS) $(notdir $<)
+else
+%.o: %.c
+	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
+	@$(E) "  CC " $<
+endif

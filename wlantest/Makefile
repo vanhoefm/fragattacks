@@ -1,21 +1,8 @@
 ALL=wlantest wlantest_cli test_vectors
 
-all: $(ALL)
+include ../src/build.rules
 
 UNAME := $(shell uname -s)
-
-ifndef CC
-CC=gcc
-endif
-
-ifndef RANLIB
-RANLIB=ranlib
-endif
-
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
-endif
-
 
 CFLAGS += -I.
 CFLAGS += -I../src
@@ -25,26 +12,6 @@ ifneq ($(UNAME),Darwin)
 # glibc < 2.17 needs -lrt for clock_gettime()
 LIBS += -lrt
 endif
-
-ifndef LDO
-LDO=$(CC)
-endif
-
-Q=@
-E=echo
-ifeq ($(V), 1)
-Q=
-E=true
-endif
-ifeq ($(QUIET), 1)
-Q=@
-E=true
-endif
-
-%.o: %.c
-	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
-	@$(E) "  CC " $<
-
 
 OWN_LIBS += ../src/utils/libutils.a
 OWN_LIBS += ../src/crypto/libcrypto.a

@@ -1,9 +1,9 @@
-TESTS=test-base64 test-md4 test-milenage \
+ALL=test-base64 test-md4 test-milenage \
 	test-rsa-sig-ver \
 	test-sha1 \
 	test-sha256 test-aes test-asn1 test-x509v3 test-list test-rc4
 
-all: $(TESTS)
+include ../src/build.rules
 
 ifdef LIBFUZZER
 CC=clang
@@ -12,18 +12,6 @@ CFLAGS += -fsanitize=fuzzer,address,signed-integer-overflow,unsigned-integer-ove
 CFLAGS += -DTEST_LIBFUZZER
 LDFLAGS += -fsanitize=fuzzer,address,signed-integer-overflow,unsigned-integer-overflow
 TEST_FUZZ=y
-endif
-
-ifndef CC
-CC=gcc
-endif
-
-ifndef LDO
-LDO=$(CC)
-endif
-
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
 endif
 
 ifdef TEST_FUZZ
@@ -152,7 +140,7 @@ test-x509v3: test-x509v3.o $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
 
-run-tests: $(TESTS)
+run-tests: $(ALL)
 	./test-aes
 	./test-list
 	./test-md4
@@ -165,7 +153,7 @@ run-tests: $(TESTS)
 
 clean:
 	$(MAKE) -C ../src clean
-	rm -f $(TESTS) *~ *.o *.d
+	rm -f $(ALL) *~ *.o *.d
 	rm -f test-eapol
 	rm -f test-https
 	rm -f test-json

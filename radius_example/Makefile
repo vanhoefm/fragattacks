@@ -1,18 +1,6 @@
 ALL=radius_example
 
-all: $(ALL)
-
-ifndef CC
-CC=gcc
-endif
-
-ifndef LDO
-LDO=$(CC)
-endif
-
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
-endif
+include ../src/build.rules
 
 CFLAGS += -I.
 CFLAGS += -I../src

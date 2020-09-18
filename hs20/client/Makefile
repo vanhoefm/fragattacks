@@ -1,28 +1,6 @@
-all: hs20-osu-client
+ALL=hs20-osu-client
 
-ifndef CC
-CC=gcc
-endif
-
-ifndef LDO
-LDO=$(CC)
-endif
-
-ifeq ($(QUIET), 1)
-Q=@
-E=true
-else
-Q=@
-E=echo
-ifeq ($(V), 1)
-Q=
-E=true
-endif
-endif
-
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
-endif
+include ../../src/build.rules
 
 CFLAGS += -I../../src/utils
 CFLAGS += -I../../src/common
@@ -96,10 +74,6 @@ LIBS += -lssl -lcrypto
 hs20-osu-client: $(OBJS)
 	$(Q)$(LDO) $(LDFLAGS) -o hs20-osu-client $(OBJS) $(LIBS)
 	@$(E) "  LD " $@
-
-%.o: %.c
-	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
-	@$(E) "  CC " $<
 
 clean:
 	rm -f core *~ *.o *.d hs20-osu-client

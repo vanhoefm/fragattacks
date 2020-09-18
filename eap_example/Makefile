@@ -1,19 +1,6 @@
 ALL=eap_example
 
-all: $(ALL)
-
-ifndef CC
-CC=gcc
-endif
-
-ifndef RANLIB
-RANLIB=ranlib
-endif
-
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
-endif
-
+include ../src/build.rules
 
 CFLAGS += -I.
 CFLAGS += -I../src
@@ -93,22 +80,6 @@ OBJS_server += ../src/eap_server/eap_server_identity.o
 OBJS_server += ../src/eap_server/eap_server_methods.o
 OBJS_server += ../src/eap_server/eap_server_tls_common.o
 CFLAGS += -DEAP_SERVER
-
-
-ifndef LDO
-LDO=$(CC)
-endif
-
-Q=@
-E=echo
-ifeq ($(V), 1)
-Q=
-E=true
-endif
-
-%.o: %.c
-	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
-	@$(E) "  CC " $<
 
 
 OBJS_lib=$(OBJS_both) $(OBJS_peer) $(OBJS_server)

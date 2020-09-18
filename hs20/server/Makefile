@@ -1,16 +1,6 @@
-all: hs20_spp_server
+ALL=hs20_spp_server
 
-ifndef CC
-CC=gcc
-endif
-
-ifndef LDO
-LDO=$(CC)
-endif
-
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
-endif
+include ../../src/build.rules
 
 CFLAGS += -I../../src
 CFLAGS += -I../../src/utils

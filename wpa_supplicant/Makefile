@@ -1,10 +1,23 @@
-ifndef CC
-CC=gcc
+BINALL=wpa_supplicant wpa_cli
+
+ifndef CONFIG_NO_WPA_PASSPHRASE
+BINALL += wpa_passphrase
 endif
 
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
+ALL = $(BINALL)
+ALL += systemd/wpa_supplicant.service
+ALL += systemd/wpa_supplicant@.service
+ALL += systemd/wpa_supplicant-nl80211@.service
+ALL += systemd/wpa_supplicant-wired@.service
+ALL += dbus/fi.w1.wpa_supplicant1.service
+ifdef CONFIG_BUILD_WPA_CLIENT_SO
+ALL += libwpa_client.so
 endif
+
+VERIFY=verify_config
+EXTRA_TARGETS=dynamic_eap_methods
+
+include ../src/build.rules
 
 ifdef LIBS
 # If LIBS is set with some global build system defaults, clone those for
@@ -43,25 +56,6 @@ CFLAGS += -DCONFIG_TESTING_OPTIONS
 CONFIG_WPS_TESTING=y
 CONFIG_TDLS_TESTING=y
 endif
-
-BINALL=wpa_supplicant wpa_cli
-
-ifndef CONFIG_NO_WPA_PASSPHRASE
-BINALL += wpa_passphrase
-endif
-
-ALL = $(BINALL)
-ALL += systemd/wpa_supplicant.service
-ALL += systemd/wpa_supplicant@.service
-ALL += systemd/wpa_supplicant-nl80211@.service
-ALL += systemd/wpa_supplicant-wired@.service
-ALL += dbus/fi.w1.wpa_supplicant1.service
-ifdef CONFIG_BUILD_WPA_CLIENT_SO
-ALL += libwpa_client.so
-endif
-
-
-all: verify_config $(ALL) dynamic_eap_methods
 
 verify_config:
 	@if [ ! -r .config ]; then \
@@ -1867,21 +1861,6 @@ ifdef CONFIG_NO_TKIP
 CFLAGS += -DCONFIG_NO_TKIP
 endif
 
-ifndef LDO
-LDO=$(CC)
-endif
-
-Q=@
-E=echo
-ifeq ($(V), 1)
-Q=
-E=true
-endif
-ifeq ($(QUIET), 1)
-Q=@
-E=true
-endif
-
 dynamic_eap_methods: $(EAPDYN)
 
 ../src/drivers/build.wpa_supplicant:
@@ -1979,16 +1958,6 @@ eap_eke.so: ../src/eap_peer/eap_eke.c ../src/eap_common/eap_eke_common.c
 %.so: %.c
 	$(CC) $(LDFLAGS) -o $@ $(CFLAGS) -shared -rdynamic -fPIC $< \
 		-D$(*F:eap_%=eap_peer_%)_register=eap_peer_method_dynamic_init
-
-ifdef CONFIG_CODE_COVERAGE
-%.o: %.c
-	@$(E) "  CC " $<
-	$(Q)cd $(dir $@); $(CC) -c -o $(notdir $@) $(CFLAGS) $(notdir $<)
-else
-%.o: %.c
-	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
-	@$(E) "  CC " $<
-endif
 
 %.service: %.service.in
 	$(Q)sed -e 's|\@BINDIR\@|$(BINDIR)|g' $< >$@

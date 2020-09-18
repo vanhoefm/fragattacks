@@ -1,10 +1,7 @@
-ifndef CC
-CC=gcc
-endif
+ALL=hostapd hostapd_cli
+VERIFY=verify_config
 
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
-endif
+include ../src/build.rules
 
 ifdef LIBS
 # If LIBS is set with some global build system defaults, clone those for
@@ -1262,31 +1259,6 @@ endif
 
 ifdef CONFIG_NO_TKIP
 CFLAGS += -DCONFIG_NO_TKIP
-endif
-
-ALL=hostapd hostapd_cli
-
-all: verify_config $(ALL)
-
-Q=@
-E=echo
-ifeq ($(V), 1)
-Q=
-E=true
-endif
-ifeq ($(QUIET), 1)
-Q=@
-E=true
-endif
-
-ifdef CONFIG_CODE_COVERAGE
-%.o: %.c
-	@$(E) "  CC " $<
-	$(Q)cd $(dir $@); $(CC) -c -o $(notdir $@) $(CFLAGS) $(notdir $<)
-else
-%.o: %.c
-	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
-	@$(E) "  CC " $<
 endif
 
 verify_config:
