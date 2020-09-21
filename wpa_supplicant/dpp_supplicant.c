@@ -1978,6 +1978,8 @@ wpas_dpp_rx_presence_announcement(struct wpa_supplicant *wpa_s, const u8 *src,
 	wpa_hexdump(MSG_MSGDUMP, "DPP: Responder Bootstrapping Key Hash",
 		    r_bootstrap, r_bootstrap_len);
 	peer_bi = dpp_bootstrap_find_chirp(wpa_s->dpp, r_bootstrap);
+	dpp_notify_chirp_received(wpa_s, peer_bi ? (int) peer_bi->id : -1, src,
+				  freq, r_bootstrap);
 	if (!peer_bi) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: No matching bootstrapping information found");
