@@ -1228,6 +1228,9 @@ hostapd_dpp_rx_presence_announcement(struct hostapd_data *hapd, const u8 *src,
 		    r_bootstrap, r_bootstrap_len);
 	peer_bi = dpp_bootstrap_find_chirp(hapd->iface->interfaces->dpp,
 					   r_bootstrap);
+	dpp_notify_chirp_received(hapd->msg_ctx,
+				  peer_bi ? (int) peer_bi->id : -1,
+				  src, freq, r_bootstrap);
 	if (!peer_bi) {
 		if (dpp_relay_rx_action(hapd->iface->interfaces->dpp,
 					src, hdr, buf, len, freq, NULL,
