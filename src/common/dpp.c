@@ -4317,6 +4317,7 @@ void dpp_global_deinit(struct dpp_global *dpp)
 
 
 #ifdef CONFIG_DPP2
+
 struct wpabuf * dpp_build_presence_announcement(struct dpp_bootstrap_info *bi)
 {
 	struct wpabuf *msg;
@@ -4333,4 +4334,17 @@ struct wpabuf * dpp_build_presence_announcement(struct dpp_bootstrap_info *bi)
 			"DPP: Presence Announcement frame attributes", msg);
 	return msg;
 }
+
+
+void dpp_notify_chirp_received(void *msg_ctx, int id, const u8 *src,
+				unsigned int freq, const u8 *hash)
+{
+	char hex[SHA256_MAC_LEN * 2 + 1];
+
+	wpa_snprintf_hex(hex, sizeof(hex), hash, SHA256_MAC_LEN);
+	wpa_msg(msg_ctx, MSG_INFO,
+		DPP_EVENT_CHIRP_RX "id=%d src=" MACSTR " freq=%u hash=%s",
+		id, MAC2STR(src), freq, hex);
+}
+
 #endif /* CONFIG_DPP2 */

@@ -686,6 +686,8 @@ int dpp_tcp_init(struct dpp_global *dpp, struct dpp_authentication *auth,
 					 struct dpp_authentication *auth));
 
 struct wpabuf * dpp_build_presence_announcement(struct dpp_bootstrap_info *bi);
+void dpp_notify_chirp_received(void *msg_ctx, int id, const u8 *src,
+				unsigned int freq, const u8 *hash);
 
 struct dpp_global_config {
 	void *cb_ctx;
