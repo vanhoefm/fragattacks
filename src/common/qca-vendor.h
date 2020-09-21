@@ -4042,6 +4042,30 @@ enum qca_vendor_attr_scan_freq_list_scheme {
 	QCA_ATTR_ROAM_CONTROL_SCAN_FREQ_LIST_SCHEME_AFTER_LAST - 1,
 };
 
+/**
+ * enum qca_roam_scan_scheme: Scan scheme
+ *
+ * @QCA_ROAM_SCAN_SCHEME_NO_SCAN: No frequencies specified to scan.
+ *     Indicates the driver to not scan on a Roam Trigger scenario, but
+ *     disconnect. E.g., on a BTM request from the AP the driver/firmware shall
+ *     disconnect from the current connected AP by notifying a failure
+ *     code in the BTM response.
+ *
+ * @QCA_ROAM_SCAN_SCHEME_PARTIAL_SCAN: Indicates the driver/firmware to
+ *     trigger partial frequency scans. These frequencies are the ones learned
+ *     or maintained by the driver based on the probability of finding the
+ *     BSSIDs in the ESS for which the roaming is triggered.
+ *
+ * @QCA_ROAM_SCAN_SCHEME_FULL_SCAN: Indicates the driver/firmware to
+ *     trigger the scan on all the valid frequencies to find better
+ *     candidates to roam.
+ */
+enum qca_roam_scan_scheme {
+	QCA_ROAM_SCAN_SCHEME_NO_SCAN = 0,
+	QCA_ROAM_SCAN_SCHEME_PARTIAL_SCAN = 1,
+	QCA_ROAM_SCAN_SCHEME_FULL_SCAN = 2,
+};
+
 /*
  * enum qca_vendor_roam_triggers: Bitmap of roaming triggers
  *
@@ -4233,6 +4257,27 @@ enum qca_vendor_attr_roam_candidate_selection_criteria {
  *
  *	Clears the selection criteria configured in the driver when specified
  *	with clear command.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_SCAN_SCHEME: Unsigned 32-bit value.
+ *	Represents value of the scan frequency scheme from enum
+ *	qca_roam_scan_scheme.
+ *	It's an optional attribute. If this attribute is not configured, the
+ *	driver shall proceed with default behavior.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_CONNECTED_RSSI_THRESHOLD: Signed 32-bit value in dBm,
+ *	signifying the RSSI threshold of the current connected AP, indicating
+ *	the driver to trigger roam only when the current connected AP's RSSI
+ *	is less than this threshold.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_CANDIDATE_RSSI_THRESHOLD: Signed 32-bit value in dBm,
+ *	signifying the RSSI threshold of the candidate AP, indicating
+ *	the driver to trigger roam only to the candidate AP with RSSI
+ *	better than this threshold.
+ *
+ * @QCA_ATTR_ROAM_CONTROL_USER_REASON: Unsigned 32-bit value. Represents the
+ *	user defined reason code to be sent to the AP in response to AP's
+ *	request to trigger the roam if the roaming cannot be triggered.
+ *	Applies to all the scenarios of AP assisted roaming (e.g., BTM).
  */
 enum qca_vendor_attr_roam_control {
 	QCA_ATTR_ROAM_CONTROL_ENABLE = 1,
@@ -4243,6 +4288,10 @@ enum qca_vendor_attr_roam_control {
 	QCA_ATTR_ROAM_CONTROL_FULL_SCAN_PERIOD = 6,
 	QCA_ATTR_ROAM_CONTROL_TRIGGERS = 7,
 	QCA_ATTR_ROAM_CONTROL_SELECTION_CRITERIA = 8,
+	QCA_ATTR_ROAM_CONTROL_SCAN_SCHEME = 9,
+	QCA_ATTR_ROAM_CONTROL_CONNECTED_RSSI_THRESHOLD = 10,
+	QCA_ATTR_ROAM_CONTROL_CANDIDATE_RSSI_THRESHOLD = 11,
+	QCA_ATTR_ROAM_CONTROL_USER_REASON = 12,
 
 	/* keep last */
 	QCA_ATTR_ROAM_CONTROL_AFTER_LAST,
