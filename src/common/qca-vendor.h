@@ -8048,6 +8048,8 @@ enum qca_wlan_vendor_attr_twt_setup {
  * @QCA_WLAN_VENDOR_TWT_STATUS_DENIED: AP did not accept the request
  * @QCA_WLAN_VENDOR_TWT_STATUS_UNKNOWN_ERROR: Adding TWT dialog failed due to an
  * unknown reason
+ * @QCA_WLAN_VENDOR_TWT_STATUS_ALREADY_SUSPENDED: TWT session already in
+ * suspend state
  */
 enum qca_wlan_vendor_twt_status {
 	QCA_WLAN_VENDOR_TWT_STATUS_OK = 0,
@@ -8063,6 +8065,7 @@ enum qca_wlan_vendor_twt_status {
 	QCA_WLAN_VENDOR_TWT_STATUS_NO_RESPONSE = 10,
 	QCA_WLAN_VENDOR_TWT_STATUS_DENIED = 11,
 	QCA_WLAN_VENDOR_TWT_STATUS_UNKNOWN_ERROR = 12,
+	QCA_WLAN_VENDOR_TWT_STATUS_ALREADY_SUSPENDED = 13,
 };
 
 /**
