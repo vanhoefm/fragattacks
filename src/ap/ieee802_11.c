@@ -4528,7 +4528,7 @@ static void handle_assoc(struct hostapd_data *hapd,
 	os_free(tmp);
 
 	/*
-	 * Remove the station in case tranmission of a success response fails
+	 * Remove the station in case transmission of a success response fails
 	 * (the STA was added associated to the driver) or if the station was
 	 * previously added unassociated.
 	 */
