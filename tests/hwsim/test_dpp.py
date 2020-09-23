@@ -5391,7 +5391,7 @@ def test_dpp_chirp_ap(dev, apdev):
                       timeout=20)
     update_hapd_config(hapd)
 
-def start_dpp_pfs_ap(apdev, pfs):
+def start_dpp_pfs_ap(apdev, pfs, sae=False):
     params = {"ssid": "dpp",
               "wpa": "2",
               "wpa_key_mgmt": "DPP",
@@ -5401,18 +5401,24 @@ def start_dpp_pfs_ap(apdev, pfs):
               "dpp_connector": params1_ap_connector,
               "dpp_csign": params1_csign,
               "dpp_netaccesskey": params1_ap_netaccesskey}
+    if sae:
+        params["wpa_key_mgmt"] = "DPP SAE"
+        params["sae_password"] = "sae-password"
     try:
         hapd = hostapd.add_ap(apdev, params)
     except:
         raise HwsimSkip("DPP not supported")
     return hapd
 
-def run_dpp_pfs_sta(dev, pfs, fail=False, pfs_expected=None):
-    dev.connect("dpp", key_mgmt="DPP", scan_freq="2412",
+def run_dpp_pfs_sta(dev, pfs, fail=False, pfs_expected=None, sae=False):
+    key_mgmt = "DPP SAE" if sae else "DPP"
+    psk = "sae-password" if sae else None
+    dev.connect("dpp", key_mgmt=key_mgmt, scan_freq="2412",
                 ieee80211w="2", dpp_pfs=str(pfs),
                 dpp_csign=params1_csign,
                 dpp_connector=params1_sta_connector,
                 dpp_netaccesskey=params1_sta_netaccesskey,
+                psk=psk,
                 wait_connect=not fail)
     if fail:
         for i in range(2):
@@ -5466,6 +5472,28 @@ def test_dpp_pfs_connect_cmd(dev, apdev):
     run_dpp_pfs_sta(wpas, 0, pfs_expected=True)
     run_dpp_pfs_sta(wpas, 1, pfs_expected=True)
     run_dpp_pfs_sta(wpas, 2, pfs_expected=False)
+
+def test_dpp_pfs_connect_cmd_ap_2(dev, apdev):
+    """DPP PFS and cfg80211 connect command (PFS not allowed by AP)"""
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
+    check_dpp_capab(wpas)
+    hapd = start_dpp_pfs_ap(apdev[0], 2)
+    run_dpp_pfs_sta(wpas, 0, pfs_expected=False)
+    run_dpp_pfs_sta(wpas, 1, fail=True)
+    run_dpp_pfs_sta(wpas, 2, pfs_expected=False)
+
+def test_dpp_pfs_connect_cmd_ap_2_sae(dev, apdev):
+    """DPP PFS and cfg80211 connect command (PFS not allowed by AP; SAE enabled)"""
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
+    check_dpp_capab(wpas)
+    if "SAE" not in wpas.get_capability("auth_alg"):
+        raise HwsimSkip("SAE not supported")
+    hapd = start_dpp_pfs_ap(apdev[0], 2, sae=True)
+    run_dpp_pfs_sta(wpas, 0, pfs_expected=False, sae=True)
+    run_dpp_pfs_sta(wpas, 1, fail=True, sae=True)
+    run_dpp_pfs_sta(wpas, 2, pfs_expected=False, sae=True)
 
 def test_dpp_pfs_ap_0_sta_ver1(dev, apdev):
     """DPP PFS AP default with version 1 STA"""
