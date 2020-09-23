@@ -4494,7 +4494,9 @@ static void wpas_event_assoc_reject(struct wpa_supplicant *wpa_s,
 	 * WLAN_STATUS_AKMP_NOT_VALID is addressed in the same manner as an
 	 * interoperability workaround with older hostapd implementation. */
 	if (DPP_VERSION > 1 && wpa_s->current_ssid &&
-	    wpa_s->current_ssid->key_mgmt == WPA_KEY_MGMT_DPP &&
+	    (wpa_s->current_ssid->key_mgmt == WPA_KEY_MGMT_DPP ||
+	     ((wpa_s->current_ssid->key_mgmt & WPA_KEY_MGMT_DPP) &&
+	      wpa_s->key_mgmt == WPA_KEY_MGMT_DPP)) &&
 	    wpa_s->current_ssid->dpp_pfs == 0 &&
 	    (data->assoc_reject.status_code ==
 	     WLAN_STATUS_ASSOC_DENIED_UNSPEC ||
