@@ -2161,6 +2161,7 @@ do {                                    \
 	d->go_internet = s->go_internet;
 	d->go_venue_group = s->go_venue_group;
 	d->go_venue_type = s->go_venue_type;
+	d->p2p_add_cli_chan = s->p2p_add_cli_chan;
 }
 
 
