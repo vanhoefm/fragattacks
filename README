@@ -1,14 +1,13 @@
 fragattacks
 -----------
 
-See research/README.md for documentation on how to test implementations
-for aggregation and fragmentation attacks.
+See research/README.md for documentation on how to use this tool.
 
 Copyright of portions of this project are held by Jouni Malinen and
-contributors (see below). Copyright of project fragsattacks are held by
+contributors (see below). Copyright of project fragattacks are held by
 Mathy Vanhoef <mathy.vanhoef@nyu.edu> and contributors.
 
-Software of project krackattacks is licensed under the 2-clause BSD
+Software of project fragattacks is licensed under the 2-clause BSD
 license (the license below with the 3rd clause removed).
 
 

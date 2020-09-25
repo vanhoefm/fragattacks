@@ -86,7 +86,7 @@ The test tool was tested on Kali Linux and Ubuntu 20.04. To install the required
 Now clone this repository, build the tools, and configure a virtual python3 environment:
 
 	# **TODO: replace with real HTTP unauthenticated link on release**
-	git clone https://gitlab.com/aconf/wifi.git fragattack --recursive
+	git clone https://github.com/vanhoefm/fragattack.git fragattack
 	cd fragattack/research
 	./build.sh
 	python3 -m venv venv
@@ -189,7 +189,8 @@ see [Handling sleep mode](#id-handling-sleep).
 ## 6.2. Injection mode
 
 This mode requires two wireless network cards: one will act as an AP or the client, and the other
-one will be used to inject frames. Execute the test tool in this mode using:
+one will be used to inject frames. The advantage is that this mode way work without requiring patched
+drivers. Execute the test tool in this mode using:
 
 	./fragattack wlan0 --inject wlan1 [--ap] $COMMAND
 
@@ -227,8 +228,8 @@ is not working, follow the instructions in [network card injection test](#id-inj
 to assure your network card is properly injecting frames. If the client being tested might enter
 sleep mode, see [Handling sleep mode](#id-handling-sleep).
 
-The third and fourth commands are not attacks but verify basic defragmentation behaviour of a device
-and are further discussed below the table.
+The third, fourth, and fifth commands are not attacks but verify basic defragmentation behaviour of a
+device and are further discussed below the table.
 
 |             Command              | Short description
 | -------------------------------- | ---------------------------------
@@ -238,6 +239,7 @@ and are further discussed below the table.
 | <div align="center">*Basic device behaviour*</div>
 | `ping I,E,E --delay 5`           | Send a normal fragmented ping with a 5 second delay between fragments.
 | `ping-frag-sep`                  | Send a normal fragmented ping with fragments separated by another frame.
+| `ping-frag-sep --pn-per-qos`     | Same as above, but also works if the target only accepts consecutive PNs.
 | <div align="center">*A-MSDU attacks (§3)*</div>
 | `ping I,E --amsdu`               | Send a ping encapsulated in a normal (non SSP protected) A-MSDU frame.
 | <div align="center">*Mixed key attacks (§4)*</div>
@@ -284,6 +286,10 @@ and are further discussed below the table.
   sending other frames between two fragments). The only purpose of this test is to better understand the
   behaviour of a device and to learn why other tests might be failing.
 
+- `ping-frag-sep --pn-per-qos`: Same as above, but adding the `--pn-per-qos` parametermeans  both fragments
+  have a consecutive Packet Number (PN). This is something that a reciever should be verifying in order to be
+  secure. Unfortunately, many implementations don't verify whether PNs are consecutive.
+
 ## 7.2. A-MSDU attack tests (§3 -- CVE-2020-24588)
 
 The test `ping I,E --amsdu` checks if an implementation supports A-MSDUs, in which case it is vulnerable to
@@ -300,9 +306,10 @@ for details.
   parameter, meaning there is no need to configure the AP to periodically renew the key.
 
 - Some APs cannot be configured to regularly renew the session key (PTK). Against these APs you can instead
-  try to run a cache attack test. In case the AP is vulnerable to cache attacks, then it is also vulnerable
-  to mixed key attacks. If the AP isn't vulnerable to cache attacks, then we cannot say anything about its
-  susceptibility to mixed key attacks, and in that case I recommend performing a code audit instead.
+  try a cache attack test. In case the AP is vulnerable to cache attacks, then it is likely also vulnerable
+  to mixed key attacks (unless these is strong evidence that contradict this, e.g., a code audit indicates
+  mixed key attacks are prevented). If the AP isn't vulnerable to cache attacks, then we cannot say anything
+  about its susceptibility to mixed key attacks, and in that case I recommend doing a code audit instead.
 
 - `ping I,F,BE,AE --pn-per-qos`: The extra `--pn-per-qos` parameter assures that both injected fragments have
   consecutive packet numbers, which is required for the mixed key attack to succeed against certain devices
@@ -774,7 +781,7 @@ In recent kernels there was a ([now fixed](https://www.spinics.net/lists/linux-w
 regression with the `ath9k_htc` driver causing it not te work. Simply use an up-to-date kernel or our patched
 drivers to avoid this issue.
 
-### AWUS036ACM
+#### AWUS036ACM
 
 If for some reason Linux does not automatically recognize this device, execute `sudo modprobe mt76x2u`
 to manually load the driver. I found that, at least on my devices, this dongle was unstable when connected
