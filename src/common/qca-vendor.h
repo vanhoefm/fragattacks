@@ -4086,6 +4086,18 @@ enum qca_roam_scan_scheme {
  *	when BTM Request frame is received from the connected AP.
  * @QCA_ROAM_TRIGGER_REASON_BSS_LOAD: Set if the roam has to be triggered
  *	when the channel utilization is goes above the configured threshold.
+ * @QCA_ROAM_TRIGGER_REASON_USER_TRIGGER: Set if the roam has to be triggered
+ *	based on the request from the user (space).
+ * @QCA_ROAM_TRIGGER_REASON_DEAUTH: Set if the roam has to be triggered when
+ *	device receives Deauthentication/Disassociation frame from connected AP.
+ * @QCA_ROAM_TRIGGER_REASON_IDLE: Set if the roam has to be triggered when the
+ *	device is in idle state (no TX/RX) and suspend mode, if the current RSSI
+ *	is determined to be a poor one.
+ * @QCA_ROAM_TRIGGER_REASON_TX_FAILURES: Set if the roam has to be triggered
+ *	based on continuous TX Data frame failures to the connected AP.
+ * @QCA_ROAM_TRIGGER_REASON_EXTERNAL_SCAN: Set if the roam has to be triggered
+ *	based on the scan results obtained from an external scan (not triggered
+ *	to aim roaming).
  *
  * Set the corresponding roam trigger reason bit to consider it for roam
  * trigger.
@@ -4101,6 +4113,11 @@ enum qca_vendor_roam_triggers {
 	QCA_ROAM_TRIGGER_REASON_DENSE		= 1 << 5,
 	QCA_ROAM_TRIGGER_REASON_BTM		= 1 << 6,
 	QCA_ROAM_TRIGGER_REASON_BSS_LOAD	= 1 << 7,
+	QCA_ROAM_TRIGGER_REASON_USER_TRIGGER	= 1 << 8,
+	QCA_ROAM_TRIGGER_REASON_DEAUTH          = 1 << 9,
+	QCA_ROAM_TRIGGER_REASON_IDLE		= 1 << 10,
+	QCA_ROAM_TRIGGER_REASON_TX_FAILURES	= 1 << 11,
+	QCA_ROAM_TRIGGER_REASON_EXTERNAL_SCAN	= 1 << 12,
 };
 
 /**
@@ -4278,6 +4295,19 @@ enum qca_vendor_attr_roam_candidate_selection_criteria {
  *	user defined reason code to be sent to the AP in response to AP's
  *	request to trigger the roam if the roaming cannot be triggered.
  *	Applies to all the scenarios of AP assisted roaming (e.g., BTM).
+ *
+ * @QCA_ATTR_ROAM_CONTROL_SCAN_SCHEME_TRIGGERS: Unsigned 32-bit value.
+ *	Carries a bitmap of the roam triggers specified in
+ *	enum qca_vendor_roam_triggers.
+ *	Represents the roam triggers for which the specific scan scheme from
+ *	enum qca_roam_scan_scheme has to be applied.
+ *	It's an optional attribute. If this attribute is not configured, but
+ *	QCA_ATTR_ROAM_CONTROL_SCAN_SCHEME is specified, the scan scheme
+ *	specified through QCA_ATTR_ROAM_CONTROL_SCAN_SCHEME is applicable for
+ *	all the roams.
+ *	If both QCA_ATTR_ROAM_CONTROL_SCAN_SCHEME and
+ *	QCA_ATTR_ROAM_CONTROL_SCAN_SCHEME_TRIGGERS are not specified, the
+ *	driver shall proceed with the default behavior.
  */
 enum qca_vendor_attr_roam_control {
 	QCA_ATTR_ROAM_CONTROL_ENABLE = 1,
@@ -4292,6 +4322,7 @@ enum qca_vendor_attr_roam_control {
 	QCA_ATTR_ROAM_CONTROL_CONNECTED_RSSI_THRESHOLD = 10,
 	QCA_ATTR_ROAM_CONTROL_CANDIDATE_RSSI_THRESHOLD = 11,
 	QCA_ATTR_ROAM_CONTROL_USER_REASON = 12,
+	QCA_ATTR_ROAM_CONTROL_SCAN_SCHEME_TRIGGERS = 13,
 
 	/* keep last */
 	QCA_ATTR_ROAM_CONTROL_AFTER_LAST,
