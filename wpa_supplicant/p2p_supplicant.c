@@ -5870,6 +5870,8 @@ int wpas_p2p_group_remove(struct wpa_supplicant *wpa_s, const char *ifname)
 
 	if (os_strcmp(ifname, "*") == 0) {
 		struct wpa_supplicant *prev;
+		bool calling_wpa_s_group_removed = false;
+
 		wpa_s = global->ifaces;
 		while (wpa_s) {
 			prev = wpa_s;
@@ -5877,9 +5879,23 @@ int wpas_p2p_group_remove(struct wpa_supplicant *wpa_s, const char *ifname)
 			if (prev->p2p_group_interface !=
 			    NOT_P2P_GROUP_INTERFACE ||
 			    (prev->current_ssid &&
-			     prev->current_ssid->p2p_group))
+			     prev->current_ssid->p2p_group)) {
 				wpas_p2p_disconnect_safely(prev, calling_wpa_s);
+				if (prev == calling_wpa_s)
+					calling_wpa_s_group_removed = true;
+			}
 		}
+
+		if (!calling_wpa_s_group_removed &&
+		    (calling_wpa_s->p2p_group_interface !=
+		     NOT_P2P_GROUP_INTERFACE ||
+		     (calling_wpa_s->current_ssid &&
+		      calling_wpa_s->current_ssid->p2p_group))) {
+			wpa_printf(MSG_DEBUG, "Remove calling_wpa_s P2P group");
+			wpas_p2p_disconnect_safely(calling_wpa_s,
+						   calling_wpa_s);
+		}
+
 		return 0;
 	}
 
