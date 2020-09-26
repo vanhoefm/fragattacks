@@ -69,6 +69,8 @@ def get_devices(filename="cfg.py"):
 def get_device(devices, name=None, flags=None, lock=False):
     if name is None and flags is None:
         raise Exception("Failed to get device")
+    word = name.split(":")
+    name = word[0]
     for device in devices:
         if device['name'] == name:
             return device
