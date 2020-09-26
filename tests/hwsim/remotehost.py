@@ -8,6 +8,7 @@ import logging
 import subprocess
 import threading
 import tempfile
+import os
 
 logger = logging.getLogger()
 
@@ -33,6 +34,17 @@ def execute_thread(command, reply):
     logger.debug("thread exit buf: " + str(buf))
     reply.append(status)
     reply.append(buf)
+
+def gen_reaper_file(conf):
+    fd, filename = tempfile.mkstemp(dir='/tmp', prefix=conf + '-')
+    f = os.fdopen(fd, 'w')
+
+    f.write("#!/bin/sh\n")
+    f.write("name=\"$(basename $0)\"\n")
+    f.write("echo $$ > /tmp/$name.pid\n")
+    f.write("exec \"$@\"\n");
+
+    return filename;
 
 class Host():
     def __init__(self, host=None, ifname=None, port=None, name="", user="root"):
@@ -86,16 +98,54 @@ class Host():
         return status, buf.decode()
 
     # async execute
-    def execute_run(self, command, res):
-        if self.host is None:
-            cmd = command
+    def execute_run(self, command, res, use_reaper=True):
+        if use_reaper:
+            filename = gen_reaper_file("reaper")
+            self.send_file(filename, filename)
+            self.execute(["chmod", "755", filename])
+            _command = [filename] + command
         else:
-            cmd = ["ssh", self.user + "@" + self.host, ' '.join(command)]
+            filename = ""
+            _command = command
+
+        if self.host is None:
+            cmd = _command
+        else:
+            cmd = ["ssh", self.user + "@" + self.host, ' '.join(_command)]
         _cmd = self.name + " execute_run: " + ' '.join(cmd)
         logger.debug(_cmd)
-        t = threading.Thread(target=execute_thread, args=(cmd, res))
+        t = threading.Thread(target=execute_thread, name=filename, args=(cmd, res))
         t.start()
         return t
+
+    def execute_stop(self, t):
+        if t.name.find("reaper") == -1:
+            raise Exception("use_reaper required")
+
+        pid_file = t.name + ".pid"
+
+        if t.isAlive():
+            cmd = ["kill `cat " + pid_file + "`"]
+            self.execute(cmd)
+
+        # try again
+        self.wait_execute_complete(t, 5)
+        if t.isAlive():
+            cmd = ["kill `cat " + pid_file + "`"]
+            self.execute(cmd)
+
+        # try with -9
+        self.wait_execute_complete(t, 5)
+        if t.isAlive():
+            cmd = ["kill -9 `cat " + pid_file + "`"]
+            self.execute(cmd)
+
+        self.wait_execute_complete(t, 5)
+        if t.isAlive():
+            raise Exception("thread still alive")
+
+        self.execute(["rm", pid_file])
+        self.execute(["rm", t.name])
 
     def wait_execute_complete(self, t, wait=None):
         if wait == None:
