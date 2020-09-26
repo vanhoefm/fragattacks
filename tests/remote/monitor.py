@@ -26,7 +26,8 @@ def create(devices, setup_params, refs, duts, monitors):
             mons.append(monitor)
 
     for mon in mons:
-        dev = config.get_device(devices, mon)
+        word = mon.split(":")
+        dev = config.get_device(devices, word[0])
         if dev is None:
             continue
 
@@ -34,6 +35,15 @@ def create(devices, setup_params, refs, duts, monitors):
                     ifname=dev['ifname'],
                     port=dev['port'],
                     name=dev['name'])
+
+        for iface_param in word[1:]:
+            params = iface_param.split(",")
+            if len(params) > 3:
+                monitor_param = { "freq" : rutils.c2f(params[0]),
+                                  "bw" : params[1],
+                                  "center_freq1" : rutils.c2f(params[2]),
+                                  "center_freq2" : rutils.c2f(params[3]) }
+                host.monitor_params.append(monitor_param)
 
         try:
             host.execute(["iw", "reg", "set", setup_params['country']])
@@ -49,10 +59,14 @@ def destroy(devices, hosts):
         stop(host)
         for monitor in host.monitors:
             host.execute(["ifconfig", monitor, "down"])
+        host.monitor_params = []
 
-def setup(host, monitor_params):
+def setup(host, monitor_params=None):
     if host is None:
         return
+
+    if monitor_params == None:
+        monitor_params = host.monitor_params
 
     ifaces = re.split('; | |, ', host.ifname)
     count = 0

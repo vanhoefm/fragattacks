@@ -57,6 +57,7 @@ class Host():
         self.ifname = ifname
         self.port = port
         self.dev = None
+        self.monitor_params = []
         if self.name == "" and host != None:
             self.name = host
 
