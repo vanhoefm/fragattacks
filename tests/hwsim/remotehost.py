@@ -7,6 +7,7 @@
 import logging
 import subprocess
 import threading
+import tempfile
 
 logger = logging.getLogger()
 
@@ -17,12 +18,15 @@ def remote_compatible(func):
 def execute_thread(command, reply):
     cmd = ' '.join(command)
     logger.debug("thread run: " + cmd)
+    err = tempfile.TemporaryFile()
     try:
         status = 0
-        buf = subprocess.check_output(command, stderr=subprocess.STDOUT).decode()
+        buf = subprocess.check_output(command, stderr=err).decode()
     except subprocess.CalledProcessError as e:
         status = e.returncode
-        buf = e.output
+        err.seek(0)
+        buf = err.read()
+    err.close()
 
     logger.debug("thread cmd: " + cmd)
     logger.debug("thread exit status: " + str(status))
@@ -46,12 +50,15 @@ class Host():
 
     def local_execute(self, command):
         logger.debug("execute: " + str(command))
+        err = tempfile.TemporaryFile()
         try:
             status = 0
-            buf = subprocess.check_output(command, stderr=subprocess.STDOUT)
+            buf = subprocess.check_output(command, stderr=err)
         except subprocess.CalledProcessError as e:
             status = e.returncode
-            buf = e.output
+            err.seek(0)
+            buf = err.read()
+        err.close()
 
         logger.debug("status: " + str(status))
         logger.debug("buf: " + str(buf))
@@ -64,12 +71,15 @@ class Host():
         cmd = ["ssh", self.user + "@" + self.host, ' '.join(command)]
         _cmd = self.name + " execute: " + ' '.join(cmd)
         logger.debug(_cmd)
+        err = tempfile.TemporaryFile()
         try:
             status = 0
-            buf = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            buf = subprocess.check_output(cmd, stderr=err)
         except subprocess.CalledProcessError as e:
             status = e.returncode
-            buf = e.output
+            err.seek(0)
+            buf = err.read()
+        err.close()
 
         logger.debug(self.name + " status: " + str(status))
         logger.debug(self.name + " buf: " + str(buf))
