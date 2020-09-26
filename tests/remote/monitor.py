@@ -107,10 +107,7 @@ def stop(host):
     if host.thread is None:
         return
 
-    host.execute(["killall", "-s", "INT", "tshark"])
-    host.wait_execute_complete(host.thread, 5)
-    if host.thread.isAlive():
-       raise Exception("tshark still alive")
+    host.execute_stop(host.thread)
     host.thread = None
 
 # Add monitor to existing interface
