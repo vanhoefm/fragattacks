@@ -231,7 +231,7 @@ def main():
 
     # sort the list
     test_names.sort()
-    tests.sort()
+    tests.sort(key=lambda t: t.__name__)
 
     # print help
     if requested_tests[0] == "help" and len(requested_hwsim_tests) == 0:
