@@ -63,6 +63,7 @@ def setup(host, monitor_params):
             logger.debug(traceback.format_exc())
             break
         host.execute(["ifconfig", iface, " down"])
+        host.execute(["rfkill", "unblock", "wifi"])
         host.execute(["iw", iface, "set type monitor"])
         host.execute(["ifconfig", iface, "up"])
         status, buf = host.execute(["iw", iface, "set", "freq", param['freq'],
