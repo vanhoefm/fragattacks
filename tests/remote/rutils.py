@@ -117,7 +117,8 @@ def run_hostapd(host, setup_params):
 
     if log_file:
         host.add_log(log_file)
-    status, buf = host.execute([setup_params['hostapd'], "-B", "-ddt", "-g", "udp:" + host.port, log])
+    pidfile = setup_params['log_dir'] + "hostapd_" + host.ifname + "_" + setup_params['tc_name'] + ".pid"
+    status, buf = host.execute([setup_params['hostapd'], "-B", "-ddt", "-g", "udp:" + host.port, "-P", pidfile, log])
     if status != 0:
         raise Exception("Could not run hostapd: " + buf)
 
@@ -134,15 +135,18 @@ def run_wpasupplicant(host, setup_params):
 
     if log_file:
         host.add_log(log_file)
-    status, buf = host.execute([setup_params['wpa_supplicant'], "-B", "-ddt", "-g", "udp:" + host.port, log])
+    pidfile = setup_params['log_dir'] + "wpa_supplicant_" + host.ifname + "_" + setup_params['tc_name'] + ".pid"
+    status, buf = host.execute([setup_params['wpa_supplicant'], "-B", "-ddt", "-g", "udp:" + host.port, "-P", pidfile, log])
     if status != 0:
         raise Exception("Could not run wpa_supplicant: " + buf)
 
 def kill_wpasupplicant(host, setup_params):
-    host.execute(['killall', setup_params['wpa_supplicant']])
+    pidfile = setup_params['log_dir'] + "wpa_supplicant_" + host.ifname + "_" + setup_params['tc_name'] + ".pid"
+    host.execute(["kill `cat " + pidfile + "`"])
 
 def kill_hostapd(host, setup_params):
-    host.execute(['killall', setup_params['hostapd']])
+    pidfile = setup_params['log_dir'] + "hostapd_" + host.ifname + "_" + setup_params['tc_name'] + ".pid"
+    host.execute(["kill `cat " + pidfile + "`"])
 
 def get_ap_params(channel="1", bw="HT20", country="US", security="open", ht_capab=None, vht_capab=None):
     ssid = "test_" + channel + "_" + security + "_" + bw
