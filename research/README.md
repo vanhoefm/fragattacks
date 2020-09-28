@@ -258,10 +258,10 @@ device and are further discussed below the table.
 | `ping I,P`                       | Send a plaintext ping.
 | `ping I,P,P`                     | Send a fragmented ping: both fragments are sent in plaintext.
 | `linux-plain`                    | Mixed plaintext/encrypted fragmentation attack specific to Linux.
-| <div align="center">*Broadcast fragment attack (§6.7)*</div>
+| <div align="center">*Broadcast fragment attack (§6.4)*</div>
 | `ping I,D,P --bcast-ra`          | Send a ping request in plaintext broadcasted 2nd fragment after connecting.
 | `ping D,BP --bcast-ra`           | Same as above, but the ping is inject during the handshake (check with tcpdump).
-| <div align="center">*A-MSDUs EAPOL attack (§6.8)*</div>
+| <div align="center">*A-MSDUs EAPOL attack (§6.5)*</div>
 | `eapol-amsdu BP`                 | Send A-MSDU disguised as EAPOL during handshake (check result with tcpdump).
 | `eapol-amsdu I,P`                | Same as above, except the frame is injected after obtaining an IP.
 | `eapol-amsdu-bad BP`             | Send malformed A-MSDU disguised as EAPOL during handshake (use tcpdump).
@@ -355,7 +355,7 @@ for details.
 - `ping I,P,P` and `ping I,P`: if this test succeeds it is trivial to inject plaintext frames towards the
   device independent of the network configuration.
 
-## 7.6. Broadcast fragment attack tests (§6.7)
+## 7.6. Broadcast fragment attack tests (§6.4)
 
 - Because all these tests send broadcast frames, which are not automatically retransmitted, it is recommended
   to **execute these tests several times**. This is because background noise may prevent the tested devices
@@ -369,7 +369,7 @@ for details.
   use the filter `icmp` and in wireshark you can also use the filter `frame contains "test_ping_icmp"`
   to more easily detect this ping request.
 
-## 7.7. A-MSDUs EAPOL attack tests (§6.8)
+## 7.7. A-MSDUs EAPOL attack tests (§6.5)
 
 - `eapol-amsdu[-bad] BP`: These two tests inject the malicious frame while the client is still connecting
   to the network (i.e. during the execution of the 4-way handshake). This is important because several
@@ -458,18 +458,18 @@ presence of a certain vulnerability class, there is no need to test the other at
 | `ping I,E,E --amsdu`                   | Send a normal ping as a fragmented A-MSDU frame.
 | `ping I,E,P,E`                         | Ping with first frag. encrypted, second plaintext, third encrypted.
 | `linux-plain 3`                        | Same as linux-plain but decoy fragment is sent using QoS priority 3.
-| <div align="center">*AP forwards EAPOL attack (§6.4)*</div>
-| `eapol-inject 00:11:22:33:44:55`       | Test if AP forwards EAPOL frames before authenticated (use tcpdump).
-| `eapol-inject-large 00:11:22:33:44:55` | Make AP send fragmented frames by EAPOL injection (use tcpdump).
-| <div align="center">*No fragmentation support attack (§6.6)*</div>
-| `ping I,E,D`                           | Send ping inside an encrypted first fragment (no 2nd fragment).
-| `ping I,D,E`                           | Send ping inside an encrypted second fragment (no 1st fragment).
-| <div align="center">*Broadcast fragment attack (§6.7)*</div>
+| <div align="center">*Broadcast fragment attack (§6.4)*</div>
 | `ping I,P --bcast-ra`                  | Ping in a plaintext broadcast frame after 4-way HS.
 | `ping BP --bcast-ra`                   | Ping in plaintext broadcast frame during 4-way HS (use tcpdump).
 | `eapfrag BP,BP`                        | Experimental broadcast fragment attack (use tcpdump).
-| <div align="center">*A-MSDUs EAPOL attack (§6.8)*</div>
+| <div align="center">*A-MSDUs EAPOL attack (§6.5)*</div>
 | `eapol-amsdu[-bad] BP --bcast-dst`     | Same as `eapol-amsdu BP` but easier to verify against APs (use tcpdump).
+| <div align="center">*AP forwards EAPOL attack (§6.6)*</div>
+| `eapol-inject 00:11:22:33:44:55`       | Test if AP forwards EAPOL frames before authenticated (use tcpdump).
+| `eapol-inject-large 00:11:22:33:44:55` | Make AP send fragmented frames by EAPOL injection (use tcpdump).
+| <div align="center">*No fragmentation support attack (§6.8)*</div>
+| `ping I,E,D`                           | Send ping inside an encrypted first fragment (no 2nd fragment).
+| `ping I,D,E`                           | Send ping inside an encrypted second fragment (no 1st fragment).
 
 ## 8.1. A-MSDU attack tests (§3 -- CVE-2020-24588)
 
@@ -548,31 +548,7 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
 - `ping I,E,P,E` and `linux-plain 3`: If all the other mixed plain/encrypt attack tests in didn't succeed, you
   can try these two extra tests as well. I think it's quite unlikely this will uncover a new vulnerability.
 
-## 8.5. AP forwards EAPOL attack tests (§6.4)
-
-- `eapol-inject 00:11:22:33:44:55`: This test is only meaningfull against APs. To perform this test you have to connect
-  to the network using a second device and replace the MAC address `00:11:22:33:44:55` with the MAC address of this second
-  device. _Before_ being authenticated, the test tool will send an EAPOL frame to the AP with as final destination this second
-  device. If the AP forwards the EAPOL frame to the second device, the AP is considered vulnerable. To confirm if the AP forwards
-  the EAPOL frame you must run tcpdump or wireshark on the second device. You can use the wireshark filter `frame contains "forwarded_data"`
-  when monitoring decrypted traffic on the wireless interface of the second device (or the tcpdump filter `ether proto 0x888e`
-  to monitor all EAPOL frames). See Section 6.4 of the paper for the details and impact of this.
-
-- `eapol-inject-lage 00:11:22:33:44:55`: In case the above `eapol-inject` test succeeds, you can also try `eapol-inject-large` to see
-  if this vulnerability can be abused to force the transmission of encrypted fragments. You again have to use tcpdump or wireshark
-  to check this. Use the wireshark or tshark filter `(wlan.fc.frag == 1) || (wlan.frag > 0)` to detect fragmented frames. I found it
-  very rare for this attack to work.
-
-## 8.6. Abusing no fragmentation support (§6.6)
-
-- `ping I,D,E`: If this test succeeds, the device doesn't support (de)fragmentation, but is still vulnerable to attacks. The
-  problem is that the receiver treats the _last_ fragment as a full frame. See Section 6.6 in the paper for details and how this
-  can be exploited.
-
-- `ping I,E,D`: If this test succeeds, then the devices treats the _first_ fragment as a full frame. Although this behaviour is
-  not ideal, it's currently unknown whether this, on its own, can be exploited in practice.
-
-## 8.7. Broadcast fragment attack tests (§6.7)
+## 8.5. Broadcast fragment attack tests (§6.4)
 
 - Because all these tests send broadcast frames, which are not automatically retransmitted, it is recommended
   to **execute these tests several times**. This is because background noise may prevent the tested devices
@@ -596,13 +572,37 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
   is properly received, for example using the filter `icmp` or `frame contains "test_ping_icmp"`. An alternative variant
   is `eapfrag BP,AE` in case the normal variant doesn't work.
 
-## 8.8. A-MSDU EAPOL attack tests (§6.8)
+## 8.6. A-MSDU EAPOL attack tests (§6.5)
 
 This test can be used in case you want to execute the `eapol-amsdu[-bad] BP` tests but cannot run tcpdump or wireshark on
 the AP. This means this test is only meaningfull against APs. In particular, the command `eapol-amsdu[-bad] BP --bcast-dst`
 will cause a vulnerable AP to broadcast the ping request to all connected clients. In other words, to check if an AP is
 vulnerable, execute this command, and listen for broadcast Wi-Fi frames on a second device that is connected to the AP by
 using the filter `icmp` or `frame contains "test_ping_icmp"`.
+
+## 8.7. AP forwards EAPOL attack tests (§6.6)
+
+- `eapol-inject 00:11:22:33:44:55`: This test is only meaningfull against APs. To perform this test you have to connect
+  to the network using a second device and replace the MAC address `00:11:22:33:44:55` with the MAC address of this second
+  device. _Before_ being authenticated, the test tool will send an EAPOL frame to the AP with as final destination this second
+  device. If the AP forwards the EAPOL frame to the second device, the AP is considered vulnerable. To confirm if the AP forwards
+  the EAPOL frame you must run tcpdump or wireshark on the second device. You can use the wireshark filter `frame contains "forwarded_data"`
+  when monitoring decrypted traffic on the wireless interface of the second device (or the tcpdump filter `ether proto 0x888e`
+  to monitor all EAPOL frames). See Section 6.4 of the paper for the details and impact of this.
+
+- `eapol-inject-lage 00:11:22:33:44:55`: In case the above `eapol-inject` test succeeds, you can also try `eapol-inject-large` to see
+  if this vulnerability can be abused to force the transmission of encrypted fragments. You again have to use tcpdump or wireshark
+  to check this. Use the wireshark or tshark filter `(wlan.fc.frag == 1) || (wlan.frag > 0)` to detect fragmented frames. I found it
+  very rare for this attack to work.
+
+## 8.8. Abusing no fragmentation support (§6.8)
+
+- `ping I,D,E`: If this test succeeds, the device doesn't support (de)fragmentation, but is still vulnerable to attacks. The
+  problem is that the receiver treats the _last_ fragment as a full frame. See Section 6.6 in the paper for details and how this
+  can be exploited.
+
+- `ping I,E,D`: If this test succeeds, then the devices treats the _first_ fragment as a full frame. Although this behaviour is
+  not ideal, it's currently unknown whether this, on its own, can be exploited in practice.
 
 # 9. Advanced Usage
 
