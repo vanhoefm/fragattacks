@@ -4906,6 +4906,65 @@ static void wpa_supplicant_rx_eapol_bridge(void *ctx, const u8 *src_addr,
 }
 
 
+int wpa_supplicant_update_bridge_ifname(struct wpa_supplicant *wpa_s,
+					const char *bridge_ifname)
+{
+	if (wpa_s->wpa_state > WPA_SCANNING)
+		return -EBUSY;
+
+	if (bridge_ifname &&
+	    os_strlen(bridge_ifname) >= sizeof(wpa_s->bridge_ifname))
+		return -EINVAL;
+
+	if (!bridge_ifname)
+		bridge_ifname = "";
+
+	if (os_strcmp(wpa_s->bridge_ifname, bridge_ifname) == 0)
+		return 0;
+
+	if (wpa_s->l2_br) {
+		l2_packet_deinit(wpa_s->l2_br);
+		wpa_s->l2_br = NULL;
+	}
+
+	os_strlcpy(wpa_s->bridge_ifname, bridge_ifname,
+		   sizeof(wpa_s->bridge_ifname));
+
+	if (wpa_s->bridge_ifname[0]) {
+		wpa_dbg(wpa_s, MSG_DEBUG,
+			"Receiving packets from bridge interface '%s'",
+			wpa_s->bridge_ifname);
+		wpa_s->l2_br = l2_packet_init_bridge(
+			wpa_s->bridge_ifname, wpa_s->ifname, wpa_s->own_addr,
+			ETH_P_EAPOL, wpa_supplicant_rx_eapol_bridge, wpa_s, 1);
+		if (!wpa_s->l2_br) {
+			wpa_msg(wpa_s, MSG_ERROR,
+				"Failed to open l2_packet connection for the bridge interface '%s'",
+				wpa_s->bridge_ifname);
+			goto fail;
+		}
+	}
+
+#ifdef CONFIG_TDLS
+	if (!wpa_s->p2p_mgmt && wpa_tdls_init(wpa_s->wpa))
+		goto fail;
+#endif /* CONFIG_TDLS */
+
+	return 0;
+fail:
+	wpa_s->bridge_ifname[0] = 0;
+	if (wpa_s->l2_br) {
+		l2_packet_deinit(wpa_s->l2_br);
+		wpa_s->l2_br = NULL;
+	}
+#ifdef CONFIG_TDLS
+	if (!wpa_s->p2p_mgmt)
+		wpa_tdls_init(wpa_s->wpa);
+#endif /* CONFIG_TDLS */
+	return -EIO;
+}
+
+
 /**
  * wpa_supplicant_driver_init - Initialize driver interface parameters
  * @wpa_s: Pointer to wpa_supplicant data

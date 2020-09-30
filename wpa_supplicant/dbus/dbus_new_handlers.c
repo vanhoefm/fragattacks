@@ -3635,6 +3635,43 @@ dbus_bool_t wpas_dbus_getter_bridge_ifname(
 }
 
 
+dbus_bool_t wpas_dbus_setter_bridge_ifname(
+	const struct wpa_dbus_property_desc *property_desc,
+	DBusMessageIter *iter, DBusError *error, void *user_data)
+{
+	struct wpa_supplicant *wpa_s = user_data;
+	const char *bridge_ifname = NULL;
+	const char *msg;
+	int r;
+
+	if (!wpas_dbus_simple_property_setter(iter, error, DBUS_TYPE_STRING,
+					      &bridge_ifname))
+		return FALSE;
+
+	r = wpa_supplicant_update_bridge_ifname(wpa_s, bridge_ifname);
+	if (r != 0) {
+		switch (r) {
+		case -EINVAL:
+			msg = "invalid interface name";
+			break;
+		case -EBUSY:
+			msg = "interface is busy";
+			break;
+		case -EIO:
+			msg = "socket error";
+			break;
+		default:
+			msg = "unknown error";
+			break;
+		}
+		dbus_set_error_const(error, DBUS_ERROR_FAILED, msg);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+
 /**
  * wpas_dbus_getter_config_file - Get interface configuration file path
  * @iter: Pointer to incoming dbus message iter

@@ -2807,6 +2807,11 @@ int wpa_tdls_init(struct wpa_sm *sm)
 	if (sm == NULL)
 		return -1;
 
+	if (sm->l2_tdls) {
+		l2_packet_deinit(sm->l2_tdls);
+		sm->l2_tdls = NULL;
+	}
+
 	sm->l2_tdls = l2_packet_init(sm->bridge_ifname ? sm->bridge_ifname :
 				     sm->ifname,
 				     sm->own_addr,

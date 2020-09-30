@@ -3613,7 +3613,7 @@ static const struct wpa_dbus_property_desc wpas_dbus_interface_properties[] = {
 	},
 	{ "BridgeIfname", WPAS_DBUS_NEW_IFACE_INTERFACE, "s",
 	  wpas_dbus_getter_bridge_ifname,
-	  NULL,
+	  wpas_dbus_setter_bridge_ifname,
 	  NULL
 	},
 	{ "ConfigFile", WPAS_DBUS_NEW_IFACE_INTERFACE, "s",
