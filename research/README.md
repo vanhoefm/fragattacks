@@ -267,6 +267,11 @@ device and are further discussed below the table.
 | `eapol-amsdu-bad BP`             | Send malformed A-MSDU disguised as EAPOL during handshake (use tcpdump).
 | `eapol-amsdu-bad I,P`            | Same as above, except the frame is injected after obtaining an IP.
 
+How commands match to CVEs is listed below. Note that for implementation flaws we list a reference
+CVE identifier, however, vendors may use different CVEs because an implementation vulnerability normally
+receives a unique CVE for each affected codebase. We nevertheless recommend to always refer to (or somehow
+include) these reference CVEs as a way to easily refer to each type of discovered implementation flaw.
+
 ## 7.1. Sanity and implementation checks
 
 - `ping I,E,E`: This test should only fail if the tested device doesn't support fragmentation. In case
@@ -343,19 +348,27 @@ for details.
   which can be useful in case there is a small delay between completion of the handshake and installing the
   negotiated key.
 
-## 7.5. Mixed plain/encrypt attack (§6.3)
+## 7.5. Non-consecutive PNs attack (§6.2 -- CVE-2020-26146)
+
+In our experiments, this test only failed against Linux and against devices that don't support fragmentation.
+
+## 7.6. Mixed plain/encrypt attack (§6.3 -- CVE-2020-26147/26140/26143)
 
 - `ping I,E,P` and `linux-plain`: if this test succeeds the resulting attacks are described in Section 6.3
   of the paper. Summarized, in combintation with the A-MSDU or cache vulnerability, it can be exploited to
-  inject packets. When not combined with any other vulnerabilities the impact is implementation-specific.
+  inject packets. When not combined with any other vulnerabilities the impact is implementation-specific
+  (CVE-2020-26147).
 
 - `ping I,P,E`: if this test succeeds it is trivial to inject plaintext frames towards the device _if_
-  fragmentation is being used by the network.
+  fragmentation is being used by the network (CVE-2020-26147).
 
-- `ping I,P,P` and `ping I,P`: if this test succeeds it is trivial to inject plaintext frames towards the
-  device independent of the network configuration.
+- `ping I,P`: if this tests succeeds the implementation accepts plaintext frames in a protected Wi-Fi
+  network, allowing trivial packet injection (CVE-2020-26140).
 
-## 7.6. Broadcast fragment attack tests (§6.4)
+- `ping I,P,P`: if this test succeeds the implementation accepts _fragmented_ plaintext frames in a protected
+  Wi-Fi network, allowing trivial packet injection (CVE-2020-26143).
+
+## 7.7. Broadcast fragment attack tests (§6.4 -- CVE-2020-26145)
 
 - Because all these tests send broadcast frames, which are not automatically retransmitted, it is recommended
   to **execute these tests several times**. This is because background noise may prevent the tested devices
@@ -369,7 +382,7 @@ for details.
   use the filter `icmp` and in wireshark you can also use the filter `frame contains "test_ping_icmp"`
   to more easily detect this ping request.
 
-## 7.7. A-MSDUs EAPOL attack tests (§6.5)
+## 7.8. A-MSDUs EAPOL attack tests (§6.5 -- CVE-2020-26144)
 
 - `eapol-amsdu[-bad] BP`: These two tests inject the malicious frame while the client is still connecting
   to the network (i.e. during the execution of the 4-way handshake). This is important because several
@@ -383,7 +396,7 @@ for details.
   test variant. Note that if this tests succeeds, the impact of the attack is identical to implementations
   that correctly parse such frames (for details see Section 3.6 and 6.8 in the paper).
 
-## 7.8. Troubleshooting checklist
+## 7.9. Troubleshooting checklist
 
 In case the test tool doesn't appear to be working, check the following:
 
@@ -410,8 +423,8 @@ In case the test tool doesn't appear to be working, check the following:
 8. If you are using a virtual machine, try to run the test tool from a live CD or USB instead.
 
 9. Confirm using a second monitor interface that no other frames are sent in between fragments.
-    For instance, I found that my Intel device sometimes sends Block Ack Response Action frames
-    between fragments, and this interfered with the defragmentation process of the device under test.
+   For instance, I found that my Intel device sometimes sends Block Ack Response Action frames
+   between fragments, and this interfered with the defragmentation process of the device under test.
 
 10. Check that you are using modified drivers if needed for your wireless network card.
     If you updated your kernel, you will need to recompile and reinstall the drivers.
@@ -538,7 +551,7 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
   shows that the device keeps fragments in memory after (re)connecting to a network, meaning its vulnerable to cache
   attacks.
 
-## 8.4. Mixed plain/encrypt attack (§6.3)
+## 8.4. Mixed plain/encrypt attack (§6.3 -- CVE-2020-26147)
 
 - `ping I,E,E --amsdu`: This test sends a fragmented A-MSDU frame, which not all devices can properly receive.
   This test is useful to determine the practical exploitability of the "Mixed plain/encrypt attack".
@@ -548,7 +561,7 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
 - `ping I,E,P,E` and `linux-plain 3`: If all the other mixed plain/encrypt attack tests in didn't succeed, you
   can try these two extra tests as well. I think it's quite unlikely this will uncover a new vulnerability.
 
-## 8.5. Broadcast fragment attack tests (§6.4)
+## 8.5. Broadcast fragment attack tests (§6.4 -- CVE-2020-26145)
 
 - Because all these tests send broadcast frames, which are not automatically retransmitted, it is recommended
   to **execute these tests several times**. This is because background noise may prevent the tested devices
@@ -572,7 +585,7 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
   is properly received, for example using the filter `icmp` or `frame contains "test_ping_icmp"`. An alternative variant
   is `eapfrag BP,AE` in case the normal variant doesn't work.
 
-## 8.6. A-MSDU EAPOL attack tests (§6.5)
+## 8.6. A-MSDU EAPOL attack tests (§6.5 -- CVE-2020-26144)
 
 This test can be used in case you want to execute the `eapol-amsdu[-bad] BP` tests but cannot run tcpdump or wireshark on
 the AP. This means this test is only meaningfull against APs. In particular, the command `eapol-amsdu[-bad] BP --bcast-dst`
@@ -580,7 +593,7 @@ will cause a vulnerable AP to broadcast the ping request to all connected client
 vulnerable, execute this command, and listen for broadcast Wi-Fi frames on a second device that is connected to the AP by
 using the filter `icmp` or `frame contains "test_ping_icmp"`.
 
-## 8.7. AP forwards EAPOL attack tests (§6.6)
+## 8.7. AP forwards EAPOL attack tests (§6.6 -- CVE-2020-26139)
 
 - `eapol-inject 00:11:22:33:44:55`: This test is only meaningfull against APs. To perform this test you have to connect
   to the network using a second device and replace the MAC address `00:11:22:33:44:55` with the MAC address of this second
@@ -595,7 +608,7 @@ using the filter `icmp` or `frame contains "test_ping_icmp"`.
   to check this. Use the wireshark or tshark filter `(wlan.fc.frag == 1) || (wlan.frag > 0)` to detect fragmented frames. I found it
   very rare for this attack to work.
 
-## 8.8. Abusing no fragmentation support (§6.8)
+## 8.8. No fragmentation support attack test (§6.8 -- CVE-2020-26142)
 
 - `ping I,D,E`: If this test succeeds, the device doesn't support (de)fragmentation, but is still vulnerable to attacks. The
   problem is that the receiver treats the _last_ fragment as a full frame. See Section 6.6 in the paper for details and how this
