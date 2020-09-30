@@ -522,7 +522,7 @@ static int wpas_p2p_disconnect_safely(struct wpa_supplicant *wpa_s,
 		/*
 		 * The calling wpa_s instance is going to be removed. Do that
 		 * from an eloop callback to keep the instance available until
-		 * the caller has returned. This my be needed, e.g., to provide
+		 * the caller has returned. This may be needed, e.g., to provide
 		 * control interface responses on the per-interface socket.
 		 */
 		if (eloop_register_timeout(0, 0, run_wpas_p2p_disconnect,
