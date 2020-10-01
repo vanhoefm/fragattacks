@@ -922,3 +922,15 @@ def run_autogo_interworking(dev):
     dev[0].remove_group()
     if '6b03110203' not in bss['ie']:
         raise Exception("Interworking element not seen")
+
+def test_autogo_remove_iface(dev):
+    """P2P autonomous GO and interface being removed"""
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5")
+    wpas.global_request("SET p2p_no_group_iface 1")
+    wpas.set("p2p_group_idle", "1")
+    autogo(wpas)
+    wpas.global_request("P2P_SET disallow_freq 5000")
+    time.sleep(0.1)
+    wpas.global_request("INTERFACE_REMOVE " + wpas.ifname)
+    time.sleep(1)
