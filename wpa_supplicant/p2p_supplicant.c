@@ -4776,6 +4776,7 @@ void wpas_p2p_deinit(struct wpa_supplicant *wpa_s)
 	eloop_cancel_timeout(wpas_p2p_group_idle_timeout, wpa_s, NULL);
 	wpas_p2p_remove_pending_group_interface(wpa_s);
 	eloop_cancel_timeout(wpas_p2p_group_freq_conflict, wpa_s, NULL);
+	eloop_cancel_timeout(wpas_p2p_reconsider_moving_go, wpa_s, NULL);
 	wpas_p2p_listen_work_done(wpa_s);
 	if (wpa_s->p2p_send_action_work) {
 		os_free(wpa_s->p2p_send_action_work->ctx);
