@@ -139,6 +139,7 @@ static const char * const dont_quote[] = {
 	"key_mgmt", "proto", "pairwise", "auth_alg", "group", "eap",
 	"bssid", "scan_freq", "freq_list", "scan_ssid", "bssid_hint",
 	"bssid_blacklist", "bssid_whitelist", "group_mgmt",
+	"ignore_broadcast_ssid",
 #ifdef CONFIG_MESH
 	"mesh_basic_rates",
 #endif /* CONFIG_MESH */
