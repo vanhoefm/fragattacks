@@ -713,6 +713,8 @@ static struct crypto_ec_point * sswu(struct crypto_ec *ec, int group,
 		goto fail;
 	const_time_select_bin(m_is_zero, bin1, bin2, prime_len, bin);
 	x1 = crypto_bignum_init_set(bin, prime_len);
+	if (!x1)
+		goto fail;
 	debug_print_bignum("SSWU: x1 = CSEL(l, x1a, x1b)", x1, prime_len);
 
 	/* gx1 = x1^3 + a * x1 + b */
@@ -753,6 +755,8 @@ static struct crypto_ec_point * sswu(struct crypto_ec *ec, int group,
 		goto fail;
 	const_time_select_bin(is_qr, bin1, bin2, prime_len, bin);
 	v = crypto_bignum_init_set(bin, prime_len);
+	if (!v)
+		goto fail;
 	debug_print_bignum("SSWU: v = CSEL(l, gx1, gx2)", v, prime_len);
 
 	/* x = CSEL(l, x1, x2) */
