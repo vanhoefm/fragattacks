@@ -3527,7 +3527,7 @@ int wpa_ft_validate_reassoc(struct wpa_state_machine *sm, const u8 *ies,
 					OCV_FAILURE "addr=" MACSTR
 					" frame=ft-reassoc-req error=%s",
 					MAC2STR(sm->addr), ocv_errorstr);
-			return WLAN_STATUS_UNSPECIFIED_FAILURE;
+			return WLAN_STATUS_INVALID_FTIE;
 		}
 	}
 #endif /* CONFIG_OCV */
