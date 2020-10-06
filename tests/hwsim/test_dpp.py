@@ -2563,6 +2563,30 @@ def test_dpp_hostapd_configurator_responder(dev, apdev):
     wait_auth_success(hapd, dev[0], configurator=hapd, enrollee=dev[0],
                       stop_initiator=True)
 
+def test_dpp_hostapd_configurator_fragmentation(dev, apdev):
+    """DPP with hostapd as configurator/initiator requiring fragmentation"""
+    check_dpp_capab(dev[0])
+    hapd = hostapd.add_ap(apdev[0], {"ssid": "unconfigured",
+                                     "channel": "1"})
+    check_dpp_capab(hapd)
+    conf_id = hapd.dpp_configurator_add()
+    id0 = dev[0].dpp_bootstrap_gen(chan="81/1", mac=True)
+    uri0 = dev[0].request("DPP_BOOTSTRAP_GET_URI %d" % id0)
+    id1 = hapd.dpp_qr_code(uri0)
+    res = hapd.request("DPP_BOOTSTRAP_INFO %d" % id1)
+    if "FAIL" in res:
+        raise Exception("DPP_BOOTSTRAP_INFO failed")
+    if "type=QRCODE" not in res:
+        raise Exception("DPP_BOOTSTRAP_INFO did not report correct type")
+    if "mac_addr=" + dev[0].own_addr() not in res:
+        raise Exception("DPP_BOOTSTRAP_INFO did not report correct mac_addr")
+    dev[0].dpp_listen(2412)
+    conf = '{"wi-fi_tech":"infra", "discovery":{"ssid":"test"},"cred":{"akm":"psk","pass":"secret passphrase"}}' + 3000*' '
+    hapd.set("dpp_config_obj_override", conf)
+    hapd.dpp_auth_init(peer=id1, configurator=conf_id, conf="sta-dpp")
+    wait_auth_success(dev[0], hapd, configurator=hapd, enrollee=dev[0],
+                      stop_responder=True)
+
 def test_dpp_own_config(dev, apdev):
     """DPP configurator signing own connector"""
     try:
