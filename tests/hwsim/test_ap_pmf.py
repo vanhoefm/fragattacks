@@ -279,6 +279,34 @@ def test_ap_pmf_assoc_comeback2(dev, apdev):
                           dev[0].p2p_interface_addr()) < 1:
         raise Exception("AP did not use reassociation comeback request")
 
+@remote_compatible
+def test_ap_pmf_assoc_comeback_wps(dev, apdev):
+    """WPA2-PSK AP with PMF association comeback (WPS)"""
+    ssid = "assoc-comeback"
+    appin = "12345670"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    params["eap_server"] = "1"
+    params["wps_state"] = "2"
+    params["ap_pin"] = appin
+    hapd = hostapd.add_ap(apdev[0], params)
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+    dev[0].connect(ssid, psk="12345678", ieee80211w="1",
+                   key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
+                   scan_freq="2412")
+    hapd.set("ext_mgmt_frame_handling", "1")
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected(timeout=10)
+    hapd.set("ext_mgmt_frame_handling", "0")
+    dev[0].wps_reg(apdev[0]['bssid'], appin)
+    if wt.get_sta_counter("assocresp_comeback", apdev[0]['bssid'],
+                          dev[0].p2p_interface_addr()) < 1:
+        raise Exception("AP did not use association comeback request")
+
 def test_ap_pmf_ap_dropping_sa(dev, apdev):
     """WPA2-PSK PMF AP dropping SA"""
     ssid = "pmf"
