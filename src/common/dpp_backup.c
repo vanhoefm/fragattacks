@@ -189,7 +189,7 @@ static struct wpabuf * dpp_build_key_pkg(struct dpp_authentication *auth)
 	if (!key)
 		goto fail;
 
-	asn1_put_integer(key, 1); /* version = v2(1) */
+	asn1_put_integer(key, 0); /* version = v1(0) */
 
 	/* PrivateKeyAlgorithmIdentifier */
 	wpabuf_put_buf(key, alg);
@@ -908,7 +908,7 @@ dpp_parse_one_asymmetric_key(const u8 *buf, size_t len)
 	/* Version ::= INTEGER { v1(0), v2(1) } (v1, ..., v2) */
 	if (asn1_get_integer(pos, end - pos, &val, &pos) < 0)
 		goto fail;
-	if (val != 1) {
+	if (val != 0 && val != 1) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Unsupported DPPAsymmetricKeyPackage version %d",
 			   val);
