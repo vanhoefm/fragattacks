@@ -3561,6 +3561,7 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 		struct wpa_channel_info ci;
 		int tx_chanwidth;
 		int tx_seg1_idx;
+		enum oci_verify_result res;
 
 		if (hostapd_drv_channel_info(hapd, &ci) != 0) {
 			wpa_printf(MSG_WARNING,
@@ -3574,9 +3575,15 @@ static int check_assoc_ies(struct hostapd_data *hapd, struct sta_info *sta,
 					  &tx_seg1_idx) < 0)
 			return WLAN_STATUS_UNSPECIFIED_FAILURE;
 
-		if (ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
-					 tx_chanwidth, tx_seg1_idx) !=
-		    OCI_SUCCESS) {
+		res = ocv_verify_tx_params(elems.oci, elems.oci_len, &ci,
+					   tx_chanwidth, tx_seg1_idx);
+		if (wpa_auth_uses_ocv(sta->wpa_sm) == 2 &&
+		    res == OCI_NOT_FOUND) {
+			/* Work around misbehaving STAs */
+			wpa_printf(MSG_INFO,
+				   "FILS: Disable OCV with a STA that does not send OCI");
+			wpa_auth_set_ocv(sta->wpa_sm, 0);
+		} else if (res != OCI_SUCCESS) {
 			wpa_printf(MSG_WARNING, "FILS: OCV failed: %s",
 				   ocv_errorstr);
 			wpa_msg(hapd->msg_ctx, MSG_INFO, OCV_FAILURE "addr="

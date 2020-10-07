@@ -810,12 +810,24 @@ wpa_validate_wpa_ie(struct wpa_authenticator *wpa_auth,
 #ifdef CONFIG_OCV
 	if (wpa_auth->conf.ocv && (data.capabilities & WPA_CAPABILITY_OCVC) &&
 	    !(data.capabilities & WPA_CAPABILITY_MFPC)) {
-		wpa_printf(MSG_DEBUG,
-			   "Management frame protection required with OCV, but client did not enable it");
-		return WPA_MGMT_FRAME_PROTECTION_VIOLATION;
+		/* Some legacy MFP incapable STAs wrongly copy OCVC bit from
+		 * AP RSN capabilities. To improve interoperability with such
+		 * legacy STAs allow connection without enabling OCV when the
+		 * workaround mode (ocv=2) is enabled.
+		 */
+		if (wpa_auth->conf.ocv == 2) {
+			wpa_printf(MSG_DEBUG,
+				   "Allow connecting MFP incapable and OCV capable STA without enabling OCV");
+			wpa_auth_set_ocv(sm, 0);
+		} else {
+			wpa_printf(MSG_DEBUG,
+				   "Management frame protection required with OCV, but client did not enable it");
+			return WPA_MGMT_FRAME_PROTECTION_VIOLATION;
+		}
+	} else {
+		wpa_auth_set_ocv(sm, (data.capabilities & WPA_CAPABILITY_OCVC) ?
+				 wpa_auth->conf.ocv : 0);
 	}
-	wpa_auth_set_ocv(sm, wpa_auth->conf.ocv &&
-			 (data.capabilities & WPA_CAPABILITY_OCVC));
 #endif /* CONFIG_OCV */
 
 	if (wpa_auth->conf.ieee80211w == NO_MGMT_FRAME_PROTECTION ||
