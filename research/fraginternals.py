@@ -6,7 +6,6 @@
 
 from libwifi import *
 import abc, sys, socket, struct, time, subprocess, atexit, select, copy
-import argparse
 import os.path
 from wpaspy import Ctrl
 from scapy.contrib.wpa_eapol import WPA_key
@@ -708,7 +707,7 @@ class Daemon(metaclass=abc.ABCMeta):
 				log(WARNING, "WARNING: Unable to check whether you are using patched drivers.")
 			elif not os.path.exists("/sys/module/mac80211/parameters/fragattack_version"):
 				log(ERROR, "You are not running patched drivers, meaning this tool may give incorrect results!")
-				log(STATUS, "To ignore this warning add the parameter --no-drivercheck")
+				log(STATUS, "To ignore this warning and timeout add the parameter --no-drivercheck")
 				time.sleep(5)
 
 		# 1. Assign/create interfaces according to provided options
@@ -753,7 +752,7 @@ class Daemon(metaclass=abc.ABCMeta):
 				with open("/sys/module/ath9k_htc/parameters/fragattack_fw") as fp:
 					if not int(fp.read()) == 1:
 						log(ERROR, "WARNING: It seems the ath9k_htc device is not using patched firmware!")
-						log(STATUS, "To ignore this warning add the parameter --no-drivercheck")
+						log(STATUS, "To ignore this warning and timeout add the parameter --no-drivercheck")
 						time.sleep(5)
 			except:
 				log(WARNING, "WARNING: Unable to check if the ath9k_htc device is using patched firmware!")

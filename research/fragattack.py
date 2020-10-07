@@ -5,7 +5,7 @@
 # See README for more details.
 
 # Note that tests_*.py files are imported automatically
-import glob, importlib
+import glob, importlib, argparse
 from fraginternals import *
 
 # ----------------------------------- Main Function -----------------------------------

@@ -805,7 +805,7 @@ with this dongle. When connected to a USB2.0 port I found this dongle to be reli
 
 This device is generally not supported by default in most Linux distributions and requires manual
 installation of drivers. I tested it on Kali Linux after installing the driver using the instructions
-on [https://github.com/aircrack-ng/rtl8812au](GitHub). Before plugging in the device, you must
+on [GitHub](https://github.com/aircrack-ng/rtl8812au). Before plugging in the device, you must
 execute `modprobe 88XXau rtw_monitor_retransmit=1`. Once my patches have reached upstream repositories
 on Kali Linux you can simply install the driver using `sudo apt install realtek-rtl88xxau-dkms`, but
 for now you must manually install the driver from GitHub.
