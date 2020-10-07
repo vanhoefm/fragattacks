@@ -5329,6 +5329,13 @@ def test_dpp_chirp(dev, apdev):
             dpp_cc = True
     if chan1 != 5 or chan6 != 5 or chan11 != 1:
         raise Exception("Unexpected number of presence announcements sent: %d %d %d" % (chan1, chan6, chan11))
+    ev = hapd.wait_event(["DPP-CHIRP-RX"], timeout=1)
+    if ev is None:
+        raise Exception("No chirp received on the AP")
+    if "freq=2462" not in ev:
+        raise Exception("Chirp reception reported on unexpected channel: " + ev)
+    if "src=" + dev[0].own_addr() not in ev:
+        raise Exception("Unexpected chirp source reported: " + ev)
 
 @long_duration_test
 def test_dpp_chirp_listen(dev, apdev):
