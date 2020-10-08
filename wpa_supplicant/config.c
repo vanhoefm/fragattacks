@@ -4998,6 +4998,7 @@ static const struct global_parse_data global_fields[] = {
 	{ INT(p2p_device_random_mac_addr), 0 },
 	{ FUNC(p2p_device_persistent_mac_addr), 0 },
 	{ INT(p2p_interface_random_mac_addr), 0 },
+	{ INT(p2p_6ghz_disable), 0 },
 #endif /* CONFIG_P2P */
 	{ FUNC(country), CFG_CHANGED_COUNTRY },
 	{ INT(bss_max_count), 0 },

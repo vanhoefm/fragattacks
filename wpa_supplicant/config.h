@@ -779,6 +779,8 @@ struct wpa_config {
 	int p2p_ignore_shared_freq;
 	int p2p_optimize_listen_chan;
 
+	int p2p_6ghz_disable;
+
 	struct wpabuf *wps_vendor_ext_m1;
 
 #define MAX_WPS_VENDOR_EXT 10
