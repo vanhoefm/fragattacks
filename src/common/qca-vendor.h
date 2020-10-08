@@ -9478,6 +9478,16 @@ enum qca_vendor_wlan_sta_guard_interval {
  * only. This represents number of Beacon frames received from this station with
  * the packet number less than or equal to the last received packet number when
  * beacon protection is enabled.
+ *
+ * @QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_CONNECT_FAIL_REASON_CODE: u32, used in
+ * STA mode only. The driver uses this attribute to populate the connection
+ * failure reason codes and the values are defined in
+ * enum qca_sta_connect_fail_reason_codes. Userspace applications can send
+ * QCA_NL80211_VENDOR_SUBCMD_GET_STA_INFO vendor command after receiving
+ * a connection failure indication from the driver. The driver shall not
+ * include this attribute in response to the
+ * QCA_NL80211_VENDOR_SUBCMD_GET_STA_INFO command if there is no connection
+ * failure observed in the last attempted connection.
  */
 enum qca_wlan_vendor_attr_get_sta_info {
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_INVALID = 0,
@@ -9523,6 +9533,7 @@ enum qca_wlan_vendor_attr_get_sta_info {
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_BIP_REPLAY_COUNT = 40,
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_BEACON_MIC_ERROR_COUNT = 41,
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_BEACON_REPLAY_COUNT = 42,
+	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_CONNECT_FAIL_REASON_CODE = 43,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_AFTER_LAST,
@@ -9970,6 +9981,34 @@ enum qca_wlan_vendor_attr_mbssid_tx_vdev_status {
 	QCA_WLAN_VENDOR_ATTR_MBSSID_TX_VDEV_STATUS_AFTER_LAST,
 	QCA_WLAN_VENDOR_ATTR_MBSSID_TX_VDEV_STATUS_MAX =
 	QCA_WLAN_VENDOR_ATTR_MBSSID_TX_VDEV_STATUS_AFTER_LAST - 1,
+};
+
+/**
+ * enum qca_sta_connect_fail_reason_codes - Defines values carried
+ * by QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_CONNECT_FAIL_REASON_CODE vendor
+ * attribute.
+ * @QCA_STA_CONNECT_FAIL_REASON_NO_BSS_FOUND: No Probe Response frame received
+ *	for unicast Probe Request frame.
+ * @QCA_STA_CONNECT_FAIL_REASON_AUTH_TX_FAIL: STA failed to send auth request.
+ * @QCA_STA_CONNECT_FAIL_REASON_AUTH_NO_ACK_RECEIVED: AP didn't send ACK for
+ *	auth request.
+ * @QCA_STA_CONNECT_FAIL_REASON_AUTH_NO_RESP_RECEIVED: Auth response is not
+ *	received from AP.
+ * @QCA_STA_CONNECT_FAIL_REASON_ASSOC_REQ_TX_FAIL: STA failed to send
+ *	Association Request frame.
+ * @QCA_STA_CONNECT_FAIL_REASON_ASSOC_NO_ACK_RECEIVED: AP didn't send ACK for
+ *	Association Request frame.
+ * @QCA_STA_CONNECT_FAIL_REASON_ASSOC_NO_RESP_RECEIVED: Association Response
+ *	frame is not received from AP.
+ */
+enum qca_sta_connect_fail_reason_codes {
+	QCA_STA_CONNECT_FAIL_REASON_NO_BSS_FOUND = 1,
+	QCA_STA_CONNECT_FAIL_REASON_AUTH_TX_FAIL = 2,
+	QCA_STA_CONNECT_FAIL_REASON_AUTH_NO_ACK_RECEIVED = 3,
+	QCA_STA_CONNECT_FAIL_REASON_AUTH_NO_RESP_RECEIVED = 4,
+	QCA_STA_CONNECT_FAIL_REASON_ASSOC_REQ_TX_FAIL = 5,
+	QCA_STA_CONNECT_FAIL_REASON_ASSOC_NO_ACK_RECEIVED = 6,
+	QCA_STA_CONNECT_FAIL_REASON_ASSOC_NO_RESP_RECEIVED = 7,
 };
 
 #endif /* QCA_VENDOR_H */
