@@ -454,7 +454,7 @@ presence of a certain vulnerability class, there is no need to test the other at
 | <div align="center">*A-MSDU attacks (§3)*</div>
 | `ping I,E --amsdu-fake`                | If this test succeeds, the A-MSDU flag is ignored (§3.5).
 | `ping I,E --amsdu-fake --amsdu-ssp`    | Check if the A-MSDU flag is authenticated but then ignored (§3.5).
-| `amsdu-inject`                         | Send A-MSDU frame whose start is also a valid rfc1042 header (§3.2).
+| `amsdu-inject`                         | Send A-MSDU frame whose start is also a valid LLC/SNAP header (§3.2).
 | `amsdu-inject-bad`                     | Same as above, but against targets that incorrectly parse the frame.
 | <div align="center">*Mixed key attacks (§4)*</div>
 | `ping I,F,BE,E`                        | In case the new key is installed relatively late.
@@ -501,10 +501,10 @@ understand how the tested device handles A-MSDU frames:
 The last two tests are used to simulate our A-MSDU injection attack:
 
 - `amsdu-inject`: This test simulates the A-MSDU injection attack described in Section 3.2 of the paper. In particular,
-  it sends an A-MSDU frame whose starts is also a valid rfc1042 header (since this is also what happens in our reference
+  it sends an A-MSDU frame whose starts is also a valid LLC/SNAP header (since this is also what happens in our reference
   attack).
   
-- `amsdu-inject-bad`: Some devices incorrectly parse A-MSDU frames that start with a valid rfc1042 header causing the
+- `amsdu-inject-bad`: Some devices incorrectly parse A-MSDU frames that start with a valid LLC/SNAP header causing the
   above test to fail. In that case try `amsdu-inject-bad` instead (see Section 3.6 in the paper). Note that if this tests
   succeeds, the impact of the attack is effectively identical to implementations that correctly parse such frames.
 
