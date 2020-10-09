@@ -1812,8 +1812,7 @@ def test_dbus_network(dev, apdev):
     tests = [dbus.Dictionary({'psk': "1234567"}, signature='sv'),
              dbus.Dictionary({'identity': dbus.ByteArray()},
                              signature='sv'),
-             dbus.Dictionary({'identity': dbus.Byte(1)}, signature='sv'),
-             dbus.Dictionary({'identity': ""}, signature='sv')]
+             dbus.Dictionary({'identity': dbus.Byte(1)}, signature='sv')]
     for args in tests:
         try:
             iface.AddNetwork(args)
