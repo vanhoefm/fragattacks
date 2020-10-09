@@ -10,6 +10,10 @@ Older WPA networks by default use TKIP for encryption, and the applicability of 
 this cipher are discussed in the paper. To illustrate that Wi-Fi has been vulnerable since its creation,
 the paper also briefly discusses the applicability of the attacks against WEP.
 
+_Embargo note_: this document refers to sections in **draft version 2 of the paper** "Fragment and Forge:
+Breaking Wi-Fi Through Frame Aggregation and Fragmentation". This paper can be found in the root directory
+of this repository.
+
 <a id="id-supported-cards"></a>
 # 2. Supported Network Cards
 
