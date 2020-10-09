@@ -302,3 +302,14 @@ def test_bgscan_unknown_module(dev, apdev):
     hapd = hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
     dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
                    bgscan="unknown:-20:2")
+
+def test_bgscan_reconfig(dev, apdev):
+    """bgscan parameter update"""
+    hostapd.add_ap(apdev[0], {"ssid": "bgscan"})
+    hostapd.add_ap(apdev[1], {"ssid": "bgscan"})
+
+    id = dev[0].connect("bgscan", key_mgmt="NONE", scan_freq="2412",
+                        bgscan="simple:1:-20:2")
+    dev[0].set_network_quoted(id, "bgscan", "simple:1:-45:2")
+    dev[0].set_network_quoted(id, "bgscan", "learn:1:-20:2")
+    dev[0].set_network_quoted(id, "bgscan", "")
