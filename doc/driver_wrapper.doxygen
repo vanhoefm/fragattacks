@@ -156,7 +156,7 @@ ap_scan=1:
 - wpa_supplicant requests scan with SIOCSIWSCAN
 - driver reports scan complete with wireless event SIOCGIWSCAN
 - wpa_supplicant reads scan results with SIOCGIWSCAN (multiple call if
-  a larget buffer is needed)
+  a larger buffer is needed)
 - wpa_supplicant decides which AP to use based on scan results
 - wpa_supplicant configures driver to associate with the selected BSS
   (SIOCSIWMODE, SIOCSIWGENIE, SIOCSIWAUTH, SIOCSIWFREQ,

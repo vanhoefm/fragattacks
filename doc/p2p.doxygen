@@ -283,7 +283,7 @@ service discovery. The user of the P2P module is responsible for
 providing P2P specific Service Request TLV(s) for queries and Service
 Response TLV(s) for responses.
 
-\subsection p2p_sd_query Quering services of peers
+\subsection p2p_sd_query Querying services of peers
 
 Service discovery is implemented by processing pending queries as a
 part of the device discovery phase. \ref p2p_sd_request() function is used
