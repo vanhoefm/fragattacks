@@ -5920,3 +5920,71 @@ def test_dbus_mesh(dev, apdev):
     with TestDbusMesh(bus) as t:
         if not t.success():
             raise Exception("Expected signals not seen")
+
+def test_dbus_roam(dev, apdev):
+    """D-Bus Roam"""
+    (bus, wpas_obj, path, if_obj) = prepare_dbus(dev[0])
+    iface = dbus.Interface(if_obj, WPAS_DBUS_IFACE)
+
+    ssid = "test-wpa2-psk"
+    passphrase = 'qwertyuiop'
+    params = hostapd.wpa2_params(ssid=ssid, passphrase=passphrase)
+    hapd = hostapd.add_ap(apdev[0], params)
+    hapd2 = hostapd.add_ap(apdev[1], params)
+    bssid = apdev[0]['bssid']
+    dev[0].scan_for_bss(bssid, freq=2412)
+    bssid2 = apdev[1]['bssid']
+    dev[0].scan_for_bss(bssid2, freq=2412)
+
+    class TestDbusConnect(TestDbus):
+        def __init__(self, bus):
+            TestDbus.__init__(self, bus)
+            self.state = 0
+
+        def __enter__(self):
+            gobject.timeout_add(1, self.run_connect)
+            gobject.timeout_add(15000, self.timeout)
+            self.add_signal(self.propertiesChanged, WPAS_DBUS_IFACE,
+                            "PropertiesChanged")
+            self.loop.run()
+            return self
+
+        def propertiesChanged(self, properties):
+            logger.debug("propertiesChanged: %s" % str(properties))
+            if 'State' in properties and properties['State'] == "completed":
+                if self.state == 0:
+                    self.state = 1
+                    cur = properties["CurrentBSS"]
+                    bss_obj = bus.get_object(WPAS_DBUS_SERVICE, cur)
+                    res = bss_obj.Get(WPAS_DBUS_BSS, 'BSSID',
+                                      dbus_interface=dbus.PROPERTIES_IFACE)
+                    bssid_str = ''
+                    for item in res:
+                        if len(bssid_str) > 0:
+                            bssid_str += ':'
+                        bssid_str += '%02x' % item
+                    dst = bssid if bssid_str == bssid2 else bssid2
+                    iface.Roam(dst)
+                elif self.state == 1:
+                    if "RoamComplete" in properties and \
+                       properties["RoamComplete"]:
+                        self.state = 2
+                        self.loop.quit()
+
+        def run_connect(self, *args):
+            logger.debug("run_connect")
+            args = dbus.Dictionary({'ssid': ssid,
+                                    'key_mgmt': 'WPA-PSK',
+                                    'psk': passphrase,
+                                    'scan_freq': 2412},
+                                   signature='sv')
+            self.netw = iface.AddNetwork(args)
+            iface.SelectNetwork(self.netw)
+            return False
+
+        def success(self):
+            return self.state == 2
+
+    with TestDbusConnect(bus) as t:
+        if not t.success():
+            raise Exception("Expected signals not seen")
