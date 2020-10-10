@@ -977,7 +977,7 @@ struct wpa_config {
 	int go_venue_type;
 
 	/**
-	 * hessid - Homogenous ESS identifier
+	 * hessid - Homogeneous ESS identifier
 	 *
 	 * If this is set (any octet is non-zero), scans will be used to
 	 * request response only from BSSes belonging to the specified
