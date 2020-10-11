@@ -41,7 +41,9 @@ make QUIET=1 CONFIG_NO_BROWSER=1
 echo "Building hostapd"
 cd ../../hostapd
 if [ ! -e .config -o $force_config -eq 1 ]; then
-    cp ../tests/hwsim/example-hostapd.config .config
+    if ! cmp ../tests/hwsim/example-hostapd.config .config >/dev/null 2>&1 ; then
+      cp ../tests/hwsim/example-hostapd.config .config
+    fi
 fi
 
 if [ $use_lcov -eq 1 ]; then
@@ -57,7 +59,9 @@ make QUIET=1 -j8 hostapd hostapd_cli hlr_auc_gw
 echo "Building wpa_supplicant"
 cd ../wpa_supplicant
 if [ ! -e .config -o $force_config -eq 1 ]; then
-    cp ../tests/hwsim/example-wpa_supplicant.config .config
+    if ! cmp ../tests/hwsim/example-wpa_supplicant.config .config >/dev/null 2>&1 ; then
+      cp ../tests/hwsim/example-wpa_supplicant.config .config
+    fi
 fi
 
 if [ $use_lcov -eq 1 ]; then
