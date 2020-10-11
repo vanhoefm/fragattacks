@@ -1,4 +1,4 @@
-ALL=libeap_common.a
+ALL=$(OUT)libeap_common.a
 
 include ../lib.rules
 
@@ -25,5 +25,5 @@ LIB_OBJS= \
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-libeap_common.a: $(LIB_OBJS)
+$(OUT)libeap_common.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

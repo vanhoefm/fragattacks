@@ -11,20 +11,14 @@ LIBS += ../src/crypto/libcrypto.a
 LIBS += ../src/utils/libutils.a
 LLIBS = -lrt
 
-../src/utils/libutils.a:
-	$(MAKE) -C ../src/utils
-
-../src/crypto/libcrypto.a:
-	$(MAKE) -C ../src/crypto
-
-../src/radius/libradius.a:
-	$(MAKE) -C ../src/radius
-
 #CLAGS += -DCONFIG_IPV6
 
 OBJS_ex = radius_example.o
 
 _OBJS_VAR := OBJS_ex
+include ../src/objs.mk
+
+_OBJS_VAR := LIBS
 include ../src/objs.mk
 
 radius_example: $(OBJS_ex) $(LIBS)

@@ -14,6 +14,12 @@ OBJS += x509.o
 _OBJS_VAR := OBJS
 include ../../../src/objs.mk
 
+_OBJS_VAR := LIBS
+include ../../../src/objs.mk
+
+_OBJS_VAR := ELIBS
+include ../../../src/objs.mk
+
 x509: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LIBS) $(ELIBS)
 

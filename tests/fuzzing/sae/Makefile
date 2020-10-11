@@ -18,6 +18,9 @@ OBJS += sae.o
 _OBJS_VAR := OBJS
 include ../../../src/objs.mk
 
+_OBJS_VAR := LIBS
+include ../../../src/objs.mk
+
 sae: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ -lcrypto
 

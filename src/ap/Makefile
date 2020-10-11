@@ -1,4 +1,4 @@
-ALL=libap.a
+ALL=$(OUT)libap.a
 
 include ../lib.rules
 
@@ -67,5 +67,5 @@ LIB_OBJS= \
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-libap.a: $(LIB_OBJS)
+$(OUT)libap.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

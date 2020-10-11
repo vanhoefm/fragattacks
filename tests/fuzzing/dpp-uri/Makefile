@@ -33,6 +33,9 @@ OBJS += dpp-uri.o
 _OBJS_VAR := OBJS
 include ../../../src/objs.mk
 
+_OBJS_VAR := LIBS
+include ../../../src/objs.mk
+
 dpp-uri: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ -lcrypto
 

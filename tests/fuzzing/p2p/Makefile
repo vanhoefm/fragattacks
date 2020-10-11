@@ -13,6 +13,9 @@ OBJS += p2p.o
 _OBJS_VAR := OBJS
 include ../../../src/objs.mk
 
+_OBJS_VAR := LIBS
+include ../../../src/objs.mk
+
 p2p: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LIBS)
 

@@ -13,6 +13,9 @@ OBJS += json.o
 _OBJS_VAR := OBJS
 include ../../../src/objs.mk
 
+_OBJS_VAR := LIBS
+include ../../../src/objs.mk
+
 json: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LIBS) $(ELIBS)
 

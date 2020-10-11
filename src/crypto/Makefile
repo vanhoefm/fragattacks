@@ -1,4 +1,4 @@
-ALL=libcrypto.a
+ALL=$(OUT)libcrypto.a
 
 include ../lib.rules
 
@@ -68,5 +68,5 @@ endif
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-libcrypto.a: $(LIB_OBJS)
+$(OUT)libcrypto.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

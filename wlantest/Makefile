@@ -62,13 +62,6 @@ TOBJS += bip.o
 TOBJS += gcmp.o
 
 
-../src/utils/libutils.a:
-	$(MAKE) -C ../src/utils
-
-../src/crypto/libcrypto.a:
-	$(MAKE) -C ../src/crypto
-
-
 OBJS_cli = wlantest_cli.o
 
 _OBJS_VAR := OBJS
@@ -76,6 +69,8 @@ include ../src/objs.mk
 _OBJS_VAR := TOBJS
 include ../src/objs.mk
 _OBJS_VAR := OBJS_cli
+include ../src/objs.mk
+_OBJS_VAR := OWN_LIBS
 include ../src/objs.mk
 
 wlantest: $(OBJS) $(OWN_LIBS)

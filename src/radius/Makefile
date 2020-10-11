@@ -1,4 +1,4 @@
-ALL=libradius.a
+ALL=$(OUT)libradius.a
 
 include ../lib.rules
 
@@ -16,5 +16,5 @@ LIB_OBJS= \
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-libradius.a: $(LIB_OBJS)
+$(OUT)libradius.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

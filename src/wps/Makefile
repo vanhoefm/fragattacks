@@ -1,4 +1,4 @@
-ALL=libwps.a
+ALL=$(OUT)libwps.a
 
 include ../lib.rules
 
@@ -35,5 +35,5 @@ LIB_OBJS= \
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-libwps.a: $(LIB_OBJS)
+$(OUT)libwps.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

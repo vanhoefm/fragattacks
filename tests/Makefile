@@ -42,54 +42,18 @@ DLIBS = ../src/crypto/libcrypto.a \
 	../src/rsn_supp/librsn_supp.a \
 	../src/tls/libtls.a
 
+_OBJS_VAR := LLIBS
+include ../src/objs.mk
+_OBJS_VAR := SLIBS
+include ../src/objs.mk
+_OBJS_VAR := DLIBS
+include ../src/objs.mk
+
 LIBS = $(SLIBS) $(DLIBS)
 LLIBS = -Wl,--start-group $(DLIBS) -Wl,--end-group $(SLIBS)
 
 # glibc < 2.17 needs -lrt for clock_gettime()
 LLIBS += -lrt
-
-../src/utils/libutils.a:
-	$(MAKE) -C ../src/utils
-
-../src/common/libcommon.a:
-	$(MAKE) -C ../src/common
-
-../src/crypto/libcrypto.a:
-	$(MAKE) -C ../src/crypto
-
-../src/tls/libtls.a:
-	$(MAKE) -C ../src/tls
-
-../src/ap/libap.a:
-	$(MAKE) -C ../src/ap
-
-../src/radius/libradius.a:
-	$(MAKE) -C ../src/radius
-
-../src/l2_packet/libl2_packet.a:
-	$(MAKE) -C ../src/l2_packet
-
-../src/wps/libwps.a:
-	$(MAKE) -C ../src/wps
-
-../src/eap_peer/libeap_peer.a:
-	$(MAKE) -C ../src/eap_peer
-
-../src/eap_server/libeap_server.a:
-	$(MAKE) -C ../src/eap_server
-
-../src/eap_common/libeap_common.a:
-	$(MAKE) -C ../src/eap_common
-
-../src/eapol_auth/libeapol_auth.a:
-	$(MAKE) -C ../src/eapol_auth
-
-../src/eapol_supp/libeapol_supp.a:
-	$(MAKE) -C ../src/eapol_supp
-
-../src/rsn_supp/librsn_supp.a:
-	$(MAKE) -C ../src/rsn_supp
-
 
 test-aes: $(call BUILDOBJ,test-aes.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)

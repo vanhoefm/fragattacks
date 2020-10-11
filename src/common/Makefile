@@ -1,4 +1,4 @@
-ALL=libcommon.a
+ALL=$(OUT)libcommon.a
 
 include ../lib.rules
 
@@ -21,5 +21,5 @@ LIB_OBJS= \
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-libcommon.a: $(LIB_OBJS)
+$(OUT)libcommon.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

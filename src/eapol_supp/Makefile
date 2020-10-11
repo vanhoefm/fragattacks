@@ -1,4 +1,4 @@
-ALL=libeapol_supp.a
+ALL=$(OUT)libeapol_supp.a
 
 include ../lib.rules
 
@@ -12,5 +12,5 @@ LIB_OBJS = eapol_supp_sm.o
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-libeapol_supp.a: $(LIB_OBJS)
+$(OUT)libeapol_supp.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

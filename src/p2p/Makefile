@@ -1,4 +1,4 @@
-ALL=libp2p.a
+ALL=$(OUT)libp2p.a
 
 include ../lib.rules
 
@@ -23,5 +23,5 @@ LIB_OBJS= \
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-libp2p.a: $(LIB_OBJS)
+$(OUT)libp2p.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

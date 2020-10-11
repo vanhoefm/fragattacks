@@ -1,4 +1,4 @@
-ALL=libutils.a
+ALL=$(OUT)libutils.a
 
 include ../lib.rules
 
@@ -36,5 +36,5 @@ LIB_OBJS += edit.o
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-libutils.a: $(LIB_OBJS)
+$(OUT)libutils.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

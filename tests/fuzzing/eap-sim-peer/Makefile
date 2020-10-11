@@ -15,6 +15,9 @@ OBJS += eap-sim-peer.o
 _OBJS_VAR := OBJS
 include ../../../src/objs.mk
 
+_OBJS_VAR := LIBS
+include ../../../src/objs.mk
+
 eap-sim-peer: $(OBJS) $(LIBS)
 	$(Q)$(LDO) $(LDFLAGS) -o $@ $^ $(LIBS) $(ELIBS)
 	@$(E) "  LD " $@

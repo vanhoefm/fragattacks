@@ -15,6 +15,9 @@ OBJS += eap-aka-peer.o
 _OBJS_VAR := OBJS
 include ../../../src/objs.mk
 
+_OBJS_VAR := LIBS
+include ../../../src/objs.mk
+
 eap-aka-peer: $(OBJS) $(LIBS)
 	$(Q)$(LDO) $(LDFLAGS) -o $@ $^ $(LIBS) $(ELIBS)
 	@$(E) "  LD " $@

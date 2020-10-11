@@ -1,4 +1,4 @@
-ALL=libtls.a
+ALL=$(OUT)libtls.a
 
 include ../lib.rules
 
@@ -33,5 +33,5 @@ LIB_OBJS= \
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-libtls.a: $(LIB_OBJS)
+$(OUT)libtls.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

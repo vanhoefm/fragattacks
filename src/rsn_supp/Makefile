@@ -1,4 +1,4 @@
-ALL=librsn_supp.a
+ALL=$(OUT)librsn_supp.a
 
 include ../lib.rules
 
@@ -21,5 +21,5 @@ LIB_OBJS= \
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-librsn_supp.a: $(LIB_OBJS)
+$(OUT)librsn_supp.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

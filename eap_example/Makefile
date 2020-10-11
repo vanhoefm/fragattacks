@@ -90,15 +90,8 @@ OBJS_ex = eap_example.o eap_example_peer.o eap_example_server.o
 _OBJS_VAR := OBJS_ex
 include ../src/objs.mk
 
-
-../src/utils/libutils.a:
-	$(MAKE) -C ../src/utils
-
-../src/crypto/libcrypto.a:
-	$(MAKE) -C ../src/crypto
-
-../src/tls/libtls.a:
-	$(MAKE) -C ../src/tls
+_OBJS_VAR := EAP_LIBS
+include ../src/objs.mk
 
 
 ifneq ($(CONFIG_SOLIB), yes)

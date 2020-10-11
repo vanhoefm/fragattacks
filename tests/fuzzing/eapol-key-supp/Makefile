@@ -20,6 +20,9 @@ OBJS += eapol-key-supp.o
 _OBJS_VAR := OBJS
 include ../../../src/objs.mk
 
+_OBJS_VAR := LIBS
+include ../../../src/objs.mk
+
 eapol-key-supp: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ -Wl,--start-group $(LIBS) -Wl,--end-group
 

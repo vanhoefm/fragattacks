@@ -27,47 +27,5 @@ SRC=../../../src
 CFLAGS += -I$(SRC) -I$(SRC)/utils -I$(WPAS_SRC)
 OBJS += ../fuzzer-common.o
 
-$(SRC)/ap/libap.a:
-	$(MAKE) -C $(SRC)/ap TEST_FUZZ=y
-
-$(SRC)/common/libcommon.a:
-	$(MAKE) -C $(SRC)/common
-
-$(SRC)/crypto/libcrypto.a:
-	$(MAKE) -C $(SRC)/crypto TEST_FUZZ=y
-
-$(SRC)/eapol_auth/libeapol_auth.a:
-	$(MAKE) -C $(SRC)/eapol_auth
-
-$(SRC)/eapol_supp/libeapol_supp.a:
-	$(MAKE) -C $(SRC)/eapol_supp
-
-$(SRC)/eap_common/libeap_common.a:
-	$(MAKE) -C $(SRC)/eap_common
-
-$(SRC)/eap_peer/libeap_peer.a:
-	$(MAKE) -C $(SRC)/eap_peer
-
-$(SRC)/eap_server/libeap_server.a:
-	$(MAKE) -C $(SRC)/eap_server
-
-$(SRC)/l2_packet/libl2_packet.a:
-	$(MAKE) -C $(SRC)/l2_packet
-
-$(SRC)/p2p/libp2p.a:
-	$(MAKE) -C $(SRC)/p2p
-
-$(SRC)/radius/libradius.a:
-	$(MAKE) -C $(SRC)/radius
-
-$(SRC)/rsn_supp/librsn_supp.a:
-	$(MAKE) -C $(SRC)/rsn_supp TEST_FUZZ=y
-
-$(SRC)/tls/libtls.a:
-	$(MAKE) -C $(SRC)/tls TEST_FUZZ=y
-
-$(SRC)/utils/libutils.a:
-	$(MAKE) -C $(SRC)/utils TEST_FUZZ=y
-
-$(SRC)/wps/libwps.a:
-	$(MAKE) -C $(SRC)/wps
+# for the lib builds
+export TEST_FUZZ=y
