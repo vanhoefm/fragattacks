@@ -3,7 +3,6 @@
 tests/hwsim/logs
 tests/remote/logs
 wpaspy/build
-mac80211_hwsim/tools/hwsim_test
 **/parallel-vm.log
 tags
 build/
