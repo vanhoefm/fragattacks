@@ -1,4 +1,4 @@
-all: sae
+ALL=sae
 include ../rules.include
 
 CFLAGS += -DCONFIG_SHA256
@@ -13,11 +13,13 @@ OBJS += $(SRC)/crypto/sha256-prf.o
 OBJS += $(SRC)/crypto/sha256-kdf.o
 OBJS += $(SRC)/common/dragonfly.o
 
-sae: sae.o $(OBJS) $(LIBS)
+OBJS += sae.o
+
+_OBJS_VAR := OBJS
+include ../../../src/objs.mk
+
+sae: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ -lcrypto
 
-clean:
-	$(MAKE) -C $(SRC) clean
+clean: common-clean
 	rm -f sae *~ *.o *.d ../*~ ../*.o ../*.d
-
--include $(OBJS:%.o=%.d)

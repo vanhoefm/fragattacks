@@ -28,11 +28,13 @@ OBJS += $(SRC)/common/dpp_pkex.o
 OBJS += $(SRC)/common/dpp_reconfig.o
 OBJS += $(SRC)/common/dpp_tcp.o
 
-dpp-uri: dpp-uri.o $(OBJS) $(LIBS)
+OBJS += dpp-uri.o
+
+_OBJS_VAR := OBJS
+include ../../../src/objs.mk
+
+dpp-uri: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ -lcrypto
 
-clean:
-	$(MAKE) -C $(SRC) clean
+clean: common-clean
 	rm -f dpp-uri *~ *.o *.d ../*~ ../*.o ../*.d
-
--include $(OBJS:%.o=%.d)

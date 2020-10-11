@@ -1,4 +1,4 @@
-all: wnm
+ALL=wnm
 include ../rules.include
 
 CFLAGS += -DCONFIG_WNM
@@ -42,12 +42,13 @@ OBJS += $(WPAS_SRC)/wpas_glue.o
 OBJS += $(SRC)/drivers/driver_common.o
 OBJS += $(SRC)/drivers/drivers.o
 
-wnm: wnm.o $(OBJS) $(LIBS)
+OBJS += wnm.o
+
+_OBJS_VAR := OBJS
+include ../../../src/objs.mk
+
+wnm: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LIBS) $(ELIBS)
 
-clean:
-	$(MAKE) -C $(SRC) clean
-	$(MAKE) -C $(WPAS_SRC) clean
+clean: common-clean
 	rm -f wnm *~ *.o *.d ../*~ ../*.o ../*.d
-
--include $(OBJS:%.o=%.d)

@@ -1,3 +1,6 @@
+FUZZ_RULES := $(lastword $(MAKEFILE_LIST))
+include $(dir $(FUZZ_RULES))../../src/build.rules
+
 FUZZ_CFLAGS =
 
 ifdef LIBFUZZER
@@ -16,14 +19,6 @@ CFLAGS += $(FUZZ_CFLAGS)
 ifdef LIBFUZZER
 CFLAGS += -DTEST_LIBFUZZER
 LDFLAGS += $(FUZZ_FLAGS)
-endif
-
-ifndef CC
-CC=gcc
-endif
-
-ifndef LDO
-LDO=$(CC)
 endif
 
 WPAS_SRC=../../../wpa_supplicant
@@ -76,18 +71,3 @@ $(SRC)/utils/libutils.a:
 
 $(SRC)/wps/libwps.a:
 	$(MAKE) -C $(SRC)/wps
-
-Q=@
-E=echo
-ifeq ($(V), 1)
-Q=
-E=true
-endif
-ifeq ($(QUIET), 1)
-Q=@
-E=true
-endif
-
-%.o: %.c
-	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
-	@$(E) "  CC " $<

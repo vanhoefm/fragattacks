@@ -83,6 +83,10 @@ $(BUILDDIR)/$(PROJ)/src/%.o: $(ROOTDIR)src/%.c $(CONFIG_FILE) | _make_dirs
 $(BUILDDIR)/$(PROJ)/%.o: %.c $(CONFIG_FILE) | _make_dirs
 	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
 	@$(E) "  CC " $<
+# for the fuzzing tests
+$(BUILDDIR)/$(PROJ)/wpa_supplicant/%.o: $(ROOTDIR)wpa_supplicant/%.c $(CONFIG_FILE) | _make_dirs
+	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
+	@$(E) "  CC " $<
 
 BUILDOBJ = $(patsubst %,$(BUILDDIR)/$(PROJ)/%,$(patsubst $(ROOTDIR)%,%,$(1)))
 
