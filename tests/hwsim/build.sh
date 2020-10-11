@@ -28,17 +28,14 @@ done
 
 echo "Building TNC testing tools"
 cd tnc
-make clean > /dev/null
 make QUIET=1 -j8
 
 echo "Building wlantest"
 cd ../../../wlantest
-make clean > /dev/null
 make QUIET=1 -j8 > /dev/null
 
 echo "Building hs20-osu-client"
 cd ../hs20/client/
-make clean > /dev/null 2>&1
 make QUIET=1 CONFIG_NO_BROWSER=1
 
 echo "Building hostapd"
@@ -55,7 +52,6 @@ if [ $use_lcov -eq 1 ]; then
     fi
 fi
 
-make clean > /dev/null
 make QUIET=1 -j8 hostapd hostapd_cli hlr_auc_gw
 
 echo "Building wpa_supplicant"
@@ -72,7 +68,6 @@ if [ $use_lcov -eq 1 ]; then
     fi
 fi
 
-make clean > /dev/null
 if [ -z $FIPSLD_CC ]; then
 export FIPSLD_CC=gcc
 fi
