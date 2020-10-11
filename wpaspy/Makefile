@@ -2,6 +2,7 @@ all: build
 
 SRC=wpaspy.c
 
+.PHONY: build
 build: $(SRC) setup.py
 	python setup.py build
 
