@@ -1,5 +1,3 @@
-ALL=$(OUT)libeap_peer.a
-
 include ../lib.rules
 
 install:
@@ -17,5 +15,3 @@ LIB_OBJS= \
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-$(OUT)libeap_peer.a: $(LIB_OBJS)
-	$(AR) crT $@ $?

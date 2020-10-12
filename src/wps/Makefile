@@ -1,5 +1,3 @@
-ALL=$(OUT)libwps.a
-
 include ../lib.rules
 
 install:
@@ -35,5 +33,3 @@ LIB_OBJS= \
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-$(OUT)libwps.a: $(LIB_OBJS)
-	$(AR) crT $@ $?

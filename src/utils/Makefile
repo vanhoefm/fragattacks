@@ -1,5 +1,3 @@
-ALL=$(OUT)libutils.a
-
 include ../lib.rules
 
 install:
@@ -36,5 +34,3 @@ LIB_OBJS += edit.o
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-$(OUT)libutils.a: $(LIB_OBJS)
-	$(AR) crT $@ $?

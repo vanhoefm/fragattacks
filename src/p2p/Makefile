@@ -1,5 +1,3 @@
-ALL=$(OUT)libp2p.a
-
 include ../lib.rules
 
 install:
@@ -23,5 +21,3 @@ LIB_OBJS= \
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-$(OUT)libp2p.a: $(LIB_OBJS)
-	$(AR) crT $@ $?

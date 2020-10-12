@@ -1,5 +1,3 @@
-ALL=$(OUT)libcrypto.a
-
 include ../lib.rules
 
 install:
@@ -68,5 +66,3 @@ endif
 
 _OBJS_VAR := LIB_OBJS
 include ../objs.mk
-$(OUT)libcrypto.a: $(LIB_OBJS)
-	$(AR) crT $@ $?
