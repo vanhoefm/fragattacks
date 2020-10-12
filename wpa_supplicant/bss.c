@@ -351,9 +351,31 @@ static int wpa_bss_is_wps_candidate(struct wpa_supplicant *wpa_s,
 }
 
 
+static bool is_p2p_pending_bss(struct wpa_supplicant *wpa_s,
+			       struct wpa_bss *bss)
+{
+#ifdef CONFIG_P2P
+	u8 addr[ETH_ALEN];
+
+	if (os_memcmp(bss->bssid, wpa_s->pending_join_iface_addr,
+		      ETH_ALEN) == 0)
+		return true;
+	if (!is_zero_ether_addr(wpa_s->pending_join_dev_addr) &&
+	    p2p_parse_dev_addr((const u8 *) (bss + 1), bss->ie_len,
+			       addr) == 0 &&
+	    os_memcmp(addr, wpa_s->pending_join_dev_addr, ETH_ALEN) == 0)
+		return true;
+#endif /* CONFIG_P2P */
+	return false;
+}
+
+
 static int wpa_bss_known(struct wpa_supplicant *wpa_s, struct wpa_bss *bss)
 {
 	struct wpa_ssid *ssid;
+
+	if (is_p2p_pending_bss(wpa_s, bss))
+		return 1;
 
 	for (ssid = wpa_s->conf->ssid; ssid; ssid = ssid->next) {
 		if (ssid->ssid == NULL || ssid->ssid_len == 0)
