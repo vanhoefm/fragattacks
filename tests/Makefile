@@ -1,7 +1,7 @@
 ALL=test-base64 test-md4 test-milenage \
 	test-rsa-sig-ver \
 	test-sha1 \
-	test-sha256 test-aes test-asn1 test-x509v3 test-list test-rc4
+	test-sha256 test-aes test-x509v3 test-list test-rc4
 
 include ../src/build.rules
 
@@ -56,9 +56,6 @@ LLIBS = -Wl,--start-group $(DLIBS) -Wl,--end-group $(SLIBS)
 LLIBS += -lrt
 
 test-aes: $(call BUILDOBJ,test-aes.o) $(LIBS)
-	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
-
-test-asn1: $(call BUILDOBJ,test-asn1.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
 test-base64: $(call BUILDOBJ,test-base64.o) $(LIBS)
