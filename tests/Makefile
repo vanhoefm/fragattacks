@@ -1,6 +1,7 @@
 ALL=test-base64 test-md4 test-milenage \
 	test-rsa-sig-ver \
 	test-sha1 \
+	test-https test-https_server \
 	test-sha256 test-aes test-x509v3 test-list test-rc4
 
 include ../src/build.rules
@@ -94,6 +95,5 @@ run-tests: $(ALL)
 
 clean: common-clean
 	rm -f *~
-	rm -f test-https
 	rm -f test_x509v3_nist.out.*
 	rm -f test_x509v3_nist2.out.*
