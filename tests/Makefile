@@ -73,9 +73,6 @@ test-https: $(call BUILDOBJ,test-https.o) $(LIBS)
 test-https_server: $(call BUILDOBJ,test-https_server.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
-test-json: $(call BUILDOBJ,test-json.o) $(LIBS)
-	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
-
 test-list: $(call BUILDOBJ,test-list.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
@@ -119,7 +116,6 @@ clean: common-clean
 	rm -f *~
 	rm -f test-eapol
 	rm -f test-https
-	rm -f test-json
 	rm -f test-tls
 	rm -f test_x509v3_nist.out.*
 	rm -f test_x509v3_nist2.out.*
