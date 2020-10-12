@@ -1,9 +1,3 @@
-include ../lib.rules
-
-install:
-	@echo Nothing to be made.
-
-
 CFLAGS += -DCONFIG_WIFI_DISPLAY
 CFLAGS += -DCONFIG_WPS_NFC
 
@@ -19,5 +13,4 @@ LIB_OBJS= \
 	p2p_sd.o \
 	p2p_utils.o
 
-_OBJS_VAR := LIB_OBJS
-include ../objs.mk
+include ../lib.rules

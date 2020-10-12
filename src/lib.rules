@@ -12,10 +12,15 @@ endif
 CFLAGS += $(FUZZ_CFLAGS)
 CFLAGS += -I.. -I../utils
 
-.SECONDEXPANSION:
-$(ALL): $$(LIB_OBJS)
+_OBJS_VAR := LIB_OBJS
+include ../objs.mk
+
+$(ALL): $(LIB_OBJS)
 	@$(E) "  AR  $(notdir $@)"
 	$(Q)$(AR) crT $@ $?
+
+install:
+	@echo Nothing to be made.
 
 clean:
 	$(Q)rm -f *~ *.o *.d *.gcno *.gcda *.gcov $(ALL)

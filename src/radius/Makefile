@@ -1,9 +1,3 @@
-include ../lib.rules
-
-install:
-	@echo Nothing to be made.
-
-
 CFLAGS += -DCONFIG_IPV6
 
 LIB_OBJS= \
@@ -12,5 +6,4 @@ LIB_OBJS= \
 	radius_das.o \
 	radius_server.o
 
-_OBJS_VAR := LIB_OBJS
-include ../objs.mk
+include ../lib.rules

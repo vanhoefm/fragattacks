@@ -1,9 +1,3 @@
-include ../lib.rules
-
-install:
-	@echo Nothing to be made.
-
-
 CFLAGS += -DCONFIG_IEEE80211R
 CFLAGS += -DCONFIG_HS20
 CFLAGS += -DCONFIG_SAE
@@ -17,5 +11,4 @@ LIB_OBJS= \
 	sae.o \
 	wpa_common.o
 
-_OBJS_VAR := LIB_OBJS
-include ../objs.mk
+include ../lib.rules

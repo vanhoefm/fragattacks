@@ -1,9 +1,3 @@
-include ../lib.rules
-
-install:
-	@echo Nothing to be made.
-
-
 CFLAGS += -DCONFIG_CRYPTO_INTERNAL
 CFLAGS += -DCONFIG_TLS_INTERNAL_CLIENT
 CFLAGS += -DCONFIG_TLS_INTERNAL_SERVER
@@ -63,6 +57,4 @@ ifndef TEST_FUZZ
 LIB_OBJS += random.o
 endif
 
-
-_OBJS_VAR := LIB_OBJS
-include ../objs.mk
+include ../lib.rules

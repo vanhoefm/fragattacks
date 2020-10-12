@@ -1,9 +1,3 @@
-include ../lib.rules
-
-install:
-	@echo Nothing to be made.
-
-
 CFLAGS += -DCONFIG_P2P
 CFLAGS += -DCONFIG_WPS_OOB
 CFLAGS += -DCONFIG_WPS_NFC
@@ -31,5 +25,4 @@ LIB_OBJS= \
 	wps_upnp_ssdp.o \
 	wps_upnp_web.o
 
-_OBJS_VAR := LIB_OBJS
-include ../objs.mk
+include ../lib.rules

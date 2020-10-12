@@ -1,9 +1,3 @@
-include ../lib.rules
-
-install:
-	@echo Nothing to be made.
-
-
 CFLAGS += -DHOSTAPD
 CFLAGS += -DNEED_AP_MLME
 CFLAGS += -DCONFIG_ETH_P_OUI
@@ -63,5 +57,4 @@ LIB_OBJS= \
 	wps_hostapd.o \
 	x_snoop.o
 
-_OBJS_VAR := LIB_OBJS
-include ../objs.mk
+include ../lib.rules

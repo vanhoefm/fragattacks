@@ -1,9 +1,3 @@
-include ../lib.rules
-
-install:
-	@echo Nothing to be made.
-
-
 CFLAGS += -DCONFIG_INTERNAL_LIBTOMMATH
 CFLAGS += -DCONFIG_CRYPTO_INTERNAL
 CFLAGS += -DCONFIG_TLSV11
@@ -28,6 +22,4 @@ LIB_OBJS= \
 	tlsv1_server_write.o \
 	x509v3.o
 
-
-_OBJS_VAR := LIB_OBJS
-include ../objs.mk
+include ../lib.rules

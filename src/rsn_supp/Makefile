@@ -1,9 +1,3 @@
-include ../lib.rules
-
-install:
-	@echo Nothing to be made.
-
-
 CFLAGS += -DCONFIG_IEEE80211R
 CFLAGS += -DCONFIG_TDLS
 CFLAGS += -DCONFIG_WNM
@@ -17,5 +11,4 @@ LIB_OBJS= \
 	wpa.o \
 	wpa_ie.o
 
-_OBJS_VAR := LIB_OBJS
-include ../objs.mk
+include ../lib.rules

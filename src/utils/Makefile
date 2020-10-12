@@ -1,9 +1,3 @@
-include ../lib.rules
-
-install:
-	@echo Nothing to be made.
-
-
 #CFLAGS += -DWPA_TRACE
 CFLAGS += -DCONFIG_IPV6
 CFLAGS += -DCONFIG_DEBUG_FILE
@@ -32,5 +26,4 @@ LIB_OBJS += edit.o
 
 #LIB_OBJS += pcsc_funcs.o
 
-_OBJS_VAR := LIB_OBJS
-include ../objs.mk
+include ../lib.rules
