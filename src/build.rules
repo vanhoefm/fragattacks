@@ -94,8 +94,12 @@ $(BUILDDIR)/$(PROJ)/wpa_supplicant/%.o: $(ROOTDIR)wpa_supplicant/%.c $(CONFIG_FI
 	@$(E) "  CC " $<
 
 # libraries - they know how to build themselves
-$(BUILDDIR)/$(PROJ)/%.a: $(CONFIG_FILE)
-	$(Q)mkdir -p $(BUILDDIR)/$(PROJ)/$(dir $(@:$(BUILDDIR)/$(PROJ)/%=%))
+# (lib_phony so we recurse all the time)
+.PHONY: lib_phony
+lib_phony:
+# nothing
+
+$(BUILDDIR)/$(PROJ)/%.a: $(CONFIG_FILE) lib_phony
 	$(Q)$(MAKE) -C $(ROOTDIR)$(dir $(@:$(BUILDDIR)/$(PROJ)/%=%)) OUT=$(abspath $(dir $@))/
 
 BUILDOBJ = $(patsubst %,$(BUILDDIR)/$(PROJ)/%,$(patsubst $(ROOTDIR)%,%,$(1)))
