@@ -91,9 +91,6 @@ test-sha1: $(call BUILDOBJ,test-sha1.o) $(LIBS)
 test-sha256: $(call BUILDOBJ,test-sha256.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
-test-tls: $(call BUILDOBJ,test-tls.o) $(LIBS)
-	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
-
 test-x509v3: $(call BUILDOBJ,test-x509v3.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
@@ -112,6 +109,5 @@ run-tests: $(ALL)
 clean: common-clean
 	rm -f *~
 	rm -f test-https
-	rm -f test-tls
 	rm -f test_x509v3_nist.out.*
 	rm -f test_x509v3_nist2.out.*
