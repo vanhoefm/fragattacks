@@ -29,17 +29,6 @@ CFLAGS += -I../src/utils
 SLIBS = ../src/utils/libutils.a
 
 DLIBS = ../src/crypto/libcrypto.a \
-	../src/common/libcommon.a \
-	../src/ap/libap.a \
-	../src/eapol_auth/libeapol_auth.a \
-	../src/eapol_supp/libeapol_supp.a \
-	../src/eap_peer/libeap_peer.a \
-	../src/eap_server/libeap_server.a \
-	../src/eap_common/libeap_common.a \
-	../src/radius/libradius.a \
-	../src/l2_packet/libl2_packet.a \
-	../src/wps/libwps.a \
-	../src/rsn_supp/librsn_supp.a \
 	../src/tls/libtls.a
 
 _OBJS_VAR := LLIBS
