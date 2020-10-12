@@ -64,9 +64,6 @@ test-asn1: $(call BUILDOBJ,test-asn1.o) $(LIBS)
 test-base64: $(call BUILDOBJ,test-base64.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LLIBS)
 
-test-eapol: $(call BUILDOBJ,test-eapol.o) $(LIBS)
-	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
-
 test-https: $(call BUILDOBJ,test-https.o) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $< $(LLIBS)
 
@@ -114,7 +111,6 @@ run-tests: $(ALL)
 
 clean: common-clean
 	rm -f *~
-	rm -f test-eapol
 	rm -f test-https
 	rm -f test-tls
 	rm -f test_x509v3_nist.out.*
