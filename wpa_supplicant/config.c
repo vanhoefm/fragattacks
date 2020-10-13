@@ -2573,6 +2573,7 @@ static const struct parse_data ssid_fields[] = {
 	{ STR_LEN(dpp_netaccesskey) },
 	{ INT(dpp_netaccesskey_expiry) },
 	{ STR_LEN(dpp_csign) },
+	{ STR_LEN(dpp_pp_key) },
 	{ INT_RANGE(dpp_pfs, 0, 2) },
 #endif /* CONFIG_DPP */
 	{ INT_RANGE(owe_group, 0, 65535) },
@@ -2776,6 +2777,7 @@ void wpa_config_free_ssid(struct wpa_ssid *ssid)
 	os_free(ssid->dpp_connector);
 	bin_clear_free(ssid->dpp_netaccesskey, ssid->dpp_netaccesskey_len);
 	os_free(ssid->dpp_csign);
+	os_free(ssid->dpp_pp_key);
 	while ((psk = dl_list_first(&ssid->psk_list, struct psk_list_entry,
 				    list))) {
 		dl_list_del(&psk->list);

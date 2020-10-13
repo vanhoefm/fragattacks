@@ -1024,6 +1024,16 @@ struct wpa_ssid {
 	size_t dpp_csign_len;
 
 	/**
+	 * dpp_pp_key - ppKey (Configurator privacy protection public key)
+	 */
+	u8 *dpp_pp_key;
+
+	/**
+	 * dpp_pp_key_len - ppKey length in octets
+	 */
+	size_t dpp_pp_key_len;
+
+	/**
 	 * dpp_pfs - DPP PFS
 	 * 0: allow PFS to be used or not used
 	 * 1: require PFS to be used (note: not compatible with DPP R1)

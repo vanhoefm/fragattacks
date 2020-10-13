@@ -1192,6 +1192,15 @@ static struct wpa_ssid * wpas_dpp_add_network(struct wpa_supplicant *wpa_s,
 		ssid->dpp_csign_len = wpabuf_len(conf->c_sign_key);
 	}
 
+	if (conf->pp_key) {
+		ssid->dpp_pp_key = os_malloc(wpabuf_len(conf->pp_key));
+		if (!ssid->dpp_pp_key)
+			goto fail;
+		os_memcpy(ssid->dpp_pp_key, wpabuf_head(conf->pp_key),
+			  wpabuf_len(conf->pp_key));
+		ssid->dpp_pp_key_len = wpabuf_len(conf->pp_key);
+	}
+
 	if (auth->net_access_key) {
 		ssid->dpp_netaccesskey =
 			os_malloc(wpabuf_len(auth->net_access_key));
@@ -1426,6 +1435,20 @@ static int wpas_dpp_handle_config_obj(struct wpa_supplicant *wpa_s,
 					 wpabuf_len(conf->c_sign_key));
 			wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_C_SIGN_KEY "%s",
 				hex);
+			os_free(hex);
+		}
+	}
+	if (conf->pp_key) {
+		char *hex;
+		size_t hexlen;
+
+		hexlen = 2 * wpabuf_len(conf->pp_key) + 1;
+		hex = os_malloc(hexlen);
+		if (hex) {
+			wpa_snprintf_hex(hex, hexlen,
+					 wpabuf_head(conf->pp_key),
+					 wpabuf_len(conf->pp_key));
+			wpa_msg(wpa_s, MSG_INFO, DPP_EVENT_PP_KEY "%s", hex);
 			os_free(hex);
 		}
 	}
