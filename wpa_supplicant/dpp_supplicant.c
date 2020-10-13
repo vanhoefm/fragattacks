@@ -3730,7 +3730,9 @@ int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, const char *cmd)
 
 	dpp_free_reconfig_id(wpa_s->dpp_reconfig_id);
 	wpa_s->dpp_reconfig_id = dpp_gen_reconfig_id(ssid->dpp_csign,
-						     ssid->dpp_csign_len);
+						     ssid->dpp_csign_len,
+						     ssid->dpp_pp_key,
+						     ssid->dpp_pp_key_len);
 	if (!wpa_s->dpp_reconfig_id) {
 		wpa_printf(MSG_DEBUG,
 			   "DPP: Failed to generate E-id for reconfiguration");

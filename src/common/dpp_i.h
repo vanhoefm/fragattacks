@@ -146,6 +146,7 @@ struct dpp_reconfig_id {
 	EVP_PKEY *csign;
 	EVP_PKEY *a_nonce; /* A-NONCE */
 	EVP_PKEY *e_prime_id; /* E'-id */
+	EVP_PKEY *pp_key;
 };
 
 /* dpp_tcp.c */

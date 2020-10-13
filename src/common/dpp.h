@@ -723,7 +723,9 @@ int dpp_reconfig_auth_conf_rx(struct dpp_authentication *auth, const u8 *hdr,
 			      const u8 *attr_start, size_t attr_len);
 
 struct dpp_reconfig_id * dpp_gen_reconfig_id(const u8 *csign_key,
-					     size_t csign_key_len);
+					     size_t csign_key_len,
+					     const u8 *pp_key,
+					     size_t pp_key_len);
 int dpp_update_reconfig_id(struct dpp_reconfig_id *id);
 void dpp_free_reconfig_id(struct dpp_reconfig_id *id);
 

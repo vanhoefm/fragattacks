@@ -3004,10 +3004,12 @@ fail:
 
 
 struct dpp_reconfig_id * dpp_gen_reconfig_id(const u8 *csign_key,
-					     size_t csign_key_len)
+					     size_t csign_key_len,
+					     const u8 *pp_key,
+					     size_t pp_key_len)
 {
 	const unsigned char *p;
-	EVP_PKEY *csign = NULL;
+	EVP_PKEY *csign = NULL, *ppkey = NULL;
 	struct dpp_reconfig_id *id = NULL;
 	BN_CTX *ctx = NULL;
 	BIGNUM *bn = NULL, *q = NULL;
@@ -3018,6 +3020,13 @@ struct dpp_reconfig_id * dpp_gen_reconfig_id(const u8 *csign_key,
 	p = csign_key;
 	csign = d2i_PUBKEY(NULL, &p, csign_key_len);
 	if (!csign)
+		goto fail;
+
+	if (!pp_key)
+		goto fail;
+	p = pp_key;
+	ppkey = d2i_PUBKEY(NULL, &p, pp_key_len);
+	if (!ppkey)
 		goto fail;
 
 	eckey = EVP_PKEY_get0_EC_KEY(csign);
@@ -3047,9 +3056,12 @@ struct dpp_reconfig_id * dpp_gen_reconfig_id(const u8 *csign_key,
 	e_id = NULL;
 	id->csign = csign;
 	csign = NULL;
+	id->pp_key = ppkey;
+	ppkey = NULL;
 fail:
 	EC_POINT_free(e_id);
 	EVP_PKEY_free(csign);
+	EVP_PKEY_free(ppkey);
 	BN_clear_free(bn);
 	BN_CTX_free(ctx);
 	return id;
@@ -3093,13 +3105,13 @@ int dpp_update_reconfig_id(struct dpp_reconfig_id *id)
 	BIGNUM *bn = NULL, *q = NULL;
 	EC_POINT *e_prime_id = NULL, *a_nonce = NULL;
 	int ret = -1;
-	const EC_KEY *csign;
-	const EC_POINT *csign_point;
+	const EC_KEY *pp;
+	const EC_POINT *pp_point;
 
-	csign = EVP_PKEY_get0_EC_KEY(id->csign);
-	if (!csign)
+	pp = EVP_PKEY_get0_EC_KEY(id->pp_key);
+	if (!pp)
 		goto fail;
-	csign_point = EC_KEY_get0_public_key(csign);
+	pp_point = EC_KEY_get0_public_key(pp);
 	e_prime_id = EC_POINT_new(id->group);
 	a_nonce = EC_POINT_new(id->group);
 	ctx = BN_CTX_new();
@@ -3107,12 +3119,12 @@ int dpp_update_reconfig_id(struct dpp_reconfig_id *id)
 	q = BN_new();
 	/* Generate random 0 <= a-nonce < q
 	 * A-NONCE = a-nonce * G
-	 * E'-id = E-id + a-nonce * S_C */
-	if (!csign_point || !e_prime_id || !a_nonce || !ctx || !bn || !q ||
+	 * E'-id = E-id + a-nonce * P_pk */
+	if (!pp_point || !e_prime_id || !a_nonce || !ctx || !bn || !q ||
 	    !EC_GROUP_get_order(id->group, q, ctx) ||
 	    !BN_rand_range(bn, q) || /* bn = a-nonce */
 	    !EC_POINT_mul(id->group, a_nonce, bn, NULL, NULL, ctx) ||
-	    !EC_POINT_mul(id->group, e_prime_id, NULL, csign_point, bn, ctx) ||
+	    !EC_POINT_mul(id->group, e_prime_id, NULL, pp_point, bn, ctx) ||
 	    !EC_POINT_add(id->group, e_prime_id, id->e_id, e_prime_id, ctx))
 		goto fail;
 
@@ -3145,6 +3157,7 @@ void dpp_free_reconfig_id(struct dpp_reconfig_id *id)
 		EVP_PKEY_free(id->csign);
 		EVP_PKEY_free(id->a_nonce);
 		EVP_PKEY_free(id->e_prime_id);
+		EVP_PKEY_free(id->pp_key);
 		os_free(id);
 	}
 }
