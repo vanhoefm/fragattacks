@@ -1586,6 +1586,16 @@ skip_groups:
 		wpa_printf(MSG_DEBUG, "DPP: Failed to build csign JWK");
 		goto fail;
 	}
+#ifdef CONFIG_DPP2
+	if (auth->peer_version >= 2 && auth->conf->pp_key) {
+		json_value_sep(buf);
+		if (dpp_build_jwk(buf, "ppKey", auth->conf->pp_key, NULL,
+				  curve) < 0) {
+			wpa_printf(MSG_DEBUG, "DPP: Failed to build ppKey JWK");
+			goto fail;
+		}
+	}
+#endif /* CONFIG_DPP2 */
 
 	json_end_object(buf);
 	json_end_object(buf);
