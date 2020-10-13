@@ -142,10 +142,13 @@ void wpas_handle_assoc_resp_mscs(struct wpa_supplicant *wpa_s, const u8 *bssid,
 		return;
 
 	mscs_desc_ie = get_ie_ext(ies, ies_len, WLAN_EID_EXT_MSCS_DESCRIPTOR);
-	if (!mscs_desc_ie || mscs_desc_ie[1] < 1)
+	if (!mscs_desc_ie || mscs_desc_ie[1] <= 8)
 		return;
 
-	mscs_status = get_ie(mscs_desc_ie, mscs_desc_ie[1],
+	/* Subelements start after (ie_id(1) + ie_len(1) + ext_id(1) +
+	 * request type(1) + upc(2) + stream timeout(4) =) 10.
+	 */
+	mscs_status = get_ie(&mscs_desc_ie[10], mscs_desc_ie[1] - 8,
 			     MCSC_SUBELEM_STATUS);
 	if (!mscs_status || mscs_status[1] < 2)
 		return;
