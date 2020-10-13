@@ -3413,7 +3413,7 @@ static int dpp_configurator_gen_kid(struct dpp_configurator *conf)
 }
 
 
-struct dpp_configurator *
+static struct dpp_configurator *
 dpp_keygen_configurator(const char *curve, const u8 *privkey,
 			size_t privkey_len)
 {

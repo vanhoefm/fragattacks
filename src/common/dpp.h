@@ -583,9 +583,6 @@ const char * dpp_akm_selector_str(enum dpp_akm akm);
 int dpp_configurator_get_key(const struct dpp_configurator *conf, char *buf,
 			     size_t buflen);
 void dpp_configurator_free(struct dpp_configurator *conf);
-struct dpp_configurator *
-dpp_keygen_configurator(const char *curve, const u8 *privkey,
-			size_t privkey_len);
 int dpp_configurator_own_config(struct dpp_authentication *auth,
 				const char *curve, int ap);
 enum dpp_status_error
