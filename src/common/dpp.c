@@ -4275,12 +4275,12 @@ int dpp_configurator_from_backup(struct dpp_global *dpp,
 				 struct dpp_asymmetric_key *key)
 {
 	struct dpp_configurator *conf;
-	const EC_KEY *eckey;
-	const EC_GROUP *group;
+	const EC_KEY *eckey, *eckey_pp;
+	const EC_GROUP *group, *group_pp;
 	int nid;
 	const struct dpp_curve_params *curve;
 
-	if (!key->csign)
+	if (!key->csign || !key->pp_key)
 		return -1;
 	eckey = EVP_PKEY_get0_EC_KEY(key->csign);
 	if (!eckey)
@@ -4294,6 +4294,18 @@ int dpp_configurator_from_backup(struct dpp_global *dpp,
 		wpa_printf(MSG_INFO, "DPP: Unsupported group in c-sign-key");
 		return -1;
 	}
+	eckey_pp = EVP_PKEY_get0_EC_KEY(key->pp_key);
+	if (!eckey_pp)
+		return -1;
+	group_pp = EC_KEY_get0_group(eckey_pp);
+	if (!group_pp)
+		return -1;
+	if (EC_GROUP_get_curve_name(group) !=
+	    EC_GROUP_get_curve_name(group_pp)) {
+		wpa_printf(MSG_INFO,
+			   "DPP: Mismatch in c-sign-key and ppKey groups");
+		return -1;
+	}
 
 	conf = os_zalloc(sizeof(*conf));
 	if (!conf)
@@ -4301,6 +4313,8 @@ int dpp_configurator_from_backup(struct dpp_global *dpp,
 	conf->curve = curve;
 	conf->csign = key->csign;
 	key->csign = NULL;
+	conf->pp_key = key->pp_key;
+	key->pp_key = NULL;
 	conf->own = 1;
 	if (dpp_configurator_gen_kid(conf) < 0) {
 		dpp_configurator_free(conf);

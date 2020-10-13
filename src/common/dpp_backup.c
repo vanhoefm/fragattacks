@@ -40,6 +40,7 @@ void dpp_free_asymmetric_key(struct dpp_asymmetric_key *key)
 		struct dpp_asymmetric_key *next = key->next;
 
 		EVP_PKEY_free(key->csign);
+		EVP_PKEY_free(key->pp_key);
 		str_clear_free(key->config_template);
 		str_clear_free(key->connector_template);
 		os_free(key);
@@ -48,35 +49,62 @@ void dpp_free_asymmetric_key(struct dpp_asymmetric_key *key)
 }
 
 
-static struct wpabuf * dpp_build_conf_params(void)
+static struct wpabuf * dpp_build_conf_params(struct dpp_configurator *conf)
 {
-	struct wpabuf *buf;
+	struct wpabuf *buf, *priv_key = NULL;
 	size_t len;
 	/* TODO: proper template values */
 	const char *conf_template = "{\"wi-fi_tech\":\"infra\",\"discovery\":{\"ssid\":\"test\"},\"cred\":{\"akm\":\"dpp\"}}";
 	const char *connector_template = NULL;
+	EC_KEY *eckey;
+	unsigned char *der = NULL;
+	int der_len;
+
+	if (!conf->pp_key)
+		return NULL;
+	eckey = EVP_PKEY_get0_EC_KEY(conf->pp_key);
+	if (!eckey)
+		return NULL;
+
+	EC_KEY_set_enc_flags(eckey, EC_PKEY_NO_PUBKEY);
+	der_len = i2d_ECPrivateKey(eckey, &der);
+	if (der_len > 0)
+		priv_key = wpabuf_alloc_copy(der, der_len);
+	OPENSSL_free(der);
+	if (!priv_key)
+		goto fail;
 
 	len = 100 + os_strlen(conf_template);
 	if (connector_template)
 		len += os_strlen(connector_template);
+	if (priv_key)
+		len += wpabuf_len(priv_key);
 	buf = wpabuf_alloc(len);
 	if (!buf)
-		return NULL;
+		goto fail;
 
 	/*
 	 * DPPConfigurationParameters ::= SEQUENCE {
+	 *    privacyProtectionKey      PrivateKey,
 	 *    configurationTemplate	UTF8String,
 	 *    connectorTemplate		UTF8String OPTIONAL}
 	 */
 
+	/* PrivateKey ::= OCTET STRING */
+	asn1_put_octet_string(buf, priv_key);
+
 	asn1_put_utf8string(buf, conf_template);
 	if (connector_template)
 		asn1_put_utf8string(buf, connector_template);
+	wpabuf_clear_free(priv_key);
 	return asn1_encaps(buf, ASN1_CLASS_UNIVERSAL, ASN1_TAG_SEQUENCE);
+fail:
+	wpabuf_clear_free(priv_key);
+	return NULL;
 }
 
 
-static struct wpabuf * dpp_build_attribute(void)
+static struct wpabuf * dpp_build_attribute(struct dpp_configurator *conf)
 {
 	struct wpabuf *conf_params, *attr;
 
@@ -88,7 +116,7 @@ static struct wpabuf * dpp_build_attribute(void)
 	 *    type OBJECT IDENTIFIER,
 	 *    values SET SIZE(1..MAX) OF Type
 	 */
-	conf_params = dpp_build_conf_params();
+	conf_params = dpp_build_conf_params(conf);
 	conf_params = asn1_encaps(conf_params, ASN1_CLASS_UNIVERSAL,
 				  ASN1_TAG_SET);
 	if (!conf_params)
@@ -167,7 +195,7 @@ static struct wpabuf * dpp_build_key_pkg(struct dpp_authentication *auth)
 	alg = dpp_build_key_alg(auth->conf->curve);
 
 	/* Attributes ::= SET OF Attribute { { OneAsymmetricKeyAttributes } } */
-	attr = dpp_build_attribute();
+	attr = dpp_build_attribute(auth->conf);
 	attr = asn1_encaps(attr, ASN1_CLASS_UNIVERSAL, ASN1_TAG_SET);
 	if (!priv_key || !attr || !alg)
 		goto fail;
@@ -1059,6 +1087,7 @@ dpp_parse_one_asymmetric_key(const u8 *buf, size_t len)
 
 	/*
 	 * DPPConfigurationParameters ::= SEQUENCE {
+	 *    privacyProtectionKey      PrivateKey,
 	 *    configurationTemplate	UTF8String,
 	 *    connectorTemplate		UTF8String OPTIONAL}
 	 */
@@ -1074,6 +1103,37 @@ dpp_parse_one_asymmetric_key(const u8 *buf, size_t len)
 	}
 	end = pos;
 	pos = hdr.payload;
+
+	/*
+	 * PrivateKey ::= OCTET STRING
+	 *    (Contains DER encoding of ECPrivateKey)
+	 */
+	if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
+	    hdr.class != ASN1_CLASS_UNIVERSAL ||
+	    hdr.tag != ASN1_TAG_OCTETSTRING) {
+		wpa_printf(MSG_DEBUG,
+			   "DPP: Expected OCTETSTRING (PrivateKey) - found class %d tag 0x%x",
+			   hdr.class, hdr.tag);
+		goto fail;
+	}
+	wpa_hexdump_key(MSG_MSGDUMP, "DPP: privacyProtectionKey",
+			hdr.payload, hdr.length);
+	pos = hdr.payload + hdr.length;
+	eckey = d2i_ECPrivateKey(NULL, &hdr.payload, hdr.length);
+	if (!eckey) {
+		wpa_printf(MSG_INFO,
+			   "DPP: OpenSSL: d2i_ECPrivateKey() failed: %s",
+			   ERR_error_string(ERR_get_error(), NULL));
+		goto fail;
+	}
+	key->pp_key = EVP_PKEY_new();
+	if (!key->pp_key || EVP_PKEY_assign_EC_KEY(key->pp_key, eckey) != 1) {
+		EC_KEY_free(eckey);
+		goto fail;
+	}
+	if (wpa_debug_show_keys)
+		dpp_debug_print_key("DPP: Received privacyProtectionKey",
+				    key->pp_key);
 
 	if (asn1_get_next(pos, end - pos, &hdr) < 0 ||
 	    hdr.class != ASN1_CLASS_UNIVERSAL ||

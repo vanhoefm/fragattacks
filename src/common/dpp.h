@@ -235,6 +235,7 @@ struct dpp_configuration {
 struct dpp_asymmetric_key {
 	struct dpp_asymmetric_key *next;
 	EVP_PKEY *csign;
+	EVP_PKEY *pp_key;
 	char *config_template;
 	char *connector_template;
 };
