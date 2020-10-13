@@ -154,27 +154,19 @@ def test_he80(dev, apdev):
         dev[0].request("DISCONNECT")
         clear_regdom(hapd, dev)
 
-def test_he_wifi_generation(dev, apdev):
+def _test_he_wifi_generation(dev, apdev, conf, scan_freq):
     """HE and wifi_generation"""
     try:
         hapd = None
         params = {"ssid": "he",
                   "country_code": "FI",
-                  "hw_mode": "a",
-                  "channel": "36",
-                  "ht_capab": "[HT40+]",
                   "ieee80211n": "1",
-                  "ieee80211ac": "1",
-                  "ieee80211ax": "1",
-                  "vht_oper_chwidth": "1",
-                  "vht_capab": "[MAX-MPDU-11454]",
-                  "vht_oper_centr_freq_seg0_idx": "42",
-                  "he_oper_chwidth": "1",
-                  "he_oper_centr_freq_seg0_idx": "42"}
+                  "ieee80211ax": "1"}
+        params.update(conf)
         hapd = hostapd.add_ap(apdev[0], params)
         bssid = apdev[0]['bssid']
 
-        dev[0].connect("he", key_mgmt="NONE", scan_freq="5180")
+        dev[0].connect("he", key_mgmt="NONE", scan_freq=scan_freq)
         status = dev[0].get_status()
         if 'wifi_generation' not in status:
             # For now, assume this is because of missing kernel support
@@ -185,7 +177,7 @@ def test_he_wifi_generation(dev, apdev):
 
         wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
         wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
-        wpas.connect("he", key_mgmt="NONE", scan_freq="5180")
+        wpas.connect("he", key_mgmt="NONE", scan_freq=scan_freq)
         status = wpas.get_status()
         if 'wifi_generation' not in status:
             # For now, assume this is because of missing kernel support
@@ -201,6 +193,27 @@ def test_he_wifi_generation(dev, apdev):
     finally:
         dev[0].request("DISCONNECT")
         clear_regdom(hapd, dev)
+
+def test_he_wifi_generation(dev, apdev):
+    conf = {
+        "vht_oper_chwidth": "1",
+        "hw_mode": "a",
+        "channel": "36",
+        "ht_capab": "[HT40+]",
+        "vht_oper_centr_freq_seg0_idx": "42",
+        "he_oper_chwidth": "1",
+        "he_oper_centr_freq_seg0_idx": "42",
+        "vht_capab": "[MAX-MPDU-11454]",
+        "ieee80211ac": "1",
+    }
+    _test_he_wifi_generation(dev, apdev, conf, "5180")
+
+def test_he_wifi_generation_24(dev, apdev):
+    conf = {
+        "hw_mode": "g",
+        "channel": "1",
+    }
+    _test_he_wifi_generation(dev, apdev, conf, "2412")
 
 def he80_test(apdev, dev, channel, ht_capab):
     clear_scan_cache(apdev)
