@@ -3355,6 +3355,7 @@ void dpp_configurator_free(struct dpp_configurator *conf)
 	os_free(conf->kid);
 	os_free(conf->connector);
 	EVP_PKEY_free(conf->connector_key);
+	EVP_PKEY_free(conf->pp_key);
 	os_free(conf);
 }
 
@@ -3415,7 +3416,7 @@ static int dpp_configurator_gen_kid(struct dpp_configurator *conf)
 
 static struct dpp_configurator *
 dpp_keygen_configurator(const char *curve, const u8 *privkey,
-			size_t privkey_len)
+			size_t privkey_len, const u8 *pp_key, size_t pp_key_len)
 {
 	struct dpp_configurator *conf;
 
@@ -3435,7 +3436,12 @@ dpp_keygen_configurator(const char *curve, const u8 *privkey,
 					      privkey_len);
 	else
 		conf->csign = dpp_gen_keypair(conf->curve);
-	if (!conf->csign)
+	if (pp_key)
+		conf->pp_key = dpp_set_keypair(&conf->curve, pp_key,
+					       pp_key_len);
+	else
+		conf->pp_key = dpp_gen_keypair(conf->curve);
+	if (!conf->csign || !conf->pp_key)
 		goto fail;
 	conf->own = 1;
 
@@ -4122,14 +4128,15 @@ static unsigned int dpp_next_configurator_id(struct dpp_global *dpp)
 int dpp_configurator_add(struct dpp_global *dpp, const char *cmd)
 {
 	char *curve = NULL;
-	char *key = NULL;
-	u8 *privkey = NULL;
-	size_t privkey_len = 0;
+	char *key = NULL, *ppkey = NULL;
+	u8 *privkey = NULL, *pp_key = NULL;
+	size_t privkey_len = 0, pp_key_len = 0;
 	int ret = -1;
 	struct dpp_configurator *conf = NULL;
 
 	curve = get_param(cmd, " curve=");
 	key = get_param(cmd, " key=");
+	ppkey = get_param(cmd, " ppkey=");
 
 	if (key) {
 		privkey_len = os_strlen(key) / 2;
@@ -4139,7 +4146,16 @@ int dpp_configurator_add(struct dpp_global *dpp, const char *cmd)
 			goto fail;
 	}
 
-	conf = dpp_keygen_configurator(curve, privkey, privkey_len);
+	if (ppkey) {
+		pp_key_len = os_strlen(key) / 2;
+		pp_key = os_malloc(pp_key_len);
+		if (!pp_key ||
+		    hexstr2bin(ppkey, pp_key, pp_key_len) < 0)
+			goto fail;
+	}
+
+	conf = dpp_keygen_configurator(curve, privkey, privkey_len,
+				       pp_key, pp_key_len);
 	if (!conf)
 		goto fail;
 
@@ -4150,7 +4166,9 @@ int dpp_configurator_add(struct dpp_global *dpp, const char *cmd)
 fail:
 	os_free(curve);
 	str_clear_free(key);
+	str_clear_free(ppkey);
 	bin_clear_free(privkey, privkey_len);
+	bin_clear_free(pp_key, pp_key_len);
 	dpp_configurator_free(conf);
 	return ret;
 }

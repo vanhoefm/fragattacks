@@ -364,6 +364,7 @@ struct dpp_configurator {
 	const struct dpp_curve_params *curve;
 	char *connector; /* own Connector for reconfiguration */
 	EVP_PKEY *connector_key;
+	EVP_PKEY *pp_key;
 };
 
 struct dpp_introduction {
