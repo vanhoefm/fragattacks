@@ -1285,6 +1285,7 @@ void dpp_auth_deinit(struct dpp_authentication *auth)
 		wpabuf_free(conf->certs);
 		wpabuf_free(conf->cacert);
 		os_free(conf->server_name);
+		wpabuf_free(conf->pp_key);
 	}
 #ifdef CONFIG_DPP2
 	dpp_free_asymmetric_key(auth->conf_key_pkg);
@@ -2428,6 +2429,20 @@ static void dpp_copy_csign(struct dpp_config_obj *conf, EVP_PKEY *csign)
 }
 
 
+static void dpp_copy_ppkey(struct dpp_config_obj *conf, EVP_PKEY *ppkey)
+{
+	unsigned char *der = NULL;
+	int der_len;
+
+	der_len = i2d_PUBKEY(ppkey, &der);
+	if (der_len <= 0)
+		return;
+	wpabuf_free(conf->pp_key);
+	conf->pp_key = wpabuf_alloc_copy(der, der_len);
+	OPENSSL_free(der);
+}
+
+
 static void dpp_copy_netaccesskey(struct dpp_authentication *auth,
 				  struct dpp_config_obj *conf)
 {
@@ -2463,10 +2478,10 @@ static int dpp_parse_cred_dpp(struct dpp_authentication *auth,
 			      struct json_token *cred)
 {
 	struct dpp_signed_connector_info info;
-	struct json_token *token, *csign;
+	struct json_token *token, *csign, *ppkey;
 	int ret = -1;
-	EVP_PKEY *csign_pub = NULL;
-	const struct dpp_curve_params *key_curve = NULL;
+	EVP_PKEY *csign_pub = NULL, *pp_pub = NULL;
+	const struct dpp_curve_params *key_curve = NULL, *pp_curve = NULL;
 	const char *signed_connector;
 
 	os_memset(&info, 0, sizeof(info));
@@ -2492,6 +2507,21 @@ static int dpp_parse_cred_dpp(struct dpp_authentication *auth,
 		goto fail;
 	}
 	dpp_debug_print_key("DPP: Received C-sign-key", csign_pub);
+
+	ppkey = json_get_member(cred, "ppKey");
+	if (ppkey && ppkey->type == JSON_OBJECT) {
+		pp_pub = dpp_parse_jwk(ppkey, &pp_curve);
+		if (!pp_pub) {
+			wpa_printf(MSG_DEBUG, "DPP: Failed to parse ppKey JWK");
+			goto fail;
+		}
+		dpp_debug_print_key("DPP: Received ppKey", pp_pub);
+		if (key_curve != pp_curve) {
+			wpa_printf(MSG_DEBUG,
+				   "DPP: C-sign-key and ppKey do not use the same curve");
+			goto fail;
+		}
+	}
 
 	token = json_get_member(cred, "signedConnector");
 	if (!token || token->type != JSON_STRING) {
@@ -2523,12 +2553,15 @@ static int dpp_parse_cred_dpp(struct dpp_authentication *auth,
 	conf->connector = os_strdup(signed_connector);
 
 	dpp_copy_csign(conf, csign_pub);
+	if (pp_pub)
+		dpp_copy_ppkey(conf, pp_pub);
 	if (dpp_akm_dpp(conf->akm) || auth->peer_version >= 2)
 		dpp_copy_netaccesskey(auth, conf);
 
 	ret = 0;
 fail:
 	EVP_PKEY_free(csign_pub);
+	EVP_PKEY_free(pp_pub);
 	os_free(info.payload);
 	return ret;
 }

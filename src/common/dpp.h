@@ -326,6 +326,7 @@ struct dpp_authentication {
 		struct wpabuf *certs;
 		struct wpabuf *cacert;
 		char *server_name;
+		struct wpabuf *pp_key;
 	} conf_obj[DPP_MAX_CONF_OBJ];
 	unsigned int num_conf_obj;
 	struct dpp_asymmetric_key *conf_key_pkg;
