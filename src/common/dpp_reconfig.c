@@ -264,7 +264,7 @@ dpp_reconfig_init(struct dpp_global *dpp, void *msg_ctx,
 		return NULL;
 	}
 	dpp_debug_print_key("E'-id", e_prime_id);
-	e_id = dpp_decrypt_e_id(conf->csign, a_nonce, e_prime_id);
+	e_id = dpp_decrypt_e_id(conf->pp_key, a_nonce, e_prime_id);
 	EVP_PKEY_free(a_nonce);
 	EVP_PKEY_free(e_prime_id);
 	if (!e_id) {

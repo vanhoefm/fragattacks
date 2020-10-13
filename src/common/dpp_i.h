@@ -133,7 +133,7 @@ int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
 int dpp_reconfig_derive_ke_initiator(struct dpp_authentication *auth,
 				     const u8 *r_proto, u16 r_proto_len,
 				     struct json_token *net_access_key);
-EC_POINT * dpp_decrypt_e_id(EVP_PKEY *csign, EVP_PKEY *a_nonce,
+EC_POINT * dpp_decrypt_e_id(EVP_PKEY *ppkey, EVP_PKEY *a_nonce,
 			    EVP_PKEY *e_prime_id);
 char * dpp_sign_connector(struct dpp_configurator *conf,
 			  const struct wpabuf *dppcon);
