@@ -19,8 +19,11 @@ $(ALL): $(LIB_OBJS)
 	@$(E) "  AR  $(notdir $@)"
 	$(Q)$(AR) crT $@ $?
 
-install:
+install-default:
 	@echo Nothing to be made.
+
+%: %-default
+	@true
 
 clean:
 	$(Q)rm -f *~ *.o *.d *.gcno *.gcda *.gcov $(ALL)
