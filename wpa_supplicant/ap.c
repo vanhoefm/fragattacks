@@ -52,8 +52,8 @@ static void wpas_conf_ap_vht(struct wpa_supplicant *wpa_s,
 #ifdef CONFIG_P2P
 	u8 center_chan = 0;
 	u8 channel = conf->channel;
-	u8 freq_seg_idx;
 #endif /* CONFIG_P2P */
+	u8 freq_seg_idx;
 
 	if (!conf->secondary_channel)
 		goto no_vht;
@@ -62,24 +62,28 @@ static void wpas_conf_ap_vht(struct wpa_supplicant *wpa_s,
 	if (ssid->max_oper_chwidth)
 		hostapd_set_oper_chwidth(conf, ssid->max_oper_chwidth);
 
-	ieee80211_freq_to_chan(ssid->vht_center_freq2,
-			       &freq_seg_idx);
-	hostapd_set_oper_centr_freq_seg1_idx(conf, freq_seg_idx);
+	if (hostapd_get_oper_chwidth(conf) == CHANWIDTH_80P80MHZ) {
+		ieee80211_freq_to_chan(ssid->vht_center_freq2,
+				       &freq_seg_idx);
+		hostapd_set_oper_centr_freq_seg1_idx(conf, freq_seg_idx);
+	}
 
 	if (!ssid->p2p_group) {
-		if (!ssid->vht_center_freq1 ||
-		    hostapd_get_oper_chwidth(conf) == CHANWIDTH_USE_HT)
+		if (!ssid->vht_center_freq1)
 			goto no_vht;
 		ieee80211_freq_to_chan(ssid->vht_center_freq1,
 				       &freq_seg_idx);
 		hostapd_set_oper_centr_freq_seg0_idx(conf, freq_seg_idx);
-		wpa_printf(MSG_DEBUG, "VHT seg0 index %d for AP",
-			   hostapd_get_oper_centr_freq_seg0_idx(conf));
+
+		wpa_printf(MSG_DEBUG,
+			   "VHT seg0 index %d and seg1 index %d for AP",
+			   hostapd_get_oper_centr_freq_seg0_idx(conf),
+			   hostapd_get_oper_centr_freq_seg1_idx(conf));
 		return;
 	}
 
 #ifdef CONFIG_P2P
-	switch (conf->vht_oper_chwidth) {
+	switch (hostapd_get_oper_chwidth(conf)) {
 	case CHANWIDTH_80MHZ:
 	case CHANWIDTH_80P80MHZ:
 		center_chan = wpas_p2p_get_vht80_center(wpa_s, mode, channel);
