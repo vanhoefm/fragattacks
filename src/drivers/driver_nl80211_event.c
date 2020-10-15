@@ -296,6 +296,94 @@ static void mlme_event_assoc(struct wpa_driver_nl80211_data *drv,
 }
 
 
+#ifdef CONFIG_DRIVER_NL80211_QCA
+
+static int qca_drv_connect_fail_reason_code_handler(struct nl_msg *msg,
+						    void *arg)
+{
+	struct nlattr *tb[NL80211_ATTR_MAX + 1];
+	struct nlattr *tb_sta_info[QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_MAX + 1];
+	struct genlmsghdr *gnlh = nlmsg_data(nlmsg_hdr(msg));
+	u32 *reason_code = arg;
+
+	*reason_code = 0;
+	nla_parse(tb, NL80211_ATTR_MAX, genlmsg_attrdata(gnlh, 0),
+		  genlmsg_attrlen(gnlh, 0), NULL);
+
+	if (!tb[NL80211_ATTR_VENDOR_DATA]) {
+		wpa_printf(MSG_ERROR, "%s: Vendor data not found", __func__);
+		return NL_SKIP;
+	}
+
+	nla_parse(tb_sta_info, QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_MAX,
+		  nla_data(tb[NL80211_ATTR_VENDOR_DATA]),
+		  nla_len(tb[NL80211_ATTR_VENDOR_DATA]), NULL);
+
+	if (!tb_sta_info[QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_CONNECT_FAIL_REASON_CODE]) {
+		wpa_printf(MSG_INFO, "%s: Vendor attr not found", __func__);
+		return NL_SKIP;
+	}
+
+	*reason_code = nla_get_u32(tb_sta_info[QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_CONNECT_FAIL_REASON_CODE]);
+
+	return NL_SKIP;
+}
+
+
+static enum qca_sta_connect_fail_reason_codes
+drv_get_connect_fail_reason_code(struct wpa_driver_nl80211_data *drv)
+{
+	enum qca_sta_connect_fail_reason_codes reason_code;
+	struct nl_msg *msg;
+	int ret;
+
+	msg = nl80211_drv_msg(drv, 0, NL80211_CMD_VENDOR);
+	if (!msg || nla_put_u32(msg, NL80211_ATTR_VENDOR_ID, OUI_QCA) ||
+	    nla_put_u32(msg, NL80211_ATTR_VENDOR_SUBCMD,
+			QCA_NL80211_VENDOR_SUBCMD_GET_STA_INFO)) {
+		nlmsg_free(msg);
+		return 0;
+	}
+
+	ret = send_and_recv_msgs(drv, msg,
+				 qca_drv_connect_fail_reason_code_handler,
+				 &reason_code, NULL, NULL);
+	if (ret)
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: Get connect fail reason_code failed: ret=%d (%s)",
+			   ret, strerror(-ret));
+
+	return reason_code;
+}
+
+
+static enum sta_connect_fail_reason_codes
+convert_connect_fail_reason_codes(enum qca_sta_connect_fail_reason_codes
+				  reason_code)
+{
+	switch (reason_code) {
+	case QCA_STA_CONNECT_FAIL_REASON_NO_BSS_FOUND:
+		return STA_CONNECT_FAIL_REASON_NO_BSS_FOUND;
+	case QCA_STA_CONNECT_FAIL_REASON_AUTH_TX_FAIL:
+		return STA_CONNECT_FAIL_REASON_AUTH_TX_FAIL;
+	case QCA_STA_CONNECT_FAIL_REASON_AUTH_NO_ACK_RECEIVED:
+		return STA_CONNECT_FAIL_REASON_AUTH_NO_ACK_RECEIVED;
+	case QCA_STA_CONNECT_FAIL_REASON_AUTH_NO_RESP_RECEIVED:
+		return STA_CONNECT_FAIL_REASON_AUTH_NO_RESP_RECEIVED;
+	case QCA_STA_CONNECT_FAIL_REASON_ASSOC_REQ_TX_FAIL:
+		return STA_CONNECT_FAIL_REASON_ASSOC_REQ_TX_FAIL;
+	case QCA_STA_CONNECT_FAIL_REASON_ASSOC_NO_ACK_RECEIVED:
+		return STA_CONNECT_FAIL_REASON_ASSOC_NO_ACK_RECEIVED;
+	case QCA_STA_CONNECT_FAIL_REASON_ASSOC_NO_RESP_RECEIVED:
+		return STA_CONNECT_FAIL_REASON_ASSOC_NO_RESP_RECEIVED;
+	default:
+		return STA_CONNECT_FAIL_REASON_UNSPECIFIED;
+	}
+}
+
+#endif /* CONFIG_DRIVER_NL80211_QCA */
+
+
 static void mlme_event_connect(struct wpa_driver_nl80211_data *drv,
 			       enum nl80211_commands cmd, struct nlattr *status,
 			       struct nlattr *addr, struct nlattr *req_ie,
@@ -385,6 +473,17 @@ static void mlme_event_connect(struct wpa_driver_nl80211_data *drv,
 		if (fils_erp_next_seq_num)
 			event.assoc_reject.fils_erp_next_seq_num =
 				nla_get_u16(fils_erp_next_seq_num);
+
+#ifdef CONFIG_DRIVER_NL80211_QCA
+		if (drv->get_sta_info_vendor_cmd_avail) {
+			enum qca_sta_connect_fail_reason_codes reason_code;
+
+			reason_code = drv_get_connect_fail_reason_code(drv);
+			event.assoc_reject.reason_code =
+				convert_connect_fail_reason_codes(reason_code);
+		}
+#endif /* CONFIG_DRIVER_NL80211_QCA */
+
 		wpa_supplicant_event(drv->ctx, EVENT_ASSOC_REJECT, &event);
 		return;
 	}

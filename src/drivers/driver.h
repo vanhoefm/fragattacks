@@ -5062,6 +5062,34 @@ struct freq_survey {
 #define SURVEY_HAS_CHAN_TIME_RX BIT(3)
 #define SURVEY_HAS_CHAN_TIME_TX BIT(4)
 
+/**
+ * enum sta_connect_fail_reason_codes - STA connect failure reason code values
+ * @STA_CONNECT_FAIL_REASON_UNSPECIFIED: No reason code specified for
+ *	connection failure.
+ * @STA_CONNECT_FAIL_REASON_NO_BSS_FOUND: No Probe Response frame received
+ *	for unicast Probe Request frame.
+ * @STA_CONNECT_FAIL_REASON_AUTH_TX_FAIL: STA failed to send auth request.
+ * @STA_CONNECT_FAIL_REASON_AUTH_NO_ACK_RECEIVED: AP didn't send ACK for
+ *	auth request.
+ * @STA_CONNECT_FAIL_REASON_AUTH_NO_RESP_RECEIVED: Auth response is not
+ *	received from AP.
+ * @STA_CONNECT_FAIL_REASON_ASSOC_REQ_TX_FAIL: STA failed to send
+ *	Association Request frame.
+ * @STA_CONNECT_FAIL_REASON_ASSOC_NO_ACK_RECEIVED: AP didn't send ACK for
+ *	Association Request frame.
+ * @STA_CONNECT_FAIL_REASON_ASSOC_NO_RESP_RECEIVED: Association Response
+ *	frame is not received from AP.
+ */
+enum sta_connect_fail_reason_codes {
+	STA_CONNECT_FAIL_REASON_UNSPECIFIED = 0,
+	STA_CONNECT_FAIL_REASON_NO_BSS_FOUND = 1,
+	STA_CONNECT_FAIL_REASON_AUTH_TX_FAIL = 2,
+	STA_CONNECT_FAIL_REASON_AUTH_NO_ACK_RECEIVED = 3,
+	STA_CONNECT_FAIL_REASON_AUTH_NO_RESP_RECEIVED = 4,
+	STA_CONNECT_FAIL_REASON_ASSOC_REQ_TX_FAIL = 5,
+	STA_CONNECT_FAIL_REASON_ASSOC_NO_ACK_RECEIVED = 6,
+	STA_CONNECT_FAIL_REASON_ASSOC_NO_RESP_RECEIVED = 7,
+};
 
 /**
  * union wpa_event_data - Additional data for wpa_supplicant_event() calls
@@ -5463,6 +5491,11 @@ union wpa_event_data {
 		 * FILS ERP messages
 		 */
 		u16 fils_erp_next_seq_num;
+
+		/**
+		 * reason_code - Connection failure reason code from the driver
+		 */
+		enum sta_connect_fail_reason_codes reason_code;
 	} assoc_reject;
 
 	struct timeout_event {
