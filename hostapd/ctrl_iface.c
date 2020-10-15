@@ -1922,7 +1922,7 @@ static void hostapd_data_test_rx(void *ctx, const u8 *src_addr, const u8 *buf,
 	if (ip.ip_hl != 5 || ip.ip_v != 4 ||
 	    ntohs(ip.ip_len) > HWSIM_IP_LEN) {
 		wpa_printf(MSG_DEBUG,
-			   "test data: RX - ignore unexpect IP header");
+			   "test data: RX - ignore unexpected IP header");
 		return;
 	}
 

@@ -444,7 +444,7 @@ endif
 ifdef CONFIG_EAP_SIM_COMMON
 OBJS += ../src/eap_common/eap_sim_common.o
 # Example EAP-SIM/AKA interface for GSM/UMTS authentication. This can be
-# replaced with another file implementating the interface specified in
+# replaced with another file implementing the interface specified in
 # eap_sim_db.h.
 OBJS += ../src/eap_server/eap_sim_db.o
 NEED_FIPS186_2_PRF=y

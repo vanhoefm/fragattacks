@@ -975,7 +975,7 @@ static void hostapd_cli_list_interfaces(struct wpa_ctrl *ctrl)
 	dir = opendir(ctrl_iface_dir);
 	if (dir == NULL) {
 		printf("Control interface directory '%s' could not be "
-		       "openned.\n", ctrl_iface_dir);
+		       "opened.\n", ctrl_iface_dir);
 		return;
 	}
 

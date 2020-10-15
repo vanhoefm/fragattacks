@@ -351,7 +351,7 @@ CONFIG_IPV6=y
 #CONFIG_ACS=y
 
 # Multiband Operation support
-# These extentions facilitate efficient use of multiple frequency bands
+# These extensions facilitate efficient use of multiple frequency bands
 # available to the AP and the devices that may associate with it.
 #CONFIG_MBO=y
 
