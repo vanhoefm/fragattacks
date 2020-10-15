@@ -25,5 +25,5 @@ install-default:
 %: %-default
 	@true
 
-clean:
+clean: common-clean
 	$(Q)rm -f *~ *.o *.d *.gcno *.gcda *.gcov $(ALL)
