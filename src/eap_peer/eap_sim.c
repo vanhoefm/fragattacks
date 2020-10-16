@@ -520,6 +520,12 @@ static struct wpabuf * eap_sim_response_start(struct eap_sm *sm,
 	wpa_printf(MSG_DEBUG, "Generating EAP-SIM Start (id=%d)", id);
 	msg = eap_sim_msg_init(EAP_CODE_RESPONSE, id,
 			       EAP_TYPE_SIM, EAP_SIM_SUBTYPE_START);
+	if (identity) {
+		wpa_hexdump_ascii(MSG_DEBUG, "   AT_IDENTITY",
+				  identity, identity_len);
+		eap_sim_msg_add(msg, EAP_SIM_AT_IDENTITY, identity_len,
+				identity, identity_len);
+	}
 	if (!data->reauth) {
 		wpa_hexdump(MSG_DEBUG, "   AT_NONCE_MT",
 			    data->nonce_mt, EAP_SIM_NONCE_MT_LEN);
@@ -529,13 +535,6 @@ static struct wpabuf * eap_sim_response_start(struct eap_sm *sm,
 			   data->selected_version);
 		eap_sim_msg_add(msg, EAP_SIM_AT_SELECTED_VERSION,
 				data->selected_version, NULL, 0);
-	}
-
-	if (identity) {
-		wpa_hexdump_ascii(MSG_DEBUG, "   AT_IDENTITY",
-				  identity, identity_len);
-		eap_sim_msg_add(msg, EAP_SIM_AT_IDENTITY, identity_len,
-				identity, identity_len);
 	}
 
 	resp = eap_sim_msg_finish(msg, EAP_TYPE_SIM, NULL, NULL, 0);
