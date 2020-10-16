@@ -1116,7 +1116,7 @@ def test_rrm_beacon_req_table_bssid(dev, apdev):
     report = BeaconReport(binascii.unhexlify(fields[4]))
     logger.info("Received beacon report: " + str(report))
     if "bssid=" + bssid2 not in str(report):
-        raise Exception("Report for unexpect BSS")
+        raise Exception("Report for unexpected BSS")
     ev = hapd.wait_event(["BEACON-RESP-RX"], timeout=0.1)
     if ev is not None:
         raise Exception("Unexpected beacon report response")
@@ -1140,7 +1140,7 @@ def test_rrm_beacon_req_table_ssid(dev, apdev):
     report = BeaconReport(binascii.unhexlify(fields[4]))
     logger.info("Received beacon report: " + str(report))
     if "bssid=" + bssid2 not in str(report):
-        raise Exception("Report for unexpect BSS")
+        raise Exception("Report for unexpected BSS")
     ev = hapd.wait_event(["BEACON-RESP-RX"], timeout=0.1)
     if ev is not None:
         raise Exception("Unexpected beacon report response")
