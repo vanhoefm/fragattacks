@@ -6,6 +6,11 @@
 from fraginternals import *
 import copy
 
+class FragInfo:
+	def __init__(self, num=0, morefrag=False):
+		self.num = num
+		self.morefrag = morefrag
+
 class PingTest(Test):
 	def __init__(self, ptype, fragments, separate_with=None, opt=None):
 		super().__init__(fragments)
@@ -24,15 +29,19 @@ class PingTest(Test):
 		self.parse_meta_actions()
 
 	def parse_meta_actions(self):
-		# Create list of fragment numbers to be used
-		self.fragnums = []
-		next_fragnum = 0
-		for act in self.actions:
-			if act.is_meta(Action.MetaDrop):
-				next_fragnum += 1
-			elif act.action == Action.Inject:
-				self.fragnums.append(next_fragnum)
-				next_fragnum += 1
+		relevant_actions = list(filter(lambda act: act.is_meta(Action.MetaDrop) or act.action == Action.Inject,
+					       self.actions))
+
+		# All fragments except the last have the MoreFragment flag set (True)
+		fraginfos = [FragInfo(fragnum, True) for fragnum in range(len(relevant_actions) - 1)]
+		# The last fragment doesn't have the MoreFragment flag set (False)
+		fraginfos.append(FragInfo(len(relevant_actions) - 1, False ))
+
+		# Now remove fragment info for the MetaDrop actions
+		self.fraginfos = [fraginfo for fraginfo, act in zip(fraginfos, relevant_actions)
+				                            if act.action == Action.Inject]
+
+		# Remove all MetaDrop actions
 		self.actions = list(filter(lambda act: not act.is_meta(Action.MetaDrop), self.actions))
 
 	def prepare(self, station):
@@ -70,8 +79,12 @@ class PingTest(Test):
 				else:
 					frame.addr1 = "ff:ff:ff:ff:ff:ff"
 
-			# Assign fragment numbers according to MetaDrop rules
-			frame.SC = (frame.SC & 0xfff0) | self.fragnums.pop(0)
+			# Set fragment number and MoreFragment flags according to parsed MetaDrop rules
+			fraginfo = self.fraginfos.pop(0)
+			frame.SC = (frame.SC & 0xfff0) | fraginfo.num
+			if fraginfo.morefrag:
+				frame.FCfield |= Dot11(FCfield="MF").FCfield
+
 			frag.frame = frame
 
 			# Take into account encryption options
