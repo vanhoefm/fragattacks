@@ -5323,6 +5323,9 @@ static void openssl_debug_dump_certificate(int i, X509 *cert)
 	ASN1_INTEGER *ser;
 	char serial_num[128];
 
+	if (!cert)
+		return;
+
 	X509_NAME_oneline(X509_get_subject_name(cert), buf, sizeof(buf));
 
 	ser = X509_get_serialNumber(cert);
