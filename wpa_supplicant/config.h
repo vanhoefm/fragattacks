@@ -650,7 +650,7 @@ struct wpa_config {
 	 * This variable control whether wpa_supplicant is allow to re-write
 	 * its configuration with wpa_config_write(). If this is zero,
 	 * configuration data is only changed in memory and the external data
-	 * is not overriden. If this is non-zero, wpa_supplicant will update
+	 * is not overridden. If this is non-zero, wpa_supplicant will update
 	 * the configuration data (e.g., a file) whenever configuration is
 	 * changed. This update may replace the old configuration which can
 	 * remove comments from it in case of a text file configuration.

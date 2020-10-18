@@ -10278,7 +10278,7 @@ static int wpas_ctrl_iface_mesh_pmksa_add(struct wpa_supplicant *wpa_s,
 					  char *cmd)
 {
 	/*
-	 * We do not check mesh interface existance because PMKSA should be
+	 * We do not check mesh interface existence because PMKSA should be
 	 * stored before wpa_s->ifmsh creation to suppress commit message
 	 * creation.
 	 */

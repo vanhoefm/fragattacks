@@ -2532,7 +2532,7 @@ static void interworking_select_network(struct wpa_supplicant *wpa_s)
 	    (selected_cred == NULL ||
 	     cred_prio_cmp(selected_home_cred, selected_cred) >= 0)) {
 		/* Prefer network operated by the Home SP */
-		wpa_printf(MSG_DEBUG, "Interworking: Overrided selected with selected_home");
+		wpa_printf(MSG_DEBUG, "Interworking: Overrode selected with selected_home");
 		selected = selected_home;
 		selected_cred = selected_home_cred;
 	}

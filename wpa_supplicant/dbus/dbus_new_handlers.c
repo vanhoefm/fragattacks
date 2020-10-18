@@ -2568,7 +2568,7 @@ wpas_dbus_handler_tdls_cancel_channel_switch(DBusMessage *message,
  * wpas_dbus_handler_save_config - Save configuration to configuration file
  * @message: Pointer to incoming dbus message
  * @wpa_s: wpa_supplicant structure for a network interface
- * Returns: NULL on Success, Otherwise errror message
+ * Returns: NULL on Success, Otherwise error message
  *
  * Handler function for "SaveConfig" method call of network interface.
  */

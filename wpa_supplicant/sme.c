@@ -300,7 +300,7 @@ static void sme_auth_handle_rrm(struct wpa_supplicant *wpa_s,
 	*pos++ = WLAN_EID_RRM_ENABLED_CAPABILITIES;
 	*pos++ = rrm_ie_len;
 
-	/* Set supported capabilites flags */
+	/* Set supported capabilities flags */
 	if (wpa_s->drv_rrm_flags & WPA_DRIVER_FLAGS_TX_POWER_INSERTION)
 		*pos |= WLAN_RRM_CAPS_LINK_MEASUREMENT;
 
