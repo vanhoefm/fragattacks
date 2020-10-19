@@ -3085,7 +3085,8 @@ static int wpa_cli_cmd_dpp_stop_chirp(struct wpa_ctrl *ctrl, int argc,
 
 static int wpa_ctrl_command_bss(struct wpa_ctrl *ctrl, const char *cmd)
 {
-	char buf[512], *pos, *bssid, *freq, *level, *flags, *ssid;
+	char buf[512], *pos, *bssid = NULL, *freq = NULL, *level = NULL,
+		*flags = NULL, *ssid = NULL;
 	size_t len;
 	int ret, id = -1;
 
@@ -3126,7 +3127,9 @@ static int wpa_ctrl_command_bss(struct wpa_ctrl *ctrl, const char *cmd)
 		*pos++ = '\0';
 	}
 	if (id != -1)
-		printf("%s\t%s\t%s\t%s\t%s\n", bssid, freq, level, flags, ssid);
+		printf("%s\t%s\t%s\t%s\t%s\n", bssid ? bssid : "N/A",
+		       freq ? freq : "N/A", level ? level : "N/A",
+		       flags ? flags : "N/A", ssid ? ssid : "N/A");
 	return id;
 }
 
