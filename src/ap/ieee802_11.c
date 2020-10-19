@@ -1149,6 +1149,7 @@ static int sae_status_success(struct hostapd_data *hapd, u16 status_code)
 {
 	int sae_pwe = hapd->conf->sae_pwe;
 	int id_in_use;
+	bool sae_pk = false;
 
 	id_in_use = hostapd_sae_pw_id_in_use(hapd->conf);
 	if (id_in_use == 2 && sae_pwe != 3)
@@ -1156,7 +1157,8 @@ static int sae_status_success(struct hostapd_data *hapd, u16 status_code)
 	else if (id_in_use == 1 && sae_pwe == 0)
 		sae_pwe = 2;
 #ifdef CONFIG_SAE_PK
-	if (sae_pwe == 0 && hostapd_sae_pk_in_use(hapd->conf))
+	sae_pk = hostapd_sae_pk_in_use(hapd->conf);
+	if (sae_pwe == 0 && sae_pk)
 		sae_pwe = 2;
 #endif /* CONFIG_SAE_PK */
 
@@ -1164,11 +1166,11 @@ static int sae_status_success(struct hostapd_data *hapd, u16 status_code)
 		status_code == WLAN_STATUS_SUCCESS) ||
 		(sae_pwe == 1 &&
 		 (status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
-		  status_code == WLAN_STATUS_SAE_PK)) ||
+		  (sae_pk && status_code == WLAN_STATUS_SAE_PK))) ||
 		(sae_pwe == 2 &&
 		 (status_code == WLAN_STATUS_SUCCESS ||
 		  status_code == WLAN_STATUS_SAE_HASH_TO_ELEMENT ||
-		  status_code == WLAN_STATUS_SAE_PK));
+		  (sae_pk && status_code == WLAN_STATUS_SAE_PK)));
 }
 
 
