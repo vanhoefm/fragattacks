@@ -4469,9 +4469,7 @@ static int wpa_global_config_parse_str(const struct global_parse_data *data,
 		prev_len = 0;
 
 	/* No change to the previously configured value */
-	if ((!(*dst) && !pos) ||
-	    (*dst && pos && prev_len == len &&
-	     os_memcmp(*dst, pos, len) == 0))
+	if (*dst && prev_len == len && os_memcmp(*dst, pos, len) == 0)
 		return 1;
 
 	tmp = os_strdup(pos);
