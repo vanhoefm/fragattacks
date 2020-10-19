@@ -120,7 +120,7 @@ class P2P_Group_Add (threading.Thread):
 			signal_name="WpsFailed")
 
 		# Sets up p2p_group_add dictionary
-	def constructArguements(self):
+	def constructArguments(self):
 		self.P2PDictionary = {'persistent':self.persistent}
 
 		if (self.frequency != None):
@@ -215,7 +215,7 @@ if __name__ == "__main__":
 	except:
 		print("Error:\n  Invalid Arguments")
 
-	p2p_group_add_test.constructArguements()
+	p2p_group_add_test.constructArguments()
 	p2p_group_add_test.start()
 	time.sleep(5)
 	print("Error:\n  Group formation timed out")
