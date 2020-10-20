@@ -181,7 +181,7 @@ if __name__ == "__main__":
 	parser.add_argument('--inc-pn', type=int, help="To test non-sequential packet number in fragments.")
 	parser.add_argument('--amsdu', default=False, action='store_true', help="Encapsulate pings in an A-MSDU frame.")
 	parser.add_argument('--amsdu-fake', default=False, action='store_true', help="Set A-MSDU flag but include normal payload.")
-	parser.add_argument('--amsdu-ssp', default=False, action='store_true', help="Force authentication of QoS A-MSDU flag.")
+	parser.add_argument('--amsdu-spp', '--amsdu-ssp', default=False, action='store_true', help="Force authentication of QoS A-MSDU flag.")
 	parser.add_argument('--arp', default=False, action='store_true', help="Override default request with ARP request.")
 	parser.add_argument('--dhcp', default=False, action='store_true', help="Override default request with DHCP discover.")
 	parser.add_argument('--icmp', default=False, action='store_true', help="Override default request with ICMP ping request.")

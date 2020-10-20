@@ -441,7 +441,7 @@ class Station():
 			# TODO: Implement and test this function
 			encrypted = encrypt_tkip(frame, key, self.pn[idx], keyid)
 		elif len(key) == 16:
-			encrypted = encrypt_ccmp(frame, key, self.pn[idx], keyid, self.options.amsdu_ssp)
+			encrypted = encrypt_ccmp(frame, key, self.pn[idx], keyid, self.options.amsdu_spp)
 		else:
 			encrypted = encrypt_wep(frame, key, self.pn[idx], keyid)
 

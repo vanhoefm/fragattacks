@@ -249,7 +249,7 @@ device and are further discussed below the table.
 | `ping-frag-sep`                  | Send a normal fragmented ping with fragments separated by another frame.
 | `ping-frag-sep --pn-per-qos`     | Same as above, but also works if the target only accepts consecutive PNs.
 | <div align="center">*A-MSDU attacks (§3)*</div>
-| `ping I,E --amsdu`               | Send a ping encapsulated in a normal (non SSP protected) A-MSDU frame.
+| `ping I,E --amsdu`               | Send a ping encapsulated in a normal (non SPP protected) A-MSDU frame.
 | <div align="center">*Mixed key attacks (§4)*</div>
 | `ping I,F,BE,AE`                 | Inject two fragments encrypted under a different key.
 | `ping I,F,BE,AE --pn-per-qos`    | Same as above, but also works if the target only accepts consecutive PNs.
@@ -306,7 +306,7 @@ include) these reference CVEs as a way to easily refer to each type of discovere
 ## 7.2. A-MSDU attack tests (§3 -- CVE-2020-24588)
 
 The test `ping I,E --amsdu` checks if an implementation supports A-MSDUs, in which case it is vulnerable to
-attacks. To prevent attacks, the network must mandate the usage of SSP A-MSDUs (and drop all non-SSP A-MSDUs).
+attacks. To prevent attacks, the network must mandate the usage of SPP A-MSDUs (and drop all non-SPP A-MSDUs).
 It's currently unclear how to prevent this attack in a backward-compatible manner. See Section 3 of the paper
 for details.
 
@@ -461,7 +461,7 @@ presence of a certain vulnerability class, there is no need to test the other at
 | -------------------------------------- | ---------------------------------
 | <div align="center">*A-MSDU attacks (§3)*</div>
 | `ping I,E --amsdu-fake`                | If this test succeeds, the A-MSDU flag is ignored (§3.5).
-| `ping I,E --amsdu-fake --amsdu-ssp`    | Check if the A-MSDU flag is authenticated but then ignored (§3.5).
+| `ping I,E --amsdu-fake --amsdu-spp`    | Check if the A-MSDU flag is authenticated but then ignored (§3.5).
 | `amsdu-inject`                         | Send A-MSDU frame whose start is also a valid LLC/SNAP header (§3.2).
 | `amsdu-inject-bad`                     | Same as above, but against targets that incorrectly parse the frame.
 | <div align="center">*Mixed key attacks (§4)*</div>
@@ -501,7 +501,7 @@ understand how the tested device handles A-MSDU frames:
   support A-MSDU frames). This behaviour is not ideal, although it is unlikely that an attacker can abuse this in
   practice (see Section 3.5 in the paper).
 
-- `ping I,E --amsdu-fake --amsdu-ssp`: If this tests succeeds, the receiver authenticates the QoS A-MSDU flag of every
+- `ping I,E --amsdu-fake --amsdu-spp`: If this tests succeeds, the receiver authenticates the QoS A-MSDU flag of every
   received frame (i.e. it will not mask it to zero on reception) but then treats all received frames as normal frames
   (meaning it does not support the reception of real A-MSDU frames). This behaviour is not ideal, although it is unlikely
   that an attacker can abuse this in practice (see Section 3.5 in the paper).
