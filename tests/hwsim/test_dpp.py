@@ -5001,7 +5001,7 @@ def run_dpp_controller_rx_errors(dev, apdev):
     if "OK" not in dev[0].request("DPP_CONTROLLER_START"):
         raise Exception("Could not start Controller")
 
-    addr = ("127.0.0.1", 7871)
+    addr = ("127.0.0.1", 8908)
 
     tests = [b"abc",
              b"abcd",
