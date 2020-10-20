@@ -512,8 +512,8 @@ presence of a certain vulnerability class, there is no need to test the other at
 | `eapol-inject 00:11:22:33:44:55`       | Test if AP forwards EAPOL frames before authenticated (use tcpdump).
 | `eapol-inject-large 00:11:22:33:44:55` | Make AP send fragmented frames by EAPOL injection (use tcpdump).
 | <div align="center">*No fragmentation support attack (§6.8)*</div>
-| `ping I,E,D`                           | Send ping inside an encrypted first fragment (no 2nd fragment).
 | `ping I,D,E`                           | Send ping inside an encrypted second fragment (no 1st fragment).
+| `ping I,E,D`                           | Send ping inside an encrypted first fragment (no 2nd fragment).
 
 ## 8.1. A-MSDU attack tests (§3 -- CVE-2020-24588)
 
