@@ -566,6 +566,11 @@ ParseRes ieee802_11_parse_elems(const u8 *start, size_t len,
 			elems->dils = pos;
 			elems->dils_len = elen;
 			break;
+		case WLAN_EID_S1G_CAPABILITIES:
+			if (elen < 15)
+				break;
+			elems->s1g_capab = pos;
+			break;
 		case WLAN_EID_FRAGMENT:
 			ieee802_11_parse_fragment(&elems->frag_ies, pos, elen);
 			break;

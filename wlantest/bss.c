@@ -178,14 +178,18 @@ void bss_update(struct wlantest *wt, struct wlantest_bss *bss,
 			  elems->osen_len + 2);
 	}
 
-	if (elems->rsn_ie == NULL) {
+	/* S1G does not include RSNE in beacon, so only clear it from
+	 * Probe Response frames. Note this assumes short beacons were dropped
+	 * due to missing SSID above.
+	 */
+	if (!elems->rsn_ie && (!elems->s1g_capab || beacon != 1)) {
 		if (bss->rsnie[0]) {
 			add_note(wt, MSG_INFO, "BSS " MACSTR
 				 " - RSN IE removed", MAC2STR(bss->bssid));
 			bss->rsnie[0] = 0;
 			update = 1;
 		}
-	} else {
+	} else if (elems->rsn_ie) {
 		if (bss->rsnie[0] == 0 ||
 		    os_memcmp(bss->rsnie, elems->rsn_ie - 2,
 			      elems->rsn_ie_len + 2) != 0) {
