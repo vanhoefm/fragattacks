@@ -5967,6 +5967,9 @@ def test_dpp_enterprise_reject(dev, apdev, params):
 
 def test_dpp_enterprise_tcp(dev, apdev, params):
     """DPP over TCP for enterprise provisioning"""
+    if not openssl_imported:
+        raise HwsimSkip("OpenSSL python method not available")
+
     try:
         run_dpp_enterprise_tcp(dev, apdev, params)
     finally:
@@ -6054,6 +6057,9 @@ def run_dpp_enterprise_tcp_end(params, dev, wt):
 
 def test_dpp_enterprise_tcp2(dev, apdev, params):
     """DPP over TCP for enterprise provisioning (Controller initiating)"""
+    if not openssl_imported:
+        raise HwsimSkip("OpenSSL python method not available")
+
     try:
         run_dpp_enterprise_tcp2(dev, apdev, params)
     finally:
