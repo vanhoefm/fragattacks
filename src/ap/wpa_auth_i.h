@@ -1,5 +1,6 @@
 /*
  * hostapd - IEEE 802.11i-2004 / WPA Authenticator: Internal definitions
+ * Copyright (c) 2020, Mathy Vanhoef <mathy.vanhoef@nyu.edu>
  * Copyright (c) 2004-2015, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.

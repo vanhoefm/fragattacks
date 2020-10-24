@@ -1,5 +1,6 @@
 /*
  * wpa_supplicant - Internal definitions
+ * Copyright (c) 2020, Mathy Vanhoef <mathy.vanhoef@nyu.edu>
  * Copyright (c) 2003-2014, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.

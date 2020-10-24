@@ -1,5 +1,6 @@
 /*
  * hostapd / Callback functions for driver wrappers
+ * Copyright (c) 2020, Mathy Vanhoef <mathy.vanhoef@nyu.edu>
  * Copyright (c) 2002-2013, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.

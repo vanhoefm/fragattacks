@@ -1,4 +1,8 @@
 #!/bin/bash
+# Copyright (c) 2020, Mathy Vanhoef <mathy.vanhoef@nyu.edu>
+#
+# This code may be distributed under the terms of the BSD license.
+# See README for more details.
 set -e
 
 if ! [ $(id -u) = 0 ]; then
