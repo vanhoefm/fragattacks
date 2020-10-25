@@ -381,7 +381,7 @@ class Station():
 		# Normal case only need to check for encryption
 		else:
 			p = p/payload
-			if self.tk and not plaintext: p = self.encrypt(p)
+			if self.tk and not plaintext: p, _ = self.encrypt(p)
 
 		self.daemon.inject_mon(p)
 		log(STATUS, "[Injected packet] " + croprepr(p))
@@ -445,7 +445,7 @@ class Station():
 		else:
 			encrypted = encrypt_wep(frame, key, self.pn[idx], keyid)
 
-		return encrypted
+		return encrypted, key
 
 	def handle_connecting(self, bss):
 		log(STATUS, f"Station: setting BSS MAC address {bss}")
@@ -553,8 +553,8 @@ class Station():
 
 				if act.encrypted:
 					assert self.tk != None and self.gtk != None
-					log(STATUS, "Using key " + self.tk.hex() + " to encrypt " + repr(act.frame))
-					frame = self.encrypt(act.frame, inc_pn=act.inc_pn, force_key=act.key)
+					frame, key = self.encrypt(act.frame, inc_pn=act.inc_pn, force_key=act.key)
+					log(STATUS, "Using key " + key.hex() + " to encrypt " + repr(act.frame))
 				else:
 					frame = act.frame
 
