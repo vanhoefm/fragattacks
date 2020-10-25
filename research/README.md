@@ -817,8 +817,9 @@ are some options to try to mitigate this problem:
    at (slightly) different times, and this may be the difference between injected frame properly arriving or
    being missed.
 
-4. Perform the tests using ARP instead of ICMP tests, see [No ICMP support](#id-no-icmp) for details. This
-   can be more reliable because fewer frames have to be properly injected when using ARP injection.
+4. Assign static IPs to the device under test and let the test tool use static IPs (see [Static IP Configuration](#id-static-ip-config)).
+   With many tests this can be more reliable because the test tool can then immediately send the test frame instead
+   of first having to use/wait on DHCP.
 
 <a id="id-notes-device-support"></a>
 ## 9.7. Notes on device support
