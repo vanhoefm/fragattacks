@@ -232,7 +232,7 @@ class EapolAmsduTest(Test):
 			quit(1)
 
 	def prepare(self, station):
-		log(STATUS, "Generating ping test", color="green")
+		log(STATUS, "Generating cloacked A-MSDU test", color="green")
 
 		# Generate the single frame
 		header, request, check_fn = generate_request(station, self.ptype, dport=self.dport)
