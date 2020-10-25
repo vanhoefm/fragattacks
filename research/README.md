@@ -254,37 +254,37 @@ device and are further discussed below the table.
 
 |             Command              | Short description
 | -------------------------------- | ---------------------------------
-| <div align="center">*Sanity checks*</div>
+| <div align="center">*[Sanity checks](#id-test-sanity)*</div>
 | `ping`                           | Send a normal ping.
 | `ping I,E,E`                     | Send a normal fragmented ping.
-| <div align="center">*Basic device behaviour*</div>
+| <div align="center">*[Basic device behaviour](#id-test-sanity)*</div>
 | `ping I,E,E --delay 5`           | Send a normal fragmented ping with a 5 second delay between fragments.
 | `ping-frag-sep`                  | Send a normal fragmented ping with fragments separated by another frame.
 | `ping-frag-sep --pn-per-qos`     | Same as above, but also works if the target only accepts consecutive PNs.
-| <div align="center">*A-MSDU attacks (§3)*</div>
+| <div align="center">*[A-MSDU attacks (§3)](#id-test-amsdu)*</div>
 | `ping I,E --amsdu`               | Send a ping encapsulated in a normal (non SPP protected) A-MSDU frame.
 | `amsdu-inject`                   | Send A-MSDU frame whose start is also a valid LLC/SNAP header (§3.2).
 | `amsdu-inject-bad`               | Same as above, but against targets that incorrectly parse the frame.
-| <div align="center">*Mixed key attacks (§4)*</div>
+| <div align="center">*[Mixed key attacks (§4)](#id-test-mixedkey)*</div>
 | `ping I,F,BE,AE`                 | Inject two fragments encrypted under a different key.
 | `ping I,F,BE,AE --pn-per-qos`    | Same as above, but also works if the target only accepts consecutive PNs.
-| <div align="center">*Cache attacks (§5)*</div>
+| <div align="center">*[Cache attacks (§5)](#id-test-cache)*</div>
 | `ping I,E,R,AE`                  | Inject a fragment, try triggering a _reassociation_, and inject second fragment.
 | `ping I,E,R,E`                   | Same as above, but with a longer delay before sending the second fragment.
 | `ping I,E,R,AE --full-reconnect` | Inject a fragment, _deauthenticate_ and reconnect, then inject second fragment.
 | `ping I,E,R,E --full-reconnect`  | Same as above, but with a longer delay before sending the second fragment.
-| <div align="center">*Non-consecutive PNs attack (§6.2)*</div>
+| <div align="center">*[Non-consecutive PNs attack (§6.2)](#id-test-nonconsec)*</div>
 | `ping I,E,E --inc-pn 2`          | Send a fragmented ping with non-consecutive packet numbers.
-| <div align="center">*Mixed plain/encrypt attack (§6.3)*</div>
+| <div align="center">*[Mixed plain/encrypt attack (§6.3)](#id-test-mixplainenc)*</div>
 | `ping I,E,P`                     | Send a fragmented ping: first fragment encrypted, second fragment in plaintext.
 | `ping I,P,E`                     | Send a fragmented ping: first fragment in plaintext, send fragment encrypted.
 | `ping I,P`                       | Send a plaintext ping.
 | `ping I,P,P`                     | Send a fragmented ping: both fragments are sent in plaintext.
 | `linux-plain`                    | Mixed plaintext/encrypted fragmentation attack specific to Linux.
-| <div align="center">*Broadcast fragment attack (§6.4)*</div>
+| <div align="center">*[Broadcast fragment attack (§6.4)](#id-test-broadcastfrag)*</div>
 | `ping I,D,P --bcast-ra`          | Send a ping request in plaintext broadcasted 2nd fragment after connecting.
 | `ping D,BP --bcast-ra`           | Same as above, but the ping is inject during the handshake (check with tcpdump).
-| <div align="center">*A-MSDUs EAPOL attack (§6.5)*</div>
+| <div align="center">*[A-MSDUs EAPOL attack (§6.5)](#id-test-cloackamsdu)*</div>
 | `eapol-amsdu BP`                 | Send A-MSDU disguised as EAPOL during handshake (check result with tcpdump).
 | `eapol-amsdu I,P`                | Same as above, except the frame is injected after obtaining an IP.
 | `eapol-amsdu-bad BP`             | Send malformed A-MSDU disguised as EAPOL during handshake (use tcpdump).
@@ -295,6 +295,7 @@ CVE identifier, however, vendors may use different CVEs because an implementatio
 receives a unique CVE for each affected codebase. We nevertheless recommend to always refer to (or somehow
 include) these reference CVEs as a way to easily refer to each type of discovered implementation flaw.
 
+<a id="id-test-sanity"></a>
 ## 7.1. Sanity and implementation checks
 
 - `ping I,E,E`: This test should only fail if the tested device doesn't support fragmentation. In case
@@ -318,6 +319,7 @@ include) these reference CVEs as a way to easily refer to each type of discovere
   have a consecutive Packet Number (PN). This is something that a reciever should be verifying in order to be
   secure. Unfortunately, many implementations don't verify whether PNs are consecutive.
 
+<a id="id-test-amsdu"></a>
 ## 7.2. A-MSDU attack tests (§3 -- CVE-2020-24588)
 
 The test `ping I,E --amsdu` checks if an implementation supports non-SPP A-MSDUs, in which case it is likely
@@ -335,6 +337,7 @@ The last two tests are used to simulate our A-MSDU injection attack:
   above test to fail. In that case try `amsdu-inject-bad` instead (see Section 3.6 in the paper). Note that if this test
   succeeds, the impact of the attack is effectively identical to implementations that correctly parse such frames.
 
+<a id="id-test-mixedkey"></a>
 ## 7.3. Mixed key attack tests (§4 -- CVE-2020-24587)
 
 - When running the mixed key test against an AP, the AP must be configured to regularly  (e.g. every minute)
@@ -357,6 +360,7 @@ The last two tests are used to simulate our A-MSDU injection attack:
   succeed or not. In case the tests fail, it is recommended to also perform the mixed key attack
   tests listed in [Extended Vulnerability Tests](#id-extended-tests).
 
+<a id="id-test-cache"></a>
 ## 7.4. Cache attack tests (§5 -- CVE-2020-24586)
 
 - When testing an AP, the tool sends a first fragment, then tries to _reassociate_ with the AP, and finally
@@ -381,10 +385,12 @@ The last two tests are used to simulate our A-MSDU injection attack:
   which can be useful in case there is a small delay between completion of the handshake and installing the
   negotiated key.
 
+<a id="id-test-nonconsec"></a>
 ## 7.5. Non-consecutive PNs attack (§6.2 -- CVE-2020-26146)
 
 In our experiments, this test only failed against Linux and against devices that don't support fragmentation.
 
+<a id="id-test-mixplainenc"></a>
 ## 7.6. Mixed plain/encrypt attack (§6.3 -- CVE-2020-26147/26140/26143)
 
 - `ping I,E,P` and `linux-plain`: if this test succeeds the resulting attacks are described in Section 6.3
@@ -401,6 +407,7 @@ In our experiments, this test only failed against Linux and against devices that
 - `ping I,P,P`: if this test succeeds the implementation accepts _fragmented_ plaintext frames in a protected
   Wi-Fi network, allowing trivial packet injection (CVE-2020-26143).
 
+<a id="id-test-broadcastfrag"></a>
 ## 7.7. Broadcast fragment attack tests (§6.4 -- CVE-2020-26145)
 
 - Because all these tests send broadcast frames, which are not automatically retransmitted, it is recommended
@@ -415,6 +422,7 @@ In our experiments, this test only failed against Linux and against devices that
   use the filter `icmp` and in wireshark you can also use the filter `frame contains "test_ping_icmp"`
   to more easily detect this ping request.
 
+<a id="id-test-cloackamsdu"></a>
 ## 7.8. A-MSDUs EAPOL attack tests (§6.5 -- CVE-2020-26144)
 
 - `eapol-amsdu[-bad] BP`: These two tests inject the malicious frame while the client is still connecting
@@ -484,37 +492,38 @@ presence of a certain vulnerability class, there is no need to test the other at
 
 |                Command                 | Short description
 | -------------------------------------- | ---------------------------------
-| <div align="center">*A-MSDU attacks (§3)*</div>
+| <div align="center">*[A-MSDU attacks (§3)](#id-extended-amsdu)*</div>
 | `ping I,E --amsdu-fake`                | If this test succeeds, the A-MSDU flag is ignored (§3.5).
 | `ping I,E --amsdu-fake --amsdu-spp`    | Check if the A-MSDU flag is authenticated but then ignored (§3.5).
-| <div align="center">*Mixed key attacks (§4)*</div>
+| <div align="center">*[Mixed key attacks (§4)](#id-extended-mixedkey)*</div>
 | `ping I,F,BE,E`                        | In case the new key is installed relatively late.
 | `ping I,E,F,AE`                        | Variant if no data frames are accepted during the rekey handshake.
 | `ping I,E,F,AE --rekey-plain`          | If the device performs the rekey handshake in plaintext.
 | `ping I,E,F,AE --rekey-plain --rekey-req` | Same as above, and actively request a rekey as client.
 | `ping I,E,F,AE --rekey-early-install`  | Install the new key before receiving/sending message 4.
 | `ping I,F,BE,AE --freebsd`             | Mixed key attack against FreeBSD or similar implementations.
-| <div align="center">*Cache attacks (§5)*</div>
+| <div align="center">*[Cache attacks (§5)](#id-extended-cache)*</div>
 | `ping I,E,R,AE --freebsd [--full-reconnect]` | Cache attack specific to FreeBSD implementations.
 | `ping I,E,R,AP --freebsd [--full-reconnect]` | Cache attack specific to FreeBSD implementations.
 | `ping I,E,R,AP [--full-reconnect]`     | Cache attack test where 2nd fragment is sent in plaintext.
-| <div align="center">*Mixed plain/encrypt attack (§6.3)*</div>
+| <div align="center">*[Mixed plain/encrypt attack (§6.3)](#id-extended-mixplainenc)*</div>
 | `ping I,E,E --amsdu`                   | Send a normal ping as a fragmented A-MSDU frame.
 | `ping I,E,P,E`                         | Ping with first frag. encrypted, second plaintext, third encrypted.
 | `linux-plain 3`                        | Same as linux-plain but decoy fragment is sent using QoS priority 3.
-| <div align="center">*Broadcast fragment attack (§6.4)*</div>
+| <div align="center">*[Broadcast checks (extensions of §6.4)](#id-extended-bcast-check)*</div>
 | `ping I,P --bcast-ra`                  | Ping in a plaintext broadcast frame after 4-way HS.
 | `ping BP --bcast-ra`                   | Ping in plaintext broadcast frame during 4-way HS (use tcpdump).
 | `eapfrag BP,BP`                        | Experimental broadcast fragment attack (use tcpdump).
-| <div align="center">*A-MSDUs EAPOL attack (§6.5)*</div>
+| <div align="center">*[A-MSDUs EAPOL attack (§6.5)](#id-extended-cloackamsdu)*</div>
 | `eapol-amsdu[-bad] BP --bcast-dst`     | Same as `eapol-amsdu BP` but easier to verify against APs (use tcpdump).
-| <div align="center">*AP forwards EAPOL attack (§6.6)*</div>
+| <div align="center">*[AP forwards EAPOL attack (§6.6)](#id-extended-apforward)*</div>
 | `eapol-inject 00:11:22:33:44:55`       | Test if AP forwards EAPOL frames before authenticated (use tcpdump).
 | `eapol-inject-large 00:11:22:33:44:55` | Make AP send fragmented frames by EAPOL injection (use tcpdump).
-| <div align="center">*No fragmentation support attack (§6.8)*</div>
+| <div align="center">*[No fragmentation support attack (§6.8)](#id-extended-nofrag)*</div>
 | `ping I,D,E`                           | Send ping inside an encrypted second fragment (no 1st fragment).
 | `ping I,E,D`                           | Send ping inside an encrypted first fragment (no 2nd fragment).
 
+<a id="id-extended-amsdu"></a>
 ## 8.1. A-MSDU attack tests (§3 -- CVE-2020-24588)
 
 It is only useful to execute the first two tests if the main test `ping I,E --amsdu` fails and you want to better
@@ -529,6 +538,7 @@ understand how the tested device handles A-MSDU frames:
   (meaning it does not support the reception of real A-MSDU frames). This behaviour is not ideal, although it is unlikely
   that an attacker can abuse this in practice (see Section 3.5 in the paper).
 
+<a id="id-extended-mixedkey"></a>
 ## 8.2. Mixed key attack tests (§4 -- CVE-2020-24587)
 
 Most devices I tested are vulnerable to mixed key attacks. In case the normal mixed key attack tests indicate
@@ -556,6 +566,7 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
 - `ping I,F,BE,AE --freebsd`: This essentially performs the rekey handshake against a FreeBSD implementation or
   driver without affecting the defragmentation process of data frames. See Appendix F in the paper for details.
 
+<a id="id-extended-cache"></a>
 ## 8.3. Cache attack tests (§5 -- CVE-2020-24586)
 
 - `ping I,E,R,AE --freebsd --full-reconnect`: This test can be used to check if a FreeBSD AP, or an implementation
@@ -572,6 +583,7 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
   shows that the device keeps fragments in memory after (re)connecting to a network, meaning its vulnerable to cache
   attacks.
 
+<a id="id-extended-mixplainenc"></a>
 ## 8.4. Mixed plain/encrypt attack (§6.3 -- CVE-2020-26147)
 
 - `ping I,E,E --amsdu`: This test sends a fragmented A-MSDU frame, which not all devices can properly receive.
@@ -582,6 +594,7 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
 - `ping I,E,P,E` and `linux-plain 3`: If all the other mixed plain/encrypt attack tests in didn't succeed, you
   can try these two extra tests as well. I think it's quite unlikely this will uncover a new vulnerability.
 
+<a id="id-extended-bcast-check"></a>
 ## 8.5. Broadcast fragment attack tests (§6.4 -- CVE-2020-26145)
 
 - Because all these tests send broadcast frames, which are not automatically retransmitted, it is recommended
@@ -606,6 +619,7 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
   is properly received, for example using the filter `icmp` or `frame contains "test_ping_icmp"`. An alternative variant
   is `eapfrag BP,AE` in case the normal variant doesn't work.
 
+<a id="id-extended-cloackamsdu"></a>
 ## 8.6. A-MSDU EAPOL attack tests (§6.5 -- CVE-2020-26144)
 
 This test can be used in case you want to execute the `eapol-amsdu[-bad] BP` tests but cannot run tcpdump or wireshark on
@@ -614,6 +628,7 @@ will cause a vulnerable AP to broadcast the ping request to all connected client
 vulnerable, execute this command, and listen for broadcast Wi-Fi frames on a second device that is connected to the AP by
 using the filter `icmp` or `frame contains "test_ping_icmp"`.
 
+<a id="id-extended-apforward"></a>
 ## 8.7. AP forwards EAPOL attack tests (§6.6 -- CVE-2020-26139)
 
 - `eapol-inject 00:11:22:33:44:55`: This test is only meaningfull against APs. To perform this test you have to connect
@@ -629,6 +644,7 @@ using the filter `icmp` or `frame contains "test_ping_icmp"`.
   to check this. Use the wireshark or tshark filter `(wlan.fc.frag == 1) || (wlan.frag > 0)` to detect fragmented frames. I found it
   very rare for this attack to work.
 
+<a id="id-extended-nofrag"></a>
 ## 8.8. No fragmentation support attack test (§6.8 -- CVE-2020-26142)
 
 - `ping I,D,E`: If this test succeeds, the device doesn't support (de)fragmentation, but is still vulnerable to attacks. The
