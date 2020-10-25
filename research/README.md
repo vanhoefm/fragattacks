@@ -283,12 +283,12 @@ device and are further discussed below the table.
 | `linux-plain`                    | Mixed plaintext/encrypted fragmentation attack specific to Linux.
 | <div align="center">*[Broadcast fragment attack (§6.4)](#id-test-broadcastfrag)*</div>
 | `ping I,D,P --bcast-ra`          | Send a unicast ping in a plaintext broadcasted 2nd fragment once connected.
-| `ping D,BP --bcast-ra`           | Same as above, but the ping is sent during the handshake (check with tcpdump).
-| <div align="center">*[A-MSDUs EAPOL attack (§6.5)](#id-test-cloackamsdu)*</div>
-| `eapol-amsdu BP`                 | Send A-MSDU disguised as EAPOL during handshake (check result with tcpdump).
-| `eapol-amsdu I,P`                | Same as above, except the frame is injected after obtaining an IP.
-| `eapol-amsdu-bad BP`             | Send malformed A-MSDU disguised as EAPOL during handshake (use tcpdump).
-| `eapol-amsdu-bad I,P`            | Same as above, except the frame is injected after obtaining an IP.
+| `ping D,BP --bcast-ra`           | Same as above, but frame is sent during 4-way handshake (check with tcpdump).
+| <div align="center">*[A-MSDU EAPOL attack (§6.5)](#id-test-cloackamsdu)*</div>
+| `eapol-amsdu I,P`                | Send a plaintext A-MSDU containing a ping request cloacked as an EAPOL frame.
+| `eapol-amsdu BP`                 | Same as above, but the frame is sent during the handshake (check with tcpdump).
+| `eapol-amsdu-bad I,P`            | Send malformed plain. A-MSDU containing a ping req. cloacked as EAPOL frame.
+| `eapol-amsdu-bad BP`             | Same as above, but the frame is sent while connecting (check with tcpdump).
 
 How commands match to CVEs is listed below. Note that for implementation flaws we list a reference
 CVE identifier, however, vendors may use different CVEs because an implementation vulnerability normally
@@ -410,32 +410,35 @@ In our experiments, this test only failed against Linux and against devices that
 <a id="id-test-broadcastfrag"></a>
 ## 7.7. Broadcast fragment attack tests (§6.4 -- CVE-2020-26145)
 
-- Because all these tests send broadcast frames, which are not automatically retransmitted, it is recommended
-  to **execute these tests several times**. This is because background noise may prevent the tested devices
-  from receiving the injected broadcast frame. So far only clients were affected by these attacks. Additionally,
-  most clients are only vulnerble while connecting to the network (i.e. during the execution of the 4-way handshake).
+The following two tests send broadcast frames, which are not automatically retransmitted, and it is therefore
+recommended to **execute them several times**. This is because background noise may prevent the tested devices
+from receiving the injected broadcast frame:
 
-- `ping I,D,P --bcast-ra`: Variant of the attack whose result can be checked automatically by the test tool.
+- `ping I,D,P --bcast-ra`: Send a unicast ping in a plaintext broadcasted 2nd fragment once connected. The result
+   of this variant of the attack is checked automatically by the test tool.
 
-- `ping D,BP --bcast-ra`: To confirm the result of this test you have to run wireshark or tcpdump on
-  the victim, and monitor whether the injected ping request is received by the victim. In tcpdump you can
-  use the filter `icmp` and in wireshark you can also use the filter `frame contains "test_ping_icmp"`
-  to more easily detect this ping request.
+- `ping D,BP --bcast-ra`: Here the above frame is sent while connecting to the network (i.e. during the 4-way handshake).
+  This is important because several clients and APs are only vulnerable before completing the 4-way handshake. To
+  confirm the result of this test you have to run wireshark or tcpdump on the victim, and monitor whether the
+  injected ping request is received by the victim. In tcpdump you can use the filter `icmp` and in wireshark you
+  can also use the filter `frame contains "test_ping_icmp"` to more easily detect this ping request.
 
 <a id="id-test-cloackamsdu"></a>
-## 7.8. A-MSDUs EAPOL attack tests (§6.5 -- CVE-2020-26144)
+## 7.8. A-MSDU EAPOL attack tests (§6.5 -- CVE-2020-26144)
 
-- `eapol-amsdu[-bad] BP`: These two tests inject the malicious frame while the client is still connecting
-  to the network (i.e. during the execution of the 4-way handshake). This is important because several
-  clients and APs are only vulnerable before completing the 4-way handshake. To confirm the result of this
-  test you have to run wireshark or tcpdump on the victim, and monitor whether the injected ping request
-  is received by the victim. In tcpdump you can use the filter `icmp` and in wireshark you can also use the
-  filter `frame contains "test_ping_icmp"` to more easily detect this ping request.
+- `eapol-amsdu I,P`: This is the standard test for the implementation-specific vulnerability discussed in
+  Section 6.5 of the paper. Its result is checked automatically by the test tool.
 
-- `eapol-amsdu-bad BP` and `eapol-amsdu-bad I,P`: Several implementations incorrectly process A-MSDU frames
-  that start with a valid EAPOL header. To test these implementations, you have to use the `eapol-amsdu-bad`
-  test variant. Note that if this tests succeeds, the impact of the attack is identical to implementations
-  that correctly parse such frames (for details see Section 3.6 and 6.8 in the paper).
+- Tests ending on `BP` (`eapol-amsdu BP` and `eapol-amsdu-bad BP`): These tests inject the malicious frame
+  while the client is still connecting to the network (i.e. during the execution of the 4-way handshake).
+  To confirm the result of this test you have to run wireshark or tcpdump on the victim, and monitor whether
+  the injected ping request is received by the victim. In tcpdump you can use the filter `icmp` and in wireshark
+  you can also use the filter `frame contains "test_ping_icmp"` to more easily detect this ping request.
+
+- Tests starting with `eapol-amsdu-bad` (`eapol-amsdu-bad BP` and `eapol-amsdu-bad I,P`): Several implementations
+  incorrectly process A-MSDU frames whose first 6 bytes also equal a valid EAPOL header. To test these implementations,
+  you have to use the `eapol-amsdu-bad` test variant. Note that if this tests succeeds, the impact of the attack is
+  identical to implementations that correctly parse such frames (for details see Section 3.6 and 6.8 in the paper).
 
 ## 7.9. Troubleshooting checklist
 
@@ -623,10 +626,10 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
 ## 8.6. A-MSDU EAPOL attack tests (§6.5 -- CVE-2020-26144)
 
 This test can be used in case you want to execute the `eapol-amsdu[-bad] BP` tests but cannot run tcpdump or wireshark on
-the AP. This means this test is only meaningfull against APs. In particular, the command `eapol-amsdu[-bad] BP --bcast-dst`
-will cause a vulnerable AP to broadcast the ping request to all connected clients. In other words, to check if an AP is
-vulnerable, execute this command, and listen for broadcast Wi-Fi frames on a second device that is connected to the AP by
-using the filter `icmp` or `frame contains "test_ping_icmp"`.
+the AP. This test is only meaningfull against APs: the command `eapol-amsdu[-bad] BP --bcast-dst` causes a vulnerable AP
+to broadcast the injected ping request to all connected clients. In other words, to check if an AP is vulnerable, execute this
+command, and listen for broadcast Wi-Fi frames on a second device that is connected to the AP by using the filter `icmp` or
+`frame contains "test_ping_icmp"`.
 
 <a id="id-extended-apforward"></a>
 ## 8.7. AP forwards EAPOL attack tests (§6.6 -- CVE-2020-26139)
@@ -679,8 +682,8 @@ it cannot test whether the firmware or wireless chip itself overwrites fields.
 
 ### Mixed mode
 
-To test whether a network card properly injects frames in _mixed mode_, you can execute the
-following two commands:
+To test whether a network card properly injects frames in _mixed mode_, which is the mode I
+recommend to use, you can execute the following two commands:
 
 	./fragattack wlan0 ping --inject-test wlan1
 	./fragattack wlan0 ping --inject-test wlan1 --ap
@@ -689,7 +692,8 @@ Here we test whether `wlan0` properly injects frames by monitoring the injected 
 second network card `wlan1`. The first command tests if frames are properly injected when using
 mixed mode while acting as a client, and the second command when using mixed mode while acting
 as an AP. In order to start the test, the client must be able to connect to a network, and the
-AP waits until a client is connecting before starting the injection tests.
+AP waits until a client is connecting before starting the injection tests (see [Before every usage](#id-before-every-usage)
+for configuring the connection setup of the client and AP).
 
 If you also want to test the retransmission behaviour of `wlan0` in mixed mode you can execute:
 
@@ -755,7 +759,7 @@ parameters.
 
 Most attack tests work by sending ICMP ping requests in special manners, and seeing wether we receive
 an ICMP ping response. In case the device being tested does not support ICMP pings you can instead
-using ARP requests by adding the `--arp` parameter to all tests. **TODO: Explain in detial for which**
+use ARP requests by adding the `--arp` parameter to all tests. **TODO: Explain in detial for which**
 **tests this parameter has an effect.**.
 
 **TODO: When acting as a client we can also inject DHCP requests intead.**
