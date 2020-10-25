@@ -282,8 +282,8 @@ device and are further discussed below the table.
 | `ping I,P,P`                     | Send a fragmented ping: both fragments are sent in plaintext.
 | `linux-plain`                    | Mixed plaintext/encrypted fragmentation attack specific to Linux.
 | <div align="center">*[Broadcast fragment attack (§6.4)](#id-test-broadcastfrag)*</div>
-| `ping I,D,P --bcast-ra`          | Send a ping request in plaintext broadcasted 2nd fragment after connecting.
-| `ping D,BP --bcast-ra`           | Same as above, but the ping is inject during the handshake (check with tcpdump).
+| `ping I,D,P --bcast-ra`          | Send a unicast ping in a plaintext broadcasted 2nd fragment once connected.
+| `ping D,BP --bcast-ra`           | Same as above, but the ping is sent during the handshake (check with tcpdump).
 | <div align="center">*[A-MSDUs EAPOL attack (§6.5)](#id-test-cloackamsdu)*</div>
 | `eapol-amsdu BP`                 | Send A-MSDU disguised as EAPOL during handshake (check result with tcpdump).
 | `eapol-amsdu I,P`                | Same as above, except the frame is injected after obtaining an IP.
@@ -330,7 +330,7 @@ mitigations are discussed in Section 7.2 of the paper.
 The last two tests are used to simulate our A-MSDU injection attack:
 
 - `amsdu-inject`: This test simulates the A-MSDU injection attack described in Section 3.2 of the paper. In particular,
-  it sends an A-MSDU frame whose starts is also a valid LLC/SNAP header (since this is also what happens in our reference
+  it sends an A-MSDU frame whose start is also a valid LLC/SNAP header (since this is also what happens in our reference
   attack).
 
 - `amsdu-inject-bad`: Some devices incorrectly parse A-MSDU frames that start with a valid LLC/SNAP header causing the
