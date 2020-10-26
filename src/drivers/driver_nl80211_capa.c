@@ -1963,6 +1963,22 @@ wpa_driver_nl80211_postprocess_modes(struct hostapd_hw_modes *modes,
 			modes[m].mode = HOSTAPD_MODE_IEEE80211A;
 	}
 
+	/* Remove unsupported bands */
+	m = 0;
+	while (m < *num_modes) {
+		if (modes[m].mode == NUM_HOSTAPD_MODES) {
+			wpa_printf(MSG_DEBUG,
+				   "nl80211: Remove unsupported mode");
+			os_free(modes[m].channels);
+			os_free(modes[m].rates);
+			os_memmove(&modes[m], &modes[m + 1],
+				   sizeof(struct hostapd_hw_modes));
+			(*num_modes)--;
+			continue;
+		}
+		m++;
+	}
+
 	/* If only 802.11g mode is included, use it to construct matching
 	 * 802.11b mode data. */
 
