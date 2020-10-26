@@ -385,6 +385,12 @@ The last two tests are used to simulate our A-MSDU injection attack:
   which can be useful in case there is a small delay between completion of the handshake and installing the
   negotiated key.
 
+- Overall it can be tedious to test if a device is vulnerable to cache attacks. Therefore I also recommend to
+  perform a code audit to check if fragments stay in the memory after disassociating or deauthenticating from
+  a network or after reassociating (this can also be dynamically checking using debug prints). If fragments
+  stay in memory, you should consider this as a risk, even if it's unknown whether it can be exploited. This
+  is similar to knowing an implementation has a buffer overflow but not (yet) knowing how to exploit it.
+
 <a id="id-test-nonconsec"></a>
 ## 7.5. Non-consecutive PNs attack (§6.2 -- CVE-2020-26146)
 
