@@ -502,6 +502,9 @@ static int send_and_recv_msgs_owner(struct wpa_driver_nl80211_data *drv,
 							      void *),
 				    void *ack_data)
 {
+	if (!msg)
+		return -ENOMEM;
+
 	/* Control port over nl80211 needs the flags and attributes below.
 	 *
 	 * The Linux kernel has initial checks for them (in nl80211.c) like:
