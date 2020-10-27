@@ -2305,13 +2305,15 @@ int dpp_reconfig_derive_ke_responder(struct dpp_authentication *auth,
 	/* M = { cR + pR } * CI */
 	cR = EVP_PKEY_get0_EC_KEY(own_key);
 	pR = EVP_PKEY_get0_EC_KEY(auth->own_protocol_key);
+	if (!pR)
+		goto fail;
 	group = EC_KEY_get0_group(pR);
 	bnctx = BN_CTX_new();
 	sum = BN_new();
 	mx = BN_new();
 	q = BN_new();
 	m = EC_POINT_new(group);
-	if (!cR || !pR || !bnctx || !sum || !mx || !q || !m)
+	if (!cR || !bnctx || !sum || !mx || !q || !m)
 		goto fail;
 	cR_bn = EC_KEY_get0_private_key(cR);
 	pR_bn = EC_KEY_get0_private_key(pR);
