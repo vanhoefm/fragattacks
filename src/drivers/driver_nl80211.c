@@ -9704,14 +9704,35 @@ static int vendor_reply_handler(struct nl_msg *msg, void *arg)
 }
 
 
+static bool is_cmd_with_nested_attrs(unsigned int vendor_id,
+				     unsigned int subcmd)
+{
+	if (vendor_id != OUI_QCA)
+		return true;
+
+	switch (subcmd) {
+	case QCA_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY:
+	case QCA_NL80211_VENDOR_SUBCMD_STATS_EXT:
+	case QCA_NL80211_VENDOR_SUBCMD_SCANNING_MAC_OUI:
+	case QCA_NL80211_VENDOR_SUBCMD_KEY_MGMT_SET_KEY:
+	case QCA_NL80211_VENDOR_SUBCMD_SPECTRAL_SCAN_GET_STATUS:
+	case QCA_NL80211_VENDOR_SUBCMD_NAN:
+		return false;
+	default:
+		return true;
+	}
+}
+
+
 static int nl80211_vendor_cmd(void *priv, unsigned int vendor_id,
 			      unsigned int subcmd, const u8 *data,
-			      size_t data_len, struct wpabuf *buf)
+			      size_t data_len, enum nested_attr nested_attr,
+			      struct wpabuf *buf)
 {
 	struct i802_bss *bss = priv;
 	struct wpa_driver_nl80211_data *drv = bss->drv;
 	struct nl_msg *msg;
-	int ret;
+	int ret, nla_flag;
 
 #ifdef CONFIG_TESTING_OPTIONS
 	if (vendor_id == 0xffffffff) {
@@ -9737,11 +9758,20 @@ static int nl80211_vendor_cmd(void *priv, unsigned int vendor_id,
 	}
 #endif /* CONFIG_TESTING_OPTIONS */
 
+	if (nested_attr == NESTED_ATTR_USED)
+		nla_flag = NLA_F_NESTED;
+	else if (nested_attr == NESTED_ATTR_UNSPECIFIED &&
+		 is_cmd_with_nested_attrs(vendor_id, subcmd))
+		nla_flag = NLA_F_NESTED;
+	else
+		nla_flag = 0;
+
 	if (!(msg = nl80211_cmd_msg(bss, 0, NL80211_CMD_VENDOR)) ||
 	    nla_put_u32(msg, NL80211_ATTR_VENDOR_ID, vendor_id) ||
 	    nla_put_u32(msg, NL80211_ATTR_VENDOR_SUBCMD, subcmd) ||
 	    (data &&
-	     nla_put(msg, NL80211_ATTR_VENDOR_DATA, data_len, data)))
+	     nla_put(msg, nla_flag | NL80211_ATTR_VENDOR_DATA,
+		     data_len, data)))
 		goto fail;
 
 	ret = send_and_recv_msgs(drv, msg, vendor_reply_handler, buf,

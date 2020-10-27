@@ -719,12 +719,14 @@ static inline int wpa_drv_wowlan(struct wpa_supplicant *wpa_s,
 
 static inline int wpa_drv_vendor_cmd(struct wpa_supplicant *wpa_s,
 				     int vendor_id, int subcmd, const u8 *data,
-				     size_t data_len, struct wpabuf *buf)
+				     size_t data_len,
+				     enum nested_attr nested_attr_flag,
+				     struct wpabuf *buf)
 {
 	if (!wpa_s->driver->vendor_cmd)
 		return -1;
 	return wpa_s->driver->vendor_cmd(wpa_s->drv_priv, vendor_id, subcmd,
-					 data, data_len, buf);
+					 data, data_len, nested_attr_flag, buf);
 }
 
 static inline int wpa_drv_roaming(struct wpa_supplicant *wpa_s, int allowed,

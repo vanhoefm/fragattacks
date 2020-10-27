@@ -2432,6 +2432,13 @@ struct external_auth {
 	const u8 *pmkid;
 };
 
+/* enum nested_attr - Used to specify if subcommand uses nested attributes */
+enum nested_attr {
+	NESTED_ATTR_NOT_USED = 0,
+	NESTED_ATTR_USED = 1,
+	NESTED_ATTR_UNSPECIFIED = 2,
+};
+
 /**
  * struct wpa_driver_ops - Driver interface API definition
  *
@@ -3717,6 +3724,8 @@ struct wpa_driver_ops {
 	 * @priv: Private driver interface data
 	 * @vendor_id: Vendor id
 	 * @subcmd: Vendor command id
+	 * @nested_attr_flag: Specifies if vendor subcommand uses nested
+	 *	attributes or not
 	 * @data: Vendor command parameters (%NULL if no parameters)
 	 * @data_len: Data length
 	 * @buf: Return buffer (%NULL to ignore reply)
@@ -3724,9 +3733,10 @@ struct wpa_driver_ops {
 	 *
 	 * This function handles vendor specific commands that are passed to
 	 * the driver/device. The command is identified by vendor id and
-	 * command id. Parameters can be passed as argument to the command
-	 * in the data buffer. Reply (if any) will be filled in the supplied
-	 * return buffer.
+	 * command id. The nested_attr_flag specifies whether the subcommand
+	 * uses nested attributes or not. Parameters can be passed
+	 * as argument to the command in the data buffer. Reply (if any) will be
+	 * filled in the supplied return buffer.
 	 *
 	 * The exact driver behavior is driver interface and vendor specific. As
 	 * an example, this will be converted to a vendor specific cfg80211
@@ -3734,6 +3744,7 @@ struct wpa_driver_ops {
 	 */
 	int (*vendor_cmd)(void *priv, unsigned int vendor_id,
 			  unsigned int subcmd, const u8 *data, size_t data_len,
+			  enum nested_attr nested_attr_flag,
 			  struct wpabuf *buf);
 
 	/**

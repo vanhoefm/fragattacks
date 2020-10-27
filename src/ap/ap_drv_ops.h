@@ -350,12 +350,13 @@ static inline int hostapd_drv_br_set_net_param(struct hostapd_data *hapd,
 static inline int hostapd_drv_vendor_cmd(struct hostapd_data *hapd,
 					 int vendor_id, int subcmd,
 					 const u8 *data, size_t data_len,
+					 enum nested_attr nested_attr_flag,
 					 struct wpabuf *buf)
 {
 	if (hapd->driver == NULL || hapd->driver->vendor_cmd == NULL)
 		return -1;
 	return hapd->driver->vendor_cmd(hapd->drv_priv, vendor_id, subcmd, data,
-					data_len, buf);
+					data_len, nested_attr_flag, buf);
 }
 
 static inline int hostapd_drv_stop_ap(struct hostapd_data *hapd)

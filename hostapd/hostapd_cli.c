@@ -1227,14 +1227,15 @@ static int hostapd_cli_cmd_vendor(struct wpa_ctrl *ctrl, int argc, char *argv[])
 	char cmd[256];
 	int res;
 
-	if (argc < 2 || argc > 3) {
+	if (argc < 2 || argc > 4) {
 		printf("Invalid vendor command\n"
-		       "usage: <vendor id> <command id> [<hex formatted command argument>]\n");
+		       "usage: <vendor id> <command id> [<hex formatted command argument>] [nested=<0|1>]\n");
 		return -1;
 	}
 
-	res = os_snprintf(cmd, sizeof(cmd), "VENDOR %s %s %s", argv[0], argv[1],
-			  argc == 3 ? argv[2] : "");
+	res = os_snprintf(cmd, sizeof(cmd), "VENDOR %s %s %s%s%s", argv[0],
+			  argv[1], argc >= 3 ? argv[2] : "",
+			  argc == 4 ? " " : "", argc == 4 ? argv[3] : "");
 	if (os_snprintf_error(sizeof(cmd), res)) {
 		printf("Too long VENDOR command.\n");
 		return -1;
