@@ -501,6 +501,11 @@ struct p2p_config {
 	struct p2p_channel *pref_chan;
 
 	/**
+	 * p2p_6ghz_disable - Disable 6GHz for P2P operations
+	 */
+	bool p2p_6ghz_disable;
+
+	/**
 	 * pri_dev_type - Primary Device Type (see WPS)
 	 */
 	u8 pri_dev_type[8];
@@ -2099,6 +2104,8 @@ unsigned int p2p_get_pref_freq(struct p2p_data *p2p,
 void p2p_update_channel_list(struct p2p_data *p2p,
 			     const struct p2p_channels *chan,
 			     const struct p2p_channels *cli_chan);
+
+bool is_p2p_6ghz_disabled(struct p2p_data *p2p);
 
 /**
  * p2p_set_best_channels - Update best channel information

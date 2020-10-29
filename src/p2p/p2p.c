@@ -2913,6 +2913,14 @@ void p2p_group_formation_failed(struct p2p_data *p2p)
 }
 
 
+bool is_p2p_6ghz_disabled(struct p2p_data *p2p)
+{
+	if (p2p)
+		return p2p->cfg->p2p_6ghz_disable;
+	return false;
+}
+
+
 struct p2p_data * p2p_init(const struct p2p_config *cfg)
 {
 	struct p2p_data *p2p;
