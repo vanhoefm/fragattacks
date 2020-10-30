@@ -16,7 +16,7 @@
 
 - **CVE-2020-26145: Accepting plaintext broadcast fragments as full frames (in an encrypted network)**: Vulnerable WEP, WPA, WPA2, or WPA3 implementations accept second (or subsequent) broadcast fragments even when sent in plaintext and process them as full unfragmented frames. An adversary can abuse this to inject arbitrary network packets independent of the network configuration.
 
-- **CVE-2020-26144: Accepting plaintext A-MSDU frames that start with an EAPOL LLC/SNAP header (in an encrypted network)**: Vulnerable WEP, WPA, WPA2, or WPA3 implementations accept plaintext A-MSDU frames as long as the first 8 bytes correspond to a valid EAPOL LLC/SNAP header. An adversary can abuse this to inject arbitrary network packets independent of the network configuration.
+- **CVE-2020-26144: Accepting plaintext A-MSDU frames that start with an RFC1042 header with EtherType EAPOL (in an encrypted network)**: Vulnerable Wi-Fi implementations accept plaintext A-MSDU frames as long as the first 8 bytes correspond to a valid RFC1042 (i.e., LLC/SNAP) header for EAPOL. An adversary can abuse this to inject arbitrary network packets independent of the network configuration.
 
 ## Other Implementation Vulnerabilities
 
