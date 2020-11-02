@@ -2868,6 +2868,7 @@ struct wpabuf * dpp_pkcs7_certs(const struct wpabuf *pkcs7)
 	res = BIO_read(out, wpabuf_put(pem, 0), rlen);
 	if (res <= 0) {
 		wpabuf_free(pem);
+		pem = NULL;
 		goto fail;
 	}
 	wpabuf_put(pem, res);
