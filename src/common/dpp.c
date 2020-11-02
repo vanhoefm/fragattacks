@@ -4190,7 +4190,7 @@ int dpp_configurator_add(struct dpp_global *dpp, const char *cmd)
 	}
 
 	if (ppkey) {
-		pp_key_len = os_strlen(key) / 2;
+		pp_key_len = os_strlen(ppkey) / 2;
 		pp_key = os_malloc(pp_key_len);
 		if (!pp_key ||
 		    hexstr2bin(ppkey, pp_key, pp_key_len) < 0)
