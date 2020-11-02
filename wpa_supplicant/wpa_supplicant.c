@@ -6789,7 +6789,7 @@ static int wpa_supplicant_match_existing(struct wpa_global *global)
 			continue;
 		iface = wpa_supplicant_match_iface(global, ifi->if_name);
 		if (iface) {
-			wpa_s = wpa_supplicant_add_iface(global, iface, NULL);
+			wpa_supplicant_add_iface(global, iface, NULL);
 			os_free(iface);
 		}
 	}
