@@ -1971,8 +1971,10 @@ wpa_driver_nl80211_postprocess_modes(struct hostapd_hw_modes *modes,
 				   "nl80211: Remove unsupported mode");
 			os_free(modes[m].channels);
 			os_free(modes[m].rates);
-			os_memmove(&modes[m], &modes[m + 1],
-				   sizeof(struct hostapd_hw_modes));
+			if (m + 1 < *num_modes)
+				os_memmove(&modes[m], &modes[m + 1],
+					   sizeof(struct hostapd_hw_modes) *
+					   (*num_modes - (m + 1)));
 			(*num_modes)--;
 			continue;
 		}
