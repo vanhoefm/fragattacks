@@ -1836,6 +1836,7 @@ static int wpa_supplicant_process_1_of_2_rsn(struct wpa_sm *sm,
 {
 	int maxkeylen;
 	struct wpa_eapol_ie_parse ie;
+	u16 gtk_len;
 
 	wpa_hexdump_key(MSG_DEBUG, "RSN: msg 1/2 key data",
 			keydata, keydatalen);
@@ -1851,7 +1852,20 @@ static int wpa_supplicant_process_1_of_2_rsn(struct wpa_sm *sm,
 			"WPA: No GTK IE in Group Key msg 1/2");
 		return -1;
 	}
-	maxkeylen = gd->gtk_len = ie.gtk_len - 2;
+	gtk_len = ie.gtk_len;
+	if (gtk_len < 2) {
+		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
+			"RSN: Invalid GTK KDE length (%u) in Group Key msg 1/2",
+			gtk_len);
+		return -1;
+	}
+	gtk_len -= 2;
+	if (gtk_len > sizeof(gd->gtk)) {
+		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
+			"RSN: Too long GTK in GTK KDE (len=%u)", gtk_len);
+		return -1;
+	}
+	maxkeylen = gd->gtk_len = gtk_len;
 
 #ifdef CONFIG_OCV
 	if (wpa_sm_ocv_enabled(sm)) {
@@ -1875,22 +1889,16 @@ static int wpa_supplicant_process_1_of_2_rsn(struct wpa_sm *sm,
 #endif /* CONFIG_OCV */
 
 	if (wpa_supplicant_check_group_cipher(sm, sm->group_cipher,
-					      gd->gtk_len, maxkeylen,
+					      gtk_len, maxkeylen,
 					      &gd->key_rsc_len, &gd->alg))
 		return -1;
 
 	wpa_hexdump_key(MSG_DEBUG, "RSN: received GTK in group key handshake",
-			ie.gtk, ie.gtk_len);
+			ie.gtk, 2 + gtk_len);
 	gd->keyidx = ie.gtk[0] & 0x3;
 	gd->tx = wpa_supplicant_gtk_tx_bit_workaround(sm,
 						      !!(ie.gtk[0] & BIT(2)));
-	if (ie.gtk_len - 2 > sizeof(gd->gtk)) {
-		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
-			"RSN: Too long GTK in GTK IE (len=%lu)",
-			(unsigned long) ie.gtk_len - 2);
-		return -1;
-	}
-	os_memcpy(gd->gtk, ie.gtk + 2, ie.gtk_len - 2);
+	os_memcpy(gd->gtk, ie.gtk + 2, gtk_len);
 
 	if (ieee80211w_set_keys(sm, &ie) < 0)
 		wpa_msg(sm->ctx->msg_ctx, MSG_INFO,
