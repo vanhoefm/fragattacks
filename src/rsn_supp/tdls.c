@@ -1926,8 +1926,10 @@ static int wpa_tdls_process_tpk_m1(struct wpa_sm *sm, const u8 *src_addr,
 		peer->initiator = 1;
 		wpa_sm_tdls_peer_addset(sm, peer->addr, 1, 0, 0, NULL, 0, NULL,
 					NULL, 0, 0, NULL, 0, NULL, 0, NULL, 0);
-		if (wpa_tdls_send_tpk_m1(sm, peer) == -2)
+		if (wpa_tdls_send_tpk_m1(sm, peer) == -2) {
+			peer = NULL;
 			goto error;
+		}
 	}
 
 	if ((tdls_testing & TDLS_TESTING_IGNORE_AP_PROHIBIT) &&
