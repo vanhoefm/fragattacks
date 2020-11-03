@@ -1154,18 +1154,15 @@ const u8 * wpa_bss_get_ie(const struct wpa_bss *bss, u8 ie)
  */
 const u8 * wpa_bss_get_vendor_ie(const struct wpa_bss *bss, u32 vendor_type)
 {
-	const u8 *end, *pos;
+	const u8 *ies;
+	const struct element *elem;
 
-	pos = (const u8 *) (bss + 1);
-	end = pos + bss->ie_len;
+	ies = (const u8 *) (bss + 1);
 
-	while (end - pos > 1) {
-		if (2 + pos[1] > end - pos)
-			break;
-		if (pos[0] == WLAN_EID_VENDOR_SPECIFIC && pos[1] >= 4 &&
-		    vendor_type == WPA_GET_BE32(&pos[2]))
-			return pos;
-		pos += 2 + pos[1];
+	for_each_element_id(elem, WLAN_EID_VENDOR_SPECIFIC, ies, bss->ie_len) {
+		if (elem->datalen >= 4 &&
+		    vendor_type == WPA_GET_BE32(elem->data))
+			return &elem->id;
 	}
 
 	return NULL;
