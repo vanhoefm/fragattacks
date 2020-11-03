@@ -177,7 +177,7 @@ static inline int bss_is_pbss(struct wpa_bss *bss)
 
 static inline void wpa_bss_update_level(struct wpa_bss *bss, int new_level)
 {
-	if (bss != NULL && new_level < 0)
+	if (bss != NULL && new_level > -WPA_INVALID_NOISE && new_level < 0)
 		bss->level = new_level;
 }
 

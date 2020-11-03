@@ -1376,7 +1376,6 @@ static void nl80211_cqm_event(struct wpa_driver_nl80211_data *drv,
 	struct nlattr *cqm[NL80211_ATTR_CQM_MAX + 1];
 	enum nl80211_cqm_rssi_threshold_event event;
 	union wpa_event_data ed;
-	struct wpa_signal_info sig;
 	int res;
 
 	if (tb[NL80211_ATTR_CQM] == NULL ||
@@ -1443,19 +1442,27 @@ static void nl80211_cqm_event(struct wpa_driver_nl80211_data *drv,
 		return;
 	}
 
-	res = nl80211_get_link_signal(drv, &sig);
+	/*
+	 * nl80211_get_link_signal() and nl80211_get_link_noise() set default
+	 * values in case querying the driver fails.
+	 */
+	res = nl80211_get_link_signal(drv, &ed.signal_change);
 	if (res == 0) {
-		ed.signal_change.current_signal = sig.current_signal;
-		ed.signal_change.current_txrate = sig.current_txrate;
 		wpa_printf(MSG_DEBUG, "nl80211: Signal: %d dBm  txrate: %d",
-			   sig.current_signal, sig.current_txrate);
+			   ed.signal_change.current_signal,
+			   ed.signal_change.current_txrate);
+	} else {
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: Querying the driver for signal info failed");
 	}
 
-	res = nl80211_get_link_noise(drv, &sig);
+	res = nl80211_get_link_noise(drv, &ed.signal_change);
 	if (res == 0) {
-		ed.signal_change.current_noise = sig.current_noise;
 		wpa_printf(MSG_DEBUG, "nl80211: Noise: %d dBm",
-			   sig.current_noise);
+			   ed.signal_change.current_noise);
+	} else {
+		wpa_printf(MSG_DEBUG,
+			   "nl80211: Querying the driver for noise info failed");
 	}
 
 	wpa_supplicant_event(drv->ctx, EVENT_SIGNAL_CHANGE, &ed);
