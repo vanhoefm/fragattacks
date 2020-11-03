@@ -2313,7 +2313,8 @@ def test_ap_wpa2_psk_supp_proto_too_long_gtk_in_group_msg(dev, apdev):
                               key_info=0x13c2)
     counter += 1
     send_eapol(dev[0], bssid, build_eapol(msg))
-    ev = dev[0].wait_event(["WPA: Unsupported CCMP Group Cipher key length 33"])
+    ev = dev[0].wait_event(["WPA: Unsupported CCMP Group Cipher key length 33",
+                            "RSN: Too long GTK in GTK KDE (len=33)"])
     if ev is None:
         raise Exception("Too long GTK KDE not reported")
     dev[0].wait_disconnected(timeout=1)
