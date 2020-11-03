@@ -46,12 +46,12 @@ static inline void dl_list_del(struct dl_list *item)
 	item->prev = NULL;
 }
 
-static inline int dl_list_empty(struct dl_list *list)
+static inline int dl_list_empty(const struct dl_list *list)
 {
 	return list->next == list;
 }
 
-static inline unsigned int dl_list_len(struct dl_list *list)
+static inline unsigned int dl_list_len(const struct dl_list *list)
 {
 	struct dl_list *item;
 	int count = 0;
