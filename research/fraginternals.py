@@ -11,6 +11,9 @@ from wpaspy import Ctrl
 from scapy.contrib.wpa_eapol import WPA_key
 from scapy.arch.common import get_if_raw_hwaddr
 
+FRAGVERSION = "1.2"
+FRAGDATE = "27 October 2020"
+
 # ----------------------------------- Utility Commands -----------------------------------
 
 def croprepr(p, length=175):
@@ -683,7 +686,7 @@ class Daemon(metaclass=abc.ABCMeta):
 			response = self.wpaspy_ctrl.recv()
 
 		if "UNKNOWN COMMAND" in response:
-			log(ERROR, "wpa_supplicant did not recognize the command %s. Did you (re)compile wpa_supplicant?" % cmd.split()[0])
+			log(ERROR, "wpa_supplicant did not recognize the command %s. Did you (re)compile wpa_supplicant/hostapd?" % cmd.split()[0])
 			quit(1)
 		elif "FAIL" in response:
 			log(ERROR, f"Failed to execute command {cmd}")
@@ -853,6 +856,13 @@ class Daemon(metaclass=abc.ABCMeta):
 		self.sock_mon = MonitorSocket(type=ETH_P_ALL, iface=self.nic_mon)
 		if self.nic_hwsim:
 			self.sock_hwsim = MonitorSocket(type=ETH_P_ALL, iface=self.nic_hwsim)
+
+		# Verify that hostap got recompiled on updates
+		version = self.wpaspy_command("GET_VERSION").strip()
+		if version != FRAGVERSION:
+			log(ERROR, f"Script has test tool version {FRAGVERSION} but compiled wpa_supplicant/hostapd is {version}.")
+			log(ERROR, f"Please recompile hostapd/wpa_supplicant using `build.sh`.")
+			quit(1)
 
 		# Post-startup configuration of the supplicant or AP
 		self.wpaspy_command("SET ext_eapol_frame_io 1")

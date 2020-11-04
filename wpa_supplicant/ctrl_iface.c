@@ -68,6 +68,8 @@
 #include <net/ethernet.h>
 #endif
 
+const char *FRAGATTACK_VERSION = "1.2";
+
 static int wpa_supplicant_global_iface_list(struct wpa_global *global,
 					    char *buf, int len);
 static int wpa_supplicant_global_iface_interfaces(struct wpa_global *global,
@@ -10865,6 +10867,8 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 		reply_len = wpa_supplicant_ctrl_iface_get_gtk(wpa_s, reply, reply_size);
 	} else if (os_strcmp(buf, "GET_CHANNEL") == 0) {
 		reply_len = wpa_supplicant_ctrl_iface_get_channel(wpa_s, reply, reply_size);
+	} else if (os_strcmp(buf, "GET_VERSION") == 0) {
+		reply_len = os_snprintf(reply, reply_size, "%s\n", FRAGATTACK_VERSION);
 	} else if (os_strcmp(buf, "GET_ASSOC_RESP_IES") == 0) {
 		reply_len = wpas_ctrl_get_assoc_resp_ies(wpa_s, reply, reply_size);
 	} else if (os_strncmp(buf, "SET_ASSOC_RESP_IES ", 19) == 0) {

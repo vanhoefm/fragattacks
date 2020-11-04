@@ -80,6 +80,8 @@ static unsigned char gcookie[COOKIE_LEN];
 #define HOSTAPD_GLOBAL_CTRL_IFACE_PORT_LIMIT	50
 #endif /* CONFIG_CTRL_IFACE_UDP */
 
+const char *FRAGATTACK_VERSION = "1.2";
+
 static void hostapd_ctrl_iface_send(struct hostapd_data *hapd, int level,
 				    enum wpa_msg_type type,
 				    const char *buf, size_t len);
@@ -3384,6 +3386,8 @@ static int hostapd_ctrl_iface_receive_process(struct hostapd_data *hapd,
 		reply_len = hostapd_get_gtk(hapd, reply, reply_size);
 	} else if (os_strcmp(buf, "GET_CHANNEL") == 0) {
 		reply_len = hostapd_get_channel(hapd, reply, reply_size);
+	} else if (os_strcmp(buf, "GET_VERSION") == 0) {
+		reply_len = os_snprintf(reply, reply_size, "%s\n", FRAGATTACK_VERSION);
 #endif /* CONFIG_TESTING_OPTIONS */
 	} else if (os_strncmp(buf, "CHAN_SWITCH ", 12) == 0) {
 		if (hostapd_ctrl_iface_chan_switch(hapd->iface, buf + 12))

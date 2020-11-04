@@ -8,8 +8,6 @@
 import glob, importlib, argparse
 from fraginternals import *
 
-FRAGVERSION = "1.1 - 20 October 2020"
-
 # ----------------------------------- Main Function -----------------------------------
 
 def cleanup():
@@ -167,7 +165,7 @@ def args2msdu(args):
 	return None
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser(description=f"Test for fragmentation vulnerabilities (v{FRAGVERSION}).")
+	parser = argparse.ArgumentParser(description=f"Test for fragmentation vulnerabilities (v{FRAGVERSION} - {FRAGDATE}).")
 	parser.add_argument('iface', help="Interface to use for the tests.")
 	parser.add_argument('testname', help="Name or identifier of the test to run.")
 	parser.add_argument('actions', nargs='?', help="Optional textual descriptions of actions")
@@ -242,7 +240,7 @@ if __name__ == "__main__":
 	change_log_level(-options.debug)
 
 	# Now start the tests --- TODO: Inject Deauths before connecting with client...
-	log(STATUS, f"This is fragattack version {FRAGVERSION}.")
+	log(STATUS, f"This is fragattack version {FRAGVERSION} - {FRAGDATE}.")
 	if options.ap:
 		daemon = Authenticator(options)
 	else:
