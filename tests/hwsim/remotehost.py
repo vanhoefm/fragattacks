@@ -147,6 +147,7 @@ class Host():
 
         self.execute(["rm", pid_file])
         self.execute(["rm", t.name])
+        self.local_execute(["rm", t.name])
 
     def thread_wait(self, t, wait=None):
         if wait == None:
@@ -157,6 +158,85 @@ class Host():
         logger.debug(self.name + " thread_wait(" + wait_str + "): ")
         if t.isAlive():
             t.join(wait)
+
+    def pending(self, s, timeout=0):
+        [r, w, e] = select.select([s], [], [], timeout)
+        if r:
+            return True
+        return False
+
+    def proc_run(self, command):
+        filename = gen_reaper_file("reaper")
+        self.send_file(filename, filename)
+        self.execute(["chmod", "755", filename])
+        _command = [filename] + command
+
+        if self.host:
+            cmd = ["ssh", self.user + "@" + self.host, ' '.join(_command)]
+        else:
+            cmd = _command
+
+        _cmd = self.name + " proc_run: " + ' '.join(cmd)
+        logger.debug(_cmd)
+        err = tempfile.TemporaryFile()
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=err)
+        proc.reaper_file = filename
+        return proc
+
+    def proc_wait_event(self, proc, events, timeout=10):
+        if not isinstance(events, list):
+            raise Exception("proc_wait_event() events not a list")
+
+        logger.debug(self.name + " proc_wait_event: " + ' '.join(events) + " timeout: " + str(timeout))
+        start = os.times()[4]
+        try:
+            while True:
+                while self.pending(proc.stdout):
+                    line = proc.stdout.readline()
+                    if not line:
+                        return None
+                    line = line.decode()
+                    logger.debug(line.strip('\n'))
+                    for event in events:
+                        if event in line:
+                            return line
+                now = os.times()[4]
+                remaining = start + timeout - now
+                if remaining <= 0:
+                    break
+                if not self.pending(proc.stdout, timeout=remaining):
+                    break
+        except:
+            pass
+        return None
+
+    def proc_stop(self, proc):
+        if not proc:
+            return
+
+        self.execute(["kill `cat " + proc.reaper_file + ".pid`"])
+        self.execute(["rm", proc.reaper_file + ".pid"])
+        self.execute(["rm", proc.reaper_file])
+        self.local_execute(["rm", proc.reaper_file])
+        proc.kill()
+
+    def proc_dump(self, proc):
+        if not proc:
+            return ""
+        return proc.stdout.read()
+
+    def execute_and_wait_event(self, command, events, timeout=10):
+        proc = None
+        ev = None
+
+        try:
+            proc = self.proc_run(command)
+            ev = self.proc_wait_event(proc, events, timeout)
+        except:
+            pass
+
+        self.proc_stop(proc)
+        return ev
 
     def add_log(self, log_file):
         self.logs.append(log_file)
