@@ -99,7 +99,7 @@ class Host():
         return status, buf.decode()
 
     # async execute
-    def execute_run(self, command, res, use_reaper=True):
+    def thread_run(self, command, res, use_reaper=True):
         if use_reaper:
             filename = gen_reaper_file("reaper")
             self.send_file(filename, filename)
@@ -113,13 +113,13 @@ class Host():
             cmd = _command
         else:
             cmd = ["ssh", self.user + "@" + self.host, ' '.join(_command)]
-        _cmd = self.name + " execute_run: " + ' '.join(cmd)
+        _cmd = self.name + " thread_run: " + ' '.join(cmd)
         logger.debug(_cmd)
         t = threading.Thread(target=execute_thread, name=filename, args=(cmd, res))
         t.start()
         return t
 
-    def execute_stop(self, t):
+    def thread_stop(self, t):
         if t.name.find("reaper") == -1:
             raise Exception("use_reaper required")
 
@@ -148,13 +148,13 @@ class Host():
         self.execute(["rm", pid_file])
         self.execute(["rm", t.name])
 
-    def wait_execute_complete(self, t, wait=None):
+    def thread_wait(self, t, wait=None):
         if wait == None:
             wait_str = "infinite"
         else:
             wait_str = str(wait) + "s"
 
-        logger.debug(self.name + " wait_execute_complete(" + wait_str + "): ")
+        logger.debug(self.name + " thread_wait(" + wait_str + "): ")
         if t.isAlive():
             t.join(wait)
 

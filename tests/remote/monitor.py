@@ -110,7 +110,7 @@ def run(host, setup_params):
 
     log = log_dir + tc_name + "_" + host.name + log_monitor + ".pcap"
     host.add_log(log)
-    thread = host.execute_run([tshark, "-w", log], monitor_res)
+    thread = host.thread_run([tshark, "-w", log], monitor_res)
     host.thread = thread
 
 
@@ -122,7 +122,7 @@ def stop(host):
     if host.thread is None:
         return
 
-    host.execute_stop(host.thread)
+    host.thread_stop(host.thread)
     host.thread = None
 
 # Add monitor to existing interface

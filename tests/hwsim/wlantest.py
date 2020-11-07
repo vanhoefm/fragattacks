@@ -29,7 +29,7 @@ class Wlantest:
             return
 
         cls.remote_host.execute(["killall", "-9", "wlantest"])
-        cls.remote_host.wait_execute_complete(cls.exe_thread, 5)
+        cls.remote_host.thread_wait(cls.exe_thread, 5)
         cls.exe_thread = None
         cls.exe_res = []
 
@@ -64,7 +64,7 @@ class Wlantest:
                                                     pcap_file, log_file)
         cls.remote_host.add_log(log_file)
         cls.remote_host.add_log(pcap_file)
-        cls.exe_thread = cls.remote_host.execute_run(cmd.split(), cls.exe_res)
+        cls.exe_thread = cls.remote_host.thread_run(cmd.split(), cls.exe_res)
         # Give wlantest a chance to start working
         time.sleep(1)
 
