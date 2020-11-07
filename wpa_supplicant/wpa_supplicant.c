@@ -3831,6 +3831,10 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 	    wpa_s->current_ssid)
 		params.prev_bssid = prev_bssid;
 
+#ifdef CONFIG_SAE
+	params.sae_pwe = wpa_s->conf->sae_pwe;
+#endif /* CONFIG_SAE */
+
 	ret = wpa_drv_associate(wpa_s, &params);
 	os_free(wpa_ie);
 	if (ret < 0) {

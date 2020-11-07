@@ -4304,6 +4304,30 @@ static int nl80211_set_multicast_to_unicast(struct i802_bss *bss,
 }
 
 
+#ifdef CONFIG_SAE
+static int nl80211_put_sae_pwe(struct nl_msg *msg, int pwe)
+{
+	u8 sae_pwe;
+
+	wpa_printf(MSG_DEBUG, "nl802111: sae_pwe=%d", pwe);
+	if (pwe == 0)
+		sae_pwe = NL80211_SAE_PWE_HUNT_AND_PECK;
+	else if (pwe == 1)
+		sae_pwe = NL80211_SAE_PWE_HASH_TO_ELEMENT;
+	else if (pwe == 2)
+		sae_pwe = NL80211_SAE_PWE_BOTH;
+	else if (pwe == 3)
+		return 0; /* special test mode */
+	else
+		return -1;
+	if (nla_put_u8(msg, NL80211_ATTR_SAE_PWE, sae_pwe))
+		return -1;
+
+	return 0;
+}
+#endif /* CONFIG_SAE */
+
+
 static int wpa_driver_nl80211_set_ap(void *priv,
 				     struct wpa_driver_ap_params *params)
 {
@@ -4563,6 +4587,13 @@ static int wpa_driver_nl80211_set_ap(void *priv,
 			goto fail;
 	}
 #endif /* CONFIG_IEEE80211AX */
+
+#ifdef CONFIG_SAE
+	if (((params->key_mgmt_suites & WPA_KEY_MGMT_SAE) ||
+	     (params->key_mgmt_suites & WPA_KEY_MGMT_FT_SAE)) &&
+	    nl80211_put_sae_pwe(msg, params->sae_pwe) < 0)
+		goto fail;
+#endif /* CONFIG_SAE */
 
 	ret = send_and_recv_msgs_owner(drv, msg, get_connect_handle(bss), 1,
 				       NULL, NULL, NULL, NULL);
@@ -6113,6 +6144,13 @@ static int wpa_driver_nl80211_try_connect(
 	    (drv->capa.flags & WPA_DRIVER_FLAGS_MFP_OPTIONAL) &&
 	    nla_put_u32(msg, NL80211_ATTR_USE_MFP, NL80211_MFP_OPTIONAL))
 		goto fail;
+
+#ifdef CONFIG_SAE
+	if ((params->key_mgmt_suite == WPA_KEY_MGMT_SAE ||
+	     params->key_mgmt_suite == WPA_KEY_MGMT_FT_SAE) &&
+	    nl80211_put_sae_pwe(msg, params->sae_pwe) < 0)
+		goto fail;
+#endif /* CONFIG_SAE */
 
 	algs = 0;
 	if (params->auth_alg & WPA_AUTH_ALG_OPEN)

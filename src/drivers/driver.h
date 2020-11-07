@@ -1189,6 +1189,14 @@ struct wpa_driver_associate_params {
 	 * fils_erp_rrk_len - Length of fils_erp_rrk in bytes
 	 */
 	size_t fils_erp_rrk_len;
+
+	/**
+	 * sae_pwe - SAE mechanism for PWE derivation
+	 * 0 = hunting-and-pecking loop only
+	 * 1 = hash-to-element only
+	 * 2 = both hunting-and-pecking loop and hash-to-element enabled
+	 */
+	int sae_pwe;
 };
 
 enum hide_ssid {
@@ -1508,6 +1516,14 @@ struct wpa_driver_ap_params {
 	 * twt_responder - Whether Target Wait Time responder is enabled
 	 */
 	int twt_responder;
+
+	/**
+	 * sae_pwe - SAE mechanism for PWE derivation
+	 * 0 = hunting-and-pecking loop only
+	 * 1 = hash-to-element only
+	 * 2 = both hunting-and-pecking loop and hash-to-element enabled
+	 */
+	int sae_pwe;
 };
 
 struct wpa_driver_mesh_bss_params {

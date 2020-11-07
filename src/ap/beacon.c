@@ -1507,6 +1507,9 @@ int ieee802_11_set_beacon(struct hostapd_data *hapd)
 							    IEEE80211_MODE_AP);
 #endif /* CONFIG_IEEE80211AX */
 	hapd->reenable_beacon = 0;
+#ifdef CONFIG_SAE
+	params.sae_pwe = hapd->conf->sae_pwe;
+#endif /* CONFIG_SAE */
 
 	if (cmode &&
 	    hostapd_set_freq_params(&freq, iconf->hw_mode, iface->freq,
