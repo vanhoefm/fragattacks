@@ -329,6 +329,9 @@ class Station():
 		# To trigger Connected event 1-2 seconds after Authentication
 		self.time_connected = None
 
+		# To detect whether the 4-way handshake gets stuck
+		self.time_authdone = None
+
 	def stop_test(self):
 		self.test = None
 
@@ -494,6 +497,9 @@ class Station():
 			result = self.perform_actions(Action.StartAuth, eapol=eapol)
 			self.hs_state = Station.HsGotM12
 
+			if self.time_authdone == None:
+				self.time_authdone = time.time() + 6
+
 			self.time_connected = None
 
 		# Inject any fragments when almost done authenticating
@@ -592,6 +598,7 @@ class Station():
 			self.time_connected = time.time() + self.options.connected_delay
 			self.perform_actions(Action.AfterAuth)
 			self.hs_state = Station.HsDone
+			self.time_authdone = None
 
 		elif self.hs_state in [Station.HsInit, Station.HsGotM12]:
 			log(WARNING, "Unexpected completion of authentication")
@@ -615,6 +622,10 @@ class Station():
 		if self.time_connected != None and time.time() > self.time_connected:
 			self.time_connected = None
 			self.handle_connected()
+		elif self.time_authdone != None and time.time() > self.time_authdone:
+			log(ERROR, "The 4-way handshake has timed out for an unknown reason.")
+			self.time_authdone = None
+			self.stop_test()
 		elif self.test != None and self.test.timedout():
 			log(ERROR, ">>> Test timed out! Retry to be sure, or manually check result.")
 			self.stop_test()
