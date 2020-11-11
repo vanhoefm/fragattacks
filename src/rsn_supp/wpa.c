@@ -220,9 +220,9 @@ void wpa_sm_key_request(struct wpa_sm *sm, int error, int pairwise)
 		key_info |= WPA_KEY_INFO_KEY_TYPE;
 	WPA_PUT_BE16(reply->key_info, key_info);
 	WPA_PUT_BE16(reply->key_length, 0);
+	inc_byte_array(sm->request_counter, WPA_REPLAY_COUNTER_LEN);
 	os_memcpy(reply->replay_counter, sm->request_counter,
 		  WPA_REPLAY_COUNTER_LEN);
-	inc_byte_array(sm->request_counter, WPA_REPLAY_COUNTER_LEN);
 
 	mic = (u8 *) (reply + 1);
 	WPA_PUT_BE16(mic + mic_len, 0);
