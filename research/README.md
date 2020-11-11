@@ -22,12 +22,21 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 **Version 1.2 (? November 2020)**:
 
-- Clarified that all commands can test both clients and APs unless noted otherwise.
+- Tool will automatically quit after a test completed or timed out.
 
-- Clarified the description of cache attacks, Broadcast fragment, and A-MSDU EAPOL attack tests in this README.
+- Tool detects if the 4-way handshake is looping or if there is not replly to a rekey request (`--rekey-req`).
+
+- When using an external DHCP server, the tool will now send rekey EAPOL frames with as destination address
+  the AP (instead of the DHCP server).
+
+- When acting as a client, the tool will send EAPOL Rekey Request with a Replay Counter of one instead of zero.
 
 - Debug output now shows the correct (group) key when encrypting broadcast/multicast frames. This does not
   influence any test results, it only changes the output of the test tool.
+
+- Clarified that all commands can test both clients and APs unless noted otherwise.
+
+- Clarified the description of cache attacks, Broadcast fragment, and A-MSDU EAPOL attack tests in this README.
 
 **Version 1.1 (20 October 2020)**:
 
@@ -157,7 +166,7 @@ to manually copy `htc_7010.fw` and `htc_9271.fw` to the appropriate directory.
 
 After installing the patched drivers and firmware you must unplug your Wi-Fi dongles
 and **reboot your system**. The above instructions have to be executed again if your
-Linux kernel gets updated or if the driver patches get updated.
+Linux kernel gets updated or if the patched drivers get updated.
 
 Note that even when your device works out of the box, I still recommend to install the modified
 drivers, as this assures there are no unexpected regressions in kernel and driver code.
@@ -524,7 +533,7 @@ All commands work against both clients and APs unless noted otherwise.
 | `ping I,E,F,AE`                        | Variant if no data frames are accepted during the rekey handshake.
 | `ping I,E,F,AE --rekey-plain`          | If the device performs the rekey handshake in plaintext.
 | `ping I,E,F,AE --rekey-plain --rekey-req` | Same as above, and actively request a rekey as client.
-| `ping I,E,F,AE --rekey-early-install`  | Install the new key before receiving/sending message 4.
+| `ping I,E,F,AE --rekey-early-install`  | Install the new key after sending message 3 of the 4-way handshake.
 | `ping I,F,BE,AE --freebsd`             | Mixed key attack against FreeBSD or similar implementations.
 | <div align="center">*[Cache attacks (§5)](#id-extended-cache)*</div>
 | `ping I,E,R,AE --freebsd [--full-reconnect]` | Cache attack specific to FreeBSD implementations.
@@ -582,8 +591,8 @@ these alternative mixed key attack tests. Some remarks:
 - `ping I,E,F,AE --rekey-plain --rekey-req`: This particular combination is useful to test routers that use a MediaTek
   driver. These routers perform the rekey handshake in plaintext, and the client can actively request a rekey handshake.
 
-- `ping I,E,F,AE --rekey-early-install`: A low number of clients and APs (incorrectly) install the key too early during
-  a pairwise session rekey. To reliably test these devices, add the `--rekey-early-install` parameter.
+- `ping I,E,F,AE --rekey-early-install`: A low number of clients (incorrectly) install the key too early during
+  a pairwise session rekey. To reliably test these clients, add the `--rekey-early-install` parameter.
 
 Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the following mixed key attack test:
 
@@ -813,10 +822,9 @@ Frequencies for channels that are _not_ marked as disabled, no IR, or radar dete
 conditions may depend on your network card, the current configured country, and the AP you are
 connected to. For more information see, for example, the [Arch Linux documentation](https://wiki.archlinux.org/index.php/Network_configuration/Wireless#Respecting_the_regulatory_domain).
 
-Although I have not yet encountered a device that behaved differently in the 2.4 GHz band compared
-to the 5 GHz band, this may occur in practice if different drivers are used to handle both bands.
-If you encounter such a case please let us know. Since I have not yet observed such differences
-between the 2.4 and 5 GHz band I believe that it is sufficient to only test one of these bands.
+Note that a device may use different drivers to handle the 2.4 and 5 GHz band. As a result, it is
+important to test devices in both these bands, since a device may behave differently depending on
+which frequency band is being used.
 
 Note that in mixed mode the Linux kernel may not allow the injection of frames even though it is
 allowed to send normal frames. This is because in the function `ieee80211_monitor_start_xmit` the kernel refuses
