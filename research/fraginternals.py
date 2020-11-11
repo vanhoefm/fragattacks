@@ -343,7 +343,6 @@ class Station():
 			log(STATUS, ">>> TEST COMPLETED SUCCESSFULLY", color="green")
 			self.test = None
 
-	# FIXME: EAPOL should not be send to peer_mac() always??
 	def send_mon(self, data, prior=1, plaintext=False):
 		"""
 		Right after completing the handshake, it occurred several times that our
@@ -502,8 +501,8 @@ class Station():
 
 		return result
 
-	def handle_eapol_tx(self, eapol):
-		eapol = EAPOL(eapol)
+	def handle_eapol_tx(self, eapol, dstmac):
+		eapol = Ether(dst=dstmac, src=self.mac)/EAPOL(eapol)
 		send_it = self.trigger_eapol_events(eapol)
 
 		if send_it == None:
@@ -1010,7 +1009,7 @@ class Authenticator(Daemon):
 			if not clientmac in self.stations:
 				log(WARNING, f"Sending EAPOL to unknown client {clientmac}.")
 				return
-			self.stations[clientmac].handle_eapol_tx(bytes.fromhex(payload))
+			self.stations[clientmac].handle_eapol_tx(bytes.fromhex(payload), clientmac)
 
 		elif "AP-STA-CONNECTED" in msg:
 			cmd, clientmac = msg.split()
@@ -1183,8 +1182,8 @@ class Supplicant(Daemon):
 			self.injection_test(self.station.bss, self.station.mac, False)
 
 		elif "EAPOL-TX" in msg:
-			cmd, srcaddr, payload = msg.split()
-			self.station.handle_eapol_tx(bytes.fromhex(payload))
+			cmd, dstmac, payload = msg.split()
+			self.station.handle_eapol_tx(bytes.fromhex(payload), dstmac)
 
 		# The "EAPOL processing" event only occurs with WEP
 		if "WPA: Key negotiation completed with" in msg or \
