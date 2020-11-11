@@ -329,6 +329,9 @@ class Station():
 		# To trigger Connected event 1-2 seconds after Authentication
 		self.time_connected = None
 
+	def stop_test(self):
+		self.test = None
+
 	def reset_keys(self):
 		self.tk = None
 		self.gtk = None
@@ -341,7 +344,7 @@ class Station():
 		if self.test != None and self.test.check != None and self.test.check(p):
 			log(STATUS, "Received packet: " + repr(p))
 			log(STATUS, ">>> TEST COMPLETED SUCCESSFULLY", color="green")
-			self.test = None
+			self.stop_test()
 
 	def send_mon(self, data, prior=1, plaintext=False):
 		"""
@@ -614,7 +617,7 @@ class Station():
 			self.handle_connected()
 		elif self.test != None and self.test.timedout():
 			log(ERROR, ">>> Test timed out! Retry to be sure, or manually check result.")
-			self.test = None
+			self.stop_test()
 
 # ----------------------------------- Client and AP Daemons -----------------------------------
 
@@ -1063,6 +1066,7 @@ class Supplicant(Daemon):
 		self.dhcp_xid = None
 		self.dhcp_offer_frame = False
 		self.time_retrans_dhcp = None
+		self.time_rekey_req = None
 
 	def get_tk(self, station):
 		tk = self.wpaspy_command("GET tk")
@@ -1091,6 +1095,7 @@ class Supplicant(Daemon):
 		if self.options.rekey_request:
 			log(STATUS, "Actively requesting PTK rekey", color="green")
 			self.wpaspy_command("KEY_REQUEST 0 1")
+			self.time_rekey_req = time.time() + 4
 		else:
 			log(STATUS, "Client cannot force rekey. Waiting on AP to start PTK rekey.", color="orange")
 
@@ -1098,6 +1103,11 @@ class Supplicant(Daemon):
 		if self.time_retrans_dhcp != None and time.time() > self.time_retrans_dhcp:
 			log(WARNING, "Retransmitting DHCP message", color="orange")
 			self.get_ip(self)
+
+		if self.time_rekey_req != None and time.time() > self.time_rekey_req:
+			self.time_rekey_req = None
+			log(ERROR, "Rekey request timed out. Configure AP to periodically renew PTK instead.")
+			self.station.stop_test()
 
 		self.station.time_tick()
 
@@ -1162,6 +1172,10 @@ class Supplicant(Daemon):
 		if BOOTP in p and p[BOOTP].xid == self.dhcp_xid:
 			self.handle_eth_dhcp(p)
 		else:
+			# Assume any EAPOL reply means rekey request worked (this isn't 100% accurate but should do)
+			if EAPOL in p:
+				self.time_rekey_req = None
+
 			if self.arp_sock != None:
 				self.arp_sock.reply(p)
 			self.station.handle_eth(p)
