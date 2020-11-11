@@ -877,7 +877,7 @@ class Daemon(metaclass=abc.ABCMeta):
 		# Verify that hostap got recompiled on updates
 		version = self.wpaspy_command("GET_VERSION").strip()
 		if version != FRAGVERSION:
-			log(ERROR, f"Script has test tool version {FRAGVERSION} but compiled wpa_supplicant/hostapd is {version}.")
+			log(ERROR, f"This script has version {FRAGVERSION} but compiled wpa_supplicant/hostapd is {version}.")
 			log(ERROR, f"Please recompile hostapd/wpa_supplicant using `build.sh`.")
 			quit(1)
 
@@ -948,7 +948,7 @@ class Authenticator(Daemon):
 		log(STATUS, f"Starting PTK rekey with client {station.get_peermac()}", color="green")
 		cmd = f"REKEY_PTK {station.get_peermac()}"
 		if self.options.rekey_early_install:
-			log(STATUS, "Will install PTK during rekey after sending Msg4")
+			log(STATUS, "Will install PTK during rekey after sending Msg3")
 			cmd += " early-install"
 		self.wpaspy_command(cmd)
 
