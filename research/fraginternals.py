@@ -208,7 +208,9 @@ class Test(metaclass=abc.ABCMeta):
 		self.inc_pn = None
 		self.check_fn = None
 		self.time_completed = None
-		self.done = False
+
+	def requires_manual_check(self):
+		return self.check_fn == None
 
 	def next_trigger_is(self, trigger):
 		if len(self.actions) == 0:
@@ -237,16 +239,14 @@ class Test(metaclass=abc.ABCMeta):
 		return act
 
 	def check_finished(self):
-		if self.done:
+		if self.time_completed != None:
 			return
 
 		# If this was the last action, record the time
 		if len(self.actions) == 0:
-			if self.check_fn != None:
-				self.time_completed = time.time()
-			else:
+			self.time_completed = time.time()
+			if self.check_fn == None:
 				log(STATUS, ">>> All frames sent. You must manually check if the test succeeded (see README).", color="green")
-			self.done = True
 
 	def get_actions(self, action):
 		return [act for act in self.actions if act.action == action]
@@ -332,8 +332,9 @@ class Station():
 		# To detect whether the 4-way handshake gets stuck
 		self.time_authdone = None
 
-	def stop_test(self):
+	def stop_test(self, failed=True):
 		self.test = None
+		quit(failed)
 
 	def reset_keys(self):
 		self.tk = None
@@ -347,7 +348,7 @@ class Station():
 		if self.test != None and self.test.check != None and self.test.check(p):
 			log(STATUS, "Received packet: " + repr(p))
 			log(STATUS, ">>> TEST COMPLETED SUCCESSFULLY", color="green")
-			self.stop_test()
+			self.stop_test(failed=False)
 
 	def send_mon(self, data, prior=1, plaintext=False):
 		"""
@@ -627,7 +628,10 @@ class Station():
 			self.time_authdone = None
 			self.stop_test()
 		elif self.test != None and self.test.timedout():
-			log(ERROR, ">>> Test timed out! Retry to be sure, or manually check result.")
+			if not self.test.requires_manual_check():
+				log(ERROR, ">>> Test timed out! Retry to be sure, or manually check result.")
+			else:
+				log(STATUS, "Closing down. Remember to manually check whether test succeeded or not.")
 			self.stop_test()
 
 # ----------------------------------- Client and AP Daemons -----------------------------------
