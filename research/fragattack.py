@@ -165,7 +165,7 @@ def args2msdu(args):
 	return None
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser(description=f"Test for fragmentation vulnerabilities (v{FRAGVERSION} - {FRAGDATE}).")
+	parser = argparse.ArgumentParser(description=f"Test for fragmentation vulnerabilities (version {FRAGVERSION}).")
 	parser.add_argument('iface', help="Interface to use for the tests.")
 	parser.add_argument('testname', help="Name or identifier of the test to run.")
 	parser.add_argument('actions', nargs='?', help="Optional textual descriptions of actions")
@@ -240,7 +240,7 @@ if __name__ == "__main__":
 	change_log_level(-options.debug)
 
 	# Now start the tests --- TODO: Inject Deauths before connecting with client...
-	log(STATUS, f"This is fragattack version {FRAGVERSION} - {FRAGDATE}.")
+	log(STATUS, f"This is fragattack version {FRAGVERSION}.")
 	if options.ap:
 		daemon = Authenticator(options)
 	else:

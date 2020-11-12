@@ -24,19 +24,23 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 - Tool will automatically quit after a test completed or timed out.
 
-- Tool detects if the 4-way handshake is looping or if there is not replly to a rekey request (`--rekey-req`).
+- Tool detects if the 4-way handshake is looping or if there is no reply to a rekey request (`--rekey-req`).
 
-- When using an external DHCP server, the tool will now send rekey EAPOL frames with as destination address
-  the AP (instead of the DHCP server).
+- When using an external DHCP server, the tool will now always send EAPOL frames with as destination address
+  the AP (instead of the DHCP server). This is important in mixed key and cache attack tests when using an
+  external DHCP server.
 
-- When acting as a client, the tool will send EAPOL Rekey Request with a Replay Counter of one instead of zero.
+- When testing an AP using `--rekey-req` the tool will now send EAPOL Rekey Request with a Replay Counter of
+  one instead of zero.
 
 - Debug output now shows the correct (group) key when encrypting broadcast/multicast frames. This does not
   influence any test results, it only changes the output of the test tool.
 
-- Clarified that all commands can test both clients and APs unless noted otherwise.
+- Clarified that all commands in this README can test both clients and APs unless noted otherwise.
 
 - Clarified the description of cache attacks, Broadcast fragment, and A-MSDU EAPOL attack tests in this README.
+
+- Clarified that it's important to test both the 2.4 and 5 GHz band in this README.
 
 **Version 1.1 (20 October 2020)**:
 
@@ -592,7 +596,8 @@ these alternative mixed key attack tests. Some remarks:
   driver. These routers perform the rekey handshake in plaintext, and the client can actively request a rekey handshake.
 
 - `ping I,E,F,AE --rekey-early-install`: A low number of clients (incorrectly) install the key too early during
-  a pairwise session rekey. To reliably test these clients, add the `--rekey-early-install` parameter.
+  a pairwise session rekey. To reliably test these clients, add the `--rekey-early-install` parameter. This test
+  is not meaningfull against APs.
 
 Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the following mixed key attack test:
 

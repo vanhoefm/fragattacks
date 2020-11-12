@@ -12,7 +12,6 @@ from scapy.contrib.wpa_eapol import WPA_key
 from scapy.arch.common import get_if_raw_hwaddr
 
 FRAGVERSION = "1.2"
-FRAGDATE = "27 October 2020"
 
 # ----------------------------------- Utility Commands -----------------------------------
 
@@ -631,7 +630,7 @@ class Station():
 			if not self.test.requires_manual_check():
 				log(ERROR, ">>> Test timed out! Retry to be sure, or manually check result.")
 			else:
-				log(STATUS, "Closing down. Remember to manually check whether test succeeded or not.")
+				log(STATUS, "Closing down. Remember to manually check whether the test succeeded or not.")
 			self.stop_test()
 
 # ----------------------------------- Client and AP Daemons -----------------------------------
