@@ -20,7 +20,7 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 ## 2.2. Change log
 
-**Version 1.2 (? November 2020)**:
+**Version 1.2 (15 November 2020)**:
 
 - Tool will automatically quit after a test completed or timed out.
 
@@ -129,7 +129,7 @@ The test tool was tested on Kali Linux and Ubuntu 20.04. To install the required
 Now clone this repository, build the tools, and configure a virtual python3 environment:
 
 	# **TODO: replace with real HTTP unauthenticated link on release**
-	git clone https://github.com/vanhoefm/fragattack.git fragattack
+	# git clone https://github.com/vanhoefm/fragattack.git fragattack
 	cd fragattack/research
 	./build.sh
 	python3 -m venv venv
