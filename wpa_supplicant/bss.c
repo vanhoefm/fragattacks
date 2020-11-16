@@ -1144,6 +1144,21 @@ const u8 * wpa_bss_get_ie(const struct wpa_bss *bss, u8 ie)
 
 
 /**
+ * wpa_bss_get_ie_ext - Fetch a specified extended IE from a BSS entry
+ * @bss: BSS table entry
+ * @ext: Information element extension identifier (WLAN_EID_EXT_*)
+ * Returns: Pointer to the information element (id field) or %NULL if not found
+ *
+ * This function returns the first matching information element in the BSS
+ * entry.
+ */
+const u8 * wpa_bss_get_ie_ext(const struct wpa_bss *bss, u8 ext)
+{
+	return get_ie_ext((const u8 *) (bss + 1), bss->ie_len, ext);
+}
+
+
+/**
  * wpa_bss_get_vendor_ie - Fetch a vendor information element from a BSS entry
  * @bss: BSS table entry
  * @vendor_type: Vendor type (four octets starting the IE payload)

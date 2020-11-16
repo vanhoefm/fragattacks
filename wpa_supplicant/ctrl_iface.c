@@ -3030,8 +3030,7 @@ static int wpa_supplicant_ctrl_iface_scan_result(
 	if (bss_is_dmg(bss)) {
 		const char *s;
 
-		if (get_ie_ext((const u8 *) (bss + 1), bss->ie_len,
-			       WLAN_EID_EXT_EDMG_OPERATION)) {
+		if (wpa_bss_get_ie_ext(bss, WLAN_EID_EXT_EDMG_OPERATION)) {
 			ret = os_snprintf(pos, end - pos, "[EDMG]");
 			if (os_snprintf_error(end - pos, ret))
 				return -1;

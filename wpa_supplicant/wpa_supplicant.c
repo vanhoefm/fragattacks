@@ -3640,8 +3640,8 @@ static void wpas_start_assoc_cb(struct wpa_radio_work *work, int deinit)
 	}
 
 	if (bss && ssid->enable_edmg)
-		edmg_ie_oper = get_ie_ext((const u8 *) (bss + 1), bss->ie_len,
-					  WLAN_EID_EXT_EDMG_OPERATION);
+		edmg_ie_oper = wpa_bss_get_ie_ext(bss,
+						  WLAN_EID_EXT_EDMG_OPERATION);
 	else
 		edmg_ie_oper = NULL;
 
