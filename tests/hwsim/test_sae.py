@@ -1710,7 +1710,7 @@ def test_sae_password_id_only(dev, apdev):
                    key_mgmt="SAE", scan_freq="2412")
 
 def test_sae_password_id_pwe_looping(dev, apdev):
-    """SAE and password identifier with forced PWE looping)"""
+    """SAE and password identifier with forced PWE looping"""
     check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1728,7 +1728,7 @@ def test_sae_password_id_pwe_looping(dev, apdev):
         dev[0].set("sae_pwe", "0")
 
 def test_sae_password_id_pwe_check_ap(dev, apdev):
-    """SAE and password identifier with STA using unexpected PWE derivation)"""
+    """SAE and password identifier with STA using unexpected PWE derivation"""
     check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae")
     params['wpa_key_mgmt'] = 'SAE'
@@ -1749,7 +1749,7 @@ def test_sae_password_id_pwe_check_ap(dev, apdev):
         dev[0].set("sae_pwe", "0")
 
 def test_sae_password_id_pwe_check_sta(dev, apdev):
-    """SAE and password identifier with AP using unexpected PWE derivation)"""
+    """SAE and password identifier with AP using unexpected PWE derivation"""
     check_sae_capab(dev[0])
     params = hostapd.wpa2_params(ssid="test-sae")
     params['wpa_key_mgmt'] = 'SAE'
