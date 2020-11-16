@@ -1359,7 +1359,7 @@ int wpa_bss_get_bit_rates(const struct wpa_bss *bss, u8 **rates)
 
 
 #ifdef CONFIG_FILS
-const u8 * wpa_bss_get_fils_cache_id(struct wpa_bss *bss)
+const u8 * wpa_bss_get_fils_cache_id(const struct wpa_bss *bss)
 {
 	const u8 *ie;
 
