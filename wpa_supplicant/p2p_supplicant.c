@@ -1107,9 +1107,9 @@ static int wpas_p2p_persistent_group(struct wpa_supplicant *wpa_s,
 			   "group is persistent - BSS " MACSTR
 			   " did not include P2P IE", MAC2STR(bssid));
 		wpa_hexdump(MSG_DEBUG, "P2P: Probe Response IEs",
-			    (u8 *) (bss + 1), bss->ie_len);
+			    wpa_bss_ie_ptr(bss), bss->ie_len);
 		wpa_hexdump(MSG_DEBUG, "P2P: Beacon IEs",
-			    ((u8 *) bss + 1) + bss->ie_len,
+			    wpa_bss_ie_ptr(bss) + bss->ie_len,
 			    bss->beacon_ie_len);
 		return 0;
 	}
@@ -5200,7 +5200,7 @@ static void wpas_p2p_scan_res_join(struct wpa_supplicant *wpa_s,
 		wpa_printf(MSG_DEBUG, "P2P: Target GO operating frequency "
 			   "from BSS table: %d MHz (SSID %s)", freq,
 			   wpa_ssid_txt(bss->ssid, bss->ssid_len));
-		if (p2p_parse_dev_addr((const u8 *) (bss + 1), bss->ie_len,
+		if (p2p_parse_dev_addr(wpa_bss_ie_ptr(bss), bss->ie_len,
 				       dev_addr) == 0 &&
 		    os_memcmp(wpa_s->pending_join_dev_addr,
 			      wpa_s->pending_join_iface_addr, ETH_ALEN) == 0 &&

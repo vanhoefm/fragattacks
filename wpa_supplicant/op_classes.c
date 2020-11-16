@@ -424,12 +424,13 @@ static int wpas_sta_secondary_channel_offset(struct wpa_bss *bss, u8 *current,
 					     u8 *channel)
 {
 
-	u8 *ies, phy_type;
+	const u8 *ies;
+	u8 phy_type;
 	size_t ies_len;
 
 	if (!bss)
 		return -1;
-	ies = (u8 *) (bss + 1);
+	ies = wpa_bss_ie_ptr(bss);
 	ies_len = bss->ie_len ? bss->ie_len : bss->beacon_ie_len;
 	return wpas_get_op_chan_phy(bss->freq, ies, ies_len, current,
 				    channel, &phy_type);

@@ -1852,7 +1852,7 @@ wpas_get_est_throughput_from_bss_snr(const struct wpa_supplicant *wpa_s,
 				     const struct wpa_bss *bss, int snr)
 {
 	int rate = wpa_bss_get_max_rate(bss);
-	const u8 *ies = (const void *) (bss + 1);
+	const u8 *ies = wpa_bss_ie_ptr(bss);
 	size_t ie_len = bss->ie_len ? bss->ie_len : bss->beacon_ie_len;
 
 	return wpas_get_est_tpt(wpa_s, ies, ie_len, rate, snr);
@@ -3029,7 +3029,7 @@ static void wpas_fst_update_mb_assoc(struct wpa_supplicant *wpa_s,
 	if (!bss)
 		return;
 
-	ieprb = (const u8 *) (bss + 1);
+	ieprb = wpa_bss_ie_ptr(bss);
 	iebcn = ieprb + bss->ie_len;
 
 	if (!wpas_fst_update_mbie(wpa_s, ieprb, bss->ie_len))

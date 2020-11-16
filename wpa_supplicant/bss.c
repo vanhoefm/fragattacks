@@ -361,8 +361,7 @@ static bool is_p2p_pending_bss(struct wpa_supplicant *wpa_s,
 		      ETH_ALEN) == 0)
 		return true;
 	if (!is_zero_ether_addr(wpa_s->pending_join_dev_addr) &&
-	    p2p_parse_dev_addr((const u8 *) (bss + 1), bss->ie_len,
-			       addr) == 0 &&
+	    p2p_parse_dev_addr(wpa_bss_ie_ptr(bss), bss->ie_len, addr) == 0 &&
 	    os_memcmp(addr, wpa_s->pending_join_dev_addr, ETH_ALEN) == 0)
 		return true;
 #endif /* CONFIG_P2P */
@@ -568,7 +567,7 @@ static u32 wpa_bss_compare_res(const struct wpa_bss *old,
 		changes |= WPA_BSS_MODE_CHANGED_FLAG;
 
 	if (old->ie_len == new_res->ie_len &&
-	    os_memcmp(old + 1, new_res + 1, old->ie_len) == 0)
+	    os_memcmp(wpa_bss_ie_ptr(old), new_res + 1, old->ie_len) == 0)
 		return changes;
 	changes |= WPA_BSS_IES_CHANGED_FLAG;
 
@@ -1075,7 +1074,7 @@ struct wpa_bss * wpa_bss_get_p2p_dev_addr(struct wpa_supplicant *wpa_s,
 	struct wpa_bss *bss, *found = NULL;
 	dl_list_for_each_reverse(bss, &wpa_s->bss, struct wpa_bss, list) {
 		u8 addr[ETH_ALEN];
-		if (p2p_parse_dev_addr((const u8 *) (bss + 1), bss->ie_len,
+		if (p2p_parse_dev_addr(wpa_bss_ie_ptr(bss), bss->ie_len,
 				       addr) != 0 ||
 		    os_memcmp(addr, dev_addr, ETH_ALEN) != 0)
 			continue;
@@ -1139,7 +1138,7 @@ struct wpa_bss * wpa_bss_get_id_range(struct wpa_supplicant *wpa_s,
  */
 const u8 * wpa_bss_get_ie(const struct wpa_bss *bss, u8 ie)
 {
-	return get_ie((const u8 *) (bss + 1), bss->ie_len, ie);
+	return get_ie(wpa_bss_ie_ptr(bss), bss->ie_len, ie);
 }
 
 
@@ -1154,7 +1153,7 @@ const u8 * wpa_bss_get_ie(const struct wpa_bss *bss, u8 ie)
  */
 const u8 * wpa_bss_get_ie_ext(const struct wpa_bss *bss, u8 ext)
 {
-	return get_ie_ext((const u8 *) (bss + 1), bss->ie_len, ext);
+	return get_ie_ext(wpa_bss_ie_ptr(bss), bss->ie_len, ext);
 }
 
 
@@ -1172,7 +1171,7 @@ const u8 * wpa_bss_get_vendor_ie(const struct wpa_bss *bss, u32 vendor_type)
 	const u8 *ies;
 	const struct element *elem;
 
-	ies = (const u8 *) (bss + 1);
+	ies = wpa_bss_ie_ptr(bss);
 
 	for_each_element_id(elem, WLAN_EID_VENDOR_SPECIFIC, ies, bss->ie_len) {
 		if (elem->datalen >= 4 &&
@@ -1205,7 +1204,7 @@ const u8 * wpa_bss_get_vendor_ie_beacon(const struct wpa_bss *bss,
 	if (bss->beacon_ie_len == 0)
 		return NULL;
 
-	ies = (const u8 *) (bss + 1);
+	ies = wpa_bss_ie_ptr(bss);
 	ies += bss->ie_len;
 
 	for_each_element_id(elem, WLAN_EID_VENDOR_SPECIFIC, ies,
@@ -1239,7 +1238,7 @@ struct wpabuf * wpa_bss_get_vendor_ie_multi(const struct wpa_bss *bss,
 	if (buf == NULL)
 		return NULL;
 
-	pos = (const u8 *) (bss + 1);
+	pos = wpa_bss_ie_ptr(bss);
 	end = pos + bss->ie_len;
 
 	while (end - pos > 1) {
@@ -1288,7 +1287,7 @@ struct wpabuf * wpa_bss_get_vendor_ie_multi_beacon(const struct wpa_bss *bss,
 	if (buf == NULL)
 		return NULL;
 
-	pos = (const u8 *) (bss + 1);
+	pos = wpa_bss_ie_ptr(bss);
 	pos += bss->ie_len;
 	end = pos + bss->beacon_ie_len;
 

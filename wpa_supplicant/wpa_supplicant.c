@@ -2276,8 +2276,7 @@ void wpa_supplicant_associate(struct wpa_supplicant *wpa_s,
 
 #ifdef CONFIG_TDLS
 	if (bss)
-		wpa_tdls_ap_ies(wpa_s->wpa, (const u8 *) (bss + 1),
-				bss->ie_len);
+		wpa_tdls_ap_ies(wpa_s->wpa, wpa_bss_ie_ptr(bss), bss->ie_len);
 #endif /* CONFIG_TDLS */
 
 #ifdef CONFIG_MBO

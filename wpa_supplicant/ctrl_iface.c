@@ -5022,7 +5022,7 @@ static int print_bss_info(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 			return 0;
 		pos += ret;
 
-		ie = (const u8 *) (bss + 1);
+		ie = wpa_bss_ie_ptr(bss);
 		for (i = 0; i < bss->ie_len; i++) {
 			ret = os_snprintf(pos, end - pos, "%02x", *ie++);
 			if (os_snprintf_error(end - pos, ret))
@@ -5189,7 +5189,7 @@ static int print_bss_info(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 
 #ifdef CONFIG_WPS
 	if (mask & WPA_BSS_MASK_WPS_SCAN) {
-		ie = (const u8 *) (bss + 1);
+		ie = wpa_bss_ie_ptr(bss);
 		ret = wpas_wps_scan_result_text(ie, bss->ie_len, pos, end);
 		if (ret >= end - pos)
 			return 0;
@@ -5200,7 +5200,7 @@ static int print_bss_info(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 
 #ifdef CONFIG_P2P
 	if (mask & WPA_BSS_MASK_P2P_SCAN) {
-		ie = (const u8 *) (bss + 1);
+		ie = wpa_bss_ie_ptr(bss);
 		ret = wpas_p2p_scan_result_text(ie, bss->ie_len, pos, end);
 		if (ret >= end - pos)
 			return 0;
@@ -5212,7 +5212,8 @@ static int print_bss_info(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 #ifdef CONFIG_WIFI_DISPLAY
 	if (mask & WPA_BSS_MASK_WIFI_DISPLAY) {
 		struct wpabuf *wfd;
-		ie = (const u8 *) (bss + 1);
+
+		ie = wpa_bss_ie_ptr(bss);
 		wfd = ieee802_11_vendor_ie_concat(ie, bss->ie_len,
 						  WFD_IE_VENDOR_TYPE);
 		if (wfd) {
@@ -5290,7 +5291,7 @@ static int print_bss_info(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 
 #ifdef CONFIG_MESH
 	if (mask & WPA_BSS_MASK_MESH_SCAN) {
-		ie = (const u8 *) (bss + 1);
+		ie = wpa_bss_ie_ptr(bss);
 		ret = wpas_mesh_scan_result_text(ie, bss->ie_len, pos, end);
 		if (ret >= end - pos)
 			return 0;
@@ -5337,7 +5338,7 @@ static int print_bss_info(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 			return 0;
 		pos += ret;
 
-		ie = (const u8 *) (bss + 1);
+		ie = wpa_bss_ie_ptr(bss);
 		ie += bss->ie_len;
 		for (i = 0; i < bss->beacon_ie_len; i++) {
 			ret = os_snprintf(pos, end - pos, "%02x", *ie++);

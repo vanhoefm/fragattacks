@@ -775,10 +775,10 @@ int wpas_get_op_chan_phy(int freq, const u8 *ies, size_t ies_len,
 static int wpas_beacon_rep_add_frame_body(struct bitfield *eids,
 					  enum beacon_report_detail detail,
 					  struct wpa_bss *bss, u8 *buf,
-					  size_t buf_len, u8 **ies_buf,
+					  size_t buf_len, const u8 **ies_buf,
 					  size_t *ie_len, int add_fixed)
 {
-	u8 *ies = *ies_buf;
+	const u8 *ies = *ies_buf;
 	size_t ies_len = *ie_len;
 	u8 *pos = buf;
 	int rem_len;
@@ -860,7 +860,7 @@ static int wpas_add_beacon_rep_elem(struct beacon_rep_data *data,
 				    struct wpa_bss *bss,
 				    struct wpabuf **wpa_buf,
 				    struct rrm_measurement_beacon_report *rep,
-				    u8 **ie, size_t *ie_len, u8 idx)
+				    const u8 **ie, size_t *ie_len, u8 idx)
 {
 	int ret;
 	u8 *buf, *pos;
@@ -927,8 +927,8 @@ static int wpas_add_beacon_rep(struct wpa_supplicant *wpa_s,
 			       u64 start, u64 parent_tsf)
 {
 	struct beacon_rep_data *data = &wpa_s->beacon_rep_data;
-	u8 *ies = (u8 *) (bss + 1);
-	u8 *pos = ies;
+	const u8 *ies = wpa_bss_ie_ptr(bss);
+	const u8 *pos = ies;
 	size_t ies_len = bss->ie_len ? bss->ie_len : bss->beacon_ie_len;
 	struct rrm_measurement_beacon_report rep;
 	u8 idx = 0;

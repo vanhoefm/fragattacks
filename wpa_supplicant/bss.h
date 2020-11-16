@@ -113,6 +113,11 @@ struct wpa_bss {
 	/* followed by beacon_ie_len octets of IEs */
 };
 
+static inline const u8 * wpa_bss_ie_ptr(const struct wpa_bss *bss)
+{
+	return (const u8 *) (bss + 1);
+}
+
 void wpa_bss_update_start(struct wpa_supplicant *wpa_s);
 void wpa_bss_update_scan_res(struct wpa_supplicant *wpa_s,
 			     struct wpa_scan_res *res,
