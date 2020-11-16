@@ -464,7 +464,7 @@ static struct wpa_bss * wpa_bss_add(struct wpa_supplicant *wpa_s,
 	bss->ssid_len = ssid_len;
 	bss->ie_len = res->ie_len;
 	bss->beacon_ie_len = res->beacon_ie_len;
-	os_memcpy(bss + 1, res + 1, res->ie_len + res->beacon_ie_len);
+	os_memcpy(bss->ies, res + 1, res->ie_len + res->beacon_ie_len);
 	wpa_bss_set_hessid(bss);
 
 	if (wpa_s->num_bss + 1 > wpa_s->conf->bss_max_count &&
@@ -691,7 +691,7 @@ wpa_bss_update(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 #endif /* CONFIG_P2P */
 	if (bss->ie_len + bss->beacon_ie_len >=
 	    res->ie_len + res->beacon_ie_len) {
-		os_memcpy(bss + 1, res + 1, res->ie_len + res->beacon_ie_len);
+		os_memcpy(bss->ies, res + 1, res->ie_len + res->beacon_ie_len);
 		bss->ie_len = res->ie_len;
 		bss->beacon_ie_len = res->beacon_ie_len;
 	} else {
@@ -712,7 +712,7 @@ wpa_bss_update(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 				wpa_s->current_bss = nbss;
 			wpa_bss_update_pending_connect(wpa_s, bss, nbss);
 			bss = nbss;
-			os_memcpy(bss + 1, res + 1,
+			os_memcpy(bss->ies, res + 1,
 				  res->ie_len + res->beacon_ie_len);
 			bss->ie_len = res->ie_len;
 			bss->beacon_ie_len = res->beacon_ie_len;
