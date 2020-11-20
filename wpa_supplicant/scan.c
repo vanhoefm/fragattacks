@@ -670,30 +670,38 @@ static int non_p2p_network_enabled(struct wpa_supplicant *wpa_s)
 #endif /* CONFIG_P2P */
 
 
-static void wpa_setband_scan_freqs_list(struct wpa_supplicant *wpa_s,
-					enum hostapd_hw_mode band,
-					struct wpa_driver_scan_params *params,
-					int is_6ghz)
+int wpa_add_scan_freqs_list(struct wpa_supplicant *wpa_s,
+			    enum hostapd_hw_mode band,
+			    struct wpa_driver_scan_params *params, int is_6ghz)
 {
 	/* Include only supported channels for the specified band */
 	struct hostapd_hw_modes *mode;
-	int count, i;
+	int num_chans = 0;
+	int *freqs, i;
 
 	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, band, is_6ghz);
-	if (mode == NULL) {
-		/* No channels supported in this band - use empty list */
-		params->freqs = os_zalloc(sizeof(int));
-		return;
+	if (!mode)
+		return -1;
+
+	if (params->freqs) {
+		while (params->freqs[num_chans])
+			num_chans++;
 	}
 
-	params->freqs = os_calloc(mode->num_channels + 1, sizeof(int));
-	if (params->freqs == NULL)
-		return;
-	for (count = 0, i = 0; i < mode->num_channels; i++) {
+	freqs = os_realloc(params->freqs,
+			   (num_chans + mode->num_channels + 1) * sizeof(int));
+	if (!freqs)
+		return -1;
+
+	params->freqs = freqs;
+	for (i = 0; i < mode->num_channels; i++) {
 		if (mode->channels[i].flag & HOSTAPD_CHAN_DISABLED)
 			continue;
-		params->freqs[count++] = mode->channels[i].freq;
+		params->freqs[num_chans++] = mode->channels[i].freq;
 	}
+	params->freqs[num_chans] = 0;
+
+	return 0;
 }
 
 
@@ -704,12 +712,13 @@ static void wpa_setband_scan_freqs(struct wpa_supplicant *wpa_s,
 		return; /* unknown what channels the driver supports */
 	if (params->freqs)
 		return; /* already using a limited channel set */
+
 	if (wpa_s->setband == WPA_SETBAND_5G)
-		wpa_setband_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211A,
-					    params, 0);
+		wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211A, params,
+					0);
 	else if (wpa_s->setband == WPA_SETBAND_2G)
-		wpa_setband_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211G,
-					    params, 0);
+		wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211G, params,
+					0);
 }
 
 

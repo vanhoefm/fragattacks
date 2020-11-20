@@ -291,41 +291,6 @@ static void wpas_p2p_scan_res_handler(struct wpa_supplicant *wpa_s,
 }
 
 
-static int wpas_p2p_add_scan_freq_list(struct wpa_supplicant *wpa_s,
-				       enum hostapd_hw_mode band,
-				       struct wpa_driver_scan_params *params)
-{
-	struct hostapd_hw_modes *mode;
-	int num_chans = 0;
-	int *freqs, i;
-
-	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, band, 0);
-	if (!mode)
-		return -1;
-
-	if (params->freqs) {
-		while (params->freqs[num_chans])
-			num_chans++;
-	}
-
-	freqs = os_realloc(params->freqs,
-			   (num_chans + mode->num_channels + 1) * sizeof(int));
-	if (!freqs)
-		return -1;
-
-	params->freqs = freqs;
-
-	for (i = 0; i < mode->num_channels; i++) {
-		if (mode->channels[i].flag & HOSTAPD_CHAN_DISABLED)
-			continue;
-		params->freqs[num_chans++] = mode->channels[i].freq;
-	}
-	params->freqs[num_chans] = 0;
-
-	return 0;
-}
-
-
 static void wpas_p2p_trigger_scan_cb(struct wpa_radio_work *work, int deinit)
 {
 	struct wpa_supplicant *wpa_s = work->wpa_s;
@@ -351,10 +316,10 @@ static void wpas_p2p_trigger_scan_cb(struct wpa_radio_work *work, int deinit)
 	if (wpa_s->conf->p2p_6ghz_disable && !params->freqs) {
 		wpa_printf(MSG_DEBUG,
 			   "P2P: 6 GHz disabled - update the scan frequency list");
-		wpas_p2p_add_scan_freq_list(wpa_s, HOSTAPD_MODE_IEEE80211G,
-					    params);
-		wpas_p2p_add_scan_freq_list(wpa_s, HOSTAPD_MODE_IEEE80211A,
-					    params);
+		wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211G, params,
+					0);
+		wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211A, params,
+					0);
 	}
 	ret = wpa_drv_scan(wpa_s, params);
 	if (ret == 0)
@@ -5342,10 +5307,10 @@ static void wpas_p2p_join_scan_req(struct wpa_supplicant *wpa_s, int freq,
 	} else if (wpa_s->conf->p2p_6ghz_disable) {
 		wpa_printf(MSG_DEBUG,
 			   "P2P: 6 GHz disabled - update the scan frequency list");
-		wpas_p2p_add_scan_freq_list(wpa_s, HOSTAPD_MODE_IEEE80211G,
-					    &params);
-		wpas_p2p_add_scan_freq_list(wpa_s, HOSTAPD_MODE_IEEE80211A,
-					    &params);
+		wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211G, &params,
+					0);
+		wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211A, &params,
+					0);
 	}
 
 	ielen = p2p_scan_ie_buf_len(wpa_s->global->p2p);
