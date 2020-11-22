@@ -286,7 +286,7 @@ device and are further discussed below the table.
 | `ping-frag-sep --pn-per-qos`     | Same as above, but also works if the target only accepts consecutive PNs.
 | <div align="center">*[A-MSDU attacks (§3)](#id-test-amsdu)*</div>
 | `ping I,E --amsdu`               | Send a ping encapsulated in a normal (non SPP protected) A-MSDU frame.
-| `amsdu-inject`                   | Send A-MSDU frame whose start is also a valid LLC/SNAP header (§3.2).
+| `amsdu-inject`                   | Simulate attack: send A-MSDU frame whose start is also a valid rfc1042 header.
 | `amsdu-inject-bad`               | Same as above, but against targets that incorrectly parse the frame.
 | <div align="center">*[Mixed key attacks (§4)](#id-test-mixedkey)*</div>
 | `ping I,F,BE,AE`                 | Inject two fragments encrypted under a different key.
