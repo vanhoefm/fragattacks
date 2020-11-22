@@ -943,3 +943,23 @@ start the test tool as follows:
 
 After the tool executed, you can directly run it again with a new `$COMMAND`.
 
+<a id="id-wpa3-sae"></a>
+## 9.9. Testing WPA3 and SAE devices
+
+You can test a WPA3/SAE AP by including the following two lines in `client.conf`:
+
+	key_mgmt=SAE
+	ieee80211w=1
+
+To test WPA3/SAE clients you can modify `hostapd.conf` and set the parameters:
+
+	wpa_key_mgmt=SAE
+	ieee80211w=2
+
+We tested the above with an Intel 8265, Intel 3160, Netgear WN111v2 (`carl9170`),
+TP-Link TL-WN722N (`ath9k_htc`) and WNDA3200 (`ath9k_htc`). With those
+devices I was able to connect with the AP and run some tests. So it
+seems this should work with all already supported dongles. Note that I
+haven't tested this in detail: my assumption has been that whether a
+device is operating in WPA2 or WPA3 mode won't impact test results.
+
