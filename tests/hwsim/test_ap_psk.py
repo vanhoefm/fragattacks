@@ -685,6 +685,8 @@ def setup_psk_ext(dev, apdev, wpa_ptk_rekey=None):
 def ext_4way_hs(hapd, dev):
     bssid = hapd.own_addr()
     addr = dev.own_addr()
+    first = None
+    last = None
     while True:
         ev = hapd.wait_event(["EAPOL-TX", "AP-STA-CONNECTED"], timeout=15)
         if ev is None:
@@ -692,6 +694,9 @@ def ext_4way_hs(hapd, dev):
         if "AP-STA-CONNECTED" in ev:
             dev.wait_connected(timeout=15)
             break
+        if not first:
+            first = ev.split(' ')[2]
+        last = ev.split(' ')[2]
         res = dev.request("EAPOL_RX " + bssid + " " + ev.split(' ')[2])
         if "OK" not in res:
             raise Exception("EAPOL_RX to wpa_supplicant failed")
@@ -703,11 +708,40 @@ def ext_4way_hs(hapd, dev):
         res = hapd.request("EAPOL_RX " + addr + " " + ev.split(' ')[2])
         if "OK" not in res:
             raise Exception("EAPOL_RX to hostapd failed")
+    return first, last
 
 def test_ap_wpa2_psk_ext(dev, apdev):
     """WPA2-PSK AP using external EAPOL I/O"""
     hapd = setup_psk_ext(dev[0], apdev[0])
     ext_4way_hs(hapd, dev[0])
+
+def test_ap_wpa2_psk_unexpected(dev, apdev):
+    """WPA2-PSK and supplicant receiving unexpected EAPOL-Key frames"""
+    hapd = setup_psk_ext(dev[0], apdev[0])
+    first, last = ext_4way_hs(hapd, dev[0])
+
+    # Not associated - Delay processing of received EAPOL frame (state=COMPLETED
+    # bssid=02:00:00:00:03:00)
+    other = "02:11:22:33:44:55"
+    res = dev[0].request("EAPOL_RX " + other + " " + first)
+    if "OK" not in res:
+        raise Exception("EAPOL_RX to wpa_supplicant failed")
+
+    # WPA: EAPOL-Key Replay Counter did not increase - dropping packet
+    bssid = hapd.own_addr()
+    res = dev[0].request("EAPOL_RX " + bssid + " " + last)
+    if "OK" not in res:
+        raise Exception("EAPOL_RX to wpa_supplicant failed")
+
+    # WPA: Invalid EAPOL-Key MIC - dropping packet
+    msg = last[0:18] + '01' + last[20:]
+    res = dev[0].request("EAPOL_RX " + bssid + " " + msg)
+    if "OK" not in res:
+        raise Exception("EAPOL_RX to wpa_supplicant failed")
+
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=12)
+    if ev is not None:
+        raise Exception("Unexpected disconnection")
 
 def test_ap_wpa2_psk_ext_retry_msg_3(dev, apdev):
     """WPA2-PSK AP using external EAPOL I/O and retry for EAPOL-Key msg 3/4"""
