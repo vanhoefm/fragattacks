@@ -1670,6 +1670,11 @@ def test_gas_anqp_venue_url(dev, apdev):
     if not bss['anqp_capability_list'].startswith(binascii.hexlify(ids).decode()):
         raise Exception("Unexpected Capability List ANQP-element value: " + bss['anqp_capability_list'])
 
+    if "anqp[277]" not in bss:
+        raise Exception("Venue-URL ANQP info not available")
+    if "protected-anqp-info[277]" in bss:
+        raise Exception("Unexpected Venue-URL protection info")
+
 def test_gas_anqp_venue_url2(dev, apdev):
     """GAS/ANQP and Venue URL (hostapd venue_url)"""
     venue_group = 1
@@ -1774,6 +1779,14 @@ def test_gas_anqp_venue_url_pmf(dev, apdev):
         raise Exception("No Venue URL indication seen (2)")
     if "2 " + url2 not in ev:
         raise Exception("Unexpected Venue URL information (2): " + ev)
+
+    bss = dev[0].get_bss(bssid)
+    if "anqp[277]" not in bss:
+        raise Exception("Venue-URL ANQP info not available")
+    if "protected-anqp-info[277]" not in bss:
+        raise Exception("Venue-URL protection info not available")
+    if bss["protected-anqp-info[277]"] != "1":
+        raise Exception("Venue-URL was not indicated to be protected")
 
 def test_gas_anqp_capab_list(dev, apdev):
     """GAS/ANQP and Capability List ANQP-element"""
