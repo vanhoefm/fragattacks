@@ -23,6 +23,7 @@ struct wpa_scan_res;
 struct wpa_bss_anqp_elem {
 	struct dl_list list;
 	u16 infoid;
+	bool protected; /* received in a protected GAS response */
 	struct wpabuf *payload;
 };
 
