@@ -652,3 +652,45 @@ def test_dfs_chan_switch(dev, apdev):
         hwsim_utils.test_connectivity(dev[0], hapd)
     finally:
         clear_regdom(hapd, dev)
+
+@long_duration_test
+def test_dfs_no_available_channel(dev, apdev):
+    """DFS and no available channel after radar detection"""
+    try:
+        hapd = None
+        hapd = start_dfs_ap(apdev[0], chanlist="56")
+
+        ev = hapd.wait_event(["AP-ENABLED"], timeout=70)
+        if not ev:
+            raise Exception("AP2 setup timed out")
+
+        dfs_simulate_radar(hapd)
+        ev = wait_dfs_event(hapd, "DFS-RADAR-DETECTED", 5)
+        if "freq=5260 ht_enabled=1 chan_offset=0 chan_width=1" not in ev:
+            raise Exception("Unexpected DFS radar detection freq from AP")
+
+        ev = wait_dfs_event(hapd, "DFS-NEW-CHANNEL", 5)
+        if "freq=5280 chan=56" not in ev:
+            raise Exception("Unexpected DFS new freq: " + ev)
+        ev = wait_dfs_event(hapd, "DFS-CAC-START", 5)
+        if "freq=5280" not in ev:
+            raise Exception("Unexpected channel: " + ev)
+        ev = wait_dfs_event(hapd, "DFS-CAC-COMPLETED", 70)
+        if "success=1" not in ev:
+            raise Exception("CAC failed")
+        if "freq=5280" not in ev:
+            raise Exception("Unexpected DFS freq result")
+        ev = hapd.wait_event(["AP-ENABLED"], timeout=5)
+        if not ev:
+            raise Exception("AP setup timed out")
+
+        dfs_simulate_radar(hapd)
+        ev = wait_dfs_event(hapd, "DFS-RADAR-DETECTED", 5)
+        if "freq=5280 ht_enabled=1 chan_offset=0 chan_width=1" not in ev:
+            raise Exception("Unexpected DFS radar detection freq from AP [2]")
+
+        ev = hapd.wait_event(["AP-DISABLED"], timeout=10)
+        if ev is None:
+            raise Exception("AP was not disabled")
+    finally:
+        clear_regdom(hapd, dev)
