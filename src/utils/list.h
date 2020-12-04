@@ -76,8 +76,8 @@ static inline unsigned int dl_list_len(const struct dl_list *list)
 	 dl_list_entry((list)->prev, type, member))
 
 #define dl_list_for_each(item, list, type, member) \
-	for (item = dl_list_first((list), type, member); \
-	     item && item != dl_list_entry((list), type, member); \
+	for (item = dl_list_entry((list)->next, type, member); \
+	     &item->member != (list); \
 	     item = dl_list_entry(item->member.next, type, member))
 
 #define dl_list_for_each_safe(item, n, list, type, member) \
