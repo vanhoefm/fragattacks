@@ -538,6 +538,7 @@ All commands work against both clients and APs unless noted otherwise.
 | `ping I,E,F,AE --rekey-plain`          | If the device performs the rekey handshake in plaintext.
 | `ping I,E,F,AE --rekey-plain --rekey-req` | Same as above, and actively request a rekey as client.
 | `ping I,E,F,AE --rekey-early-install`  | Install the new key after sending message 3 of the 4-way handshake.
+| `ping I,E,F,E [--rekey-pl] [--rekey-req]` | Same as above 4 tests, but with longer delay before 2nd fragment.
 | `ping I,F,BE,AE --freebsd`             | Mixed key attack against FreeBSD or similar implementations.
 | <div align="center">*[Cache attacks (§5)](#id-extended-cache)*</div>
 | `ping I,E,R,AE --freebsd [--full-reconnect]` | Cache attack specific to FreeBSD implementations.
@@ -598,6 +599,10 @@ these alternative mixed key attack tests. Some remarks:
 - `ping I,E,F,AE --rekey-early-install`: A low number of clients (incorrectly) install the key too early during
   a pairwise session rekey. To reliably test these clients, add the `--rekey-early-install` parameter. This test
   is not meaningfull against APs.
+
+- `ping I,E,F,E [--rekey-pl] [--rekey-req]`: This test variant is the same as the above four, except that the second
+  fragment is send 1 second after the 4-way handshake. This can be important because in a low number of devices there
+  is a small delay the new key is installed. Note that `--rekey-pl` is a shorthand of `--rekey-plain`.
 
 Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the following mixed key attack test:
 
