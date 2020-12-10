@@ -3066,6 +3066,20 @@ static int wpa_cli_cmd_dpp_pkex_remove(struct wpa_ctrl *ctrl, int argc,
 
 #ifdef CONFIG_DPP2
 
+static int wpa_cli_cmd_dpp_controller_start(struct wpa_ctrl *ctrl, int argc,
+					    char *argv[])
+{
+	return wpa_cli_cmd(ctrl, "DPP_CONTROLLER_START", 1, argc, argv);
+}
+
+
+static int wpa_cli_cmd_dpp_controller_stop(struct wpa_ctrl *ctrl, int argc,
+					    char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "DPP_CONTROLLER_STOP");
+}
+
+
 static int wpa_cli_cmd_dpp_chirp(struct wpa_ctrl *ctrl, int argc,
 				 char *argv[])
 {
@@ -3820,6 +3834,12 @@ static const struct wpa_cli_cmd wpa_cli_commands[] = {
 	  cli_cmd_flag_none,
 	  "*|<id> = remove DPP pkex information" },
 #ifdef CONFIG_DPP2
+	{ "dpp_controller_start", wpa_cli_cmd_dpp_controller_start, NULL,
+	  cli_cmd_flag_none,
+	  "[tcp_port=<port>] [role=..] = start DPP controller" },
+	{ "dpp_controller_stop", wpa_cli_cmd_dpp_controller_stop, NULL,
+	  cli_cmd_flag_none,
+	  "= stop DPP controller" },
 	{ "dpp_chirp", wpa_cli_cmd_dpp_chirp, NULL,
 	  cli_cmd_flag_none,
 	  "own=<BI ID> iter=<count> = start DPP chirp" },
