@@ -672,7 +672,7 @@ static int non_p2p_network_enabled(struct wpa_supplicant *wpa_s)
 
 int wpa_add_scan_freqs_list(struct wpa_supplicant *wpa_s,
 			    enum hostapd_hw_mode band,
-			    struct wpa_driver_scan_params *params, int is_6ghz)
+			    struct wpa_driver_scan_params *params, bool is_6ghz)
 {
 	/* Include only supported channels for the specified band */
 	struct hostapd_hw_modes *mode;

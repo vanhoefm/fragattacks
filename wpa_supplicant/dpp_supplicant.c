@@ -3493,7 +3493,7 @@ static void wpas_dpp_chirp_scan_res_handler(struct wpa_supplicant *wpa_s,
 
 	/* Preferred chirping channels */
 	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes,
-			HOSTAPD_MODE_IEEE80211G, 0);
+			HOSTAPD_MODE_IEEE80211G, false);
 	chan6 = mode == NULL;
 	if (mode) {
 		for (c = 0; c < mode->num_channels; c++) {
@@ -3510,7 +3510,7 @@ static void wpas_dpp_chirp_scan_res_handler(struct wpa_supplicant *wpa_s,
 		int_array_add_unique(&wpa_s->dpp_chirp_freqs, 2437);
 
 	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes,
-			HOSTAPD_MODE_IEEE80211A, 0);
+			HOSTAPD_MODE_IEEE80211A, false);
 	if (mode) {
 		int chan44 = 0, chan149 = 0;
 
@@ -3532,7 +3532,7 @@ static void wpas_dpp_chirp_scan_res_handler(struct wpa_supplicant *wpa_s,
 	}
 
 	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes,
-			HOSTAPD_MODE_IEEE80211AD, 0);
+			HOSTAPD_MODE_IEEE80211AD, false);
 	if (mode) {
 		for (c = 0; c < mode->num_channels; c++) {
 			struct hostapd_channel_data *chan = &mode->channels[c];

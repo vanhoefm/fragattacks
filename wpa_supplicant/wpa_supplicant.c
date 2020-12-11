@@ -3395,7 +3395,7 @@ get_supported_edmg(struct wpa_supplicant *wpa_s,
 	if (hw_mode == NUM_HOSTAPD_MODES)
 		goto fail;
 
-	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, hw_mode, 0);
+	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, hw_mode, false);
 	if (!mode)
 		goto fail;
 
@@ -8055,7 +8055,7 @@ int wpas_vendor_elem_remove(struct wpa_supplicant *wpa_s, int frame,
 
 struct hostapd_hw_modes * get_mode(struct hostapd_hw_modes *modes,
 				   u16 num_modes, enum hostapd_hw_mode mode,
-				   int is_6ghz)
+				   bool is_6ghz)
 {
 	u16 i;
 

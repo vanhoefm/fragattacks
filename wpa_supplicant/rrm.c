@@ -563,7 +563,7 @@ static int * wpas_op_class_freqs(const struct oper_class_map *op,
 	u8 channels_160mhz_6ghz[] = { 15, 47, 79, 111, 143, 175, 207 };
 	const u8 *channels = NULL;
 	size_t num_chan = 0;
-	int is_6ghz = is_6ghz_op_class(op->op_class);
+	bool is_6ghz = is_6ghz_op_class(op->op_class);
 
 	/*
 	 * When adding all channels in the operating class, 80 + 80 MHz

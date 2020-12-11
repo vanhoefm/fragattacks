@@ -22,10 +22,10 @@ static enum chan_allowed allow_channel(struct hostapd_hw_modes *mode,
 				       unsigned int *flags)
 {
 	int i;
-	int is_6ghz = op_class >= 131 && op_class <= 136;
+	bool is_6ghz = op_class >= 131 && op_class <= 136;
 
 	for (i = 0; i < mode->num_channels; i++) {
-		int chan_is_6ghz;
+		bool chan_is_6ghz;
 
 		chan_is_6ghz = mode->channels[i].freq >= 5935 &&
 			mode->channels[i].freq <= 7115;

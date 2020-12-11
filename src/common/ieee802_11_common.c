@@ -2245,44 +2245,44 @@ int center_idx_to_bw_6ghz(u8 idx)
 }
 
 
-int is_6ghz_freq(int freq)
+bool is_6ghz_freq(int freq)
 {
 	if (freq < 5935 || freq > 7115)
-		return 0;
+		return false;
 
 	if (freq == 5935)
-		return 1;
+		return true;
 
 	if (center_idx_to_bw_6ghz((freq - 5950) / 5) < 0)
-		return 0;
+		return false;
 
-	return 1;
+	return true;
 }
 
 
-int is_6ghz_op_class(u8 op_class)
+bool is_6ghz_op_class(u8 op_class)
 {
 	return op_class >= 131 && op_class <= 136;
 }
 
 
-int is_6ghz_psc_frequency(int freq)
+bool is_6ghz_psc_frequency(int freq)
 {
 	int i;
 
 	if (!is_6ghz_freq(freq) || freq == 5935)
-		return 0;
+		return false;
 	if ((((freq - 5950) / 5) & 0x3) != 0x1)
-		return 0;
+		return false;
 
 	i = (freq - 5950 + 55) % 80;
 	if (i == 0)
 		i = (freq - 5950 + 55) / 80;
 
 	if (i >= 1 && i <= 15)
-		return 1;
+		return true;
 
-	return 0;
+	return false;
 }
 
 
