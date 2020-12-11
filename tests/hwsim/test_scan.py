@@ -1137,7 +1137,7 @@ def test_scan_fail(dev, apdev):
     try:
         if "OK" not in dev[0].request("SET setband 2G"):
             raise Exception("SET setband failed")
-        with alloc_fail(dev[0], 1, "=wpa_setband_scan_freqs_list"):
+        with alloc_fail(dev[0], 1, "=wpa_add_scan_freqs_list"):
             # While the frequency list cannot be created due to memory
             # allocation failure, this scan is expected to be completed without
             # frequency filtering.
