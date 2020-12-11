@@ -20,7 +20,19 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 ## 2.2. Change log
 
+**Version 1.3 (? December 2020)**:
+
+- This version is based on hostap commit **XXX**.
+
+- Added the extra tests `ping I,E,F,E [--rekey-pl] [--rekey-req]` to this README to better detect mixed key
+  attacks (CVE-2020-24587) in certain devices.
+
+- Added the extra test `ping BP --bcast-ra --bcast-dst` to this README to be able to test for CVE-2020-26145
+  against APs that cannot run tcpdump (with this test tcpdump has to be run on an independent connected client).
+
 **Version 1.2 (15 November 2020)**:
+
+- This version (and lower) is based on hostap commit `1c67a0760` ("tests: Add basic power saving tests for ap_open").
 
 - Tool will automatically quit after a test completed or timed out.
 
@@ -550,7 +562,7 @@ All commands work against both clients and APs unless noted otherwise.
 | `linux-plain 3`                        | Same as linux-plain but decoy fragment is sent using QoS priority 3.
 | <div align="center">*[Broadcast checks (extensions of §6.4)](#id-extended-bcast-check)*</div>
 | `ping I,P --bcast-ra`                  | Ping in a plaintext broadcast frame after 4-way HS.
-| `ping BP --bcast-ra`                   | Ping in plaintext broadcast frame during 4-way HS (use tcpdump).
+| `ping BP --bcast-ra [--bcast-dst]`     | Ping in plaintext broadcast frame during 4-way HS (use tcpdump).
 | `eapfrag BP,BP`                        | Experimental broadcast fragment attack (use tcpdump).
 | <div align="center">*[A-MSDU EAPOL attack (§6.5)](#id-extended-cloackamsdu)*</div>
 | `eapol-amsdu[-bad] BP --bcast-dst`     | Same as `eapol-amsdu BP` but easier to verify against APs (use tcpdump).
@@ -564,7 +576,7 @@ All commands work against both clients and APs unless noted otherwise.
 <a id="id-extended-amsdu"></a>
 ## 8.1. A-MSDU attack tests (§3 -- CVE-2020-24588)
 
-It is only useful to execute the first two tests if the main test `ping I,E --amsdu` fails and you want to better
+It is only useful to execute these two tests if the main test `ping I,E --amsdu` fails and you want to better
 understand how the tested device handles A-MSDU frames:
 
 - `ping I,E --amsdu-fake`: If this tests succeeds, the receiver treats all frames as normal frames (meaning it doesn't
@@ -655,6 +667,12 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
   authenticated with the network (i.e. during the execution of the 4-way handshake). You must run tcpdump or wireshark
   to check if the client accepts the frame. In tcpdump you can use the filter `icmp` and in wireshark you can also use
   the filter `frame contains "test_ping_icmp"` to more easily detect this ping request.
+
+- `ping BP --bcast-ra --bcast-dst`: this test is the same as the previous one, but is useful if you cannot run tcpdump
+  on the target AP. Note that this test is only meaningfull against APs. The extra `--bcast-dst` parameter in this test
+  causes a vulnerable AP to broadcast the injected ping request to all connected clients. In other words, to check if an
+  AP is vulnerable, execute this command, and listen for broadcast Wi-Fi frames on a second device that is connected to
+  the AP by using the filter `icmp` or `frame contains "test_ping_icmp"`.
 
 - `eapfrag BP,BP`: this is a specialization of the above two tests that is performed before the client has authenticated.
   It is a _very experimental_ attack based on the analysis of leaked code. It first sends a plaintext fragment that starts
@@ -857,7 +875,8 @@ are some options to try to mitigate this problem:
 
 3. Try a different network card to perform the tests. I found that different network cards will inject frames
    at (slightly) different times, and this may be the difference between injected frame properly arriving or
-   being missed.
+   being missed. For instance, against a Pixel 4 XL the test tool was unreliable when using a TL-WN722N but
+   worked reliably with an Intel 8265.
 
 4. Assign static IPs to the device under test and let the test tool use static IPs (see [Static IP Configuration](#id-static-ip-config)).
    With many tests this can be more reliable because the test tool can then immediately send the test frame instead
