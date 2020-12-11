@@ -654,6 +654,10 @@ def test_scan_reqs_with_non_scan_radio_work(dev, apdev):
 
 def test_scan_setband(dev, apdev):
     """Band selection for scan operations"""
+    wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
+    wpas.interface_add("wlan5")
+    devs = [ dev[0], dev[1], dev[2], wpas ]
+
     try:
         hapd = None
         hapd2 = None
@@ -678,21 +682,26 @@ def test_scan_setband(dev, apdev):
             raise Exception("Failed to set setband")
         if "OK" not in dev[2].request("SET setband 2G"):
             raise Exception("Failed to set setband")
+        if "OK" not in wpas.request("SET setband 2G,5G"):
+            raise Exception("Failed to set setband")
 
         # Allow a retry to avoid reporting errors during heavy load
         for j in range(5):
-            for i in range(3):
-                dev[i].request("SCAN only_new=1")
+            for d in devs:
+                d.request("SCAN only_new=1")
 
-            for i in range(3):
-                ev = dev[i].wait_event(["CTRL-EVENT-SCAN-RESULTS"], 15)
+            for d in devs:
+                ev = d.wait_event(["CTRL-EVENT-SCAN-RESULTS"], 15)
                 if ev is None:
                     raise Exception("Scan timed out")
 
             res0 = dev[0].request("SCAN_RESULTS")
             res1 = dev[1].request("SCAN_RESULTS")
             res2 = dev[2].request("SCAN_RESULTS")
-            if bssid in res0 and bssid2 in res0 and bssid in res1 and bssid2 in res2:
+            res3 = wpas.request("SCAN_RESULTS")
+            if bssid in res0 and bssid2 in res0 and \
+               bssid in res1 and bssid2 in res2 and \
+               bssid in res3 and bssid2 in res3:
                 break
 
         res = dev[0].request("SCAN_RESULTS")
@@ -710,15 +719,19 @@ def test_scan_setband(dev, apdev):
             raise Exception("Missing scan result(2)")
         if bssid in res:
             raise Exception("Unexpected scan result(2)")
+
+        res = wpas.request("SCAN_RESULTS")
+        if bssid not in res or bssid2 not in res:
+            raise Exception("Missing scan result(3)")
     finally:
         if hapd:
             hapd.request("DISABLE")
         if hapd2:
             hapd2.request("DISABLE")
         subprocess.call(['iw', 'reg', 'set', '00'])
-        for i in range(3):
-            dev[i].request("SET setband AUTO")
-            dev[i].flush_scan_cache()
+        for i in devs:
+            d.request("SET setband AUTO")
+            d.flush_scan_cache()
 
 @remote_compatible
 def test_scan_hidden_many(dev, apdev):
