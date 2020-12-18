@@ -189,7 +189,7 @@ if __name__ == "__main__":
 	# TODO: Test the --udp option more
 	parser.add_argument('--udp', type=int, default=None, help="Override default request with UDP packet to the given port.")
 	parser.add_argument('--no-dhcp', default=False, action='store_true', help="Do not reply to DHCP requests as an AP.")
-	parser.add_argument('--icmp-size', type=int, default=None, help="Second to wait after AfterAuth before triggering Connected event")
+	parser.add_argument('--icmp-size', type=int, default=None, help="Size of the ICMP ping request to send.")
 	parser.add_argument('--padding', type=int, default=None, help="Add padding data to ARP/DHCP/ICMP requests.")
 	parser.add_argument('--rekey-request', default=False, action='store_true', help="Actively request PTK rekey as client.")
 	parser.add_argument('--rekey-plaintext', default=False, action='store_true', help="Do PTK rekey with plaintext EAPOL frames.")
