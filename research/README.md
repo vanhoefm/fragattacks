@@ -1012,3 +1012,12 @@ seems this should work with all already supported dongles. Note that I
 haven't tested this in detail: my assumption has been that whether a
 device is operating in WPA2 or WPA3 mode won't impact test results.
 
+The provided `client.conf` by default enables both the hunting-and-pecking method and
+the hash-to-element method. To set up an AP that supports hash-to-element (and thereby
+test the latest WPA3/SAE clients) you can modify `hostapd.conf` and set the parameter:
+
+	sae_pwe=2
+
+By setting this value the AP will accept both the hunting-and-pecking method and
+the hash-to-element method.
+
