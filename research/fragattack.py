@@ -204,6 +204,7 @@ if __name__ == "__main__":
 	parser.add_argument('--connected-delay', type=float, default=1, help="Second to wait after AfterAuth before triggering Connected event")
 	parser.add_argument('--to-self', default=False, action='store_true', help="Send ARP/DHCP/ICMP with same src and dst MAC address.")
 	parser.add_argument('--no-drivercheck', default=False, action='store_true', help="Don't check if patched drivers are being used.")
+	parser.add_argument('--stay-up', default=False, action='store_true', help="Don't quit when test has finished.")
 	options = parser.parse_args()
 
 	# Default value for options that should not be command line parameters

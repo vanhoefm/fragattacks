@@ -333,7 +333,8 @@ class Station():
 
 	def stop_test(self, failed=True):
 		self.test = None
-		quit(failed)
+		if not self.options.stay_up:
+			quit(failed)
 
 	def reset_keys(self):
 		self.tk = None
