@@ -1,4 +1,4 @@
-all: eapol-supp
+ALL=eapol-supp
 include ../rules.include
 
 CFLAGS += -DIEEE8021X_EAPOL
@@ -13,11 +13,16 @@ LIBS += $(SRC)/eap_common/libeap_common.a
 LIBS += $(SRC)/l2_packet/libl2_packet.a
 LIBS += $(SRC)/utils/libutils.a
 
-eapol-supp: eapol-supp.o $(OBJS) $(LIBS)
+OBJS += eapol-supp.o
+
+_OBJS_VAR := OBJS
+include ../../../src/objs.mk
+
+_OBJS_VAR := LIBS
+include ../../../src/objs.mk
+
+eapol-supp: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ -Wl,--start-group $(LIBS) -Wl,--end-group
 
-clean:
-	$(MAKE) -C $(SRC) clean
+clean: common-clean
 	rm -f eapol-supp *~ *.o *.d ../*~ ../*.o ../*.d
-
--include $(OBJS:%.o=%.d)

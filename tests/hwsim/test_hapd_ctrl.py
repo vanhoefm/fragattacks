@@ -6,10 +6,11 @@
 
 import logging
 logger = logging.getLogger()
+import os
 from remotehost import remote_compatible
 import hostapd
 import hwsim_utils
-from utils import skip_with_fips, alloc_fail, fail_test, HwsimSkip
+from utils import *
 
 @remote_compatible
 def test_hapd_ctrl_status(dev, apdev):
@@ -283,44 +284,56 @@ def test_hapd_ctrl_ess_disassoc(dev, apdev):
 def test_hapd_ctrl_set_deny_mac_file(dev, apdev):
     """hostapd and SET deny_mac_file ctrl_iface command"""
     ssid = "hapd-ctrl"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.macaddr')
     params = {"ssid": ssid}
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
     dev[1].connect(ssid, key_mgmt="NONE", scan_freq="2412")
-    if "OK" not in hapd.request("SET deny_mac_file hostapd.macaddr"):
+    hapd.send_file(filename, filename)
+    if "OK" not in hapd.request("SET deny_mac_file " + filename):
         raise Exception("Unexpected SET failure")
     dev[0].wait_disconnected(timeout=15)
     ev = dev[1].wait_event(["CTRL-EVENT-DISCONNECTED"], 1)
     if ev is not None:
         raise Exception("Unexpected disconnection")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_hapd_ctrl_set_accept_mac_file(dev, apdev):
     """hostapd and SET accept_mac_file ctrl_iface command"""
     ssid = "hapd-ctrl"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.macaddr')
     params = {"ssid": ssid}
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
     dev[1].connect(ssid, key_mgmt="NONE", scan_freq="2412")
+    hapd.send_file(filename, filename)
     hapd.request("SET macaddr_acl 1")
-    if "OK" not in hapd.request("SET accept_mac_file hostapd.macaddr"):
+    if "OK" not in hapd.request("SET accept_mac_file " + filename):
         raise Exception("Unexpected SET failure")
     dev[1].wait_disconnected(timeout=15)
     ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], 1)
     if ev is not None:
         raise Exception("Unexpected disconnection")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_hapd_ctrl_set_accept_mac_file_vlan(dev, apdev):
     """hostapd and SET accept_mac_file ctrl_iface command (VLAN ID)"""
     ssid = "hapd-ctrl"
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.accept')
     params = {"ssid": ssid}
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
     dev[1].connect(ssid, key_mgmt="NONE", scan_freq="2412")
+    hapd.send_file(filename, filename)
     hapd.request("SET macaddr_acl 1")
-    if "OK" not in hapd.request("SET accept_mac_file hostapd.accept"):
+    if "OK" not in hapd.request("SET accept_mac_file " + filename):
         raise Exception("Unexpected SET failure")
     dev[1].wait_disconnected(timeout=15)
     dev[0].wait_disconnected(timeout=15)
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 @remote_compatible
 def test_hapd_ctrl_set_error_cases(dev, apdev):
@@ -600,6 +613,7 @@ def test_hapd_dup_network_global_wpa2(dev, apdev):
 def test_hapd_dup_network_global_wpa(dev, apdev):
     """hostapd and DUP_NETWORK command (WPA)"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     psk = '602e323e077bc63bd80307ef4745b754b0ae0a925c2638ecd13a794b9527b9e6'
     src_ssid = "hapd-ctrl-src"
     dst_ssid = "hapd-ctrl-dst"

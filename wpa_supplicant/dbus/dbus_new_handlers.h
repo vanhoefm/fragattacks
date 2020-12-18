@@ -117,6 +117,9 @@ DBusMessage * wpas_dbus_handler_select_network(DBusMessage *message,
 DBusMessage * wpas_dbus_handler_network_reply(DBusMessage *message,
 					      struct wpa_supplicant *wpa_s);
 
+DBusMessage * wpas_dbus_handler_roam(DBusMessage *message,
+				     struct wpa_supplicant *wpa_s);
+
 DBusMessage * wpas_dbus_handler_add_blob(DBusMessage *message,
 					 struct wpa_supplicant *wpa_s);
 
@@ -167,6 +170,7 @@ DECLARE_ACCESSOR(wpas_dbus_setter_scan_interval);
 DECLARE_ACCESSOR(wpas_dbus_getter_ifname);
 DECLARE_ACCESSOR(wpas_dbus_getter_driver);
 DECLARE_ACCESSOR(wpas_dbus_getter_bridge_ifname);
+DECLARE_ACCESSOR(wpas_dbus_setter_bridge_ifname);
 DECLARE_ACCESSOR(wpas_dbus_getter_config_file);
 DECLARE_ACCESSOR(wpas_dbus_getter_current_bss);
 DECLARE_ACCESSOR(wpas_dbus_getter_current_network);

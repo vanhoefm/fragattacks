@@ -121,6 +121,15 @@ int ieee802_11_send_wnmsleep_req(struct wpa_supplicant *wpa_s,
 			os_free(wnmtfs_ie);
 			return -1;
 		}
+#ifdef CONFIG_TESTING_OPTIONS
+		if (wpa_s->oci_freq_override_wnm_sleep) {
+			wpa_printf(MSG_INFO,
+				   "TEST: Override OCI KDE frequency %d -> %d MHz",
+				   ci.frequency,
+				   wpa_s->oci_freq_override_wnm_sleep);
+			ci.frequency = wpa_s->oci_freq_override_wnm_sleep;
+		}
+#endif /* CONFIG_TESTING_OPTIONS */
 
 		oci_ie_len = OCV_OCI_EXTENDED_LEN;
 		oci_ie = os_zalloc(oci_ie_len);
@@ -280,6 +289,15 @@ static void wnm_sleep_mode_exit_success(struct wpa_supplicant *wpa_s,
 			wpa_wnmsleep_install_key(wpa_s->wpa,
 						 WNM_SLEEP_SUBELEM_IGTK, ptr);
 			ptr += 10 + WPA_IGTK_LEN;
+		} else if (*ptr == WNM_SLEEP_SUBELEM_BIGTK) {
+			if (ptr[1] < 2 + 6 + WPA_BIGTK_LEN) {
+				wpa_printf(MSG_DEBUG,
+					   "WNM: Too short BIGTK subelem");
+				break;
+			}
+			wpa_wnmsleep_install_key(wpa_s->wpa,
+						 WNM_SLEEP_SUBELEM_BIGTK, ptr);
+			ptr += 10 + WPA_BIGTK_LEN;
 		} else
 			break; /* skip the loop */
 	}
@@ -365,8 +383,9 @@ static void ieee802_11_rx_wnmsleep_resp(struct wpa_supplicant *wpa_s,
 
 		if (ocv_verify_tx_params(oci_ie, oci_ie_len, &ci,
 					 channel_width_to_int(ci.chanwidth),
-					 ci.seg1_idx) != 0) {
-			wpa_msg(wpa_s, MSG_WARNING, "WNM: %s", ocv_errorstr);
+					 ci.seg1_idx) != OCI_SUCCESS) {
+			wpa_msg(wpa_s, MSG_WARNING, "WNM: OCV failed: %s",
+				ocv_errorstr);
 			return;
 		}
 	}

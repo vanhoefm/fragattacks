@@ -288,7 +288,8 @@ int hs20_anqp_send_req(struct wpa_supplicant *wpa_s, const u8 *dst, u32 stypes,
 	if (buf == NULL)
 		return -1;
 
-	res = gas_query_req(wpa_s->gas, dst, freq, 0, buf, anqp_resp_cb, wpa_s);
+	res = gas_query_req(wpa_s->gas, dst, freq, 0, 0, buf, anqp_resp_cb,
+			    wpa_s);
 	if (res < 0) {
 		wpa_printf(MSG_DEBUG, "ANQP: Failed to send Query Request");
 		wpabuf_free(buf);
@@ -900,14 +901,25 @@ static void hs20_osu_add_prov(struct wpa_supplicant *wpa_s, struct wpa_bss *bss,
 	/* OSU Friendly Name Duples */
 	while (pos - pos2 >= 4 && prov->friendly_name_count < OSU_MAX_ITEMS) {
 		struct osu_lang_string *f;
-		if (1 + pos2[0] > pos - pos2 || pos2[0] < 3) {
+		u8 slen;
+
+		slen = pos2[0];
+		if (1 + slen > pos - pos2) {
 			wpa_printf(MSG_DEBUG, "Invalid OSU Friendly Name");
 			break;
 		}
+		if (slen < 3) {
+			wpa_printf(MSG_DEBUG,
+				   "Invalid OSU Friendly Name (no room for language)");
+			break;
+		}
 		f = &prov->friendly_name[prov->friendly_name_count++];
-		os_memcpy(f->lang, pos2 + 1, 3);
-		os_memcpy(f->text, pos2 + 1 + 3, pos2[0] - 3);
-		pos2 += 1 + pos2[0];
+		pos2++;
+		os_memcpy(f->lang, pos2, 3);
+		pos2 += 3;
+		slen -= 3;
+		os_memcpy(f->text, pos2, slen);
+		pos2 += slen;
 	}
 
 	/* OSU Server URI */

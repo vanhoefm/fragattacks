@@ -237,6 +237,10 @@ static void wpas_trigger_scan_cb(struct wpa_radio_work *work, int deinit)
 		if (wpa_s->disconnected)
 			retry = 0;
 
+		/* do not retry if operation is not supported */
+		if (ret == -EOPNOTSUPP)
+			retry = 0;
+
 		wpa_supplicant_notify_scanning(wpa_s, 0);
 		wpas_notify_scan_done(wpa_s, 0);
 		if (wpa_s->wpa_state == WPA_SCANNING)
@@ -666,30 +670,38 @@ static int non_p2p_network_enabled(struct wpa_supplicant *wpa_s)
 #endif /* CONFIG_P2P */
 
 
-static void wpa_setband_scan_freqs_list(struct wpa_supplicant *wpa_s,
-					enum hostapd_hw_mode band,
-					struct wpa_driver_scan_params *params,
-					int is_6ghz)
+int wpa_add_scan_freqs_list(struct wpa_supplicant *wpa_s,
+			    enum hostapd_hw_mode band,
+			    struct wpa_driver_scan_params *params, bool is_6ghz)
 {
 	/* Include only supported channels for the specified band */
 	struct hostapd_hw_modes *mode;
-	int count, i;
+	int num_chans = 0;
+	int *freqs, i;
 
 	mode = get_mode(wpa_s->hw.modes, wpa_s->hw.num_modes, band, is_6ghz);
-	if (mode == NULL) {
-		/* No channels supported in this band - use empty list */
-		params->freqs = os_zalloc(sizeof(int));
-		return;
+	if (!mode)
+		return -1;
+
+	if (params->freqs) {
+		while (params->freqs[num_chans])
+			num_chans++;
 	}
 
-	params->freqs = os_calloc(mode->num_channels + 1, sizeof(int));
-	if (params->freqs == NULL)
-		return;
-	for (count = 0, i = 0; i < mode->num_channels; i++) {
+	freqs = os_realloc(params->freqs,
+			   (num_chans + mode->num_channels + 1) * sizeof(int));
+	if (!freqs)
+		return -1;
+
+	params->freqs = freqs;
+	for (i = 0; i < mode->num_channels; i++) {
 		if (mode->channels[i].flag & HOSTAPD_CHAN_DISABLED)
 			continue;
-		params->freqs[count++] = mode->channels[i].freq;
+		params->freqs[num_chans++] = mode->channels[i].freq;
 	}
+	params->freqs[num_chans] = 0;
+
+	return 0;
 }
 
 
@@ -700,12 +712,16 @@ static void wpa_setband_scan_freqs(struct wpa_supplicant *wpa_s,
 		return; /* unknown what channels the driver supports */
 	if (params->freqs)
 		return; /* already using a limited channel set */
-	if (wpa_s->setband == WPA_SETBAND_5G)
-		wpa_setband_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211A,
-					    params, 0);
-	else if (wpa_s->setband == WPA_SETBAND_2G)
-		wpa_setband_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211G,
-					    params, 0);
+
+	if (wpa_s->setband_mask & WPA_SETBAND_5G)
+		wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211A, params,
+					0);
+	if (wpa_s->setband_mask & WPA_SETBAND_2G)
+		wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211G, params,
+					0);
+	if (wpa_s->setband_mask & WPA_SETBAND_6G)
+		wpa_add_scan_freqs_list(wpa_s, HOSTAPD_MODE_IEEE80211A, params,
+					1);
 }
 
 
@@ -1109,7 +1125,9 @@ static void wpa_supplicant_scan(void *eloop_ctx, void *timeout_ctx)
 		     tssid = tssid->next) {
 			if (wpas_network_disabled(wpa_s, tssid))
 				continue;
-			if ((params.freqs || !freqs_set) && tssid->scan_freq) {
+			if (((params.freqs || !freqs_set) &&
+			     tssid->scan_freq) &&
+			    int_array_len(params.freqs) < 100) {
 				int_array_concat(&params.freqs,
 						 tssid->scan_freq);
 			} else {
@@ -1195,7 +1213,12 @@ ssid_list_set:
 	wpa_setband_scan_freqs(wpa_s, &params);
 
 	/* See if user specified frequencies. If so, scan only those. */
-	if (wpa_s->conf->freq_list && !params.freqs) {
+	if (wpa_s->last_scan_req == INITIAL_SCAN_REQ &&
+	    wpa_s->conf->initial_freq_list && !params.freqs) {
+		wpa_dbg(wpa_s, MSG_DEBUG,
+			"Optimize scan based on conf->initial_freq_list");
+		int_array_concat(&params.freqs, wpa_s->conf->initial_freq_list);
+	} else if (wpa_s->conf->freq_list && !params.freqs) {
 		wpa_dbg(wpa_s, MSG_DEBUG,
 			"Optimize scan based on conf->freq_list");
 		int_array_concat(&params.freqs, wpa_s->conf->freq_list);
@@ -1251,7 +1274,8 @@ ssid_list_set:
 
 		params.bssid = wpa_s->next_scan_bssid;
 		bss = wpa_bss_get_bssid_latest(wpa_s, params.bssid);
-		if (bss && bss->ssid_len && params.num_ssids == 1 &&
+		if (!wpa_s->next_scan_bssid_wildcard_ssid &&
+		    bss && bss->ssid_len && params.num_ssids == 1 &&
 		    params.ssids[0].ssid_len == 0) {
 			params.ssids[0].ssid = bss->ssid;
 			params.ssids[0].ssid_len = bss->ssid_len;
@@ -1328,6 +1352,7 @@ scan:
 #ifdef CONFIG_INTERWORKING
 		wpa_s->interworking_fast_assoc_tried = 0;
 #endif /* CONFIG_INTERWORKING */
+		wpa_s->next_scan_bssid_wildcard_ssid = 0;
 		if (params.bssid)
 			os_memset(wpa_s->next_scan_bssid, 0, ETH_ALEN);
 	}
@@ -1861,18 +1886,15 @@ const u8 * wpa_scan_get_ie(const struct wpa_scan_res *res, u8 ie)
 const u8 * wpa_scan_get_vendor_ie(const struct wpa_scan_res *res,
 				  u32 vendor_type)
 {
-	const u8 *end, *pos;
+	const u8 *ies;
+	const struct element *elem;
 
-	pos = (const u8 *) (res + 1);
-	end = pos + res->ie_len;
+	ies = (const u8 *) (res + 1);
 
-	while (end - pos > 1) {
-		if (2 + pos[1] > end - pos)
-			break;
-		if (pos[0] == WLAN_EID_VENDOR_SPECIFIC && pos[1] >= 4 &&
-		    vendor_type == WPA_GET_BE32(&pos[2]))
-			return pos;
-		pos += 2 + pos[1];
+	for_each_element_id(elem, WLAN_EID_VENDOR_SPECIFIC, ies, res->ie_len) {
+		if (elem->datalen >= 4 &&
+		    vendor_type == WPA_GET_BE32(elem->data))
+			return &elem->id;
 	}
 
 	return NULL;
@@ -1894,22 +1916,20 @@ const u8 * wpa_scan_get_vendor_ie(const struct wpa_scan_res *res,
 const u8 * wpa_scan_get_vendor_ie_beacon(const struct wpa_scan_res *res,
 					 u32 vendor_type)
 {
-	const u8 *end, *pos;
+	const u8 *ies;
+	const struct element *elem;
 
 	if (res->beacon_ie_len == 0)
 		return NULL;
 
-	pos = (const u8 *) (res + 1);
-	pos += res->ie_len;
-	end = pos + res->beacon_ie_len;
+	ies = (const u8 *) (res + 1);
+	ies += res->ie_len;
 
-	while (end - pos > 1) {
-		if (2 + pos[1] > end - pos)
-			break;
-		if (pos[0] == WLAN_EID_VENDOR_SPECIFIC && pos[1] >= 4 &&
-		    vendor_type == WPA_GET_BE32(&pos[2]))
-			return pos;
-		pos += 2 + pos[1];
+	for_each_element_id(elem, WLAN_EID_VENDOR_SPECIFIC, ies,
+			    res->beacon_ie_len) {
+		if (elem->datalen >= 4 &&
+		    vendor_type == WPA_GET_BE32(elem->data))
+			return &elem->id;
 	}
 
 	return NULL;
@@ -1940,12 +1960,17 @@ struct wpabuf * wpa_scan_get_vendor_ie_multi(const struct wpa_scan_res *res,
 	end = pos + res->ie_len;
 
 	while (end - pos > 1) {
-		if (2 + pos[1] > end - pos)
+		u8 ie, len;
+
+		ie = pos[0];
+		len = pos[1];
+		if (len > end - pos - 2)
 			break;
-		if (pos[0] == WLAN_EID_VENDOR_SPECIFIC && pos[1] >= 4 &&
-		    vendor_type == WPA_GET_BE32(&pos[2]))
-			wpabuf_put_data(buf, pos + 2 + 4, pos[1] - 4);
-		pos += 2 + pos[1];
+		pos += 2;
+		if (ie == WLAN_EID_VENDOR_SPECIFIC && len >= 4 &&
+		    vendor_type == WPA_GET_BE32(pos))
+			wpabuf_put_data(buf, pos + 4, len - 4);
+		pos += len;
 	}
 
 	if (wpabuf_len(buf) == 0) {
@@ -2183,69 +2208,101 @@ void scan_snr(struct wpa_scan_res *res)
 }
 
 
-static unsigned int max_ht20_rate(int snr)
+/* Minimum SNR required to achieve a certain bitrate. */
+struct minsnr_bitrate_entry {
+	int minsnr;
+	unsigned int bitrate; /* in Mbps */
+};
+
+/* VHT needs to be enabled in order to achieve MCS8 and MCS9 rates. */
+static const int vht_mcs = 8;
+
+static const struct minsnr_bitrate_entry vht20_table[] = {
+	{ 0, 0 },
+	{ 2, 6500 },   /* HT20 MCS0 */
+	{ 5, 13000 },  /* HT20 MCS1 */
+	{ 9, 19500 },  /* HT20 MCS2 */
+	{ 11, 26000 }, /* HT20 MCS3 */
+	{ 15, 39000 }, /* HT20 MCS4 */
+	{ 18, 52000 }, /* HT20 MCS5 */
+	{ 20, 58500 }, /* HT20 MCS6 */
+	{ 25, 65000 }, /* HT20 MCS7 */
+	{ 29, 78000 }, /* VHT20 MCS8 */
+	{ -1, 78000 }  /* SNR > 29 */
+};
+
+static const struct minsnr_bitrate_entry vht40_table[] = {
+	{ 0, 0 },
+	{ 5, 13500 },   /* HT40 MCS0 */
+	{ 8, 27000 },   /* HT40 MCS1 */
+	{ 12, 40500 },  /* HT40 MCS2 */
+	{ 14, 54000 },  /* HT40 MCS3 */
+	{ 18, 81000 },  /* HT40 MCS4 */
+	{ 21, 108000 }, /* HT40 MCS5 */
+	{ 23, 121500 }, /* HT40 MCS6 */
+	{ 28, 135000 }, /* HT40 MCS7 */
+	{ 32, 162000 }, /* VHT40 MCS8 */
+	{ 34, 180000 }, /* VHT40 MCS9 */
+	{ -1, 180000 }  /* SNR > 34 */
+};
+
+static const struct minsnr_bitrate_entry vht80_table[] = {
+	{ 0, 0 },
+	{ 8, 29300 },   /* VHT80 MCS0 */
+	{ 11, 58500 },  /* VHT80 MCS1 */
+	{ 15, 87800 },  /* VHT80 MCS2 */
+	{ 17, 117000 }, /* VHT80 MCS3 */
+	{ 21, 175500 }, /* VHT80 MCS4 */
+	{ 24, 234000 }, /* VHT80 MCS5 */
+	{ 26, 263300 }, /* VHT80 MCS6 */
+	{ 31, 292500 }, /* VHT80 MCS7 */
+	{ 35, 351000 }, /* VHT80 MCS8 */
+	{ 37, 390000 }, /* VHT80 MCS9 */
+	{ -1, 390000 }  /* SNR > 37 */
+};
+
+
+static unsigned int interpolate_rate(int snr, int snr0, int snr1,
+				     int rate0, int rate1)
 {
-	if (snr < 6)
-		return 6500; /* HT20 MCS0 */
-	if (snr < 8)
-		return 13000; /* HT20 MCS1 */
-	if (snr < 13)
-		return 19500; /* HT20 MCS2 */
-	if (snr < 17)
-		return 26000; /* HT20 MCS3 */
-	if (snr < 20)
-		return 39000; /* HT20 MCS4 */
-	if (snr < 23)
-		return 52000; /* HT20 MCS5 */
-	if (snr < 24)
-		return 58500; /* HT20 MCS6 */
-	return 65000; /* HT20 MCS7 */
+	return rate0 + (snr - snr0) * (rate1 - rate0) / (snr1 - snr0);
 }
 
 
-static unsigned int max_ht40_rate(int snr)
+static unsigned int max_rate(const struct minsnr_bitrate_entry table[],
+			     int snr, bool vht)
 {
-	if (snr < 3)
-		return 13500; /* HT40 MCS0 */
-	if (snr < 6)
-		return 27000; /* HT40 MCS1 */
-	if (snr < 10)
-		return 40500; /* HT40 MCS2 */
-	if (snr < 15)
-		return 54000; /* HT40 MCS3 */
-	if (snr < 17)
-		return 81000; /* HT40 MCS4 */
-	if (snr < 22)
-		return 108000; /* HT40 MCS5 */
-	if (snr < 24)
-		return 121500; /* HT40 MCS6 */
-	return 135000; /* HT40 MCS7 */
+	const struct minsnr_bitrate_entry *prev, *entry = table;
+
+	while ((entry->minsnr != -1) &&
+	       (snr >= entry->minsnr) &&
+	       (vht || entry - table <= vht_mcs))
+		entry++;
+	if (entry == table)
+		return entry->bitrate;
+	prev = entry - 1;
+	if (entry->minsnr == -1 || (!vht && entry - table > vht_mcs))
+		return prev->bitrate;
+	return interpolate_rate(snr, prev->minsnr, entry->minsnr, prev->bitrate,
+				entry->bitrate);
+}
+
+
+static unsigned int max_ht20_rate(int snr, bool vht)
+{
+	return max_rate(vht20_table, snr, vht);
+}
+
+
+static unsigned int max_ht40_rate(int snr, bool vht)
+{
+	return max_rate(vht40_table, snr, vht);
 }
 
 
 static unsigned int max_vht80_rate(int snr)
 {
-	if (snr < 1)
-		return 0;
-	if (snr < 2)
-		return 29300; /* VHT80 MCS0 */
-	if (snr < 5)
-		return 58500; /* VHT80 MCS1 */
-	if (snr < 9)
-		return 87800; /* VHT80 MCS2 */
-	if (snr < 11)
-		return 117000; /* VHT80 MCS3 */
-	if (snr < 15)
-		return 175500; /* VHT80 MCS4 */
-	if (snr < 16)
-		return 234000; /* VHT80 MCS5 */
-	if (snr < 18)
-		return 263300; /* VHT80 MCS6 */
-	if (snr < 20)
-		return 292500; /* VHT80 MCS7 */
-	if (snr < 22)
-		return 351000; /* VHT80 MCS8 */
-	return 390000; /* VHT80 MCS9 */
+	return max_rate(vht80_table, snr, 1);
 }
 
 
@@ -2268,14 +2325,32 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 		rate = 9 * 2;
 	else if (rate > 12 * 2 && snr < 7)
 		rate = 12 * 2;
+	else if (rate > 12 * 2 && snr < 8)
+		rate = 14 * 2;
+	else if (rate > 12 * 2 && snr < 9)
+		rate = 16 * 2;
 	else if (rate > 18 * 2 && snr < 10)
 		rate = 18 * 2;
 	else if (rate > 24 * 2 && snr < 11)
 		rate = 24 * 2;
+	else if (rate > 24 * 2 && snr < 12)
+		rate = 27 * 2;
+	else if (rate > 24 * 2 && snr < 13)
+		rate = 30 * 2;
+	else if (rate > 24 * 2 && snr < 14)
+		rate = 33 * 2;
 	else if (rate > 36 * 2 && snr < 15)
 		rate = 36 * 2;
+	else if (rate > 36 * 2 && snr < 16)
+		rate = 39 * 2;
+	else if (rate > 36 * 2 && snr < 17)
+		rate = 42 * 2;
+	else if (rate > 36 * 2 && snr < 18)
+		rate = 45 * 2;
 	else if (rate > 48 * 2 && snr < 19)
 		rate = 48 * 2;
+	else if (rate > 48 * 2 && snr < 20)
+		rate = 51 * 2;
 	else if (rate > 54 * 2 && snr < 21)
 		rate = 54 * 2;
 	est = rate * 500;
@@ -2283,7 +2358,7 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 	if (capab == CAPAB_HT || capab == CAPAB_HT40 || capab == CAPAB_VHT) {
 		ie = get_ie(ies, ies_len, WLAN_EID_HT_CAP);
 		if (ie) {
-			tmp = max_ht20_rate(snr);
+			tmp = max_ht20_rate(snr, false);
 			if (tmp > est)
 				est = tmp;
 		}
@@ -2293,7 +2368,7 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 		ie = get_ie(ies, ies_len, WLAN_EID_HT_OPERATION);
 		if (ie && ie[1] >= 2 &&
 		    (ie[3] & HT_INFO_HT_PARAM_SECONDARY_CHNL_OFF_MASK)) {
-			tmp = max_ht40_rate(snr);
+			tmp = max_ht40_rate(snr, false);
 			if (tmp > est)
 				est = tmp;
 		}
@@ -2303,7 +2378,7 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 		/* Use +1 to assume VHT is always faster than HT */
 		ie = get_ie(ies, ies_len, WLAN_EID_VHT_CAP);
 		if (ie) {
-			tmp = max_ht20_rate(snr) + 1;
+			tmp = max_ht20_rate(snr, true) + 1;
 			if (tmp > est)
 				est = tmp;
 
@@ -2311,7 +2386,7 @@ unsigned int wpas_get_est_tpt(const struct wpa_supplicant *wpa_s,
 			if (ie && ie[1] >= 2 &&
 			    (ie[3] &
 			     HT_INFO_HT_PARAM_SECONDARY_CHNL_OFF_MASK)) {
-				tmp = max_ht40_rate(snr) + 1;
+				tmp = max_ht40_rate(snr, true) + 1;
 				if (tmp > est)
 					est = tmp;
 			}
@@ -2604,8 +2679,8 @@ void wpa_scan_free_params(struct wpa_driver_scan_params *params)
 
 int wpas_start_pno(struct wpa_supplicant *wpa_s)
 {
-	int ret, prio;
-	size_t i, num_ssid, num_match_ssid;
+	int ret;
+	size_t prio, i, num_ssid, num_match_ssid;
 	struct wpa_ssid *ssid;
 	struct wpa_driver_scan_params params;
 	struct sched_scan_plan scan_plan;

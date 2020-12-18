@@ -1,9 +1,23 @@
-These scripts allow you to run the hwsim tests inside a KVM virtual machine.
+These scripts allow you to run the hwsim tests inside a KVM virtual machine or
+as a UML (User Mode Linux) program.
 
-To set it up, first compile a kernel with the kernel-config file as the
-.config. You can adjust it as needed, the configuration is for a 64-bit
-x86 system and should be close to minimal. The architecture must be the
-same as your host since the host's filesystem is used.
+To set it up, first compile a kernel with the kernel-config[.uml] file as the
+.config. You can adjust it as needed, the configuration is for a 64-bit x86
+system and should be close to minimal. The architecture must be the same as
+your host since the host's filesystem is used.
+
+To build the regular x86_64 kernel, simply issue
+
+yes "" | make -j <n_cpus>
+
+or to build UML:
+
+yes "" | ARCH=um make -j <n_cpus>
+
+Running a UML kernel is recommended as it can optimize out any sleep()s or
+kernel timers by taking advantage of UML time travel mode, greatly increasing
+test efficiency (~3200 tests can be run in under 5 minutes using parallel-vm.py
+on a 24 core CPU).
 
 Install the required tools: at least 'kvm', if you want tracing trace-cmd,
 valgrind if you want, etc.

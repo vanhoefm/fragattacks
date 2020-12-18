@@ -17,7 +17,7 @@ import socket
 import subprocess
 
 import hostapd
-from utils import HwsimSkip, skip_with_fips, alloc_fail, fail_test, wait_fail_trigger
+from utils import *
 import hwsim_utils
 from tshark import run_tshark
 from wlantest import Wlantest
@@ -726,6 +726,61 @@ def test_ap_hs20_auto_interworking(dev, apdev):
         raise Exception("Unexpected pairwise cipher")
     if status['hs20'] != "3":
         raise Exception("Unexpected HS 2.0 support indication")
+
+def test_ap_hs20_auto_interworking_global_pmf(dev, apdev):
+    """Hotspot 2.0 connection with auto_interworking=1 and pmf=2"""
+    check_eap_capa(dev[0], "MSCHAPV2")
+    bssid = apdev[0]['bssid']
+    params = hs20_ap_params()
+    params['hessid'] = bssid
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].hs20_enable(auto_interworking=True)
+    id = dev[0].add_cred_values({'realm': "example.com",
+                                 'username': "hs20-test",
+                                 'password': "password",
+                                 'ca_cert': "auth_serv/ca.pem",
+                                 'domain': "example.com",
+                                 'update_identifier': "1234"})
+    try:
+        dev[0].set("pmf", "2")
+        dev[0].request("REASSOCIATE")
+        dev[0].wait_connected(timeout=15)
+        pmf = dev[0].get_status_field("pmf")
+        if pmf != "1":
+            raise Exception("Unexpected PMF state: " + str(pmf))
+    finally:
+        dev[0].set("pmf", "0")
+
+def test_ap_hs20_auto_interworking_global_pmf_fail(dev, apdev):
+    """Hotspot 2.0 connection with auto_interworking=1 and pmf=2 failure"""
+    check_eap_capa(dev[0], "MSCHAPV2")
+    bssid = apdev[0]['bssid']
+    params = hs20_ap_params()
+    params['ieee80211w'] = "0"
+    params['hessid'] = bssid
+    hostapd.add_ap(apdev[0], params)
+
+    dev[0].hs20_enable(auto_interworking=True)
+    id = dev[0].add_cred_values({'realm': "example.com",
+                                 'username': "hs20-test",
+                                 'password': "password",
+                                 'ca_cert': "auth_serv/ca.pem",
+                                 'domain': "example.com",
+                                 'update_identifier': "1234"})
+    try:
+        dev[0].set("pmf", "2")
+        dev[0].request("REASSOCIATE")
+        for i in range(2):
+            ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                    "INTERWORKING-SELECTED"], timeout=15)
+            if ev is None:
+                raise Exception("Connection result not reported")
+            if "CTRL-EVENT-CONNECTED" in ev:
+                raise Exception("Unexpected connection")
+        dev[0].request("DISCONNECT")
+    finally:
+        dev[0].set("pmf", "0")
 
 @remote_compatible
 def test_ap_hs20_auto_interworking_no_match(dev, apdev):
@@ -2547,6 +2602,41 @@ def test_ap_hs20_deauth_req_without_pmf(dev, apdev):
         if "FAIL" not in hapd.request("HS20_DEAUTH_REQ " + addr + " 1 120 http://example.com/"):
             raise Exception("HS20_DEAUTH_REQ accepted during OOM")
 
+def test_ap_hs20_deauth_req_pmf_htc(dev, apdev):
+    """Hotspot 2.0 connection and deauthentication request PMF misbehavior (+HTC)"""
+    try:
+        run_ap_hs20_deauth_req_pmf_htc(dev, apdev)
+    finally:
+        stop_monitor(apdev[1]["ifname"])
+
+def run_ap_hs20_deauth_req_pmf_htc(dev, apdev):
+    check_eap_capa(dev[0], "MSCHAPV2")
+    dev[0].request("SET pmf 0")
+    hapd = eap_test(dev[0], apdev[0], "21[3:26]", "TTLS", "user", release=1)
+    dev[0].dump_monitor()
+    addr = dev[0].own_addr()
+    hapd.wait_sta()
+
+    sock = start_monitor(apdev[1]["ifname"])
+    radiotap = radiotap_build()
+    bssid = hapd.own_addr().replace(':', '')
+    addr = dev[0].own_addr().replace(':', '')
+    payload = "0a1a0101dd1b506f9a0101780013687474703a2f2f6578616d706c652e636f6d2f"
+    # Claim there is a HT Control field, but then start the frame body from
+    # there and do not encrypt the Robust Action frame.
+    frame = binascii.unhexlify("d0803a01" + addr + 2 * bssid + "0000" + payload)
+    # Claim there is a HT Control field and start the frame body in the correct
+    # location, but do not encrypt the Robust Action frame. Make the first octet
+    # of HT Control field use a non-robust Action Category value.
+    frame2 = binascii.unhexlify("d0803a01" + addr + 2 * bssid + "0000" + "04000000" + payload)
+
+    sock.send(radiotap + frame)
+    sock.send(radiotap + frame2)
+
+    ev = dev[0].wait_event(["HS20-DEAUTH-IMMINENT-NOTICE"], timeout=1)
+    if ev is not None:
+        raise Exception("Deauth imminent notice without PMF accepted")
+
 def test_ap_hs20_remediation_required(dev, apdev):
     """Hotspot 2.0 connection and remediation required from RADIUS"""
     check_eap_capa(dev[0], "MSCHAPV2")
@@ -2662,8 +2752,9 @@ def test_ap_hs20_osen(dev, apdev):
 
     dev[1].connect("osen", key_mgmt="NONE", scan_freq="2412",
                    wait_connect=False)
-    dev[2].connect("osen", key_mgmt="NONE", wep_key0='"hello"',
-                   scan_freq="2412", wait_connect=False)
+    if "WEP40" in dev[2].get_capability("group"):
+        dev[2].connect("osen", key_mgmt="NONE", wep_key0='"hello"',
+                       scan_freq="2412", wait_connect=False)
     dev[0].flush_scan_cache()
     dev[0].connect("osen", proto="OSEN", key_mgmt="OSEN", pairwise="CCMP",
                    group="GTK_NOT_USED CCMP",
@@ -3849,7 +3940,7 @@ def test_ap_hs20_remediation_sql(dev, apdev, params):
         import sqlite3
     except ImportError:
         raise HwsimSkip("No sqlite3 module available")
-    dbfile = os.path.join(params['logdir'], "eap-user.db")
+    dbfile = params['prefix'] + ".eap-user.db"
     try:
         os.remove(dbfile)
     except:
@@ -3913,7 +4004,7 @@ def test_ap_hs20_sim_provisioning(dev, apdev, params):
         import sqlite3
     except ImportError:
         raise HwsimSkip("No sqlite3 module available")
-    dbfile = os.path.join(params['logdir'], "ap_hs20_sim_provisioning-eap-user.db")
+    dbfile = params['prefix'] + ".eap-user.db"
     try:
         os.remove(dbfile)
     except:
@@ -4631,16 +4722,10 @@ def tshark_get_na(cap):
     return frames
 
 def _test_proxyarp_open(dev, apdev, params, ebtables=False):
-    prefix = "proxyarp_open"
-    if ebtables:
-        prefix += "_ebtables"
-    cap_br = os.path.join(params['logdir'], prefix + ".ap-br0.pcap")
-    cap_dev0 = os.path.join(params['logdir'],
-                            prefix + ".%s.pcap" % dev[0].ifname)
-    cap_dev1 = os.path.join(params['logdir'],
-                            prefix + ".%s.pcap" % dev[1].ifname)
-    cap_dev2 = os.path.join(params['logdir'],
-                            prefix + ".%s.pcap" % dev[2].ifname)
+    cap_br = params['prefix'] + ".ap-br0.pcap"
+    cap_dev0 = params['prefix'] + ".%s.pcap" % dev[0].ifname
+    cap_dev1 = params['prefix'] + ".%s.pcap" % dev[1].ifname
+    cap_dev2 = params['prefix'] + ".%s.pcap" % dev[2].ifname
 
     bssid = apdev[0]['bssid']
     params = {'ssid': 'open'}
@@ -4671,9 +4756,12 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
     if ebtables:
         for chain in ['FORWARD', 'OUTPUT']:
             try:
-                subprocess.call(['ebtables', '-A', chain, '-p', 'ARP',
-                                 '-d', 'Broadcast', '-o', apdev[0]['ifname'],
-                                 '-j', 'DROP'])
+                err = subprocess.call(['ebtables', '-A', chain, '-p', 'ARP',
+                                       '-d', 'Broadcast',
+                                       '-o', apdev[0]['ifname'],
+                                       '-j', 'DROP'])
+                if err != 0:
+                    raise
             except:
                 raise HwsimSkip("No ebtables available")
 
@@ -4956,17 +5044,10 @@ def _test_proxyarp_open(dev, apdev, params, ebtables=False):
     #    raise Exception("br did not get ARP response for 192.168.1.123")
 
 def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
-    prefix = "proxyarp_open"
-    if ebtables:
-        prefix += "_ebtables"
-    prefix += "_ipv6"
-    cap_br = os.path.join(params['logdir'], prefix + ".ap-br0.pcap")
-    cap_dev0 = os.path.join(params['logdir'],
-                            prefix + ".%s.pcap" % dev[0].ifname)
-    cap_dev1 = os.path.join(params['logdir'],
-                            prefix + ".%s.pcap" % dev[1].ifname)
-    cap_dev2 = os.path.join(params['logdir'],
-                            prefix + ".%s.pcap" % dev[2].ifname)
+    cap_br = params['prefix'] + ".ap-br0.pcap"
+    cap_dev0 = params['prefix'] + ".%s.pcap" % dev[0].ifname
+    cap_dev1 = params['prefix'] + ".%s.pcap" % dev[1].ifname
+    cap_dev2 = params['prefix'] + ".%s.pcap" % dev[2].ifname
 
     bssid = apdev[0]['bssid']
     params = {'ssid': 'open'}
@@ -4997,10 +5078,15 @@ def _test_proxyarp_open_ipv6(dev, apdev, params, ebtables=False):
     if ebtables:
         for chain in ['FORWARD', 'OUTPUT']:
             try:
-                subprocess.call(['ebtables', '-A', chain, '-d', 'Multicast',
-                                 '-p', 'IPv6', '--ip6-protocol', 'ipv6-icmp',
-                                 '--ip6-icmp-type', 'neighbor-solicitation',
-                                 '-o', apdev[0]['ifname'], '-j', 'DROP'])
+                err = subprocess.call(['ebtables', '-A', chain,
+                                       '-d', 'Multicast',
+                                       '-p', 'IPv6',
+                                       '--ip6-protocol', 'ipv6-icmp',
+                                       '--ip6-icmp-type',
+                                       'neighbor-solicitation',
+                                       '-o', apdev[0]['ifname'], '-j', 'DROP'])
+                if err != 0:
+                    raise
                 subprocess.call(['ebtables', '-A', chain, '-d', 'Multicast',
                                  '-p', 'IPv6', '--ip6-protocol', 'ipv6-icmp',
                                  '--ip6-icmp-type', 'neighbor-advertisement',
@@ -5988,6 +6074,9 @@ def test_ap_hs20_set_profile_failures(dev, apdev):
 
 def test_ap_hs20_unexpected(dev, apdev):
     """Unexpected Hotspot 2.0 AP configuration"""
+    skip_without_tkip(dev[0])
+    skip_without_tkip(dev[1])
+    skip_without_tkip(dev[2])
     check_eap_capa(dev[0], "MSCHAPV2")
     bssid = apdev[0]['bssid']
     params = hostapd.wpa_eap_params(ssid="test-hs20-fake")
@@ -6170,7 +6259,7 @@ def run_ap_hs20_terms_and_conditions_sql(dev, apdev, params, url_template,
         import sqlite3
     except ImportError:
         raise HwsimSkip("No sqlite3 module available")
-    dbfile = os.path.join(params['logdir'], "eap-user.db")
+    dbfile = params['prefix'] + ".eap-user.db"
     try:
         os.remove(dbfile)
     except:

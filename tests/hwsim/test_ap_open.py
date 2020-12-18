@@ -18,7 +18,6 @@ from tshark import run_tshark
 from utils import *
 from wpasupplicant import WpaSupplicant
 from wlantest import WlantestCapture
-from test_ap_ht import set_world_reg
 
 @remote_compatible
 def test_ap_open(dev, apdev):
@@ -278,6 +277,7 @@ def hapd_out_of_mem(hapd, apdev, count, func):
 def test_ap_open_out_of_memory(dev, apdev):
     """hostapd failing to setup interface due to allocation failure"""
     hapd = hostapd.add_ap(apdev[0], {"ssid": "open"})
+    flags2 = hapd.request("DRIVER_FLAGS2").splitlines()[1:]
     hapd_out_of_mem(hapd, apdev[1], 1, "hostapd_alloc_bss_data")
 
     for i in range(1, 3):
@@ -293,8 +293,9 @@ def test_ap_open_out_of_memory(dev, apdev):
     for i in range(1, 3):
         hapd_out_of_mem(hapd, apdev[1], i, "=wpa_driver_nl80211_drv_init")
 
-    # eloop_register_read_sock() call from i802_init()
-    hapd_out_of_mem(hapd, apdev[1], 1, "eloop_sock_table_add_sock;?eloop_register_sock;?eloop_register_read_sock;=i802_init")
+    if 'CONTROL_PORT_RX' not in flags2:
+        # eloop_register_read_sock() call from i802_init()
+        hapd_out_of_mem(hapd, apdev[1], 1, "eloop_sock_table_add_sock;?eloop_register_sock;?eloop_register_read_sock;=i802_init")
 
     # verify that a new interface can still be added when memory allocation does
     # not fail
@@ -505,7 +506,7 @@ def test_ap_open_sta_ps(dev, apdev):
         run_ap_open_sta_ps(dev, hapd)
     finally:
         dev[0].cmd_execute(['iw', 'dev', dev[0].ifname,
-                            'set', 'power_save', 'on'])
+                            'set', 'power_save', 'off'])
 
 def run_ap_open_sta_ps(dev, hapd):
     hwsim_utils.test_connectivity(dev[0], hapd)
@@ -527,6 +528,11 @@ def run_ap_open_sta_ps(dev, hapd):
 
         if not ok:
             raise Exception("STA did not enter power save")
+
+        dev[0].dump_monitor()
+        hapd.dump_monitor()
+        hapd.request("DEAUTHENTICATE " + dev[0].own_addr())
+        dev[0].wait_disconnected()
     except FileNotFoundError:
         raise HwsimSkip("Kernel does not support inspecting HW PS state")
 

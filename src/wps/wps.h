@@ -395,11 +395,6 @@ struct wps_registrar_config {
 	int disable_auto_conf;
 
 	/**
-	 * static_wep_only - Whether the BSS supports only static WEP
-	 */
-	int static_wep_only;
-
-	/**
 	 * dualband - Whether this is a concurrent dualband AP
 	 */
 	int dualband;

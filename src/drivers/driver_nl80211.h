@@ -17,6 +17,11 @@
 #include "utils/list.h"
 #include "driver.h"
 
+#ifndef NL_CAPABILITY_VERSION_3_5_0
+#define nla_nest_start(msg, attrtype) \
+	nla_nest_start(msg, NLA_F_NESTED | (attrtype))
+#endif
+
 struct nl80211_global {
 	void *ctx;
 	struct dl_list interfaces;
@@ -106,6 +111,7 @@ struct wpa_driver_nl80211_data {
 	unsigned int num_iface_ext_capa;
 
 	int has_capability;
+	int has_driver_key_mgmt;
 
 	int operstate;
 
@@ -164,8 +170,11 @@ struct wpa_driver_nl80211_data {
 	unsigned int set_wifi_conf_vendor_cmd_avail:1;
 	unsigned int fetch_bss_trans_status:1;
 	unsigned int roam_vendor_cmd_avail:1;
-	unsigned int get_supported_akm_suites_avail:1;
 	unsigned int add_sta_node_vendor_cmd_avail:1;
+	unsigned int control_port_ap:1;
+	unsigned int multicast_registrations:1;
+	unsigned int no_rrm:1;
+	unsigned int get_sta_info_vendor_cmd_avail:1;
 
 	u64 vendor_scan_cookie;
 	u64 remain_on_chan_cookie;
@@ -173,6 +182,7 @@ struct wpa_driver_nl80211_data {
 #define MAX_SEND_FRAME_COOKIES 20
 	u64 send_frame_cookies[MAX_SEND_FRAME_COOKIES];
 	unsigned int num_send_frame_cookies;
+	u64 eapol_tx_cookie;
 
 	unsigned int last_mgmt_freq;
 
@@ -223,7 +233,10 @@ struct nl_msg * nl80211_drv_msg(struct wpa_driver_nl80211_data *drv, int flags,
 struct nl_msg * nl80211_bss_msg(struct i802_bss *bss, int flags, uint8_t cmd);
 int send_and_recv_msgs(struct wpa_driver_nl80211_data *drv, struct nl_msg *msg,
 		       int (*valid_handler)(struct nl_msg *, void *),
-		       void *valid_data);
+		       void *valid_data,
+		       int (*ack_handler_custom)(struct nl_msg *, void *),
+		       void *ack_data);
+struct nl_sock * get_connect_handle(struct i802_bss *bss);
 int nl80211_create_iface(struct wpa_driver_nl80211_data *drv,
 			 const char *ifname, enum nl80211_iftype iftype,
 			 const u8 *addr, int wds,
@@ -266,6 +279,8 @@ int process_global_event(struct nl_msg *msg, void *arg);
 int process_bss_event(struct nl_msg *msg, void *arg);
 
 const char * nl80211_iftype_str(enum nl80211_iftype mode);
+
+void nl80211_restore_ap_mode(struct i802_bss *bss);
 
 #ifdef ANDROID
 int android_nl_socket_set_nonblocking(struct nl_sock *handle);

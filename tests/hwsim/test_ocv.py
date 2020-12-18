@@ -12,9 +12,8 @@ logger = logging.getLogger()
 import hostapd
 from wpasupplicant import WpaSupplicant
 import hwsim_utils
-from utils import HwsimSkip
+from utils import *
 
-from test_ap_ht import set_world_reg
 from test_ap_psk import parse_eapol, build_eapol, pmk_to_ptk, eapol_key_mic, recv_eapol, send_eapol, reply_eapol, build_eapol_key_3_4, aes_wrap, pad_key_data
 
 #TODO: Refuse setting up AP with OCV but without MFP support
@@ -260,6 +259,7 @@ def run_wpa2_ocv_vht160(dev, apdev):
                   "channel": channel,
                   "country_code": "ZA",
                   "ht_capab": capab,
+                  "vht_capab": "[VHT160]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "vht_oper_chwidth": "2",
@@ -302,6 +302,7 @@ def run_wpa2_ocv_vht80plus80(dev, apdev):
                   "channel": channel,
                   "country_code": "US",
                   "ht_capab": capab,
+                  "vht_capab": "[VHT160-80PLUS80]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "vht_oper_chwidth": "3",
@@ -904,3 +905,211 @@ def test_wpa2_ocv_auto_enable_pmf(dev, apdev):
                        ieee80211w="2")
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
+
+def test_wpa2_ocv_sta_override_eapol(dev, apdev):
+    """OCV on 2.4 GHz and STA override EAPOL-Key msg 2/4"""
+    params = {"channel": "1",
+              "ieee80211w": "2",
+              "ocv": "1"}
+    hapd, ssid, passphrase = ocv_setup_ap(apdev[0], params)
+    dev[0].set("oci_freq_override_eapol", "2462")
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412", ocv="1",
+                   ieee80211w="2", wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "CTRL-EVENT-DISCONNECTED"], timeout=15)
+    dev[0].request("DISCONNECT")
+    if ev is None:
+        raise Exception("No connection result reported")
+    if "CTRL-EVENT-CONNECTED" in ev:
+        raise Exception("Unexpected connection")
+    if "reason=15" not in ev:
+        raise Exception("Unexpected disconnection reason: " + ev)
+
+    check_ocv_failure(hapd, "EAPOL-Key msg 2/4", "eapol-key-m2",
+                      dev[0].own_addr())
+
+def test_wpa2_ocv_sta_override_sa_query_req(dev, apdev):
+    """OCV on 2.4 GHz and STA override SA Query Request"""
+    params = {"channel": "1",
+              "ieee80211w": "2",
+              "ocv": "1"}
+    hapd, ssid, passphrase = ocv_setup_ap(apdev[0], params)
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412", ocv="1",
+                   ieee80211w="2")
+    hapd.wait_sta()
+    dev[0].set("oci_freq_override_saquery_req", "2462")
+    if "OK" not in dev[0].request("UNPROT_DEAUTH"):
+        raise Exception("Triggering SA Query from the STA failed")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=3)
+    if ev is None:
+        raise Exception("Disconnection after failed SA Query not reported")
+    dev[0].set("oci_freq_override_saquery_req", "0")
+    dev[0].wait_connected()
+    if "OK" not in dev[0].request("UNPROT_DEAUTH"):
+        raise Exception("Triggering SA Query from the STA failed")
+    check_ocv_failure(hapd, "SA Query Request", "saqueryreq",
+                      dev[0].own_addr())
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=3)
+    if ev is not None:
+        raise Exception("SA Query from the STA failed")
+
+def test_wpa2_ocv_sta_override_sa_query_resp(dev, apdev):
+    """OCV on 2.4 GHz and STA override SA Query Response"""
+    params = {"channel": "1",
+              "ieee80211w": "2",
+              "ocv": "1"}
+    hapd, ssid, passphrase = ocv_setup_ap(apdev[0], params)
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412", ocv="1",
+                   ieee80211w="2")
+    dev[0].set("oci_freq_override_saquery_resp", "2462")
+    hapd.wait_sta()
+    if "OK" not in hapd.request("SA_QUERY " + dev[0].own_addr()):
+        raise Exception("SA_QUERY failed")
+    check_ocv_failure(hapd, "SA Query Response", "saqueryresp",
+                      dev[0].own_addr())
+
+def check_ocv_failure(dev, frame_txt, frame, addr):
+    ev = dev.wait_event(["OCV-FAILURE"], timeout=3)
+    if ev is None:
+        raise Exception("OCV failure for %s not reported" % frame_txt)
+    if "addr=" + addr not in ev:
+        raise Exception("Unexpected OCV failure addr: " + ev)
+    if "frame=" + frame not in ev:
+        raise Exception("Unexpected OCV failure frame: " + ev)
+    if "error=primary channel mismatch" not in ev:
+        raise Exception("Unexpected OCV failure error: " + ev)
+
+def test_wpa2_ocv_ap_override_eapol_m3(dev, apdev):
+    """OCV on 2.4 GHz and AP override EAPOL-Key msg 3/4"""
+    params = {"channel": "1",
+              "ieee80211w": "2",
+              "ocv": "1",
+              "oci_freq_override_eapol_m3": "2462"}
+    hapd, ssid, passphrase = ocv_setup_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412", ocv="1",
+                   ieee80211w="2", wait_connect=False)
+
+    check_ocv_failure(dev[0], "EAPOL-Key msg 3/4", "eapol-key-m3", bssid)
+
+    ev = dev[0].wait_disconnected()
+    if "reason=15" not in ev:
+        raise Exception("Unexpected disconnection reason: " + ev)
+
+def test_wpa2_ocv_ap_override_eapol_g1(dev, apdev):
+    """OCV on 2.4 GHz and AP override EAPOL-Key group msg 1/2"""
+    params = {"channel": "1",
+              "ieee80211w": "2",
+              "ocv": "1",
+              "oci_freq_override_eapol_g1": "2462"}
+    hapd, ssid, passphrase = ocv_setup_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412", ocv="1",
+                   ieee80211w="2")
+
+    if "OK" not in hapd.request("REKEY_GTK"):
+        raise Exception("REKEY_GTK failed")
+    check_ocv_failure(dev[0], "EAPOL-Key group msg 1/2", "eapol-key-g1", bssid)
+
+def test_wpa2_ocv_ap_override_saquery_req(dev, apdev):
+    """OCV on 2.4 GHz and AP override SA Query Request"""
+    params = {"channel": "1",
+              "ieee80211w": "2",
+              "ocv": "1",
+              "oci_freq_override_saquery_req": "2462"}
+    hapd, ssid, passphrase = ocv_setup_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412", ocv="1",
+                   ieee80211w="2")
+
+    if "OK" not in hapd.request("SA_QUERY " + dev[0].own_addr()):
+        raise Exception("SA_QUERY failed")
+    check_ocv_failure(dev[0], "SA Query Request", "saqueryreq", bssid)
+
+def test_wpa2_ocv_ap_override_saquery_resp(dev, apdev):
+    """OCV on 2.4 GHz and AP override SA Query Response"""
+    params = {"channel": "1",
+              "ieee80211w": "2",
+              "ocv": "1",
+              "oci_freq_override_saquery_resp": "2462"}
+    hapd, ssid, passphrase = ocv_setup_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412", ocv="1",
+                   ieee80211w="2")
+
+    if "OK" not in dev[0].request("UNPROT_DEAUTH"):
+        raise Exception("Triggering SA Query from the STA failed")
+    check_ocv_failure(dev[0], "SA Query Response", "saqueryresp", bssid)
+
+@remote_compatible
+def test_wpa2_ocv_no_pmf(dev, apdev):
+    """OCV on 2.4 GHz and no PMF on STA"""
+    params = {"channel": "1",
+              "ieee80211w": "1",
+              "ocv": "1"}
+    hapd, ssid, passphrase = ocv_setup_ap(apdev[0], params)
+    ie = "301a0100000fac040100000fac040100000fac0200400000000fac06"
+    if "OK" not in dev[0].request("TEST_ASSOC_IE " + ie):
+        raise Exception("Could not set TEST_ASSOC_IE")
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412", ocv="0",
+                   ieee80211w="0", wait_connect=False)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED", "CTRL-EVENT-ASSOC-REJECT"],
+                           timeout=10)
+    dev[0].request("DISCONNECT")
+    if ev is None:
+        raise Exception("No connection result seen")
+    if "CTRL-EVENT-CONNECTED" in ev:
+        raise Exception("Unexpected connection")
+    if "status_code=31" not in ev:
+        raise Exception("Unexpected status code: " + ev)
+
+@remote_compatible
+def test_wpa2_ocv_no_pmf_workaround(dev, apdev):
+    """OCV on 2.4 GHz and no PMF on STA with workaround"""
+    params = {"channel": "1",
+              "ieee80211w": "1",
+              "ocv": "2"}
+    hapd, ssid, passphrase = ocv_setup_ap(apdev[0], params)
+    ie = "301a0100000fac040100000fac040100000fac0200400000000fac06"
+    if "OK" not in dev[0].request("TEST_ASSOC_IE " + ie):
+        raise Exception("Could not set TEST_ASSOC_IE")
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412", ocv="0",
+                   ieee80211w="0")
+
+@remote_compatible
+def test_wpa2_ocv_no_oci(dev, apdev):
+    """OCV on 2.4 GHz and no OCI from STA"""
+    params = {"channel": "1",
+              "ieee80211w": "1",
+              "ocv": "1"}
+    hapd, ssid, passphrase = ocv_setup_ap(apdev[0], params)
+    ie = "301a0100000fac040100000fac040100000fac0280400000000fac06"
+    if "OK" not in dev[0].request("TEST_ASSOC_IE " + ie):
+        raise Exception("Could not set TEST_ASSOC_IE")
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412", ocv="0",
+                   ieee80211w="1", wait_connect=False)
+    ev = hapd.wait_event(["OCV-FAILURE"], timeout=10)
+    if ev is None:
+        raise Exception("No OCV failure reported")
+    if "frame=eapol-key-m2 error=did not receive mandatory OCI" not in ev:
+        raise Exception("Unexpected error: " + ev)
+    ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                            "WPA: 4-Way Handshake failed"], timeout=10)
+    dev[0].request("DISCONNECT")
+    if "CTRL-EVENT-CONNECTED" in ev:
+        raise Exception("Unexpected connection")
+    if ev is None:
+        raise Exception("4-way handshake failure not reported")
+
+@remote_compatible
+def test_wpa2_ocv_no_oci_workaround(dev, apdev):
+    """OCV on 2.4 GHz and no OCI from STA with workaround"""
+    params = {"channel": "1",
+              "ieee80211w": "1",
+              "ocv": "2"}
+    hapd, ssid, passphrase = ocv_setup_ap(apdev[0], params)
+    ie = "301a0100000fac040100000fac040100000fac0280400000000fac06"
+    if "OK" not in dev[0].request("TEST_ASSOC_IE " + ie):
+        raise Exception("Could not set TEST_ASSOC_IE")
+    dev[0].connect(ssid, psk=passphrase, scan_freq="2412", ocv="0",
+                   ieee80211w="1")

@@ -200,7 +200,13 @@ static void supp_cancel_auth_timeout(void *ctx)
 }
 
 
-static void supp_deauthenticate(void * ctx, u16 reason_code)
+static void supp_deauthenticate(void *ctx, u16 reason_code)
+{
+	wpa_printf(MSG_DEBUG, "SUPP: %s (TODO)", __func__);
+}
+
+
+static void supp_reconnect(void *ctx)
 {
 	wpa_printf(MSG_DEBUG, "SUPP: %s (TODO)", __func__);
 }
@@ -225,6 +231,7 @@ static int ibss_rsn_supp_init(struct ibss_rsn_peer *peer, const u8 *own_addr,
 	ctx->mlme_setprotection = supp_mlme_setprotection;
 	ctx->cancel_auth_timeout = supp_cancel_auth_timeout;
 	ctx->deauthenticate = supp_deauthenticate;
+	ctx->reconnect = supp_reconnect;
 	peer->supp = wpa_sm_init(ctx);
 	if (peer->supp == NULL) {
 		wpa_printf(MSG_DEBUG, "SUPP: wpa_sm_init() failed");
@@ -513,7 +520,7 @@ static int ibss_rsn_send_auth(struct ibss_rsn *ibss_rsn, const u8 *da, int seq)
 	wpa_printf(MSG_DEBUG, "RSN: IBSS TX Auth frame (SEQ %d) to " MACSTR,
 		   seq, MAC2STR(da));
 
-	return wpa_drv_send_mlme(wpa_s, (u8 *) &auth, auth_length, 0, 0);
+	return wpa_drv_send_mlme(wpa_s, (u8 *) &auth, auth_length, 0, 0, 0);
 }
 
 

@@ -10,7 +10,7 @@ logger = logging.getLogger()
 import time
 
 import hostapd
-from utils import HwsimSkip
+from utils import *
 
 def hostapd_oom_loop(apdev, params, start_func="main"):
     hapd = hostapd.add_ap(apdev[0], {"ssid": "ctrl"})
@@ -125,10 +125,9 @@ def test_hostapd_oom_wpa2_psk_connect(dev, apdev):
                 break
     dev[0].request("SCAN_INTERVAL 5")
 
-def test_hostapd_oom_wpa2_eap_connect(dev, apdev, params):
+@long_duration_test
+def test_hostapd_oom_wpa2_eap_connect(dev, apdev):
     """hostapd failing during WPA2-EAP mode connection due to OOM"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     params['acct_server_addr'] = "127.0.0.1"
     params['acct_server_port'] = "1813"

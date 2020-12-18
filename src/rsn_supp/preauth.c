@@ -252,9 +252,9 @@ int rsn_preauth_init(struct wpa_sm *sm, const u8 *dst,
 	eapol_sm_configure(sm->preauth_eapol, -1, -1, 5, 6);
 	os_memcpy(sm->preauth_bssid, dst, ETH_ALEN);
 
-	eapol_sm_notify_portValid(sm->preauth_eapol, TRUE);
+	eapol_sm_notify_portValid(sm->preauth_eapol, true);
 	/* 802.1X::portControl = Auto */
-	eapol_sm_notify_portEnabled(sm->preauth_eapol, TRUE);
+	eapol_sm_notify_portEnabled(sm->preauth_eapol, true);
 
 	eloop_register_timeout(sm->dot11RSNAConfigSATimeout, 0,
 			       rsn_preauth_timeout, sm, NULL);
@@ -349,7 +349,8 @@ void rsn_preauth_candidate_process(struct wpa_sm *sm)
 		 * PMKIDs again, so report the existing data now. */
 		if (p) {
 			wpa_sm_add_pmkid(sm, NULL, candidate->bssid, p->pmkid,
-					 NULL, p->pmk, p->pmk_len);
+					 NULL, p->pmk, p->pmk_len, 0, 0,
+					 p->akmp);
 		}
 
 		dl_list_del(&candidate->list);

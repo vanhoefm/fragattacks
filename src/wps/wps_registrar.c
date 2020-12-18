@@ -173,7 +173,6 @@ struct wps_registrar {
 	int sel_reg_union;
 	int sel_reg_dev_password_id_override;
 	int sel_reg_config_methods_override;
-	int static_wep_only;
 	int dualband;
 	int force_per_enrollee_psk;
 
@@ -697,7 +696,6 @@ wps_registrar_init(struct wps_context *wps,
 	reg->disable_auto_conf = cfg->disable_auto_conf;
 	reg->sel_reg_dev_password_id_override = -1;
 	reg->sel_reg_config_methods_override = -1;
-	reg->static_wep_only = cfg->static_wep_only;
 	reg->dualband = cfg->dualband;
 	reg->force_per_enrollee_psk = cfg->force_per_enrollee_psk;
 
@@ -1390,28 +1388,6 @@ static int wps_set_ie(struct wps_registrar *reg)
 		return -1;
 	}
 
-	if (reg->static_wep_only) {
-		/*
-		 * Windows XP and Vista clients can get confused about
-		 * EAP-Identity/Request when they probe the network with
-		 * EAPOL-Start. In such a case, they may assume the network is
-		 * using IEEE 802.1X and prompt user for a certificate while
-		 * the correct (non-WPS) behavior would be to ask for the
-		 * static WEP key. As a workaround, use Microsoft Provisioning
-		 * IE to advertise that legacy 802.1X is not supported.
-		 */
-		const u8 ms_wps[7] = {
-			WLAN_EID_VENDOR_SPECIFIC, 5,
-			/* Microsoft Provisioning IE (00:50:f2:5) */
-			0x00, 0x50, 0xf2, 5,
-			0x00 /* no legacy 802.1X or MS WPS */
-		};
-		wpa_printf(MSG_DEBUG, "WPS: Add Microsoft Provisioning IE "
-			   "into Beacon/Probe Response frames");
-		wpabuf_put_data(beacon, ms_wps, sizeof(ms_wps));
-		wpabuf_put_data(probe, ms_wps, sizeof(ms_wps));
-	}
-
 	return wps_cb_set_ie(reg, beacon, probe);
 }
 
@@ -1701,8 +1677,10 @@ int wps_build_cred(struct wps_data *wps, struct wpabuf *msg)
 		   wps->wps->auth_types, wps->auth_type);
 	if (wps->auth_type & WPS_AUTH_WPA2PSK)
 		wps->auth_type = WPS_AUTH_WPA2PSK;
+#ifndef CONFIG_NO_TKIP
 	else if (wps->auth_type & WPS_AUTH_WPAPSK)
 		wps->auth_type = WPS_AUTH_WPAPSK;
+#endif /* CONFIG_NO_TKIP */
 	else if (wps->auth_type & WPS_AUTH_OPEN)
 		wps->auth_type = WPS_AUTH_OPEN;
 	else {
@@ -1724,8 +1702,10 @@ int wps_build_cred(struct wps_data *wps, struct wpabuf *msg)
 	    wps->auth_type == WPS_AUTH_WPAPSK) {
 		if (wps->encr_type & WPS_ENCR_AES)
 			wps->encr_type = WPS_ENCR_AES;
+#ifndef CONFIG_NO_TKIP
 		else if (wps->encr_type & WPS_ENCR_TKIP)
 			wps->encr_type = WPS_ENCR_TKIP;
+#endif /* CONFIG_NO_TKIP */
 		else {
 			wpa_printf(MSG_DEBUG, "WPS: No suitable encryption "
 				   "type for WPA/WPA2");
@@ -3502,6 +3482,7 @@ static void wps_registrar_set_selected_timeout(void *eloop_ctx,
 		   "unselect internal Registrar");
 	reg->selected_registrar = 0;
 	reg->pbc = 0;
+	wps_registrar_expire_pins(reg);
 	wps_registrar_selected_registrar_changed(reg, 0);
 }
 

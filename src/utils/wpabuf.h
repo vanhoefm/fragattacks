@@ -71,6 +71,21 @@ static inline size_t wpabuf_tailroom(const struct wpabuf *buf)
 }
 
 /**
+ * wpabuf_cmp - Check if two buffers contain the same data
+ * @a: wpabuf buffer
+ * @b: wpabuf buffer
+ * Returns: 0 if the two buffers contain the same data and non-zero otherwise
+ */
+static inline int wpabuf_cmp(const struct wpabuf *a, const struct wpabuf *b)
+{
+	if (!a && !b)
+		return 0;
+	if (a && b && wpabuf_size(a) == wpabuf_size(b))
+		return os_memcmp(a->buf, b->buf, wpabuf_size(a));
+	return -1;
+}
+
+/**
  * wpabuf_head - Get pointer to the head of the buffer data
  * @buf: wpabuf buffer
  * Returns: Pointer to the head of the buffer data

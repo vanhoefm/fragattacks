@@ -227,7 +227,7 @@ static int wpa_tdls_set_key(struct wpa_sm *sm, struct wpa_tdls_peer *peer)
 
 	wpa_printf(MSG_DEBUG, "TDLS: Configure pairwise key for peer " MACSTR,
 		   MAC2STR(peer->addr));
-	if (wpa_sm_set_key(sm, alg, peer->addr, -1, 1, rsc, sizeof(rsc),
+	if (wpa_sm_set_key(sm, alg, peer->addr, 0, 1, rsc, sizeof(rsc),
 			   peer->tpk.tk, key_len,
 			   KEY_FLAG_PAIRWISE_RX_TX) < 0) {
 		wpa_printf(MSG_WARNING, "TDLS: Failed to set TPK to the "
@@ -1155,7 +1155,7 @@ skip_rsnie:
 	rbuf = os_zalloc(buf_len + 1);
 	if (rbuf == NULL) {
 		wpa_tdls_peer_free(sm, peer);
-		return -1;
+		return -2;
 	}
 	pos = rbuf;
 
@@ -1174,7 +1174,7 @@ skip_rsnie:
 			"TDLS: Failed to get random data for initiator Nonce");
 		os_free(rbuf);
 		wpa_tdls_peer_free(sm, peer);
-		return -1;
+		return -2;
 	}
 	peer->tk_set = 0; /* A new nonce results in a new TK */
 	wpa_hexdump(MSG_DEBUG, "TDLS: Initiator Nonce for TPK handshake",
@@ -1926,7 +1926,10 @@ static int wpa_tdls_process_tpk_m1(struct wpa_sm *sm, const u8 *src_addr,
 		peer->initiator = 1;
 		wpa_sm_tdls_peer_addset(sm, peer->addr, 1, 0, 0, NULL, 0, NULL,
 					NULL, 0, 0, NULL, 0, NULL, 0, NULL, 0);
-		wpa_tdls_send_tpk_m1(sm, peer);
+		if (wpa_tdls_send_tpk_m1(sm, peer) == -2) {
+			peer = NULL;
+			goto error;
+		}
 	}
 
 	if ((tdls_testing & TDLS_TESTING_IGNORE_AP_PROHIBIT) &&
@@ -2654,6 +2657,7 @@ int wpa_tdls_start(struct wpa_sm *sm, const u8 *addr)
 {
 	struct wpa_tdls_peer *peer;
 	int tdls_prohibited = sm->tdls_prohibited;
+	int res;
 
 	if (sm->tdls_disabled || !sm->tdls_supported)
 		return -1;
@@ -2693,8 +2697,10 @@ int wpa_tdls_start(struct wpa_sm *sm, const u8 *addr)
 
 	peer->tpk_in_progress = 1;
 
-	if (wpa_tdls_send_tpk_m1(sm, peer) < 0) {
-		wpa_tdls_disable_peer_link(sm, peer);
+	res = wpa_tdls_send_tpk_m1(sm, peer);
+	if (res < 0) {
+		if (res != -2)
+			wpa_tdls_disable_peer_link(sm, peer);
 		return -1;
 	}
 
@@ -2806,6 +2812,11 @@ int wpa_tdls_init(struct wpa_sm *sm)
 {
 	if (sm == NULL)
 		return -1;
+
+	if (sm->l2_tdls) {
+		l2_packet_deinit(sm->l2_tdls);
+		sm->l2_tdls = NULL;
+	}
 
 	sm->l2_tdls = l2_packet_init(sm->bridge_ifname ? sm->bridge_ifname :
 				     sm->ifname,

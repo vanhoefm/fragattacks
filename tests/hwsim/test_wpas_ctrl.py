@@ -17,12 +17,13 @@ import hostapd
 import hwsim_utils
 from hwsim import HWSimRadio
 from wpasupplicant import WpaSupplicant
-from utils import alloc_fail, fail_test
+from utils import *
 from test_wpas_ap import wait_ap_ready
 
 @remote_compatible
 def test_wpas_ctrl_network(dev):
     """wpa_supplicant ctrl_iface network set/get"""
+    skip_without_tkip(dev[0])
     id = dev[0].add_network()
 
     if "FAIL" not in dev[0].request("SET_NETWORK " + str(id)):
@@ -145,11 +146,12 @@ def test_wpas_ctrl_network(dev):
     if "FAIL" not in dev[0].request("SET_NETWORK " + str(id) + ' identity 12x3'):
         raise Exception("Unexpected success for invalid identity string")
 
-    for i in range(0, 4):
-        if "FAIL" in dev[0].request("SET_NETWORK " + str(id) + ' wep_key' + str(i) + ' aabbccddee'):
-            raise Exception("Unexpected wep_key set failure")
-        if dev[0].get_network(id, "wep_key" + str(i)) != '*':
-            raise Exception("Unexpected wep_key get failure")
+    if "WEP40" in dev[0].get_capability("group"):
+        for i in range(0, 4):
+            if "FAIL" in dev[0].request("SET_NETWORK " + str(id) + ' wep_key' + str(i) + ' aabbccddee'):
+                raise Exception("Unexpected wep_key set failure")
+            if dev[0].get_network(id, "wep_key" + str(i)) != '*':
+                raise Exception("Unexpected wep_key get failure")
 
     if "FAIL" in dev[0].request("SET_NETWORK " + str(id) + ' psk_list P2P-00:11:22:33:44:55-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'):
         raise Exception("Unexpected failure for psk_list string")
@@ -205,11 +207,12 @@ def test_wpas_ctrl_network(dev):
         raise Exception("Invalid WEP key accepted")
     if "FAIL" not in dev[0].request('SET_NETWORK ' + str(id) + ' wep_key0 "12345678901234567"'):
         raise Exception("Too long WEP key accepted")
-    # too short WEP key is ignored
-    dev[0].set_network_quoted(id, "wep_key0", "1234")
-    dev[0].set_network_quoted(id, "wep_key1", "12345")
-    dev[0].set_network_quoted(id, "wep_key2", "1234567890123")
-    dev[0].set_network_quoted(id, "wep_key3", "1234567890123456")
+    if "WEP40" in dev[0].get_capability("group"):
+        # too short WEP key is ignored
+        dev[0].set_network_quoted(id, "wep_key0", "1234")
+        dev[0].set_network_quoted(id, "wep_key1", "12345")
+        dev[0].set_network_quoted(id, "wep_key2", "1234567890123")
+        dev[0].set_network_quoted(id, "wep_key3", "1234567890123456")
 
     dev[0].set_network(id, "go_p2p_dev_addr", "any")
     if dev[0].get_network(id, "go_p2p_dev_addr") is not None:
@@ -802,6 +805,7 @@ def test_wpas_ctrl_level(dev):
     finally:
         dev[2].mon.request("LEVEL 3")
 
+@remote_compatible
 def test_wpas_ctrl_bssid_filter(dev, apdev):
     """wpa_supplicant bssid_filter"""
     try:
@@ -818,7 +822,8 @@ def test_wpas_ctrl_bssid_filter(dev, apdev):
         bss = dev[2].get_bss(apdev[1]['bssid'])
         if bss and len(bss) != 0:
             raise Exception("Unexpected BSS data")
-        dev[2].request("SET bssid_filter ")
+        dev[2].request("SET bssid_filter " + apdev[0]['bssid'] + " " + \
+                       apdev[1]['bssid'])
         dev[2].scan(freq="2412")
         bss = dev[2].get_bss(apdev[0]['bssid'])
         if bss is None or len(bss) == 0:
@@ -981,6 +986,16 @@ def test_wpas_ctrl_get_capability(dev):
     res = dev[0].get_capability("key_mgmt")
     if "WPA-PSK" not in res or "WPA-EAP" not in res:
         raise Exception("Unexpected GET_CAPABILITY key_mgmt response: " + str(res))
+
+    res = dev[0].get_capability("key_mgmt iftype=STATION")
+    if "WPA-PSK" not in res or "WPA-EAP" not in res:
+        raise Exception("Unexpected GET_CAPABILITY key_mgmt iftype=STATION response: " + str(res))
+
+    iftypes = [ "STATION", "AP_VLAN", "AP", "P2P_GO", "P2P_CLIENT",
+                "P2P_DEVICE", "MESH", "IBSS", "NAN", "UNKNOWN" ]
+    for i in iftypes:
+        res = dev[0].get_capability("key_mgmt iftype=" + i)
+        logger.info("GET_CAPABILITY key_mgmt iftype=%s: %s" % (i, res))
 
     res = dev[0].get_capability("proto")
     if "WPA" not in res or "RSN" not in res:

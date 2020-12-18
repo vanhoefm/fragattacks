@@ -230,6 +230,7 @@ static int wpa_driver_privsep_set_key(void *priv,
 		os_memset(cmd.addr, 0xff, ETH_ALEN);
 	cmd.key_idx = key_idx;
 	cmd.set_tx = set_tx;
+	cmd.key_flag = params->key_flag;
 	if (seq && seq_len > 0 && seq_len < sizeof(cmd.seq)) {
 		os_memcpy(cmd.seq, seq, seq_len);
 		cmd.seq_len = seq_len;
@@ -796,6 +797,8 @@ static int wpa_driver_privsep_get_capa(void *priv,
 	capa->extended_capa = NULL;
 	capa->extended_capa_mask = NULL;
 	capa->extended_capa_len = 0;
+	/* Control port is not yet supported */
+	capa->flags &= ~WPA_DRIVER_FLAGS_CONTROL_PORT;
 	return 0;
 }
 

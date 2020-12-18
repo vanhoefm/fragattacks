@@ -485,7 +485,7 @@ int rc4_skip(const u8 *key, size_t keylen, size_t skip,
 	     u8 *data, size_t data_len);
 
 /**
- * crypto_get_random - Generate cryptographically strong pseudy-random bytes
+ * crypto_get_random - Generate cryptographically strong pseudo-random bytes
  * @buf: Buffer for data
  * @len: Number of bytes to generate
  * Returns: 0 on success, -1 on failure
@@ -916,5 +916,18 @@ struct wpabuf * crypto_ecdh_get_pubkey(struct crypto_ecdh *ecdh, int inc_y);
 struct wpabuf * crypto_ecdh_set_peerkey(struct crypto_ecdh *ecdh, int inc_y,
 					const u8 *key, size_t len);
 void crypto_ecdh_deinit(struct crypto_ecdh *ecdh);
+size_t crypto_ecdh_prime_len(struct crypto_ecdh *ecdh);
+
+struct crypto_ec_key;
+
+struct crypto_ec_key * crypto_ec_key_parse_priv(const u8 *der, size_t der_len);
+struct crypto_ec_key * crypto_ec_key_parse_pub(const u8 *der, size_t der_len);
+void crypto_ec_key_deinit(struct crypto_ec_key *key);
+struct wpabuf * crypto_ec_key_get_subject_public_key(struct crypto_ec_key *key);
+struct wpabuf * crypto_ec_key_sign(struct crypto_ec_key *key, const u8 *data,
+				   size_t len);
+int crypto_ec_key_verify_signature(struct crypto_ec_key *key, const u8 *data,
+				   size_t len, const u8 *sig, size_t sig_len);
+int crypto_ec_key_group(struct crypto_ec_key *key);
 
 #endif /* CRYPTO_H */

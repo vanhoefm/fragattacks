@@ -968,6 +968,7 @@ static void wext_check_hostap(struct wpa_driver_wext_data *drv)
 static int wpa_driver_wext_finish_drv_init(struct wpa_driver_wext_data *drv)
 {
 	int send_rfkill_event = 0;
+	int i;
 
 	if (linux_set_iface_flags(drv->ioctl_sock, drv->ifname, 1) < 0) {
 		if (rfkill_is_blocked(drv->rfkill)) {
@@ -995,6 +996,10 @@ static int wpa_driver_wext_finish_drv_init(struct wpa_driver_wext_data *drv)
 	}
 
 	wpa_driver_wext_get_range(drv);
+
+	/* Update per interface supported AKMs */
+	for (i = 0; i < WPA_IF_MAX; i++)
+		drv->capa.key_mgmt_iftype[i] = drv->capa.key_mgmt;
 
 	/*
 	 * Unlock the driver's BSSID and force to a random SSID to clear any
@@ -1712,7 +1717,8 @@ static int wpa_driver_wext_set_key_ext(void *priv, enum wpa_alg alg,
 				       const u8 *addr, int key_idx,
 				       int set_tx, const u8 *seq,
 				       size_t seq_len,
-				       const u8 *key, size_t key_len)
+				       const u8 *key, size_t key_len,
+				       enum key_flag key_flag)
 {
 	struct wpa_driver_wext_data *drv = priv;
 	struct iwreq iwr;
@@ -1751,30 +1757,31 @@ static int wpa_driver_wext_set_key_ext(void *priv, enum wpa_alg alg,
 		os_memcpy(ext + 1, key, key_len);
 		ext->key_len = key_len;
 	}
-	switch (alg) {
-	case WPA_ALG_NONE:
-		ext->alg = IW_ENCODE_ALG_NONE;
-		break;
-	case WPA_ALG_WEP:
-		ext->alg = IW_ENCODE_ALG_WEP;
-		break;
-	case WPA_ALG_TKIP:
-		ext->alg = IW_ENCODE_ALG_TKIP;
-		break;
-	case WPA_ALG_CCMP:
-		ext->alg = IW_ENCODE_ALG_CCMP;
-		break;
-	case WPA_ALG_PMK:
+	if (key_flag & KEY_FLAG_PMK) {
 		ext->alg = IW_ENCODE_ALG_PMK;
-		break;
-	case WPA_ALG_IGTK:
-		ext->alg = IW_ENCODE_ALG_AES_CMAC;
-		break;
-	default:
-		wpa_printf(MSG_DEBUG, "%s: Unknown algorithm %d",
-			   __FUNCTION__, alg);
-		os_free(ext);
-		return -1;
+	} else {
+		switch (alg) {
+		case WPA_ALG_NONE:
+			ext->alg = IW_ENCODE_ALG_NONE;
+			break;
+		case WPA_ALG_WEP:
+			ext->alg = IW_ENCODE_ALG_WEP;
+			break;
+		case WPA_ALG_TKIP:
+			ext->alg = IW_ENCODE_ALG_TKIP;
+			break;
+		case WPA_ALG_CCMP:
+			ext->alg = IW_ENCODE_ALG_CCMP;
+			break;
+		case WPA_ALG_BIP_CMAC_128:
+			ext->alg = IW_ENCODE_ALG_AES_CMAC;
+			break;
+		default:
+			wpa_printf(MSG_DEBUG, "%s: Unknown algorithm %d",
+				   __FUNCTION__, alg);
+			os_free(ext);
+			return -1;
+		}
 	}
 
 	if (seq && seq_len) {
@@ -1816,6 +1823,7 @@ static int wpa_driver_wext_set_key(void *priv,
 	struct iwreq iwr;
 	int ret = 0;
 	enum wpa_alg alg = params->alg;
+	enum key_flag key_flag = params->key_flag;
 	const u8 *addr = params->addr;
 	int key_idx = params->key_idx;
 	int set_tx = params->set_tx;
@@ -1830,7 +1838,7 @@ static int wpa_driver_wext_set_key(void *priv,
 		   (unsigned long) seq_len, (unsigned long) key_len);
 
 	ret = wpa_driver_wext_set_key_ext(drv, alg, addr, key_idx, set_tx,
-					  seq, seq_len, key, key_len);
+					  seq, seq_len, key, key_len, key_flag);
 	if (ret == 0)
 		return 0;
 

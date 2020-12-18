@@ -285,7 +285,7 @@ int crypto_rsa_exptmod(const u8 *in, size_t inlen, u8 *out, size_t *outlen,
 
 	if (use_private) {
 		/*
-		 * Decrypt (or sign) using Chinese remainer theorem to speed
+		 * Decrypt (or sign) using Chinese remainder theorem to speed
 		 * up calculation. This is equivalent to tmp = tmp^d mod n
 		 * (which would require more CPU to calculate directly).
 		 *

@@ -15,7 +15,7 @@ import time
 import hwsim_utils
 import hostapd
 from tshark import run_tshark
-from utils import alloc_fail, HwsimSkip, parse_ie
+from utils import *
 
 @remote_compatible
 def test_ap_fragmentation_rts_set_high(dev, apdev):
@@ -140,8 +140,10 @@ def test_ap_acl_accept(dev, apdev):
     """MAC ACL accept list"""
     ssid = "acl"
     params = {}
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.macaddr')
+    hostapd.send_file(apdev[0], filename, filename)
     params['ssid'] = ssid
-    params['accept_mac_file'] = "hostapd.macaddr"
+    params['accept_mac_file'] = filename
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412")
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412")
@@ -156,13 +158,17 @@ def test_ap_acl_accept(dev, apdev):
     ev = dev[1].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
     if ev is not None:
         raise Exception("Unexpected association")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_acl_deny(dev, apdev):
     """MAC ACL deny list"""
     ssid = "acl"
     params = {}
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.macaddr')
+    hostapd.send_file(apdev[0], filename, filename)
     params['ssid'] = ssid
-    params['deny_mac_file'] = "hostapd.macaddr"
+    params['deny_mac_file'] = filename
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].scan_for_bss(apdev[0]['bssid'], freq="2412", passive=True)
     dev[0].connect(ssid, key_mgmt="NONE", scan_freq="2412", wait_connect=False)
@@ -171,13 +177,17 @@ def test_ap_acl_deny(dev, apdev):
     ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
     if ev is not None:
         raise Exception("Unexpected association")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 def test_ap_acl_mgmt(dev, apdev):
     """MAC ACL accept/deny management"""
     ssid = "acl"
     params = {}
+    filename = hostapd.acl_file(dev, apdev, 'hostapd.macaddr')
+    hostapd.send_file(apdev[0], filename, filename)
     params['ssid'] = ssid
-    params['deny_mac_file'] = "hostapd.macaddr"
+    params['deny_mac_file'] = filename
     hapd = hostapd.add_ap(apdev[0], params)
 
     accept = hapd.request("ACCEPT_ACL SHOW").splitlines()
@@ -241,6 +251,8 @@ def test_ap_acl_mgmt(dev, apdev):
     hapd.request("DENY_ACL ADD_MAC " + dev[0].own_addr())
     dev[0].wait_disconnected()
     dev[0].request("DISCONNECT")
+    if filename.startswith('/tmp/'):
+        os.unlink(filename)
 
 @remote_compatible
 def test_ap_wds_sta(dev, apdev):
@@ -288,6 +300,43 @@ def test_ap_wds_sta(dev, apdev):
         dev[0].cmd_execute(['ip', 'link', 'set', 'dev', 'wds-br0', 'down'])
         dev[0].cmd_execute(['brctl', 'delbr', 'wds-br0'])
 
+def test_ap_wds_sta_eap(dev, apdev):
+    """WPA2-EAP AP with STA using 4addr mode"""
+    ssid = "test-wpa2-eap"
+    params = hostapd.wpa2_eap_params(ssid=ssid)
+    params['wds_sta'] = "1"
+    params['wds_bridge'] = "wds-br0"
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    try:
+        dev[0].cmd_execute(['brctl', 'addbr', 'wds-br0'])
+        dev[0].cmd_execute(['brctl', 'setfd', 'wds-br0', '0'])
+        dev[0].cmd_execute(['ip', 'link', 'set', 'dev', 'wds-br0', 'up'])
+        dev[0].cmd_execute(['iw', dev[0].ifname, 'set', '4addr', 'on'])
+        dev[0].connect(ssid, key_mgmt="WPA-EAP", eap="GPSK",
+                       identity="gpsk user",
+                       password="abcdefghijklmnop0123456789abcdef",
+                       scan_freq="2412")
+        ev = hapd.wait_event(["WDS-STA-INTERFACE-ADDED"], timeout=10)
+        if ev is None:
+            raise Exception("No WDS-STA-INTERFACE-ADDED event seen")
+        if "sta_addr=" + dev[0].own_addr() not in ev:
+            raise Exception("No sta_addr match in " + ev)
+        if "ifname=" + hapd.ifname + ".sta" not in ev:
+            raise Exception("No ifname match in " + ev)
+        sta = hapd.get_sta(dev[0].own_addr())
+        if "wds_sta_ifname" not in sta:
+            raise Exception("Missing wds_sta_ifname in STA data")
+        if "ifname=" + sta['wds_sta_ifname'] not in ev:
+            raise Exception("wds_sta_ifname %s not in event: %s" %
+                            (sta['wds_sta_ifname'], ev))
+        hwsim_utils.test_connectivity_iface(dev[0], hapd, "wds-br0",
+                                            max_tries=15)
+    finally:
+        dev[0].cmd_execute(['iw', dev[0].ifname, 'set', '4addr', 'off'])
+        dev[0].cmd_execute(['ip', 'link', 'set', 'dev', 'wds-br0', 'down'])
+        dev[0].cmd_execute(['brctl', 'delbr', 'wds-br0'])
+
 def test_ap_wds_sta_open(dev, apdev):
     """Open AP with STA using 4addr mode"""
     ssid = "test-wds-open"
@@ -322,6 +371,7 @@ def test_ap_wds_sta_open(dev, apdev):
 
 def test_ap_wds_sta_wep(dev, apdev):
     """WEP AP with STA using 4addr mode"""
+    check_wep_capa(dev[0])
     ssid = "test-wds-wep"
     params = {}
     params['ssid'] = ssid
@@ -551,6 +601,7 @@ def test_ap_beacon_rate_legacy(dev, apdev):
     hapd.set('beacon_rate', '55')
     hapd.enable()
     dev[0].connect('beacon-rate', key_mgmt="NONE", scan_freq="2412")
+    time.sleep(0.5)
 
 def test_ap_beacon_rate_legacy2(dev, apdev):
     """Open AP with Beacon frame TX rate 12 Mbps in VHT BSS"""
@@ -573,6 +624,7 @@ def test_ap_beacon_rate_legacy2(dev, apdev):
         hapd.enable()
         dev[0].scan_for_bss(hapd.own_addr(), freq="5180")
         dev[0].connect('beacon-rate', key_mgmt="NONE", scan_freq="5180")
+        time.sleep(0.5)
     finally:
         dev[0].request("DISCONNECT")
         hapd.request("DISABLE")
@@ -589,6 +641,7 @@ def test_ap_beacon_rate_ht(dev, apdev):
     hapd.set('beacon_rate', 'ht:0')
     hapd.enable()
     dev[0].connect('beacon-rate', key_mgmt="NONE", scan_freq="2412")
+    time.sleep(0.5)
 
 def test_ap_beacon_rate_ht2(dev, apdev):
     """Open AP with Beacon frame TX rate HT-MCS 1 in VHT BSS"""
@@ -611,6 +664,7 @@ def test_ap_beacon_rate_ht2(dev, apdev):
         hapd.enable()
         dev[0].scan_for_bss(hapd.own_addr(), freq="5180")
         dev[0].connect('beacon-rate', key_mgmt="NONE", scan_freq="5180")
+        time.sleep(0.5)
     finally:
         dev[0].request("DISCONNECT")
         hapd.request("DISABLE")
@@ -638,6 +692,7 @@ def test_ap_beacon_rate_vht(dev, apdev):
         hapd.enable()
         dev[0].scan_for_bss(hapd.own_addr(), freq="5180")
         dev[0].connect('beacon-rate', key_mgmt="NONE", scan_freq="5180")
+        time.sleep(0.5)
     finally:
         dev[0].request("DISCONNECT")
         hapd.request("DISABLE")
@@ -646,6 +701,7 @@ def test_ap_beacon_rate_vht(dev, apdev):
 
 def test_ap_wep_to_wpa(dev, apdev):
     """WEP to WPA2-PSK configuration change in hostapd"""
+    check_wep_capa(dev[0])
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wep-to-wpa",
                            "wep_key0": '"hello"'})

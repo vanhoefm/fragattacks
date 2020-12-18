@@ -1,4 +1,4 @@
-all: eapol-key-auth
+ALL=eapol-key-auth
 include ../rules.include
 
 CFLAGS += -DCONFIG_IEEE80211R_AP
@@ -17,11 +17,18 @@ LIBS += $(SRC)/eap_server/libeap_server.a
 LIBS += $(SRC)/ap/libap.a
 LIBS += $(SRC)/radius/libradius.a
 
-eapol-key-auth: eapol-key-auth.o $(OBJS) $(LIBS)
+OBJS += $(SRC)/drivers/driver_common.o
+
+OBJS += eapol-key-auth.o
+
+_OBJS_VAR := OBJS
+include ../../../src/objs.mk
+
+_OBJS_VAR := LIBS
+include ../../../src/objs.mk
+
+eapol-key-auth: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ -Wl,--start-group $(LIBS) -Wl,--end-group
 
-clean:
-	$(MAKE) -C $(SRC) clean
+clean: common-clean
 	rm -f eapol-key-auth *~ *.o *.d ../*~ ../*.o ../*.d
-
--include $(OBJS:%.o=%.d)

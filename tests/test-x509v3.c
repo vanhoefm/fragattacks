@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
 	int i, reason;
 
 	wpa_debug_level = 0;
+	wpa_debug_show_keys = 1;
 
 	if (argc < 3 || strcmp(argv[1], "-v") != 0) {
 		printf("usage: test_x509v3 -v <cert1.der> <cert2.der> ..\n");

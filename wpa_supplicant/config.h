@@ -44,6 +44,7 @@
 #define DEFAULT_MBO_CELL_CAPA MBO_CELL_CAPA_NOT_SUPPORTED
 #define DEFAULT_DISASSOC_IMMINENT_RSSI_THRESHOLD -75
 #define DEFAULT_OCE_SUPPORT OCE_STA
+#define DEFAULT_EXTENDED_KEY_ID 0
 
 #include "config_ssid.h"
 #include "wps/wps.h"
@@ -332,7 +333,7 @@ struct wpa_cred {
 	 */
 	unsigned int max_bss_load;
 
-	unsigned int num_req_conn_capab;
+	size_t num_req_conn_capab;
 	u8 *req_conn_capab_proto;
 	int **req_conn_capab_port;
 
@@ -375,6 +376,7 @@ struct wpa_cred {
 #define CFG_CHANGED_SCHED_SCAN_PLANS BIT(17)
 #define CFG_CHANGED_WOWLAN_TRIGGERS BIT(18)
 #define CFG_CHANGED_DISABLE_BTM BIT(19)
+#define CFG_CHANGED_BGSCAN BIT(20)
 
 /**
  * struct wpa_config - wpa_supplicant configuration data
@@ -403,7 +405,7 @@ struct wpa_config {
 	 * This indicates how many per-priority network lists are included in
 	 * pssid.
 	 */
-	int num_prio;
+	size_t num_prio;
 
 	/**
 	 * cred - Head of the credential list
@@ -648,7 +650,7 @@ struct wpa_config {
 	 * This variable control whether wpa_supplicant is allow to re-write
 	 * its configuration with wpa_config_write(). If this is zero,
 	 * configuration data is only changed in memory and the external data
-	 * is not overriden. If this is non-zero, wpa_supplicant will update
+	 * is not overridden. If this is non-zero, wpa_supplicant will update
 	 * the configuration data (e.g., a file) whenever configuration is
 	 * changed. This update may replace the old configuration which can
 	 * remove comments from it in case of a text file configuration.
@@ -777,6 +779,8 @@ struct wpa_config {
 	int p2p_add_cli_chan;
 	int p2p_ignore_shared_freq;
 	int p2p_optimize_listen_chan;
+
+	int p2p_6ghz_disable;
 
 	struct wpabuf *wps_vendor_ext_m1;
 
@@ -913,6 +917,19 @@ struct wpa_config {
 	int *freq_list;
 
 	/**
+	 * initial_freq_list - like freq_list but for initial scan
+	 *
+	 * This is an optional zero-terminated array of frequencies in
+	 * megahertz (MHz) to allow for narrowing scanning range when
+	 * the application is started.
+	 *
+	 * This can be used to speed up initial connection time if the
+	 * channel is known ahead of time, without limiting the scanned
+	 * frequencies during normal use.
+	 */
+	int *initial_freq_list;
+
+	/**
 	 * scan_cur_freq - Whether to scan only the current channel
 	 *
 	 * If true, attempt to scan only the current channel if any other
@@ -973,7 +990,7 @@ struct wpa_config {
 	int go_venue_type;
 
 	/**
-	 * hessid - Homogenous ESS identifier
+	 * hessid - Homogeneous ESS identifier
 	 *
 	 * If this is set (any octet is non-zero), scans will be used to
 	 * request response only from BSSes belonging to the specified
@@ -1057,6 +1074,7 @@ struct wpa_config {
 	int p2p_go_max_inactivity;
 
 	struct hostapd_wmm_ac_params wmm_ac_params[4];
+	struct hostapd_tx_queue_params tx_queue[4];
 
 	/**
 	 * auto_interworking - Whether to use network selection automatically
@@ -1570,6 +1588,17 @@ struct wpa_config {
 	 * By default BSS transition management is enabled
 	 */
 	int disable_btm;
+
+	/**
+	 * extended_key_id - Extended Key ID support
+	 *
+	 * IEEE Std 802.11-2016 optionally allows to use Key ID 0 and 1 for PTK
+	 * keys with Extended Key ID.
+	 *
+	 * 0 = don't use Extended Key ID
+	 * 1 = use Extended Key ID when possible
+	 */
+	int extended_key_id;
 };
 
 

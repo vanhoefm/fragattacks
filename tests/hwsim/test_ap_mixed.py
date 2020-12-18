@@ -9,11 +9,12 @@ logger = logging.getLogger()
 
 import hostapd
 import hwsim_utils
-from utils import skip_with_fips
+from utils import *
 
 def test_ap_mixed_security(dev, apdev):
     """WPA/WPA2 with PSK, EAP, SAE, FT in a single BSS"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     dev[0].flush_scan_cache()
     sae = "SAE" in dev[2].get_capability("auth_alg")
     ssid = "test-mixed"

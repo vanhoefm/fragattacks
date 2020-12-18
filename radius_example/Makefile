@@ -1,18 +1,6 @@
 ALL=radius_example
 
-all: $(ALL)
-
-ifndef CC
-CC=gcc
-endif
-
-ifndef LDO
-LDO=$(CC)
-endif
-
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
-endif
+include ../src/build.rules
 
 CFLAGS += -I.
 CFLAGS += -I../src
@@ -23,24 +11,18 @@ LIBS += ../src/crypto/libcrypto.a
 LIBS += ../src/utils/libutils.a
 LLIBS = -lrt
 
-../src/utils/libutils.a:
-	$(MAKE) -C ../src/utils
-
-../src/crypto/libcrypto.a:
-	$(MAKE) -C ../src/crypto
-
-../src/radius/libradius.a:
-	$(MAKE) -C ../src/radius
-
 #CLAGS += -DCONFIG_IPV6
 
 OBJS_ex = radius_example.o
 
+_OBJS_VAR := OBJS_ex
+include ../src/objs.mk
+
+_OBJS_VAR := LIBS
+include ../src/objs.mk
+
 radius_example: $(OBJS_ex) $(LIBS)
 	$(LDO) $(LDFLAGS) -o radius_example $(OBJS_ex) $(LIBS) $(LLIBS)
 
-clean:
-	$(MAKE) -C ../src clean
-	rm -f core *~ *.o *.d $(ALL)
-
--include $(OBJS:%.o=%.d)
+clean: common-clean
+	rm -f core *~ *.o *.d

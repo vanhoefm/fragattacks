@@ -1,4 +1,4 @@
-all: ap-mgmt
+ALL=ap-mgmt
 include ../rules.include
 
 CFLAGS += -DCONFIG_WNM
@@ -24,11 +24,21 @@ LIBS += $(SRC)/utils/libutils.a
 ELIBS += $(SRC)/crypto/libcrypto.a
 ELIBS += $(SRC)/tls/libtls.a
 
-ap-mgmt: ap-mgmt.o $(OBJS) $(LIBS)
+OBJS += $(SRC)/drivers/driver_common.o
+
+OBJS += ap-mgmt.o
+
+_OBJS_VAR := OBJS
+include ../../../src/objs.mk
+
+_OBJS_VAR := LIBS
+include ../../../src/objs.mk
+
+_OBJS_VAR := ELIBS
+include ../../../src/objs.mk
+
+ap-mgmt: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LIBS) $(ELIBS)
 
-clean:
-	$(MAKE) -C $(SRC) clean
+clean: common-clean
 	rm -f ap-mgmt *~ *.o *.d ../*~ ../*.o ../*.d
-
--include $(OBJS:%.o=%.d)

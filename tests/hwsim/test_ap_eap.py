@@ -24,7 +24,7 @@ import tempfile
 import hwsim_utils
 from hwsim import HWSimRadio
 import hostapd
-from utils import HwsimSkip, alloc_fail, fail_test, skip_with_fips, wait_fail_trigger, require_under_vm
+from utils import *
 from wpasupplicant import WpaSupplicant
 from test_ap_psk import check_mib, find_wpas_process, read_process_memory, verify_not_present, get_key_locations, set_test_assoc_ie
 
@@ -2731,7 +2731,7 @@ def test_ap_wpa2_eap_ttls_server_cert_hash(dev, apdev):
     """WPA2-Enterprise connection using EAP-TTLS and server certificate hash"""
     check_cert_probe_support(dev[0])
     skip_with_fips(dev[0])
-    srv_cert_hash = "f6b9d0b2bc3f106ff01542161647036992de889267005d93fac1c7274bfca5bb"
+    srv_cert_hash = "f75a953c1aa9967926525d4d860d1ff7e872f7088782f060768d12aecbd5f25e"
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     hapd = hostapd.add_ap(apdev[0], params)
     dev[0].connect("test-wpa2-eap", key_mgmt="WPA-EAP", eap="TTLS",
@@ -3026,10 +3026,9 @@ def test_ap_wpa2_eap_eke(dev, apdev):
     eap_connect(dev[0], hapd, "EKE", "eke user", password="hello1",
                 expect_failure=True)
 
-def test_ap_wpa2_eap_eke_many(dev, apdev, params):
-    """WPA2-Enterprise connection using EAP-EKE (many connections) [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_ap_wpa2_eap_eke_many(dev, apdev):
+    """WPA2-Enterprise connection using EAP-EKE (many connections)"""
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
     hostapd.add_ap(apdev[0], params)
     success = 0
@@ -3304,6 +3303,7 @@ def test_ap_wpa2_eap_psk_oom(dev, apdev):
 
 def test_ap_wpa_eap_peap_eap_mschapv2(dev, apdev):
     """WPA-Enterprise connection using EAP-PEAP/EAP-MSCHAPv2"""
+    skip_without_tkip(dev[0])
     check_eap_capa(dev[0], "MSCHAPV2")
     params = hostapd.wpa_eap_params(ssid="test-wpa-eap")
     hapd = hostapd.add_ap(apdev[0], params)
@@ -4175,7 +4175,7 @@ def ocsp_req(outfile):
            "-reqout", outfile,
            '-issuer', 'auth_serv/ca.pem',
            '-sha256',
-           '-serial', '0xD8D3E3A6CBE3CD1F',
+           '-serial', '0xD8D3E3A6CBE3CD5F',
            '-no_nonce']
     run_openssl(arg)
     if not os.path.exists(outfile):
@@ -5131,6 +5131,46 @@ def test_ap_wpa2_eap_reauth(dev, apdev):
     if state != "COMPLETED":
         raise Exception("Reauthentication did not complete")
 
+def test_ap_wpa2_eap_reauth_ptk_rekey_blocked_ap(dev, apdev):
+    """WPA2-Enterprise and Authenticator forcing reauthentication with PTK rekey blocked on AP"""
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    params['eap_reauth_period'] = '2'
+    params['wpa_deny_ptk0_rekey'] = '2'
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "PAX", "pax.user@example.com",
+                password_hex="0123456789abcdef0123456789abcdef")
+    logger.info("Wait for disconnect due to reauth")
+    ev = dev[0].wait_event(["CTRL-EVENT-EAP-STARTED",
+                            "CTRL-EVENT-DISCONNECTED"], timeout=10)
+    if ev is None:
+        raise Exception("Timeout on reauthentication")
+    if "CTRL-EVENT-EAP-STARTED" in ev:
+        raise Exception("Reauthentication without disconnect")
+
+    ev = dev[0].wait_event(["WPA: Key negotiation completed"], timeout=1)
+    if ev is None:
+        raise Exception("Timeout on reconnect")
+
+def test_ap_wpa2_eap_reauth_ptk_rekey_blocked_sta(dev, apdev):
+    """WPA2-Enterprise and Authenticator forcing reauthentication with PTK rekey blocked on station"""
+    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    params['eap_reauth_period'] = '2'
+    hapd = hostapd.add_ap(apdev[0], params)
+    eap_connect(dev[0], hapd, "PAX", "pax.user@example.com",
+                password_hex="0123456789abcdef0123456789abcdef",
+                wpa_deny_ptk0_rekey="2")
+    logger.info("Wait for disconnect due to reauth")
+    ev = dev[0].wait_event(["CTRL-EVENT-EAP-STARTED",
+                            "CTRL-EVENT-DISCONNECTED"], timeout=10)
+    if ev is None:
+        raise Exception("Timeout on reauthentication")
+    if "CTRL-EVENT-EAP-STARTED" in ev:
+        raise Exception("Reauthentication without disconnect")
+
+    ev = dev[0].wait_event(["WPA: Key negotiation completed"], timeout=1)
+    if ev is None:
+        raise Exception("Timeout on reconnect")
+
 def test_ap_wpa2_eap_request_identity_message(dev, apdev):
     """Optional displayable message in EAP Request-Identity"""
     params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
@@ -5799,7 +5839,17 @@ def check_tls_ver(dev, hapd, phase1, expected):
 
 def test_ap_wpa2_eap_tls_versions(dev, apdev):
     """EAP-TLS and TLS version configuration"""
-    params = hostapd.wpa2_eap_params(ssid="test-wpa2-eap")
+    params = {"ssid": "test-wpa2-eap",
+              "wpa": "2",
+              "wpa_key_mgmt": "WPA-EAP",
+              "rsn_pairwise": "CCMP",
+              "ieee8021x": "1",
+              "eap_server": "1",
+              "tls_flags": "[ENABLE-TLSv1.0][ENABLE-TLSv1.1][ENABLE-TLSv1.2][ENABLE-TLSv1.3]",
+              "eap_user_file": "auth_serv/eap_user.conf",
+              "ca_cert": "auth_serv/ca.pem",
+              "server_cert": "auth_serv/server.pem",
+              "private_key": "auth_serv/server.key"}
     hapd = hostapd.add_ap(apdev[0], params)
 
     tls = dev[0].request("GET tls_library")
@@ -5818,9 +5868,9 @@ def test_ap_wpa2_eap_tls_versions(dev, apdev):
         check_tls_ver(dev[0], hapd,
                       "tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=1", "TLSv1.2")
     check_tls_ver(dev[1], hapd,
-                  "tls_disable_tlsv1_0=1 tls_disable_tlsv1_2=1", "TLSv1.1")
+                  "tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=0 tls_disable_tlsv1_2=1", "TLSv1.1")
     check_tls_ver(dev[2], hapd,
-                  "tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1", "TLSv1")
+                  "tls_disable_tlsv1_0=0 tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1", "TLSv1")
     if "run=OpenSSL 1.1.1" in tls:
         check_tls_ver(dev[0], hapd,
                       "tls_disable_tlsv1_0=1 tls_disable_tlsv1_1=1 tls_disable_tlsv1_2=1 tls_disable_tlsv1_3=0", "TLSv1.3")
@@ -5846,7 +5896,7 @@ def test_ap_wpa2_eap_tls_versions_server(dev, apdev):
         hapd.disable()
         hapd.set("tls_flags", flags)
         hapd.enable()
-        check_tls_ver(dev[0], hapd, "", exp)
+        check_tls_ver(dev[0], hapd, "tls_disable_tlsv1_0=0 tls_disable_tlsv1_1=0 tls_disable_tlsv1_2=0 tls_disable_tlsv1_3=0", exp)
 
 def test_ap_wpa2_eap_tls_13(dev, apdev):
     """EAP-TLS and TLS 1.3"""
@@ -6696,7 +6746,7 @@ def test_ap_wpa2_eap_assoc_rsn(dev, apdev):
         dev[0].request("REMOVE_NETWORK all")
         dev[0].wait_disconnected()
 
-    tests = [("Invalid group cipher", "30060100000fac02", 41),
+    tests = [("Invalid group cipher", "30060100000fac02", [40, 41]),
              ("Invalid pairwise cipher", "300c0100000fac040100000fac02", 42)]
     for title, ie, status in tests:
         logger.info(title)
@@ -6708,7 +6758,15 @@ def test_ap_wpa2_eap_assoc_rsn(dev, apdev):
         ev = dev[0].wait_event(["CTRL-EVENT-ASSOC-REJECT"])
         if ev is None:
             raise Exception("Association rejection not reported")
-        if "status_code=" + str(status) not in ev:
+        ok = False
+        if isinstance(status, list):
+            for i in status:
+                ok = "status_code=" + str(i) in ev
+                if ok:
+                    break
+        else:
+            ok = "status_code=" + str(status) in ev
+        if not ok:
             raise Exception("Unexpected status code: " + ev)
         dev[0].request("REMOVE_NETWORK all")
         dev[0].dump_monitor()
@@ -7202,6 +7260,7 @@ def run_openssl_systemwide_policy(iface, apdev, test_params):
 
 def test_ap_wpa2_eap_tls_tod(dev, apdev):
     """EAP-TLS server certificate validation and TOD-STRICT"""
+    check_tls_tod(dev[0])
     params = int_eap_server_params()
     params["server_cert"] = "auth_serv/server-certpol.pem"
     params["private_key"] = "auth_serv/server-certpol.key"
@@ -7231,6 +7290,7 @@ def test_ap_wpa2_eap_tls_tod(dev, apdev):
 
 def test_ap_wpa2_eap_tls_tod_tofu(dev, apdev):
     """EAP-TLS server certificate validation and TOD-TOFU"""
+    check_tls_tod(dev[0])
     params = int_eap_server_params()
     params["server_cert"] = "auth_serv/server-certpol2.pem"
     params["private_key"] = "auth_serv/server-certpol2.key"
@@ -7274,3 +7334,39 @@ def test_ap_wpa2_eap_sake_no_control_port(dev, apdev):
     eap_connect(wpas, hapd, "SAKE", "sake user",
                 password_hex="ff23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
                 expect_failure=True)
+
+def test_ap_wpa3_eap_transition_disable(dev, apdev):
+    """WPA3-Enterprise transition disable indication"""
+    skip_without_tkip(dev[0])
+    params = hostapd.wpa2_eap_params(ssid="test-wpa3-eap")
+    params["ieee80211w"] = "1"
+    params['transition_disable'] = '0x04'
+    hapd = hostapd.add_ap(apdev[0], params)
+    id = dev[0].connect("test-wpa3-eap", key_mgmt="WPA-EAP", ieee80211w="1",
+                        proto="WPA WPA2", pairwise="CCMP", group="TKIP CCMP",
+                        eap="GPSK", identity="gpsk user",
+                        password="abcdefghijklmnop0123456789abcdef",
+                        scan_freq="2412")
+    ev = dev[0].wait_event(["TRANSITION-DISABLE"], timeout=1)
+    if ev is None:
+        raise Exception("Transition disable not indicated")
+    if ev.split(' ')[1] != "04":
+        raise Exception("Unexpected transition disable bitmap: " + ev)
+
+    val = dev[0].get_network(id, "ieee80211w")
+    if val != "2":
+        raise Exception("Unexpected ieee80211w value: " + val)
+    val = dev[0].get_network(id, "key_mgmt")
+    if val != "WPA-EAP":
+        raise Exception("Unexpected key_mgmt value: " + val)
+    val = dev[0].get_network(id, "group")
+    if val != "CCMP":
+        raise Exception("Unexpected group value: " + val)
+    val = dev[0].get_network(id, "proto")
+    if val != "RSN":
+        raise Exception("Unexpected proto value: " + val)
+
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    dev[0].request("RECONNECT")
+    dev[0].wait_connected()

@@ -13,8 +13,7 @@ import time
 import hwsim_utils
 import hostapd
 from p2p_utils import *
-from test_ap_ht import clear_scan_cache
-from utils import HwsimSkip
+from utils import *
 
 @remote_compatible
 def test_concurrent_autogo(dev, apdev):

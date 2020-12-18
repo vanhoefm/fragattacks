@@ -1,4 +1,4 @@
-all: tls-server
+ALL=tls-server
 include ../rules.include
 
 LIBS += $(SRC)/common/libcommon.a
@@ -14,12 +14,19 @@ LIBS += $(SRC)/utils/libutils.a
 ELIBS += $(SRC)/crypto/libcrypto.a
 ELIBS += $(SRC)/tls/libtls.a
 
-tls-server: tls-server.o $(OBJS) $(LIBS)
+OBJS += tls-server.o
+
+_OBJS_VAR := OBJS
+include ../../../src/objs.mk
+
+_OBJS_VAR := LIBS
+include ../../../src/objs.mk
+
+_OBJS_VAR := ELIBS
+include ../../../src/objs.mk
+
+tls-server: $(OBJS) $(LIBS)
 	$(LDO) $(LDFLAGS) -o $@ $^ $(LIBS) $(ELIBS)
 
-clean:
-	$(MAKE) -C $(SRC) clean
-	$(MAKE) -C $(WPAS_SRC) clean
+clean: common-clean
 	rm -f tls-server *~ *.o *.d ../*~ ../*.o ../*.d
-
--include $(OBJS:%.o=%.d)

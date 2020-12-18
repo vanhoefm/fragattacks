@@ -434,7 +434,8 @@ static int sae_tests(void)
 		goto fail;
 
 	/* Check that output matches the test vector */
-	sae_write_commit(&sae, buf, NULL, pwid);
+	if (sae_write_commit(&sae, buf, NULL, pwid) < 0)
+		goto fail;
 	wpa_hexdump_buf(MSG_DEBUG, "SAE: Commit message", buf);
 
 	if (wpabuf_len(buf) != sizeof(local_commit) ||
@@ -547,6 +548,95 @@ fail:
 }
 
 
+static int sae_pk_tests(void)
+{
+#ifdef CONFIG_SAE_PK
+	const char *invalid[] = { "a2bc-de3f-ghim-", "a2bcde3fghim", "", NULL };
+	struct {
+		const char *pw;
+		const u8 *val;
+	} valid[] = {
+		{ "a2bc-de3f-ghim", (u8 *) "\x06\x82\x21\x93\x65\x31\xd0\xc0" },
+		{ "aaaa-aaaa-aaaj", (u8 *) "\x00\x00\x00\x00\x00\x00\x00\x90" },
+		{ "7777-7777-777f", (u8 *) "\xff\xff\xff\xff\xff\xff\xfe\x50" },
+		{ NULL, NULL }
+	};
+	int i;
+	bool failed;
+
+	for (i = 0; invalid[i]; i++) {
+		if (sae_pk_valid_password(invalid[i])) {
+			wpa_printf(MSG_ERROR,
+				   "SAE-PK: Invalid password '%s' not recognized",
+				   invalid[i]);
+			return -1;
+		}
+	}
+
+	failed = false;
+	for (i = 0; valid[i].pw; i++) {
+		u8 *res;
+		size_t res_len;
+		char *b32;
+		const char *pw = valid[i].pw;
+		const u8 *val = valid[i].val;
+		size_t pw_len = os_strlen(pw);
+		size_t bits = (pw_len - pw_len / 5) * 5;
+		size_t bytes = (bits + 7) / 8;
+
+		if (!sae_pk_valid_password(pw)) {
+			wpa_printf(MSG_ERROR,
+				   "SAE-PK: Valid password '%s' not recognized",
+				   pw);
+			failed = true;
+			continue;
+		}
+
+		res = sae_pk_base32_decode(pw, pw_len, &res_len);
+		if (!res) {
+			wpa_printf(MSG_ERROR,
+				   "SAE-PK: Failed to decode password '%s'",
+				   valid[i].pw);
+			failed = true;
+			continue;
+		}
+		if (res_len != bytes || os_memcmp(val, res, res_len) != 0) {
+			wpa_printf(MSG_ERROR,
+				   "SAE-PK: Mismatch for decoded password '%s'",
+				   valid[i].pw);
+			wpa_hexdump(MSG_INFO, "SAE-PK: Decoded value",
+				    res, res_len);
+			wpa_hexdump(MSG_INFO, "SAE-PK: Expected value",
+				    val, bytes);
+			failed = true;
+		}
+		os_free(res);
+
+		b32 = sae_pk_base32_encode(val, bits - 5);
+		if (!b32) {
+			wpa_printf(MSG_ERROR,
+				   "SAE-PK: Failed to encode password '%s'",
+				   pw);
+			failed = true;
+			continue;
+		}
+		if (os_strcmp(b32, pw) != 0) {
+			wpa_printf(MSG_ERROR,
+				   "SAE-PK: Mismatch for password '%s'", pw);
+			wpa_printf(MSG_INFO, "SAE-PK: Encoded value: '%s'",
+				   b32);
+			failed = true;
+		}
+		os_free(b32);
+	}
+
+	return failed ? -1 : 0;
+#else /* CONFIG_SAE_PK */
+	return 0;
+#endif /* CONFIG_SAE_PK */
+}
+
+
 int common_module_tests(void)
 {
 	int ret = 0;
@@ -556,6 +646,7 @@ int common_module_tests(void)
 	if (ieee802_11_parse_tests() < 0 ||
 	    gas_tests() < 0 ||
 	    sae_tests() < 0 ||
+	    sae_pk_tests() < 0 ||
 	    rsn_ie_parse_tests() < 0)
 		ret = -1;
 

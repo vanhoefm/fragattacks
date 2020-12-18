@@ -18,16 +18,16 @@ void eap_example_server_rx(const u8 *data, size_t data_len);
 
 
 struct eap_peer_ctx {
-	Boolean eapSuccess;
-	Boolean eapRestart;
-	Boolean eapFail;
-	Boolean eapResp;
-	Boolean eapNoResp;
-	Boolean eapReq;
-	Boolean portEnabled;
-	Boolean altAccept; /* for EAP */
-	Boolean altReject; /* for EAP */
-	Boolean eapTriggerStart;
+	bool eapSuccess;
+	bool eapRestart;
+	bool eapFail;
+	bool eapResp;
+	bool eapNoResp;
+	bool eapReq;
+	bool portEnabled;
+	bool altAccept; /* for EAP */
+	bool altReject; /* for EAP */
+	bool eapTriggerStart;
 
 	struct wpabuf *eapReqData; /* for EAP */
 
@@ -48,11 +48,11 @@ static struct eap_peer_config * peer_get_config(void *ctx)
 }
 
 
-static Boolean peer_get_bool(void *ctx, enum eapol_bool_var variable)
+static bool peer_get_bool(void *ctx, enum eapol_bool_var variable)
 {
 	struct eap_peer_ctx *peer = ctx;
 	if (peer == NULL)
-		return FALSE;
+		return false;
 	switch (variable) {
 	case EAPOL_eapSuccess:
 		return peer->eapSuccess;
@@ -75,12 +75,11 @@ static Boolean peer_get_bool(void *ctx, enum eapol_bool_var variable)
 	case EAPOL_eapTriggerStart:
 		return peer->eapTriggerStart;
 	}
-	return FALSE;
+	return false;
 }
 
 
-static void peer_set_bool(void *ctx, enum eapol_bool_var variable,
-			  Boolean value)
+static void peer_set_bool(void *ctx, enum eapol_bool_var variable, bool value)
 {
 	struct eap_peer_ctx *peer = ctx;
 	if (peer == NULL)
@@ -319,7 +318,7 @@ int eap_example_peer_init(void)
 		return -1;
 
 	/* Enable "port" to allow authentication */
-	eap_ctx.portEnabled = TRUE;
+	eap_ctx.portEnabled = true;
 
 	return 0;
 }
@@ -344,7 +343,7 @@ int eap_example_peer_step(void)
 	if (eap_ctx.eapResp) {
 		struct wpabuf *resp;
 		printf("==> Response\n");
-		eap_ctx.eapResp = FALSE;
+		eap_ctx.eapResp = false;
 		resp = eap_get_eapRespData(eap_ctx.eap);
 		if (resp) {
 			/* Send EAP response to the server */
@@ -372,7 +371,7 @@ int eap_example_peer_step(void)
 void eap_example_peer_rx(const u8 *data, size_t data_len)
 {
 	/* Make received EAP message available to the EAP library */
-	eap_ctx.eapReq = TRUE;
+	eap_ctx.eapReq = true;
 	wpabuf_free(eap_ctx.eapReqData);
 	eap_ctx.eapReqData = wpabuf_alloc_copy(data, data_len);
 }

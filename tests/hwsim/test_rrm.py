@@ -16,11 +16,8 @@ import time
 
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import HwsimSkip, alloc_fail, fail_test, wait_fail_trigger
-from utils import disable_hapd, clear_regdom_dev, clear_regdom
-from test_ap_ht import clear_scan_cache
+from utils import *
 from remotehost import remote_compatible
-from test_ap_vht import vht_supported
 
 def check_rrm_support(dev):
     rrm = int(dev.get_driver_status_field("capa.rrm_flags"), 16)
@@ -1119,7 +1116,7 @@ def test_rrm_beacon_req_table_bssid(dev, apdev):
     report = BeaconReport(binascii.unhexlify(fields[4]))
     logger.info("Received beacon report: " + str(report))
     if "bssid=" + bssid2 not in str(report):
-        raise Exception("Report for unexpect BSS")
+        raise Exception("Report for unexpected BSS")
     ev = hapd.wait_event(["BEACON-RESP-RX"], timeout=0.1)
     if ev is not None:
         raise Exception("Unexpected beacon report response")
@@ -1143,7 +1140,7 @@ def test_rrm_beacon_req_table_ssid(dev, apdev):
     report = BeaconReport(binascii.unhexlify(fields[4]))
     logger.info("Received beacon report: " + str(report))
     if "bssid=" + bssid2 not in str(report):
-        raise Exception("Report for unexpect BSS")
+        raise Exception("Report for unexpected BSS")
     ev = hapd.wait_event(["BEACON-RESP-RX"], timeout=0.1)
     if ev is not None:
         raise Exception("Unexpected beacon report response")
@@ -1732,6 +1729,7 @@ def test_rrm_beacon_req_passive_scan_vht160(dev, apdev):
                   "hw_mode": "a",
                   "channel": "104",
                   "ht_capab": "[HT40-]",
+                  "vht_capab": "[VHT160]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "vht_oper_chwidth": "2",

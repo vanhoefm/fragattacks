@@ -226,7 +226,7 @@ static int int_array_tests(void)
 	int test3[] = { 1, 1, 1, -1, 2, 3, 4, 1, 2, 0 };
 	int test3_res[] = { -1, 1, 2, 3, 4, 0 };
 	int errors = 0;
-	int len;
+	size_t len;
 
 	wpa_printf(MSG_INFO, "int_array tests");
 

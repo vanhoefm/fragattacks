@@ -208,8 +208,8 @@ static struct wpabuf * eap_gpsk_buildReq(struct eap_sm *sm, void *priv, u8 id)
 }
 
 
-static Boolean eap_gpsk_check(struct eap_sm *sm, void *priv,
-			      struct wpabuf *respData)
+static bool eap_gpsk_check(struct eap_sm *sm, void *priv,
+			   struct wpabuf *respData)
 {
 	struct eap_gpsk_data *data = priv;
 	const u8 *pos;
@@ -218,21 +218,21 @@ static Boolean eap_gpsk_check(struct eap_sm *sm, void *priv,
 	pos = eap_hdr_validate(EAP_VENDOR_IETF, EAP_TYPE_GPSK, respData, &len);
 	if (pos == NULL || len < 1) {
 		wpa_printf(MSG_INFO, "EAP-GPSK: Invalid frame");
-		return TRUE;
+		return true;
 	}
 
 	wpa_printf(MSG_DEBUG, "EAP-GPSK: Received frame: opcode=%d", *pos);
 
 	if (data->state == GPSK_1 && *pos == EAP_GPSK_OPCODE_GPSK_2)
-		return FALSE;
+		return false;
 
 	if (data->state == GPSK_3 && *pos == EAP_GPSK_OPCODE_GPSK_4)
-		return FALSE;
+		return false;
 
 	wpa_printf(MSG_INFO, "EAP-GPSK: Unexpected opcode=%d in state=%d",
 		   *pos, data->state);
 
-	return TRUE;
+	return true;
 }
 
 
@@ -560,7 +560,7 @@ static void eap_gpsk_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_gpsk_isDone(struct eap_sm *sm, void *priv)
+static bool eap_gpsk_isDone(struct eap_sm *sm, void *priv)
 {
 	struct eap_gpsk_data *data = priv;
 	return data->state == SUCCESS || data->state == FAILURE;
@@ -601,7 +601,7 @@ static u8 * eap_gpsk_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
-static Boolean eap_gpsk_isSuccess(struct eap_sm *sm, void *priv)
+static bool eap_gpsk_isSuccess(struct eap_sm *sm, void *priv)
 {
 	struct eap_gpsk_data *data = priv;
 	return data->state == SUCCESS;

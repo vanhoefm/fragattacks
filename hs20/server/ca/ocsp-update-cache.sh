@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# NOTE: You may need to replace 'localhost' with your OCSP server hostname.
 openssl ocsp \
 	-no_nonce \
 	-CAfile ca.pem \

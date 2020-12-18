@@ -5,6 +5,7 @@
 # See README for more details.
 
 import hostapd
+from utils import *
 
 def test_multi_ap_association(dev, apdev):
     """Multi-AP association in backhaul BSS"""
@@ -183,6 +184,7 @@ def test_multi_ap_wps_split_psk(dev, apdev):
 
 def test_multi_ap_wps_split_mixed(dev, apdev):
     """WPS on split fronthaul and backhaul AP with mixed-mode fronthaul"""
+    skip_without_tkip(dev[0])
     backhaul_ssid = "multi-ap-backhaul-wps"
     backhaul_passphrase = "87654321"
     params = hostapd.wpa_mixed_params(ssid="multi-ap-fronthaul-wps",

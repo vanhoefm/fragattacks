@@ -528,6 +528,28 @@ struct wpabuf * json_get_member_base64url(struct json_token *json,
 }
 
 
+struct wpabuf * json_get_member_base64(struct json_token *json,
+				       const char *name)
+{
+	struct json_token *token;
+	unsigned char *buf;
+	size_t buflen;
+	struct wpabuf *ret;
+
+	token = json_get_member(json, name);
+	if (!token || token->type != JSON_STRING)
+		return NULL;
+	buf = base64_decode(token->string, os_strlen(token->string), &buflen);
+	if (!buf)
+		return NULL;
+	ret = wpabuf_alloc_ext_data(buf, buflen);
+	if (!ret)
+		os_free(buf);
+
+	return ret;
+}
+
+
 static const char * json_type_str(enum json_type type)
 {
 	switch (type) {
@@ -612,6 +634,20 @@ int json_add_base64url(struct wpabuf *json, const char *name, const void *val,
 	char *b64;
 
 	b64 = base64_url_encode(val, len, NULL);
+	if (!b64)
+		return -1;
+	json_add_string(json, name, b64);
+	os_free(b64);
+	return 0;
+}
+
+
+int json_add_base64(struct wpabuf *json, const char *name, const void *val,
+		    size_t len)
+{
+	char *b64;
+
+	b64 = base64_encode_no_lf(val, len, NULL);
 	if (!b64)
 		return -1;
 	json_add_string(json, name, b64);

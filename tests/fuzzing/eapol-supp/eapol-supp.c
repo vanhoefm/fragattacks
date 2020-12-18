@@ -33,7 +33,7 @@ static void test_send_eapol(void *eloop_data, void *user_ctx)
 
 	wpa_hexdump(MSG_MSGDUMP, "fuzzer - EAPOL", ctx->data, ctx->data_len);
 
-	eapol_sm_notify_portEnabled(ctx->eapol, TRUE);
+	eapol_sm_notify_portEnabled(ctx->eapol, true);
 
 	wpa_sm_set_param(ctx->wpa, WPA_PARAM_PROTO, WPA_PROTO_RSN);
 	wpa_sm_set_param(ctx->wpa, WPA_PARAM_RSN_ENABLED, 1);

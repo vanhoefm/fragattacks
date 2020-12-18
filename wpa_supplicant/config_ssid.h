@@ -19,8 +19,13 @@
 			     EAPOL_FLAG_REQUIRE_KEY_BROADCAST)
 #define DEFAULT_PROTO (WPA_PROTO_WPA | WPA_PROTO_RSN)
 #define DEFAULT_KEY_MGMT (WPA_KEY_MGMT_PSK | WPA_KEY_MGMT_IEEE8021X)
+#ifdef CONFIG_NO_TKIP
+#define DEFAULT_PAIRWISE (WPA_CIPHER_CCMP)
+#define DEFAULT_GROUP (WPA_CIPHER_CCMP)
+#else /* CONFIG_NO_TKIP */
 #define DEFAULT_PAIRWISE (WPA_CIPHER_CCMP | WPA_CIPHER_TKIP)
 #define DEFAULT_GROUP (WPA_CIPHER_CCMP | WPA_CIPHER_TKIP)
+#endif /* CONFIG_NO_TKIP */
 #define DEFAULT_FRAGMENT_SIZE 1398
 
 #define DEFAULT_BG_SCAN_PERIOD -1
@@ -55,6 +60,12 @@ enum wpas_mode {
 	WPAS_MODE_P2P_GO = 3,
 	WPAS_MODE_P2P_GROUP_FORMATION = 4,
 	WPAS_MODE_MESH = 5,
+};
+
+enum sae_pk_mode {
+	SAE_PK_MODE_AUTOMATIC = 0,
+	SAE_PK_MODE_ONLY = 1,
+	SAE_PK_MODE_DISABLED = 2,
 };
 
 /**
@@ -300,6 +311,7 @@ struct wpa_ssid {
 	struct eap_peer_config eap;
 #endif /* IEEE8021X_EAPOL */
 
+#ifdef CONFIG_WEP
 #define NUM_WEP_KEYS 4
 #define MAX_WEP_KEY_LEN 16
 	/**
@@ -316,6 +328,7 @@ struct wpa_ssid {
 	 * wep_tx_keyidx - Default key index for TX frames using WEP
 	 */
 	int wep_tx_keyidx;
+#endif /* CONFIG_WEP */
 
 	/**
 	 * proactive_key_caching - Enable proactive key caching
@@ -553,6 +566,19 @@ struct wpa_ssid {
 	 */
 	int wpa_ptk_rekey;
 
+	/** wpa_deny_ptk0_rekey - Control PTK0 rekeying
+	 *
+	 * Rekeying a pairwise key using only keyid 0 (PTK0 rekey) has many
+	 * broken implementations and should be avoided when using or
+	 * interacting with one.
+	 *
+	 * 0 = always rekey when configured/instructed
+	 * 1 = only rekey when the local driver is explicitly indicating it can
+	 *	perform this operation without issues
+	 * 2 = never allow PTK0 rekeys
+	 */
+	enum ptk0_rekey_handling wpa_deny_ptk0_rekey;
+
 	/**
 	 * group_rekey - Group rekeying time in seconds
 	 *
@@ -763,6 +789,16 @@ struct wpa_ssid {
 	    vht_tx_mcs_nss_5, vht_tx_mcs_nss_6,
 	    vht_tx_mcs_nss_7, vht_tx_mcs_nss_8;
 #endif /* CONFIG_VHT_OVERRIDES */
+
+#ifdef CONFIG_HE_OVERRIDES
+	/**
+	 * disable_he - Disable HE (IEEE 802.11ax) for this network
+	 *
+	 * By default, use it if it is available, but this can be configured
+	 * to 1 to have it disabled.
+	 */
+	int disable_he;
+#endif /* CONFIG_HE_OVERRIDES */
 
 	/**
 	 * ap_max_inactivity - Timeout in seconds to detect STA's inactivity
@@ -988,6 +1024,32 @@ struct wpa_ssid {
 	size_t dpp_csign_len;
 
 	/**
+	 * dpp_pp_key - ppKey (Configurator privacy protection public key)
+	 */
+	u8 *dpp_pp_key;
+
+	/**
+	 * dpp_pp_key_len - ppKey length in octets
+	 */
+	size_t dpp_pp_key_len;
+
+	/**
+	 * dpp_pfs - DPP PFS
+	 * 0: allow PFS to be used or not used
+	 * 1: require PFS to be used (note: not compatible with DPP R1)
+	 * 2: do not allow PFS to be used
+	 */
+	int dpp_pfs;
+
+	/**
+	 * dpp_pfs_fallback - DPP PFS fallback selection
+	 *
+	 * This is an internally used variable (i.e., not used in external
+	 * configuration) to track state of the DPP PFS fallback mechanism.
+	 */
+	int dpp_pfs_fallback;
+
+	/**
 	 * owe_group - OWE DH Group
 	 *
 	 * 0 = use default (19) first and then try all supported groups one by
@@ -1047,6 +1109,53 @@ struct wpa_ssid {
 	 * FT initial mobility domain association.
 	 */
 	int ft_eap_pmksa_caching;
+
+	/**
+	 * beacon_prot - Whether Beacon protection is enabled
+	 *
+	 * This depends on management frame protection (ieee80211w) being
+	 * enabled.
+	 */
+	int beacon_prot;
+
+	/**
+	 * transition_disable - Transition Disable indication
+	 * The AP can notify authenticated stations to disable transition mode
+	 * in their network profiles when the network has completed transition
+	 * steps, i.e., once sufficiently large number of APs in the ESS have
+	 * been updated to support the more secure alternative. When this
+	 * indication is used, the stations are expected to automatically
+	 * disable transition mode and less secure security options. This
+	 * includes use of WEP, TKIP (including use of TKIP as the group
+	 * cipher), and connections without PMF.
+	 * Bitmap bits:
+	 * bit 0 (0x01): WPA3-Personal (i.e., disable WPA2-Personal = WPA-PSK
+	 *	and only allow SAE to be used)
+	 * bit 1 (0x02): SAE-PK (disable SAE without use of SAE-PK)
+	 * bit 2 (0x04): WPA3-Enterprise (move to requiring PMF)
+	 * bit 3 (0x08): Enhanced Open (disable use of open network; require
+	 *	OWE)
+	 */
+	u8 transition_disable;
+
+	/**
+	 * sae_pk - SAE-PK mode
+	 * 0 = automatic SAE/SAE-PK selection based on password; enable
+	 * transition mode (allow SAE authentication without SAE-PK)
+	 * 1 = SAE-PK only (disable transition mode; allow SAE authentication
+	 * only with SAE-PK)
+	 * 2 = disable SAE-PK (allow SAE authentication only without SAE-PK)
+	 */
+	enum sae_pk_mode sae_pk;
+
+	/**
+	 * was_recently_reconfigured - Whether this SSID config has been changed
+	 * recently
+	 *
+	 * This is an internally used variable, i.e., not used in external
+	 * configuration.
+	 */
+	bool was_recently_reconfigured;
 };
 
 #endif /* CONFIG_SSID_H */

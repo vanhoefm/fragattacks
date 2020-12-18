@@ -169,7 +169,7 @@ static int sae_test_pwd_seed_ecc(struct sae_data *sae, const u8 *pwd_seed,
 	 * being smaller than prime. */
 	in_range = const_time_fill_msb((unsigned int) cmp_prime);
 	/* The algorithm description would skip the next steps if
-	 * cmp_prime >= 0 (reutnr 0 here), but go through them regardless to
+	 * cmp_prime >= 0 (return 0 here), but go through them regardless to
 	 * minimize externally observable differences in behavior. */
 
 	x_cand = crypto_bignum_init_set(pwd_value, sae->tmp->prime_len);
@@ -713,6 +713,8 @@ static struct crypto_ec_point * sswu(struct crypto_ec *ec, int group,
 		goto fail;
 	const_time_select_bin(m_is_zero, bin1, bin2, prime_len, bin);
 	x1 = crypto_bignum_init_set(bin, prime_len);
+	if (!x1)
+		goto fail;
 	debug_print_bignum("SSWU: x1 = CSEL(l, x1a, x1b)", x1, prime_len);
 
 	/* gx1 = x1^3 + a * x1 + b */
@@ -753,6 +755,8 @@ static struct crypto_ec_point * sswu(struct crypto_ec *ec, int group,
 		goto fail;
 	const_time_select_bin(is_qr, bin1, bin2, prime_len, bin);
 	v = crypto_bignum_init_set(bin, prime_len);
+	if (!v)
+		goto fail;
 	debug_print_bignum("SSWU: v = CSEL(l, gx1, gx2)", v, prime_len);
 
 	/* x = CSEL(l, x1, x2) */
@@ -1052,10 +1056,17 @@ sae_derive_pt_group(int group, const u8 *ssid, size_t ssid_len,
 
 	wpa_printf(MSG_DEBUG, "SAE: Derive PT - group %d", group);
 
+	if (ssid_len > 32)
+		return NULL;
+
 	pt = os_zalloc(sizeof(*pt));
 	if (!pt)
 		return NULL;
 
+#ifdef CONFIG_SAE_PK
+	os_memcpy(pt->ssid, ssid, ssid_len);
+	pt->ssid_len = ssid_len;
+#endif /* CONFIG_SAE_PK */
 	pt->group = group;
 	pt->ec = crypto_ec_init(group);
 	if (pt->ec) {
@@ -1354,14 +1365,15 @@ int sae_prepare_commit(const u8 *addr1, const u8 *addr2,
 						identifier) < 0))
 		return -1;
 
-	sae->tmp->h2e = 0;
+	sae->h2e = 0;
+	sae->pk = 0;
 	return sae_derive_commit(sae);
 }
 
 
 int sae_prepare_commit_pt(struct sae_data *sae, const struct sae_pt *pt,
 			  const u8 *addr1, const u8 *addr2,
-			  int *rejected_groups)
+			  int *rejected_groups, const struct sae_pk *pk)
 {
 	if (!sae->tmp)
 		return -1;
@@ -1377,6 +1389,11 @@ int sae_prepare_commit_pt(struct sae_data *sae, const struct sae_pt *pt,
 		return -1;
 	}
 
+#ifdef CONFIG_SAE_PK
+	os_memcpy(sae->tmp->ssid, pt->ssid, pt->ssid_len);
+	sae->tmp->ssid_len = pt->ssid_len;
+	sae->tmp->ap_pk = pk;
+#endif /* CONFIG_SAE_PK */
 	sae->tmp->own_addr_higher = os_memcmp(addr1, addr2, ETH_ALEN) > 0;
 	wpabuf_free(sae->tmp->own_rejected_groups);
 	sae->tmp->own_rejected_groups = NULL;
@@ -1409,7 +1426,7 @@ int sae_prepare_commit_pt(struct sae_data *sae, const struct sae_pt *pt,
 			return -1;
 	}
 
-	sae->tmp->h2e = 1;
+	sae->h2e = 1;
 	return sae_derive_commit(sae);
 }
 
@@ -1515,7 +1532,7 @@ static int sae_derive_keys(struct sae_data *sae, const u8 *k)
 	const u8 *salt;
 	struct wpabuf *rejected_groups = NULL;
 	u8 keyseed[SAE_MAX_HASH_LEN];
-	u8 keys[SAE_MAX_HASH_LEN + SAE_PMK_LEN];
+	u8 keys[2 * SAE_MAX_HASH_LEN + SAE_PMK_LEN];
 	struct crypto_bignum *tmp;
 	int ret = -1;
 	size_t hash_len, salt_len, prime_len = sae->tmp->prime_len;
@@ -1530,15 +1547,18 @@ static int sae_derive_keys(struct sae_data *sae, const u8 *k)
 	 * KCK || PMK = KDF-Hash-Length(keyseed, "SAE KCK and PMK",
 	 *                      (commit-scalar + peer-commit-scalar) modulo r)
 	 * PMKID = L((commit-scalar + peer-commit-scalar) modulo r, 0, 128)
+	 *
+	 * When SAE-PK is used,
+	 * KCK || PMK || KEK = KDF-Hash-Length(keyseed, "SAE-PK keys", context)
 	 */
-	if (!sae->tmp->h2e)
+	if (!sae->h2e)
 		hash_len = SHA256_MAC_LEN;
 	else if (sae->tmp->dh)
 		hash_len = sae_ffc_prime_len_2_hash_len(prime_len);
 	else
 		hash_len = sae_ecc_prime_len_2_hash_len(prime_len);
-	if (sae->tmp->h2e && (sae->tmp->own_rejected_groups ||
-			      sae->tmp->peer_rejected_groups)) {
+	if (sae->h2e && (sae->tmp->own_rejected_groups ||
+			 sae->tmp->peer_rejected_groups)) {
 		struct wpabuf *own, *peer;
 
 		own = sae->tmp->own_rejected_groups;
@@ -1589,15 +1609,40 @@ static int sae_derive_keys(struct sae_data *sae, const u8 *k)
 	 * octets). */
 	crypto_bignum_to_bin(tmp, val, sizeof(val), sae->tmp->order_len);
 	wpa_hexdump(MSG_DEBUG, "SAE: PMKID", val, SAE_PMKID_LEN);
+
+#ifdef CONFIG_SAE_PK
+	if (sae->pk) {
+		if (sae_kdf_hash(hash_len, keyseed, "SAE-PK keys",
+				 val, sae->tmp->order_len,
+				 keys, 2 * hash_len + SAE_PMK_LEN) < 0)
+			goto fail;
+	} else {
+		if (sae_kdf_hash(hash_len, keyseed, "SAE KCK and PMK",
+				 val, sae->tmp->order_len,
+				 keys, hash_len + SAE_PMK_LEN) < 0)
+			goto fail;
+	}
+#else /* CONFIG_SAE_PK */
 	if (sae_kdf_hash(hash_len, keyseed, "SAE KCK and PMK",
 			 val, sae->tmp->order_len,
 			 keys, hash_len + SAE_PMK_LEN) < 0)
 		goto fail;
+#endif /* !CONFIG_SAE_PK */
+
 	forced_memzero(keyseed, sizeof(keyseed));
 	os_memcpy(sae->tmp->kck, keys, hash_len);
 	sae->tmp->kck_len = hash_len;
 	os_memcpy(sae->pmk, keys + hash_len, SAE_PMK_LEN);
 	os_memcpy(sae->pmkid, val, SAE_PMKID_LEN);
+#ifdef CONFIG_SAE_PK
+	if (sae->pk) {
+		os_memcpy(sae->tmp->kek, keys + hash_len + SAE_PMK_LEN,
+			  hash_len);
+		sae->tmp->kek_len = hash_len;
+		wpa_hexdump_key(MSG_DEBUG, "SAE: KEK for SAE-PK",
+				sae->tmp->kek, sae->tmp->kek_len);
+	}
+#endif /* CONFIG_SAE_PK */
 	forced_memzero(keys, sizeof(keys));
 	wpa_hexdump_key(MSG_DEBUG, "SAE: KCK",
 			sae->tmp->kck, sae->tmp->kck_len);
@@ -1623,38 +1668,42 @@ int sae_process_commit(struct sae_data *sae)
 }
 
 
-void sae_write_commit(struct sae_data *sae, struct wpabuf *buf,
-		      const struct wpabuf *token, const char *identifier)
+int sae_write_commit(struct sae_data *sae, struct wpabuf *buf,
+		     const struct wpabuf *token, const char *identifier)
 {
 	u8 *pos;
 
 	if (sae->tmp == NULL)
-		return;
+		return -1;
 
 	wpabuf_put_le16(buf, sae->group); /* Finite Cyclic Group */
-	if (!sae->tmp->h2e && token) {
+	if (!sae->h2e && token) {
 		wpabuf_put_buf(buf, token);
 		wpa_hexdump(MSG_DEBUG, "SAE: Anti-clogging token",
 			    wpabuf_head(token), wpabuf_len(token));
 	}
 	pos = wpabuf_put(buf, sae->tmp->prime_len);
-	crypto_bignum_to_bin(sae->tmp->own_commit_scalar, pos,
-			     sae->tmp->prime_len, sae->tmp->prime_len);
+	if (crypto_bignum_to_bin(sae->tmp->own_commit_scalar, pos,
+				 sae->tmp->prime_len, sae->tmp->prime_len) < 0)
+		return -1;
 	wpa_hexdump(MSG_DEBUG, "SAE: own commit-scalar",
 		    pos, sae->tmp->prime_len);
 	if (sae->tmp->ec) {
 		pos = wpabuf_put(buf, 2 * sae->tmp->prime_len);
-		crypto_ec_point_to_bin(sae->tmp->ec,
-				       sae->tmp->own_commit_element_ecc,
-				       pos, pos + sae->tmp->prime_len);
+		if (crypto_ec_point_to_bin(sae->tmp->ec,
+					   sae->tmp->own_commit_element_ecc,
+					   pos, pos + sae->tmp->prime_len) < 0)
+			return -1;
 		wpa_hexdump(MSG_DEBUG, "SAE: own commit-element(x)",
 			    pos, sae->tmp->prime_len);
 		wpa_hexdump(MSG_DEBUG, "SAE: own commit-element(y)",
 			    pos + sae->tmp->prime_len, sae->tmp->prime_len);
 	} else {
 		pos = wpabuf_put(buf, sae->tmp->prime_len);
-		crypto_bignum_to_bin(sae->tmp->own_commit_element_ffc, pos,
-				     sae->tmp->prime_len, sae->tmp->prime_len);
+		if (crypto_bignum_to_bin(sae->tmp->own_commit_element_ffc, pos,
+					 sae->tmp->prime_len,
+					 sae->tmp->prime_len) < 0)
+			return -1;
 		wpa_hexdump(MSG_DEBUG, "SAE: own commit-element",
 			    pos, sae->tmp->prime_len);
 	}
@@ -1669,7 +1718,7 @@ void sae_write_commit(struct sae_data *sae, struct wpabuf *buf,
 			   identifier);
 	}
 
-	if (sae->tmp->h2e && sae->tmp->own_rejected_groups) {
+	if (sae->h2e && sae->tmp->own_rejected_groups) {
 		wpa_hexdump_buf(MSG_DEBUG, "SAE: own Rejected Groups",
 				sae->tmp->own_rejected_groups);
 		wpabuf_put_u8(buf, WLAN_EID_EXTENSION);
@@ -1679,7 +1728,7 @@ void sae_write_commit(struct sae_data *sae, struct wpabuf *buf,
 		wpabuf_put_buf(buf, sae->tmp->own_rejected_groups);
 	}
 
-	if (sae->tmp->h2e && token) {
+	if (sae->h2e && token) {
 		wpabuf_put_u8(buf, WLAN_EID_EXTENSION);
 		wpabuf_put_u8(buf, 1 + wpabuf_len(token));
 		wpabuf_put_u8(buf, WLAN_EID_EXT_ANTI_CLOGGING_TOKEN);
@@ -1688,6 +1737,8 @@ void sae_write_commit(struct sae_data *sae, struct wpabuf *buf,
 				"SAE: Anti-clogging token (in container)",
 				token);
 	}
+
+	return 0;
 }
 
 
@@ -2183,13 +2234,14 @@ static int sae_cn_confirm_ffc(struct sae_data *sae, const u8 *sc,
 }
 
 
-void sae_write_confirm(struct sae_data *sae, struct wpabuf *buf)
+int sae_write_confirm(struct sae_data *sae, struct wpabuf *buf)
 {
 	const u8 *sc;
 	size_t hash_len;
+	int res;
 
 	if (sae->tmp == NULL)
-		return;
+		return -1;
 
 	hash_len = sae->tmp->kck_len;
 
@@ -2200,17 +2252,26 @@ void sae_write_confirm(struct sae_data *sae, struct wpabuf *buf)
 		sae->send_confirm++;
 
 	if (sae->tmp->ec)
-		sae_cn_confirm_ecc(sae, sc, sae->tmp->own_commit_scalar,
-				   sae->tmp->own_commit_element_ecc,
-				   sae->peer_commit_scalar,
-				   sae->tmp->peer_commit_element_ecc,
-				   wpabuf_put(buf, hash_len));
+		res = sae_cn_confirm_ecc(sae, sc, sae->tmp->own_commit_scalar,
+					 sae->tmp->own_commit_element_ecc,
+					 sae->peer_commit_scalar,
+					 sae->tmp->peer_commit_element_ecc,
+					 wpabuf_put(buf, hash_len));
 	else
-		sae_cn_confirm_ffc(sae, sc, sae->tmp->own_commit_scalar,
-				   sae->tmp->own_commit_element_ffc,
-				   sae->peer_commit_scalar,
-				   sae->tmp->peer_commit_element_ffc,
-				   wpabuf_put(buf, hash_len));
+		res = sae_cn_confirm_ffc(sae, sc, sae->tmp->own_commit_scalar,
+					 sae->tmp->own_commit_element_ffc,
+					 sae->peer_commit_scalar,
+					 sae->tmp->peer_commit_element_ffc,
+					 wpabuf_put(buf, hash_len));
+	if (res)
+		return res;
+
+#ifdef CONFIG_SAE_PK
+	if (sae_write_confirm_pk(sae, buf) < 0)
+		return -1;
+#endif /* CONFIG_SAE_PK */
+
+	return 0;
 }
 
 
@@ -2263,6 +2324,12 @@ int sae_check_confirm(struct sae_data *sae, const u8 *data, size_t len)
 			    verifier, hash_len);
 		return -1;
 	}
+
+#ifdef CONFIG_SAE_PK
+	if (sae_check_confirm_pk(sae, data + 2 + hash_len,
+				 len - 2 - hash_len) < 0)
+		return -1;
+#endif /* CONFIG_SAE_PK */
 
 	return 0;
 }

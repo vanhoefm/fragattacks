@@ -14,9 +14,8 @@ import hwsim_utils
 from hostapd import HostapdGlobal
 from hostapd import Hostapd
 import hostapd
-from utils import HwsimSkip, skip_with_fips
+from utils import *
 from wlantest import Wlantest
-from test_ap_vht import vht_supported
 
 def start_ap_wpa2_psk(ap):
     params = hostapd.wpa2_params(ssid="test-wpa2-psk", passphrase="12345678")
@@ -27,9 +26,13 @@ def connectivity(dev, hapd):
     hwsim_utils.test_connectivity(dev[0], hapd)
     hwsim_utils.test_connectivity(dev[1], hapd)
 
-def connect_2sta(dev, ssid, hapd):
-    dev[0].connect(ssid, psk="12345678", scan_freq="2412")
-    dev[1].connect(ssid, psk="12345678", scan_freq="2412")
+def connect_2sta(dev, ssid, hapd, sae=False):
+    key_mgmt = "SAE" if sae else "WPA-PSK"
+    ieee80211w = "2" if sae else "1"
+    dev[0].connect(ssid, key_mgmt=key_mgmt, psk="12345678",
+                   ieee80211w=ieee80211w, scan_freq="2412")
+    dev[1].connect(ssid, key_mgmt=key_mgmt, psk="12345678",
+                   ieee80211w=ieee80211w, scan_freq="2412")
     hapd.wait_sta()
     hapd.wait_sta()
     connectivity(dev, hapd)
@@ -113,7 +116,7 @@ def check_connectivity(sta0, sta1, hapd):
     hwsim_utils.test_connectivity(sta0, hapd)
     hwsim_utils.test_connectivity(sta1, hapd)
 
-def setup_tdls(sta0, sta1, hapd, reverse=False, expect_fail=False):
+def setup_tdls(sta0, sta1, hapd, reverse=False, expect_fail=False, sae=False):
     logger.info("Setup TDLS")
     check_connectivity(sta0, sta1, hapd)
     bssid = hapd.own_addr()
@@ -125,18 +128,20 @@ def setup_tdls(sta0, sta1, hapd, reverse=False, expect_fail=False):
     sta0.tdls_setup(addr1)
     time.sleep(1)
     if expect_fail:
-        tdls_check_ap(sta0, sta1, bssid, addr0, addr1)
+        if not sae:
+            tdls_check_ap(sta0, sta1, bssid, addr0, addr1)
         return
     if reverse:
         addr1 = sta0.p2p_interface_addr()
         addr0 = sta1.p2p_interface_addr()
-    conf = wt.get_tdls_counter("setup_conf_ok", bssid, addr0, addr1)
-    if conf == 0:
-        raise Exception("No TDLS Setup Confirm (success) seen")
-    tdls_check_dl(sta0, sta1, bssid, addr0, addr1)
+    if not sae:
+        conf = wt.get_tdls_counter("setup_conf_ok", bssid, addr0, addr1)
+        if conf == 0:
+            raise Exception("No TDLS Setup Confirm (success) seen")
+        tdls_check_dl(sta0, sta1, bssid, addr0, addr1)
     check_connectivity(sta0, sta1, hapd)
 
-def teardown_tdls(sta0, sta1, hapd, responder=False, wildcard=False):
+def teardown_tdls(sta0, sta1, hapd, responder=False, wildcard=False, sae=False):
     logger.info("Teardown TDLS")
     check_connectivity(sta0, sta1, hapd)
     bssid = hapd.own_addr()
@@ -149,11 +154,12 @@ def teardown_tdls(sta0, sta1, hapd, responder=False, wildcard=False):
     else:
         sta0.tdls_teardown(addr1)
     time.sleep(1)
-    wt = Wlantest()
-    teardown = wt.get_tdls_counter("teardown", bssid, addr0, addr1)
-    if teardown == 0:
-        raise Exception("No TDLS Setup Teardown seen")
-    tdls_check_ap(sta0, sta1, bssid, addr0, addr1)
+    if not sae:
+        wt = Wlantest()
+        teardown = wt.get_tdls_counter("teardown", bssid, addr0, addr1)
+        if teardown == 0:
+            raise Exception("No TDLS Setup Teardown seen")
+        tdls_check_ap(sta0, sta1, bssid, addr0, addr1)
     check_connectivity(sta0, sta1, hapd)
 
 def check_tdls_link(sta0, sta1, connected=True):
@@ -290,6 +296,8 @@ def test_ap_wpa2_tdls_double_tpk_m2(dev, apdev):
 def test_ap_wpa_tdls(dev, apdev):
     """WPA-PSK AP and two stations using TDLS"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
+    skip_without_tkip(dev[1])
     hapd = hostapd.add_ap(apdev[0],
                           hostapd.wpa_params(ssid="test-wpa-psk",
                                              passphrase="12345678"))
@@ -302,6 +310,7 @@ def test_ap_wpa_tdls(dev, apdev):
 def test_ap_wpa_mixed_tdls(dev, apdev):
     """WPA+WPA2-PSK AP and two stations using TDLS"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     hapd = hostapd.add_ap(apdev[0],
                           hostapd.wpa_mixed_params(ssid="test-wpa-mixed-psk",
                                                    passphrase="12345678"))
@@ -313,6 +322,8 @@ def test_ap_wpa_mixed_tdls(dev, apdev):
 
 def test_ap_wep_tdls(dev, apdev):
     """WEP AP and two stations using TDLS"""
+    check_wep_capa(dev[0])
+    check_wep_capa(dev[1])
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "test-wep", "wep_key0": '"hello"'})
     wlantest_setup(hapd)
@@ -409,6 +420,7 @@ def test_ap_open_tdls_vht80(dev, apdev):
               "hw_mode": "a",
               "channel": "36",
               "ht_capab": "[HT40+]",
+              "vht_capab": "[VHT160]",
               "ieee80211n": "1",
               "ieee80211ac": "1",
               "vht_capab": "",
@@ -448,7 +460,7 @@ def test_ap_open_tdls_vht80plus80(dev, apdev):
               "ht_capab": "[HT40+]",
               "ieee80211n": "1",
               "ieee80211ac": "1",
-              "vht_capab": "",
+              "vht_capab": "[VHT160-80PLUS80]",
               "vht_oper_chwidth": "3",
               "vht_oper_centr_freq_seg0_idx": "42",
               "vht_oper_centr_freq_seg1_idx": "155"}
@@ -490,6 +502,7 @@ def test_ap_open_tdls_vht160(dev, apdev):
               "hw_mode": "a",
               "channel": "104",
               "ht_capab": "[HT40-]",
+              "vht_capab": "[VHT160]",
               "ieee80211n": "1",
               "ieee80211ac": "1",
               "vht_oper_chwidth": "2",
@@ -621,3 +634,17 @@ def _test_ap_open_tdls_external_control(dev, apdev):
         time.sleep(0.1)
     if connected:
         raise Exception("TDLS teardown did not complete")
+
+def test_ap_sae_tdls(dev, apdev):
+    """SAE AP and two stations using TDLS"""
+    check_sae_capab(dev[0])
+    check_sae_capab(dev[1])
+    params = hostapd.wpa2_params(ssid="test-wpa2-psk", passphrase="12345678")
+    params['wpa_key_mgmt'] = 'SAE'
+    params["ieee80211w"] = "2"
+    hapd = hostapd.add_ap(apdev[0], params)
+    wlantest_setup(hapd)
+    connect_2sta(dev, "test-wpa2-psk", hapd, sae=True)
+    setup_tdls(dev[0], dev[1], hapd, sae=True)
+    teardown_tdls(dev[0], dev[1], hapd, sae=True)
+    setup_tdls(dev[1], dev[0], hapd, sae=True)

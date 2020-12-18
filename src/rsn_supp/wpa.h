@@ -27,6 +27,7 @@ struct wpa_sm_ctx {
 	void (*set_state)(void *ctx, enum wpa_states state);
 	enum wpa_states (*get_state)(void *ctx);
 	void (*deauthenticate)(void * ctx, u16 reason_code);
+	void (*reconnect)(void *ctx);
 	int (*set_key)(void *ctx, enum wpa_alg alg,
 		       const u8 *addr, int key_idx, int set_tx,
 		       const u8 *seq, size_t seq_len,
@@ -41,7 +42,8 @@ struct wpa_sm_ctx {
 			    size_t *msg_len, void **data_pos);
 	int (*add_pmkid)(void *ctx, void *network_ctx, const u8 *bssid,
 			 const u8 *pmkid, const u8 *fils_cache_id,
-			 const u8 *pmk, size_t pmk_len);
+			 const u8 *pmk, size_t pmk_len, u32 pmk_lifetime,
+			 u8 pmk_reauth_threshold, int akmp);
 	int (*remove_pmkid)(void *ctx, void *network_ctx, const u8 *bssid,
 			    const u8 *pmkid, const u8 *fils_cache_id);
 	void (*set_config_blob)(void *ctx, struct wpa_config_blob *blob);
@@ -84,6 +86,7 @@ struct wpa_sm_ctx {
 	void (*fils_hlp_rx)(void *ctx, const u8 *dst, const u8 *src,
 			    const u8 *pkt, size_t pkt_len);
 	int (*channel_info)(void *ctx, struct wpa_channel_info *ci);
+	void (*transition_disable)(void *ctx, u8 bitmap);
 };
 
 
@@ -100,6 +103,16 @@ enum wpa_sm_conf_params {
 	WPA_PARAM_MFP,
 	WPA_PARAM_OCV,
 	WPA_PARAM_SAE_PWE,
+	WPA_PARAM_SAE_PK,
+	WPA_PARAM_DENY_PTK0_REKEY,
+	WPA_PARAM_EXT_KEY_ID,
+	WPA_PARAM_USE_EXT_KEY_ID,
+	WPA_PARAM_FT_RSNXE_USED,
+	WPA_PARAM_DPP_PFS,
+	WPA_PARAM_OCI_FREQ_EAPOL,
+	WPA_PARAM_OCI_FREQ_EAPOL_G2,
+	WPA_PARAM_OCI_FREQ_FT_ASSOC,
+	WPA_PARAM_OCI_FREQ_FILS_ASSOC,
 };
 
 struct rsn_supp_config {
@@ -111,10 +124,12 @@ struct rsn_supp_config {
 	const u8 *ssid;
 	size_t ssid_len;
 	int wpa_ptk_rekey;
+	int wpa_deny_ptk0_rekey;
 	int p2p;
 	int wpa_rsc_relaxation;
 	int owe_ptk_workaround;
 	const u8 *fils_cache_id;
+	int beacon_prot;
 };
 
 #ifndef CONFIG_NO_WPA
@@ -150,6 +165,8 @@ int wpa_sm_set_param(struct wpa_sm *sm, enum wpa_sm_conf_params param,
 int wpa_sm_get_status(struct wpa_sm *sm, char *buf, size_t buflen,
 		      int verbose);
 int wpa_sm_pmf_enabled(struct wpa_sm *sm);
+int wpa_sm_ext_key_id(struct wpa_sm *sm);
+int wpa_sm_ext_key_id_active(struct wpa_sm *sm);
 int wpa_sm_ocv_enabled(struct wpa_sm *sm);
 
 void wpa_sm_key_request(struct wpa_sm *sm, int error, int pairwise);
@@ -292,6 +309,16 @@ static inline int wpa_sm_get_status(struct wpa_sm *sm, char *buf,
 }
 
 static inline int wpa_sm_pmf_enabled(struct wpa_sm *sm)
+{
+	return 0;
+}
+
+static inline int wpa_sm_ext_key_id(struct wpa_sm *sm)
+{
+	return 0;
+}
+
+static inline int wpa_sm_ext_key_id_active(struct wpa_sm *sm)
 {
 	return 0;
 }

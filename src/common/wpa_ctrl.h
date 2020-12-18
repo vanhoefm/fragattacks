@@ -95,6 +95,12 @@ extern "C" {
 /** SAE authentication failed due to unknown password identifier */
 #define WPA_EVENT_SAE_UNKNOWN_PASSWORD_IDENTIFIER \
 	"CTRL-EVENT-SAE-UNKNOWN-PASSWORD-IDENTIFIER "
+/** Unprotected Beacon frame dropped */
+#define WPA_EVENT_UNPROT_BEACON "CTRL-EVENT-UNPROT-BEACON "
+/** Decision made to do a within-ESS roam */
+#define WPA_EVENT_DO_ROAM "CTRL-EVENT-DO-ROAM "
+/** Decision made to skip a within-ESS roam */
+#define WPA_EVENT_SKIP_ROAM "CTRL-EVENT-SKIP-ROAM "
 
 /** IP subnet status change notification
  *
@@ -120,6 +126,8 @@ extern "C" {
 #define WPA_EVENT_FREQ_CONFLICT "CTRL-EVENT-FREQ-CONFLICT "
 /** Frequency ranges that the driver recommends to avoid */
 #define WPA_EVENT_AVOID_FREQ "CTRL-EVENT-AVOID-FREQ "
+/** Result of MSCS setup */
+#define WPA_EVENT_MSCS_RESULT "CTRL-EVENT-MSCS-RESULT "
 /** WPS overlap detected in PBC mode */
 #define WPS_EVENT_OVERLAP "WPS-OVERLAP-DETECTED "
 /** Available WPS AP with active PBC found in scan results */
@@ -176,7 +184,11 @@ extern "C" {
 #define DPP_EVENT_CONFOBJ_PSK "DPP-CONFOBJ-PSK "
 #define DPP_EVENT_CONNECTOR "DPP-CONNECTOR "
 #define DPP_EVENT_C_SIGN_KEY "DPP-C-SIGN-KEY "
+#define DPP_EVENT_PP_KEY "DPP-PP-KEY "
 #define DPP_EVENT_NET_ACCESS_KEY "DPP-NET-ACCESS-KEY "
+#define DPP_EVENT_SERVER_NAME "DPP-SERVER-NAME "
+#define DPP_EVENT_CERTBAG "DPP-CERTBAG "
+#define DPP_EVENT_CACERT "DPP-CACERT "
 #define DPP_EVENT_MISSING_CONNECTOR "DPP-MISSING-CONNECTOR "
 #define DPP_EVENT_NETWORK_ID "DPP-NETWORK-ID "
 #define DPP_EVENT_CONFIGURATOR_ID "DPP-CONFIGURATOR-ID "
@@ -187,6 +199,11 @@ extern "C" {
 #define DPP_EVENT_PKEX_T_LIMIT "DPP-PKEX-T-LIMIT "
 #define DPP_EVENT_INTRO "DPP-INTRO "
 #define DPP_EVENT_CONF_REQ_RX "DPP-CONF-REQ-RX "
+#define DPP_EVENT_CHIRP_STOPPED "DPP-CHIRP-STOPPED "
+#define DPP_EVENT_MUD_URL "DPP-MUD-URL "
+#define DPP_EVENT_BAND_SUPPORT "DPP-BAND-SUPPORT "
+#define DPP_EVENT_CSR "DPP-CSR "
+#define DPP_EVENT_CHIRP_RX "DPP-CHIRP-RX "
 
 /* MESH events */
 #define MESH_GROUP_STARTED "MESH-GROUP-STARTED "
@@ -379,6 +396,17 @@ extern "C" {
 /* New interface addition or removal for 4addr WDS SDA */
 #define WDS_STA_INTERFACE_ADDED "WDS-STA-INTERFACE-ADDED "
 #define WDS_STA_INTERFACE_REMOVED "WDS-STA-INTERFACE-REMOVED "
+
+/* Transition mode disabled indication - followed by bitmap */
+#define TRANSITION_DISABLE "TRANSITION-DISABLE "
+
+/* OCV validation failure; parameters: addr=<src addr>
+ * frame=<saqueryreq/saqueryresp> error=<error string> */
+#define OCV_FAILURE "OCV-FAILURE "
+
+#ifndef BIT
+#define BIT(x) (1U << (x))
+#endif
 
 /* BSS command information masks */
 

@@ -17,8 +17,8 @@ logger = logging.getLogger()
 # definitions in the format as below. In other case HWSIM cfg will be used.
 #
 setup_params = {"setup_hw" : "./tests/setup_hw.sh",
-                "hostapd" : "./tests/hostapd",
-                "wpa_supplicant" : "./tests/wpa_supplicant",
+                "hostapd" : "./tests/hostapd-rt",
+                "wpa_supplicant" : "./tests/wpa_supplicant-rt",
                 "iperf" : "iperf",
                 "wlantest" : "./tests/wlantest",
                 "wlantest_cli" : "./tests/wlantest_cli",
@@ -69,6 +69,8 @@ def get_devices(filename="cfg.py"):
 def get_device(devices, name=None, flags=None, lock=False):
     if name is None and flags is None:
         raise Exception("Failed to get device")
+    word = name.split(":")
+    name = word[0]
     for device in devices:
         if device['name'] == name:
             return device

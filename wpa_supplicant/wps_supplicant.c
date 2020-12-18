@@ -188,6 +188,7 @@ static void wpas_wps_security_workaround(struct wpa_supplicant *wpa_s,
 	const u8 *ie;
 	struct wpa_ie_data adv;
 	int wpa2 = 0, ccmp = 0;
+	enum wpa_driver_if_type iftype;
 
 	/*
 	 * Many existing WPS APs do not know how to negotiate WPA2 or CCMP in
@@ -239,9 +240,12 @@ static void wpas_wps_security_workaround(struct wpa_supplicant *wpa_s,
 		return;
 	}
 
+	iftype = ssid->p2p_group ? WPA_IF_P2P_CLIENT : WPA_IF_STATION;
+
 	if (ccmp && !(ssid->pairwise_cipher & WPA_CIPHER_CCMP) &&
 	    (ssid->pairwise_cipher & WPA_CIPHER_TKIP) &&
-	    (capa.key_mgmt & WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK)) {
+	    (capa.key_mgmt_iftype[iftype] &
+	     WPA_DRIVER_CAPA_KEY_MGMT_WPA2_PSK)) {
 		wpa_printf(MSG_DEBUG, "WPS: Add CCMP into the credential "
 			   "based on scan results");
 		if (wpa_s->conf->ap_scan == 1)
@@ -484,7 +488,7 @@ static int wpa_supplicant_wps_cred(void *ctx,
 	case WPS_ENCR_NONE:
 		break;
 	case WPS_ENCR_TKIP:
-		ssid->pairwise_cipher = WPA_CIPHER_TKIP;
+		ssid->pairwise_cipher = WPA_CIPHER_TKIP | WPA_CIPHER_CCMP;
 		break;
 	case WPS_ENCR_AES:
 		ssid->pairwise_cipher = WPA_CIPHER_CCMP;
@@ -525,13 +529,14 @@ static int wpa_supplicant_wps_cred(void *ctx,
 	case WPS_AUTH_WPAPSK:
 		ssid->auth_alg = WPA_AUTH_ALG_OPEN;
 		ssid->key_mgmt = WPA_KEY_MGMT_PSK;
-		ssid->proto = WPA_PROTO_WPA;
+		ssid->proto = WPA_PROTO_WPA | WPA_PROTO_RSN;
 		break;
 	case WPS_AUTH_WPA2PSK:
 		ssid->auth_alg = WPA_AUTH_ALG_OPEN;
 		ssid->key_mgmt = WPA_KEY_MGMT_PSK;
 		if (wpa_s->conf->wps_cred_add_sae &&
 		    cred->key_len != 2 * PMK_LEN) {
+			ssid->auth_alg = 0;
 			ssid->key_mgmt |= WPA_KEY_MGMT_SAE;
 			ssid->ieee80211w = MGMT_FRAME_PROTECTION_OPTIONAL;
 		}
@@ -715,7 +720,7 @@ static void wpa_supplicant_wps_event_success(struct wpa_supplicant *wpa_s)
 	wpas_notify_wps_event_success(wpa_s);
 	if (wpa_s->current_ssid)
 		wpas_clear_temp_disabled(wpa_s, wpa_s->current_ssid, 1);
-	wpa_s->extra_blacklist_count = 0;
+	wpa_s->consecutive_conn_failures = 0;
 
 	/*
 	 * Enable the networks disabled during wpas_wps_reassoc after 10
@@ -1617,8 +1622,13 @@ int wpas_wps_init(struct wpa_supplicant *wpa_s)
 	os_memcpy(wps->dev.mac_addr, wpa_s->own_addr, ETH_ALEN);
 	wpas_wps_set_uuid(wpa_s, wps);
 
+#ifdef CONFIG_NO_TKIP
+	wps->auth_types = WPS_AUTH_WPA2PSK;
+	wps->encr_types = WPS_ENCR_AES;
+#else /* CONFIG_NO_TKIP */
 	wps->auth_types = WPS_AUTH_WPA2PSK | WPS_AUTH_WPAPSK;
 	wps->encr_types = WPS_ENCR_AES | WPS_ENCR_TKIP;
+#endif /* CONFIG_NO_TKIP */
 
 	os_memset(&rcfg, 0, sizeof(rcfg));
 	rcfg.new_psk_cb = wpas_wps_new_psk_cb;
@@ -1829,6 +1839,10 @@ int wpas_wps_scan_pbc_overlap(struct wpa_supplicant *wpa_s,
 	wpa_printf(MSG_DEBUG, "WPS: Check whether PBC session overlap is "
 		   "present in scan results; selected BSSID " MACSTR,
 		   MAC2STR(selected->bssid));
+	if (!is_zero_ether_addr(ssid->bssid))
+		wpa_printf(MSG_DEBUG,
+			   "WPS: Network profile limited to accept only a single BSSID " MACSTR,
+			   MAC2STR(ssid->bssid));
 
 	/* Make sure that only one AP is in active PBC mode */
 	wps_ie = wpa_bss_get_vendor_ie_multi(selected, WPS_IE_VENDOR_TYPE);
@@ -1848,6 +1862,14 @@ int wpas_wps_scan_pbc_overlap(struct wpa_supplicant *wpa_s,
 		if (!ap->pbc_active ||
 		    os_memcmp(selected->bssid, ap->bssid, ETH_ALEN) == 0)
 			continue;
+
+		if (!is_zero_ether_addr(ssid->bssid) &&
+		    os_memcmp(ap->bssid, ssid->bssid, ETH_ALEN) != 0) {
+			wpa_printf(MSG_DEBUG, "WPS: Ignore another BSS " MACSTR
+				   " in active PBC mode due to local BSSID limitation",
+				   MAC2STR(ap->bssid));
+			continue;
+		}
 
 		wpa_printf(MSG_DEBUG, "WPS: Another BSS in active PBC mode: "
 			   MACSTR, MAC2STR(ap->bssid));

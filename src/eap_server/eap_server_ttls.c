@@ -509,8 +509,8 @@ static struct wpabuf * eap_ttls_buildReq(struct eap_sm *sm, void *priv, u8 id)
 }
 
 
-static Boolean eap_ttls_check(struct eap_sm *sm, void *priv,
-			      struct wpabuf *respData)
+static bool eap_ttls_check(struct eap_sm *sm, void *priv,
+			   struct wpabuf *respData)
 {
 	const u8 *pos;
 	size_t len;
@@ -518,10 +518,10 @@ static Boolean eap_ttls_check(struct eap_sm *sm, void *priv,
 	pos = eap_hdr_validate(EAP_VENDOR_IETF, EAP_TYPE_TTLS, respData, &len);
 	if (pos == NULL || len < 1) {
 		wpa_printf(MSG_INFO, "EAP-TTLS: Invalid frame");
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
@@ -1260,7 +1260,7 @@ static void eap_ttls_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_ttls_isDone(struct eap_sm *sm, void *priv)
+static bool eap_ttls_isDone(struct eap_sm *sm, void *priv)
 {
 	struct eap_ttls_data *data = priv;
 	return data->state == SUCCESS || data->state == FAILURE;
@@ -1290,7 +1290,7 @@ static u8 * eap_ttls_getKey(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
-static Boolean eap_ttls_isSuccess(struct eap_sm *sm, void *priv)
+static bool eap_ttls_isSuccess(struct eap_sm *sm, void *priv)
 {
 	struct eap_ttls_data *data = priv;
 	return data->state == SUCCESS;

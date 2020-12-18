@@ -15,15 +15,6 @@ import hostapd
 from wpasupplicant import WpaSupplicant
 from utils import *
 from test_dfs import wait_dfs_event
-from test_ap_csa import csa_supported
-from test_ap_ht import clear_scan_cache
-
-def vht_supported():
-    cmd = subprocess.Popen(["iw", "reg", "get"], stdout=subprocess.PIPE)
-    reg = cmd.stdout.read()
-    if "@ 80)" in reg or "@ 160)" in reg:
-        return True
-    return False
 
 def test_ap_vht80(dev, apdev):
     """VHT with 80 MHz channel width"""
@@ -75,6 +66,11 @@ def test_ap_vht80(dev, apdev):
             raise Exception("Missing STA flag: HT")
         if "[VHT]" not in sta['flags']:
             raise Exception("Missing STA flag: VHT")
+        if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+            raise Exception("No Supported Operating Classes information for STA")
+        opclass = int(sta['supp_op_classes'][0:2], 16)
+        if opclass != 128:
+            raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
     except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
@@ -290,6 +286,13 @@ def test_ap_vht_20(devs, apdevs):
         hapd = hostapd.add_ap(ap, params)
         dev.connect("test-vht20", scan_freq="5180", key_mgmt="NONE")
         hwsim_utils.test_connectivity(dev, hapd)
+
+        sta = hapd.get_sta(dev.own_addr())
+        if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+            raise Exception("No Supported Operating Classes information for STA")
+        opclass = int(sta['supp_op_classes'][0:2], 16)
+        if opclass != 115:
+            raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
     finally:
         dev.request("DISCONNECT")
         clear_regdom(hapd, devs)
@@ -313,6 +316,13 @@ def test_ap_vht_40(devs, apdevs):
         hapd = hostapd.add_ap(ap, params)
         dev.connect("test-vht40", scan_freq="5180", key_mgmt="NONE")
         hwsim_utils.test_connectivity(dev, hapd)
+
+        sta = hapd.get_sta(dev.own_addr())
+        if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+            raise Exception("No Supported Operating Classes information for STA")
+        opclass = int(sta['supp_op_classes'][0:2], 16)
+        if opclass != 116:
+            raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
     finally:
         dev.request("DISCONNECT")
         clear_regdom(hapd, devs)
@@ -320,6 +330,7 @@ def test_ap_vht_40(devs, apdevs):
 def test_ap_vht_capab_not_supported(dev, apdev):
     """VHT configuration with driver not supporting all vht_capab entries"""
     try:
+        hapd = None
         params = {"ssid": "vht",
                   "country_code": "FI",
                   "hw_mode": "a",
@@ -350,6 +361,7 @@ def test_ap_vht160(dev, apdev):
                   "hw_mode": "a",
                   "channel": "36",
                   "ht_capab": "[HT40+]",
+                  "vht_capab": "[VHT160]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "vht_oper_chwidth": "2",
@@ -395,6 +407,13 @@ def test_ap_vht160(dev, apdev):
             raise Exception("Unexpected SIGNAL_POLL value(1): " + str(sig))
         if "WIDTH=160 MHz" not in sig:
             raise Exception("Unexpected SIGNAL_POLL value(2): " + str(sig))
+
+        sta = hapd.get_sta(dev[0].own_addr())
+        if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+            raise Exception("No Supported Operating Classes information for STA")
+        opclass = int(sta['supp_op_classes'][0:2], 16)
+        if opclass != 129:
+            raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
     except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
@@ -418,6 +437,7 @@ def test_ap_vht160b(dev, apdev):
                   "hw_mode": "a",
                   "channel": "104",
                   "ht_capab": "[HT40-]",
+                  "vht_capab": "[VHT160]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "vht_oper_chwidth": "2",
@@ -520,6 +540,7 @@ def run_ap_vht160_no_dfs(dev, apdev, channel, ht_capab):
                   "hw_mode": "a",
                   "channel": channel,
                   "ht_capab": ht_capab,
+                  "vht_capab": "[VHT160]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "vht_oper_chwidth": "2",
@@ -532,7 +553,7 @@ def run_ap_vht160_no_dfs(dev, apdev, channel, ht_capab):
             cmd = subprocess.Popen(["iw", "reg", "get"], stdout=subprocess.PIPE)
             reg = cmd.stdout.readlines()
             for r in reg:
-                if "5490" in r and "DFS" in r:
+                if b"5490" in r and b"DFS" in r:
                     raise HwsimSkip("ZA regulatory rule did not have DFS requirement removed")
             raise Exception("AP setup timed out")
 
@@ -598,6 +619,7 @@ def test_ap_vht80plus80(dev, apdev):
                   "hw_mode": "a",
                   "channel": "52",
                   "ht_capab": "[HT40+]",
+                  "vht_capab": "[VHT160-80PLUS80]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "vht_oper_chwidth": "3",
@@ -615,6 +637,7 @@ def test_ap_vht80plus80(dev, apdev):
                   "hw_mode": "a",
                   "channel": "36",
                   "ht_capab": "[HT40+]",
+                  "vht_capab": "[VHT160-80PLUS80]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "vht_oper_chwidth": "3",
@@ -644,6 +667,13 @@ def test_ap_vht80plus80(dev, apdev):
             raise Exception("Unexpected SIGNAL_POLL value(3): " + str(sig))
         if "CENTER_FRQ2=5775" not in sig:
             raise Exception("Unexpected SIGNAL_POLL value(4): " + str(sig))
+
+        sta = hapd2.get_sta(dev[1].own_addr())
+        if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+            raise Exception("No Supported Operating Classes information for STA")
+        opclass = int(sta['supp_op_classes'][0:2], 16)
+        if opclass != 130:
+            raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
     except Exception as e:
         if isinstance(e, Exception) and str(e) == "AP startup failed":
             if not vht_supported():
@@ -856,10 +886,10 @@ def test_ap_vht_csa_vht40_disable(dev, apdev):
         hapd = hostapd.add_ap(apdev[0], params)
         bssid = hapd.own_addr()
 
-        dev[0].connect("vht", key_mgmt="NONE", scan_freq="5745")
+        dev[0].connect("vht", key_mgmt="NONE", scan_freq="5200 5745")
         hwsim_utils.test_connectivity(dev[0], hapd)
 
-        hapd.request("CHAN_SWITCH 5 5200 center_freq1=5200 bandwidth=40 ht")
+        hapd.request("CHAN_SWITCH 5 5200 center_freq1=5210 sec_channel_offset=1 bandwidth=40 ht")
         ev = hapd.wait_event(["AP-CSA-FINISHED"], timeout=10)
         if ev is None:
             raise Exception("CSA finished event timed out")
@@ -870,7 +900,14 @@ def test_ap_vht_csa_vht40_disable(dev, apdev):
             raise Exception("Channel switch event not seen")
         if "freq=5200" not in ev:
             raise Exception("Channel mismatch: " + ev)
-        time.sleep(0.5)
+        ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=5)
+        if ev:
+            # mac80211 does not support CSA to disable VHT, so the channel
+            # switch will be followed by disconnection and attempt to reconnect.
+            # Wait for that here to avoid failing the test case based on how
+            # example the connectivity test would get timed compared to getting
+            # disconnected or reconnected.
+            dev[0].wait_connected()
         hwsim_utils.test_connectivity(dev[0], hapd)
 
         dev[1].connect("vht", key_mgmt="NONE", scan_freq="5200")
@@ -973,6 +1010,7 @@ def test_ap_vht_on_24ghz_2(dev, apdev):
 def test_prefer_vht40(dev, apdev):
     """Preference on VHT40 over HT40"""
     try:
+        hapd = None
         hapd2 = None
 
         params = {"ssid": "test",
@@ -1008,7 +1046,7 @@ def test_prefer_vht40(dev, apdev):
             raise Exception("Unexpected BSS0 est_throughput: " + est)
 
         est = dev[0].get_bss(bssid2)['est_throughput']
-        if est != "135001":
+        if est != "180001":
             raise Exception("Unexpected BSS1 est_throughput: " + est)
     finally:
         dev[0].request("DISCONNECT")
@@ -1077,6 +1115,7 @@ def test_ap_vht_use_sta_nsts(dev, apdev):
 
 def test_ap_vht_tkip(dev, apdev):
     """VHT and TKIP"""
+    skip_without_tkip(dev[0])
     try:
         hapd = None
         params = {"ssid": "vht",

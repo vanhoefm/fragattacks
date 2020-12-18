@@ -13,12 +13,21 @@ struct wpa_blacklist {
 	struct wpa_blacklist *next;
 	u8 bssid[ETH_ALEN];
 	int count;
+	/* Time of most recent blacklist event. */
+	struct os_reltime blacklist_start;
+	/*
+	 * Number of seconds after blacklist_start that the entry will be
+	 * considered blacklisted.
+	 */
+	int timeout_secs;
 };
 
 struct wpa_blacklist * wpa_blacklist_get(struct wpa_supplicant *wpa_s,
 					 const u8 *bssid);
 int wpa_blacklist_add(struct wpa_supplicant *wpa_s, const u8 *bssid);
 int wpa_blacklist_del(struct wpa_supplicant *wpa_s, const u8 *bssid);
+int wpa_blacklist_is_blacklisted(struct wpa_supplicant *wpa_s, const u8 *bssid);
 void wpa_blacklist_clear(struct wpa_supplicant *wpa_s);
+void wpa_blacklist_update(struct wpa_supplicant *wpa_s);
 
 #endif /* BLACKLIST_H */

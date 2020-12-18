@@ -12,26 +12,8 @@ import struct
 
 import hostapd
 from wpasupplicant import WpaSupplicant
-from utils import HwsimSkip, alloc_fail, parse_ie, clear_regdom
+from utils import *
 import hwsim_utils
-from test_ap_csa import csa_supported
-
-def clear_scan_cache(apdev):
-    ifname = apdev['ifname']
-    hostapd.cmd_execute(apdev, ['ifconfig', ifname, 'up'])
-    hostapd.cmd_execute(apdev, ['iw', ifname, 'scan', 'trigger', 'freq', '2412',
-                                'flush'])
-    time.sleep(0.1)
-    hostapd.cmd_execute(apdev, ['ifconfig', ifname, 'down'])
-
-def set_world_reg(apdev0=None, apdev1=None, dev0=None):
-    if apdev0:
-        hostapd.cmd_execute(apdev0, ['iw', 'reg', 'set', '00'])
-    if apdev1:
-        hostapd.cmd_execute(apdev1, ['iw', 'reg', 'set', '00'])
-    if dev0:
-        dev0.cmd_execute(['iw', 'reg', 'set', '00'])
-    time.sleep(0.1)
 
 def test_ap_ht40_scan(dev, apdev):
     """HT40 co-ex scan"""
@@ -72,6 +54,18 @@ def test_ap_ht40_scan(dev, apdev):
     dev[0].connect("test-ht40", key_mgmt="NONE", scan_freq=freq)
     sta = hapd.get_sta(dev[0].own_addr())
     logger.info("hostapd STA: " + str(sta))
+
+    res = dev[0].request("SIGNAL_POLL")
+    logger.info("STA SIGNAL_POLL:\n" + res.strip())
+    sig = res.splitlines()
+    if "WIDTH=40 MHz" not in sig:
+        raise Exception("Not a 40 MHz connection")
+
+    if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+        raise Exception("No Supported Operating Classes information for STA")
+    opclass = int(sta['supp_op_classes'][0:2], 16)
+    if opclass != 84:
+        raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
 
 def test_ap_ht_wifi_generation(dev, apdev):
     """HT and wifi_generation"""
@@ -892,6 +886,13 @@ def test_ap_require_ht(dev, apdev):
                    ampdu_density="1", disable_ht40="1", disable_sgi="1",
                    disable_ldpc="1", rx_stbc="2", tx_stbc="1")
 
+    sta = hapd.get_sta(dev[0].own_addr())
+    if 'supp_op_classes' not in sta or len(sta['supp_op_classes']) < 2:
+        raise Exception("No Supported Operating Classes information for STA")
+    opclass = int(sta['supp_op_classes'][0:2], 16)
+    if opclass != 81:
+        raise Exception("Unexpected Current Operating Class from STA: %d" % opclass)
+
 def test_ap_ht_stbc(dev, apdev):
     """HT STBC overrides"""
     params = {"ssid": "ht"}
@@ -1005,7 +1006,10 @@ def test_ap_ht_40mhz_intolerant_ap(dev, apdev):
 
     logger.info("Waiting for co-ex report from STA")
     ok = False
-    for i in range(0, 20):
+    for i in range(4):
+        ev = dev[0].wait_event(['CTRL-EVENT-SCAN-RESULTS'], timeout=20)
+        if ev is None:
+            raise Exception("No OBSS scan seen")
         time.sleep(1)
         if hapd.get_status_field("secondary_channel") == "0":
             logger.info("AP moved to 20 MHz channel")
@@ -1165,21 +1169,37 @@ def test_ap_ht40_csa3(dev, apdev):
         set_world_reg(apdev[0], None, dev[0])
         dev[0].flush_scan_cache()
 
-@remote_compatible
-def test_ap_ht_smps(dev, apdev):
-    """SMPS AP configuration options"""
-    params = {"ssid": "ht1", "ht_capab": "[SMPS-STATIC]"}
-    try:
-        hapd = hostapd.add_ap(apdev[0], params)
-    except:
-        raise HwsimSkip("Assume mac80211_hwsim was not recent enough to support SMPS")
-    params = {"ssid": "ht2", "ht_capab": "[SMPS-DYNAMIC]"}
-    hapd2 = hostapd.add_ap(apdev[1], params)
+def test_ap_ht_20_to_40_csa(dev, apdev):
+    """HT with 20 MHz channel width doing CSA to 40 MHz"""
+    csa_supported(dev[0])
 
-    dev[0].connect("ht1", key_mgmt="NONE", scan_freq="2412")
-    dev[1].connect("ht2", key_mgmt="NONE", scan_freq="2412")
-    hwsim_utils.test_connectivity(dev[0], hapd)
-    hwsim_utils.test_connectivity(dev[1], hapd2)
+    params = {"ssid": "ht",
+              "channel": "1",
+              "ieee80211n": "1"}
+    hapd = hostapd.add_ap(apdev[0], params)
+
+    dev[0].connect("ht", key_mgmt="NONE", scan_freq="2412")
+    hapd.wait_sta()
+    res = dev[0].request("SIGNAL_POLL")
+    logger.info("SIGNAL_POLL:\n" + res)
+    sig = res.splitlines()
+    if 'WIDTH=20 MHz' not in sig:
+        raise Exception("20 MHz channel bandwidth not used on the original channel")
+
+    hapd.request("CHAN_SWITCH 5 2462 ht sec_channel_offset=-1 bandwidth=40")
+    ev = hapd.wait_event(["AP-CSA-FINISHED"], timeout=10)
+    if ev is None:
+        raise Exception("CSA finished event timed out")
+    if "freq=2462" not in ev:
+        raise Exception("Unexpected channel in CSA finished event")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=0.5)
+    if ev is not None:
+        raise Exception("Unexpected STA disconnection during CSA")
+    res = dev[0].request("SIGNAL_POLL")
+    logger.info("SIGNAL_POLL:\n" + res)
+    sig = res.splitlines()
+    if 'WIDTH=40 MHz' not in sig:
+        raise Exception("40 MHz channel bandwidth not used on the new channel")
 
 @remote_compatible
 def test_prefer_ht20(dev, apdev):

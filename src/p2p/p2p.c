@@ -2913,6 +2913,14 @@ void p2p_group_formation_failed(struct p2p_data *p2p)
 }
 
 
+bool is_p2p_6ghz_disabled(struct p2p_data *p2p)
+{
+	if (p2p)
+		return p2p->cfg->p2p_6ghz_disable;
+	return false;
+}
+
+
 struct p2p_data * p2p_init(const struct p2p_config *cfg)
 {
 	struct p2p_data *p2p;
@@ -3974,6 +3982,7 @@ static void p2p_timeout_wait_peer_idle(struct p2p_data *p2p)
 	}
 
 	p2p_dbg(p2p, "Go to Listen state while waiting for the peer to become ready for GO Negotiation");
+	p2p->cfg->stop_listen(p2p->cfg->cb_ctx);
 	p2p_set_state(p2p, P2P_WAIT_PEER_CONNECT);
 	p2p_listen_in_find(p2p, 0);
 }

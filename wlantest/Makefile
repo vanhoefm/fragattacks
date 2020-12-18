@@ -1,49 +1,20 @@
 ALL=wlantest wlantest_cli test_vectors
 
-all: $(ALL)
+include ../src/build.rules
 
-ifndef CC
-CC=gcc
-endif
-
-ifndef RANLIB
-RANLIB=ranlib
-endif
-
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
-endif
-
+UNAME := $(shell uname -s)
 
 CFLAGS += -I.
 CFLAGS += -I../src
 CFLAGS += -I../src/utils
 
+ifneq ($(UNAME),Darwin)
 # glibc < 2.17 needs -lrt for clock_gettime()
 LIBS += -lrt
-
-ifndef LDO
-LDO=$(CC)
 endif
 
-Q=@
-E=echo
-ifeq ($(V), 1)
-Q=
-E=true
-endif
-ifeq ($(QUIET), 1)
-Q=@
-E=true
-endif
-
-%.o: %.c
-	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
-	@$(E) "  CC " $<
-
-
-OBJS_lib += ../src/utils/libutils.a
-OBJS_lib += ../src/crypto/libcrypto.a
+OWN_LIBS += ../src/utils/libutils.a
+OWN_LIBS += ../src/crypto/libcrypto.a
 
 CFLAGS += -DCONFIG_OCV
 CFLAGS += -DCONFIG_IEEE80211R
@@ -91,44 +62,25 @@ TOBJS += bip.o
 TOBJS += gcmp.o
 
 
-../src/utils/libutils.a:
-	$(MAKE) -C ../src/utils
-
-../src/crypto/libcrypto.a:
-	$(MAKE) -C ../src/crypto
-
-
-ifneq ($(CONFIG_SOLIB), yes)
-LIBWLANTEST = libwlantest.a
-libwlantest.a: $(OBJS_lib)
-	$(AR) crT libwlantest.a $(OBJS_lib)
-	$(RANLIB) libwlantest.a
-
-else
-CFLAGS  += -fPIC -DPIC
-LDFLAGS += -shared
-
-LIBWLANTEST  = libwlantest.so
-libwlantest.so: $(OBJS_lib)
-	$(LDO) $(LDFLAGS) $(OBJS_lib) -o $(LIBWLANTEST)
-
-endif
-
-
 OBJS_cli = wlantest_cli.o
 
+_OBJS_VAR := OBJS
+include ../src/objs.mk
+_OBJS_VAR := TOBJS
+include ../src/objs.mk
+_OBJS_VAR := OBJS_cli
+include ../src/objs.mk
+_OBJS_VAR := OWN_LIBS
+include ../src/objs.mk
 
-wlantest: $(OBJS) $(LIBWLANTEST)
-	$(LDO) $(LDFLAGS) -o wlantest $(OBJS) -L. -lwlantest $(LIBS)
+wlantest: $(OBJS) $(OWN_LIBS)
+	$(LDO) $(LDFLAGS) -o wlantest $(OBJS) $(OWN_LIBS) $(LIBS)
 
-wlantest_cli: $(OBJS_cli) $(LIBWLANTEST)
-	$(LDO) $(LDFLAGS) -o wlantest_cli $(OBJS_cli) -L. -lwlantest $(LIBS)
+wlantest_cli: $(OBJS_cli) $(OWN_LIBS)
+	$(LDO) $(LDFLAGS) -o wlantest_cli $(OBJS_cli) $(OWN_LIBS) $(LIBS)
 
-test_vectors: $(TOBJS) $(LIBWLANTEST)
-	$(LDO) $(LDFLAGS) -o test_vectors $(TOBJS) -L. -lwlantest $(LIBS)
+test_vectors: $(TOBJS) $(OWN_LIBS)
+	$(LDO) $(LDFLAGS) -o test_vectors $(TOBJS) $(OWN_LIBS) $(LIBS)
 
-clean:
-	$(MAKE) -C ../src clean
-	rm -f core *~ *.o *.d libwlantest.a libwlantest.so $(ALL)
-
--include $(OBJS:%.o=%.d)
+clean: common-clean
+	rm -f core *~

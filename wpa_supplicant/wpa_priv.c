@@ -413,6 +413,7 @@ static void wpa_priv_cmd_set_key(struct wpa_priv_interface *iface,
 	p.seq_len = params->seq_len;
 	p.key = params->key_len ? params->key : NULL;
 	p.key_len = params->key_len;
+	p.key_flag = params->key_flag;
 
 	res = iface->driver->set_key(iface->drv_priv, &p);
 	wpa_printf(MSG_DEBUG, "drv->set_key: res=%d", res);
@@ -1189,14 +1190,15 @@ static void wpa_priv_fd_workaround(void)
 
 static void usage(void)
 {
-	printf("wpa_priv v" VERSION_STR "\n"
+	printf("wpa_priv v%s\n"
 	       "Copyright (c) 2007-2017, Jouni Malinen <j@w1.fi> and "
 	       "contributors\n"
 	       "\n"
 	       "usage:\n"
 	       "  wpa_priv [-Bdd] [-c<ctrl dir>] [-P<pid file>] "
 	       "<driver:ifname> \\\n"
-	       "           [driver:ifname ...]\n");
+	       "           [driver:ifname ...]\n",
+	       VERSION_STR);
 }
 
 

@@ -26,7 +26,8 @@ def create(devices, setup_params, refs, duts, monitors):
             mons.append(monitor)
 
     for mon in mons:
-        dev = config.get_device(devices, mon)
+        word = mon.split(":")
+        dev = config.get_device(devices, word[0])
         if dev is None:
             continue
 
@@ -34,6 +35,15 @@ def create(devices, setup_params, refs, duts, monitors):
                     ifname=dev['ifname'],
                     port=dev['port'],
                     name=dev['name'])
+
+        for iface_param in word[1:]:
+            params = iface_param.split(",")
+            if len(params) > 3:
+                monitor_param = { "freq" : rutils.c2f(params[0]),
+                                  "bw" : params[1],
+                                  "center_freq1" : rutils.c2f(params[2]),
+                                  "center_freq2" : rutils.c2f(params[3]) }
+                host.monitor_params.append(monitor_param)
 
         try:
             host.execute(["iw", "reg", "set", setup_params['country']])
@@ -49,10 +59,14 @@ def destroy(devices, hosts):
         stop(host)
         for monitor in host.monitors:
             host.execute(["ifconfig", monitor, "down"])
+        host.monitor_params = []
 
-def setup(host, monitor_params):
+def setup(host, monitor_params=None):
     if host is None:
         return
+
+    if monitor_params == None:
+        monitor_params = host.monitor_params
 
     ifaces = re.split('; | |, ', host.ifname)
     count = 0
@@ -63,6 +77,7 @@ def setup(host, monitor_params):
             logger.debug(traceback.format_exc())
             break
         host.execute(["ifconfig", iface, " down"])
+        host.execute(["rfkill", "unblock", "wifi"])
         host.execute(["iw", iface, "set type monitor"])
         host.execute(["ifconfig", iface, "up"])
         status, buf = host.execute(["iw", iface, "set", "freq", param['freq'],
@@ -95,7 +110,7 @@ def run(host, setup_params):
 
     log = log_dir + tc_name + "_" + host.name + log_monitor + ".pcap"
     host.add_log(log)
-    thread = host.execute_run([tshark, "-w", log], monitor_res)
+    thread = host.thread_run([tshark, "-w", log], monitor_res)
     host.thread = thread
 
 
@@ -107,10 +122,7 @@ def stop(host):
     if host.thread is None:
         return
 
-    host.execute(["killall", "-s", "INT", "tshark"])
-    host.wait_execute_complete(host.thread, 5)
-    if host.thread.isAlive():
-       raise Exception("tshark still alive")
+    host.thread_stop(host.thread)
     host.thread = None
 
 # Add monitor to existing interface

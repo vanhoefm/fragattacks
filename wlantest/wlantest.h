@@ -1,6 +1,6 @@
 /*
  * wlantest - IEEE 802.11 protocol monitoring and testing tool
- * Copyright (c) 2010-2019, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2010-2020, Jouni Malinen <j@w1.fi>
  *
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
@@ -61,6 +61,7 @@ struct wlantest_sta {
 		STATE3 /* associated */
 	} state;
 	u16 auth_alg;
+	bool ft_over_ds;
 	u16 aid;
 	u8 rsnie[257]; /* WPA/RSN IE */
 	u8 osenie[257]; /* OSEN IE */
@@ -69,10 +70,16 @@ struct wlantest_sta {
 	int group_cipher;
 	int key_mgmt;
 	int rsn_capab;
-	u8 anonce[32]; /* ANonce from the previous EAPOL-Key msg 1/4 or 3/4 */
-	u8 snonce[32]; /* SNonce from the previous EAPOL-Key msg 2/4 */
-	u8 pmk_r0[PMK_LEN];
+	/* ANonce from the previous EAPOL-Key msg 1/4 or 3/4 */
+	u8 anonce[WPA_NONCE_LEN];
+	/* SNonce from the previous EAPOL-Key msg 2/4 */
+	u8 snonce[WPA_NONCE_LEN];
+	u8 pmk_r0[PMK_LEN_MAX];
+	size_t pmk_r0_len;
 	u8 pmk_r0_name[WPA_PMK_NAME_LEN];
+	u8 pmk_r1[PMK_LEN_MAX];
+	size_t pmk_r1_len;
+	u8 pmk_r1_name[WPA_PMK_NAME_LEN];
 	struct wpa_ptk ptk; /* Derived PTK */
 	int ptk_set;
 	struct wpa_ptk tptk; /* Derived PTK during rekeying */
@@ -82,6 +89,7 @@ struct wlantest_sta {
 	u8 ap_sa_query_tr[2];
 	u8 sta_sa_query_tr[2];
 	u32 counters[NUM_WLANTEST_STA_COUNTER];
+	int assocreq_seen;
 	u16 assocreq_capab_info;
 	u16 assocreq_listen_int;
 	u8 *assocreq_ies;
@@ -134,6 +142,7 @@ struct wlantest_bss {
 	size_t ssid_len;
 	int beacon_seen;
 	int proberesp_seen;
+	int ies_set;
 	int parse_error_reported;
 	u8 wpaie[257];
 	u8 rsnie[257];
@@ -150,13 +159,14 @@ struct wlantest_bss {
 	size_t gtk_len[4];
 	int gtk_idx;
 	u8 rsc[4][6];
-	u8 igtk[6][32];
-	size_t igtk_len[6];
+	u8 igtk[8][32];
+	size_t igtk_len[8];
 	int igtk_idx;
-	u8 ipn[6][6];
+	u8 ipn[8][6];
+	int bigtk_idx;
 	u32 counters[NUM_WLANTEST_BSS_COUNTER];
 	struct dl_list tdls; /* struct wlantest_tdls */
-	u8 mdid[2];
+	u8 mdid[MOBILITY_DOMAIN_ID_LEN];
 	u8 r0kh_id[FT_R0KH_ID_MAX_LEN];
 	size_t r0kh_id_len;
 	u8 r1kh_id[FT_R1KH_ID_LEN];
@@ -192,6 +202,7 @@ struct wlantest {
 	unsigned int rx_ctrl;
 	unsigned int rx_data;
 	unsigned int fcs_error;
+	unsigned int frame_num;
 
 	void *write_pcap; /* pcap_t* */
 	void *write_pcap_dumper; /* pcpa_dumper_t */
@@ -263,7 +274,7 @@ struct wlantest_bss * bss_find(struct wlantest *wt, const u8 *bssid);
 struct wlantest_bss * bss_get(struct wlantest *wt, const u8 *bssid);
 void bss_deinit(struct wlantest_bss *bss);
 void bss_update(struct wlantest *wt, struct wlantest_bss *bss,
-		struct ieee802_11_elems *elems);
+		struct ieee802_11_elems *elems, int beacon);
 void bss_flush(struct wlantest *wt);
 int bss_add_pmk_from_passphrase(struct wlantest_bss *bss,
 				const char *passphrase);

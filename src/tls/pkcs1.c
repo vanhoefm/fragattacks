@@ -157,6 +157,7 @@ int pkcs1_decrypt_public_key(struct crypto_rsa_key *key,
 	    plain[0] != 0x00 || plain[1] != 0x01) {
 		wpa_printf(MSG_INFO, "LibTomCrypt: Invalid signature EB "
 			   "structure");
+		wpa_hexdump_key(MSG_DEBUG, "Signature EB", plain, len);
 		return -1;
 	}
 
@@ -165,6 +166,7 @@ int pkcs1_decrypt_public_key(struct crypto_rsa_key *key,
 	if (plain[2] != 0xff) {
 		wpa_printf(MSG_INFO, "LibTomCrypt: Invalid signature "
 			   "PS (BT=01)");
+		wpa_hexdump_key(MSG_DEBUG, "Signature EB", plain, len);
 		return -1;
 	}
 	while (pos < plain + len && *pos == 0xff)
@@ -174,12 +176,14 @@ int pkcs1_decrypt_public_key(struct crypto_rsa_key *key,
 		/* PKCS #1 v1.5, 8.1: At least eight octets long PS */
 		wpa_printf(MSG_INFO, "LibTomCrypt: Too short signature "
 			   "padding");
+		wpa_hexdump_key(MSG_DEBUG, "Signature EB", plain, len);
 		return -1;
 	}
 
 	if (pos + 16 /* min hash len */ >= plain + len || *pos != 0x00) {
 		wpa_printf(MSG_INFO, "LibTomCrypt: Invalid signature EB "
 			   "structure (2)");
+		wpa_hexdump_key(MSG_DEBUG, "Signature EB", plain, len);
 		return -1;
 	}
 	pos++;

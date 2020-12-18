@@ -13,13 +13,14 @@ import time
 
 import hostapd
 import hwsim_utils
-from utils import skip_with_fips
+from utils import *
 from tshark import run_tshark
 
 logger = logging.getLogger()
 
 def test_ieee8021x_wep104(dev, apdev):
     """IEEE 802.1X connection using dynamic WEP104"""
+    check_wep_capa(dev[0])
     skip_with_fips(dev[0])
     params = hostapd.radius_params()
     params["ssid"] = "ieee8021x-wep"
@@ -36,6 +37,7 @@ def test_ieee8021x_wep104(dev, apdev):
 
 def test_ieee8021x_wep40(dev, apdev):
     """IEEE 802.1X connection using dynamic WEP40"""
+    check_wep_capa(dev[0])
     skip_with_fips(dev[0])
     params = hostapd.radius_params()
     params["ssid"] = "ieee8021x-wep"
@@ -52,6 +54,7 @@ def test_ieee8021x_wep40(dev, apdev):
 
 def test_ieee8021x_wep_index_workaround(dev, apdev):
     """IEEE 802.1X and EAPOL-Key index workaround"""
+    check_wep_capa(dev[0])
     skip_with_fips(dev[0])
     params = hostapd.radius_params()
     params["ssid"] = "ieee8021x-wep"
@@ -100,6 +103,7 @@ def test_ieee8021x_static_wep104(dev, apdev):
     run_static_wep(dev, apdev, '"hello-there-/"')
 
 def run_static_wep(dev, apdev, key):
+    check_wep_capa(dev[0])
     params = hostapd.radius_params()
     params["ssid"] = "ieee8021x-wep"
     params["ieee8021x"] = "1"
@@ -252,6 +256,7 @@ def send_eapol_key(dev, bssid, signkey, frame_start, frame_end):
 
 def test_ieee8021x_eapol_key(dev, apdev):
     """IEEE 802.1X connection and EAPOL-Key protocol tests"""
+    check_wep_capa(dev[0])
     skip_with_fips(dev[0])
     params = hostapd.radius_params()
     params["ssid"] = "ieee8021x-wep"
@@ -317,6 +322,7 @@ def test_ieee8021x_reauth(dev, apdev):
 
 def test_ieee8021x_reauth_wep(dev, apdev, params):
     """IEEE 802.1X and EAPOL_REAUTH request with WEP"""
+    check_wep_capa(dev[0])
     logdir = params['logdir']
 
     params = hostapd.radius_params()
@@ -492,6 +498,7 @@ def test_ieee8021x_open_leap(dev, apdev):
 
 def test_ieee8021x_and_wpa_enabled(dev, apdev):
     """IEEE 802.1X connection using dynamic WEP104 when WPA enabled"""
+    check_wep_capa(dev[0])
     skip_with_fips(dev[0])
     params = hostapd.radius_params()
     params["ssid"] = "ieee8021x-wep"

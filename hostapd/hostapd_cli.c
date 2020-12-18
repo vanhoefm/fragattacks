@@ -975,7 +975,7 @@ static void hostapd_cli_list_interfaces(struct wpa_ctrl *ctrl)
 	dir = opendir(ctrl_iface_dir);
 	if (dir == NULL) {
 		printf("Control interface directory '%s' could not be "
-		       "openned.\n", ctrl_iface_dir);
+		       "opened.\n", ctrl_iface_dir);
 		return;
 	}
 
@@ -1227,14 +1227,15 @@ static int hostapd_cli_cmd_vendor(struct wpa_ctrl *ctrl, int argc, char *argv[])
 	char cmd[256];
 	int res;
 
-	if (argc < 2 || argc > 3) {
+	if (argc < 2 || argc > 4) {
 		printf("Invalid vendor command\n"
-		       "usage: <vendor id> <command id> [<hex formatted command argument>]\n");
+		       "usage: <vendor id> <command id> [<hex formatted command argument>] [nested=<0|1>]\n");
 		return -1;
 	}
 
-	res = os_snprintf(cmd, sizeof(cmd), "VENDOR %s %s %s", argv[0], argv[1],
-			  argc == 3 ? argv[2] : "");
+	res = os_snprintf(cmd, sizeof(cmd), "VENDOR %s %s %s%s%s", argv[0],
+			  argv[1], argc >= 3 ? argv[2] : "",
+			  argc == 4 ? " " : "", argc == 4 ? argv[3] : "");
 	if (os_snprintf_error(sizeof(cmd), res)) {
 		printf("Too long VENDOR command.\n");
 		return -1;
@@ -1402,6 +1403,13 @@ static int hostapd_cli_cmd_dpp_bootstrap_info(struct wpa_ctrl *ctrl, int argc,
 }
 
 
+static int hostapd_cli_cmd_dpp_bootstrap_set(struct wpa_ctrl *ctrl, int argc,
+					     char *argv[])
+{
+	return hostapd_cli_cmd(ctrl, "DPP_BOOTSTRAP_SET", 1, argc, argv);
+}
+
+
 static int hostapd_cli_cmd_dpp_auth_init(struct wpa_ctrl *ctrl, int argc,
 					 char *argv[])
 {
@@ -1464,6 +1472,37 @@ static int hostapd_cli_cmd_dpp_pkex_remove(struct wpa_ctrl *ctrl, int argc,
 	return hostapd_cli_cmd(ctrl, "DPP_PKEX_REMOVE", 1, argc, argv);
 }
 
+
+#ifdef CONFIG_DPP2
+
+static int hostapd_cli_cmd_dpp_controller_start(struct wpa_ctrl *ctrl, int argc,
+						char *argv[])
+{
+	return hostapd_cli_cmd(ctrl, "DPP_CONTROLLER_START", 1, argc, argv);
+}
+
+
+static int hostapd_cli_cmd_dpp_controller_stop(struct wpa_ctrl *ctrl, int argc,
+					       char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "DPP_CONTROLLER_STOP");
+}
+
+
+static int hostapd_cli_cmd_dpp_chirp(struct wpa_ctrl *ctrl, int argc,
+				     char *argv[])
+{
+	return hostapd_cli_cmd(ctrl, "DPP_CHIRP", 1, argc, argv);
+}
+
+
+static int hostapd_cli_cmd_dpp_stop_chirp(struct wpa_ctrl *ctrl, int argc,
+					  char *argv[])
+{
+	return wpa_ctrl_command(ctrl, "DPP_STOP_CHIRP");
+}
+
+#endif /* CONFIG_DPP2 */
 #endif /* CONFIG_DPP */
 
 
@@ -1650,6 +1689,8 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
 	  "<id> = get DPP bootstrap URI" },
 	{ "dpp_bootstrap_info", hostapd_cli_cmd_dpp_bootstrap_info, NULL,
 	  "<id> = show DPP bootstrap information" },
+	{ "dpp_bootstrap_set", hostapd_cli_cmd_dpp_bootstrap_set, NULL,
+	  "<id> [conf=..] [ssid=<SSID>] [ssid_charset=#] [psk=<PSK>] [pass=<passphrase>] [configurator=<id>] [conn_status=#] [akm_use_selector=<0|1>] [group_id=..] [expiry=#] [csrattrs=..] = set DPP configurator parameters" },
 	{ "dpp_auth_init", hostapd_cli_cmd_dpp_auth_init, NULL,
 	  "peer=<id> [own=<id>] = initiate DPP bootstrapping" },
 	{ "dpp_listen", hostapd_cli_cmd_dpp_listen, NULL,
@@ -1670,6 +1711,16 @@ static const struct hostapd_cli_cmd hostapd_cli_commands[] = {
 	  "add PKEX code" },
 	{ "dpp_pkex_remove", hostapd_cli_cmd_dpp_pkex_remove, NULL,
 	  "*|<id> = remove DPP pkex information" },
+#ifdef CONFIG_DPP2
+	{ "dpp_controller_start", hostapd_cli_cmd_dpp_controller_start, NULL,
+	  "[tcp_port=<port>] [role=..] = start DPP controller" },
+	{ "dpp_controller_stop", hostapd_cli_cmd_dpp_controller_stop, NULL,
+	  "= stop DPP controller" },
+	{ "dpp_chirp", hostapd_cli_cmd_dpp_chirp, NULL,
+	  "own=<BI ID> iter=<count> = start DPP chirp" },
+	{ "dpp_stop_chirp", hostapd_cli_cmd_dpp_stop_chirp, NULL,
+	  "= stop DPP chirp" },
+#endif /* CONFIG_DPP2 */
 #endif /* CONFIG_DPP */
 	{ "accept_acl", hostapd_cli_cmd_accept_macacl, NULL,
 	  "=Add/Delete/Show/Clear accept MAC ACL" },

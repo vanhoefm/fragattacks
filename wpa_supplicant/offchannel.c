@@ -246,7 +246,7 @@ void offchannel_send_action_tx_status(
  * @buf: Frame to transmit starting from the Category field
  * @len: Length of @buf in bytes
  * @wait_time: Wait time for response in milliseconds
- * @tx_cb: Callback function for indicating TX status or %NULL for now callback
+ * @tx_cb: Callback function for indicating TX status or %NULL for no callback
  * @no_cck: Whether CCK rates are to be disallowed for TX rate selection
  * Returns: 0 on success or -1 on failure
  *

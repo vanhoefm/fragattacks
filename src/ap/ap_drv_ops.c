@@ -418,6 +418,7 @@ int hostapd_sta_add(struct hostapd_data *hapd,
 		    const struct ieee80211_vht_capabilities *vht_capab,
 		    const struct ieee80211_he_capabilities *he_capab,
 		    size_t he_capab_len,
+		    const struct ieee80211_he_6ghz_band_cap *he_6ghz_capab,
 		    u32 flags, u8 qosinfo, u8 vht_opmode, int supp_p2p_ps,
 		    int set)
 {
@@ -439,6 +440,7 @@ int hostapd_sta_add(struct hostapd_data *hapd,
 	params.vht_capabilities = vht_capab;
 	params.he_capab = he_capab;
 	params.he_capab_len = he_capab_len;
+	params.he_6ghz_capab = he_6ghz_capab;
 	params.vht_opmode_enabled = !!(flags & WLAN_STA_VHT_OPMODE_ENABLED);
 	params.vht_opmode = vht_opmode;
 	params.flags = hostapd_sta_flags_to_drv(flags);
@@ -588,7 +590,7 @@ int hostapd_set_frag(struct hostapd_data *hapd, int frag)
 int hostapd_sta_set_flags(struct hostapd_data *hapd, u8 *addr,
 			  int total_flags, int flags_or, int flags_and)
 {
-	if (hapd->driver == NULL || hapd->driver->sta_set_flags == NULL)
+	if (!hapd->driver || !hapd->drv_priv || !hapd->driver->sta_set_flags)
 		return 0;
 	return hapd->driver->sta_set_flags(hapd->drv_priv, addr, total_flags,
 					   flags_or, flags_and);
@@ -647,6 +649,12 @@ int hostapd_driver_commit(struct hostapd_data *hapd)
 int hostapd_drv_none(struct hostapd_data *hapd)
 {
 	return hapd->driver && os_strcmp(hapd->driver->name, "none") == 0;
+}
+
+
+bool hostapd_drv_nl80211(struct hostapd_data *hapd)
+{
+	return hapd->driver && os_strcmp(hapd->driver->name, "nl80211") == 0;
 }
 
 
@@ -714,7 +722,7 @@ int hostapd_drv_send_mlme(struct hostapd_data *hapd,
 	if (!hapd->driver || !hapd->driver->send_mlme || !hapd->drv_priv)
 		return 0;
 	return hapd->driver->send_mlme(hapd->drv_priv, msg, len, noack, 0,
-				       csa_offs, csa_offs_len, no_encrypt);
+				       csa_offs, csa_offs_len, no_encrypt, 0);
 }
 
 
@@ -938,6 +946,7 @@ int hostapd_drv_do_acs(struct hostapd_data *hapd)
 	}
 
 	params.freq_list = freq_list;
+	params.edmg_enabled = hapd->iface->conf->enable_edmg;
 
 	params.ht_enabled = !!(hapd->iface->conf->ieee80211n);
 	params.ht40_enabled = !!(hapd->iface->conf->ht_capab &

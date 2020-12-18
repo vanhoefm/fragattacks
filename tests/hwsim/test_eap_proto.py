@@ -106,7 +106,7 @@ def start_radius_server(eap_handler):
                 logger.info("No EAP request available")
             reply.code = pyrad.packet.AccessChallenge
 
-            hmac_obj = hmac.new(reply.secret)
+            hmac_obj = hmac.new(reply.secret, digestmod=hashlib.md5)
             hmac_obj.update(struct.pack("B", reply.code))
             hmac_obj.update(struct.pack("B", reply.id))
 

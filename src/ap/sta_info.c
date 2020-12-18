@@ -165,6 +165,7 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
 
 	/* just in case */
 	ap_sta_set_authorized(hapd, sta, 0);
+	hostapd_set_sta_flags(hapd, sta);
 
 	if (sta->flags & (WLAN_STA_WDS | WLAN_STA_MULTI_AP))
 		hostapd_set_wds_sta(hapd, NULL, sta->addr, sta->aid, 0);
@@ -234,9 +235,7 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
 	sta->assoc_ie_taxonomy = NULL;
 #endif /* CONFIG_TAXONOMY */
 
-#ifdef CONFIG_IEEE80211N
 	ht40_intolerant_remove(hapd->iface, sta);
-#endif /* CONFIG_IEEE80211N */
 
 #ifdef CONFIG_P2P
 	if (sta->no_p2p_set) {
@@ -247,10 +246,10 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
 	}
 #endif /* CONFIG_P2P */
 
-#if defined(NEED_AP_MLME) && defined(CONFIG_IEEE80211N)
+#ifdef NEED_AP_MLME
 	if (hostapd_ht_operation_update(hapd->iface) > 0)
 		set_beacon++;
-#endif /* NEED_AP_MLME && CONFIG_IEEE80211N */
+#endif /* NEED_AP_MLME */
 
 #ifdef CONFIG_MESH
 	if (hapd->mesh_sta_free_cb)
@@ -328,6 +327,7 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
 	os_free(sta->vht_capabilities);
 	os_free(sta->vht_operation);
 	os_free(sta->he_capab);
+	os_free(sta->he_6ghz_capab);
 	hostapd_free_psk_list(sta->psk);
 	os_free(sta->identity);
 	os_free(sta->radius_cui);
@@ -547,6 +547,7 @@ skip_poll:
 	case STA_DISASSOC_FROM_CLI:
 		ap_sta_set_authorized(hapd, sta, 0);
 		sta->flags &= ~WLAN_STA_ASSOC;
+		hostapd_set_sta_flags(hapd, sta);
 		ieee802_1x_notify_port_enabled(sta->eapol_sm, 0);
 		if (!sta->acct_terminate_cause)
 			sta->acct_terminate_cause =
@@ -815,6 +816,7 @@ void ap_sta_disassociate(struct hostapd_data *hapd, struct sta_info *sta,
 		sta->timeout_next = STA_DEAUTH;
 	}
 	ap_sta_set_authorized(hapd, sta, 0);
+	hostapd_set_sta_flags(hapd, sta);
 	wpa_printf(MSG_DEBUG, "%s: reschedule ap_handle_timer timeout "
 		   "for " MACSTR " (%d seconds - "
 		   "AP_MAX_INACTIVITY_AFTER_DISASSOC)",
@@ -865,6 +867,7 @@ void ap_sta_deauthenticate(struct hostapd_data *hapd, struct sta_info *sta,
 	sta->last_seq_ctrl = WLAN_INVALID_MGMT_SEQ;
 	sta->flags &= ~(WLAN_STA_AUTH | WLAN_STA_ASSOC | WLAN_STA_ASSOC_REQ_OK);
 	ap_sta_set_authorized(hapd, sta, 0);
+	hostapd_set_sta_flags(hapd, sta);
 	sta->timeout_next = STA_REMOVE;
 	wpa_printf(MSG_DEBUG, "%s: reschedule ap_handle_timer timeout "
 		   "for " MACSTR " (%d seconds - "
@@ -1030,6 +1033,13 @@ int ap_sta_bind_vlan(struct hostapd_data *hapd, struct sta_info *sta)
 	int ret;
 	int old_vlanid = sta->vlan_id_bound;
 
+	if ((sta->flags & WLAN_STA_WDS) && sta->vlan_id == 0) {
+		wpa_printf(MSG_DEBUG,
+			   "Do not override WDS VLAN assignment for STA "
+			   MACSTR, MAC2STR(sta->addr));
+		return 0;
+	}
+
 	iface = hapd->conf->iface;
 	if (hapd->conf->ssid.vlan[0])
 		iface = hapd->conf->ssid.vlan;
@@ -1135,6 +1145,8 @@ static void ap_sa_query_timer(void *eloop_ctx, void *timeout_ctx)
 
 	if (sta->sa_query_count > 0 &&
 	    ap_check_sa_query_timeout(hapd, sta))
+		return;
+	if (sta->sa_query_count >= 1000)
 		return;
 
 	nbuf = os_realloc_array(sta->sa_query_trans_id,
@@ -1330,9 +1342,10 @@ void ap_sta_disconnect(struct hostapd_data *hapd, struct sta_info *sta,
 	if (sta == NULL)
 		return;
 	ap_sta_set_authorized(hapd, sta, 0);
+	sta->flags &= ~(WLAN_STA_AUTH | WLAN_STA_ASSOC);
+	hostapd_set_sta_flags(hapd, sta);
 	wpa_auth_sm_event(sta->wpa_sm, WPA_DEAUTH);
 	ieee802_1x_notify_port_enabled(sta->eapol_sm, 0);
-	sta->flags &= ~(WLAN_STA_AUTH | WLAN_STA_ASSOC);
 	wpa_printf(MSG_DEBUG, "%s: %s: reschedule ap_handle_timer timeout "
 		   "for " MACSTR " (%d seconds - "
 		   "AP_MAX_INACTIVITY_AFTER_DEAUTH)",
@@ -1420,7 +1433,8 @@ int ap_sta_flags_txt(u32 flags, char *buf, size_t buflen)
 	int res;
 
 	buf[0] = '\0';
-	res = os_snprintf(buf, buflen, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
+	res = os_snprintf(buf, buflen,
+			  "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s",
 			  (flags & WLAN_STA_AUTH ? "[AUTH]" : ""),
 			  (flags & WLAN_STA_ASSOC ? "[ASSOC]" : ""),
 			  (flags & WLAN_STA_AUTHORIZED ? "[AUTHORIZED]" : ""),
@@ -1440,6 +1454,7 @@ int ap_sta_flags_txt(u32 flags, char *buf, size_t buflen)
 			  (flags & WLAN_STA_HT ? "[HT]" : ""),
 			  (flags & WLAN_STA_VHT ? "[VHT]" : ""),
 			  (flags & WLAN_STA_HE ? "[HE]" : ""),
+			  (flags & WLAN_STA_6GHZ ? "[6GHZ]" : ""),
 			  (flags & WLAN_STA_VENDOR_VHT ? "[VENDOR_VHT]" : ""),
 			  (flags & WLAN_STA_WNM_SLEEP_MODE ?
 			   "[WNM_SLEEP_MODE]" : ""));
@@ -1492,4 +1507,34 @@ int ap_sta_pending_delayed_1x_auth_fail_disconnect(struct hostapd_data *hapd,
 {
 	return eloop_is_timeout_registered(ap_sta_delayed_1x_auth_fail_cb,
 					   hapd, sta);
+}
+
+
+int ap_sta_re_add(struct hostapd_data *hapd, struct sta_info *sta)
+{
+	/*
+	 * If a station that is already associated to the AP, is trying to
+	 * authenticate again, remove the STA entry, in order to make sure the
+	 * STA PS state gets cleared and configuration gets updated. To handle
+	 * this, station's added_unassoc flag is cleared once the station has
+	 * completed association.
+	 */
+	ap_sta_set_authorized(hapd, sta, 0);
+	hostapd_drv_sta_remove(hapd, sta->addr);
+	sta->flags &= ~(WLAN_STA_ASSOC | WLAN_STA_AUTH | WLAN_STA_AUTHORIZED);
+
+	if (hostapd_sta_add(hapd, sta->addr, 0, 0,
+			    sta->supported_rates,
+			    sta->supported_rates_len,
+			    0, NULL, NULL, NULL, 0, NULL,
+			    sta->flags, 0, 0, 0, 0)) {
+		hostapd_logger(hapd, sta->addr,
+			       HOSTAPD_MODULE_IEEE80211,
+			       HOSTAPD_LEVEL_NOTICE,
+			       "Could not add STA to kernel driver");
+		return -1;
+	}
+
+	sta->added_unassoc = 1;
+	return 0;
 }

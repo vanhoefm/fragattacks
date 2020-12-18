@@ -148,9 +148,6 @@ CONFIG_IEEE80211R=y
 # the IEEE 802.11 Management capability (e.g., FreeBSD/net80211)
 #CONFIG_DRIVER_RADIUS_ACL=y
 
-# IEEE 802.11n (High Throughput) support
-CONFIG_IEEE80211N=y
-
 # Wireless Network Management (IEEE Std 802.11v-2011)
 # Note: This is experimental and not complete implementation.
 #CONFIG_WNM=y
@@ -354,7 +351,7 @@ CONFIG_INTERWORKING=y
 #CONFIG_ACS=y
 
 # Multiband Operation support
-# These extentions facilitate efficient use of multiple frequency bands
+# These extensions facilitate efficient use of multiple frequency bands
 # available to the AP and the devices that may associate with it.
 #CONFIG_MBO=y
 
@@ -384,6 +381,19 @@ CONFIG_INTERWORKING=y
 # parameter. See that parameter in hostapd.conf for more details.
 #CFLAGS += -DDEFAULT_WPA_DISABLE_EAPOL_KEY_RETRIES=1
 
-CONFIG_TESTING_OPTIONS=y
+# Wired equivalent privacy (WEP)
+# WEP is an obsolete cryptographic data confidentiality algorithm that is not
+# considered secure. It should not be used for anything anymore. The
+# functionality needed to use WEP is available in the current hostapd
+# release under this optional build parameter. This functionality is subject to
+# be completely removed in a future release.
+CONFIG_WEP=y
 
-CONFIG_SAE=y
+# Remove all TKIP functionality
+# TKIP is an old cryptographic data confidentiality algorithm that is not
+# considered secure. It should not be used anymore. For now, the default hostapd
+# build includes this to allow mixed mode WPA+WPA2 networks to be enabled, but
+# that functionality is subject to be removed in the future.
+#CONFIG_NO_TKIP=y
+
+CONFIG_TESTING_OPTIONS=y

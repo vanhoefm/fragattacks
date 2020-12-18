@@ -11,7 +11,7 @@ import os
 import hostapd
 import hwsim_utils
 from wpasupplicant import WpaSupplicant
-from utils import HwsimSkip, skip_with_fips
+from utils import *
 from test_rfkill import get_rfkill
 
 def get_wext_interface():
@@ -55,6 +55,7 @@ def test_wext_wpa2_psk(dev, apdev):
 def test_wext_wpa_psk(dev, apdev):
     """WEXT driver interface with WPA-PSK"""
     skip_with_fips(dev[0])
+    skip_without_tkip(dev[0])
     wpas = get_wext_interface()
 
     params = hostapd.wpa_params(ssid="wext-wpa-psk", passphrase="12345678")
@@ -149,6 +150,7 @@ def test_wext_pmksa_cache(dev, apdev):
 def test_wext_wep_open_auth(dev, apdev):
     """WEP Open System authentication"""
     wpas = get_wext_interface()
+    check_wep_capa(wpas)
 
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wep-open",
@@ -162,6 +164,7 @@ def test_wext_wep_open_auth(dev, apdev):
 def test_wext_wep_shared_key_auth(dev, apdev):
     """WEP Shared Key authentication"""
     wpas = get_wext_interface()
+    check_wep_capa(wpas)
 
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wep-shared-key",

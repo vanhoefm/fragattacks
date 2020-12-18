@@ -192,9 +192,12 @@ u8 * hostapd_eid_he_operation(struct hostapd_data *hapd, u8 *eid)
 		params |= (hapd->iface->conf->he_op.he_rts_threshold <<
 			   HE_OPERATION_RTS_THRESHOLD_OFFSET);
 
-	if (hapd->iface->conf->he_op.he_bss_color)
-		params |= (hapd->iface->conf->he_op.he_bss_color <<
-			   HE_OPERATION_BSS_COLOR_OFFSET);
+	if (hapd->iface->conf->he_op.he_bss_color_disabled)
+		params |= HE_OPERATION_BSS_COLOR_DISABLED;
+	if (hapd->iface->conf->he_op.he_bss_color_partial)
+		params |= HE_OPERATION_BSS_COLOR_PARTIAL;
+	params |= hapd->iface->conf->he_op.he_bss_color <<
+		HE_OPERATION_BSS_COLOR_OFFSET;
 
 	/* HE minimum required basic MCS and NSS for STAs */
 	oper->he_mcs_nss_set =
@@ -308,6 +311,35 @@ u8 * hostapd_eid_spatial_reuse(struct hostapd_data *hapd, u8 *eid)
 }
 
 
+u8 * hostapd_eid_he_6ghz_band_cap(struct hostapd_data *hapd, u8 *eid)
+{
+	struct hostapd_hw_modes *mode = hapd->iface->current_mode;
+	struct he_capabilities *he_cap;
+	struct ieee80211_he_6ghz_band_cap *cap;
+	u16 capab;
+	u8 *pos;
+
+	if (!mode || !is_6ghz_op_class(hapd->iconf->op_class) ||
+	    !is_6ghz_freq(hapd->iface->freq))
+		return eid;
+
+	he_cap = &mode->he_capab[IEEE80211_MODE_AP];
+	capab = he_cap->he_6ghz_capa;
+	capab |= HE_6GHZ_BAND_CAP_SMPS_DISABLED;
+
+	pos = eid;
+	*pos++ = WLAN_EID_EXTENSION;
+	*pos++ = 1 + sizeof(*cap);
+	*pos++ = WLAN_EID_EXT_HE_6GHZ_BAND_CAP;
+
+	cap = (struct ieee80211_he_6ghz_band_cap *) pos;
+	cap->capab = host_to_le16(capab);
+	pos += sizeof(*cap);
+
+	return pos;
+}
+
+
 void hostapd_get_he_capab(struct hostapd_data *hapd,
 			  const struct ieee80211_he_capabilities *he_cap,
 			  struct ieee80211_he_capabilities *neg_he_cap,
@@ -387,6 +419,7 @@ u16 copy_sta_he_capab(struct hostapd_data *hapd, struct sta_info *sta,
 		      size_t he_capab_len)
 {
 	if (!he_capab || !hapd->iconf->ieee80211ax ||
+	    hapd->conf->disable_11ax ||
 	    !check_valid_he_mcs(hapd, he_capab, opmode) ||
 	    ieee80211_invalid_he_cap_size(he_capab, he_capab_len) ||
 	    he_capab_len > sizeof(struct ieee80211_he_capabilities)) {
@@ -409,4 +442,46 @@ u16 copy_sta_he_capab(struct hostapd_data *hapd, struct sta_info *sta,
 	sta->he_capab_len = he_capab_len;
 
 	return WLAN_STATUS_SUCCESS;
+}
+
+
+u16 copy_sta_he_6ghz_capab(struct hostapd_data *hapd, struct sta_info *sta,
+			   const u8 *he_6ghz_capab)
+{
+	if (!he_6ghz_capab || !hapd->iconf->ieee80211ax ||
+	    hapd->conf->disable_11ax ||
+	    !is_6ghz_op_class(hapd->iconf->op_class)) {
+		sta->flags &= ~WLAN_STA_6GHZ;
+		os_free(sta->he_6ghz_capab);
+		sta->he_6ghz_capab = NULL;
+		return WLAN_STATUS_SUCCESS;
+	}
+
+	if (!sta->he_6ghz_capab) {
+		sta->he_6ghz_capab =
+			os_zalloc(sizeof(struct ieee80211_he_6ghz_band_cap));
+		if (!sta->he_6ghz_capab)
+			return WLAN_STATUS_UNSPECIFIED_FAILURE;
+	}
+
+	sta->flags |= WLAN_STA_6GHZ;
+	os_memcpy(sta->he_6ghz_capab, he_6ghz_capab,
+		  sizeof(struct ieee80211_he_6ghz_band_cap));
+
+	return WLAN_STATUS_SUCCESS;
+}
+
+
+int hostapd_get_he_twt_responder(struct hostapd_data *hapd,
+				 enum ieee80211_op_mode mode)
+{
+	u8 *mac_cap;
+
+	if (!hapd->iface->current_mode ||
+	    !hapd->iface->current_mode->he_capab[mode].he_supported)
+		return 0;
+
+	mac_cap = hapd->iface->current_mode->he_capab[mode].mac_cap;
+
+	return !!(mac_cap[HE_MAC_CAPAB_0] & HE_MACCAP_TWT_RESPONDER);
 }

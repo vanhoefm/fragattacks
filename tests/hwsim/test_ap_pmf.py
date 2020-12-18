@@ -6,14 +6,14 @@
 
 from remotehost import remote_compatible
 import binascii
+import os
 import time
 import logging
 logger = logging.getLogger()
 
 import hwsim_utils
 import hostapd
-from utils import alloc_fail, fail_test, wait_fail_trigger, HwsimSkip, \
-    radiotap_build, start_monitor, stop_monitor
+from utils import *
 from wlantest import Wlantest
 from wpasupplicant import WpaSupplicant
 
@@ -59,24 +59,30 @@ def test_ap_pmf_required(dev, apdev):
                           dev[1].p2p_interface_addr()) < 1:
         raise Exception("STA did not reply to SA Query")
 
-@remote_compatible
-def test_ocv_sa_query(dev, apdev):
-    """Test SA Query with OCV"""
+def start_ocv_ap(apdev):
     ssid = "test-pmf-required"
     params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
     params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
     params["ieee80211w"] = "2"
     params["ocv"] = "1"
     try:
-        hapd = hostapd.add_ap(apdev[0], params)
+        hapd = hostapd.add_ap(apdev, params)
     except Exception as e:
         if "Failed to set hostapd parameter ocv" in str(e):
             raise HwsimSkip("OCV not supported")
         raise
+
     Wlantest.setup(hapd)
     wt = Wlantest()
     wt.flush()
     wt.add_passphrase("12345678")
+
+    return hapd, ssid, wt
+
+@remote_compatible
+def test_ocv_sa_query(dev, apdev):
+    """Test SA Query with OCV"""
+    hapd, ssid, wt = start_ocv_ap(apdev[0])
     dev[0].connect(ssid, psk="12345678", ieee80211w="1", ocv="1",
                    key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
                    scan_freq="2412")
@@ -84,7 +90,9 @@ def test_ocv_sa_query(dev, apdev):
     # Test that client can handle SA Query with OCI element
     if "OK" not in hapd.request("SA_QUERY " + dev[0].own_addr()):
         raise Exception("SA_QUERY failed")
-    time.sleep(0.1)
+    ev = hapd.wait_event(["OCV-FAILURE"], timeout=0.1)
+    if ev:
+        raise Exception("Unexpected OCV failure reported")
     if wt.get_sta_counter("valid_saqueryresp_tx", apdev[0]['bssid'],
                           dev[0].own_addr()) < 1:
         raise Exception("STA did not reply to SA Query")
@@ -99,21 +107,7 @@ def test_ocv_sa_query(dev, apdev):
 @remote_compatible
 def test_ocv_sa_query_csa(dev, apdev):
     """Test SA Query with OCV after channel switch"""
-    ssid = "test-pmf-required"
-    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
-    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
-    params["ieee80211w"] = "2"
-    params["ocv"] = "1"
-    try:
-        hapd = hostapd.add_ap(apdev[0], params)
-    except Exception as e:
-        if "Failed to set hostapd parameter ocv" in str(e):
-            raise HwsimSkip("OCV not supported")
-        raise
-    Wlantest.setup(hapd)
-    wt = Wlantest()
-    wt.flush()
-    wt.add_passphrase("12345678")
+    hapd, ssid, wt = start_ocv_ap(apdev[0])
     dev[0].connect(ssid, psk="12345678", ieee80211w="1", ocv="1",
                    key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
                    scan_freq="2412")
@@ -123,6 +117,44 @@ def test_ocv_sa_query_csa(dev, apdev):
     if wt.get_sta_counter("valid_saqueryreq_tx", apdev[0]['bssid'],
                           dev[0].own_addr()) < 1:
         raise Exception("STA did not start SA Query after channel switch")
+
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=16)
+    if ev is not None:
+        raise Exception("Unexpected disconnection")
+
+def test_ocv_sa_query_csa_no_resp(dev, apdev):
+    """Test SA Query with OCV after channel switch getting no response"""
+    hapd, ssid, wt = start_ocv_ap(apdev[0])
+    dev[0].connect(ssid, psk="12345678", ieee80211w="1", ocv="1",
+                   key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
+                   scan_freq="2412")
+
+    hapd.set("ext_mgmt_frame_handling", "1")
+    hapd.request("CHAN_SWITCH 5 2437")
+    ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=5)
+    if ev is None:
+        raise Exception("Disconnection after CSA not reported")
+    if "locally_generated=1" not in ev:
+        raise Exception("Unexpectedly disconnected by AP: " + ev)
+
+def test_ocv_sa_query_csa_missing(dev, apdev):
+    """Test SA Query with OCV missing after channel switch"""
+    hapd, ssid, wt = start_ocv_ap(apdev[0])
+    dev[0].connect(ssid, psk="12345678", ieee80211w="1", ocv="1",
+                   key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
+                   scan_freq="2412")
+
+    hapd.set("ext_mgmt_frame_handling", "1")
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected()
+    ev = hapd.wait_event(['MGMT-RX'], timeout=5)
+    if ev is None:
+        raise Exception("Deauthentication frame RX not reported")
+    hapd.set("ext_mgmt_frame_handling", "0")
+    hapd.request("CHAN_SWITCH 5 2437")
+    ev = hapd.wait_event(["AP-STA-DISCONNECTED"], timeout=20)
+    if ev is None:
+        raise Exception("No disconnection event received from hostapd")
 
 @remote_compatible
 def test_ap_pmf_optional(dev, apdev):
@@ -246,6 +278,34 @@ def test_ap_pmf_assoc_comeback2(dev, apdev):
     if wt.get_sta_counter("reassocresp_comeback", apdev[0]['bssid'],
                           dev[0].p2p_interface_addr()) < 1:
         raise Exception("AP did not use reassociation comeback request")
+
+@remote_compatible
+def test_ap_pmf_assoc_comeback_wps(dev, apdev):
+    """WPA2-PSK AP with PMF association comeback (WPS)"""
+    ssid = "assoc-comeback"
+    appin = "12345670"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    params["eap_server"] = "1"
+    params["wps_state"] = "2"
+    params["ap_pin"] = appin
+    hapd = hostapd.add_ap(apdev[0], params)
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+    dev[0].connect(ssid, psk="12345678", ieee80211w="1",
+                   key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
+                   scan_freq="2412")
+    hapd.set("ext_mgmt_frame_handling", "1")
+    dev[0].request("DISCONNECT")
+    dev[0].wait_disconnected(timeout=10)
+    hapd.set("ext_mgmt_frame_handling", "0")
+    dev[0].wps_reg(apdev[0]['bssid'], appin)
+    if wt.get_sta_counter("assocresp_comeback", apdev[0]['bssid'],
+                          dev[0].p2p_interface_addr()) < 1:
+        raise Exception("AP did not use association comeback request")
 
 def test_ap_pmf_ap_dropping_sa(dev, apdev):
     """WPA2-PSK PMF AP dropping SA"""
@@ -853,6 +913,7 @@ def run_ap_pmf_inject_data(dev, apdev):
 
 def test_ap_pmf_tkip_reject(dev, apdev):
     """Mixed mode BSS and MFP-enabled AP rejecting TKIP"""
+    skip_without_tkip(dev[0])
     params = hostapd.wpa2_params(ssid="test-pmf", passphrase="12345678")
     params['wpa'] = '3'
     params["ieee80211w"] = "1"
@@ -915,3 +976,229 @@ def test_ap_pmf_sa_query_timeout(dev, apdev):
     ev = dev[0].wait_event(["CTRL-EVENT-DISCONNECTED"], timeout=1.5)
     if ev is not None:
         raise Exception("Unexpected disconnection after reconnection seen")
+
+def mac80211_read_key(keydir):
+    vals = {}
+    for name in os.listdir(keydir):
+        try:
+            with open(os.path.join(keydir, name)) as f:
+                vals[name] = f.read().strip()
+        except OSError as e:
+            pass
+    return vals
+
+def check_mac80211_bigtk(dev, hapd):
+    sta_key = None
+    ap_key = None
+
+    phy = dev.get_driver_status_field("phyname")
+    keys = "/sys/kernel/debug/ieee80211/%s/keys" % phy
+    try:
+        for key in os.listdir(keys):
+            keydir = os.path.join(keys, key)
+            vals = mac80211_read_key(keydir)
+            keyidx = int(vals['keyidx'])
+            if keyidx == 6 or keyidx == 7:
+                sta_key = vals;
+                break
+    except OSError as e:
+        raise HwsimSkip("debugfs not supported in mac80211 (STA)")
+
+    phy = hapd.get_driver_status_field("phyname")
+    keys = "/sys/kernel/debug/ieee80211/%s/keys" % phy
+    try:
+        for key in os.listdir(keys):
+            keydir = os.path.join(keys, key)
+            vals = mac80211_read_key(keydir)
+            keyidx = int(vals['keyidx'])
+            if keyidx == 6 or keyidx == 7:
+                ap_key = vals;
+                break
+    except OSError as e:
+        raise HwsimSkip("debugfs not supported in mac80211 (AP)")
+
+    if not sta_key:
+        raise Exception("Could not find STA key information from debugfs")
+    logger.info("STA key: " + str(sta_key))
+
+    if not ap_key:
+        raise Exception("Could not find AP key information from debugfs")
+    logger.info("AP key: " + str(ap_key))
+
+    if sta_key['key'] != ap_key['key']:
+        raise Exception("AP and STA BIGTK mismatch")
+
+    if sta_key['keyidx'] != ap_key['keyidx']:
+        raise Exception("AP and STA BIGTK keyidx mismatch")
+
+    if sta_key['algorithm'] != ap_key['algorithm']:
+        raise Exception("AP and STA BIGTK algorithm mismatch")
+
+    replays = int(sta_key['replays'])
+    icverrors = int(sta_key['icverrors'])
+    if replays > 0 or icverrors > 0:
+        raise Exception("STA reported errors: replays=%d icverrors=%d" % replays, icverrors)
+
+    rx_spec = int(sta_key['rx_spec'], base=16)
+    if rx_spec < 3:
+        raise Exception("STA did not update BIGTK receive counter sufficiently")
+
+    tx_spec = int(ap_key['tx_spec'], base=16)
+    if tx_spec < 3:
+        raise Exception("AP did not update BIGTK BIPN sufficiently")
+
+def test_ap_pmf_beacon_protection_bip(dev, apdev):
+    """WPA2-PSK Beacon protection (BIP)"""
+    run_ap_pmf_beacon_protection(dev, apdev, "AES-128-CMAC")
+
+def test_ap_pmf_beacon_protection_bip_cmac_256(dev, apdev):
+    """WPA2-PSK Beacon protection (BIP-CMAC-256)"""
+    run_ap_pmf_beacon_protection(dev, apdev, "BIP-CMAC-256")
+
+def test_ap_pmf_beacon_protection_bip_gmac_128(dev, apdev):
+    """WPA2-PSK Beacon protection (BIP-GMAC-128)"""
+    run_ap_pmf_beacon_protection(dev, apdev, "BIP-GMAC-128")
+
+def test_ap_pmf_beacon_protection_bip_gmac_256(dev, apdev):
+    """WPA2-PSK Beacon protection (BIP-GMAC-256)"""
+    run_ap_pmf_beacon_protection(dev, apdev, "BIP-GMAC-256")
+
+def run_ap_pmf_beacon_protection(dev, apdev, cipher):
+    ssid = "test-beacon-prot"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    params["beacon_prot"] = "1"
+    params["group_mgmt_cipher"] = cipher
+    try:
+        hapd = hostapd.add_ap(apdev[0], params)
+    except Exception as e:
+        if "Failed to enable hostapd interface" in str(e):
+            raise HwsimSkip("Beacon protection not supported")
+        raise
+
+    bssid = hapd.own_addr()
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+
+    # STA with Beacon protection enabled
+    dev[0].connect(ssid, psk="12345678", ieee80211w="2", beacon_prot="1",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
+
+    # STA with Beacon protection disabled
+    dev[1].connect(ssid, psk="12345678", ieee80211w="2",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
+
+    time.sleep(1)
+    check_mac80211_bigtk(dev[0], hapd)
+
+    valid_bip = wt.get_bss_counter('valid_bip_mmie', bssid)
+    invalid_bip = wt.get_bss_counter('invalid_bip_mmie', bssid)
+    missing_bip = wt.get_bss_counter('missing_bip_mmie', bssid)
+    logger.info("wlantest BIP counters: valid=%d invalid=%d missing=%d" % (valid_bip, invalid_bip, missing_bip))
+    if valid_bip < 0 or invalid_bip > 0 or missing_bip > 0:
+        raise Exception("Unexpected wlantest BIP counters: valid=%d invalid=%d missing=%d" % (valid_bip, invalid_bip, missing_bip))
+
+def test_ap_pmf_beacon_protection_mismatch(dev, apdev):
+    """WPA2-PSK Beacon protection MIC mismatch"""
+    run_ap_pmf_beacon_protection_mismatch(dev, apdev, False)
+
+def test_ap_pmf_beacon_protection_missing(dev, apdev):
+    """WPA2-PSK Beacon protection MME missing"""
+    run_ap_pmf_beacon_protection_mismatch(dev, apdev, True)
+
+def run_ap_pmf_beacon_protection_mismatch(dev, apdev, clear):
+    ssid = "test-beacon-prot"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK-SHA256"
+    params["ieee80211w"] = "2"
+    params["beacon_prot"] = "1"
+    params["group_mgmt_cipher"] = "AES-128-CMAC"
+    try:
+        hapd = hostapd.add_ap(apdev[0], params)
+    except Exception as e:
+        if "Failed to enable hostapd interface" in str(e):
+            raise HwsimSkip("Beacon protection not supported")
+        raise
+
+    bssid = hapd.own_addr()
+
+    Wlantest.setup(hapd)
+    wt = Wlantest()
+    wt.flush()
+    wt.add_passphrase("12345678")
+
+    dev[0].connect(ssid, psk="12345678", ieee80211w="2", beacon_prot="1",
+                   key_mgmt="WPA-PSK-SHA256", proto="WPA2", scan_freq="2412")
+
+    WPA_ALG_NONE = 0
+    WPA_ALG_IGTK = 4
+    KEY_FLAG_DEFAULT = 0x02
+    KEY_FLAG_TX = 0x08
+    KEY_FLAG_GROUP = 0x10
+    KEY_FLAG_GROUP_TX_DEFAULT = KEY_FLAG_GROUP | KEY_FLAG_TX | KEY_FLAG_DEFAULT
+
+    addr = "ff:ff:ff:ff:ff:ff"
+
+    if clear:
+        res = hapd.request("SET_KEY %d %s %d %d %s %s %d" % (WPA_ALG_NONE, addr, 6, 1, 6*"00", "", KEY_FLAG_GROUP))
+    else:
+        res = hapd.request("SET_KEY %d %s %d %d %s %s %d" % (WPA_ALG_IGTK, addr, 6, 1, 6*"00", 16*"00", KEY_FLAG_GROUP_TX_DEFAULT))
+    if "OK" not in res:
+        raise Exception("SET_KEY failed")
+
+    ev = dev[0].wait_event(["CTRL-EVENT-UNPROT-BEACON"], timeout=5)
+    if ev is None:
+        raise Exception("Unprotected Beacon frame not reported")
+
+    ev = dev[0].wait_event(["CTRL-EVENT-BEACON-LOSS"], timeout=5)
+    if ev is None:
+        raise Exception("Beacon loss not reported")
+
+    ev = hapd.wait_event(["CTRL-EVENT-UNPROT-BEACON"], timeout=5)
+    if ev is None:
+        raise Exception("WNM-Notification Request frame not reported")
+
+def test_ap_pmf_sta_global_require(dev, apdev):
+    """WPA2-PSK AP with PMF optional and wpa_supplicant pmf=2"""
+    ssid = "test-pmf-optional"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK"
+    params["ieee80211w"] = "1"
+    hapd = hostapd.add_ap(apdev[0], params)
+    try:
+        dev[0].set("pmf", "2")
+        dev[0].connect(ssid, psk="12345678",
+                       key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
+                       scan_freq="2412")
+        pmf = dev[0].get_status_field("pmf")
+        if pmf != "1":
+            raise Exception("Unexpected PMF state: " + str(pmf))
+    finally:
+        dev[0].set("pmf", "0")
+
+def test_ap_pmf_sta_global_require2(dev, apdev):
+    """WPA2-PSK AP with PMF optional and wpa_supplicant pmf=2 (2)"""
+    ssid = "test-pmf-optional"
+    params = hostapd.wpa2_params(ssid=ssid, passphrase="12345678")
+    params["wpa_key_mgmt"] = "WPA-PSK"
+    params["ieee80211w"] = "0"
+    hapd = hostapd.add_ap(apdev[0], params)
+    bssid = hapd.own_addr()
+    try:
+        dev[0].scan_for_bss(bssid, freq=2412)
+        dev[0].set("pmf", "2")
+        dev[0].connect(ssid, psk="12345678",
+                       key_mgmt="WPA-PSK WPA-PSK-SHA256", proto="WPA2",
+                       scan_freq="2412", wait_connect=False)
+        ev = dev[0].wait_event(["CTRL-EVENT-CONNECTED",
+                                "CTRL-EVENT-NETWORK-NOT-FOUND"], timeout=10)
+        if ev is None:
+            raise Exception("Connection result not reported")
+        if "CTRL-EVENT-CONNECTED" in ev:
+            raise Exception("Unexpected connection")
+    finally:
+        dev[0].set("pmf", "0")

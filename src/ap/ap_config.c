@@ -54,23 +54,33 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 	bss->logger_syslog = (unsigned int) -1;
 	bss->logger_stdout = (unsigned int) -1;
 
+#ifdef CONFIG_WEP
 	bss->auth_algs = WPA_AUTH_ALG_OPEN | WPA_AUTH_ALG_SHARED;
 
 	bss->wep_rekeying_period = 300;
 	/* use key0 in individual key and key1 in broadcast key */
 	bss->broadcast_key_idx_min = 1;
 	bss->broadcast_key_idx_max = 2;
+#else /* CONFIG_WEP */
+	bss->auth_algs = WPA_AUTH_ALG_OPEN;
+#endif /* CONFIG_WEP */
 	bss->eap_reauth_period = 3600;
 
 	bss->wpa_group_rekey = 600;
 	bss->wpa_gmk_rekey = 86400;
+	bss->wpa_deny_ptk0_rekey = PTK0_REKEY_ALLOW_ALWAYS;
 	bss->wpa_group_update_count = 4;
 	bss->wpa_pairwise_update_count = 4;
 	bss->wpa_disable_eapol_key_retries =
 		DEFAULT_WPA_DISABLE_EAPOL_KEY_RETRIES;
 	bss->wpa_key_mgmt = WPA_KEY_MGMT_PSK;
+#ifdef CONFIG_NO_TKIP
+	bss->wpa_pairwise = WPA_CIPHER_CCMP;
+	bss->wpa_group = WPA_CIPHER_CCMP;
+#else /* CONFIG_NO_TKIP */
 	bss->wpa_pairwise = WPA_CIPHER_TKIP;
 	bss->wpa_group = WPA_CIPHER_TKIP;
+#endif /* CONFIG_NO_TKIP */
 	bss->rsn_pairwise = 0;
 
 	bss->max_num_sta = MAX_STA_COUNT;
@@ -150,6 +160,10 @@ void hostapd_config_defaults_bss(struct hostapd_bss_config *bss)
 
 	/* Default to strict CRL checking. */
 	bss->check_crl_strict = 1;
+
+#ifdef CONFIG_TESTING_OPTIONS
+	bss->sae_commit_status = -1;
+#endif /* CONFIG_TESTING_OPTIONS */
 }
 
 
@@ -251,6 +265,9 @@ struct hostapd_config * hostapd_config_defaults(void)
 		HE_OPERATION_RTS_THRESHOLD_OFFSET;
 	/* Set default basic MCS/NSS set to single stream MCS 0-7 */
 	conf->he_op.he_basic_mcs_nss_set = 0xfffc;
+	conf->he_op.he_bss_color_disabled = 1;
+	conf->he_op.he_bss_color_partial = 0;
+	conf->he_op.he_bss_color = 1;
 #endif /* CONFIG_IEEE80211AX */
 
 	/* The third octet of the country string uses an ASCII space character
@@ -448,7 +465,8 @@ int hostapd_setup_sae_pt(struct hostapd_bss_config *conf)
 	struct hostapd_ssid *ssid = &conf->ssid;
 	struct sae_password_entry *pw;
 
-	if ((conf->sae_pwe == 0 && !hostapd_sae_pw_id_in_use(conf)) ||
+	if ((conf->sae_pwe == 0 && !hostapd_sae_pw_id_in_use(conf) &&
+	     !hostapd_sae_pk_in_use(conf)) ||
 	    conf->sae_pwe == 3 ||
 	    !wpa_key_mgmt_sae(conf->wpa_key_mgmt))
 		return 0; /* PT not needed */
@@ -632,6 +650,7 @@ void hostapd_config_free_eap_users(struct hostapd_eap_user *user)
 }
 
 
+#ifdef CONFIG_WEP
 static void hostapd_config_free_wep(struct hostapd_wep_keys *keys)
 {
 	int i;
@@ -640,6 +659,7 @@ static void hostapd_config_free_wep(struct hostapd_wep_keys *keys)
 		keys->key[i] = NULL;
 	}
 }
+#endif /* CONFIG_WEP */
 
 
 void hostapd_config_clear_wpa_psk(struct hostapd_wpa_psk **l)
@@ -696,6 +716,9 @@ static void hostapd_config_free_sae_passwords(struct hostapd_bss_config *conf)
 #ifdef CONFIG_SAE
 		sae_deinit_pt(tmp->pt);
 #endif /* CONFIG_SAE */
+#ifdef CONFIG_SAE_PK
+		sae_deinit_pk(tmp->pk);
+#endif /* CONFIG_SAE_PK */
 		os_free(tmp);
 	}
 }
@@ -728,7 +751,9 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 
 	str_clear_free(conf->ssid.wpa_passphrase);
 	os_free(conf->ssid.wpa_psk_file);
+#ifdef CONFIG_WEP
 	hostapd_config_free_wep(&conf->ssid.wep);
+#endif /* CONFIG_WEP */
 #ifdef CONFIG_FULL_DYNAMIC_VLAN
 	os_free(conf->ssid.vlan_tagged_interface);
 #endif /* CONFIG_FULL_DYNAMIC_VLAN */
@@ -890,7 +915,10 @@ void hostapd_config_free_bss(struct hostapd_bss_config *conf)
 #ifdef CONFIG_TESTING_OPTIONS
 	wpabuf_free(conf->own_ie_override);
 	wpabuf_free(conf->sae_commit_override);
+	wpabuf_free(conf->rsne_override_eapol);
 	wpabuf_free(conf->rsnxe_override_eapol);
+	wpabuf_free(conf->rsne_override_ft);
+	wpabuf_free(conf->rsnxe_override_ft);
 	wpabuf_free(conf->gtk_rsc_override);
 	wpabuf_free(conf->igtk_rsc_override);
 #endif /* CONFIG_TESTING_OPTIONS */
@@ -1091,6 +1119,37 @@ const u8 * hostapd_get_psk(const struct hostapd_bss_config *conf,
 }
 
 
+#ifdef CONFIG_SAE_PK
+static bool hostapd_sae_pk_password_without_pk(struct hostapd_bss_config *bss)
+{
+	struct sae_password_entry *pw;
+	bool res = false;
+
+	if (bss->ssid.wpa_passphrase &&
+#ifdef CONFIG_TESTING_OPTIONS
+	    !bss->sae_pk_password_check_skip &&
+#endif /* CONFIG_TESTING_OPTIONS */
+	    sae_pk_valid_password(bss->ssid.wpa_passphrase))
+		res = true;
+
+	for (pw = bss->sae_passwords; pw; pw = pw->next) {
+		if (!pw->pk &&
+#ifdef CONFIG_TESTING_OPTIONS
+		    !bss->sae_pk_password_check_skip &&
+#endif /* CONFIG_TESTING_OPTIONS */
+		    sae_pk_valid_password(pw->password))
+			return true;
+
+		if (bss->ssid.wpa_passphrase && res && pw->pk &&
+		    os_strcmp(bss->ssid.wpa_passphrase, pw->password) == 0)
+			res = false;
+	}
+
+	return res;
+}
+#endif /* CONFIG_SAE_PK */
+
+
 static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 				    struct hostapd_config *conf,
 				    int full_config)
@@ -1102,6 +1161,7 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 		return -1;
 	}
 
+#ifdef CONFIG_WEP
 	if (bss->wpa) {
 		int wep, i;
 
@@ -1119,6 +1179,7 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 			return -1;
 		}
 	}
+#endif /* CONFIG_WEP */
 
 	if (full_config && bss->wpa &&
 	    bss->wpa_psk_radius != PSK_RADIUS_IGNORED &&
@@ -1166,47 +1227,49 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 	}
 #endif /* CONFIG_IEEE80211R_AP */
 
-#ifdef CONFIG_IEEE80211N
 	if (full_config && conf->ieee80211n &&
 	    conf->hw_mode == HOSTAPD_MODE_IEEE80211B) {
-		bss->disable_11n = 1;
+		bss->disable_11n = true;
 		wpa_printf(MSG_ERROR, "HT (IEEE 802.11n) in 11b mode is not "
 			   "allowed, disabling HT capabilities");
 	}
 
+#ifdef CONFIG_WEP
 	if (full_config && conf->ieee80211n &&
 	    bss->ssid.security_policy == SECURITY_STATIC_WEP) {
-		bss->disable_11n = 1;
+		bss->disable_11n = true;
 		wpa_printf(MSG_ERROR, "HT (IEEE 802.11n) with WEP is not "
 			   "allowed, disabling HT capabilities");
 	}
+#endif /* CONFIG_WEP */
 
 	if (full_config && conf->ieee80211n && bss->wpa &&
 	    !(bss->wpa_pairwise & WPA_CIPHER_CCMP) &&
 	    !(bss->rsn_pairwise & (WPA_CIPHER_CCMP | WPA_CIPHER_GCMP |
 				   WPA_CIPHER_CCMP_256 | WPA_CIPHER_GCMP_256)))
 	{
-		bss->disable_11n = 1;
+		bss->disable_11n = true;
 		wpa_printf(MSG_ERROR, "HT (IEEE 802.11n) with WPA/WPA2 "
 			   "requires CCMP/GCMP to be enabled, disabling HT "
 			   "capabilities");
 	}
-#endif /* CONFIG_IEEE80211N */
 
 #ifdef CONFIG_IEEE80211AC
+#ifdef CONFIG_WEP
 	if (full_config && conf->ieee80211ac &&
 	    bss->ssid.security_policy == SECURITY_STATIC_WEP) {
-		bss->disable_11ac = 1;
+		bss->disable_11ac = true;
 		wpa_printf(MSG_ERROR,
 			   "VHT (IEEE 802.11ac) with WEP is not allowed, disabling VHT capabilities");
 	}
+#endif /* CONFIG_WEP */
 
 	if (full_config && conf->ieee80211ac && bss->wpa &&
 	    !(bss->wpa_pairwise & WPA_CIPHER_CCMP) &&
 	    !(bss->rsn_pairwise & (WPA_CIPHER_CCMP | WPA_CIPHER_GCMP |
 				   WPA_CIPHER_CCMP_256 | WPA_CIPHER_GCMP_256)))
 	{
-		bss->disable_11ac = 1;
+		bss->disable_11ac = true;
 		wpa_printf(MSG_ERROR,
 			   "VHT (IEEE 802.11ac) with WPA/WPA2 requires CCMP/GCMP to be enabled, disabling VHT capabilities");
 	}
@@ -1219,12 +1282,14 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 		bss->wps_state = 0;
 	}
 
+#ifdef CONFIG_WEP
 	if (full_config && bss->wps_state &&
 	    bss->ssid.wep.keys_set && bss->wpa == 0) {
 		wpa_printf(MSG_INFO, "WPS: WEP configuration forced WPS to be "
 			   "disabled");
 		bss->wps_state = 0;
 	}
+#endif /* CONFIG_WEP */
 
 	if (full_config && bss->wps_state && bss->wpa &&
 	    (!(bss->wpa & 2) ||
@@ -1267,6 +1332,15 @@ static int hostapd_config_check_bss(struct hostapd_bss_config *bss,
 		return -1;
 	}
 #endif /* CONFIG_OCV */
+
+#ifdef CONFIG_SAE_PK
+	if (full_config && hostapd_sae_pk_in_use(bss) &&
+	    hostapd_sae_pk_password_without_pk(bss)) {
+		wpa_printf(MSG_ERROR,
+			   "SAE-PK: SAE password uses SAE-PK style, but does not have PK configured");
+		return -1;
+	}
+#endif /* CONFIG_SAE_PK */
 
 	return 0;
 }
@@ -1348,11 +1422,13 @@ int hostapd_config_check(struct hostapd_config *conf, int full_config)
 void hostapd_set_security_params(struct hostapd_bss_config *bss,
 				 int full_config)
 {
+#ifdef CONFIG_WEP
 	if (bss->individual_wep_key_len == 0) {
 		/* individual keys are not use; can use key idx0 for
 		 * broadcast keys */
 		bss->broadcast_key_idx_min = 0;
 	}
+#endif /* CONFIG_WEP */
 
 	if ((bss->wpa & 2) && bss->rsn_pairwise == 0)
 		bss->rsn_pairwise = bss->wpa_pairwise;
@@ -1378,6 +1454,7 @@ void hostapd_set_security_params(struct hostapd_bss_config *bss,
 	} else if (bss->ieee802_1x) {
 		int cipher = WPA_CIPHER_NONE;
 		bss->ssid.security_policy = SECURITY_IEEE_802_1X;
+#ifdef CONFIG_WEP
 		bss->ssid.wep.default_len = bss->default_wep_key_len;
 		if (full_config && bss->default_wep_key_len) {
 			cipher = bss->default_wep_key_len >= 13 ?
@@ -1388,11 +1465,13 @@ void hostapd_set_security_params(struct hostapd_bss_config *bss,
 			else
 				cipher = WPA_CIPHER_WEP40;
 		}
+#endif /* CONFIG_WEP */
 		bss->wpa_group = cipher;
 		bss->wpa_pairwise = cipher;
 		bss->rsn_pairwise = cipher;
 		if (full_config)
 			bss->wpa_key_mgmt = WPA_KEY_MGMT_IEEE8021X_NO_WPA;
+#ifdef CONFIG_WEP
 	} else if (bss->ssid.wep.keys_set) {
 		int cipher = WPA_CIPHER_WEP40;
 		if (bss->ssid.wep.len[0] >= 13)
@@ -1403,6 +1482,7 @@ void hostapd_set_security_params(struct hostapd_bss_config *bss,
 		bss->rsn_pairwise = cipher;
 		if (full_config)
 			bss->wpa_key_mgmt = WPA_KEY_MGMT_NONE;
+#endif /* CONFIG_WEP */
 	} else if (bss->osen) {
 		bss->ssid.security_policy = SECURITY_OSEN;
 		bss->wpa_group = WPA_CIPHER_CCMP;
@@ -1441,3 +1521,38 @@ int hostapd_sae_pw_id_in_use(struct hostapd_bss_config *conf)
 		return 2;
 	return with_id;
 }
+
+
+bool hostapd_sae_pk_in_use(struct hostapd_bss_config *conf)
+{
+#ifdef CONFIG_SAE_PK
+	struct sae_password_entry *pw;
+
+	for (pw = conf->sae_passwords; pw; pw = pw->next) {
+		if (pw->pk)
+			return true;
+	}
+#endif /* CONFIG_SAE_PK */
+
+	return false;
+}
+
+
+#ifdef CONFIG_SAE_PK
+bool hostapd_sae_pk_exclusively(struct hostapd_bss_config *conf)
+{
+	bool with_pk = false;
+	struct sae_password_entry *pw;
+
+	if (conf->ssid.wpa_passphrase)
+		return false;
+
+	for (pw = conf->sae_passwords; pw; pw = pw->next) {
+		if (!pw->pk)
+			return false;
+		with_pk = true;
+	}
+
+	return with_pk;
+}
+#endif /* CONFIG_SAE_PK */

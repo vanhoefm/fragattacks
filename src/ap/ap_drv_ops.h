@@ -43,6 +43,7 @@ int hostapd_sta_add(struct hostapd_data *hapd,
 		    const struct ieee80211_vht_capabilities *vht_capab,
 		    const struct ieee80211_he_capabilities *he_capab,
 		    size_t he_capab_len,
+		    const struct ieee80211_he_6ghz_band_cap *he_6ghz_capab,
 		    u32 flags, u8 qosinfo, u8 vht_opmode, int supp_p2p_ps,
 		    int set);
 int hostapd_set_privacy(struct hostapd_data *hapd, int enabled);
@@ -80,6 +81,7 @@ hostapd_get_hw_feature_data(struct hostapd_data *hapd, u16 *num_modes,
 			    u16 *flags, u8 *dfs_domain);
 int hostapd_driver_commit(struct hostapd_data *hapd);
 int hostapd_drv_none(struct hostapd_data *hapd);
+bool hostapd_drv_nl80211(struct hostapd_data *hapd);
 int hostapd_driver_scan(struct hostapd_data *hapd,
 			struct wpa_driver_scan_params *params);
 struct wpa_scan_results * hostapd_driver_get_scan_results(
@@ -348,12 +350,13 @@ static inline int hostapd_drv_br_set_net_param(struct hostapd_data *hapd,
 static inline int hostapd_drv_vendor_cmd(struct hostapd_data *hapd,
 					 int vendor_id, int subcmd,
 					 const u8 *data, size_t data_len,
+					 enum nested_attr nested_attr_flag,
 					 struct wpabuf *buf)
 {
 	if (hapd->driver == NULL || hapd->driver->vendor_cmd == NULL)
 		return -1;
 	return hapd->driver->vendor_cmd(hapd->drv_priv, vendor_id, subcmd, data,
-					data_len, buf);
+					data_len, nested_attr_flag, buf);
 }
 
 static inline int hostapd_drv_stop_ap(struct hostapd_data *hapd)
@@ -382,11 +385,11 @@ hostapd_drv_send_external_auth_status(struct hostapd_data *hapd,
 }
 
 static inline int
-hostapd_drv_set_band(struct hostapd_data *hapd, enum set_band band)
+hostapd_drv_set_band(struct hostapd_data *hapd, u32 band_mask)
 {
 	if (!hapd->driver || !hapd->drv_priv || !hapd->driver->set_band)
 		return -1;
-	return hapd->driver->set_band(hapd->drv_priv, band);
+	return hapd->driver->set_band(hapd->drv_priv, band_mask);
 }
 
 #endif /* AP_DRV_OPS */

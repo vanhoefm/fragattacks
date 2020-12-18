@@ -232,8 +232,8 @@ static struct wpabuf * eap_sake_buildReq(struct eap_sm *sm, void *priv, u8 id)
 }
 
 
-static Boolean eap_sake_check(struct eap_sm *sm, void *priv,
-			      struct wpabuf *respData)
+static bool eap_sake_check(struct eap_sm *sm, void *priv,
+			   struct wpabuf *respData)
 {
 	struct eap_sake_data *data = priv;
 	struct eap_sake_hdr *resp;
@@ -244,7 +244,7 @@ static Boolean eap_sake_check(struct eap_sm *sm, void *priv,
 	pos = eap_hdr_validate(EAP_VENDOR_IETF, EAP_TYPE_SAKE, respData, &len);
 	if (pos == NULL || len < sizeof(struct eap_sake_hdr)) {
 		wpa_printf(MSG_INFO, "EAP-SAKE: Invalid frame");
-		return TRUE;
+		return true;
 	}
 
 	resp = (struct eap_sake_hdr *) pos;
@@ -254,33 +254,33 @@ static Boolean eap_sake_check(struct eap_sm *sm, void *priv,
 
 	if (version != EAP_SAKE_VERSION) {
 		wpa_printf(MSG_INFO, "EAP-SAKE: Unknown version %d", version);
-		return TRUE;
+		return true;
 	}
 
 	if (session_id != data->session_id) {
 		wpa_printf(MSG_INFO, "EAP-SAKE: Session ID mismatch (%d,%d)",
 			   session_id, data->session_id);
-		return TRUE;
+		return true;
 	}
 
 	wpa_printf(MSG_DEBUG, "EAP-SAKE: Received frame: subtype=%d", subtype);
 
 	if (data->state == IDENTITY && subtype == EAP_SAKE_SUBTYPE_IDENTITY)
-		return FALSE;
+		return false;
 
 	if (data->state == CHALLENGE && subtype == EAP_SAKE_SUBTYPE_CHALLENGE)
-		return FALSE;
+		return false;
 
 	if (data->state == CONFIRM && subtype == EAP_SAKE_SUBTYPE_CONFIRM)
-		return FALSE;
+		return false;
 
 	if (subtype == EAP_SAKE_SUBTYPE_AUTH_REJECT)
-		return FALSE;
+		return false;
 
 	wpa_printf(MSG_INFO, "EAP-SAKE: Unexpected subtype=%d in state=%d",
 		   subtype, data->state);
 
-	return TRUE;
+	return true;
 }
 
 
@@ -456,7 +456,7 @@ static void eap_sake_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_sake_isDone(struct eap_sm *sm, void *priv)
+static bool eap_sake_isDone(struct eap_sm *sm, void *priv)
 {
 	struct eap_sake_data *data = priv;
 	return data->state == SUCCESS || data->state == FAILURE;
@@ -497,7 +497,7 @@ static u8 * eap_sake_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
-static Boolean eap_sake_isSuccess(struct eap_sm *sm, void *priv)
+static bool eap_sake_isSuccess(struct eap_sm *sm, void *priv)
 {
 	struct eap_sake_data *data = priv;
 	return data->state == SUCCESS;

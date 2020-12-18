@@ -137,7 +137,7 @@ static void * eap_peap_init(struct eap_sm *sm)
 	data = os_zalloc(sizeof(*data));
 	if (data == NULL)
 		return NULL;
-	sm->peap_done = FALSE;
+	sm->peap_done = false;
 	data->peap_version = EAP_PEAP_VERSION;
 	data->force_peap_version = -1;
 	data->peap_outer_success = 2;
@@ -920,7 +920,7 @@ continue_req:
 				/* No EAP-Success expected for Phase 1 (outer,
 				 * unencrypted auth), so force EAP state
 				 * machine to SUCCESS state. */
-				sm->peap_done = TRUE;
+				sm->peap_done = true;
 			}
 		} else {
 			/* FIX: ? */
@@ -930,7 +930,7 @@ continue_req:
 		wpa_printf(MSG_DEBUG, "EAP-PEAP: Phase 2 Failure");
 		ret->decision = DECISION_FAIL;
 		ret->methodState = METHOD_MAY_CONT;
-		ret->allowNotifications = FALSE;
+		ret->allowNotifications = false;
 		/* Reply with EAP-Failure within the TLS channel to complete
 		 * failure reporting. */
 		resp = wpabuf_alloc(sizeof(struct eap_hdr));
@@ -1014,7 +1014,7 @@ static struct wpabuf * eap_peap_process(struct eap_sm *sm, void *priv,
 				   data->force_peap_version);
 			ret->methodState = METHOD_DONE;
 			ret->decision = DECISION_FAIL;
-			ret->allowNotifications = FALSE;
+			ret->allowNotifications = false;
 			return NULL;
 		}
 		wpa_printf(MSG_DEBUG, "EAP-PEAP: Using PEAP version %d",
@@ -1166,7 +1166,7 @@ static struct wpabuf * eap_peap_process(struct eap_sm *sm, void *priv,
 	}
 
 	if (ret->methodState == METHOD_DONE) {
-		ret->allowNotifications = FALSE;
+		ret->allowNotifications = false;
 	}
 
 	if (res == 1) {
@@ -1179,7 +1179,7 @@ static struct wpabuf * eap_peap_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_peap_has_reauth_data(struct eap_sm *sm, void *priv)
+static bool eap_peap_has_reauth_data(struct eap_sm *sm, void *priv)
 {
 	struct eap_peap_data *data = priv;
 	return tls_connection_established(sm->ssl_ctx, data->ssl.conn) &&
@@ -1220,7 +1220,7 @@ static void * eap_peap_init_for_reauth(struct eap_sm *sm, void *priv)
 	data->phase2_eap_started = 0;
 	data->resuming = 1;
 	data->reauth = 1;
-	sm->peap_done = FALSE;
+	sm->peap_done = false;
 	return priv;
 }
 
@@ -1245,7 +1245,7 @@ static int eap_peap_get_status(struct eap_sm *sm, void *priv, char *buf,
 }
 
 
-static Boolean eap_peap_isKeyAvailable(struct eap_sm *sm, void *priv)
+static bool eap_peap_isKeyAvailable(struct eap_sm *sm, void *priv)
 {
 	struct eap_peap_data *data = priv;
 	return data->key_data != NULL && data->phase2_success;

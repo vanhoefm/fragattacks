@@ -195,7 +195,8 @@ static int __mesh_rsn_auth_init(struct mesh_rsn *rsn, const u8 *addr,
 		wpa_hexdump_key(MSG_DEBUG, "mesh: Own TX IGTK",
 				rsn->igtk, rsn->igtk_len);
 		wpa_drv_set_key(rsn->wpa_s,
-				wpa_cipher_to_alg(rsn->mgmt_group_cipher), NULL,
+				wpa_cipher_to_alg(rsn->mgmt_group_cipher),
+				broadcast_ether_addr,
 				rsn->igtk_key_id, 1,
 				seq, sizeof(seq), rsn->igtk, rsn->igtk_len,
 				KEY_FLAG_GROUP_TX_DEFAULT);
@@ -204,7 +205,8 @@ static int __mesh_rsn_auth_init(struct mesh_rsn *rsn, const u8 *addr,
 	/* group privacy / data frames */
 	wpa_hexdump_key(MSG_DEBUG, "mesh: Own TX MGTK",
 			rsn->mgtk, rsn->mgtk_len);
-	wpa_drv_set_key(rsn->wpa_s, wpa_cipher_to_alg(rsn->group_cipher), NULL,
+	wpa_drv_set_key(rsn->wpa_s, wpa_cipher_to_alg(rsn->group_cipher),
+			broadcast_ether_addr,
 			rsn->mgtk_key_id, 1, seq, sizeof(seq),
 			rsn->mgtk, rsn->mgtk_len, KEY_FLAG_GROUP_TX_DEFAULT);
 

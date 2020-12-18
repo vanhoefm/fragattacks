@@ -38,6 +38,7 @@
 #define WLAN_STA_PENDING_FILS_ERP BIT(22)
 #define WLAN_STA_MULTI_AP BIT(23)
 #define WLAN_STA_HE BIT(24)
+#define WLAN_STA_6GHZ BIT(25)
 #define WLAN_STA_PENDING_DISASSOC_CB BIT(29)
 #define WLAN_STA_PENDING_DEAUTH_CB BIT(30)
 #define WLAN_STA_NONERP BIT(31)
@@ -121,6 +122,7 @@ struct sta_info {
 	unsigned int hs20_t_c_filtering:1;
 	unsigned int ft_over_ds:1;
 	unsigned int external_dh_updated:1;
+	unsigned int post_csa_sa_query:1;
 
 	u16 auth_alg;
 
@@ -170,6 +172,7 @@ struct sta_info {
 	u8 vht_opmode;
 	struct ieee80211_he_capabilities *he_capab;
 	size_t he_capab_len;
+	struct ieee80211_he_6ghz_band_cap *he_6ghz_capab;
 
 	int sa_query_count; /* number of pending SA Query requests;
 			     * 0 = no SA Query in progress */
@@ -358,5 +361,6 @@ void ap_sta_delayed_1x_auth_fail_disconnect(struct hostapd_data *hapd,
 					    struct sta_info *sta);
 int ap_sta_pending_delayed_1x_auth_fail_disconnect(struct hostapd_data *hapd,
 						   struct sta_info *sta);
+int ap_sta_re_add(struct hostapd_data *hapd, struct sta_info *sta);
 
 #endif /* STA_INFO_H */

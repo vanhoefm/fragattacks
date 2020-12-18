@@ -64,7 +64,7 @@ struct eap_teap_data {
 	struct wpabuf *pending_phase2_resp;
 	struct wpabuf *server_outer_tlvs;
 	struct wpabuf *peer_outer_tlvs;
-	u8 *identity; /* from PAC-Opaque */
+	u8 *identity; /* from PAC-Opaque or client certificate */
 	size_t identity_len;
 	int eap_seq;
 	int tnc_started;
@@ -365,7 +365,9 @@ static void * eap_teap_init(struct eap_sm *sm)
 	data->teap_version = EAP_TEAP_VERSION;
 	data->state = START;
 
-	if (eap_server_tls_ssl_init(sm, &data->ssl, 0, EAP_TYPE_TEAP)) {
+	if (eap_server_tls_ssl_init(sm, &data->ssl,
+				    sm->cfg->eap_teap_auth == 2 ? 2 : 0,
+				    EAP_TYPE_TEAP)) {
 		wpa_printf(MSG_INFO, "EAP-TEAP: Failed to initialize SSL.");
 		eap_teap_reset(sm, data);
 		return NULL;
@@ -501,6 +503,19 @@ static int eap_teap_phase1_done(struct eap_sm *sm, struct eap_teap_data *data)
 	char cipher[64];
 
 	wpa_printf(MSG_DEBUG, "EAP-TEAP: Phase 1 done, starting Phase 2");
+
+	if (!data->identity && sm->cfg->eap_teap_auth == 2) {
+		const char *subject;
+
+		subject = tls_connection_get_peer_subject(data->ssl.conn);
+		if (subject) {
+			wpa_printf(MSG_DEBUG,
+				   "EAP-TEAP: Peer subject from Phase 1 client certificate: '%s'",
+				   subject);
+			data->identity = (u8 *) os_strdup(subject);
+			data->identity_len = os_strlen(subject);
+		}
+	}
 
 	data->tls_cs = tls_connection_get_cipher_suite(data->ssl.conn);
 	wpa_printf(MSG_DEBUG, "EAP-TEAP: TLS cipher suite 0x%04x",
@@ -965,8 +980,8 @@ static struct wpabuf * eap_teap_buildReq(struct eap_sm *sm, void *priv, u8 id)
 }
 
 
-static Boolean eap_teap_check(struct eap_sm *sm, void *priv,
-			      struct wpabuf *respData)
+static bool eap_teap_check(struct eap_sm *sm, void *priv,
+			   struct wpabuf *respData)
 {
 	const u8 *pos;
 	size_t len;
@@ -974,10 +989,10 @@ static Boolean eap_teap_check(struct eap_sm *sm, void *priv,
 	pos = eap_hdr_validate(EAP_VENDOR_IETF, EAP_TYPE_TEAP, respData, &len);
 	if (!pos || len < 1) {
 		wpa_printf(MSG_INFO, "EAP-TEAP: Invalid frame");
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
@@ -1775,9 +1790,10 @@ static int eap_teap_process_phase2_start(struct eap_sm *sm,
 			next_vendor = EAP_VENDOR_IETF;
 			next_type = EAP_TYPE_NONE;
 			eap_teap_state(data, PHASE2_METHOD);
-		} else if (sm->cfg->eap_teap_pac_no_inner) {
+		} else if (sm->cfg->eap_teap_pac_no_inner ||
+			sm->cfg->eap_teap_auth == 2) {
 			wpa_printf(MSG_DEBUG,
-				   "EAP-TEAP: Used PAC and identity already known - skip inner auth");
+				   "EAP-TEAP: Used PAC or client certificate and identity already known - skip inner auth");
 			data->skipped_inner_auth = 1;
 			/* FIX: Need to derive CMK here. However, how is that
 			 * supposed to be done? RFC 7170 does not tell that for
@@ -1974,7 +1990,7 @@ static void eap_teap_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_teap_isDone(struct eap_sm *sm, void *priv)
+static bool eap_teap_isDone(struct eap_sm *sm, void *priv)
 {
 	struct eap_teap_data *data = priv;
 
@@ -2032,7 +2048,7 @@ static u8 * eap_teap_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
-static Boolean eap_teap_isSuccess(struct eap_sm *sm, void *priv)
+static bool eap_teap_isSuccess(struct eap_sm *sm, void *priv)
 {
 	struct eap_teap_data *data = priv;
 

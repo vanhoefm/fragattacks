@@ -11,7 +11,7 @@ logger = logging.getLogger()
 
 import hwsim_utils
 import hostapd
-from utils import HwsimSkip
+from utils import *
 
 def connect(dev, apdev, scan_freq="2412", **kwargs):
     params = {"ssid": "ap-csa",
@@ -54,13 +54,6 @@ def wait_channel_switch(dev, freq):
         raise Exception("Channel switch not reported")
     if "freq=%d" % freq not in ev:
         raise Exception("Unexpected frequency: " + ev)
-
-# This function checks whether the provided dev, which may be either
-# WpaSupplicant or Hostapd supports CSA.
-def csa_supported(dev):
-    res = dev.get_driver_status()
-    if (int(res['capa.flags'], 0) & 0x80000000) == 0:
-        raise HwsimSkip("CSA not supported")
 
 @remote_compatible
 def test_ap_csa_1_switch(dev, apdev):

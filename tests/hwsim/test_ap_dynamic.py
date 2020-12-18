@@ -13,7 +13,7 @@ import os
 
 import hwsim_utils
 import hostapd
-from utils import alloc_fail, require_under_vm, get_phy
+from utils import *
 from test_ap_acs import force_prev_ap_on_24g
 
 @remote_compatible
@@ -37,7 +37,7 @@ def test_ap_change_ssid(dev, apdev):
     dev[0].set_network_quoted(id, "ssid", "test-wpa2-psk-new")
     dev[0].connect_network(id)
 
-def multi_check(dev, check, scan_opt=True):
+def multi_check(apdev, dev, check, scan_opt=True):
     id = []
     num_bss = len(check)
     for i in range(0, num_bss):
@@ -51,7 +51,7 @@ def multi_check(dev, check, scan_opt=True):
     for i in range(num_bss):
         if not check[i]:
             continue
-        bssid = '02:00:00:00:03:0' + str(i)
+        bssid = hostapd.bssid_inc(apdev, i)
         if scan_opt:
             dev[i].scan_for_bss(bssid, freq=2412)
         id.append(dev[i].connect("bss-" + str(i + 1), key_mgmt="NONE",
@@ -98,59 +98,59 @@ def _test_ap_bss_add_remove(dev, apdev):
     ifname3 = apdev[0]['ifname'] + '-3'
     logger.info("Set up three BSSes one by one")
     hostapd.add_bss(apdev[0], ifname1, 'bss-1.conf')
-    multi_check(dev, [True, False, False])
+    multi_check(apdev[0], dev, [True, False, False])
     hostapd.add_bss(apdev[0], ifname2, 'bss-2.conf')
-    multi_check(dev, [True, True, False])
+    multi_check(apdev[0], dev, [True, True, False])
     hostapd.add_bss(apdev[0], ifname3, 'bss-3.conf')
-    multi_check(dev, [True, True, True])
+    multi_check(apdev[0], dev, [True, True, True])
 
     logger.info("Remove the last BSS and re-add it")
     hostapd.remove_bss(apdev[0], ifname3)
-    multi_check(dev, [True, True, False])
+    multi_check(apdev[0], dev, [True, True, False])
     hostapd.add_bss(apdev[0], ifname3, 'bss-3.conf')
-    multi_check(dev, [True, True, True])
+    multi_check(apdev[0], dev, [True, True, True])
 
     logger.info("Remove the middle BSS and re-add it")
     hostapd.remove_bss(apdev[0], ifname2)
-    multi_check(dev, [True, False, True])
+    multi_check(apdev[0], dev, [True, False, True])
     hostapd.add_bss(apdev[0], ifname2, 'bss-2.conf')
-    multi_check(dev, [True, True, True])
+    multi_check(apdev[0], dev, [True, True, True])
 
     logger.info("Remove the first BSS and re-add it and other BSSs")
     hostapd.remove_bss(apdev[0], ifname1)
-    multi_check(dev, [False, False, False])
+    multi_check(apdev[0], dev, [False, False, False])
     hostapd.add_bss(apdev[0], ifname1, 'bss-1.conf')
     hostapd.add_bss(apdev[0], ifname2, 'bss-2.conf')
     hostapd.add_bss(apdev[0], ifname3, 'bss-3.conf')
-    multi_check(dev, [True, True, True])
+    multi_check(apdev[0], dev, [True, True, True])
 
     logger.info("Remove two BSSes and re-add them")
     hostapd.remove_bss(apdev[0], ifname2)
-    multi_check(dev, [True, False, True])
+    multi_check(apdev[0], dev, [True, False, True])
     hostapd.remove_bss(apdev[0], ifname3)
-    multi_check(dev, [True, False, False])
+    multi_check(apdev[0], dev, [True, False, False])
     hostapd.add_bss(apdev[0], ifname2, 'bss-2.conf')
-    multi_check(dev, [True, True, False])
+    multi_check(apdev[0], dev, [True, True, False])
     hostapd.add_bss(apdev[0], ifname3, 'bss-3.conf')
-    multi_check(dev, [True, True, True])
+    multi_check(apdev[0], dev, [True, True, True])
 
     logger.info("Remove three BSSes in and re-add them")
     hostapd.remove_bss(apdev[0], ifname3)
-    multi_check(dev, [True, True, False])
+    multi_check(apdev[0], dev, [True, True, False])
     hostapd.remove_bss(apdev[0], ifname2)
-    multi_check(dev, [True, False, False])
+    multi_check(apdev[0], dev, [True, False, False])
     hostapd.remove_bss(apdev[0], ifname1)
-    multi_check(dev, [False, False, False])
+    multi_check(apdev[0], dev, [False, False, False])
     hostapd.add_bss(apdev[0], ifname1, 'bss-1.conf')
-    multi_check(dev, [True, False, False])
+    multi_check(apdev[0], dev, [True, False, False])
     hostapd.add_bss(apdev[0], ifname2, 'bss-2.conf')
-    multi_check(dev, [True, True, False])
+    multi_check(apdev[0], dev, [True, True, False])
     hostapd.add_bss(apdev[0], ifname3, 'bss-3.conf')
-    multi_check(dev, [True, True, True])
+    multi_check(apdev[0], dev, [True, True, True])
 
     logger.info("Test error handling if a duplicate ifname is tried")
     hostapd.add_bss(apdev[0], ifname3, 'bss-3.conf', ignore_error=True)
-    multi_check(dev, [True, True, True])
+    multi_check(apdev[0], dev, [True, True, True])
 
 def test_ap_bss_add_remove_during_ht_scan(dev, apdev):
     """Dynamic BSS add during HT40 co-ex scan"""
@@ -158,22 +158,27 @@ def test_ap_bss_add_remove_during_ht_scan(dev, apdev):
         dev[i].flush_scan_cache()
     ifname1 = apdev[0]['ifname']
     ifname2 = apdev[0]['ifname'] + '-2'
-    hostapd.add_bss(apdev[0], ifname1, 'bss-ht40-1.conf')
-    hostapd.add_bss(apdev[0], ifname2, 'bss-ht40-2.conf')
-    multi_check(dev, [True, True], scan_opt=False)
+    confname1 = hostapd.cfg_file(apdev[0], "bss-ht40-1.conf")
+    confname2 = hostapd.cfg_file(apdev[0], "bss-ht40-2.conf")
+    hapd_global = hostapd.HostapdGlobal(apdev)
+    hapd_global.send_file(confname1, confname1)
+    hapd_global.send_file(confname2, confname2)
+    hostapd.add_bss(apdev[0], ifname1, confname1)
+    hostapd.add_bss(apdev[0], ifname2, confname2)
+    multi_check(apdev[0], dev, [True, True], scan_opt=False)
     hostapd.remove_bss(apdev[0], ifname2)
     hostapd.remove_bss(apdev[0], ifname1)
 
-    hostapd.add_bss(apdev[0], ifname1, 'bss-ht40-1.conf')
-    hostapd.add_bss(apdev[0], ifname2, 'bss-ht40-2.conf')
+    hostapd.add_bss(apdev[0], ifname1, confname1)
+    hostapd.add_bss(apdev[0], ifname2, confname2)
     hostapd.remove_bss(apdev[0], ifname2)
-    multi_check(dev, [True, False], scan_opt=False)
+    multi_check(apdev[0], dev, [True, False], scan_opt=False)
     hostapd.remove_bss(apdev[0], ifname1)
 
-    hostapd.add_bss(apdev[0], ifname1, 'bss-ht40-1.conf')
-    hostapd.add_bss(apdev[0], ifname2, 'bss-ht40-2.conf')
+    hostapd.add_bss(apdev[0], ifname1, confname1)
+    hostapd.add_bss(apdev[0], ifname2, confname2)
     hostapd.remove_bss(apdev[0], ifname1)
-    multi_check(dev, [False, False])
+    multi_check(apdev[0], dev, [False, False])
 
 def test_ap_multi_bss_config(dev, apdev):
     """hostapd start with a multi-BSS configuration file"""
@@ -185,18 +190,18 @@ def test_ap_multi_bss_config(dev, apdev):
     logger.info("Set up three BSSes with one configuration file")
     hapd = hostapd.add_iface(apdev[0], 'multi-bss.conf')
     hapd.enable()
-    multi_check(dev, [True, True, True])
+    multi_check(apdev[0], dev, [True, True, True])
     hostapd.remove_bss(apdev[0], ifname2)
-    multi_check(dev, [True, False, True])
+    multi_check(apdev[0], dev, [True, False, True])
     hostapd.remove_bss(apdev[0], ifname3)
-    multi_check(dev, [True, False, False])
+    multi_check(apdev[0], dev, [True, False, False])
     hostapd.remove_bss(apdev[0], ifname1)
-    multi_check(dev, [False, False, False])
+    multi_check(apdev[0], dev, [False, False, False])
 
     hapd = hostapd.add_iface(apdev[0], 'multi-bss.conf')
     hapd.enable()
     hostapd.remove_bss(apdev[0], ifname1)
-    multi_check(dev, [False, False, False])
+    multi_check(apdev[0], dev, [False, False, False])
 
 def invalid_ap(ap):
     logger.info("Trying to start AP " + ap['ifname'] + " with invalid configuration")
@@ -404,21 +409,23 @@ def test_ap_bss_add_out_of_memory(dev, apdev):
     ifname1 = apdev[0]['ifname']
     ifname2 = apdev[0]['ifname'] + '-2'
 
-    hapd_bss_out_of_mem(hapd2, 'phy3', 'bss-1.conf', 1, 'hostapd_add_iface')
+    confname1 = hostapd.cfg_file(apdev[0], "bss-1.conf")
+    confname2 = hostapd.cfg_file(apdev[0], "bss-2.conf")
+    hapd_bss_out_of_mem(hapd2, 'phy3', confname1, 1, 'hostapd_add_iface')
     for i in range(1, 3):
-        hapd_bss_out_of_mem(hapd2, 'phy3', 'bss-1.conf',
+        hapd_bss_out_of_mem(hapd2, 'phy3', confname1,
                             i, 'hostapd_interface_init_bss')
-    hapd_bss_out_of_mem(hapd2, 'phy3', 'bss-1.conf',
+    hapd_bss_out_of_mem(hapd2, 'phy3', confname1,
                         1, 'ieee802_11_build_ap_params')
 
-    hostapd.add_bss(apdev[0], ifname1, 'bss-1.conf')
+    hostapd.add_bss(apdev[0], ifname1, confname1)
 
-    hapd_bss_out_of_mem(hapd2, 'phy3', 'bss-2.conf',
+    hapd_bss_out_of_mem(hapd2, 'phy3', confname2,
                         1, 'hostapd_interface_init_bss')
-    hapd_bss_out_of_mem(hapd2, 'phy3', 'bss-2.conf',
+    hapd_bss_out_of_mem(hapd2, 'phy3', confname2,
                         1, 'ieee802_11_build_ap_params')
 
-    hostapd.add_bss(apdev[0], ifname2, 'bss-2.conf')
+    hostapd.add_bss(apdev[0], ifname2, confname2)
     hostapd.remove_bss(apdev[0], ifname2)
     hostapd.remove_bss(apdev[0], ifname1)
 
@@ -495,19 +502,23 @@ def test_ap_duplicate_bssid(dev, apdev):
 
 def test_ap_bss_config_file(dev, apdev, params):
     """hostapd BSS config file"""
-    pidfile = os.path.join(params['logdir'], "ap_bss_config_file-hostapd.pid")
-    logfile = os.path.join(params['logdir'], "ap_bss_config_file-hostapd-log")
+    pidfile = params['prefix'] + ".hostapd.pid"
+    logfile = params['prefix'] + ".hostapd-log"
     prg = os.path.join(params['logdir'], 'alt-hostapd/hostapd/hostapd')
     if not os.path.exists(prg):
         prg = '../../hostapd/hostapd'
     phy = get_phy(apdev[0])
+    confname1 = hostapd.cfg_file(apdev[0], "bss-1.conf")
+    confname2 = hostapd.cfg_file(apdev[0], "bss-2.conf")
+    confname3 = hostapd.cfg_file(apdev[0], "bss-3.conf")
+
     cmd = [prg, '-B', '-dddt', '-P', pidfile, '-f', logfile, '-S', '-T',
-           '-b', phy + ':bss-1.conf', '-b', phy + ':bss-2.conf',
-           '-b', phy + ':bss-3.conf']
+           '-b', phy + ':' + confname1, '-b', phy + ':' + confname2,
+           '-b', phy + ':' + confname3]
     res = subprocess.check_call(cmd)
     if res != 0:
         raise Exception("Could not start hostapd: %s" % str(res))
-    multi_check(dev, [True, True, True])
+    multi_check(apdev[0], dev, [True, True, True])
     for i in range(0, 3):
         dev[i].request("DISCONNECT")
 

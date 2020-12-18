@@ -1,13 +1,3 @@
-all: libcommon.a
-
-clean:
-	rm -f *~ *.o *.d *.gcno *.gcda *.gcov libcommon.a
-
-install:
-	@echo Nothing to be made.
-
-include ../lib.rules
-
 CFLAGS += -DCONFIG_IEEE80211R
 CFLAGS += -DCONFIG_HS20
 CFLAGS += -DCONFIG_SAE
@@ -21,7 +11,4 @@ LIB_OBJS= \
 	sae.o \
 	wpa_common.o
 
-libcommon.a: $(LIB_OBJS)
-	$(AR) crT $@ $?
-
--include $(OBJS:%.o=%.d)
+include ../lib.rules

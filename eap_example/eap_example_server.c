@@ -234,8 +234,8 @@ int eap_example_server_init(void)
 	eap_ctx.eap_if = eap_get_interface(eap_ctx.eap);
 
 	/* Enable "port" and request EAP to start authentication. */
-	eap_ctx.eap_if->portEnabled = TRUE;
-	eap_ctx.eap_if->eapRestart = TRUE;
+	eap_ctx.eap_if->portEnabled = true;
+	eap_ctx.eap_if->eapRestart = true;
 
 	return 0;
 }
@@ -296,5 +296,5 @@ void eap_example_server_rx(const u8 *data, size_t data_len)
 	wpabuf_free(eap_ctx.eap_if->eapRespData);
 	eap_ctx.eap_if->eapRespData = wpabuf_alloc_copy(data, data_len);
 	if (eap_ctx.eap_if->eapRespData)
-		eap_ctx.eap_if->eapResp = TRUE;
+		eap_ctx.eap_if->eapResp = true;
 }

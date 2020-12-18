@@ -7,13 +7,35 @@
  */
 
 #include "utils/includes.h"
+#ifndef __APPLE__
 #include <net/if.h>
 #include <netpacket/packet.h>
+#endif /* __APPLE__ */
 
 #include "utils/common.h"
 #include "utils/eloop.h"
 #include "wlantest.h"
 
+
+#ifdef __APPLE__
+
+int monitor_init(struct wlantest *wt, const char *ifname)
+{
+	return -1;
+}
+
+
+int monitor_init_wired(struct wlantest *wt, const char *ifname)
+{
+	return -1;
+}
+
+
+void monitor_deinit(struct wlantest *wt)
+{
+}
+
+#else /* __APPLE__ */
 
 static void monitor_read(int sock, void *eloop_ctx, void *sock_ctx)
 {
@@ -146,3 +168,5 @@ void monitor_deinit(struct wlantest *wt)
 		wt->monitor_wired = -1;
 	}
 }
+
+#endif /* __APPLE__ */

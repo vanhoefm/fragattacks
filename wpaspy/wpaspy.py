@@ -113,6 +113,9 @@ class Ctrl:
     def detach(self):
         if not self.attached:
             return None
+        if self.s.fileno() == -1:
+            self.attached = False
+            return None
         while self.pending():
             ev = self.recv()
         res = self.request("DETACH")

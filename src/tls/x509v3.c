@@ -264,7 +264,8 @@ static int x509_parse_public_key(const u8 *buf, size_t len,
 		return -1;
 	pos = hdr.payload;
 	if (*pos) {
-		wpa_printf(MSG_DEBUG, "X509: BITSTRING - %d unused bits",
+		wpa_printf(MSG_DEBUG,
+			   "X509: BITSTRING (subjectPublicKey) - %d unused bits",
 			   *pos);
 		/*
 		 * TODO: should this be rejected? X.509 certificates are
@@ -1851,7 +1852,8 @@ struct x509_certificate * x509_certificate_parse(const u8 *buf, size_t len)
 	}
 	pos = hdr.payload;
 	if (*pos) {
-		wpa_printf(MSG_DEBUG, "X509: BITSTRING - %d unused bits",
+		wpa_printf(MSG_DEBUG,
+			   "X509: BITSTRING (signatureValue) - %d unused bits",
 			   *pos);
 		/* PKCS #1 v1.5 10.2.1:
 		 * It is an error if the length in bits of the signature S is

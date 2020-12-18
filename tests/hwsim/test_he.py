@@ -14,8 +14,6 @@ import hostapd
 from wpasupplicant import WpaSupplicant
 from utils import *
 from test_dfs import wait_dfs_event
-from test_ap_csa import csa_supported
-from test_ap_ht import clear_scan_cache
 
 def test_he_open(dev, apdev):
     """HE AP with open mode configuration"""
@@ -156,27 +154,19 @@ def test_he80(dev, apdev):
         dev[0].request("DISCONNECT")
         clear_regdom(hapd, dev)
 
-def test_he_wifi_generation(dev, apdev):
+def _test_he_wifi_generation(dev, apdev, conf, scan_freq):
     """HE and wifi_generation"""
     try:
         hapd = None
         params = {"ssid": "he",
                   "country_code": "FI",
-                  "hw_mode": "a",
-                  "channel": "36",
-                  "ht_capab": "[HT40+]",
                   "ieee80211n": "1",
-                  "ieee80211ac": "1",
-                  "ieee80211ax": "1",
-                  "vht_oper_chwidth": "1",
-                  "vht_capab": "[MAX-MPDU-11454]",
-                  "vht_oper_centr_freq_seg0_idx": "42",
-                  "he_oper_chwidth": "1",
-                  "he_oper_centr_freq_seg0_idx": "42"}
+                  "ieee80211ax": "1"}
+        params.update(conf)
         hapd = hostapd.add_ap(apdev[0], params)
         bssid = apdev[0]['bssid']
 
-        dev[0].connect("he", key_mgmt="NONE", scan_freq="5180")
+        dev[0].connect("he", key_mgmt="NONE", scan_freq=scan_freq)
         status = dev[0].get_status()
         if 'wifi_generation' not in status:
             # For now, assume this is because of missing kernel support
@@ -187,7 +177,7 @@ def test_he_wifi_generation(dev, apdev):
 
         wpas = WpaSupplicant(global_iface='/tmp/wpas-wlan5')
         wpas.interface_add("wlan5", drv_params="force_connect_cmd=1")
-        wpas.connect("he", key_mgmt="NONE", scan_freq="5180")
+        wpas.connect("he", key_mgmt="NONE", scan_freq=scan_freq)
         status = wpas.get_status()
         if 'wifi_generation' not in status:
             # For now, assume this is because of missing kernel support
@@ -203,6 +193,27 @@ def test_he_wifi_generation(dev, apdev):
     finally:
         dev[0].request("DISCONNECT")
         clear_regdom(hapd, dev)
+
+def test_he_wifi_generation(dev, apdev):
+    conf = {
+        "vht_oper_chwidth": "1",
+        "hw_mode": "a",
+        "channel": "36",
+        "ht_capab": "[HT40+]",
+        "vht_oper_centr_freq_seg0_idx": "42",
+        "he_oper_chwidth": "1",
+        "he_oper_centr_freq_seg0_idx": "42",
+        "vht_capab": "[MAX-MPDU-11454]",
+        "ieee80211ac": "1",
+    }
+    _test_he_wifi_generation(dev, apdev, conf, "5180")
+
+def test_he_wifi_generation_24(dev, apdev):
+    conf = {
+        "hw_mode": "g",
+        "channel": "1",
+    }
+    _test_he_wifi_generation(dev, apdev, conf, "2412")
 
 def he80_test(apdev, dev, channel, ht_capab):
     clear_scan_cache(apdev)
@@ -420,10 +431,9 @@ def test_he_40(devs, apdevs):
         dev.request("DISCONNECT")
         clear_regdom(hapd, devs)
 
-def test_he160(dev, apdev, params):
-    """HE with 160 MHz channel width (1) [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_he160(dev, apdev):
+    """HE with 160 MHz channel width (1)"""
     try:
         hapd = None
         params = {"ssid": "he",
@@ -431,6 +441,7 @@ def test_he160(dev, apdev, params):
                   "hw_mode": "a",
                   "channel": "36",
                   "ht_capab": "[HT40+]",
+                  "vht_capab": "[VHT160]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "ieee80211ax": "1",
@@ -492,10 +503,9 @@ def test_he160(dev, apdev, params):
         dev[0].wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=0.5)
         dev[0].flush_scan_cache()
 
-def test_he160b(dev, apdev, params):
-    """HE with 160 MHz channel width (2) [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
+@long_duration_test
+def test_he160b(dev, apdev):
+    """HE with 160 MHz channel width (2)"""
     try:
         hapd = None
 
@@ -504,6 +514,7 @@ def test_he160b(dev, apdev, params):
                   "hw_mode": "a",
                   "channel": "104",
                   "ht_capab": "[HT40-]",
+                  "vht_capab": "[VHT160]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "ieee80211ax": "1",
@@ -609,6 +620,7 @@ def run_ap_he160_no_dfs(dev, apdev, channel, ht_capab):
                   "hw_mode": "a",
                   "channel": channel,
                   "ht_capab": ht_capab,
+                  "vht_capab": "[VHT160]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "ieee80211ax": "1",
@@ -624,7 +636,7 @@ def run_ap_he160_no_dfs(dev, apdev, channel, ht_capab):
             cmd = subprocess.Popen(["iw", "reg", "get"], stdout=subprocess.PIPE)
             reg = cmd.stdout.readlines()
             for r in reg:
-                if "5490" in r and "DFS" in r:
+                if b"5490" in r and b"DFS" in r:
                     raise HwsimSkip("ZA regulatory rule did not have DFS requirement removed")
             raise Exception("AP setup timed out")
 
@@ -693,6 +705,7 @@ def test_he80plus80(dev, apdev):
                   "hw_mode": "a",
                   "channel": "52",
                   "ht_capab": "[HT40+]",
+                  "vht_capab": "[VHT160-80PLUS80]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "ieee80211ax": "1",
@@ -714,6 +727,7 @@ def test_he80plus80(dev, apdev):
                   "hw_mode": "a",
                   "channel": "36",
                   "ht_capab": "[HT40+]",
+                  "vht_capab": "[VHT160-80PLUS80]",
                   "ieee80211n": "1",
                   "ieee80211ac": "1",
                   "ieee80211ax": "1",
@@ -956,6 +970,7 @@ def test_he_use_sta_nsts(dev, apdev):
 
 def test_he_tkip(dev, apdev):
     """HE and TKIP"""
+    skip_without_tkip(dev[0])
     try:
         hapd = None
         params = {"ssid": "he",

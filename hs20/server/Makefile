@@ -1,16 +1,6 @@
-all: hs20_spp_server
+ALL=hs20_spp_server
 
-ifndef CC
-CC=gcc
-endif
-
-ifndef LDO
-LDO=$(CC)
-endif
-
-ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
-endif
+include ../../src/build.rules
 
 CFLAGS += -I../../src
 CFLAGS += -I../../src/utils
@@ -43,14 +33,10 @@ CFLAGS += $(shell xml2-config --cflags)
 LIBS += $(shell xml2-config --libs)
 OBJS += ../../src/utils/xml_libxml2.o
 
+_OBJS_VAR := OBJS
+include ../../src/objs.mk
 hs20_spp_server: $(OBJS)
 	$(LDO) $(LDFLAGS) -o hs20_spp_server $(OBJS) $(LIBS)
 
-clean:
-	rm -f core *~ *.o *.d hs20_spp_server
-	rm -f ../../src/utils/*.o
-	rm -f ../../src/utils/*.d
-	rm -f ../../src/crypto/*.o
-	rm -f ../../src/crypto/*.d
-
--include $(OBJS:%.o=%.d)
+clean: common-clean
+	rm -f core *~

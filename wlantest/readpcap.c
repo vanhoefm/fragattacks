@@ -92,6 +92,7 @@ int read_cap_file(struct wlantest *wt, const char *fname)
 		}
 
 		/* Packet was read without problems */
+		wt->frame_num++;
 		wpa_printf(MSG_EXCESSIVE, "pcap hdr: ts=%d.%06d "
 			   "len=%u/%u",
 			   (int) hdr->ts.tv_sec, (int) hdr->ts.tv_usec,

@@ -19,6 +19,8 @@ int wpas_dpp_nfc_handover_sel(struct wpa_supplicant *wpa_s, const char *cmd);
 int wpas_dpp_auth_init(struct wpa_supplicant *wpa_s, const char *cmd);
 int wpas_dpp_listen(struct wpa_supplicant *wpa_s, const char *cmd);
 void wpas_dpp_listen_stop(struct wpa_supplicant *wpa_s);
+void wpas_dpp_remain_on_channel_cb(struct wpa_supplicant *wpa_s,
+				   unsigned int freq, unsigned int duration);
 void wpas_dpp_cancel_remain_on_channel_cb(struct wpa_supplicant *wpa_s,
 					  unsigned int freq);
 void wpas_dpp_rx_action(struct wpa_supplicant *wpa_s, const u8 *src,
@@ -35,5 +37,9 @@ int wpas_dpp_controller_start(struct wpa_supplicant *wpa_s, const char *cmd);
 void wpas_dpp_connected(struct wpa_supplicant *wpa_s);
 void wpas_dpp_send_conn_status_result(struct wpa_supplicant *wpa_s,
 				      enum dpp_status_error result);
+int wpas_dpp_chirp(struct wpa_supplicant *wpa_s, const char *cmd);
+void wpas_dpp_chirp_stop(struct wpa_supplicant *wpa_s);
+int wpas_dpp_reconfig(struct wpa_supplicant *wpa_s, const char *cmd);
+int wpas_dpp_ca_set(struct wpa_supplicant *wpa_s, const char *cmd);
 
 #endif /* DPP_SUPPLICANT_H */

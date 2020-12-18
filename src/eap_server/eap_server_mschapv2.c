@@ -235,8 +235,8 @@ static struct wpabuf * eap_mschapv2_buildReq(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_mschapv2_check(struct eap_sm *sm, void *priv,
-				  struct wpabuf *respData)
+static bool eap_mschapv2_check(struct eap_sm *sm, void *priv,
+			       struct wpabuf *respData)
 {
 	struct eap_mschapv2_data *data = priv;
 	struct eap_mschapv2_hdr *resp;
@@ -247,7 +247,7 @@ static Boolean eap_mschapv2_check(struct eap_sm *sm, void *priv,
 			       &len);
 	if (pos == NULL || len < 1) {
 		wpa_printf(MSG_INFO, "EAP-MSCHAPV2: Invalid frame");
-		return TRUE;
+		return true;
 	}
 
 	resp = (struct eap_mschapv2_hdr *) pos;
@@ -255,7 +255,7 @@ static Boolean eap_mschapv2_check(struct eap_sm *sm, void *priv,
 	    resp->op_code != MSCHAPV2_OP_RESPONSE) {
 		wpa_printf(MSG_DEBUG, "EAP-MSCHAPV2: Expected Response - "
 			   "ignore op %d", resp->op_code);
-		return TRUE;
+		return true;
 	}
 
 	if (data->state == SUCCESS_REQ &&
@@ -263,17 +263,17 @@ static Boolean eap_mschapv2_check(struct eap_sm *sm, void *priv,
 	    resp->op_code != MSCHAPV2_OP_FAILURE) {
 		wpa_printf(MSG_DEBUG, "EAP-MSCHAPV2: Expected Success or "
 			   "Failure - ignore op %d", resp->op_code);
-		return TRUE;
+		return true;
 	}
 
 	if (data->state == FAILURE_REQ &&
 	    resp->op_code != MSCHAPV2_OP_FAILURE) {
 		wpa_printf(MSG_DEBUG, "EAP-MSCHAPV2: Expected Failure "
 			   "- ignore op %d", resp->op_code);
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
@@ -531,7 +531,7 @@ static void eap_mschapv2_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_mschapv2_isDone(struct eap_sm *sm, void *priv)
+static bool eap_mschapv2_isDone(struct eap_sm *sm, void *priv)
 {
 	struct eap_mschapv2_data *data = priv;
 	return data->state == SUCCESS || data->state == FAILURE;
@@ -564,7 +564,7 @@ static u8 * eap_mschapv2_getKey(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
-static Boolean eap_mschapv2_isSuccess(struct eap_sm *sm, void *priv)
+static bool eap_mschapv2_isSuccess(struct eap_sm *sm, void *priv)
 {
 	struct eap_mschapv2_data *data = priv;
 	return data->state == SUCCESS;

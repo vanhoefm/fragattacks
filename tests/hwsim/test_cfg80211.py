@@ -16,6 +16,7 @@ import hwsim_utils
 from tshark import run_tshark
 from nl80211 import *
 from wpasupplicant import WpaSupplicant
+from utils import *
 
 def nl80211_command(dev, cmd, attr):
     res = dev.request("VENDOR ffffffff {} {}".format(nl80211_cmd[cmd],
@@ -101,6 +102,7 @@ def test_cfg80211_tx_frame(dev, apdev, params):
 @remote_compatible
 def test_cfg80211_wep_key_idx_change(dev, apdev):
     """WEP Shared Key authentication and key index change without deauth"""
+    check_wep_capa(dev[0])
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": "wep-shared-key",
                            "wep_key0": '"hello12345678"',

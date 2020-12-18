@@ -13,7 +13,7 @@ logger = logging.getLogger()
 
 import hwsim_utils
 import hostapd
-from utils import alloc_fail, fail_test, clear_regdom
+from utils import *
 
 def check_wpa2_connection(sta, ap, hapd, ssid, mixed=False):
     status = sta.get_status()
@@ -104,6 +104,7 @@ def test_nfc_wps_config_token(dev, apdev):
 
 def test_nfc_wps_config_token_init(dev, apdev):
     """NFC tag with configuration token from AP with auto configuration"""
+    skip_without_tkip(dev[0])
     ssid = "test-wps-nfc-conf-token-init"
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": ssid, "eap_server": "1", "wps_state": "1"})
@@ -122,6 +123,7 @@ def test_nfc_wps_config_token_init(dev, apdev):
 @remote_compatible
 def test_nfc_wps_password_token_sta_init(dev, apdev):
     """Initial AP configuration with first WPS NFC Enrollee"""
+    skip_without_tkip(dev[0])
     ssid = "test-wps-nfc-pw-token-init"
     hapd = hostapd.add_ap(apdev[0],
                           {"ssid": ssid, "eap_server": "1", "wps_state": "1"})
@@ -216,6 +218,7 @@ def test_nfc_wps_password_token_ap_preconf(dev, apdev):
 
 def test_nfc_wps_handover_init(dev, apdev):
     """Connect to WPS AP with NFC connection handover and move to configured state"""
+    skip_without_tkip(dev[0])
     try:
         _test_nfc_wps_handover_init(dev, apdev)
     finally:

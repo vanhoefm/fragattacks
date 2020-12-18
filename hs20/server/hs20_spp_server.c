@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
 			ctx.root_dir = optarg;
 			break;
 		case 'v':
-			printf("hs20_spp_server v" VERSION_STR "\n");
+			printf("hs20_spp_server v%s\n", VERSION_STR);
 			return 0;
 		default:
 			usage();

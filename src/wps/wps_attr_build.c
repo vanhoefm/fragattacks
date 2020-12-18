@@ -310,6 +310,9 @@ int wps_build_auth_type_flags(struct wps_data *wps, struct wpabuf *msg)
 	auth_types &= ~WPS_AUTH_WPA;
 	auth_types &= ~WPS_AUTH_WPA2;
 	auth_types &= ~WPS_AUTH_SHARED;
+#ifdef CONFIG_NO_TKIP
+	auth_types &= ~WPS_AUTH_WPAPSK;
+#endif /* CONFIG_NO_TKIP */
 #ifdef CONFIG_WPS_TESTING
 	if (wps_force_auth_types_in_use) {
 		wpa_printf(MSG_DEBUG,
@@ -331,6 +334,9 @@ int wps_build_encr_type_flags(struct wps_data *wps, struct wpabuf *msg)
 {
 	u16 encr_types = WPS_ENCR_TYPES;
 	encr_types &= ~WPS_ENCR_WEP;
+#ifdef CONFIG_NO_TKIP
+	encr_types &= ~WPS_ENCR_TKIP;
+#endif /* CONFIG_NO_TKIP */
 #ifdef CONFIG_WPS_TESTING
 	if (wps_force_encr_types_in_use) {
 		wpa_printf(MSG_DEBUG,

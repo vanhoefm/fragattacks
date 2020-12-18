@@ -345,7 +345,6 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 	}
 #endif /* CONFIG_IEEE80211AC */
 
-#ifdef CONFIG_IEEE80211N
 	if ((sta->flags & WLAN_STA_HT) && sta->ht_capabilities) {
 		res = os_snprintf(buf + len, buflen - len,
 				  "ht_caps_info=0x%04x\n",
@@ -354,7 +353,6 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
 		if (!os_snprintf_error(buflen - len, res))
 			len += res;
 	}
-#endif /* CONFIG_IEEE80211N */
 
 	if (sta->ext_capability &&
 	    buflen - len > (unsigned) (11 + 2 * sta->ext_capability[0])) {
@@ -750,7 +748,8 @@ int hostapd_ctrl_iface_status(struct hostapd_data *hapd, char *buf,
 			  iface->conf->ieee80211n && !hapd->conf->disable_11n,
 			  iface->conf->ieee80211ac &&
 			  !hapd->conf->disable_11ac,
-			  iface->conf->ieee80211ax,
+			  iface->conf->ieee80211ax &&
+			  !hapd->conf->disable_11ax,
 			  iface->conf->beacon_int,
 			  hapd->conf->dtim_period);
 	if (os_snprintf_error(buflen - len, ret))
@@ -758,7 +757,7 @@ int hostapd_ctrl_iface_status(struct hostapd_data *hapd, char *buf,
 	len += ret;
 
 #ifdef CONFIG_IEEE80211AX
-	if (iface->conf->ieee80211ax) {
+	if (iface->conf->ieee80211ax && !hapd->conf->disable_11ax) {
 		ret = os_snprintf(buf + len, buflen - len,
 				  "he_oper_chwidth=%d\n"
 				  "he_oper_centr_freq_seg0_idx=%d\n"

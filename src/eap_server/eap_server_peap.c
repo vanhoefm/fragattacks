@@ -569,8 +569,8 @@ static struct wpabuf * eap_peap_buildReq(struct eap_sm *sm, void *priv, u8 id)
 }
 
 
-static Boolean eap_peap_check(struct eap_sm *sm, void *priv,
-			      struct wpabuf *respData)
+static bool eap_peap_check(struct eap_sm *sm, void *priv,
+			   struct wpabuf *respData)
 {
 	const u8 *pos;
 	size_t len;
@@ -578,10 +578,10 @@ static Boolean eap_peap_check(struct eap_sm *sm, void *priv,
 	pos = eap_hdr_validate(EAP_VENDOR_IETF, EAP_TYPE_PEAP, respData, &len);
 	if (pos == NULL || len < 1) {
 		wpa_printf(MSG_INFO, "EAP-PEAP: Invalid frame");
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
@@ -1289,7 +1289,7 @@ static void eap_peap_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_peap_isDone(struct eap_sm *sm, void *priv)
+static bool eap_peap_isDone(struct eap_sm *sm, void *priv)
 {
 	struct eap_peap_data *data = priv;
 	return data->state == SUCCESS || data->state == FAILURE;
@@ -1383,7 +1383,7 @@ static u8 * eap_peap_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
-static Boolean eap_peap_isSuccess(struct eap_sm *sm, void *priv)
+static bool eap_peap_isSuccess(struct eap_sm *sm, void *priv)
 {
 	struct eap_peap_data *data = priv;
 	return data->state == SUCCESS;

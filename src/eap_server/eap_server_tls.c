@@ -226,8 +226,8 @@ check_established:
 }
 
 
-static Boolean eap_tls_check(struct eap_sm *sm, void *priv,
-			     struct wpabuf *respData)
+static bool eap_tls_check(struct eap_sm *sm, void *priv,
+			  struct wpabuf *respData)
 {
 	struct eap_tls_data *data = priv;
 	const u8 *pos;
@@ -246,10 +246,10 @@ static Boolean eap_tls_check(struct eap_sm *sm, void *priv,
 				       respData, &len);
 	if (pos == NULL || len < 1) {
 		wpa_printf(MSG_INFO, "EAP-TLS: Invalid frame");
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
@@ -346,7 +346,7 @@ static void eap_tls_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_tls_isDone(struct eap_sm *sm, void *priv)
+static bool eap_tls_isDone(struct eap_sm *sm, void *priv)
 {
 	struct eap_tls_data *data = priv;
 	return data->state == SUCCESS || data->state == FAILURE;
@@ -431,7 +431,7 @@ static u8 * eap_tls_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
-static Boolean eap_tls_isSuccess(struct eap_sm *sm, void *priv)
+static bool eap_tls_isSuccess(struct eap_sm *sm, void *priv)
 {
 	struct eap_tls_data *data = priv;
 	return data->state == SUCCESS;

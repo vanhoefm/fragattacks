@@ -171,8 +171,8 @@ static struct wpabuf * eap_psk_buildReq(struct eap_sm *sm, void *priv, u8 id)
 }
 
 
-static Boolean eap_psk_check(struct eap_sm *sm, void *priv,
-			     struct wpabuf *respData)
+static bool eap_psk_check(struct eap_sm *sm, void *priv,
+			  struct wpabuf *respData)
 {
 	struct eap_psk_data *data = priv;
 	size_t len;
@@ -182,7 +182,7 @@ static Boolean eap_psk_check(struct eap_sm *sm, void *priv,
 	pos = eap_hdr_validate(EAP_VENDOR_IETF, EAP_TYPE_PSK, respData, &len);
 	if (pos == NULL || len < 1) {
 		wpa_printf(MSG_INFO, "EAP-PSK: Invalid frame");
-		return TRUE;
+		return true;
 	}
 	t = EAP_PSK_FLAGS_GET_T(*pos);
 
@@ -191,22 +191,22 @@ static Boolean eap_psk_check(struct eap_sm *sm, void *priv,
 	if (data->state == PSK_1 && t != 1) {
 		wpa_printf(MSG_DEBUG, "EAP-PSK: Expected PSK-2 - "
 			   "ignore T=%d", t);
-		return TRUE;
+		return true;
 	}
 
 	if (data->state == PSK_3 && t != 3) {
 		wpa_printf(MSG_DEBUG, "EAP-PSK: Expected PSK-4 - "
 			   "ignore T=%d", t);
-		return TRUE;
+		return true;
 	}
 
 	if ((t == 1 && len < sizeof(struct eap_psk_hdr_2)) ||
 	    (t == 3 && len < sizeof(struct eap_psk_hdr_4))) {
 		wpa_printf(MSG_DEBUG, "EAP-PSK: Too short frame");
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
 
@@ -433,7 +433,7 @@ static void eap_psk_process(struct eap_sm *sm, void *priv,
 }
 
 
-static Boolean eap_psk_isDone(struct eap_sm *sm, void *priv)
+static bool eap_psk_isDone(struct eap_sm *sm, void *priv)
 {
 	struct eap_psk_data *data = priv;
 	return data->state == SUCCESS || data->state == FAILURE;
@@ -474,7 +474,7 @@ static u8 * eap_psk_get_emsk(struct eap_sm *sm, void *priv, size_t *len)
 }
 
 
-static Boolean eap_psk_isSuccess(struct eap_sm *sm, void *priv)
+static bool eap_psk_isSuccess(struct eap_sm *sm, void *priv)
 {
 	struct eap_psk_data *data = priv;
 	return data->state == SUCCESS;

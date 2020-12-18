@@ -1388,6 +1388,15 @@ static int eap_teap_process_decrypted(struct eap_sm *sm,
 			   "EAP-TEAP: PAC used - server may decide to skip inner authentication");
 		ret->methodState = METHOD_MAY_CONT;
 		ret->decision = DECISION_COND_SUCC;
+	} else if (data->result_success_done &&
+		   tls_connection_get_own_cert_used(data->ssl.conn) &&
+		   eap_teap_derive_msk(data) == 0) {
+		/* Assume the server might accept authentication without going
+		 * through inner authentication. */
+		wpa_printf(MSG_DEBUG,
+			   "EAP-TEAP: Client certificate used - server may decide to skip inner authentication");
+		ret->methodState = METHOD_MAY_CONT;
+		ret->decision = DECISION_COND_SUCC;
 	}
 
 	if (tlv.pac) {
@@ -1985,7 +1994,7 @@ static struct wpabuf * eap_teap_process(struct eap_sm *sm, void *priv,
 
 
 #if 0 /* TODO */
-static Boolean eap_teap_has_reauth_data(struct eap_sm *sm, void *priv)
+static bool eap_teap_has_reauth_data(struct eap_sm *sm, void *priv)
 {
 	struct eap_teap_data *data = priv;
 
@@ -2048,7 +2057,7 @@ static int eap_teap_get_status(struct eap_sm *sm, void *priv, char *buf,
 }
 
 
-static Boolean eap_teap_isKeyAvailable(struct eap_sm *sm, void *priv)
+static bool eap_teap_isKeyAvailable(struct eap_sm *sm, void *priv)
 {
 	struct eap_teap_data *data = priv;
 

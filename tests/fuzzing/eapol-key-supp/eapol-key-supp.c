@@ -175,11 +175,11 @@ static int supp_get_beacon_ie(void *ctx)
 static int supp_set_key(void *ctx, enum wpa_alg alg,
 			const u8 *addr, int key_idx, int set_tx,
 			const u8 *seq, size_t seq_len,
-			const u8 *key, size_t key_len)
+			const u8 *key, size_t key_len, enum key_flag key_flag)
 {
 	wpa_printf(MSG_DEBUG, "SUPP: %s(alg=%d addr=" MACSTR " key_idx=%d "
-		   "set_tx=%d)",
-		   __func__, alg, MAC2STR(addr), key_idx, set_tx);
+		   "set_tx=%d key_flag=0x%x)",
+		   __func__, alg, MAC2STR(addr), key_idx, set_tx, key_flag);
 	wpa_hexdump(MSG_DEBUG, "SUPP: set_key - seq", seq, seq_len);
 	wpa_hexdump(MSG_DEBUG, "SUPP: set_key - key", key, key_len);
 	return 0;

@@ -105,6 +105,23 @@ static int wpa_gen_wpa_ie_wpa(u8 *wpa_ie, size_t wpa_ie_len,
 }
 
 
+u16 rsn_supp_capab(struct wpa_sm *sm)
+{
+	u16 capab = 0;
+
+	if (sm->mfp)
+		capab |= WPA_CAPABILITY_MFPC;
+	if (sm->mfp == 2)
+		capab |= WPA_CAPABILITY_MFPR;
+	if (sm->ocv)
+		capab |= WPA_CAPABILITY_OCVC;
+	if (sm->ext_key_id)
+		capab |= WPA_CAPABILITY_EXT_KEY_ID_FOR_UNICAST;
+
+	return capab;
+}
+
+
 static int wpa_gen_wpa_ie_rsn(u8 *rsn_ie, size_t rsn_ie_len,
 			      int pairwise_cipher, int group_cipher,
 			      int key_mgmt, int mgmt_group_cipher,
@@ -112,7 +129,6 @@ static int wpa_gen_wpa_ie_rsn(u8 *rsn_ie, size_t rsn_ie_len,
 {
 	u8 *pos;
 	struct rsn_ie_hdr *hdr;
-	u16 capab;
 	u32 suite;
 
 	if (rsn_ie_len < sizeof(*hdr) + RSN_SELECTOR_LEN +
@@ -214,14 +230,7 @@ static int wpa_gen_wpa_ie_rsn(u8 *rsn_ie, size_t rsn_ie_len,
 	pos += RSN_SELECTOR_LEN;
 
 	/* RSN Capabilities */
-	capab = 0;
-	if (sm->mfp)
-		capab |= WPA_CAPABILITY_MFPC;
-	if (sm->mfp == 2)
-		capab |= WPA_CAPABILITY_MFPR;
-	if (sm->ocv)
-		capab |= WPA_CAPABILITY_OCVC;
-	WPA_PUT_LE16(pos, capab);
+	WPA_PUT_LE16(pos, rsn_supp_capab(sm));
 	pos += 2;
 
 	if (sm->cur_pmksa) {
@@ -348,7 +357,7 @@ int wpa_gen_rsnxe(struct wpa_sm *sm, u8 *rsnxe, size_t rsnxe_len)
 
 	if (!wpa_key_mgmt_sae(sm->key_mgmt))
 		return 0; /* SAE not in use */
-	if (sm->sae_pwe != 1 && sm->sae_pwe != 2)
+	if (sm->sae_pwe != 1 && sm->sae_pwe != 2 && !sm->sae_pk)
 		return 0; /* no supported extended RSN capabilities */
 
 	if (rsnxe_len < 3)
@@ -358,7 +367,12 @@ int wpa_gen_rsnxe(struct wpa_sm *sm, u8 *rsnxe, size_t rsnxe_len)
 	*pos++ = 1;
 	/* bits 0-3 = 0 since only one octet of Extended RSN Capabilities is
 	 * used for now */
-	*pos++ = BIT(WLAN_RSNX_CAPAB_SAE_H2E);
+	*pos = BIT(WLAN_RSNX_CAPAB_SAE_H2E);
+#ifdef CONFIG_SAE_PK
+	if (sm->sae_pk)
+		*pos |= BIT(WLAN_RSNX_CAPAB_SAE_PK);
+#endif /* CONFIG_SAE_PK */
+	pos++;
 
 	return pos - rsnxe;
 }

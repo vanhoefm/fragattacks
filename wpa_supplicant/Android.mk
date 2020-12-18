@@ -98,6 +98,7 @@ OBJS += src/utils/crc32.c
 OBJS += wmm_ac.c
 OBJS += op_classes.c
 OBJS += rrm.c
+OBJS += robust_av.c
 OBJS_p = wpa_passphrase.c
 OBJS_p += src/utils/common.c
 OBJS_p += src/utils/wpa_debug.c
@@ -166,6 +167,10 @@ ifdef CONFIG_VHT_OVERRIDES
 L_CFLAGS += -DCONFIG_VHT_OVERRIDES
 endif
 
+ifdef CONFIG_HE_OVERRIDES
+L_CFLAGS += -DCONFIG_HE_OVERRIDES
+endif
+
 ifndef CONFIG_BACKEND
 CONFIG_BACKEND=file
 endif
@@ -231,8 +236,13 @@ endif
 ifdef CONFIG_SAE
 L_CFLAGS += -DCONFIG_SAE
 OBJS += src/common/sae.c
+ifdef CONFIG_SAE_PK
+L_CFLAGS += -DCONFIG_SAE_PK
+OBJS += src/common/sae_pk.c
+endif
 NEED_ECC=y
 NEED_DH_GROUPS=y
+NEED_HMAC_SHA256_KDF=y
 NEED_DRAGONFLY=y
 ifdef CONFIG_TESTING_OPTIONS
 NEED_DH_GROUPS_ALL=y
@@ -242,6 +252,12 @@ endif
 ifdef CONFIG_DPP
 L_CFLAGS += -DCONFIG_DPP
 OBJS += src/common/dpp.c
+OBJS += src/common/dpp_auth.c
+OBJS += src/common/dpp_backup.c
+OBJS += src/common/dpp_crypto.c
+OBJS += src/common/dpp_pkex.c
+OBJS += src/common/dpp_reconfig.c
+OBJS += src/common/dpp_tcp.c
 OBJS += dpp_supplicant.c
 NEED_AES_SIV=y
 NEED_HMAC_SHA256_KDF=y
@@ -376,6 +392,14 @@ endif
 ifdef CONFIG_CTRL_IFACE
 OBJS += src/fst/fst_ctrl_iface.c
 endif
+endif
+
+ifdef CONFIG_WEP
+L_CFLAGS += -DCONFIG_WEP
+endif
+
+ifdef CONFIG_NO_TKIP
+L_CFLAGS += -DCONFIG_NO_TKIP
 endif
 
 
@@ -858,14 +882,12 @@ OBJS += src/ap/bss_load.c
 OBJS += src/ap/eap_user_db.c
 OBJS += src/ap/neighbor_db.c
 OBJS += src/ap/rrm.c
-ifdef CONFIG_IEEE80211N
 OBJS += src/ap/ieee802_11_ht.c
 ifdef CONFIG_IEEE80211AC
 OBJS += src/ap/ieee802_11_vht.c
 endif
 ifdef CONFIG_IEEE80211AX
 OBJS += src/ap/ieee802_11_he.c
-endif
 endif
 ifdef CONFIG_WNM_AP
 L_CFLAGS += -DCONFIG_WNM_AP
@@ -886,14 +908,11 @@ OBJS += src/eap_server/eap_server.c
 OBJS += src/eap_server/eap_server_identity.c
 OBJS += src/eap_server/eap_server_methods.c
 
-ifdef CONFIG_IEEE80211N
-L_CFLAGS += -DCONFIG_IEEE80211N
 ifdef CONFIG_IEEE80211AC
 L_CFLAGS += -DCONFIG_IEEE80211AC
 endif
 ifdef CONFIG_IEEE80211AX
 L_CFLAGS += -DCONFIG_IEEE80211AX
-endif
 endif
 
 ifdef NEED_AP_MLME

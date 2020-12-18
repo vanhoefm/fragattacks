@@ -1099,15 +1099,26 @@ class WpaSupplicant:
                       "bssid_whitelist", "mem_only_psk", "eap_workaround",
                       "engine", "fils_dh_group", "bssid_hint",
                       "dpp_csign", "dpp_csign_expiry",
-                      "dpp_netaccesskey", "dpp_netaccesskey_expiry",
+                      "dpp_netaccesskey", "dpp_netaccesskey_expiry", "dpp_pfs",
                       "group_mgmt", "owe_group", "owe_only",
                       "owe_ptk_workaround",
+                      "transition_disable", "sae_pk",
                       "roaming_consortium_selection", "ocv",
                       "multi_ap_backhaul_sta", "rx_stbc", "tx_stbc",
-                      "ft_eap_pmksa_caching"]
+                      "ft_eap_pmksa_caching", "beacon_prot",
+                      "wpa_deny_ptk0_rekey"]
         for field in not_quoted:
             if field in kwargs and kwargs[field]:
                 self.set_network(id, field, kwargs[field])
+
+        known_args = {"raw_psk", "password_hex", "peerkey", "okc", "ocsp",
+                      "only_add_network", "wait_connect"}
+        unknown = set(kwargs.keys())
+        unknown -= set(quoted)
+        unknown -= set(not_quoted)
+        unknown -= known_args
+        if unknown:
+            raise Exception("Unknown WpaSupplicant::connect() arguments: " + str(unknown))
 
         if "raw_psk" in kwargs and kwargs['raw_psk']:
             self.set_network(id, "psk", kwargs['raw_psk'])
@@ -1190,27 +1201,42 @@ class WpaSupplicant:
                                  "CTRL-EVENT-SCAN-RESULTS"], timeout=0.5)
         self.dump_monitor()
 
-    def roam(self, bssid, fail_test=False, assoc_reject_ok=False):
+    def roam(self, bssid, fail_test=False, assoc_reject_ok=False,
+             check_bssid=True):
         self.dump_monitor()
         if "OK" not in self.request("ROAM " + bssid):
             raise Exception("ROAM failed")
         if fail_test:
             if assoc_reject_ok:
                 ev = self.wait_event(["CTRL-EVENT-CONNECTED",
+                                      "CTRL-EVENT-DISCONNECTED",
                                       "CTRL-EVENT-ASSOC-REJECT"], timeout=1)
             else:
-                ev = self.wait_event(["CTRL-EVENT-CONNECTED"], timeout=1)
+                ev = self.wait_event(["CTRL-EVENT-CONNECTED",
+                                      "CTRL-EVENT-DISCONNECTED"], timeout=1)
+            if ev and "CTRL-EVENT-DISCONNECTED" in ev:
+                self.dump_monitor()
+                return
             if ev is not None and "CTRL-EVENT-ASSOC-REJECT" not in ev:
                 raise Exception("Unexpected connection")
             self.dump_monitor()
             return
-        ev = self.wait_event(["CTRL-EVENT-CONNECTED",
-                              "CTRL-EVENT-ASSOC-REJECT"], timeout=10)
+        if assoc_reject_ok:
+            ev = self.wait_event(["CTRL-EVENT-CONNECTED",
+                                  "CTRL-EVENT-DISCONNECTED"], timeout=10)
+        else:
+            ev = self.wait_event(["CTRL-EVENT-CONNECTED",
+                                      "CTRL-EVENT-DISCONNECTED",
+                                  "CTRL-EVENT-ASSOC-REJECT"], timeout=10)
         if ev is None:
             raise Exception("Roaming with the AP timed out")
         if "CTRL-EVENT-ASSOC-REJECT" in ev:
             raise Exception("Roaming association rejected")
+        if "CTRL-EVENT-DISCONNECTED" in ev:
+            raise Exception("Unexpected disconnection when waiting for roam to complete")
         self.dump_monitor()
+        if check_bssid and self.get_status_field('bssid') != bssid:
+            raise Exception("Did not roam to correct BSSID")
 
     def roam_over_ds(self, bssid, fail_test=False):
         self.dump_monitor()
@@ -1427,6 +1453,10 @@ class WpaSupplicant:
     def note(self, txt):
         self.request("NOTE " + txt)
 
+    def save_config(self):
+        if "OK" not in self.request("SAVE_CONFIG"):
+            raise Exception("Failed to save configuration file")
+
     def wait_regdom(self, country_ie=False):
         for i in range(5):
             ev = self.wait_event(["CTRL-EVENT-REGDOM-CHANGE"], timeout=1)
@@ -1470,6 +1500,20 @@ class WpaSupplicant:
             raise Exception("Failed to generate bootstrapping info")
         return int(res)
 
+    def dpp_bootstrap_set(self, id, conf=None, configurator=None, ssid=None,
+                          extra=None):
+        cmd = "DPP_BOOTSTRAP_SET %d" % id
+        if ssid:
+            cmd += " ssid=" + binascii.hexlify(ssid.encode()).decode()
+        if extra:
+            cmd += " " + extra
+        if conf:
+            cmd += " conf=" + conf
+        if configurator is not None:
+            cmd += " configurator=%d" % configurator
+        if "OK" not in self.request(cmd):
+            raise Exception("Failed to set bootstrapping parameters")
+
     def dpp_listen(self, freq, netrole=None, qr=None, role=None):
         cmd = "DPP_LISTEN " + str(freq)
         if netrole:
@@ -1485,7 +1529,8 @@ class WpaSupplicant:
                       extra=None, own=None, role=None, neg_freq=None,
                       ssid=None, passphrase=None, expect_fail=False,
                       tcp_addr=None, tcp_port=None, conn_status=False,
-                      ssid_charset=None, nfc_uri=None, netrole=None):
+                      ssid_charset=None, nfc_uri=None, netrole=None,
+                      csrattrs=None):
         cmd = "DPP_AUTH_INIT"
         if peer is None:
             if nfc_uri:
@@ -1519,6 +1564,8 @@ class WpaSupplicant:
             cmd += " conn_status=1"
         if netrole:
             cmd += " netrole=" + netrole
+        if csrattrs:
+            cmd += " csrattrs=" + csrattrs
         res = self.request(cmd)
         if expect_fail:
             if "FAIL" not in res:
@@ -1526,6 +1573,7 @@ class WpaSupplicant:
             return
         if "OK" not in res:
             raise Exception("Failed to initiate DPP Authentication")
+        return int(peer)
 
     def dpp_pkex_init(self, identifier, code, role=None, key=None, curve=None,
                       extra=None, use_id=None, allow_fail=False):

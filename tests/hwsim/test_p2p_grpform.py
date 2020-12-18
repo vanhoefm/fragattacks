@@ -14,8 +14,7 @@ import os
 
 import hostapd
 import hwsim_utils
-import utils
-from utils import HwsimSkip
+from utils import *
 from wpasupplicant import WpaSupplicant
 from p2p_utils import *
 from test_p2p_messages import parse_p2p_public_action, p2p_hdr, p2p_attr_capability, p2p_attr_go_intent, p2p_attr_config_timeout, p2p_attr_listen_channel, p2p_attr_intended_interface_addr, p2p_attr_channel_list, p2p_attr_device_info, p2p_attr_operating_channel, ie_p2p, ie_wsc, mgmt_tx, P2P_GO_NEG_REQ
@@ -46,7 +45,7 @@ def test_grpform_a(dev):
         raise Exception("Unexpected group interface name")
     check_grpform_results(i_res, r_res)
     remove_group(dev[0], dev[1])
-    if i_res['ifname'] in utils.get_ifnames():
+    if i_res['ifname'] in get_ifnames():
         raise Exception("Group interface netdev was not removed")
 
 def test_grpform_b(dev):
@@ -67,7 +66,7 @@ def test_grpform_b(dev):
     if "FAIL" not in dev[0].group_request("P2P_GROUP_MEMBER 00:11:22:33:44:55"):
         raise Exception("P2P_GROUP_MEMBER for non-member accepted")
     remove_group(dev[0], dev[1])
-    if r_res['ifname'] in utils.get_ifnames():
+    if r_res['ifname'] in get_ifnames():
         raise Exception("Group interface netdev was not removed")
 
 def test_grpform_c(dev):
@@ -82,9 +81,9 @@ def test_grpform_c(dev):
         raise Exception("Unexpected group interface name")
     check_grpform_results(i_res, r_res)
     remove_group(dev[0], dev[1])
-    if i_res['ifname'] in utils.get_ifnames():
+    if i_res['ifname'] in get_ifnames():
         raise Exception("Group interface netdev was not removed")
-    if r_res['ifname'] in utils.get_ifnames():
+    if r_res['ifname'] in get_ifnames():
         raise Exception("Group interface netdev was not removed")
 
 @remote_compatible
@@ -99,9 +98,9 @@ def test_grpform2_c(dev):
     dev[1].global_request("SET p2p_no_group_iface 0")
     [i_res, r_res] = go_neg_pin_authorized(i_dev=dev[0], i_intent=0, r_dev=dev[1], r_intent=15)
     remove_group(dev[0], dev[1])
-    if i_res['ifname'] in utils.get_ifnames():
+    if i_res['ifname'] in get_ifnames():
         raise Exception("Group interface netdev was not removed")
-    if r_res['ifname'] in utils.get_ifnames():
+    if r_res['ifname'] in get_ifnames():
         raise Exception("Group interface netdev was not removed")
 
 @remote_compatible
@@ -116,9 +115,9 @@ def test_grpform3_c(dev):
     dev[1].global_request("SET p2p_no_group_iface 0")
     [i_res, r_res] = go_neg_pin(i_dev=dev[0], i_intent=15, r_dev=dev[1], r_intent=0)
     remove_group(dev[0], dev[1])
-    if i_res['ifname'] in utils.get_ifnames():
+    if i_res['ifname'] in get_ifnames():
         raise Exception("Group interface netdev was not removed")
-    if r_res['ifname'] in utils.get_ifnames():
+    if r_res['ifname'] in get_ifnames():
         raise Exception("Group interface netdev was not removed")
 
 @remote_compatible
@@ -638,6 +637,7 @@ def clear_pbc_overlap(dev, ap):
     dev[1].request("P2P_CANCEL")
     dev[0].p2p_stop_find()
     dev[1].p2p_stop_find()
+    remove_group(dev[0], dev[1], allow_failure=True)
     dev[0].dump_monitor()
     dev[1].dump_monitor()
     time.sleep(0.1)
@@ -653,9 +653,9 @@ def test_grpform_pbc_overlap(dev, apdev):
     hapd.request("WPS_PBC")
     time.sleep(0.1)
 
-    # Since P2P Client scan case is now optimzied to use a specific SSID, the
+    # Since P2P Client scan case is now optimized to use a specific SSID, the
     # WPS AP will not reply to that and the scan after GO Negotiation can quite
-    # likely miss the AP due to dwell time being short enoguh to miss the Beacon
+    # likely miss the AP due to dwell time being short enough to miss the Beacon
     # frame. This has made the test case somewhat pointless, but keep it here
     # for now with an additional scan to confirm that PBC detection works if
     # there is a BSS entry for a overlapping AP.
@@ -677,11 +677,11 @@ def test_grpform_pbc_overlap(dev, apdev):
         raise Exception("Failed to authorize GO Neg")
     if "OK" not in dev[1].global_request("P2P_CONNECT " + addr0 + " pbc go_intent=15 freq=2412"):
         raise Exception("Failed to initiate GO Neg")
-    ev = dev[0].wait_global_event(["WPS-OVERLAP-DETECTED"], timeout=15)
-    if ev is None:
-        raise Exception("PBC overlap not reported")
-
+    ev = dev[0].wait_global_event(["WPS-OVERLAP-DETECTED",
+                                   "P2P-GROUP-FORMATION-SUCCESS"], timeout=15)
     clear_pbc_overlap(dev, apdev[0])
+    if ev is None or "P2P-GROUP-FORMATION-SUCCESS" not in ev:
+        raise Exception("P2P group formation did not complete")
 
 @remote_compatible
 def test_grpform_pbc_overlap_group_iface(dev, apdev):
@@ -713,14 +713,9 @@ def test_grpform_pbc_overlap_group_iface(dev, apdev):
         raise Exception("Failed to initiate GO Neg")
     ev = dev[0].wait_global_event(["WPS-OVERLAP-DETECTED",
                                    "P2P-GROUP-FORMATION-SUCCESS"], timeout=15)
-    if ev is None or "WPS-OVERLAP-DETECTED" not in ev:
-        # Do not report this as failure since the P2P group formation case
-        # using a separate group interface has limited chances of "seeing" the
-        # overlapping AP due to a per-SSID scan and no prior scan operations on
-        # the group interface.
-        logger.info("PBC overlap not reported")
-
     clear_pbc_overlap(dev, apdev[0])
+    if ev is None or "P2P-GROUP-FORMATION-SUCCESS" not in ev:
+        raise Exception("P2P group formation did not complete")
 
 @remote_compatible
 def test_grpform_goneg_fail_with_group_iface(dev):
@@ -738,11 +733,9 @@ def test_grpform_goneg_fail_with_group_iface(dev):
     if ev is None:
         raise Exception("GO Negotiation failure timed out")
 
-def test_grpform_cred_ready_timeout(dev, apdev, params):
-    """P2P GO Negotiation wait for credentials to become ready [long]"""
-    if not params['long']:
-        raise HwsimSkip("Skip test case with long duration due to --long not specified")
-
+@long_duration_test
+def test_grpform_cred_ready_timeout(dev):
+    """P2P GO Negotiation wait for credentials to become ready"""
     dev[1].p2p_listen()
     addr1 = dev[1].p2p_dev_addr()
     if not dev[0].discover_peer(addr1):
@@ -1185,7 +1178,7 @@ def test_grpform_random_addr(dev):
         check_grpform_results(i_res, r_res)
         hwsim_utils.test_connectivity_p2p(dev[0], dev[1])
         remove_group(dev[0], dev[1])
-        if i_res['ifname'] in utils.get_ifnames():
+        if i_res['ifname'] in get_ifnames():
             raise Exception("Group interface netdev was not removed")
     finally:
         dev[0].global_request("SET p2p_interface_random_mac_addr 0")
