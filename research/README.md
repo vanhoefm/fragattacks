@@ -20,17 +20,20 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 ## 2.2. Change log
 
-**Version 1.3 (? December 2020)**:
+**Version 1.3 (18 December 2020)**:
 
-- This version is based on hostap commit **XXX**.
+- This version is based on hostap commit `a337c1d7c` ("New TWT operations and attributes to TWT Setup and Nudge").
 
 - Added a clarification to this README on how to use tcpdump to verify the result of certain tests.
 
-- Added the extra tests `ping I,E,F,E [--rekey-pl] [--rekey-req]` to this README to better detect mixed key
-  attacks (CVE-2020-24587) in certain devices.
+- Added instructions on how to test WPA3/SAE devices using either the hunting-and-pecking or hash-to-element method.
+  This also implies that Management Frame Protection (MFP) is supported by the test tool.
 
 - Added the extra test `ping BP --bcast-ra --bcast-dst` to this README to be able to test for CVE-2020-26145
   against APs that cannot run tcpdump (with this test tcpdump has to be run on an independent connected client).
+
+- Added the extra tests `ping I,E,F,E [--rekey-pl] [--rekey-req]` to this README to better detect mixed key
+  attacks (CVE-2020-24587) in certain devices.
 
 **Version 1.2 (15 November 2020)**:
 
