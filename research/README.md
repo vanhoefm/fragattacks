@@ -24,6 +24,8 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 - This version is based on hostap commit **XXX**.
 
+- Added a clarification to this README on how to use tcpdump to verify the result of certain tests.
+
 - Added the extra tests `ping I,E,F,E [--rekey-pl] [--rekey-req]` to this README to better detect mixed key
   attacks (CVE-2020-24587) in certain devices.
 
@@ -273,9 +275,14 @@ All commands work against both clients and APs unless noted otherwise.
 The tool outputs `TEST COMPLETED SUCCESSFULLY` if the device is vulnerable to the attack corresponding
 to the given `$COMMAND`, and outputs `Test timed out! Retry to be sure, or manually check result` if
 the device is not vulnerable. After the test completed you can close the test tool using `CTRL+C`.
-Most attacks have several slight variants represented by different `$COMMAND` values. Verifying the
-result of some tests requires running tcpdump or wireshark on the targeted device (this is further
-clarified below the table).
+Most attacks have several slight variants represented by different `$COMMAND` values.
+
+Verifying the result of some tests requires running tcpdump or wireshark on the device under test (the
+table below states if tcpdump has to be used). This tcpdump packet capture must only include packets that
+passed PHY and MAC layer processing. For instance, on Linux this capture should be made while the
+wireless interface is in "managed" or "ap" mode, not in monitor mode, meaning the capture will only
+contain packets that passed processing at the Wi-Fi layer. See [avoiding tcpdump on APs](#id-avoiding-tcpdump-aps)
+for a discussion on how some tests can nevertheless be performed without having to run tcpdump on APs.
 
 To **verify your test setup**, the first command in the table below performs a normal ping that must
 succeed. The second command sends the ping as two fragmented Wi-Fi frames, and should only fail
@@ -882,8 +889,26 @@ are some options to try to mitigate this problem:
    With many tests this can be more reliable because the test tool can then immediately send the test frame instead
    of first having to use/wait on DHCP.
 
+<a id="id-avoiding-tcpdump-aps"></a>
+## 9.7. Avoiding tcpdump on APs
+
+Some vulnerabilities can only be exploited while the device under test is connecting to the network,
+i.e., when it's executing the 4-way handshake. This makes them harder to test automatically and typically
+means that tcpdump or similar has to be used on the device under test. However, APs can be tested without running
+tcpdump on it. In particular, the broadcast fragment attack tests (CVE-2020-26145) and A-MSDU EAPOL attack
+tests (CVE-2020-26144) can be performed without running tcpdump on the device under test. Instead, tcpdump has
+to run on another client connected to the AP. Concretely, the following commands can be used:
+
+- `ping I,P --bcast-ra` and `ping BP --bcast-ra --bcast-dst`
+
+- `eapol-amsdu BP --bcast-dst` and `eapol-amsdu-bad BP --bcast-dst`
+
+With these commands, you can monitor for the ping request on another client that is connected to the AP. In
+case the ping request is received on this independent client, the AP under test is vulnerable. Unfortunately,
+currently, it appears hard to test clients against these attack variants without running tcpdump on the client.
+
 <a id="id-notes-device-support"></a>
-## 9.7. Notes on device support
+## 9.8. Notes on device support
 
 ### ath9k_htc
 
@@ -920,7 +945,7 @@ after injecting a frame with the More Fragments flag set. If an Intel developer 
 update the firmware and make it possible to inject fragmented frames.
 
 <a id="id-hwsim-details"></a>
-## 9.8. Hwsim mode details
+## 9.9. Hwsim mode details
 
 **Warning**: *this is currently an experimental mode, only use it for research purposes.*
 
@@ -968,7 +993,7 @@ start the test tool as follows:
 After the tool executed, you can directly run it again with a new `$COMMAND`.
 
 <a id="id-wpa3-sae"></a>
-## 9.9. Testing WPA3 and SAE devices
+## 9.10. Testing WPA3 and SAE devices
 
 You can test a WPA3/SAE AP by including the following two lines in `client.conf`:
 
