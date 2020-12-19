@@ -68,7 +68,7 @@
 #include <net/ethernet.h>
 #endif
 
-const char *FRAGATTACK_VERSION = "1.2";
+const char *FRAGATTACK_VERSION = "1.3";
 
 static int wpa_supplicant_global_iface_list(struct wpa_global *global,
 					    char *buf, int len);

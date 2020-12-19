@@ -79,7 +79,7 @@
 #define HOSTAPD_GLOBAL_CTRL_IFACE_PORT_LIMIT	50
 #endif /* CONFIG_CTRL_IFACE_UDP */
 
-const char *FRAGATTACK_VERSION = "1.2";
+const char *FRAGATTACK_VERSION = "1.3";
 
 static void hostapd_ctrl_iface_send(struct hostapd_data *hapd, int level,
 				    enum wpa_msg_type type,

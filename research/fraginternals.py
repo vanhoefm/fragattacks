@@ -11,7 +11,7 @@ from wpaspy import Ctrl
 from scapy.contrib.wpa_eapol import WPA_key
 from scapy.arch.common import get_if_raw_hwaddr
 
-FRAGVERSION = "1.2"
+FRAGVERSION = "1.3"
 
 # ----------------------------------- Utility Commands -----------------------------------
 
@@ -729,6 +729,12 @@ class Daemon(metaclass=abc.ABCMeta):
 				log(ERROR, "You are not running patched drivers, meaning this tool may give incorrect results!")
 				log(STATUS, "To ignore this warning and timeout add the parameter --no-drivercheck")
 				time.sleep(5)
+
+			version = open("/sys/module/mac80211/parameters/fragattack_version").read().strip()
+			if version != FRAGVERSION:
+				log(ERROR, f"This script has version {FRAGVERSION} but the modified drivers are version {version}.")
+				log(ERROR, f"Please recompile and reinstall the modified drivers (see the README for details).")
+				quit(1)
 
 		# 1. Assign/create interfaces according to provided options
 		if self.options.hwsim:
