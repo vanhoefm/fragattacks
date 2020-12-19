@@ -35,6 +35,8 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 - Added the extra tests `ping I,E,F,E [--rekey-pl] [--rekey-req]` to this README to better detect mixed key
   attacks (CVE-2020-24587) in certain devices.
 
+- Fixed injection of fragmented frames when using ath9k_htc dongles in combination with 802.11n.
+
 **Version 1.2 (15 November 2020)**:
 
 - This version (and lower) is based on hostap commit `1c67a0760` ("tests: Add basic power saving tests for ap_open").
