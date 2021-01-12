@@ -8,7 +8,7 @@ py==1.8.1
 pycryptodome==3.9.7
 pyparsing==2.4.6
 pytest==5.3.5
-scapy==2.4.3
+git+https://github.com/vanhoefm/scapy.git@v2.4.4fix1#egg=scapy
 simpy==3.0.11
 six==1.14.0
 sympy==1.5.1

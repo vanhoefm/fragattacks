@@ -20,7 +20,7 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 ## 2.2. Change log
 
-**Version 1.3 (18 December 2020)**:
+**Version 1.3 (12 January 2021)**:
 
 - This version is based on hostap commit `a337c1d7c` ("New TWT operations and attributes to TWT Setup and Nudge").
 
@@ -36,6 +36,9 @@ the paper also briefly discusses the applicability of the attacks against WEP.
   attacks (CVE-2020-24587) in certain devices.
 
 - Fixed injection of fragmented frames when using ath9k_htc dongles in combination with 802.11n.
+
+- The python `requirements.txt` file now references a patched Scapy version to work around an
+  [incompatibility](https://github.com/secdev/scapy/commit/46fa40fde4049ad7770481f8806c59640df24059) with Python 3.9.
 
 **Version 1.2 (15 November 2020)**:
 
@@ -937,11 +940,10 @@ with this dongle. When connected to a USB2.0 port I found this dongle to be reli
 #### AWUS036ACH
 
 This device is generally not supported by default in most Linux distributions and requires manual
-installation of drivers. I tested it on Kali Linux after installing the driver using the instructions
-on [GitHub](https://github.com/aircrack-ng/rtl8812au). Before plugging in the device, you must
-execute `modprobe 88XXau rtw_monitor_retransmit=1`. Once my patches have reached upstream repositories
-on Kali Linux you can simply install the driver using `sudo apt install realtek-rtl88xxau-dkms`, but
-for now you must manually install the driver from GitHub.
+installation of drivers. On Kali Linux you can install the driver using `sudo apt install realtek-rtl88xxau-dkms`.
+To install the driver on other distributions check your package manager or follow the installation
+instructions on [GitHub](https://github.com/aircrack-ng/rtl8812au). Before plugging in the device,
+you must execute `modprobe 88XXau rtw_monitor_retransmit=1`.
 
 ### Intel AX200
 
