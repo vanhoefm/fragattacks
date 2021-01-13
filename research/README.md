@@ -24,7 +24,7 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 - This version is based on hostap commit `a337c1d7c` ("New TWT operations and attributes to TWT Setup and Nudge").
 
-- Added instructions on how to test WPA3/SAE devices using either the hunting-and-pecking or hash-to-element method.
+- Added <a href="#id-wpa3-sae">instructions</a> on how to test WPA3/SAE devices using either the hunting-and-pecking or hash-to-element method.
   This also implies that Management Frame Protection (MFP) is supported by the test tool.
 
 - Added a clarification to this README on how to use tcpdump to verify the result of certain tests.
@@ -37,7 +37,7 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 - Fixed injection of fragmented frames when using ath9k_htc dongles in combination with 802.11n.
 
-- The python `requirements.txt` file now references a patched Scapy version to work around an
+- The python `requirements.txt` file now references a patched scapy version to address an
   [incompatibility](https://github.com/secdev/scapy/commit/46fa40fde4049ad7770481f8806c59640df24059) with Python 3.9.
 
 - Fixed the `ping-frag-sep` test. Previously it behaved like `ping-frag-sep --pn-per-qos`. Note that this test
