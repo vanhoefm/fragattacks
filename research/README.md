@@ -24,10 +24,10 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 - This version is based on hostap commit `a337c1d7c` ("New TWT operations and attributes to TWT Setup and Nudge").
 
-- Added a clarification to this README on how to use tcpdump to verify the result of certain tests.
-
 - Added instructions on how to test WPA3/SAE devices using either the hunting-and-pecking or hash-to-element method.
   This also implies that Management Frame Protection (MFP) is supported by the test tool.
+
+- Added a clarification to this README on how to use tcpdump to verify the result of certain tests.
 
 - Added the extra test `ping BP --bcast-ra --bcast-dst` to this README to be able to test for CVE-2020-26145
   against APs that cannot run tcpdump (with this test tcpdump has to be run on an independent connected client).
@@ -39,6 +39,9 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 - The python `requirements.txt` file now references a patched Scapy version to work around an
   [incompatibility](https://github.com/secdev/scapy/commit/46fa40fde4049ad7770481f8806c59640df24059) with Python 3.9.
+
+- Fixed the `ping-frag-sep` test. Previously it behaved like `ping-frag-sep --pn-per-qos`. Note that this test
+  is not used to detect vulnerabilities but only to better understand implementations.
 
 **Version 1.2 (15 November 2020)**:
 
@@ -660,9 +663,9 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
 ## 8.4. Mixed plain/encrypt attack (§6.3 -- CVE-2020-26147)
 
 - `ping I,E,E --amsdu`: This test sends a fragmented A-MSDU frame, which not all devices can properly receive.
-  This test is useful to determine the practical exploitability of the "Mixed plain/encrypt attack".
-  Summarized, if this tests succeeds, it's easier to attack the device if the second fragment can be sent
-  in plaintext (test `ping I,E,P`). See Section 6.3 of the paper for details.
+  It does not test for a vulnerability. Instead, this test is useful to determine the practical exploitability
+  of the "Mixed plain/encrypt attack". Namely, if this tests  succeeds, it's easier to attack the device if the
+  second fragment can be sent in plaintext (test `ping I,E,P`). See Section 6.3 of the paper for details.
 
 - `ping I,E,P,E` and `linux-plain 3`: If all the other mixed plain/encrypt attack tests didn't succeed, you
   can try these two extra tests as well. I think it's quite unlikely this will uncover a new vulnerability.

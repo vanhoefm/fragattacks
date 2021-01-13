@@ -59,7 +59,7 @@ def freebsd_encap_eapolmsdu(p, src, dst, payload):
 	p.addr1 = "ff:ff:ff:ff:ff:ff"
 
 	# Encapsulate EAPOL in malformed EAPOL/A-MSDU fragment
-	p.Reserved = 1
+	p.A_MSDU_Present = 1
 
 
 	p = p/freebsd_create_eapolmsdu(src, dst, payload)
@@ -624,7 +624,10 @@ class Station():
 			self.time_connected = None
 			self.handle_connected()
 		elif self.time_authdone != None and time.time() > self.time_authdone:
-			log(ERROR, "The 4-way handshake has timed out for an unknown reason.")
+			if self.options.freebsd_cache:
+				log(ERROR, "The 4-way handshake has timed out, perhaps due to usage of the --freebsd parameter.")
+			else:
+				log(ERROR, "The 4-way handshake has timed out for an unknown reason.")
 			self.time_authdone = None
 			self.stop_test()
 		elif self.test != None and self.test.timedout():

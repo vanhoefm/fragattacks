@@ -73,7 +73,7 @@ def prepare_tests(opt):
 		test = PingTest(REQ_ICMP,
 				[Action(Action.Connected, action=Action.GetIp),
 				 Action(Action.Connected, enc=True),
-				 Action(Action.Connected, enc=True, inc_pn=0)],
+				 Action(Action.Connected, enc=True)],
 				 separate_with=separator, opt=opt)
 
 	elif opt.testname in ["eapol-inject", "eapol-inject-large"]:
