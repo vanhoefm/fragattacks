@@ -529,20 +529,20 @@ In case the test tool doesn't appear to be working, check the following:
 
 8. If you are using a virtual machine, try to run the test tool from a live CD or USB instead.
 
-9. Confirm using a second monitor interface that no other frames are sent in between fragments.
-   For instance, I found that my Intel device sometimes sends Block Ack Response Action frames
-   between fragments, and this interfered with the defragmentation process of the device under test.
+9. Check that the tested device doesn't block ICMP ping requests. In case it doesn't reply to pings, you
+   can run tcpdump or wireshark on the device, or you can try any of the other methods listed in [No ICMP Support](#id-no-icmp).
 
-10. Check that you are using modified drivers if needed for your wireless network card.
-    If you updated your kernel, you will need to recompile and reinstall the drivers.
-
-11. Check that you are using modified firmware if needed for your wireless network card.
-
-12. Check that the tested device doesn't block ICMP ping requests. In case it doesn't reply to pings, you
-    can run tcpdump or wireshark on the device, or you can try any of the other methods listed in [No ICMP Support](#id-no-icmp).
-
-13. Run the tool with the extra parameter `--debug 2` to get extra debug output from wpa_supplicant or
+10. Run the tool with the extra parameter `--debug 2` to get extra debug output from wpa_supplicant or
     hostapd and from the test tool itself.
+
+11. Confirm using a second monitor interface that no other frames are sent in between fragments.
+    For instance, I found that my Intel device sometimes sends Block Ack Response Action frames
+    between fragments, and this interfered with the defragmentation process of the device under test.
+
+12. Double-check that you are using modified firmware if needed for your wireless network card. The test
+    tool already checks this automatically for `ath9k_htc` devices. The test tool also automatically checks
+    if you are using modified drivers, though it might be good to manually double-check this on your
+    specific Linux distribution.
 
 <a id="id-extended-tests"></a>
 # 8. Extended Vulnerability Tests
