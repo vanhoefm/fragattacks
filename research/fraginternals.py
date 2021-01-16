@@ -59,8 +59,7 @@ def freebsd_encap_eapolmsdu(p, src, dst, payload):
 	p.addr1 = "ff:ff:ff:ff:ff:ff"
 
 	# Encapsulate EAPOL in malformed EAPOL/A-MSDU fragment
-	p.A_MSDU_Present = 1
-
+	set_amsdu(p)
 
 	p = p/freebsd_create_eapolmsdu(src, dst, payload)
 	return p

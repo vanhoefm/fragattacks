@@ -58,12 +58,12 @@ class PingTest(Test):
 
 		if self.as_msdu == 1:
 			# Set the A-MSDU frame type flag in the QoS header
-			header.A_MSDU_Present = 1
+			set_amsdu(header)
 			# Encapsulate the request in an A-MSDU payload
 			request = create_msdu_subframe(station.mac, station.get_peermac(), request)
 		elif self.as_msdu == 2:
 			# Set A-MSDU flag but include a normal payload (fake A-MSDU)
-			header.A_MSDU_Present = 1
+			set_amsdu(header)
 
 		# Generate all the individual (fragmented) frames
 		num_frags = len(self.get_actions(Action.Inject))
@@ -237,7 +237,7 @@ class EapolAmsduTest(Test):
 		# Generate the single frame
 		header, request, check_fn = generate_request(station, self.ptype, dport=self.dport)
 		# Set the A-MSDU frame type flag in the QoS header
-		header.A_MSDU_Present = 1
+		set_amsdu(header)
 
 		# We can automatically detect the result if the last fragment was sent after a connected event.
 		# Note we might get a reply during a rekey handshake, and this will be handled properly.

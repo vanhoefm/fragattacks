@@ -42,7 +42,7 @@ class AmsduInject(Test):
 			p = header/LLC()/SNAP()/IP(dst="192.168.1.2", src="3.5.1.1")/TCP()/Raw(b"A" * 748)
 
 		p = p/create_msdu_subframe(src, dst, request, last=True)
-		p[Dot11QoS].A_MSDU_Present = 1
+		set_amsdu(p[Dot11QoS])
 
 		# Schedule transmission of frame
 		self.actions[0].frame = p
