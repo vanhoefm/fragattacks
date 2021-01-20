@@ -732,8 +732,9 @@ class Daemon(metaclass=abc.ABCMeta):
 				log(STATUS, "To ignore this warning and timeout add the parameter --no-drivercheck")
 				time.sleep(5)
 			elif FRAGVERSION != open("/sys/module/mac80211/parameters/fragattack_version").read().strip():
+				version = open("/sys/module/mac80211/parameters/fragattack_version").read().strip()
 				log(ERROR, f"This script has version {FRAGVERSION} but the modified drivers are version {version}.")
-				log(ERROR, f"Please recompile and reinstall the modified drivers (see the README for details).")
+				log(ERROR, f"Recompile and reinstall the modified drivers or add --no-drivercheck (see the README for details).")
 				quit(1)
 
 		# 1. Assign/create interfaces according to provided options
@@ -801,8 +802,15 @@ class Daemon(metaclass=abc.ABCMeta):
 
 	def connect_wpaspy(self):
 		# Wait until daemon started
-		while not os.path.exists("wpaspy_ctrl/" + self.nic_iface):
+		time_abort = time.time() + 10
+		while not os.path.exists("wpaspy_ctrl/" + self.nic_iface) and time.time() < time_abort:
 			time.sleep(0.1)
+
+		# Abort if daemon didn't start properly
+		if not os.path.exists("wpaspy_ctrl/" + self.nic_iface):
+			log(ERROR, "Unable to connect to control interface. Did hostap/wpa_supplicant start properly?")
+			log(ERROR, "Try recompiling them using ./build.sh and double-check client.conf and hostapd.conf.")
+			quit(1)
 
 		# Open the wpa_supplicant or hostapd control interface
 		try:

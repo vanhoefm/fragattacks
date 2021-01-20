@@ -50,8 +50,11 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 - Fixed injection of fragmented frames when using ath9k_htc dongles in combination with 802.11n.
 
-- The python `requirements.txt` file now references a patched scapy version to address an
-  [incompatibility](https://github.com/secdev/scapy/commit/46fa40fde4049ad7770481f8806c59640df24059) with Python 3.9.
+- The `pysetup.sh` script has been added to create the python virtual environment. This script also fixes
+  [a bug](https://github.com/secdev/scapy/commit/46fa40fde4049ad7770481f8806c59640df24059) in the scapy library
+  when used with Python 3.9.
+
+- The patched drivers have been updated to properly compile on Linux 5.9.0.
 
 - Fixed the `ping-frag-sep` test. Previously it behaved like `ping-frag-sep --pn-per-qos`. Note that this test
   is not used to detect vulnerabilities but only to better understand implementations.
@@ -99,24 +102,22 @@ sequence or fragment number of injected frames, or may reorder frames of differe
 interferes with the test tool (i.e. the tool might say a device is secure although it's not).
 I have confirmed that the following network cards work properly:
 
-|      Network Card      | USB | 5GHz |        mixed mode       |      injection mode     |      hwsim mode      |
-| ---------------------- | --- | ---- | ----------------------- | ----------------------- | -------------------- |
-| Technoethical N150 HGA | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_  |
-| TP-Link TL-WN722N v1.x | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_  |
-| Alfa AWUS036NHA        | Yes | No   | patched driver/firmware | patched driver/firmware | _under development_  |
-| Intel Wireless-AC 8265 | No  | Yes  | patched driver          | yes                     | _under development_  |
-| Intel Wireless-AC 3160 | No  | Yes  | patched driver          | yes                     | _under development_  |
-| Alfa AWUS036ACM        | Yes | Yes  | patched driver          | yes                     | _under development_  |
-| Netgear WN111v2        | Yes | No   | patched driver          | yes                     | _under development_  |
-| Alfa AWUS036ACH        | Yes | Yes  | **TODO**                | **TODO**                | _under development_  |
+|      Network Card      | USB | 5GHz |        mixed mode       |      injection mode     |
+| ---------------------- | --- | ---- | ----------------------- | ----------------------- |
+| Technoethical N150 HGA | Yes | No   | patched driver/firmware | patched driver/firmware |
+| TP-Link TL-WN722N v1.x | Yes | No   | patched driver/firmware | patched driver/firmware |
+| Alfa AWUS036NHA        | Yes | No   | patched driver/firmware | patched driver/firmware |
+| Intel Wireless-AC 8265 | No  | Yes  | patched driver          | yes                     |
+| Intel Wireless-AC 3160 | No  | Yes  | patched driver          | yes                     |
+| Alfa AWUS036ACM        | Yes | Yes  | patched driver          | yes                     |
+| Netgear WN111v2        | Yes | No   | patched driver          | yes                     |
+| Alfa AWUS036ACH        | Yes | Yes  | **TODO**                | **TODO**                |
 
-The three last colums signify:
+The three two colums signify:
 
 1. Mixed mode: whether the network card can be used in [mixed mode](#id-mixed-mode).
 
 2. Injection mode: whether the network card can be used as a second interface to inject frames in [injection mode](#id-injection-mode).
-
-3. Hwsim mode: whether the network card can be used in the experimental [hwsim mode](#id-hwsim-mode).
 
 _Yes_ indicates the card works out-of-the-box in the given mode. _Patched driver/firmware_
 means that the card is compatible when used with patched drivers and/or firmware.
@@ -170,10 +171,7 @@ Now clone this repository, build the tools, and configure a virtual python3 envi
 	# git clone https://github.com/vanhoefm/fragattack.git fragattack
 	cd fragattack/research
 	./build.sh
-	python3 -m venv venv
-	source venv/bin/activate
-	pip install wheel
-	pip install -r requirements.txt
+	./pysetup.sh
 
 The above instructions only have to be executed once. After pulling in new code using git you do
 have to execute `./build.sh` again.
