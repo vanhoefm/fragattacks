@@ -2,9 +2,10 @@
 
 # 1. Introduction
 
-The discovered vulnerabilities affect all Wi-Fi networks. A short summary of all vulnerabilities can be
-found [here](SUMMARY.md), although we also recommend reading the [paper](fragattacks.pdf). The resulting
-attacks are identical against WPA2 and WPA3 because their CCMP and GCMP encryption ciphers are identical.
+The discovered vulnerabilities affect all Wi-Fi networks. A short overview of all vulnerabilities can be
+found [here](SUMMARY.md) and a summary of resulting attacks and their preconditions can be found [here](attacks.pdf).
+We also recommend reading the [paper](fragattacks.pdf). Note that the attacks are identical against WPA2
+and WPA3 because their CCMP and GCMP encryption ciphers are identical.
 
 Older WPA networks by default use TKIP for encryption, and the applicability of the attacks against
 this cipher are discussed in the paper. To illustrate that Wi-Fi has been vulnerable since its creation,
@@ -20,12 +21,14 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 ## 2.2. Change log
 
-**Version 1.3 (12 January 2021)**:
+**Version 1.3 (20 January 2021)**:
 
 - This version is based on hostap commit `a337c1d7c` ("New TWT operations and attributes to TWT Setup and Nudge").
 
-- Added <a href="#id-wpa3-sae">instructions</a> on how to test WPA3/SAE devices using either the hunting-and-pecking or hash-to-element method.
-  This also implies that Management Frame Protection (MFP) is supported by the test tool.
+- Added an [overview](attacks.pdf) of resulting attacks and their preconditions.
+
+- Added <a href="#id-wpa3-sae">instructions</a> on how to test WPA3/SAE devices using either the hunting-and-pecking
+  or hash-to-element method. This also implies that Management Frame Protection (MFP) is supported by the test tool.
 
 - Added a clarification to this README on how to use tcpdump to verify the result of certain tests.
 

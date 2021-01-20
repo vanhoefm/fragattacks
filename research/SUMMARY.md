@@ -26,7 +26,7 @@
 
 - **CVE-2020-26139: Forwarding EAPOL frames even though the sender is not yet authenticated**: Vulnerable Access Points (APs) forward EAPOL frames to other clients even though the sender has not yet successfully authenticated to the AP. An adversary might be able to abuse this in projected Wi-Fi networks to launch denial-of-service attacks against connected clients, and this makes it easier to exploit other vulnerabilities in connected clients.
 
-- **CVE-2020-26141: Not verifying the TKIP MIC of fragmented frames**: Vulnerable Wi-Fi implementations do not verify the Message Integrity Check (authenticity) of fragmented TKIP frames. An adversary can abuse this to inject and possibly decrypt packets in WPA or WPA2 networks that support the TKIP data-confidentiality protocol.
-
 - **CVE-2020-26142: Processing fragmented frames as full frames**: Vulnerable WEP, WPA, WPA2, or WPA3 implementations treat fragmented frames as full frames. An adversary can abuse this to inject arbitrary network packets, independent of the network configuration.
+
+- **CVE-2020-26141: Not verifying the TKIP MIC of fragmented frames**: Vulnerable Wi-Fi implementations do not verify the Message Integrity Check (authenticity) of fragmented TKIP frames. An adversary can abuse this to inject and possibly decrypt packets in WPA or WPA2 networks that support the TKIP data-confidentiality protocol.
 
