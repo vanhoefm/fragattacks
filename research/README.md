@@ -11,7 +11,16 @@ Older WPA networks by default use TKIP for encryption, and the applicability of 
 this cipher are discussed in the paper. To illustrate that Wi-Fi has been vulnerable since its creation,
 the paper also briefly discusses the applicability of the attacks against WEP.
 
-## 2.1. Embargo notes
+## 1.1. Paper Clarifications
+
+- [This overview](attacks.pdf) contains a summary of attacks and their preconditions.
+
+- [These slides](amsduattack.pdf) clarify how the aggregation/A-MSDU attack (CVE-2020-24588) works in practice.
+  Performing this attack requires tricking the victim into connecting to a server of the adversary. This can be as simple
+  as tricking the victim into downloading an image from the adversary’s server. Note that (JavaScript) code execution on
+  the victim is not required.
+
+## 1.2. Embargo notes
 
 - This document refers to sections in **draft version 2 of the paper** "Fragment and Forge: Breaking Wi-Fi
   Through Frame Aggregation and Fragmentation". This paper can be found in the root directory of this repository.
@@ -19,13 +28,14 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 - For each implementation flaw we list a reference CVE identifier. There's currently an ongoing discussion
   whether these CVEs can be used across different codebases.
 
-## 2.2. Change log
+## 1.3. Change log
 
 **Version 1.3 (20 January 2021)**:
 
 - This version is based on hostap commit `a337c1d7c` ("New TWT operations and attributes to TWT Setup and Nudge").
 
-- Added an [overview](attacks.pdf) of resulting attacks and their preconditions.
+- Added an [overview](attacks.pdf) of attacks and their preconditions and created [these slides](aggregation.pdf)
+  to better illustrate how the aggregation attack (CVE-2020-24588) works in practice.
 
 - Added <a href="#id-wpa3-sae">instructions</a> on how to test WPA3/SAE devices using either the hunting-and-pecking
   or hash-to-element method. This also implies that Management Frame Protection (MFP) is supported by the test tool.
