@@ -174,7 +174,7 @@ Now clone this repository, build the tools, and configure a virtual python3 envi
 	./pysetup.sh
 
 The above instructions only have to be executed once. After pulling in new code using git you do
-have to execute `./build.sh` again.
+have to execute `./build.sh` and `./pysetup.sh` again.
 
 <a id="id-patched-drivers"></a>
 # 4. Patched Drivers
@@ -535,7 +535,7 @@ In case the test tool doesn't appear to be working, check the following:
 6. Make sure the AP being tested is using (AES-)CCMP as the encryption algorithm. Other encryption
    algorithms such as TKIP or GCMP are not supported.
 
-7. If you updated the code using git, execute `./build.sh` again (see [Prerequisites](#id-prerequisites)).
+7. If you updated the code using git, execute `./build.sh` and `./pysetup.sh` again (see [Prerequisites](#id-prerequisites)).
    In case the patched drivers got updated, remember to recompile them as well.
 
 8. If you are using a virtual machine, try to run the test tool from a live CD or USB instead.
