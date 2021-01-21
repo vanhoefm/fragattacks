@@ -34,7 +34,7 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 - This version is based on hostap commit `a337c1d7c` ("New TWT operations and attributes to TWT Setup and Nudge").
 
-- Added an [overview](attacks.pdf) of attacks and their preconditions and created [these slides](aggregation.pdf)
+- Added an [overview](attacks.pdf) of attacks and their preconditions and created [these slides](amsduattack.pdf)
   to better illustrate how the aggregation attack (CVE-2020-24588) works in practice.
 
 - Added <a href="#id-wpa3-sae">instructions</a> on how to test WPA3/SAE devices using either the hunting-and-pecking
