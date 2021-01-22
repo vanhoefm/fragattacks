@@ -321,7 +321,7 @@ device and are further discussed below the table.
 | <div align="center">*[Sanity checks](#id-test-sanity)*</div>
 | `ping`                           | Send a normal ping.
 | `ping I,E,E`                     | Send a normal fragmented ping.
-| <div align="center">*[Basic device behaviour](#id-test-sanity)*</div>
+| <div align="center">*[Basic device behaviour](#id-test-behaviour)*</div>
 | `ping I,E,E --delay 5`           | Send a normal fragmented ping with a 5 second delay between fragments.
 | `ping-frag-sep`                  | Send a normal fragmented ping with fragments separated by another frame.
 | `ping-frag-sep --pn-per-qos`     | Same as above, but also works if the target only accepts consecutive PNs.
@@ -360,11 +360,16 @@ receives a unique CVE for each affected codebase. We nevertheless recommend to a
 include) these reference CVEs as a way to easily refer to each type of discovered implementation flaw.
 
 <a id="id-test-sanity"></a>
-## 7.1. Sanity and implementation checks
+## 7.1. Sanity checks
 
-- `ping I,E,E`: This test should only fail if the tested device doesn't support fragmentation. In case
-  you encounter this, it is recommended to also run this test against a device that _does_ support
-  fragmentation to assure the test tool is properly injecting fragmented frames.
+- `ping`: This test must always succeed. If it fails, something is wrong with the test setup.
+
+- `ping I,E,E`: This test should succeed against all modern laptops, smartphones, and APs. If it fails,
+  something is wrong with the test setup. This test only fails if the tested device doesn't support receiving
+  fragmented frames, which can be the case on lightweight IoT devices and, for example, OpenBSD.
+
+<a id="id-test-behaviour"></a>
+## 7.2. Basic device behaviour
 
 - `ping I,E,E --delay 5`: This test is used to check the maximum accepted delay between two fragments.
   If this test doesn't work, try it again with `--delay 1.5` or lower. For instance, Linux removes fragments
@@ -384,7 +389,7 @@ include) these reference CVEs as a way to easily refer to each type of discovere
   secure. Unfortunately, many implementations don't verify whether PNs are consecutive.
 
 <a id="id-test-amsdu"></a>
-## 7.2. A-MSDU attack tests (§3 -- CVE-2020-24588)
+## 7.3. A-MSDU attack tests (§3 -- CVE-2020-24588)
 
 The test `ping I,E --amsdu` checks if an implementation supports non-SPP A-MSDUs, in which case it is likely
 vulnerable to one of the below two attacks. To prevent attacks, ideally the network must mandate the usage of
@@ -402,7 +407,7 @@ The last two tests are used to simulate our A-MSDU injection attack:
   succeeds, the impact of the attack is effectively identical to implementations that correctly parse such frames.
 
 <a id="id-test-mixedkey"></a>
-## 7.3. Mixed key attack tests (§4 -- CVE-2020-24587)
+## 7.4. Mixed key attack tests (§4 -- CVE-2020-24587)
 
 - When running the mixed key test against an AP, the AP must be configured to regularly  (e.g. every minute)
   renew the session key (PTK) by executing a new 4-way handshake. The tool will display
@@ -425,7 +430,7 @@ The last two tests are used to simulate our A-MSDU injection attack:
   tests listed in [Extended Vulnerability Tests](#id-extended-tests).
 
 <a id="id-test-cache"></a>
-## 7.4. Cache attack tests (§5 -- CVE-2020-24586)
+## 7.5. Cache attack tests (§5 -- CVE-2020-24586)
 
 - When testing an AP, the tool sends a first fragment, then tries to _reassociate_ with the AP, and finally
   sends the second fragment. However, not all APs properly support the reassociation process. In that case,
@@ -456,12 +461,12 @@ The last two tests are used to simulate our A-MSDU injection attack:
   is similar to knowing an implementation has a buffer overflow but not (yet) knowing how to exploit it.
 
 <a id="id-test-nonconsec"></a>
-## 7.5. Non-consecutive PNs attack (§6.2 -- CVE-2020-26146)
+## 7.6. Non-consecutive PNs attack (§6.2 -- CVE-2020-26146)
 
 In our experiments, this test only failed against Linux and against devices that don't support fragmentation.
 
 <a id="id-test-mixplainenc"></a>
-## 7.6. Mixed plain/encrypt attack (§6.3 -- CVE-2020-26147/26140/26143)
+## 7.7. Mixed plain/encrypt attack (§6.3 -- CVE-2020-26147/26140/26143)
 
 - `ping I,E,P` and `linux-plain`: if this test succeeds the resulting attacks are described in Section 6.3
   of the paper. Summarized, in combintation with the A-MSDU or cache vulnerability, it can be exploited to
@@ -478,7 +483,7 @@ In our experiments, this test only failed against Linux and against devices that
   Wi-Fi network, allowing trivial packet injection (CVE-2020-26143).
 
 <a id="id-test-broadcastfrag"></a>
-## 7.7. Broadcast fragment attack tests (§6.4 -- CVE-2020-26145)
+## 7.8. Broadcast fragment attack tests (§6.4 -- CVE-2020-26145)
 
 The following two tests send broadcast frames, which are not automatically retransmitted, and it is therefore
 recommended to **execute them several times**. This is because background noise may prevent the tested devices
@@ -496,7 +501,7 @@ from receiving the injected broadcast frame:
   mainly clients were affected.
 
 <a id="id-test-cloackamsdu"></a>
-## 7.8. A-MSDU EAPOL attack tests (§6.5 -- CVE-2020-26144)
+## 7.9. A-MSDU EAPOL attack tests (§6.5 -- CVE-2020-26144)
 
 - `eapol-amsdu I,P`: This is the standard test for the implementation-specific vulnerability discussed in
   Section 6.5 of the paper. Both clients and APs can be vulnerable. Its result is checked automatically by
@@ -514,7 +519,7 @@ from receiving the injected broadcast frame:
   of the attack is identical to implementations that correctly parse such frames (for details see Section 3.6 and
   6.8 in the paper).
 
-## 7.9. Troubleshooting checklist
+## 7.10. Troubleshooting checklist
 
 In case the test tool doesn't appear to be working, check the following:
 
