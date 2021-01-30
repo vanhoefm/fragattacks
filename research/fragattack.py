@@ -164,7 +164,15 @@ def args2msdu(args):
 
 	return None
 
+def get_expected_scapy_ver():
+	for line in open("requirements.txt"):
+		if line.startswith("scapy=="):
+			return line[7:].strip()
+	return None
+
 if __name__ == "__main__":
+	log(STATUS, f"This is fragattack version {FRAGVERSION}.")
+
 	parser = argparse.ArgumentParser(description=f"Test for fragmentation vulnerabilities (version {FRAGVERSION}).")
 	parser.add_argument('iface', help="Interface to use for the tests.")
 	parser.add_argument('testname', help="Name or identifier of the test to run.")
@@ -207,6 +215,12 @@ if __name__ == "__main__":
 	parser.add_argument('--stay-up', default=False, action='store_true', help="Don't quit when test has finished.")
 	options = parser.parse_args()
 
+	# Check if we're using the expected scapy version
+	expected_ver = get_expected_scapy_ver()
+	if expected_ver!= None and scapy.VERSION != expected_ver:
+		log(WARNING, f"You are using scapy version {scapy.VERSION} instead of the expected {expected_ver}")
+		log(WARNING, "Are you executing the script from inside the correct python virtual environment?")
+
 	# Default value for options that should not be command line parameters
 	options.inject_mf_workaround = False
 
@@ -241,7 +255,6 @@ if __name__ == "__main__":
 	change_log_level(-options.debug)
 
 	# Now start the tests --- TODO: Inject Deauths before connecting with client...
-	log(STATUS, f"This is fragattack version {FRAGVERSION}.")
 	if options.ap:
 		daemon = Authenticator(options)
 	else:

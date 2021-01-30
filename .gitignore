@@ -6,3 +6,6 @@ wpaspy/build
 **/parallel-vm.log
 tags
 build/
+*.d
+*.o
+venv/
