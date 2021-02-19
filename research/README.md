@@ -517,7 +517,7 @@ from receiving the injected broadcast frame:
   incorrectly process A-MSDU frames whose first 6 bytes also equal a valid RFC1042 header for EAPOL. To test these
   implementations, you have to use the `eapol-amsdu-bad` test variant. Note that if this tests succeeds, the impact
   of the attack is identical to implementations that correctly parse such frames (for details see Section 3.6 and
-  6.8 in the paper).
+  6.6 in the paper).
 
 ## 7.10. Troubleshooting checklist
 
@@ -735,7 +735,7 @@ command, and listen for broadcast Wi-Fi frames on a second device that is connec
   device. If the AP forwards the EAPOL frame to the second device, the AP is considered vulnerable. To confirm if the AP forwards
   the EAPOL frame you must run tcpdump or wireshark on the second device. You can use the wireshark filter `frame contains "forwarded_data"`
   when monitoring decrypted traffic on the wireless interface of the second device (or the tcpdump filter `ether proto 0x888e`
-  to monitor all EAPOL frames). See Section 6.4 of the paper for the details and impact of this.
+  to monitor all EAPOL frames). See Section 6.6 of the paper for the details and impact of this.
 
 - `eapol-inject-lage 00:11:22:33:44:55`: In case the above `eapol-inject` test succeeds, you can also try `eapol-inject-large` to see
   if this vulnerability can be abused to force the transmission of encrypted fragments. You again have to use tcpdump or wireshark
@@ -746,7 +746,7 @@ command, and listen for broadcast Wi-Fi frames on a second device that is connec
 ## 8.8. No fragmentation support attack test (§6.8 -- CVE-2020-26142)
 
 - `ping I,D,E`: If this test succeeds, the client or AP doesn't support (de)fragmentation, but is still vulnerable to attacks.
-  The problem is that the receiver treats the _last_ fragment as a full frame. See Section 6.6 in the paper for details and how
+  The problem is that the receiver treats the _last_ fragment as a full frame. See Section 6.8 in the paper for details and how
   this can be exploited.
 
 - `ping I,E,D`: If this test succeeds, then the client or AP treats the _first_ fragment as a full frame. Although this behaviour
