@@ -11,9 +11,11 @@ Older WPA networks by default use TKIP for encryption, and the applicability of 
 this cipher are discussed in the paper. To illustrate that Wi-Fi has been vulnerable since its creation,
 the paper also briefly discusses the applicability of the attacks against WEP.
 
+<a id="id-paper-clarifications"></a>
 ## 1.1. Paper Clarifications
 
-- [This overview](attacks.pdf) contains a summary of attacks and their preconditions.
+- [This attack overview](attacks.pdf) contains a summary of attacks and their preconditions. It also contains
+  extra examples on how an adversary might abuse packet injection vulnerabilities in practice.
 
 - [These slides](amsduattack.pdf) clarify how the aggregation/A-MSDU attack (CVE-2020-24588) works in practice.
   Performing this attack requires tricking the victim into connecting to a server of the adversary. This can be as simple
@@ -22,13 +24,31 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 ## 1.2. Embargo notes
 
-- This document refers to sections in **draft version 2 of the paper** "Fragment and Forge: Breaking Wi-Fi
+- This document refers to sections in **draft version 3 of the paper** "Fragment and Forge: Breaking Wi-Fi
   Through Frame Aggregation and Fragmentation". This paper can be found in the root directory of this repository.
 
 - For each implementation flaw we list a reference CVE identifier. There's currently an ongoing discussion
   whether these CVEs can be used across different codebases.
 
 ## 1.3. Change log
+
+**Version 1.3.1 (1 March 2021)**:
+
+- Added the test [`ping BP [--bcast-dst]`](#id-extended-bcast-check-ping-bp) to this README. It injects a plaintext ping
+  while connecting (i.e. during the 4-way handshake). Both clients and APs can be vulnerable to this attack.
+
+- Updated the [attack overview](#id-paper-clarifications) with new examples on how packet injection vulnerabilities
+  can be abused in practice. This includes techniques to trick IPv4-only clients into using a malicious DNS server
+  and techniques to directly communicate with devices behind a NAT/firewall (to e.g. exploit local services).
+
+- Clarified that [broadcast fragment tests](#id-extended-bcast-check) can be performed against both clients and APs.
+
+- The test tool will now check whether the expected version of the Python Scapy library has been loaded.
+
+- Fixed some references to the paper in this README (now properly references sections 6.4, 6.6, and 6.8).
+
+- Updated to draft version 3 of the paper. There are no major changes compared to draft version 2, only minor textual
+  and structural tweaks. Content-wise this is now the final version of the paper.
 
 **Version 1.3 (20 January 2021)**:
 
@@ -487,11 +507,11 @@ In our experiments, this test only failed against Linux and against devices that
 
 The following two tests send broadcast frames, which are not automatically retransmitted, and it is therefore
 recommended to **execute them several times**. This is because background noise may prevent the tested devices
-from receiving the injected broadcast frame:
+from receiving the injected broadcast frame. In my experiments, mainly clients were affected (out of the tested
+APs only Free/NetBSD ones were affected).
 
 - `ping I,D,P --bcast-ra`: Send a unicast ping in a plaintext broadcasted 2nd fragment once connected. The result
-  of this variant of the attack is checked automatically by the test tool. In my experiments mainly clients were
-  affected.
+  of this variant of the attack is checked automatically by the test tool.
 
 - `ping D,BP --bcast-ra`: Here the above frame is sent while connecting to the network (i.e. during the 4-way handshake).
   This is important because several clients and APs are only vulnerable before completing the 4-way handshake. To
@@ -597,6 +617,7 @@ All commands work against both clients and APs unless noted otherwise.
 | <div align="center">*[Broadcast checks (extensions of §6.4)](#id-extended-bcast-check)*</div>
 | `ping I,P --bcast-ra`                  | Ping in a plaintext broadcast frame after 4-way HS.
 | `ping BP --bcast-ra [--bcast-dst]`     | Ping in plaintext broadcast frame during 4-way HS (use tcpdump).
+| `ping BP [--bcast-dst]`                | Ping in a plaintext frame during the 4-way handshake (use tcpdump).
 | `eapfrag BP,BP`                        | Experimental broadcast fragment attack (use tcpdump).
 | <div align="center">*[A-MSDU EAPOL attack (§6.5)](#id-extended-cloackamsdu)*</div>
 | `eapol-amsdu[-bad] BP --bcast-dst`     | Same as `eapol-amsdu BP` but easier to verify against APs (use tcpdump).
@@ -687,26 +708,36 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
   can try these two extra tests as well. I think it's quite unlikely this will uncover a new vulnerability.
 
 <a id="id-extended-bcast-check"></a>
-## 8.5. Broadcast fragment attack tests (§6.4 -- CVE-2020-26145)
+## 8.5. Broadcast fragment attack tests (extensions of §6.4)
 
-- Because all these tests send broadcast frames, which are not automatically retransmitted, it is recommended
-  to **execute these tests several times**. This is because background noise may prevent the tested devices
-  from receiving the injected broadcast frame. So far only clients were affected by these attacks. Additionally,
-  most clients are only vulnerble while connecting to the network (i.e. during the execution of the 4-way handshake).
+Most of the following tests send broadcast frames, which are not automatically retransmitted, and it is therefore
+recommended to **execute them several times**. This is because background noise may prevent the tested devices
+from receiving the injected broadcast frame. In my experiments, mainly clients were affected. Most clients are
+only vulnerable while connecting to the network (i.e. during the execution of the 4-way handshake).
 
-- `ping I,P --bcast-ra`: this sends a unicast ICMP ping request inside a plaintext broadcast Wi-Fi frame. This test
-  only makes sense against a client.
+- `ping I,P --bcast-ra`: this sends a unicast ICMP ping request inside a plaintext broadcast Wi-Fi frame (CVE-2020-26145).
+  This test can be performed against both clients and APs.
 
 - `ping BP --bcast-ra`: similar to the above test `ping I,P --bcast-ra`, but the ping is sent before the client has
-  authenticated with the network (i.e. during the execution of the 4-way handshake). You must run tcpdump or wireshark
-  to check if the client accepts the frame. In tcpdump you can use the filter `icmp` and in wireshark you can also use
-  the filter `frame contains "test_ping_icmp"` to more easily detect this ping request.
+  authenticated with the network, i.e., during the execution of the 4-way handshake (CVE-2020-26145). You must run tcpdump
+  or wireshark to check if the client accepts the frame. In tcpdump you can use the filter `icmp` and in wireshark you
+  can also use the filter `frame contains "test_ping_icmp"` to more easily detect this ping request.
 
 - `ping BP --bcast-ra --bcast-dst`: this test is the same as the previous one, but is useful if you cannot run tcpdump
   on the target AP. Note that this test is only meaningfull against APs. The extra `--bcast-dst` parameter in this test
   causes a vulnerable AP to broadcast the injected ping request to all connected clients. In other words, to check if an
   AP is vulnerable, execute this command, and listen for broadcast Wi-Fi frames on a second device that is connected to
   the AP by using the filter `icmp` or `frame contains "test_ping_icmp"`.
+
+<a id="id-extended-bcast-check-ping-bp"></a>
+
+- `ping BP [--bcast-dst]`: this is a variant of the above two tests, except that the ping request is now send in a
+  plaintext unicast frame instead of a broadcast one (no CVE is allocated yet - it's related to CVE-2020-26145). This test
+  must be performed against both clients and APs. The ping is sent before the client has authenticated with the network
+  (i.e. during the execution of the 4-way handshake), meaning you must run tcpdump or wireshark to check if the device
+  accepts this frame. Alternatively, when testing APs, you can add the `--bcast-dst` parameter similar to the above test,
+  and then use tcpdump or wireshark on a second device that is connected to the AP by using the filter `icmp` or
+  `frame contains "test_ping_icmp"`.
 
 - `eapfrag BP,BP`: this is a specialization of the above two tests that is performed before the client has authenticated.
   It is a _very experimental_ attack based on the analysis of leaked code. It first sends a plaintext fragment that starts
@@ -926,7 +957,7 @@ tcpdump on it. In particular, the broadcast fragment attack tests (CVE-2020-2614
 tests (CVE-2020-26144) can be performed without running tcpdump on the device under test. Instead, tcpdump has
 to run on another client connected to the AP. Concretely, the following commands can be used:
 
-- `ping I,P --bcast-ra` and `ping BP --bcast-ra --bcast-dst`
+- `ping I,P --bcast-ra --bcast-dst` and `ping BP --bcast-ra --bcast-dst`
 
 - `eapol-amsdu BP --bcast-dst` and `eapol-amsdu-bad BP --bcast-dst`
 
