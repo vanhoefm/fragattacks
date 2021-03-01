@@ -2,6 +2,9 @@
 
 # 1. Introduction
 
+This repository contains the **FragAttack** tool. It can test for **FR**agmentation and **AG**gregation
+Attacks (FragAttacks) against protected Wi-Fi networks.
+
 The discovered vulnerabilities affect all Wi-Fi networks. A short overview of all vulnerabilities can be
 found [here](SUMMARY.md) and a summary of resulting attacks and their preconditions can be found [here](attacks.pdf).
 We also recommend reading the [paper](fragattacks.pdf). Note that the attacks are identical against WPA2
@@ -31,6 +34,10 @@ the paper also briefly discusses the applicability of the attacks against WEP.
   whether these CVEs can be used across different codebases.
 
 ## 1.3. Change log
+
+**Version ? (? 2021)**:
+
+- Minor fixes in this README.
 
 **Version 1.3.1 (1 March 2021)**:
 
@@ -275,7 +282,7 @@ firmware. See [Patched Drivers](#id-patched-drivers) on how to install patched d
 [Supported Network Cards](#id-supported-cards) for compatible network cards. Execute the test
 tool in this mode using:
 
-	./fragattack wlan0 [--ap] $COMMAND
+	./fragattack.py wlan0 [--ap] $COMMAND
 
 Possible values of `$COMMAND` are listed in [testing for vulnerabilities](#id-testing-for-flaws)
 and [extended vulnerability tests](#id-extended-tests).
@@ -291,7 +298,7 @@ This mode requires two wireless network cards: one will act as an AP or the clie
 one will be used to inject frames. The advantage is that this mode way work without requiring patched
 drivers. Execute the test tool in this mode using:
 
-	./fragattack wlan0 --inject wlan1 [--ap] $COMMAND
+	./fragattack.py wlan0 --inject wlan1 [--ap] $COMMAND
 
 Here interface wlan0 will act as a legitimate client or AP, and wlan1 will be used to inject
 frames. For wlan0, any card that supports normal client or AP mode on Linux can be used. For
@@ -811,8 +818,8 @@ it cannot test whether the firmware or wireless chip itself overwrites fields.
 To test whether a network card properly injects frames in _mixed mode_, which is the mode I
 recommend to use, you can execute the following two commands:
 
-	./fragattack wlan0 ping --inject-test wlan1
-	./fragattack wlan0 ping --inject-test wlan1 --ap
+	./fragattack.py wlan0 ping --inject-test wlan1
+	./fragattack.py wlan0 ping --inject-test wlan1 --ap
 
 Here we test whether `wlan0` properly injects frames by monitoring the injected frames using the
 second network card `wlan1`. The first command tests if frames are properly injected when using
@@ -823,14 +830,14 @@ for configuring the connection setup of the client and AP).
 
 If you also want to test the retransmission behaviour of `wlan0` in mixed mode you can execute:
 
-	./fragattack wlan0 ping --inject-test-postauth wlan1
-	./fragattack wlan0 ping --inject-test-postauth wlan1 --ap
+	./fragattack.py wlan0 ping --inject-test-postauth wlan1
+	./fragattack.py wlan0 ping --inject-test-postauth wlan1 --ap
 
 In case you do not have a second network card, you can execute a partial mixed mode injection test
 using:
 
-	./fragattack wlan0 ping --inject-test[-postauth] self
-	./fragattack wlan0 ping --inject-test[-postauth] self --ap
+	./fragattack.py wlan0 ping --inject-test[-postauth] self
+	./fragattack.py wlan0 ping --inject-test[-postauth] self --ap
 
 Unfortunately, the above tests can only test if the kernel overwrites fields of injected frames,
 it cannot test whether the firmware or wireless chip itself overwrites fields.
@@ -1045,7 +1052,7 @@ Here wlan0 refers to the _real_ network card (not an interface created by `hwsim
 client, do do not first have to configure the channel (it is taken from `hostapd.conf`). You can now
 start the test tool as follows:
 
-	./fragattack wlan0 --hwsim wlan1,wlan2 [--ap] $COMMAND
+	./fragattack.py	 wlan0 --hwsim wlan1,wlan2 [--ap] $COMMAND
 
 After the tool executed, you can directly run it again with a new `$COMMAND`.
 

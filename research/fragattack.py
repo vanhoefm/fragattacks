@@ -171,7 +171,7 @@ def get_expected_scapy_ver():
 	return None
 
 if __name__ == "__main__":
-	log(STATUS, f"This is fragattack version {FRAGVERSION}.")
+	log(STATUS, f"This is FragAttack version {FRAGVERSION}.")
 
 	parser = argparse.ArgumentParser(description=f"Test for fragmentation vulnerabilities (version {FRAGVERSION}).")
 	parser.add_argument('iface', help="Interface to use for the tests.")
