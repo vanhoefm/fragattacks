@@ -2,14 +2,14 @@
 
 # 1. Introduction
 
-This repository contains the **FragAttack** tool. It can test for **FR**agmentation and **AG**gregation
-Attacks (FragAttacks) against protected Wi-Fi networks.
+This repository contains the **FragAttack** tool. It can test Wi-Fi clients and access points for **FR**agmentation
+and **AG**gregation Attacks (FragAttacks). These vulnerabilities affect _all_ protected Wi-Fi networks. You can
+view a summary of the [root cause and impact](fragattacks-slides-summary.pdf) of each vulnerability. There is also
+an overview of all [assigned CVEs](SUMMARY.md), a [2-page summary](attacks.pdf) of resulting attacks and preconditions,
+and you can view the presentation [handouts](fragattacks-slides.pdf). For more details see the USENIX Security
+**[research paper](fragattacks.pdf)**.
 
-The discovered vulnerabilities affect all Wi-Fi networks. A short overview of all vulnerabilities can be
-found [here](SUMMARY.md) and a summary of resulting attacks and their preconditions can be found [here](attacks.pdf).
-We also recommend reading the [paper](fragattacks.pdf). Note that the attacks are identical against WPA2
-and WPA3 because their CCMP and GCMP encryption ciphers are identical.
-
+The attacks are identical against WPA2 and WPA3 because their CCMP and GCMP encryption ciphers are identical.
 Older WPA networks by default use TKIP for encryption, and the applicability of the attacks against
 this cipher are discussed in the paper. To illustrate that Wi-Fi has been vulnerable since its creation,
 the paper also briefly discusses the applicability of the attacks against WEP.
@@ -35,9 +35,15 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 ## 1.3. Change log
 
-**Version ? (? 2021)**:
+**Version 1.3.2 (8 March 2021)**:
 
-- Minor fixes in this README.
+- Added presentation [handouts](#fragattacks-slides.pdf) and a [summary](#fragattacks-slides-summary.pdf)
+  of each vulnerability's root cause and impact.
+
+- Updated this README to [explain](#id-test-sanity) that the parameter `--icmp-size 100` or similar can be added to
+  all tests that send fragmented frames if the device under test only accepts fragments of a certain minimum size.
+
+- Fixed minor typos in this README.
 
 **Version 1.3.1 (1 March 2021)**:
 
@@ -392,8 +398,10 @@ include) these reference CVEs as a way to easily refer to each type of discovere
 - `ping`: This test must always succeed. If it fails, something is wrong with the test setup.
 
 - `ping I,E,E`: This test should succeed against all modern laptops, smartphones, and APs. If it fails,
-  something is wrong with the test setup. This test only fails if the tested device doesn't support receiving
-  fragmented frames, which can be the case on lightweight IoT devices and, for example, OpenBSD.
+  something is likely wrong with the test setup. Try adding the `--icmp-size 100` parameter as a fix. If
+  it works with this extra parameter, you have to execute all other tests with this extra parameter as well.
+  The only time I encountered this test failing for valid reasons is when the tested device doesn't support
+  receiving fragmented frames, which can be the case on lightweight IoT devices and, for example, OpenBSD.
 
 <a id="id-test-behaviour"></a>
 ## 7.2. Basic device behaviour
