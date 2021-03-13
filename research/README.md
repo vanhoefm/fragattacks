@@ -4,7 +4,7 @@
 
 This repository contains the **FragAttack** tool. It can test Wi-Fi clients and access points for **FR**agmentation
 and **AG**gregation Attacks (FragAttacks). These vulnerabilities affect _all_ protected Wi-Fi networks. You can
-view a summary of the [root cause and impact](fragattacks-slides-summary.pdf) of each vulnerability. There is also
+view a _summary_ of the [root cause and impact](fragattacks-slides-summary.pdf) of each vulnerability. There is also
 an overview of all [assigned CVEs](SUMMARY.md), a [2-page summary](attacks.pdf) of resulting attacks and preconditions,
 and you can view the presentation [handouts](fragattacks-slides.pdf). For more details see the USENIX Security
 **[research paper](fragattacks.pdf)**.
@@ -554,43 +554,47 @@ APs only Free/NetBSD ones were affected).
   of the attack is identical to implementations that correctly parse such frames (for details see Section 3.6 and
   6.6 in the paper).
 
+<a id="id-troubleshooting"></a>
 ## 7.10. Troubleshooting checklist
 
 In case the test tool doesn't appear to be working, check the following:
 
 1. Check that no other process is using the network card (e.g. kill your network manager).
 
-2. Assure the device you are testing doesn't enter a sleep state (causing it to miss injected frames).
+2. If everything worked previously, try unplugging your Wi-Fi dongle, restart your computer or virtual
+   machine, and then try again.
+
+3. Assure the device you are testing doesn't enter a sleep state (causing it to miss injected frames).
    I recommend running the test tool in [mixed mode](#id-mixed-mode) since this better handles clients
    that may go into a sleep state.
 
-3. Run the [injection tests](#id-injection-tests) to make sure injection is working properly.
+4. Run the [injection tests](#id-injection-tests) to make sure injection is working properly.
 
-4. Check that you machine isn't generating background traffic that interferes with the tests. In
+5. Check that you machine isn't generating background traffic that interferes with the tests. In
    particular, disable networking in your OS, manually kill your DHCP client/server, etc. See
    also [Before every usage](#id-before-every-usage).
 
-5. Confirm that you are connecting to the correct network. Double-check `client.conf`.
+6. Confirm that you are connecting to the correct network. Double-check `client.conf`.
 
-6. Make sure the AP being tested is using (AES-)CCMP as the encryption algorithm. Other encryption
+7. Make sure the AP being tested is using (AES-)CCMP as the encryption algorithm. Other encryption
    algorithms such as TKIP or GCMP are not supported.
 
-7. If you updated the code using git, execute `./build.sh` and `./pysetup.sh` again (see [Prerequisites](#id-prerequisites)).
+8. If you updated the code using git, execute `./build.sh` and `./pysetup.sh` again (see [Prerequisites](#id-prerequisites)).
    In case the patched drivers got updated, remember to recompile them as well.
 
-8. If you are using a virtual machine, try to run the test tool from a live CD or USB instead.
+9. If you are using a virtual machine, try to run the test tool from a live CD or USB instead.
 
-9. Check that the tested device doesn't block ICMP ping requests. In case it doesn't reply to pings, you
-   can run tcpdump or wireshark on the device, or you can try any of the other methods listed in [No ICMP Support](#id-no-icmp).
+10. Check that the tested device doesn't block ICMP ping requests. In case it doesn't reply to pings, you
+    can run tcpdump or wireshark on the device, or you can try any of the other methods listed in [No ICMP Support](#id-no-icmp).
 
-10. Run the tool with the extra parameter `--debug 2` to get extra debug output from wpa_supplicant or
+11. Run the tool with the extra parameter `--debug 2` to get extra debug output from wpa_supplicant or
     hostapd and from the test tool itself.
 
-11. Confirm using a second monitor interface that no other frames are sent in between fragments.
+12. Confirm using a second monitor interface that no other frames are sent in between fragments.
     For instance, I found that my Intel device sometimes sends Block Ack Response Action frames
     between fragments, and this interfered with the defragmentation process of the device under test.
 
-12. Double-check that you are using modified firmware if needed for your wireless network card. The test
+13. Double-check that you are using modified firmware if needed for your wireless network card. The test
     tool already checks this automatically for `ath9k_htc` devices. The test tool also automatically checks
     if you are using modified drivers, though it might be good to manually double-check this on your
     specific Linux distribution.
