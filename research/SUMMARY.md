@@ -10,13 +10,13 @@
 
 ## Common Implementation Vulnerabilities
 
-- **CVE-2020-26146: Reassembling encrypted fragments with non-consecutive packet numbers**: Vulnerable WPA, WPA2, or WPA3 implementations reassemble fragments with non-consecutive packet numbers. An adversary can abuse this to exfiltrate selected fragments. This vulnerability is exploitable when another device sends fragmented frames and the WEP, CCMP, or GCMP data-confidentiality protocol is used. Note that WEP is vulnerable to this attack by design.
-
-- **CVE-2020-26147: Reassembling mixed encrypted/plaintext fragments**: Vulnerable WEP, WPA, WPA2, or WPA3 implementations reassemble fragments even though some of them were sent in plaintext. This vulnerability can be abused to inject packets and/or exfiltrate selected fragments when another device sends fragmented frames and the WEP, CCMP, or GCMP data-confidentiality protocol is used.
-
 - **CVE-2020-26145: Accepting plaintext broadcast fragments as full frames (in an encrypted network)**: Vulnerable WEP, WPA, WPA2, or WPA3 implementations accept second (or subsequent) broadcast fragments even when sent in plaintext and process them as full unfragmented frames. An adversary can abuse this to inject arbitrary network packets independent of the network configuration.
 
 - **CVE-2020-26144: Accepting plaintext A-MSDU frames that start with an RFC1042 header with EtherType EAPOL (in an encrypted network)**: Vulnerable Wi-Fi implementations accept plaintext A-MSDU frames as long as the first 8 bytes correspond to a valid RFC1042 (i.e., LLC/SNAP) header for EAPOL. An adversary can abuse this to inject arbitrary network packets independent of the network configuration.
+
+- **CVE-2020-26146: Reassembling encrypted fragments with non-consecutive packet numbers**: Vulnerable WPA, WPA2, or WPA3 implementations reassemble fragments with non-consecutive packet numbers. An adversary can abuse this to exfiltrate selected fragments. This vulnerability is exploitable when another device sends fragmented frames and the WEP, CCMP, or GCMP data-confidentiality protocol is used. Note that WEP is vulnerable to this attack by design.
+
+- **CVE-2020-26147: Reassembling mixed encrypted/plaintext fragments**: Vulnerable WEP, WPA, WPA2, or WPA3 implementations reassemble fragments even though some of them were sent in plaintext. This vulnerability can be abused to inject packets and/or exfiltrate selected fragments when another device sends fragmented frames and the WEP, CCMP, or GCMP data-confidentiality protocol is used.
 
 ## Other Implementation Vulnerabilities
 
