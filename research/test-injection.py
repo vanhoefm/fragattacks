@@ -30,7 +30,7 @@ def main():
 		elif chan_inject != chan_monitor:
 			log(ERROR, "Both devices are not on the same channel")
 			quit(1)
-		peermac = get_mac_address(options.monitor)
+		peermac = get_macaddress(options.monitor)
 
 	log(STATUS, "Performing injection tests")
 	try:
