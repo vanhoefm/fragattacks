@@ -35,6 +35,10 @@ the paper also briefly discusses the applicability of the attacks against WEP.
 
 ## 1.3. Change log
 
+**Version ? (? 2021)**:
+
+- Updated the modified drivers so they compile on Linux kernel 5.10.
+
 **Version 1.3.2 (8 March 2021)**:
 
 - Added presentation [handouts](#fragattacks-slides.pdf) and a [summary](#fragattacks-slides-summary.pdf)
