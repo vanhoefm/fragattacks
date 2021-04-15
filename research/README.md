@@ -698,13 +698,13 @@ Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the fo
 
 - `ping I,F,BE,AE --freebsd`: This essentially performs the rekey handshake against a FreeBSD implementation, or
   a driver that borrows code from FreeBSD, without affecting the defragmentation process of data frames. See
-  Appendix F in the paper for details.
+  Appendix E in the paper for details.
 
 <a id="id-extended-cache"></a>
 ## 8.3. Cache attack tests (§5 -- CVE-2020-24586)
 
 - `ping I,E,R,AE --freebsd --full-reconnect`: This test can be used to check if a FreeBSD AP, or a driver that
-  borrows code from FreeBSD, is vulnerable to a cache attack. See Appendix F in the paper for details on how this
+  borrows code from FreeBSD, is vulnerable to a cache attack. See Appendix E in the paper for details on how this
   test works. You should also try this test without the `--full-reconnect` parameter. The test also works against
   clients, but these are unlikely to be affected.
 
