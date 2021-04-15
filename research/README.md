@@ -1,4 +1,4 @@
-# <div align="center">Fragmentation & Aggregation Attacks</div>
+# <div align="center">FragAttacks: Fragmentation & Aggregation Attacks</div>
 
 # 1. Introduction
 
@@ -754,7 +754,7 @@ only vulnerable while connecting to the network (i.e. during the execution of th
 
 <a id="id-extended-bcast-check-ping-bp"></a>
 
-- `ping BP [--bcast-dst]`: this is a variant of the above two tests, except that the ping request is now send in a
+- `ping BP [--bcast-dst]`: this is a variant of the above two tests, except that the ping request is now sent in a
   plaintext unicast frame instead of a broadcast one (no CVE is allocated yet - it's related to CVE-2020-26145). This test
   must be performed against both clients and APs. The ping is sent before the client has authenticated with the network
   (i.e. during the execution of the 4-way handshake), meaning you must run tcpdump or wireshark to check if the device
