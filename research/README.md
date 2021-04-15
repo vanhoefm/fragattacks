@@ -671,13 +671,15 @@ understand how the tested device handles A-MSDU frames:
 
 Most devices I tested are vulnerable to mixed key attacks. In case the normal mixed key attack tests indicate
 that a device is not vulnerable, but the test `ping-frag-sep` does succeed, it is highly recommended to try
-these alternative mixed key attack tests. Some remarks:
+these alternative mixed key attack tests.
 
-- `--rekey-req`: When testing an AP, you can add the `--rekey-req` parameter to any of the mixed key attack tests to
-  actively request a rekey handshake. A low number of APs will then perform the rekey handshake. Most APs will ignore
-  this request though, and have to be explicitly configured to regularly renew the session key (PTK).
+As a general remark, when testing an AP, you can add the `--rekey-req` parameter to any of the mixed key attack tests to
+actively request a rekey handshake. A low number of APs will then perform the rekey handshake. Most APs will ignore
+this request though, and have to be explicitly configured to regularly renew the session key (PTK).
 
-- `ping I,E,F,AE` and `ping I,F,BE,E`: These are fairly straightforward mixed key attack tests where both fragments are
+Some notes regarding the tests:
+
+- `ping I,F,BE,E` and `ping I,E,F,AE`: These are fairly straightforward mixed key attack tests where both fragments are
   injected at different times.
 
 - `ping I,E,F,AE --rekey-plain`: Some drivers (e.g. MediaTek) will perform the rekey handshake in plaintext. To test
@@ -690,9 +692,10 @@ these alternative mixed key attack tests. Some remarks:
   a pairwise session rekey. To reliably test these clients, add the `--rekey-early-install` parameter. This test
   is not meaningfull against APs.
 
-- `ping I,E,F,E [--rekey-pl] [--rekey-req]`: This test variant is the same as the above four, except that the second
-  fragment is send 1 second after the 4-way handshake. This can be important because in a low number of devices there
-  is a small delay the new key is installed. Note that `--rekey-pl` is a shorthand of `--rekey-plain`.
+- `ping I,E,F,E [--rekey-pl] [--rekey-req]`: This test variant is the same as the previous `ping I,E,F,AE *` tests,
+  except that the second fragment is send 1 second after the 4-way handshake. This can be important because in a
+  low number of devices there is a small delay before the new key is installed. Note that `--rekey-pl` is a shorthand
+  of `--rekey-plain`.
 
 Finally, in case the test `ping-frag-sep` doesn't succeed, you should try the following mixed key attack test:
 
@@ -754,18 +757,18 @@ only vulnerable while connecting to the network (i.e. during the execution of th
 
 <a id="id-extended-bcast-check-ping-bp"></a>
 
-- `ping BP [--bcast-dst]`: this is a variant of the above two tests, except that the ping request is now sent in a
-  plaintext unicast frame instead of a broadcast one (no CVE is allocated yet - it's related to CVE-2020-26145). This test
-  must be performed against both clients and APs. The ping is sent before the client has authenticated with the network
-  (i.e. during the execution of the 4-way handshake), meaning you must run tcpdump or wireshark to check if the device
-  accepts this frame. Alternatively, when testing APs, you can add the `--bcast-dst` parameter similar to the above test,
+- `ping BP [--bcast-dst]`: this is a variant of the above two tests `ping BP --bcast-ra [--bcast-dst]`, except that the ping
+  request is now sent in a plaintext unicast frame instead of a broadcast one (no CVE is allocated yet - it's related to
+  CVE-2020-26145). This test must be performed against both clients and APs. The ping is sent before the client has authenticated
+  with the network (i.e. during the execution of the 4-way handshake), meaning you must run tcpdump or wireshark to check if the
+  device accepts this frame. Alternatively, when testing APs, you can add the `--bcast-dst` parameter similar to the above test,
   and then use tcpdump or wireshark on a second device that is connected to the AP by using the filter `icmp` or
   `frame contains "test_ping_icmp"`.
 
-- `eapfrag BP,BP`: this is a specialization of the above two tests that is performed before the client has authenticated.
-  It is a _very experimental_ attack based on the analysis of leaked code. It first sends a plaintext fragment that starts
-  with an EAPOL header, which is accepted because the 4-way handshake is still being executed. Then it sends a second
-  broadcast fragment with the same sequence number. Based on the analysis of leaked code some devices may now accept
+- `eapfrag BP,BP`: this is a specialization of the above broadcast fragment tests that is performed before the client has
+  authenticated. It is a _very experimental_ attack based on the analysis of leaked code. It first sends a plaintext fragment
+  that starts with an EAPOL header, which is accepted because the 4-way handshake is still being executed. Then it sends a
+  second broadcast fragment with the same sequence number. Based on the analysis of leaked code some devices may now accept
   this fragment (because the previous fragment was allowed), but the subsequent code will process it as a normal frame
   (because the fragment is broadcasted). You must use tcpdump or wireshark on the victim to determine whether the frame
   is properly received, for example using the filter `icmp` or `frame contains "test_ping_icmp"`. An alternative variant
