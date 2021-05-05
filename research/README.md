@@ -2,134 +2,29 @@
 
 # 1. Introduction
 
-This repository contains the **FragAttack** tool. It can test Wi-Fi clients and access points for **FR**agmentation
-and **AG**gregation Attacks (FragAttacks). These vulnerabilities affect _all_ protected Wi-Fi networks. You can
-view a _summary_ of the [root cause and impact](fragattacks-slides-summary.pdf) of each vulnerability. There is also
-an overview of all [assigned CVEs](SUMMARY.md), a [2-page summary](attacks.pdf) of resulting attacks and preconditions,
-and you can view the presentation [handouts](fragattacks-slides.pdf). For more details see the USENIX Security
-**[research paper](fragattacks.pdf)**.
+This repository contains the **FragAttacks** tool. It can test Wi-Fi clients and access points for **fr**agmentation
+and **ag**gregation **attacks**. These vulnerabilities affect _all_ protected Wi-Fi networks. For more information
+about these vulnerabilities see [fragattacks.com](https://www.fragattacks.com).
 
-The attacks are identical against WPA2 and WPA3 because their CCMP and GCMP encryption ciphers are identical.
+The following additional resources are available:
+
+- The [USENIX Security presentation](https://youtu.be/OJ9nFeuitIU) gives a summary of the discovered vulnerabilities.
+- An overview of all [assigned CVEs](SUMMARY.md) is available.
+- Slides that summarize the [root cause and impact](https://papers.mathyvanhoef.com/fragattacks-slides-summary-2021-03-8.pdf) of each vulnerability.
+- A [2-page summary](https://papers.mathyvanhoef.com/fragattacks-overview.pdf) of resulting attacks and preconditions.
+- [Handouts](https://papers.mathyvanhoef.com/fragattacks-slides-2021-03-8.pdf) that give extra background and explain the vulnerabilities in more detail.
+- A [demonstration](https://youtu.be/88YZ4061tYw) of three example attacks.
+- A [research paper](https://papers.mathyvanhoef.com/usenix2021.pdf) published at USENIX Security.
+
+See the [change log](#id-change-log) for a detailed overview of updates to the tool made since 11 August 2020.
+This change log also contains information on which version of hostap the FragAttacks tool is based on.
+
+Note that the attacks are identical against WPA2 and WPA3 because their CCMP and GCMP encryption ciphers are identical.
 Older WPA networks by default use TKIP for encryption, and the applicability of the attacks against
-this cipher are discussed in the paper. To illustrate that Wi-Fi has been vulnerable since its creation,
-the paper also briefly discusses the applicability of the attacks against WEP.
+this cipher are discussed in the paper and on [the website](https://www.fragattacks.com/index.html#tkip). To illustrate
+that Wi-Fi has been vulnerable since its creation, the paper [and website](https://www.fragattacks.com/index.html#wep)
+also briefly discusses the applicability of the attacks against WEP.
 
-<a id="id-paper-clarifications"></a>
-## 1.1. Paper Clarifications
-
-- [This attack overview](attacks.pdf) contains a summary of attacks and their preconditions. It also contains
-  extra examples on how an adversary might abuse packet injection vulnerabilities in practice.
-
-- [These slides](amsduattack.pdf) clarify how the aggregation/A-MSDU attack (CVE-2020-24588) works in practice.
-  Performing this attack requires tricking the victim into connecting to a server of the adversary. This can be as simple
-  as tricking the victim into downloading an image from the adversary’s server. Note that (JavaScript) code execution on
-  the victim is not required.
-
-## 1.2. Embargo notes
-
-- This document refers to sections in **draft version 3 of the paper** "Fragment and Forge: Breaking Wi-Fi
-  Through Frame Aggregation and Fragmentation". This paper can be found in the root directory of this repository.
-
-- For each implementation flaw we list a reference CVE identifier. There's currently an ongoing discussion
-  whether these CVEs can be used across different codebases.
-
-## 1.3. Change log
-
-**Version ? (? 2021)**:
-
-- Updated the modified drivers so they compile on Linux kernel 5.10.
-
-**Version 1.3.2 (8 March 2021)**:
-
-- Added presentation [handouts](#fragattacks-slides.pdf) and a [summary](#fragattacks-slides-summary.pdf)
-  of each vulnerability's root cause and impact.
-
-- Updated this README to [explain](#id-test-sanity) that the parameter `--icmp-size 100` or similar can be added to
-  all tests that send fragmented frames if the device under test only accepts fragments of a certain minimum size.
-
-- Fixed minor typos in this README.
-
-**Version 1.3.1 (1 March 2021)**:
-
-- Added the test [`ping BP [--bcast-dst]`](#id-extended-bcast-check-ping-bp) to this README. It injects a plaintext ping
-  while connecting (i.e. during the 4-way handshake). Both clients and APs can be vulnerable to this attack.
-
-- Updated the [attack overview](#id-paper-clarifications) with new examples on how packet injection vulnerabilities
-  can be abused in practice. This includes techniques to trick IPv4-only clients into using a malicious DNS server
-  and techniques to directly communicate with devices behind a NAT/firewall (to e.g. exploit local services).
-
-- Clarified that [broadcast fragment tests](#id-extended-bcast-check) can be performed against both clients and APs.
-
-- The test tool will now check whether the expected version of the Python Scapy library has been loaded.
-
-- Fixed some references to the paper in this README (now properly references sections 6.4, 6.6, and 6.8).
-
-- Updated to draft version 3 of the paper. There are no major changes compared to draft version 2, only minor textual
-  and structural tweaks. Content-wise this is now the final version of the paper.
-
-**Version 1.3 (20 January 2021)**:
-
-- This version is based on hostap commit `a337c1d7c` ("New TWT operations and attributes to TWT Setup and Nudge").
-
-- Added an [overview](attacks.pdf) of attacks and their preconditions and created [these slides](amsduattack.pdf)
-  to better illustrate how the aggregation attack (CVE-2020-24588) works in practice.
-
-- Added <a href="#id-wpa3-sae">instructions</a> on how to test WPA3/SAE devices using either the hunting-and-pecking
-  or hash-to-element method. This also implies that Management Frame Protection (MFP) is supported by the test tool.
-
-- Added a clarification to this README on how to use tcpdump to verify the result of certain tests.
-
-- Added the extra test `ping BP --bcast-ra --bcast-dst` to this README to be able to test for CVE-2020-26145
-  against APs that cannot run tcpdump (with this test tcpdump has to be run on an independent connected client).
-
-- Added the extra tests `ping I,E,F,E [--rekey-pl] [--rekey-req]` to this README to better detect mixed key
-  attacks (CVE-2020-24587) in certain devices.
-
-- Fixed injection of fragmented frames when using ath9k_htc dongles in combination with 802.11n.
-
-- The `pysetup.sh` script has been added to create the python virtual environment. This script also fixes
-  [a bug](https://github.com/secdev/scapy/commit/46fa40fde4049ad7770481f8806c59640df24059) in the scapy library
-  when used with Python 3.9.
-
-- The patched drivers have been updated to properly compile on Linux 5.9.0.
-
-- Fixed the `ping-frag-sep` test. Previously it behaved like `ping-frag-sep --pn-per-qos`. Note that this test
-  is not used to detect vulnerabilities but only to better understand implementations.
-
-**Version 1.2 (15 November 2020)**:
-
-- This version (and lower) is based on hostap commit `1c67a0760` ("tests: Add basic power saving tests for ap_open").
-
-- Tool will automatically quit after a test completed or timed out.
-
-- Tool detects if the 4-way handshake is looping or if there is no reply to a rekey request (`--rekey-req`).
-
-- When using an external DHCP server, the tool will now always send EAPOL frames with as destination address
-  the AP (instead of the DHCP server). This is important in mixed key and cache attack tests when using an
-  external DHCP server.
-
-- When testing an AP using `--rekey-req` the tool will now send EAPOL Rekey Request with a Replay Counter of
-  one instead of zero.
-
-- Debug output now shows the correct (group) key when encrypting broadcast/multicast frames. This does not
-  influence any test results, it only changes the output of the test tool.
-
-- Clarified that all commands in this README can test both clients and APs unless noted otherwise.
-
-- Clarified the description of cache attacks, Broadcast fragment, and A-MSDU EAPOL attack tests in this README.
-
-- Clarified that it's important to test both the 2.4 and 5 GHz band in this README.
-
-**Version 1.1 (20 October 2020)**:
-
-- Fixed a bug where the command `ping I,E,D` would send a normal encrypted ping request. It now sends an
-  encrypted ping request with the More Fragments flag set in the header.
-
-- Moved the `amsdu-inject-[bad]` commands to Section 7 of this README. These simulate real attacks and can
-  be used to verify whether temporary mitigations are working (see Section 7.2 in the paper).
-
-- Fixed spelling of A-MSDU SPPs in this README and the test tool. The new argument `--amsdu-spp` is now a
-  synonym of the old `--amsdu-ssp` argument.
 
 <a id="id-supported-cards"></a>
 # 2. Supported Network Cards
@@ -204,9 +99,8 @@ The test tool was tested on Kali Linux and Ubuntu 20.04. To install the required
 
 Now clone this repository, build the tools, and configure a virtual python3 environment:
 
-	# **TODO: replace with real HTTP unauthenticated link on release**
-	# git clone https://github.com/vanhoefm/fragattack.git fragattack
-	cd fragattack/research
+	git clone https://github.com/vanhoefm/fragattacks.git fragattacks
+	cd fragattacks/research
 	./build.sh
 	./pysetup.sh
 
@@ -219,8 +113,8 @@ have to execute `./build.sh` and `./pysetup.sh` again.
 Install patched drivers using:
 
 	sudo apt-get install bison flex linux-headers-$(uname -r)
-	# **TODO: replace with real HTTP unauthenticated link on release instead of separate directory?**
-	cd driver-backports-5.8-rc2-1
+	git clone https://github.com/vanhoefm/fragattacks-drivers58.git fragattacks-drivers58
+	cd fragattacks-drivers58
 	make defconfig-wifi
 	make -j 4
 	sudo make install
@@ -393,8 +287,8 @@ device and are further discussed below the table.
 
 How commands match to CVEs is listed below. Note that for implementation flaws we list a reference
 CVE identifier, however, vendors may use different CVEs because an implementation vulnerability normally
-receives a unique CVE for each affected codebase. We nevertheless recommend to always refer to (or somehow
-include) these reference CVEs as a way to easily refer to each type of discovered implementation flaw.
+receives a unique CVE for each affected codebase. We nevertheless recommend to always refer to these reference
+CVEs as a way to easily refer to each type of discovered implementation flaw.
 
 <a id="id-test-sanity"></a>
 ## 7.1. Sanity checks
@@ -1103,4 +997,111 @@ test the latest WPA3/SAE clients) you can modify `hostapd.conf` and set the para
 
 By setting this value the AP will accept both the hunting-and-pecking method and
 the hash-to-element method.
+
+
+<a id="id-change-log"></a>
+# 10. Change log
+
+**Version 1.3.3 (11 May 2021)**:
+
+- Updated the modified drivers so they compile on Linux kernel 5.10.
+
+- Restructured the repository for pubic release. Removed internal documents and slides to instead reference
+  the public versions of these documents.
+
+**Version 1.3.2 (8 March 2021)**:
+
+- Added presentation [handouts](#fragattacks-slides.pdf) and a [summary](#fragattacks-slides-summary.pdf)
+  of each vulnerability's root cause and impact.
+
+- Updated this README to [explain](#id-test-sanity) that the parameter `--icmp-size 100` or similar can be added to
+  all tests that send fragmented frames if the device under test only accepts fragments of a certain minimum size.
+
+- Fixed minor typos in this README.
+
+**Version 1.3.1 (1 March 2021)**:
+
+- Added the test [`ping BP [--bcast-dst]`](#id-extended-bcast-check-ping-bp) to this README. It injects a plaintext ping
+  while connecting (i.e. during the 4-way handshake). Both clients and APs can be vulnerable to this attack.
+
+- Updated the [attack overview](#id-paper-clarifications) with new examples on how packet injection vulnerabilities
+  can be abused in practice. This includes techniques to trick IPv4-only clients into using a malicious DNS server
+  and techniques to directly communicate with devices behind a NAT/firewall (to e.g. exploit local services).
+
+- Clarified that [broadcast fragment tests](#id-extended-bcast-check) can be performed against both clients and APs.
+
+- The test tool will now check whether the expected version of the Python Scapy library has been loaded.
+
+- Fixed some references to the paper in this README (now properly references sections 6.4, 6.6, and 6.8).
+
+- Updated to draft version 3 of the paper. There are no major changes compared to draft version 2, only minor textual
+  and structural tweaks. Content-wise this is now the final version of the paper.
+
+**Version 1.3 (20 January 2021)**:
+
+- This version is based on hostap commit `a337c1d7c` ("New TWT operations and attributes to TWT Setup and Nudge").
+
+- Added an [overview](attacks.pdf) of attacks and their preconditions and created [these slides](amsduattack.pdf)
+  to better illustrate how the aggregation attack (CVE-2020-24588) works in practice.
+
+- Added <a href="#id-wpa3-sae">instructions</a> on how to test WPA3/SAE devices using either the hunting-and-pecking
+  or hash-to-element method. This also implies that Management Frame Protection (MFP) is supported by the test tool.
+
+- Added a clarification to this README on how to use tcpdump to verify the result of certain tests.
+
+- Added the extra test `ping BP --bcast-ra --bcast-dst` to this README to be able to test for CVE-2020-26145
+  against APs that cannot run tcpdump (with this test tcpdump has to be run on an independent connected client).
+
+- Added the extra tests `ping I,E,F,E [--rekey-pl] [--rekey-req]` to this README to better detect mixed key
+  attacks (CVE-2020-24587) in certain devices.
+
+- Fixed injection of fragmented frames when using ath9k_htc dongles in combination with 802.11n.
+
+- The `pysetup.sh` script has been added to create the python virtual environment. This script also fixes
+  [a bug](https://github.com/secdev/scapy/commit/46fa40fde4049ad7770481f8806c59640df24059) in the scapy library
+  when used with Python 3.9.
+
+- The patched drivers have been updated to properly compile on Linux 5.9.0.
+
+- Fixed the `ping-frag-sep` test. Previously it behaved like `ping-frag-sep --pn-per-qos`. Note that this test
+  is not used to detect vulnerabilities but only to better understand implementations.
+
+**Version 1.2 (15 November 2020)**:
+
+- This version (and lower) is based on hostap commit `1c67a0760` ("tests: Add basic power saving tests for ap_open").
+
+- Tool will automatically quit after a test completed or timed out.
+
+- Tool detects if the 4-way handshake is looping or if there is no reply to a rekey request (`--rekey-req`).
+
+- When using an external DHCP server, the tool will now always send EAPOL frames with as destination address
+  the AP (instead of the DHCP server). This is important in mixed key and cache attack tests when using an
+  external DHCP server.
+
+- When testing an AP using `--rekey-req` the tool will now send EAPOL Rekey Request with a Replay Counter of
+  one instead of zero.
+
+- Debug output now shows the correct (group) key when encrypting broadcast/multicast frames. This does not
+  influence any test results, it only changes the output of the test tool.
+
+- Clarified that all commands in this README can test both clients and APs unless noted otherwise.
+
+- Clarified the description of cache attacks, Broadcast fragment, and A-MSDU EAPOL attack tests in this README.
+
+- Clarified that it's important to test both the 2.4 and 5 GHz band in this README.
+
+**Version 1.1 (20 October 2020)**:
+
+- Fixed a bug where the command `ping I,E,D` would send a normal encrypted ping request. It now sends an
+  encrypted ping request with the More Fragments flag set in the header.
+
+- Moved the `amsdu-inject-[bad]` commands to Section 7 of this README. These simulate real attacks and can
+  be used to verify whether temporary mitigations are working (see Section 7.2 in the paper).
+
+- Fixed spelling of A-MSDU SPPs in this README and the test tool. The new argument `--amsdu-spp` is now a
+  synonym of the old `--amsdu-ssp` argument.
+
+**Version 1.0 (11 August 2020)**:
+
+- Prepared initial release for usage during the embargo.
 
