@@ -1159,6 +1159,30 @@ int ieee80211_chaninfo_to_channel(unsigned int freq, enum chan_width chanwidth,
 }
 
 
+int chaninfo_to_string(struct wpa_channel_info *ci, char *buf, size_t buflen,
+		       int *reply_len)
+{
+	u8 op_class, channel;
+
+	if (ieee80211_chaninfo_to_channel(ci->frequency, ci->chanwidth,
+					  ci->sec_channel, &op_class,
+					  &channel) < 0)
+		return -1;
+
+	/* FIXME: Implement full support for all channels */
+	if (ci->chanwidth == CHAN_WIDTH_40) {
+		if (ci->sec_channel < 0)
+			*reply_len = os_snprintf(buf, buflen, "%d HT40-\n", channel);
+		else
+			*reply_len = os_snprintf(buf, buflen, "%d HT40+\n", channel);
+	} else {
+		*reply_len = os_snprintf(buf, buflen, "%d\n", channel);
+	}
+
+	return 0;
+}
+
+
 static const char *const us_op_class_cc[] = {
 	"US", "CA", NULL
 };

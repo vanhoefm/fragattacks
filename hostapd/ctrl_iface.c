@@ -2572,18 +2572,16 @@ static int hostapd_get_gtk(struct hostapd_data *hapd,  char *buf, size_t buflen)
 static int hostapd_get_channel(struct hostapd_data *hapd,  char *buf, size_t buflen)
 {
 	struct wpa_channel_info ci;
-	u8 op_class, channel;
+	int reply_len = -1;
 
 	if (hostapd_drv_channel_info(hapd, &ci) != 0 ||
-	    ieee80211_chaninfo_to_channel(ci.frequency, ci.chanwidth,
-					  ci.sec_channel, &op_class,
-					  &channel) < 0) {
+	    chaninfo_to_string(&ci, buf, buflen, &reply_len) < 0) {
 		wpa_printf(MSG_WARNING, "Failed to get channel info from drive, falling "
 					"back to channel provided in the current config.");
-		channel = hapd->iconf->channel;
+		return os_snprintf(buf, buflen, "%d\n", hapd->iconf->channel);
 	}
 
-	return os_snprintf(buf, buflen, "%d\n", channel);
+	return reply_len;
 }
 
 

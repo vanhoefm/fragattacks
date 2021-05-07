@@ -825,19 +825,20 @@ class Daemon(metaclass=abc.ABCMeta):
 	def follow_channel(self):
 		# We use GET_CHANNEL of wpa_s/hostapd because it's more reliable than get_channel,
 		# which can fail on certain devices such as the AWUS036ACH.
-		channel = int(self.wpaspy_command("GET_CHANNEL"))
+		channel = self.wpaspy_command("GET_CHANNEL").strip()
 		if self.options.inject:
-			set_channel(self.nic_mon, channel)
 			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
-		elif self.options.hwsim:
-			set_channel(self.nic_hwsim, channel)
 			set_channel(self.nic_mon, channel)
+		elif self.options.hwsim:
 			log(STATUS, f"{self.nic_hwsim}: setting to channel {channel}")
 			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
+			set_channel(self.nic_hwsim, channel)
+			set_channel(self.nic_mon, channel)
 
 		if self.options.inject_test != None and self.options.inject_test != "self":
-			set_channel(self.options.inject_test, channel)
+			# FIXME: When using 40 MHz channel this call tends to fail the first time
 			log(STATUS, f"{self.options.inject_test}: setting to channel {channel}")
+			set_channel(self.options.inject_test, channel)
 			# When explicitly testing we can afford a longer timeout. Otherwise we should avoid it.
 			time.sleep(0.5)
 

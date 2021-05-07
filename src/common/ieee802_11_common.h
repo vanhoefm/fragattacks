@@ -11,6 +11,7 @@
 
 #include "defs.h"
 #include "ieee802_11_defs.h"
+#include "drivers/driver.h"
 
 struct element {
 	u8 id;
@@ -214,6 +215,8 @@ enum hostapd_hw_mode ieee80211_freq_to_channel_ext(unsigned int freq,
 						   u8 *op_class, u8 *channel);
 int ieee80211_chaninfo_to_channel(unsigned int freq, enum chan_width chanwidth,
 				  int sec_channel, u8 *op_class, u8 *channel);
+int chaninfo_to_string(struct wpa_channel_info *ci, char *buf, size_t buflen,
+		       int *reply_len);
 int ieee80211_is_dfs(int freq, const struct hostapd_hw_modes *modes,
 		     u16 num_modes);
 enum phy_type ieee80211_get_phy_type(int freq, int ht, int vht);

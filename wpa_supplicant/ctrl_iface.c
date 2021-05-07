@@ -9774,20 +9774,20 @@ static int wpa_supplicant_ctrl_iface_get_channel(struct wpa_supplicant *wpa_s,
 						 char *buf, size_t buflen)
 {
 	struct wpa_channel_info ci;
-	u8 op_class, channel;
+	int reply_len = -1;
 
 	if (wpa_drv_channel_info(wpa_s, &ci) != 0 ||
-	    ieee80211_chaninfo_to_channel(ci.frequency, ci.chanwidth,
-					  ci.sec_channel, &op_class,
-					  &channel) < 0) {
+	    chaninfo_to_string(&ci, buf, buflen, &reply_len) < 0) {
+		u8 op_class, channel;
 		wpa_printf(MSG_WARNING, "Failed to get channel info from drive, falling "
 					"back to channel provided in the current config. assoc_freq=%d", wpa_s->assoc_freq);
 		if (ieee80211_chaninfo_to_channel(wpa_s->assoc_freq, CHAN_WIDTH_20, 0,
 						  &op_class, &channel) < 0)
 			return -1;
+		return os_snprintf(buf, buflen, "%d\n", channel);
 	}
 
-	return os_snprintf(buf, buflen, "%d\n", channel);
+	return reply_len;
 }
 
 
