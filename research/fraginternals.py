@@ -1060,7 +1060,7 @@ class Authenticator(Daemon):
 			self.process = subprocess.Popen(cmd)
 		except:
 			if not os.path.exists("../hostapd/hostapd"):
-				log(ERROR, "hostapd executable not found. Did you compile hostapd?")
+				log(ERROR, "hostapd executable not found. Did you compile hostapd using ./build.sh?")
 			raise
 
 		self.connect_wpaspy()
@@ -1267,7 +1267,7 @@ class Supplicant(Daemon):
 			self.process = subprocess.Popen(cmd)
 		except:
 			if not os.path.exists("../wpa_supplicant/wpa_supplicant"):
-				log(ERROR, "wpa_supplicant executable not found. Did you compile wpa_supplicant?")
+				log(ERROR, "wpa_supplicant executable not found. Did you compile wpa_supplicant using ./build.sh?")
 			raise
 
 		self.connect_wpaspy()

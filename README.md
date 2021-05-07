@@ -14,16 +14,15 @@ The following additional resources are available:
 - A [2-page summary](https://papers.mathyvanhoef.com/fragattacks-overview.pdf) of resulting attacks and preconditions.
 - [Handouts](https://papers.mathyvanhoef.com/fragattacks-slides-2021-03-8.pdf) that give extra background and explain the vulnerabilities in more detail.
 - A [demonstration](https://youtu.be/88YZ4061tYw) of three example attacks.
-- A [research paper](https://papers.mathyvanhoef.com/usenix2021.pdf) published at USENIX Security.
+- The [research paper](https://papers.mathyvanhoef.com/usenix2021.pdf) published at USENIX Security.
 
 See the [change log](#id-change-log) for a detailed overview of updates to the tool made since 11 August 2020.
 This change log also contains information on which version of hostap the FragAttacks tool is based on.
 
 Note that the attacks are identical against WPA2 and WPA3 because their CCMP and GCMP encryption ciphers are identical.
-Older WPA networks by default use TKIP for encryption, and the applicability of the attacks against
-this cipher are discussed in the paper and on [the website](https://www.fragattacks.com/index.html#tkip). To illustrate
-that Wi-Fi has been vulnerable since its creation, the paper [and website](https://www.fragattacks.com/index.html#wep)
-also briefly discusses the applicability of the attacks against WEP.
+Older WPA networks by default use TKIP for encryption, and the applicability of the [attacks against TKIP](https://www.fragattacks.com/index.html#tkip)
+are discussed in the paper and on the website. To illustrate that Wi-Fi has been vulnerable since its creation, the paper
+and website also briefly discusses the applicability of the [attacks against WEP](https://www.fragattacks.com/index.html#wep).
 
 
 <a id="id-supported-cards"></a>
@@ -43,11 +42,11 @@ I have confirmed that the following network cards work properly:
 | Intel Wireless-AC 3160 | No  | Yes  | patched driver          | yes                     |
 | Alfa AWUS036ACM        | Yes | Yes  | patched driver          | yes                     |
 | Netgear WN111v2        | Yes | No   | patched driver          | yes                     |
-| Alfa AWUS036ACH        | Yes | Yes  | **TODO**                | **TODO**                |
+| Alfa AWUS036ACH        | Yes | Yes  | no                      | yes                     |
 
 The three two colums signify:
 
-1. Mixed mode: whether the network card can be used in [mixed mode](#id-mixed-mode).
+1. Mixed mode: whether the network card can be used in the recommended [mixed mode](#id-mixed-mode).
 
 2. Injection mode: whether the network card can be used as a second interface to inject frames in [injection mode](#id-injection-mode).
 
@@ -75,7 +74,7 @@ My experience with the above network cards can be found [here](#id-notes-device-
 - The WN111v2 seems to work well, although I did not test it extensively.
 
 - The driver for the AWUS036ACH is not part of the Linux kernel and requires the installation of a separate
-  driver. On some Linux distributions such as Kali you can install this driver through the package manager.
+  driver. On Kali you can install this driver through the package manager. This card was not extensivly tested.
 
 If you are unable to find one of the above network cards, you can search for [alternative network cards](#id-alternative-cards)
 that have a high chance of also working. When using a network card that is not explicitly supported
@@ -467,6 +466,7 @@ In case the test tool doesn't appear to be working, check the following:
    that may go into a sleep state.
 
 4. Run the [injection tests](#id-injection-tests) to make sure injection is working properly.
+   Also assure that a 20 MHz channel is used, injection on other channels is untested.
 
 5. Check that you machine isn't generating background traffic that interferes with the tests. In
    particular, disable networking in your OS, manually kill your DHCP client/server, etc. See
@@ -913,7 +913,12 @@ This device is generally not supported by default in most Linux distributions an
 installation of drivers. On Kali Linux you can install the driver using `sudo apt install realtek-rtl88xxau-dkms`.
 To install the driver on other distributions check your package manager or follow the installation
 instructions on [GitHub](https://github.com/aircrack-ng/rtl8812au). Before plugging in the device,
-you must execute `modprobe 88XXau rtw_monitor_retransmit=1`.
+it is recommended to execute `modprobe 88XXau rtw_monitor_retransmit=1`.
+
+Unfortunately, this device doesn't work in mixed mode, which is the recommended mode, and is difficult
+to use in combination with our modified drivers. In practice, you will have to uninstall the modified
+drivers and then run the test tool using the parameters `--no-drivercheck` and using `--inject wlan0`
+where wlan0 refers to the AWUS036ACH card. Because of these limitations this device is not recommended.
 
 ### Intel AX200
 
@@ -1004,10 +1009,15 @@ the hash-to-element method.
 
 **Version 1.3.3 (11 May 2021)**:
 
-- Updated the modified drivers so they compile on Linux kernel 5.10.
+- Updated the modified drivers so they compile on Linux kernel 5.10, 5.11, and 5.12.
+
+- Updated firmware for `ath9k_htc` devices (should have no impact on tests).
 
 - Restructured the repository for pubic release. Removed internal documents and slides to instead reference
   the public versions of these documents.
+
+- Basic support for 40 MHz channels when using `--inject-test[-postauth]` parameter to test injection. In actual
+  vulnerability tests, the usage of 40 MHz channels is untested (use `disable_ht40` in `client.conf` if needed).
 
 **Version 1.3.2 (8 March 2021)**:
 
