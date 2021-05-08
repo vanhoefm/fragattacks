@@ -265,8 +265,8 @@ device and are further discussed below the table.
 | <div align="center">*[Cache attacks (§5)](#id-test-cache)*</div>
 | `ping I,E,R,AE`                  | Inject a fragment, try triggering a _reassociation_, and inject second fragment.
 | `ping I,E,R,E`                   | Same as above, but with a longer delay before sending the second fragment.
-| `ping I,E,R,AE --full-reconnect` | Inject a fragment, _deauthenticate_ and reconnect, then inject second fragment.
-| `ping I,E,R,E --full-reconnect`  | Same as above, but with a longer delay before sending the second fragment.
+| `ping I,E,R,AE --full-recon`     | Inject a fragment, _deauthenticate_ and reconnect, then inject second fragment.
+| `ping I,E,R,E --full-recon`      | Same as above, but with a longer delay before sending the second fragment.
 | <div align="center">*[Non-consecutive PNs attack (§6.2)](#id-test-nonconsec)*</div>
 | `ping I,E,E --inc-pn 2`          | Send a fragmented ping with non-consecutive packet numbers.
 | <div align="center">*[Mixed plain/encrypt attack (§6.3)](#id-test-mixplainenc)*</div>
@@ -379,10 +379,11 @@ The last two tests are used to simulate our A-MSDU injection attack:
   might fail although the implementation _is_ vulnerable. This can be due to background noise, other devices
   sending frames to the tested device, etc.
 
-- `ping I,E,R,AE [--full-reconnect]`: Here the second fragment is sent immediately after reconnecting with the
+- `ping I,E,R,AE [--full-recon]`: Here the second fragment is sent immediately after reconnecting with the
   device under test, which is important in case the device clears fragments from memory after a short time.
+  Note that `full-recon` is a shorthand of `full-reconnect`.
 
-- `ping I,E,R,E [--full-reconnect]`: Here the second fragment is sent 1 second after reconnecting with the
+- `ping I,E,R,E [--full-recon]`: Here the second fragment is sent 1 second after reconnecting with the
   device under test, which can be useful in case there is a small delay between completion of the handshake
   and installing the negotiated key.
 
