@@ -15,6 +15,7 @@ The following additional resources are available:
 - [Handouts](https://papers.mathyvanhoef.com/fragattacks-slides-2021-03-8.pdf) that give extra background and explain the vulnerabilities in more detail.
 - A [demonstration](https://youtu.be/88YZ4061tYw) of three example attacks.
 - The [research paper](https://papers.mathyvanhoef.com/usenix2021.pdf) published at USENIX Security.
+- A [live USB image](#id-live-image) with this tool and modified drivers pre-installed.
 
 See the [change log](#id-change-log) for a detailed overview of updates to the tool made since 11 August 2020.
 This change log also contains information on which version of hostap the FragAttacks tool is based on.
@@ -57,8 +58,8 @@ _No_ means this mode is not supported by the network card.
 
 Note that USB devices can be used inside a virtual machine, and the modified drivers and/or firmware
 can be installed in this virtual machine. However, I found that the usage of virtual machines can
-make network cards less reliable, and I instead recommend the usage of a live CD if you cannot install
-the modified drivers/firmware natively.
+make network cards less reliable, and I instead recommend the usage of a live USB image if you cannot
+install the modified drivers/firmware natively.
 
 My experience with the above network cards can be found [here](#id-notes-device-support). Summarized:
 
@@ -142,7 +143,7 @@ Note that even when your device works out of the box, I still recommend to insta
 drivers, as this assures there are no unexpected regressions in kernel and driver code.
 
 In case you cannot install the modified drivers/firmware natively, you can download a
-**[live Ubuntu CD]()** that contains the modified drivers/firmware along with our test tool.
+**[live USB image](#id-live-image)** that contains the modified drivers/firmware along with our test tool.
 Alternatively, you can use a virtual machine with USB network cards, although I found that
 using a virtual machine is less reliable in pratice.
 
@@ -481,7 +482,7 @@ In case the test tool doesn't appear to be working, check the following:
 8. If you updated the code using git, execute `./build.sh` and `./pysetup.sh` again (see [Prerequisites](#id-prerequisites)).
    In case the patched drivers got updated, remember to recompile them as well.
 
-9. If you are using a virtual machine, try to run the test tool from a live CD or USB instead.
+9. If you are using a virtual machine, try to run the test tool from a live USB image instead.
 
 10. Check that the tested device doesn't block ICMP ping requests. In case it doesn't reply to pings, you
     can run tcpdump or wireshark on the device, or you can try any of the other methods listed in [No ICMP Support](#id-no-icmp).
@@ -1003,6 +1004,32 @@ test the latest WPA3/SAE clients) you can modify `hostapd.conf` and set the para
 
 By setting this value the AP will accept both the hunting-and-pecking method and
 the hash-to-element method.
+
+<a id="id-live-image"></a>
+## 9.11. Live USB image
+
+Download the [live USB image](http://people.cs.kuleuven.be/~mathy.vanhoef/fragattacks/ubuntu-20.04.2-fragattacks-1.3.3-amd64.iso)
+and write it to USB using:
+
+	# Unmount in case there's an old partition on the USB
+	sudo umount /dev/sdb*
+	# Copy the image
+	sudo dd bs=4M if=ubuntu-20.04.2-fragattacks-1.3.3-amd64.iso of=/dev/sdb conv=fdatasync status=progress
+
+Replace `/dev/sdb` with your USB stick. If you're not running Linux, search online how to write an ISO image to your USB stick.
+
+When starting the live image click on "Try Ubuntu" during startup. Start a terminal by right clicking on the
+desktop and selecting "Open in Terminal" and execute:
+
+	cd ~/fragattacks/research
+	sudo su
+	nmcli radio wifi off
+	source venv/bin/activate
+
+You can now run `./fragattacks.py` and follow the normal instructions in this README.
+Remember to disable Wi-Fi using `nmcli radio wifi off` as shown above, otherwise the
+network manager of Ubuntu will interfere with the test tool. This README is also present
+on the live image at `~/fragattacks/README.md`.
 
 
 <a id="id-change-log"></a>
