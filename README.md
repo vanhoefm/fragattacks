@@ -1050,7 +1050,8 @@ on the live image at `~/fragattacks/README.md`.
 
 **Version 1.3.2 (8 March 2021)**:
 
-- Added presentation [handouts](#fragattacks-slides.pdf) and a [summary](#fragattacks-slides-summary.pdf)
+- Added presentation [handouts](https://papers.mathyvanhoef.com/fragattacks-slides-2021-03-8.pdf) and a
+  [summary](https://papers.mathyvanhoef.com/fragattacks-overview.pdf)
   of each vulnerability's root cause and impact.
 
 - Updated this README to [explain](#id-test-sanity) that the parameter `--icmp-size 100` or similar can be added to
