@@ -1016,7 +1016,8 @@ and write it to USB using:
 	# Copy the image
 	sudo dd bs=4M if=ubuntu-20.04.2-fragattacks-1.3.3-amd64.iso of=/dev/sdb conv=fdatasync status=progress
 
-Replace `/dev/sdb` with your USB stick. If you're not running Linux, search online how to write an ISO image to your USB stick.
+The sha256sum of the image is `4b973452a08b981778285a33accfd4ce58625a91e8e0eab20941facf54904bba`. Replace `/dev/sdb`
+with your USB stick. If you're not running Linux, search online how to write an ISO image to your USB stick.
 
 When starting the live image click on "Try Ubuntu" during startup. Start a terminal by right clicking on the
 desktop and selecting "Open in Terminal" and execute:
