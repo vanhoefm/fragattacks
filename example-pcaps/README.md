@@ -1,6 +1,6 @@
 # Example Packet Captures
 
-In all the following captures the Wi-Fi network is `testnetwork` with as password `abcdefgh`.
+The following captures are based on executing the test tool and **illustrate the root cause** of the vulnerabilities. In all captures the Wi-Fi network being used has SSID `testnetwork` with password `abcdefgh`.
 
 Note that the captures were made on the same network card that was injecting packets (with hardware encryption disabled). On Linux, **injected packets are shown twice in a network capture**. First it shows the frame as injected by userspace (the test tool will always set the `Has Seqnum` and `Order` in the radiotap header). After the frame was sent, the Linux kernel echoes the actual transmitted frame a second time. This second frame for instance contains the bitrate that was used to send the frame and whether an acknowledgement was received in response.
 
