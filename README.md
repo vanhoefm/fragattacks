@@ -900,7 +900,7 @@ more reliably when used natively. When using a VM, I recommend to configure the 
 controller, since that appeared more stable (at least with VirtualBox).
 
 In recent kernels there was a ([now fixed](https://www.spinics.net/lists/linux-wireless/msg200825.html))
-regression with the `ath9k_htc` driver causing it not te work. Simply use an up-to-date kernel or our patched
+regression with the `ath9k_htc` driver causing it not to work. Simply use an up-to-date kernel or our patched
 drivers to avoid this issue.
 
 #### AWUS036ACM
