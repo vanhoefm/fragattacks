@@ -17,6 +17,7 @@ The following additional resources are available:
 - The [research paper](https://papers.mathyvanhoef.com/usenix2021.pdf) published at USENIX Security.
 - Example [network captures](example-pcaps/) illustrating some of the vulnerabilities.
 - A [live USB image](#id-live-image) with this tool and modified drivers pre-installed.
+- A list of [known advisories](ADVISORIES.md) from companies
 
 See the [change log](#id-change-log) for a detailed overview of updates to the tool made since 11 August 2020.
 This change log also contains information on which version of hostap the FragAttacks tool is based on.
