@@ -27,7 +27,7 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 
 - [Juniper](https://kb.juniper.net/InfoCenter/index?page=content&id=JSA11170&cat=SIRT_1&actp=LIST)
 
-## K
+## L
 
 - [Lancom](https://www.lancom-systems.com/service-support/instant-help/general-security-information/): look for WLAN vulnerability "Fragattacks" - They provide patches .
 - [Lenovo](https://support.lenovo.com/fr/en/product_security/len-57316)
