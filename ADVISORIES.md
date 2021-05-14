@@ -15,9 +15,17 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 - COMMSCOPE: [Link 1](https://www.commscope.com/fragattacks-commscope-ruckus-resource-center/wifi-fragattacks-what-you-need-to-know/), [Link 2](https://www.commscope.com/globalassets/digizuite/916169-faq-security-advisory-id-20210511-v1-0.pdf)
 - [Cypress](https://community.cypress.com/t5/Security-Bulletin/Potential-Fragmentation-Vulnerabilities-for-Wi-Fi-Devices/ba-p/276441)
 
+## D
+
+- [Dell](https://www.dell.com/support/kbdoc/en-th/000186331/dsa-2021-100-dell-client-platform-security-update-for-intel-wifi-software-vulnerabilitiesdsa-2021-100-dell-client-platform-security-update-for-intel-wifi-software-vulnerabilities)
+
 ## E
 
 - [Eero](https://blog.eero.com/fragattacks-fragmentation-aggregation-and-attacks-update-available-for-all-eero-customers/)
+
+## H
+
+- [Huawei](https://www.huawei.com/en/psirt/security-notices/huawei-sn-20210513-01-fragattacks-en)
 
 ## I
 
