@@ -146,6 +146,15 @@ def is_amsdu(p):
 	else:
 		return p.Reserved == 1
 
+def remove_dot11qos(p):
+	if not Dot11QoS in p: return
+	p = p.copy()
+	payload = p[Dot11QoS].payload
+	p.remove_payload()
+	p /= payload
+	p.subtype = 0
+	return p
+
 #### Packet Processing Functions ####
 
 class DHCP_sock(DHCP_am):
