@@ -22,6 +22,7 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 ## E
 
 - [Eero](https://blog.eero.com/fragattacks-fragmentation-aggregation-and-attacks-update-available-for-all-eero-customers/)
+- [Extreme Networks](https://extremeportal.force.com/ExtrArticleDetail?an=000095779)
 
 ## H
 
