@@ -14,6 +14,7 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 - [Cisco](https://www.cisco.com/c/en/us/support/docs/csa/cisco-sa-wifi-faf-22epcEWu.html)
 - COMMSCOPE: [Link 1](https://www.commscope.com/fragattacks-commscope-ruckus-resource-center/wifi-fragattacks-what-you-need-to-know/), [Link 2](https://www.commscope.com/globalassets/digizuite/916169-faq-security-advisory-id-20210511-v1-0.pdf). Claim in their [FAQ](https://www.commscope.com/fragattacks-commscope-ruckus-resource-center/faqs/) that using EAP-TLS makes attack harder is **[incorrect](https://www.fragattacks.com/#eaptls)**.
 - [Cypress](https://community.cypress.com/t5/Security-Bulletin/Potential-Fragmentation-Vulnerabilities-for-Wi-Fi-Devices/ba-p/276441)
+- [Cambium Networks](https://www.cambiumnetworks.com/wp-content/uploads/2021/05/2021-1-FragAttacks-05142021.pdf)
 
 ## D
 
