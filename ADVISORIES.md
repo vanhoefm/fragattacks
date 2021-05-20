@@ -48,7 +48,7 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 
 - Microsoft: [CVE-2020-24587](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2020-24587), [CVE-2020-24588](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2020-24587), [CVE-2020-26144](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2020-26144)
 - [Mist](https://www.mist.com/documentation/mist-security-advisory-fragattacks-and-faq)
-- MikroTik: [forum post](https://forum.mikrotik.com/viewtopic.php?t=175184#p857367) says updates will be included in future releases of RouterOS
+- MikroTik: patches available in [testing release](https://mikrotik.com/download/changelogs/testing-release-tree), look for 6.49beta46 (2021-May-18 07:56).
 
 ## N
 
