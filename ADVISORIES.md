@@ -24,6 +24,7 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 
 - [Eero](https://blog.eero.com/fragattacks-fragmentation-aggregation-and-attacks-update-available-for-all-eero-customers/)
 - [Extreme Networks](https://extremeportal.force.com/ExtrArticleDetail?an=000095779)
+- [Espressif](https://github.com/espressif/esp-idf/issues/7019)
 
 ## H
 
