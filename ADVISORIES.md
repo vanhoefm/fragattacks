@@ -38,6 +38,10 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 
 - [Juniper](https://kb.juniper.net/InfoCenter/index?page=content&id=JSA11170&cat=SIRT_1&actp=LIST)
 
+## K
+
+- [Keenetic](https://help.keenetic.com/hc/en-us/articles/360021967180-Release-KeeneticOS-3-6-6)
+
 ## L
 
 - [Lancom](https://www.lancom-systems.com/service-support/instant-help/general-security-information/): look for WLAN vulnerability "Fragattacks" - They provide patches .
