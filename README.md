@@ -809,8 +809,9 @@ parameters.
 
 Most attack tests work by sending ICMP ping requests in special manners, and seeing wether we receive
 an ICMP ping response. In case the device being tested does not support ICMP pings you can instead
-use ARP requests by adding the `--arp` parameter to all tests. **TODO: Explain in detial for which**
-**tests this parameter has an effect.**.
+use ARP requests by adding the `--arp` parameter to all tests. In case a test doesn't support sending
+ARP requests the tool will display the error `Cannot override request type of the selected test`, in
+which case the specific test can only be executed using ICMP ping requests.
 
 **TODO: When acting as a client we can also inject DHCP requests intead.**
 
