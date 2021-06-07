@@ -61,6 +61,10 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 
 - [Netgear](https://kb.netgear.com/000063666/Security-Advisory-for-Fragment-and-Forge-vulnerabilities-on-some-WiFi-capable-devices-PSV-2021-0014-PSV-2021-0080)
 
+## O
+
+- OpenWRT: [patches](https://git.openwrt.org/?p=openwrt/openwrt.git;a=commit;h=025bd93f36c9923127674ce127e22933592cba6c) have been commited but unclear which builds have these patches so far. [This discussion](https://forum.openwrt.org/t/new-wi-fi-vulnerability-probably-affecting-openwrt/96356/26) talks about which versions/buids have patches.
+
 ## R
 
 - Ruckus/COMMSCOPE: [Overview](https://support.ruckuswireless.com/fragattacks-ruckus-technical-support-response-center), [Link 2](https://www.commscope.com/fragattacks-commscope-ruckus-resource-center/wifi-fragattacks-what-you-need-to-know/), [Link 3](https://www.commscope.com/globalassets/digizuite/916169-faq-security-advisory-id-20210511-v1-0.pdf). Claim that [EAP-TLS](https://www.fragattacks.com/#eaptls) or [802.11w](https://www.fragattacks.com/#mfp) makes attacks harder is incorrect.
