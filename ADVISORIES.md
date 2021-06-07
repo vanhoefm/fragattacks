@@ -20,6 +20,7 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 ## D
 
 - [Dell](https://www.dell.com/support/kbdoc/en-th/000186331/dsa-2021-100-dell-client-platform-security-update-for-intel-wifi-software-vulnerabilitiesdsa-2021-100-dell-client-platform-security-update-for-intel-wifi-software-vulnerabilities)
+- [DD-WRT](): Patches are included in revision r46690. Builds are available depending on the hardware: [Marvell MVEBU](https://forum.dd-wrt.com/phpBB2/viewtopic.php?t=329127), [Atheros WiSOC](https://forum.dd-wrt.com/phpBB2/viewtopic.php?t=329125), [Broadcom SoC](https://forum.dd-wrt.com/phpBB2/viewtopic.php?t=329092&postdays=0&postorder=asc&start=0), [x86 based](https://forum.dd-wrt.com/phpBB2/viewtopic.php?t=329129), [Ralink SoC](https://forum.dd-wrt.com/phpBB2/viewtopic.php?t=329128&sid=80c14f34bd3a9f1e48e1ea3002c4d5f1). 
 
 ## E
 
