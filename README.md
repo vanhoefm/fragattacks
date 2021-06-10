@@ -13,6 +13,7 @@ The following additional resources are available:
 - Slides that summarize the [root cause and impact](https://papers.mathyvanhoef.com/fragattacks-slides-summary-2021-03-8.pdf) of each vulnerability.
 - A [2-page summary](https://papers.mathyvanhoef.com/fragattacks-overview.pdf) of resulting attacks and preconditions.
 - [Handouts](https://papers.mathyvanhoef.com/fragattacks-slides-2021-03-8.pdf) that give extra background and explain the vulnerabilities in more detail.
+- ICASI [Announcement](https://www.icasi.org/aggregation-fragmentation-attacks-against-wifi/)
 - A [demonstration](https://youtu.be/88YZ4061tYw) of three example attacks.
 - The [research paper](https://papers.mathyvanhoef.com/usenix2021.pdf) published at USENIX Security.
 - Example [network captures](example-pcaps/) illustrating some of the vulnerabilities.
