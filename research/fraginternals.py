@@ -437,6 +437,11 @@ class Station():
 	def encrypt(self, frame, inc_pn=1, force_key=None):
 		# TODO: Add argument to force a bad authenticity check
 
+		# Need to already remove Dot11QoS here since this affects authenticity tag
+		if self.options.no_qos and Dot11QoS in frame:
+			log(DEBUG, "Station.encrypt: removing Dot11QoS header as requested by user")
+			frame = remove_dot11qos(frame)
+
 		idx = dot11_get_priority(frame) if self.options.pn_per_qos else 0
 		self.pn[idx] += inc_pn
 
@@ -795,6 +800,10 @@ class Daemon(metaclass=abc.ABCMeta):
 			set_monitor_mode(self.options.inject_test)
 
 	def inject_mon(self, p):
+		# If requested send all frames as normal data frames (i.e. remove Dot11QoS if present)
+		if self.options.no_qos and Dot11QoS in p:
+			log(DEBUG, "Station.inject_mon: removing Dot11QoS header as requested by user")
+			p = remove_dot11qos(p)
 		self.sock_mon.send(p)
 
 	def inject_eth(self, p):

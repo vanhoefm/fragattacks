@@ -208,6 +208,7 @@ if __name__ == "__main__":
 	# TODO: Properly test the --bad-mic option
 	parser.add_argument('--bad-mic', default=False, action='store_true', help="Send pings using an invalid authentication tag.")
 	parser.add_argument('--pn-per-qos', default=False, action='store_true', help="Use separate Tx packet counter for each QoS TID.")
+	parser.add_argument('--no-qos', default=False, action='store_true', help="Don't send QoS data frames (experimental - may break some tests).")
 	parser.add_argument('--freebsd-cache', default=False, action='store_true', help="Sent EAP(OL) frames as (malformed) broadcast EAPOL/A-MSDUs.")
 	parser.add_argument('--connected-delay', type=float, default=1, help="Second to wait after AfterAuth before triggering Connected event")
 	parser.add_argument('--to-self', default=False, action='store_true', help="Send ARP/DHCP/ICMP with same src and dst MAC address.")
@@ -227,6 +228,9 @@ if __name__ == "__main__":
 	# Sanity check and convert some arguments to more usable form
 	options.ptype = args2ptype(options)
 	options.as_msdu = args2msdu(options)
+	if options.pn_per_qos and options.no_qos:
+		log(STATUS, f"Cannot specify option --pn-per-qos and --no-qos simultaneously.")
+		quit(1)
 
 	# Make the --inject-test-postauth flags easier to check
 	if options.inject_test_postauth != None:

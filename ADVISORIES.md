@@ -8,16 +8,29 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 - [Arris](https://arris.secure.force.com/consumers/articles/General_FAQs/FragAttack-Vulnerability)
 - [Aruba](https://www.arubanetworks.com/assets/alert/ARUBA-PSA-2021-011.txt)
 - [Avm.de](https://en.avm.de/service/current-security-notifications/): Look for "FragAttacks" Wi-Fi vulnerability
+- [Asuswrt-Merlin](https://www.asuswrt-merlin.net/changelog): FragAttacks got patched in [`386.2_6 (6-June-2021)`](https://twitter.com/RMerlinDev/status/1401598180811227137).
 
 ## C
 
 - [Cisco](https://www.cisco.com/c/en/us/support/docs/csa/cisco-sa-wifi-faf-22epcEWu.html)
-- COMMSCOPE: [Link 1](https://www.commscope.com/fragattacks-commscope-ruckus-resource-center/wifi-fragattacks-what-you-need-to-know/), [Link 2](https://www.commscope.com/globalassets/digizuite/916169-faq-security-advisory-id-20210511-v1-0.pdf)
+- COMMSCOPE/Ruckus: [Overview](https://support.ruckuswireless.com/fragattacks-ruckus-technical-support-response-center), [Link 2](https://www.commscope.com/fragattacks-commscope-ruckus-resource-center/wifi-fragattacks-what-you-need-to-know/), [Link 3](https://www.commscope.com/globalassets/digizuite/916169-faq-security-advisory-id-20210511-v1-0.pdf). Claim that [EAP-TLS](https://www.fragattacks.com/#eaptls) or [802.11w](https://www.fragattacks.com/#mfp) makes attacks harder is **[incorrect](https://www.mathyvanhoef.com/2021/05/fragattacks-clarifying-some-aspects.html)**.
 - [Cypress](https://community.cypress.com/t5/Security-Bulletin/Potential-Fragmentation-Vulnerabilities-for-Wi-Fi-Devices/ba-p/276441)
+- [Cambium Networks](https://www.cambiumnetworks.com/wp-content/uploads/2021/05/2021-1-FragAttacks-05142021.pdf)
+
+## D
+
+- [Dell](https://www.dell.com/support/kbdoc/en-th/000186331/dsa-2021-100-dell-client-platform-security-update-for-intel-wifi-software-vulnerabilitiesdsa-2021-100-dell-client-platform-security-update-for-intel-wifi-software-vulnerabilities)
+- [DD-WRT](): Patches are included in revision r46690. Builds are available depending on the hardware: [Marvell MVEBU](https://forum.dd-wrt.com/phpBB2/viewtopic.php?t=329127), [Atheros WiSOC](https://forum.dd-wrt.com/phpBB2/viewtopic.php?t=329125), [Broadcom SoC](https://forum.dd-wrt.com/phpBB2/viewtopic.php?t=329092&postdays=0&postorder=asc&start=0), [x86 based](https://forum.dd-wrt.com/phpBB2/viewtopic.php?t=329129), [Ralink SoC](https://forum.dd-wrt.com/phpBB2/viewtopic.php?t=329128&sid=80c14f34bd3a9f1e48e1ea3002c4d5f1). 
 
 ## E
 
 - [Eero](https://blog.eero.com/fragattacks-fragmentation-aggregation-and-attacks-update-available-for-all-eero-customers/)
+- [Extreme Networks](https://extremeportal.force.com/ExtrArticleDetail?an=000095779)
+- [Espressif](https://github.com/espressif/esp-idf/issues/7019)
+
+## H
+
+- [Huawei](https://www.huawei.com/en/psirt/security-notices/huawei-sn-20210513-01-fragattacks-en)
 
 ## I
 
@@ -26,6 +39,10 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 ## J
 
 - [Juniper](https://kb.juniper.net/InfoCenter/index?page=content&id=JSA11170&cat=SIRT_1&actp=LIST)
+
+## K
+
+- [Keenetic](https://help.keenetic.com/hc/en-us/articles/360021967180-Release-KeeneticOS-3-6-6)
 
 ## L
 
@@ -36,16 +53,21 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 
 ## M
 
-- Microsoft: [CVE-2020-24587](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2020-24587), [CVE-2020-24588](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2020-24587), [CVE-2020-26144](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2020-26144)
+- Microsoft: [CVE-2020-24587](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2020-24587), [CVE-2020-24588](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2020-24588), [CVE-2020-26144](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2020-26144)
 - [Mist](https://www.mist.com/documentation/mist-security-advisory-fragattacks-and-faq)
+- MikroTik: patches are available for [all releases](https://blog.mikrotik.com/security/fragattacks.html).
 
 ## N
 
 - [Netgear](https://kb.netgear.com/000063666/Security-Advisory-for-Fragment-and-Forge-vulnerabilities-on-some-WiFi-capable-devices-PSV-2021-0014-PSV-2021-0080)
 
+## O
+
+- OpenWRT: [patches](https://git.openwrt.org/?p=openwrt/openwrt.git;a=commit;h=025bd93f36c9923127674ce127e22933592cba6c) have been commited but unclear which builds have these patches so far. [This discussion](https://forum.openwrt.org/t/new-wi-fi-vulnerability-probably-affecting-openwrt/96356/26) talks about which versions/buids have patches.
+
 ## R
 
-- [RuckusWireless](https://support.ruckuswireless.com/fragattacks-ruckus-technical-support-response-center)
+- Ruckus/COMMSCOPE: [Overview](https://support.ruckuswireless.com/fragattacks-ruckus-technical-support-response-center), [Link 2](https://www.commscope.com/fragattacks-commscope-ruckus-resource-center/wifi-fragattacks-what-you-need-to-know/), [Link 3](https://www.commscope.com/globalassets/digizuite/916169-faq-security-advisory-id-20210511-v1-0.pdf). Claim that [EAP-TLS](https://www.fragattacks.com/#eaptls) or [802.11w](https://www.fragattacks.com/#mfp) makes attacks harder is incorrect.
 
 ## S
 
