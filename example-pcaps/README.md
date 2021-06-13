@@ -14,7 +14,9 @@ Note that the captures were made on the same network card that was injecting pac
 
 ## Cache attacks
 
-- `ping_I_E_R_E-fromclient.pcapng`: used command was `ping I,E,R,E`. Frame 69 contains the first fragment encrypted under TK `dda31c8516b9d92581fc17e4a8f1b47b`. Frame 72 and 74 shows that the client is reassociating. Frame 98 contains the second fragmented encrypted under TK `b4d1a94a4d126dbd39ec3557969f430b`. The ping reply is contained in frame 101.
+- `ping_I_E_R_E-fromclient.pcapng`: used command was `ping I,E,R,E`. Frame 69 contains the first fragment encrypted under TK `dda31c8516b9d92581fc17e4a8f1b47b`. Frame 72 and 74 shows that the client is reassociating. Frame 98 contains the second fragment encrypted under TK `b4d1a94a4d126dbd39ec3557969f430b`. The ping reply is contained in frame 101.
+
+- `ping_I_E_R_E__full-recon-fromclient.pcapng`: used command was `ping I,E,R,E --full-recon`. Frame 63 contains the first fragmented encrypted under TK `7911b7173daf49c898fa42119232885e`. Frame 66 shows the deauthentication frame, and frames 67 and 71 show that the client is authenticating and reassociating. Frame 107 contains the second fragment encrypted under TK `292184b9c862a4b640d4c920aba35a48`. The ping reply is contained in frame 110.
 
 ## Non-consecutive PNs attack
 
