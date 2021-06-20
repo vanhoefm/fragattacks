@@ -59,7 +59,7 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 
 ## N
 
-- [Netgear](https://kb.netgear.com/000063666/Security-Advisory-for-Fragment-and-Forge-vulnerabilities-on-some-WiFi-capable-devices-PSV-2021-0014-PSV-2021-0080)
+- [Netgear](https://kb.netgear.com/000063666/Security-Advisory-for-Fragment-and-Forge-vulnerabilities-on-some-WiFi-capable-devices-PSV-2021-0014-PSV-2021-0080): their claim that the adversary needs to know the Wi-Fi password is **[incorrect](https://www.mathyvanhoef.com/2021/05/fragattacks-clarifying-some-aspects.html#nopassword)**.
 
 ## O
 
