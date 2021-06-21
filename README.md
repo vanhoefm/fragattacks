@@ -315,13 +315,16 @@ CVEs as a way to easily refer to each type of discovered implementation flaw.
 
 - `ping-frag-sep`: This tests sends a fragmented Wi-Fi frame that is seperated by an unrelated frame.
   That is, it sends the first fragment, then a (normal) unrelated Wi-Fi frame, and finally the second fragment.
-  In case this test fails, the mixed key attack and cache attack will likely also fail (since they require
-  sending other frames between two fragments). The only purpose of this test is to better understand the
-  behaviour of a device and to learn why other tests might be failing.
+  In case this test fails, the (default) mixed key attack and cache attack will likely also fail (since they require
+  sending other frames between two fragments). This test will also fail in case the reciever checks whether fragments
+  have consecutive packet numbers (see the next test `ping-frag-sep --pn-per-qos`).
 
 - `ping-frag-sep --pn-per-qos`: Same as above, but adding the `--pn-per-qos` parameter assures both fragments
-  have a consecutive Packet Number (PN). This is something that a reciever should be verifying in order to be
-  secure. Unfortunately, many implementations don't verify whether PNs are consecutive.
+  of the ping request have a consecutive Packet Number (PN). This is something that a reciever _should_ be
+  verifying in order to be secure. Unfortunately, before the disclosure of our results, many implementations
+  don't verify whether PNs are consecutive. This test might fail in case the reciever doesn't track the latest
+  received packet counter per QoS TID, in which case you can ignore other tests that contain the `--pn-per-qos`
+  parameter.
 
 <a id="id-test-amsdu"></a>
 ## 7.3. A-MSDU attack tests (§3 -- CVE-2020-24588)

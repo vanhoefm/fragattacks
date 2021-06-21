@@ -65,9 +65,13 @@ def prepare_tests(opt):
 
 	elif opt.testname == "ping-frag-sep":
 		# Check if we can send frames in between fragments. The seperator by default uses a different
-		# QoS TID. The second fragment must use an incremental PN compared to the first fragment.
-		# So this also tests if the receivers uses a per-QoS receive replay counter. By overriding
-		# the TID you can check whether fragments are cached for multiple sequence numbers in one TID.
+		# QoS TID. The second fragment of the ping request will NOT have an incremental PN compared
+		# to the first fragment. So this test fails if the receivers checks for consecutive PNs. By adding
+		# `--pn-per-qos` both ping fragments will use consecutive PNs, but this will only be accepted if
+		# the receiver checks PNs for each QoS TID separately.
+		# By overriding the TID to 2 you can check whether fragments are cached for multiple sequence numbers
+		# in one TID (since all fragments use the same TID but the ping fragments use a different sequence
+		# number compared to the seperator).
 		tid = 1 if stractions == None else int(stractions)
 		separator = Dot11(type="Data", subtype=8, SC=(33 << 4) | 0)/Dot11QoS(TID=tid)/LLC()/SNAP()
 		test = PingTest(REQ_ICMP,
