@@ -80,6 +80,7 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 ## T
 
 - [Telekom.com](https://www.telekom.com/en/company/details/fragattack-gap-in-wifi-standard-627006)
+- [Texas Instruments](https://e2e.ti.com/support/wireless-connectivity/wi-fi-group/wifi/f/wi-fi-forum/1000522/faq-wi-fi-fragattacks---fragmentation-and-aggregation-attacks): they also provide an [application report](https://www.ti.com/lit/an/swra710a/swra710a.pdf?ts=1624389571376&ref_url=https%253A%252F%252Fwww.google.com%252F)
 
 ## Z
 
