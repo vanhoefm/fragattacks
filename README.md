@@ -329,20 +329,19 @@ CVEs as a way to easily refer to each type of discovered implementation flaw.
 <a id="id-test-amsdu"></a>
 ## 7.3. A-MSDU attack tests (§3 -- CVE-2020-24588)
 
-The test `ping I,E --amsdu` checks if an implementation supports non-SPP A-MSDUs, in which case it is likely
-vulnerable to one of the below two attacks. To prevent attacks, ideally the network must mandate the usage of
-SPP A-MSDUs (and drop all non-SPP A-MSDUs). In case it's not an option to drop non-SPP A-MSDUs, temporary
-mitigations are discussed in Section 7.2 of the paper.
-
-The last two tests are used to simulate our A-MSDU injection attack:
+The test `ping I,E --amsdu` checks if an implementation _supports_ non-SPP A-MSDUs. To prevent attacks, ideally
+the network must mandate the usage of SPP A-MSDUs and drop all non-SPP A-MSDUs. However, most vendors are
+currently implementing ad-hoc mitigations instead (see Section 7.2 of the paper). Because of this, you must use
+the following two tests to check whether a device is _vulnerable_ to aggregation (A-MSDU) attacks (CVE-2020-24588):
 
 - `amsdu-inject`: This test simulates the A-MSDU injection attack described in Section 3.2 of the paper. In particular,
   it sends an A-MSDU frame whose start is also a valid LLC/SNAP header (since this is also what happens in our reference
-  attack).
+  attack). If this test succeeds, the device is vulnerable to CVE-2020-24588.
 
 - `amsdu-inject-bad`: Some devices incorrectly parse A-MSDU frames that start with a valid LLC/SNAP header causing the
   above test to fail. In that case try `amsdu-inject-bad` instead (see Section 3.6 in the paper). Note that if this test
-  succeeds, the impact of the attack is effectively identical to implementations that correctly parse such frames.
+  succeeds, the impact of the attack is effectively identical to implementations that correctly parse such frames,
+  meaing the device is vulnerable to CVE-2020-24588.
 
 <a id="id-test-mixedkey"></a>
 ## 7.4. Mixed key attack tests (§4 -- CVE-2020-24587)
