@@ -329,7 +329,8 @@ CVEs as a way to easily refer to each type of discovered implementation flaw.
 <a id="id-test-amsdu"></a>
 ## 7.3. A-MSDU attack tests (§3 -- CVE-2020-24588)
 
-The test `ping I,E --amsdu` checks if an implementation _supports_ non-SPP A-MSDUs. To prevent attacks, ideally
+The test `ping I,E --amsdu` checks if an implementation _supports_ non-SPP A-MSDUs (it doesn't check if the device
+is vulnerable to CVE-2020-24588). To prevent attacks, ideally
 the network must mandate the usage of SPP A-MSDUs and drop all non-SPP A-MSDUs. However, most vendors are
 currently implementing ad-hoc mitigations instead (see Section 7.2 of the paper). Because of this, you must use
 the following two tests to check whether a device is _vulnerable_ to aggregation (A-MSDU) attacks (CVE-2020-24588):
