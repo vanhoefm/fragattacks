@@ -9,6 +9,7 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 - [Aruba](https://www.arubanetworks.com/assets/alert/ARUBA-PSA-2021-011.txt)
 - [Avm.de](https://en.avm.de/service/current-security-notifications/): Look for "FragAttacks" Wi-Fi vulnerability
 - [Asuswrt-Merlin](https://www.asuswrt-merlin.net/changelog): FragAttacks got patched in [`386.2_6 (6-June-2021)`](https://twitter.com/RMerlinDev/status/1401598180811227137).
+- [Arlo](https://kb.arlo.com/000062602/Security-Advisory-for-Aggregation-and-Fragmentation-Attacks-Against-Wi-Fi)
 
 ## C
 
