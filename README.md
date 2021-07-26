@@ -47,7 +47,7 @@ I have confirmed that the following network cards work properly:
 | Netgear WN111v2        | Yes | No   | patched driver          | yes                     |
 | Alfa AWUS036ACH        | Yes | Yes  | no                      | yes                     |
 
-The three two colums signify:
+The last two columns signify:
 
 1. Mixed mode: whether the network card can be used in the recommended [mixed mode](#id-mixed-mode).
 
