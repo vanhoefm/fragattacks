@@ -13,6 +13,7 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 
 ## C
 
+- [Check Point](https://supportcontent.checkpoint.com/solutions?id=sk173718)
 - [Cisco](https://www.cisco.com/c/en/us/support/docs/csa/cisco-sa-wifi-faf-22epcEWu.html)
 - COMMSCOPE/Ruckus: [Overview](https://support.ruckuswireless.com/fragattacks-ruckus-technical-support-response-center), [Link 2](https://www.commscope.com/fragattacks-commscope-ruckus-resource-center/wifi-fragattacks-what-you-need-to-know/), [Link 3](https://www.commscope.com/globalassets/digizuite/916169-faq-security-advisory-id-20210511-v1-0.pdf). Their claim that [EAP-TLS](https://www.fragattacks.com/#eaptls) or [802.11w](https://www.fragattacks.com/#mfp) makes attacks harder is **[incorrect](https://www.mathyvanhoef.com/2021/05/fragattacks-clarifying-some-aspects.html)**.
 - [Cypress](https://community.cypress.com/t5/Security-Bulletin/Potential-Fragmentation-Vulnerabilities-for-Wi-Fi-Devices/ba-p/276441)
