@@ -852,6 +852,10 @@ allowed to send normal frames. This is because in the function `ieee80211_monito
 to inject frames when `cfg80211_reg_can_beacon` returns false. As a result, Linux may refuse to
 inject frames even though this is actually allowed. Making `cfg80211_reg_can_beacon` return true
 under the correct conditions prevents this bug.
+	
+In practice, some people have found that you must first manually set the wireless network card to
+the 5GHz channel that the AP is operating on. See [this GitHub issue](https://github.com/vanhoefm/fragattacks/issues/33#issuecomment-898712082)
+for details.
 
 <a id="id-handling-sleep"></a>
 ## 9.6. Handling sleep mode
