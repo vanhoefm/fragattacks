@@ -1042,6 +1042,8 @@ Remember to disable Wi-Fi using `nmcli radio wifi off` as shown above, otherwise
 network manager of Ubuntu will interfere with the test tool. This README is also present
 on the live image at `~/fragattacks/README.md`.
 
+Note that airmon-ng may be unreliable on the live image and it's better to use [iw](https://github.com/vanhoefm/fragattacks/issues/36).
+	
 
 <a id="id-change-log"></a>
 # 10. Change log
