@@ -4,7 +4,7 @@ more-itertools==8.2.0
 mpmath==1.1.0
 packaging==20.1
 pluggy==0.13.1
-py==1.8.1
+py==1.10.0
 pycryptodome==3.9.7
 pyparsing==2.4.6
 pytest==5.3.5
