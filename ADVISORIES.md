@@ -30,6 +30,10 @@ Pull requests with additional links are welcome! Or create an issue on GitHub to
 - [Extreme Networks](https://extremeportal.force.com/ExtrArticleDetail?an=000095779)
 - [Espressif](https://github.com/espressif/esp-idf/issues/7019)
 
+## F
+
+- [Fortinet](https://www.fortiguard.com/psirt/FG-IR-21-071)
+
 ## H
 
 - [Huawei](https://www.huawei.com/en/psirt/security-notices/huawei-sn-20210513-01-fragattacks-en)
