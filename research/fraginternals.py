@@ -261,7 +261,7 @@ class Test(metaclass=abc.ABCMeta):
 
 	def generate(self, station):
 		self.prepare(station)
-		self.enforce_delay()
+		self.enforce_delays()
 		self.enforce_inc_pn()
 
 	def check(self, p):
@@ -274,13 +274,19 @@ class Test(metaclass=abc.ABCMeta):
 		self.delay = delay
 		self.inc_pn = inc_pn
 
-	def enforce_delay(self):
-		if self.delay == None or self.delay <= 0:
-			return
+	def enforce_delays(self):
+		inject_frags = self.get_actions(Action.Inject)
 
-		# Add a delay between injected fragments if requested
-		for frag in self.get_actions(Action.Inject)[1:]:
-			frag.delay = self.delay
+		# Add a delay before executing the first Inject action. This means a delay is added after
+		# possibly getting an IP via DHCP but before injecting the first test fragment/frame.
+		if self.pre_delay is not None and self.pre_delay > 0:
+			assert len(inject_frags) > 0
+			inject_frags[0].delay = self.pre_delay
+
+		# Add a delay between every next injected fragments if requested
+		if self.delay is not None and self.delay > 0:
+			for frag in inject_frags[1:]:
+				frag.delay = self.delay
 
 	def enforce_inc_pn(self):
 		if self.inc_pn == None:
