@@ -475,7 +475,7 @@ In case the test tool doesn't appear to be working, check the following:
 4. Run the [injection tests](#id-injection-tests) to make sure injection is working properly.
    Also assure that a 20 MHz channel is used, injection on other channels is untested.
 
-5. Check that you machine isn't generating background traffic that interferes with the tests. In
+5. Check that your machine isn't generating background traffic that interferes with the tests. In
    particular, disable networking in your OS, manually kill your DHCP client/server, etc. See
    also [Before every usage](#id-before-every-usage).
 
