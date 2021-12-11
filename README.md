@@ -905,7 +905,7 @@ currently, it appears hard to test clients against these attack variants without
 The Technoethical N150 HGA, TP-Link TL-WN722N v1.x, and Alfa AWUS036NHA, all use the `ath9k_htc` driver.
 
 For me these devices worked fairly well in a virtual machine, although like with all devices they are
-more reliably when used natively. When using a VM, I recommend to configure the VM to use a USB2.0
+more reliable when used natively. When using a VM, I recommend to configure the VM to use a USB2.0
 controller, since that appeared more stable (at least with VirtualBox).
 
 In recent kernels there was a ([now fixed](https://www.spinics.net/lists/linux-wireless/msg200825.html))
