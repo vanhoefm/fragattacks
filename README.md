@@ -72,7 +72,8 @@ My experience with the above network cards can be found [here](#id-notes-device-
   a reboot makes the network card usable again. The Intel AX200 is not compatible with the test tool.
 
 - During my tests the AWUS036ACM dongle was unreliable when connected to a USB3.0 port, but worked
-  well when connected to a USB2.0 port. This behaviour may depend on your computer.
+  well when connected to a USB2.0 port. This behaviour may depend on your computer. See
+  [this issue](https://github.com/vanhoefm/fragattacks/issues/22) for experience that others had with this dongle.
 
 - The WN111v2 seems to work well, although I did not test it extensively.
 
@@ -917,7 +918,8 @@ drivers to avoid this issue.
 If for some reason Linux does not automatically recognize this device, execute `sudo modprobe mt76x2u`
 to manually load the driver. I found that, at least on my devices, this dongle was unstable when connected
 to a USB3.0 port. Others seems to have reported [similar issues](https://www.spinics.net/lists/linux-wireless/msg200453.html)
-with this dongle. When connected to a USB2.0 port I found this dongle to be reliable.
+with this dongle. When connected to a USB2.0 port I found this dongle to be reliable. Also see
+[this issue](https://github.com/vanhoefm/fragattacks/issues/22) for experience that others had with this dongle.
 
 #### AWUS036ACH
 
