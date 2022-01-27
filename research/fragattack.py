@@ -244,7 +244,8 @@ if __name__ == "__main__":
 	else:
 		options.inject_test_postauth = False
 
-	# Dynamically import tests depending on their availability in the directory
+	# Dynamically import tests depending on their availability in the directory,
+	# but ignore private variables. See https://stackoverflow.com/a/44492879
 	for test in glob("tests_*.py"):
 		module = importlib.import_module(test[:-3])
 		globals().update(
