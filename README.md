@@ -467,7 +467,8 @@ In case the test tool doesn't appear to be working, check the following:
 1. Check that no other process is using the network card (e.g. kill your network manager).
 
 2. If everything worked previously, try unplugging your Wi-Fi dongle, restart your computer or virtual
-   machine, and then try again.
+   machine, and then try again. Also try to disable hardware encryption using the `disable-hwcrypto.sh`
+   script (reboot your computer after executing this script).
 
 3. Assure the device you are testing doesn't enter a sleep state (causing it to miss injected frames).
    I recommend running the test tool in [mixed mode](#id-mixed-mode) since this better handles clients
@@ -939,6 +940,15 @@ where wlan0 refers to the AWUS036ACH card. Because of these limitations this dev
 I tested the Intel AX200 and found that it is _not_ compatible with the test tool: its firmware crashes
 after injecting a frame with the More Fragments flag set. If an Intel developer is reading this, please
 update the firmware and make it possible to inject fragmented frames.
+
+### RT5572-based chips
+
+I tested this chipset using the general [CSL USB 2.0 WLAN Adapter 300Mbit adapter](http://www.amazon.de/dp/B00LLIOT34?tag=modwiffir-20).
+After disabling hardware decryption by executing the `disable-hwcrypto.sh` script I was able to perform
+a basic ping test (`ping`). A fragmented ping test (`ping I,E,E`) was very unreliable but sometimes worked.
+
+The current conclusion is that RT5572 chips _might_ work with the test tool after disabling hardware
+encryption. But extra experiments are needed to confirm this (feedback is welcome).
 
 <a id="id-hwsim-details"></a>
 ## 9.9. Hwsim mode details
