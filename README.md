@@ -88,17 +88,26 @@ and using the tool against a known-vulnerable implementation to confirm the tool
 <a id="id-prerequisites"></a>
 # 3. Prerequisites
 
-The test tool was tested on Kali Linux and Ubuntu 20.04. To install the required dependencies, execute:
+The test tool was tested on Ubuntu 20.04 using kernel 5.8. If you use another Linux distribution, please note
+that only **kernel versions below or equal to 5.12 are supported**.
 
-	# Kali Linux and Ubuntu:
+When using Ubuntu 20.04 you will first have to install kernel 5.8 as follows. Note that your existing kernel
+will keep being installed and will also keep being used by default:
+
+	sudo apt install linux-image-5.8.0-63-generic linux-headers-5.8.0-63-generic linux-hwe-5.8-headers-5.8.0-63 \
+		linux-modules-5.8.0-63-generic linux-modules-extra-5.8.0-63-generic
+
+Now reboot Ubuntu, hold the shift key while booting, select "Advanced options for Ubuntu", and then start kernel 5.8
+by picking "Ubuntu, with Linux 5.8.0-63-generic". You can [edit your GRUB config](https://unix.stackexchange.com/a/421650)
+so Ubuntu will use this kernel version by default.
+
+Next, install the required dependencies:
+
 	sudo apt-get update
 	sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libssl-dev \
 		libdbus-1-dev git pkg-config build-essential macchanger net-tools python3-venv \
-		aircrack-ng rfkill
-	# Kali Linux:
-	sudo apt-get install firmware-atheros
-	# Ubuntu/Debian:
-	sudo apt-get install firmware-ath9k-htc
+		aircrack-ng rfkill firmware-ath9k-htc
+	# Note: on Kali linux use the package firmware-atheros instead of firmware-ath9k-htc
 
 Now clone this repository, build the tools, and configure a virtual python3 environment:
 
