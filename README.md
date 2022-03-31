@@ -515,6 +515,9 @@ In case the test tool doesn't appear to be working, check the following:
     if you are using modified drivers, though it might be good to manually double-check this on your
     specific Linux distribution.
 
+14. It may help to add a delay between getting the IP address and the transmission of the first fragment/frame.
+    Do this using the `--pre-test-delay` parameter.
+
 <a id="id-extended-tests"></a>
 # 8. Extended Vulnerability Tests
 
@@ -1071,6 +1074,10 @@ Note that airmon-ng may be unreliable on the live image and it's better to use [
 
 **Version 1.3.4 (under progress):**:
 
+- Added the `--pre-test-delay` parameter. This adds a delay between getting an IP address and the transmission
+  of the first fragments/frames. See the [pull request](https://github.com/vanhoefm/fragattacks/pull/44) by
+  Michael Trimarchi and Angelo Compagnucci.
+	
 - Updated the modified drivers so they compile on Linux kernel 5.13 as well. This is experimental.
 
 - Updated the README with an example on how to install an older supported kernel on Ubuntu 20.04.
