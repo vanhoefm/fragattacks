@@ -1069,6 +1069,12 @@ Note that airmon-ng may be unreliable on the live image and it's better to use [
 <a id="id-change-log"></a>
 # 10. Change log
 
+**Version 1.3.4 (under progress):**:
+
+- Updated the modified drivers so they compile on Linux kernel 5.13 as well. This is experimental.
+
+- Updated the README with an example on how to install an older supported kernel on Ubuntu 20.04.
+
 **Version 1.3.3 (11 May 2021)**:
 
 - Updated the modified drivers so they compile on Linux kernel 5.10, 5.11, and 5.12.
