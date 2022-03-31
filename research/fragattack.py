@@ -132,7 +132,7 @@ def prepare_tests(opt):
 	else: return None
 
 	# If requested, override delay and inc_pn parameters in the test.
-	test.set_general_options(opt.delay, opt.inc_pn)
+	test.set_general_options(opt.delay, opt.inc_pn, opt.pre_test_delay)
 
 	# If requested, override the ptype
 	if opt.ptype != None:
@@ -215,6 +215,7 @@ if __name__ == "__main__":
 	parser.add_argument('--no-qos', default=False, action='store_true', help="Don't send QoS data frames (experimental - may break some tests).")
 	parser.add_argument('--freebsd-cache', default=False, action='store_true', help="Sent EAP(OL) frames as (malformed) broadcast EAPOL/A-MSDUs.")
 	parser.add_argument('--connected-delay', type=float, default=1, help="Second to wait after AfterAuth before triggering Connected event")
+	parser.add_argument('--pre-test-delay', type=int, default=0, help="Delay before launching the test")
 	parser.add_argument('--to-self', default=False, action='store_true', help="Send ARP/DHCP/ICMP with same src and dst MAC address.")
 	parser.add_argument('--no-drivercheck', default=False, action='store_true', help="Don't check if patched drivers are being used.")
 	parser.add_argument('--stay-up', default=False, action='store_true', help="Don't quit when test has finished.")
