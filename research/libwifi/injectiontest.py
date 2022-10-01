@@ -120,7 +120,7 @@ def test_injection_order(sout, sin, ref, strtype, retries=1):
 		for p in [p2] * 4 + [p6]:
 			sout.send(RadioTap(present="TXFlags", TXFlags="NOSEQ+ORDER")/p/Raw(label))
 
-		packets = sniff(opened_socket=sin, timeout=1.5, lfilter=lambda p: Dot11QoS in p and label in raw(p))
+		packets = sniff(opened_socket=sin, timeout=2.5, lfilter=lambda p: Dot11QoS in p and label in raw(p))
 		tids = [p[Dot11QoS].TID for p in packets]
 		log(STATUS, "Captured TIDs: " + str(tids))
 
