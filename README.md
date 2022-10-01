@@ -65,15 +65,16 @@ install the modified drivers/firmware natively.
 
 My experience with the above network cards can be found [here](#id-notes-device-support). Summarized:
 
-- I recommend the Technoethical N150 HGA in mixed mode. This device is identical to the TP-Link TL-WN722N v1.x
-  and requires the usage of patched drivers and firmware.
+- The [AWUS036ACM](https://www.amazon.com/dp/B08BJS8FXD?tag=modwiffir-20) in mixed mode appears reliable
+  with our latest drivers and is the one I recommend. A cheaper but almost identical device is one with a
+  [MT7612U chipset](https://www.amazon.de/dp/B0873BNBD8?tag=modwiffir-20). See more info [here](#id-notes-device-support).
+
+- I previously recommended the Technoethical N150 HGA in mixed mode. This dongle is identical to the
+  TP-Link TL-WN722N v1.x and requires the usage of patched drivers and firmware. This is one of the
+  most well-tested dongles, but it's hard to get. That's why I now recommend the AWUS036ACM instead.
 
 - The Intel 3160 and 8265 are supported and extensively tested. Sometimes their firmware crashed but
   a reboot makes the network card usable again. The Intel AX200 is not compatible with the test tool.
-
-- During my tests the AWUS036ACM dongle was unreliable when connected to a USB3.0 port, but worked
-  well when connected to a USB2.0 port. This behaviour may depend on your computer. See
-  [this issue](https://github.com/vanhoefm/fragattacks/issues/22) for experience that others had with this dongle.
 
 - The WN111v2 seems to work well, although I did not test it extensively.
 
@@ -914,6 +915,24 @@ currently, it appears hard to test clients against these attack variants without
 <a id="id-notes-device-support"></a>
 ## 9.8. Notes on device support
 
+#### AWUS036ACM
+
+If for some reason Linux does not automatically recognize this dongle, execute `sudo modprobe mt76x2u`
+to manually load the driver. This dongle seems reliable with our latest drivers. If the dongle is unreliable,
+create the file `/etc/modprobe.d/mt76.conf` with the following content:
+```
+options mt76_usb disable_usb_sg=1
+```
+Then reboot your machine. Also be sure to use a good USB cable with this dongle! I previously encountered
+unreliable behavior with this dongle, which was caused by a bad USB 3.0 cable. So if you experience issues,
+it may help to directly plug in the dongle without using a cable.
+
+When using VirtualBox, make sure you enable USB3.0 so that the dongle gets recognized. See
+[this issue](https://github.com/vanhoefm/fragattacks/issues/22) for details.
+
+The AWUS036ACM internally uses a MT7612U chipset. There are now also dongles with a MT7612UN chipset that
+are also reliable with our testing tool. An example is the [CSL Wireless Network Adaptor](https://www.amazon.de/dp/B0873BNBD8?tag=modwiffir-20).
+
 ### ath9k_htc
 
 The Technoethical N150 HGA, TP-Link TL-WN722N v1.x, and Alfa AWUS036NHA, all use the `ath9k_htc` driver.
@@ -925,14 +944,6 @@ controller, since that appeared more stable (at least with VirtualBox).
 In recent kernels there was a ([now fixed](https://www.spinics.net/lists/linux-wireless/msg200825.html))
 regression with the `ath9k_htc` driver causing it not to work. Simply use an up-to-date kernel or our patched
 drivers to avoid this issue.
-
-#### AWUS036ACM
-
-If for some reason Linux does not automatically recognize this device, execute `sudo modprobe mt76x2u`
-to manually load the driver. I found that, at least on my devices, this dongle was unstable when connected
-to a USB3.0 port. Others seems to have reported [similar issues](https://www.spinics.net/lists/linux-wireless/msg200453.html)
-with this dongle. When connected to a USB2.0 port I found this dongle to be reliable. Also see
-[this issue](https://github.com/vanhoefm/fragattacks/issues/22) for experience that others had with this dongle.
 
 #### AWUS036ACH
 
