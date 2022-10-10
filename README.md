@@ -170,11 +170,11 @@ as root. This can be done using:
 	sudo su
 	source venv/bin/activate
 
-You should now disable Wi-Fi in your network manager so it will not interfere with the test tool.
-Also make sure no other network services are causing outgoing traffic. You can assure this by
-using iptables to block traffic by executing `./droptraffic.sh` (you can revert this by rebooting).
-Optionally check using `sudo airmon-ng check` to see which other processes might be using the
-wireless network card and might interfere with our tool.
+You should now [disable Wi-Fi in your network manager](https://github.com/vanhoefm/libwifi/blob/master/docs/linux_tutorial.md#id-disable-wifi)
+so it will not interfere with the test tool. Also make sure no other network services are causing
+outgoing traffic. You can assure this by using iptables to block traffic by executing `./droptraffic.sh`
+(you can revert this by rebooting). Optionally check using `sudo airmon-ng check` to see which other
+processes might be using the wireless network card and might interfere with our tool.
 
 The test tool can test both clients and APs:
 
