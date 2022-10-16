@@ -9808,6 +9808,7 @@ static int wpas_ctrl_set_assoc_resp_ies(struct wpa_supplicant *wpa_s, const char
 	struct wpa_sm *sm = wpa_s->wpa;
 	size_t len;
 	u8 *buf;
+	int i;
 
 	len = os_strlen(cmd);
 	if (len & 1) return -1;
@@ -9823,7 +9824,7 @@ static int wpas_ctrl_set_assoc_resp_ies(struct wpa_supplicant *wpa_s, const char
 	}
 
 	printf("\n\nCurrent value = ");
-	for (int i = 0; i < sm->assoc_resp_ies_len; ++i)
+	for (i = 0; i < sm->assoc_resp_ies_len; ++i)
 		printf("%02X ", sm->assoc_resp_ies[i]);
 	printf("\n");
 
