@@ -175,9 +175,9 @@ def get_expected_scapy_ver():
 	return None
 
 if __name__ == "__main__":
-	log(STATUS, f"This is FragAttack version {FRAGVERSION}.")
+	log(STATUS, "This is FragAttack version {}.".format(FRAGVERSION))
 
-	parser = argparse.ArgumentParser(description=f"Test for fragmentation vulnerabilities (version {FRAGVERSION}).")
+	parser = argparse.ArgumentParser(description="Test for fragmentation vulnerabilities (version {}).".format(FRAGVERSION))
 	parser.add_argument('iface', help="Interface to use for the tests.")
 	parser.add_argument('testname', help="Name or identifier of the test to run.")
 	parser.add_argument('actions', nargs='?', help="Optional textual descriptions of actions")
@@ -224,7 +224,7 @@ if __name__ == "__main__":
 	# Check if we're using the expected scapy version
 	expected_ver = get_expected_scapy_ver()
 	if expected_ver!= None and scapy.VERSION != expected_ver:
-		log(WARNING, f"You are using scapy version {scapy.VERSION} instead of the expected {expected_ver}")
+		log(WARNING, "You are using scapy version {} instead of the expected {}".format(scapy.VERSION, expected_ver))
 		log(WARNING, "Are you executing the script from inside the correct python virtual environment?")
 
 	# Default value for options that should not be command line parameters
@@ -234,7 +234,7 @@ if __name__ == "__main__":
 	options.ptype = args2ptype(options)
 	options.as_msdu = args2msdu(options)
 	if options.pn_per_qos and options.no_qos:
-		log(STATUS, f"Cannot specify option --pn-per-qos and --no-qos simultaneously.")
+		log(STATUS, "Cannot specify option --pn-per-qos and --no-qos simultaneously.")
 		quit(1)
 
 	# Make the --inject-test-postauth flags easier to check
@@ -258,7 +258,7 @@ if __name__ == "__main__":
 	# Construct the test
 	options.test = prepare_tests(options)
 	if options.test == None:
-		log(STATUS, f"Test name '{options.testname}' not recognized. Specify a valid test case.")
+		log(STATUS, "Test name '{}' not recognized. Specify a valid test case.".format(options.testname))
 		quit(1)
 
 	# Parse remaining options

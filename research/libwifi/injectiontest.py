@@ -71,45 +71,45 @@ def test_packet_injection(sout, sin, p, test_func, frametype, msgfail):
 	"""Check if given property holds of all injected frames"""
 	packets = inject_and_capture(sout, sin, p, count=1)
 	if len(packets) < 1:
-		log(ERROR,   f"[-] Unable to capture injected {frametype}.")
+		log(ERROR,   "[-] Unable to capture injected {}.".format(frametype))
 		return FLAG_NOCAPTURE
 	if not all([test_func(cap) for cap in packets]):
-		log(ERROR,   f"[-] " + msgfail.format(frametype=frametype))
+		log(ERROR,   "[-] " + msgfail.format(frametype=frametype))
 		return FLAG_FAIL
-	log(STATUS, f"    Properly captured injected {frametype}.")
+	log(STATUS, "    Properly captured injected {}.".format(frametype))
 	return 0
 
 def test_injection_fields(sout, sin, ref, strtype):
-	log(STATUS, f"--- Testing injection of fields using {strtype}")
+	log(STATUS, "--- Testing injection of fields using {}".format(strtype))
 	status = 0
 
 	p = Dot11(FCfield=ref.FCfield, addr1=ref.addr1, addr2=ref.addr2, addr3=ref.addr3, type=2, SC=30<<4)/LLC()/SNAP()/EAPOL()/EAP()
-	status |= test_packet_injection(sout, sin, p, lambda cap: EAPOL in cap, f"EAPOL frame with {strtype}",
+	status |= test_packet_injection(sout, sin, p, lambda cap: EAPOL in cap, "EAPOL frame with {}".format(strtype),
 					"Scapy thinks injected {frametype} is a different frame?")
 
 	p = Dot11(FCfield=ref.FCfield, addr1=ref.addr1, addr2=ref.addr2, addr3=ref.addr3, type=2, SC=31<<4)
-	status |= test_packet_injection(sout, sin, p, lambda cap: cap.SC == p.SC, f"empty data frame with {strtype}",
+	status |= test_packet_injection(sout, sin, p, lambda cap: cap.SC == p.SC, "empty data frame with {}".format(strtype),
 					"Sequence number of injected {frametype} is being overwritten!")
 
 	p = Dot11(FCfield=ref.FCfield, addr1=ref.addr1, addr2=ref.addr2, addr3=ref.addr3, type=2, SC=(32<<4)|1)
-	status |= test_packet_injection(sout, sin, p, lambda cap: (cap.SC & 0xf) == 1, f"fragmented empty data frame with {strtype}",
+	status |= test_packet_injection(sout, sin, p, lambda cap: (cap.SC & 0xf) == 1, "fragmented empty data frame with {}".format(strtype),
 					"Fragment number of injected {frametype} is being overwritten!")
 
 	p = Dot11(FCfield=ref.FCfield, addr1=ref.addr1, addr2=ref.addr2, addr3=ref.addr3, type=2, subtype=8, SC=33<<4)/Dot11QoS(TID=2)
-	status |= test_packet_injection(sout, sin, p, lambda cap: cap.TID == p.TID, f"empty QoS data frame with {strtype}",
+	status |= test_packet_injection(sout, sin, p, lambda cap: cap.TID == p.TID, "empty QoS data frame with {}".format(strtype),
 					"QoS TID of injected {frametype} is being overwritten!")
 
 	p = Dot11(FCfield=ref.FCfield, addr1=ref.addr1, addr2=ref.addr2, addr3=ref.addr3, type=2, subtype=8, SC=33<<4)/Dot11QoS(TID=2)/Raw("BBBB")
 	set_amsdu(p[Dot11QoS])
 	status |= test_packet_injection(sout, sin, p, \
 					lambda cap: cap.TID == p.TID and is_amsdu(cap) and b"BBBB" in raw(cap), \
-					f"A-MSDU frame with {strtype}",	"A-MSDU frame is not properly injected!")
+					"A-MSDU frame with {}".format(strtype),	"A-MSDU frame is not properly injected!")
 
-	if status == 0: log(STATUS, f"[+] All tested fields are properly injected when using {strtype}.", color="green")
+	if status == 0: log(STATUS, "[+] All tested fields are properly injected when using {}.".format(strtype), color="green")
 	return status
 
 def test_injection_order(sout, sin, ref, strtype, retries=1):
-	log(STATUS, f"--- Testing order of injected QoS frames using {strtype}")
+	log(STATUS, "--- Testing order of injected QoS frames using {}".format(strtype))
 
 	label = b"AAAA" + struct.pack(">II", random.randint(0, 2**32), random.randint(0, 2**32))
 	p2 = Dot11(FCfield=ref.FCfield, addr1=ref.addr1, addr2=ref.addr2, type=2, subtype=8, SC=33<<4)/Dot11QoS(TID=2)
@@ -126,18 +126,18 @@ def test_injection_order(sout, sin, ref, strtype, retries=1):
 
 		# Sanity check the captured TIDs, and then analyze the results
 		if not (2 in tids and 6 in tids):
-			log(STATUS,  f"We didn't capture all injected QoS TID frames, retrying.")
+			log(STATUS,  "We didn't capture all injected QoS TID frames, retrying.")
 		else:
 			break
 
 	if not (2 in tids and 6 in tids):
-		log(ERROR,  f"[-] We didn't capture all injected QoS TID frames with {strtype}. Test failed.")
+		log(ERROR,  "[-] We didn't capture all injected QoS TID frames with {}. Test failed.".format(strtype))
 		return FLAG_NOCAPTURE
 	elif tids != sorted(tids):
-		log(ERROR,  f"[-] Frames with different QoS TIDs are reordered during injection with {strtype}.")
+		log(ERROR,  "[-] Frames with different QoS TIDs are reordered during injection with {}.".format(strtype))
 		return FLAG_FAIL
 	else:
-		log(STATUS, f"[+] Frames with different QoS TIDs are not reordered during injection with {strtype}.", color="green")
+		log(STATUS, "[+] Frames with different QoS TIDs are not reordered during injection with {}.".format(strtype), color="green")
 		return 0
 
 def test_injection_ack(sout, sin, addr1, addr2):
@@ -147,7 +147,7 @@ def test_injection_ack(sout, sin, addr1, addr2):
 	# Test number of retransmissions
 	p = Dot11(FCfield="to-DS", addr1="00:11:00:00:02:01", addr2="00:11:00:00:02:01", type=2, SC=33<<4)
 	num = len(inject_and_capture(sout, sin, p, retries=1))
-	log(STATUS, f"Injected frames seem to be (re)transitted {num} times")
+	log(STATUS, "Injected frames seem to be (re)transitted {} times".format(num))
 	if num == 0:
 		log(ERROR, "Couldn't capture injected frame. Please restart the test.")
 		test_fail = True
@@ -158,7 +158,7 @@ def test_injection_ack(sout, sin, addr1, addr2):
 	# Test ACK towards an unassigned MAC address
 	p = Dot11(FCfield="to-DS", addr1=addr1, addr2="00:22:00:00:00:01", type=2, SC=33<<4)
 	num = len(inject_and_capture(sout, sin, p, retries=1))
-	log(STATUS, f"Captured {num} (re)transmitted frames to the AP when using a spoofed sender address")
+	log(STATUS, "Captured {} (re)transmitted frames to the AP when using a spoofed sender address".format(num))
 	if num == 0:
 		log(ERROR, "Couldn't capture injected frame. Please restart the test.")
 		test_fail = True
@@ -168,7 +168,7 @@ def test_injection_ack(sout, sin, addr1, addr2):
 	# Test ACK towards an assigned MAC address
 	p = Dot11(FCfield="to-DS", addr1=addr1, addr2=addr2, type=2, SC=33<<4)
 	num = len(inject_and_capture(sout, sin, p, retries=1))
-	log(STATUS, f"Captured {num} (re)transmitted frames to the AP when using the real sender address")
+	log(STATUS, "Captured {} (re)transmitted frames to the AP when using the real sender address".format(num))
 	if num == 0:
 		log(ERROR, "Couldn't capture injected frame. Please restart the test.")
 		test_fail = True
@@ -194,22 +194,22 @@ def test_injection(iface_out, iface_in=None, peermac=None, ownmac=None, testack=
 	# Workaround to properly inject fragmented frames (and prevent it from blocking Tx queue).
 	sout.mf_workaround = driver_out in ["iwlwifi", "ath9k_htc"]
 	if sout.mf_workaround:
-		log(WARNING, f"Detected {driver_out}, using workaround to reliably inject fragmented frames.")
+		log(WARNING, "Detected {}, using workaround to reliably inject fragmented frames.".format(driver_out))
 
 	# Print out what we are tested. Abort if the driver is known not to support a self-test.
-	log(STATUS, f"Injection test: using {iface_out} ({driver_out}) to inject frames")
+	log(STATUS, "Injection test: using {} ({}) to inject frames".format(iface_out, driver_out))
 	if iface_in == None:
-		log(WARNING, f"Injection selftest: also using {iface_out} to capture frames. This means the tests can detect if the kernel")
-		log(WARNING, f"                    interferes with injection, but it cannot check the behaviour of the device itself.")
+		log(WARNING, "Injection selftest: also using {} to capture frames. This means the tests can detect if the kernel".format(iface_out))
+		log(WARNING, "                    interferes with injection, but it cannot check the behaviour of the device itself.")
 		if driver_out in ["mt76x2u"]:
-			log(WARNING, f"                    WARNING: self-test with the {driver_out} driver can be unreliable.")
+			log(WARNING, "                    WARNING: self-test with the {} driver can be unreliable.".format(driver_out))
 		elif not driver_out in ["iwlwifi", "ath9k_htc"]:
-			log(WARNING, f"                    WARNING: it is unknown whether a self-test works with the {driver_out} driver.")
+			log(WARNING, "                    WARNING: it is unknown whether a self-test works with the {} driver.".format(driver_out))
 
 		sin = sout
 	else:
 		driver_in = get_device_driver(iface_in)
-		log(STATUS, f"Injection test: using {iface_in} ({driver_in}) to capture frames")
+		log(STATUS, "Injection test: using {} ({}) to capture frames".format(iface_in, driver_in))
 		sin = L2Socket(type=ETH_P_ALL, iface=iface_in)
 
 	# Injection using the "own" MAC address is mainly a problem when using a second virtual
@@ -242,15 +242,15 @@ def test_injection(iface_out, iface_in=None, peermac=None, ownmac=None, testack=
 		# 2. If sout interface "sees" the AP this assure it will also receive its ACK frames
 		# 3. The given peermac might be a client that goes into sleep mode
 		channel = get_channel(sin.iface)
-		log(STATUS, f"--- Searching for AP on channel {channel} to test ACK behaviour.")
+		log(STATUS, "--- Searching for AP on channel {} to test ACK behaviour.".format(channel))
 		apmac, ssid = get_nearby_ap_addr(sout)
 		if apmac == None and peermac == None:
 			raise IOError("Unable to find nearby AP to test injection")
 		elif apmac == None:
-			log(WARNING, f"Unable to find AP. Try a different channel? Testing ACK behaviour with peer {peermac}.")
+			log(WARNING, "Unable to find AP. Try a different channel? Testing ACK behaviour with peer {}.".format(peermac))
 			destmac = peermac
 		else:
-			log(STATUS, f"Testing ACK behaviour by injecting frames to AP {ssid} ({apmac}).")
+			log(STATUS, "Testing ACK behaviour by injecting frames to AP {} ({}).".format(ssid, apmac))
 			destmac = apmac
 		test_injection_ack(sout, sin, addr1=destmac, addr2=ownmac)
 
@@ -259,9 +259,9 @@ def test_injection(iface_out, iface_in=None, peermac=None, ownmac=None, testack=
 	if status == 0:
 		log(STATUS, "==> The most important tests have been passed successfully!", color="green")
 	if status & FLAG_NOCAPTURE != 0:
-		log(WARNING, f"==> Failed to capture some frames. Try another channel or use another monitoring device.")
+		log(WARNING, "==> Failed to capture some frames. Try another channel or use another monitoring device.")
 	if status & FLAG_FAIL !=0 :
-		log(ERROR, f"==> Some tests failed. Are you using patched drivers/firmware?")
+		log(ERROR, "==> Some tests failed. Are you using patched drivers/firmware?")
 
 	sout.close()
 	sin.close()

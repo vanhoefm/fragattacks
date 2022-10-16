@@ -188,7 +188,7 @@ class Action():
 	def __str__(self):
 		trigger = ["NoTigger", "StartAuth", "BeforeAuth", "AfterAuth", "Connected"][self.trigger]
 		action = ["NoAction", "GetIp", "Rekey", "Reconnect", "Roam", "Inject", "Func"][self.action]
-		return f"Action({trigger}, {action})"
+		return "Action({}, {})".format(trigger, action)
 
 	def __repr__(self):
 		return str(self)
@@ -469,7 +469,7 @@ class Station():
 		return encrypted, key
 
 	def handle_connecting(self, bss):
-		log(STATUS, f"Station: setting BSS MAC address {bss}")
+		log(STATUS, "Station: setting BSS MAC address {}".format(bss))
 		self.bss = bss
 
 		# Clear the keys on a new connection
@@ -572,7 +572,7 @@ class Station():
 
 			elif act.action == Action.Inject:
 				if act.delay != None and act.delay > 0:
-					log(STATUS, f"Sleeping {act.delay} seconds")
+					log(STATUS, "Sleeping {} seconds".format(act.delay))
 					time.sleep(act.delay)
 
 				if act.encrypted:
@@ -721,7 +721,7 @@ class Daemon(metaclass=abc.ABCMeta):
 			log(ERROR, "wpa_supplicant did not recognize the command %s. Did you (re)compile wpa_supplicant/hostapd?" % cmd.split()[0])
 			quit(1)
 		elif "FAIL" in response:
-			log(ERROR, f"Failed to execute command {cmd}")
+			log(ERROR, "Failed to execute command {}".format(cmd))
 			quit(1)
 
 		return response[2:]
@@ -746,8 +746,8 @@ class Daemon(metaclass=abc.ABCMeta):
 				time.sleep(5)
 			elif FRAGVERSION != open("/sys/module/mac80211/parameters/fragattack_version").read().strip():
 				version = open("/sys/module/mac80211/parameters/fragattack_version").read().strip()
-				log(ERROR, f"This script has version {FRAGVERSION} but the modified drivers are version {version}.")
-				log(ERROR, f"Recompile and reinstall the modified drivers or add --no-drivercheck (see the README for details).")
+				log(ERROR, "This script has version {} but the modified drivers are version {}.".format(FRAGVERSION, version))
+				log(ERROR, "Recompile and reinstall the modified drivers or add --no-drivercheck (see the README for details).")
 				quit(1)
 
 		# 1. Assign/create interfaces according to provided options
@@ -758,7 +758,7 @@ class Daemon(metaclass=abc.ABCMeta):
 			set_macaddress(self.nic_iface, get_macaddress(self.nic_mon))
 
 			if not self.options.ap:
-				log(WARNING, f"Note: you must manually set {self.nic_mon} on the channel of the AP")
+				log(WARNING, "Note: you must manually set {} on the channel of the AP".format(self.nic_mon))
 
 		elif self.options.inject:
 			# Use the provided interface to monitor/inject frames
@@ -784,7 +784,7 @@ class Daemon(metaclass=abc.ABCMeta):
 		elif driver in ["ath9k_htc", "iwlwifi"]:
 			# Assure that fragmented frames are reliably injected on certain iwlwifi and ath9k_htc devices
 			self.options.inject_mf_workaround = True
-			log(STATUS, f"Detected {driver}, using injection bug workarounds")
+			log(STATUS, "Detected {}, using injection bug workarounds".format(driver))
 
 		# 2.B Check if ath9k_htc is using patched firmware
 		if not self.options.no_drivercheck and driver == "ath9k_htc":
@@ -799,7 +799,7 @@ class Daemon(metaclass=abc.ABCMeta):
 
 		# 3. Enable monitor mode
 		set_monitor_mode(self.nic_mon)
-		log(STATUS, f"Using interface {self.nic_mon} ({get_device_driver(self.nic_mon)}) to inject frames.")
+		log(STATUS, "Using interface {} ({}) to inject frames.".format(self.nic_mon, get_device_driver(self.nic_mon)))
 		if self.nic_hwsim:
 			set_monitor_mode(self.nic_hwsim)
 
@@ -844,17 +844,17 @@ class Daemon(metaclass=abc.ABCMeta):
 		# which can fail on certain devices such as the AWUS036ACH.
 		channel = self.wpaspy_command("GET_CHANNEL").strip()
 		if self.options.inject:
-			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
+			log(STATUS, "{}: setting to channel {}".format(self.nic_mon, channel))
 			set_channel(self.nic_mon, channel)
 		elif self.options.hwsim:
-			log(STATUS, f"{self.nic_hwsim}: setting to channel {channel}")
-			log(STATUS, f"{self.nic_mon}: setting to channel {channel}")
+			log(STATUS, "{}: setting to channel {}".format(self.nic_hwsim, channel))
+			log(STATUS, "{}: setting to channel {}".format(self.nic_mon, channel))
 			set_channel(self.nic_hwsim, channel)
 			set_channel(self.nic_mon, channel)
 
 		if self.options.inject_test != None and self.options.inject_test != "self":
 			# FIXME: When using 40 MHz channel this call tends to fail the first time
-			log(STATUS, f"{self.options.inject_test}: setting to channel {channel}")
+			log(STATUS, "{}: setting to channel {}".format(self.options.inject_test, channel))
 			set_channel(self.options.inject_test, channel)
 			# When explicitly testing we can afford a longer timeout. Otherwise we should avoid it.
 			time.sleep(0.5)
@@ -876,7 +876,7 @@ class Daemon(metaclass=abc.ABCMeta):
 			log(ERROR, "Unexpected error. Are you using the correct kernel/driver/device?")
 			quit(1)
 
-		log(DEBUG, f"Passed injection self-test on interface {self.nic_mon}.")
+		log(DEBUG, "Passed injection self-test on interface {}.".format(self.nic_mon))
 		quit(1)
 
 	def forward_hwsim(self, p, s):
@@ -885,7 +885,7 @@ class Daemon(metaclass=abc.ABCMeta):
 		if p.type != 0 and p.type != 2: return
 
 		if len(p) >= 2200:
-			log(DEBUG, f"Cannot forward frame longer than MTU (length {len(p)}).")
+			log(DEBUG, "Cannot forward frame longer than MTU (length {}).".format(len(p)))
 			return
 
 		# Due to very strange buy in Scapy, we cannot directly forward frames with a
@@ -909,8 +909,8 @@ class Daemon(metaclass=abc.ABCMeta):
 		# Verify that hostap got recompiled on updates
 		version = self.wpaspy_command("GET_VERSION").strip()
 		if version != FRAGVERSION:
-			log(ERROR, f"This script has version {FRAGVERSION} but compiled wpa_supplicant/hostapd is {version}.")
-			log(ERROR, f"Please recompile hostapd/wpa_supplicant using `build.sh`.")
+			log(ERROR, "This script has version {} but compiled wpa_supplicant/hostapd is {}.".format(FRAGVERSION, version))
+			log(ERROR, "Please recompile hostapd/wpa_supplicant using `build.sh`.")
 			quit(1)
 
 		# Post-startup configuration of the supplicant or AP
@@ -974,11 +974,11 @@ class Authenticator(Daemon):
 			station.time_tick()
 
 	def get_ip(self, station):
-		log(STATUS, f"Waiting on client {station.get_peermac()} to get IP")
+		log(STATUS, "Waiting on client {} to get IP".format(station.get_peermac()))
 
 	def rekey(self, station):
-		log(STATUS, f"Starting PTK rekey with client {station.get_peermac()}", color="green")
-		cmd = f"REKEY_PTK {station.get_peermac()}"
+		log(STATUS, "Starting PTK rekey with client {}".format(station.get_peermac()), color="green")
+		cmd = "REKEY_PTK {}".format(station.get_peermac())
 		if self.options.rekey_early_install:
 			log(STATUS, "Will install PTK during rekey after sending Msg3")
 			cmd += " early-install"
@@ -990,10 +990,10 @@ class Authenticator(Daemon):
 		# Takes a few seconds, and then does a full new connection: Security Camera
 		if self.options.full_reconnect:
 			log(STATUS, "Deauthentication station to make it reconnect", color="green")
-			cmd = f"DEAUTHENTICATE {station.get_peermac()} reason={WLAN_REASON_CLASS2_FRAME_FROM_NONAUTH_STA}"
+			cmd = "DEAUTHENTICATE {} reason={}".format(station.get_peermac(), WLAN_REASON_CLASS2_FRAME_FROM_NONAUTH_STA)
 		else:
 			log(STATUS, "Disassociating station to make it reconnect", color="green")
-			cmd = f"DISASSOCIATE {station.get_peermac()} reason={WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA}"
+			cmd = "DISASSOCIATE {} reason={}".format(station.get_peermac(), WLAN_REASON_CLASS3_FRAME_FROM_NONASSOC_STA)
 		self.wpaspy_command(cmd)
 
 	def handle_eth_dhcp(self, p, station):
@@ -1004,7 +1004,7 @@ class Authenticator(Daemon):
 		if req_type != 3: return
 
 		peerip = self.dhcp.leases[station.get_peermac()]
-		log(STATUS, f"Client {station.get_peermac()} with IP {peerip} has connected")
+		log(STATUS, "Client {} with IP {} has connected".format(station.get_peermac(), peerip))
 		station.set_ip_addresses(self.arp_sender_ip, peerip)
 
 	def handle_eth(self, p):
@@ -1045,7 +1045,7 @@ class Authenticator(Daemon):
 			cmd, clientmac, source = msg.split()
 			self.add_station(clientmac)
 
-			log(STATUS, f"Client {clientmac} is connecting")
+			log(STATUS, "Client {} is connecting".format(clientmac))
 			station = self.stations[clientmac]
 			station.handle_connecting(self.apmac)
 			station.set_peermac(clientmac)
@@ -1057,14 +1057,14 @@ class Authenticator(Daemon):
 		elif "EAPOL-TX" in msg:
 			cmd, clientmac, payload = msg.split()
 			if not clientmac in self.stations:
-				log(WARNING, f"Sending EAPOL to unknown client {clientmac}.")
+				log(WARNING, "Sending EAPOL to unknown client {}.".format(clientmac))
 				return
 			self.stations[clientmac].handle_eapol_tx(bytes.fromhex(payload), clientmac)
 
 		elif "AP-STA-CONNECTED" in msg:
 			cmd, clientmac = msg.split()
 			if not clientmac in self.stations:
-				log(WARNING, f"Unknown client {clientmac} finished authenticating.")
+				log(WARNING, "Unknown client {} finished authenticating.".format(clientmac))
 				return
 			self.stations[clientmac].handle_authenticated()
 
@@ -1167,7 +1167,7 @@ class Supplicant(Daemon):
 		req = req/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=self.dhcp_xid)
 		req = req/DHCP(options=[("message-type", "discover"), "end"])
 
-		log(STATUS, f"Sending DHCP discover with XID {self.dhcp_xid}")
+		log(STATUS, "Sending DHCP discover with XID {}".format(self.dhcp_xid))
 		self.station.send_mon(req)
 
 	def send_dhcp_request(self, offer):
@@ -1181,7 +1181,7 @@ class Supplicant(Daemon):
 		reply = reply/DHCP(options=[("message-type", "request"), ("requested_addr", myip),
 					    ("hostname", "fragclient"), "end"])
 
-		log(STATUS, f"Sending DHCP request with XID {self.dhcp_xid}")
+		log(STATUS, "Sending DHCP request with XID {}".format(self.dhcp_xid))
 		self.station.send_mon(reply)
 
 	def handle_eth_dhcp(self, p):
@@ -1201,14 +1201,14 @@ class Supplicant(Daemon):
 			clientip = p[BOOTP].yiaddr
 			serverip = p[IP].src
 			self.time_retrans_dhcp = None
-			log(STATUS, f"Received DHCP ack. My ip is {clientip} and router is {serverip}.", color="green")
+			log(STATUS, "Received DHCP ack. My ip is {} and router is {}.".format(clientip, serverip), color="green")
 
 			self.initialize_peermac(p.src)
 			self.initialize_ips(clientip, serverip)
 
 	def initialize_peermac(self, peermac):
 		if peermac != self.station.bss:
-			log(STATUS, f"Will now use peer MAC address {peermac} instead of the BSS {self.station.bss}.")
+			log(STATUS, "Will now use peer MAC address {} instead of the BSS {}.".format(peermac, self.station.bss))
 		self.station.set_peermac(peermac)
 
 	def initialize_ips(self, clientip, serverip):
@@ -1266,7 +1266,7 @@ class Supplicant(Daemon):
 		# the authentication phase (reducing the chance that packet queues are reset).
 		optim = "0" if self.options.full_reconnect else "1"
 
-		self.wpaspy_command(f"SET reassoc_same_bss_optim {optim}")
+		self.wpaspy_command("SET reassoc_same_bss_optim {}".format(optim))
 		self.wpaspy_command("REASSOCIATE")
 
 	def configure_daemon(self):

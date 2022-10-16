@@ -228,7 +228,7 @@ class EapolAmsduTest(Test):
 
 		actions = self.get_actions(Action.Inject)
 		if len(actions) != 1:
-			log(ERROR, f"eapol-amsdu: invalid arguments, should only give 1 inject action (gave {len(actions)}).")
+			log(ERROR, "eapol-amsdu: invalid arguments, should only give 1 inject action (gave {}).".format(len(actions)))
 			quit(1)
 
 	def prepare(self, station):

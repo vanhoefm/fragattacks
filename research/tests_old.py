@@ -19,10 +19,10 @@ class BcastEapFragTest(Test):
 
 		actions = self.get_actions(Action.Inject)
 		if len(actions) != 2:
-			log(ERROR, f"eapfrag: invalid arguments, should give 2 inject action (gave {len(actions)}).")
+			log(ERROR, "eapfrag: invalid arguments, should give 2 inject action (gave {}).".format(len(actions)))
 			quit(1)
 		elif actions[0].encrypted:
-			log(ERROR, f"eapfrag: first inject action should not be encrypted.")
+			log(ERROR, "eapfrag: first inject action should not be encrypted.")
 			quit(1)
 
 	def prepare(self, station):
