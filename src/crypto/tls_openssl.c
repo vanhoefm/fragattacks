@@ -3285,7 +3285,14 @@ static int tls_connection_client_cert(struct tls_connection *conn,
 		while ((x509 = PEM_read_bio_X509(bio, NULL, NULL, NULL))) {
 			wpa_printf(MSG_DEBUG,
 				   "OpenSSL: Added an additional certificate into the chain");
+/** Quick and dirty fix to enable compilation on Ubuntu 14.04 */
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
 			SSL_add0_chain_cert(conn->ssl, x509);
+#else
+			fprintf(stderr, "ERROR: Can't call SSL_add0_chain_cert. Aborting.\n");
+			BIO_free(bio);
+			return -1;
+#endif
 		}
 		BIO_free(bio);
 		return 0;
@@ -5364,6 +5371,8 @@ static void openssl_debug_dump_certificates(SSL_CTX *ssl_ctx)
 static void openssl_debug_dump_certificate_chains(SSL_CTX *ssl_ctx)
 {
 #if !defined(LIBRESSL_VERSION_NUMBER) && !defined(BORINGSSL_API_VERSION)
+/** Quick and dirty fix to enable compilation on Ubuntu 14.04 */
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	int res;
 
 	for (res = SSL_CTX_set_current_cert(ssl_ctx, SSL_CERT_SET_FIRST);
@@ -5372,6 +5381,7 @@ static void openssl_debug_dump_certificate_chains(SSL_CTX *ssl_ctx)
 		openssl_debug_dump_certificates(ssl_ctx);
 
 	SSL_CTX_set_current_cert(ssl_ctx, SSL_CERT_SET_FIRST);
+#endif
 #endif
 }
 
