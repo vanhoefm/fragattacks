@@ -92,6 +92,8 @@ and using the tool against a known-vulnerable implementation to confirm the tool
 The test tool was tested on Ubuntu 20.04 using kernel 5.8. If you use another Linux distribution, please note
 that only **kernel versions below or equal to 5.12 are supported**.
 
+### Ubuntu 20.04 specific
+
 When using Ubuntu 20.04 you will first have to install kernel 5.8 as follows. Note that your existing kernel
 will keep being installed and will also keep being used by default:
 
@@ -100,9 +102,11 @@ will keep being installed and will also keep being used by default:
 
 Now reboot Ubuntu, hold the shift key while booting, select "Advanced options for Ubuntu", and then start kernel 5.8
 by picking "Ubuntu, with Linux 5.8.0-63-generic". You can [edit your GRUB config](https://unix.stackexchange.com/a/421650)
-so Ubuntu will use this kernel version by default.
+so Ubuntu will use this kernel version by default. Continue the next instructions under this now-running kernel.
 
-Next, install the required dependencies:
+### General Instructions
+
+Install the required dependencies:
 
 	sudo apt-get update
 	sudo apt-get install libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libssl-dev \
