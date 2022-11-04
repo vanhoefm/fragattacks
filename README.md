@@ -1082,10 +1082,47 @@ network manager of Ubuntu will interfere with the test tool. This README is also
 on the live image at `~/fragattacks/README.md`.
 
 Note that airmon-ng may be unreliable on the live image and it's better to use [iw](https://github.com/vanhoefm/fragattacks/issues/36).
-	
+
+<a id="id-design-notes"></a>
+# 10. Design notes
+
+The arguments given to the ping command define which actions the test tool will perform
+and when these actions are performed. Each action is separated by a comma (`,`). By default
+an action is performed after the client connected, and in that case a single letter represents
+which action is performed. Note that this is implemented in the
+[`stract2action`](https://github.com/vanhoefm/fragattacks/blob/master/research/fragattack.py#L23)
+function. Possible actions are:
+
+- `I`: obtain an IP address. By default is is done using DHCP, unless an IP address is explicitly
+       provided using the `--ip` and `--peerip` arguments, in which case nothing is done.
+- `E`: inject an encrypted packet/fragment of the ping request.
+- `P`: inject a plaintext packet/fragment of the ping request.
+- `F`: refresh the session key by initiation the 4-way handshake (as an AP) or waiting for the
+       4-way handshake (as a client).
+- `R`: let the client reconnect to the network.
+- `D`: this is a special "meta action". Treat this like an empty fragment of the ping request
+       that is not actually sent.
+
+If there is only a single `E` or `P` action, then the ping request is injected as a single frame.
+If there are multiple `E`, `P` actions, then the ping request is fragmented, where the number
+of fragments equal the number of `E` or `P` actions. If there is the special `D` action, then
+the ping request is fragmented over the remaining `E` or `P` actions (see the examples in the table).
+This fragmentation behavior is implemented in the [PingTest](https://github.com/vanhoefm/fragattacks/blob/master/research/tests_common.py#L47)
+class.
+
+A letter can be put in front of the above actions to change when the action should be performed:
+
+- `S`: the action is performed on the 1st or 2nd message of the 4-way handshake.
+- `B`: the action is performed on the 3rd or 4th message of the 4-way handshake.
+- `A`: the action is performed immediately after the 4-way handshake completed.
+- `C`: the action is performed 1 second after the 4-way handshake completed. The amount of seconds
+       to wait can be changed by using the `--connected-delay` parameter.
+
+For example see the above two tables with commands.
+
 
 <a id="id-change-log"></a>
-# 10. Change log
+# 11. Change log
 
 **Version 1.3.4 (under progress):**:
 
@@ -1095,7 +1132,13 @@ Note that airmon-ng may be unreliable on the live image and it's better to use [
 	
 - Updated the modified drivers so they compile on Linux kernel 5.13 as well. This is experimental.
 
-- Updated the README with an example on how to install an older supported kernel on Ubuntu 20.04.
+- Made the injection test more reliable by waiting longer for frames in the reorder test.
+
+- Made several minor changes to make the code easier to compile on older platforms (that have older Python
+  version and OpenSSL libraries).
+
+- Updated the README with an example on how to install an older supported kernel on Ubuntu 20.04. Added
+  design notes. Now recommending the AWUS036ACM.
 
 **Version 1.3.3 (11 May 2021)**:
 
