@@ -63,6 +63,9 @@ def prepare_tests(opt):
 				 Action(Action.Connected, enc=True)])
 		test = PingTest(REQ_ICMP, actions, opt=opt)
 
+	elif opt.testname == "ping-before":
+		test = PingBefore(REQ_ICMP, opt)
+
 	elif opt.testname == "ping-frag-sep":
 		# Check if we can send frames in between fragments. The seperator by default uses a different
 		# QoS TID. The second fragment of the ping request will NOT have an incremental PN compared
