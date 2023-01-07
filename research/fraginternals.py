@@ -1199,6 +1199,9 @@ class Supplicant(Daemon):
 		# DHCP Ack
 		elif req_type == 5:
 			clientip = p[BOOTP].yiaddr
+			# Note: The DHCP server may use a seemginly invalid IP address. The IP address of the router/gateway
+			#       is often an option in the DHCP Ack. E.g., some DHCP server will use 1.1.1.1 as their address,
+			#       see https://revolutionwifi.blogspot.com/2011/03/explaining-dhcp-server-1111.html
 			serverip = p[IP].src
 			self.time_retrans_dhcp = None
 			log(STATUS, "Received DHCP ack. My ip is {} and router is {}.".format(clientip, serverip), color="green")
