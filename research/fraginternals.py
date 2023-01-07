@@ -1179,7 +1179,7 @@ class Supplicant(Daemon):
 		reply = Ether(dst="ff:ff:ff:ff:ff:ff", src=self.station.mac)/IP(src="0.0.0.0", dst="255.255.255.255")
 		reply = reply/UDP(sport=68, dport=67)/BOOTP(op=1, chaddr=rawmac, xid=self.dhcp_xid)
 		reply = reply/DHCP(options=[("message-type", "request"), ("requested_addr", myip),
-					    ("hostname", "fragclient"), "end"])
+					    ("server_id", offer[IP].src), ("hostname", "fragclient"), "end"])
 
 		log(STATUS, "Sending DHCP request with XID {}".format(self.dhcp_xid))
 		self.station.send_mon(reply)
