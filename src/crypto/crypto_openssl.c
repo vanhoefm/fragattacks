@@ -90,6 +90,20 @@ static EC_KEY * EVP_PKEY_get0_EC_KEY(EVP_PKEY *pkey)
 
 #endif /* OpenSSL version < 1.1.0 */
 
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+static OSSL_PROVIDER *openssl_legacy_provider = NULL;
+#endif /* OpenSSL version >= 3.0 */
+
+void openssl_load_legacy_provider(void)
+{
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+	if (openssl_legacy_provider)
+		return;
+
+	openssl_legacy_provider = OSSL_PROVIDER_try_load(NULL, "legacy", 1);
+#endif /* OpenSSL version >= 3.0 */
+}
+
 static BIGNUM * get_group5_prime(void)
 {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L && \
@@ -196,6 +210,7 @@ static int openssl_digest_vector(const EVP_MD *type, size_t num_elem,
 #ifndef CONFIG_FIPS
 int md4_vector(size_t num_elem, const u8 *addr[], const size_t *len, u8 *mac)
 {
+	openssl_load_legacy_provider();
 	return openssl_digest_vector(EVP_md4(), num_elem, addr, len, mac);
 }
 #endif /* CONFIG_FIPS */

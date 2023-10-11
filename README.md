@@ -1126,6 +1126,9 @@ For example see the above two tables with commands.
 
 **Version 1.3.4 (under progress):**:
 
+- Updated wpa_supplicant to re-enable connecting to Enterprise networks that use MS-CHAPv2. Previously, when
+  the OS uses OpenSSL 3.0 or higher, MD4 was disabled by default, meaning MS-CHAPv2 could not be used.
+
 - Added the `--pre-test-delay` parameter. This adds a delay between getting an IP address and the transmission
   of the first fragments/frames. See the [pull request](https://github.com/vanhoefm/fragattacks/pull/44) by
   Michael Trimarchi and Angelo Compagnucci.
