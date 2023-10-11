@@ -1126,6 +1126,11 @@ For example see the above two tables with commands.
 
 **Version 1.3.4 (under progress):**:
 
+- Always encrypt EAPOL (Rekey) Request frames, even when --rekey-plaintext is used.
+
+- The client now accepts replayed EAPOL frames. This assures that rekeys work even when the AP being tested
+  implements rekeys incorrectly.
+
 - Updated wpa_supplicant to re-enable connecting to Enterprise networks that use MS-CHAPv2. Previously, when
   the OS uses OpenSSL 3.0 or higher, MD4 was disabled by default, meaning MS-CHAPv2 could not be used.
 
