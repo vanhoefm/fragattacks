@@ -2615,10 +2615,16 @@ int wpa_sm_rx_eapol(struct wpa_sm *sm, const u8 *src_addr,
 	if (sm->rx_replay_counter_set &&
 	    os_memcmp(key->replay_counter, sm->rx_replay_counter,
 		      WPA_REPLAY_COUNTER_LEN) <= 0) {
+#ifndef CONFIG_TESTING_OPTIONS
 		wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
 			"WPA: EAPOL-Key Replay Counter did not increase - "
 			"dropping packet");
 		goto out;
+#else /* CONFIG_TESTING_OPTIONS */
+		wpa_msg(sm->ctx->msg_ctx, MSG_WARNING,
+			"WPA: Ignoring that EAPOL-Key Replay Counter did "
+			"not increase - can happen during rekeys");
+#endif /* CONFIG_TESTING_OPTIONS */
 	}
 
 	if (key_info & WPA_KEY_INFO_SMK_MESSAGE) {
