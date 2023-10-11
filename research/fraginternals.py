@@ -535,7 +535,12 @@ class Station():
 			# - Send with high priority, otherwise Action.AfterAuth might be send before
 			#   the EAPOL frame by the Wi-Fi chip.
 			# - Some routers such as the RT-AC51U do the 4-way rekey HS in plaintext.
-			self.send_mon(eapol, plaintext=self.options.rekey_plaintext)
+
+			plaintext = self.options.rekey_plaintext
+			if WPA_key in eapol and eapol[WPA_key].key_info & 2048:
+				plaintext = False
+
+			self.send_mon(eapol, plaintext=plaintext)
 
 	def perform_actions(self, trigger, **kwargs):
 		result = None
