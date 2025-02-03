@@ -138,9 +138,16 @@ Install patched drivers using:
 
 This compiles the drivers for most network cards supported by Linux. If you only want to compile
 the drivers for network cards I explicitly tested, use `make defconfig-experiments` instead.
-During the install command you may get several warnings containing `.. needs unknown symbol ..`. You can
-ignore these warning as long they do not contain the directory `/lib/modules/*/updates/` and the
-compiled drivers are working.
+You may get the following warnings:
+- When executing `make defconfig-wifi` you may get warnings related to `-Wyacc` and `-Wformat-overflow`.
+  You can ignore these warnings as long as the drivers get successfully compiled.
+- During the install command, you may also get the following warnings:
+	- Several warnings containing `.. needs unknown symbol ..`. You can ignore these warning as long
+	  they do not contain the directory `/lib/modules/*/updates/` and the compiled drivers are working.
+	- Repeated warnings containing `SSL error` and the `sign-file` command. This means that digitally
+	  signing the kernel modules has failed. You can usually ignore this.
+- You can verify that the modified driver were located by executing `cat /sys/module/mac80211/parameters/fragattack_version`
+  after a reboot. If this file exists, the modified drivers were successfully installed.
 
 Now install patched `ath9k_htc` firmware:
 
