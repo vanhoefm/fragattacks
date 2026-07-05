@@ -23,6 +23,9 @@
 #include <openssl/ec.h>
 #include <openssl/x509.h>
 #endif /* CONFIG_ECC */
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/provider.h>
+#endif /* OpenSSL version >= 3.0 */
 
 #include "common.h"
 #include "utils/const_time.h"

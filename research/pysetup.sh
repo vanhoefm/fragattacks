@@ -9,6 +9,10 @@ source venv/bin/activate
 pip install wheel
 pip install -r requirements.txt
 
-# Fix a bug in scapy that isn't fixed in the PyPI version yet. For background see
+# Fix a bug in scapy<=2.4.3 that isn't fixed in the PyPI version yet. For background see
 # https://github.com/secdev/scapy/commit/46fa40fde4049ad7770481f8806c59640df24059
-sed -i 's/find_library("libc")/find_library("c")/g' venv/lib/python*/site-packages/scapy/arch/bpf/core.py
+# (no-op on scapy>=2.4.4 where this was already fixed upstream)
+BPF_CORE="venv/lib/python*/site-packages/scapy/arch/bpf/core.py"
+for f in $BPF_CORE; do
+    [ -f "$f" ] && sed -i 's/find_library("libc")/find_library("c")/g' "$f"
+done

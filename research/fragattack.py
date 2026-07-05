@@ -5,7 +5,8 @@
 # See README for more details.
 
 # Note that tests_*.py files are imported automatically
-import glob, importlib, argparse
+import glob, importlib, argparse, warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 from fraginternals import *
 
 # ----------------------------------- Main Function -----------------------------------
@@ -90,8 +91,7 @@ def prepare_tests(opt):
 	elif opt.testname in ["eapol-amsdu", "eapol-amsdu-bad"]:
 		freebsd = opt.testname.endswith("-bad")
 		actions = str2actions(stractions,
-				[Action(Action.StartAuth, enc=False),
-				 Action(Action.StartAuth, enc=False)])
+				[Action(Action.StartAuth, enc=False)])
 		test = EapolAmsduTest(REQ_ICMP, actions, freebsd, opt)
 
 	elif opt.testname == "linux-plain":
